@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab1E1Rk7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 13:40:59 -0400
-Received: from mail.perches.com ([173.55.12.10]:2192 "EHLO mail.perches.com"
+	id S1755980Ab1E1RkX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 13:40:23 -0400
+Received: from mail.perches.com ([173.55.12.10]:2197 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754683Ab1E1Rg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 13:36:57 -0400
+	id S1754978Ab1E1Rg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 13:36:59 -0400
 From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+To: Chas Williams <chas@cmf.nrl.navy.mil>, Jiri Kosina <trivial@kernel.org>
+Cc: linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [TRIVIAL PATCH next 02/15] x86: Convert vmalloc/memset to vzalloc
-Date: Sat, 28 May 2011 10:36:22 -0700
-Message-Id: <10e35243fda0b8739c89ac32a7bdf348ec4752e1.1306603968.git.joe@perches.com>
+Subject: [TRIVIAL PATCH next 03/15] atm: Convert vmalloc/memset to vzalloc
+Date: Sat, 28 May 2011 10:36:23 -0700
+Message-Id: <116f5bfafcbf40c5bce65498e5ed6983be6c20c1.1306603968.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.5.rc3.dirty
 In-Reply-To: <cover.1306603968.git.joe@perches.com>
 References: <cover.1306603968.git.joe@perches.com>
@@ -23,27 +22,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/x86/mm/pageattr-test.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/atm/idt77252.c |   11 ++++++-----
+ drivers/atm/lanai.c    |    3 +--
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/mm/pageattr-test.c b/arch/x86/mm/pageattr-test.c
-index e1d1069..b008656 100644
---- a/arch/x86/mm/pageattr-test.c
-+++ b/arch/x86/mm/pageattr-test.c
-@@ -123,12 +123,11 @@ static int pageattr_test(void)
- 	if (print)
- 		printk(KERN_INFO "CPA self-test:\n");
+diff --git a/drivers/atm/idt77252.c b/drivers/atm/idt77252.c
+index 1f8d724..8d7b663 100644
+--- a/drivers/atm/idt77252.c
++++ b/drivers/atm/idt77252.c
+@@ -3415,27 +3415,28 @@ init_card(struct atm_dev *dev)
  
--	bm = vmalloc((max_pfn_mapped + 7) / 8);
-+	bm = vzalloc((max_pfn_mapped + 7) / 8);
- 	if (!bm) {
- 		printk(KERN_ERR "CPA Cannot vmalloc bitmap\n");
- 		return -ENOMEM;
+ 	size = sizeof(struct vc_map *) * card->tct_size;
+ 	IPRINTK("%s: allocate %d byte for VC map.\n", card->name, size);
+-	if (NULL == (card->vcs = vmalloc(size))) {
++	card->vcs = vzalloc(size);
++	if (!card->vcs) {
+ 		printk("%s: memory allocation failure.\n", card->name);
+ 		deinit_card(card);
+ 		return -1;
  	}
--	memset(bm, 0, (max_pfn_mapped + 7) / 8);
+-	memset(card->vcs, 0, size);
  
- 	failed += print_split(&sa);
- 	srandom32(100);
+ 	size = sizeof(struct vc_map *) * card->scd_size;
+ 	IPRINTK("%s: allocate %d byte for SCD to VC mapping.\n",
+ 	        card->name, size);
+-	if (NULL == (card->scd2vc = vmalloc(size))) {
++	card->scd2vc = vzalloc(size);
++	if (!card->scd2vc) {
+ 		printk("%s: memory allocation failure.\n", card->name);
+ 		deinit_card(card);
+ 		return -1;
+ 	}
+-	memset(card->scd2vc, 0, size);
+ 
+ 	size = sizeof(struct tst_info) * (card->tst_size - 2);
+ 	IPRINTK("%s: allocate %d byte for TST to VC mapping.\n",
+ 		card->name, size);
+-	if (NULL == (card->soft_tst = vmalloc(size))) {
++	card->soft_tst = vmalloc(size);
++	if (!card->soft_tst) {
+ 		printk("%s: memory allocation failure.\n", card->name);
+ 		deinit_card(card);
+ 		return -1;
+diff --git a/drivers/atm/lanai.c b/drivers/atm/lanai.c
+index 4e8ba56..be57a14 100644
+--- a/drivers/atm/lanai.c
++++ b/drivers/atm/lanai.c
+@@ -1457,10 +1457,9 @@ static int __devinit vcc_table_allocate(struct lanai_dev *lanai)
+ 	return (lanai->vccs == NULL) ? -ENOMEM : 0;
+ #else
+ 	int bytes = (lanai->num_vci) * sizeof(struct lanai_vcc *);
+-	lanai->vccs = (struct lanai_vcc **) vmalloc(bytes);
++	lanai->vccs = vzalloc(bytes);
+ 	if (unlikely(lanai->vccs == NULL))
+ 		return -ENOMEM;
+-	memset(lanai->vccs, 0, bytes);
+ 	return 0;
+ #endif
+ }
 -- 
 1.7.5.rc3.dirty
 
