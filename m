@@ -1,312 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab1E1Qkq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 12:40:46 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54118 "EHLO mx3.mail.elte.hu"
+	id S1755253Ab1E1QlJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 12:41:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55295 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754591Ab1E1Qkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 12:40:43 -0400
-Date: Sat, 28 May 2011 18:40:33 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler fixes
-Message-ID: <20110528164033.GA10131@elte.hu>
+	id S1754825Ab1E1QlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 12:41:06 -0400
+Date: Sat, 28 May 2011 16:40:55 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-db24d33e08b88e990991760a44d72006a5dc6102@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110409192141.930282378@chello.nl>
+References: <20110409192141.930282378@chello.nl>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Change and simplify ctx::is_active semantics
+Git-Commit-ID: db24d33e08b88e990991760a44d72006a5dc6102
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 28 May 2011 16:40:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Commit-ID:  db24d33e08b88e990991760a44d72006a5dc6102
+Gitweb:     http://git.kernel.org/tip/db24d33e08b88e990991760a44d72006a5dc6102
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Sat, 9 Apr 2011 21:17:45 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 28 May 2011 18:01:17 +0200
 
-Please pull the latest sched-urgent-for-linus git tree from:
+perf: Change and simplify ctx::is_active semantics
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git sched-urgent-for-linus
+Instead of tracking if a context is active or not, track which events
+of the context are active. By making it a bitmask of
+EVENT_PINNED|EVENT_FLEXIBLE we can simplify some of the scheduling
+routines since it can avoid adding events that are already active.
 
- Thanks,
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20110409192141.930282378@chello.nl
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/events/core.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-	Ingo
-
------------------->
-KOSAKI Motohiro (1):
-      cpuset: Fix cpuset_cpus_allowed_fallback(), don't update tsk->rt.nr_cpus_allowed
-
-Peter Zijlstra (2):
-      sched: Fix ttwu() for __ARCH_WANT_INTERRUPTS_ON_CTXSW
-      sched: Fix ->min_vruntime calculation in dequeue_entity()
-
-Xiaotian Feng (1):
-      sched: More sched_domain iterations fixes
-
-
- include/linux/cpuset.h |    2 +-
- include/linux/sched.h  |    7 ++++++
- kernel/cpuset.c        |    4 +-
- kernel/kthread.c       |    4 +-
- kernel/sched.c         |   56 ++++++++++++++++++++++++++++++++++-------------
- kernel/sched_fair.c    |    5 ++-
- kernel/sched_rt.c      |   10 ++++++-
- kernel/sched_stats.h   |    4 +-
- 8 files changed, 65 insertions(+), 27 deletions(-)
-
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index f20eb8f..e9eaec5 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -146,7 +146,7 @@ static inline void cpuset_cpus_allowed(struct task_struct *p,
- 
- static inline int cpuset_cpus_allowed_fallback(struct task_struct *p)
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 60b333a..71c2d44 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1763,8 +1763,9 @@ static void ctx_sched_out(struct perf_event_context *ctx,
+ 			  enum event_type_t event_type)
  {
--	cpumask_copy(&p->cpus_allowed, cpu_possible_mask);
-+	do_set_cpus_allowed(p, cpu_possible_mask);
- 	return cpumask_any(cpu_active_mask);
- }
+ 	struct perf_event *event;
++	int is_active = ctx->is_active;
  
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index dc88712..8da84b7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1841,9 +1841,16 @@ static inline void rcu_copy_process(struct task_struct *p)
- #endif
- 
- #ifdef CONFIG_SMP
-+extern void do_set_cpus_allowed(struct task_struct *p,
-+			       const struct cpumask *new_mask);
-+
- extern int set_cpus_allowed_ptr(struct task_struct *p,
- 				const struct cpumask *new_mask);
- #else
-+static inline void do_set_cpus_allowed(struct task_struct *p,
-+				      const struct cpumask *new_mask)
-+{
-+}
- static inline int set_cpus_allowed_ptr(struct task_struct *p,
- 				       const struct cpumask *new_mask)
- {
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 1ceeb04..9c9b754 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2190,7 +2190,7 @@ int cpuset_cpus_allowed_fallback(struct task_struct *tsk)
- 	rcu_read_lock();
- 	cs = task_cs(tsk);
- 	if (cs)
--		cpumask_copy(&tsk->cpus_allowed, cs->cpus_allowed);
-+		do_set_cpus_allowed(tsk, cs->cpus_allowed);
- 	rcu_read_unlock();
- 
- 	/*
-@@ -2217,7 +2217,7 @@ int cpuset_cpus_allowed_fallback(struct task_struct *tsk)
- 		 * Like above we can temporary set any mask and rely on
- 		 * set_cpus_allowed_ptr() as synchronization point.
- 		 */
--		cpumask_copy(&tsk->cpus_allowed, cpu_possible_mask);
-+		do_set_cpus_allowed(tsk, cpu_possible_mask);
- 		cpu = cpumask_any(cpu_active_mask);
- 	}
- 
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 3b34d27..4ba7ccc 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -202,8 +202,8 @@ void kthread_bind(struct task_struct *p, unsigned int cpu)
+-	ctx->is_active = 0;
++	ctx->is_active &= ~event_type;
+ 	if (likely(!ctx->nr_events))
  		return;
+ 
+@@ -1774,12 +1775,12 @@ static void ctx_sched_out(struct perf_event_context *ctx,
+ 		return;
+ 
+ 	perf_pmu_disable(ctx->pmu);
+-	if (event_type & EVENT_PINNED) {
++	if ((is_active & EVENT_PINNED) && (event_type & EVENT_PINNED)) {
+ 		list_for_each_entry(event, &ctx->pinned_groups, group_entry)
+ 			group_sched_out(event, cpuctx, ctx);
  	}
  
--	p->cpus_allowed = cpumask_of_cpu(cpu);
--	p->rt.nr_cpus_allowed = 1;
-+	/* It's safe because the task is inactive. */
-+	do_set_cpus_allowed(p, cpumask_of(cpu));
- 	p->flags |= PF_THREAD_BOUND;
- }
- EXPORT_SYMBOL(kthread_bind);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 5e43e9d..cbb3a0e 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2573,7 +2573,26 @@ static void ttwu_queue_remote(struct task_struct *p, int cpu)
- 	if (!next)
- 		smp_send_reschedule(cpu);
- }
--#endif
-+
-+#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-+static int ttwu_activate_remote(struct task_struct *p, int wake_flags)
-+{
-+	struct rq *rq;
-+	int ret = 0;
-+
-+	rq = __task_rq_lock(p);
-+	if (p->on_cpu) {
-+		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
-+		ttwu_do_wakeup(rq, p, wake_flags);
-+		ret = 1;
-+	}
-+	__task_rq_unlock(rq);
-+
-+	return ret;
-+
-+}
-+#endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
-+#endif /* CONFIG_SMP */
- 
- static void ttwu_queue(struct task_struct *p, int cpu)
+-	if (event_type & EVENT_FLEXIBLE) {
++	if ((is_active & EVENT_FLEXIBLE) && (event_type & EVENT_FLEXIBLE)) {
+ 		list_for_each_entry(event, &ctx->flexible_groups, group_entry)
+ 			group_sched_out(event, cpuctx, ctx);
+ 	}
+@@ -2058,8 +2059,9 @@ ctx_sched_in(struct perf_event_context *ctx,
+ 	     struct task_struct *task)
  {
-@@ -2631,17 +2650,17 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
- 	while (p->on_cpu) {
- #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
- 		/*
--		 * If called from interrupt context we could have landed in the
--		 * middle of schedule(), in this case we should take care not
--		 * to spin on ->on_cpu if p is current, since that would
--		 * deadlock.
-+		 * In case the architecture enables interrupts in
-+		 * context_switch(), we cannot busy wait, since that
-+		 * would lead to deadlocks when an interrupt hits and
-+		 * tries to wake up @prev. So bail and do a complete
-+		 * remote wakeup.
- 		 */
--		if (p == current) {
--			ttwu_queue(p, cpu);
-+		if (ttwu_activate_remote(p, wake_flags))
- 			goto stat;
--		}
--#endif
-+#else
- 		cpu_relax();
-+#endif
- 	}
- 	/*
- 	 * Pairs with the smp_wmb() in finish_lock_switch().
-@@ -5841,7 +5860,7 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
- 	idle->state = TASK_RUNNING;
- 	idle->se.exec_start = sched_clock();
+ 	u64 now;
++	int is_active = ctx->is_active;
  
--	cpumask_copy(&idle->cpus_allowed, cpumask_of(cpu));
-+	do_set_cpus_allowed(idle, cpumask_of(cpu));
- 	/*
- 	 * We're having a chicken and egg problem, even though we are
- 	 * holding rq->lock, the cpu isn't yet set to this cpu so the
-@@ -5929,6 +5948,16 @@ static inline void sched_init_granularity(void)
- }
+-	ctx->is_active = 1;
++	ctx->is_active |= event_type;
+ 	if (likely(!ctx->nr_events))
+ 		return;
  
- #ifdef CONFIG_SMP
-+void do_set_cpus_allowed(struct task_struct *p, const struct cpumask *new_mask)
-+{
-+	if (p->sched_class && p->sched_class->set_cpus_allowed)
-+		p->sched_class->set_cpus_allowed(p, new_mask);
-+	else {
-+		cpumask_copy(&p->cpus_allowed, new_mask);
-+		p->rt.nr_cpus_allowed = cpumask_weight(new_mask);
-+	}
-+}
-+
- /*
-  * This is how migration works:
-  *
-@@ -5974,12 +6003,7 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
- 		goto out;
- 	}
- 
--	if (p->sched_class->set_cpus_allowed)
--		p->sched_class->set_cpus_allowed(p, new_mask);
--	else {
--		cpumask_copy(&p->cpus_allowed, new_mask);
--		p->rt.nr_cpus_allowed = cpumask_weight(new_mask);
--	}
-+	do_set_cpus_allowed(p, new_mask);
- 
- 	/* Can the task run on the task's current CPU? If so, we're done */
- 	if (cpumask_test_cpu(task_cpu(p), new_mask))
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index e32a9b7..433491c 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1076,8 +1076,6 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 	se->on_rq = 0;
- 	update_cfs_load(cfs_rq, 0);
- 	account_entity_dequeue(cfs_rq, se);
--	update_min_vruntime(cfs_rq);
--	update_cfs_shares(cfs_rq);
- 
- 	/*
- 	 * Normalize the entity after updating the min_vruntime because the
-@@ -1086,6 +1084,9 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+@@ -2070,11 +2072,11 @@ ctx_sched_in(struct perf_event_context *ctx,
+ 	 * First go through the list and put on any pinned groups
+ 	 * in order to give them the best chance of going on.
  	 */
- 	if (!(flags & DEQUEUE_SLEEP))
- 		se->vruntime -= cfs_rq->min_vruntime;
-+
-+	update_min_vruntime(cfs_rq);
-+	update_cfs_shares(cfs_rq);
+-	if (event_type & EVENT_PINNED)
++	if (!(is_active & EVENT_PINNED) && (event_type & EVENT_PINNED))
+ 		ctx_pinned_sched_in(ctx, cpuctx);
+ 
+ 	/* Then walk through the lower prio flexible groups */
+-	if (event_type & EVENT_FLEXIBLE)
++	if (!(is_active & EVENT_FLEXIBLE) && (event_type & EVENT_FLEXIBLE))
+ 		ctx_flexible_sched_in(ctx, cpuctx);
  }
  
- /*
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index 64b2a37..88725c9 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -1263,6 +1263,7 @@ static int find_lowest_rq(struct task_struct *task)
- 	if (!cpumask_test_cpu(this_cpu, lowest_mask))
- 		this_cpu = -1; /* Skip this_cpu opt if not among lowest */
- 
-+	rcu_read_lock();
- 	for_each_domain(cpu, sd) {
- 		if (sd->flags & SD_WAKE_AFFINE) {
- 			int best_cpu;
-@@ -1272,15 +1273,20 @@ static int find_lowest_rq(struct task_struct *task)
- 			 * remote processor.
- 			 */
- 			if (this_cpu != -1 &&
--			    cpumask_test_cpu(this_cpu, sched_domain_span(sd)))
-+			    cpumask_test_cpu(this_cpu, sched_domain_span(sd))) {
-+				rcu_read_unlock();
- 				return this_cpu;
-+			}
- 
- 			best_cpu = cpumask_first_and(lowest_mask,
- 						     sched_domain_span(sd));
--			if (best_cpu < nr_cpu_ids)
-+			if (best_cpu < nr_cpu_ids) {
-+				rcu_read_unlock();
- 				return best_cpu;
-+			}
- 		}
- 	}
-+	rcu_read_unlock();
- 
- 	/*
- 	 * And finally, if there were no matches within the domains
-diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
-index 48ddf43..331e01b 100644
---- a/kernel/sched_stats.h
-+++ b/kernel/sched_stats.h
-@@ -37,7 +37,7 @@ static int show_schedstat(struct seq_file *seq, void *v)
- 
- #ifdef CONFIG_SMP
- 		/* domain-specific stats */
--		preempt_disable();
-+		rcu_read_lock();
- 		for_each_domain(cpu, sd) {
- 			enum cpu_idle_type itype;
- 
-@@ -64,7 +64,7 @@ static int show_schedstat(struct seq_file *seq, void *v)
- 			    sd->ttwu_wake_remote, sd->ttwu_move_affine,
- 			    sd->ttwu_move_balance);
- 		}
--		preempt_enable();
-+		rcu_read_unlock();
- #endif
- 	}
- 	kfree(mask_str);
