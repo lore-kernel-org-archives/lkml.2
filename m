@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab1E1Rjm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 13:39:42 -0400
-Received: from mail.perches.com ([173.55.12.10]:2207 "EHLO mail.perches.com"
+	id S1755498Ab1E1RhM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 13:37:12 -0400
+Received: from mail.perches.com ([173.55.12.10]:2211 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755262Ab1E1RhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 13:37:05 -0400
+	id S1754199Ab1E1RhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 13:37:07 -0400
 From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+To: Neil Brown <neilb@suse.de>, Jiri Kosina <trivial@kernel.org>
+Cc: dm-devel@redhat.com, linux-raid@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [TRIVIAL PATCH next 06/15] isdn: Convert vmalloc/memset to vzalloc
-Date: Sat, 28 May 2011 10:36:26 -0700
-Message-Id: <db81a56e3fe6a88a4b2d558f8f68405742d26d65.1306603968.git.joe@perches.com>
+Subject: [TRIVIAL PATCH next 07/15] md: Convert vmalloc/memset to vzalloc
+Date: Sat, 28 May 2011 10:36:27 -0700
+Message-Id: <3e09b436027e1d6f2a42663739961817da1e2be9.1306603968.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.5.rc3.dirty
 In-Reply-To: <cover.1306603968.git.joe@perches.com>
 References: <cover.1306603968.git.joe@perches.com>
@@ -22,68 +22,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/isdn/i4l/isdn_common.c   |    4 ++--
- drivers/isdn/mISDN/dsp_core.c    |    3 +--
- drivers/isdn/mISDN/l1oip_codec.c |    6 ++----
- 3 files changed, 5 insertions(+), 8 deletions(-)
+ drivers/md/dm-log.c             |    3 +--
+ drivers/md/dm-snap-persistent.c |    3 +--
+ drivers/md/dm-table.c           |    4 +---
+ 3 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/isdn/i4l/isdn_common.c b/drivers/isdn/i4l/isdn_common.c
-index 6ed82ad..6ddb795e 100644
---- a/drivers/isdn/i4l/isdn_common.c
-+++ b/drivers/isdn/i4l/isdn_common.c
-@@ -2308,11 +2308,11 @@ static int __init isdn_init(void)
- 	int i;
- 	char tmprev[50];
+diff --git a/drivers/md/dm-log.c b/drivers/md/dm-log.c
+index a1f3218..b6c2b71 100644
+--- a/drivers/md/dm-log.c
++++ b/drivers/md/dm-log.c
+@@ -487,7 +487,7 @@ static int create_log_context(struct dm_dirty_log *log, struct dm_target *ti,
+ 	memset(lc->sync_bits, (sync == NOSYNC) ? -1 : 0, bitset_size);
+ 	lc->sync_count = (sync == NOSYNC) ? region_count : 0;
  
--	if (!(dev = vmalloc(sizeof(isdn_dev)))) {
-+	dev = vzalloc(sizeof(isdn_dev));
-+	if (!dev) {
- 		printk(KERN_WARNING "isdn: Could not allocate device-struct.\n");
- 		return -EIO;
- 	}
--	memset((char *) dev, 0, sizeof(isdn_dev));
- 	init_timer(&dev->timer);
- 	dev->timer.function = isdn_timer_funct;
- 	spin_lock_init(&dev->lock);
-diff --git a/drivers/isdn/mISDN/dsp_core.c b/drivers/isdn/mISDN/dsp_core.c
-index 2877291..0c41553 100644
---- a/drivers/isdn/mISDN/dsp_core.c
-+++ b/drivers/isdn/mISDN/dsp_core.c
-@@ -1052,12 +1052,11 @@ dspcreate(struct channel_req *crq)
- 	if (crq->protocol != ISDN_P_B_L2DSP
- 	 && crq->protocol != ISDN_P_B_L2DSPHDLC)
- 		return -EPROTONOSUPPORT;
--	ndsp = vmalloc(sizeof(struct dsp));
-+	ndsp = vzalloc(sizeof(struct dsp));
- 	if (!ndsp) {
- 		printk(KERN_ERR "%s: vmalloc struct dsp failed\n", __func__);
+-	lc->recovering_bits = vmalloc(bitset_size);
++	lc->recovering_bits = vzalloc(bitset_size);
+ 	if (!lc->recovering_bits) {
+ 		DMWARN("couldn't allocate sync bitset");
+ 		vfree(lc->sync_bits);
+@@ -499,7 +499,6 @@ static int create_log_context(struct dm_dirty_log *log, struct dm_target *ti,
+ 		kfree(lc);
  		return -ENOMEM;
  	}
--	memset(ndsp, 0, sizeof(struct dsp));
- 	if (dsp_debug & DEBUG_DSP_CTRL)
- 		printk(KERN_DEBUG "%s: creating new dsp instance\n", __func__);
+-	memset(lc->recovering_bits, 0, bitset_size);
+ 	lc->sync_search = 0;
+ 	log->context = lc;
  
-diff --git a/drivers/isdn/mISDN/l1oip_codec.c b/drivers/isdn/mISDN/l1oip_codec.c
-index bbfd1b8..5a89972 100644
---- a/drivers/isdn/mISDN/l1oip_codec.c
-+++ b/drivers/isdn/mISDN/l1oip_codec.c
-@@ -330,14 +330,12 @@ l1oip_4bit_alloc(int ulaw)
- 		return 0;
+diff --git a/drivers/md/dm-snap-persistent.c b/drivers/md/dm-snap-persistent.c
+index 95891df..be100d4 100644
+--- a/drivers/md/dm-snap-persistent.c
++++ b/drivers/md/dm-snap-persistent.c
+@@ -174,10 +174,9 @@ static int alloc_area(struct pstore *ps)
+ 	if (!ps->area)
+ 		goto err_area;
  
- 	/* alloc conversion tables */
--	table_com = vmalloc(65536);
--	table_dec = vmalloc(512);
-+	table_com = vzalloc(65536);
-+	table_dec = vzalloc(512);
- 	if (!table_com || !table_dec) {
- 		l1oip_4bit_free();
- 		return -ENOMEM;
- 	}
--	memset(table_com, 0, 65536);
--	memset(table_dec, 0, 512);
- 	/* generate compression table */
- 	i1 = 0;
- 	while (i1 < 256) {
+-	ps->zero_area = vmalloc(len);
++	ps->zero_area = vzalloc(len);
+ 	if (!ps->zero_area)
+ 		goto err_zero_area;
+-	memset(ps->zero_area, 0, len);
+ 
+ 	ps->header_area = vmalloc(len);
+ 	if (!ps->header_area)
+diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+index cb8380c..5850497 100644
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -154,9 +154,7 @@ void *dm_vcalloc(unsigned long nmemb, unsigned long elem_size)
+ 		return NULL;
+ 
+ 	size = nmemb * elem_size;
+-	addr = vmalloc(size);
+-	if (addr)
+-		memset(addr, 0, size);
++	addr = vzalloc(size);
+ 
+ 	return addr;
+ }
 -- 
 1.7.5.rc3.dirty
 
