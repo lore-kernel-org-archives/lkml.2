@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755980Ab1E1RkX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 13:40:23 -0400
-Received: from mail.perches.com ([173.55.12.10]:2197 "EHLO mail.perches.com"
+	id S1755603Ab1E1Rj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 13:39:59 -0400
+Received: from mail.perches.com ([173.55.12.10]:2201 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754978Ab1E1Rg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 13:36:59 -0400
+	id S1755121Ab1E1RhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 13:37:00 -0400
 From: Joe Perches <joe@perches.com>
-To: Chas Williams <chas@cmf.nrl.navy.mil>, Jiri Kosina <trivial@kernel.org>
-Cc: linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [TRIVIAL PATCH next 03/15] atm: Convert vmalloc/memset to vzalloc
-Date: Sat, 28 May 2011 10:36:23 -0700
-Message-Id: <116f5bfafcbf40c5bce65498e5ed6983be6c20c1.1306603968.git.joe@perches.com>
+To: Lars Ellenberg <drbd-dev@lists.linbit.com>,
+        Jiri Kosina <trivial@kernel.org>
+Cc: drbd-user@lists.linbit.com, linux-kernel@vger.kernel.org
+Subject: [TRIVIAL PATCH next 04/15] drbd: Convert vmalloc/memset to vzalloc
+Date: Sat, 28 May 2011 10:36:24 -0700
+Message-Id: <c6d0069e093ffb3508c515aea7e301fac9c2cfc8.1306603968.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.5.rc3.dirty
 In-Reply-To: <cover.1306603968.git.joe@perches.com>
 References: <cover.1306603968.git.joe@perches.com>
@@ -22,64 +22,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/atm/idt77252.c |   11 ++++++-----
- drivers/atm/lanai.c    |    3 +--
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/block/drbd/drbd_bitmap.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/atm/idt77252.c b/drivers/atm/idt77252.c
-index 1f8d724..8d7b663 100644
---- a/drivers/atm/idt77252.c
-+++ b/drivers/atm/idt77252.c
-@@ -3415,27 +3415,28 @@ init_card(struct atm_dev *dev)
- 
- 	size = sizeof(struct vc_map *) * card->tct_size;
- 	IPRINTK("%s: allocate %d byte for VC map.\n", card->name, size);
--	if (NULL == (card->vcs = vmalloc(size))) {
-+	card->vcs = vzalloc(size);
-+	if (!card->vcs) {
- 		printk("%s: memory allocation failure.\n", card->name);
- 		deinit_card(card);
- 		return -1;
+diff --git a/drivers/block/drbd/drbd_bitmap.c b/drivers/block/drbd/drbd_bitmap.c
+index f440a02..9dd03b0 100644
+--- a/drivers/block/drbd/drbd_bitmap.c
++++ b/drivers/block/drbd/drbd_bitmap.c
+@@ -381,15 +381,14 @@ static struct page **bm_realloc_pages(struct drbd_bitmap *b, unsigned long want)
+ 	 * thread.  As we have no disk yet, we are not in the IO path,
+ 	 * not even the IO path of the peer. */
+ 	bytes = sizeof(struct page *)*want;
+-	new_pages = kmalloc(bytes, GFP_KERNEL);
++	new_pages = kzalloc(bytes, GFP_KERNEL);
+ 	if (!new_pages) {
+-		new_pages = vmalloc(bytes);
++		new_pages = vzalloc(bytes);
+ 		if (!new_pages)
+ 			return NULL;
+ 		vmalloced = 1;
  	}
--	memset(card->vcs, 0, size);
  
- 	size = sizeof(struct vc_map *) * card->scd_size;
- 	IPRINTK("%s: allocate %d byte for SCD to VC mapping.\n",
- 	        card->name, size);
--	if (NULL == (card->scd2vc = vmalloc(size))) {
-+	card->scd2vc = vzalloc(size);
-+	if (!card->scd2vc) {
- 		printk("%s: memory allocation failure.\n", card->name);
- 		deinit_card(card);
- 		return -1;
- 	}
--	memset(card->scd2vc, 0, size);
- 
- 	size = sizeof(struct tst_info) * (card->tst_size - 2);
- 	IPRINTK("%s: allocate %d byte for TST to VC mapping.\n",
- 		card->name, size);
--	if (NULL == (card->soft_tst = vmalloc(size))) {
-+	card->soft_tst = vmalloc(size);
-+	if (!card->soft_tst) {
- 		printk("%s: memory allocation failure.\n", card->name);
- 		deinit_card(card);
- 		return -1;
-diff --git a/drivers/atm/lanai.c b/drivers/atm/lanai.c
-index 4e8ba56..be57a14 100644
---- a/drivers/atm/lanai.c
-+++ b/drivers/atm/lanai.c
-@@ -1457,10 +1457,9 @@ static int __devinit vcc_table_allocate(struct lanai_dev *lanai)
- 	return (lanai->vccs == NULL) ? -ENOMEM : 0;
- #else
- 	int bytes = (lanai->num_vci) * sizeof(struct lanai_vcc *);
--	lanai->vccs = (struct lanai_vcc **) vmalloc(bytes);
-+	lanai->vccs = vzalloc(bytes);
- 	if (unlikely(lanai->vccs == NULL))
- 		return -ENOMEM;
--	memset(lanai->vccs, 0, bytes);
- 	return 0;
- #endif
- }
+-	memset(new_pages, 0, bytes);
+ 	if (want >= have) {
+ 		for (i = 0; i < have; i++)
+ 			new_pages[i] = old_pages[i];
 -- 
 1.7.5.rc3.dirty
 
