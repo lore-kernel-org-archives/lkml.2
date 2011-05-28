@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644Ab1E1Hoz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 03:44:55 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:32837
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752170Ab1E1How (ORCPT
+	id S1752534Ab1E1HzO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 03:55:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47103 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752099Ab1E1HzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 03:44:52 -0400
-Date: Sat, 28 May 2011 03:44:49 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <jaxboe@fusionio.com>,
-        Mike Snitzer <snitzer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 1/2] blktrace: treat flush as barrier
-Message-ID: <20110528074449.GB22382@infradead.org>
-References: <1306501883-23498-1-git-send-email-namhyung@gmail.com>
- <20110527131237.GA27647@infradead.org>
- <BANLkTi=8jQPdBNJYfM=geuXFsAXJJgfq=Q@mail.gmail.com>
- <1306509182.1351.1.camel@leonhard>
- <4DE006C5.4010906@fusionio.com>
- <20110527202747.GA4803@infradead.org>
- <1306548581.1679.12.camel@leonhard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306548581.1679.12.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 28 May 2011 03:55:11 -0400
+Date: Sat, 28 May 2011 00:56:40 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ankita Garg <ankita@in.ibm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
+ Power Management
+Message-Id: <20110528005640.9076c0b1.akpm@linux-foundation.org>
+In-Reply-To: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 28, 2011 at 11:09:41AM +0900, Namhyung Kim wrote:
-> AFAIK FLUSH always precedes WRITE and then followed by FUA, so how about
+On Fri, 27 May 2011 18:01:28 +0530 Ankita Garg <ankita@in.ibm.com> wrote:
 
-Right now most do because that's how the old barriers worked, but it's
-going to change.  For $NEXT + 1 I have a patch that for will make
-xfs sends FUA without flushes in a lot of cases, and afaik some device
-mapper code already does now.
+> This patchset proposes a generic memory regions infrastructure that can be
+> used to tag boundaries of memory blocks which belongs to a specific memory
+> power management domain and further enable exploitation of platform memory
+> power management capabilities.
+
+A couple of quick thoughts...
+
+I'm seeing no estimate of how much energy we might save when this work
+is completed.  But saving energy is the entire point of the entire
+patchset!  So please spend some time thinking about that and update and
+maintain the [patch 0/n] description so others can get some idea of the
+benefit we might get from all of this.  That estimate should include an
+estimate of what proportion of machines are likely to have hardware
+which can use this feature and in what timeframe.
+
+IOW, if it saves one microwatt on 0.001% of machines, not interested ;)
+
+
+Also, all this code appears to be enabled on all machines?  So machines
+which don't have the requisite hardware still carry any additional
+overhead which is added here.  I can see that ifdeffing a feature like
+this would be ghastly but please also have a think about the
+implications of this and add that discussion also.  
+
+If possible, it would be good to think up some microbenchmarks which
+probe the worst-case performance impact and describe those and present
+the results.  So others can gain an understanding of the runtime costs.
+
 
