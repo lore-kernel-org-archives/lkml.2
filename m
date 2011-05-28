@@ -1,136 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab1E1JHO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 05:07:14 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47461 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507Ab1E1JHM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 05:07:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=JuJxlyfpa9KBWgEMftbTOJG/ioxAapJwkKlNPPlDpIiFcGvMKewbG0yq4OS5qqNGoT
-         AMmrXfSq+Km71vCiwIW3K95vgr/tWVP22TKy/tDzZnpbEMMLthYnu34LFLXvQBXzt3um
-         r+ut4tpPltfzdaogSsuIYBbIK9poXmr0GhZsA=
-Message-ID: <4DE0B9D8.3020405@gmail.com>
-Date: Sat, 28 May 2011 11:01:12 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1752558Ab1E1JC4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 05:02:56 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36227 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751413Ab1E1JCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 05:02:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kees Cook <kees.cook@canonical.com>
+Subject: Re: [PATCH] acpi: create CONFIG item for debugfs custom_method
+Date: Sat, 28 May 2011 11:03:38 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, Thomas Renninger <trenn@suse.de>
+References: <20110222193250.GA23913@outflux.net> <20110528041523.GD19633@outflux.net>
+In-Reply-To: <20110528041523.GD19633@outflux.net>
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: kyungmin.park@samsung.com, stevie.trujillo@gmail.com,
-        xiyou.wangcong@gmail.com
-Subject: [PATCH] ramoops: use module parameters instead of platform data if
- not available
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105281103.39033.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Stornelli <marco.stornelli@gmail.com>
+On Saturday, May 28, 2011, Kees Cook wrote:
+> Since /sys/kernel/debug/acpi/custom_method can be used to write arbitrary
+> kernel memory (http://jon.oberheide.org/files/american-sign-language.c),
+> it should be able to be left out of the kernel for system owners that
+> want to be as defensive as possible to potential attacks, even from the
+> root user. See as examples: CONFIG_DEVKMEM, CONFIG_STRICT_DEVMEM, and
+> /proc/sys/kernel/modules_disabled.
 
-Use generic module parameters instead of platform data, if platform
-data are not available. This limitation has been introduced with
-commit c3b92ce9e75f6353104fc7f8e32fb9fdb2550ad0.
+I believe Thomas Renninger sent patches to address this issue too.
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-CC: Kyungmin Park <kyungmin.park@samsung.com>
-Reported-by: Stevie Trujillo <stevie.trujillo@gmail.com>
----
+Thanks,
+Rafael
 
-diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
-index 1a9f5f6..a201f81 100644
---- a/drivers/char/ramoops.c
-+++ b/drivers/char/ramoops.c
-@@ -26,6 +26,7 @@
- #include <linux/io.h>
- #include <linux/ioport.h>
- #include <linux/platform_device.h>
-+#include <linux/slab.h>
- #include <linux/ramoops.h>
- 
- #define RAMOOPS_KERNMSG_HDR "===="
-@@ -56,6 +57,9 @@ static struct ramoops_context {
- 	int max_count;
- } oops_cxt;
- 
-+static struct platform_device *dummy;
-+static struct ramoops_platform_data *dummy_data;
-+
- static void ramoops_do_dump(struct kmsg_dumper *dumper,
- 		enum kmsg_dump_reason reason, const char *s1, unsigned long l1,
- 		const char *s2, unsigned long l2)
-@@ -106,27 +110,22 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 	struct ramoops_context *cxt = &oops_cxt;
- 	int err = -EINVAL;
- 
--	if (pdata) {
--		mem_size = pdata->mem_size;
--		mem_address = pdata->mem_address;
--	}
--
--	if (!mem_size) {
-+	if (!pdata->mem_size) {
- 		printk(KERN_ERR "ramoops: invalid size specification");
- 		goto fail3;
- 	}
- 
--	rounddown_pow_of_two(mem_size);
-+	rounddown_pow_of_two(pdata->mem_size);
- 
--	if (mem_size < RECORD_SIZE) {
-+	if (pdata->mem_size < RECORD_SIZE) {
- 		printk(KERN_ERR "ramoops: size too small");
- 		goto fail3;
- 	}
- 
--	cxt->max_count = mem_size / RECORD_SIZE;
-+	cxt->max_count = pdata->mem_size / RECORD_SIZE;
- 	cxt->count = 0;
--	cxt->size = mem_size;
--	cxt->phys_addr = mem_address;
-+	cxt->size = pdata->mem_size;
-+	cxt->phys_addr = pdata->mem_address;
- 
- 	if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
- 		printk(KERN_ERR "ramoops: request mem region failed");
-@@ -179,12 +178,34 @@ static struct platform_driver ramoops_driver = {
- 
- static int __init ramoops_init(void)
- {
--	return platform_driver_probe(&ramoops_driver, ramoops_probe);
-+	int ret;
-+	ret = platform_driver_probe(&ramoops_driver, ramoops_probe);
-+	if (ret == -ENODEV)
-+	{
-+	   /* 
-+	    * if we didn't find a platform device, we use module parameters
-+	    * building platform data on the fly.
-+	    */
-+	   dummy_data = (struct ramoops_platform_data *) 
-+		     kzalloc(sizeof(struct ramoops_platform_data), GFP_KERNEL);
-+	   dummy_data->mem_size = mem_size;
-+	   dummy_data->mem_address = mem_address;
-+	   dummy = platform_create_bundle(&ramoops_driver, ramoops_probe, NULL,
-+			0, dummy_data, sizeof(struct ramoops_platform_data));
-+
-+	   if (IS_ERR(dummy)) 
-+	     ret = PTR_ERR(dummy);
-+	   else
-+	     ret = 0;
-+	}
-+	
-+	return ret;
- }
- 
- static void __exit ramoops_exit(void)
- {
- 	platform_driver_unregister(&ramoops_driver);
-+	kfree(dummy_data);
- }
- 
- module_init(ramoops_init);
+
+> Signed-off-by: Kees Cook <kees.cook@canonical.com>
+> ---
+> Third time sending this, no response...
+> https://lkml.org/lkml/2011/2/22/369
+> 
+>  drivers/acpi/Kconfig   |   10 ++++++++++
+>  drivers/acpi/debugfs.c |    2 ++
+>  2 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> index 2aa042a..726b7ea 100644
+> --- a/drivers/acpi/Kconfig
+> +++ b/drivers/acpi/Kconfig
+> @@ -381,6 +381,16 @@ config ACPI_HED
+>  	  which is used to report some hardware errors notified via
+>  	  SCI, mainly the corrected errors.
+>  
+> +config ACPI_DEBUG_CUSTOM_METHOD
+> +	bool "Debugging: Custom Method Insertion"
+> +	depends on DEBUG_FS
+> +	default n
+> +	help
+> +	  This creates the debugfs interface file "acpi/custom_method"
+> +	  used for loading custom ACPI methods. Note that this allows
+> +	  arbitrary kernel memory writing by the root user and is not
+> +	  recommended for normal systems.
+> +
+>  source "drivers/acpi/apei/Kconfig"
+>  
+>  endif	# ACPI
+> diff --git a/drivers/acpi/debugfs.c b/drivers/acpi/debugfs.c
+> index 5df67f1..0240b15 100644
+> --- a/drivers/acpi/debugfs.c
+> +++ b/drivers/acpi/debugfs.c
+> @@ -20,6 +20,7 @@ module_param_named(aml_debug_output, acpi_gbl_enable_aml_debug_object,
+>  MODULE_PARM_DESC(aml_debug_output,
+>  		 "To enable/disable the ACPI Debug Object output.");
+>  
+> +#ifdef CONFIG_ACPI_DEBUG_CUSTOM_METHOD
+>  /* /sys/kernel/debug/acpi/custom_method */
+>  
+>  static ssize_t cm_write(struct file *file, const char __user * user_buf,
+> @@ -92,3 +93,4 @@ err:
+>  		debugfs_remove(acpi_dir);
+>  	return -EINVAL;
+>  }
+> +#endif
+> 
 
