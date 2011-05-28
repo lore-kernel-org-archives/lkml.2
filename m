@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756353Ab1E1Tez (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 15:34:55 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:33794 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898Ab1E1Teu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756559Ab1E1Te6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 15:34:58 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:44266 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755312Ab1E1Teu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 28 May 2011 15:34:50 -0400
-Subject: [PATCH V7 2/4 net-next] skbuff: Add userspace zero-copy buffers in
- skb
+Subject: [PATCH V7 3/4]macvtap: macvtap TX zero-copy support
 From: Shirley Ma <mashirle@us.ibm.com>
 To: David Miller <davem@davemloft.net>, mst@redhat.com,
         Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
         Arnd Bergmann <arnd@arndb.de>
 Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 28 May 2011 12:23:08 -0700
-Message-ID: <1306610588.5180.87.camel@localhost.localdomain>
+Date: Sat, 28 May 2011 12:25:21 -0700
+Message-ID: <1306610721.5180.89.camel@localhost.localdomain>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
@@ -24,193 +22,228 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds userspace buffers support in skb shared info. A new 
-struct skb_ubuf_info is needed to maintain the userspace buffers
-argument and index, a callback is used to notify userspace to release
-the buffers once lower device has done DMA (Last reference to that skb
-has gone).
-
-If there is any userspace apps to reference these userspace buffers,
-then these userspaces buffers will be copied into kernel. This way we
-can prevent userspace apps to hold these userspace buffers too long.
-
-One userspace buffer info pointer is added in skb_shared_info. Is that
-safe to use destructor_arg? From the comments, this destructor_arg is
-used for destructor, destructor calls doesn't wait for last reference to
-that skb is gone.
+Only when buffer size is greater than or equal PAGE_SIZE, macvtap
+enables zero-copy.
 
 Signed-off-by: Shirley Ma <xma@us.ibm.com>
 ---
- include/linux/skbuff.h |   24 ++++++++++++++++
- net/core/skbuff.c      |   73 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 97 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index e8b78ce..37a2cb4 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -189,6 +189,17 @@ enum {
- 	SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
- };
- 
-+/*
-+ * The callback notifies userspace to release buffers when skb DMA is done in
-+ * lower device, the skb last reference should be 0 when calling this.
-+ * The desc is used to track userspace buffer index.
-+ */
-+struct ubuf_info {
-+	void (*callback)(void *);
-+	void *arg;
-+	unsigned long desc;
-+};
-+
- /* This data is invariant across clones and lives at
-  * the end of the header data, ie. at skb->end.
+ drivers/net/macvtap.c |  131 ++++++++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 120 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 6696e56..a0fe315 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -60,6 +60,7 @@ static struct proto macvtap_proto = {
   */
-@@ -203,6 +214,9 @@ struct skb_shared_info {
- 	struct sk_buff	*frag_list;
- 	struct skb_shared_hwtstamps hwtstamps;
+ static dev_t macvtap_major;
+ #define MACVTAP_NUM_DEVS 65536
++#define GOODCOPY_LEN 256
+ static struct class *macvtap_class;
+ static struct cdev macvtap_cdev;
  
-+	/* DMA mapping from/to userspace buffers info */
-+	void		*ubuf_arg;
-+
- 	/*
- 	 * Warning : all fields before dataref are cleared in __alloc_skb()
- 	 */
-@@ -2261,5 +2275,15 @@ static inline void skb_checksum_none_assert(struct sk_buff *skb)
- }
+@@ -340,6 +341,7 @@ static int macvtap_open(struct inode *inode, struct file *file)
+ {
+ 	struct net *net = current->nsproxy->net_ns;
+ 	struct net_device *dev = dev_get_by_index(net, iminor(inode));
++	struct macvlan_dev *vlan = netdev_priv(dev);
+ 	struct macvtap_queue *q;
+ 	int err;
  
- bool skb_partial_csum_set(struct sk_buff *skb, u16 start, u16 off);
-+
-+/*
-+ *	skb *uarg - is the buffer from userspace
-+ *	@skb: buffer to check
-+ */
-+static inline int skb_ubuf(const struct sk_buff *skb)
-+{
-+	return skb_shinfo(skb)->ubuf_arg != NULL;
-+}
-+
- #endif	/* __KERNEL__ */
- #endif	/* _LINUX_SKBUFF_H */
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 46cbd28..115c5ca 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -329,6 +329,19 @@ static void skb_release_data(struct sk_buff *skb)
- 				put_page(skb_shinfo(skb)->frags[i].page);
- 		}
+@@ -369,6 +371,16 @@ static int macvtap_open(struct inode *inode, struct file *file)
+ 	q->flags = IFF_VNET_HDR | IFF_NO_PI | IFF_TAP;
+ 	q->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
  
-+		/*
-+		 * If skb buf is from userspace, we need to notify the caller
-+		 * the lower device DMA has done;
-+		 */
-+		if (skb_ubuf(skb)) {
-+			struct ubuf_info *uarg;
-+
-+			uarg = (struct ubuf_info *)skb_shinfo(skb)->ubuf_arg;
-+
-+			if (uarg->callback)
-+				uarg->callback(uarg);
-+		}
-+
- 		if (skb_has_frag_list(skb))
- 			skb_drop_fraglist(skb);
- 
-@@ -481,6 +494,9 @@ bool skb_recycle_check(struct sk_buff *skb, int skb_size)
- 	if (irqs_disabled())
- 		return false;
- 
-+	if (skb_ubuf(skb))
-+		return false;
-+
- 	if (skb_is_nonlinear(skb) || skb->fclone != SKB_FCLONE_UNAVAILABLE)
- 		return false;
- 
-@@ -573,6 +589,7 @@ static struct sk_buff *__skb_clone(struct sk_buff *n, struct sk_buff *skb)
- 	atomic_set(&n->users, 1);
- 
- 	atomic_inc(&(skb_shinfo(skb)->dataref));
-+	skb_shinfo(skb)->ubuf_arg = NULL;
- 	skb->cloned = 1;
- 
- 	return n;
-@@ -596,6 +613,51 @@ struct sk_buff *skb_morph(struct sk_buff *dst, struct sk_buff *src)
- }
- EXPORT_SYMBOL_GPL(skb_morph);
- 
-+/* skb frags copy userspace buffers to kernel */
-+static int skb_copy_ubufs(struct sk_buff *skb, gfp_t gfp_mask)
-+{
-+	int i;
-+	int num_frags = skb_shinfo(skb)->nr_frags;
-+	struct page *page, *head = NULL;
-+	struct ubuf_info *uarg = skb_shinfo(skb)->ubuf_arg;
-+
-+	for (i = 0; i < num_frags; i++) {
-+		u8 *vaddr;
-+		skb_frag_t *f = &skb_shinfo(skb)->frags[i];
-+
-+		page = alloc_page(GFP_ATOMIC);
-+		if (!page) {
-+			while (head) {
-+				put_page(head);
-+				head = (struct page *)head->private;
-+			}
-+			return -ENOMEM;
-+		}
-+		vaddr = kmap_skb_frag(&skb_shinfo(skb)->frags[i]);
-+		memcpy(page_address(page),
-+		       vaddr + f->page_offset, f->size);
-+		kunmap_skb_frag(vaddr);
-+		page->private = (unsigned long)head;
-+		head = page;
++	/*
++	 * so far only KVM virtio_net uses macvtap, enable zero copy between
++	 * guest kernel and host kernel when lower device supports zerocopy
++	 */
++	if (vlan) {
++		if ((vlan->lowerdev->features & NETIF_F_HIGHDMA) &&
++		    (vlan->lowerdev->features & NETIF_F_SG))
++			sock_set_flag(&q->sk, SOCK_ZEROCOPY);
 +	}
 +
-+	/* skb frags release userspace buffers */
-+	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
-+		put_page(skb_shinfo(skb)->frags[i].page);
+ 	err = macvtap_set_queue(dev, file, q);
+ 	if (err)
+ 		sock_put(&q->sk);
+@@ -433,6 +445,80 @@ static inline struct sk_buff *macvtap_alloc_skb(struct sock *sk, size_t prepad,
+ 	return skb;
+ }
+ 
++/* set skb frags from iovec, this can move to core network code for reuse */
++static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
++				  int offset, size_t count)
++{
++	int len = iov_length(from, count) - offset;
++	int copy = skb_headlen(skb);
++	int size, offset1 = 0;
++	int i = 0;
++	skb_frag_t *f;
 +
-+	uarg->callback(uarg);
-+	skb_shinfo(skb)->ubuf_arg = NULL;
++	/* Skip over from offset */
++	while (count && (offset >= from->iov_len)) {
++		offset -= from->iov_len;
++		++from;
++		--count;
++	}
 +
-+	/* skb frags point to kernel buffers */
-+	for (i = skb_shinfo(skb)->nr_frags; i > 0; i--) {
-+		skb_shinfo(skb)->frags[i - 1].page_offset = 0;
-+		skb_shinfo(skb)->frags[i - 1].page = head;
-+		head = (struct page *)head->private;
++	/* copy up to skb headlen */
++	while (count && (copy > 0)) {
++		size = min_t(unsigned int, copy, from->iov_len - offset);
++		if (copy_from_user(skb->data + offset1, from->iov_base + offset,
++				   size))
++			return -EFAULT;
++		if (copy > size) {
++			++from;
++			--count;
++		}
++		copy -= size;
++		offset1 += size;
++		offset = 0;
++	}
++
++	if (len == offset1)
++		return 0;
++
++	while (count--) {
++		struct page *page[MAX_SKB_FRAGS];
++		int num_pages;
++		unsigned long base;
++
++		len = from->iov_len - offset1;
++		if (!len) {
++			offset1 = 0;
++			++from;
++			continue;
++		}
++		base = (unsigned long)from->iov_base + offset1;
++		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
++		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
++		if ((num_pages != size) ||
++		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags))
++			/* put_page is in skb free */
++			return -EFAULT;
++		skb->data_len += len;
++		skb->len += len;
++		skb->truesize += len;
++		atomic_add(len, &skb->sk->sk_wmem_alloc);
++		while (len) {
++			f = &skb_shinfo(skb)->frags[i];
++			f->page = page[i];
++			f->page_offset = base & ~PAGE_MASK;
++			f->size = min_t(int, len, PAGE_SIZE - f->page_offset);
++			skb_shinfo(skb)->nr_frags++;
++			/* increase sk_wmem_alloc */
++			base += f->size;
++			len -= f->size;
++			i++;
++		}
++		offset1 = 0;
++		++from;
 +	}
 +	return 0;
 +}
 +
-+
- /**
-  *	skb_clone	-	duplicate an sk_buff
-  *	@skb: buffer to clone
-@@ -614,6 +676,11 @@ struct sk_buff *skb_clone(struct sk_buff *skb, gfp_t gfp_mask)
+ /*
+  * macvtap_skb_from_vnet_hdr and macvtap_skb_to_vnet_hdr should
+  * be shared with the tun/tap driver.
+@@ -515,16 +601,18 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+ 
+ 
+ /* Get packet from user space buffer */
+-static ssize_t macvtap_get_user(struct macvtap_queue *q,
+-				const struct iovec *iv, size_t count,
+-				int noblock)
++static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
++				const struct iovec *iv, unsigned long total_len,
++				size_t count, int noblock)
  {
- 	struct sk_buff *n;
+ 	struct sk_buff *skb;
+ 	struct macvlan_dev *vlan;
+-	size_t len = count;
++	unsigned long len = total_len;
+ 	int err;
+ 	struct virtio_net_hdr vnet_hdr = { 0 };
+ 	int vnet_hdr_len = 0;
++	int copylen;
++	bool zerocopy = false;
  
-+	if (skb_ubuf(skb)) {
-+		if (skb_copy_ubufs(skb, gfp_mask))
-+			return NULL;
-+	}
+ 	if (q->flags & IFF_VNET_HDR) {
+ 		vnet_hdr_len = q->vnet_hdr_sz;
+@@ -552,12 +640,30 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q,
+ 	if (unlikely(len < ETH_HLEN))
+ 		goto err;
+ 
+-	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, len, vnet_hdr.hdr_len,
+-				noblock, &err);
++	if (m && m->msg_control)
++		zerocopy = true;
 +
- 	n = skb + 1;
- 	if (skb->fclone == SKB_FCLONE_ORIG &&
- 	    n->fclone == SKB_FCLONE_UNAVAILABLE) {
-@@ -731,6 +798,12 @@ struct sk_buff *pskb_copy(struct sk_buff *skb, gfp_t gfp_mask)
- 	if (skb_shinfo(skb)->nr_frags) {
- 		int i;
++	if (zerocopy) {
++		/* There are 256 bytes to be copied in skb, so there is enough
++		 * room for skb expand head in case it is used.
++		 * The rest buffer is mapped from userspace.
++		 */
++		copylen = vnet_hdr.hdr_len;
++		if (!copylen)
++			copylen = GOODCOPY_LEN;
++	} else
++		copylen = len;
++
++	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
++				vnet_hdr.hdr_len, noblock, &err);
+ 	if (!skb)
+ 		goto err;
  
-+		if (skb_ubuf(skb)) {
-+			if (skb_copy_ubufs(skb, gfp_mask)) {
-+				kfree(n);
-+				goto out;
-+			}
-+		}
- 		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
- 			skb_shinfo(n)->frags[i] = skb_shinfo(skb)->frags[i];
- 			get_page(skb_shinfo(n)->frags[i].page);
+-	err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len, len);
++	if (zerocopy)
++		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
++	else
++		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
++						   len);
+ 	if (err)
+ 		goto err_kfree;
+ 
+@@ -573,13 +679,16 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q,
+ 
+ 	rcu_read_lock_bh();
+ 	vlan = rcu_dereference_bh(q->vlan);
++	/* copy skb_ubuf_info for callback when skb has no error */
++	if (zerocopy)
++		skb_shinfo(skb)->ubuf_arg = m->msg_control;
+ 	if (vlan)
+ 		macvlan_start_xmit(skb, vlan->dev);
+ 	else
+ 		kfree_skb(skb);
+ 	rcu_read_unlock_bh();
+ 
+-	return count;
++	return total_len;
+ 
+ err_kfree:
+ 	kfree_skb(skb);
+@@ -601,8 +710,8 @@ static ssize_t macvtap_aio_write(struct kiocb *iocb, const struct iovec *iv,
+ 	ssize_t result = -ENOLINK;
+ 	struct macvtap_queue *q = file->private_data;
+ 
+-	result = macvtap_get_user(q, iv, iov_length(iv, count),
+-			      file->f_flags & O_NONBLOCK);
++	result = macvtap_get_user(q, NULL, iv, iov_length(iv, count), count,
++				  file->f_flags & O_NONBLOCK);
+ 	return result;
+ }
+ 
+@@ -815,7 +924,7 @@ static int macvtap_sendmsg(struct kiocb *iocb, struct socket *sock,
+ 			   struct msghdr *m, size_t total_len)
+ {
+ 	struct macvtap_queue *q = container_of(sock, struct macvtap_queue, sock);
+-	return macvtap_get_user(q, m->msg_iov, total_len,
++	return macvtap_get_user(q, m, m->msg_iov, total_len, m->msg_iovlen,
+ 			    m->msg_flags & MSG_DONTWAIT);
+ }
+ 
+
 
 
