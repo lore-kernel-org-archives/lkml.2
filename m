@@ -1,117 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362Ab1E1Fle (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 01:41:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56349 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab1E1Flc (ORCPT
+	id S1751489Ab1E1GEk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 02:04:40 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:45592 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284Ab1E1GEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 01:41:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=XElcNHjElvvrB4GN0k6e7O71rUcO2dKorav+g2bj2OcwucDl8EQGoOEVh57gMjvLjc
-         imGZOBGdg0d8KEs6S/Mm6dr2W9W7U5NL3MPTJD9513CgteiXOYxkmNUPDstRUAzpHAR1
-         dtRqPeoUyaK9zg1KXS0OdtSJ3F8M//sPshmB0=
-Subject: Re: Kernel crash after using new Intel NIC (igb)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Arun Sharma <asharma@fb.com>
-Cc: David Miller <davem@davemloft.net>,
-        Maximilian Engelhardt <maxi@daemonizer.de>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        StuStaNet Vorstand <vorstand@stusta.mhn.de>,
-        Yann Dupont <Yann.Dupont@univ-nantes.fr>,
-        Denys Fedoryshchenko <denys@visp.net.lb>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20110527211419.GA6793@dev1756.snc6.facebook.com>
-References: <20110525060609.GA32244@dev1756.snc6.facebook.com>
-	 <1306305331.3305.22.camel@edumazet-laptop> <4DDEAA3C.7020502@fb.com>
-	 <1306439246.2543.10.camel@edumazet-laptop> <4DDECA9B.8080206@fb.com>
-	 <1306447292.2543.32.camel@edumazet-laptop> <4DDEEBC5.80804@fb.com>
-	 <1306466831.2543.58.camel@edumazet-laptop> <4DDFE4D6.4010000@fb.com>
-	 <1306526219.2533.3.camel@edumazet-laptop>
-	 <20110527211419.GA6793@dev1756.snc6.facebook.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 28 May 2011 07:41:25 +0200
-Message-ID: <1306561285.2533.9.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Sat, 28 May 2011 02:04:39 -0400
+MIME-Version: 1.0
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sat, 28 May 2011 00:04:18 -0600
+X-Google-Sender-Auth: GviCFnJkSqqkQm2jvT77SMJi-oc
+Message-ID: <BANLkTikC2d+r+0CCh61UJx+qsSO3yHe+JQ@mail.gmail.com>
+Subject: [GIT PULL] Move gpio drivers from arch/arm into drivers/gpio
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Joe Perches <joe@perches.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Kristen Carlson Accardi <kristen.c.accardi@intel.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 27 mai 2011 à 14:14 -0700, Arun Sharma a écrit :
+Hi Linus,
 
-> The attached works for me for x86_64. Cc'ing Ingo/Thomas for comment.
-> 
->  -Arun
-> 
-> atomic: Refactor atomic_add_unless
-> 
-> Commit 686a7e3 (inetpeer: fix race in unused_list manipulations)
-> in net-2.6 added a atomic_add_unless_return() variant that tries
-> to detect 0->1 transitions of an atomic reference count.
-> 
-> This sounds like a generic functionality that could be expressed
-> in terms of an __atomic_add_unless() that returned the old value
-> instead of a bool.
-> 
-> Signed-off-by: Arun Sharma <asharma@fb.com>
-> ---
->  arch/x86/include/asm/atomic.h |   22 ++++++++++++++++++----
->  1 files changed, 18 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
-> index 952a826..bbdbffe 100644
-> --- a/arch/x86/include/asm/atomic.h
-> +++ b/arch/x86/include/asm/atomic.h
-> @@ -221,15 +221,15 @@ static inline int atomic_xchg(atomic_t *v, int new)
->  }
->  
->  /**
-> - * atomic_add_unless - add unless the number is already a given value
-> + * __atomic_add_unless - add unless the number is already a given value
->   * @v: pointer of type atomic_t
->   * @a: the amount to add to v...
->   * @u: ...unless v is equal to u.
->   *
->   * Atomically adds @a to @v, so long as @v was not already @u.
-> - * Returns non-zero if @v was not @u, and zero otherwise.
-> + * Returns the old value of v
->   */
-> -static inline int atomic_add_unless(atomic_t *v, int a, int u)
-> +static inline int __atomic_add_unless(atomic_t *v, int a, int u)
->  {
->  	int c, old;
->  	c = atomic_read(v);
-> @@ -241,7 +241,21 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
->  			break;
->  		c = old;
->  	}
-> -	return c != (u);
-> +	return c;
-> +}
-> +
-> +/**
-> + * atomic_add_unless - add unless the number is already a given value
-> + * @v: pointer of type atomic_t
-> + * @a: the amount to add to v...
-> + * @u: ...unless v is equal to u.
-> + *
-> + * Atomically adds @a to @v, so long as @v was not already @u.
-> + * Returns non-zero if @v was not @u, and zero otherwise.
-> + */
-> +static inline int atomic_add_unless(atomic_t *v, int a, int u)
-> +{
-> +	return __atomic_add_unless(v, a, u) != u;
->  }
->  
->  #define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
+As part of the big cleanup of arch/arm, all of the gpio drivers are
+being moved out of arch/arm and into drivers/gpio where they will be
+cleaned up and consolidated.  This pull request include a handful of
+moves, plus a few other miscellaneous gpio changes that I missed in
+the first pull.
 
-As I said, atomic_add_unless() has several implementations in various
-arches. You must take care of all, not only x86.
+g.
 
+The following changes since commit 29a6ccca3869bbe33879dae0cd7df2a1559eff54:
 
+  Merge git://git.infradead.org/mtd-2.6 (2011-05-27 20:06:53 -0700)
 
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux-2.6 gpio/next
+
+Ed Wildgoose (1):
+      gpio/cs5535: Show explicit dependency between gpio_cs5535 and mfd_cs5535
+
+Grant Likely (2):
+      gpio: move Nomadik GPIO driver to drivers/gpio
+      Merge branch 'for_2.6.40/gpio-move' of
+git://git.kernel.org/.../khilman/linux-omap-pm into gpio/next
+
+Haojian Zhuang (1):
+      gpio/pca953x: Add support for pca9574 and pca9575 devices
+
+Joe Perches (1):
+      gpio: Convert gpio_is_valid to return bool
+
+Kevin Hilman (2):
+      GPIO: OMAP: move register offset defines into <plat/gpio.h>
+      GPIO: OMAP: move to drivers/gpio
+
+Kristen Carlson Accardi (1):
+      langwell_gpio: add runtime pm support
+
+Kyungmin Park (4):
+      gpio: Move to Samsung common GPIO library to drivers/gpio
+      gpio: Move the exynos4 GPIO to drivers/gpio
+      gpio: Move the s5pv210 GPIO to drivers/gpio
+      gpio: Move the s5pc100 GPIO to drivers/gpio
+
+Lars-Peter Clausen (1):
+      gpio: make gpio_{request,free}_array gpio array parameter const
+
+Linus Walleij (1):
+      gpio: move U300 GPIO driver to drivers/gpio
+
+Rabin Vincent (1):
+      gpio/nomadik: show all pins in debug
+
+Rickard Andersson (1):
+      gpio/nomadik: add function to read GPIO pull down status
+
+Tomoya MORINAGA (1):
+      gpio/pch_gpio: Support new device ML7223
+
+ arch/arm/mach-exynos4/Makefile                     |    2 +-
+ arch/arm/mach-nomadik/Kconfig                      |    1 -
+ arch/arm/mach-s5pc100/Makefile                     |    2 +-
+ arch/arm/mach-s5pv210/Makefile                     |    2 +-
+ arch/arm/mach-u300/Makefile                        |    2 +-
+ arch/arm/mach-ux500/Kconfig                        |    1 -
+ arch/arm/plat-nomadik/Kconfig                      |    5 -
+ arch/arm/plat-nomadik/Makefile                     |    1 -
+ arch/arm/plat-nomadik/include/plat/gpio.h          |    2 +
+ arch/arm/plat-omap/Makefile                        |    2 +-
+ arch/arm/plat-omap/include/plat/gpio.h             |  103 ++++++++
+ arch/arm/plat-samsung/Makefile                     |    1 -
+ drivers/gpio/Kconfig                               |   34 +++-
+ drivers/gpio/Makefile                              |    7 +
+ .../gpiolib.c => drivers/gpio/gpio-exynos4.c       |    0
+ .../gpio.c => drivers/gpio/gpio-nomadik.c          |   65 +++++-
+ .../plat-omap/gpio.c => drivers/gpio/gpio-omap.c   |  105 --------
+ .../gpiolib.c => drivers/gpio/gpio-plat-samsung.c  |    0
+ .../gpiolib.c => drivers/gpio/gpio-s5pc100.c       |    0
+ .../gpiolib.c => drivers/gpio/gpio-s5pv210.c       |    0
+ .../mach-u300/gpio.c => drivers/gpio/gpio-u300.c   |    0
+ drivers/gpio/gpiolib.c                             |    4 +-
+ drivers/gpio/langwell_gpio.c                       |   65 +++++
+ drivers/gpio/pca953x.c                             |  249 +++++++++++++++-----
+ drivers/gpio/pch_gpio.c                            |    2 +
+ include/asm-generic/gpio.h                         |   10 +-
+ include/linux/gpio.h                               |    8 +-
+ 27 files changed, 475 insertions(+), 198 deletions(-)
+ rename arch/arm/mach-exynos4/gpiolib.c => drivers/gpio/gpio-exynos4.c (100%)
+ rename arch/arm/plat-nomadik/gpio.c => drivers/gpio/gpio-nomadik.c (95%)
+ rename arch/arm/plat-omap/gpio.c => drivers/gpio/gpio-omap.c (93%)
+ rename arch/arm/plat-samsung/gpiolib.c =>
+drivers/gpio/gpio-plat-samsung.c (100%)
+ rename arch/arm/mach-s5pc100/gpiolib.c => drivers/gpio/gpio-s5pc100.c (100%)
+ rename arch/arm/mach-s5pv210/gpiolib.c => drivers/gpio/gpio-s5pv210.c (100%)
+ rename arch/arm/mach-u300/gpio.c => drivers/gpio/gpio-u300.c (100%)
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
