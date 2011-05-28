@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab1E1URI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 16:17:08 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:51257 "EHLO
+	id S1756471Ab1E1UU2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 16:20:28 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:50770 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212Ab1E1URF (ORCPT
+	with ESMTP id S1752212Ab1E1UU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 16:17:05 -0400
+	Sat, 28 May 2011 16:20:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
          :mime-version:content-type;
-        b=APBq06QNCe1EWL5jLFAsOOI6/VbsZFO7sqJyttIVBtp7WD9foxW+GooJDzbogGshns
-         MLbDCclvbxDFGNQoucfA==
-Date: Sat, 28 May 2011 13:17:04 -0700 (PDT)
+        b=fbRpx8p3UmROFZP1Ip2sicDmhODaR4ETJOmVoZ4Pss3baYhTquGPEZxM9wsQ6jd0YF
+         jclBZEORRAE64O4zES/Q==
+Date: Sat, 28 May 2011 13:20:21 -0700 (PDT)
 From: Hugh Dickins <hughd@google.com>
 X-X-Sender: hugh@sister.anvils
 To: Linus Torvalds <torvalds@linux-foundation.org>
 cc: Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH] mm: fix kernel BUG at mm/rmap.c:1017!
-Message-ID: <alpine.LSU.2.00.1105281314220.13319@sister.anvils>
+Subject: [PATCH] mm: fix page_lock_anon_vma leaving mutex locked
+Message-ID: <alpine.LSU.2.00.1105281317090.13319@sister.anvils>
 User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -30,40 +30,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've hit the "address >= vma->vm_end" check in do_page_add_anon_rmap()
-just once.  The stack showed khugepaged allocation trying to compact
-pages: the call to page_add_anon_rmap() coming from remove_migration_pte().
+On one machine I've been getting hangs, a page fault's anon_vma_prepare()
+waiting in anon_vma_lock(), other processes waiting for that page's lock.
 
-That path holds anon_vma lock, but does not hold mmap_sem: it can
-therefore race with a split_vma(), and in commit 5f70b962ccc2 "mmap:
-avoid unnecessary anon_vma lock" we just took away the anon_vma lock
-protection when adjusting vma->vm_end.
+This is a replay of last year's f18194275c39
+"mm: fix hang on anon_vma->root->lock".
 
-I don't think that particular BUG_ON ever caught anything interesting,
-so better replace it by a comment, than reinstate the anon_vma locking.
+The new page_lock_anon_vma() places too much faith in its refcount: when
+it has acquired the mutex_trylock(), it's possible that a racing task in
+anon_vma_alloc() has just reallocated the struct anon_vma, set refcount
+to 1, and is about to reset its anon_vma->root.
+
+Fix this by saving anon_vma->root, and relying on the usual page_mapped()
+check instead of a refcount check: if page is still mapped, the anon_vma
+is still ours; if page is not still mapped, we're no longer interested.
 
 Signed-off-by: Hugh Dickins <hughd@google.com>
 ---
- mm/rmap.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/rmap.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- linux.orig/mm/rmap.c	2011-05-27 19:05:27.000000000 -0700
-+++ linux/mm/rmap.c	2011-05-27 20:07:44.601361236 -0700
-@@ -1014,7 +1014,7 @@ void do_page_add_anon_rmap(struct page *
- 		return;
+--- linux.orig/mm/rmap.c	2011-05-27 20:07:44.000000000 -0700
++++ linux/mm/rmap.c	2011-05-27 20:31:04.596303434 -0700
+@@ -405,6 +405,7 @@ out:
+ struct anon_vma *page_lock_anon_vma(struct page *page)
+ {
+ 	struct anon_vma *anon_vma = NULL;
++	struct anon_vma *root_anon_vma;
+ 	unsigned long anon_mapping;
  
- 	VM_BUG_ON(!PageLocked(page));
--	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
-+	/* address might be in next vma when migration races vma_adjust */
- 	if (first)
- 		__page_set_anon_rmap(page, vma, address, exclusive);
- 	else
-@@ -1709,7 +1709,7 @@ void hugepage_add_anon_rmap(struct page
+ 	rcu_read_lock();
+@@ -415,13 +416,15 @@ struct anon_vma *page_lock_anon_vma(stru
+ 		goto out;
  
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(!anon_vma);
--	BUG_ON(address < vma->vm_start || address >= vma->vm_end);
-+	/* address might be in next vma when migration races vma_adjust */
- 	first = atomic_inc_and_test(&page->_mapcount);
- 	if (first)
- 		__hugepage_set_anon_rmap(page, vma, address, 0);
+ 	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
+-	if (mutex_trylock(&anon_vma->root->mutex)) {
++	root_anon_vma = ACCESS_ONCE(anon_vma->root);
++	if (mutex_trylock(&root_anon_vma->mutex)) {
+ 		/*
+-		 * If we observe a !0 refcount, then holding the lock ensures
+-		 * the anon_vma will not go away, see __put_anon_vma().
++		 * If the page is still mapped, then this anon_vma is still
++		 * its anon_vma, and holding the mutex ensures that it will
++		 * not go away, see __put_anon_vma().
+ 		 */
+-		if (!atomic_read(&anon_vma->refcount)) {
+-			anon_vma_unlock(anon_vma);
++		if (!page_mapped(page)) {
++			mutex_unlock(&root_anon_vma->mutex);
+ 			anon_vma = NULL;
+ 		}
+ 		goto out;
