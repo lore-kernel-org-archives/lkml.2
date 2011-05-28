@@ -1,80 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab1E1RV6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 13:21:58 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49806 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab1E1RV4 (ORCPT
+	id S1754635Ab1E1RZQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 13:25:16 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48551 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754159Ab1E1RZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 13:21:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=OeZcY5ZLyi6X/Qp3bwPdE8NSHbfZbp9gZmbhb1vE0rLImU45KDmM+NW5teCn+n1XAR
-         +cdh9X65ITo2BMR776B2e4k+e6W6lNt5+YURhiV2AxbesCmU7SiilS6Aj/YdYV2pNgdU
-         u4XsENjdFOtEGtzpnY7/QC6cmDgQSkAuavwOY=
+	Sat, 28 May 2011 13:25:15 -0400
+Date: Sat, 28 May 2011 18:25:13 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs pile, part 2
+Message-ID: <20110528172513.GH11521@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20110527164702.GB28520@samba2>
-References: <BANLkTinVOaFwkCf33iKNk8GjqiiBEF5N3w@mail.gmail.com>
-	<20110527164702.GB28520@samba2>
-Date: Sat, 28 May 2011 12:21:55 -0500
-Message-ID: <BANLkTik1vW-PnEiaSfLnr0pWhr_rFLTowQ@mail.gmail.com>
-Subject: Re: Big performance improvements seen with cifs async write patches
- even over localhost
-From: Steve French <smfrench@gmail.com>
-To: Jeremy Allison <jra@samba.org>
-Cc: linux-cifs@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 11:47 AM, Jeremy Allison <jra@samba.org> wrote:
-> On Fri, May 27, 2011 at 12:14:19AM -0500, Steve French wrote:
->> Did some informal testing of Jeff Layton's cifs async_write patch set
->> tonight (recent kernel). Copying 700MB sequentially was 20% faster
->> from cifs kernel client to Samba 3.6 with his patches - even mounted
->> over localhost (where network latency is a much smaller issue) and
->> with a slow laptop drive!
->>
->> I was simply doing
->>
->> time dd if=/dev/zero of=/mnt/null bs=1M count=700
->>
->> repeated 4 times each way (with old module, and with same code with
->> Jeff's cifs async write code builtin), deleting the target file in
->> between each run.
->>
->> I am looking forward to trying this over GigE tomorrow to servers with
->> faster disks.
->
-> Very nice ! Now where's my encrypted transport Steve ? :-) :-)
->
-> Jeremy.
+	Stuff missed in the previous one (Darrick's after rediff,
+continuation of dentry_unhash() series, Andi's "let's not call
+->getxattr() on each and every write(2)", etc.)  DCACHE_NEED_LOOKUP
+series is *NOT* there yet; I've tossed pending do_lookup() cleanups
+into the pile and I'd like to see Josef's set rediffed on top of that,
+with obvious cleanup I suggested to him in do_lookup() part.
 
-Did some additional informal testing with this (current mainline vs.
-cifs from 2.6.39) and the results are even better.
+	Please, pull from the usual place -
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
 
-Mounted over GiGE to midrange desktop system from my laptop.  Copying
-2.5GB to the server was 88% faster with current mainline.   Repeated
-the test 3 times each way.  Current mainline cifs averaged 98.9 MB/s
-for sequential file copy vs. 52.6 MB/s (for 2.6.39 and older).
+Shortlog:
 
-stevef@stevef-laptop:~$ time dd if=/dev/zero of=/mnt/null bs=1M count=2500
-2500+0 records in
-2500+0 records out
-2621440000 bytes (2.6 GB) copied, 26.3095 s, 99.6 MB/s
+Al Viro (3):
+      split __follow_mount_rcu() into normal and .. cases
+      Trim excessive arguments of follow_mount_rcu()
+      Lift the check for automount points into do_lookup()
 
-real	0m27.201s
-user	0m0.000s
-sys	0m3.340s
+Andi Kleen (1):
+      Cache xattr security drop check for write v2
 
+Andreas Gruenbacher (2):
+      xattr: Fix error results for non-existent / invisible attributes
+      vfs: Improve the bio_add_page() and bio_add_pc_page() descriptions
 
+Christoph Hellwig (2):
+      fs: pass exact type of data dirties to ->dirty_inode
+      fs: cosmetic inode.c cleanups
 
+Darrick J. Wong (2):
+      mm: Wait for writeback when grabbing pages to begin a write
+      fs: block_page_mkwrite should wait for writeback to finish
 
--- 
-Thanks,
+Sage Weil (26):
+      bfs: remove unnecessary dentry_unhash on dir rename
+      sysv: remove unnecessary dentry_unhash from rmdir, dir rename
+      jffs2: remove unnecessary dentry_unhash from rmdir, dir rename
+      jfs: remove unnecessary dentry_unhash from rmdir, dir rename
+      logfs: remove unnecessary dentry_unhash from rmdir, dir rename
+      nilfs2: remove unnecessary dentry_unhash from rmdir, dir rename
+      ubifs: remove unnecessary dentry_unhash from rmdir, dir rename
+      ufs: remove unnecessary dentry_unhash from rmdir, dir rename
+      reiserfs: remove unnecessary dentry_unhash from rmdir, dir rename
+      udf: remove unnecessary dentry_unhash from rmdir, dir rename
+      omfs: remove unnecessary dentry_unhash on rmdir, dir rneame
+      hfs: remove unnecessary dentry_unhash on rmdir, dir rename
+      hfsplus: remove unnecessary dentry_unhash on rmdir, dir rename
+      hostfs: remove unnecessary dentry_unhash on rmdir, dir rename
+      ecryptfs: remove unnecessary dentry_unhash on rmdir, dir rename
+      ncpfs: document dentry_unhash usage
+      ncpfs: fix rename over directory with dangling references
+      9p: remove unnecessary dentry_unhash on rmdir, dir rename
+      affs: remove unnecessary dentry_unhash on rmdir, dir rename
+      afs: remove unnecessary dentry_unhash on rmdir, dir rename
+      coda: remove unnecessary dentry_unhash on rmdir, dir rename
+      fuse: remove unnecessary dentry_unhash on rmdir, dir rename
+      minix: remove unnecessary dentry_unhash on rmdir, dir rename
+      hpfs: remove unnecessary dentry_unhash on rmdir, dir rename
+      fat: remove unnecessary dentry_unhash on rmdir, dir rename
+      configfs: remove unnecessary dentry_unhash on rmdir, dir rename
 
-Steve
+Diffstat:
+ Documentation/filesystems/Locking |    4 +-
+ Documentation/filesystems/vfs.txt |    2 +-
+ fs/9p/vfs_inode.c                 |    4 ---
+ fs/affs/namei.c                   |    5 ---
+ fs/afs/dir.c                      |    5 ---
+ fs/attr.c                         |    7 +++++
+ fs/bfs/dir.c                      |    3 --
+ fs/bio.c                          |   16 +++++-----
+ fs/btrfs/ctree.h                  |    2 +-
+ fs/btrfs/inode.c                  |    2 +-
+ fs/buffer.c                       |    1 +
+ fs/coda/dir.c                     |    5 ---
+ fs/configfs/dir.c                 |    2 -
+ fs/ecryptfs/inode.c               |    5 ---
+ fs/ext3/inode.c                   |    2 +-
+ fs/ext4/ext4.h                    |    2 +-
+ fs/ext4/inode.c                   |    2 +-
+ fs/fat/namei_msdos.c              |    5 ---
+ fs/fat/namei_vfat.c               |    5 ---
+ fs/fs-writeback.c                 |    5 +---
+ fs/fuse/dir.c                     |    5 ---
+ fs/hfs/dir.c                      |    6 ----
+ fs/hfsplus/dir.c                  |    8 +----
+ fs/hostfs/hostfs_kern.c           |    5 ---
+ fs/hpfs/namei.c                   |    5 ---
+ fs/inode.c                        |   54 +++---------------------------------
+ fs/jffs2/dir.c                    |    5 ---
+ fs/jffs2/fs.c                     |    2 +-
+ fs/jffs2/os-linux.h               |    2 +-
+ fs/jfs/inode.c                    |    2 +-
+ fs/jfs/jfs_inode.h                |    2 +-
+ fs/jfs/namei.c                    |    5 ---
+ fs/logfs/dir.c                    |    5 ---
+ fs/minix/namei.c                  |    5 ---
+ fs/namei.c                        |   41 ++++++++++++++++-----------
+ fs/ncpfs/dir.c                    |   15 +++++++++-
+ fs/nilfs2/inode.c                 |    2 +-
+ fs/nilfs2/namei.c                 |    5 ---
+ fs/nilfs2/nilfs.h                 |    2 +-
+ fs/omfs/dir.c                     |   11 ++-----
+ fs/reiserfs/namei.c               |    5 ---
+ fs/reiserfs/super.c               |    2 +-
+ fs/reiserfs/xattr.c               |    1 -
+ fs/sysv/namei.c                   |    5 ---
+ fs/ubifs/dir.c                    |    5 ---
+ fs/ubifs/super.c                  |    2 +-
+ fs/udf/namei.c                    |    5 ---
+ fs/ufs/namei.c                    |    5 ---
+ fs/xattr.c                        |   23 ++++++++++-----
+ fs/xfs/linux-2.6/xfs_super.c      |    3 +-
+ include/linux/ext3_fs.h           |    2 +-
+ include/linux/fs.h                |   15 +++++++++-
+ mm/filemap.c                      |   18 ++++++++++--
+ 53 files changed, 127 insertions(+), 235 deletions(-)
