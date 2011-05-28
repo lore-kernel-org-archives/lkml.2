@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750858Ab1E1ETh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 00:19:37 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:58022 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750715Ab1E1ETg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 00:19:36 -0400
-Date: Fri, 27 May 2011 21:15:23 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
-Subject: [PATCH] acpi: create CONFIG item for debugfs custom_method
-Message-ID: <20110528041523.GD19633@outflux.net>
-References: <20110222193250.GA23913@outflux.net>
+	id S1750891Ab1E1E3N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 00:29:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46041 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab1E1E3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 00:29:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=sZV2O9x3cqR1le0TY8M03kJrTEUQYCc+fblTUt1jX2wmPzELzu9/Q32tGC6pFlJzZY
+         w7cpDfKucsjMnPCp2VA/OYanIKsV9JcLGA544jfX0illJRAwA7RFm34Ry+e5gbIn+xhV
+         1ZA+ApRYCO3Ue0kbWMhOc4zkC+znlylbcMzM8=
+From: Jason Stubbs <jasonbstubbs@gmail.com>
+To: Keith Packard <keithp@keithp.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] drm/i915: fix regression after clock gating init split
+Date: Sat, 28 May 2011 14:26:28 +1000
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r5; KDE/4.6.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201105272344.20084.jasonbstubbs@gmail.com> <yunaae8j5dg.fsf@aiko.keithp.com>
+In-Reply-To: <yunaae8j5dg.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222193250.GA23913@outflux.net>
-Organization: Canonical
-X-HELO: www.outflux.net
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105281426.28488.jasonbstubbs@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since /sys/kernel/debug/acpi/custom_method can be used to write arbitrary
-kernel memory (http://jon.oberheide.org/files/american-sign-language.c),
-it should be able to be left out of the kernel for system owners that
-want to be as defensive as possible to potential attacks, even from the
-root user. See as examples: CONFIG_DEVKMEM, CONFIG_STRICT_DEVMEM, and
-/proc/sys/kernel/modules_disabled.
+On Sat, 28 May 2011 05:44:11 Keith Packard wrote:
+> On Fri, 27 May 2011 23:44:19 +1000, Jason Stubbs <jasonbstubbs@gmail.com> 
+wrote:
+> > From: Jason Stubbs <jasonbstubbs@gmail.com>
+> > 
+> > However, there are some code paths, notably IS_PINEVIEW(dev), where 
+> > init_clock_gating is not set and not needed.
+> 
+> Looks like Pineview should be using the gen3_init_clock_gating function.
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
----
-Third time sending this, no response...
-https://lkml.org/lkml/2011/2/22/369
+Yep, you are right. Adding printk()s to the original implementation confirmed 
+that - at least on my hardware. I should have known to check that...
 
- drivers/acpi/Kconfig   |   10 ++++++++++
- drivers/acpi/debugfs.c |    2 ++
- 2 files changed, 12 insertions(+), 0 deletions(-)
+There are two other code paths where an init_clock_gating function isn't 
+specified though. The specific code paths are:
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 2aa042a..726b7ea 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -381,6 +381,16 @@ config ACPI_HED
- 	  which is used to report some hardware errors notified via
- 	  SCI, mainly the corrected errors.
- 
-+config ACPI_DEBUG_CUSTOM_METHOD
-+	bool "Debugging: Custom Method Insertion"
-+	depends on DEBUG_FS
-+	default n
-+	help
-+	  This creates the debugfs interface file "acpi/custom_method"
-+	  used for loading custom ACPI methods. Note that this allows
-+	  arbitrary kernel memory writing by the root user and is not
-+	  recommended for normal systems.
-+
- source "drivers/acpi/apei/Kconfig"
- 
- endif	# ACPI
-diff --git a/drivers/acpi/debugfs.c b/drivers/acpi/debugfs.c
-index 5df67f1..0240b15 100644
---- a/drivers/acpi/debugfs.c
-+++ b/drivers/acpi/debugfs.c
-@@ -20,6 +20,7 @@ module_param_named(aml_debug_output, acpi_gbl_enable_aml_debug_object,
- MODULE_PARM_DESC(aml_debug_output,
- 		 "To enable/disable the ACPI Debug Object output.");
- 
-+#ifdef CONFIG_ACPI_DEBUG_CUSTOM_METHOD
- /* /sys/kernel/debug/acpi/custom_method */
- 
- static ssize_t cm_write(struct file *file, const char __user * user_buf,
-@@ -92,3 +93,4 @@ err:
- 		debugfs_remove(acpi_dir);
- 	return -EINVAL;
- }
-+#endif
--- 
-1.7.2.3
+HAS_PCH_SPLIT() && !IS_GEN5() && !IS_GEN6() && !IS_IVYBRIDGE()
 
--- 
-Kees Cook
-Ubuntu Security Team
+Looking at the original intel_enable_clock_gating() function, there would
+have been some intialization done for this case.
+
+IS_GEN4() && !IS_CRESTLINE() && !IS_BROADWATER()
+
+It looks like this would have gone into the final "no gating match" if/else 
+branch.
+
+If both of the above don't happen in the real world, then I guess it's fine as 
+is. If either are possible, then they need to be fixed too.
+
+I'll just (re)send a patch for the IS_PINEVIEW() case and leave the above to
+somebody who knows better than I...
+
+Regards,
+Jason Stubbs
