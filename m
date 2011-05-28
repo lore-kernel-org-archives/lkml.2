@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab1E1Qip (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 12:38:45 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32944 "EHLO hera.kernel.org"
+	id S1753524Ab1E1QjT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 12:39:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:32961 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754144Ab1E1Qin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 12:38:43 -0400
-Date: Sat, 28 May 2011 16:38:28 GMT
+	id S1754290Ab1E1QjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 12:39:17 -0400
+Date: Sat, 28 May 2011 16:39:00 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-075e0b00857e166dcc3e39037a1fc5a90acac709@git.kernel.org>
+Message-ID: <tip-9137fb28ac74d05eb66d1d8e6778eaa14e6fed43@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, oleg@redhat.com, tglx@linutronix.de,
-        mingo@elte.hu
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, oleg@redhat.com,
-        mingo@elte.hu
-In-Reply-To: <20110409192141.665385503@chello.nl>
-References: <20110409192141.665385503@chello.nl>
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110409192141.719340481@chello.nl>
+References: <20110409192141.719340481@chello.nl>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Optimize ctx_sched_out()
-Git-Commit-ID: 075e0b00857e166dcc3e39037a1fc5a90acac709
+Subject: [tip:perf/core] perf: Clean up 'ctx' reference counting
+Git-Commit-ID: 9137fb28ac74d05eb66d1d8e6778eaa14e6fed43
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 28 May 2011 16:38:29 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 28 May 2011 16:39:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  075e0b00857e166dcc3e39037a1fc5a90acac709
-Gitweb:     http://git.kernel.org/tip/075e0b00857e166dcc3e39037a1fc5a90acac709
+Commit-ID:  9137fb28ac74d05eb66d1d8e6778eaa14e6fed43
+Gitweb:     http://git.kernel.org/tip/9137fb28ac74d05eb66d1d8e6778eaa14e6fed43
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Sat, 9 Apr 2011 21:17:40 +0200
+AuthorDate: Sat, 9 Apr 2011 21:17:41 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sat, 28 May 2011 18:01:09 +0200
+CommitDate: Sat, 28 May 2011 18:01:10 +0200
 
-perf: Optimize ctx_sched_out()
+perf: Clean up 'ctx' reference counting
 
-Oleg noted that ctx_sched_out() disables the PMU even though it might
-not actually do something, avoid needless PMU-disabling.
+Small cleanup to how we refcount in find_get_context(), this also
+allows us to use put_ctx() to free things instead of using kfree().
 
-Reported-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110409192141.665385503@chello.nl
+Link: http://lkml.kernel.org/r/20110409192141.719340481@chello.nl
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/events/core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/events/core.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d863b3c..4d9a1f01 100644
+index 4d9a1f01..d665ac4 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -1760,7 +1760,6 @@ static void ctx_sched_out(struct perf_event_context *ctx,
- 	struct perf_event *event;
+@@ -2835,16 +2835,12 @@ retry:
+ 		unclone_ctx(ctx);
+ 		++ctx->pin_count;
+ 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
+-	}
+-
+-	if (!ctx) {
++	} else {
+ 		ctx = alloc_perf_context(pmu, task);
+ 		err = -ENOMEM;
+ 		if (!ctx)
+ 			goto errout;
  
- 	raw_spin_lock(&ctx->lock);
--	perf_pmu_disable(ctx->pmu);
- 	ctx->is_active = 0;
- 	if (likely(!ctx->nr_events))
- 		goto out;
-@@ -1770,6 +1769,7 @@ static void ctx_sched_out(struct perf_event_context *ctx,
- 	if (!ctx->nr_active)
- 		goto out;
+-		get_ctx(ctx);
+-
+ 		err = 0;
+ 		mutex_lock(&task->perf_event_mutex);
+ 		/*
+@@ -2856,14 +2852,14 @@ retry:
+ 		else if (task->perf_event_ctxp[ctxn])
+ 			err = -EAGAIN;
+ 		else {
++			get_ctx(ctx);
+ 			++ctx->pin_count;
+ 			rcu_assign_pointer(task->perf_event_ctxp[ctxn], ctx);
+ 		}
+ 		mutex_unlock(&task->perf_event_mutex);
  
-+	perf_pmu_disable(ctx->pmu);
- 	if (event_type & EVENT_PINNED) {
- 		list_for_each_entry(event, &ctx->pinned_groups, group_entry)
- 			group_sched_out(event, cpuctx, ctx);
-@@ -1779,8 +1779,8 @@ static void ctx_sched_out(struct perf_event_context *ctx,
- 		list_for_each_entry(event, &ctx->flexible_groups, group_entry)
- 			group_sched_out(event, cpuctx, ctx);
- 	}
--out:
- 	perf_pmu_enable(ctx->pmu);
-+out:
- 	raw_spin_unlock(&ctx->lock);
- }
+ 		if (unlikely(err)) {
+-			put_task_struct(task);
+-			kfree(ctx);
++			put_ctx(ctx);
  
+ 			if (err == -EAGAIN)
+ 				goto retry;
