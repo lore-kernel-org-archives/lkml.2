@@ -1,115 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab1E1S6w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 14:58:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33579 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755442Ab1E1S6v (ORCPT
+	id S1755609Ab1E1Tei (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 15:34:38 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:49264 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754898Ab1E1Teh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 14:58:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Rjx5zBWQid+WpaXaEueV96Uf4gpZq86V0Q3PfwwHm5tnbygJHDHDA9GdVD2CrBhziv
-         wcg/4xyh4LV+HDtD33anzX7L4ttVkvDp09wW2QBIXD6pO64ObvUjUR0YuTRHZn13p5ou
-         OYtRrvB9L4su1EXPrt97Vb74hDQ+L5egNbnzE=
-From: Jonas Gorski <jonas.gorski@gmail.com>
-To: Phillip Lougher <phillip@lougher.demon.co.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] squashfs: Fix sanity checks for big endian systems
-Date: Sat, 28 May 2011 20:57:32 +0200
-Message-Id: <1306609052-11762-1-git-send-email-jonas.gorski@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Sat, 28 May 2011 15:34:37 -0400
+Subject: [PATCH V7 0/4 net-next] macvtap/vhost TX zero-copy support
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>, mst@redhat.com,
+        Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 28 May 2011 12:14:37 -0700
+Message-ID: <1306610077.5180.78.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a regression introduced in 37986f63c81bf23c856f65fc5e4830550e7f3d5b to
-1094a4a6118019255bf0e4adaa96bb17ccec3a82 ("add sanity checks ..."):
+This patchset add supports for TX zero-copy between guest and host
+kernel through vhost. It significantly reduces CPU utilization on the
+local host on which the guest is located (It reduced about 50% CPU usage
+for single stream test on the host, while 4K message size BW has
+increased about 50%). The patchset is based on previous submission and
+comments from the community regarding when/how to handle guest kernel
+buffers to be released. This is the simplest approach I can think of
+after comparing with several other solutions.
 
-squashfs_sb_info's id_table, fragment_index, xattr_id_table and
-inode_lookup_table are stored in little endian and need to be read as such.
-This was done correct mostly except when doing the sanity checks and
-reading the superblock, resulting in squashfs aborting on big endian systems.
+This patchset has integrated V3 review comments from community: 
 
-Signed-off-by: Jonas Gorski <jonas.gorski@gmail.com>
----
- fs/squashfs/export.c   |    2 +-
- fs/squashfs/fragment.c |    2 +-
- fs/squashfs/id.c       |    2 +-
- fs/squashfs/super.c    |    6 +++---
- 4 files changed, 6 insertions(+), 6 deletions(-)
+1. Add more comments on how to use device ZEROCOPY flag;
+2. Change device ZEROCOPY to available bit 31
+3. Fix skb header linear allocation when virtio_net GSO is not enabled
 
-diff --git a/fs/squashfs/export.c b/fs/squashfs/export.c
-index 730c562..5e1101f 100644
---- a/fs/squashfs/export.c
-+++ b/fs/squashfs/export.c
-@@ -147,7 +147,7 @@ __le64 *squashfs_read_inode_lookup_table(struct super_block *sb,
- 	 * table[0] points to the first inode lookup table metadata block,
- 	 * this should be less than lookup_table_start
- 	 */
--	if (!IS_ERR(table) && table[0] >= lookup_table_start) {
-+	if (!IS_ERR(table) && le64_to_cpu(table[0]) >= lookup_table_start) {
- 		kfree(table);
- 		return ERR_PTR(-EINVAL);
- 	}
-diff --git a/fs/squashfs/fragment.c b/fs/squashfs/fragment.c
-index 1516a649..0ed6edb 100644
---- a/fs/squashfs/fragment.c
-+++ b/fs/squashfs/fragment.c
-@@ -90,7 +90,7 @@ __le64 *squashfs_read_fragment_index_table(struct super_block *sb,
- 	 * table[0] points to the first fragment table metadata block, this
- 	 * should be less than fragment_table_start
- 	 */
--	if (!IS_ERR(table) && table[0] >= fragment_table_start) {
-+	if (!IS_ERR(table) && le64_to_cpu(table[0]) >= fragment_table_start) {
- 		kfree(table);
- 		return ERR_PTR(-EINVAL);
- 	}
-diff --git a/fs/squashfs/id.c b/fs/squashfs/id.c
-index a70858e..d38ea3d 100644
---- a/fs/squashfs/id.c
-+++ b/fs/squashfs/id.c
-@@ -93,7 +93,7 @@ __le64 *squashfs_read_id_index_table(struct super_block *sb,
- 	 * table[0] points to the first id lookup table metadata block, this
- 	 * should be less than id_table_start
- 	 */
--	if (!IS_ERR(table) && table[0] >= id_table_start) {
-+	if (!IS_ERR(table) && le64_to_cpu(table[0]) >= id_table_start) {
- 		kfree(table);
- 		return ERR_PTR(-EINVAL);
- 	}
-diff --git a/fs/squashfs/super.c b/fs/squashfs/super.c
-index 6f26abe..7438850 100644
---- a/fs/squashfs/super.c
-+++ b/fs/squashfs/super.c
-@@ -245,7 +245,7 @@ allocate_id_index_table:
- 		msblk->id_table = NULL;
- 		goto failed_mount;
- 	}
--	next_table = msblk->id_table[0];
-+	next_table = le64_to_cpu(msblk->id_table[0]);
- 
- 	/* Handle inode lookup table */
- 	lookup_table_start = le64_to_cpu(sblk->lookup_table_start);
-@@ -261,7 +261,7 @@ allocate_id_index_table:
- 		msblk->inode_lookup_table = NULL;
- 		goto failed_mount;
- 	}
--	next_table = msblk->inode_lookup_table[0];
-+	next_table = le64_to_cpu(msblk->inode_lookup_table[0]);
- 
- 	sb->s_export_op = &squashfs_export_ops;
- 
-@@ -286,7 +286,7 @@ handle_fragments:
- 		msblk->fragment_index = NULL;
- 		goto failed_mount;
- 	}
--	next_table = msblk->fragment_index[0];
-+	next_table = le64_to_cpu(msblk->fragment_index[0]);
- 
- check_directory_table:
- 	/* Sanity check directory_table */
--- 
-1.7.2.5
+It has integrated V4 review comments from MST and Sridhar:
+1. In vhost, using socket poll wake up for outstanding DMAs
+2. Add detailed comments for vhost_zerocopy_signal_used call
+3. Add sleep in vhost shutting down instead of busy-wait for outstanding
+   DMAs.
+4. Copy small packets, don't do zero-copy callback in mavtap, mark it's
+   DMA done in vhost
+5. change zerocopy to bool in macvtap.
+
+It has integrated V5 review comments from MST and 
+Michał Mirosław <mirqus@gmail.com>
+1. Prevent userspace apps from holding skb userspace buffers by copying
+userspace buffers to kernel in skb_clone, skb_copy, pskb_copy,
+pskb_expand_head.
+2. It is also used HIGHDMA, SG feature bits to enable ZEROCOPY to remove
+the dependency of a new feature bit, we can add it later when new
+feature bit is available.
+
+It has integrated V6 review comments from Eric Dumazet.
+1. Moving ubuf_info object from skb to caller, just use one pointer in
+skb_share_info to point ubuf_info object.
+
+2. Change the zero-copy size from 256 bytes to PAGE_SIZE (4K) because of
+the small message size performance issue.
+
+3. During vhost shutting down, release outstanding userspace buffers w/o
+waiting for lower device DMAs done if any. Do we really care about the
+possible wrong data being sent on the wire during shutting down?
+
+This patchset includes:
+1/4: Add a new sock zero-copy flag, SOCK_ZEROCOPY;
+
+2/4: Add a new struct skb_ubuf_info in skb_share_info for userspace
+buffers release callback when lower device DMA has done for that skb,
+which is the last reference count gone; Or whenever skb_clone, skb_copy,
+pskb_copy, pskb_expand_head get call from tcpdump, filtering, these
+userspace buffers will be copied into kernel ... we don't want userspace
+apps to hold userspace buffers too long.
+
+3/4: Add vhost zero-copy callback in vhost when skb last refcnt is gone;
+add vhost_zerocopy_signal_used to notify guest to release TX skb
+buffers.
+
+4/4: Add macvtap zero-copy in lower device when sending packet is
+greater than PAGE_SIZE.
+
+The patchset is built against linux-2.6.39. It has passed
+netperf/netserver multiple streams stress test, tcpdump
+suspended test, dynamically SG change test.
+
+Single TCP_STREAM 120 secs test results 2.6.39-rc3 over ixgbe 10Gb NIC
+results:
+
+Message BW(Gb/s)qemu-kvm (NumCPU)vhost-net(NumCPU) PerfTop irq/s
+4K      7408.57         92.1%           22.6%           1229
+4K(Orig)4913.17         118.1%          84.1%           2086    
+8K      9129.90         89.3%           23.3%           1141
+8K(Orig)7094.55         115.9%          84.7%           2157
+16K     9178.81         89.1%           23.3%           1139
+16K(Orig)8927.1         118.7%          83.4%           2262
+64K     9171.43         88.4%           24.9%           1253
+64K(Orig)9085.85        115.9%          82.4%           2229
+
+For message size less or equal than 2K, there is a known KVM guest TX
+overrun issue. With this zero-copy patch, the issue becomes more severe,
+guest io_exits has tripled than before, so the performance is not good.
+Once the TX overrun problem has been addressed, I will retest the small
+message size performance.
+
+ drivers/net/macvtap.c  |  131
+++++++++++++++++++++++++++++++++++++++++++++----
+ drivers/vhost/net.c    |   45 ++++++++++++++++-
+ drivers/vhost/vhost.c  |   51 +++++++++++++++++++
+ drivers/vhost/vhost.h  |   15 ++++++
+ include/linux/skbuff.h |   25 +++++++++
+ include/net/sock.h     |    1 +
+ net/core/skbuff.c      |   83 ++++++++++++++++++++++++++++++-
+ 7 files changed, 338 insertions(+), 13 deletions(-)
+
 
