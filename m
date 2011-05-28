@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab1E1RiO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 13:38:14 -0400
-Received: from mail.perches.com ([173.55.12.10]:2239 "EHLO mail.perches.com"
+	id S1756198Ab1E1Rh0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 13:37:26 -0400
+Received: from mail.perches.com ([173.55.12.10]:2246 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755955Ab1E1RhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 13:37:22 -0400
+	id S1754860Ab1E1RhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 13:37:24 -0400
 From: Joe Perches <joe@perches.com>
-To: Jan Harkes <jaharkes@cs.cmu.edu>, coda@cs.cmu.edu,
+To: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
         Jiri Kosina <trivial@kernel.org>
-Cc: Alex Elder <aelder@sgi.com>, xfs-masters@oss.sgi.com,
-        codalist@TELEMANN.coda.cs.cmu.edu, linux-kernel@vger.kernel.org,
-        reiserfs-devel@vger.kernel.org, xfs@oss.sgi.com
-Subject: [TRIVIAL PATCH next 13/15] fs: Convert vmalloc/memset to vzalloc
-Date: Sat, 28 May 2011 10:36:33 -0700
-Message-Id: <4561db676a209fff984a75ade2f552ddbfabb95b.1306603968.git.joe@perches.com>
+Cc: linux-mm@kvack.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [TRIVIAL PATCH next 14/15] mm: Convert vmalloc/memset to vzalloc
+Date: Sat, 28 May 2011 10:36:34 -0700
+Message-Id: <f3d616b526e00bd8f01a250b7ce8c5a6e2412768.1306603968.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.5.rc3.dirty
 In-Reply-To: <cover.1306603968.git.joe@perches.com>
 References: <cover.1306603968.git.joe@perches.com>
@@ -24,119 +26,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/coda/coda_linux.h    |    5 ++---
- fs/reiserfs/journal.c   |    9 +++------
- fs/reiserfs/resize.c    |    4 +---
- fs/xfs/linux-2.6/kmem.h |    7 +------
- 4 files changed, 7 insertions(+), 18 deletions(-)
+ mm/page_cgroup.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/fs/coda/coda_linux.h b/fs/coda/coda_linux.h
-index 9b0c532..7807025 100644
---- a/fs/coda/coda_linux.h
-+++ b/fs/coda/coda_linux.h
-@@ -59,12 +59,11 @@ void coda_sysctl_clean(void);
+diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+index 74ccff6..dbb28fd 100644
+--- a/mm/page_cgroup.c
++++ b/mm/page_cgroup.c
+@@ -478,11 +478,10 @@ int swap_cgroup_swapon(int type, unsigned long max_pages)
+ 	length = DIV_ROUND_UP(max_pages, SC_PER_PAGE);
+ 	array_size = length * sizeof(void *);
  
- #define CODA_ALLOC(ptr, cast, size) do { \
-     if (size < PAGE_SIZE) \
--        ptr = kmalloc((unsigned long) size, GFP_KERNEL); \
-+        ptr = kzalloc((unsigned long) size, GFP_KERNEL); \
-     else \
--        ptr = (cast)vmalloc((unsigned long) size); \
-+        ptr = (cast)vzalloc((unsigned long) size); \
-     if (!ptr) \
-         printk("kernel malloc returns 0 at %s:%d\n", __FILE__, __LINE__); \
--    else memset( ptr, 0, size ); \
- } while (0)
+-	array = vmalloc(array_size);
++	array = vzalloc(array_size);
+ 	if (!array)
+ 		goto nomem;
  
- 
-diff --git a/fs/reiserfs/journal.c b/fs/reiserfs/journal.c
-index c5e82ec..40d8b0a 100644
---- a/fs/reiserfs/journal.c
-+++ b/fs/reiserfs/journal.c
-@@ -291,14 +291,13 @@ int reiserfs_allocate_list_bitmaps(struct super_block *sb,
- 	for (i = 0; i < JOURNAL_NUM_BITMAPS; i++) {
- 		jb = jb_array + i;
- 		jb->journal_list = NULL;
--		jb->bitmaps = vmalloc(mem);
-+		jb->bitmaps = vzalloc(mem);
- 		if (!jb->bitmaps) {
- 			reiserfs_warning(sb, "clm-2000", "unable to "
- 					 "allocate bitmaps for journal lists");
- 			failed = 1;
- 			break;
- 		}
--		memset(jb->bitmaps, 0, mem);
- 	}
- 	if (failed) {
- 		free_list_bitmaps(sb, jb_array);
-@@ -353,11 +352,10 @@ static struct reiserfs_journal_cnode *allocate_cnodes(int num_cnodes)
- 	if (num_cnodes <= 0) {
- 		return NULL;
- 	}
--	head = vmalloc(num_cnodes * sizeof(struct reiserfs_journal_cnode));
-+	head = vzalloc(num_cnodes * sizeof(struct reiserfs_journal_cnode));
- 	if (!head) {
- 		return NULL;
- 	}
--	memset(head, 0, num_cnodes * sizeof(struct reiserfs_journal_cnode));
- 	head[0].prev = NULL;
- 	head[0].next = head + 1;
- 	for (i = 1; i < num_cnodes; i++) {
-@@ -2695,14 +2693,13 @@ int journal_init(struct super_block *sb, const char *j_dev_name,
- 	 * dependency inversion warnings.
- 	 */
- 	reiserfs_write_unlock(sb);
--	journal = SB_JOURNAL(sb) = vmalloc(sizeof(struct reiserfs_journal));
-+	journal = SB_JOURNAL(sb) = vzalloc(sizeof(struct reiserfs_journal));
- 	if (!journal) {
- 		reiserfs_warning(sb, "journal-1256",
- 				 "unable to get memory for journal structure");
- 		reiserfs_write_lock(sb);
- 		return 1;
- 	}
--	memset(journal, 0, sizeof(struct reiserfs_journal));
- 	INIT_LIST_HEAD(&journal->j_bitmap_nodes);
- 	INIT_LIST_HEAD(&journal->j_prealloc_list);
- 	INIT_LIST_HEAD(&journal->j_working_list);
-diff --git a/fs/reiserfs/resize.c b/fs/reiserfs/resize.c
-index b3a94d2..cfb5196 100644
---- a/fs/reiserfs/resize.c
-+++ b/fs/reiserfs/resize.c
-@@ -111,15 +111,13 @@ int reiserfs_resize(struct super_block *s, unsigned long block_count_new)
- 		/* allocate additional bitmap blocks, reallocate array of bitmap
- 		 * block pointers */
- 		bitmap =
--		    vmalloc(sizeof(struct reiserfs_bitmap_info) * bmap_nr_new);
-+		    vzalloc(sizeof(struct reiserfs_bitmap_info) * bmap_nr_new);
- 		if (!bitmap) {
- 			/* Journal bitmaps are still supersized, but the memory isn't
- 			 * leaked, so I guess it's ok */
- 			printk("reiserfs_resize: unable to allocate memory.\n");
- 			return -ENOMEM;
- 		}
--		memset(bitmap, 0,
--		       sizeof(struct reiserfs_bitmap_info) * bmap_nr_new);
- 		for (i = 0; i < bmap_nr; i++)
- 			bitmap[i] = old_bitmap[i];
- 
-diff --git a/fs/xfs/linux-2.6/kmem.h b/fs/xfs/linux-2.6/kmem.h
-index f7c8f7a..292eff1 100644
---- a/fs/xfs/linux-2.6/kmem.h
-+++ b/fs/xfs/linux-2.6/kmem.h
-@@ -61,12 +61,7 @@ extern void  kmem_free(const void *);
- 
- static inline void *kmem_zalloc_large(size_t size)
- {
--	void *ptr;
--
--	ptr = vmalloc(size);
--	if (ptr)
--		memset(ptr, 0, size);
--	return ptr;
-+	return vzalloc(size);
- }
- static inline void kmem_free_large(void *ptr)
- {
+-	memset(array, 0, array_size);
+ 	ctrl = &swap_cgroup_ctrl[type];
+ 	mutex_lock(&swap_cgroup_mutex);
+ 	ctrl->length = length;
 -- 
 1.7.5.rc3.dirty
 
