@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab1E1R6H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 13:58:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52258 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754103Ab1E1R6F (ORCPT
+	id S1754913Ab1E1Rsf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 13:48:35 -0400
+Received: from s15407518.onlinehome-server.info ([82.165.136.167]:51210 "EHLO
+	s15407518.onlinehome-server.info" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753550Ab1E1Rse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 13:58:05 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Restructure wm8994-core device revision handling
-Date: Sun, 29 May 2011 01:48:07 +0800
-Message-Id: <1306604887-31167-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.1
+	Sat, 28 May 2011 13:48:34 -0400
+From: Heiko =?iso-8859-15?q?St=FCbner?= <heiko@sntech.de>
+To: Joe Perches <joe@perches.com>
+Subject: Re: [TRIVIAL PATCH next 12/15] video: Convert vmalloc/memset to vzalloc
+Date: Sat, 28 May 2011 19:48:12 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.37-2-686; KDE/4.4.5; i686; ; )
+Cc: Jaya Kumar <jayalk@intworks.biz>, Paul Mundt <lethal@linux-sh.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jiri Kosina <trivial@kernel.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+References: <cover.1306603968.git.joe@perches.com> <77538de911b8af99f68b7bcfbaaedce8e40db04f.1306603968.git.joe@perches.com>
+In-Reply-To: <77538de911b8af99f68b7bcfbaaedce8e40db04f.1306603968.git.joe@perches.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105281948.12941.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch on the device type before revision since anything we do here will
-be device as well as revision specific.
+Am Samstag 28 Mai 2011, 19:36:32 schrieb Joe Perches:
+> diff --git a/drivers/video/arcfb.c b/drivers/video/arcfb.c
+> index 3ec4923..86573e2 100644
+> --- a/drivers/video/arcfb.c
+> +++ b/drivers/video/arcfb.c
+> @@ -515,11 +515,10 @@ static int __devinit arcfb_probe(struct
+> platform_device *dev)
+> 
+>  	/* We need a flat backing store for the Arc's
+>  	   less-flat actual paged framebuffer */
+> -	if (!(videomemory = vmalloc(videomemorysize)))
+> +	videomemory = vmalloc(videomemorysize);
+> +	if (!videomemory)
+>  		return retval;
+shouldn't this be vzalloc too?
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm8994-core.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+> -	memset(videomemory, 0, videomemorysize);
+> -
+>  	info = framebuffer_alloc(sizeof(struct arcfb_par), &dev->dev);
+>  	if (!info)
+>  		goto err;
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index 877590b..9497c57 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -482,13 +482,18 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
- 		goto err_enable;
- 	}
- 
--	switch (ret) {
--	case 0:
--	case 1:
--		if (wm8994->type == WM8994)
-+	switch (wm8994->type) {
-+	case WM8994:
-+		switch (ret) {
-+		case 0:
-+		case 1:
- 			dev_warn(wm8994->dev,
- 				 "revision %c not fully supported\n",
- 				 'A' + ret);
-+			break;
-+		default:
-+			break;
-+		}
- 		break;
- 	default:
- 		break;
--- 
-1.7.5.1
 
+Heiko
