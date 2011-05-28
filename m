@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab1E1KfK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 06:35:10 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33854 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab1E1KfI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 06:35:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=NBDdjCUZzexdBXQdjwjsGlbk8W/juJhlQSmWjF/mF/h4Lu/0hUQ8W9wbJqq4yerF5h
-         Sb0EpUzIMZn4e7ioBQJqatrAse1HUYyF8mOzYd7S0AOzvTX1xAV72K9KqXaDFNLheGz3
-         Ar1WLWTfTeCJUGS0lMf81l5FJ8qQ2CfecA7hg=
-Date: Sat, 28 May 2011 13:33:05 +0300
-From: Mika Westerberg <mika.westerberg@iki.fi>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "ryan@bluewatersys.com" <ryan@bluewatersys.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH 1/5] dmaengine: add ep93xx DMA support
-Message-ID: <20110528103305.GB15220@acer>
-References: <cover.1306082097.git.mika.westerberg@iki.fi>
- <e6777eb9f7228ee1dadec1f0c9f16c3afc44c307.1306082097.git.mika.westerberg@iki.fi>
- <0D753D10438DA54287A00B027084269764D331A4B2@AUSP01VMBX24.collaborationhost.net>
+	id S1752796Ab1E2Bcm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 21:32:42 -0400
+Received: from mail.nkfi.ru ([62.231.163.133]:57334 "EHLO mail.nkfi.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353Ab1E2Bce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 21:32:34 -0400
+X-Greylist: delayed 35764 seconds by postgrey-1.27 at vger.kernel.org; Sat, 28 May 2011 21:32:34 EDT
+Message-ID: <2b1a55cfe669e3f51743414a40bcbd0c.squirrel@webmail.nkfi.ru>
+Date: Sat, 28 May 2011 10:45:28 -0000 (GMT)
+Subject: WAITING ON YOUR REPLY
+From: "Rev. Johnson" <johnsong@blumail.org>
+Reply-To: johnsongeorge@qatar.io
+User-Agent: WebMail NKFI / ver. 0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0D753D10438DA54287A00B027084269764D331A4B2@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 26, 2011 at 08:38:41PM -0500, H Hartley Sweeten wrote:
-> >  
-> > +config EP93XX_DMA
-> > +	bool "Cirrus Logic EP93xx DMA support"
-> > +	depends on ARCH_EP93XX
-> > +	select DMA_ENGINE
-> > +	help
-> > +	  Enable support for the Cirrus Logic EP93xx M2P/M2M DMA controller.
-> > +
-> >  config DMA_ENGINE
-> >  	bool
-> 
-> The old dma-m2p support was always builtin.  Should ARCH_EP93XX select
-> EP93XX_DMA to keep this, or should it be added to the ep93xx_defconfig?
+Dear Sir/Madam,
 
-There are no users for the DMA in ep93xx_defconfig so I think that it
-shouldn't be selected by default. I was planning to change platform code to be
-conditionally compiled, like:
+In accordance to my religious persuasion, I felt, that I should contact
+you and seek for your help/partnership to enable us have the proposition
+in my hand accomplished.
 
-arch/arm/mach-ep93xx/Makefile:
+I am Rev. JOHNSON GEORGE, an official of a financial institution. I need
+your assistance as a partner in a financial transaction opportunity
+currently open in the department where I work.
 
-+obj-$(CONFIG_EP93XX_DMA)       += dma.o
+This opportunity holds immense prospect of financial benefit to both of us
+if we seize the opportunity.
 
-Any objections?
+For further details contact me as soon as possible.
+
+
+Rev. JOHNSON GEORGE
+
+
