@@ -1,121 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757825Ab1E1DBd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 23:01:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:55218 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402Ab1E1DB3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 23:01:29 -0400
-X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=wDBAj_Zu_dEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=XrPVtCNe9J9qHYjOOGEA:9 a=rvsHsgzfDi8ne0YKXRYA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH] st_kim: Handle case of no device found for ID 0
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Pavan Savoy <pavan_savoy@ti.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 27 May 2011 23:01:27 -0400
-Message-ID: <1306551687.3857.47.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1757897Ab1E1DP6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 23:15:58 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:54658 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753402Ab1E1DP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 23:15:56 -0400
+Date: Fri, 27 May 2011 20:13:48 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Emese Revfy <re.emese@gmail.com>
+Cc: Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org,
+        cocci@diku.dk
+Subject: Re: status of constification
+Message-ID: <20110528031348.GA19633@outflux.net>
+References: <20101108223844.GS5876@outflux.net>
+ <4CD9BF25.4090306@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CD9BF25.4090306@gmail.com>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running ktest.pl, I hit this bug:
+Hi Emese,
 
-[   19.780654] BUG: unable to handle kernel NULL pointer dereference at 0000000c
-[   19.780660] IP: [<c112efcd>] dev_get_drvdata+0xc/0x46
-[   19.780669] *pdpt = 0000000031daf001 *pde = 0000000000000000 
-[   19.780673] Oops: 0000 [#1] SMP 
-[   19.780680] Dumping ftrace buffer:^M
-[   19.780685]    (ftrace buffer empty)
-[   19.780687] Modules linked in: ide_pci_generic firewire_ohci firewire_core evbug crc_itu_t e1000 ide_core i2c_i801 iTCO_wdt
-[   19.780697] 
-[   19.780700] Pid: 346, comm: v4l_id Not tainted 2.6.39-test-02740-gcaebc16-dirty #4                  /DG965MQ
-[   19.780706] EIP: 0060:[<c112efcd>] EFLAGS: 00010202 CPU: 0
-[   19.780709] EIP is at dev_get_drvdata+0xc/0x46
-[   19.780712] EAX: 00000008 EBX: f1e37da4 ECX: 00000000 EDX: 00000000
-[   19.780715] ESI: f1c3f200 EDI: c33ec95c EBP: f1e37d80 ESP: f1e37d80
-[   19.780718]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[   19.780721] Process v4l_id (pid: 346, ti=f1e36000 task=f2bc2a60 task.ti=f1e36000)
-[   19.780723] Stack:
-[   19.780725]  f1e37d8c c117d395 c33ec93c f1e37db4 c117a0f9 00000002 00000000 c1725e54
-[   19.780732]  00000001 00000007 f2918c90 f1c3f200 c33ec95c f1e37dd4 c1789d3d 22222222
-[   19.780740]  22222222 22222222 f2918c90 f1c3f200 f29194f4 f1e37de8 c178d5c4 c1725e54
-[   19.780747] Call Trace:
-[   19.780752]  [<c117d395>] st_kim_ref+0x28/0x41
-[   19.780756]  [<c117a0f9>] st_register+0x29/0x562
-[   19.780761]  [<c1725e54>] ? v4l2_open+0x111/0x1e3
-[   19.780766]  [<c1789d3d>] fmc_prepare+0x97/0x424
-[   19.780770]  [<c178d5c4>] fm_v4l2_fops_open+0x70/0x106
-[   19.780773]  [<c1725e54>] ? v4l2_open+0x111/0x1e3
-[   19.780777]  [<c1725e9b>] v4l2_open+0x158/0x1e3
-[   19.780782]  [<c065173b>] chrdev_open+0x22c/0x276
-[   19.780787]  [<c0647c4e>] __dentry_open+0x35c/0x581
-[   19.780792]  [<c06498f9>] nameidata_to_filp+0x7c/0x96
-[   19.780795]  [<c065150f>] ? cdev_put+0x57/0x57
-[   19.780800]  [<c0660cad>] do_last+0x743/0x9d4
-[   19.780804]  [<c065d5fc>] ? path_init+0x1ee/0x596
-[   19.780808]  [<c0661481>] path_openat+0x10c/0x597
-[   19.780813]  [<c05204a1>] ? trace_hardirqs_off+0x27/0x37
-[   19.780817]  [<c0509651>] ? local_clock+0x78/0xc7
-[   19.780821]  [<c0661945>] do_filp_open+0x39/0xc2
-[   19.780827]  [<c1cabc76>] ? _raw_spin_unlock+0x4c/0x5d^M
-[   19.780831]  [<c0674ccd>] ? alloc_fd+0x19e/0x1b7
-[   19.780836]  [<c06499ca>] do_sys_open+0xb7/0x1bd
-[   19.780840]  [<c0608eea>] ? sys_munmap+0x78/0x8d
-[   19.780844]  [<c0649b06>] sys_open+0x36/0x58
-[   19.780849]  [<c1cb809f>] sysenter_do_call+0x12/0x38
-[   19.780852] Code: d8 2f 20 c3 01 83 15 dc 2f 20 c3 00 f0 ff 00 83 05 e0 2f 20 c3 01 83 15 e4 2f 20 c3 00 5d c3 55 89 e5 3e 8d 74 26 00 85 c0 74 28 <8b> 40 04 83 05 e8 2f 20 c3 01 83 15 ec 2f 20 c3 00 85 c0 74 13 ^M
-[   19.780889] EIP: [<c112efcd>] dev_get_drvdata+0xc/0x46 SS:ESP 0068:f1e37d80
-[   19.780894] CR2: 000000000000000c
-[   19.780898] ---[ end trace e7d1d0f6a2d1d390 ]---
+I got distracted, but I'd like to get back to this thread...
 
-The id of 0 passed to st_kim_ref() found no device, keeping pdev null,
-and causing pdev->dev cause a NULL pointer dereference. After having
-st_kim_ref() check for NULL, the st_unregister() function needed to be
-updated to handle the case that st_gdata was not set by the
-st_kim_ref().
+On Tue, Nov 09, 2010 at 10:37:41PM +0100, Emese Revfy wrote:
+> I will gladly break up my current patch for the next -rc by structure
+> type or maintainer (some preferred it one way or the other) and send
+> it in some time next week so that you can handle the upstream submission
+> process (I will continue to maintain my patch in grsecurity).
+> 
+> There are many structures that can be constified, you can use the following
+> command to find most of them (use it on an allyesconfig kernel preferably):
+> 
+> grep _ops System.map |grep -Ewi 'b|d' | awk '{print $3}' | \
+> while read i ; do cscope -d -L -1 $i | grep -E "struct[ \t]*([^ ]*)[ \t]*" \
+> --color=none -o | awk '{print $2}' ; done |sort -u
+> 
+> Also there are always new instances of structures going in that should have
+> been constified.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Just in my running kernel, I see 56 _ops structures reported from the above
+search. :)
 
+Do you have a new stack of patches I can help usher into the kernel? I
+don't want reinvent the wheel if I don't have to. :)
 
----
- drivers/misc/ti-st/st_core.c |    2 +-
- drivers/misc/ti-st/st_kim.c  |    4 ++++
- 2 files changed, 5 insertions(+), 1 deletion(-)
+> I tried to automate the whole process with Coccinelle but I abandoned it
+> because Coccinelle didn't support recursive header file inclusion at the time.
+> If someone feels like fixing Coccinelle then I would quickly finish my script
+> (it has a few bugs because I could never test it for real), but see the end
+> of the mail for the current version. I think it would be a good idea because
+> it would take a few hours only to generate a constification patch for a new
+> kernel. One thing that probably cannot be automated with Coccinelle is that
+> once the script determines that a given structure cannot be constified, it
+> cannot undo already emitted patches for the given structure so it must be
+> cleaned up by post processing script.
 
-Index: linux-test.git/drivers/misc/ti-st/st_core.c
-===================================================================
---- linux-test.git.orig/drivers/misc/ti-st/st_core.c	2011-05-23 15:30:37.287951016 -0400
-+++ linux-test.git/drivers/misc/ti-st/st_core.c	2011-05-23 16:04:40.422367907 -0400
-@@ -605,7 +605,7 @@ long st_unregister(struct st_proto_s *pr
- 	pr_debug("%s: %d ", __func__, proto->chnl_id);
- 
- 	st_kim_ref(&st_gdata, 0);
--	if (proto->chnl_id >= ST_MAX_CHANNELS) {
-+	if (!st_gdata || proto->chnl_id >= ST_MAX_CHANNELS) {
- 		pr_err(" chnl_id %d not supported", proto->chnl_id);
- 		return -EPROTONOSUPPORT;
- 	}
-Index: linux-test.git/drivers/misc/ti-st/st_kim.c
-===================================================================
---- linux-test.git.orig/drivers/misc/ti-st/st_kim.c	2011-05-23 15:30:37.303951943 -0400
-+++ linux-test.git/drivers/misc/ti-st/st_kim.c	2011-05-23 16:04:40.434368603 -0400
-@@ -604,6 +604,10 @@ void st_kim_ref(struct st_data_s **core_
- 	struct kim_data_s	*kim_gdata;
- 	/* get kim_gdata reference from platform device */
- 	pdev = st_get_plat_device(id);
-+	if (!pdev) {
-+		*core_data = NULL;
-+		return;
-+	}
- 	kim_gdata = dev_get_drvdata(&pdev->dev);
- 	*core_data = kim_gdata->core_data;
- }
+Has there been any update to your Coccinelle script since the addition of
+-recursive_includes?
 
+Thanks!
 
+-Kees
 
+-- 
+Kees Cook
+Ubuntu Security Team
