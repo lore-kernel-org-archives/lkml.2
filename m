@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab1E1RhV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 13:37:21 -0400
-Received: from mail.perches.com ([173.55.12.10]:2226 "EHLO mail.perches.com"
+	id S1756342Ab1E1Rio (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 13:38:44 -0400
+Received: from mail.perches.com ([173.55.12.10]:2232 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755255Ab1E1RhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 13:37:16 -0400
+	id S1755280Ab1E1RhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 13:37:19 -0400
 From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [TRIVIAL PATCH next 11/15] staging: Convert vmalloc/memset to vzalloc
-Date: Sat, 28 May 2011 10:36:31 -0700
-Message-Id: <e88a87ee0642dcc35c51daa24add02e33c53c59e.1306603968.git.joe@perches.com>
+To: Jaya Kumar <jayalk@intworks.biz>, Paul Mundt <lethal@linux-sh.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jiri Kosina <trivial@kernel.org>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: [TRIVIAL PATCH next 12/15] video: Convert vmalloc/memset to vzalloc
+Date: Sat, 28 May 2011 10:36:32 -0700
+Message-Id: <77538de911b8af99f68b7bcfbaaedce8e40db04f.1306603968.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.5.rc3.dirty
 In-Reply-To: <cover.1306603968.git.joe@perches.com>
 References: <cover.1306603968.git.joe@perches.com>
@@ -22,52 +26,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/staging/rts_pstor/ms.c        |    3 +--
- drivers/staging/rts_pstor/rtsx_chip.c |    6 ++----
- 2 files changed, 3 insertions(+), 6 deletions(-)
+ drivers/video/arcfb.c        |    5 ++---
+ drivers/video/broadsheetfb.c |    4 +---
+ drivers/video/hecubafb.c     |    5 ++---
+ drivers/video/metronomefb.c  |    4 +---
+ drivers/video/xen-fbfront.c  |    3 +--
+ 5 files changed, 7 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/staging/rts_pstor/ms.c b/drivers/staging/rts_pstor/ms.c
-index 2e82587..66341df 100644
---- a/drivers/staging/rts_pstor/ms.c
-+++ b/drivers/staging/rts_pstor/ms.c
-@@ -2064,11 +2064,10 @@ static int ms_init_l2p_tbl(struct rtsx_chip *chip)
- 	RTSX_DEBUGP("ms_card->segment_cnt = %d\n", ms_card->segment_cnt);
+diff --git a/drivers/video/arcfb.c b/drivers/video/arcfb.c
+index 3ec4923..86573e2 100644
+--- a/drivers/video/arcfb.c
++++ b/drivers/video/arcfb.c
+@@ -515,11 +515,10 @@ static int __devinit arcfb_probe(struct platform_device *dev)
  
- 	size = ms_card->segment_cnt * sizeof(struct zone_entry);
--	ms_card->segment = (struct zone_entry *)vmalloc(size);
-+	ms_card->segment = vzalloc(size);
- 	if (ms_card->segment == NULL) {
- 		TRACE_RET(chip, STATUS_FAIL);
- 	}
--	memset(ms_card->segment, 0, size);
+ 	/* We need a flat backing store for the Arc's
+ 	   less-flat actual paged framebuffer */
+-	if (!(videomemory = vmalloc(videomemorysize)))
++	videomemory = vmalloc(videomemorysize);
++	if (!videomemory)
+ 		return retval;
  
- 	retval = ms_read_page(chip, ms_card->boot_block, 1);
- 	if (retval != STATUS_SUCCESS) {
-diff --git a/drivers/staging/rts_pstor/rtsx_chip.c b/drivers/staging/rts_pstor/rtsx_chip.c
-index 4e60780..5452069 100644
---- a/drivers/staging/rts_pstor/rtsx_chip.c
-+++ b/drivers/staging/rts_pstor/rtsx_chip.c
-@@ -1596,18 +1596,16 @@ int rtsx_write_cfg_seq(struct rtsx_chip *chip, u8 func, u16 addr, u8 *buf, int l
- 	}
- 	RTSX_DEBUGP("dw_len = %d\n", dw_len);
+-	memset(videomemory, 0, videomemorysize);
+-
+ 	info = framebuffer_alloc(sizeof(struct arcfb_par), &dev->dev);
+ 	if (!info)
+ 		goto err;
+diff --git a/drivers/video/broadsheetfb.c b/drivers/video/broadsheetfb.c
+index ebda687..377dde3 100644
+--- a/drivers/video/broadsheetfb.c
++++ b/drivers/video/broadsheetfb.c
+@@ -1101,12 +1101,10 @@ static int __devinit broadsheetfb_probe(struct platform_device *dev)
  
--	data = (u32 *)vmalloc(dw_len * 4);
-+	data = vzalloc(dw_len * 4);
- 	if (!data) {
- 		TRACE_RET(chip, STATUS_NOMEM);
- 	}
--	memset(data, 0, dw_len * 4);
+ 	videomemorysize = roundup((dpyw*dpyh), PAGE_SIZE);
  
--	mask = (u32 *)vmalloc(dw_len * 4);
-+	mask = vzalloc(dw_len * 4);
- 	if (!mask) {
- 		vfree(data);
- 		TRACE_RET(chip, STATUS_NOMEM);
- 	}
--	memset(mask, 0, dw_len * 4);
+-	videomemory = vmalloc(videomemorysize);
++	videomemory = vzalloc(videomemorysize);
+ 	if (!videomemory)
+ 		goto err_fb_rel;
  
- 	j = 0;
- 	for (i = 0; i < len; i++) {
+-	memset(videomemory, 0, videomemorysize);
+-
+ 	info->screen_base = (char *)videomemory;
+ 	info->fbops = &broadsheetfb_ops;
+ 
+diff --git a/drivers/video/hecubafb.c b/drivers/video/hecubafb.c
+index 1b94643..fbef15f 100644
+--- a/drivers/video/hecubafb.c
++++ b/drivers/video/hecubafb.c
+@@ -231,11 +231,10 @@ static int __devinit hecubafb_probe(struct platform_device *dev)
+ 
+ 	videomemorysize = (DPY_W*DPY_H)/8;
+ 
+-	if (!(videomemory = vmalloc(videomemorysize)))
++	videomemory = vzalloc(videomemorysize);
++	if (!videomemory)
+ 		return retval;
+ 
+-	memset(videomemory, 0, videomemorysize);
+-
+ 	info = framebuffer_alloc(sizeof(struct hecubafb_par), &dev->dev);
+ 	if (!info)
+ 		goto err_fballoc;
+diff --git a/drivers/video/metronomefb.c b/drivers/video/metronomefb.c
+index ed64edf..97d45e5 100644
+--- a/drivers/video/metronomefb.c
++++ b/drivers/video/metronomefb.c
+@@ -628,12 +628,10 @@ static int __devinit metronomefb_probe(struct platform_device *dev)
+ 	/* we need to add a spare page because our csum caching scheme walks
+ 	 * to the end of the page */
+ 	videomemorysize = PAGE_SIZE + (fw * fh);
+-	videomemory = vmalloc(videomemorysize);
++	videomemory = vzalloc(videomemorysize);
+ 	if (!videomemory)
+ 		goto err_fb_rel;
+ 
+-	memset(videomemory, 0, videomemorysize);
+-
+ 	info->screen_base = (char __force __iomem *)videomemory;
+ 	info->fbops = &metronomefb_ops;
+ 
+diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
+index a20218c..beac52f 100644
+--- a/drivers/video/xen-fbfront.c
++++ b/drivers/video/xen-fbfront.c
+@@ -395,10 +395,9 @@ static int __devinit xenfb_probe(struct xenbus_device *dev,
+ 	spin_lock_init(&info->dirty_lock);
+ 	spin_lock_init(&info->resize_lock);
+ 
+-	info->fb = vmalloc(fb_size);
++	info->fb = vzalloc(fb_size);
+ 	if (info->fb == NULL)
+ 		goto error_nomem;
+-	memset(info->fb, 0, fb_size);
+ 
+ 	info->nr_pages = (fb_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 
 -- 
 1.7.5.rc3.dirty
 
