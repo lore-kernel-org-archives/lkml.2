@@ -1,569 +1,604 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab1E1PCb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 11:02:31 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:43229 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753586Ab1E1PC1 (ORCPT
+	id S1753917Ab1E1PQr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 11:16:47 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:6292 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342Ab1E1PQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 11:02:27 -0400
-From: Shawn Guo <shawn.guo@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: grant.likely@secretlab.ca, arnd@arndb.de, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH v2 2/2] ARM: mxs: use gpio-mxs driver by adding platform device
-Date: Sat, 28 May 2011 23:09:34 +0800
-Message-Id: <1306595374-25178-3-git-send-email-shawn.guo@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1306595374-25178-1-git-send-email-shawn.guo@linaro.org>
-References: <1306595374-25178-1-git-send-email-shawn.guo@linaro.org>
+	Sat, 28 May 2011 11:16:45 -0400
+Message-Id: <201105281516.p4SFGfHg024703@farm-0010.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Sat, 28 May 2011 11:13:54 -0400
+Subject: [PATCH v2] arch/tile: add hypervisor-based character driver for SPI flash ROM
+To: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: Greg KH <gregkh@suse.de>, Eric Biederman <ebiederm@aristanetworks.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+In-Reply-To: <201105042004.p44K4kZx011721@farm-0032.internal.tilera.com>
+References: <201105042004.p44K4kZx011721@farm-0032.internal.tilera.com>
+	<4DD6FB9E.2050604@tilera.com>
+	<20110521032102.GD19907@suse.de>
+	<201105211133.50238.arnd@arndb.de>
+	<4DD7C3A7.5010402@tilera.com>
+	<BANLkTim-d-8w1_idg4u302aB3MqTo7q4Sg@mail.gmail.com>
+X-OriginalArrivalTime: 28 May 2011 15:16:44.0824 (UTC) FILETIME=[415C1180:01CC1D4A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It replaces mach-mxs/gpio with gpio-mxs driver by adding platform
-device for drivers/gpio/gpio-mxs, and then remove the mach-mxs/gpio
-driver.
+The first version of this patch proposed an arch/tile/drivers/ directory,
+but the consensus was that this was probably a poor choice for a place to
+group Tilera-specific drivers, and that in any case grouping by platform
+was discouraged, and grouping by function was preferred.
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+This driver has no particular "peer" drivers it can be grouped with.
+It is sort of like an MTD driver for SPI ROM, but it doesn't group well
+with the other MTD devices since it relies on hypervisor virtualization
+to handle many of the irritating aspects of flash ROM management: sector
+awareness, background read for sub-sector writes, bit examination to
+determine whether a sector erase needs to be issued, etc.  It is in fact
+more like an EEPROM driver, but the hypervisor virtualization does require
+a "flush" command if you wish to commit a sector write prior to writing
+to a different sector, and this is sufficiently different from generic
+I2C/SPI EEPROMs that as a result it doesn't group well with them either.
+
+The simple character device is already in use by a range of Tilera
+SPI ROM management tools, as well as by customers.  In addition, using
+the simple character device actually simplifies the userspace tools,
+since they don't need to manage sector erase, background read, etc.
+This both simplifies the code (since we can uniformly manage plain files
+and the SPI ROM) as well as makes the user code portable to non-Linux
+platforms that don't offer the same MTD ioctls.
+
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/arm/mach-mxs/Makefile                      |    2 +-
- arch/arm/mach-mxs/devices.c                     |   11 +
- arch/arm/mach-mxs/devices/Makefile              |    1 +
- arch/arm/mach-mxs/devices/platform-gpio-mxs.c   |   53 ++++
- arch/arm/mach-mxs/gpio.c                        |  331 -----------------------
- arch/arm/mach-mxs/gpio.h                        |   34 ---
- arch/arm/mach-mxs/include/mach/devices-common.h |    2 +
- arch/arm/mach-mxs/mach-mx28evk.c                |    1 -
- arch/arm/mach-mxs/mm-mx23.c                     |    1 -
- arch/arm/mach-mxs/mm-mx28.c                     |    1 -
- 10 files changed, 68 insertions(+), 369 deletions(-)
- create mode 100644 arch/arm/mach-mxs/devices/platform-gpio-mxs.c
- delete mode 100644 arch/arm/mach-mxs/gpio.c
- delete mode 100644 arch/arm/mach-mxs/gpio.h
+ arch/tile/include/hv/drv_srom_intf.h |   41 +++
+ drivers/char/Kconfig                 |   11 +
+ drivers/char/Makefile                |    2 +
+ drivers/char/tile-srom.c             |  453 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 507 insertions(+), 0 deletions(-)
+ create mode 100644 arch/tile/include/hv/drv_srom_intf.h
+ create mode 100644 drivers/char/tile-srom.c
 
-diff --git a/arch/arm/mach-mxs/Makefile b/arch/arm/mach-mxs/Makefile
-index 58e8923..6c38262 100644
---- a/arch/arm/mach-mxs/Makefile
-+++ b/arch/arm/mach-mxs/Makefile
-@@ -1,5 +1,5 @@
- # Common support
--obj-y := clock.o devices.o gpio.o icoll.o iomux.o system.o timer.o
-+obj-y := clock.o devices.o icoll.o iomux.o system.o timer.o
- 
- obj-$(CONFIG_MXS_OCOTP) += ocotp.o
- obj-$(CONFIG_PM) += pm.o
-diff --git a/arch/arm/mach-mxs/devices.c b/arch/arm/mach-mxs/devices.c
-index cfdb6b2..fe3e847 100644
---- a/arch/arm/mach-mxs/devices.c
-+++ b/arch/arm/mach-mxs/devices.c
-@@ -88,3 +88,14 @@ int __init mxs_add_amba_device(const struct amba_device *dev)
- 
- 	return amba_device_register(adev, &iomem_resource);
- }
+diff --git a/arch/tile/include/hv/drv_srom_intf.h b/arch/tile/include/hv/drv_srom_intf.h
+new file mode 100644
+index 0000000..6395faa
+--- /dev/null
++++ b/arch/tile/include/hv/drv_srom_intf.h
+@@ -0,0 +1,41 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
 +
-+struct device mxs_apbh_bus = {
-+	.init_name	= "mxs_apbh",
-+	.parent         = &platform_bus,
++/**
++ * @file drv_srom_intf.h
++ * Interface definitions for the SPI Flash ROM driver.
++ */
++
++#ifndef _SYS_HV_INCLUDE_DRV_SROM_INTF_H
++#define _SYS_HV_INCLUDE_DRV_SROM_INTF_H
++
++/** Read this offset to get the total device size. */
++#define SROM_TOTAL_SIZE_OFF   0xF0000000
++
++/** Read this offset to get the device sector size. */
++#define SROM_SECTOR_SIZE_OFF  0xF0000004
++
++/** Read this offset to get the device page size. */
++#define SROM_PAGE_SIZE_OFF    0xF0000008
++
++/** Write this offset to flush any pending writes. */
++#define SROM_FLUSH_OFF        0xF1000000
++
++/** Write this offset, plus the byte offset of the start of a sector, to
++ *  erase a sector.  Any write data is ignored, but there must be at least
++ *  one byte of write data.  Only applies when the driver is in MTD mode.
++ */
++#define SROM_ERASE_OFF        0xF2000000
++
++#endif /* _SYS_HV_INCLUDE_DRV_SROM_INTF_H */
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index ad59b4e..d3c84c5 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -616,5 +616,16 @@ config MSM_SMD_PKT
+ 	  Enables userspace clients to read and write to some packet SMD
+ 	  ports via device interface for MSM chipset.
+ 
++config TILE_SROM
++	bool "Character-device access via hypervisor to the Tilera SPI ROM"
++	depends on TILE
++	default y
++	---help---
++	  This device provides character-level read-write access
++	  to the SROM, typically via the "0", "1", "2", and "info"
++	  devices in /dev/srom/.  The Tilera hypervisor makes the
++	  flash device appear much like a simple EEPROM, and knows
++	  how to partition a single ROM for multiple purposes.
++
+ endmenu
+ 
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index 7a00672..32762ba 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -63,3 +63,5 @@ obj-$(CONFIG_RAMOOPS)		+= ramoops.o
+ 
+ obj-$(CONFIG_JS_RTC)		+= js-rtc.o
+ js-rtc-y = rtc.o
++
++obj-$(CONFIG_TILE_SROM)		+= tile-srom.o
+diff --git a/drivers/char/tile-srom.c b/drivers/char/tile-srom.c
+new file mode 100644
+index 0000000..9e03826
+--- /dev/null
++++ b/drivers/char/tile-srom.c
+@@ -0,0 +1,453 @@
++/*
++ * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * SPI Flash ROM driver
++ *
++ * This source code is derived from code provided in "Linux Device
++ * Drivers" by Alessandro Rubini and Jonathan Corbet, published by
++ * O'Reilly & Associates.
++ */
++
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/init.h>
++#include <linux/kernel.h>	/* printk() */
++#include <linux/slab.h>		/* kmalloc() */
++#include <linux/fs.h>		/* everything... */
++#include <linux/errno.h>	/* error codes */
++#include <linux/types.h>	/* size_t */
++#include <linux/proc_fs.h>
++#include <linux/fcntl.h>	/* O_ACCMODE */
++#include <linux/aio.h>
++#include <linux/pagemap.h>
++#include <linux/hugetlb.h>
++#include <linux/uaccess.h>
++#include <hv/hypervisor.h>
++#include <linux/ioctl.h>
++#include <linux/cdev.h>
++#include <linux/delay.h>
++#include <hv/drv_srom_intf.h>
++
++/*
++ * Size of our hypervisor I/O requests.  We break up large transfers
++ * so that we don't spend large uninterrupted spans of time in the
++ * hypervisor.  Erasing an SROM sector takes a significant fraction of
++ * a second, so if we allowed the user to, say, do one I/O to write the
++ * entire ROM, we'd get soft lockup timeouts, or worse.
++ */
++#define SROM_CHUNK_SIZE ((size_t)4096)
++
++/*
++ * When hypervisor is busy (e.g. erasing), poll the status periodically.
++ */
++
++/*
++ * Interval to poll the state in msec
++ */
++#define SROM_WAIT_TRY_INTERVAL 20
++
++/*
++ * Maximum times to poll the state
++ */
++#define SROM_MAX_WAIT_TRY_TIMES 1000
++
++struct srom_dev {
++	struct cdev cdev;		/* Character device structure */
++	int hv_devhdl;			/* Handle for hypervisor device */
++	u32 size;		        /* Size of this device */
++	char *info_string;		/* String returned by the info device
++					   if this is it; NULL otherwise */
++	struct mutex srom_lock;		/* Allow only one accessor at a time */
 +};
 +
-+static int __init mxs_device_init(void)
++static int srom_major;		/* Dynamic major by default */
++static int srom_devs =    4;	/* One per SROM partition plus one info file */
++
++/* Minor number of the info file */
++static inline int srom_info_minor(void)
 +{
-+	return device_register(&mxs_apbh_bus);
++	return srom_devs - 1;
 +}
-+core_initcall(mxs_device_init);
-diff --git a/arch/arm/mach-mxs/devices/Makefile b/arch/arm/mach-mxs/devices/Makefile
-index 324f282..351915c 100644
---- a/arch/arm/mach-mxs/devices/Makefile
-+++ b/arch/arm/mach-mxs/devices/Makefile
-@@ -6,4 +6,5 @@ obj-$(CONFIG_MXS_HAVE_PLATFORM_FLEXCAN) += platform-flexcan.o
- obj-$(CONFIG_MXS_HAVE_PLATFORM_MXS_I2C) += platform-mxs-i2c.o
- obj-$(CONFIG_MXS_HAVE_PLATFORM_MXS_MMC) += platform-mxs-mmc.o
- obj-$(CONFIG_MXS_HAVE_PLATFORM_MXS_PWM) += platform-mxs-pwm.o
-+obj-y += platform-gpio-mxs.o
- obj-$(CONFIG_MXS_HAVE_PLATFORM_MXSFB) += platform-mxsfb.o
-diff --git a/arch/arm/mach-mxs/devices/platform-gpio-mxs.c b/arch/arm/mach-mxs/devices/platform-gpio-mxs.c
-new file mode 100644
-index 0000000..ed0885e
---- /dev/null
-+++ b/arch/arm/mach-mxs/devices/platform-gpio-mxs.c
-@@ -0,0 +1,53 @@
++
++module_param(srom_major, int, 0);
++module_param(srom_devs, int, 0);
++MODULE_AUTHOR("Tilera Corporation");
++MODULE_LICENSE("Dual BSD/GPL");
++
++static struct srom_dev *srom_devices; /* allocated in srom_init */
++
 +/*
-+ * Copyright 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it under
-+ * the terms of the GNU General Public License version 2 as published by the
-+ * Free Software Foundation.
++ * Handle calling the hypervisor and managing EAGAIN/EBUSY.
 + */
-+#include <linux/compiler.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
 +
-+#include <mach/mx23.h>
-+#include <mach/mx28.h>
-+#include <mach/devices-common.h>
-+
-+struct platform_device *__init mxs_add_gpio(
-+	int id, resource_size_t iobase, int irq)
++static ssize_t _srom_read(int hv_devhdl, void *buf,
++			  loff_t off, size_t count)
 +{
-+	struct resource res[] = {
-+		{
-+			.start = iobase,
-+			.end = iobase + SZ_8K - 1,
-+			.flags = IORESOURCE_MEM,
-+		}, {
-+			.start = irq,
-+			.end = irq,
-+			.flags = IORESOURCE_IRQ,
-+		},
-+	};
-+
-+	return platform_device_register_resndata(&mxs_apbh_bus,
-+			"gpio-mxs", id, res, ARRAY_SIZE(res), NULL, 0);
++	int retval, retries = SROM_MAX_WAIT_TRY_TIMES;
++	for (;;) {
++		retval = hv_dev_pread(hv_devhdl, 0, (HV_VirtAddr)buf,
++				      count, off);
++		if (retval >= 0)
++			return retval;
++		if (retval == HV_EAGAIN)
++			continue;
++		if (retval == HV_EBUSY && --retries > 0) {
++			msleep(SROM_WAIT_TRY_INTERVAL);
++			continue;
++		}
++		pr_err("_srom_read: error %d\n", retval);
++		return -EIO;
++	}
 +}
 +
-+static int __init mxs_add_mxs_gpio(void)
++static ssize_t _srom_write(int hv_devhdl, const void *buf,
++			   loff_t off, size_t count)
 +{
-+	if (cpu_is_mx23()) {
-+		mxs_add_gpio(0, MX23_PINCTRL_BASE_ADDR, MX23_INT_GPIO0);
-+		mxs_add_gpio(1, MX23_PINCTRL_BASE_ADDR, MX23_INT_GPIO1);
-+		mxs_add_gpio(2, MX23_PINCTRL_BASE_ADDR, MX23_INT_GPIO2);
++	int retval, retries = SROM_MAX_WAIT_TRY_TIMES;
++	for (;;) {
++		retval = hv_dev_pwrite(hv_devhdl, 0, (HV_VirtAddr)buf,
++				       count, off);
++		if (retval >= 0)
++			return retval;
++		if (retval == HV_EAGAIN)
++			continue;
++		if (retval == HV_EBUSY && --retries > 0) {
++			msleep(SROM_WAIT_TRY_INTERVAL);
++			continue;
++		}
++		pr_err("_srom_write: error %d\n", retval);
++		return -EIO;
 +	}
-+
-+	if (cpu_is_mx28()) {
-+		mxs_add_gpio(0, MX28_PINCTRL_BASE_ADDR, MX28_INT_GPIO0);
-+		mxs_add_gpio(1, MX28_PINCTRL_BASE_ADDR, MX28_INT_GPIO1);
-+		mxs_add_gpio(2, MX28_PINCTRL_BASE_ADDR, MX28_INT_GPIO2);
-+		mxs_add_gpio(3, MX28_PINCTRL_BASE_ADDR, MX28_INT_GPIO3);
-+		mxs_add_gpio(4, MX28_PINCTRL_BASE_ADDR, MX28_INT_GPIO4);
-+	}
-+
-+	return 0;
 +}
-+postcore_initcall(mxs_add_mxs_gpio);
-diff --git a/arch/arm/mach-mxs/gpio.c b/arch/arm/mach-mxs/gpio.c
-deleted file mode 100644
-index 2c950fe..0000000
---- a/arch/arm/mach-mxs/gpio.c
-+++ /dev/null
-@@ -1,331 +0,0 @@
--/*
-- * MXC GPIO support. (c) 2008 Daniel Mack <daniel@caiaq.de>
-- * Copyright 2008 Juergen Beisert, kernel@pengutronix.de
-- *
-- * Based on code from Freescale,
-- * Copyright (C) 2004-2010 Freescale Semiconductor, Inc. All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or
-- * modify it under the terms of the GNU General Public License
-- * as published by the Free Software Foundation; either version 2
-- * of the License, or (at your option) any later version.
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-- * MA  02110-1301, USA.
-- */
--
--#include <linux/init.h>
--#include <linux/interrupt.h>
--#include <linux/io.h>
--#include <linux/irq.h>
--#include <linux/gpio.h>
--#include <mach/mx23.h>
--#include <mach/mx28.h>
--#include <asm-generic/bug.h>
--
--#include "gpio.h"
--
--static struct mxs_gpio_port *mxs_gpio_ports;
--static int gpio_table_size;
--
--#define PINCTRL_DOUT(n)		((cpu_is_mx23() ? 0x0500 : 0x0700) + (n) * 0x10)
--#define PINCTRL_DIN(n)		((cpu_is_mx23() ? 0x0600 : 0x0900) + (n) * 0x10)
--#define PINCTRL_DOE(n)		((cpu_is_mx23() ? 0x0700 : 0x0b00) + (n) * 0x10)
--#define PINCTRL_PIN2IRQ(n)	((cpu_is_mx23() ? 0x0800 : 0x1000) + (n) * 0x10)
--#define PINCTRL_IRQEN(n)	((cpu_is_mx23() ? 0x0900 : 0x1100) + (n) * 0x10)
--#define PINCTRL_IRQLEV(n)	((cpu_is_mx23() ? 0x0a00 : 0x1200) + (n) * 0x10)
--#define PINCTRL_IRQPOL(n)	((cpu_is_mx23() ? 0x0b00 : 0x1300) + (n) * 0x10)
--#define PINCTRL_IRQSTAT(n)	((cpu_is_mx23() ? 0x0c00 : 0x1400) + (n) * 0x10)
--
--#define GPIO_INT_FALL_EDGE	0x0
--#define GPIO_INT_LOW_LEV	0x1
--#define GPIO_INT_RISE_EDGE	0x2
--#define GPIO_INT_HIGH_LEV	0x3
--#define GPIO_INT_LEV_MASK	(1 << 0)
--#define GPIO_INT_POL_MASK	(1 << 1)
--
--/* Note: This driver assumes 32 GPIOs are handled in one register */
--
--static void clear_gpio_irqstatus(struct mxs_gpio_port *port, u32 index)
--{
--	__mxs_clrl(1 << index, port->base + PINCTRL_IRQSTAT(port->id));
--}
--
--static void set_gpio_irqenable(struct mxs_gpio_port *port, u32 index,
--				int enable)
--{
--	if (enable) {
--		__mxs_setl(1 << index, port->base + PINCTRL_IRQEN(port->id));
--		__mxs_setl(1 << index, port->base + PINCTRL_PIN2IRQ(port->id));
--	} else {
--		__mxs_clrl(1 << index, port->base + PINCTRL_IRQEN(port->id));
--	}
--}
--
--static void mxs_gpio_ack_irq(struct irq_data *d)
--{
--	u32 gpio = irq_to_gpio(d->irq);
--	clear_gpio_irqstatus(&mxs_gpio_ports[gpio / 32], gpio & 0x1f);
--}
--
--static void mxs_gpio_mask_irq(struct irq_data *d)
--{
--	u32 gpio = irq_to_gpio(d->irq);
--	set_gpio_irqenable(&mxs_gpio_ports[gpio / 32], gpio & 0x1f, 0);
--}
--
--static void mxs_gpio_unmask_irq(struct irq_data *d)
--{
--	u32 gpio = irq_to_gpio(d->irq);
--	set_gpio_irqenable(&mxs_gpio_ports[gpio / 32], gpio & 0x1f, 1);
--}
--
--static int mxs_gpio_get(struct gpio_chip *chip, unsigned offset);
--
--static int mxs_gpio_set_irq_type(struct irq_data *d, unsigned int type)
--{
--	u32 gpio = irq_to_gpio(d->irq);
--	u32 pin_mask = 1 << (gpio & 31);
--	struct mxs_gpio_port *port = &mxs_gpio_ports[gpio / 32];
--	void __iomem *pin_addr;
--	int edge;
--
--	switch (type) {
--	case IRQ_TYPE_EDGE_RISING:
--		edge = GPIO_INT_RISE_EDGE;
--		break;
--	case IRQ_TYPE_EDGE_FALLING:
--		edge = GPIO_INT_FALL_EDGE;
--		break;
--	case IRQ_TYPE_LEVEL_LOW:
--		edge = GPIO_INT_LOW_LEV;
--		break;
--	case IRQ_TYPE_LEVEL_HIGH:
--		edge = GPIO_INT_HIGH_LEV;
--		break;
--	default:
--		return -EINVAL;
--	}
--
--	/* set level or edge */
--	pin_addr = port->base + PINCTRL_IRQLEV(port->id);
--	if (edge & GPIO_INT_LEV_MASK)
--		__mxs_setl(pin_mask, pin_addr);
--	else
--		__mxs_clrl(pin_mask, pin_addr);
--
--	/* set polarity */
--	pin_addr = port->base + PINCTRL_IRQPOL(port->id);
--	if (edge & GPIO_INT_POL_MASK)
--		__mxs_setl(pin_mask, pin_addr);
--	else
--		__mxs_clrl(pin_mask, pin_addr);
--
--	clear_gpio_irqstatus(port, gpio & 0x1f);
--
--	return 0;
--}
--
--/* MXS has one interrupt *per* gpio port */
--static void mxs_gpio_irq_handler(u32 irq, struct irq_desc *desc)
--{
--	u32 irq_stat;
--	struct mxs_gpio_port *port = (struct mxs_gpio_port *)irq_get_handler_data(irq);
--	u32 gpio_irq_no_base = port->virtual_irq_start;
--
--	desc->irq_data.chip->irq_ack(&desc->irq_data);
--
--	irq_stat = __raw_readl(port->base + PINCTRL_IRQSTAT(port->id)) &
--			__raw_readl(port->base + PINCTRL_IRQEN(port->id));
--
--	while (irq_stat != 0) {
--		int irqoffset = fls(irq_stat) - 1;
--		generic_handle_irq(gpio_irq_no_base + irqoffset);
--		irq_stat &= ~(1 << irqoffset);
--	}
--}
--
--/*
-- * Set interrupt number "irq" in the GPIO as a wake-up source.
-- * While system is running, all registered GPIO interrupts need to have
-- * wake-up enabled. When system is suspended, only selected GPIO interrupts
-- * need to have wake-up enabled.
-- * @param  irq          interrupt source number
-- * @param  enable       enable as wake-up if equal to non-zero
-- * @return       This function returns 0 on success.
-- */
--static int mxs_gpio_set_wake_irq(struct irq_data *d, unsigned int enable)
--{
--	u32 gpio = irq_to_gpio(d->irq);
--	u32 gpio_idx = gpio & 0x1f;
--	struct mxs_gpio_port *port = &mxs_gpio_ports[gpio / 32];
--
--	if (enable) {
--		if (port->irq_high && (gpio_idx >= 16))
--			enable_irq_wake(port->irq_high);
--		else
--			enable_irq_wake(port->irq);
--	} else {
--		if (port->irq_high && (gpio_idx >= 16))
--			disable_irq_wake(port->irq_high);
--		else
--			disable_irq_wake(port->irq);
--	}
--
--	return 0;
--}
--
--static struct irq_chip gpio_irq_chip = {
--	.name = "mxs gpio",
--	.irq_ack = mxs_gpio_ack_irq,
--	.irq_mask = mxs_gpio_mask_irq,
--	.irq_unmask = mxs_gpio_unmask_irq,
--	.irq_set_type = mxs_gpio_set_irq_type,
--	.irq_set_wake = mxs_gpio_set_wake_irq,
--};
--
--static void mxs_set_gpio_direction(struct gpio_chip *chip, unsigned offset,
--				int dir)
--{
--	struct mxs_gpio_port *port =
--		container_of(chip, struct mxs_gpio_port, chip);
--	void __iomem *pin_addr = port->base + PINCTRL_DOE(port->id);
--
--	if (dir)
--		__mxs_setl(1 << offset, pin_addr);
--	else
--		__mxs_clrl(1 << offset, pin_addr);
--}
--
--static int mxs_gpio_get(struct gpio_chip *chip, unsigned offset)
--{
--	struct mxs_gpio_port *port =
--		container_of(chip, struct mxs_gpio_port, chip);
--
--	return (__raw_readl(port->base + PINCTRL_DIN(port->id)) >> offset) & 1;
--}
--
--static void mxs_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
--{
--	struct mxs_gpio_port *port =
--		container_of(chip, struct mxs_gpio_port, chip);
--	void __iomem *pin_addr = port->base + PINCTRL_DOUT(port->id);
--
--	if (value)
--		__mxs_setl(1 << offset, pin_addr);
--	else
--		__mxs_clrl(1 << offset, pin_addr);
--}
--
--static int mxs_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
--{
--	struct mxs_gpio_port *port =
--		container_of(chip, struct mxs_gpio_port, chip);
--
--	return port->virtual_irq_start + offset;
--}
--
--static int mxs_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
--{
--	mxs_set_gpio_direction(chip, offset, 0);
--	return 0;
--}
--
--static int mxs_gpio_direction_output(struct gpio_chip *chip,
--				     unsigned offset, int value)
--{
--	mxs_gpio_set(chip, offset, value);
--	mxs_set_gpio_direction(chip, offset, 1);
--	return 0;
--}
--
--int __init mxs_gpio_init(struct mxs_gpio_port *port, int cnt)
--{
--	int i, j;
--
--	/* save for local usage */
--	mxs_gpio_ports = port;
--	gpio_table_size = cnt;
--
--	pr_info("MXS GPIO hardware\n");
--
--	for (i = 0; i < cnt; i++) {
--		/* disable the interrupt and clear the status */
--		__raw_writel(0, port[i].base + PINCTRL_PIN2IRQ(i));
--		__raw_writel(0, port[i].base + PINCTRL_IRQEN(i));
--
--		/* clear address has to be used to clear IRQSTAT bits */
--		__mxs_clrl(~0U, port[i].base + PINCTRL_IRQSTAT(i));
--
--		for (j = port[i].virtual_irq_start;
--			j < port[i].virtual_irq_start + 32; j++) {
--			irq_set_chip_and_handler(j, &gpio_irq_chip,
--						 handle_level_irq);
--			set_irq_flags(j, IRQF_VALID);
--		}
--
--		/* setup one handler for each entry */
--		irq_set_chained_handler(port[i].irq, mxs_gpio_irq_handler);
--		irq_set_handler_data(port[i].irq, &port[i]);
--
--		/* register gpio chip */
--		port[i].chip.direction_input = mxs_gpio_direction_input;
--		port[i].chip.direction_output = mxs_gpio_direction_output;
--		port[i].chip.get = mxs_gpio_get;
--		port[i].chip.set = mxs_gpio_set;
--		port[i].chip.to_irq = mxs_gpio_to_irq;
--		port[i].chip.base = i * 32;
--		port[i].chip.ngpio = 32;
--
--		/* its a serious configuration bug when it fails */
--		BUG_ON(gpiochip_add(&port[i].chip) < 0);
--	}
--
--	return 0;
--}
--
--#define MX23_GPIO_BASE	MX23_IO_ADDRESS(MX23_PINCTRL_BASE_ADDR)
--#define MX28_GPIO_BASE	MX28_IO_ADDRESS(MX28_PINCTRL_BASE_ADDR)
--
--#define DEFINE_MXS_GPIO_PORT(_base, _irq, _id)				\
--	{								\
--		.chip.label = "gpio-" #_id,				\
--		.id = _id,						\
--		.irq = _irq,						\
--		.base = _base,						\
--		.virtual_irq_start = MXS_GPIO_IRQ_START + (_id) * 32,	\
--	}
--
--#ifdef CONFIG_SOC_IMX23
--static struct mxs_gpio_port mx23_gpio_ports[] = {
--	DEFINE_MXS_GPIO_PORT(MX23_GPIO_BASE, MX23_INT_GPIO0, 0),
--	DEFINE_MXS_GPIO_PORT(MX23_GPIO_BASE, MX23_INT_GPIO1, 1),
--	DEFINE_MXS_GPIO_PORT(MX23_GPIO_BASE, MX23_INT_GPIO2, 2),
--};
--
--int __init mx23_register_gpios(void)
--{
--	return mxs_gpio_init(mx23_gpio_ports, ARRAY_SIZE(mx23_gpio_ports));
--}
--#endif
--
--#ifdef CONFIG_SOC_IMX28
--static struct mxs_gpio_port mx28_gpio_ports[] = {
--	DEFINE_MXS_GPIO_PORT(MX28_GPIO_BASE, MX28_INT_GPIO0, 0),
--	DEFINE_MXS_GPIO_PORT(MX28_GPIO_BASE, MX28_INT_GPIO1, 1),
--	DEFINE_MXS_GPIO_PORT(MX28_GPIO_BASE, MX28_INT_GPIO2, 2),
--	DEFINE_MXS_GPIO_PORT(MX28_GPIO_BASE, MX28_INT_GPIO3, 3),
--	DEFINE_MXS_GPIO_PORT(MX28_GPIO_BASE, MX28_INT_GPIO4, 4),
--};
--
--int __init mx28_register_gpios(void)
--{
--	return mxs_gpio_init(mx28_gpio_ports, ARRAY_SIZE(mx28_gpio_ports));
--}
--#endif
-diff --git a/arch/arm/mach-mxs/gpio.h b/arch/arm/mach-mxs/gpio.h
-deleted file mode 100644
-index 005bb06..0000000
---- a/arch/arm/mach-mxs/gpio.h
-+++ /dev/null
-@@ -1,34 +0,0 @@
--/*
-- * Copyright 2007 Freescale Semiconductor, Inc. All Rights Reserved.
-- * Copyright 2008 Juergen Beisert, kernel@pengutronix.de
-- *
-- * This program is free software; you can redistribute it and/or
-- * modify it under the terms of the GNU General Public License
-- * as published by the Free Software Foundation; either version 2
-- * of the License, or (at your option) any later version.
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-- * MA  02110-1301, USA.
-- */
--
--#ifndef __MXS_GPIO_H__
--#define __MXS_GPIO_H__
--
--struct mxs_gpio_port {
--	void __iomem *base;
--	int id;
--	int irq;
--	int irq_high;
--	int virtual_irq_start;
--	struct gpio_chip chip;
--};
--
--int mxs_gpio_init(struct mxs_gpio_port*, int);
--
--#endif /* __MXS_GPIO_H__ */
-diff --git a/arch/arm/mach-mxs/include/mach/devices-common.h b/arch/arm/mach-mxs/include/mach/devices-common.h
-index 7a37469..812d7a8 100644
---- a/arch/arm/mach-mxs/include/mach/devices-common.h
-+++ b/arch/arm/mach-mxs/include/mach/devices-common.h
-@@ -11,6 +11,8 @@
- #include <linux/init.h>
- #include <linux/amba/bus.h>
- 
-+extern struct device mxs_apbh_bus;
 +
- struct platform_device *mxs_add_platform_device_dmamask(
- 		const char *name, int id,
- 		const struct resource *res, unsigned int num_resources,
-diff --git a/arch/arm/mach-mxs/mach-mx28evk.c b/arch/arm/mach-mxs/mach-mx28evk.c
-index eacdc6b..56767a5 100644
---- a/arch/arm/mach-mxs/mach-mx28evk.c
-+++ b/arch/arm/mach-mxs/mach-mx28evk.c
-@@ -26,7 +26,6 @@
- #include <mach/iomux-mx28.h>
- 
- #include "devices-mx28.h"
--#include "gpio.h"
- 
- #define MX28EVK_FLEXCAN_SWITCH	MXS_GPIO_NR(2, 13)
- #define MX28EVK_FEC_PHY_POWER	MXS_GPIO_NR(2, 15)
-diff --git a/arch/arm/mach-mxs/mm-mx23.c b/arch/arm/mach-mxs/mm-mx23.c
-index 5148cd6..1b2345a 100644
---- a/arch/arm/mach-mxs/mm-mx23.c
-+++ b/arch/arm/mach-mxs/mm-mx23.c
-@@ -41,5 +41,4 @@ void __init mx23_map_io(void)
- void __init mx23_init_irq(void)
- {
- 	icoll_init_irq();
--	mx23_register_gpios();
- }
-diff --git a/arch/arm/mach-mxs/mm-mx28.c b/arch/arm/mach-mxs/mm-mx28.c
-index 7e4cea3..b6e18dd 100644
---- a/arch/arm/mach-mxs/mm-mx28.c
-+++ b/arch/arm/mach-mxs/mm-mx28.c
-@@ -41,5 +41,4 @@ void __init mx28_map_io(void)
- void __init mx28_init_irq(void)
- {
- 	icoll_init_irq();
--	mx28_register_gpios();
- }
++/**
++ * srom_open() - Device open routine.
++ * @inode: Inode for this device.
++ * @filp: File for this specific open of the device.
++ *
++ * Returns zero, or an error code.
++ */
++static int srom_open(struct inode *inode, struct file *filp)
++{
++	struct srom_dev *dev;
++
++	/* Find the device */
++	dev = container_of(inode->i_cdev, struct srom_dev, cdev);
++
++	/* Now open the hypervisor device if we haven't already. */
++	if (dev->hv_devhdl == 0) {
++		char buf[20];
++		int instance = iminor(inode);
++		if (instance != srom_info_minor()) {
++			sprintf(buf, "srom/0/%d", instance);
++			dev->hv_devhdl = hv_dev_open((HV_VirtAddr)buf, 0);
++			if (dev->hv_devhdl > 0) {
++				dev->size = 0;
++				if (mutex_lock_interruptible(&dev->srom_lock))
++					return -ERESTARTSYS;
++				_srom_read(dev->hv_devhdl, &dev->size,
++					   SROM_TOTAL_SIZE_OFF,
++					   sizeof(dev->size));
++				mutex_unlock(&dev->srom_lock);
++				i_size_write(inode, dev->size);
++			}
++		} else {
++			u32 sector_size = 0;
++			u32 page_size = 0;
++
++			sprintf(buf, "srom/0/0");
++			dev->hv_devhdl = hv_dev_open((HV_VirtAddr)buf, 0);
++			if (dev->hv_devhdl > 0) {
++				static const int info_string_size = 80;
++
++				if (mutex_lock_interruptible(&dev->srom_lock))
++					return -ERESTARTSYS;
++				_srom_read(dev->hv_devhdl, &sector_size,
++					   SROM_SECTOR_SIZE_OFF,
++					   sizeof(sector_size));
++				_srom_read(dev->hv_devhdl, &page_size,
++					   SROM_PAGE_SIZE_OFF,
++					   sizeof(page_size));
++				mutex_unlock(&dev->srom_lock);
++
++				dev->info_string = kmalloc(info_string_size,
++							GFP_KERNEL);
++				snprintf(dev->info_string, info_string_size,
++					"sector_size: %d\npage_size: %d\n",
++					sector_size, page_size);
++			}
++		}
++	}
++
++	/* If we tried and failed to open it, fail. */
++	if (dev->hv_devhdl < 0) {
++		switch (dev->hv_devhdl)	{
++		case HV_ENODEV:
++			return -ENODEV;
++		default:
++			return (ssize_t)dev->hv_devhdl;
++		}
++	}
++
++	filp->private_data = dev;
++
++	return 0;          /* success */
++}
++
++
++/**
++ * srom_release() - Device release routine.
++ * @inode: Inode for this device.
++ * @filp: File for this specific open of the device.
++ *
++ * Returns zero, or an error code.
++ */
++static int srom_release(struct inode *inode, struct file *filp)
++{
++	struct srom_dev *dev = filp->private_data;
++	int retval = 0;
++	char dummy;
++
++	/*
++	 * First we need to make sure we've flushed anything written to
++	 * the ROM.
++	 */
++	if (mutex_lock_interruptible(&dev->srom_lock)) {
++		retval = -ERESTARTSYS;
++		filp->private_data = NULL;
++		return retval;
++	}
++
++	if (dev->hv_devhdl > 0)
++		_srom_write(dev->hv_devhdl, &dummy, SROM_FLUSH_OFF, 1);
++
++	mutex_unlock(&dev->srom_lock);
++	filp->private_data = NULL;
++
++	return retval;
++}
++
++
++/**
++ * srom_read() - Read (control) data from the device.
++ * @filp: File for this specific open of the device.
++ * @buf: User's data buffer.
++ * @count: Number of bytes requested.
++ * @f_pos: File position.
++ *
++ * Returns number of bytes read, or an error code.
++ */
++static ssize_t srom_read(struct file *filp, char __user *buf,
++			 size_t count, loff_t *f_pos)
++{
++	int retval = 0;
++	void *kernbuf;
++	struct srom_dev *dev = filp->private_data;
++
++	if (dev->hv_devhdl < 0)
++		return -EINVAL;
++
++	if (dev->info_string) {
++		int info_len = strlen(dev->info_string);
++		int bytes_avail = info_len - *f_pos;
++		int xfer_len = (bytes_avail < count) ? bytes_avail : count;
++
++		if (xfer_len <= 0)
++			return 0;
++
++		if (copy_to_user(buf, dev->info_string + *f_pos, xfer_len))
++			return -EFAULT;
++		*f_pos += xfer_len;
++		return xfer_len;
++	}
++
++	kernbuf = kmalloc(SROM_CHUNK_SIZE, GFP_KERNEL);
++	if (!kernbuf)
++		return -ENOMEM;
++
++	if (mutex_lock_interruptible(&dev->srom_lock)) {
++		retval = -ERESTARTSYS;
++		kfree(kernbuf);
++		return retval;
++	}
++
++	while (count) {
++		int hv_retval;
++		int bytes_this_pass = min(count, SROM_CHUNK_SIZE);
++
++		hv_retval = _srom_read(dev->hv_devhdl, kernbuf,
++				       *f_pos, bytes_this_pass);
++		if (hv_retval > 0) {
++			if (copy_to_user(buf, kernbuf, hv_retval) != 0) {
++				retval = -EFAULT;
++				break;
++			}
++		} else if (hv_retval <= 0) {
++			if (retval == 0)
++				retval = hv_retval;
++			break;
++		}
++
++		retval += hv_retval;
++		*f_pos += hv_retval;
++		buf += hv_retval;
++		count -= hv_retval;
++	}
++
++	mutex_unlock(&dev->srom_lock);
++	kfree(kernbuf);
++
++	return retval;
++}
++
++/**
++ * srom_write() - Write (control) data to the device.
++ * @filp: File for this specific open of the device.
++ * @buf: User's data buffer.
++ * @count: Number of bytes requested.
++ * @f_pos: File position.
++ *
++ * Returns number of bytes written, or an error code.
++ */
++static ssize_t srom_write(struct file *filp, const char __user *buf,
++			  size_t count, loff_t *f_pos)
++{
++	int retval = 0;
++	void *kernbuf;
++	struct srom_dev *dev = filp->private_data;
++
++	if (dev->hv_devhdl < 0 || dev->info_string)
++		return -EINVAL;
++
++	kernbuf = kmalloc(SROM_CHUNK_SIZE, GFP_KERNEL);
++	if (!kernbuf)
++		return -ENOMEM;
++
++	if (mutex_lock_interruptible(&dev->srom_lock)) {
++		retval = -ERESTARTSYS;
++		kfree(kernbuf);
++		return retval;
++	}
++
++	while (count) {
++		int hv_retval;
++		int bytes_this_pass = min(count, SROM_CHUNK_SIZE);
++
++		if (copy_from_user(kernbuf, buf, bytes_this_pass) != 0) {
++			retval = -EFAULT;
++			break;
++		}
++
++		hv_retval = _srom_write(dev->hv_devhdl, kernbuf,
++					*f_pos, bytes_this_pass);
++		if (hv_retval <= 0) {
++			if (retval == 0)
++				retval = hv_retval;
++			break;
++		}
++
++		retval += hv_retval;
++		*f_pos += hv_retval;
++		buf += hv_retval;
++		count -= hv_retval;
++	}
++
++	mutex_unlock(&dev->srom_lock);
++	kfree(kernbuf);
++
++	return retval;
++}
++
++
++/*
++ * The fops
++ */
++static const struct file_operations srom_fops = {
++	.owner =     THIS_MODULE,
++	.llseek =    generic_file_llseek,
++	.read =	     srom_read,
++	.write =     srom_write,
++	.open =	     srom_open,
++	.release =   srom_release,
++};
++
++/**
++ * srom_setup_cdev() - Set up a device instance in the cdev table.
++ * @dev: Per-device SROM state.
++ * @index: Device to set up.
++ */
++static void srom_setup_cdev(struct srom_dev *dev, int index)
++{
++	int err, devno = MKDEV(srom_major, index);
++
++	cdev_init(&dev->cdev, &srom_fops);
++	dev->cdev.owner = THIS_MODULE;
++	dev->cdev.ops = &srom_fops;
++	err = cdev_add(&dev->cdev, devno, 1);
++	/* Fail gracefully if need be */
++	if (err)
++		pr_notice("Error %d adding srom%d", err, index);
++}
++
++/** srom_init() - Initialize the driver's module. */
++static int srom_init(void)
++{
++	int result, i;
++	dev_t dev = MKDEV(srom_major, 0);
++
++	/*
++	 * Register our major, and accept a dynamic number.
++	 */
++	if (srom_major)
++		result = register_chrdev_region(dev, srom_devs, "srom");
++	else {
++		result = alloc_chrdev_region(&dev, 0, srom_devs, "srom");
++		srom_major = MAJOR(dev);
++	}
++	if (result < 0)
++		return result;
++
++
++	/*
++	 * Allocate the devices -- we can't have them static, as the number
++	 * can be specified at load time.
++	 */
++	srom_devices = kzalloc(srom_devs * sizeof(struct srom_dev),
++			       GFP_KERNEL);
++	if (!srom_devices) {
++		unregister_chrdev_region(dev, srom_devs);
++		return -ENOMEM;
++	}
++	for (i = 0; i < srom_devs; i++) {
++		srom_setup_cdev(srom_devices + i, i);
++		mutex_init(&srom_devices[i].srom_lock);
++	}
++
++	return 0; /* succeed */
++}
++
++/** srom_cleanup() - Clean up the driver's module. */
++static void srom_cleanup(void)
++{
++	int i;
++
++	for (i = 0; i < srom_devs; i++) {
++		cdev_del(&srom_devices[i].cdev);
++		kfree(srom_devices[i].info_string);
++	}
++	kfree(srom_devices);
++	unregister_chrdev_region(MKDEV(srom_major, 0), srom_devs);
++}
++
++module_init(srom_init);
++module_exit(srom_cleanup);
 -- 
-1.7.4.1
+1.6.5.2
 
