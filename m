@@ -1,100 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab1E1Mm2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 08:42:28 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:53553 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab1E1Mm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 08:42:26 -0400
-X-ASG-Debug-ID: 1306586545-03d6a512a8188a0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DE0EDAD.5060108@fusionio.com>
-Date: Sat, 28 May 2011 14:42:21 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Parag Warudkar <parag.lkml@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:   __elv_add_request
- OOPS]
-References: <alpine.DEB.2.02.1105232329040.1910@natty-nar>	 <4DDB8BF6.2000304@fusionio.com>	 <alpine.DEB.2.02.1105242127340.3472@ubuntu-natty>	 <4DDCB1C8.7040708@fusionio.com>	 <alpine.DEB.2.02.1105251416340.3472@ubuntu-natty>	 <BANLkTimZi6rPSA-1OX+ZAh3135SMpDcHKg@mail.gmail.com>	 <4DDD5240.2060308@fusionio.com>	 <BANLkTikSXMZ3a6-e4-k5dV5vHtegxuUL-w@mail.gmail.com>	 <4DDD55D6.1080909@fusionio.com>	 <alpine.DEB.2.02.1105251548420.2742@ubuntu-natty>	 <BANLkTimWPWc4k2_q0KZpmWo9G93UmVWoxA@mail.gmail.com>	 <alpine.DEB.2.02.1105251613500.8972@ubuntu-natty>	 <BANLkTimndXcBJ9wwJrcTt3Pf3vaNVUUtwg@mail.gmail.com>	 <alpine.DEB.2.02.1105251638220.8972@ubuntu-natty>	 <1306356735.1641.61.camel@mulgrave.site>	 <1306468385.4048.73.camel@mulgrave.site>  <4DDF3A07.7040106@fusionio.com> <1306527677.12244.2.camel@mulgrave.site>
-X-ASG-Orig-Subj: Re: [PATCH] SCSI IOCTL: Check for device deletion [was Re:   __elv_add_request
- OOPS]
-In-Reply-To: <1306527677.12244.2.camel@mulgrave.site>
+	id S1753106Ab1E1NJr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 09:09:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33783 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009Ab1E1NJq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 09:09:46 -0400
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+ locks up on ARM
+From: Peter Zijlstra <peterz@infradead.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Ingo Molnar <mingo@elte.hu>, Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Michal Simek <monstr@monstr.eu>
+In-Reply-To: <20110527205240.GT24876@n2100.arm.linux.org.uk>
+References: <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
+	 <1306405979.1200.63.camel@twins>
+	 <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
+	 <1306409575.1200.71.camel@twins> <1306412511.1200.90.camel@twins>
+	 <20110526122623.GA11875@elte.hu>
+	 <20110526123137.GG24876@n2100.arm.linux.org.uk>
+	 <20110526125007.GA27083@elte.hu>
+	 <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com>
+	 <20110527120629.GA32617@elte.hu>
+	 <20110527205240.GT24876@n2100.arm.linux.org.uk>
 Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 28 May 2011 15:13:01 +0200
+Message-ID: <1306588381.2497.481.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1306586545
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.64909
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-27 22:21, James Bottomley wrote:
-> On Fri, 2011-05-27 at 07:43 +0200, Jens Axboe wrote: 
->> On 2011-05-27 05:53, James Bottomley wrote:
->>> On Wed, 2011-05-25 at 15:52 -0500, James Bottomley wrote:
->>>> On Wed, 2011-05-25 at 16:42 -0400, Parag Warudkar wrote:
->>>>> Yeah - that makes sense. By that logic, looks like we can only disallow 
->>>>> for SDEV_DEL (if we decide to do that check here).
->>>>
->>>> I don't think this is the root cause.  I think q is non-NULL but has
->>>> already been released, so we're just getting a NULL deref on the actual
->>>> list head.
->>>>
->>>> Does this fix it?  It adds the refcounting at approximately the correct
->>>> places.  Of course, we'll now be trying elevator operations on an extant
->>>> queue but one whose elevator functions have been destroyed, so there are
->>>> probably additional state guards to place.
->>>>
->>>> James
->>>>
->>>> ---
->>>>
->>>> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
->>>> index 58584dc..44e8ca3 100644
->>>> --- a/drivers/scsi/scsi_scan.c
->>>> +++ b/drivers/scsi/scsi_scan.c
->>>> @@ -297,7 +297,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
->>>>  		kfree(sdev);
->>>>  		goto out;
->>>>  	}
->>>> -
->>>> +	blk_get_queue(sdev->request_queue);
->>>
->>> Apparently we can't do this because blk_[put|get]_queue aren't exported
->>> for use in modules (and SCSI can be modular), so this caused a build
->>> failure in linux-next.
->>
->> I'll just export them.
+On Fri, 2011-05-27 at 21:52 +0100, Russell King - ARM Linux wrote:
+> On Fri, May 27, 2011 at 02:06:29PM +0200, Ingo Molnar wrote:
+> > The expectations are to have irqs off (we are holding the runqueue 
+> > lock if !__ARCH_WANT_INTERRUPTS_ON_CTXSW), so that's not workable i 
+> > suspect.
 > 
-> OK, if you're fine with that, how does this patch look?
+> Just a thought, but we _might_ be able to avoid a lot of this hastle if
+> we had a new arch hook in finish_task_switch(), after finish_lock_switch()
+> returns but before the old MM is dropped.
 
-Outdated :-)
+I'd be more than willing to provide this.
 
-I already merged the export addition:
+> For the new ASID-based switch_mm(), we currently do this:
+> 
+> 1. check ASID validity
+> 2. flush branch predictor
+> 3. set reserved ASID value
+> 4. set new page tables
+> 5. set new ASID value
+> 
+> This will be shortly changed to:
+> 
+> 1. check ASID validity
+> 2. flush branch predictor
+> 3. set swapper_pg_dir tables
+> 4. set new ASID value
+> 5. set new page tables
+> 
+> We could change switch_mm() to only do:
+> 
+> 1. flush branch predictor
+> 2. set swapper_pg_dir tables
+> 3. check ASID validity
+> 4. set new ASID value
+> 
+> At this point, we have no user mappings, and so nothing will be using the
+> ASID at this point.  Then in a new post-finish_lock_switch() arch hook:
+> 
+> 5. check whether we need to do flushing as a result of ASID change
+> 6. set new page tables
+> 
+> I think this may simplify the ASID code.  It needs prototyping out,
+> reviewing and testing, but I think it may work.
+> 
+> And I think it may also be workable with the CPUs which need to flush
+> the caches on context switches - we can postpone their page table
+> switch to this new arch hook too, which will mean we wouldn't require
+> __ARCH_WANT_INTERRUPTS_ON_CTXSW on ARM at all.
+> 
+> Any thoughts (if you've followed what I'm going on about) ?
 
-commit d86e0e83b32bc84600adb0b6ea1fce389b266682
-Author: Jens Axboe <jaxboe@fusionio.com>
-Date:   Fri May 27 07:44:43 2011 +0200
+Yeah, definitely worth a try, you mentioned on IRC the problem of
+detecting if switch_mm() happened in the new arch hook. Since
+switch_mm() gets a @next pointer we can set a TIF flag there and have
+the new arch hook test for that and conditionally perform the required
+work.
 
-    block: export blk_{get,put}_queue()
+Now, supposing we can get ARM to not rely on
+__ARCH_WANT_INTERRUPTS_ON_CTXSW anymore, there's only microblaze left,
+Michal, would a similar scheme work for you? If so we can fully
+deprecate and remove this exception from the scheduler (yay!).
 
-> I can take it through my rc-fixes tree (with your ack), since I'm a bit
-> late on the merge window now.
 
-Only the SCSI bit remains, so add at will. You can add my acked-by to
-that standalone, if you wish.
-
--- 
-Jens Axboe
 
