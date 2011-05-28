@@ -1,209 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab1E1UNu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 16:13:50 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49814 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755516Ab1E1UNt (ORCPT
+	id S1756566Ab1E1UOV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 16:14:21 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:49846 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756193Ab1E1UOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 16:13:49 -0400
-Subject: Re: [PATCH-v5 07/13] iscsi-target: Add iSCSI Login Negotiation +
-	Parameter logic
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
-        hare@suse.de, agrover@redhat.com, michaelc@cs.wisc.edu,
-        bharrosh@panasas.com, akpm@linux-foundation.org, martin.svec@zoner.cz,
-        jxm@risingtidesystems.com, "J.H." <warthog9@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1306607491.5630.45.camel@mulgrave.site>
-References: <1306445587.23461.22.camel@haakon2.linux-iscsi.org>
-	 <1306451068.4048.69.camel@mulgrave.site>
-	 <1306452490.23461.60.camel@haakon2.linux-iscsi.org>
-	 <20110527084752T.fujita.tomonori@lab.ntt.co.jp>
-	 <1306454848.23461.77.camel@haakon2.linux-iscsi.org>
-	 <1306538602.12244.22.camel@mulgrave.site>
-	 <1306543947.23461.313.camel@haakon2.linux-iscsi.org>
-	 <1306607491.5630.45.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Sat, 28 May 2011 13:05:30 -0700
-Message-Id: <1306613130.23461.586.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Sat, 28 May 2011 16:14:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=bFgqFJ9TIETdkeez9GLbijFS40YkMmvd8UG3249D+FmyL1PSWcpqFgkeYR/BVkdVav
+         VBrPPBItgBQ++12Hg/1w==
+Date: Sat, 28 May 2011 13:14:09 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] tmpfs: fix race between truncate and writepage
+Message-ID: <alpine.LSU.2.00.1105281311150.13319@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-05-28 at 13:31 -0500, James Bottomley wrote:
-> On Fri, 2011-05-27 at 17:52 -0700, Nicholas A. Bellinger wrote:
-> > On Fri, 2011-05-27 at 18:23 -0500, James Bottomley wrote:
-> > > On Thu, 2011-05-26 at 17:07 -0700, Nicholas A. Bellinger wrote:
-> > > > On Fri, 2011-05-27 at 08:47 +0900, FUJITA Tomonori wrote:
-> > > > > On Thu, 26 May 2011 16:28:10 -0700
-> > > > > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> > > > > 
-> > > > > > As we have discussed at length over the years, the split needs to be all
-> > > > > > userspace or all kernelspace, and when implementations start doing
-> > > > > > things in-between they quickly get painful to debug, maintain and
-> > > > > > extend.  I have no interest in trying to evolve this further when LIO
-> > > > > 
-> > > > > Sorry, I disagree. As I explained, once user space passes established nexuses
-> > > > > to kernel, kernel handles all. I don't think it's painful.
-> > > > > 
-> > > > > 
-> > > > 
-> > > > Then we are going to have to agree to disgree on this for an individual
-> > > > target endpoint context and being able to manage (via configfs) a
-> > > > complete set of iscsi-target features with native python library code.
-> > > > 
-> > > > As for moving the mainline iscsi-target efforts to a more complex
-> > > > default direction is something that we (speaking as LIO maintainer and
-> > > > on behalf of RisingTide userspace) do not have an interest for an
-> > > > initial merge.  We owe our users a complete set of functional and stable
-> > > > kernel and userspace library+shell, and not an untested design with
-> > > > undetermined time-frame for deployment.
-> > > 
-> > > OK, so I understand the commercial imperatives.  However, when a trusted
-> > > reviewer raises issues, and I check and find myself agreeing, I need
-> > > them addressed to make forward progress.
-> > > 
-> > 
-> > It's more than that.  It's about the future maintainability of the
-> > target kernel code.  Doing this reset to push the entire iSCSI login
-> > into userspace for drivers/target/iscsi/ is technically the wrong
-> > direction.
-> 
-> You've stated this many times, but never actually given an explanation
-> of why.
-> 
+While running fsx on tmpfs with a memhog then swapoff, swapoff was hanging
+(interruptibly), repeatedly failing to locate the owner of a 0xff entry in
+the swap_map.
 
-I have been laying out the technical reasons against this, but these
-have apparently been snipped from my last response.  :(
+Although shmem_writepage() does abandon when it sees incoming page index
+is beyond eof, there was still a window in which shmem_truncate_range()
+could come in between writepage's dropping lock and updating swap_map,
+find the half-completed swap_map entry, and in trying to free it,
+leave it in a state that swap_shmem_alloc() could not correct.
 
-> >    We already have a userspace target, and going down this
-> > direction (again) for iscsi-target is not making forward progress.
-> 
-> This isn't the correct way to look at it.  The choice isn't all in
-> userspace or all in kernel space.  For performance, the key idea is to
-> have all the fast paths in kernel space.  However, login is hardly a
-> fast path.  It's done once at start of day, then occasionally on
-> connection reset.
-> 
-> Moving some code to userspace doesn't mean all has to move.
-> 
+Arguably a bug in __swap_duplicate()'s and swap_entry_free()'s handling
+of the different cases, but easiest to fix by moving swap_shmem_alloc()
+under cover of the lock.
 
-We already completely drive configuration from userspace, and have a
-python object library for doing this all of this so the application
-level developer does not have to care way the underyling configfs layout
-functions or actually looks like.
+More interesting than the bug: it's been there since 2.6.33, why could
+I not see it with earlier kernels?  The mmotm of two weeks ago seems to
+have some magic for generating races, this is just one of three I found.
 
-This is modern kernel/user split that makes the most sense for
-iscsi-target mode and has taken years of effort to achieve, and is what
-I have committed to support to Linus (CC'ed)
+With yesterday's git I first saw this in mainline, bisected in search of
+that magic, but the easy reproducibility evaporated.  Oh well, fix the bug.
 
-Trying to change that model by pushing iSCSI login state machine into
-userspace is an acedemic project, and going to produce poor results
-compared to what we already have.
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: stable@kernel.org
+---
+ mm/shmem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> > > The issue is simple:
-> > > 
-> > >       * We can put all the auth mechanisms in the kernel, so we need a
-> > >         userspace upcall anyway
-> > >       * Since we have to have an upcall, it should be the default path
-> > >         for everything (so it gets well tested).
-> > > 
-> > > Just saying "everything has to be in the kernel because mixed
-> > > user/kernel code is too complex" doesn't fly because we already have a
-> > > growing list of counter examples, some of which were cited.
-> > > 
-> > 
-> > I am not saying that everything has to be in the kernel.  I am saying
-> > that the main iSCSI login state machines that *do* *not* effect
-> > authentication payloads of the iSCSI login process need to be in kernel
-> > for a kernel-level iscsi-target stack in order to properly support the
-> > real-time management of the /sys/kernel/config/target/iscsi/ control
-> > plane.
-> 
-> So what I hear you say is that the login process has to be in-kernel
-> because otherwise we can't control it from configfs.
-> 
-> I don't think this to be true: you can still have a configfs based
-> control plane and just do user space upcalls for the pieces that aren't
-> in-kernel.  I agree with the goal of single control plane, but if
-> configfs is causing us to be inflexible, I think configfs, rather than
-> the design, needs to change.
-> 
-
-Again, it's about consistency with the userspace library and the ability
-to access all of the underlying iscsi-target functionality from an
-object library for application developers, integrators, and test script
-writers.
-
-I understand from your high-level perspective it sounds like pushing
-iSCSI login to userspace does not make any different to how this work
-from the persective of rtslib, but it very much does so.
-
-> > Being able to support the proper shutdown of all outstanding I/O across
-> > N:M mapped iSCSI network portals <-> iSCSI TargetName
-> > +TargetPortalGroupTag endpoints is already not trivial, and wanting to
-> > move existing iscsi_target_login_thread() logic to (multi-threaded..?)
-> > userspace where we now have to sychronize with everything going on in
-> > the kernel is where there is a serious technical problem with what you
-> > are suggesting that is now required for an initial iscsi-target merge.
-> 
-> I really don't see this.  The broad abstract state machine looks like
-> 
-> 
-> |Target Configuration and initialisation|
->    |
->    |      +----------------------------- (relogin)
->    V      V                            |
-> |Login (userspace)| ----> |Operation (Kernel)| -> |Termination|
-> 
-> That's nicely separable and doesn't really involve state
-> synchronisation.  Nothing really says that Termination has to be in
-> userspace (or kernel space).
-> 
-
-Wrong, this is a overly simplfied view of how things actually work.  It
-involves alot of state sychronization.
-
-Working from iscsi_target_nego.c:iscsi_target_locate_portal(), a login
-attempt has to:
-
-*) Locate TargetName (tiqn) via iscsit_get_tiqn_for_login()
-*) Locate TargetPortalGroupTag (conn->tpg) via iscsit_get_tpg_from_np()
-*) Locate NodeACL (se_node_acl) via core_tpg_check_initiator_node_acl()
-
-The three structures that are located reference underlying struct
-config_group objects at tiqn->tiqn_wwn->wwn_group,
-tpg->tpg_se_tpg->tpg_group and se_node_acl->acl_group respectively.
-
-We have to consider that any of these objects may be removed / changed
-via configfs at any time.  That all means sychronization of kernel
-objects if the complete login statemachine is living in userspace.
-
-But that's not even the whole story..  We also have to deal with iSCSI
-session reinstatement during the login process in
-iscsi_target_login.c:iscsi_check_for_session_reinstatement() which needs
-to:
-
-*) Walk the list of active sessions on the endpoint to find a match
-*) If an active session is found, force reinstatement via
-iscsit_stop_session(), and once that is complete call
-iscsit_close_session() to release the session.
-
-The forcing reinstatement involves waiting for all outstanding I/O to
-complete for the active nexus.  Again, this all means sychronization of
-kernel objects if the complete login state machine is living in
-userspace.
-
-This already is by no means trivial code, and pushing this into
-userspace unnecessary complicates everything that is already has to be
-done, with no tangible upside benefit.  
-
---nab
-
-
+--- linux.orig/mm/shmem.c	2011-05-27 19:05:27.000000000 -0700
++++ linux/mm/shmem.c	2011-05-27 19:45:44.194813695 -0700
+@@ -1114,8 +1114,8 @@ static int shmem_writepage(struct page *
+ 		delete_from_page_cache(page);
+ 		shmem_swp_set(info, entry, swap.val);
+ 		shmem_swp_unmap(entry);
+-		spin_unlock(&info->lock);
+ 		swap_shmem_alloc(swap);
++		spin_unlock(&info->lock);
+ 		BUG_ON(page_mapped(page));
+ 		swap_writepage(page, wbc);
+ 		return 0;
