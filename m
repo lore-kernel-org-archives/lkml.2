@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab1E1Rg7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 13:36:59 -0400
-Received: from mail.perches.com ([173.55.12.10]:2185 "EHLO mail.perches.com"
+	id S1755233Ab1E1RhB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 13:37:01 -0400
+Received: from mail.perches.com ([173.55.12.10]:2190 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751971Ab1E1Rgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 13:36:55 -0400
+	id S1753565Ab1E1Rg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 13:36:56 -0400
 From: Joe Perches <joe@perches.com>
-To: linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        drbd-user@lists.linbit.com, dm-devel@redhat.com,
-        linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org,
-        linux-scsi@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
-        codalist@TELEMANN.coda.cs.cmu.edu, reiserfs-devel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.linux-foundation.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, rds-devel@oss.oracle.com
-Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        xfs@oss.sgi.com
-Subject: [TRIVIAL PATCH next 00/15] treewide: Convert vmalloc/memset to vzalloc
-Date: Sat, 28 May 2011 10:36:20 -0700
-Message-Id: <cover.1306603968.git.joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [TRIVIAL PATCH next 01/15] s390: Convert vmalloc/memset to vzalloc
+Date: Sat, 28 May 2011 10:36:21 -0700
+Message-Id: <f40dc6eefbb2cd401aa47970ffe786c6f198ba47.1306603968.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.5.rc3.dirty
+In-Reply-To: <cover.1306603968.git.joe@perches.com>
+References: <cover.1306603968.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resubmittal of patches from November 2010 and a few new ones.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ arch/s390/hypfs/hypfs_diag.c |    3 +--
+ drivers/s390/cio/blacklist.c |    3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-Joe Perches (15):
-  s390: Convert vmalloc/memset to vzalloc
-  x86: Convert vmalloc/memset to vzalloc
-  atm: Convert vmalloc/memset to vzalloc
-  drbd: Convert vmalloc/memset to vzalloc
-  char: Convert vmalloc/memset to vzalloc
-  isdn: Convert vmalloc/memset to vzalloc
-  md: Convert vmalloc/memset to vzalloc
-  media: Convert vmalloc/memset to vzalloc
-  mtd: Convert vmalloc/memset to vzalloc
-  scsi: Convert vmalloc/memset to vzalloc
-  staging: Convert vmalloc/memset to vzalloc
-  video: Convert vmalloc/memset to vzalloc
-  fs: Convert vmalloc/memset to vzalloc
-  mm: Convert vmalloc/memset to vzalloc
-  net: Convert vmalloc/memset to vzalloc
-
- arch/s390/hypfs/hypfs_diag.c           |    3 +--
- arch/x86/mm/pageattr-test.c            |    3 +--
- drivers/atm/idt77252.c                 |   11 ++++++-----
- drivers/atm/lanai.c                    |    3 +--
- drivers/block/drbd/drbd_bitmap.c       |    5 ++---
- drivers/char/agp/backend.c             |    3 +--
- drivers/char/raw.c                     |    3 +--
- drivers/isdn/i4l/isdn_common.c         |    4 ++--
- drivers/isdn/mISDN/dsp_core.c          |    3 +--
- drivers/isdn/mISDN/l1oip_codec.c       |    6 ++----
- drivers/md/dm-log.c                    |    3 +--
- drivers/md/dm-snap-persistent.c        |    3 +--
- drivers/md/dm-table.c                  |    4 +---
- drivers/media/video/videobuf2-dma-sg.c |    8 ++------
- drivers/mtd/mtdswap.c                  |    3 +--
- drivers/s390/cio/blacklist.c           |    3 +--
- drivers/scsi/bfa/bfad.c                |    3 +--
- drivers/scsi/bfa/bfad_debugfs.c        |    8 ++------
- drivers/scsi/cxgbi/libcxgbi.h          |    6 ++----
- drivers/scsi/qla2xxx/qla_attr.c        |    6 ++----
- drivers/scsi/qla2xxx/qla_bsg.c         |    3 +--
- drivers/scsi/scsi_debug.c              |    7 ++-----
- drivers/staging/rts_pstor/ms.c         |    3 +--
- drivers/staging/rts_pstor/rtsx_chip.c  |    6 ++----
- drivers/video/arcfb.c                  |    5 ++---
- drivers/video/broadsheetfb.c           |    4 +---
- drivers/video/hecubafb.c               |    5 ++---
- drivers/video/metronomefb.c            |    4 +---
- drivers/video/xen-fbfront.c            |    3 +--
- fs/coda/coda_linux.h                   |    5 ++---
- fs/reiserfs/journal.c                  |    9 +++------
- fs/reiserfs/resize.c                   |    4 +---
- fs/xfs/linux-2.6/kmem.h                |    7 +------
- mm/page_cgroup.c                       |    3 +--
- net/netfilter/x_tables.c               |    5 ++---
- net/rds/ib_cm.c                        |    6 ++----
- 36 files changed, 57 insertions(+), 113 deletions(-)
-
+diff --git a/arch/s390/hypfs/hypfs_diag.c b/arch/s390/hypfs/hypfs_diag.c
+index 6023c6d..74c8f5e 100644
+--- a/arch/s390/hypfs/hypfs_diag.c
++++ b/arch/s390/hypfs/hypfs_diag.c
+@@ -562,10 +562,9 @@ static int dbfs_d204_create(void **data, void **data_free_ptr, size_t *size)
+ 	void *base;
+ 
+ 	buf_size = PAGE_SIZE * (diag204_buf_pages + 1) + sizeof(d204->hdr);
+-	base = vmalloc(buf_size);
++	base = vzalloc(buf_size);
+ 	if (!base)
+ 		return -ENOMEM;
+-	memset(base, 0, buf_size);
+ 	d204 = page_align_ptr(base + sizeof(d204->hdr)) - sizeof(d204->hdr);
+ 	rc = diag204_do_store(d204->buf, diag204_buf_pages);
+ 	if (rc) {
+diff --git a/drivers/s390/cio/blacklist.c b/drivers/s390/cio/blacklist.c
+index 76058a5..08c6603 100644
+--- a/drivers/s390/cio/blacklist.c
++++ b/drivers/s390/cio/blacklist.c
+@@ -335,10 +335,9 @@ cio_ignore_write(struct file *file, const char __user *user_buf,
+ 		return -EINVAL;
+ 	if (user_len > 65536)
+ 		user_len = 65536;
+-	buf = vmalloc (user_len + 1); /* maybe better use the stack? */
++	buf = vzalloc(user_len + 1); /* maybe better use the stack? */
+ 	if (buf == NULL)
+ 		return -ENOMEM;
+-	memset(buf, 0, user_len + 1);
+ 
+ 	if (strncpy_from_user (buf, user_buf, user_len) < 0) {
+ 		rc = -EFAULT;
 -- 
 1.7.5.rc3.dirty
 
