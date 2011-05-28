@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab1E1SHZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 14:07:25 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:35815 "EHLO e5.ny.us.ibm.com"
+	id S1755274Ab1E1SJG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 14:09:06 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:43756 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754144Ab1E1SHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 14:07:24 -0400
-Subject: Re: [PATCH V6 0/4 net-next] macvtap/vhost TX zero-copy support
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1306441885.5180.52.camel@localhost.localdomain>
-References: <1306440020.5180.47.camel@localhost.localdomain>
-	 <20110526202836.GA1951@redhat.com>
-	 <1306441885.5180.52.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 28 May 2011 11:07:03 -0700
-Message-ID: <1306606023.5180.67.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754487Ab1E1SJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 14:09:05 -0400
+Date: Sat, 28 May 2011 20:08:48 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, peterz@infradead.org, fweisbec@gmail.com,
+        paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH] perf stat: clarify unsupported events from uncounted
+ events
+Message-ID: <20110528180848.GC12530@elte.hu>
+References: <1306515106-11967-1-git-send-email-dsahern@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306515106-11967-1-git-send-email-dsahern@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-05-26 at 13:31 -0700, Shirley Ma wrote:
-> On Thu, 2011-05-26 at 23:28 +0300, Michael S. Tsirkin wrote:
-> > On Thu, May 26, 2011 at 01:00:20PM -0700, Shirley Ma wrote:
-> > > 3. Add sleep in vhost shutting down instead of busy-wait for
-> > outstanding
-> > >    DMAs.
-> > 
-> > I still think this is not much better. We need to use a
-> > completion structure and wait on it instead.
-> > If this gets blocked thinkably a tx watchdog can fire and save us
-> > from blocking forver :) 
+
+* David Ahern <dsahern@gmail.com> wrote:
+
+> After:
 > 
-> Ok, I can add a completion structure here. 
+> perf stat -ddd -- sleep 1
+> 
+>  Performance counter stats for 'sleep 1':
+> 
+>           1.350326 task-clock                #    0.001 CPUs utilized
+>                  2 context-switches          #    0.001 M/sec
+>                  0 CPU-migrations            #    0.000 M/sec
+>                157 page-faults               #    0.116 M/sec
+>             11,986 cycles                    #    0.009 GHz
+>    <not supported> stalled-cycles-frontend
+>    <not supported> stalled-cycles-backend
+>            496,986 instructions              #   41.46  insns per cycle
+>            138,065 branches                  #  102.246 M/sec
+>              7,245 branch-misses             #    5.25% of all branches         [97.60%]
+>      <not counted> L1-dcache-loads
+>      <not counted> L1-dcache-load-misses
+>      <not counted> LLC-loads
+>      <not counted> LLC-load-misses
+>      <not counted> L1-icache-loads
+>      <not counted> L1-icache-load-misses
+>      <not counted> dTLB-loads
+>      <not counted> dTLB-load-misses
+>      <not counted> iTLB-loads
+>      <not counted> iTLB-load-misses
+>      <not counted> L1-dcache-prefetches
+>    <not supported> L1-dcache-prefetch-misses
 
-The code here doesn't block forever during shutdown, it will release all
-outstanding userspace buffers anyway, see vhost_zerocopy_signal_used()
-shutdown case.
+That looks like a really useful distinction!
 
-Thanks
-Shirley
+Thanks,
 
+	Ingo
