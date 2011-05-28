@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750829Ab1E1EOr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 00:14:47 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38695 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab1E1EOp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 00:14:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=x4BZdOmfXGoKKV34ZLNWoDjO5zxTgaRi38AxQevngUvudYe6JGhoCrckSTEpK1zoe0
-         oTaxKh5Wx+E5B+k0THRP7dmnO27H/k0ALbpQv0uvavDA+IOX0otpCy+r6CmC5hoCZfdy
-         m8NaWRSjiHjKrCWzmH5cf49lcbWwhlmn2Yjis=
+	id S1750858Ab1E1ETh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 00:19:37 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:58022 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750715Ab1E1ETg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 00:19:36 -0400
+Date: Fri, 27 May 2011 21:15:23 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
+Subject: [PATCH] acpi: create CONFIG item for debugfs custom_method
+Message-ID: <20110528041523.GD19633@outflux.net>
+References: <20110222193250.GA23913@outflux.net>
 MIME-Version: 1.0
-In-Reply-To: <1306554793.11899.9.camel@gandalf.stny.rr.com>
-References: <1306554793.11899.9.camel@gandalf.stny.rr.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sat, 28 May 2011 00:14:25 -0400
-X-Google-Sender-Auth: 8pJcPq0D7jsfrc73iUPmpD3oEaA
-Message-ID: <BANLkTi=B4p6B3FmDwJ2HHjmAgcKGU0ARgA@mail.gmail.com>
-Subject: Re: [GIT PULL] x86: Put back -pg to tsc.o and add no GCOV to vread_tsc_64.o
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222193250.GA23913@outflux.net>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 11:53 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> Ingo,
->
-> While running ktest randconfig tests on latest Linus's tree, I hit a
-> case where the function graph tracer caused a nasty crash, or even a
-> reboot. Using the ktest git bisect utility, I quickly found that the
-> crash was due to the commit:
->
->  44259b1a x86-64: Move vread_tsc into a new file with sensible options
->
-> I found that it removed the -pg from tsc.o causing accesses to tsc to be
-> traced. The function graph tracer uses the tsc outside its recursive
-> protection and this caused the crash.
+Since /sys/kernel/debug/acpi/custom_method can be used to write arbitrary
+kernel memory (http://jon.oberheide.org/files/american-sign-language.c),
+it should be able to be left out of the kernel for system owners that
+want to be as defensive as possible to potential attacks, even from the
+root user. See as examples: CONFIG_DEVKMEM, CONFIG_STRICT_DEVMEM, and
+/proc/sys/kernel/modules_disabled.
 
-Oops, I didn't think of that.
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+---
+Third time sending this, no response...
+https://lkml.org/lkml/2011/2/22/369
 
->
-> But this was not the only bug. As I had 3 different configs that crashed
-> in my randconfig tests, I tested all three. The first two ran fine with
-> the update of the tsc.o with the -pg option, but the third config failed
-> with the init process taking a segfault in the vread_tsc function.
->
-> That same patch added the vread_tsc_64.o but did not disable GCOV from
-> it. Thomas noticed that GCOV was set in that config and after disabling
-> GCOV, the strange accesses to kernel space in that function went away.
+ drivers/acpi/Kconfig   |   10 ++++++++++
+ drivers/acpi/debugfs.c |    2 ++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
-And that was just an oversight on my part.  Sorry.
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 2aa042a..726b7ea 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -381,6 +381,16 @@ config ACPI_HED
+ 	  which is used to report some hardware errors notified via
+ 	  SCI, mainly the corrected errors.
+ 
++config ACPI_DEBUG_CUSTOM_METHOD
++	bool "Debugging: Custom Method Insertion"
++	depends on DEBUG_FS
++	default n
++	help
++	  This creates the debugfs interface file "acpi/custom_method"
++	  used for loading custom ACPI methods. Note that this allows
++	  arbitrary kernel memory writing by the root user and is not
++	  recommended for normal systems.
++
+ source "drivers/acpi/apei/Kconfig"
+ 
+ endif	# ACPI
+diff --git a/drivers/acpi/debugfs.c b/drivers/acpi/debugfs.c
+index 5df67f1..0240b15 100644
+--- a/drivers/acpi/debugfs.c
++++ b/drivers/acpi/debugfs.c
+@@ -20,6 +20,7 @@ module_param_named(aml_debug_output, acpi_gbl_enable_aml_debug_object,
+ MODULE_PARM_DESC(aml_debug_output,
+ 		 "To enable/disable the ACPI Debug Object output.");
+ 
++#ifdef CONFIG_ACPI_DEBUG_CUSTOM_METHOD
+ /* /sys/kernel/debug/acpi/custom_method */
+ 
+ static ssize_t cm_write(struct file *file, const char __user * user_buf,
+@@ -92,3 +93,4 @@ err:
+ 		debugfs_remove(acpi_dir);
+ 	return -EINVAL;
+ }
++#endif
+-- 
+1.7.2.3
 
-> Steven Rostedt (1):
->      x86: Put back -pg to tsc.o and add no GCOV to vread_tsc_64.o
-
-Looks fine to me.
-
---Andy
+-- 
+Kees Cook
+Ubuntu Security Team
