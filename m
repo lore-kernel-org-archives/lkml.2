@@ -1,116 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757647Ab1E1Aom (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 27 May 2011 20:44:42 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:41896 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757552Ab1E1Aol convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 27 May 2011 20:44:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=A/9iKgwXapBVM4x4d114sgzhYrr6Jkgd1xyB/c9IvABiOsGtSo2SuwimtONqbY4WKf
-         8oFbsOYu3iyJ9qN85k1Q==
+	id S1757708Ab1E1Avl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 27 May 2011 20:51:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54311 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757615Ab1E1Avl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 27 May 2011 20:51:41 -0400
+Message-ID: <4DE046D9.7050700@zytor.com>
+Date: Fri, 27 May 2011 17:50:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1105271618470.9445@chino.kir.corp.google.com>
-References: <1306439537-23706-1-git-send-email-vnagarnaik@google.com>
- <1306519125-19301-1-git-send-email-vnagarnaik@google.com> <alpine.DEB.2.00.1105271618470.9445@chino.kir.corp.google.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Fri, 27 May 2011 17:44:06 -0700
-Message-ID: <BANLkTimfdkpY=9pgEmBZwE3ezCmooEtQTA@mail.gmail.com>
-Subject: Re: [PATCH] trace: Set oom_score_adj to maximum for ring buffer
- allocating process
-To: David Rientjes <rientjes@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org
+To: Olivier Galibert <galibert@pobox.com>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
+        linux-kernel@vger.kernel.org, davej@redhat.com,
+        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
+        adobriyan@gmail.com, penberg@kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+References: <1306269105.21443.20.camel@dan> <201105270018.36835.rjw@sisk.pl> <BANLkTin+Vjhqtv5-N07G9P9_asNQnrnhVg@mail.gmail.com> <20110527170045.GB4356@elte.hu> <1306516230.3339.17.camel@dan> <20110527171611.GE4356@elte.hu> <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com> <20110527174644.GG4356@elte.hu> <BANLkTimGQh7P9O+BEd85Wm5iqzWg5DuYYg@mail.gmail.com> <20110527181724.GA6485@elte.hu> <20110527215123.GA45133@dspnet.fr>
+In-Reply-To: <20110527215123.GA45133@dspnet.fr>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 4:22 PM, David Rientjes <rientjes@google.com> wrote:
-> On Fri, 27 May 2011, Vaibhav Nagarnaik wrote:
->
->> The tracing ring buffer is allocated from kernel memory. While
->> allocating the memory, if OOM happens, the allocating process might not
->> be the one that gets killed, since the ring-buffer memory is not
->> allocated as process memory. Thus random processes might get killed
->> during the allocation.
+On 05/27/2011 02:51 PM, Olivier Galibert wrote:
+> On Fri, May 27, 2011 at 08:17:24PM +0200, Ingo Molnar wrote:
+>>  - A root exploit will still not give away the location of the
+>>    kernel (assuming module loading has been disabled after bootup),
+>>    so a rootkit cannot be installed 'silently' on the system, into
+>>    RAM only, evading most offline-storage-checking tools.
 >>
->> This patch makes sure that the allocating process is considered the most
->> likely oom-kill-able process while the allocating is going on. Thus if
->> oom-killer is invoked because of ring-buffer allocation, it is easier
->> for the ring buffer memory to be freed and save important system
->> processes from being killed.
->>
->> This patch also adds __GFP_NORETRY flag to the ring buffer allocation
->> calls to make it fail more gracefully if the system will not be able to
->> complete the allocation request.
->>
->> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
->
-> Still not sure this is what we want, I'm afraid.
->
-> I like the addition of __GFP_NORETRY, but I don't understand the use of
-> test_set_oom_score_adj() here.  Why can't we use oom_killer_disable(),
-> allocate with __GFP_NORETRY, and then do oom_killer_enable()?
->
-> This prevents other tasks from getting oom killed themselves if they have
-> oom_score_adj of OOM_SCORE_ADJ_MAX and allows the write to fail with
-> -ENOMEM rather then being oom killed out from under us.
->
-> So why is test_set_oom_score_adj() better?
->
+>>    With static linking this is not possible: reading the kernel image
+>>    as root trivially exposes the kernel's location.
+> 
+> There's something I don't get there.  If you managed to escalate your
+> priviledges enough that you have physical ram access, there's a
+> billion things you can do to find the kernel, including vector
+> tracing, pattern matching, looking at the page tables, etc.
+> 
+> What am I missing?
+> 
 
-When I tested this change, I saw that oom-killer can be invoked by any
-process trying to allocate. If the oom_score_adj is not set to MAXIMUM,
-oom-killer will not pick the "echo" process allocating ring buffer
-memory since the memory is not counted against its RSS. This was the
-main reason to use the test_set_oom_score_adj() API.
+Just makes it harder to automate an attack, and more likely that it will
+fail.  It's an arms race, of course.
 
-I saw this API being used in the swapoff() to allocate RAM for the pages
-swapped out and as implemented, it seemed like a similar use case.
-
-This change is not for the case where memory is already constrained. It
-is for the case where the user has specified an invalid amount of memory
-to be allocated while running in a constrained container. We don't want
-to kill random processes while allocation of ring buffer is going on.
-
-By using oom_killer_{enable|disable}, I think you mean setting the
-global variable oom_killer_disabled. Using it will upset the system's
-expectation of memory behavior. When GFP_NORETRY is set for our ring
-buffer allocating process, the oom_killer_disabled is never checked. But
-it would cause NULL's to be returned to other allocating processes which
-might destabilize them and the system. The oom-killer has much better
-success of reclaiming memory by killing the ring buffer allocating
-process at that point.
-
-For the other tasks with OOM_SCORE_ADJ_MAX set, one can argue that they
-had expectation to be killed even if they themselves were not the direct
-cause of the OOM situation.
-
-> The alternative would be to setup an oom notifier for the ring buffer and
-> stop allocating prior to killing a task and return a size that was smaller
-> than what the user requested.
->
-
-I think this gets really complex for the ring buffer allocation
-scenario. I see that using __GFP_NORETRY is great for a graceful
-failure. In the rare case where the allocation is going on and some
-other process invokes oom-killer, stopping the ring buffer allocation
-should be a priority to make sure that the system doesn't get
-de-stabilized. As far as I can see, setting the oom_score_adj to maximum
-is the best way to solve it.
-
-That said, I am open to changing it if Steven and you think using
-oom_killer_disabled is a better solution.
-
-
-
-Vaibhav Nagarnaik
+	-hpa
