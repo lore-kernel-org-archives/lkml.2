@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab1E1N0p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 09:26:45 -0400
-Received: from aspirin.dii.utk.edu ([160.36.0.81]:36819 "EHLO
-	aspirin.dii.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753373Ab1E1N0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 09:26:44 -0400
-Date: Sat, 28 May 2011 09:26:02 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        acme@redhat.com, torvalds@linux-foundation.org
-Subject: Re: perf: definition of a "regression"
-In-Reply-To: <1306578144.1200.1150.camel@twins>
-Message-ID: <alpine.DEB.2.00.1105280918510.27439@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu>  <1306182141.2497.5.camel@laptop>  <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu>  <1306233036.2497.15.camel@laptop>  <alpine.DEB.2.00.1105272332400.9313@cl320.eecs.utk.edu>
- <1306578144.1200.1150.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753538Ab1E1N73 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 09:59:29 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:57248 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753447Ab1E1N71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 09:59:27 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: [PATCH] kgdbts: only use new asm-generic/ptrace.h api when needed
+Date: Sat, 28 May 2011 10:04:25 -0400
+Message-Id: <1306591465-9622-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.5.rc3
+In-Reply-To: <20110527151135.cd6f758a.sfr@canb.auug.org.au>
+References: <20110527151135.cd6f758a.sfr@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 May 2011, Peter Zijlstra wrote:
+The new instruction_pointer_set helper is defined for people who have
+converted to asm-generic/ptrace.h, so don't use it generally unless
+the arch needs it (in which case it has been converted).  This should
+fix building of kgdb tests for arches not yet converted.
 
-> On Fri, 2011-05-27 at 23:38 -0400, Vince Weaver wrote:
-> > on that note (and while trying to document exactly what the ioctls do) it 
-> > seems that a PERF_EVENT_IOC_REFRESH with an argument of anything higher 
-> > than one does not work on kernels 2.6.36 and newer.  The behavior acts
-> > as if 1 was passed, even if you pass in, say, 3.
-> 
-> Urgh, no that should definitely work. Thanks for the test-case, I'll
-> work on that (probably not until Monday though, but who knows).
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ drivers/misc/kgdbts.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-So wait, the two regressions I found in 2.6.37 are WONTFIX because they 
-are too old, even though they break existing userspace code?
+diff --git a/drivers/misc/kgdbts.c b/drivers/misc/kgdbts.c
+index b0c5631..8cebec5 100644
+--- a/drivers/misc/kgdbts.c
++++ b/drivers/misc/kgdbts.c
+@@ -304,7 +304,10 @@ static int check_and_rewind_pc(char *put_str, char *arg)
+ 		return 1;
+ 	}
+ 	/* Readjust the instruction pointer if needed */
+-	instruction_pointer_set(&kgdbts_regs, ip + offset);
++	ip += offset;
++#ifdef GDB_ADJUSTS_BREAK_OFFSET
++	instruction_pointer_set(&kgdbts_regs, ip);
++#endif
+ 	return 0;
+ }
+ 
+-- 
+1.7.5.rc3
 
-And this older regression in 2.6.36 is going to be fixed, even though
-perf, PAPI, and libpfm4 don't trigger the buggy functionality at all?
-
-I think it's time to redefine the PERF_EVENT_IOC_REFRESH ioctl to just
-refresh once (as that's what it actually does on 2.6.36 - 2.6.39) and
-if we need to refresh multiple we should add a new 
-PERF_EVENT_IOC_REFRESH_COUNT ioctl.
-
-I know I am being difficult, but the perf-event ABI is a mess to program 
-for in a backward compatible fashion.
-
-Vince
