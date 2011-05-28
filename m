@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab1E1LY2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 07:24:28 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38141 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630Ab1E1LY1 (ORCPT
+	id S1753347Ab1E1Lmv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 07:42:51 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52058 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752981Ab1E1Lmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 07:24:27 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
-        tytso <tytso@mit.edu>
-Subject: Re: [PATCH 2/4] EXT4: Set NOSEC flag early when there are no xattrs
-In-reply-to: <4DE0BB71.9000303@gmail.com>
-References: <1306536845-24162-1-git-send-email-andi@firstfloor.org> <1306536845-24162-2-git-send-email-andi@firstfloor.org> <4DE0BB71.9000303@gmail.com>
-Date: Sat, 28 May 2011 07:24:08 -0400
-Message-Id: <1306581836-sup-9169@shiny>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090208.4DE0DB64.00CA:SCFSTAT5015188,ss=1,fgs=0
+	Sat, 28 May 2011 07:42:50 -0400
+Date: Sat, 28 May 2011 12:42:44 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, chris.mason@oracle.com,
+        josef@redhat.com, agruen@linbit.com,
+        "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: Re: [PATCH 1/4] Cache xattr security drop check for write
+Message-ID: <20110528114244.GG11521@ZenIV.linux.org.uk>
+References: <1306536845-24162-1-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306536845-24162-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Marco Stornelli's message of 2011-05-28 05:08:01 -0400:
-> Il 28/05/2011 00:54, Andi Kleen ha scritto:
-> > From: Andi Kleen<ak@linux.intel.com>
-> >
-> > This avoids a xattr lookup on every write.
-> >
-> > Cc: tytso@mit.edu
-> > Signed-off-by: Andi Kleen<ak@linux.intel.com>
+On Fri, May 27, 2011 at 03:54:02PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> Are ext2/3 affected too? It seems to me that more or less the xattr 
-> management for the extN series is the same, isn't it?
+> Some recent benchmarking on btrfs showed that a major scaling bottleneck
+> on large systems on btrfs is currently the xattr lookup on every write.
+> 
+> Why xattr lookup on every write I hear you ask?
+> 
+> write wants to drop suid and security related xattrs that could set o
+> capabilities for executables.  To do that it currently looks up
+> security.capability on EVERY write (even for non executables) to decide
+> whether to drop it or not.
 
-Yes, everyone who uses mbcache.
-
--chris
+Hm...
+	a) is_sgid() is a bad name for that - at the very least s/g/x/, since
+anybody would read your variant as "check if it's set-group-id".
+	b) I'd add a helper for filesystems to use, rather than messing
+with the flags directly.
