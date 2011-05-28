@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab1E1EEB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 00:04:01 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25084 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454Ab1E1EEA (ORCPT
+	id S1750829Ab1E1EOr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 00:14:47 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38695 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab1E1EOp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 00:04:00 -0400
-Message-ID: <4DE07413.5050408@kernel.org>
-Date: Fri, 27 May 2011 21:03:31 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Sat, 28 May 2011 00:14:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=x4BZdOmfXGoKKV34ZLNWoDjO5zxTgaRi38AxQevngUvudYe6JGhoCrckSTEpK1zoe0
+         oTaxKh5Wx+E5B+k0THRP7dmnO27H/k0ALbpQv0uvavDA+IOX0otpCy+r6CmC5hoCZfdy
+         m8NaWRSjiHjKrCWzmH5cf49lcbWwhlmn2Yjis=
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        tglx@linutronix.de, mingo@elte.hu
-Subject: Re: [tip:core/rcu] Revert "rcu: Decrease memory-barrier usage based
- on semi-formal proof"
-References: <4DDC21E1.1070502@kernel.org> <4DDC48E3.1060108@kernel.org> <20110525045253.GB2262@linux.vnet.ibm.com> <4DDD7F96.3090408@kernel.org> <20110525223437.GO2341@linux.vnet.ibm.com> <4DDD8775.1000501@kernel.org> <20110526011310.GP2341@linux.vnet.ibm.com> <20110526013029.GA28103@linux.vnet.ibm.com> <BANLkTinC2q6Fjf7=2GZoJ=+c+fzpdwAvuQ@mail.gmail.com> <20110526162802.GC2386@linux.vnet.ibm.com> <20110528010448.GA21955@linux.vnet.ibm.com>
-In-Reply-To: <20110528010448.GA21955@linux.vnet.ibm.com>
+In-Reply-To: <1306554793.11899.9.camel@gandalf.stny.rr.com>
+References: <1306554793.11899.9.camel@gandalf.stny.rr.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sat, 28 May 2011 00:14:25 -0400
+X-Google-Sender-Auth: 8pJcPq0D7jsfrc73iUPmpD3oEaA
+Message-ID: <BANLkTi=B4p6B3FmDwJ2HHjmAgcKGU0ARgA@mail.gmail.com>
+Subject: Re: [GIT PULL] x86: Put back -pg to tsc.o and add no GCOV to vread_tsc_64.o
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090204.4DE0741D.0034,ss=1,fgs=0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2011 06:04 PM, Paul E. McKenney wrote:
-> 
-> And, after having repeatedly shot myself in the foot trying to make
-> an all-singing all-dancing RCU grace-period latency measurement tool,
-> I fell back to simply measuring the RCU grace-period latency during
-> the time that memory_dev_init() is running.  This assumes that the
-> grace periods are started using synchronize_rcu() -- if they are instead
-> being started using call_rcu(), I can adapt to that as well.
-> 
-[   31.635137] cpu_dev_init done
-[   31.635320] Starting RCU latency diagnostics
-[   71.605662] Ending RCU latency diagnostics
-[   71.605924] memory_dev_init done
+On Fri, May 27, 2011 at 11:53 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> Ingo,
+>
+> While running ktest randconfig tests on latest Linus's tree, I hit a
+> case where the function graph tracer caused a nasty crash, or even a
+> reboot. Using the ktest git bisect utility, I quickly found that the
+> crash was due to the commit:
+>
+>  44259b1a x86-64: Move vread_tsc into a new file with sensible options
+>
+> I found that it removed the -pg from tsc.o causing accesses to tsc to be
+> traced. The function graph tracer uses the tsc outside its recursive
+> protection and this caused the crash.
 
+Oops, I didn't think of that.
 
-Thanks
+>
+> But this was not the only bug. As I had 3 different configs that crashed
+> in my randconfig tests, I tested all three. The first two ran fine with
+> the update of the tsc.o with the -pg option, but the third config failed
+> with the init process taking a segfault in the vread_tsc function.
+>
+> That same patch added the vread_tsc_64.o but did not disable GCOV from
+> it. Thomas noticed that GCOV was set in that config and after disabling
+> GCOV, the strange accesses to kernel space in that function went away.
 
-Yinghai
+And that was just an oversight on my part.  Sorry.
+
+> Steven Rostedt (1):
+>      x86: Put back -pg to tsc.o and add no GCOV to vread_tsc_64.o
+
+Looks fine to me.
+
+--Andy
