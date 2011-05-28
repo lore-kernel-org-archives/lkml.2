@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab1E1VLO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 17:11:14 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55095
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751723Ab1E1VLL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 17:11:11 -0400
-Subject: Re: [PATCH] mm: fix page_lock_anon_vma leaving mutex locked
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <alpine.LSU.2.00.1105281317090.13319@sister.anvils>
-References: <alpine.LSU.2.00.1105281317090.13319@sister.anvils>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 28 May 2011 23:14:30 +0200
-Message-ID: <1306617270.2497.516.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756214Ab1E1VXj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 17:23:39 -0400
+Received: from cantor.suse.de ([195.135.220.2]:60146 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751922Ab1E1VXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 17:23:37 -0400
+Date: Sun, 29 May 2011 05:23:47 +0800
+From: Greg KH <gregkh@suse.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Eric Biederman <ebiederm@aristanetworks.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+Subject: Re: [PATCH v2] arch/tile: add hypervisor-based character driver for
+ SPI flash ROM
+Message-ID: <20110528212347.GA11303@suse.de>
+References: <201105042004.p44K4kZx011721@farm-0032.internal.tilera.com>
+ <4DD6FB9E.2050604@tilera.com>
+ <20110521032102.GD19907@suse.de>
+ <201105211133.50238.arnd@arndb.de>
+ <4DD7C3A7.5010402@tilera.com>
+ <BANLkTim-d-8w1_idg4u302aB3MqTo7q4Sg@mail.gmail.com>
+ <201105281516.p4SFGfHg024703@farm-0010.internal.tilera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105281516.p4SFGfHg024703@farm-0010.internal.tilera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-05-28 at 13:20 -0700, Hugh Dickins wrote:
-> On one machine I've been getting hangs, a page fault's anon_vma_prepare()
-> waiting in anon_vma_lock(), other processes waiting for that page's lock.
-> 
-> This is a replay of last year's f18194275c39
-> "mm: fix hang on anon_vma->root->lock".
-> 
-> The new page_lock_anon_vma() places too much faith in its refcount: when
-> it has acquired the mutex_trylock(), it's possible that a racing task in
-> anon_vma_alloc() has just reallocated the struct anon_vma, set refcount
-> to 1, and is about to reset its anon_vma->root.
-> 
-> Fix this by saving anon_vma->root, and relying on the usual page_mapped()
-> check instead of a refcount check: if page is still mapped, the anon_vma
-> is still ours; if page is not still mapped, we're no longer interested.
+On Sat, May 28, 2011 at 11:13:54AM -0400, Chris Metcalf wrote:
+> --- /dev/null
+> +++ b/drivers/char/tile-srom.c
+> @@ -0,0 +1,453 @@
+> +/*
+> + * Copyright 2011 Tilera Corporation. All Rights Reserved.
+> + *
+> + *   This program is free software; you can redistribute it and/or
+> + *   modify it under the terms of the GNU General Public License
+> + *   as published by the Free Software Foundation, version 2.
+> + *
+> + *   This program is distributed in the hope that it will be useful, but
+> + *   WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+> + *   NON INFRINGEMENT.  See the GNU General Public License for
+> + *   more details.
+> + *
+> + * SPI Flash ROM driver
+> + *
+> + * This source code is derived from code provided in "Linux Device
+> + * Drivers" by Alessandro Rubini and Jonathan Corbet, published by
+> + * O'Reilly & Associates.
+> + */
 
-Interesting race.. but can we guarantee that the page didn't get
-remapped meanwhile?
+LDD version 2?  Wow, this driver is old.
 
-The updated comment by page_get_anon_vma() describes the lack of
-serialization against page_remove_rmap() but fails to mention the
-page_add_anon_rmap cases (bad me, I know I checked at the time, but
-can't for the life of me remember what it was now).
+> +MODULE_LICENSE("Dual BSD/GPL");
 
-_IFF_ we are serialized, your patch should suffice, since then
-page_mapped() implies a >0 refcount, if not however, I think we need
-both tests since in that case the page might be mapped again against a
-different anon_vma and our current anon_vma (the one we locked against)
-might have refcount == 0 and already be past the mutex_is_locked() test
-in anon_vma_free(), at which point we're up shit creek since then the
-anon_vma we're returning can disappear the moment we do
-rcu_read_unlock().
+Wait, where did the BSD come from?  You just said it was GPL only above
+in the header of the file?
 
-Or am I delusional due to lack of sleep?
+> +/**
+> + * srom_setup_cdev() - Set up a device instance in the cdev table.
+> + * @dev: Per-device SROM state.
+> + * @index: Device to set up.
+> + */
+> +static void srom_setup_cdev(struct srom_dev *dev, int index)
+> +{
+> +	int err, devno = MKDEV(srom_major, index);
+> +
+> +	cdev_init(&dev->cdev, &srom_fops);
+> +	dev->cdev.owner = THIS_MODULE;
+> +	dev->cdev.ops = &srom_fops;
+> +	err = cdev_add(&dev->cdev, devno, 1);
+> +	/* Fail gracefully if need be */
+> +	if (err)
+> +		pr_notice("Error %d adding srom%d", err, index);
+> +}
 
+As you are only using 1 minor device, why not just use a misc device
+instead?  It's simpler, and you get the sysfs code for free, which you
+forgot to do, so your device node will never show up in userspace :(
+
+thanks,
+
+greg k-h
