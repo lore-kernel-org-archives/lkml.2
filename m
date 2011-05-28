@@ -1,107 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab1E1QlJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 12:41:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55295 "EHLO hera.kernel.org"
+	id S1755364Ab1E1Qlg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 12:41:36 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55306 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754825Ab1E1QlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 12:41:06 -0400
-Date: Sat, 28 May 2011 16:40:55 GMT
+	id S1754978Ab1E1Qlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 12:41:35 -0400
+Date: Sat, 28 May 2011 16:41:24 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-db24d33e08b88e990991760a44d72006a5dc6102@git.kernel.org>
+Message-ID: <tip-dce5855bba5df9e87bb04584d505c1f1b103c652@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110409192141.930282378@chello.nl>
-References: <20110409192141.930282378@chello.nl>
+In-Reply-To: <20110409192141.979862055@chello.nl>
+References: <20110409192141.979862055@chello.nl>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Change and simplify ctx::is_active semantics
-Git-Commit-ID: db24d33e08b88e990991760a44d72006a5dc6102
+Subject: [tip:perf/core] perf: Collect the schedule-in rules in one function
+Git-Commit-ID: dce5855bba5df9e87bb04584d505c1f1b103c652
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 28 May 2011 16:40:55 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 28 May 2011 16:41:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  db24d33e08b88e990991760a44d72006a5dc6102
-Gitweb:     http://git.kernel.org/tip/db24d33e08b88e990991760a44d72006a5dc6102
+Commit-ID:  dce5855bba5df9e87bb04584d505c1f1b103c652
+Gitweb:     http://git.kernel.org/tip/dce5855bba5df9e87bb04584d505c1f1b103c652
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Sat, 9 Apr 2011 21:17:45 +0200
+AuthorDate: Sat, 9 Apr 2011 21:17:46 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sat, 28 May 2011 18:01:17 +0200
+CommitDate: Sat, 28 May 2011 18:01:19 +0200
 
-perf: Change and simplify ctx::is_active semantics
+perf: Collect the schedule-in rules in one function
 
-Instead of tracking if a context is active or not, track which events
-of the context are active. By making it a bitmask of
-EVENT_PINNED|EVENT_FLEXIBLE we can simplify some of the scheduling
-routines since it can avoid adding events that are already active.
+This was scattered out - refactor it into a single function.
+No change in functionality.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110409192141.930282378@chello.nl
+Link: http://lkml.kernel.org/r/20110409192141.979862055@chello.nl
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/events/core.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ kernel/events/core.c |   27 +++++++++++++++------------
+ 1 files changed, 15 insertions(+), 12 deletions(-)
 
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 60b333a..71c2d44 100644
+index 71c2d44..802f3b2 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -1763,8 +1763,9 @@ static void ctx_sched_out(struct perf_event_context *ctx,
- 			  enum event_type_t event_type)
- {
- 	struct perf_event *event;
-+	int is_active = ctx->is_active;
+@@ -1476,6 +1476,18 @@ ctx_sched_in(struct perf_event_context *ctx,
+ 	     enum event_type_t event_type,
+ 	     struct task_struct *task);
  
--	ctx->is_active = 0;
-+	ctx->is_active &= ~event_type;
- 	if (likely(!ctx->nr_events))
- 		return;
- 
-@@ -1774,12 +1775,12 @@ static void ctx_sched_out(struct perf_event_context *ctx,
- 		return;
- 
- 	perf_pmu_disable(ctx->pmu);
--	if (event_type & EVENT_PINNED) {
-+	if ((is_active & EVENT_PINNED) && (event_type & EVENT_PINNED)) {
- 		list_for_each_entry(event, &ctx->pinned_groups, group_entry)
- 			group_sched_out(event, cpuctx, ctx);
- 	}
- 
--	if (event_type & EVENT_FLEXIBLE) {
-+	if ((is_active & EVENT_FLEXIBLE) && (event_type & EVENT_FLEXIBLE)) {
- 		list_for_each_entry(event, &ctx->flexible_groups, group_entry)
- 			group_sched_out(event, cpuctx, ctx);
- 	}
-@@ -2058,8 +2059,9 @@ ctx_sched_in(struct perf_event_context *ctx,
- 	     struct task_struct *task)
- {
- 	u64 now;
-+	int is_active = ctx->is_active;
- 
--	ctx->is_active = 1;
-+	ctx->is_active |= event_type;
- 	if (likely(!ctx->nr_events))
- 		return;
- 
-@@ -2070,11 +2072,11 @@ ctx_sched_in(struct perf_event_context *ctx,
- 	 * First go through the list and put on any pinned groups
- 	 * in order to give them the best chance of going on.
++static void perf_event_sched_in(struct perf_cpu_context *cpuctx,
++				struct perf_event_context *ctx,
++				struct task_struct *task)
++{
++	cpu_ctx_sched_in(cpuctx, EVENT_PINNED, task);
++	if (ctx)
++		ctx_sched_in(ctx, cpuctx, EVENT_PINNED, task);
++	cpu_ctx_sched_in(cpuctx, EVENT_FLEXIBLE, task);
++	if (ctx)
++		ctx_sched_in(ctx, cpuctx, EVENT_FLEXIBLE, task);
++}
++
+ /*
+  * Cross CPU call to install and enable a performance event
+  *
+@@ -1523,12 +1535,7 @@ static int  __perf_install_in_context(void *info)
+ 	/*
+ 	 * Schedule everything back in
  	 */
--	if (event_type & EVENT_PINNED)
-+	if (!(is_active & EVENT_PINNED) && (event_type & EVENT_PINNED))
- 		ctx_pinned_sched_in(ctx, cpuctx);
+-	cpu_ctx_sched_in(cpuctx, EVENT_PINNED, task);
+-	if (task_ctx)
+-		ctx_sched_in(task_ctx, cpuctx, EVENT_PINNED, task);
+-	cpu_ctx_sched_in(cpuctx, EVENT_FLEXIBLE, task);
+-	if (task_ctx)
+-		ctx_sched_in(task_ctx, cpuctx, EVENT_FLEXIBLE, task);
++	perf_event_sched_in(cpuctx, task_ctx, task);
  
- 	/* Then walk through the lower prio flexible groups */
--	if (event_type & EVENT_FLEXIBLE)
-+	if (!(is_active & EVENT_FLEXIBLE) && (event_type & EVENT_FLEXIBLE))
- 		ctx_flexible_sched_in(ctx, cpuctx);
- }
+ 	perf_pmu_enable(cpuctx->ctx.pmu);
+ 	perf_ctx_unlock(cpuctx, task_ctx);
+@@ -2107,9 +2114,7 @@ static void perf_event_context_sched_in(struct perf_event_context *ctx,
+ 	 */
+ 	cpu_ctx_sched_out(cpuctx, EVENT_FLEXIBLE);
  
+-	ctx_sched_in(ctx, cpuctx, EVENT_PINNED, task);
+-	cpu_ctx_sched_in(cpuctx, EVENT_FLEXIBLE, task);
+-	ctx_sched_in(ctx, cpuctx, EVENT_FLEXIBLE, task);
++	perf_event_sched_in(cpuctx, ctx, task);
+ 
+ 	cpuctx->task_ctx = ctx;
+ 
+@@ -2347,9 +2352,7 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
+ 	if (ctx)
+ 		rotate_ctx(ctx);
+ 
+-	cpu_ctx_sched_in(cpuctx, EVENT_FLEXIBLE, current);
+-	if (ctx)
+-		ctx_sched_in(ctx, cpuctx, EVENT_FLEXIBLE, current);
++	perf_event_sched_in(cpuctx, ctx, current);
+ 
+ done:
+ 	if (remove)
