@@ -1,98 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab1E1WAV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 18:00:21 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36300 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab1E1WAS (ORCPT
+	id S1755453Ab1E1WCc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 18:02:32 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:37826 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379Ab1E1WCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 18:00:18 -0400
+	Sat, 28 May 2011 18:02:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=lUKYHGtU5ctajnhirAR8T37RP16w5/Pk464bvqRkVBo+rLgdc6/OxLMY03tjdaCaSM
-         tQ9vU1+wsbd77i+lg+Im3etpA8UEfal0mt37rKVtnKzbyMJsmr0U4cEarD+h1L0s9BQe
-         yxV2Zsire6BifIKJGY3ZXsIZErKrkcpQgOtZM=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=jsvTkNrgMbMOtEg4Y15NwD9tWEm41nC+LntbCOEnSJefrUerEdYNvO0VGeKfuU1C9/
+         5dcsY3v05xNP5OVPScDw==
+Date: Sat, 28 May 2011 15:02:15 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: fix page_lock_anon_vma leaving mutex locked
+In-Reply-To: <1306617270.2497.516.camel@laptop>
+Message-ID: <alpine.LSU.2.00.1105281437320.13942@sister.anvils>
+References: <alpine.LSU.2.00.1105281317090.13319@sister.anvils> <1306617270.2497.516.camel@laptop>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1306488451.2029.107.camel@i7.infradead.org>
-References: <1301005107.2714.113.camel@edumazet-laptop>
-	<AANLkTinv+XGBjbFoK6vpyiDW6gBEBKFjUef+mCAMJU9i@mail.gmail.com>
-	<1301005946.2714.130.camel@edumazet-laptop>
-	<20110324.153623.45921344.davem@davemloft.net>
-	<1301006652.2714.145.camel@edumazet-laptop>
-	<AANLkTi=Xb3KCBKoVCcaVD5iyCtMCAnYaGF_DTeFQ0ays@mail.gmail.com>
-	<AANLkTinh9Li7DGgSqcZ+p9peS5XrHWomerSvKTYwHZ9-@mail.gmail.com>
-	<AANLkTi=hgOcwO8ojQBtmqbROS1qrhm5HCmq7tRxesc=6@mail.gmail.com>
-	<AANLkTinQq=BAVS1FrH80+VukTfAK1OKOkjEH4=gwZkv6@mail.gmail.com>
-	<1306488451.2029.107.camel@i7.infradead.org>
-Date: Sun, 29 May 2011 00:00:17 +0200
-Message-ID: <BANLkTi=8aBj8QRr+RgH=enL1vVuQq61Avg@mail.gmail.com>
-Subject: Re: [PATCH] ipv4: fix fib metrics
-From: Alessandro Suardi <alessandro.suardi@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Hiroyuki Kawakatsu <hkawakat@gmail.com>,
-        Kyle Moffett <kyle@moffetthome.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: multipart/mixed; boundary=90e6ba6e864c04af4504a45d2e1b
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---90e6ba6e864c04af4504a45d2e1b
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Sat, 28 May 2011, Peter Zijlstra wrote:
+> On Sat, 2011-05-28 at 13:20 -0700, Hugh Dickins wrote:
+> > On one machine I've been getting hangs, a page fault's anon_vma_prepare()
+> > waiting in anon_vma_lock(), other processes waiting for that page's lock.
+> > 
+> > This is a replay of last year's f18194275c39
+> > "mm: fix hang on anon_vma->root->lock".
+> > 
+> > The new page_lock_anon_vma() places too much faith in its refcount: when
+> > it has acquired the mutex_trylock(), it's possible that a racing task in
+> > anon_vma_alloc() has just reallocated the struct anon_vma, set refcount
+> > to 1, and is about to reset its anon_vma->root.
+> > 
+> > Fix this by saving anon_vma->root, and relying on the usual page_mapped()
+> > check instead of a refcount check: if page is still mapped, the anon_vma
+> > is still ours; if page is not still mapped, we're no longer interested.
+> 
+> Interesting race.. but can we guarantee that the page didn't get
+> remapped meanwhile?
 
-On Fri, May 27, 2011 at 11:27 AM, David Woodhouse <dwmw2@infradead.org> wro=
-te:
-> On Fri, 2011-03-25 at 02:25 +0100, Alessandro Suardi wrote:
->>
->> ...which didn't take that long - one last bugging question and I'm happi=
-ly
->> =A0off to sleep; does ipid always come in the form of 0x followed by fou=
-r
->> =A0bytes representing hex values ? In a perhaps inelegant but working wa=
-y
->> =A0(I'm now writing through the VPN tunnel),
->>
->> =A0 sed 's/cache//;s/metric \?[0-9]\+ [0-9]\+//g;s/hoplimit
->> [0-9]\+//g;s/ipid 0x....//g'
->>
->> =A0appears to be Work For Me (TM).
->
-> Please could I have a tested patch for vpnc-script?
->
-> It now lives in its own repository at
-> git://, http://git.infradead.org/users/dwmw2/vpnc-scripts.git because
-> it's used by openconnect too, and has had various bug fixes for
-> cross-platform support and IPv6 since it was forked from vpnc.
+Remapped how?  If migrated, then this page will simply be unmapped,
+and another page take its place.
 
-I downloaded the git version and checked - the one I use is the Fedora
- version which seems updated to perhaps two revisions behind git...
- anyway, attaching (in order to not mangle whitespace) the one-liner
- change that I've been using since without issues - to the point that I
- actually forgot having patched the script...
+I see now your comment above page_get_anon_vma(), saying the page might
+have been remapped to a different anon_vma, but how does tha come about?
 
---alessandro
+Oh, are you referring to page_move_anon_rmap()?  Yikes, I wasn't paying
+attention when that came in: in my comfortable little world, once PageAnon
+page->mapping is set, it remains constant until the page is freed.
 
-=A0"There's always a siren singing you to shipwreck"
+That's long been a given, but now I see, not for the last year.
+I'll give some thought to that right now, it's hard to appreciate
+the ramifications.  The page lock is held while that move is made,
+but I believe there's one (perhaps no more) path to page_lock_anon_vma(),
+when checking page_referenced(), when the page is not necessarily locked.
 
-=A0=A0 (Radiohead, "There There")
+But I'm not even sure if you're referring to page_move_anon_rmap(),
+or something else?
 
---90e6ba6e864c04af4504a45d2e1b
-Content-Type: application/octet-stream; name="vpnc-script.diff"
-Content-Disposition: attachment; filename="vpnc-script.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_go93ri2z0
+> 
+> The updated comment by page_get_anon_vma() describes the lack of
+> serialization against page_remove_rmap() but fails to mention the
+> page_add_anon_rmap cases (bad me, I know I checked at the time, but
+> can't for the life of me remember what it was now).
 
-LS0tIHZwbmMtc2NyaXB0cy05MjM5YmQ4L3ZwbmMtc2NyaXB0CTIwMTAtMDItMjMgMTk6MTE6NTMu
-MDAwMDAwMDAwICswMTAwCisrKyB2cG5jLXNjcmlwdHMtbmV3L3ZwbmMtc2NyaXB0CTIwMTEtMDUt
-MjggMjM6NDk6MjguMDAwMDAwMDAwICswMjAwCkBAIC0xMzksNyArMTM5LDcgQEAKIAogaWYgWyAt
-biAiJElQUk9VVEUiIF07IHRoZW4KIAlmaXhfaXBfZ2V0X291dHB1dCAoKSB7Ci0JCXNlZCAncy9j
-YWNoZS8vO3MvbWV0cmljIFw/WzAtOV1cKyBbMC05XVwrLy9nO3MvaG9wbGltaXQgWzAtOV1cKy8v
-ZycKKwkJc2VkICdzL2NhY2hlLy87cy9tZXRyaWMgXD9bMC05XVwrIFswLTldXCsvL2c7cy9ob3Bs
-aW1pdCBbMC05XVwrLy9nO3MvaXBpZCAweC4uLi4vL2cnCiAJfQogCiAJc2V0X3ZwbmdhdGV3YXlf
-cm91dGUoKSB7Cgo=
---90e6ba6e864c04af4504a45d2e1b--
+What is the problematic page_add_anon_rmap() case?  Ah, when do_swap_page()
+calls do_page_add_anon_rmap() with exclusive 1?  Which is pretty much
+equivalent to the page_move_anon_rmap() case, but just from that slightly
+different place.
+
+> 
+> _IFF_ we are serialized, your patch should suffice, since then
+> page_mapped() implies a >0 refcount, if not however, I think we need
+> both tests since in that case the page might be mapped again against a
+> different anon_vma and our current anon_vma (the one we locked against)
+> might have refcount == 0 and already be past the mutex_is_locked() test
+> in anon_vma_free(), at which point we're up shit creek since then the
+> anon_vma we're returning can disappear the moment we do
+> rcu_read_unlock().
+
+I'm not convinced that the refcount helps at all there.  If the page is
+now using a different anon_vma than the one it started out with, what
+prevents the old one from being freed and reused and now refcount 1?
+
+But I'm replying before I've given it enough thought,
+mainly to let you know that I am back on it now.
+
+> 
+> Or am I delusional due to lack of sleep?
+
+Congratulations!?
+
+I fear you're not delusional: thank you for catching this.
+
+Hugh
