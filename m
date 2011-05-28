@@ -1,115 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab1E1Pk1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 11:40:27 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50219 "EHLO hera.kernel.org"
+	id S1754213Ab1E1Pkr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 11:40:47 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50232 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753665Ab1E1PkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 11:40:25 -0400
-Date: Sat, 28 May 2011 15:39:59 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-i1p8vrhq7xveyui6t1sc914e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
+	id S1753665Ab1E1Pkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 11:40:46 -0400
+Date: Sat, 28 May 2011 15:40:24 GMT
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-4af4c9550ccaaf0b53013ff730bc15068ffe6abc@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, fweisbec@gmail.com,
+        peterz@infradead.org, dsahern@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1306511914-8016-1-git-send-email-dsahern@gmail.com>
+References: <1306511914-8016-1-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Make sure kptr_restrict warnings fit 80 col terms
-Git-Commit-ID: 646aaea615704010b5fd2c8c8891ff1a3a4b4f1a
+Subject: [tip:perf/urgent] perf events: initialize fd array to -1 instead of 0
+Git-Commit-ID: 4af4c9550ccaaf0b53013ff730bc15068ffe6abc
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 28 May 2011 15:40:00 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 28 May 2011 15:40:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  646aaea615704010b5fd2c8c8891ff1a3a4b4f1a
-Gitweb:     http://git.kernel.org/tip/646aaea615704010b5fd2c8c8891ff1a3a4b4f1a
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 27 May 2011 11:00:41 -0300
+Commit-ID:  4af4c9550ccaaf0b53013ff730bc15068ffe6abc
+Gitweb:     http://git.kernel.org/tip/4af4c9550ccaaf0b53013ff730bc15068ffe6abc
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Fri, 27 May 2011 09:58:34 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 27 May 2011 16:02:09 -0300
+CommitDate: Fri, 27 May 2011 16:02:12 -0300
 
-perf tools: Make sure kptr_restrict warnings fit 80 col terms
+perf events: initialize fd array to -1 instead of 0
 
-Suggested-by: Ingo Molnar <mingo@elte.hu>
+perf_evsel__alloc_fd allocates an array of file descriptors with the
+memory initialized to 0. The array has dimensions for cpus and threads.
+
+Later, __perf_evsel__open calls sys_perf_event_open for each cpu and thread
+dimensions. If the open fails for any of the cpus or threads then the fd's
+for this event are closed and the fd entry in the array is set to -1. Now,
+if the first attempt fails for the event (e.g., the event is not supported)
+the remaining dimensions (cpu > 0 and thread > 0) are not touched and left
+at the initialized value of 0.
+
+builtin-stat catches ENOENT and ENOSYS failures and allows the command to
+continue. The end result is that stat attempts to read from an fd of 0 which
+of course is stdin and so the command hangs until you type ctrl-D.
+
+Resolve by initializing the array to -1 since an fd < 0 is already
+handled.
+
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Link: http://lkml.kernel.org/n/tip-i1p8vrhq7xveyui6t1sc914e@git.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1306511914-8016-1-git-send-email-dsahern@gmail.com
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |   19 ++++++++-----------
- tools/perf/builtin-report.c |   17 +++++++----------
- 2 files changed, 15 insertions(+), 21 deletions(-)
+ tools/perf/util/evsel.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 2ca107f..8e2c857 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -824,17 +824,14 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 	symbol__init();
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index ee0fe0d..cca29ed 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -35,7 +35,17 @@ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
  
- 	if (symbol_conf.kptr_restrict)
--		pr_warning("WARNING: Kernel address maps "
--			   "(/proc/{kallsyms,modules}) are restricted, "
--			   "check /proc/sys/kernel/kptr_restrict.\n\n"
--			   "Samples in kernel functions may not be resolved "
--			   "if a suitable vmlinux file is not found in the "
--			   "buildid cache or in the vmlinux path.\n\n"
--			   "Samples in kernel modules won't be resolved "
--			   "at all.\n\n"
--			   "If some relocation was applied (e.g. kexec) "
--			   "symbols may be misresolved even with a suitable "
--			   "vmlinux or kallsyms file.\n\n");
-+		pr_warning(
-+"WARNING: Kernel address maps (/proc/{kallsyms,modules}) are restricted,\n"
-+"check /proc/sys/kernel/kptr_restrict.\n\n"
-+"Samples in kernel functions may not be resolved if a suitable vmlinux\n"
-+"file is not found in the buildid cache or in the vmlinux path.\n\n"
-+"Samples in kernel modules won't be resolved at all.\n\n"
-+"If some relocation was applied (e.g. kexec) symbols may be misresolved\n"
-+"even with a suitable vmlinux or kallsyms file.\n\n");
+ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
+ {
++	int cpu, thread;
+ 	evsel->fd = xyarray__new(ncpus, nthreads, sizeof(int));
++
++	if (evsel->fd) {
++		for (cpu = 0; cpu < ncpus; cpu++) {
++			for (thread = 0; thread < nthreads; thread++) {
++				FD(evsel, cpu, thread) = -1;
++			}
++		}
++	}
++
+ 	return evsel->fd != NULL ? 0 : -ENOMEM;
+ }
  
- 	if (no_buildid_cache || no_buildid)
- 		disable_buildid_cache();
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 99156c3..287a173 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -281,17 +281,14 @@ static int __cmd_report(void)
- 	      kernel_kmap->ref_reloc_sym->addr == 0))) {
- 		const struct dso *kdso = kernel_map->dso;
- 
--		ui__warning("Kernel address maps "
--			    "(/proc/{kallsyms,modules}) were restricted, "
--			    "check /proc/sys/kernel/kptr_restrict before "
--			    "running 'perf record'.\n\n%s\n\n"
--			    "Samples in kernel modules can't be resolved "
--			    "as well.\n\n",
-+		ui__warning(
-+"Kernel address maps (/proc/{kallsyms,modules}) were restricted.\n\n"
-+"Check /proc/sys/kernel/kptr_restrict before running 'perf record'.\n\n%s\n\n"
-+"Samples in kernel modules can't be resolved as well.\n\n",
- 			    RB_EMPTY_ROOT(&kdso->symbols[MAP__FUNCTION]) ?
--			    "As no suitable kallsyms nor vmlinux was found, "
--			    "kernel samples can't be resolved." :
--			    "If some relocation was applied (e.g. kexec) "
--			    "symbols may be misresolved.");
-+"As no suitable kallsyms nor vmlinux was found, kernel samples\n"
-+"can't be resolved." :
-+"If some relocation was applied (e.g. kexec) symbols may be misresolved.");
- 	}
- 
- 	if (dump_trace) {
