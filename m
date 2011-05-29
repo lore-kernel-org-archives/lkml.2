@@ -1,89 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab1E2KVc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 06:21:32 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:59621 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750915Ab1E2KVb convert rfc822-to-8bit (ORCPT
+	id S1752996Ab1E2KVj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 06:21:39 -0400
+Received: from [212.227.17.10] ([212.227.17.10]:57115 "EHLO
+	moutng.kundenserver.de" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751301Ab1E2KVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 06:21:31 -0400
-Date: Sun, 29 May 2011 11:21:19 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Frank Rowand <frank.rowand@am.sony.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
- locks up on ARM
-Message-ID: <20110529102119.GC9489@e102109-lin.cambridge.arm.com>
-References: <1306405979.1200.63.camel@twins>
- <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
- <1306409575.1200.71.camel@twins>
- <1306412511.1200.90.camel@twins>
- <20110526122623.GA11875@elte.hu>
- <20110526123137.GG24876@n2100.arm.linux.org.uk>
- <20110526125007.GA27083@elte.hu>
- <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com>
- <20110527120629.GA32617@elte.hu>
- <20110527205240.GT24876@n2100.arm.linux.org.uk>
+	Sun, 29 May 2011 06:21:36 -0400
+Date: Sun, 29 May 2011 12:21:27 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Andrew Chew <achew@nvidia.com>
+cc: mchehab@redhat.com, olof@lixom.net, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5 v2] [media] ov9740: Fixed some settings
+In-Reply-To: <1306368272-28279-3-git-send-email-achew@nvidia.com>
+Message-ID: <Pine.LNX.4.64.1105291218250.18788@axis700.grange>
+References: <1306368272-28279-1-git-send-email-achew@nvidia.com>
+ <1306368272-28279-3-git-send-email-achew@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <20110527205240.GT24876@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 29 May 2011 10:21:42.0008 (UTC) FILETIME=[34127780:01CC1DEA]
-X-MC-Unique: 111052911212700201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:2uP+cBB/aAmb0rquR7XkB9OgEn7KxrmD2gj+Wc++zx7
+ B8jtx0KHyxjkrszzUKHIwV+4lthfT2KJJVhadPddJ6NrdVdKdU
+ Ew8pEbrlq8u76Dby7l9CYg7sh9/8Jn/PB2OXC0Kd6chL0V/OAB
+ pxvVrTUwPJ4Tw6ghuLgL2N4f2Wy5saEMRxOdZmwK6x5WIQKefo
+ nZWEGDg6QWrB7yjt3YpdnRXStYfGHX4PYqUCQQ9e/E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 09:52:40PM +0100, Russell King - ARM Linux wrote:
-> On Fri, May 27, 2011 at 02:06:29PM +0200, Ingo Molnar wrote:
-> > The expectations are to have irqs off (we are holding the runqueue
-> > lock if !__ARCH_WANT_INTERRUPTS_ON_CTXSW), so that's not workable i
-> > suspect.
+On Wed, 25 May 2011, achew@nvidia.com wrote:
+
+> From: Andrew Chew <achew@nvidia.com>
 > 
-> Just a thought, but we _might_ be able to avoid a lot of this hastle if
-> we had a new arch hook in finish_task_switch(), after finish_lock_switch()
-> returns but before the old MM is dropped.
-...
-> We could change switch_mm() to only do:
+> Based on vendor feedback, should issue a software reset at start of day.
 > 
-> 1. flush branch predictor
-> 2. set swapper_pg_dir tables
-> 3. check ASID validity
-> 4. set new ASID value
-
-If we find that we ran out of ASIDs, we can't reset it across all the
-other CPUs at this point as we have interrupts disabled. So here we
-assume that we don't need to reset the ASIDs.
-
-> At this point, we have no user mappings, and so nothing will be using the
-> ASID at this point.  Then in a new post-finish_lock_switch() arch hook:
+> Also, OV9740_ANALOG_CTRL15 needs to be changed so the sensor does not begin
+> streaming until it is ready (otherwise, results in a nonsense frame for the
+> initial frame).
 > 
-> 5. check whether we need to do flushing as a result of ASID change
-> 6. set new page tables
+> For discontinuous clocks, need to change OV9740_MIPI_CTRL00.
+> 
+> Finally, OV9740_ISP_CTRL19 needs to be changed to really use YUYV ordering
+> (the previous value was for VYUY).
+> 
+> Signed-off-by: Andrew Chew <achew@nvidia.com>
+> ---
+>  drivers/media/video/ov9740.c |   10 +++++++++-
+>  1 files changed, 9 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/video/ov9740.c b/drivers/media/video/ov9740.c
+> index d5c9061..9d7c74d 100644
+> --- a/drivers/media/video/ov9740.c
+> +++ b/drivers/media/video/ov9740.c
+> @@ -68,6 +68,7 @@
+>  #define OV9740_ANALOG_CTRL04		0x3604
+>  #define OV9740_ANALOG_CTRL10		0x3610
+>  #define OV9740_ANALOG_CTRL12		0x3612
+> +#define OV9740_ANALOG_CTRL15		0x3615
+>  #define OV9740_ANALOG_CTRL20		0x3620
+>  #define OV9740_ANALOG_CTRL21		0x3621
+>  #define OV9740_ANALOG_CTRL22		0x3622
+> @@ -222,6 +223,9 @@ struct ov9740_priv {
+>  };
+>  
+>  static const struct ov9740_reg ov9740_defaults[] = {
+> +	/* Software Reset */
+> +	{ OV9740_SOFTWARE_RESET,	0x01 },
+> +
+>  	/* Banding Filter */
+>  	{ OV9740_AEC_B50_STEP_HI,	0x00 },
+>  	{ OV9740_AEC_B50_STEP_LO,	0xe8 },
+> @@ -333,6 +337,7 @@ static const struct ov9740_reg ov9740_defaults[] = {
+>  	{ OV9740_ANALOG_CTRL10,		0xa1 },
+>  	{ OV9740_ANALOG_CTRL12,		0x24 },
+>  	{ OV9740_ANALOG_CTRL22,		0x9f },
+> +	{ OV9740_ANALOG_CTRL15,		0xf0 },
+>  
+>  	/* Sensor Control */
+>  	{ OV9740_SENSOR_CTRL03,		0x42 },
+> @@ -385,7 +390,7 @@ static const struct ov9740_reg ov9740_defaults[] = {
+>  	{ OV9740_LN_LENGTH_PCK_LO,	0x62 },
+>  
+>  	/* MIPI Control */
+> -	{ OV9740_MIPI_CTRL00,		0x44 },
+> +	{ OV9740_MIPI_CTRL00,		0x64 }, /* 0x44 for continuous clock */
 
-Can we actually not move points 1, 3 and 4 to the
-post-finish_lock_switch() hook as well? We don't really care what's in
-the ASID as long as we don't have any user mappings. The same goes for
-the branch predictor (which may be wrongly placed already). This would
-make the switch_mm() relatively simple and move the check_context() and
-cpu_switch_mm() to the post-switch hook.
+I think, the choice between continuous and discontinuous CSI-2 clock 
+should become configurable. You can only use discontinuous clock with 
+hosts, that support it, right? Whereas all hosts must support continuous 
+clock. So, I'm not sure we should unconditionally switch to discontinuous 
+clock here... Maybe it's better to keep it continuous until we make it 
+configurable?
 
-On A15, the ASID is part of TTBR0 so we set both of them at the same
-time in the post-switch hook.
+>  	{ OV9740_MIPI_3837,		0x01 },
+>  	{ OV9740_MIPI_CTRL01,		0x0f },
+>  	{ OV9740_MIPI_CTRL03,		0x05 },
+> @@ -393,6 +398,9 @@ static const struct ov9740_reg ov9740_defaults[] = {
+>  	{ OV9740_VFIFO_RD_CTRL,		0x16 },
+>  	{ OV9740_MIPI_CTRL_3012,	0x70 },
+>  	{ OV9740_SC_CMMM_MIPI_CTR,	0x01 },
+> +
+> +	/* YUYV order */
+> +	{ OV9740_ISP_CTRL19,		0x02 },
+>  };
+>  
+>  static const struct ov9740_reg ov9740_regs_vga[] = {
+> -- 
+> 1.7.5.2
+> 
 
-To avoid extra per-thread flags, we could set a per-cpu variable in
-switch_mm() so that we know what to switch the page tables to in the
-post-switch hook.
-
-So I think this is feasible but it needs some intensive testing.
-
--- 
-Catalin
-
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
