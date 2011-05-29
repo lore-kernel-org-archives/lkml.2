@@ -1,99 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab1E2Sop (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 14:44:45 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54614 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754085Ab1E2Son (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 14:44:43 -0400
-Date: Sun, 29 May 2011 20:44:09 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        adobriyan@gmail.com, penberg@kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-Message-ID: <20110529184409.GA9835@elte.hu>
-References: <1306516230.3339.17.camel@dan>
- <20110527171611.GE4356@elte.hu>
- <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com>
- <20110527174644.GG4356@elte.hu>
- <4DDFE52D.4070308@zytor.com>
- <BANLkTimVQbHvW8tCACAcC8zRkyY1KyU2ww@mail.gmail.com>
- <20110528121820.GB12059@elte.hu>
- <4DE19DC3.7090106@zytor.com>
- <20110529124702.GE26627@elte.hu>
- <4DE28E1E.60207@zytor.com>
+	id S1756114Ab1E2Soz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 14:44:55 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:45361 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972Ab1E2Sox convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 14:44:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=Q6zYBxzNoSSMiA67Iwc1uPtK2YaM0MM7S4sYJ+J8q6/6goa8z3DjH1ViHvNBhBvNHg
+         JIEe5lXdqDsQ3lsyTtqaVMFLzAAY5wZszutfABuSkRMGsIujfSZl7h++ANQMV2mkCk7X
+         2zDHUyECjSr91v6drQFt6SXri4Y6+hofz/GVc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DE28E1E.60207@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <19938.35645.288213.802394@pilspetsen.it.uu.se>
+References: <alpine.LFD.2.02.1105262049180.3078@ionos> <4DDEC589.3010201@mit.edu>
+ <20110527061208.GB9260@elte.hu> <BANLkTinOQ_C_-Bix4FTQxHqP3aavmTRrzg@mail.gmail.com>
+ <BANLkTikKAx=KXZuECAXaskhZOre-2ZHutw@mail.gmail.com> <20110528153536.GB27104@elte.hu>
+ <19938.23219.306163.24059@pilspetsen.it.uu.se> <BANLkTi=y2vGbj_LMqyXzj4JPL+w_KL+=yQ@mail.gmail.com>
+ <19938.28108.250080.666938@pilspetsen.it.uu.se> <BANLkTimXoLANJabAK8JfHsGi8OfDgPuhCA@mail.gmail.com>
+ <19938.35645.288213.802394@pilspetsen.it.uu.se>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sun, 29 May 2011 14:44:33 -0400
+X-Google-Sender-Auth: rlH4_RZGabuJE11hT7j3OdEUTrs
+Message-ID: <BANLkTi=zxA3xzc0pR14rqwaOUXUAyF__MQ@mail.gmail.com>
+Subject: Re: [GIT pull] x86 vdso updates
+To: Mikael Pettersson <mikpe@it.uu.se>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, May 29, 2011 at 2:06 PM, Mikael Pettersson <mikpe@it.uu.se> wrote:
+> Andrew Lutomirski writes:
+>  > On Sun, May 29, 2011 at 12:01 PM, Mikael Pettersson <mikpe@it.uu.se> wrote:
+>  > > Andrew Lutomirski writes:
+>  > >  >
+>  > >  > All of the vsyscalls have vDSO versions that work like any other code.
+>  > >
+>  > > Easiest would be if we can simply map int $0xcc with rAX==FOO to syscall or
+>  > > int 0x80 with rAX==BAR.
+>  >
+>  > Yes and no.
+>  >
+>  > With the code I just posted (and am fixing up now) that will work.
+>  > But if we want to replace the entire vsyscall page with three int 0xcc
+>  > and 4090 int3 instructions, then we can't look at eax because it won't
+>  > contain anything meaningful.
+>
+> I can relatively easily also consider the original application rIP
+> when decoding and translating these instructions.
+>
+>  >
+>  > --Andy
+>  >
+>  > >
+>  > > We currently don't even know about the vDSO, it's all just user-space code
+>  > > to us.
+>  > >
+>  > >  > Alternatively, if the dynamic instrumentation code knew about
+>  > >  > vsyscalls, it could just not instrument addresses in the vsyscall
+>  > >  > page.
+>  > >
+>  > > Not instrumenting code is not an option, unless we can prove that the
+>  > > code in question has no relevant side-effects or unexpected control-flow.
+>  > > (Where "side-effects" relate both to the integrity of the instrumentation
+>  > > engine and the application-specific payload it's attaching to the code.)
+>  >
+>  > Calls to 0xffffffffff600000, 0xffffffffff600400, and
+>  > 0xffffffffff600800 are syscalls, as an (unfortunate) part of the ABI.
+>  >
+>  > >
+>  > >  > What existing applications would get broken?
+>  > >
+>  > > My concern is ThreadSpotter, but any user-space dynamic binary instrumentation
+>  > > engine that instruments down to the raw kernel interface (syscall/sysenter/int
+>  > > instructions) would have a problem with syscalls that only work at specific
+>  > > addresses.
+>  >
+>  > I'll look.
+>  >
+>  > >
+>  > > Anyway, if I can map that vsyscall to a plain proper syscall, then I'm OK.
+>  >
+>  > All three vsyscalls can be replaced with real syscalls without side
+>  > effects.  Would it be possible to teach the instrumentation code to
+>  > deal with that?
+>
+> Yes, I just need to know how to identify them and what their equivalents are.
+> E.g., an int3 at <known address> becomes syscall rAX=<some constant>.
+>
+> Sounds like this change will be manageable after all.  Thanks.
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+I'm not entirely sure I like that -- that way if we ever change it
+again we break your stuff again.
 
-> On 05/29/2011 05:47 AM, Ingo Molnar wrote:
-> > 
-> > Do you mean we'd not start at a 2MB boundary and thus would waste on 
-> > average an about 0.125 worth of huge-TLB cache entry?
-> > 
-> > That does not look like a very big issue to me - but maybe i'm 
-> > missing something and you mean something else.
-> > 
-> 
-> The problem is that because of the misalignment, and whatever falls 
-> on the other side of that memory boundary we might end up having to 
-> fracture the 2 MB page into 4K pages.
+Here are two proposals.
 
-We already have that kind of fragmentation anyway, due to NX and due 
-to the readonly area. Randomization does not really make that 
-situation much worse.
+1. Teach your code that call 0xffffffffff600000 means
+gettimeofday(rdi, rsi).  That's guaranteed to never change and will
+keep working even if we start to emulate vsyscalls by marking the page
+not present and trapping the instruction fetch fault.
 
-But the thing is, we could fully eliminate all those disadvantages on 
-64-bit x86:
+2. Use a magic incantation like:
 
-We could put a 2MB hole between end of text (end of X) and start of 
-readonly data (start of NX), and another 2MB hole between end of 
-readonly and start of data.
+mov $0xce,%al
+int $0xcc
+ret
 
-That way we'd have:
+for gettimeofday.  (The other two vsyscalls could use 0xcc and 0xf4,
+for example.)  If I did this, I would make the 0xcc handler fault if
+called from kernel space with al and rip not matching and it would log
+a warning (but not fault) if called from user memory.
 
- - the low alias is mapped NX as well, so the whole area and 
-   surrounding pages are 2MB aligned. The 'holes' are freed up as 
-   __initmem so not wasted.
+The idea is that, as far as a binary instrumentation tools is
+concerned, int $0xcc is just a two-byte instruction without any funny
+control flow.  Also, if I looked everything up correctly, that magic
+sequence will either fault or turn into plain ret if called at the
+wrong offset.
 
- - the high alias will have three areas:
+If we went this route, then no software should assume *anything* about
+int 0xcc because it could be changed again in the future.  I might
+even want to randomize the magic constants on each boot to make
+certain that no one distributes software that cares.
 
-    - the    text area, which is 2MB mapped as X
-    - the ro-data area, which is 2MB mapped as NX-RO
-    - the    data area, which is 2MB mapped as NX-RW
+--Andy
 
-because there's at least 2MB of distance between end of text and 
-start of data there's a guarantee that both will be fully 2MB mapped.
-
-Btw., we might want to do this regardless of randomization, for 
-performance reasons: right now the NX and readonly area fragments the 
-2MB mapping around the kernel text already, into 4K mappings.
-
-Hm?
-
-Thanks,
-
-	Ingo
+>
+> /Mikael
+>
