@@ -1,100 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab1E2VMK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 17:12:10 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:17505 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab1E2VMI (ORCPT
+	id S1755393Ab1E2VHK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 17:07:10 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:33709 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab1E2VHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 17:12:08 -0400
-Message-Id: <201105292112.p4TLC6cN017178@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Sun, 29 May 2011 16:55:44 -0400
-Subject: [PATCH] ip_options_compile: properly handle unaligned pointer
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, <kaber@trash.net>
-X-OriginalArrivalTime: 29 May 2011 21:12:07.0265 (UTC) FILETIME=[10F01D10:01CC1E45]
+	Sun, 29 May 2011 17:07:08 -0400
+Subject: Re: [GIT PULL] iscsi-target: Merge for .40-rc1
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Andy Grover <agrover@redhat.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTimt5qisV7EH7NMv1tG8gR_9d-kA3g@mail.gmail.com>
+References: <1306551592.23461.506.camel@haakon2.linux-iscsi.org>
+	 <BANLkTimt5qisV7EH7NMv1tG8gR_9d-kA3g@mail.gmail.com>
+Content-Type: text/plain
+Date: Sun, 29 May 2011 13:58:38 -0700
+Message-Id: <1306702718.13640.39.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code takes an unaligned pointer and does htonl() on it to
-make it big-endian, then does a memcpy().  The problem is that the
-compiler decides that since the pointer is to a __be32, it is legal
-to optimize the copy into a processor word store.  However, on an
-architecture that does not handled unaligned writes in kernel space,
-this produces an unaligned exception fault.
+On Sun, 2011-05-29 at 11:49 -0700, Linus Torvalds wrote:
+> Gaah.
+> 
+> I don't feel confident or motivated enough about iscsi-target, so
+> after some (little) thought I ended up not pulling this. I really need
+> a lot of acks from people who actually work on and care about SCSI,
+> and right now I feel like with me being away for the next week, I
+> can't handle it.
+> 
+> I just don't want to be in the situation where I pull something that
+> is apparently contentious in the SCSI space in general, but that's
+> _particularly_ true this release. So I'm afraid that this essentially
+> got pushed out to the next release.
+> 
 
-The solution is to track the pointer as a "char *" (which removes a bunch
-of unpleasant casts in any case), and then just use put_unaligned_be32()
-to write the value to memory.
+Hi again Linus,
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- net/ipv4/ip_options.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+Thanks for your consideration here.  I understand your concern and the
+time pressures involved that make this difficult for you to merge this
+round.
 
-diff --git a/net/ipv4/ip_options.c b/net/ipv4/ip_options.c
-index 2391b24..a12d33f 100644
---- a/net/ipv4/ip_options.c
-+++ b/net/ipv4/ip_options.c
-@@ -14,6 +14,7 @@
- #include <linux/slab.h>
- #include <linux/types.h>
- #include <asm/uaccess.h>
-+#include <asm/unaligned.h>
- #include <linux/skbuff.h>
- #include <linux/ip.h>
- #include <linux/icmp.h>
-@@ -352,7 +353,7 @@ int ip_options_compile(struct net *net,
- 				goto error;
- 			}
- 			if (optptr[2] <= optlen) {
--				__be32 *timeptr = NULL;
-+				unsigned char *timeptr = NULL;
- 				if (optptr[2]+3 > optptr[1]) {
- 					pp_ptr = optptr + 2;
- 					goto error;
-@@ -361,7 +362,7 @@ int ip_options_compile(struct net *net,
- 				      case IPOPT_TS_TSONLY:
- 					opt->ts = optptr - iph;
- 					if (skb)
--						timeptr = (__be32*)&optptr[optptr[2]-1];
-+						timeptr = &optptr[optptr[2]-1];
- 					opt->ts_needtime = 1;
- 					optptr[2] += 4;
- 					break;
-@@ -373,7 +374,7 @@ int ip_options_compile(struct net *net,
- 					opt->ts = optptr - iph;
- 					if (rt)  {
- 						memcpy(&optptr[optptr[2]-1], &rt->rt_spec_dst, 4);
--						timeptr = (__be32*)&optptr[optptr[2]+3];
-+						timeptr = &optptr[optptr[2]+3];
- 					}
- 					opt->ts_needaddr = 1;
- 					opt->ts_needtime = 1;
-@@ -391,7 +392,7 @@ int ip_options_compile(struct net *net,
- 						if (inet_addr_type(net, addr) == RTN_UNICAST)
- 							break;
- 						if (skb)
--							timeptr = (__be32*)&optptr[optptr[2]+3];
-+							timeptr = &optptr[optptr[2]+3];
- 					}
- 					opt->ts_needtime = 1;
- 					optptr[2] += 8;
-@@ -405,10 +406,10 @@ int ip_options_compile(struct net *net,
- 				}
- 				if (timeptr) {
- 					struct timespec tv;
--					__be32  midtime;
-+					u32  midtime;
- 					getnstimeofday(&tv);
--					midtime = htonl((tv.tv_sec % 86400) * MSEC_PER_SEC + tv.tv_nsec / NSEC_PER_MSEC);
--					memcpy(timeptr, &midtime, sizeof(__be32));
-+					midtime = (tv.tv_sec % 86400) * MSEC_PER_SEC + tv.tv_nsec / NSEC_PER_MSEC;
-+					put_unaligned_be32(midtime, timeptr);
- 					opt->is_changed = 1;
- 				}
- 			} else {
--- 
-1.6.5.2
+To clarify one point however, the contentious piece in question between
+James and myself is something that I am not willing to compromise on for
+this (or the next) round considering the serious technical implications
+of doing so as discussed in the PATCH-v5 thread.
+
+My real frustration here is the fact that this is the second time in as
+many merge windows where at the very last minute this same point has
+been raised to effectively delay the merging of this code.  There have
+been many folks ready to sign-off on the current design (including
+upstream distro folks), and the number of target patches from full time
+developers like Andy have been piling up waiting for this to be merged.
+
+So that said, aside from my differences of opinion on this particular
+topic with James wrt to iscsi-target, the bigger issue here having to go
+through the SCSI tree for all drivers/target/ related changes.  This is
+really starting to slow down the number of target core changes getting
+to mainline, and is causing the lio-core-2.6.git tree (that full time
+developers like Andy are using) to quickly diverge from mainline.
+
+So, I am asking for you to consider start pulling directly from .41 and
+onwards for target core pieces now that drivers/target/ has finally been
+added to MAINTAINERS.  I am not interested in trying to push anything
+related to drivers/scsi/ outside of the SCSI tree, but for pieces of
+target core that are not directly related to drivers/scsi/, it would be
+very helpful for you to start pulling directly in order to keep the
+mainline target better in-sync with lio-core-2.6.git tree that full time
+target developers are using and moving forward with.
+
+Thank you,
+
+--nab
+
+
+>                     Linus
+> 
+> On Fri, May 27, 2011 at 7:59 PM, Nicholas A. Bellinger
+> <nab@linux-iscsi.org> wrote:
+> > Hi Linus,
+> >
+> > This is a GIT PULL request for the initial merge of the iscsi-target
+> > fabric driver for mainline target core v4.0 infrastructure.
+> >
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-40-iscsi-target
+> >
+> > This series has been made against the following linux-2.6.git HEAD:
+> >
+> > commit dc7acbb2518f250050179c8581a972df3b6a24f1
+> > Merge: f01e1af 4bf0ff2
+> > Author: Linus Torvalds <torvalds@linux-foundation.org>
+> > Date:   Thu May 26 19:01:15 2011 -0700
+> >
+> >    Merge branch 'upstream/tidy-xen-mmu-2.6.39' of git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen
+> >
+> > This code has undergone a number of review cycles on linux-scsi over the
+> > last six months by Christoph, Mike and other interested folks.  This has
+> > included a number of cleanups to follow mainline conventions, and
+> > conversion to use mainline include/scsi/iscsi_proto.h RFC definitions.
+> > There has been an good amount of testing feedback on this code so far,
+> > and with the LIO communities help we have been able to resolve the
+> > reported cleanup/conversion regressions, and fix one long-standing
+> > shutdown bug.
+> >
+> > Unfortuately James and I have been unable to come to an aggreement on
+> > implementation details wrt to proper kernel/user split ahead of his
+> > final SCSI pull for .40.  I have no interest to take the mainline
+> > iscsi-target development effort in this direction again, so I am
+> > offically committing to you to support iscsi-target in good-faith
+> > together with rtslib community edition moving forward.  I am also
+> > committing to extending iscsi-target to address the non-standard
+> > authentication pieces that James has mentioned, but by the time .40
+> > ships we are still not going to have iSCSI clients that actually support
+> > them.
+> >
+> > I believe that Christoph is happy with the current iscsi-target code for
+> > an initial merge now, and am asking for the merge to avoid slipping
+> > (again) for this type of 'mass-market' code that has a large audience,
+> > and poses minimal risk considering the small amount of external changes.
+> > [...]
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
