@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab1E2MQz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 08:16:55 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47918 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab1E2MQy (ORCPT
+	id S1753467Ab1E2MTj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 08:19:39 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:29074 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865Ab1E2MTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 08:16:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:message-id:content-type
-         :content-transfer-encoding;
-        b=nAQ8tHWjk7MAgvAB2HkQB4YSxCvmiZf8YIMe65EwMzeo8635fa9Nt9MpuXfcov7P7Q
-         lmQFvfy6b0L53qip0YRycm+4psHoSiszRHDJut5n0xKnOxXpOIhb5Jtg0mWmiN4HdTYd
-         znDS3B+ZDPIQ2YM+NtmCbulCJXy1d2TVk3nOo=
-From: Nai Xia <nai.xia@gmail.com>
-Reply-To: nai.xia@gmail.com
-Organization: Nanjing University
-To: Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] mm: fix kernel BUG at mm/rmap.c:1017!
-Date: Sun, 29 May 2011 20:16:30 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.38.1; KDE/4.5.5; i686; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-References: <alpine.LSU.2.00.1105281314220.13319@sister.anvils> <201105291823.47082.nai.xia@gmail.com>
-In-Reply-To: <201105291823.47082.nai.xia@gmail.com>
+	Sun, 29 May 2011 08:19:37 -0400
+Message-ID: <4DE2399C.9090500@tilera.com>
+Date: Sun, 29 May 2011 08:18:36 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Message-Id: <201105292016.30748.nai.xia@gmail.com>
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Greg KH <gregkh@suse.de>
+CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Eric Biederman <ebiederm@aristanetworks.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+Subject: Re: [PATCH v2] arch/tile: add hypervisor-based character driver for
+ SPI flash ROM
+References: <201105042004.p44K4kZx011721@farm-0032.internal.tilera.com> <4DD6FB9E.2050604@tilera.com> <20110521032102.GD19907@suse.de> <201105211133.50238.arnd@arndb.de> <4DD7C3A7.5010402@tilera.com> <BANLkTim-d-8w1_idg4u302aB3MqTo7q4Sg@mail.gmail.com> <201105281516.p4SFGfHg024703@farm-0010.internal.tilera.com> <20110528212347.GA11303@suse.de> <4DE19407.8040407@tilera.com> <20110529114517.GA13513@suse.de>
+In-Reply-To: <20110529114517.GA13513@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 29 May 2011 18:23:46 Nai Xia wrote:
-> On Sunday 29 May 2011 04:17:04 Hugh Dickins wrote:
-> > I've hit the "address >= vma->vm_end" check in do_page_add_anon_rmap()
-> > just once.  The stack showed khugepaged allocation trying to compact
-> > pages: the call to page_add_anon_rmap() coming from remove_migration_pte().
-> > 
-> > That path holds anon_vma lock, but does not hold mmap_sem: it can
-> > therefore race with a split_vma(), and in commit 5f70b962ccc2 "mmap:
-> > avoid unnecessary anon_vma lock" we just took away the anon_vma lock
-> > protection when adjusting vma->vm_end.
-> > 
-> > I don't think that particular BUG_ON ever caught anything interesting,
-> > so better replace it by a comment, than reinstate the anon_vma locking.
-> 
-> Is there another racing between "vma->vm_pgoff = pgoff;" in 
-> vma_adjust() and linear_page_index() in __page_set_anon_rmap() ?
+On 5/29/2011 7:45 AM, Greg KH wrote:
+> On Sat, May 28, 2011 at 08:32:07PM -0400, Chris Metcalf wrote:
+>>> As you are only using 1 minor device, why not just use a misc device
+>>> instead?  It's simpler, and you get the sysfs code for free, which you
+>>> forgot to do, so your device node will never show up in userspace :(
+>> Interesting; this appears to be a bug.  We use 4 minors (see "srom_devs =
+>> 4" higher up).  I'll fix this.  We may have some other devices that would
+>> benefit from being recast as misc devices, so I'll look at our set of
+>> internal devices.
+> This kind of implies that you didn't test this code, right?  You might
+> want to do that next time :)
 
-Oh, sorry, please ignore this, this _is_ protected by anon_vma lock.
+No, this bug has been in the code since day one (I just double-checked our
+SCM), and it has always worked fine.  I'm looking into how this is possible
+now, but trust me, we've tested this aspect of the driver the whole time. :-)
 
-Nai Xia
+>> Is there a good example of a character device that has multiple minors and
+>> also is registered with sysfs?
+> Lots of them, look all over the kernel, and in LDD3 there's even an
+> outdated example of one I think.
 
-> 
-> 
-> Nai Xia
-> 
-> > 
-> > Signed-off-by: Hugh Dickins <hughd@google.com>
-> > ---
-> >  mm/rmap.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > --- linux.orig/mm/rmap.c	2011-05-27 19:05:27.000000000 -0700
-> > +++ linux/mm/rmap.c	2011-05-27 20:07:44.601361236 -0700
-> > @@ -1014,7 +1014,7 @@ void do_page_add_anon_rmap(struct page *
-> >  		return;
-> >  
-> >  	VM_BUG_ON(!PageLocked(page));
-> > -	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
-> > +	/* address might be in next vma when migration races vma_adjust */
-> >  	if (first)
-> >  		__page_set_anon_rmap(page, vma, address, exclusive);
-> >  	else
-> > @@ -1709,7 +1709,7 @@ void hugepage_add_anon_rmap(struct page
-> >  
-> >  	BUG_ON(!PageLocked(page));
-> >  	BUG_ON(!anon_vma);
-> > -	BUG_ON(address < vma->vm_start || address >= vma->vm_end);
-> > +	/* address might be in next vma when migration races vma_adjust */
-> >  	first = atomic_inc_and_test(&page->_mapcount);
-> >  	if (first)
-> >  		__hugepage_set_anon_rmap(page, vma, address, 0);
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > 
-> 
+ I didn't actually find many drivers that have both cdev_add with count>1,
+and mention sysfs or kobj, but char/raw.c is one that looks pretty clean. 
+(I found only four others total: uio/uio.c, s390/char/vmlogrdr.c,
+staging/comedi/comedi_fops.c, and staging/vme/devices/vme_user.c.)
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
+
