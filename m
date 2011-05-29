@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab1E2Sxu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 14:53:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45142 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754582Ab1E2Sxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 14:53:49 -0400
-Message-ID: <4DE295FE.1020506@zytor.com>
-Date: Sun, 29 May 2011 11:52:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1756126Ab1E2S4N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 14:56:13 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43193 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755030Ab1E2S4M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 14:56:12 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        adobriyan@gmail.com, penberg@kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-References: <1306516230.3339.17.camel@dan> <20110527171611.GE4356@elte.hu> <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com> <20110527174644.GG4356@elte.hu> <4DDFE52D.4070308@zytor.com> <BANLkTimVQbHvW8tCACAcC8zRkyY1KyU2ww@mail.gmail.com> <20110528121820.GB12059@elte.hu> <4DE19DC3.7090106@zytor.com> <20110529124702.GE26627@elte.hu> <4DE28E1E.60207@zytor.com> <20110529184409.GA9835@elte.hu>
-In-Reply-To: <20110529184409.GA9835@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110529060702.GA7112@vigoh>
+References: <20110529060702.GA7112@vigoh>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 29 May 2011 11:55:19 -0700
+Message-ID: <BANLkTimKjb5hNUJv1EsRuHdWZ1Wv5mrswg@mail.gmail.com>
+Subject: Re: [GIT PULL] Fix common misspellings
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2011 11:44 AM, Ingo Molnar wrote:
-> 
-> We could put a 2MB hole between end of text (end of X) and start of 
-> readonly data (start of NX), and another 2MB hole between end of 
-> readonly and start of data.
-> 
+On Sat, May 28, 2011 at 11:07 PM, Lucas De Marchi
+<lucas.demarchi@profusion.mobi> wrote:
+>
+> Please pull the following fixes for common misspellings. This patch is shorter
+> than the other time, but larger than I expected, partially because there were
+> some new entries in the dictionary.
 
-It still means you have memory which is X-mapped when it doesn't need to
-be, since there will be RAM in that region.
+This pull request is probably perfectly fine, but since I'll be
+travelling with a rather weak laptop next week, and there were some
+complaints about the cross-subsystem merge problems that the big(ger)
+spelling fixes caused last time around, I'm afraid that I ended up
+feeling that it's easier for me to ignore this pull request at this
+time.
 
-	-hpa
+When I'm back from traveling,. and if this release window turns out to
+be quiet and problem free, I might decide that I'll pull some trivial
+spelling fixes during a later -rc phase. On the other hand, I might
+also go for being very strict about the -rc's too, so no promises.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Because I might just try to make 2.6.40 (or whatever I'll call it -
+I'll throw some mental dice before cutting the -rc1 later today) be
+one of those nice "strict and stable and as little excitement as
+possible" releases. The merge window itself has been pretty calm so
+far, I think, which is a good thing.
 
+                        Linus
