@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab1E2AjC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 20:39:02 -0400
-Received: from mx.treblig.org ([80.68.94.177]:39238 "EHLO mx.treblig.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754463Ab1E2Ai7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 20:38:59 -0400
-Date: Sun, 29 May 2011 01:38:57 +0100
-From: "Dr. David Alan Gilbert" <linux@treblig.org>
-To: kosaki.motohiro@jp.fujitsu.com
-Cc: linux-kernel@vger.kernel.org
-Subject: sparse build breakage with 903c0c7cdc21f2ccb7562a7bbc70289c0c2b16ad
-Message-ID: <20110529003857.GA9898@gallifrey>
+	id S1756710Ab1E2Anm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 20:43:42 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:49853 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525Ab1E2Anl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 20:43:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=xYPwY0C/pB3oU1zaET0htPp7naeF2n6ZajATOeLzaKipj3fvmL8BqWNQv4Q6AV/4PV
+         UBYaywcx3gyXDlRlnVDQ==
+Date: Sat, 28 May 2011 17:43:27 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: fix page_lock_anon_vma leaving mutex locked
+In-Reply-To: <BANLkTi=9qqiLNuo9qbcLoQtK3CKSPnhn4g@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1105281738530.14374@sister.anvils>
+References: <alpine.LSU.2.00.1105281317090.13319@sister.anvils> <1306617270.2497.516.camel@laptop> <alpine.LSU.2.00.1105281437320.13942@sister.anvils> <BANLkTinsq-XJGvRVmBa6kRp0RTj9NqGWtA@mail.gmail.com> <alpine.LSU.2.00.1105281634440.14257@sister.anvils>
+ <BANLkTi=9qqiLNuo9qbcLoQtK3CKSPnhn4g@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Chocolate: 70 percent or better cocoa solids preferably
-X-Operating-System: Linux/2.6.32.27-kvm-i386-20110114 (i686)
-X-Uptime: 01:18:08 up 100 days,  1:50,  1 user,  load average: 0.00, 0.00,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kosaki,
-  I'm getting a problem when running the current (5dbe0af47f8a8f968bac2991c3ec974c6e3eaabc)
-kernel tree through sparse, and I think it's down to an
-interaction between your commit
+On Sat, 28 May 2011, Linus Torvalds wrote:
+> On Sat, May 28, 2011 at 5:12 PM, Hugh Dickins <hughd@google.com> wrote:
+> >
+> > Though I think I'm arriving at the conclusion that this patch
+> > is correct as is, despite the doubts that have arisen.
+> 
+> Well, you hopefully saw my second email where I had come to the same conclusion.
 
-903c0c7cdc21f2ccb7562a7bbc70289c0c2b16ad sparse: define dummy BUILD_BUG_ON definition for sparse
+Yes, thanks.
 
-and the __module_param_call code in moduleparam.h
+> 
+> So I applied the third patch as well, after all. I think it's at the
+> very least at least "more correct" than what we have now. Whether that
+> "page_mapped()" should then be extended to do something else is an
+> additional thing, and I suspect it would affect the slow-path case
+> too.
 
-The error is:
-init/main.c:643:1: error: Syntax error in unary expression
+Yes, I agree it's certainly more correct (two machines running well
+with it for 33 hours now, one of them would hang in 7 or 17 hours).
 
-core_param(initcall_debug, initcall_debug, bool, 0644);
+And I'm increasingly confident that it's complete too, but it will be
+interesting to see whether I've persuaded Peter.  It was certainly a
+very good point that he raised, that I hadn't thought of at all.
 
-this calls __module_param_call which is defined as:
-
-
-#define __module_param_call(prefix, name, ops, arg, isbool, perm)       \
-        /* Default value instead of permissions? */                     \
-        static int __param_perm_check_##name __attribute__((unused)) =  \
-        BUILD_BUG_ON_ZERO((perm) < 0 || (perm) > 0777 || ((perm) & 2))  \
-        + BUILD_BUG_ON_ZERO(sizeof(""prefix) > MAX_PARAM_PREFIX_LEN);   \
-        static const char __param_str_##name[] = prefix #name;          \
-        static struct kernel_param __moduleparam_const __param_##name   \
-        __used                                                          \
-    __attribute__ ((unused,__section__ ("__param"),aligned(sizeof(void *)))) \
-        = { __param_str_##name, ops, perm, isbool ? KPARAM_ISBOOL : 0,  \
-            { arg } }
-
-which ends up with a postprocessed line of:
-
-static inline void __check_initcall_debug(void) {; }; static int __param_perm_check_initcall_debug __attribute__((unused)) = +; static const char __param_str_initcall_debug[] = "" "initcall_debug"; static struct kernel_param const __param_initcall_debug __attribute__((__used__)) __attribute__ ((unused,__section__ ("__param"),aligned(sizeof(void *)))) = { __param_str_initcall_debug, &param_ops_bool, 0644, __builtin_types_compatible_p(typeof(initcall_debug), typeof(bool)) ? 2 : 0, { &initcall_debug } };
-
-Note the '+;' being assigned to __param_perm_check_initcall_debug
-
-So I think your dummy BUILD_BUG_ON_ZERO's needs to have a value:
-
-The following diff seems to fix it, but I've not let
-a fuller sparse run complete yet:
-
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index fb0e732..953352a 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -671,8 +671,8 @@ struct sysinfo {
- 
- #ifdef __CHECKER__
- #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
--#define BUILD_BUG_ON_ZERO(e)
--#define BUILD_BUG_ON_NULL(e)
-+#define BUILD_BUG_ON_ZERO(e) (0)
-+#define BUILD_BUG_ON_NULL(e) ((void*)0)
- #define BUILD_BUG_ON(condition)
- #else /* __CHECKER__ */
- 
-
-
-
-
--- 
- -----Open up your eyes, open up your mind, open up your code -------   
-/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
-\ gro.gilbert @ treblig.org |                               | In Hex /
- \ _________________________|_____ http://www.treblig.org   |_______/
+Hugh
