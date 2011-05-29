@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab1E2Sjy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 14:39:54 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59730 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab1E2Sjx (ORCPT
+	id S1755368Ab1E2SoI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 14:44:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42093 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754085Ab1E2SoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 14:39:53 -0400
-From: Tim Retout <tim@retout.co.uk>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Tim Retout <tim@retout.co.uk>
-Subject: [PATCH] staging: sep: clean up some checkpatch.pl issues
-Date: Sun, 29 May 2011 19:38:32 +0100
-Message-Id: <1306694312-7009-1-git-send-email-tim@retout.co.uk>
-X-Mailer: git-send-email 1.7.4.1
+	Sun, 29 May 2011 14:44:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTimqhkiBSArm7n0_9FD+LW6hWBWxFA@mail.gmail.com>
+References: <20110529072256.GA20983@elte.hu> <BANLkTikHejgEyz9LfJ962Bu89vn1cBP+WQ@mail.gmail.com>
+ <BANLkTimqhkiBSArm7n0_9FD+LW6hWBWxFA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 29 May 2011 11:43:23 -0700
+Message-ID: <BANLkTin8yxh=Bjwf7AEyzPCoghnYO2brLQ@mail.gmail.com>
+Subject: Re: [PATCH] mm: Fix boot crash in mm_alloc()
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use consistent spacing in array indexing, and a whitespace fix.
+On Sun, May 29, 2011 at 10:19 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> STILL TOTALLY UNTESTED! The fixes were just from eyeballing it a bit
+> more, not from any actual testing.
 
-Signed-off-by: Tim Retout <tim@retout.co.uk>
----
- drivers/staging/sep/sep_driver.c        |    4 ++--
- drivers/staging/sep/sep_driver_config.h |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Ok, I eyeballed it some more, and tested both the OFFSTACK and ONSTACK
+case, and decided that I had better commit it now rather than wait any
+later since I'll do the -rc1 later today, and will be on an airplane
+most of tomorrow.
 
-diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
-index 52342c1..be8594e 100644
---- a/drivers/staging/sep/sep_driver.c
-+++ b/drivers/staging/sep/sep_driver.c
-@@ -1102,9 +1102,9 @@ static int sep_lock_user_pages(struct sep_device *sep,
- 			"lli_array[%x].bus_address is "
- 			"%08lx, lli_array[%x].block_size is %x\n",
- 			num_pages - 1,
--			(unsigned long)lli_array[num_pages -1].bus_address,
-+			(unsigned long)lli_array[num_pages - 1].bus_address,
- 			num_pages - 1,
--			lli_array[num_pages -1].block_size);
-+			lli_array[num_pages - 1].block_size);
- 	}
- 
- 	/* Set output params according to the in_out flag */
-diff --git a/drivers/staging/sep/sep_driver_config.h b/drivers/staging/sep/sep_driver_config.h
-index 1033425..d6bfd24 100644
---- a/drivers/staging/sep/sep_driver_config.h
-+++ b/drivers/staging/sep/sep_driver_config.h
-@@ -180,7 +180,7 @@ held by the process (struct file) */
- /* offset of the caller id area */
- #define SEP_CALLER_ID_OFFSET_BYTES \
- 	(SEP_DRIVER_SYSTEM_RAR_MEMORY_OFFSET_IN_BYTES + \
--    SEP_DRIVER_SYSTEM_RAR_MEMORY_SIZE_IN_BYTES)
-+	SEP_DRIVER_SYSTEM_RAR_MEMORY_SIZE_IN_BYTES)
- 
- /* offset of the DCB area */
- #define SEP_DRIVER_SYSTEM_DCB_MEMORY_OFFSET_IN_BYTES \
--- 
-1.7.4.1
+The exact placement of the cpu_vm_mask_var is up for grabs. For
+example, I started thinking that it might be better to put it *after*
+the mm_context_t, since for the non-OFFSTACK case it's generally
+touched at the beginning rather than the end.
 
+And the actual change to make the mm_cachep kmem_cache_create() use a
+variable-sized allocation for the OFFSTACK case is similarly left as
+an exercise for the the reader. So effectively, this reverts a lot of
+de03c72cfce5, but does so in a way that should make very it easy to
+get back to where KOSAKI was aiming for.
+
+Whatever. I was hoping to get comments on it, but I think I need to
+rather push it out to get tested and public than wait any longer. The
+patch *looks* fine, tests ok on my machine, and removes more lines
+than it adds despite the new big comment.
+
+                    Linus
