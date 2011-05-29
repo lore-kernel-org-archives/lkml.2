@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825Ab1E2QwC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 12:52:02 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:48261 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754589Ab1E2QwA (ORCPT
+	id S1754857Ab1E2QyU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 12:54:20 -0400
+Received: from aspirin.dii.utk.edu ([160.36.0.81]:51571 "EHLO
+	aspirin.dii.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754356Ab1E2QyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 12:52:00 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call filtering
-In-Reply-To: <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
-References: <20110517131902.GF21441@elte.hu> <BANLkTikBK3-KZ10eErQ6Eex_L6Qe2aZang@mail.gmail.com> <1305807728.11267.25.camel@gandalf.stny.rr.com> <BANLkTiki8aQJbFkKOFC+s6xAEiuVyMM5MQ@mail.gmail.com> <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com> <1306254027.18455.47.camel@twins> <20110524195435.GC27634@elte.hu> <alpine.LFD.2.02.1105242239230.3078@ionos> <20110525150153.GE29179@elte.hu> <alpine.LFD.2.02.1105251836030.3078@ionos> <20110525180100.GY19633@outflux.net> <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
-User-Agent: Notmuch/0.5-145-gb6862c7 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Sun, 29 May 2011 22:21:45 +0530
-Message-ID: <8762otqwke.fsf@linux.vnet.ibm.com>
+	Sun, 29 May 2011 12:54:19 -0400
+Date: Sun, 29 May 2011 12:54:00 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        acme@redhat.com
+Subject: Re: perf: regression with PERF_EVENT_IOC_REFRESH
+In-Reply-To: <1306578144.1200.1150.camel@twins>
+Message-ID: <alpine.DEB.2.00.1105291253270.6774@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu>  <1306182141.2497.5.camel@laptop>  <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu>  <1306233036.2497.15.camel@laptop>  <alpine.DEB.2.00.1105272332400.9313@cl320.eecs.utk.edu>
+ <1306578144.1200.1150.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011 11:42:44 -0700, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Wed, May 25, 2011 at 11:01 AM, Kees Cook <kees.cook@canonical.com> wrote:
-> >
-> > Can we just go back to the original spec? A lot of people were excited
-> > about the prctl() API as done in Will's earlier patchset, we don't lose the
-> > extremely useful "enable_on_exec" feature, and we can get away from all
-> > this disagreement.
-> 
-> .. and quite frankly, I'm not even convinced about the original simpler spec.
-> 
-> Security is a morass. People come up with cool ideas every day, and
-> nobody actually uses them - or if they use them, they are just a
-> maintenance nightmare.
-> 
-> Quite frankly, limiting pathname access by some prefix is "cool", but
-> it's basically useless.
-> 
-> That's not where security problems are.
-> 
-> Security problems are in the odd corners - ioctl's, /proc files,
-> random small interfaces that aren't just about file access.
-> 
-> And who would *use* this thing in real life? Nobody. In order to sell
-> me on a new security interface, give me a real actual use case that is
-> security-conscious and relevant to real users.
-> 
-> For things like web servers that actually want to limit filename
-> lookup, we'd be <i>much</i> better off with a few new flags to
-> pathname lookup that say "don't follow symlinks" and "don't follow
-> '..'". Things like that can actually be beneficial to
-> security-conscious programming, with very little overhead. Some of
-> those things currently look up pathnames one component at a time,
-> because they can't afford to not do so. That's a *much* better model
-> for the whole "only limit to this subtree" case that was quoted
-> sometime early in this thread.
+On Sat, 28 May 2011, Peter Zijlstra wrote:
 
+> On Fri, 2011-05-27 at 23:38 -0400, Vince Weaver wrote:
+> > on that note (and while trying to document exactly what the ioctls do) it 
+> > seems that a PERF_EVENT_IOC_REFRESH with an argument of anything higher 
+> > than one does not work on kernels 2.6.36 and newer.  The behavior acts
+> > as if 1 was passed, even if you pass in, say, 3.
+> 
+> Urgh, no that should definitely work. Thanks for the test-case, I'll
+> work on that (probably not until Monday though, but who knows).
+> 
 
-The "make sure we don't follow symlinks at all" is a real problem in
-VirtFS (http://wiki.qemu.org/Documentation/9psetup) that we are fixing
-by adding a forked chrooted process to Qemu. If we are open to a new
-open flag O_NOFOLLOW_PATH, which would fail with ELOOP if any of the
-path component is a symbolic link, that would greatly simplify VirtFS.
-Will such a new flag to open be acceptable ? 
+after a painfully long bisection, it turns out that this problem was in
+theory introduced by the following commit:
 
+  d57e34fdd60be7ffd0b1d86bfa1a553df86b7172
 
--aneesh
+  perf: Simplify the ring-buffer logic: make perf_buffer_alloc() do everything needed
 
+I'll see if I can come up with a patch, but it's a bit non-obvious why
+this commit is affecting the REFRESH value at all.
+
+Vince
+vweaver1@eecs.utk.edu
