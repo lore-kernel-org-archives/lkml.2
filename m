@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab1E2JEt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 05:04:49 -0400
-Received: from lo.gmane.org ([80.91.229.12]:53343 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750916Ab1E2JEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 05:04:48 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Niels <zorglub_olsen@hotmail.com>
-Subject: Re: Trace during boot
-Date: Sun, 29 May 2011 11:04:28 +0200
-Message-ID: <irt26s$me6$1@dough.gmane.org>
-References: <irsuji$6h8$1@dough.gmane.org> <20110529081300.GB3762@liondog.tnic>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7Bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 0x4dd52733.adsl.cybercity.dk
-User-Agent: KNode/0.10.9
+	id S1752106Ab1E2JWI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 05:22:08 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:53130 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750915Ab1E2JWF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 05:22:05 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1+TuFotlvWTKGsGEl+w8zTZB5EGTXIO6oG2eOGaBh
+	wfrsGWhLAF4YyZ
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: user-mode-linux-devel@lists.sourceforge.net
+Subject: 2 small kernel config issues related to UML + RTC
+Date: Sun, 29 May 2011 11:22:01 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38.7; KDE/4.6.3; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201105291122.01602.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 29 May 2011 10:13, Borislav Petkov wrote:
+Hello,
 
-> On Sun, May 29, 2011 at 10:02:59AM +0200, Niels wrote:
->> Hi list, I got the below trace during boot (got it from dmesg). I don't
->> know if it's anything serious, just thought I'd pass it on.
-> 
-> No, nothing serious, just a warning about syslog-ng using a deprecated
-> syslog access method.
-> 
-[snip rest]
+with the current git kernel I run 
+$>make ARCH=um menuconfig
 
-Thank you! I'll update my syslog-ng if the error annoys me enough.
+and searched for the string "RTC" b/c during boot of my UML image I realized nowadays the message:
+
+"Kernel not built with RTC support, ALARM timers will not wake from suspend"
+
+Although the menuconfig gives me the answer :
+
+  │ Symbol: STMMAC_RTC_TIMER [=n]                                                                                   │   
+  │ Type  : boolean                                                                                                 │   
+  │ Prompt: Real time clock                                                                                         │   
+  │   Defined at drivers/net/stmmac/Kconfig:50                                                                      │   
+  │   Depends on: <choice> && RTC_CLASS                                                                             │   
+  │   Location:                                                                                                     │   
+  │     -> Network device support (NETDEVICES [=y])                                                                 │   
+  │       -> Ethernet (1000 Mbit) (NETDEV_1000 [=n])                                                                │   
+  │         -> STMicroelectronics 10/100/1000 Ethernet driver (STMMAC_ETH [=n])                                     │   
+  │           -> STMMAC Timer optimisation (STMMAC_TIMER [=n])                                                      │   
+  │             -> Select Timer device (<choice> [=n])                                                              │   
 
 
-//Niels
+I cannot found the menu item.
 
+To sum it up IMO the kernel mesage doesn't makes sense for UML
+and furthermore searching for "RTC" shouldn't give non-existent menu items, isn't it ?
+
+
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
