@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab1E2UBq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 16:01:46 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36095 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756532Ab1E2UBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 16:01:44 -0400
-Date: Sun, 29 May 2011 22:01:31 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] x86-64: Replace vsyscall gettimeofday fallback with
- int 0xcc
-Message-ID: <20110529200131.GA23390@elte.hu>
-References: <cover.1306517576.git.luto@mit.edu>
- <452208dbdf79d4c821d701d5973621bf7546419a.1306517576.git.luto@mit.edu>
- <20110529191055.GC9835@elte.hu>
- <BANLkTin=nCdEjA3Fgj6jH5TrSryit8K_XQ@mail.gmail.com>
- <20110529194922.GC13539@elte.hu>
- <BANLkTi=w37QWARQCOTLVXQq6EiW0rdDfcw@mail.gmail.com>
+	id S1756517Ab1E2UBm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 16:01:42 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:41672 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752468Ab1E2UBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 16:01:40 -0400
+Date: Sun, 29 May 2011 15:01:35 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        ecryptfs@vger.kernel.org
+Subject: [GIT PULL] More eCryptfs fixes
+Message-ID: <20110529200135.GA9787@boyd.l.tihix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTi=w37QWARQCOTLVXQq6EiW0rdDfcw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-* Andrew Lutomirski <luto@mit.edu> wrote:
+The first 2 patches are code cleanups to pave the way for the 3rd patch,
+which fixes a race condition around the i_size field of new eCryptfs
+inodes. The last 3 patches are more fs/ecryptfs/inode.c code cleanups
+that I couldn't resist doing after I was done fixing the race condition.
 
-> On Sun, May 29, 2011 at 3:49 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Andrew Lutomirski <luto@mit.edu> wrote:
-> >
-> >> > Ok, i suspect you marked it 0xCC because that's the INT3 instruction
-> >> > - not very useful for exploits?
-> >>
-> >> Exactly.
-> >>
-> >> The comments in irq_vectors.h make it sound like vectors 0x81..0xed
-> >> are used for device interrupts but AFAICT it's only 0x20..0x39 that
-> >> are used, so the precise choice of vector doesn't matter that much.
-> >
-> > No, we use almost all of the vector space for device interrupts. Why
-> > do you think only 0x20..0x39 is used?
-> 
-> Possibility my inability to understand all the IRQ mapping code in 
-> just half an hour of trying.
+Sorry for the late pull request. The reporter of the i_size race
+condition was nice enough to test the fix yesterday, but I haven't had
+access to a computer until this afternoon.
 
-Hey, you managed to find all the scattered pieces in just half an 
-hour, i'm impressed ;-)
+The following changes since commit 139f37f5e14cd883eee2a8a36289f544b5390a44:
 
-> In arch/x86/kernel/irq.c, arch_probe_nr_irqs returns 
-> NR_IRQS_LEGACY, which I think means that the genirq code allocates 
-> will only expect IRQs on that many vectors.
-> 
-> If I'm wrong then my patch could be bad: if something tries to use 
-> vector 0xcc for a device interrupt, then the vsyscall emulation 
-> code will eat that interrupt.
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin (2011-05-28 23:12:28 -0700)
 
-I saw the used_vector trick you did and it looked safe to me: we set 
-up these gates very early on, when there's no device interrupts yet.
+are available in the git repository at:
 
-If you want to be really sure you could do a BUG_ON(test_bit()) 
-before setting it.
+  git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git for-linus
 
-> (0xcc is barely below the maximum.  INVALIDATE_TLB_VECTOR_START 
-> could be as low as 0xcf.)
+Tyler Hicks (6):
+      eCryptfs: Consolidate inode functions into inode.c
+      eCryptfs: Cleanup inode initialization code
+      eCryptfs: Fix new inode race condition
+      eCryptfs: Return useful code from contains_ecryptfs_marker
+      eCryptfs: Cleanup and optimize ecryptfs_lookup_interpose()
+      eCryptfs: Remove ecryptfs_header_cache_2
 
-Yeah - 0xcc could be fine even if it's in the middle - we are able to 
-skip over used ones.
-
-Thanks,
-
-	Ingo
+ fs/ecryptfs/crypto.c          |   74 +++++------
+ fs/ecryptfs/ecryptfs_kernel.h |   26 ++---
+ fs/ecryptfs/file.c            |    2 +-
+ fs/ecryptfs/inode.c           |  281 +++++++++++++++++++++++++----------------
+ fs/ecryptfs/main.c            |   84 +------------
+ fs/ecryptfs/super.c           |   16 ---
+ 6 files changed, 220 insertions(+), 263 deletions(-)
