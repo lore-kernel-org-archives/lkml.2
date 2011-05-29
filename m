@@ -1,51 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab1E2SUo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 14:20:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58914 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755111Ab1E2SUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 14:20:43 -0400
-Message-ID: <4DE28E1E.60207@zytor.com>
-Date: Sun, 29 May 2011 11:19:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1756088Ab1E2Sas (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 14:30:48 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19335 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755759Ab1E2Saq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 14:30:46 -0400
+Date: Sun, 29 May 2011 20:22:56 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netfilter-devel@vger.kernel.org, lvs-devel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>, Julian Anastasov <ja@ssi.bg>,
+        Simon Horman <horms@verge.net.au>,
+        Wensong Zhang <wensong@linux-vs.org>
+Subject: [PATCH] netfilter, ipvs: Avoid undefined order of evaluation in
+ assignments to struct nf_conn *
+Message-ID: <alpine.LNX.2.00.1105292011450.4411@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        adobriyan@gmail.com, penberg@kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-References: <BANLkTin+Vjhqtv5-N07G9P9_asNQnrnhVg@mail.gmail.com> <20110527170045.GB4356@elte.hu> <1306516230.3339.17.camel@dan> <20110527171611.GE4356@elte.hu> <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com> <20110527174644.GG4356@elte.hu> <4DDFE52D.4070308@zytor.com> <BANLkTimVQbHvW8tCACAcC8zRkyY1KyU2ww@mail.gmail.com> <20110528121820.GB12059@elte.hu> <4DE19DC3.7090106@zytor.com> <20110529124702.GE26627@elte.hu>
-In-Reply-To: <20110529124702.GE26627@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2011 05:47 AM, Ingo Molnar wrote:
-> 
-> Do you mean we'd not start at a 2MB boundary and thus would waste on 
-> average an about 0.125 worth of huge-TLB cache entry?
-> 
-> That does not look like a very big issue to me - but maybe i'm 
-> missing something and you mean something else.
-> 
+In net/netfilter/ipvs/ip_vs_nfct.c::ip_vs_update_conntrack(),
+net/netfilter/ipvs/ip_vs_xmit.c::ip_vs_nat_xmit(), 
+net/netfilter/ipvs/ip_vs_xmit.c::ip_vs_nat_xmit_v6(), 
+net/netfilter/ipvs/ip_vs_xmit.c::ip_vs_icmp_xmit)() 
+net/netfilter/ipvs/ip_vs_xmit.c::and ip_vs_icmp_xmit_v6() we do this:
+	...
+	struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
+	...
 
-The problem is that because of the misalignment, and whatever falls on
-the other side of that memory boundary we might end up having to
-fracture the 2 MB page into 4K pages.
+Since '=' is not a sequence point the order of these assignments happening 
+is undefined. Luckily it's easy to avoid by just doing what is obviously 
+the intended thing:
+	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
 
-	-hpa
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ ip_vs_nfct.c |    2 +-
+ ip_vs_xmit.c |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+ Compile tested only.
+ Patch is against Linus' tree as of a few minutes ago.
+
+diff --git a/net/netfilter/ipvs/ip_vs_nfct.c b/net/netfilter/ipvs/ip_vs_nfct.c
+index f454c80..a3d86c2 100644
+--- a/net/netfilter/ipvs/ip_vs_nfct.c
++++ b/net/netfilter/ipvs/ip_vs_nfct.c
+@@ -82,7 +82,7 @@ void
+ ip_vs_update_conntrack(struct sk_buff *skb, struct ip_vs_conn *cp, int outin)
+ {
+ 	enum ip_conntrack_info ctinfo;
+-	struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
++	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 	struct nf_conntrack_tuple new_tuple;
+ 
+ 	if (ct == NULL || nf_ct_is_confirmed(ct) || nf_ct_is_untracked(ct) ||
+diff --git a/net/netfilter/ipvs/ip_vs_xmit.c b/net/netfilter/ipvs/ip_vs_xmit.c
+index ee319a4..16d129e 100644
+--- a/net/netfilter/ipvs/ip_vs_xmit.c
++++ b/net/netfilter/ipvs/ip_vs_xmit.c
+@@ -544,7 +544,7 @@ ip_vs_nat_xmit(struct sk_buff *skb, struct ip_vs_conn *cp,
+ #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
+ 	if (cp->flags & IP_VS_CONN_F_SYNC && local) {
+ 		enum ip_conntrack_info ctinfo;
+-		struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
++		struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 
+ 		if (ct && !nf_ct_is_untracked(ct)) {
+ 			IP_VS_DBG_RL_PKT(10, AF_INET, pp, skb, 0,
+@@ -661,7 +661,7 @@ ip_vs_nat_xmit_v6(struct sk_buff *skb, struct ip_vs_conn *cp,
+ #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
+ 	if (cp->flags & IP_VS_CONN_F_SYNC && local) {
+ 		enum ip_conntrack_info ctinfo;
+-		struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
++		struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 
+ 		if (ct && !nf_ct_is_untracked(ct)) {
+ 			IP_VS_DBG_RL_PKT(10, AF_INET6, pp, skb, 0,
+@@ -1176,7 +1176,7 @@ ip_vs_icmp_xmit(struct sk_buff *skb, struct ip_vs_conn *cp,
+ #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
+ 	if (cp->flags & IP_VS_CONN_F_SYNC && local) {
+ 		enum ip_conntrack_info ctinfo;
+-		struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
++		struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 
+ 		if (ct && !nf_ct_is_untracked(ct)) {
+ 			IP_VS_DBG(10, "%s(): "
+@@ -1296,7 +1296,7 @@ ip_vs_icmp_xmit_v6(struct sk_buff *skb, struct ip_vs_conn *cp,
+ #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
+ 	if (cp->flags & IP_VS_CONN_F_SYNC && local) {
+ 		enum ip_conntrack_info ctinfo;
+-		struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
++		struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 
+ 		if (ct && !nf_ct_is_untracked(ct)) {
+ 			IP_VS_DBG(10, "%s(): "
+
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
