@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab1E2Anm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 20:43:42 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:49853 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525Ab1E2Anl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 20:43:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=xYPwY0C/pB3oU1zaET0htPp7naeF2n6ZajATOeLzaKipj3fvmL8BqWNQv4Q6AV/4PV
-         UBYaywcx3gyXDlRlnVDQ==
-Date: Sat, 28 May 2011 17:43:27 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: fix page_lock_anon_vma leaving mutex locked
-In-Reply-To: <BANLkTi=9qqiLNuo9qbcLoQtK3CKSPnhn4g@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1105281738530.14374@sister.anvils>
-References: <alpine.LSU.2.00.1105281317090.13319@sister.anvils> <1306617270.2497.516.camel@laptop> <alpine.LSU.2.00.1105281437320.13942@sister.anvils> <BANLkTinsq-XJGvRVmBa6kRp0RTj9NqGWtA@mail.gmail.com> <alpine.LSU.2.00.1105281634440.14257@sister.anvils>
- <BANLkTi=9qqiLNuo9qbcLoQtK3CKSPnhn4g@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1751634Ab1E2BPH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 21:15:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47148 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750804Ab1E2BPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 21:15:04 -0400
+Message-ID: <4DE19DC3.7090106@zytor.com>
+Date: Sat, 28 May 2011 18:13:39 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Ingo Molnar <mingo@elte.hu>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
+        linux-kernel@vger.kernel.org, davej@redhat.com,
+        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
+        adobriyan@gmail.com, penberg@kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+References: <1306269105.21443.20.camel@dan> <201105270018.36835.rjw@sisk.pl> <BANLkTin+Vjhqtv5-N07G9P9_asNQnrnhVg@mail.gmail.com> <20110527170045.GB4356@elte.hu> <1306516230.3339.17.camel@dan> <20110527171611.GE4356@elte.hu> <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com> <20110527174644.GG4356@elte.hu> <4DDFE52D.4070308@zytor.com> <BANLkTimVQbHvW8tCACAcC8zRkyY1KyU2ww@mail.gmail.com> <20110528121820.GB12059@elte.hu>
+In-Reply-To: <20110528121820.GB12059@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 May 2011, Linus Torvalds wrote:
-> On Sat, May 28, 2011 at 5:12 PM, Hugh Dickins <hughd@google.com> wrote:
-> >
-> > Though I think I'm arriving at the conclusion that this patch
-> > is correct as is, despite the doubts that have arisen.
+On 05/28/2011 05:18 AM, Ingo Molnar wrote:
 > 
-> Well, you hopefully saw my second email where I had come to the same conclusion.
-
-Yes, thanks.
-
+> Having half a megabyte of '__init buffer' at the beginning or end of 
+> the kernel image is no big deal, it's more than enough for good 
+> randomization and makes the whole thing image-loader invariant: we 
+> can freely shift the 'real' kernel image within this larger boundary 
+> without consulting RAM maps.
 > 
-> So I applied the third patch as well, after all. I think it's at the
-> very least at least "more correct" than what we have now. Whether that
-> "page_mapped()" should then be extended to do something else is an
-> additional thing, and I suspect it would affect the slow-path case
-> too.
 
-Yes, I agree it's certainly more correct (two machines running well
-with it for 33 hours now, one of them would hang in 7 or 17 hours).
+Sure, but you're also blowing any attempt at PMD alignment to kingdom come.
 
-And I'm increasingly confident that it's complete too, but it will be
-interesting to see whether I've persuaded Peter.  It was certainly a
-very good point that he raised, that I hadn't thought of at all.
+	-hpa
 
-Hugh
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
