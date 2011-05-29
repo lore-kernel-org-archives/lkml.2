@@ -1,64 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab1E2WTi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 18:19:38 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:43200 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421Ab1E2WTh (ORCPT
+	id S1754908Ab1E2WYS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 18:24:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56774 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252Ab1E2WYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 18:19:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=augustl.com; s=google;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type;
-        b=AzVVwy0n5fBqnNApYQ8bULAy5uzniheeta/QnOYh2dDBPauVaGakFh64GTDHZJBSO5
-         cELlEoQpa9VovayGmpw1DPEa17217A2qmgvrLEWu45HeCgkA015nnJRMd/Rw3bXlR/HJ
-         Du8Zeh2hELcqab4N6Hzcy542VQz0n2yNhHYUA=
+	Sun, 29 May 2011 18:24:17 -0400
+Message-ID: <4DE2C787.1050809@simplicitymedialtd.co.uk>
+Date: Sun, 29 May 2011 23:24:07 +0100
+From: "Cal Leeming [Simplicity Media Ltd]" 
+	<cal.leeming@simplicitymedialtd.co.uk>
+Organization: Simplicity Media Ltd
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinoaAt4YamyDoOGbsDhCMBGZhz_rw@mail.gmail.com>
-References: <1306688839-18732-1-git-send-email-august@augustl.com>
- <20110529234416.7f6f2d53@stein> <BANLkTinoaAt4YamyDoOGbsDhCMBGZhz_rw@mail.gmail.com>
-From: August Lilleaas <august@augustl.com>
-Date: Mon, 30 May 2011 00:19:17 +0200
-Message-ID: <BANLkTinSueVgV1xyLVo1nycnLm4VJOyTtA@mail.gmail.com>
-Subject: [PATCH] Firewire: net: replacing deprecated __attribute__((packed))
- with __packed
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Subject: Re: Fwd: cgroup OOM killer loop causes system to lockup (possible
+ fix included)
+References: <4DE2BFA2.3030309@simplicitymedialtd.co.uk>
+In-Reply-To: <4DE2BFA2.3030309@simplicitymedialtd.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forwarding as plain text, mistakenly sent as HTML mail first.
+Some further logs:
+./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.369927] redis-server 
+invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.369939]  
+[<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.399285] redis-server 
+invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.399296]  
+[<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.428690] redis-server 
+invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.428702]  
+[<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.487696] redis-server 
+invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.487708]  
+[<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.517023] redis-server 
+invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.517035]  
+[<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.546379] redis-server 
+invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.546391]  
+[<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.310789] redis-server 
+invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.310804]  
+[<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.369918] redis-server 
+invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.369930]  
+[<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.399284] redis-server 
+invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.399296]  
+[<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.433634] redis-server 
+invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.433648]  
+[<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.463947] redis-server 
+invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.463959]  
+[<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.493439] redis-server 
+invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.493451]  
+[<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
 
----------- Forwarded message ----------
-From: August Lilleaas <august@augustl.com>
-Date: Mon, May 30, 2011 at 12:11 AM
-Subject: Re: [PATCH] Firewire: net: replacing deprecated
-__attribute__((packed)) with __packed
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
 
-
-On Sun, May 29, 2011 at 11:44 PM, Stefan Richter
-<stefanr@s5r6.in-berlin.de> wrote:
+On 29/05/2011 22:50, Cal Leeming [Simplicity Media Ltd] wrote:
+>  First of all, my apologies if I have submitted this problem to the 
+> wrong place, spent 20 minutes trying to figure out where it needs to 
+> be sent, and was still none the wiser.
 >
-> Who deprecated it and why?
-
-To be frank, the motivation for this patch was a message from
-script/checkpatch.pl when scouring random files for warnings. (This is
-my first contribution to the kernel.)
-Just did some much needed investigation though. It was deprecated for
-portability, specifically to avoid GCC specific code. See commit
-82ddcb040570411fc2d421d96b3e69711c670328.
-
+> The problem is related to applying memory limitations within a cgroup. 
+> If the OOM killer kicks in, it gets stuck in a loop where it tries to 
+> kill a process which has an oom_adj of -17. This causes an infinite 
+> loop, which in turn locks up the system.
 >
-> Shouldn't you add "#include <linux/compiler.h>" now?
-
-You're right. I'll read up on updating patches and get at it.
-
+> May 30 03:13:08 vicky kernel: [ 1578.117055] Memory cgroup out of 
+> memory: kill process 6016 (java) score 0 or a child
+> May 30 03:13:08 vicky kernel: [ 1578.117154] Memory cgroup out of 
+> memory: kill process 6016 (java) score 0 or a child
+> May 30 03:13:08 vicky kernel: [ 1578.117248] Memory cgroup out of 
+> memory: kill process 6016 (java) score 0 or a child
+> May 30 03:13:08 vicky kernel: [ 1578.117343] Memory cgroup out of 
+> memory: kill process 6016 (java) score 0 or a child
+> May 30 03:13:08 vicky kernel: [ 1578.117441] Memory cgroup out of 
+> memory: kill process 6016 (java) score 0 or a child
 >
-> --
-> Stefan Richter
-> -=====-==-== -=-= ===-=
-> http://arcgraph.de/sr/
+>
+>  root@vicky [/home/foxx] > uname -a
+> Linux vicky 2.6.32.41-grsec #3 SMP Mon May 30 02:34:43 BST 2011 x86_64 
+> GNU/Linux
+> (this happens on both the grsec patched and non patched 2.6.32.41 kernel)
+>
+> When this is encountered, the memory usage across the whole server is 
+> still within limits (not even hitting swap).
+>
+> The memory configuration for the cgroup/lxc is:
+> lxc.cgroup.memory.limit_in_bytes = 3000M
+> lxc.cgroup.memory.memsw.limit_in_bytes = 3128M
+>
+> Now, what is even more strange, is that when running under the 
+> 2.6.32.28 kernel (both patched and unpatched), this problem doesn't 
+> happen. However, there is a slight difference between the two kernels. 
+> The 2.6.32.28 kernel gives a default of 0 in the /proc/X/oom_adj, 
+> where as the 2.6.32.41 gives a default of -17. I suspect this is the 
+> root cause of why it's showing in the later kernel, but not the earlier.
+>
+> To test this theory, I started up the lxc on both servers, and then 
+> ran a one liner which showed me all the processes with an oom_adj of -17:
+>
+> (the below is the older/working kernel)
+> root@courtney.internal [/mnt/encstore/lxc] > uname -a
+> Linux courtney.internal 2.6.32.28-grsec #3 SMP Fri Feb 18 16:09:07 GMT 
+> 2011 x86_64 GNU/Linux
+> root@courtney.internal [/mnt/encstore/lxc] > for x in `find /proc 
+> -iname 'oom_adj' | xargs grep "\-17"  | awk -F '/' '{print $3}'` ; do 
+> ps -p $x --no-headers ; done
+> grep: /proc/1411/task/1411/oom_adj: No such file or directory
+> grep: /proc/1411/oom_adj: No such file or directory
+>   804 ?        00:00:00 udevd
+>   804 ?        00:00:00 udevd
+> 25536 ?        00:00:00 sshd
+> 25536 ?        00:00:00 sshd
+> 31861 ?        00:00:00 sshd
+> 31861 ?        00:00:00 sshd
+> 32173 ?        00:00:00 udevd
+> 32173 ?        00:00:00 udevd
+> 32174 ?        00:00:00 udevd
+> 32174 ?        00:00:00 udevd
+>
+> (the below is the newer/broken kernel)
+>  root@vicky [/mnt/encstore/ssd/kernel/linux-2.6.32.41] > uname -a
+> Linux vicky 2.6.32.41-grsec #3 SMP Mon May 30 02:34:43 BST 2011 x86_64 
+> GNU/Linux
+>  root@vicky [/mnt/encstore/ssd/kernel/linux-2.6.32.41] > for x in 
+> `find /proc -iname 'oom_adj' | xargs grep "\-17"  | awk -F '/' '{print 
+> $3}'` ; do ps -p $x --no-headers ; done
+> grep: /proc/3118/task/3118/oom_adj: No such file or directory
+> grep: /proc/3118/oom_adj: No such file or directory
+>   895 ?        00:00:00 udevd
+>   895 ?        00:00:00 udevd
+>  1091 ?        00:00:00 udevd
+>  1091 ?        00:00:00 udevd
+>  1092 ?        00:00:00 udevd
+>  1092 ?        00:00:00 udevd
+>  2596 ?        00:00:00 sshd
+>  2596 ?        00:00:00 sshd
+>  2608 ?        00:00:00 sshd
+>  2608 ?        00:00:00 sshd
+>  2613 ?        00:00:00 sshd
+>  2613 ?        00:00:00 sshd
+>  2614 pts/0    00:00:00 bash
+>  2614 pts/0    00:00:00 bash
+>  2620 pts/0    00:00:00 sudo
+>  2620 pts/0    00:00:00 sudo
+>  2621 pts/0    00:00:00 su
+>  2621 pts/0    00:00:00 su
+>  2622 pts/0    00:00:00 bash
+>  2622 pts/0    00:00:00 bash
+>  2685 ?        00:00:00 lxc-start
+>  2685 ?        00:00:00 lxc-start
+>  2699 ?        00:00:00 init
+>  2699 ?        00:00:00 init
+>  2939 ?        00:00:00 rc
+>  2939 ?        00:00:00 rc
+>  2942 ?        00:00:00 startpar
+>  2942 ?        00:00:00 startpar
+>  2964 ?        00:00:00 rsyslogd
+>  2964 ?        00:00:00 rsyslogd
+>  2964 ?        00:00:00 rsyslogd
+>  2964 ?        00:00:00 rsyslogd
+>  2980 ?        00:00:00 startpar
+>  2980 ?        00:00:00 startpar
+>  2981 ?        00:00:00 ctlscript.sh
+>  2981 ?        00:00:00 ctlscript.sh
+>  3016 ?        00:00:00 cron
+>  3016 ?        00:00:00 cron
+>  3025 ?        00:00:00 mysqld_safe
+>  3025 ?        00:00:00 mysqld_safe
+>  3032 ?        00:00:00 sshd
+>  3032 ?        00:00:00 sshd
+>  3097 ?        00:00:00 mysqld.bin
+>  3097 ?        00:00:00 mysqld.bin
+>  3097 ?        00:00:00 mysqld.bin
+>  3097 ?        00:00:00 mysqld.bin
+>  3097 ?        00:00:00 mysqld.bin
+>  3097 ?        00:00:00 mysqld.bin
+>  3097 ?        00:00:00 mysqld.bin
+>  3097 ?        00:00:00 mysqld.bin
+>  3097 ?        00:00:00 mysqld.bin
+>  3097 ?        00:00:00 mysqld.bin
+>  3113 ?        00:00:00 ctl.sh
+>  3113 ?        00:00:00 ctl.sh
+>  3115 ?        00:00:00 sleep
+>  3115 ?        00:00:00 sleep
+>  3116 ?        00:00:00 .memcached.bin
+>  3116 ?        00:00:00 .memcached.bin
+>
+>
+> As you can see, it is clear that the newer kernel is setting -17 by 
+> default, which in turn is causing the OOM killer loop.
+>
+> So I began to try and find what may have caused this problem by 
+> comparing the two sources...
+>
+> I checked the code for all references to 'oom_adj' and 'oom_adjust' in 
+> both code sets, but found no obvious differences:
+> grep -R -e oom_adjust -e oom_adj . | sort | grep -R -e oom_adjust -e 
+> oom_adj
+>
+> Then I checked for references to "-17" in all .c and .h files, and 
+> found a couple of matches, but only one obvious one:
+> grep -R "\-17" . | grep -e ".c:" -e ".h:" -e "\-17" | wc -l
+> ./include/linux/oom.h:#define OOM_DISABLE (-17)
+>
+> But again, a search for OOM_DISABLE came up with nothing obvious...
+>
+> In a last ditch attempt, I did a search for all references to 'oom' 
+> (case-insensitive) in both code bases, then compared the two:
+>  root@annabelle [~/lol/linux-2.6.32.28] > grep -i -R "oom" . | sort -n 
+> > /tmp/annabelle.oom_adj
+>  root@vicky [/mnt/encstore/ssd/kernel/linux-2.6.32.41] > grep -i -R 
+> "oom" . | sort -n > /tmp/vicky.oom_adj
+>
+> and this brought back (yet again) nothing obvious..
+>
+>
+>  root@vicky [/mnt/encstore/ssd/kernel/linux-2.6.32.41] > md5sum 
+> ./include/linux/oom.h
+> 2a32622f6cd38299fc2801d10a9a3ea8  ./include/linux/oom.h
+>
+>  root@annabelle [~/lol/linux-2.6.32.28] > md5sum ./include/linux/oom.h
+> 2a32622f6cd38299fc2801d10a9a3ea8  ./include/linux/oom.h
+>
+>  root@vicky [/mnt/encstore/ssd/kernel/linux-2.6.32.41] > md5sum 
+> ./mm/oom_kill.c
+> 1ef2c2bec19868d13ec66ec22033f10a  ./mm/oom_kill.c
+>
+>  root@annabelle [~/lol/linux-2.6.32.28] > md5sum ./mm/oom_kill.c
+> 1ef2c2bec19868d13ec66ec22033f10a  ./mm/oom_kill.c
+>
+>
+>
+> Could anyone please shed some light as to why the default oom_adj is 
+> set to -17 now (and where it is actually set)? From what I can tell, 
+> the fix for this issue will either be:
+>
+>   1. Allow OOM killer to override the decision of ignoring oom_adj ==
+>      -17 if an unrecoverable loop is encountered.
+>   2. Change the default back to 0.
+>
+> Again, my apologies if this bug report is slightly unorthodox, or 
+> doesn't follow usual procedure etc. I can assure you I have tried my 
+> absolute best to give all the necessary information though.
+>
+> Cal
+>
+
