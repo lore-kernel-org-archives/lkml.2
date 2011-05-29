@@ -1,83 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab1E2RSN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 13:18:13 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:41735 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab1E2RSM (ORCPT
+	id S1754818Ab1E2RUg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 13:20:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43713 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750962Ab1E2RUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 13:18:12 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: 2 small kernel config issues related to UML + RTC
-In-Reply-To: Your message of "Sun, 29 May 2011 11:22:01 +0200."
-             <201105291122.01602.toralf.foerster@gmx.de>
-From: Valdis.Kletnieks@vt.edu
-References: <201105291122.01602.toralf.foerster@gmx.de>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1306689477_27223P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sun, 29 May 2011 13:17:57 -0400
-Message-ID: <103895.1306689477@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020209.4DE27FC9.006A,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Sun, 29 May 2011 13:20:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTikHejgEyz9LfJ962Bu89vn1cBP+WQ@mail.gmail.com>
+References: <20110529072256.GA20983@elte.hu> <BANLkTikHejgEyz9LfJ962Bu89vn1cBP+WQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 29 May 2011 10:19:44 -0700
+Message-ID: <BANLkTimqhkiBSArm7n0_9FD+LW6hWBWxFA@mail.gmail.com>
+Subject: Re: [PATCH] mm: Fix boot crash in mm_alloc()
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-mm@kvack.org
+Content-Type: multipart/mixed; boundary=001517503e1ab00d6f04a46d61ea
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1306689477_27223P
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+--001517503e1ab00d6f04a46d61ea
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Sun, 29 May 2011 11:22:01 +0200, Toralf F=F6rster said:
->   │ Symbol: STMMAC_RTC_TIMER =5B=3Dn=5D                       =20
->   │ Type  : boolean
->   │ Prompt: Real time clock
->   │   Defined at drivers/net/stmmac/Kconfig:50
->   │   Depends on: <choice> && RTC_CLASS
->   │   Location:
->   │     -> Network device support (NETDEVICES =5B=3Dy=5D)
->   │       -> Ethernet (1000 Mbit) (NETDEV_1000 =5B=3Dn=5D)
->   │         -> STMicroelectronics 10/100/1000 Ethernet driver (STMMAC_E=
-TH =5B=3Dn=5D)
->   │           -> STMMAC Timer optimisation (STMMAC_TIMER =5B=3Dn=5D)
->   │             -> Select Timer device (<choice> =5B=3Dn=5D)
+On Sun, May 29, 2011 at 9:22 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Or, in fact, we could just do something like the attached (UNTESTED!)
 
-Ouch. That has to be the strangest place one could *possibly* put an RTC =
-driver. ;)
+So I did warn you that it was untested.
 
-Giuseppe - is that RTC driver *really* an integral part of the chipset an=
-d
-won't work without the Ethernet parts, or should the driver code for the =
-RTC
-live elsewhere in the tree?
+It still is, but I walked through it a bit more, and I realized that
+while I had gotten rid of the extra allocations of the
+cpu_vm_mask_var, I hadn't gotten rid of the freeing.
 
+So that patch would definitely not have worked very well with
+CONFIG_CPUMASK_OFFSTACK.
 
---==_Exmh_1306689477_27223P
-Content-Type: application/pgp-signature
+And I noticed that I moved the cpu_vm_mask back in the wrong space, it
+should likely be as close as possible to the mm_context_t, since the
+main user is likely the task switching code that touches that anyway.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+So here's a slightly updated patch.
 
-iD4DBQFN4n/FcC3lWbTT17ARAulNAJ9BhXhUUV0WBKViuZNErEpOMYQJpACUCkx1
-JzlXXFc+TtSPi10Dl9TpLQ==
-=Cqc3
------END PGP SIGNATURE-----
+STILL TOTALLY UNTESTED! The fixes were just from eyeballing it a bit
+more, not from any actual testing.
 
---==_Exmh_1306689477_27223P--
+                      Linus
 
+--001517503e1ab00d6f04a46d61ea
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_goa98iqf1
+
+IGluY2x1ZGUvbGludXgvbW1fdHlwZXMuaCB8ICAgMTQgKysrKysrKysrKysrLS0KIGluY2x1ZGUv
+bGludXgvc2NoZWQuaCAgICB8ICAgIDEgLQogaW5pdC9tYWluLmMgICAgICAgICAgICAgIHwgICAg
+MiArLQoga2VybmVsL2ZvcmsuYyAgICAgICAgICAgIHwgICA0MiArKysrKysrKysrLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIDQgZmlsZXMgY2hhbmdlZCwgMjMgaW5zZXJ0aW9ucygr
+KSwgMzYgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9tbV90eXBlcy5o
+IGIvaW5jbHVkZS9saW51eC9tbV90eXBlcy5oCmluZGV4IDJhNzhhYWU3OGM2OS4uMDI3OTM1Yzg2
+YzY4IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L21tX3R5cGVzLmgKKysrIGIvaW5jbHVkZS9s
+aW51eC9tbV90eXBlcy5oCkBAIC0yNjQsNiArMjY0LDggQEAgc3RydWN0IG1tX3N0cnVjdCB7CiAK
+IAlzdHJ1Y3QgbGludXhfYmluZm10ICpiaW5mbXQ7CiAKKwljcHVtYXNrX3Zhcl90IGNwdV92bV9t
+YXNrX3ZhcjsKKwogCS8qIEFyY2hpdGVjdHVyZS1zcGVjaWZpYyBNTSBjb250ZXh0ICovCiAJbW1f
+Y29udGV4dF90IGNvbnRleHQ7CiAKQEAgLTMxMSwxMCArMzEzLDE4IEBAIHN0cnVjdCBtbV9zdHJ1
+Y3QgewogI2lmZGVmIENPTkZJR19UUkFOU1BBUkVOVF9IVUdFUEFHRQogCXBndGFibGVfdCBwbWRf
+aHVnZV9wdGU7IC8qIHByb3RlY3RlZCBieSBwYWdlX3RhYmxlX2xvY2sgKi8KICNlbmRpZgotCi0J
+Y3B1bWFza192YXJfdCBjcHVfdm1fbWFza192YXI7CisjaWZkZWYgQ09ORklHX0NQVU1BU0tfT0ZG
+U1RBQ0sKKwlzdHJ1Y3QgY3B1bWFzayBjcHVtYXNrX2FsbG9jYXRpb247CisjZW5kaWYKIH07CiAK
+K3N0YXRpYyBpbmxpbmUgdm9pZCBtbV9pbml0X2NwdW1hc2soc3RydWN0IG1tX3N0cnVjdCAqbW0p
+Cit7CisjaWZkZWYgQ09ORklHX0NQVU1BU0tfT0ZGU1RBQ0sKKwltbS0+Y3B1X3ZtX21hc2tfdmFy
+ID0gJm1tLT5jcHVtYXNrX2FsbG9jYXRpb247CisjZW5kaWYKK30KKwogLyogRnV0dXJlLXNhZmUg
+YWNjZXNzb3IgZm9yIHN0cnVjdCBtbV9zdHJ1Y3QncyBjcHVfdm1fbWFzay4gKi8KIHN0YXRpYyBp
+bmxpbmUgY3B1bWFza190ICptbV9jcHVtYXNrKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tKQogewpkaWZm
+IC0tZ2l0IGEvaW5jbHVkZS9saW51eC9zY2hlZC5oIGIvaW5jbHVkZS9saW51eC9zY2hlZC5oCmlu
+ZGV4IGJjZGRkMDEzODEwNS4uMmE4NjIxYzRiZTFlIDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4
+L3NjaGVkLmgKKysrIGIvaW5jbHVkZS9saW51eC9zY2hlZC5oCkBAIC0yMTk0LDcgKzIxOTQsNiBA
+QCBzdGF0aWMgaW5saW5lIHZvaWQgbW1kcm9wKHN0cnVjdCBtbV9zdHJ1Y3QgKiBtbSkKIAlpZiAo
+dW5saWtlbHkoYXRvbWljX2RlY19hbmRfdGVzdCgmbW0tPm1tX2NvdW50KSkpCiAJCV9fbW1kcm9w
+KG1tKTsKIH0KLWV4dGVybiBpbnQgbW1faW5pdF9jcHVtYXNrKHN0cnVjdCBtbV9zdHJ1Y3QgKm1t
+LCBzdHJ1Y3QgbW1fc3RydWN0ICpvbGRtbSk7CiAKIC8qIG1tcHV0IGdldHMgcmlkIG9mIHRoZSBt
+YXBwaW5ncyBhbmQgYWxsIHVzZXItc3BhY2UgKi8KIGV4dGVybiB2b2lkIG1tcHV0KHN0cnVjdCBt
+bV9zdHJ1Y3QgKik7CmRpZmYgLS1naXQgYS9pbml0L21haW4uYyBiL2luaXQvbWFpbi5jCmluZGV4
+IGQyZjFlMDg2YmYzMy4uY2FmYmE2N2MxM2JmIDEwMDY0NAotLS0gYS9pbml0L21haW4uYworKysg
+Yi9pbml0L21haW4uYwpAQCAtNDg3LDYgKzQ4Nyw3IEBAIGFzbWxpbmthZ2Ugdm9pZCBfX2luaXQg
+c3RhcnRfa2VybmVsKHZvaWQpCiAJcHJpbnRrKEtFUk5fTk9USUNFICIlcyIsIGxpbnV4X2Jhbm5l
+cik7CiAJc2V0dXBfYXJjaCgmY29tbWFuZF9saW5lKTsKIAltbV9pbml0X293bmVyKCZpbml0X21t
+LCAmaW5pdF90YXNrKTsKKwltbV9pbml0X2NwdW1hc2soJmluaXRfbW0pOwogCXNldHVwX2NvbW1h
+bmRfbGluZShjb21tYW5kX2xpbmUpOwogCXNldHVwX25yX2NwdV9pZHMoKTsKIAlzZXR1cF9wZXJf
+Y3B1X2FyZWFzKCk7CkBAIC01MTAsNyArNTExLDYgQEAgYXNtbGlua2FnZSB2b2lkIF9faW5pdCBz
+dGFydF9rZXJuZWwodm9pZCkKIAlzb3J0X21haW5fZXh0YWJsZSgpOwogCXRyYXBfaW5pdCgpOwog
+CW1tX2luaXQoKTsKLQlCVUdfT04obW1faW5pdF9jcHVtYXNrKCZpbml0X21tLCAwKSk7CiAKIAkv
+KgogCSAqIFNldCB1cCB0aGUgc2NoZWR1bGVyIHByaW9yIHN0YXJ0aW5nIGFueSBpbnRlcnJ1cHRz
+IChzdWNoIGFzIHRoZQpkaWZmIC0tZ2l0IGEva2VybmVsL2ZvcmsuYyBiL2tlcm5lbC9mb3JrLmMK
+aW5kZXggY2E0MDZkOTE2NzEzLi4wMjc2YzMwNDAxYTAgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9mb3Jr
+LmMKKysrIGIva2VybmVsL2ZvcmsuYwpAQCAtNDg0LDIwICs0ODQsNiBAQCBzdGF0aWMgdm9pZCBt
+bV9pbml0X2FpbyhzdHJ1Y3QgbW1fc3RydWN0ICptbSkKICNlbmRpZgogfQogCi1pbnQgbW1faW5p
+dF9jcHVtYXNrKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCBzdHJ1Y3QgbW1fc3RydWN0ICpvbGRtbSkK
+LXsKLSNpZmRlZiBDT05GSUdfQ1BVTUFTS19PRkZTVEFDSwotCWlmICghYWxsb2NfY3B1bWFza192
+YXIoJm1tLT5jcHVfdm1fbWFza192YXIsIEdGUF9LRVJORUwpKQotCQlyZXR1cm4gLUVOT01FTTsK
+LQotCWlmIChvbGRtbSkKLQkJY3B1bWFza19jb3B5KG1tX2NwdW1hc2sobW0pLCBtbV9jcHVtYXNr
+KG9sZG1tKSk7Ci0JZWxzZQotCQltZW1zZXQobW1fY3B1bWFzayhtbSksIDAsIGNwdW1hc2tfc2l6
+ZSgpKTsKLSNlbmRpZgotCXJldHVybiAwOwotfQotCiBzdGF0aWMgc3RydWN0IG1tX3N0cnVjdCAq
+IG1tX2luaXQoc3RydWN0IG1tX3N0cnVjdCAqIG1tLCBzdHJ1Y3QgdGFza19zdHJ1Y3QgKnApCiB7
+CiAJYXRvbWljX3NldCgmbW0tPm1tX3VzZXJzLCAxKTsKQEAgLTUzOCwxNyArNTI0LDggQEAgc3Ry
+dWN0IG1tX3N0cnVjdCAqIG1tX2FsbG9jKHZvaWQpCiAJCXJldHVybiBOVUxMOwogCiAJbWVtc2V0
+KG1tLCAwLCBzaXplb2YoKm1tKSk7Ci0JbW0gPSBtbV9pbml0KG1tLCBjdXJyZW50KTsKLQlpZiAo
+IW1tKQotCQlyZXR1cm4gTlVMTDsKLQotCWlmIChtbV9pbml0X2NwdW1hc2sobW0sIE5VTEwpKSB7
+Ci0JCW1tX2ZyZWVfcGdkKG1tKTsKLQkJZnJlZV9tbShtbSk7Ci0JCXJldHVybiBOVUxMOwotCX0K
+LQotCXJldHVybiBtbTsKKwltbV9pbml0X2NwdW1hc2sobW0pOworCXJldHVybiBtbV9pbml0KG1t
+LCBjdXJyZW50KTsKIH0KIAogLyoKQEAgLTU1OSw3ICs1MzYsNiBAQCBzdHJ1Y3QgbW1fc3RydWN0
+ICogbW1fYWxsb2Modm9pZCkKIHZvaWQgX19tbWRyb3Aoc3RydWN0IG1tX3N0cnVjdCAqbW0pCiB7
+CiAJQlVHX09OKG1tID09ICZpbml0X21tKTsKLQlmcmVlX2NwdW1hc2tfdmFyKG1tLT5jcHVfdm1f
+bWFza192YXIpOwogCW1tX2ZyZWVfcGdkKG1tKTsKIAlkZXN0cm95X2NvbnRleHQobW0pOwogCW1t
+dV9ub3RpZmllcl9tbV9kZXN0cm95KG1tKTsKQEAgLTc1Myw2ICs3MjksNyBAQCBzdHJ1Y3QgbW1f
+c3RydWN0ICpkdXBfbW0oc3RydWN0IHRhc2tfc3RydWN0ICp0c2spCiAJCWdvdG8gZmFpbF9ub21l
+bTsKIAogCW1lbWNweShtbSwgb2xkbW0sIHNpemVvZigqbW0pKTsKKwltbV9pbml0X2NwdW1hc2so
+bW0pOwogCiAJLyogSW5pdGlhbGl6aW5nIGZvciBTd2FwIHRva2VuIHN0dWZmICovCiAJbW0tPnRv
+a2VuX3ByaW9yaXR5ID0gMDsKQEAgLTc2NSw5ICs3NDIsNiBAQCBzdHJ1Y3QgbW1fc3RydWN0ICpk
+dXBfbW0oc3RydWN0IHRhc2tfc3RydWN0ICp0c2spCiAJaWYgKCFtbV9pbml0KG1tLCB0c2spKQog
+CQlnb3RvIGZhaWxfbm9tZW07CiAKLQlpZiAobW1faW5pdF9jcHVtYXNrKG1tLCBvbGRtbSkpCi0J
+CWdvdG8gZmFpbF9ub2NwdW1hc2s7Ci0KIAlpZiAoaW5pdF9uZXdfY29udGV4dCh0c2ssIG1tKSkK
+IAkJZ290byBmYWlsX25vY29udGV4dDsKIApAQCAtNzk0LDkgKzc2OCw2IEBAIGZhaWxfbm9tZW06
+CiAJcmV0dXJuIE5VTEw7CiAKIGZhaWxfbm9jb250ZXh0OgotCWZyZWVfY3B1bWFza192YXIobW0t
+PmNwdV92bV9tYXNrX3Zhcik7Ci0KLWZhaWxfbm9jcHVtYXNrOgogCS8qCiAJICogSWYgaW5pdF9u
+ZXdfY29udGV4dCgpIGZhaWxlZCwgd2UgY2Fubm90IHVzZSBtbXB1dCgpIHRvIGZyZWUgdGhlIG1t
+CiAJICogYmVjYXVzZSBpdCBjYWxscyBkZXN0cm95X2NvbnRleHQoKQpAQCAtMTU5MSw2ICsxNTYy
+LDEzIEBAIHZvaWQgX19pbml0IHByb2NfY2FjaGVzX2luaXQodm9pZCkKIAlmc19jYWNoZXAgPSBr
+bWVtX2NhY2hlX2NyZWF0ZSgiZnNfY2FjaGUiLAogCQkJc2l6ZW9mKHN0cnVjdCBmc19zdHJ1Y3Qp
+LCAwLAogCQkJU0xBQl9IV0NBQ0hFX0FMSUdOfFNMQUJfUEFOSUN8U0xBQl9OT1RSQUNLLCBOVUxM
+KTsKKwkvKgorCSAqIEZJWE1FISBUaGUgInNpemVvZihzdHJ1Y3QgbW1fc3RydWN0KSIgY3VycmVu
+dGx5IGluY2x1ZGVzIHRoZQorCSAqIHdob2xlIHN0cnVjdCBjcHVtYXNrIGZvciB0aGUgT0ZGU1RB
+Q0sgY2FzZS4gV2UgY291bGQgY2hhbmdlCisJICogdGhpcyB0byAqb25seSogYWxsb2NhdGUgYXMg
+bXVjaCBvZiBpdCBhcyByZXF1aXJlZCBieSB0aGUKKwkgKiBtYXhpbXVtIG51bWJlciBvZiBDUFUn
+cyB3ZSBjYW4gZXZlciBoYXZlLiAgVGhlIGNwdW1hc2tfYWxsb2NhdGlvbgorCSAqIGlzIGF0IHRo
+ZSBlbmQgb2YgdGhlIHN0cnVjdHVyZSwgZXhhY3RseSBmb3IgdGhhdCByZWFzb24uCisJICovCiAJ
+bW1fY2FjaGVwID0ga21lbV9jYWNoZV9jcmVhdGUoIm1tX3N0cnVjdCIsCiAJCQlzaXplb2Yoc3Ry
+dWN0IG1tX3N0cnVjdCksIEFSQ0hfTUlOX01NU1RSVUNUX0FMSUdOLAogCQkJU0xBQl9IV0NBQ0hF
+X0FMSUdOfFNMQUJfUEFOSUN8U0xBQl9OT1RSQUNLLCBOVUxMKTsK
+--001517503e1ab00d6f04a46d61ea--
