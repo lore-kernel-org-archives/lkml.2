@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab1E2XNP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 19:13:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54798 "EHLO
+	id S1754657Ab1E2XNH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 19:13:07 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53557 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754295Ab1E2XNC (ORCPT
+	with ESMTP id S1754307Ab1E2XND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 19:13:02 -0400
+	Sun, 29 May 2011 19:13:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=dqqDk7GwxiYrczserMCB6//zfP7D0OSdP0yNaH0sPp21UUjfUD+TaX9EsQHDxIeBi2
-         lPs1Y2ZKahym4YROBALii8/XOFOPuDfMMJtQbuZ3+9gUFVGqS2HQuTcZsJ50BjaFghjt
-         csubwxOQE9uUv+1Ruh+q5RYvVfbV4q27xYgqs=
+        b=iHMNSUXJXStSUmujYjC3BDSka1+M4eg+/HstbZk7gJyhQOfIj1gyd1vhIb+qoMcsJW
+         GDbRBYUi6e++/MA4yoZx64yrNk+QKbrxA5YFluEzcE/BmcFnUbgQx5k2xUsBDmv07fdj
+         wxbJWZO4IKttT5iSDa54+lZui0y9uePGvgXxM=
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com
 Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
         pedro@codesourcery.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/17] ptrace: use bit_waitqueue for TRAPPING instead of wait_chldexit
-Date: Mon, 30 May 2011 01:12:31 +0200
-Message-Id: <1306710760-16440-9-git-send-email-tj@kernel.org>
+Subject: [PATCH 09/17] signal: remove three noop tracehooks
+Date: Mon, 30 May 2011 01:12:32 +0200
+Message-Id: <1306710760-16440-10-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.5.2
 In-Reply-To: <1306710760-16440-1-git-send-email-tj@kernel.org>
 References: <1306710760-16440-1-git-send-email-tj@kernel.org>
@@ -30,69 +30,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ptracer->signal->wait_chldexit was used to wait for TRAPPING; however,
-->wait_chldexit was already complicated with waker-side filtering
-without adding TRAPPING wait on top of it.  Also, it unnecessarily
-made TRAPPING clearing depend on the current ptrace relationship - if
-the ptracee is detached, wakeup is lost.
+Remove the following three noop tracehooks in signals.c.
 
-There is no reason to use signal->wait_chldexit here.  We're just
-waiting for JOBCTL_TRAPPING bit to clear and given the relatively
-infrequent use of ptrace, bit_waitqueue can serve it perfectly.
+* tracehook_force_sigpending()
+* tracehook_get_signal()
+* tracehook_finish_jctl()
 
-This patch makes JOBCTL_TRAPPING wait use bit_waitqueue instead of
-signal->wait_chldexit.
-
--v2: Use JOBCTL_*_BIT macros instead of ilog2() as suggested by Linus.
+The code area is about to be updated and these hooks don't do anything
+other than obfuscating the logic.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- kernel/ptrace.c |   10 ++++++++--
- kernel/signal.c |    3 +--
- 2 files changed, 9 insertions(+), 4 deletions(-)
+ include/linux/tracehook.h |   52 ---------------------------------------------
+ kernel/signal.c           |   44 ++++++++++++--------------------------
+ 2 files changed, 14 insertions(+), 82 deletions(-)
 
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 1506556..82f566b 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -25,6 +25,12 @@
- #include <linux/hw_breakpoint.h>
- 
- 
-+static int ptrace_trapping_sleep_fn(void *flags)
-+{
-+	schedule();
-+	return 0;
-+}
-+
- /*
-  * ptrace a task: make the debugger its new parent and
-  * move it to the ptrace list.
-@@ -269,8 +275,8 @@ unlock_tasklist:
- unlock_creds:
- 	mutex_unlock(&task->signal->cred_guard_mutex);
- out:
--	wait_event(current->signal->wait_chldexit,
--			   !(task->jobctl & JOBCTL_TRAPPING));
-+	wait_on_bit(&task->jobctl, JOBCTL_TRAPPING_BIT,
-+			    ptrace_trapping_sleep_fn, TASK_UNINTERRUPTIBLE);
- 	return retval;
+diff --git a/include/linux/tracehook.h b/include/linux/tracehook.h
+index e95f523..15745cd 100644
+--- a/include/linux/tracehook.h
++++ b/include/linux/tracehook.h
+@@ -425,58 +425,6 @@ static inline int tracehook_consider_fatal_signal(struct task_struct *task,
+ 	return (task_ptrace(task) & PT_PTRACED) != 0;
  }
+ 
+-/**
+- * tracehook_force_sigpending - let tracing force signal_pending(current) on
+- *
+- * Called when recomputing our signal_pending() flag.  Return nonzero
+- * to force the signal_pending() flag on, so that tracehook_get_signal()
+- * will be called before the next return to user mode.
+- *
+- * Called with @current->sighand->siglock held.
+- */
+-static inline int tracehook_force_sigpending(void)
+-{
+-	return 0;
+-}
+-
+-/**
+- * tracehook_get_signal - deliver synthetic signal to traced task
+- * @task:		@current
+- * @regs:		task_pt_regs(@current)
+- * @info:		details of synthetic signal
+- * @return_ka:		sigaction for synthetic signal
+- *
+- * Return zero to check for a real pending signal normally.
+- * Return -1 after releasing the siglock to repeat the check.
+- * Return a signal number to induce an artificial signal delivery,
+- * setting *@info and *@return_ka to specify its details and behavior.
+- *
+- * The @return_ka->sa_handler value controls the disposition of the
+- * signal, no matter the signal number.  For %SIG_DFL, the return value
+- * is a representative signal to indicate the behavior (e.g. %SIGTERM
+- * for death, %SIGQUIT for core dump, %SIGSTOP for job control stop,
+- * %SIGTSTP for stop unless in an orphaned pgrp), but the signal number
+- * reported will be @info->si_signo instead.
+- *
+- * Called with @task->sighand->siglock held, before dequeuing pending signals.
+- */
+-static inline int tracehook_get_signal(struct task_struct *task,
+-				       struct pt_regs *regs,
+-				       siginfo_t *info,
+-				       struct k_sigaction *return_ka)
+-{
+-	return 0;
+-}
+-
+-/**
+- * tracehook_finish_jctl - report about return from job control stop
+- *
+- * This is called by do_signal_stop() after wakeup.
+- */
+-static inline void tracehook_finish_jctl(void)
+-{
+-}
+-
+ #define DEATH_REAP			-1
+ #define DEATH_DELAYED_GROUP_LEADER	-2
  
 diff --git a/kernel/signal.c b/kernel/signal.c
-index 9ab91c5..172a4c7 100644
+index 172a4c7..c99b8b5 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
-@@ -272,8 +272,7 @@ static void task_clear_jobctl_trapping(struct task_struct *task)
+@@ -150,9 +150,7 @@ void recalc_sigpending_and_wake(struct task_struct *t)
+ 
+ void recalc_sigpending(void)
  {
- 	if (unlikely(task->jobctl & JOBCTL_TRAPPING)) {
- 		task->jobctl &= ~JOBCTL_TRAPPING;
--		__wake_up_sync_key(&task->parent->signal->wait_chldexit,
--				   TASK_UNINTERRUPTIBLE, 1, task);
-+		wake_up_bit(&task->jobctl, JOBCTL_TRAPPING_BIT);
- 	}
+-	if (unlikely(tracehook_force_sigpending()))
+-		set_thread_flag(TIF_SIGPENDING);
+-	else if (!recalc_sigpending_tsk(current) && !freezing(current))
++	if (!recalc_sigpending_tsk(current) && !freezing(current))
+ 		clear_thread_flag(TIF_SIGPENDING);
+ 
  }
+@@ -2005,8 +2003,6 @@ retry:
+ 
+ 	spin_unlock_irq(&current->sighand->siglock);
+ 
+-	tracehook_finish_jctl();
+-
+ 	return 1;
+ }
+ 
+@@ -2109,37 +2105,25 @@ relock:
+ 
+ 	for (;;) {
+ 		struct k_sigaction *ka;
+-		/*
+-		 * Tracing can induce an artificial signal and choose sigaction.
+-		 * The return value in @signr determines the default action,
+-		 * but @info->si_signo is the signal number we will report.
+-		 */
+-		signr = tracehook_get_signal(current, regs, info, return_ka);
+-		if (unlikely(signr < 0))
++
++		if (unlikely(current->jobctl & JOBCTL_STOP_PENDING) &&
++		    do_signal_stop(0))
+ 			goto relock;
+-		if (unlikely(signr != 0))
+-			ka = return_ka;
+-		else {
+-			if (unlikely(current->jobctl & JOBCTL_STOP_PENDING) &&
+-			    do_signal_stop(0))
+-				goto relock;
+ 
+-			signr = dequeue_signal(current, &current->blocked,
+-					       info);
++		signr = dequeue_signal(current, &current->blocked, info);
+ 
+-			if (!signr)
+-				break; /* will return 0 */
++		if (!signr)
++			break; /* will return 0 */
+ 
+-			if (signr != SIGKILL) {
+-				signr = ptrace_signal(signr, info,
+-						      regs, cookie);
+-				if (!signr)
+-					continue;
+-			}
+-
+-			ka = &sighand->action[signr-1];
++		if (signr != SIGKILL) {
++			signr = ptrace_signal(signr, info,
++					      regs, cookie);
++			if (!signr)
++				continue;
+ 		}
+ 
++		ka = &sighand->action[signr-1];
++
+ 		/* Trace actually delivered signals. */
+ 		trace_signal_deliver(signr, info, ka);
  
 -- 
 1.7.5.2
