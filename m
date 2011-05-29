@@ -1,164 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab1E2QXS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 12:23:18 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43927 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753972Ab1E2QXR (ORCPT
+	id S1754773Ab1E2Qhw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 12:37:52 -0400
+Received: from vt.electrainfo.com ([207.136.236.70]:55154 "EHLO
+	black.electrainfo.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754080Ab1E2Qhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 12:23:17 -0400
+	Sun, 29 May 2011 12:37:51 -0400
+X-Greylist: delayed 617 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 May 2011 12:37:50 EDT
+Date: Sun, 29 May 2011 12:27:38 -0400
+From: Whit Blauvelt <whit@transpect.com>
+To: linux-kernel@vger.kernel.org
+Subject: recursive fault in 2.6.35.5
+Message-ID: <20110529162738.GA7832@black.transpect.com>
 MIME-Version: 1.0
-In-Reply-To: <20110529072256.GA20983@elte.hu>
-References: <20110529072256.GA20983@elte.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 29 May 2011 09:22:49 -0700
-Message-ID: <BANLkTikHejgEyz9LfJ962Bu89vn1cBP+WQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: Fix boot crash in mm_alloc()
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-mm@kvack.org
-Content-Type: multipart/mixed; boundary=001517503e1a31508704a46c961c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001517503e1a31508704a46c961c
-Content-Type: text/plain; charset=ISO-8859-1
+Hi,
 
-On Sun, May 29, 2011 at 12:22 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> Would be nice to get the fix below into -rc1 as well, it triggers
-> rather easily on bootup when CONFIG_CPUMASK_OFFSTACK is turned on.
+This isn't a most-recent kernel, so we should upgrade the systems with it,
+but it could also be useful to know why the fault occurred. If someone here
+can easily decode the final messages when the system froze....
 
-Looking at that commit de03c72cfce5, it looks odd in other ways too.
+This is vanilla 2.6.35.5, built from source, running with Ubuntu Server
+10.04.2. Two similar systems have been running stably for months, then
+yesterday and today both froze up - one twice. On the one where I was able
+to get a remote console before rebooting the final messages are in a screen
+capture at
 
-For example, it looks like mm_cpumask is always initialized to zero.
-That's a bit odd, isn't it, since it *used* to be initialized
-statically with this:
+http://www.transpect.com/jpg/sb2crash.jpg
 
--       .cpu_vm_mask    = CPU_MASK_ALL,
+The final lines are
 
-which is rather different from zero.
+[3521437.065988] RIP  [<ffffffff81054ddc>] set_next_entity+0xc/0xa0
+[3521437.065993]  RSP <ffff8801b60b1748>
+[3521437.065994] CR2: 0000000000000038
+[3521437.065997] ---[ end trace 5a40c5f226029029 ]---
+[3521437.065999] Fixing recursive fault but reboot is needed!
 
-Now, I'm sure the init mm_cpumask doesn't really matter, but I'd have
-expected a commentary about it.
+These are basically file servers running NFS, samba, and some Python. I know
+there are recent improvements to the kernel's NFS functions. Does this point
+in that direction as the cause of the recursive fault?
 
-I also wonder if that whole conversion to cpumask_var_t was worth it,
-since clearly it wasn't very well tested. It results in an extra
-allocation at fork() time for the many-cpu case, and I do get the
-feeling that we would have been better off keeping the cpumask inside
-the mm_struct. Moving it to the end of mm_struct makes sense for the
-many-cpu case, but at the same time I end up wondering what it does to
-the switch_mm() cache behavior. (And perhaps the TLB flush IPI cache
-activity).
-
-Ho humm. I have this suspicion that that whole patch wasn't fully
-thought out, and that I should revert it rather than fix the oops.
-
-Or, in fact, we could just do something like the attached (UNTESTED!)
-which does the whole "move big allocation to end, but keep the
-cpumask_var_t at the beginning, and don't do any extra allocations"
-thing.
-
-NOTE NOTE NOTE! Not only is the attached patch untested, but please
-see the added FIXME comment about the whole mm_struct
-kmem_cache_create(). Right now we always allocate the whole
-maximum-sized bitmap.
-
-Comments?
-
-                          Linus
-
---001517503e1a31508704a46c961c
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_goa76u7y0
-
-IGluY2x1ZGUvbGludXgvbW1fdHlwZXMuaCB8ICAgMTQgKysrKysrKysrKystLS0KIGluY2x1ZGUv
-bGludXgvc2NoZWQuaCAgICB8ICAgIDEgLQogaW5pdC9tYWluLmMgICAgICAgICAgICAgIHwgICAg
-MiArLQoga2VybmVsL2ZvcmsuYyAgICAgICAgICAgIHwgICAzOSArKysrKysrKysrLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0KIDQgZmlsZXMgY2hhbmdlZCwgMjIgaW5zZXJ0aW9ucygrKSwg
-MzQgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9tbV90eXBlcy5oIGIv
-aW5jbHVkZS9saW51eC9tbV90eXBlcy5oCmluZGV4IDJhNzhhYWU3OGM2OS4uZjRlOWJiMTdiZGYy
-IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L21tX3R5cGVzLmgKKysrIGIvaW5jbHVkZS9saW51
-eC9tbV90eXBlcy5oCkBAIC0yNDMsNyArMjQzLDcgQEAgc3RydWN0IG1tX3N0cnVjdCB7CiAJCQkJ
-CQkgKiB0b2dldGhlciBvZmYgaW5pdF9tbS5tbWxpc3QsIGFuZCBhcmUgcHJvdGVjdGVkCiAJCQkJ
-CQkgKiBieSBtbWxpc3RfbG9jawogCQkJCQkJICovCi0KKwljcHVtYXNrX3Zhcl90IGNwdV92bV9t
-YXNrX3ZhcjsKIAogCXVuc2lnbmVkIGxvbmcgaGl3YXRlcl9yc3M7CS8qIEhpZ2gtd2F0ZXJtYXJr
-IG9mIFJTUyB1c2FnZSAqLwogCXVuc2lnbmVkIGxvbmcgaGl3YXRlcl92bTsJLyogSGlnaC13YXRl
-ciB2aXJ0dWFsIG1lbW9yeSB1c2FnZSAqLwpAQCAtMzExLDEwICszMTEsMTggQEAgc3RydWN0IG1t
-X3N0cnVjdCB7CiAjaWZkZWYgQ09ORklHX1RSQU5TUEFSRU5UX0hVR0VQQUdFCiAJcGd0YWJsZV90
-IHBtZF9odWdlX3B0ZTsgLyogcHJvdGVjdGVkIGJ5IHBhZ2VfdGFibGVfbG9jayAqLwogI2VuZGlm
-Ci0KLQljcHVtYXNrX3Zhcl90IGNwdV92bV9tYXNrX3ZhcjsKKyNpZmRlZiBDT05GSUdfQ1BVTUFT
-S19PRkZTVEFDSworCXN0cnVjdCBjcHVtYXNrIGNwdW1hc2tfYWxsb2NhdGlvbjsKKyNlbmRpZgog
-fTsKIAorc3RhdGljIGlubGluZSB2b2lkIG1tX2luaXRfY3B1bWFzayhzdHJ1Y3QgbW1fc3RydWN0
-ICptbSkKK3sKKyNpZmRlZiBDT05GSUdfQ1BVTUFTS19PRkZTVEFDSworCW1tLT5jcHVfdm1fbWFz
-a192YXIgPSAmbW0tPmNwdW1hc2tfYWxsb2NhdGlvbjsKKyNlbmRpZgorfQorCiAvKiBGdXR1cmUt
-c2FmZSBhY2Nlc3NvciBmb3Igc3RydWN0IG1tX3N0cnVjdCdzIGNwdV92bV9tYXNrLiAqLwogc3Rh
-dGljIGlubGluZSBjcHVtYXNrX3QgKm1tX2NwdW1hc2soc3RydWN0IG1tX3N0cnVjdCAqbW0pCiB7
-CmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L3NjaGVkLmggYi9pbmNsdWRlL2xpbnV4L3NjaGVk
-LmgKaW5kZXggYmNkZGQwMTM4MTA1Li4yYTg2MjFjNGJlMWUgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUv
-bGludXgvc2NoZWQuaAorKysgYi9pbmNsdWRlL2xpbnV4L3NjaGVkLmgKQEAgLTIxOTQsNyArMjE5
-NCw2IEBAIHN0YXRpYyBpbmxpbmUgdm9pZCBtbWRyb3Aoc3RydWN0IG1tX3N0cnVjdCAqIG1tKQog
-CWlmICh1bmxpa2VseShhdG9taWNfZGVjX2FuZF90ZXN0KCZtbS0+bW1fY291bnQpKSkKIAkJX19t
-bWRyb3AobW0pOwogfQotZXh0ZXJuIGludCBtbV9pbml0X2NwdW1hc2soc3RydWN0IG1tX3N0cnVj
-dCAqbW0sIHN0cnVjdCBtbV9zdHJ1Y3QgKm9sZG1tKTsKIAogLyogbW1wdXQgZ2V0cyByaWQgb2Yg
-dGhlIG1hcHBpbmdzIGFuZCBhbGwgdXNlci1zcGFjZSAqLwogZXh0ZXJuIHZvaWQgbW1wdXQoc3Ry
-dWN0IG1tX3N0cnVjdCAqKTsKZGlmZiAtLWdpdCBhL2luaXQvbWFpbi5jIGIvaW5pdC9tYWluLmMK
-aW5kZXggZDJmMWUwODZiZjMzLi5jYWZiYTY3YzEzYmYgMTAwNjQ0Ci0tLSBhL2luaXQvbWFpbi5j
-CisrKyBiL2luaXQvbWFpbi5jCkBAIC00ODcsNiArNDg3LDcgQEAgYXNtbGlua2FnZSB2b2lkIF9f
-aW5pdCBzdGFydF9rZXJuZWwodm9pZCkKIAlwcmludGsoS0VSTl9OT1RJQ0UgIiVzIiwgbGludXhf
-YmFubmVyKTsKIAlzZXR1cF9hcmNoKCZjb21tYW5kX2xpbmUpOwogCW1tX2luaXRfb3duZXIoJmlu
-aXRfbW0sICZpbml0X3Rhc2spOworCW1tX2luaXRfY3B1bWFzaygmaW5pdF9tbSk7CiAJc2V0dXBf
-Y29tbWFuZF9saW5lKGNvbW1hbmRfbGluZSk7CiAJc2V0dXBfbnJfY3B1X2lkcygpOwogCXNldHVw
-X3Blcl9jcHVfYXJlYXMoKTsKQEAgLTUxMCw3ICs1MTEsNiBAQCBhc21saW5rYWdlIHZvaWQgX19p
-bml0IHN0YXJ0X2tlcm5lbCh2b2lkKQogCXNvcnRfbWFpbl9leHRhYmxlKCk7CiAJdHJhcF9pbml0
-KCk7CiAJbW1faW5pdCgpOwotCUJVR19PTihtbV9pbml0X2NwdW1hc2soJmluaXRfbW0sIDApKTsK
-IAogCS8qCiAJICogU2V0IHVwIHRoZSBzY2hlZHVsZXIgcHJpb3Igc3RhcnRpbmcgYW55IGludGVy
-cnVwdHMgKHN1Y2ggYXMgdGhlCmRpZmYgLS1naXQgYS9rZXJuZWwvZm9yay5jIGIva2VybmVsL2Zv
-cmsuYwppbmRleCBjYTQwNmQ5MTY3MTMuLmQzMGM3OTJhODNhMiAxMDA2NDQKLS0tIGEva2VybmVs
-L2ZvcmsuYworKysgYi9rZXJuZWwvZm9yay5jCkBAIC00ODQsMjAgKzQ4NCw2IEBAIHN0YXRpYyB2
-b2lkIG1tX2luaXRfYWlvKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tKQogI2VuZGlmCiB9CiAKLWludCBt
-bV9pbml0X2NwdW1hc2soc3RydWN0IG1tX3N0cnVjdCAqbW0sIHN0cnVjdCBtbV9zdHJ1Y3QgKm9s
-ZG1tKQotewotI2lmZGVmIENPTkZJR19DUFVNQVNLX09GRlNUQUNLCi0JaWYgKCFhbGxvY19jcHVt
-YXNrX3ZhcigmbW0tPmNwdV92bV9tYXNrX3ZhciwgR0ZQX0tFUk5FTCkpCi0JCXJldHVybiAtRU5P
-TUVNOwotCi0JaWYgKG9sZG1tKQotCQljcHVtYXNrX2NvcHkobW1fY3B1bWFzayhtbSksIG1tX2Nw
-dW1hc2sob2xkbW0pKTsKLQllbHNlCi0JCW1lbXNldChtbV9jcHVtYXNrKG1tKSwgMCwgY3B1bWFz
-a19zaXplKCkpOwotI2VuZGlmCi0JcmV0dXJuIDA7Ci19Ci0KIHN0YXRpYyBzdHJ1Y3QgbW1fc3Ry
-dWN0ICogbW1faW5pdChzdHJ1Y3QgbW1fc3RydWN0ICogbW0sIHN0cnVjdCB0YXNrX3N0cnVjdCAq
-cCkKIHsKIAlhdG9taWNfc2V0KCZtbS0+bW1fdXNlcnMsIDEpOwpAQCAtNTM4LDE3ICs1MjQsOCBA
-QCBzdHJ1Y3QgbW1fc3RydWN0ICogbW1fYWxsb2Modm9pZCkKIAkJcmV0dXJuIE5VTEw7CiAKIAlt
-ZW1zZXQobW0sIDAsIHNpemVvZigqbW0pKTsKLQltbSA9IG1tX2luaXQobW0sIGN1cnJlbnQpOwot
-CWlmICghbW0pCi0JCXJldHVybiBOVUxMOwotCi0JaWYgKG1tX2luaXRfY3B1bWFzayhtbSwgTlVM
-TCkpIHsKLQkJbW1fZnJlZV9wZ2QobW0pOwotCQlmcmVlX21tKG1tKTsKLQkJcmV0dXJuIE5VTEw7
-Ci0JfQotCi0JcmV0dXJuIG1tOworCW1tX2luaXRfY3B1bWFzayhtbSk7CisJcmV0dXJuIG1tX2lu
-aXQobW0sIGN1cnJlbnQpOwogfQogCiAvKgpAQCAtNzUzLDYgKzczMCw3IEBAIHN0cnVjdCBtbV9z
-dHJ1Y3QgKmR1cF9tbShzdHJ1Y3QgdGFza19zdHJ1Y3QgKnRzaykKIAkJZ290byBmYWlsX25vbWVt
-OwogCiAJbWVtY3B5KG1tLCBvbGRtbSwgc2l6ZW9mKCptbSkpOworCW1tX2luaXRfY3B1bWFzayht
-bSk7CiAKIAkvKiBJbml0aWFsaXppbmcgZm9yIFN3YXAgdG9rZW4gc3R1ZmYgKi8KIAltbS0+dG9r
-ZW5fcHJpb3JpdHkgPSAwOwpAQCAtNzY1LDkgKzc0Myw2IEBAIHN0cnVjdCBtbV9zdHJ1Y3QgKmR1
-cF9tbShzdHJ1Y3QgdGFza19zdHJ1Y3QgKnRzaykKIAlpZiAoIW1tX2luaXQobW0sIHRzaykpCiAJ
-CWdvdG8gZmFpbF9ub21lbTsKIAotCWlmIChtbV9pbml0X2NwdW1hc2sobW0sIG9sZG1tKSkKLQkJ
-Z290byBmYWlsX25vY3B1bWFzazsKLQogCWlmIChpbml0X25ld19jb250ZXh0KHRzaywgbW0pKQog
-CQlnb3RvIGZhaWxfbm9jb250ZXh0OwogCkBAIC03OTYsNyArNzcxLDYgQEAgZmFpbF9ub21lbToK
-IGZhaWxfbm9jb250ZXh0OgogCWZyZWVfY3B1bWFza192YXIobW0tPmNwdV92bV9tYXNrX3Zhcik7
-CiAKLWZhaWxfbm9jcHVtYXNrOgogCS8qCiAJICogSWYgaW5pdF9uZXdfY29udGV4dCgpIGZhaWxl
-ZCwgd2UgY2Fubm90IHVzZSBtbXB1dCgpIHRvIGZyZWUgdGhlIG1tCiAJICogYmVjYXVzZSBpdCBj
-YWxscyBkZXN0cm95X2NvbnRleHQoKQpAQCAtMTU5MSw2ICsxNTY1LDEzIEBAIHZvaWQgX19pbml0
-IHByb2NfY2FjaGVzX2luaXQodm9pZCkKIAlmc19jYWNoZXAgPSBrbWVtX2NhY2hlX2NyZWF0ZSgi
-ZnNfY2FjaGUiLAogCQkJc2l6ZW9mKHN0cnVjdCBmc19zdHJ1Y3QpLCAwLAogCQkJU0xBQl9IV0NB
-Q0hFX0FMSUdOfFNMQUJfUEFOSUN8U0xBQl9OT1RSQUNLLCBOVUxMKTsKKwkvKgorCSAqIEZJWE1F
-ISBUaGUgInNpemVvZihzdHJ1Y3QgbW1fc3RydWN0KSIgY3VycmVudGx5IGluY2x1ZGVzIHRoZQor
-CSAqIHdob2xlIHN0cnVjdCBjcHVtYXNrIGZvciB0aGUgT0ZGU1RBQ0sgY2FzZS4gV2UgY291bGQg
-Y2hhbmdlCisJICogdGhpcyB0byAqb25seSogYWxsb2NhdGUgYXMgbXVjaCBvZiBpdCBhcyByZXF1
-aXJlZCBieSB0aGUKKwkgKiBtYXhpbXVtIG51bWJlciBvZiBDUFUncyB3ZSBjYW4gZXZlciBoYXZl
-LiAgVGhlIGNwdW1hc2tfYWxsb2NhdGlvbgorCSAqIGlzIGF0IHRoZSBlbmQgb2YgdGhlIHN0cnVj
-dHVyZSwgZXhhY3RseSBmb3IgdGhhdCByZWFzb24uCisJICovCiAJbW1fY2FjaGVwID0ga21lbV9j
-YWNoZV9jcmVhdGUoIm1tX3N0cnVjdCIsCiAJCQlzaXplb2Yoc3RydWN0IG1tX3N0cnVjdCksIEFS
-Q0hfTUlOX01NU1RSVUNUX0FMSUdOLAogCQkJU0xBQl9IV0NBQ0hFX0FMSUdOfFNMQUJfUEFOSUN8
-U0xBQl9OT1RSQUNLLCBOVUxMKTsK
---001517503e1a31508704a46c961c--
+TIA,
+Whit
