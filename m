@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953Ab1E2NTp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 09:19:45 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58562 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab1E2NTo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 09:19:44 -0400
-Date: Sun, 29 May 2011 14:19:06 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Frank Rowand <frank.rowand@am.sony.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
-	locks up on ARM
-Message-ID: <20110529131906.GB24876@n2100.arm.linux.org.uk>
-References: <1306412511.1200.90.camel@twins> <20110526122623.GA11875@elte.hu> <20110526123137.GG24876@n2100.arm.linux.org.uk> <20110526125007.GA27083@elte.hu> <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com> <20110527120629.GA32617@elte.hu> <20110527205240.GT24876@n2100.arm.linux.org.uk> <20110529102119.GC9489@e102109-lin.cambridge.arm.com> <20110529102659.GY24876@n2100.arm.linux.org.uk> <BANLkTin-5+jE6U-3RrPjPiFVRMGNhvwVEw@mail.gmail.com>
+	id S1753999Ab1E2Ndu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 09:33:50 -0400
+Received: from fieldses.org ([174.143.236.118]:52976 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752139Ab1E2Ndt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 09:33:49 -0400
+Date: Sun, 29 May 2011 09:33:45 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: nfsd changes for the kernel formerly to be known as 2.6.40
+Message-ID: <20110529133345.GA7145@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTin-5+jE6U-3RrPjPiFVRMGNhvwVEw@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 01:01:58PM +0100, Catalin Marinas wrote:
-> On Sunday, 29 May 2011, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > On Sun, May 29, 2011 at 11:21:19AM +0100, Catalin Marinas wrote:
-> >> To avoid extra per-thread flags, we could set a per-cpu variable in
-> >> switch_mm() so that we know what to switch the page tables to in the
-> >> post-switch hook.
-> >
-> > Why do we need to add more per-cpu stuff when we already have easy access
-> > to the thread flags?
-> 
-> It could work, I was thinking that we only get an mm structure in the
-> post-switch hook.
+The following nfsd changes for whatever-version-it-turns-out-to-be are
+available from the git repository at
 
-No.  What we get is the mm structure for the _previous_ task which
-was running if the previous task was a lazy-tlb task.  Otherwise it
-will be NULL.
+  git://linux-nfs.org/~bfields/linux.git for-2.6.40
 
-What we do get is the 'next' task and 'next' thread by virtue of the
-fact that it has become the 'current' task - so current and
-current_thread_info() both point at what switch_mm() regarded as the
-'next' task/thread.
+A bit of a quiet cycle again, mainly because I've gotten behind--I have
+a few more 4.1 patches from Bryan to handle, and some bug reports to
+look into.  The latter at least I may try to sneak into -rc2 if they seem
+appropriate.
 
-> BTW, we currently have a per-cpu current_mm variable in context.c
-> because switch_mm() is called before switch_to() and the CPU may
-> receive an IPI to reset the ASID in this interval. But we can remove
-> it entirely if we set the ASID in the post-switch hook and run the
-> main switch code with interrupts disabled.
+But this includes a forward-port of some tcp performance work from Olga
+and Trond, some fixes to the v4/v4.1 server's security negotiation code,
+and some 4.1 protocol conformance fixes from Andy Adamson and Mi
+Jinlong.  The fix from Andy was for a server bug causing locking to fail
+with new versions of the client.
 
-Unconvinced.  If we move the ASID update to the post-switch hook, then
-we have the opposite problem - an IPI can sneak in between the dropping
-of the IRQ disabling and the post-switch hook.  This could mean that
-we end up racing to update the hardware ASID value instead (we may
-have read the ASID value from the mm struct, interrupt occurs, changes
-the ASID value, returns, we program the old ASID value.)
+--b.
+
+Andy Adamson (1):
+      nfsd v4.1 lOCKT clientid field must be ignored
+
+Bryan Schumaker (3):
+      NFSD: Remove setting unused variable in nfsd_vfs_read()
+      NFSD: Check status from nfsd4_map_bcts_dir()
+      NFSD: Remove unused variable from nfsd4_decode_bind_conn_to_session()
+
+Daniel Mack (1):
+      nfsd: make local functions static
+
+J. Bruce Fields (10):
+      svcrpc: note network-order types in svc_process_calldir
+      svcrpc: close connection if client sends short packet
+      SUNRPC: Don't wait for full record to receive tcp data
+      Merge branch 'for-2.6.39' into for-2.6.40
+      svcrpc: complete svsk processing on cb receive failure
+      nfsd: distinguish functions of NFSD_MAY_* flags
+      nfsd4: allow fh_verify caller to skip pseudoflavor checks
+      nfsd4: introduce OPDESC helper
+      nfsd4: make fh_verify responsibility of nfsd_lookup_dentry caller
+      nfsd4: fix wrongsec handling for PUTFH + op cases
+
+Mi Jinlong (4):
+      nfsd41: make sure nfs server process OPEN with EXCLUSIVE4_1 correctly
+      nfsd41: add flag checking for create_session
+      nfsd41: compare request's opcnt with session's maxops at nfsd4_sequence
+      nfsd41: error out on repeated RECLAIM_COMPLETE
+
+Olga Kornievskaia (1):
+      svcrpc: take advantage of tcp autotuning
+
+Trond Myklebust (3):
+      SUNRPC: requeue tcp socket less frequently
+      SUNRPC: svc_tcp_recvfrom cleanup
+      svcrpc: copy cb reply instead of pages
+
+ fs/nfsd/export.c               |    6 -
+ fs/nfsd/lockd.c                |    1 -
+ fs/nfsd/nfs3proc.c             |    2 +-
+ fs/nfsd/nfs3xdr.c              |    2 +-
+ fs/nfsd/nfs4proc.c             |   73 ++++++++-
+ fs/nfsd/nfs4state.c            |   42 ++++-
+ fs/nfsd/nfs4xdr.c              |   11 +-
+ fs/nfsd/nfsfh.c                |    2 +-
+ fs/nfsd/vfs.c                  |   33 +++--
+ fs/nfsd/vfs.h                  |    6 +-
+ include/linux/nfs4.h           |    8 +-
+ include/linux/sunrpc/svcsock.h |    1 +
+ net/sunrpc/svcsock.c           |  336 ++++++++++++++++++++++------------------
+ 13 files changed, 323 insertions(+), 200 deletions(-)
