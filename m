@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab1E2CfF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 22:35:05 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:49969 "EHLO smtp.gentoo.org"
+	id S1752422Ab1E2CuR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 22:50:17 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:52116 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750961Ab1E2CfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 22:35:02 -0400
+	id S1751353Ab1E2CuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 22:50:14 -0400
 From: Mike Frysinger <vapier@gentoo.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
-Subject: Pull request blackfin.git (for-linus branch)
-Date: Sat, 28 May 2011 22:40:02 -0400
-Message-Id: <1306636802-9523-1-git-send-email-vapier@gentoo.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] asm-generic/system.h: drop useless __KERNEL__
+Date: Sat, 28 May 2011 22:55:08 -0400
+Message-Id: <1306637708-11640-1-git-send-email-vapier@gentoo.org>
 X-Mailer: git-send-email 1.7.5.rc3
-In-Reply-To: <1306636724-9314-1-git-send-email-vapier@gentoo.org>
-References: <1306636724-9314-1-git-send-email-vapier@gentoo.org>
+In-Reply-To: <1302738110-22344-1-git-send-email-vapier@gentoo.org>
+References: <1302738110-22344-1-git-send-email-vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 36947a76826111e661a26cb0f668a5be6cc3ddb4:
+This header isn't exported to user-space, and even if it was, the
+__KERNEL__ check covers the entire file, so we'd get a useless stub
+in the first place.  So punt it.
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6 (2011-05-28 13:03:41 -0700)
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+andrew: could you pick this up ?  sent it out about 6 weeks ago with no love
 
-are available in the git repository at:
+ include/asm-generic/system.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin.git for-linus
+diff --git a/include/asm-generic/system.h b/include/asm-generic/system.h
+index 4b0b9cb..215efa7 100644
+--- a/include/asm-generic/system.h
++++ b/include/asm-generic/system.h
+@@ -14,7 +14,6 @@
+ #ifndef __ASM_GENERIC_SYSTEM_H
+ #define __ASM_GENERIC_SYSTEM_H
+ 
+-#ifdef __KERNEL__
+ #ifndef __ASSEMBLY__
+ 
+ #include <linux/types.h>
+@@ -139,5 +138,4 @@ unsigned long __xchg(unsigned long x, volatile void *ptr, int size)
+ 
+ #endif /* !__ASSEMBLY__ */
+ 
+-#endif /* __KERNEL__ */
+ #endif /* __ASM_GENERIC_SYSTEM_H */
+-- 
+1.7.5.rc3
 
-Mike Frysinger (8):
-      Blackfin: bfin_serial.h: turn default port wrappers into stubs
-      Blackfin: mach/bfin_serial_5xx.h: punt now-unused header
-      Blackfin: wire up new sendmmsg syscall
-      Blackfin: gptimers: add structure for hardware register layout
-      Blackfin: debug-mmrs: fix typos with gptimers/mdma/ppi
-      Blackfin: bf52x/bf54x: fix up usb MMR defines
-      Blackfin: bf51x: fix up RSI_PID# MMR defines
-      Blackfin: debug-mmrs: include RSI_PID[4567] MMRs
-
- arch/blackfin/include/asm/bfin_serial.h            |    6 +-
- arch/blackfin/include/asm/gptimers.h               |   18 ++++
- arch/blackfin/include/asm/unistd.h                 |    3 +-
- arch/blackfin/kernel/debug-mmrs.c                  |   36 ++++----
- .../mach-bf518/include/mach/bfin_serial_5xx.h      |   79 ----------------
- arch/blackfin/mach-bf518/include/mach/defBF514.h   |   16 ++--
- .../mach-bf527/include/mach/bfin_serial_5xx.h      |   79 ----------------
- arch/blackfin/mach-bf527/include/mach/defBF525.h   |    4 +-
- .../mach-bf533/include/mach/bfin_serial_5xx.h      |   52 -----------
- .../mach-bf537/include/mach/bfin_serial_5xx.h      |   79 ----------------
- .../mach-bf538/include/mach/bfin_serial_5xx.h      |   93 -------------------
- .../mach-bf548/include/mach/bfin_serial_5xx.h      |   94 --------------------
- arch/blackfin/mach-bf548/include/mach/defBF547.h   |   19 ++--
- .../mach-bf561/include/mach/bfin_serial_5xx.h      |   52 -----------
- arch/blackfin/mach-common/entry.S                  |    1 +
- 15 files changed, 62 insertions(+), 569 deletions(-)
- delete mode 100644 arch/blackfin/mach-bf518/include/mach/bfin_serial_5xx.h
- delete mode 100644 arch/blackfin/mach-bf527/include/mach/bfin_serial_5xx.h
- delete mode 100644 arch/blackfin/mach-bf533/include/mach/bfin_serial_5xx.h
- delete mode 100644 arch/blackfin/mach-bf537/include/mach/bfin_serial_5xx.h
- delete mode 100644 arch/blackfin/mach-bf538/include/mach/bfin_serial_5xx.h
- delete mode 100644 arch/blackfin/mach-bf548/include/mach/bfin_serial_5xx.h
- delete mode 100644 arch/blackfin/mach-bf561/include/mach/bfin_serial_5xx.h
