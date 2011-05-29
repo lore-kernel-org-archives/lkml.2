@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab1E2Sas (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 14:30:48 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:19335 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755759Ab1E2Saq (ORCPT
+	id S1755842Ab1E2SYb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 14:24:31 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51327 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755665Ab1E2SY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 14:30:46 -0400
-Date: Sun, 29 May 2011 20:22:56 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: netfilter@vger.kernel.org, coreteam@netfilter.org,
-        netfilter-devel@vger.kernel.org, lvs-devel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Patrick McHardy <kaber@trash.net>, Julian Anastasov <ja@ssi.bg>,
-        Simon Horman <horms@verge.net.au>,
-        Wensong Zhang <wensong@linux-vs.org>
-Subject: [PATCH] netfilter, ipvs: Avoid undefined order of evaluation in
- assignments to struct nf_conn *
-Message-ID: <alpine.LNX.2.00.1105292011450.4411@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 29 May 2011 14:24:29 -0400
+Date: Sun, 29 May 2011 19:23:56 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Kees Cook <kees.cook@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
+ filtering
+Message-ID: <20110529182356.GJ11521@ZenIV.linux.org.uk>
+References: <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
+ <1306254027.18455.47.camel@twins>
+ <20110524195435.GC27634@elte.hu>
+ <alpine.LFD.2.02.1105242239230.3078@ionos>
+ <20110525150153.GE29179@elte.hu>
+ <alpine.LFD.2.02.1105251836030.3078@ionos>
+ <20110525180100.GY19633@outflux.net>
+ <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
+ <8762otqwke.fsf@linux.vnet.ibm.com>
+ <BANLkTimuixiwGS0VkWBiB63pzMov8ZB62Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimuixiwGS0VkWBiB63pzMov8ZB62Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In net/netfilter/ipvs/ip_vs_nfct.c::ip_vs_update_conntrack(),
-net/netfilter/ipvs/ip_vs_xmit.c::ip_vs_nat_xmit(), 
-net/netfilter/ipvs/ip_vs_xmit.c::ip_vs_nat_xmit_v6(), 
-net/netfilter/ipvs/ip_vs_xmit.c::ip_vs_icmp_xmit)() 
-net/netfilter/ipvs/ip_vs_xmit.c::and ip_vs_icmp_xmit_v6() we do this:
-	...
-	struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
-	...
+On Sun, May 29, 2011 at 10:02:06AM -0700, Linus Torvalds wrote:
 
-Since '=' is not a sequence point the order of these assignments happening 
-is undefined. Luckily it's easy to avoid by just doing what is obviously 
-the intended thing:
-	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+> And yes, it is absolutely acceptable. The only questions in my mind are
+> 
+>  - why haven't we done this long ago?
+> 
+>  - do we have the flag space?
+> 
+>  - should we do a O_NOMNT_PATH flag to do the same for mount-points?
+> 
+>   Some people worry about being confused by bind mounts etc.
+> 
+>  - do we think ".." is worthy of a flag too?
+> 
+>    or is that a "user space can damn well check that itself, even if
+> it would be absolutely trivial to check in the kernel too"?
+> 
+> Whatever. I think the NOFOLLOW_PATH one is pretty much a no-brainer.
+> It's not like symlink worries are unusual.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- ip_vs_nfct.c |    2 +-
- ip_vs_xmit.c |    8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+It's not *quite* a no-brainer.  Guys, please hold that one off for a while;
+we have more massage to do in the area and I *really* want to get atomic
+open work finished (== intents gone, revalidation vs mountpoints sanitized,
+etc.) before anything else is done to fs/namie.c.  OK?
 
- Compile tested only.
- Patch is against Linus' tree as of a few minutes ago.
-
-diff --git a/net/netfilter/ipvs/ip_vs_nfct.c b/net/netfilter/ipvs/ip_vs_nfct.c
-index f454c80..a3d86c2 100644
---- a/net/netfilter/ipvs/ip_vs_nfct.c
-+++ b/net/netfilter/ipvs/ip_vs_nfct.c
-@@ -82,7 +82,7 @@ void
- ip_vs_update_conntrack(struct sk_buff *skb, struct ip_vs_conn *cp, int outin)
- {
- 	enum ip_conntrack_info ctinfo;
--	struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
-+	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
- 	struct nf_conntrack_tuple new_tuple;
- 
- 	if (ct == NULL || nf_ct_is_confirmed(ct) || nf_ct_is_untracked(ct) ||
-diff --git a/net/netfilter/ipvs/ip_vs_xmit.c b/net/netfilter/ipvs/ip_vs_xmit.c
-index ee319a4..16d129e 100644
---- a/net/netfilter/ipvs/ip_vs_xmit.c
-+++ b/net/netfilter/ipvs/ip_vs_xmit.c
-@@ -544,7 +544,7 @@ ip_vs_nat_xmit(struct sk_buff *skb, struct ip_vs_conn *cp,
- #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
- 	if (cp->flags & IP_VS_CONN_F_SYNC && local) {
- 		enum ip_conntrack_info ctinfo;
--		struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
-+		struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
- 
- 		if (ct && !nf_ct_is_untracked(ct)) {
- 			IP_VS_DBG_RL_PKT(10, AF_INET, pp, skb, 0,
-@@ -661,7 +661,7 @@ ip_vs_nat_xmit_v6(struct sk_buff *skb, struct ip_vs_conn *cp,
- #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
- 	if (cp->flags & IP_VS_CONN_F_SYNC && local) {
- 		enum ip_conntrack_info ctinfo;
--		struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
-+		struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
- 
- 		if (ct && !nf_ct_is_untracked(ct)) {
- 			IP_VS_DBG_RL_PKT(10, AF_INET6, pp, skb, 0,
-@@ -1176,7 +1176,7 @@ ip_vs_icmp_xmit(struct sk_buff *skb, struct ip_vs_conn *cp,
- #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
- 	if (cp->flags & IP_VS_CONN_F_SYNC && local) {
- 		enum ip_conntrack_info ctinfo;
--		struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
-+		struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
- 
- 		if (ct && !nf_ct_is_untracked(ct)) {
- 			IP_VS_DBG(10, "%s(): "
-@@ -1296,7 +1296,7 @@ ip_vs_icmp_xmit_v6(struct sk_buff *skb, struct ip_vs_conn *cp,
- #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
- 	if (cp->flags & IP_VS_CONN_F_SYNC && local) {
- 		enum ip_conntrack_info ctinfo;
--		struct nf_conn *ct = ct = nf_ct_get(skb, &ctinfo);
-+		struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
- 
- 		if (ct && !nf_ct_is_untracked(ct)) {
- 			IP_VS_DBG(10, "%s(): "
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+And as for .. - userland can bloody well check that on its own if it cares.
+Let's keep it simple, please - we already have things far too complicated
+in there for my taste.
