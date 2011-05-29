@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842Ab1E2SYb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 14:24:31 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51327 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665Ab1E2SY3 (ORCPT
+	id S1755526Ab1E2SYV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 14:24:21 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:40011 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755219Ab1E2SYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 14:24:29 -0400
-Date: Sun, 29 May 2011 19:23:56 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Will Drewry <wad@chromium.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] v2 seccomp_filters: Enable ftrace-based system call
- filtering
-Message-ID: <20110529182356.GJ11521@ZenIV.linux.org.uk>
-References: <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com>
- <1306254027.18455.47.camel@twins>
- <20110524195435.GC27634@elte.hu>
- <alpine.LFD.2.02.1105242239230.3078@ionos>
- <20110525150153.GE29179@elte.hu>
- <alpine.LFD.2.02.1105251836030.3078@ionos>
- <20110525180100.GY19633@outflux.net>
- <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com>
- <8762otqwke.fsf@linux.vnet.ibm.com>
- <BANLkTimuixiwGS0VkWBiB63pzMov8ZB62Q@mail.gmail.com>
+	Sun, 29 May 2011 14:24:20 -0400
+Message-ID: <4DE28F3F.2010709@tilera.com>
+Date: Sun, 29 May 2011 14:23:59 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimuixiwGS0VkWBiB63pzMov8ZB62Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Greg KH <gregkh@suse.de>, <linux-kernel@vger.kernel.org>,
+        Eric Biederman <ebiederm@aristanetworks.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+Subject: Re: [PATCH v2] arch/tile: add hypervisor-based character driver for
+ SPI flash ROM
+References: <201105042004.p44K4kZx011721@farm-0032.internal.tilera.com> <20110529114517.GA13513@suse.de> <4DE2399C.9090500@tilera.com> <201105291745.26468.arnd@arndb.de>
+In-Reply-To: <201105291745.26468.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 10:02:06AM -0700, Linus Torvalds wrote:
+On 5/29/2011 11:45 AM, Arnd Bergmann wrote:
+> On Sunday 29 May 2011 14:18:36 Chris Metcalf wrote:
+>> On 5/29/2011 7:45 AM, Greg KH wrote:
+>>> On Sat, May 28, 2011 at 08:32:07PM -0400, Chris Metcalf wrote:
+>>>>> As you are only using 1 minor device, why not just use a misc device
+>>>>> instead?  It's simpler, and you get the sysfs code for free, which you
+>>>>> forgot to do, so your device node will never show up in userspace :(
+>>>> Interesting; this appears to be a bug.  We use 4 minors (see "srom_devs =
+>>>> 4" higher up).  I'll fix this.  We may have some other devices that would
+>>>> benefit from being recast as misc devices, so I'll look at our set of
+>>>> internal devices.
+>>> This kind of implies that you didn't test this code, right?  You might
+>>> want to do that next time :)
+>> No, this bug has been in the code since day one (I just double-checked our
+>> SCM), and it has always worked fine.  I'm looking into how this is possible
+>> now, but trust me, we've tested this aspect of the driver the whole time. :-)
+>>
+> AFAICT, the driver just calls cdev_add in a loop, adding one device
+> add a time. This is actually a correct way to register multiple
+> character devices, but simply passing the number of devices you
+> want to add as the third argument would be simpler.
 
-> And yes, it is absolutely acceptable. The only questions in my mind are
-> 
->  - why haven't we done this long ago?
-> 
->  - do we have the flag space?
-> 
->  - should we do a O_NOMNT_PATH flag to do the same for mount-points?
-> 
->   Some people worry about being confused by bind mounts etc.
-> 
->  - do we think ".." is worthy of a flag too?
-> 
->    or is that a "user space can damn well check that itself, even if
-> it would be absolutely trivial to check in the kernel too"?
-> 
-> Whatever. I think the NOFOLLOW_PATH one is pretty much a no-brainer.
-> It's not like symlink worries are unusual.
+Good catch!  Amusingly, I audited our other drivers that we haven't tried
+to push back yet, and did find one that actually did have this bug: it was
+doing cdev_add() without the surrounding loop, but without passing the
+right minor count from alloc_chrdev_region() (although in that case the
+default value was "1" in any case).
 
-It's not *quite* a no-brainer.  Guys, please hold that one off for a while;
-we have more massage to do in the area and I *really* want to get atomic
-open work finished (== intents gone, revalidation vs mountpoints sanitized,
-etc.) before anything else is done to fs/namie.c.  OK?
+I restructured the tile-srom init code to call cdev_add() once, using a
+single global "struct cdev".  The "open" routine now uses "iminor()"
+instead of "container_of()" to get the proper srom_dev structure with the
+driver's per-partition info.
 
-And as for .. - userland can bloody well check that on its own if it cares.
-Let's keep it simple, please - we already have things far too complicated
-in there for my taste.
+> On a related note, the number of devices you add is a module parameter,
+> which seems a bit backwards, since the hypervisor should actually
+> know how many devices there are. Can't you just ask the hypervisor?
+
+Fair point.  I restructured the init so we loop calling hv_dev_open() until
+the hypervisor says we've hit a bad partition number, and that's the number
+of partitions the Linux driver then supports.
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
+
