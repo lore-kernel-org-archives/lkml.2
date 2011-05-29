@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab1E2Poo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 11:44:44 -0400
-Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:36632 "HELO
-	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750992Ab1E2Pon (ORCPT
+	id S1754265Ab1E2Ppn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 11:45:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61056 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab1E2Ppm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 11:44:43 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=WdrMRjJnAzpB3xfxNTmwYkDHYEInk7C8nO+uj1QkAiI77nUJZpiNmloGHCQIRYBD30hhLLIP/hn4pxiK+zzjOR3iFUBf9FBGxawIiY+jnydSQG6tuXl/USuCid9DNNie;
-Date: Sun, 29 May 2011 08:44:40 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: gpio: gpio-exynos4 build fails in mainline
-Message-Id: <20110529084440.a4803072.rdunlap@xenotime.net>
-In-Reply-To: <20110529084000.68a6351a.randy.dunlap@oracle.com>
-References: <20110529083032.d3d16059.randy.dunlap@oracle.com>
-	<20110529083520.41730250.randy.dunlap@oracle.com>
-	<20110529084000.68a6351a.randy.dunlap@oracle.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 29 May 2011 11:45:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH v2] arch/tile: add hypervisor-based character driver for SPI flash ROM
+Date: Sun, 29 May 2011 17:45:26 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Eric Biederman <ebiederm@aristanetworks.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+References: <201105042004.p44K4kZx011721@farm-0032.internal.tilera.com> <20110529114517.GA13513@suse.de> <4DE2399C.9090500@tilera.com>
+In-Reply-To: <4DE2399C.9090500@tilera.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Message-Id: <201105291745.26468.arnd@arndb.de>
+X-Provags-ID: V02:K0:wBIItSTephB11ZSIE/fXfhfpiC2EzwwxsBN/VIy8Bck
+ vyw7L4lQfE4tsOXjo9l7idgNCI7s1ZNFS9P2vqU33qBJEURhTJ
+ oilxRKrnqLTtBiscX6liW8wGY69ObLpgIJIg5s3Y94m62QK3p/
+ hzvWE4l9hlZMMfjQY60WkUc9IUk7HtRGBkb1mTjifOHyr7zr46
+ 1ngvkbO/GbvMTksdmtLVQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 29 May 2011 08:40:00 -0700 Randy Dunlap wrote:
+On Sunday 29 May 2011 14:18:36 Chris Metcalf wrote:
+> On 5/29/2011 7:45 AM, Greg KH wrote:
+> > On Sat, May 28, 2011 at 08:32:07PM -0400, Chris Metcalf wrote:
+> >>> As you are only using 1 minor device, why not just use a misc device
+> >>> instead?  It's simpler, and you get the sysfs code for free, which you
+> >>> forgot to do, so your device node will never show up in userspace :(
+> >> Interesting; this appears to be a bug.  We use 4 minors (see "srom_devs =
+> >> 4" higher up).  I'll fix this.  We may have some other devices that would
+> >> benefit from being recast as misc devices, so I'll look at our set of
+> >> internal devices.
+> > This kind of implies that you didn't test this code, right?  You might
+> > want to do that next time :)
+> 
+> No, this bug has been in the code since day one (I just double-checked our
+> SCM), and it has always worked fine.  I'm looking into how this is possible
+> now, but trust me, we've tested this aspect of the driver the whole time. :-)
+> 
 
-> On Sun, 29 May 2011 08:35:20 -0700 Randy Dunlap wrote:
-> 
-> > On Sun, 29 May 2011 08:30:32 -0700 Randy Dunlap wrote:
-> > 
-> > > probably should depend on ARM or some ARM sub-arch/mach-type?
-> > > 
-> > > 
-> > > drivers/gpio/gpio-exynos4.c:18:11: error: unable to open 'mach/map.h'
-> > > 
-> > > 
-> > > on x86_64
-> > > 
-> > > ---
-> > 
-> > similarly:
-> > 
-> > drivers/gpio/gpio-plat-samsung.c:22:11: error: unable to open 'plat/gpio-core.h'
-> 
-> 
-> and
-> 
-> drivers/gpio/gpio-s5pc100.c:21:11: error: unable to open 'mach/map.h'
-> 
-> 
-> (this began as x86_64 allmodconfig)
+AFAICT, the driver just calls cdev_add in a loop, adding one device
+add a time. This is actually a correct way to register multiple
+character devices, but simply passing the number of devices you
+want to add as the third argument would be simpler.
 
-and
+On a related note, the number of devices you add is a module parameter,
+which seems a bit backwards, since the hypervisor should actually
+know how many devices there are. Can't you just ask the hypervisor?
 
-drivers/gpio/gpio-s5pv210.c:17:11: error: unable to open 'plat/gpio-core.h'
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	Arnd
