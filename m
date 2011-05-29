@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab1E2LbQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 07:31:16 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58081 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab1E2LbO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 07:31:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sgF6D9Trd9IHf9Fu36tBr06l+/7tp3+sBixs4zzZqsW7+G7lNMcrPn7odFN1bdzil3
-         NK6h2q3VqWvWssXfO9i/Mk2A73E8OwJftVEwMuD4BP8RbGVXfqlh6btRw+M4VyNrZZ6m
-         Zay/HBV2md8JeM1hNoxZLFfV/rXjyv1xMuH8o=
+	id S1753368Ab1E2LzX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 07:55:23 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45873 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752029Ab1E2LzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 07:55:22 -0400
+Date: Sun, 29 May 2011 19:45:17 +0800
+From: Greg KH <gregkh@suse.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Eric Biederman <ebiederm@aristanetworks.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+Subject: Re: [PATCH v2] arch/tile: add hypervisor-based character driver for
+ SPI flash ROM
+Message-ID: <20110529114517.GA13513@suse.de>
+References: <201105042004.p44K4kZx011721@farm-0032.internal.tilera.com>
+ <4DD6FB9E.2050604@tilera.com>
+ <20110521032102.GD19907@suse.de>
+ <201105211133.50238.arnd@arndb.de>
+ <4DD7C3A7.5010402@tilera.com>
+ <BANLkTim-d-8w1_idg4u302aB3MqTo7q4Sg@mail.gmail.com>
+ <201105281516.p4SFGfHg024703@farm-0010.internal.tilera.com>
+ <20110528212347.GA11303@suse.de>
+ <4DE19407.8040407@tilera.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1105290252150.7577@arrandale.kernel.org>
-References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>
-	<alpine.LFD.2.02.1105290252150.7577@arrandale.kernel.org>
-Date: Sun, 29 May 2011 19:31:13 +0800
-Message-ID: <BANLkTimpe8MOor+oWm4t0M6ODzM_RPn6yg@mail.gmail.com>
-Subject: Re: [PATCH 0/9] ACPI, APEI patches for 2.6.40
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DE19407.8040407@tilera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 2:55 PM, Len Brown <lenb@kernel.org> wrote:
->> [PATCH 1/9] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
->> [PATCH 2/9] lib, Add lock-less NULL terminated single list
->> [PATCH 3/9] lib, Make gen_pool memory allocator lockless
->> [PATCH 4/9] ACPI, APEI, GHES, printk support for recoverable error via NMI
->
-> I think the 4 above should go upstream to enable the
-> printk for recoverable errors.  If queuing messages
-> from NMI context gets re-implemented in the future,
-> then so be it.
+On Sat, May 28, 2011 at 08:32:07PM -0400, Chris Metcalf wrote:
+> > As you are only using 1 minor device, why not just use a misc device
+> > instead?  It's simpler, and you get the sysfs code for free, which you
+> > forgot to do, so your device node will never show up in userspace :(
+> 
+> Interesting; this appears to be a bug.  We use 4 minors (see "srom_devs =
+> 4" higher up).  I'll fix this.  We may have some other devices that would
+> benefit from being recast as misc devices, so I'll look at our set of
+> internal devices.
 
-The GHES records are queued just for printk.  It has no contradiction
-with perf based logging.
+This kind of implies that you didn't test this code, right?  You might
+want to do that next time :)
 
-> I'll skip the rest, however, except #9:-)
->
-> thanks,
-> -Len
->
->> [PATCH 5/9] HWPoison: add memory_failure_queue()
->> [PATCH 6/9] ACPI, APEI, GHES: Add hardware memory error recovery support
->> [PATCH 7/9] PCIe, AER, add aer_recover_queue
->> [PATCH 8/9] ACPI, APEI, GHES: Add PCIe AER recovery support
->> [PATCH 9/9] ACPI, APEI, ERST, Prevent erst_dbg from loading if ERST is disabled
+> Is there a good example of a character device that has multiple minors and
+> also is registered with sysfs?
 
-I think #5 and #7 just some general code that can be used by perf
-based recovering too.  Because we are still waiting for perf based
-hardware error logging/recovering infrastructure.  I think we can take
-#6 and #8 for now and maybe replace them with perf based solution when
-that is ready.
+Lots of them, look all over the kernel, and in LDD3 there's even an
+outdated example of one I think.
 
-BTW: Can you take a look at another patch with following title?
+thanks,
 
-[PATCH] ACPI, APEI, Add APEI _OSC support
-
-https://lkml.org/lkml/2011/5/25/28
-
-This is needed to enable GHES reporting in firmware on some machines.
-
-Best Regards,
-Huang Ying
+greg k-h
