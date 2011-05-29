@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab1E2XM7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 19:12:59 -0400
+	id S1756607Ab1E2XP6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 19:15:58 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:53557 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab1E2XMz (ORCPT
+	with ESMTP id S1753532Ab1E2XM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 19:12:55 -0400
+	Sun, 29 May 2011 19:12:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=Q4OFYB0whzc9TZMN1IGwOgqutq9H7Tda6SkcsN3ZutJPEjRrL/9No77QkO3SrJuf0R
-         vLmLAGIz+JCAWr7QRSlHcGNMUypZMhu4yoksP0FVJY5bJMWt/aMYYbl745RmWYjS0ire
-         kXSPhmoCGwxwH4VAD9OmKE3jl91/y3qtGv2/A=
+        b=UQzdAnFMs3/jJJ3OpUAkWbwhUlpeiLFTh6hQYidrJO4t5Cv8KWN7FZSR0EfhTqQ3Rk
+         sf3y+DuqjkXdRzVUHF5ZXBAG1N//ZwyjcnuusgYKjRPp+vk8lHTOwD9Get1z++HWkyXI
+         EgP3FXmFvAekElDkdIOSxlbKCKzSdafbClkLo=
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com
 Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
         pedro@codesourcery.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 03/17] ptrace: ptrace_check_attach(): rename @kill to @ignore_state and add comments
-Date: Mon, 30 May 2011 01:12:26 +0200
-Message-Id: <1306710760-16440-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/17] ptrace: relocate set_current_state(TASK_TRACED) in ptrace_stop()
+Date: Mon, 30 May 2011 01:12:27 +0200
+Message-Id: <1306710760-16440-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.5.2
 In-Reply-To: <1306710760-16440-1-git-send-email-tj@kernel.org>
 References: <1306710760-16440-1-git-send-email-tj@kernel.org>
@@ -30,79 +30,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PTRACE_INTERRUPT is going to be added which should also skip
-task_is_traced() check in ptrace_check_attach().  Rename @kill to
-@ignore_state and make it bool.  Add function comment while at it.
+In ptrace_stop(), after arch hook is done, the task state and jobctl
+bits are updated while holding siglock.  The ordering requirement
+there is that TASK_TRACED is set before JOBCTL_TRAPPING is cleared to
+prevent ptracer waiting on TRAPPING doesn't end up waking up TRACED is
+actually set and sees TASK_RUNNING in wait(2).
 
-This patch doesn't introduce any behavior difference.
+Move set_current_state(TASK_TRACED) to the top of the block and
+reorganize comments.  This makes the ordering more obvious
+(TASK_TRACED before other updates) and helps future updates to group
+stop participation.
+
+This patch doesn't cause any functional change.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/ptrace.h |    2 +-
- kernel/ptrace.c        |   24 +++++++++++++++++++-----
- 2 files changed, 20 insertions(+), 6 deletions(-)
+ kernel/signal.c |   28 +++++++++++++---------------
+ 1 files changed, 13 insertions(+), 15 deletions(-)
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 9178d5c..e93ef1a 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -105,7 +105,7 @@ extern long arch_ptrace(struct task_struct *child, long request,
- extern int ptrace_readdata(struct task_struct *tsk, unsigned long src, char __user *dst, int len);
- extern int ptrace_writedata(struct task_struct *tsk, char __user *src, unsigned long dst, int len);
- extern void ptrace_disable(struct task_struct *);
--extern int ptrace_check_attach(struct task_struct *task, int kill);
-+extern int ptrace_check_attach(struct task_struct *task, bool ignore_state);
- extern int ptrace_request(struct task_struct *child, long request,
- 			  unsigned long addr, unsigned long data);
- extern void ptrace_notify(int exit_code);
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index da14bd2..cbda3c2 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -97,10 +97,24 @@ void __ptrace_unlink(struct task_struct *child)
- 	spin_unlock(&child->sighand->siglock);
- }
- 
--/*
-- * Check that we have indeed attached to the thing..
-+/**
-+ * ptrace_check_attach - check whether ptracee is ready for ptrace operation
-+ * @child: ptracee to check for
-+ * @ignore_state: don't check whether @child is currently %TASK_TRACED
-+ *
-+ * Check whether @child is being ptraced by %current and ready for further
-+ * ptrace operations.  If @ignore_state is %false, @child also should be in
-+ * %TASK_TRACED state and on return the child is guaranteed to be traced
-+ * and not executing.  If @ignore_state is %true, @child can be in any
-+ * state.
-+ *
-+ * CONTEXT:
-+ * Grabs and releases tasklist_lock and @child->sighand->siglock.
-+ *
-+ * RETURNS:
-+ * 0 on success, -ESRCH if %child is not ready.
-  */
--int ptrace_check_attach(struct task_struct *child, int kill)
-+int ptrace_check_attach(struct task_struct *child, bool ignore_state)
- {
- 	int ret = -ESRCH;
- 
-@@ -119,13 +133,13 @@ int ptrace_check_attach(struct task_struct *child, int kill)
- 		 */
- 		spin_lock_irq(&child->sighand->siglock);
- 		WARN_ON_ONCE(task_is_stopped(child));
--		if (task_is_traced(child) || kill)
-+		if (task_is_traced(child) || ignore_state)
- 			ret = 0;
- 		spin_unlock_irq(&child->sighand->siglock);
+diff --git a/kernel/signal.c b/kernel/signal.c
+index ab6851c..62a6c3b 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1733,6 +1733,18 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
  	}
- 	read_unlock(&tasklist_lock);
  
--	if (!ret && !kill)
-+	if (!ret && !ignore_state)
- 		ret = wait_task_inactive(child, TASK_TRACED) ? 0 : -ESRCH;
+ 	/*
++	 * We're committing to trapping.  TRACED should be visible before
++	 * TRAPPING is cleared; otherwise, the tracer might fail do_wait().
++	 * Also, transition to TRACED and updates to ->jobctl should be
++	 * atomic with respect to siglock and should be done after the arch
++	 * hook as siglock is released and regrabbed across it.
++	 */
++	set_current_state(TASK_TRACED);
++
++	current->last_siginfo = info;
++	current->exit_code = exit_code;
++
++	/*
+ 	 * If @why is CLD_STOPPED, we're trapping to participate in a group
+ 	 * stop.  Do the bookkeeping.  Note that if SIGCONT was delievered
+ 	 * while siglock was released for the arch hook, PENDING could be
+@@ -1742,21 +1754,7 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
+ 	if (why == CLD_STOPPED && (current->jobctl & JOBCTL_STOP_PENDING))
+ 		gstop_done = task_participate_group_stop(current);
  
- 	/* All systems go.. */
+-	current->last_siginfo = info;
+-	current->exit_code = exit_code;
+-
+-	/*
+-	 * TRACED should be visible before TRAPPING is cleared; otherwise,
+-	 * the tracer might fail do_wait().
+-	 */
+-	set_current_state(TASK_TRACED);
+-
+-	/*
+-	 * We're committing to trapping.  Clearing JOBCTL_TRAPPING and
+-	 * transition to TASK_TRACED should be atomic with respect to
+-	 * siglock.  This should be done after the arch hook as siglock is
+-	 * released and regrabbed across it.
+-	 */
++	/* entering a trap, clear TRAPPING */
+ 	task_clear_jobctl_trapping(current);
+ 
+ 	spin_unlock_irq(&current->sighand->siglock);
 -- 
 1.7.5.2
 
