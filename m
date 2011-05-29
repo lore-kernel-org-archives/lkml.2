@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab1E2Tns (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 15:43:48 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52568 "EHLO mx3.mail.elte.hu"
+	id S1756259Ab1E2Tta (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 15:49:30 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45536 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563Ab1E2Tnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 15:43:47 -0400
-Date: Sun, 29 May 2011 21:43:30 +0200
+	id S1752563Ab1E2Tt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 15:49:29 -0400
+Date: Sun, 29 May 2011 21:49:22 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Andrew Lutomirski <luto@mit.edu>
 Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 4/5] x86-64: Replace vsyscall gettimeofday fallback with
  int 0xcc
-Message-ID: <20110529194330.GB13539@elte.hu>
+Message-ID: <20110529194922.GC13539@elte.hu>
 References: <cover.1306517576.git.luto@mit.edu>
  <452208dbdf79d4c821d701d5973621bf7546419a.1306517576.git.luto@mit.edu>
  <20110529191055.GC9835@elte.hu>
@@ -38,57 +38,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Andrew Lutomirski <luto@mit.edu> wrote:
 
-> On Sun, May 29, 2011 at 3:10 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Andy Lutomirski <luto@MIT.EDU> wrote:
-> >
-> >> --- a/arch/x86/kernel/entry_64.S
-> >> +++ b/arch/x86/kernel/entry_64.S
-> >> @@ -1121,6 +1121,8 @@ zeroentry spurious_interrupt_bug do_spurious_interrupt_bug
-> >>  zeroentry coprocessor_error do_coprocessor_error
-> >>  errorentry alignment_check do_alignment_check
-> >>  zeroentry simd_coprocessor_error do_simd_coprocessor_error
-> >> +zeroentry intcc do_intcc
-> >> +
-> >>
-> >>       /* Reload gs selector with exception handling */
-> >>       /* edi:  new selector */
-> >> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> >
-> > I forgot to reply to your prior question about zeroentry vs.
-> > paranoidzeroentry.
-> >
-> > That distinction is an undocumented x86-64-ism.
+> > Ok, i suspect you marked it 0xCC because that's the INT3 instruction
+> > - not very useful for exploits?
 > 
-> Is this an erratum or just the undocumented fact that
-> swapgs twice puts usergs back and confuses the kernel?
+> Exactly.
+> 
+> The comments in irq_vectors.h make it sound like vectors 0x81..0xed 
+> are used for device interrupts but AFAICT it's only 0x20..0x39 that 
+> are used, so the precise choice of vector doesn't matter that much.
 
-There's no erratum needed for this to be unreliable: if an NMI hits like this:
+No, we use almost all of the vector space for device interrupts. Why 
+do you think only 0x20..0x39 is used?
 
+> > A not-so-nit: i'd not limit this message to unhandled signals 
+> > alone. An attacker could install a SIGSEGV handler, send a 
+> > SIGSEGV and attempt the exploit right then - he'll get a free 
+> > attempt with no logging performed, right?.
+> 
+> I think if an exploit can call sigaction, then we've already lost. 
 
-	SYSENTER
+Yes, indeed. In theory an app could be catching SIGSEGV and we could 
+have an exploit there. But that's pretty theoretical ...
 
-	<=== ... NMI entry ...
+> But I can still make the change.
 
-	SWAPGS
+If you did it to not repeat the message then i think the 
+printk_ratelimit() is more than enough. force_sig() will be able to 
+sort out repeat signals just fine.
 
-then the CS check of the entry frame will show 'we interrupted kernel 
-mode code', but in reality the SWAPGS has not been done yet.
+> >> +     local_irq_disable();
+> >> +     return;
+> >> +}
+> >
+> > Nit: no need for a 'return;' at the end of a void function.
+> 
+> :)
+> 
+> That pointless "return" statement was to hide the fact that the
+> local_irq_enable wasn't correctly matched.
 
-Regular interrupts (and pagefaults, etc.) can never interrupt the 
-above sequence 'in the middle', where the CS check is unreliable.
+indeed. I noticed the do_exit() local_irq_enable() assymetry which is 
+harmless (we never return), but missed the force_sig() one that isn't 
+so harmless.
 
-So yes, it's about not confusing the kernel into the wrong SWAPGS 
-state.
+> I'm changing this code a fair bit in preparation for the extra 
+> bonus patch to defang vsyscalls even more by trapping all of them.
 
-I suspect you could trigger badness very quickly: mark the NMI entry 
-zeroentry and run some more extreme NMI load like:
-
-        # 100 KHz NMI with precise (no skid) cycles PEBS profiling:
-
-	perf record -a -e cycles:pp -F 100000 sleep 60
-
-and i guess you'll see a nasty crash very quickly.
+ok.
 
 Thanks,
 
