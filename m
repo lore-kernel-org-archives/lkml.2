@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1E2Ndu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 09:33:50 -0400
-Received: from fieldses.org ([174.143.236.118]:52976 "EHLO fieldses.org"
+	id S1754069Ab1E2Nq5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 09:46:57 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48501 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752139Ab1E2Ndt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 09:33:49 -0400
-Date: Sun, 29 May 2011 09:33:45 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: nfsd changes for the kernel formerly to be known as 2.6.40
-Message-ID: <20110529133345.GA7145@fieldses.org>
+	id S1753882Ab1E2Nq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 09:46:56 -0400
+Date: Sun, 29 May 2011 21:47:45 +0800
+From: Greg KH <gregkh@suse.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Eric Biederman <ebiederm@aristanetworks.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+Subject: Re: [PATCH v2] arch/tile: add hypervisor-based character driver for
+ SPI flash ROM
+Message-ID: <20110529134745.GA26524@suse.de>
+References: <4DD6FB9E.2050604@tilera.com>
+ <20110521032102.GD19907@suse.de>
+ <201105211133.50238.arnd@arndb.de>
+ <4DD7C3A7.5010402@tilera.com>
+ <BANLkTim-d-8w1_idg4u302aB3MqTo7q4Sg@mail.gmail.com>
+ <201105281516.p4SFGfHg024703@farm-0010.internal.tilera.com>
+ <20110528212347.GA11303@suse.de>
+ <4DE19407.8040407@tilera.com>
+ <20110529114517.GA13513@suse.de>
+ <4DE2399C.9090500@tilera.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+In-Reply-To: <4DE2399C.9090500@tilera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following nfsd changes for whatever-version-it-turns-out-to-be are
-available from the git repository at
+On Sun, May 29, 2011 at 08:18:36AM -0400, Chris Metcalf wrote:
+> >> Is there a good example of a character device that has multiple minors and
+> >> also is registered with sysfs?
+> > Lots of them, look all over the kernel, and in LDD3 there's even an
+> > outdated example of one I think.
+> 
+>  I didn't actually find many drivers that have both cdev_add with count>1,
+> and mention sysfs or kobj, but char/raw.c is one that looks pretty clean. 
+> (I found only four others total: uio/uio.c, s390/char/vmlogrdr.c,
+> staging/comedi/comedi_fops.c, and staging/vme/devices/vme_user.c.)
 
-  git://linux-nfs.org/~bfields/linux.git for-2.6.40
+No, you don't need "raw" kobjects or sysfs at all.  Just use the
+device_create() call.
 
-A bit of a quiet cycle again, mainly because I've gotten behind--I have
-a few more 4.1 patches from Bryan to handle, and some bug reports to
-look into.  The latter at least I may try to sneak into -rc2 if they seem
-appropriate.
+Hope this helps,
 
-But this includes a forward-port of some tcp performance work from Olga
-and Trond, some fixes to the v4/v4.1 server's security negotiation code,
-and some 4.1 protocol conformance fixes from Andy Adamson and Mi
-Jinlong.  The fix from Andy was for a server bug causing locking to fail
-with new versions of the client.
-
---b.
-
-Andy Adamson (1):
-      nfsd v4.1 lOCKT clientid field must be ignored
-
-Bryan Schumaker (3):
-      NFSD: Remove setting unused variable in nfsd_vfs_read()
-      NFSD: Check status from nfsd4_map_bcts_dir()
-      NFSD: Remove unused variable from nfsd4_decode_bind_conn_to_session()
-
-Daniel Mack (1):
-      nfsd: make local functions static
-
-J. Bruce Fields (10):
-      svcrpc: note network-order types in svc_process_calldir
-      svcrpc: close connection if client sends short packet
-      SUNRPC: Don't wait for full record to receive tcp data
-      Merge branch 'for-2.6.39' into for-2.6.40
-      svcrpc: complete svsk processing on cb receive failure
-      nfsd: distinguish functions of NFSD_MAY_* flags
-      nfsd4: allow fh_verify caller to skip pseudoflavor checks
-      nfsd4: introduce OPDESC helper
-      nfsd4: make fh_verify responsibility of nfsd_lookup_dentry caller
-      nfsd4: fix wrongsec handling for PUTFH + op cases
-
-Mi Jinlong (4):
-      nfsd41: make sure nfs server process OPEN with EXCLUSIVE4_1 correctly
-      nfsd41: add flag checking for create_session
-      nfsd41: compare request's opcnt with session's maxops at nfsd4_sequence
-      nfsd41: error out on repeated RECLAIM_COMPLETE
-
-Olga Kornievskaia (1):
-      svcrpc: take advantage of tcp autotuning
-
-Trond Myklebust (3):
-      SUNRPC: requeue tcp socket less frequently
-      SUNRPC: svc_tcp_recvfrom cleanup
-      svcrpc: copy cb reply instead of pages
-
- fs/nfsd/export.c               |    6 -
- fs/nfsd/lockd.c                |    1 -
- fs/nfsd/nfs3proc.c             |    2 +-
- fs/nfsd/nfs3xdr.c              |    2 +-
- fs/nfsd/nfs4proc.c             |   73 ++++++++-
- fs/nfsd/nfs4state.c            |   42 ++++-
- fs/nfsd/nfs4xdr.c              |   11 +-
- fs/nfsd/nfsfh.c                |    2 +-
- fs/nfsd/vfs.c                  |   33 +++--
- fs/nfsd/vfs.h                  |    6 +-
- include/linux/nfs4.h           |    8 +-
- include/linux/sunrpc/svcsock.h |    1 +
- net/sunrpc/svcsock.c           |  336 ++++++++++++++++++++++------------------
- 13 files changed, 323 insertions(+), 200 deletions(-)
+greg k-h
