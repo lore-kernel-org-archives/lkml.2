@@ -1,36 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab1E2HZn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 03:25:43 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53725 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab1E2HZm (ORCPT
+	id S1751891Ab1E2Hdx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 03:33:53 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61724 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab1E2Hdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 03:25:42 -0400
-Date: Sun, 29 May 2011 08:25:16 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Rientjes <rientjes@google.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Eric Miao <eric.y.miao@gmail.com>, Samuel Ortiz <samuel@sortiz.org>
-Subject: Re: IrDA driver fails on PXA255
-Message-ID: <20110529072516.GW24876@n2100.arm.linux.org.uk>
-References: <20110528205701.GA1788@doriath.ww600.siemens.net> <alpine.DEB.2.00.1105281628480.9934@chino.kir.corp.google.com> <20110528234614.GV24876@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105281913490.15709@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105281913490.15709@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sun, 29 May 2011 03:33:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=vNagd8NbweKSvaHUjVx+ZlKg7v6149FKlwDRVcSD2fD9S7UJMNoUiutdxkbsRpcbtn
+         8olKcsR283Uj98nhIDn1tAONpYIIvH8txfQT46nwIqR+WCLBq7k8WyXG7Ls19ytCPyeZ
+         QnlBS5PXJdZ21OWWijqKfsjXLit33MmV44mZY=
+Subject: Re: Kernel crash after using new Intel NIC (igb)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arun Sharma <asharma@fb.com>, David Miller <davem@davemloft.net>,
+        Maximilian Engelhardt <maxi@daemonizer.de>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        StuStaNet Vorstand <vorstand@stusta.mhn.de>,
+        Yann Dupont <Yann.Dupont@univ-nantes.fr>,
+        Denys Fedoryshchenko <denys@visp.net.lb>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20110528180434.GB12530@elte.hu>
+References: <4DDEAA3C.7020502@fb.com>
+	 <1306439246.2543.10.camel@edumazet-laptop> <4DDECA9B.8080206@fb.com>
+	 <1306447292.2543.32.camel@edumazet-laptop> <4DDEEBC5.80804@fb.com>
+	 <1306466831.2543.58.camel@edumazet-laptop> <4DDFE4D6.4010000@fb.com>
+	 <1306526219.2533.3.camel@edumazet-laptop>
+	 <20110527211419.GA6793@dev1756.snc6.facebook.com>
+	 <1306561285.2533.9.camel@edumazet-laptop>  <20110528180434.GB12530@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 29 May 2011 09:33:44 +0200
+Message-ID: <1306654424.30021.7.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 28, 2011 at 07:22:44PM -0700, David Rientjes wrote:
-> arm, pxa2xx: enable DMA support for pxa2xx IRDA interface
+Le samedi 28 mai 2011 à 20:04 +0200, Ingo Molnar a écrit :
+> * Eric Dumazet <eric.dumazet@gmail.com> wrote:
 > 
-> The pxa2xx-ir driver allocates with GFP_DMA, so it must always have 
-> ZONE_DMA.
+> > > +static inline int atomic_add_unless(atomic_t *v, int a, int u)
+> > > +{
+> > > +	return __atomic_add_unless(v, a, u) != u;
+> > >  }
+> > >  
+> > >  #define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
+> > 
+> > As I said, atomic_add_unless() has several implementations in 
+> > various arches. You must take care of all, not only x86.
+> 
+> It's a bit sad to see local hacks to generic facilities committed 
+> upstream like that.
+> 
 
-Wrong way.  If there's no restrictions, drivers shouldn't be using
-GFP_DMA.  For the majority of SoCs, that's the case.
+Again, its a stable candidate patch, on a file that had many changes in
+recent kernels.
+
+I felt this was the right thing to do, to ease stable teams work.
+
+Its not like there is an urgent need for this atomic_add_unless_return()
+thing that we have to worry right now.
+
+
+
