@@ -1,363 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab1E2TQO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 15:16:14 -0400
-Received: from fallback-out2.mxes.net ([216.86.168.191]:57261 "EHLO
-	fallback-in2.mxes.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756075Ab1E2TQM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 15:16:12 -0400
-X-Greylist: delayed 484 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 May 2011 15:16:12 EDT
-From: =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Bri=C3=A8re?= <fbriere@fbriere.net>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        linux-serial@vger.kernel.org, linux-parport@lists.infradead.org
-Subject: [PATCH 2/2] parport/serial: add support for Timedia/SUNIX cards to parport_serial
-Date: Sun, 29 May 2011 15:08:04 -0400
-Message-Id: <1306696084-17977-2-git-send-email-fbriere@fbriere.net>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <1306696084-17977-1-git-send-email-fbriere@fbriere.net>
-References: <1306696084-17977-1-git-send-email-fbriere@fbriere.net>
+	id S1756168Ab1E2TLM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 15:11:12 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58700 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755176Ab1E2TLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 15:11:11 -0400
+Date: Sun, 29 May 2011 21:10:55 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andy Lutomirski <luto@MIT.EDU>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] x86-64: Replace vsyscall gettimeofday fallback with
+ int 0xcc
+Message-ID: <20110529191055.GC9835@elte.hu>
+References: <cover.1306517576.git.luto@mit.edu>
+ <452208dbdf79d4c821d701d5973621bf7546419a.1306517576.git.luto@mit.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <452208dbdf79d4c821d701d5973621bf7546419a.1306517576.git.luto@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Timedia/SUNIX PCI cards with both serial and parallel ports are
-currently supported by 8250_pci and parport_pc individually.  Moving
-that support into parport_serial allows using both types of ports at the
-same time.
 
-This was successfully tested with a SUNIX 4079T.
+* Andy Lutomirski <luto@MIT.EDU> wrote:
 
-Signed-off-by: Frédéric Brière <fbriere@fbriere.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: linux-serial@vger.kernel.org
-Cc: linux-parport@lists.infradead.org
----
- drivers/parport/parport_pc.c     |   54 -------------
- drivers/parport/parport_serial.c |  163 ++++++++++++++++++++++++++++++++++++++
- drivers/tty/serial/8250_pci.c    |   23 ++++++
- 3 files changed, 186 insertions(+), 54 deletions(-)
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -1121,6 +1121,8 @@ zeroentry spurious_interrupt_bug do_spurious_interrupt_bug
+>  zeroentry coprocessor_error do_coprocessor_error
+>  errorentry alignment_check do_alignment_check
+>  zeroentry simd_coprocessor_error do_simd_coprocessor_error
+> +zeroentry intcc do_intcc
+> +
+>  
+>  	/* Reload gs selector with exception handling */
+>  	/* edi:  new selector */
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
 
-diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
-index f330338..d1cdb94 100644
---- a/drivers/parport/parport_pc.c
-+++ b/drivers/parport/parport_pc.c
-@@ -2864,24 +2864,6 @@ enum parport_pc_pci_cards {
- 	lava_parallel_dual_b,
- 	boca_ioppar,
- 	plx_9050,
--	timedia_4078a,
--	timedia_4079h,
--	timedia_4085h,
--	timedia_4088a,
--	timedia_4089a,
--	timedia_4095a,
--	timedia_4096a,
--	timedia_4078u,
--	timedia_4079a,
--	timedia_4085u,
--	timedia_4079r,
--	timedia_4079s,
--	timedia_4079d,
--	timedia_4079e,
--	timedia_4079f,
--	timedia_9079a,
--	timedia_9079b,
--	timedia_9079c,
- 	timedia_4006a,
- 	timedia_4014,
- 	timedia_4008a,
-@@ -2940,24 +2922,6 @@ static struct parport_pc_pci {
- 	/* lava_parallel_dual_b */	{ 1, { { 0, -1 }, } },
- 	/* boca_ioppar */		{ 1, { { 0, -1 }, } },
- 	/* plx_9050 */			{ 2, { { 4, -1 }, { 5, -1 }, } },
--	/* timedia_4078a */		{ 1, { { 2, -1 }, } },
--	/* timedia_4079h */             { 1, { { 2, 3 }, } },
--	/* timedia_4085h */             { 2, { { 2, -1 }, { 4, -1 }, } },
--	/* timedia_4088a */             { 2, { { 2, 3 }, { 4, 5 }, } },
--	/* timedia_4089a */             { 2, { { 2, 3 }, { 4, 5 }, } },
--	/* timedia_4095a */             { 2, { { 2, 3 }, { 4, 5 }, } },
--	/* timedia_4096a */             { 2, { { 2, 3 }, { 4, 5 }, } },
--	/* timedia_4078u */             { 1, { { 2, -1 }, } },
--	/* timedia_4079a */             { 1, { { 2, 3 }, } },
--	/* timedia_4085u */             { 2, { { 2, -1 }, { 4, -1 }, } },
--	/* timedia_4079r */             { 1, { { 2, 3 }, } },
--	/* timedia_4079s */             { 1, { { 2, 3 }, } },
--	/* timedia_4079d */             { 1, { { 2, 3 }, } },
--	/* timedia_4079e */             { 1, { { 2, 3 }, } },
--	/* timedia_4079f */             { 1, { { 2, 3 }, } },
--	/* timedia_9079a */             { 1, { { 2, 3 }, } },
--	/* timedia_9079b */             { 1, { { 2, 3 }, } },
--	/* timedia_9079c */             { 1, { { 2, 3 }, } },
- 	/* timedia_4006a */             { 1, { { 0, -1 }, } },
- 	/* timedia_4014  */             { 2, { { 0, -1 }, { 2, -1 }, } },
- 	/* timedia_4008a */             { 1, { { 0, 1 }, } },
-@@ -3019,24 +2983,6 @@ static const struct pci_device_id parport_pc_pci_tbl[] = {
- 	{ PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_9050,
- 	  PCI_SUBVENDOR_ID_EXSYS, PCI_SUBDEVICE_ID_EXSYS_4014, 0, 0, plx_9050 },
- 	/* PCI_VENDOR_ID_TIMEDIA/SUNIX has many differing cards ...*/
--	{ 0x1409, 0x7168, 0x1409, 0x4078, 0, 0, timedia_4078a },
--	{ 0x1409, 0x7168, 0x1409, 0x4079, 0, 0, timedia_4079h },
--	{ 0x1409, 0x7168, 0x1409, 0x4085, 0, 0, timedia_4085h },
--	{ 0x1409, 0x7168, 0x1409, 0x4088, 0, 0, timedia_4088a },
--	{ 0x1409, 0x7168, 0x1409, 0x4089, 0, 0, timedia_4089a },
--	{ 0x1409, 0x7168, 0x1409, 0x4095, 0, 0, timedia_4095a },
--	{ 0x1409, 0x7168, 0x1409, 0x4096, 0, 0, timedia_4096a },
--	{ 0x1409, 0x7168, 0x1409, 0x5078, 0, 0, timedia_4078u },
--	{ 0x1409, 0x7168, 0x1409, 0x5079, 0, 0, timedia_4079a },
--	{ 0x1409, 0x7168, 0x1409, 0x5085, 0, 0, timedia_4085u },
--	{ 0x1409, 0x7168, 0x1409, 0x6079, 0, 0, timedia_4079r },
--	{ 0x1409, 0x7168, 0x1409, 0x7079, 0, 0, timedia_4079s },
--	{ 0x1409, 0x7168, 0x1409, 0x8079, 0, 0, timedia_4079d },
--	{ 0x1409, 0x7168, 0x1409, 0x9079, 0, 0, timedia_4079e },
--	{ 0x1409, 0x7168, 0x1409, 0xa079, 0, 0, timedia_4079f },
--	{ 0x1409, 0x7168, 0x1409, 0xb079, 0, 0, timedia_9079a },
--	{ 0x1409, 0x7168, 0x1409, 0xc079, 0, 0, timedia_9079b },
--	{ 0x1409, 0x7168, 0x1409, 0xd079, 0, 0, timedia_9079c },
- 	{ 0x1409, 0x7268, 0x1409, 0x0101, 0, 0, timedia_4006a },
- 	{ 0x1409, 0x7268, 0x1409, 0x0102, 0, 0, timedia_4014 },
- 	{ 0x1409, 0x7268, 0x1409, 0x0103, 0, 0, timedia_4008a },
-diff --git a/drivers/parport/parport_serial.c b/drivers/parport/parport_serial.c
-index f01e264..60c191d 100644
---- a/drivers/parport/parport_serial.c
-+++ b/drivers/parport/parport_serial.c
-@@ -41,6 +41,24 @@ enum parport_pc_pci_cards {
- 	siig_2p1s_20x,
- 	siig_1s1p_20x,
- 	siig_2s1p_20x,
-+	timedia_4078a,
-+	timedia_4079h,
-+	timedia_4085h,
-+	timedia_4088a,
-+	timedia_4089a,
-+	timedia_4095a,
-+	timedia_4096a,
-+	timedia_4078u,
-+	timedia_4079a,
-+	timedia_4085u,
-+	timedia_4079r,
-+	timedia_4079s,
-+	timedia_4079d,
-+	timedia_4079e,
-+	timedia_4079f,
-+	timedia_9079a,
-+	timedia_9079b,
-+	timedia_9079c,
- };
- 
- /* each element directly indexed from enum list, above */
-@@ -105,6 +123,24 @@ static struct parport_pc_pci cards[] __devinitdata = {
- 	/* siig_2p1s_20x */		{ 2, { { 1, 2 }, { 3, 4 }, } },
- 	/* siig_1s1p_20x */		{ 1, { { 1, 2 }, } },
- 	/* siig_2s1p_20x */		{ 1, { { 2, 3 }, } },
-+	/* timedia_4078a */		{ 1, { { 2, -1 }, } },
-+	/* timedia_4079h */             { 1, { { 2, 3 }, } },
-+	/* timedia_4085h */             { 2, { { 2, -1 }, { 4, -1 }, } },
-+	/* timedia_4088a */             { 2, { { 2, 3 }, { 4, 5 }, } },
-+	/* timedia_4089a */             { 2, { { 2, 3 }, { 4, 5 }, } },
-+	/* timedia_4095a */             { 2, { { 2, 3 }, { 4, 5 }, } },
-+	/* timedia_4096a */             { 2, { { 2, 3 }, { 4, 5 }, } },
-+	/* timedia_4078u */             { 1, { { 2, -1 }, } },
-+	/* timedia_4079a */             { 1, { { 2, 3 }, } },
-+	/* timedia_4085u */             { 2, { { 2, -1 }, { 4, -1 }, } },
-+	/* timedia_4079r */             { 1, { { 2, 3 }, } },
-+	/* timedia_4079s */             { 1, { { 2, 3 }, } },
-+	/* timedia_4079d */             { 1, { { 2, 3 }, } },
-+	/* timedia_4079e */             { 1, { { 2, 3 }, } },
-+	/* timedia_4079f */             { 1, { { 2, 3 }, } },
-+	/* timedia_9079a */             { 1, { { 2, 3 }, } },
-+	/* timedia_9079b */             { 1, { { 2, 3 }, } },
-+	/* timedia_9079c */             { 1, { { 2, 3 }, } },
- };
- 
- static struct pci_device_id parport_serial_pci_tbl[] = {
-@@ -176,6 +212,25 @@ static struct pci_device_id parport_serial_pci_tbl[] = {
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, siig_2s1p_20x },
- 	{ PCI_VENDOR_ID_SIIG, PCI_DEVICE_ID_SIIG_2S1P_20x_850,
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, siig_2s1p_20x },
-+	/* PCI_VENDOR_ID_TIMEDIA/SUNIX has many differing cards ...*/
-+	{ 0x1409, 0x7168, 0x1409, 0x4078, 0, 0, timedia_4078a },
-+	{ 0x1409, 0x7168, 0x1409, 0x4079, 0, 0, timedia_4079h },
-+	{ 0x1409, 0x7168, 0x1409, 0x4085, 0, 0, timedia_4085h },
-+	{ 0x1409, 0x7168, 0x1409, 0x4088, 0, 0, timedia_4088a },
-+	{ 0x1409, 0x7168, 0x1409, 0x4089, 0, 0, timedia_4089a },
-+	{ 0x1409, 0x7168, 0x1409, 0x4095, 0, 0, timedia_4095a },
-+	{ 0x1409, 0x7168, 0x1409, 0x4096, 0, 0, timedia_4096a },
-+	{ 0x1409, 0x7168, 0x1409, 0x5078, 0, 0, timedia_4078u },
-+	{ 0x1409, 0x7168, 0x1409, 0x5079, 0, 0, timedia_4079a },
-+	{ 0x1409, 0x7168, 0x1409, 0x5085, 0, 0, timedia_4085u },
-+	{ 0x1409, 0x7168, 0x1409, 0x6079, 0, 0, timedia_4079r },
-+	{ 0x1409, 0x7168, 0x1409, 0x7079, 0, 0, timedia_4079s },
-+	{ 0x1409, 0x7168, 0x1409, 0x8079, 0, 0, timedia_4079d },
-+	{ 0x1409, 0x7168, 0x1409, 0x9079, 0, 0, timedia_4079e },
-+	{ 0x1409, 0x7168, 0x1409, 0xa079, 0, 0, timedia_4079f },
-+	{ 0x1409, 0x7168, 0x1409, 0xb079, 0, 0, timedia_9079a },
-+	{ 0x1409, 0x7168, 0x1409, 0xc079, 0, 0, timedia_9079b },
-+	{ 0x1409, 0x7168, 0x1409, 0xd079, 0, 0, timedia_9079c },
- 
- 	{ 0, } /* terminate list */
- };
-@@ -267,6 +322,114 @@ static struct pciserial_board pci_parport_serial_boards[] __devinitdata = {
- 		.base_baud	= 921600,
- 		.uart_offset	= 8,
- 	},
-+	[timedia_4078a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079h] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4085h] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4088a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4089a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4095a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4096a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4078u] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4085u] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079r] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079s] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079d] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079e] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079f] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_9079a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_9079b] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_9079c] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
- };
- 
- struct parport_serial_private {
-diff --git a/drivers/tty/serial/8250_pci.c b/drivers/tty/serial/8250_pci.c
-index e6fb67b..8e7e6072 100644
---- a/drivers/tty/serial/8250_pci.c
-+++ b/drivers/tty/serial/8250_pci.c
-@@ -572,6 +572,28 @@ static const struct timedia_struct {
- 	{ 8, timedia_eight_port }
- };
- 
-+/*
-+ * There are nearly 70 different Timedia/SUNIX PCI serial devices.  Instead of
-+ * listing them individually, this driver merely grabs them all with
-+ * PCI_ANY_ID.  Some of these devices, however, also feature a parallel port,
-+ * and should be left free to be claimed by parport_serial instead.
-+ */
-+static int pci_timedia_probe(struct pci_dev *dev)
-+{
-+	/*
-+	 * Check the third digit of the subdevice ID
-+	 * (0,2,3,5,6: serial only -- 7,8,9: serial + parallel)
-+	 */
-+	if ((dev->subsystem_device & 0x00f0) >= 0x70) {
-+		dev_info(&dev->dev,
-+			"ignoring Timedia subdevice %04x for parport_serial\n",
-+			dev->subsystem_device);
-+		return -ENODEV;
-+	}
-+
-+	return 0;
-+}
-+
- static int pci_timedia_init(struct pci_dev *dev)
- {
- 	const unsigned short *ids;
-@@ -1388,6 +1410,7 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
- 		.device		= PCI_DEVICE_ID_TIMEDIA_1889,
- 		.subvendor	= PCI_VENDOR_ID_TIMEDIA,
- 		.subdevice	= PCI_ANY_ID,
-+		.probe		= pci_timedia_probe,
- 		.init		= pci_timedia_init,
- 		.setup		= pci_timedia_setup,
- 	},
--- 
-1.7.5.1
+I forgot to reply to your prior question about zeroentry vs. 
+paranoidzeroentry.
 
+That distinction is an undocumented x86-64-ism.
+
+Background:
+
+The SWAPGS instruction is rather fragile: it must nest perfectly and 
+only in single depth, it should only be used if entering from user 
+mode to kernel mode and then when returning to user-space, and 
+precisely so. If we mess that up even slightly, we crash.
+
+So when we have a secondary entry, already in kernel mode, we *must 
+not* use SWAPGS blindly - nor must we forget doing a SWAPGS when it's 
+not switched/swapped yet.
+
+Now, there's a secondary complication: there's a cheap way to test 
+which mode the CPU is in and an expensive way.
+
+The cheap way is to pick this info off the entry frame on the kernel 
+stack, from the CS of the ptregs area of the kernel stack:
+
+        xorl %ebx,%ebx
+        testl $3,CS+8(%rsp)
+        je error_kernelspace
+        SWAPGS
+
+The expensive (paranoid) way is to read back the MSR_GS_BASE value 
+(which is what SWAPGS modifies):
+
+        movl $1,%ebx
+        movl $MSR_GS_BASE,%ecx
+        rdmsr
+        testl %edx,%edx
+        js 1f   /* negative -> in kernel */
+        SWAPGS
+        xorl %ebx,%ebx
+1:      ret
+
+
+and the whole paranoid non-paranoid macro complexity is about whether 
+to suffer that RDMSR cost.
+
+If we are at an interrupt or user-trap/gate-alike boundary then we 
+can use the faster check: the stack will be a reliable indicator of 
+whether SWAPGS was already done: if we see that we are a secondary 
+entry interrupting kernel mode execution, then we know that the GS 
+base has already been switched. If it says that we interrupted 
+user-space execution then we must do the SWAPGS.
+
+But if we are in an NMI/MCE/DEBUG/whatever super-atomic entry 
+context, which might have triggered right after a normal entry wrote 
+CS to the stack but before we executed SWAPGS, then the only safe way 
+to check for GS is the slower method: the RDMSR.
+
+So we try only to mark those entry methods 'paranoid' that absolutely 
+need the more expensive check for the GS base - and we generate all 
+'normal' entry points with the regular (faster) entry macros.
+
+I hope this explains!
+
+All in one, your zeroentry choice should be fine: INT 0xCC will not 
+issue in NMI context.
+
+Btw, as a sidenote, and since you are already touching this code, 
+would you be interested in putting this explanation into the source 
+code? It's certainly not obvious and whoever wrote those macros did 
+not think of documenting them for later generations ;-)
+
+> +++ b/arch/x86/kernel/traps.c
+> @@ -872,6 +872,10 @@ void __init trap_init(void)
+>  	set_bit(SYSCALL_VECTOR, used_vectors);
+>  #endif
+>  
+> +	set_system_intr_gate(0xCC, &intcc);
+> +	set_bit(0xCC, used_vectors);
+> +	printk(KERN_ERR "intcc gate isntalled\n");
+
+I think you mentioned it but i cannot remember your reasoning why you 
+marked it 0xcc (and not closer to the existing syscall vector) - 
+please add a comment about it into the source code as well.
+
+Ok, i suspect you marked it 0xCC because that's the INT3 instruction 
+- not very useful for exploits?
+
+> +void dotraplinkage do_intcc(struct pt_regs *regs, long error_code)
+> +{
+> +	/* Kernel code must never get here. */
+> +	if (!user_mode(regs))
+> +		BUG();
+
+Nit: you can use BUG_ON() for that.
+
+> +	local_irq_enable();
+> +
+> +	if (!in_vsyscall_page(regs->ip)) {
+> +		struct task_struct *tsk = current;
+> +		if (show_unhandled_signals && unhandled_signal(tsk, SIGSEGV) &&
+
+Nit: please put an empty new line between local variable definitions 
+and the first statement that follows - we do this for visual clarity.
+
+A not-so-nit: i'd not limit this message to unhandled signals alone. 
+An attacker could install a SIGSEGV handler, send a SIGSEGV and 
+attempt the exploit right then - he'll get a free attempt with no 
+logging performed, right?.
+
+> +		    printk_ratelimit()) {
+> +			printk(KERN_INFO
+> +			       "%s[%d] illegal int $0xCC ip:%lx sp:%lx",
+> +			       tsk->comm, task_pid_nr(tsk),
+> +			       regs->ip, regs->sp);
+
+I'd suggest putting the text 'exploit attempt?' into the printk 
+somewhere - a sysadmin might not necessarily know what an illegal int 
+$0xCC is..
+
+> +			print_vma_addr(" in ", regs->ip);
+> +			printk("\n");
+> +		}
+> +
+> +		force_sig(SIGSEGV, current);
+> +		return;
+> +	}
+> +
+> +	if (current->seccomp.mode) {
+> +		do_exit(SIGKILL);
+> +		return;
+> +	}
+> +
+> +	regs->ax = sys_gettimeofday((struct timeval __user *)regs->di, NULL);
+
+Does the vsyscall gettimeofday ignore the zone parameter too?
+
+> +
+> +	local_irq_disable();
+> +	return;
+> +}
+
+Nit: no need for a 'return;' at the end of a void function.
+
+Thanks,
+
+	Ingo
