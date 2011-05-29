@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab1E2Aca (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 20:32:30 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:39445 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab1E2Ac2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 20:32:28 -0400
-Message-ID: <4DE19407.8040407@tilera.com>
-Date: Sat, 28 May 2011 20:32:07 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1756700Ab1E2AjC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 20:39:02 -0400
+Received: from mx.treblig.org ([80.68.94.177]:39238 "EHLO mx.treblig.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754463Ab1E2Ai7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 20:38:59 -0400
+Date: Sun, 29 May 2011 01:38:57 +0100
+From: "Dr. David Alan Gilbert" <linux@treblig.org>
+To: kosaki.motohiro@jp.fujitsu.com
+Cc: linux-kernel@vger.kernel.org
+Subject: sparse build breakage with 903c0c7cdc21f2ccb7562a7bbc70289c0c2b16ad
+Message-ID: <20110529003857.GA9898@gallifrey>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Eric Biederman <ebiederm@aristanetworks.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Benjamin Thery <benjamin.thery@bull.net>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>
-Subject: Re: [PATCH v2] arch/tile: add hypervisor-based character driver for
- SPI flash ROM
-References: <201105042004.p44K4kZx011721@farm-0032.internal.tilera.com> <4DD6FB9E.2050604@tilera.com> <20110521032102.GD19907@suse.de> <201105211133.50238.arnd@arndb.de> <4DD7C3A7.5010402@tilera.com> <BANLkTim-d-8w1_idg4u302aB3MqTo7q4Sg@mail.gmail.com> <201105281516.p4SFGfHg024703@farm-0010.internal.tilera.com> <20110528212347.GA11303@suse.de>
-In-Reply-To: <20110528212347.GA11303@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Chocolate: 70 percent or better cocoa solids preferably
+X-Operating-System: Linux/2.6.32.27-kvm-i386-20110114 (i686)
+X-Uptime: 01:18:08 up 100 days,  1:50,  1 user,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/28/2011 5:23 PM, Greg KH wrote:
-> On Sat, May 28, 2011 at 11:13:54AM -0400, Chris Metcalf wrote:
->> + * This source code is derived from code provided in "Linux Device
->> + * Drivers" by Alessandro Rubini and Jonathan Corbet, published by
->> + * O'Reilly & Associates.
->> + */
-> LDD version 2?  Wow, this driver is old.
+Hi Kosaki,
+  I'm getting a problem when running the current (5dbe0af47f8a8f968bac2991c3ec974c6e3eaabc)
+kernel tree through sparse, and I think it's down to an
+interaction between your commit
 
-The driver was originally written in 2007. LDD3 came out in 2005, right?  I
-guess we were a little behind the curve :-)
+903c0c7cdc21f2ccb7562a7bbc70289c0c2b16ad sparse: define dummy BUILD_BUG_ON definition for sparse
 
->> +MODULE_LICENSE("Dual BSD/GPL");
-> Wait, where did the BSD come from?  You just said it was GPL only above
-> in the header of the file?
+and the __module_param_call code in moduleparam.h
 
-Good point.  We have a boiler-plate auto-generated GPL license comment that
-we use for kernel sources.  In general, we've tended toward licenses that
-are as available to the community as possible -- for example, the string
-code that we've written is under GPL in the kernel (and glibc) but under a
-BSD license in newlib, because we wrote it all from scratch and can do
-that.  And, since we're hardware vendors, our general goal is to enable
-whatever kinds of software will sell chips.  :-)
+The error is:
+init/main.c:643:1: error: Syntax error in unary expression
 
-My guess is that we should be using a consistent GPL-only license for these
-kinds of kernel drivers, because frankly, they aren't useful outside the
-context of Linux.  I'll double-check with the rest of the software team,
-but I think we should probably just switch this over to a straight "GPL"
-license.
+core_param(initcall_debug, initcall_debug, bool, 0644);
 
-> As you are only using 1 minor device, why not just use a misc device
-> instead?  It's simpler, and you get the sysfs code for free, which you
-> forgot to do, so your device node will never show up in userspace :(
+this calls __module_param_call which is defined as:
 
-Interesting; this appears to be a bug.  We use 4 minors (see "srom_devs =
-4" higher up).  I'll fix this.  We may have some other devices that would
-benefit from being recast as misc devices, so I'll look at our set of
-internal devices.
 
-Is there a good example of a character device that has multiple minors and
-also is registered with sysfs?
+#define __module_param_call(prefix, name, ops, arg, isbool, perm)       \
+        /* Default value instead of permissions? */                     \
+        static int __param_perm_check_##name __attribute__((unused)) =  \
+        BUILD_BUG_ON_ZERO((perm) < 0 || (perm) > 0777 || ((perm) & 2))  \
+        + BUILD_BUG_ON_ZERO(sizeof(""prefix) > MAX_PARAM_PREFIX_LEN);   \
+        static const char __param_str_##name[] = prefix #name;          \
+        static struct kernel_param __moduleparam_const __param_##name   \
+        __used                                                          \
+    __attribute__ ((unused,__section__ ("__param"),aligned(sizeof(void *)))) \
+        = { __param_str_##name, ops, perm, isbool ? KPARAM_ISBOOL : 0,  \
+            { arg } }
+
+which ends up with a postprocessed line of:
+
+static inline void __check_initcall_debug(void) {; }; static int __param_perm_check_initcall_debug __attribute__((unused)) = +; static const char __param_str_initcall_debug[] = "" "initcall_debug"; static struct kernel_param const __param_initcall_debug __attribute__((__used__)) __attribute__ ((unused,__section__ ("__param"),aligned(sizeof(void *)))) = { __param_str_initcall_debug, &param_ops_bool, 0644, __builtin_types_compatible_p(typeof(initcall_debug), typeof(bool)) ? 2 : 0, { &initcall_debug } };
+
+Note the '+;' being assigned to __param_perm_check_initcall_debug
+
+So I think your dummy BUILD_BUG_ON_ZERO's needs to have a value:
+
+The following diff seems to fix it, but I've not let
+a fuller sparse run complete yet:
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index fb0e732..953352a 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -671,8 +671,8 @@ struct sysinfo {
+ 
+ #ifdef __CHECKER__
+ #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
+-#define BUILD_BUG_ON_ZERO(e)
+-#define BUILD_BUG_ON_NULL(e)
++#define BUILD_BUG_ON_ZERO(e) (0)
++#define BUILD_BUG_ON_NULL(e) ((void*)0)
+ #define BUILD_BUG_ON(condition)
+ #else /* __CHECKER__ */
+ 
+
+
+
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
-
+ -----Open up your eyes, open up your mind, open up your code -------   
+/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
+\ gro.gilbert @ treblig.org |                               | In Hex /
+ \ _________________________|_____ http://www.treblig.org   |_______/
