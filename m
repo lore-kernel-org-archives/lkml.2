@@ -1,73 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab1E2Wne (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 18:43:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48857 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752306Ab1E2Wnc (ORCPT
+	id S1752546Ab1E2XMu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 19:12:50 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53557 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab1E2XMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 18:43:32 -0400
-Date: Sun, 29 May 2011 15:45:42 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Robert Goldner <robert@au-79.de>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Ooops with 2.6.39
-Message-Id: <20110529154542.add2a308.akpm@linux-foundation.org>
-In-Reply-To: <4DE1E013.6010300@au-79.de>
-References: <4DE1E013.6010300@au-79.de>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 29 May 2011 19:12:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=xeDrmsBUqV3FBLO0SHxl122lod3INmwQGGpSwD9pbnC8PR3td5Rnjjx9d/2XDkr+BS
+         k5wzL/e8tuSXiZj++SjPIiczxkvuP7ZSBdqtkfdQU+HtC5oYHZtwn+pjHdYcigUx/Bbu
+         OdVMwlpILbHEivBf3lpeBDiEHSrLGd7gpEL50=
+From: Tejun Heo <tj@kernel.org>
+To: oleg@redhat.com
+Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        pedro@codesourcery.com
+Subject: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and group stop notification, take#4
+Date: Mon, 30 May 2011 01:12:23 +0200
+Message-Id: <1306710760-16440-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc netdev)
+Hello,
 
-On Sun, 29 May 2011 07:56:35 +0200 Robert Goldner <robert@au-79.de> wrote:
+This is the fourth take of PTRACE_SEIZE/INTERRUPT and group stop
+notification patchset.  This patchset contains both the prep and the
+actual implementation patches.
 
-> Hi,
-> 
-> sometimes I got an Ooops while the system is starting:
-> 
-> [   15.824365] ------------[ cut here ]------------
-> [   15.824616] WARNING: at net/sched/sch_generic.c:256
-> dev_watchdog+0x1d6/0x1e0()
-> [   15.824868] Hardware name:
-> [   15.825098] NETDEV WATCHDOG: eth0 (sis900): transmit queue 0 timed out
-> [   15.825333] Modules linked in: coretemp qt1010 af9013 dvb_pll mt2060
-> dvb_usb_nova_t_usb2 dvb_usb_dibusb_common dib3000mc psmouse
-> dibx000_common pcspkr dvb_usb_af9015 ohci_hcd
-> [   15.829066] Pid: 1462, comm: startpar Not tainted 2.6.39-agathe #2
-> [   15.829301] Call Trace:
-> [   15.829534]  [<c103c79d>] warn_slowpath_common+0x6d/0xa0
-> [   15.829948]  [<c13ff216>] ? dev_watchdog+0x1d6/0x1e0
-> [   15.830183]  [<c13ff216>] ? dev_watchdog+0x1d6/0x1e0
-> [   15.830417]  [<c103c84e>] warn_slowpath_fmt+0x2e/0x30
-> [   15.830828]  [<c13ff216>] dev_watchdog+0x1d6/0x1e0
-> [   15.831241]  [<c104ecc8>] ? __queue_work+0xb8/0x300
-> [   15.831476]  [<c10048a8>] ? handle_irq+0x18/0x90
-> [   15.831889]  [<c1041bc7>] ? irq_exit+0x37/0x80
-> [   15.832127]  [<c10044f6>] ? do_IRQ+0x46/0xb0
-> [   15.832541]  [<c1080189>] ? rcu_start_gp+0x149/0x1d0
-> [   15.832954]  [<c1046a24>] run_timer_softirq+0xe4/0x200
-> [   15.833189]  [<c1041900>] ? local_bh_enable+0x80/0x80
-> [   15.833426]  [<c151ade9>] ? common_interrupt+0x29/0x30
-> [   15.833838]  [<c13ff040>] ? qdisc_reset+0x40/0x40
-> [   15.834250]  [<c1041978>] __do_softirq+0x78/0x100
-> [   15.834841]  [<c1041900>] ? local_bh_enable+0x80/0x80
-> [   15.835097]  <IRQ>  [<c1041bfe>] ? irq_exit+0x6e/0x80
-> [   15.835188]  [<c1019dc6>] ? smp_apic_timer_interrupt+0x56/0x90
-> [   15.835247]  [<c151a46a>] ? apic_timer_interrupt+0x2a/0x30
-> [   15.835305]  [<c151a168>] ? resume_userspace+0x14/0x14
-> [   15.835360] ---[ end trace 519c5412e162986a ]---
-> 
-> 
-> The level of pain is very low, because the system is still running very
-> well.
-> 
-> If somebody needs some more information, please let me know.
-> 
+I'm traveling from tomorrow and wanted to send out the revised version
+before leaving, so I didn't spend enough time testing the notification
+part.  I haven't tested things like INTERRUPT cancelling listening or
+immediate re-trap triggering on LISTEN.  But the basics are tested and
+it should be enough to decide on direction.  BTW, Oleg, nice
+suggestions.  I much prefer this over the TRAPPING one. :)
 
-Which net device driver is being used?
+Notable changes from the third take[1] are,
+
+* PTRACE_TRAP_NOTIFY is now cleared on the next STOP trap instead of
+  PTRACE_GETSIGINFO as suggested by Oleg.
+
+* PTRACE_LISTEN added.  This puts tracee into quasi-active state where
+  wait(2) and sync ptrace requests fail and tracee is allowed to
+  re-trap into STOP to notify an async event.  This makes re-trapping
+  protection with TRAPPING unnecessary and makes the implementation
+  noticeably simpler.  Also suggested by Oleg.
+
+Per patch changes:
+
+* The following patches are dropped.
+
+  0008-ptrace-move-JOBCTL_TRAPPING-wait-to-wait-2-and-ptrac.patch
+  0009-ptrace-make-TRAPPING-wait-interruptible.patch
+  0014-ptrace-restructure-ptrace_getsiginfo.patch
+  0018-ptrace-add-JOBCTL_BLOCK_NOTIFY.patch
+  0019-ptrace-implement-group-stop-notification-for-ptracer.patch
+
+* The following patches are added
+  
+  0001-ptrace-remove-silly-wait_trap-variable-from-ptrace_a.patch
+  0016-ptrace-implement-TRAP_NOTIFY-and-use-it-for-group-st.patch
+  0017-ptrace-implement-PTRACE_LISTEN.patch
+
+* 0002-job-control-rename-signal-group_stop-and-flags-to-jo.patch
+
+  JOBCTL_*_BIT macros defined to replace ilog2() usage as suggested by
+  Linus.
+
+* 0010-job-control-introduce-JOBCTL_TRAP_STOP-and-use-it-fo.patch
+
+  PTRACE_TRAP_MASK handling in get_signal_delivery() is relocated
+  after group stop participation inside for(;;) and do_signal_stop()
+  now returns %false after scheduling STOP trap without releasing
+  siglock.  This removes the extra re-locking and also avoids taking
+  consecutive traps by consuming group stop first.
+
+* 0014-ptrace-make-group-stop-state-visible-via-PTRACE_GETS.patch
+
+  si_pt_flags and si_signo are set while taking trap instead of on
+  PTRACE_GETSIGINFO.  Accordingly, NOTIFY is also cleared on STOP
+  trap.
+
+This patchset contains the following 17 patches.
+
+  0001-ptrace-remove-silly-wait_trap-variable-from-ptrace_a.patch
+  0002-job-control-rename-signal-group_stop-and-flags-to-jo.patch
+  0003-ptrace-ptrace_check_attach-rename-kill-to-ignore_sta.patch
+  0004-ptrace-relocate-set_current_state-TASK_TRACED-in-ptr.patch
+  0005-job-control-introduce-JOBCTL_PENDING_MASK-and-task_c.patch
+  0006-job-control-make-task_clear_jobctl_pending-clear-TRA.patch
+  0007-job-control-introduce-task_set_jobctl_pending.patch
+  0008-ptrace-use-bit_waitqueue-for-TRAPPING-instead-of-wai.patch
+  0009-signal-remove-three-noop-tracehooks.patch
+  0010-job-control-introduce-JOBCTL_TRAP_STOP-and-use-it-fo.patch
+  0011-ptrace-implement-PTRACE_SEIZE.patch
+  0012-ptrace-implement-PTRACE_INTERRUPT.patch
+  0013-ptrace-add-siginfo.si_pt_flags.patch
+  0014-ptrace-make-group-stop-state-visible-via-PTRACE_GETS.patch
+  0015-ptrace-don-t-let-PTRACE_SETSIGINFO-override-__SI_TRA.patch
+  0016-ptrace-implement-TRAP_NOTIFY-and-use-it-for-group-st.patch
+  0017-ptrace-implement-PTRACE_LISTEN.patch
+
+and available in the following git branch.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-ptrace-seize
+
+The HEAD is a48ca3deab (ptrace: implement PTRACE_LISTEN).  If you see
+older branch, please retry after a while (korg is still syncing).
+
+The patchset is on top of today's (20110530) mainline - 139f37f5e1
+(Merge branch 'for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin).
+
+diffstat follows.
+
+ arch/ia64/include/asm/siginfo.h       |    7 
+ arch/ia64/kernel/signal.c             |    5 
+ arch/mips/include/asm/compat-signal.h |    7 
+ arch/mips/include/asm/siginfo.h       |    7 
+ arch/mips/kernel/signal32.c           |    5 
+ arch/parisc/kernel/signal32.c         |    5 
+ arch/parisc/kernel/signal32.h         |    7 
+ arch/powerpc/kernel/ppc32.h           |    7 
+ arch/powerpc/kernel/signal_32.c       |    5 
+ arch/s390/kernel/compat_linux.h       |    7 
+ arch/s390/kernel/compat_signal.c      |    5 
+ arch/sparc/kernel/signal32.c          |   12 +
+ arch/tile/kernel/compat_signal.c      |   11 +
+ arch/x86/ia32/ia32_signal.c           |    4 
+ arch/x86/include/asm/ia32.h           |    7 
+ fs/exec.c                             |    2 
+ include/asm-generic/siginfo.h         |   10 
+ include/linux/ptrace.h                |   16 +
+ include/linux/sched.h                 |   37 ++-
+ include/linux/tracehook.h             |   52 -----
+ kernel/exit.c                         |    2 
+ kernel/ptrace.c                       |  190 +++++++++++++++---
+ kernel/signal.c                       |  351 ++++++++++++++++++++++------------
+ 23 files changed, 543 insertions(+), 218 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1144997
