@@ -1,64 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611Ab1E2IQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 04:16:29 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:54866 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab1E2IQ1 (ORCPT
+	id S1751547Ab1E2Ief (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 04:34:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51006 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab1E2Iec convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 04:16:27 -0400
-Date: Sun, 29 May 2011 13:46:18 +0530
-From: Ankita Garg <ankita@in.ibm.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: svaidy@linux.vnet.ibm.com, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, thomas.abraham@linaro.org
-Subject: Re: [PATCH 01/10] mm: Introduce the memory regions data structure
-Message-ID: <20110529081618.GC8333@in.ibm.com>
-Reply-To: Ankita Garg <ankita@in.ibm.com>
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
- <1306499498-14263-2-git-send-email-ankita@in.ibm.com>
- <1306510203.22505.69.camel@nimitz>
- <20110527182041.GM5654@dirshya.in.ibm.com>
- <1306531912.22505.84.camel@nimitz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306531912.22505.84.camel@nimitz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 29 May 2011 04:34:32 -0400
+Subject: Re: [PATCH] mm: fix page_lock_anon_vma leaving mutex locked
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <alpine.LSU.2.00.1105281634440.14257@sister.anvils>
+References: <alpine.LSU.2.00.1105281317090.13319@sister.anvils>
+	 <1306617270.2497.516.camel@laptop>
+	 <alpine.LSU.2.00.1105281437320.13942@sister.anvils>
+	 <BANLkTinsq-XJGvRVmBa6kRp0RTj9NqGWtA@mail.gmail.com>
+	 <alpine.LSU.2.00.1105281634440.14257@sister.anvils>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sun, 29 May 2011 10:33:44 +0200
+Message-ID: <1306658024.1200.1222.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Sat, 2011-05-28 at 17:12 -0700, Hugh Dickins wrote:
 
-On Fri, May 27, 2011 at 02:31:52PM -0700, Dave Hansen wrote:
-> On Fri, 2011-05-27 at 23:50 +0530, Vaidyanathan Srinivasan wrote:
-> > The overall idea is to have a VM data structure that can capture
-> > various boundaries of memory, and enable the allocations and reclaim
-> > logic to target certain areas based on the boundaries and properties
-> > required. 
+> Though I think I'm arriving at the conclusion that this patch
+> is correct as is, despite the doubts that have arisen.
 > 
-> It's worth noting that we already do targeted reclaim on boundaries
-> other than zones.  The lumpy reclaim and memory compaction logically do
-> the same thing.  So, it's at least possible to do this without having
-> the global LRU designed around the way you want to reclaim.
->
+> One argument is by induction: since we've noticed no problems before
+> Peter's patchset, and actually Peter's patchset plus my patch is not
+> really making any difference to this "anon_vma changing beneath you"
+> case, is it?
 
-My understanding maybe incorrect, but doesn't both lumpy reclaim and
-memory compaction still work under zone boundary ? While trying to free
-up higher order pages, lumpy reclaim checks to ensure that pages that
-are selected do not cross zone boundary. Further, compaction walks
-through the pages in a zone and tries to re-arrange them.
- 
-> Also, if you get _too_ dependent on the global LRU, what are you going
-> to do if our cgroup buddies manage to get cgroup'd pages off the global
-> LRU?  
+I'll buy that argument, and on those grounds would have Acked the patch,
+but since Linus already committed it, that's a tad moot.
+
+Still understanding why the previous code was right (if so) is
+important.
+
+> > I'm wondering - wouldn't it be nicer to just re-check (after getting
+> > the anon_vma lock) that page->mapping still matches anon_mapping?
 > 
+> I toyed with that: it seemed a better idea than relying on the refcount,
+> which wasn't giving the guarantee we needed (the refcount is perfectly
+> good in other respects, it just isn't good for this particular check).
+> 
+> However, the problem (if there is one) goes a bit further than that:
+> if we don't actually have serialization against page->anon_vma (okay,
+> it's actually page->mapping, but simpler to express this way) being
+> changed at any instant, i.e. we're serving the page_referenced() without
+> PageLocked case, then what good is the "anon_vma" that page_lock_anon_vma()
+> returns?  If that can be freed and reused at any moment?
 
--- 
-Regards,
-Ankita Garg (ankita@in.ibm.com)
-Linux Technology Center
-IBM India Systems & Technology Labs,
-Bangalore, India
+Agreed, all except page_referenced() are serialized using PageLock.
+
+> I believe that although it may no longer be the anon_vma that the page
+> is pointing to, it remains stable.  Because even if page->anon_vma is
+> updated, it will certainly have the same anon_vma->root as before
+> (see the first BUG_ON in __page_check_anon_rmap() for reassurance),
+> so the mutex locking holds good.
+> 
+> And the structure itself won't be freed: although the page is now
+> pointing to a less inclusive, more optimal anon_vma for reclaim to use,
+> the anon_vma which was originally pointed to remains on the same vma's
+> chains as it ever was, and only gets freed up when they're all gone.
+> 
+> So, when there's this race with moving anon_vma, page_lock_anon_vma()
+> may end up returning a less than optimal anon_vma, but it's still valid
+> as a good though longer list of vmas to look through.
+
+Yes, and I think I see what you mean, if a page's anon_vma is changed
+while it remains mapped it will only ever be moved to a child of the
+original anon_vma. And because of the anon_vma ref-counting, the
+original anon_vma will stick around until that too is dead, which won't
+happen for as long as the page remains mapped.
+
+Therefore, for as long as we observe page_mapped(), any anon_vma
+obtained from it remains valid.
+
+Talk about tricky.. shees. I bet that wants a comment or so.
+
+> The previous code would have broken horribly, wouldn't it, were that
+> not the case?
+
+It would have, yes.
+
+---
+Subject: mm, rmap: Add yet more comments to page_get_anon_vma/page_lock_anon_vma
+
+Inspired by an analysis from Hugh on why again all this doesn't explode
+in our face.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ mm/rmap.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 6bada99..487d5cc 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -350,7 +350,12 @@ void __init anon_vma_init(void)
+  * have been relevant to this page.
+  *
+  * The page might have been remapped to a different anon_vma or the anon_vma
+- * returned may already be freed (and even reused).
++ * returned may already be freed (and even reused). 
++ *
++ * In case it was remapped to a different anon_vma, the new anon_vma will be a
++ * child of the old anon_vma, and the anon_vma lifetime rules will therefore
++ * ensure that any anon_vma obtained from the page will still be valid for as
++ * long as we observe page_mapped() [ hence all those page_mapped() tests ].
+  *
+  * All users of this function must be very careful when walking the anon_vma
+  * chain and verify that the page in question is indeed mapped in it
+@@ -421,7 +426,7 @@ struct anon_vma *page_lock_anon_vma(struct page *page)
+ 		/*
+ 		 * If the page is still mapped, then this anon_vma is still
+ 		 * its anon_vma, and holding the mutex ensures that it will
+-		 * not go away, see __put_anon_vma().
++		 * not go away, see anon_vma_free().
+ 		 */
+ 		if (!page_mapped(page)) {
+ 			mutex_unlock(&root_anon_vma->mutex);
+
