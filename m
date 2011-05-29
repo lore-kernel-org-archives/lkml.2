@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab1E2Sh1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 14:37:27 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57526 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755393Ab1E2Sh0 (ORCPT
+	id S1756060Ab1E2Sjy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 14:39:54 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59730 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754795Ab1E2Sjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 14:37:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=GJ4ZIogWEaZe+V5hdRL8xOIfk8tOKtoVEVyvzOXd2nR60ClARWWX5PxDG6Sl8jAq4Z
-         pT8bN8fwTv7T97FPdagzJv1kgz7GGdxrikvNyFlG9fsOLlIWaKv1qOLsxNePSDtG+obc
-         NshjLBwwXwPGvzwVFwwIyl3O7xIxqzZk+AxwI=
-MIME-Version: 1.0
-In-Reply-To: <cover.1306689214.git.minchan.kim@gmail.com>
-References: <cover.1306689214.git.minchan.kim@gmail.com>
-Date: Mon, 30 May 2011 03:37:25 +0900
-Message-ID: <BANLkTimxpFed3EO0qrKa8CfoJK=o0wjH8w@mail.gmail.com>
-Subject: Re: [PATCH v2 00/10] Prevent LRU churning
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 29 May 2011 14:39:53 -0400
+From: Tim Retout <tim@retout.co.uk>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Tim Retout <tim@retout.co.uk>
+Subject: [PATCH] staging: sep: clean up some checkpatch.pl issues
+Date: Sun, 29 May 2011 19:38:32 +0100
+Message-Id: <1306694312-7009-1-git-send-email-tim@retout.co.uk>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You can see test script and all-at-once patch in following URL.
-http://www.kernel.org/pub/linux/kernel/people/minchan/inorder_putback/v2/
+Use consistent spacing in array indexing, and a whitespace fix.
+
+Signed-off-by: Tim Retout <tim@retout.co.uk>
+---
+ drivers/staging/sep/sep_driver.c        |    4 ++--
+ drivers/staging/sep/sep_driver_config.h |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
+index 52342c1..be8594e 100644
+--- a/drivers/staging/sep/sep_driver.c
++++ b/drivers/staging/sep/sep_driver.c
+@@ -1102,9 +1102,9 @@ static int sep_lock_user_pages(struct sep_device *sep,
+ 			"lli_array[%x].bus_address is "
+ 			"%08lx, lli_array[%x].block_size is %x\n",
+ 			num_pages - 1,
+-			(unsigned long)lli_array[num_pages -1].bus_address,
++			(unsigned long)lli_array[num_pages - 1].bus_address,
+ 			num_pages - 1,
+-			lli_array[num_pages -1].block_size);
++			lli_array[num_pages - 1].block_size);
+ 	}
+ 
+ 	/* Set output params according to the in_out flag */
+diff --git a/drivers/staging/sep/sep_driver_config.h b/drivers/staging/sep/sep_driver_config.h
+index 1033425..d6bfd24 100644
+--- a/drivers/staging/sep/sep_driver_config.h
++++ b/drivers/staging/sep/sep_driver_config.h
+@@ -180,7 +180,7 @@ held by the process (struct file) */
+ /* offset of the caller id area */
+ #define SEP_CALLER_ID_OFFSET_BYTES \
+ 	(SEP_DRIVER_SYSTEM_RAR_MEMORY_OFFSET_IN_BYTES + \
+-    SEP_DRIVER_SYSTEM_RAR_MEMORY_SIZE_IN_BYTES)
++	SEP_DRIVER_SYSTEM_RAR_MEMORY_SIZE_IN_BYTES)
+ 
+ /* offset of the DCB area */
+ #define SEP_DRIVER_SYSTEM_DCB_MEMORY_OFFSET_IN_BYTES \
 -- 
-Kind regards,
-Minchan Kim
+1.7.4.1
+
