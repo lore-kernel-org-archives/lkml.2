@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634Ab1E2BPH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 21:15:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47148 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750804Ab1E2BPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 21:15:04 -0400
-Message-ID: <4DE19DC3.7090106@zytor.com>
-Date: Sat, 28 May 2011 18:13:39 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1752361Ab1E2Bi4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 21:38:56 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:39245 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab1E2Biz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 28 May 2011 21:38:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=tNZfOD4vJIE2Io87ExxSD3yf1tPbks94ANByTrJzPOLy1teCZKtS7XieB0Mu1JE36c
+         Vo1/rhxLgLDBZ30AIaVtC4ymSHppYrurnlONB6ggrUYUokLAkgDHdEz2I5smxjvkXMcg
+         R55F5l12kYuErIN7kr8LiAPJbLCcFyG1/ix0w=
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        adobriyan@gmail.com, penberg@kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-References: <1306269105.21443.20.camel@dan> <201105270018.36835.rjw@sisk.pl> <BANLkTin+Vjhqtv5-N07G9P9_asNQnrnhVg@mail.gmail.com> <20110527170045.GB4356@elte.hu> <1306516230.3339.17.camel@dan> <20110527171611.GE4356@elte.hu> <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com> <20110527174644.GG4356@elte.hu> <4DDFE52D.4070308@zytor.com> <BANLkTimVQbHvW8tCACAcC8zRkyY1KyU2ww@mail.gmail.com> <20110528121820.GB12059@elte.hu>
-In-Reply-To: <20110528121820.GB12059@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20110528174733.GF9907@pengutronix.de>
+References: <1306576376.10669.12.camel@phoenix> <20110528174733.GF9907@pengutronix.de>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Sun, 29 May 2011 09:38:34 +0800
+Message-ID: <BANLkTi=F2Gh=+-8ms0nBf+zdLy+7uEOugg@mail.gmail.com>
+Subject: Re: [PATCH] leds: make LEDS_GPIO_REGISTER depend on NEW_LEDS
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>, kernel@pengutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2011 05:18 AM, Ingo Molnar wrote:
-> 
-> Having half a megabyte of '__init buffer' at the beginning or end of 
-> the kernel image is no big deal, it's more than enough for good 
-> randomization and makes the whole thing image-loader invariant: we 
-> can freely shift the 'real' kernel image within this larger boundary 
-> without consulting RAM maps.
-> 
+hi Uwe,
+> Below is a patch that fixes the layout problem but keeps the
+> functionality as before and intended.
+>
+> -----8<-----
+> leds: move LEDS_GPIO_REGISTER out of menuconfig NEW_LEDS
+>
+> From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>
+> Commit 4440673a "leds: provide helper to register "leds-gpio" devices"
+> broke the display of the NEW_LEDS menu as it didn't depend on NEW_LEDS
+> and so made "LED drivers" and "LED Triggers" appear at the same level as
+> "LED Support" instead of below it as it was before 4440673a.
+>
+> Moving LEDS_GPIO_REGISTER out of the menuconfig NEW_LEDS fixes this
+> unintended side effect.
+>
+> Reported-by: Axel Lin <axel.lin@gmail.com>
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+Your patch looks good.
 
-Sure, but you're also blowing any attempt at PMD alignment to kingdom come.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Thanks,
+Axel
