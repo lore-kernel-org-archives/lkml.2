@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453Ab1E2Txt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 15:53:49 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63531 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756389Ab1E2Txs (ORCPT
+	id S1756373Ab1E2Txe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 15:53:34 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:60624 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752468Ab1E2Txd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 15:53:48 -0400
+	Sun, 29 May 2011 15:53:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=GCMX6u56njRHEdKBEI4lAWgztMi8cqgn8Jj+iN2PvkvikwWGMSHkswoYrqSKi0h4Z4
-         1Bnb4nk9C2DFr7DWPAKkdshDbZANJMDJkEtVsGxXdRWyrdFzb/pczmyX9MPJdgwHREgK
-         QynX5Kw60MP2l99RBAaA1gghD2aFTqXGOdyxI=
-Date: Sun, 29 May 2011 22:53:12 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Richard Cochran <richard.cochran@omicron.at>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        open list <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Subject: [patch 1/2] ptp: return -EFAULT on copy_to_user() errors
-Message-ID: <20110529195312.GA3099@shale.localdomain>
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=dHlXF/05dLrHTrykOzkYi1XaBFM7NScNkRGu4mSBeOxColUMzAe7zlZbUz2DPoHddo
+         vqvnMYI+eL1xepMNU+5DPYptDclQ7WDzFFyxVM/axcNtuFkVZb4sX6PLrGWbRcCcz8+O
+         0OOpSaPGHWbWsoBk1cQW/I6Jq+3g7pGhg0CyI=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Olaf Freyer <aaron667@gmx.net>
+Subject: Re: Erroneous package power limit notification since kernel 2.6.39
+Date: Sun, 29 May 2011 21:53:27 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <4DD9092A.4080507@gmx.net>
+In-Reply-To: <4DD9092A.4080507@gmx.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201105292153.27823.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-copy_to_user() returns the number of bytes remaining, but we want a
-negative error code here.
+On niedziela, 22 maja 2011 o 15:01:30 Olaf Freyer wrote:
+> Hi,
+> 
+> since using kernel-2.6.39 I recieve those reports right after rebooting
+> my system when it's still "warm".
+> (Sensors reporting about 50°C. I don't see those on a cold boot early in
+> the morning.)
+> I don't get any such reports with 2.6.38.7 or any earlier kernel I used
+> before.
+> 
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=36182
+for your bug report, please add your address to the CC list in there, thanks!
 
-diff --git a/drivers/ptp/ptp_chardev.c b/drivers/ptp/ptp_chardev.c
-index a8d03ae..93fa22d 100644
---- a/drivers/ptp/ptp_chardev.c
-+++ b/drivers/ptp/ptp_chardev.c
-@@ -46,7 +46,8 @@ long ptp_ioctl(struct posix_clock *pc, unsigned int cmd, unsigned long arg)
- 		caps.n_ext_ts = ptp->info->n_ext_ts;
- 		caps.n_per_out = ptp->info->n_per_out;
- 		caps.pps = ptp->info->pps;
--		err = copy_to_user((void __user *)arg, &caps, sizeof(caps));
-+		if (copy_to_user((void __user *)arg, &caps, sizeof(caps)))
-+			err = -EFAULT;
- 		break;
- 
- 	case PTP_EXTTS_REQUEST:
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
