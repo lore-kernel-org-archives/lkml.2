@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab1E2SP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 14:15:56 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:54550 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229Ab1E2SOR (ORCPT
+	id S1755521Ab1E2SOY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 14:14:24 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53799 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755451Ab1E2SOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 14:14:17 -0400
+	Sun, 29 May 2011 14:14:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=SzTV57iSUQctjpQ/m3+uYP1t0kab6X7ihLEOPw+rpaXTBTwEkpa98hzb3HuQBOXhiU
-         NwUMYZn3TepXiKRk1Y2gqR21X295qXU2HRauPD59bGgyI5VC7AlrgxF2CoS2c6UCVXSd
-         ykSyoCKGq9iPhVjJvJnvzdgyX9VMrDxrDo+qI=
+        b=SfdAULslNbU9OuORWbBJlq9hyUKFdd7pu/aht2toa2BElPWx56Sej7fOUDHD0GmFIs
+         O0iuNmk4oB0PigOHNLQN6q4YV5s7KVRVd9TYigRQnoj54rTz9Ia10XITHZc9Pu4u1U9h
+         sRGunM1Os4QFFNYOvvn0jrR9y/hLP3oek2SGM=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
@@ -22,9 +22,9 @@ Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH v2 04/10] Add additional isolation mode
-Date: Mon, 30 May 2011 03:13:43 +0900
-Message-Id: <5b0f0be7ee441ea27ffcad81d2637ac09407acf3.1306689214.git.minchan.kim@gmail.com>
+Subject: [PATCH v2 05/10] compaction: make isolate_lru_page with filter aware
+Date: Mon, 30 May 2011 03:13:44 +0900
+Message-Id: <4feb21bdac4c00a30f3c0d9361bd3565e6afa72f.1306689214.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <cover.1306689214.git.minchan.kim@gmail.com>
 References: <cover.1306689214.git.minchan.kim@gmail.com>
@@ -34,63 +34,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are some places to isolate lru page and I believe
-users of isolate_lru_page will be growing.
-The purpose of them is each different so part of isolated pages
-should put back to LRU, again.
+In async mode, compaction doesn't migrate dirty or writeback pages.
+So, it's meaningless to pick the page and re-add it to lru list.
 
-The problem is when we put back the page into LRU,
-we lose LRU ordering and the page is inserted at head of LRU list.
-It makes unnecessary LRU churning so that vm can evict working set pages
-rather than idle pages.
+Of course, when we isolate the page in compaction, the page might
+be dirty or writeback but when we try to migrate the page, the page
+would be not dirty, writeback. So it could be migrated. But it's
+very unlikely as isolate and migration cycle is much faster than
+writeout.
 
-This patch adds new modes when we isolate page in LRU so we don't isolate pages
-if we can't handle it. It could reduce LRU churning.
+So, this patch helps cpu and prevent unnecessary LRU churning.
 
-This patch doesn't change old behavior. It's just used by next patches.
-
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 ---
- include/linux/swap.h |    2 ++
- mm/vmscan.c          |    6 ++++++
- 2 files changed, 8 insertions(+), 0 deletions(-)
+ mm/compaction.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 37e4591..2718f8c 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -249,6 +249,8 @@ enum ISOLATE_PAGE_MODE {
- 	ISOLATE_INACTIVE = 1,	/* Isolate inactive pages */
- 	ISOLATE_ACTIVE = 2,	/* Isolate active pages */
- 	ISOLATE_BOTH = 4,	/* Isolate both active and inactive pages */
-+	ISOLATE_CLEAN = 8,	/* Isolate clean file */
-+	ISOLATE_UNMAPPED = 16,	/* Isolate unmapped file */
- };
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 61eab88..e218562 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -243,6 +243,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
+ 	unsigned long last_pageblock_nr = 0, pageblock_nr;
+ 	unsigned long nr_scanned = 0, nr_isolated = 0;
+ 	struct list_head *migratelist = &cc->migratepages;
++	enum ISOLATE_PAGE_MODE mode = ISOLATE_BOTH;
  
- /* linux/mm/vmscan.c */
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f03bb2e..9972356 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -992,6 +992,12 @@ int __isolate_lru_page(struct page *page, enum ISOLATE_PAGE_MODE mode,
+ 	/* Do not scan outside zone boundaries */
+ 	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+@@ -327,7 +328,9 @@ static unsigned long isolate_migratepages(struct zone *zone,
+ 		}
  
- 	ret = -EBUSY;
+ 		/* Try isolate the page */
+-		if (__isolate_lru_page(page, ISOLATE_BOTH, 0) != 0)
++		if (!cc->sync)
++			mode |= ISOLATE_CLEAN;
++		if (__isolate_lru_page(page, mode, 0) != 0)
+ 			continue;
  
-+	if (mode & ISOLATE_CLEAN && (PageDirty(page) || PageWriteback(page)))
-+		return ret;
-+
-+	if (mode & ISOLATE_UNMAPPED && page_mapped(page))
-+		return ret;
-+
- 	if (likely(get_page_unless_zero(page))) {
- 		/*
- 		 * Be careful not to clear PageLRU until after we're
+ 		VM_BUG_ON(PageTransCompound(page));
 -- 
 1.7.0.4
 
