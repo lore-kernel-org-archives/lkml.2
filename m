@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab1E2Blq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 21:41:46 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51910 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab1E2Blp convert rfc822-to-8bit (ORCPT
+	id S1752128Ab1E2CWw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 22:22:52 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:32253 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab1E2CWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 21:41:45 -0400
+	Sat, 28 May 2011 22:22:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=Y3xvoh/599Ce7EFIZToYGSrm0Bv/24n+v4ThhMYraHlxALS1SIA6LO8y866nqRBFMS
-         H+xNqXJk1lTQejXtmcXA5uckAciofas5lpBGG6AHzgJHLjFOKdwVwrGZXXVoQuE67ZqI
-         4t8CD+ofw9HVNdriQASl+um7EcOfBaCdronEM=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=rM+fOMhMpdd8LKccbJle5AN8NAIqLgVGS84gxXXYucdNC9owYHnq9R8Mrp9aT8tzc7
+         X8qRVy1ARTHO2sY9KP+w==
+Date: Sat, 28 May 2011 19:22:44 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Eric Miao <eric.y.miao@gmail.com>, Samuel Ortiz <samuel@sortiz.org>
+Subject: Re: IrDA driver fails on PXA255
+In-Reply-To: <20110528234614.GV24876@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.00.1105281913490.15709@chino.kir.corp.google.com>
+References: <20110528205701.GA1788@doriath.ww600.siemens.net> <alpine.DEB.2.00.1105281628480.9934@chino.kir.corp.google.com> <20110528234614.GV24876@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110528153536.GB27104@elte.hu>
-References: <alpine.LFD.2.02.1105262049180.3078@ionos> <4DDEC589.3010201@mit.edu>
- <20110527061208.GB9260@elte.hu> <BANLkTinOQ_C_-Bix4FTQxHqP3aavmTRrzg@mail.gmail.com>
- <BANLkTikKAx=KXZuECAXaskhZOre-2ZHutw@mail.gmail.com> <20110528153536.GB27104@elte.hu>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sat, 28 May 2011 21:41:25 -0400
-X-Google-Sender-Auth: WcNflLhJw-IXYKjvnXnMY5k0tKc
-Message-ID: <BANLkTimhK2d2C=U2umD_JqwiJD=jOf-kGA@mail.gmail.com>
-Subject: Re: [GIT pull] x86 vdso updates
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 28, 2011 at 11:35 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Andrew Lutomirski <luto@mit.edu> wrote:
->
->> On Fri, May 27, 2011 at 7:36 AM, Andrew Lutomirski <luto@mit.edu> wrote:
->> > 3. Add int 0xcc and use it from vgettimeofday.  It will SIGSEGV if
->> > called from a user address (so it has no risk of ever becoming ABI)
->> > and it will do gettimeofday if called from the right address.  (I like
->> > 0xcc better than 0x81 because then I don't have to wonder whether any
->> > syscall-like instructions start with 0x81.)  I'm not convinced that
->> > the existing syscall entries are usable, because syscall itself has a
->> > different calling convention and int 0x80 is a compat syscall.
->> >
->>
->> I started looking at what needs to be done and I wanted to get your
->> opinion before I wrote a bunch of code that you'd reject.  Here are
->> three ideas for how the int 0xcc / int 0x81 entry could work:
->>
->> *** Idea 1 ***
->>
->> Make it a real syscall but with extra constraints.  It would have the
->> same calling convention as the syscall instruction, but it would turn
->> into SIGKILL if the calling address isn't in the VSYSCALL page or if
->> the syscall number isn't __NR_clock_gettimeofday.  It would BUG() if
->> called from kernel mode.  There are two ways to implement this:
->>
->> 1. Have the interrupt entry check constraints, twiddle its stack frame
->> to look like a syscall instruction, and jump to the syscall entry.
->> This way there's little code duplication.  (Is it safe to sysret back
->> to userspace from an interrupt gate?  I don't see why not, but it
->> seems to violate the spirit of the thing.)
->
-> Yeah, i think it should be safe. Lets try this? It looks like the
-> simplest variant.
+On Sun, 29 May 2011, Russell King - ARM Linux wrote:
 
-The code's in the thread "[PATCH 0/5] x86-64: Remove syscall
-instructions at fixed addresses".
+> > The driver is attempting to allocate DMA memory and you have 
+> > CONFIG_ZONE_DMA disabled, which is the only reason you would get this 
+> > warning.  If the allocation did not fail as a result of a197b59ae6e8, the 
+> > page allocator may return any memory in a higher zone that the driver may 
+> > not be expecting.  If you had never noticed a problem before, it may be 
+> > possible that the driver doesn't actually have any zone restrictions and 
+> > GFP_DMA can be removed, but this code is pretty old.  Otherwise, it'll 
+> > need to depend on ZONE_DMA in the Kconfig.
+> > 
+> > Let's cc Nicolas and Russell as well.
+> 
+> Ouch.  We're probably going to have a pile of work to do to check that
+> the DMA masks on all our devices are correct for the unrestricted case
+> then.  That's probably going to be a very _big_ patch.
+> 
 
-The interrupt handler ought to be reviewed especially carefully for
-security since user code can call it at will.  It has two glaring
-problems that I've found already, and I'll send a v2 out soon.
+There are probably a lot of drivers that are requesting DMA but don't 
+explicitly require its support.  ARM has always been one of the exceptions 
+when it comes to enabling CONFIG_ZONE_DMA, most archs do by default (x86 
+_just_ made it configurable during this merge window), so this probably 
+isn't the last report you'll get now that it fails the allocation and 
+emits a warning.
 
---Andy
+	$ grep -r GFP_DMA drivers/* | wc -l
+	299
+
+
+
+arm, pxa2xx: enable DMA support for pxa2xx IRDA interface
+
+The pxa2xx-ir driver allocates with GFP_DMA, so it must always have 
+ZONE_DMA.
+
+Reported-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ drivers/net/irda/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/irda/Kconfig b/drivers/net/irda/Kconfig
+--- a/drivers/net/irda/Kconfig
++++ b/drivers/net/irda/Kconfig
+@@ -374,6 +374,7 @@ config VIA_FIR
+ config PXA_FICP
+ 	tristate "Intel PXA2xx Internal FICP"
+ 	depends on ARCH_PXA && IRDA
++	select ZONE_DMA
+ 	help
+ 	  Say Y or M here if you want to build support for the PXA2xx
+ 	  built-in IRDA interface which can support both SIR and FIR.
