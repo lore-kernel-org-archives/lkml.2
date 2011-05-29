@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab1E2XNM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 19:13:12 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56170 "EHLO
+	id S1756086Ab1E2XNP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 19:13:15 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54798 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241Ab1E2XNB (ORCPT
+	with ESMTP id S1754295Ab1E2XNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 19:13:01 -0400
+	Sun, 29 May 2011 19:13:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=Qim72s21sKfM9nZ9t+0pX7fnotgjBDpgPjPnHuGJAtg1iJ5Ya79MSKpJuVa2NdRrH7
-         bmsLwlx92iPXq9/+QkRkQbY5/JQZKnZrqxGVmIdFX11RSiYh0mTnBq/IYK3uIDM8LzA+
-         XwZitsVbILbYbvDe0ntjvuIVn1w+HdEGd4adk=
+        b=dqqDk7GwxiYrczserMCB6//zfP7D0OSdP0yNaH0sPp21UUjfUD+TaX9EsQHDxIeBi2
+         lPs1Y2ZKahym4YROBALii8/XOFOPuDfMMJtQbuZ3+9gUFVGqS2HQuTcZsJ50BjaFghjt
+         csubwxOQE9uUv+1Ruh+q5RYvVfbV4q27xYgqs=
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com
 Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
         pedro@codesourcery.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/17] job control: introduce task_set_jobctl_pending()
-Date: Mon, 30 May 2011 01:12:30 +0200
-Message-Id: <1306710760-16440-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/17] ptrace: use bit_waitqueue for TRAPPING instead of wait_chldexit
+Date: Mon, 30 May 2011 01:12:31 +0200
+Message-Id: <1306710760-16440-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.5.2
 In-Reply-To: <1306710760-16440-1-git-send-email-tj@kernel.org>
 References: <1306710760-16440-1-git-send-email-tj@kernel.org>
@@ -30,138 +30,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task->jobctl currently hosts JOBCTL_STOP_PENDING and will host TRAP
-pending bits too.  Setting pending conditions on a dying task may make
-the task unkillable.  Currently, each setting site is responsible for
-checking for the condition but with to-be-added job control traps this
-becomes too fragile.
+ptracer->signal->wait_chldexit was used to wait for TRAPPING; however,
+->wait_chldexit was already complicated with waker-side filtering
+without adding TRAPPING wait on top of it.  Also, it unnecessarily
+made TRAPPING clearing depend on the current ptrace relationship - if
+the ptracee is detached, wakeup is lost.
 
-This patch adds task_set_jobctl_pending() which should be used when
-setting task->jobctl bits to schedule a stop or trap.  The function
-performs the followings to ease setting pending bits.
+There is no reason to use signal->wait_chldexit here.  We're just
+waiting for JOBCTL_TRAPPING bit to clear and given the relatively
+infrequent use of ptrace, bit_waitqueue can serve it perfectly.
 
-* Sanity checks.
+This patch makes JOBCTL_TRAPPING wait use bit_waitqueue instead of
+signal->wait_chldexit.
 
-* If fatal signal is pending or PF_EXITING is set, no bit is set.
-
-* STOP_SIGMASK is automatically cleared if new value is being set.
-
-do_signal_stop() and ptrace_attach() are updated to use
-task_set_jobctl_pending() instead of setting STOP_PENDING explicitly.
-The surrounding structures around setting are changed to fit
-task_set_jobctl_pending() better but there should be no userland
-visible behavior difference.
+-v2: Use JOBCTL_*_BIT macros instead of ilog2() as suggested by Linus.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- include/linux/sched.h |    2 ++
- kernel/ptrace.c       |    6 +++---
- kernel/signal.c       |   46 ++++++++++++++++++++++++++++++++++++++++------
- 3 files changed, 45 insertions(+), 9 deletions(-)
+ kernel/ptrace.c |   10 ++++++++--
+ kernel/signal.c |    3 +--
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 11791dd..bc7a380 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1819,6 +1819,8 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- 
- #define JOBCTL_PENDING_MASK	JOBCTL_STOP_PENDING
- 
-+extern bool task_set_jobctl_pending(struct task_struct *task,
-+				    unsigned int mask);
- extern void task_clear_jobctl_pending(struct task_struct *task,
- 				      unsigned int mask);
- 
 diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index cbda3c2..1506556 100644
+index 1506556..82f566b 100644
 --- a/kernel/ptrace.c
 +++ b/kernel/ptrace.c
-@@ -256,10 +256,10 @@ static int ptrace_attach(struct task_struct *task)
- 	 * The following task_is_stopped() test is safe as both transitions
- 	 * in and out of STOPPED are protected by siglock.
- 	 */
--	if (task_is_stopped(task)) {
--		task->jobctl |= JOBCTL_STOP_PENDING | JOBCTL_TRAPPING;
-+	if (task_is_stopped(task) &&
-+	    task_set_jobctl_pending(task,
-+				    JOBCTL_STOP_PENDING | JOBCTL_TRAPPING))
- 		signal_wake_up(task, 1);
--	}
+@@ -25,6 +25,12 @@
+ #include <linux/hw_breakpoint.h>
  
- 	spin_unlock(&task->sighand->siglock);
  
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 637a171..9ab91c5 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -224,6 +224,39 @@ static inline void print_dropped_signal(int sig)
- }
- 
- /**
-+ * task_set_jobctl_pending - set jobctl pending bits
-+ * @task: target task
-+ * @mask: pending bits to set
-+ *
-+ * Clear @mask from @task->jobctl.  @mask must be subset of
-+ * %JOBCTL_PENDING_MASK | %JOBCTL_STOP_CONSUME | %JOBCTL_STOP_SIGMASK |
-+ * %JOBCTL_TRAPPING.  If stop signo is being set, the existing signo is
-+ * cleared.  If @task is already being killed or exiting, this function
-+ * becomes noop.
-+ *
-+ * CONTEXT:
-+ * Must be called with @task->sighand->siglock held.
-+ *
-+ * RETURNS:
-+ * %true if @mask is set, %false if made noop because @task was dying.
-+ */
-+bool task_set_jobctl_pending(struct task_struct *task, unsigned int mask)
++static int ptrace_trapping_sleep_fn(void *flags)
 +{
-+	BUG_ON(mask & ~(JOBCTL_PENDING_MASK | JOBCTL_STOP_CONSUME |
-+			JOBCTL_STOP_SIGMASK | JOBCTL_TRAPPING));
-+	BUG_ON((mask & JOBCTL_TRAPPING) && !(mask & JOBCTL_PENDING_MASK));
-+
-+	if (unlikely(fatal_signal_pending(task) || (task->flags & PF_EXITING)))
-+		return false;
-+
-+	if (mask & JOBCTL_STOP_SIGMASK)
-+		task->jobctl &= ~JOBCTL_STOP_SIGMASK;
-+
-+	task->jobctl |= mask;
-+	return true;
++	schedule();
++	return 0;
 +}
 +
-+/**
-  * task_clear_jobctl_trapping - clear jobctl trapping bit
-  * @task: target task
-  *
-@@ -1902,19 +1935,20 @@ static int do_signal_stop(int signr)
- 		else
- 			WARN_ON_ONCE(!task_ptrace(current));
+ /*
+  * ptrace a task: make the debugger its new parent and
+  * move it to the ptrace list.
+@@ -269,8 +275,8 @@ unlock_tasklist:
+ unlock_creds:
+ 	mutex_unlock(&task->signal->cred_guard_mutex);
+ out:
+-	wait_event(current->signal->wait_chldexit,
+-			   !(task->jobctl & JOBCTL_TRAPPING));
++	wait_on_bit(&task->jobctl, JOBCTL_TRAPPING_BIT,
++			    ptrace_trapping_sleep_fn, TASK_UNINTERRUPTIBLE);
+ 	return retval;
+ }
  
--		current->jobctl &= ~JOBCTL_STOP_SIGMASK;
--		current->jobctl |= signr | gstop;
--		sig->group_stop_count = 1;
-+		sig->group_stop_count = 0;
-+
-+		if (task_set_jobctl_pending(current, signr | gstop))
-+			sig->group_stop_count++;
-+
- 		for (t = next_thread(current); t != current;
- 		     t = next_thread(t)) {
--			t->jobctl &= ~JOBCTL_STOP_SIGMASK;
- 			/*
- 			 * Setting state to TASK_STOPPED for a group
- 			 * stop is always done with the siglock held,
- 			 * so this check has no races.
- 			 */
--			if (!(t->flags & PF_EXITING) && !task_is_stopped(t)) {
--				t->jobctl |= signr | gstop;
-+			if (!task_is_stopped(t) &&
-+			    task_set_jobctl_pending(t, signr | gstop)) {
- 				sig->group_stop_count++;
- 				signal_wake_up(t, 0);
- 			}
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 9ab91c5..172a4c7 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -272,8 +272,7 @@ static void task_clear_jobctl_trapping(struct task_struct *task)
+ {
+ 	if (unlikely(task->jobctl & JOBCTL_TRAPPING)) {
+ 		task->jobctl &= ~JOBCTL_TRAPPING;
+-		__wake_up_sync_key(&task->parent->signal->wait_chldexit,
+-				   TASK_UNINTERRUPTIBLE, 1, task);
++		wake_up_bit(&task->jobctl, JOBCTL_TRAPPING_BIT);
+ 	}
+ }
+ 
 -- 
 1.7.5.2
 
