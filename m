@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab1E1X4j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 28 May 2011 19:56:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35084 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754852Ab1E1X4h (ORCPT
+	id S1756826Ab1E2AMW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 28 May 2011 20:12:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38325 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143Ab1E2AMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 28 May 2011 19:56:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTinsq-XJGvRVmBa6kRp0RTj9NqGWtA@mail.gmail.com>
-References: <alpine.LSU.2.00.1105281317090.13319@sister.anvils>
- <1306617270.2497.516.camel@laptop> <alpine.LSU.2.00.1105281437320.13942@sister.anvils>
- <BANLkTinsq-XJGvRVmBa6kRp0RTj9NqGWtA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 28 May 2011 16:56:11 -0700
-Message-ID: <BANLkTinoFnTjCDL8B2HEYdYHqbMgCw_RrQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix page_lock_anon_vma leaving mutex locked
-To: Hugh Dickins <hughd@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 28 May 2011 20:12:20 -0400
+Subject: Re: [PATCH 0/7] Intel pci: Fix various problems with Intel IOMMU
+ code
+From: David Woodhouse <dwmw2@infradead.org>
+To: Mike Travis <travis@sgi.com>
+Cc: Chris Wright <chrisw@sous-sol.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Mike Habeck <habeck@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
+        Derek Fults <dfults@sgi.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        stable@kernel.org, iommu@lists.linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 29 May 2011 01:12:02 +0100
+In-Reply-To: <20110528181501.896092225@gulag1.americas.sgi.com>
+References: <20110528181501.896092225@gulag1.americas.sgi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1306627925.2029.341.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 28, 2011 at 4:24 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> That said, I do agree with the "anon_vma_root" part of your patch. I
-> just think you mixed up two independent issues with it: the fact that
-> we may be unlocking a new root, and the precise check used to
-> determine whether the anon_vma might have changed.
+On Sat, 2011-05-28 at 13:15 -0500, Mike Travis wrote:
+> 	Various problems exist in the Intel IOMMU PCI driver when
+> 	using DMA remapping in 1:1 identity mode on UV systems and
+> 	devices cannot address all of physical memory.
+> 
+> 	This patchset addresses those problems.
 
-Thinking some more about it, I end up agreeing with the whole patch.
-The "page_mapped()" test is what we use in the slow-path after
-incrementing the anon_vma count too when the trylock didn't work too,
-so it can't be too wrong.
+Patches 1-6 applied to iommu-2.6.git. Please test. Thanks.
 
-So I'm going to apply it as-is as an improvement (at least we won't be
-unlocking the wrong anon_vma root), and hope that you and Peter end up
-agreeing about what the sufficient test is for whether the anon_vma is
-the right one.
+Please note for future reference that 'From:' lines such as the one in
+your patch 1/7 should be *first* in the body of your email. The git-am
+tool doesn't find them and set the authorship if you put them with the
+Signed-off-bys. Also please avoid putting whitespace at the beginning of
+every line of your commit comments.
 
-                             Linus
+I still hate patch 7, but the point was that I wouldn't have to care
+about it. Once your patches 1-6 are included in known stable releases
+that your SCU can recognise, it can just pass 'iommu=pt' for those.
+
+It's only the "probably buggy" kernels with older release numbers that
+you'll pass 'forcedac,pt64' to, so your mission is to get patch 7 or
+some variant of it accepted into *those* kernels.
+
+-- 
+dwmw2
+
