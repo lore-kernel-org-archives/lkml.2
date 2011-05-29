@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab1E2OaQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 10:30:16 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:35226 "EHLO mx3.mail.elte.hu"
+	id S1754557Ab1E2Ojx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 10:39:53 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:58993 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754265Ab1E2OaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 10:30:15 -0400
-Date: Sun, 29 May 2011 16:30:05 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [GIT PULL 0/5] perf/urgent fixes
-Message-ID: <20110529143005.GB15441@elte.hu>
-References: <1306532736-3790-1-git-send-email-acme@infradead.org>
- <20110528094150.GA12059@elte.hu>
- <20110529141256.GA12777@ghostprotocols.net>
+	id S1754532Ab1E2Ojw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 10:39:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110529141256.GA12777@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Message-ID: <19938.23219.306163.24059@pilspetsen.it.uu.se>
+Date: Sun, 29 May 2011 16:39:47 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Lutomirski <luto@mit.edu>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT pull] x86 vdso updates
+In-Reply-To: <20110528153536.GB27104@elte.hu>
+References: <alpine.LFD.2.02.1105262049180.3078@ionos>
+	<4DDEC589.3010201@mit.edu>
+	<20110527061208.GB9260@elte.hu>
+	<BANLkTinOQ_C_-Bix4FTQxHqP3aavmTRrzg@mail.gmail.com>
+	<BANLkTikKAx=KXZuECAXaskhZOre-2ZHutw@mail.gmail.com>
+	<20110528153536.GB27104@elte.hu>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ingo Molnar writes:
+ > 
+ > * Andrew Lutomirski <luto@mit.edu> wrote:
+ > 
+ > > On Fri, May 27, 2011 at 7:36 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+ > > > 3. Add int 0xcc and use it from vgettimeofday.  It will SIGSEGV if
+ > > > called from a user address (so it has no risk of ever becoming ABI)
+ > > > and it will do gettimeofday if called from the right address.  (I like
+...
+ > > Make it a real syscall but with extra constraints.  It would have the
+ > > same calling convention as the syscall instruction, but it would turn
+ > > into SIGKILL if the calling address isn't in the VSYSCALL page
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+This will make things difficult for user-space dynamic binary instrumentation
+applications, since these normally execute generated code at different
+addresses than the original code.
 
-> Em Sat, May 28, 2011 at 11:41:50AM +0200, Ingo Molnar escreveu:
-> > The various variations of kptr_restrict now work fine AFAICS - will 
-> > send the fixes to Linus today.
-> > 
-> > One (very) small issue i noticed, if the user only samples user-space 
-> > events then i still get the warning:
-> > 
-> >  aldebaran:~> perf record -e cycles:upp sleep 1
-> >  WARNING: Kernel address maps (/proc/{kallsyms,modules}) are restricted,
-> > 
-> > although perf does not record any kernel samples so kptr_restrict is 
-> > irrelevant in this case.
-> 
-> I'll have that fixed too, oversight. We really should avoid 
-> confusing messages, and this one, as you mention, seems just noise 
-> as I still have to look again how vsyscall symbols get resolved, 
-> IIRC they need a kernel symtab, but then, if that is the case, the 
-> message should be changed accordingly.
+Is there a safe fallback for this particular vsyscall?
 
-Btw., if you touch that code, would you be interested in adding a 
---user-events kind of option which would have the implicit effect of 
-adding :u to every event that is listed (or implied)? (and a 
---kernel-events counterpart, for :k)
-
-The reason is that right now there's no easy way to run say 'perf 
-stat -ddd' but measure userspace events only.
-
-[ perf record --repeat would be nice as well :-) And a pony! ]
-
-Thanks,
-
-	Ingo
+/Mikael
