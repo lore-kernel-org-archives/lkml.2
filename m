@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777Ab1E2UqV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 16:46:21 -0400
-Received: from smtp-02.mandic.com.br ([200.225.81.133]:38700 "EHLO
-	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753252Ab1E2UqU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 16:46:20 -0400
-X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Sun, 29 May 2011 16:46:19 EDT
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-To: linux-mm@kvack.org
-Cc: Minchan Kim <minchan.kim@gmail.com>, Jan Beulich <JBeulich@novell.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger@sun.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org,
-        Cesar Eduardo Barros <cesarb@cesarb.net>
-Subject: [PATCH] cleancache: use __read_mostly for cleancache_enabled
-Date: Sun, 29 May 2011 17:38:18 -0300
-Message-Id: <1306701498-10846-1-git-send-email-cesarb@cesarb.net>
-X-Mailer: git-send-email 1.7.4.4
+	id S1754942Ab1E2Uks (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 16:40:48 -0400
+Received: from mail.perches.com ([173.55.12.10]:2313 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752153Ab1E2Ukr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 16:40:47 -0400
+Subject: Re: [PATCH 2/4] staging: Remove direct includes of printk.h
+From: Joe Perches <joe@perches.com>
+To: julie Sullivan <kernelmail.jms@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org,
+        Dowan Kim <dowan@broadcom.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <BANLkTimY9-ng8HVm+QFyS8FYks_mFx=ong@mail.gmail.com>
+References: <cover.1306342673.git.joe@perches.com>
+	 <BANLkTimo30L7feKr9_Ec=fMoe1erw8Rnag@mail.gmail.com>
+	 <a605f8a8039f83fae3fbf61b58f846bc3c58c379.1306342673.git.joe@perches.com>
+	 <BANLkTimY9-ng8HVm+QFyS8FYks_mFx=ong@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 29 May 2011 13:40:45 -0700
+Message-ID: <1306701645.14524.3.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The global variable cleancache_enabled is read often but written to
-rarely. Use __read_mostly to prevent it being on the same cacheline as
-another variable which is written to often, which would cause cacheline
-bouncing.
+On Sun, 2011-05-29 at 18:00 +0100, julie Sullivan wrote: 
+> > --- a/drivers/staging/brcm80211/brcmfmac/dhd_sdio.c
+[] 
+> types.h is also a subfile of kernel.h, right?
 
-Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
----
- include/linux/cleancache.h |    2 +-
- mm/cleancache.c            |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Yes it is.
 
-diff --git a/include/linux/cleancache.h b/include/linux/cleancache.h
-index 04ffb2e..83fffe8 100644
---- a/include/linux/cleancache.h
-+++ b/include/linux/cleancache.h
-@@ -42,7 +42,7 @@ extern void __cleancache_put_page(struct page *);
- extern void __cleancache_flush_page(struct address_space *, struct page *);
- extern void __cleancache_flush_inode(struct address_space *);
- extern void __cleancache_flush_fs(struct super_block *);
--extern int cleancache_enabled;
-+extern int cleancache_enabled __read_mostly;
- 
- #ifdef CONFIG_CLEANCACHE
- static inline bool cleancache_fs_enabled(struct page *page)
-diff --git a/mm/cleancache.c b/mm/cleancache.c
-index bcaae4c..a3d7a22 100644
---- a/mm/cleancache.c
-+++ b/mm/cleancache.c
-@@ -24,7 +24,7 @@
-  * disabled), so is preferred to the slower alternative: a function
-  * call that checks a non-global.
-  */
--int cleancache_enabled;
-+int cleancache_enabled __read_mostly;
- EXPORT_SYMBOL(cleancache_enabled);
- 
- /*
--- 
-1.7.4.4
+> Or maybe you patched this one already - if so please excuse the noise :-)
+
+No I didn't patch that one.
+
+I think it wouldn't be good to do that.
+printk.h may be a special case because it was
+moved out of kernel.h just to make it a bit neater.
+
+You are welcome to if you choose to.
+
+There are like 1500 or so files that have both kernel.h and types.h
+
+$ grep --include=*.[ch] -rP -l "^\s*\#\s*include\s+\<linux/types\.h>" * | \
+  xargs grep -Pl "^\s*\#\s*include\s+\<linux/kernel\.h\>" | wc -l
+1572
+
 
