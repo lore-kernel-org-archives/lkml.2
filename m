@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab1E2T5p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 15:57:45 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21084 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756505Ab1E2T5V (ORCPT
+	id S1756453Ab1E2Txt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 15:53:49 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63531 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756389Ab1E2Txs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 15:57:21 -0400
-Date: Sun, 29 May 2011 21:49:31 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Andy Lutomirski <luto@MIT.EDU>
-cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] x86-64: Replace vsyscall gettimeofday fallback with
- int 0xcc
-In-Reply-To: <452208dbdf79d4c821d701d5973621bf7546419a.1306517576.git.luto@mit.edu>
-Message-ID: <alpine.LNX.2.00.1105292146470.4411@swampdragon.chaosbits.net>
-References: <cover.1306517576.git.luto@mit.edu> <452208dbdf79d4c821d701d5973621bf7546419a.1306517576.git.luto@mit.edu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 29 May 2011 15:53:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=GCMX6u56njRHEdKBEI4lAWgztMi8cqgn8Jj+iN2PvkvikwWGMSHkswoYrqSKi0h4Z4
+         1Bnb4nk9C2DFr7DWPAKkdshDbZANJMDJkEtVsGxXdRWyrdFzb/pczmyX9MPJdgwHREgK
+         QynX5Kw60MP2l99RBAaA1gghD2aFTqXGOdyxI=
+Date: Sun, 29 May 2011 22:53:12 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Richard Cochran <richard.cochran@omicron.at>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        open list <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Subject: [patch 1/2] ptp: return -EFAULT on copy_to_user() errors
+Message-ID: <20110529195312.GA3099@shale.localdomain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 May 2011, Andy Lutomirski wrote:
+copy_to_user() returns the number of bytes remaining, but we want a
+negative error code here.
 
-> Now the only way to issue a syscall with side effects through the
-> vsyscall page is to call a misaligned instruction.  I haven't
-> checked for that.
-> 
-> Signed-off-by: Andy Lutomirski <luto@mit.edu>
-> ---
->  arch/x86/include/asm/traps.h    |    4 +++
->  arch/x86/include/asm/vsyscall.h |    6 +++++
->  arch/x86/kernel/entry_64.S      |    2 +
->  arch/x86/kernel/traps.c         |    4 +++
->  arch/x86/kernel/vsyscall_64.c   |   47 ++++++++++++++++++++++++++++++++++-----
->  5 files changed, 57 insertions(+), 6 deletions(-)
-> 
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-one very tiny nit below.
-
-[...]
-> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> index b9b6716..d34894e 100644
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -872,6 +872,10 @@ void __init trap_init(void)
->  	set_bit(SYSCALL_VECTOR, used_vectors);
->  #endif
->  
-> +	set_system_intr_gate(0xCC, &intcc);
-> +	set_bit(0xCC, used_vectors);
-> +	printk(KERN_ERR "intcc gate isntalled\n");
-
-Let's spell the error message correctly:
-
-	printk(KERN_ERR "intcc gate installed\n");
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+diff --git a/drivers/ptp/ptp_chardev.c b/drivers/ptp/ptp_chardev.c
+index a8d03ae..93fa22d 100644
+--- a/drivers/ptp/ptp_chardev.c
++++ b/drivers/ptp/ptp_chardev.c
+@@ -46,7 +46,8 @@ long ptp_ioctl(struct posix_clock *pc, unsigned int cmd, unsigned long arg)
+ 		caps.n_ext_ts = ptp->info->n_ext_ts;
+ 		caps.n_per_out = ptp->info->n_per_out;
+ 		caps.pps = ptp->info->pps;
+-		err = copy_to_user((void __user *)arg, &caps, sizeof(caps));
++		if (copy_to_user((void __user *)arg, &caps, sizeof(caps)))
++			err = -EFAULT;
+ 		break;
+ 
+ 	case PTP_EXTTS_REQUEST:
