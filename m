@@ -1,135 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393Ab1E2VHK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 17:07:10 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:33709 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700Ab1E2VHI (ORCPT
+	id S1754975Ab1E2VFh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 17:05:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51815 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab1E2VFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 17:07:08 -0400
-Subject: Re: [GIT PULL] iscsi-target: Merge for .40-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Andy Grover <agrover@redhat.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <BANLkTimt5qisV7EH7NMv1tG8gR_9d-kA3g@mail.gmail.com>
-References: <1306551592.23461.506.camel@haakon2.linux-iscsi.org>
-	 <BANLkTimt5qisV7EH7NMv1tG8gR_9d-kA3g@mail.gmail.com>
-Content-Type: text/plain
-Date: Sun, 29 May 2011 13:58:38 -0700
-Message-Id: <1306702718.13640.39.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Sun, 29 May 2011 17:05:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type;
+        b=t/VCOB9yR5KqO+LREKdDSztBbrP+EL1AEp4fiO/blsrkrZ7v9G/3gthTHF8uiFJnIK
+         A6ak+S88ois7Djv3MlbBgoNPzqoa2ekXWK7l0fITPFDNMj0Tj6HWOGgg3z5EGv7tQoaS
+         mwIBWRFluywRlRb+aJrgkNrAjK/DZifOe8esM=
+Message-ID: <4DE2B51E.7010807@gmail.com>
+Date: Sun, 29 May 2011 23:05:34 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: usb: Move device id for quirk to pci_ids
+Content-Type: multipart/mixed;
+ boundary="------------090305050709000804050807"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-05-29 at 11:49 -0700, Linus Torvalds wrote:
-> Gaah.
-> 
-> I don't feel confident or motivated enough about iscsi-target, so
-> after some (little) thought I ended up not pulling this. I really need
-> a lot of acks from people who actually work on and care about SCSI,
-> and right now I feel like with me being away for the next week, I
-> can't handle it.
-> 
-> I just don't want to be in the situation where I pull something that
-> is apparently contentious in the SCSI space in general, but that's
-> _particularly_ true this release. So I'm afraid that this essentially
-> got pushed out to the next release.
-> 
+This is a multi-part message in MIME format.
+--------------090305050709000804050807
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Hi again Linus,
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+---
+When adding a quirk for asrock p67 xhci controller I noticed it being 
+defined on top, I don't know what the policy is, but shouldn't it be in 
+pci_ids?
 
-Thanks for your consideration here.  I understand your concern and the
-time pressures involved that make this difficult for you to merge this
-round.
+--------------090305050709000804050807
+Content-Type: text/plain;
+ name="0001-usb-Move-device-id-for-quirk-to-pci_ids.txt"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-usb-Move-device-id-for-quirk-to-pci_ids.txt"
 
-To clarify one point however, the contentious piece in question between
-James and myself is something that I am not willing to compromise on for
-this (or the next) round considering the serious technical implications
-of doing so as discussed in the PATCH-v5 thread.
+>From 9259b45bf91729235e165d584de1a65a09664325 Mon Sep 17 00:00:00 2001
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Date: Sun, 29 May 2011 22:56:47 +0200
+Subject: [PATCH 1/2] usb: Move device id for quirk to pci_ids
 
-My real frustration here is the fact that this is the second time in as
-many merge windows where at the very last minute this same point has
-been raised to effectively delay the merging of this code.  There have
-been many folks ready to sign-off on the current design (including
-upstream distro folks), and the number of target patches from full time
-developers like Andy have been piling up waiting for this to be merged.
+---
+ drivers/usb/host/xhci-pci.c |    4 ----
+ include/linux/pci_ids.h     |    3 +++
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-So that said, aside from my differences of opinion on this particular
-topic with James wrt to iscsi-target, the bigger issue here having to go
-through the SCSI tree for all drivers/target/ related changes.  This is
-really starting to slow down the number of target core changes getting
-to mainline, and is causing the lio-core-2.6.git tree (that full time
-developers like Andy are using) to quickly diverge from mainline.
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index a10494c..5a41f05 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -24,10 +24,6 @@
+ 
+ #include "xhci.h"
+ 
+-/* Device for a quirk */
+-#define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
+-#define PCI_DEVICE_ID_FRESCO_LOGIC_PDK	0x1000
+-
+ static const char hcd_name[] = "xhci_hcd";
+ 
+ /* called after powerup, by probe or system-pm "wakeup" */
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 8abe8d7..1c56294 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2387,6 +2387,9 @@
+ 
+ #define PCI_VENDOR_ID_AZWAVE		0x1a3b
+ 
++#define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
++#define PCI_DEVICE_ID_FRESCO_LOGIC_PDK	0x1000
++
+ #define PCI_VENDOR_ID_TEKRAM		0x1de1
+ #define PCI_DEVICE_ID_TEKRAM_DC290	0xdc29
+ 
+-- 
+1.7.4.1
 
-So, I am asking for you to consider start pulling directly from .41 and
-onwards for target core pieces now that drivers/target/ has finally been
-added to MAINTAINERS.  I am not interested in trying to push anything
-related to drivers/scsi/ outside of the SCSI tree, but for pieces of
-target core that are not directly related to drivers/scsi/, it would be
-very helpful for you to start pulling directly in order to keep the
-mainline target better in-sync with lio-core-2.6.git tree that full time
-target developers are using and moving forward with.
 
-Thank you,
-
---nab
-
-
->                     Linus
-> 
-> On Fri, May 27, 2011 at 7:59 PM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
-> > Hi Linus,
-> >
-> > This is a GIT PULL request for the initial merge of the iscsi-target
-> > fabric driver for mainline target core v4.0 infrastructure.
-> >
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-40-iscsi-target
-> >
-> > This series has been made against the following linux-2.6.git HEAD:
-> >
-> > commit dc7acbb2518f250050179c8581a972df3b6a24f1
-> > Merge: f01e1af 4bf0ff2
-> > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> > Date:   Thu May 26 19:01:15 2011 -0700
-> >
-> >    Merge branch 'upstream/tidy-xen-mmu-2.6.39' of git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen
-> >
-> > This code has undergone a number of review cycles on linux-scsi over the
-> > last six months by Christoph, Mike and other interested folks.  This has
-> > included a number of cleanups to follow mainline conventions, and
-> > conversion to use mainline include/scsi/iscsi_proto.h RFC definitions.
-> > There has been an good amount of testing feedback on this code so far,
-> > and with the LIO communities help we have been able to resolve the
-> > reported cleanup/conversion regressions, and fix one long-standing
-> > shutdown bug.
-> >
-> > Unfortuately James and I have been unable to come to an aggreement on
-> > implementation details wrt to proper kernel/user split ahead of his
-> > final SCSI pull for .40.  I have no interest to take the mainline
-> > iscsi-target development effort in this direction again, so I am
-> > offically committing to you to support iscsi-target in good-faith
-> > together with rtslib community edition moving forward.  I am also
-> > committing to extending iscsi-target to address the non-standard
-> > authentication pieces that James has mentioned, but by the time .40
-> > ships we are still not going to have iSCSI clients that actually support
-> > them.
-> >
-> > I believe that Christoph is happy with the current iscsi-target code for
-> > an initial merge now, and am asking for the merge to avoid slipping
-> > (again) for this type of 'mass-market' code that has a large audience,
-> > and poses minimal risk considering the small amount of external changes.
-> > [...]
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+--------------090305050709000804050807--
