@@ -1,180 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab1E2Oqh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 10:46:37 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:41008 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab1E2Oqf (ORCPT
+	id S1753606Ab1E2Ouj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 10:50:39 -0400
+Received: from host171.canaca.com ([67.55.55.225]:40771 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab1E2Ouh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 10:46:35 -0400
-Date: Sun, 29 May 2011 16:46:32 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [GIT PULL] s390 patches for 2.6.40-rc1
-Message-ID: <20110529144632.GA2328@osiris.boeblingen.de.ibm.com>
+	Sun, 29 May 2011 10:50:37 -0400
+Message-ID: <a49670b80c887da1f9224080e9e62f32.squirrel@host171.canaca.com>
+In-Reply-To: <201105290846.59531.michael@m-bauer.org>
+References: <201105282037.22888.michael@m-bauer.org>
+    <fd06492f61f15697eb1c8400e29ec7bd.squirrel@host171.canaca.com>
+    <8942e3cdf4941912b0855e64939e5939.squirrel@host171.canaca.com>
+    <201105290846.59531.michael@m-bauer.org>
+Date: Sun, 29 May 2011 10:50:35 -0400
+Subject: Re: [PATCH] hid: Fix Logitech Driving Force Pro wheel
+From: simon@mungewell.org
+To: "Michael Bauer" <michael@m-bauer.org>
+Cc: linux-input@vger.kernel.org, simon@mungewell.org,
+        linux-kernel@vger.kernel.org, "Jiri Kosina" <jkosina@suse.cz>
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-please pull from 'for-linus' branch of
+> Often the control assignement works like this: User clicks "set axis for
+> acceleration", application asks "please move the desired axis" and then
+> automatically choses the "moving" axis.
+> If we report both combined and separate at the same time, the application
+> will
+> have a hard time deciding which one to use, as they both will change their
+> values.
+>
 
-	git://git390.marist.edu/pub/scm/linux-2.6.git for-linus
+Fair enough, I played a little trying to massage the original descriptor
+but could not find a sensible solution - so I guess we'll have to provide
+a full replacement.
 
-There are only two bug fixes. One is an important one since it fixes our
-dirty bit handling which got broken during the merge window. Therefore it
-fixes potential data corruption...
+I don't see the need to comment the original/replacement blocks, so
+probably a simple 'hex block' would be good.
 
-Heiko Carstens (2):
-      [S390] mm: fix storage key handling
-      [S390] mm: fix mmu_gather rework
+Regarding the replacement, you appear to have a lot of unnecessary code
+there. You could try with something like:
+--
+...
++0x09, 0x39,         /*          Usage (Hat Switch),             */
++0x81, 0x42,         /*          Input (Variable),               */
++0x75, 0x08,         /*          Report Size (8),                */
++0x95, 0x08,         /*          Report Count (1),               */
++0x65, 0x00,         /*          Unit,                           */
++0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),             */
++0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
++0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
++0x09, 0x01,         /*          Usage (01h),                    */
++0x81, 0x02,         /*          Input (Variable),               */
++0xA4,               /*          Push,                           */
++0x05, 0x01,         /*          Usage Page (Desktop),           */
++0x95, 0x01,         /*          Report Count (2),               */
++0x09, 0x31,         /*          Usage (Y),                      */
++0x09, 0x35,         /*          Usage (Rz),                     */
++0x81, 0x02,         /*          Input (Variable),               */
++0xB4,               /*          Pop,                            */
++0x81, 0x02,         /*          Input (Variable),               */
++0xC0,               /*      End Collection,                     */
+...
+--
 
- arch/s390/include/asm/pgtable.h |   16 ++++++++--------
- arch/s390/mm/pgtable.c          |   23 ++++++++++++++++-------
- include/linux/page-flags.h      |    2 +-
- 3 files changed, 25 insertions(+), 16 deletions(-)
+Cheers,
+Simon.
 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index c4773a2..e4efacf 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -577,16 +577,16 @@ static inline void pgste_set_unlock(pte_t *ptep, pgste_t pgste)
- static inline pgste_t pgste_update_all(pte_t *ptep, pgste_t pgste)
- {
- #ifdef CONFIG_PGSTE
--	unsigned long pfn, bits;
-+	unsigned long address, bits;
- 	unsigned char skey;
- 
--	pfn = pte_val(*ptep) >> PAGE_SHIFT;
--	skey = page_get_storage_key(pfn);
-+	address = pte_val(*ptep) & PAGE_MASK;
-+	skey = page_get_storage_key(address);
- 	bits = skey & (_PAGE_CHANGED | _PAGE_REFERENCED);
- 	/* Clear page changed & referenced bit in the storage key */
- 	if (bits) {
- 		skey ^= bits;
--		page_set_storage_key(pfn, skey, 1);
-+		page_set_storage_key(address, skey, 1);
- 	}
- 	/* Transfer page changed & referenced bit to guest bits in pgste */
- 	pgste_val(pgste) |= bits << 48;		/* RCP_GR_BIT & RCP_GC_BIT */
-@@ -628,16 +628,16 @@ static inline pgste_t pgste_update_young(pte_t *ptep, pgste_t pgste)
- static inline void pgste_set_pte(pte_t *ptep, pgste_t pgste)
- {
- #ifdef CONFIG_PGSTE
--	unsigned long pfn;
-+	unsigned long address;
- 	unsigned long okey, nkey;
- 
--	pfn = pte_val(*ptep) >> PAGE_SHIFT;
--	okey = nkey = page_get_storage_key(pfn);
-+	address = pte_val(*ptep) & PAGE_MASK;
-+	okey = nkey = page_get_storage_key(address);
- 	nkey &= ~(_PAGE_ACC_BITS | _PAGE_FP_BIT);
- 	/* Set page access key and fetch protection bit from pgste */
- 	nkey |= (pgste_val(pgste) & (RCP_ACC_BITS | RCP_FP_BIT)) >> 56;
- 	if (okey != nkey)
--		page_set_storage_key(pfn, nkey, 1);
-+		page_set_storage_key(address, nkey, 1);
- #endif
- }
- 
-diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
-index 14c6fae..b09763f 100644
---- a/arch/s390/mm/pgtable.c
-+++ b/arch/s390/mm/pgtable.c
-@@ -71,12 +71,15 @@ static void rcu_table_freelist_callback(struct rcu_head *head)
- 
- void rcu_table_freelist_finish(void)
- {
--	struct rcu_table_freelist *batch = __get_cpu_var(rcu_table_freelist);
-+	struct rcu_table_freelist **batchp = &get_cpu_var(rcu_table_freelist);
-+	struct rcu_table_freelist *batch = *batchp;
- 
- 	if (!batch)
--		return;
-+		goto out;
- 	call_rcu(&batch->rcu, rcu_table_freelist_callback);
--	__get_cpu_var(rcu_table_freelist) = NULL;
-+	*batchp = NULL;
-+out:
-+	put_cpu_var(rcu_table_freelist);
- }
- 
- static void smp_sync(void *arg)
-@@ -141,20 +144,23 @@ void crst_table_free_rcu(struct mm_struct *mm, unsigned long *table)
- {
- 	struct rcu_table_freelist *batch;
- 
-+	preempt_disable();
- 	if (atomic_read(&mm->mm_users) < 2 &&
- 	    cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id()))) {
- 		crst_table_free(mm, table);
--		return;
-+		goto out;
- 	}
- 	batch = rcu_table_freelist_get(mm);
- 	if (!batch) {
- 		smp_call_function(smp_sync, NULL, 1);
- 		crst_table_free(mm, table);
--		return;
-+		goto out;
- 	}
- 	batch->table[--batch->crst_index] = table;
- 	if (batch->pgt_index >= batch->crst_index)
- 		rcu_table_freelist_finish();
-+out:
-+	preempt_enable();
- }
- 
- #ifdef CONFIG_64BIT
-@@ -323,16 +329,17 @@ void page_table_free_rcu(struct mm_struct *mm, unsigned long *table)
- 	struct page *page;
- 	unsigned long bits;
- 
-+	preempt_disable();
- 	if (atomic_read(&mm->mm_users) < 2 &&
- 	    cpumask_equal(mm_cpumask(mm), cpumask_of(smp_processor_id()))) {
- 		page_table_free(mm, table);
--		return;
-+		goto out;
- 	}
- 	batch = rcu_table_freelist_get(mm);
- 	if (!batch) {
- 		smp_call_function(smp_sync, NULL, 1);
- 		page_table_free(mm, table);
--		return;
-+		goto out;
- 	}
- 	bits = (mm->context.has_pgste) ? 3UL : 1UL;
- 	bits <<= (__pa(table) & (PAGE_SIZE - 1)) / 256 / sizeof(unsigned long);
-@@ -345,6 +352,8 @@ void page_table_free_rcu(struct mm_struct *mm, unsigned long *table)
- 	batch->table[batch->pgt_index++] = table;
- 	if (batch->pgt_index >= batch->crst_index)
- 		rcu_table_freelist_finish();
-+out:
-+	preempt_enable();
- }
- 
- /*
-diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-index 79a6700..6081493 100644
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -308,7 +308,7 @@ static inline void SetPageUptodate(struct page *page)
- {
- #ifdef CONFIG_S390
- 	if (!test_and_set_bit(PG_uptodate, &page->flags))
--		page_set_storage_key(page_to_pfn(page), PAGE_DEFAULT_KEY, 0);
-+		page_set_storage_key(page_to_phys(page), PAGE_DEFAULT_KEY, 0);
- #else
- 	/*
- 	 * Memory barrier must be issued before setting the PG_uptodate bit,
