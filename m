@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab1E2Mr3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 08:47:29 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56979 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752385Ab1E2Mr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 08:47:27 -0400
-Date: Sun, 29 May 2011 14:47:02 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
-        linux-kernel@vger.kernel.org, davej@redhat.com,
-        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
-        adobriyan@gmail.com, penberg@kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-Message-ID: <20110529124702.GE26627@elte.hu>
-References: <BANLkTin+Vjhqtv5-N07G9P9_asNQnrnhVg@mail.gmail.com>
- <20110527170045.GB4356@elte.hu>
- <1306516230.3339.17.camel@dan>
- <20110527171611.GE4356@elte.hu>
- <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com>
- <20110527174644.GG4356@elte.hu>
- <4DDFE52D.4070308@zytor.com>
- <BANLkTimVQbHvW8tCACAcC8zRkyY1KyU2ww@mail.gmail.com>
- <20110528121820.GB12059@elte.hu>
- <4DE19DC3.7090106@zytor.com>
+	id S1753953Ab1E2NTp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 09:19:45 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58562 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258Ab1E2NTo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 09:19:44 -0400
+Date: Sun, 29 May 2011 14:19:06 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+	locks up on ARM
+Message-ID: <20110529131906.GB24876@n2100.arm.linux.org.uk>
+References: <1306412511.1200.90.camel@twins> <20110526122623.GA11875@elte.hu> <20110526123137.GG24876@n2100.arm.linux.org.uk> <20110526125007.GA27083@elte.hu> <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com> <20110527120629.GA32617@elte.hu> <20110527205240.GT24876@n2100.arm.linux.org.uk> <20110529102119.GC9489@e102109-lin.cambridge.arm.com> <20110529102659.GY24876@n2100.arm.linux.org.uk> <BANLkTin-5+jE6U-3RrPjPiFVRMGNhvwVEw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DE19DC3.7090106@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <BANLkTin-5+jE6U-3RrPjPiFVRMGNhvwVEw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* H. Peter Anvin <hpa@zytor.com> wrote:
-
-> On 05/28/2011 05:18 AM, Ingo Molnar wrote:
-> > 
-> > Having half a megabyte of '__init buffer' at the beginning or end 
-> > of the kernel image is no big deal, it's more than enough for 
-> > good randomization and makes the whole thing image-loader 
-> > invariant: we can freely shift the 'real' kernel image within 
-> > this larger boundary without consulting RAM maps.
+On Sun, May 29, 2011 at 01:01:58PM +0100, Catalin Marinas wrote:
+> On Sunday, 29 May 2011, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> > On Sun, May 29, 2011 at 11:21:19AM +0100, Catalin Marinas wrote:
+> >> To avoid extra per-thread flags, we could set a per-cpu variable in
+> >> switch_mm() so that we know what to switch the page tables to in the
+> >> post-switch hook.
+> >
+> > Why do we need to add more per-cpu stuff when we already have easy access
+> > to the thread flags?
 > 
-> Sure, but you're also blowing any attempt at PMD alignment to 
-> kingdom come.
+> It could work, I was thinking that we only get an mm structure in the
+> post-switch hook.
 
-Do you mean we'd not start at a 2MB boundary and thus would waste on 
-average an about 0.125 worth of huge-TLB cache entry?
+No.  What we get is the mm structure for the _previous_ task which
+was running if the previous task was a lazy-tlb task.  Otherwise it
+will be NULL.
 
-That does not look like a very big issue to me - but maybe i'm 
-missing something and you mean something else.
+What we do get is the 'next' task and 'next' thread by virtue of the
+fact that it has become the 'current' task - so current and
+current_thread_info() both point at what switch_mm() regarded as the
+'next' task/thread.
 
-Thanks,
+> BTW, we currently have a per-cpu current_mm variable in context.c
+> because switch_mm() is called before switch_to() and the CPU may
+> receive an IPI to reset the ASID in this interval. But we can remove
+> it entirely if we set the ASID in the post-switch hook and run the
+> main switch code with interrupts disabled.
 
-	Ingo
+Unconvinced.  If we move the ASID update to the post-switch hook, then
+we have the opposite problem - an IPI can sneak in between the dropping
+of the IRQ disabling and the post-switch hook.  This could mean that
+we end up racing to update the hardware ASID value instead (we may
+have read the ASID value from the mm struct, interrupt occurs, changes
+the ASID value, returns, we program the old ASID value.)
