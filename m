@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab1E2SoI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 14:44:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42093 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754085Ab1E2SoG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 14:44:06 -0400
+	id S1755797Ab1E2Sop (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 14:44:45 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54614 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754085Ab1E2Son (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 14:44:43 -0400
+Date: Sun, 29 May 2011 20:44:09 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@gmail.com>,
+        linux-kernel@vger.kernel.org, davej@redhat.com,
+        kees.cook@canonical.com, davem@davemloft.net, eranian@google.com,
+        adobriyan@gmail.com, penberg@kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+Message-ID: <20110529184409.GA9835@elte.hu>
+References: <1306516230.3339.17.camel@dan>
+ <20110527171611.GE4356@elte.hu>
+ <BANLkTim7+gPdvQS99oJ7xteYOAQaSSr8Sw@mail.gmail.com>
+ <20110527174644.GG4356@elte.hu>
+ <4DDFE52D.4070308@zytor.com>
+ <BANLkTimVQbHvW8tCACAcC8zRkyY1KyU2ww@mail.gmail.com>
+ <20110528121820.GB12059@elte.hu>
+ <4DE19DC3.7090106@zytor.com>
+ <20110529124702.GE26627@elte.hu>
+ <4DE28E1E.60207@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimqhkiBSArm7n0_9FD+LW6hWBWxFA@mail.gmail.com>
-References: <20110529072256.GA20983@elte.hu> <BANLkTikHejgEyz9LfJ962Bu89vn1cBP+WQ@mail.gmail.com>
- <BANLkTimqhkiBSArm7n0_9FD+LW6hWBWxFA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 29 May 2011 11:43:23 -0700
-Message-ID: <BANLkTin8yxh=Bjwf7AEyzPCoghnYO2brLQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: Fix boot crash in mm_alloc()
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DE28E1E.60207@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 10:19 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> STILL TOTALLY UNTESTED! The fixes were just from eyeballing it a bit
-> more, not from any actual testing.
 
-Ok, I eyeballed it some more, and tested both the OFFSTACK and ONSTACK
-case, and decided that I had better commit it now rather than wait any
-later since I'll do the -rc1 later today, and will be on an airplane
-most of tomorrow.
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-The exact placement of the cpu_vm_mask_var is up for grabs. For
-example, I started thinking that it might be better to put it *after*
-the mm_context_t, since for the non-OFFSTACK case it's generally
-touched at the beginning rather than the end.
+> On 05/29/2011 05:47 AM, Ingo Molnar wrote:
+> > 
+> > Do you mean we'd not start at a 2MB boundary and thus would waste on 
+> > average an about 0.125 worth of huge-TLB cache entry?
+> > 
+> > That does not look like a very big issue to me - but maybe i'm 
+> > missing something and you mean something else.
+> > 
+> 
+> The problem is that because of the misalignment, and whatever falls 
+> on the other side of that memory boundary we might end up having to 
+> fracture the 2 MB page into 4K pages.
 
-And the actual change to make the mm_cachep kmem_cache_create() use a
-variable-sized allocation for the OFFSTACK case is similarly left as
-an exercise for the the reader. So effectively, this reverts a lot of
-de03c72cfce5, but does so in a way that should make very it easy to
-get back to where KOSAKI was aiming for.
+We already have that kind of fragmentation anyway, due to NX and due 
+to the readonly area. Randomization does not really make that 
+situation much worse.
 
-Whatever. I was hoping to get comments on it, but I think I need to
-rather push it out to get tested and public than wait any longer. The
-patch *looks* fine, tests ok on my machine, and removes more lines
-than it adds despite the new big comment.
+But the thing is, we could fully eliminate all those disadvantages on 
+64-bit x86:
 
-                    Linus
+We could put a 2MB hole between end of text (end of X) and start of 
+readonly data (start of NX), and another 2MB hole between end of 
+readonly and start of data.
+
+That way we'd have:
+
+ - the low alias is mapped NX as well, so the whole area and 
+   surrounding pages are 2MB aligned. The 'holes' are freed up as 
+   __initmem so not wasted.
+
+ - the high alias will have three areas:
+
+    - the    text area, which is 2MB mapped as X
+    - the ro-data area, which is 2MB mapped as NX-RO
+    - the    data area, which is 2MB mapped as NX-RW
+
+because there's at least 2MB of distance between end of text and 
+start of data there's a guarantee that both will be fully 2MB mapped.
+
+Btw., we might want to do this regardless of randomization, for 
+performance reasons: right now the NX and readonly area fragments the 
+2MB mapping around the kernel text already, into 4K mappings.
+
+Hm?
+
+Thanks,
+
+	Ingo
