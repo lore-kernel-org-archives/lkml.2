@@ -1,149 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab1E2K6d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 06:58:33 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50673 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433Ab1E2K6c (ORCPT
+	id S1752511Ab1E2LbQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 07:31:16 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58081 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916Ab1E2LbO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 06:58:32 -0400
-Date: Sun, 29 May 2011 12:58:29 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Andrew Chew <achew@nvidia.com>
-cc: mchehab@redhat.com, olof@lixom.net, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5 v2] [media] ov9740: Add suspend/resume
-In-Reply-To: <1306368272-28279-5-git-send-email-achew@nvidia.com>
-Message-ID: <Pine.LNX.4.64.1105291249220.18788@axis700.grange>
-References: <1306368272-28279-1-git-send-email-achew@nvidia.com>
- <1306368272-28279-5-git-send-email-achew@nvidia.com>
+	Sun, 29 May 2011 07:31:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=sgF6D9Trd9IHf9Fu36tBr06l+/7tp3+sBixs4zzZqsW7+G7lNMcrPn7odFN1bdzil3
+         NK6h2q3VqWvWssXfO9i/Mk2A73E8OwJftVEwMuD4BP8RbGVXfqlh6btRw+M4VyNrZZ6m
+         Zay/HBV2md8JeM1hNoxZLFfV/rXjyv1xMuH8o=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:i4e3y3C7Bex9tl9P0K7CjZ7RPwwhIgj26t+oB9XqgX6
- DZUrY6cyTg14OwzDetSQQzpjY8058jSVDqiKEcWazs7p6uKnAQ
- U7UEOFpbqMdMmSjic7h0WArJiyMLlWoXTqDqbXYV9099J4WoEF
- wWvjqh86jYNU5FNhjzeOpZgoTpKooIWkHVU4rT2On9wP1ME05t
- Ayc1LqzEKQVHGY4W3ULO+W4SqMGw3tfM2arlSq1lvE=
+In-Reply-To: <alpine.LFD.2.02.1105290252150.7577@arrandale.kernel.org>
+References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>
+	<alpine.LFD.2.02.1105290252150.7577@arrandale.kernel.org>
+Date: Sun, 29 May 2011 19:31:13 +0800
+Message-ID: <BANLkTimpe8MOor+oWm4t0M6ODzM_RPn6yg@mail.gmail.com>
+Subject: Re: [PATCH 0/9] ACPI, APEI patches for 2.6.40
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011, achew@nvidia.com wrote:
+On Sun, May 29, 2011 at 2:55 PM, Len Brown <lenb@kernel.org> wrote:
+>> [PATCH 1/9] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
+>> [PATCH 2/9] lib, Add lock-less NULL terminated single list
+>> [PATCH 3/9] lib, Make gen_pool memory allocator lockless
+>> [PATCH 4/9] ACPI, APEI, GHES, printk support for recoverable error via NMI
+>
+> I think the 4 above should go upstream to enable the
+> printk for recoverable errors.  If queuing messages
+> from NMI context gets re-implemented in the future,
+> then so be it.
 
-> From: Andrew Chew <achew@nvidia.com>
-> 
-> On suspend, remember whether we are streaming or not, and at what frame format,
-> so that on resume, we can start streaming again.
-> 
-> Signed-off-by: Andrew Chew <achew@nvidia.com>
-> ---
->  drivers/media/video/ov9740.c |   39 +++++++++++++++++++++++++++++++++++++++
->  1 files changed, 39 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/media/video/ov9740.c b/drivers/media/video/ov9740.c
-> index 6c28ae8..4abe943 100644
-> --- a/drivers/media/video/ov9740.c
-> +++ b/drivers/media/video/ov9740.c
-> @@ -201,6 +201,10 @@ struct ov9740_priv {
->  
->  	bool				flag_vflip;
->  	bool				flag_hflip;
-> +
-> +	/* For suspend/resume. */
-> +	struct v4l2_mbus_framefmt	current_mf;
-> +	int				current_enable;
+The GHES records are queued just for printk.  It has no contradiction
+with perf based logging.
 
-bool?
+> I'll skip the rest, however, except #9:-)
+>
+> thanks,
+> -Len
+>
+>> [PATCH 5/9] HWPoison: add memory_failure_queue()
+>> [PATCH 6/9] ACPI, APEI, GHES: Add hardware memory error recovery support
+>> [PATCH 7/9] PCIe, AER, add aer_recover_queue
+>> [PATCH 8/9] ACPI, APEI, GHES: Add PCIe AER recovery support
+>> [PATCH 9/9] ACPI, APEI, ERST, Prevent erst_dbg from loading if ERST is disabled
 
->  };
->  
->  static const struct ov9740_reg ov9740_defaults[] = {
-> @@ -551,6 +555,8 @@ static int ov9740_s_stream(struct v4l2_subdev *sd, int enable)
->  					       0x00);
->  	}
->  
-> +	priv->current_enable = enable;
-> +
->  	return ret;
->  }
->  
-> @@ -786,6 +792,7 @@ static int ov9740_s_fmt(struct v4l2_subdev *sd,
->  			struct v4l2_mbus_framefmt *mf)
->  {
->  	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +	struct ov9740_priv *priv = to_ov9740(sd);
->  	enum v4l2_colorspace cspace;
->  	enum v4l2_mbus_pixelcode code = mf->code;
->  	int ret;
-> @@ -812,6 +819,8 @@ static int ov9740_s_fmt(struct v4l2_subdev *sd,
->  	mf->code	= code;
->  	mf->colorspace	= cspace;
->  
-> +	memcpy(&priv->current_mf, mf, sizeof(struct v4l2_mbus_framefmt));
-> +
->  	return ret;
->  }
->  
-> @@ -922,7 +931,37 @@ err:
->  	return ret;
->  }
->  
-> +static int ov9740_suspend(struct soc_camera_device *icd, pm_message_t state)
-> +{
-> +	struct v4l2_subdev *sd = soc_camera_to_subdev(icd);
-> +	struct ov9740_priv *priv = to_ov9740(sd);
-> +
-> +	if (priv->current_enable) {
-> +		int current_enable = priv->current_enable;
-> +
-> +		ov9740_s_stream(sd, 0);
-> +		priv->current_enable = current_enable;
+I think #5 and #7 just some general code that can be used by perf
+based recovering too.  Because we are still waiting for perf based
+hardware error logging/recovering infrastructure.  I think we can take
+#6 and #8 for now and maybe replace them with perf based solution when
+that is ready.
 
-You don't need the local variable, just set
+BTW: Can you take a look at another patch with following title?
 
-	priv->current_enable = true;
+[PATCH] ACPI, APEI, Add APEI _OSC support
 
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int ov9740_resume(struct soc_camera_device *icd)
-> +{
-> +	struct v4l2_subdev *sd = soc_camera_to_subdev(icd);
-> +	struct ov9740_priv *priv = to_ov9740(sd);
-> +
-> +	if (priv->current_enable) {
-> +		ov9740_s_fmt(sd, &priv->current_mf);
-> +		ov9740_s_stream(sd, priv->current_enable);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static struct soc_camera_ops ov9740_ops = {
-> +	.suspend		= ov9740_suspend,
-> +	.resume			= ov9740_resume,
+https://lkml.org/lkml/2011/5/25/28
 
-No, we don't want to use these, whey should disappear some time... Please, 
-use .s_power() from struct v4l2_subdev_core_ops, you can check 
-http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/33105 
-for an example. If your host is not using these ops, it has to be fixed. 
-So far in the mainline only one soc-camera host driver is using these 
-callbacks: pxa_camera.c, which, looking at your email address, I doubt is 
-the driver, that you're using;)
+This is needed to enable GHES reporting in firmware on some machines.
 
->  	.set_bus_param		= ov9740_set_bus_param,
->  	.query_bus_param	= ov9740_query_bus_param,
->  	.controls		= ov9740_controls,
-> -- 
-> 1.7.5.2
-> 
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Best Regards,
+Huang Ying
