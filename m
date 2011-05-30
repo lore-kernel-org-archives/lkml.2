@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab1E3LMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 07:12:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40547 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab1E3LMm (ORCPT
+	id S1756675Ab1E3LTo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 07:19:44 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:39254 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753137Ab1E3LTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 07:12:42 -0400
-Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
-From: David Woodhouse <dwmw2@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 30 May 2011 12:12:37 +0100
-In-Reply-To: <20110530110432.GA21429@elte.hu>
-References: <1306707270.2029.377.camel@i7.infradead.org>
-	 <20110530072300.GA9802@elte.hu>
-	 <1306745835.2029.389.camel@i7.infradead.org>
-	 <20110530091536.GA2827@elte.hu>
-	 <1306747629.2029.397.camel@i7.infradead.org>
-	 <20110530095333.GA8461@elte.hu>
-	 <1306750004.2029.413.camel@i7.infradead.org>
-	 <20110530102502.GC17821@elte.hu>
-	 <1306753314.2029.442.camel@i7.infradead.org>
-	 <20110530110432.GA21429@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
-Content-Transfer-Encoding: 8bit
-Message-ID: <1306753958.2029.450.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 30 May 2011 07:19:43 -0400
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "'Alan Cox'" <alan@linux.intel.com>, "'Greg KH'" <gregkh@suse.de>
+Cc: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <qi.wang@intel.com>, <yong.y.wang@intel.com>, <joel.clark@intel.com>,
+        <kok.howg.ewe@intel.com>, <toshiharu-linux@dsn.okisemi.com>
+References: <1306741324-4562-1-git-send-email-tomoya-linux@dsn.okisemi.com><20110530074722.GA7947@suse.de> <20110530105633.596ab8ab@bob.linux.org.uk>
+Subject: RE: [PATCH] 8250_pci: add -ENODEV code for Intel EG20T PCH
+Date: Mon, 30 May 2011 20:19:40 +0900
+Message-ID: <EC1A82FC0A474852B4C14B0946198E85@hacdom.okisemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcwesbC7WluX1hHxSQGfNkCRQOFx1gABwXNA
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+In-Reply-To: <20110530105633.596ab8ab@bob.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-30 at 13:04 +0200, Ingo Molnar wrote:
+Hi Greg
+
+> Because if the PCH driver is not available you want to bind 
+> it to the 8250 driver, which also works with it but less efficiently.
 > 
-> That v2 changelog still seems to have an attitude though about the 
-> ARCH=i386 and ARCH=x86_64 modifiers (thoroughly debunked both by 
-> myself and others), so mind sending a v3 one which correctly and 
-> fairly describes the situation? (or ack my variant which ought to be 
-> pretty close) 
+> The giant if probably should be a pci match table however
+ 
+Which opinions should I select ?
 
-SIGWENCH; have to run. Back later. Can we make it something like
+Though Alan's comment has a point,
+IMHO, in probe processing, the efficiently is not so important.
+Adding the "#ifdef", I think, readability of 8250_pci.c goes down.
 
-"This version preserves the legacy ARCH=i386/ARCH=x86_64 behaviour for
-randconfig/oldconfig/all*config, although I believe that this *ought* to
-be removed in the future, in favour of a generic method of overriding
-config options — one that doesn't work *only* for one particular config
-setting (CONFIG_64BIT), and *only* on one architecture (there's no
-equivalent for mips/powerpc/s390/parisc/sparc to flip CONFIG_64BIT for
-you)."
-
-It's less of an 'attitude' but I think it clearly states the situation?
-
--- 
-dwmw2
+Thanks,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
 
