@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456Ab1E3BMi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 21:12:38 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45915 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab1E3BMh (ORCPT
+	id S1752332Ab1E3BRi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 21:17:38 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56613 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab1E3BRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 21:12:37 -0400
+	Sun, 29 May 2011 21:17:37 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DE2EEFB.1080803@jp.fujitsu.com>
-Date: Mon, 30 May 2011 10:12:27 +0900
+Message-ID: <4DE2F028.6020608@jp.fujitsu.com>
+Date: Mon, 30 May 2011 10:17:28 +0900
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: torvalds@linux-foundation.org
-CC: mingo@elte.hu, akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: Fix boot crash in mm_alloc()
-References: <20110529072256.GA20983@elte.hu> <BANLkTikHejgEyz9LfJ962Bu89vn1cBP+WQ@mail.gmail.com> <BANLkTimqhkiBSArm7n0_9FD+LW6hWBWxFA@mail.gmail.com> <BANLkTin8yxh=Bjwf7AEyzPCoghnYO2brLQ@mail.gmail.com>
-In-Reply-To: <BANLkTin8yxh=Bjwf7AEyzPCoghnYO2brLQ@mail.gmail.com>
+To: rientjes@google.com
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, caiqian@redhat.com, hughd@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, minchan.kim@gmail.com, oleg@redhat.com
+Subject: Re: [PATCH 4/5] oom: don't kill random process
+References: <4DD61F80.1020505@jp.fujitsu.com> <4DD6207E.1070300@jp.fujitsu.com> <alpine.DEB.2.00.1105231529340.17840@chino.kir.corp.google.com> <4DDB0B45.2080507@jp.fujitsu.com> <alpine.DEB.2.00.1105231838420.17729@chino.kir.corp.google.com> <4DDB1028.7000600@jp.fujitsu.com> <alpine.DEB.2.00.1105231856210.18353@chino.kir.corp.google.com> <4DDB11F4.2070903@jp.fujitsu.com> <alpine.DEB.2.00.1105251645270.29729@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1105251645270.29729@chino.kir.corp.google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/05/30 3:43), Linus Torvalds wrote:
-> On Sun, May 29, 2011 at 10:19 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> STILL TOTALLY UNTESTED! The fixes were just from eyeballing it a bit
->> more, not from any actual testing.
+> I'm afraid that a second time through the tasklist in select_bad_process() 
+> is simply a non-starter for _any_ case; it significantly increases the 
+> amount of time that tasklist_lock is held and causes problems elsewhere on 
+> large systems -- such as some of ours -- since irqs are disabled while 
+> waiting for the writeside of the lock.  I think it would be better to use 
+> a proportional privilege for root processes based on the amount of memory 
+> they are using (discounting 1% of memory per 10% of memory used, as 
+> proposed earlier, seems sane) so we can always protect root when necessary 
+> and never iterate through the list again.
 > 
-> Ok, I eyeballed it some more, and tested both the OFFSTACK and ONSTACK
-> case, and decided that I had better commit it now rather than wait any
-> later since I'll do the -rc1 later today, and will be on an airplane
-> most of tomorrow.
-> 
-> The exact placement of the cpu_vm_mask_var is up for grabs. For
-> example, I started thinking that it might be better to put it *after*
-> the mm_context_t, since for the non-OFFSTACK case it's generally
-> touched at the beginning rather than the end.
-> 
-> And the actual change to make the mm_cachep kmem_cache_create() use a
-> variable-sized allocation for the OFFSTACK case is similarly left as
-> an exercise for the the reader. So effectively, this reverts a lot of
-> de03c72cfce5, but does so in a way that should make very it easy to
-> get back to where KOSAKI was aiming for.
-> 
-> Whatever. I was hoping to get comments on it, but I think I need to
-> rather push it out to get tested and public than wait any longer. The
-> patch *looks* fine, tests ok on my machine, and removes more lines
-> than it adds despite the new big comment.
+> Please look into the earlier review comments on the other patches, refresh 
+> the series, and post it again.  Thanks!
 
-Hi
+Never mind.
 
-Thank you Linus and I'm sorry for bother you and guys. So, if I understand
-this thread correctly, rest my homework is 1) make cpumask_allocation variable
-size 2) remove NR_CPUS bit fill/copy from fork/exec path. Right?
-
-I think (2) is big matter than (1). NR_CPUS(=4096) bits copy easily screw up
-cache behavior. Anyway, will do. Thank you!
-
-
+You never see to increase tasklist_lock. You never seen all processes
+have root privilege case.
 
