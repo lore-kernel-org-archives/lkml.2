@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab1E3Mdk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 08:33:40 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38170 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756531Ab1E3Mdi (ORCPT
+	id S1752538Ab1E3Mg4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 08:36:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34326 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816Ab1E3Mgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 08:33:38 -0400
+	Mon, 30 May 2011 08:36:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=HBbdcon4yo2NDAtMXxqX/OPzyEK7dwWzdDsIHbBGvpNWyjZMLTbgf2sP+A1Cw/l0NU
-         OK3WfrqMSl7ltyb/TwHubqcej5XYzRfUCpvPfSzDvCbraKXE96PuSFqWcYsDYKHp/QMr
-         nBUhJT+U9g23L2+z2XkyHXk+HYBBDPJWik8SY=
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel J Blueman <daniel.blueman@gmail.com>
-Subject: [PATCH] sdhci: fix undue iomem warning
-Date: Mon, 30 May 2011 20:33:16 +0800
-Message-Id: <1306758796-4254-1-git-send-email-daniel.blueman@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=gg62C73m9dJ0Uu5rsrhiLfKPNNq2SdpHnF033tUosbWOlcBh4Y+TC7TzKMS00LvWr+
+         CRWR6ZqslLq7c+MqUr6kasgA0wT2Ywi9ciURfSAL5vY4OzjnI5GEL4BhiGorpcCc44cs
+         kFoDDAkTGm1tOYqP+YUzTfyQzTV4czhPAIIdc=
+Message-ID: <4DE38F62.3000508@gmail.com>
+Date: Mon, 30 May 2011 15:36:50 +0300
+From: =?UTF-8?B?VMO2csO2ayBFZHdpbg==?= <edwintorok@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110510 Icedove/3.1.10
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        kvm@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: fix mwait_play_dead() faulting on mwait-incapable
+ cpus
+References: <201105301143.p4UBhco4001230@demeter2.kernel.org> <1306758237-9327-1-git-send-email-avi@redhat.com>
+In-Reply-To: <1306758237-9327-1-git-send-email-avi@redhat.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some newer SDHCI controllers have memory mapped I/O regions of 512
-bytes, so accept these without warning.
+On 05/30/2011 03:23 PM, Avi Kivity wrote:
+> A logic error in mwait_play_dead() causes the kernel to use mwait
+> even on cpus which don't support it, such as KVM virtual cpus.
+> 
+> Introduced by 349c004e3d31fd.
+> 
+> Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=36222
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
----
- drivers/mmc/host/sdhci-pci.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Confirmed that it fixes it.
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 936bbca..ae948b0 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -918,8 +918,9 @@ static struct sdhci_pci_slot * __devinit sdhci_pci_probe_slot(
- 		return ERR_PTR(-ENODEV);
- 	}
- 
--	if (pci_resource_len(pdev, bar) != 0x100) {
--		dev_err(&pdev->dev, "Invalid iomem size. You may "
-+	int len = pci_resource_len(pdev, bar);
-+	if (len != 0x100 && len != 0x200) {
-+		dev_warn(&pdev->dev, "Invalid iomem size. You may "
- 			"experience problems.\n");
- 	}
- 
--- 
-1.7.4.1
+>
+> Reported-by: Török Edwin <edwintorok@gmail.com>
+> Signed-off-by: Avi Kivity <avi@redhat.com>
 
+You can add this if you want to:
+Tested-by: Török Edwin <edwintorok@gmail.com>
+
+Thanks,
+--Edwin
