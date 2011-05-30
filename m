@@ -1,533 +1,472 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab1E3Xq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 19:46:59 -0400
-Received: from smp.if.uj.edu.pl ([149.156.82.206]:54931 "EHLO smp.if.uj.edu.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752194Ab1E3Xq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 19:46:57 -0400
-From: "Witold Baryluk" <baryluk@smp.if.uj.edu.pl>
-Date: Tue, 31 May 2011 01:46:54 +0200
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <johnstul@us.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Kernel OOPS in function_graph_tracer due to the 44259b1. More
- oopses in tracing...
-Message-ID: <20110530234654.GB14366@smp.if.uj.edu.pl>
-References: <20110530161014.GS25813@smp.if.uj.edu.pl>
- <BANLkTi=7k4XbK6JVDp3oOJRAK_7Ox=aWMw@mail.gmail.com>
+	id S1753745Ab1E3X44 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 19:56:56 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54757 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab1E3X4z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 19:56:55 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 31 May 2011 08:50:06 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Cal Leeming [Simplicity Media Ltd]" 
+	<cal.leeming@simplicitymedialtd.co.uk>
+Cc: linux-kernel@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+        "rientjes@google.com" <rientjes@google.com>
+Subject: Re: cgroup OOM killer loop causes system to lockup (possible fix
+ included)
+Message-Id: <20110531085006.e420d157.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4DE40DCA.3000909@simplicitymedialtd.co.uk>
+References: <4DE2BFA2.3030309@simplicitymedialtd.co.uk>
+	<4DE2C787.1050809@simplicitymedialtd.co.uk>
+	<20110530112355.e92a58c0.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTikheK8O3v5HvCcKE7iiAfauDq7NhQ@mail.gmail.com>
+	<BANLkTimzMvE7kz75umbzPFOAC5T2-vcdfQ@mail.gmail.com>
+	<4DE3A956.5020707@simplicitymedialtd.co.uk>
+	<4DE3D5A8.8060707@simplicitymedialtd.co.uk>
+	<4DE40DCA.3000909@simplicitymedialtd.co.uk>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_smp.if.uj.edu.pl-29466-1306799215-0001-2"
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=7k4XbK6JVDp3oOJRAK_7Ox=aWMw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME-formatted message.  If you see this text it means that your
-E-mail software does not support MIME-formatted messages.
+On Mon, 30 May 2011 22:36:10 +0100
+"Cal Leeming [Simplicity Media Ltd]" <cal.leeming@simplicitymedialtd.co.uk> wrote:
 
---=_smp.if.uj.edu.pl-29466-1306799215-0001-2
-Content-Type: multipart/mixed; boundary="QTprm0S8XgL7H0Dt"
-Content-Disposition: inline
+> FYI everyone, I found a bug within openssh-server which caused this problem.
+> 
+> I've patched and submitted to the openssh list.
+> 
+> You can find details of this by googling for:
+> "port-linux.c bug with oom_adjust_restore() - causes real bad oom_adj - 
+> which can cause DoS conditions"
+> 
 
+Thank you.
 
---QTprm0S8XgL7H0Dt
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> It's extremely strange.. :S
+> 
 
-On 05-30 16:14, Andrew Lutomirski wrote:
-> On Mon, May 30, 2011 at 12:10 PM, Witold Baryluk
-> <baryluk@smp.if.uj.edu.pl> wrote:
-> > Hi,
+yes...
+
+Thanks,
+-Kame
+
+> Cal
+> 
+> On 30/05/2011 18:36, Cal Leeming [Simplicity Media Ltd] wrote:
+> > Here is an strace of the SSH process (which is somehow inheriting the 
+> > -17 oom_adj on all forked user instances)
 > >
-> > I found yesterday a problem when booting system on Pentium-M, 32-bit.
+> > (broken server - with bnx2 module loaded)
+> > [pid  2200] [    7f13a09c9cb0] open("/proc/self/oom_adj", 
+> > O_WRONLY|O_CREAT|O_TRUNC, 0666 <unfinished ...>
+> > [pid  2120] [    7f13a09c9f00] write(7, "\0\0\2\240\n\n\n\nPort 
+> > 22\n\n\n\nProtocol 2\n\nH"..., 680 <unfinished ...>
+> > [pid  2200] [    7f13a09c9cb0] <... open resumed> ) = 9
+> > [pid  2120] [    7f13a09c9f00] <... write resumed> ) = 680
+> > [pid  2120] [    7f13a09c9e40] close(7 <unfinished ...>
+> > [pid  2200] [    7f13a09c9844] fstat(9, <unfinished ...>
+> > [pid  2120] [    7f13a09c9e40] <... close resumed> ) = 0
+> > [pid  2200] [    7f13a09c9844] <... fstat resumed> 
+> > {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
+> > [pid  2120] [    7f13a09c9e40] close(8 <unfinished ...>
+> > [pid  2200] [    7f13a09d2a2a] mmap(NULL, 4096, PROT_READ|PROT_WRITE, 
+> > MAP_PRIVATE|MAP_ANONYMOUS, -1, 0 <unfinished ...>
+> > [pid  2120] [    7f13a09c9e40] <... close resumed> ) = 0
+> > [pid  2200] [    7f13a09d2a2a] <... mmap resumed> ) = 0x7f13a25a6000
+> > [pid  2120] [    7f13a09c9e40] close(4 <unfinished ...>
+> > [pid  2200] [    7f13a09c9f00] write(9, "-17\n", 4 <unfinished ...>
 > >
-> > I got approximetly this
 > >
-> > [ =A0 =A02.459170] Testing tracer function_graph:
-> > [ =A0 =A02.466979] BUG: unable to handle kernel paging request at e421c=
-c10
->=20
+> > (working server - with bnx2 module unloaded)
+> > [pid  1323] [    7fae577fbe40] close(7) = 0
+> > [pid  1631] [    7fae577fbcb0] open("/proc/self/oom_adj", 
+> > O_WRONLY|O_CREAT|O_TRUNC, 0666 <unfinished ...>
+> > [pid  1323] [    7fae577fbf00] write(8, "\0\0\2\217\0", 5 <unfinished 
+> > ...>
+> > [pid  1631] [    7fae577fbcb0] <... open resumed> ) = 10
+> > [pid  1323] [    7fae577fbf00] <... write resumed> ) = 5
+> > [pid  1323] [    7fae577fbf00] write(8, "\0\0\2\206\n\n\n\nPort 
+> > 22\n\n\n\nProtocol 2\n\nH"..., 654 <unfinished ...>
+> > [pid  1631] [    7fae577fb844] fstat(10, <unfinished ...>
+> > [pid  1323] [    7fae577fbf00] <... write resumed> ) = 654
+> > [pid  1631] [    7fae577fb844] <... fstat resumed> 
+> > {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
+> > [pid  1323] [    7fae577fbe40] close(8) = 0
+> > [pid  1631] [    7fae57804a2a] mmap(NULL, 4096, PROT_READ|PROT_WRITE, 
+> > MAP_PRIVATE|MAP_ANONYMOUS, -1, 0 <unfinished ...>
+> > [pid  1323] [    7fae577fbe40] close(9 <unfinished ...>
+> > [pid  1631] [    7fae57804a2a] <... mmap resumed> ) = 0x7fae593d9000
+> > [pid  1323] [    7fae577fbe40] <... close resumed> ) = 0
+> > [pid  1323] [    7fae577fbe40] close(5 <unfinished ...>
+> > [pid  1631] [    7fae577fbf00] write(10, "0\n", 2 <unfinished ...>
 > >
-> > Reverting commit 44259b1abfaa8bb819d25d41d71e8e33e25dd36a on top of cur=
-rent
-> > kernel make bug disapear.
+> > The two servers are *EXACT* duplicates of each other, completely fresh 
+> > Debian installs, with exactly the same packages installed.
 > >
-> > Disabling CONFIG_FUNCTION_GRAPH_TRACER also make bug dispear.
+> > As you can see, the working server sends "0" into the oom_adj and the 
+> > broken one sends "-17".
 > >
->=20
-> Of course, the most trivial of my patches was the one with the most
-> significant bug.  Can you try this fix:
->=20
-> http://git.kernel.org/?p=3Dlinux/kernel/git/x86/linux-2.6-tip.git;a=3Dcom=
-mitdiff;h=3D89e1be50c68eb5e58b873dce87bbac627ee18d1f
->=20
-> --Andy
+> >
+> > On 30/05/2011 15:27, Cal Leeming [Simplicity Media Ltd] wrote:
+> >> I FOUND THE PROBLEM!!!
+> >>
+> >> Explicit details can be found on the Debian kernel mailing list, but 
+> >> to cut short, it's caused by the firmware-bnx2 kernel module:
+> >>
+> >> The broken server uses 'firmware-bnx2'.. so I purged the bnx2 
+> >> package, removed the bnx*.ko files from /lib/modules, ran 
+> >> update-initramfs, and then rebooted (i then confirmed it was removed 
+> >> by checking ifconfig and lsmod).
+> >>
+> >> And guess what.. IT WORKED.
+> >>
+> >> So, this problem seems to be caused by the firmware-bnx2 module being 
+> >> loaded.. some how, that module is causing -17 oom_adj to be set for 
+> >> everything..
+> >>
+> >> WTF?!?! Surely a bug?? Could someone please forward this to the 
+> >> appropriate person for the bnx2 kernel module, as I wouldn't even 
+> >> know where to begin :S
+> >>
+> >> Cal
+> >>
+> >> On 30/05/2011 11:52, Cal Leeming [Simplicity Media Ltd] wrote:
+> >>> -resent due to incorrect formatting, sorry if this dups!
+> >>>
+> >>> @Kame
+> >>> Thanks for the reply!
+> >>> Both kernels used the same env/dist, but which slightly different 
+> >>> packages.
+> >>> After many frustrating hours, I have pin pointed this down to a dodgy
+> >>> Debian package which appears to continue affecting the system, even
+> >>> after purging. I'm still yet to pin point the package down (I'm doing
+> >>> several reinstall tests, along with tripwire analysis after each
+> >>> reboot).
+> >>>
+> >>> @Hiroyuki
+> >>> Thank you for sending this to the right people!
+> >>>
+> >>> @linux-mm
+> >>> On a side note, would someone mind taking a few minutes to give a
+> >>> brief explanation as to how the default oom_adj is set, and under what
+> >>> conditions it is given -17 by default? Is this defined by the
+> >>> application? I looked through the kernel source,
+> >>> and noticed some of the code was defaulted to set oom_adj to
+> >>> OOM_DISABLE (which is defined in the headers as -17).
+> >>>
+> >>> Assuming the debian problem is resolved, this might be another call
+> >>> for the oom-killer to be modified so that if it encounters the
+> >>> unrecoverable loop, it ignores the -17 rule (with some exceptions,
+> >>> such as kernel processes, and other critical things). If this is going
+> >>> to be a relatively simple task, I wouldn't mind spending a few hours
+> >>> patching this?
+> >>>
+> >>> Cal
+> >>>
+> >>> On Mon, May 30, 2011 at 3:23 AM, KAMEZAWA Hiroyuki
+> >>> <kamezawa.hiroyu@jp.fujitsu.com>  wrote:
+> >>>> Thank you. memory cgroup and OOM troubles are handled in linux-mm.
+> >>>>
+> >>>> On Sun, 29 May 2011 23:24:07 +0100
+> >>>> "Cal Leeming [Simplicity Media 
+> >>>> Ltd]"<cal.leeming@simplicitymedialtd.co.uk>  wrote:
+> >>>>
+> >>>>> Some further logs:
+> >>>>> ./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.369927] 
+> >>>>> redis-server
+> >>>>> invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+> >>>>> ./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.369939]
+> >>>>> [<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+> >>>>> ./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.399285] 
+> >>>>> redis-server
+> >>>>> invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+> >>>>> ./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.399296]
+> >>>>> [<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+> >>>>> ./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.428690] 
+> >>>>> redis-server
+> >>>>> invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+> >>>>> ./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.428702]
+> >>>>> [<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+> >>>>> ./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.487696] 
+> >>>>> redis-server
+> >>>>> invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+> >>>>> ./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.487708]
+> >>>>> [<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+> >>>>> ./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.517023] 
+> >>>>> redis-server
+> >>>>> invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+> >>>>> ./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.517035]
+> >>>>> [<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+> >>>>> ./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.546379] 
+> >>>>> redis-server
+> >>>>> invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+> >>>>> ./log/syslog:May 30 07:44:38 vicky kernel: [ 2283.546391]
+> >>>>> [<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+> >>>>> ./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.310789] 
+> >>>>> redis-server
+> >>>>> invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+> >>>>> ./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.310804]
+> >>>>> [<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+> >>>>> ./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.369918] 
+> >>>>> redis-server
+> >>>>> invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+> >>>>> ./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.369930]
+> >>>>> [<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+> >>>>> ./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.399284] 
+> >>>>> redis-server
+> >>>>> invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+> >>>>> ./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.399296]
+> >>>>> [<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+> >>>>> ./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.433634] 
+> >>>>> redis-server
+> >>>>> invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+> >>>>> ./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.433648]
+> >>>>> [<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+> >>>>> ./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.463947] 
+> >>>>> redis-server
+> >>>>> invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+> >>>>> ./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.463959]
+> >>>>> [<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+> >>>>> ./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.493439] 
+> >>>>> redis-server
+> >>>>> invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=-17
+> >>>>> ./log/syslog:May 30 07:44:43 vicky kernel: [ 2288.493451]
+> >>>>> [<ffffffff810b12b7>] ? oom_kill_process+0x82/0x283
+> >>>>>
+> >>>>>
+> >>>> hmm, in short, applications has -17 oom_adj in default with 
+> >>>> 2.6.32.41 ?
+> >>>> AFAIK, no kernel has such crazy settings as default..
+> >>>>
+> >>>> Does your 2 kernel uses the same environment/distribution ?
+> >>>>
+> >>>> Thanks,
+> >>>> -Kame
+> >>>>
+> >>>>> On 29/05/2011 22:50, Cal Leeming [Simplicity Media Ltd] wrote:
+> >>>>>>   First of all, my apologies if I have submitted this problem to the
+> >>>>>> wrong place, spent 20 minutes trying to figure out where it needs to
+> >>>>>> be sent, and was still none the wiser.
+> >>>>>>
+> >>>>>> The problem is related to applying memory limitations within a 
+> >>>>>> cgroup.
+> >>>>>> If the OOM killer kicks in, it gets stuck in a loop where it 
+> >>>>>> tries to
+> >>>>>> kill a process which has an oom_adj of -17. This causes an infinite
+> >>>>>> loop, which in turn locks up the system.
+> >>>>>>
+> >>>>>> May 30 03:13:08 vicky kernel: [ 1578.117055] Memory cgroup out of
+> >>>>>> memory: kill process 6016 (java) score 0 or a child
+> >>>>>> May 30 03:13:08 vicky kernel: [ 1578.117154] Memory cgroup out of
+> >>>>>> memory: kill process 6016 (java) score 0 or a child
+> >>>>>> May 30 03:13:08 vicky kernel: [ 1578.117248] Memory cgroup out of
+> >>>>>> memory: kill process 6016 (java) score 0 or a child
+> >>>>>> May 30 03:13:08 vicky kernel: [ 1578.117343] Memory cgroup out of
+> >>>>>> memory: kill process 6016 (java) score 0 or a child
+> >>>>>> May 30 03:13:08 vicky kernel: [ 1578.117441] Memory cgroup out of
+> >>>>>> memory: kill process 6016 (java) score 0 or a child
+> >>>>>>
+> >>>>>>
+> >>>>>>   root@vicky [/home/foxx]>  uname -a
+> >>>>>> Linux vicky 2.6.32.41-grsec #3 SMP Mon May 30 02:34:43 BST 2011 
+> >>>>>> x86_64
+> >>>>>> GNU/Linux
+> >>>>>> (this happens on both the grsec patched and non patched 2.6.32.41 
+> >>>>>> kernel)
+> >>>>>>
+> >>>>>> When this is encountered, the memory usage across the whole 
+> >>>>>> server is
+> >>>>>> still within limits (not even hitting swap).
+> >>>>>>
+> >>>>>> The memory configuration for the cgroup/lxc is:
+> >>>>>> lxc.cgroup.memory.limit_in_bytes = 3000M
+> >>>>>> lxc.cgroup.memory.memsw.limit_in_bytes = 3128M
+> >>>>>>
+> >>>>>> Now, what is even more strange, is that when running under the
+> >>>>>> 2.6.32.28 kernel (both patched and unpatched), this problem doesn't
+> >>>>>> happen. However, there is a slight difference between the two 
+> >>>>>> kernels.
+> >>>>>> The 2.6.32.28 kernel gives a default of 0 in the /proc/X/oom_adj,
+> >>>>>> where as the 2.6.32.41 gives a default of -17. I suspect this is the
+> >>>>>> root cause of why it's showing in the later kernel, but not the 
+> >>>>>> earlier.
+> >>>>>>
+> >>>>>> To test this theory, I started up the lxc on both servers, and then
+> >>>>>> ran a one liner which showed me all the processes with an oom_adj 
+> >>>>>> of -17:
+> >>>>>>
+> >>>>>> (the below is the older/working kernel)
+> >>>>>> root@courtney.internal [/mnt/encstore/lxc]>  uname -a
+> >>>>>> Linux courtney.internal 2.6.32.28-grsec #3 SMP Fri Feb 18 
+> >>>>>> 16:09:07 GMT
+> >>>>>> 2011 x86_64 GNU/Linux
+> >>>>>> root@courtney.internal [/mnt/encstore/lxc]>  for x in `find /proc
+> >>>>>> -iname 'oom_adj' | xargs grep "\-17"  | awk -F '/' '{print $3}'` 
+> >>>>>> ; do
+> >>>>>> ps -p $x --no-headers ; done
+> >>>>>> grep: /proc/1411/task/1411/oom_adj: No such file or directory
+> >>>>>> grep: /proc/1411/oom_adj: No such file or directory
+> >>>>>>    804 ?        00:00:00 udevd
+> >>>>>>    804 ?        00:00:00 udevd
+> >>>>>> 25536 ?        00:00:00 sshd
+> >>>>>> 25536 ?        00:00:00 sshd
+> >>>>>> 31861 ?        00:00:00 sshd
+> >>>>>> 31861 ?        00:00:00 sshd
+> >>>>>> 32173 ?        00:00:00 udevd
+> >>>>>> 32173 ?        00:00:00 udevd
+> >>>>>> 32174 ?        00:00:00 udevd
+> >>>>>> 32174 ?        00:00:00 udevd
+> >>>>>>
+> >>>>>> (the below is the newer/broken kernel)
+> >>>>>>   root@vicky [/mnt/encstore/ssd/kernel/linux-2.6.32.41]>  uname -a
+> >>>>>> Linux vicky 2.6.32.41-grsec #3 SMP Mon May 30 02:34:43 BST 2011 
+> >>>>>> x86_64
+> >>>>>> GNU/Linux
+> >>>>>>   root@vicky [/mnt/encstore/ssd/kernel/linux-2.6.32.41]>  for x in
+> >>>>>> `find /proc -iname 'oom_adj' | xargs grep "\-17"  | awk -F '/' 
+> >>>>>> '{print
+> >>>>>> $3}'` ; do ps -p $x --no-headers ; done
+> >>>>>> grep: /proc/3118/task/3118/oom_adj: No such file or directory
+> >>>>>> grep: /proc/3118/oom_adj: No such file or directory
+> >>>>>>    895 ?        00:00:00 udevd
+> >>>>>>    895 ?        00:00:00 udevd
+> >>>>>>   1091 ?        00:00:00 udevd
+> >>>>>>   1091 ?        00:00:00 udevd
+> >>>>>>   1092 ?        00:00:00 udevd
+> >>>>>>   1092 ?        00:00:00 udevd
+> >>>>>>   2596 ?        00:00:00 sshd
+> >>>>>>   2596 ?        00:00:00 sshd
+> >>>>>>   2608 ?        00:00:00 sshd
+> >>>>>>   2608 ?        00:00:00 sshd
+> >>>>>>   2613 ?        00:00:00 sshd
+> >>>>>>   2613 ?        00:00:00 sshd
+> >>>>>>   2614 pts/0    00:00:00 bash
+> >>>>>>   2614 pts/0    00:00:00 bash
+> >>>>>>   2620 pts/0    00:00:00 sudo
+> >>>>>>   2620 pts/0    00:00:00 sudo
+> >>>>>>   2621 pts/0    00:00:00 su
+> >>>>>>   2621 pts/0    00:00:00 su
+> >>>>>>   2622 pts/0    00:00:00 bash
+> >>>>>>   2622 pts/0    00:00:00 bash
+> >>>>>>   2685 ?        00:00:00 lxc-start
+> >>>>>>   2685 ?        00:00:00 lxc-start
+> >>>>>>   2699 ?        00:00:00 init
+> >>>>>>   2699 ?        00:00:00 init
+> >>>>>>   2939 ?        00:00:00 rc
+> >>>>>>   2939 ?        00:00:00 rc
+> >>>>>>   2942 ?        00:00:00 startpar
+> >>>>>>   2942 ?        00:00:00 startpar
+> >>>>>>   2964 ?        00:00:00 rsyslogd
+> >>>>>>   2964 ?        00:00:00 rsyslogd
+> >>>>>>   2964 ?        00:00:00 rsyslogd
+> >>>>>>   2964 ?        00:00:00 rsyslogd
+> >>>>>>   2980 ?        00:00:00 startpar
+> >>>>>>   2980 ?        00:00:00 startpar
+> >>>>>>   2981 ?        00:00:00 ctlscript.sh
+> >>>>>>   2981 ?        00:00:00 ctlscript.sh
+> >>>>>>   3016 ?        00:00:00 cron
+> >>>>>>   3016 ?        00:00:00 cron
+> >>>>>>   3025 ?        00:00:00 mysqld_safe
+> >>>>>>   3025 ?        00:00:00 mysqld_safe
+> >>>>>>   3032 ?        00:00:00 sshd
+> >>>>>>   3032 ?        00:00:00 sshd
+> >>>>>>   3097 ?        00:00:00 mysqld.bin
+> >>>>>>   3097 ?        00:00:00 mysqld.bin
+> >>>>>>   3097 ?        00:00:00 mysqld.bin
+> >>>>>>   3097 ?        00:00:00 mysqld.bin
+> >>>>>>   3097 ?        00:00:00 mysqld.bin
+> >>>>>>   3097 ?        00:00:00 mysqld.bin
+> >>>>>>   3097 ?        00:00:00 mysqld.bin
+> >>>>>>   3097 ?        00:00:00 mysqld.bin
+> >>>>>>   3097 ?        00:00:00 mysqld.bin
+> >>>>>>   3097 ?        00:00:00 mysqld.bin
+> >>>>>>   3113 ?        00:00:00 ctl.sh
+> >>>>>>   3113 ?        00:00:00 ctl.sh
+> >>>>>>   3115 ?        00:00:00 sleep
+> >>>>>>   3115 ?        00:00:00 sleep
+> >>>>>>   3116 ?        00:00:00 .memcached.bin
+> >>>>>>   3116 ?        00:00:00 .memcached.bin
+> >>>>>>
+> >>>>>>
+> >>>>>> As you can see, it is clear that the newer kernel is setting -17 by
+> >>>>>> default, which in turn is causing the OOM killer loop.
+> >>>>>>
+> >>>>>> So I began to try and find what may have caused this problem by
+> >>>>>> comparing the two sources...
+> >>>>>>
+> >>>>>> I checked the code for all references to 'oom_adj' and 
+> >>>>>> 'oom_adjust' in
+> >>>>>> both code sets, but found no obvious differences:
+> >>>>>> grep -R -e oom_adjust -e oom_adj . | sort | grep -R -e oom_adjust -e
+> >>>>>> oom_adj
+> >>>>>>
+> >>>>>> Then I checked for references to "-17" in all .c and .h files, and
+> >>>>>> found a couple of matches, but only one obvious one:
+> >>>>>> grep -R "\-17" . | grep -e ".c:" -e ".h:" -e "\-17" | wc -l
+> >>>>>> ./include/linux/oom.h:#define OOM_DISABLE (-17)
+> >>>>>>
+> >>>>>> But again, a search for OOM_DISABLE came up with nothing obvious...
+> >>>>>>
+> >>>>>> In a last ditch attempt, I did a search for all references to 'oom'
+> >>>>>> (case-insensitive) in both code bases, then compared the two:
+> >>>>>>   root@annabelle [~/lol/linux-2.6.32.28]>  grep -i -R "oom" . | 
+> >>>>>> sort -n
+> >>>>>>> /tmp/annabelle.oom_adj
+> >>>>>>   root@vicky [/mnt/encstore/ssd/kernel/linux-2.6.32.41]>  grep -i -R
+> >>>>>> "oom" . | sort -n>  /tmp/vicky.oom_adj
+> >>>>>>
+> >>>>>> and this brought back (yet again) nothing obvious..
+> >>>>>>
+> >>>>>>
+> >>>>>>   root@vicky [/mnt/encstore/ssd/kernel/linux-2.6.32.41]>  md5sum
+> >>>>>> ./include/linux/oom.h
+> >>>>>> 2a32622f6cd38299fc2801d10a9a3ea8  ./include/linux/oom.h
+> >>>>>>
+> >>>>>>   root@annabelle [~/lol/linux-2.6.32.28]>  md5sum 
+> >>>>>> ./include/linux/oom.h
+> >>>>>> 2a32622f6cd38299fc2801d10a9a3ea8  ./include/linux/oom.h
+> >>>>>>
+> >>>>>>   root@vicky [/mnt/encstore/ssd/kernel/linux-2.6.32.41]>  md5sum
+> >>>>>> ./mm/oom_kill.c
+> >>>>>> 1ef2c2bec19868d13ec66ec22033f10a  ./mm/oom_kill.c
+> >>>>>>
+> >>>>>>   root@annabelle [~/lol/linux-2.6.32.28]>  md5sum ./mm/oom_kill.c
+> >>>>>> 1ef2c2bec19868d13ec66ec22033f10a  ./mm/oom_kill.c
+> >>>>>>
+> >>>>>>
+> >>>>>>
+> >>>>>> Could anyone please shed some light as to why the default oom_adj is
+> >>>>>> set to -17 now (and where it is actually set)? From what I can tell,
+> >>>>>> the fix for this issue will either be:
+> >>>>>>
+> >>>>>>    1. Allow OOM killer to override the decision of ignoring 
+> >>>>>> oom_adj ==
+> >>>>>>       -17 if an unrecoverable loop is encountered.
+> >>>>>>    2. Change the default back to 0.
+> >>>>>>
+> >>>>>> Again, my apologies if this bug report is slightly unorthodox, or
+> >>>>>> doesn't follow usual procedure etc. I can assure you I have tried my
+> >>>>>> absolute best to give all the necessary information though.
+> >>>>>>
+> >>>>>> Cal
+> >>>>>>
+> >>>>> -- 
+> >>>>> To unsubscribe from this list: send the line "unsubscribe 
+> >>>>> linux-kernel" in
+> >>>>> the body of a message to majordomo@vger.kernel.org
+> >>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>>>> Please read the FAQ at  http://www.tux.org/lkml/
+> >>>>>
+> >>
+> >
+> 
 
-Well, to add more.
-
-It fixed most of crashes and definietl one with function graph tracer.
-
-However in 1/10 of boots I still got some kind of crash, oops or panic.
-
-I repeated 50 times a boot cycle on qemu, and got oopses in attachments.
-
-=2E..
-[    0.036201] CPU: Intel Pentium III (Katmai) stepping 03
-[    0.038551] ftrace: allocating 6263 entries in 13 pages
-[    0.050411] BUG: unable to handle kernel NULL pointer dereference at 000=
-00012
-[    0.051079] IP: [<c106a07f>] note_interrupt+0xf/0x1c0
-[    0.051743] *pdpt =3D 0000000000000000 *pde =3D f000ff53f000ff53=20
-=2E..
-CRASH
-
-
-=2E...
-[    0.035682] CPU: Intel Pentium III (Katmai) stepping 03
-[    0.038048] ftrace: allocating 6263 entries in 13 pages
-[    0.050386] BUG: unable to handle kernel paging request at 8a51553a
-[    0.051031] IP: [<c10587cd>] tick_handle_periodic+0x1d/0x90
-[    0.051705] *pdpt =3D 0000000000000000 *pde =3D f000ff53f000ff53=20
-=2E..
-CRASH
-
-=2E..
-[    1.758224] Testing tracer preemptirqsoff:=20
-[    1.772287] ------------[ cut here ]------------
-[    1.773193] WARNING: at kernel/lockdep.c:3351 check_flags+0x186/0x190()
-=2E..
-BOOTING (up to mounting root - not tested more)
-
-=2E..
-[    0.045767] CPU: Intel Pentium III (Katmai) stepping 03
-[    0.048323] ftrace: allocating 6263 entries in 13 pages
-CRASH
-
-
-Details in attachments.
-
-
-Regards,
-Witek
-
---=20
-Witold Baryluk
-
---QTprm0S8XgL7H0Dt
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="config.txt.gz"
-Content-Transfer-Encoding: base64
-
-H4sICLMr5E0CA2NvbmZpZy50eHQAlDxbb9s4l+/zK4zOArv70EnipG6yQBagKMpmLYmqSPmS
-F8HjuFNj0jif7czX/vs9JGWLpEjbW6CdMc/h7fDw3Knff/u9h973mx+L/Xq5eHn51ftr9bra
-Lvar596Pxd+r3nLz+m391//0njev/7nvrZ7Xe+iRrl/ff16tb+8Hvf4fgz9uH3rj1fZ19dLD
-Cvsd+q83r7/9DqiY5Qkd1oO7iIreetd73ex7u9X+t6Z9dj+ob/uPv1pM2TK486MCXvOD5lyU
-FRaU5XVMMItJ2QJZJYpK1AkrMyQeP6xevt32P8rVfjhgoBKPoF+ifz5+WGyX369+3g+u9HZ3
-am/18+qb/n3sNyQ5KSmuccZ4XRUxEqSdFqcMjzmrSkzqKRJ4FLNhCz12lVhkQnLBW6Bsi0lR
-86ooWClaABcIj0WJYMgObIQmpE5hCTmeC+bpnGVV++OJ5aSOM2TSOicklm11hgo5lSAeuisk
-PlR4KcmHYtTdFOWoGdsFMBi62xxVHsqMpoQOR8b61SllaK53WuA6ibG5/HLKSXbszguaSzp6
-tqARZ3g0RHFco3TISipGmTPTCPEaF1VN41QeIBWew0MpjUqgEzBPiubmYg4ogmaknvA5B9zU
-sxZrqhJGmXmWAayJqlSopfhWifAIjp7CiXL6RByW4ERURV2QUk2BSmKcizrMA4hkEfxKaMlF
-jUdVPg7gFWhIHLTjttWMgJQhPq5ZovDhyIMbpxEpc6TubcE4p1Fng7ziBcljE3yc7cDEt/3Q
-BAUrKnkneJ2DUKg19x37oyqmQiGG+jeXiNesgJME4sYga4DSNB921tlgxgTYWREJTpzhFk0L
-N7iiT/N6yN1z1Nxe4yRFAPzw8ZuUvx93i39Wzx9Xy589u+H551EIjRWLSf5ChtA7SjPgCw5S
-7+pl/efVj83z+8tqd/UfVY6gD7AbQZxc/eGINfiPFqes5A4z0fJrPWWlwRpGi5LwQ6UwXiQl
-39+gpUEjM2AfWGguUNp2jko2JnkNp8+zwhTncCwknwBp5PozuHu3/ePqSuAEWGNWUOCGDx8M
-oYnSCSk5MBPQb393+6E9aRMIxy6Y58DVBsfAjySth0+0cLbeQCKA9P2g9MmUeSZk9hTqwVqA
-PfVx6ea85qpdBDn7Kfjs6XRv5gXzqX17W8CcT2iBvbCIw30tGSZwUAhj4UVKRigHeRY6iKMa
-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
-
---QTprm0S8XgL7H0Dt
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="oops1.txt.gz"
-Content-Transfer-Encoding: base64
-
-H4sICBAq5E0CA29vcHMxLnR4dADtV1tv28YSfu+vGKAvSVMreyGXSyFJkdhOKjRpfWIHOIAh
-EKvlMmZNkSxJpXZ/fWeWutCSdY4tuG8VZJlLzjf3nf14CfhhI+Y/U3hv2g4uzo/BmiKfNabL
-qxIWbV5+hbPJxXeXd6VPXOds51KQPI5H+Aeffv4L6qayrm2rZrSWF4zHegrHK6WoLnWFuYWi
-qmp41l7nde3S5z/CN1MsHBm3i8KQ5t52l89dA1nj/li40t6ORqBkrEcyhnfV1+rT5OwcnhX1
-76/JD/yy5wPLUcSnUOdpMjc3YzSbmUXRjUGKSGmY52U+X8xxyfgGI1kgp/CpWpTdkTX2ysGV
-aa+gM7PCgSu7JnftGEIu1hCpMEQM8OzLGCZl5wo4Q7l8MYfJZALPfjHd3OTPoe1cXVNATG6g
-OgwRmnWNsW4Mpigq26dICSVX5iAvgUuozVfXrqEhCzhC3335MIZF6b3rKvS1TPHq2jUl+vHr
-l48foa5ydKrB6BuX4V9pHZgO+joOwgg5i+IpTM7GcPnKcqYMi7I3UyirziVeRbOouxfsJnvJ
-brhlA2BEKfuhTusOXi8Vbz70wOH9DK+zLJSr/7BRIDiF8ltVY2Y95PJ7XJ99Pj39dHYxlAsC
-NR2uVRChXJ4i7Eew1RyL2f5psJ8a+LXqsGjkN7boCKWPGsuPukC+gO85w96xV23/O9AXx8EU
-TikFjCk2vpOH0/cf3344Hy/ji0Vf8EEapBDaoyFvKcP/P3EyEBjn6dv/jtdZg9N3uLJchqFW
-uDrePONwejJ4NlCjNLl9PhmqOZmQqGBh6JViSDbSGEmsUXK9iuxATSwwm3DiY4xmKLa8eL+M
-Glbhw7m/UHoDDniIPpz1239dhGf1sjZd/poMKgJ3pr1+Ta5xGfSrET3mPDP4+PlAZ0B9dd4Z
-ez0e3A01Jq2PlLtwE/I6aeuw13cGMqtHPvw02OgNeYhjDajiWkfBJuv+jpFyibF6+ShQQ5mN
-JR4aMahOqLRa+Uuia192wf2F0dtuOr1yYlAuJaTyY7WACz8+Bo9kjDt5uY0pGGzffjIkefNH
-4r7hYEmwPrZeYFvOAuxLEQxcVkpGGzyGjvifdjQgVEqEDlsROzEeIu09lglnt3ARC/UaZ2aS
-eYsEaV2X2Ku8TlBL0qtqktLMHaoJ2Ev6GaiRNInXavTAfIG2C3ICcSGZT4c4pQTiXk0+/+fN
-YL5EWrKlOh5lQmTeq7RKUI6ioA0dhxt5zfggCqb7KHbmAGfbg0ALGmyHAAMVbzzkynkgTcKq
-vAMVDqFy0O5aaXmYSR2LATDK7gfuDLuYrZuSSxz4xuOSxFb1bdJVyaLFwhYFldUgNhtCJZcH
-mQw3fRxncaaXJpGlzFzSH5LJn03eUTNJjXA9REdq3UwcT0ezqn5/XCfzKkXnU8JG5DGXQ3Ac
-6wNcVj25WhmVqje6sZhntyujIRmN9mID4e5gzbVLyqpe98IeYBQo0wMvRlpKsuPuluOO+IGx
-8Sg2WT9W2speo2NJVbuSykCovb5Fs3jtG6fExyQe3i8vcUfM1DAJyPh8U8seJvfAVKxDDzMF
-hlMiI/tG2LZrFpZYcUt+0saQYo8GqeWsj64zTbdsNUp9RMkUOt6Hk8563LI5Vw7z2Uv/uw/G
-VNRPTKlVsmVTRTRs023oMXbRGFkZ8BRPF8AzhuGBlgGnIwr0DCJcWtAhZArwPDQM3AxsCjql
-pVBeLIWZBRGBP8+W3zAEHQMezRoprAVuaRmmkAV0EaFC7S/wjoVX0r3xIL60jNYCgZwcmJey
-Ef2m0l87QouAFGcx0GGawXZcpw9msERjkAt5JjPe4UOrNH0W4y1Oy3eqfnR0dIlsPQXfZhA4
-Y4TRymgnUiMETFFgG/NLz9FrU+YWjshJaG9Li+R/jK9inSnA3VhX+7ewnL5L/7f13E9/L3rq
-O4YP4D8n/neXCO+Eew+fuLtxjVOUVO83dZfyW+n+hmb4cqBoK+GrXptggl7QgYkAs29sRSYN
-fMlwymEAN1QuSwTF7UXMNM31JJmZNDGNMzhMWjc39VXV0JiMaa7zYC/cBrR19oA57R2xD6uZ
-pnGERwK9myX+7ZI2uaLxIuM9sDAzii1PooKGX+MKZ1p/jvjTdl9yBE/Dfi61+F6aLogJdbm9
-9hMt/B9IHjnDeiT2UNWsTxDyUwX7MuNE7+Z83oeWeLC3xrbOu6dBej8po3e9TP8RLw89lQ8g
-1Fv4RxDqHeQDCfVWpIcS6m01DyXUK1xPqB9MoLfr82BS+iTAxxHoJ/P1IPr0OAL9JH3/aAK9
-xUcfR6CfxOV/CfS/BPoJCfTx57fnP3/3N/ENN8k2FwAA
-
---QTprm0S8XgL7H0Dt
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="oops2.txt.gz"
-Content-Transfer-Encoding: base64
-
-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
-/g8l/3+j5KcfXl/+8NV/AYThf9PEFwAA
-
---QTprm0S8XgL7H0Dt
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="oops3.txt.gz"
-Content-Transfer-Encoding: base64
-
-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
-AAA=
-
---QTprm0S8XgL7H0Dt
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="oops4.txt.gz"
-Content-Transfer-Encoding: base64
-
-H4sICDIq5E0CA29vcHM0LnR4dACFkM1OwzAQhO99ijm2EkRJTNM2EgcofxGqqCicqghtnW1r
-cGITOwh4elwQVHBhbpZn5tvdJYLiKP5UicP/1Fv+DtycnZ/eX+ZwrNeenYcl57j6a7ug8HW3
-mEKSVquWvDINOqeaDebF3V/3GXuWniuIZDKJ0kRgdvUO2xrJzpk2+vGLOBhKTL9LQ13Fmt6g
-jbHouydlLVeDA7yQ7ngHl52mXfMX26uaW6xbfu64kW9RhExMxtFRilOzMbNivkBf28fj3Rxh
-jHiwJyfJaFTCquqhptc8YNfUaZ9DpKNsjFo1qu7q8IyTfUYMh1mJmekafyhJbhlbclt4WmkG
-N75V7HIMk/QncjQcZQEznd/nKBrPGvPgU12NoijQvyZfkxrAebZ2t1As9tGxSEWJtW9Jcg7S
-2sivE2VpJr5xUA3CfS1t2PWmtyeLq94HLeH8+BMCAAA=
-
---QTprm0S8XgL7H0Dt
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="oops5.txt.gz"
-Content-Transfer-Encoding: base64
-
-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
-
---QTprm0S8XgL7H0Dt
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="oops6.txt.gz"
-Content-Transfer-Encoding: base64
-
-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
-
---QTprm0S8XgL7H0Dt--
-
---=_smp.if.uj.edu.pl-29466-1306799215-0001-2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk3kLG4ACgkQ7ZLFFOttZ4Ju8wCdE9AOVEZDpVg3nEjS+kGvJyf5
-HHgAoL5mFAUO6zXX10en4VAN2qWtVIkd
-=yhuh
------END PGP SIGNATURE-----
-
---=_smp.if.uj.edu.pl-29466-1306799215-0001-2--
