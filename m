@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab1E3HGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 03:06:18 -0400
-Received: from mga14.intel.com ([143.182.124.37]:1788 "EHLO mga14.intel.com"
+	id S1754590Ab1E3HLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 03:11:21 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40958 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752729Ab1E3HGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 03:06:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,290,1304319600"; 
-   d="scan'208";a="3840065"
-Subject: Re: [PATCH 2/3] introduce intel_rapl driver
-From: Zhang Rui <rui.zhang@intel.com>
-To: Greg KH <greg@kroah.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@lists.linux-foundation.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "mingo@elte.hu" <mingo@elte.hu>, "acme@redhat.com" <acme@redhat.com>,
-        "Lin, Ming M" <ming.m.lin@intel.com>, "Brown, Len" <lenb@kernel.org>
-In-Reply-To: <20110528101757.GA32493@kroah.com>
-References: <1306398857.2207.157.camel@rui>
-	 <20110528101757.GA32493@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 30 May 2011 15:04:20 +0800
-Message-ID: <1306739060.32738.245.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751949Ab1E3HLU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 03:11:20 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: david@lang.hm
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+Date: Mon, 30 May 2011 09:13:27 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: "D. Jansen" <d.g.jansen@googlemail.com>, Theodore Tso <tytso@mit.edu>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
+References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com> <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm>
+In-Reply-To: <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201105300913.27971.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Greg,
-
-On Sat, 2011-05-28 at 18:17 +0800, Greg KH wrote:
-> On Thu, May 26, 2011 at 04:34:17PM +0800, Zhang Rui wrote:
-> > +/*
-> > + *  Intel RAPL interface driver
-> > + *
-> > + *  Copyright (C) 2010-2011 Zhang Rui <rui.zhang@intel.com>
-> > + *
-> > + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> > + *
-> > + *  This program is free software; you can redistribute it and/or modify
-> > + *  it under the terms of the GNU General Public License as published by
-> > + *  the Free Software Foundation; either version 2 of the License, or (at
-> > + *  your option) any later version.
+Am Montag, 30. Mai 2011, 03:53:18 schrieb david@lang.hm:
+> > So what if we would queue the fsyncs along with the writes - we would
+> > just fsync later instead of immediately, in between the writes as they
+> > came in. Then by design previous data could not be corrupted, right?
+> > We would do exactly the same thing, just later.
+> > It'd be kind of a disk write time distortion field.
 > 
-> Are you really sure about "any later version"?  I didn't think that was
-> the default rule of Intel kernel code these days, have you verified this
-> exception is ok?
+> the problem is that the spec for fsync says that your program stops until 
+> fsync finishes. If you don't do that then you will corrupt and loose data.
+
+It is important to be precise.
+You will loose data, but you will not get corruption.
+
+> so if you delay fsync you will have your application (or desktop manager) 
+> freeze until the fsync completes.
 > 
-Sorry, I overlooked this problem and just did the copy & paste from
-another driver. It won't happen again.
+> if what you are wanting is the ability to say 'these things must be 
+> written before these other things to keep them from being corrupted, but I 
+> don't care when they get written (or if they get lost in a crash)' then 
+> what you want isn't fsync, it's a barrier.
 
-thanks,
-rui
+Yes, but where is the problem?
 
-> > + *
-> > + *  This program is distributed in the hope that it will be useful, but
-> > + *  WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> > + *  General Public License for more details.
-> > + *
-> > + *  You should have received a copy of the GNU General Public License along
-> > + *  with this program; if not, write to the Free Software Foundation, Inc.,
-> > + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-> 
-> These two paragraphs are not needed, and the last one is never needed
-> unless you want to track the office movements of the FSF for the next
-> 50+ years and always update this file because of that.
-> 
-> greg k-h
-
-
+	Regards
+		Oliver
+-- 
+- - - 
+SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
+Maxfeldstraße 5                         
+90409 Nürnberg 
+Germany 
+- - - 
