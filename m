@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757384Ab1E3Ovs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 10:51:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58151 "EHLO mx2.suse.de"
+	id S1757366Ab1E3OvO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 10:51:14 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57942 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757297Ab1E3OvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 10:51:07 -0400
+	id S1757333Ab1E3OvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 10:51:11 -0400
 From: Michal Marek <mmarek@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] kbuild: Fix <linux/version.h> for X.Y versions
-Date: Mon, 30 May 2011 16:50:50 +0200
-Message-Id: <1306767052-15593-3-git-send-email-mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH 3/4] perf: Use make kernelversion instead of parsing the Makefile
+Date: Mon, 30 May 2011 16:50:51 +0200
+Message-Id: <1306767052-15593-4-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1306767052-15593-1-git-send-email-mmarek@suse.cz>
 References: <1306767052-15593-1-git-send-email-mmarek@suse.cz>
@@ -19,28 +22,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-expr treats all numbers as decimals, so prepending a zero is safe. Note
-that the KERNEL_VERSION() macro still takes three arguments, 3.0 has to be
-written as KERNEL_VERSION(3,0,0).
-
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/PERF-VERSION-GEN |    7 +------
+ 1 files changed, 1 insertions(+), 6 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index c706ae1..130e282 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1005,7 +1005,7 @@ endef
+diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
+index 26d4d3f..9c5fb4d 100755
+--- a/tools/perf/util/PERF-VERSION-GEN
++++ b/tools/perf/util/PERF-VERSION-GEN
+@@ -23,12 +23,7 @@ if test -d ../../.git -o -f ../../.git &&
+ then
+ 	VN=$(echo "$VN" | sed -e 's/-/./g');
+ else
+-	eval $(grep '^VERSION[[:space:]]*=' ../../Makefile|tr -d ' ')
+-	eval $(grep '^PATCHLEVEL[[:space:]]*=' ../../Makefile|tr -d ' ')
+-	eval $(grep '^SUBLEVEL[[:space:]]*=' ../../Makefile|tr -d ' ')
+-	eval $(grep '^EXTRAVERSION[[:space:]]*=' ../../Makefile|tr -d ' ')
+-
+-	VN="${VERSION}.${PATCHLEVEL}.${SUBLEVEL}${EXTRAVERSION}"
++	VN=$(make -sC ../.. kernelversion)
+ fi
  
- define filechk_version.h
- 	(echo \#define LINUX_VERSION_CODE $(shell                             \
--	expr $(VERSION) \* 65536 + $(PATCHLEVEL) \* 256 + $(SUBLEVEL));     \
-+	expr $(VERSION) \* 65536 + $(PATCHLEVEL) \* 256 + 0$(SUBLEVEL));    \
- 	echo '#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))';)
- endef
- 
+ VN=$(expr "$VN" : v*'\(.*\)')
 -- 
 1.7.4.1
 
