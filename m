@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757027Ab1E3PCC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 11:02:02 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39887
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751355Ab1E3PCB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 11:02:01 -0400
-Subject: [PATCH] perf, cgroup: Fix up for new API
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Stephane Eranian <eranian@gmail.com>, Ben Blum <bblum@andrew.cmu.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 30 May 2011 17:00:51 +0200
-Message-ID: <1306767651.1200.2990.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755579Ab1E3PHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 11:07:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:62354 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab1E3PHx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 11:07:53 -0400
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=XYJHFtupD_QA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=HCBNgsfdGUPPDC8Y-sQA:9 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Mon, 30 May 2011 11:07:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.0-rc1
+Message-ID: <20110530150750.GD10792@home.goodmis.org>
+References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
+ <201105300359.28515.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105300359.28515.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: perf, cgroup: Fix up for new API
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon May 30 16:48:06 CEST 2011
+On Mon, May 30, 2011 at 03:59:28AM +0200, Rafael J. Wysocki wrote:
+> > 
+> > So no ABI changes, no API changes,
+> 
+> Well, actually there is one. ;-)  The shutdown/suspend/resume callbacks have
+> been removed from struct sysdev_class and struct sysdev_driver.
 
-Ben changed the API but forgot to convert everybody...
+And there's another one. The function tracer now allows different users
+to pick different functions to trace! We don't actually have any true
+users of that yet (perf will be the first, hopefully in 3.1), but it is
+a new feature.
 
-Cc: Ben Blum <bblum@andrew.cmu.edu>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/events/core.c |   22 ++++------------------
- 1 file changed, 4 insertions(+), 18 deletions(-)
+> 
+> Not that this is important to anyone except for the 10 people or so who care,
+> but still. :-)
 
-Index: linux-2.6/kernel/events/core.c
-===================================================================
---- linux-2.6.orig/kernel/events/core.c
-+++ linux-2.6/kernel/events/core.c
-@@ -7394,26 +7394,12 @@ static int __perf_cgroup_move(void *info
- 	return 0;
- }
- 
--static void perf_cgroup_move(struct task_struct *task)
-+static void
-+perf_cgroup_attach_task(struct cgroup *cgrp, struct task_struct *task)
- {
- 	task_function_call(task, __perf_cgroup_move, task);
- }
- 
--static void perf_cgroup_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
--		struct cgroup *old_cgrp, struct task_struct *task,
--		bool threadgroup)
--{
--	perf_cgroup_move(task);
--	if (threadgroup) {
--		struct task_struct *c;
--		rcu_read_lock();
--		list_for_each_entry_rcu(c, &task->thread_group, thread_group) {
--			perf_cgroup_move(c);
--		}
--		rcu_read_unlock();
--	}
--}
--
- static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 		struct cgroup *old_cgrp, struct task_struct *task)
- {
-@@ -7425,7 +7411,7 @@ static void perf_cgroup_exit(struct cgro
- 	if (!(task->flags & PF_EXITING))
- 		return;
- 
--	perf_cgroup_move(task);
-+	perf_cgroup_attach_task(cgrp, task);
- }
- 
- struct cgroup_subsys perf_subsys = {
-@@ -7434,6 +7420,6 @@ struct cgroup_subsys perf_subsys = {
- 	.create		= perf_cgroup_create,
- 	.destroy	= perf_cgroup_destroy,
- 	.exit		= perf_cgroup_exit,
--	.attach		= perf_cgroup_attach,
-+	.attach_task	= perf_cgroup_attach_task,
- };
- #endif /* CONFIG_CGROUP_PERF */
+I think you have 9 more people that care about your change than mine ;)
 
+-- Steve
