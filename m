@@ -1,60 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab1E3Cse (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 22:48:34 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:53040 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752085Ab1E3Csd (ORCPT
+	id S1753821Ab1E3Cwe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 22:52:34 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60545 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224Ab1E3Cwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 22:48:33 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18VD5Qs9ZEVH4VqOcLZ3wWj+adYUafhbmuq/ZC103
-	h7squ7t9IKY1Hh
-Subject: Re: recursive fault in 2.6.35.5
-From: Mike Galbraith <efault@gmx.de>
-To: Whit Blauvelt <whit@transpect.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20110529162738.GA7832@black.transpect.com>
-References: <20110529162738.GA7832@black.transpect.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 30 May 2011 04:48:29 +0200
-Message-ID: <1306723709.4895.4.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Sun, 29 May 2011 22:52:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=xZZa7aR57pqJqvYc+DU+JyOW79uVlimPXUzQJ5f/XYF0LG317KOJgsrP8dkfWsS4LZ
+         VVKO13Odip8P4YfMIy7JF3eI6rWBihoCCjUhdZofu6WoNNW3WRQokPcVy82E53VUIR1a
+         qZUizeyYM49faVmp7PMRrQiWtFlJux4DIkB8s=
+Message-ID: <4DE305FD.4040503@samsung.com>
+Date: Sun, 29 May 2011 19:50:37 -0700
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Kyungmin Park <kmpark@infradead.org>
+CC: Randy Dunlap <rdunlap@xenotime.net>, lkml <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: gpio: gpio-exynos4 build fails in mainline
+References: <20110529083032.d3d16059.randy.dunlap@oracle.com> <20110529083520.41730250.randy.dunlap@oracle.com> <20110529084000.68a6351a.randy.dunlap@oracle.com> <20110529084440.a4803072.rdunlap@xenotime.net> <BANLkTinhXj51dzCnnXhxrCLeW1qQES6CvA@mail.gmail.com>
+In-Reply-To: <BANLkTinhXj51dzCnnXhxrCLeW1qQES6CvA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-05-29 at 12:27 -0400, Whit Blauvelt wrote:
+On 05/29/11 18:24, Kyungmin Park wrote:
+> On Mon, May 30, 2011 at 12:44 AM, Randy Dunlap<rdunlap@xenotime.net>  wrote:
+>> On Sun, 29 May 2011 08:40:00 -0700 Randy Dunlap wrote:
+
+(snip)
+
+>>
+>> drivers/gpio/gpio-s5pv210.c:17:11: error: unable to open 'plat/gpio-core.h'
+>
+Hi all,
+
+Grrr, :(
+
 > Hi,
-> 
-> This isn't a most-recent kernel, so we should upgrade the systems with it,
-> but it could also be useful to know why the fault occurred. If someone here
-> can easily decode the final messages when the system froze....
-> 
-> This is vanilla 2.6.35.5, built from source, running with Ubuntu Server
-> 10.04.2. Two similar systems have been running stably for months, then
-> yesterday and today both froze up - one twice. On the one where I was able
-> to get a remote console before rebooting the final messages are in a screen
-> capture at
-> 
-> http://www.transpect.com/jpg/sb2crash.jpg
-> 
-> The final lines are
-> 
-> [3521437.065988] RIP  [<ffffffff81054ddc>] set_next_entity+0xc/0xa0
-> [3521437.065993]  RSP <ffff8801b60b1748>
-> [3521437.065994] CR2: 0000000000000038
-> [3521437.065997] ---[ end trace 5a40c5f226029029 ]---
-> [3521437.065999] Fixing recursive fault but reboot is needed!
-> 
-> These are basically file servers running NFS, samba, and some Python. I know
-> there are recent improvements to the kernel's NFS functions. Does this point
-> in that direction as the cause of the recursive fault?
+>
+> Right, now it's just moved from mach directories to drivers/gpio
+> So it requires the proper depends on each ARCH_CPU.
+>
+Please add me in Cc on this.
 
-No, you've been bitten by an annoyingly elusive load balancing bug.
+> ---
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 5923976..655babf 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -88,24 +88,28 @@ config GPIO_IT8761E
+>
+>   config GPIO_EXYNOS4
+>          bool "Samsung Exynos4 GPIO library support"
+> +       depends on CPU_EXYNOS4210
+>          default y if CPU_EXYNOS4210
+>          help
+>            Say yes here to support Samsung Exynos4 series SoCs GPIO library
 
-	-Mike
+Basically, GPIO_EXYNOS4 is used only for EXYNOS4(EXYNOS4210) and was 
+selected as a default on EXYNOS4 before moving into drivers/. I mean, do 
+we really need to select this manually in kernel configuration(like make 
+menuconfig)?
 
+And I think, it's more reasonable that depends on ARCH_XXX not CPU_XXX.
+
+Grant, how about following?
+
++config GPIO_EXYNOS4
++ 	bool
++	depends on ARCH_EXYNOS4
++	default y if CPU_EXYNOS4210
+
+>
+>   config GPIO_PLAT_SAMSUNG
+>          bool "Samsung SoCs GPIO library support"
+> +       depends on SAMSUNG_GPIOLIB_4BIT
+>          default y if SAMSUNG_GPIOLIB_4BIT
+>          help
+>            Say yes here to support Samsung SoCs GPIO library
+>
+Same as above.
+
++config GPIO_PLAT_SAMSUNG
++	bool
++	depends on PLAT_SAMSUNG
++	default y if SAMSUNG_GPIOLIB_4BIT
+
+>   config GPIO_S5PC100
+>          bool "Samsung S5PC100 GPIO library support"
+> +       depends on CPU_S5PC100
+>          default y if CPU_S5PC100
+>          help
+>            Say yes here to support Samsung S5PC100 SoCs GPIO library
+>
+Same...
+
++config GPIO_S5PC100
++	bool
++	depends on ARCH_S5PC100
++	default y if CPU_S5PC100
+
+>   config GPIO_S5PV210
+>          bool "Samsung S5PV210/S5PC110 GPIO library support"
+> +       depends on CPU_S5PV210
+>          default y if CPU_S5PV210
+>          help
+>            Say yes here to support Samsung S5PV210/S5PC110 SoCs GPIO library
+>
+Same.
+
++config GPIO_S5PV210
++	bool
++	depends on ARCH_S5PV210
++	default y if CPU_S5PV210
+
+One more, IMHO, would be better if they could not split like following.
+As you know, 'PLAT_SAMSUNG' includes common GPIOlib for other Samsung SoCs.
+
+config GPIO_PLAT_SAMSUNG
+...
+config GPIO_S5PC100
+...
+config GPIO_S5PV210
+...
+config GPIO_EXYNOS4
+...
+
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
