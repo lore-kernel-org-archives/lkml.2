@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab1E3BhE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 21:37:04 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:50220 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751920Ab1E3BhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 21:37:03 -0400
-Date: Mon, 30 May 2011 11:36:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: linux-next: build warninga in Linus' tree
-Message-Id: <20110530113653.5c7084f0.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__30_May_2011_11_36_53_+1000_o8uk4EXqcJcBbuII"
+	id S1752883Ab1E3BiM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 21:38:12 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:44984 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab1E3BiL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 21:38:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:content-type
+         :content-transfer-encoding;
+        b=T21R1kCfDOdHoM296D3EcW3UUGguyi7VluvfRXe/hxmLx4irtDqtV2ShCq3/kDJ7d9
+         mezSExaTdouwWiyFGv9UDqRE+1++1j7AgulHa8us1UaWtw4U1/o0nzIBv9xrGtLIaUpZ
+         OgP34mcii72/cecTUL9iNp3Sog8SKCqzsC3NM=
+MIME-Version: 1.0
+In-Reply-To: <20110529203402.GB1192@liondog.tnic>
+References: <cover.1306517576.git.luto@mit.edu> <80895427afdff1cb56c7f02d567f92ce2e1fa9d8.1306517576.git.luto@mit.edu>
+ <20110529203402.GB1192@liondog.tnic>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sun, 29 May 2011 21:37:50 -0400
+X-Google-Sender-Auth: VINhta2fMr9Bx3VTizenIRMK2_8
+Message-ID: <BANLkTimsB8Q3bxVc5SY9Rk4ecZYWTnqNmg@mail.gmail.com>
+Subject: Re: [PATCH 2/5] x86-64: Give vvars their own page
+To: Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@mit.edu>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__30_May_2011_11_36_53_+1000_o8uk4EXqcJcBbuII
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, May 29, 2011 at 4:34 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, May 27, 2011 at 01:38:39PM -0400, Andy Lutomirski wrote:
+>> Move vvars out of the vsyscall page into their own page and mark it
+>> NX.
+>>
+>> Without this patch, an attacker who can force a daemon to call some
+>> fixed address could wait until the time contains, say, 0xCD80, and
+>> then execute the current time.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@mit.edu>
+>> ---
+>>  arch/x86/include/asm/fixmap.h        |    1 +
+>>  arch/x86/include/asm/pgtable_types.h |    2 ++
+>>  arch/x86/include/asm/vvar.h          |   22 ++++++++++------------
+>>  arch/x86/kernel/vmlinux.lds.S        |   27 ++++++++++++++++-----------
+>>  arch/x86/kernel/vsyscall_64.c        |    5 +++++
+>>  tools/power/x86/turbostat/turbostat  |  Bin 0 -> 29200 bytes
+>
+> You've added the turbostat binary to the diffstat too. I believe this
+> wasn't your intention, no? :)
 
-Hi all,
+Foiled again!
 
-After merging the Linus' tree, today's linux-next build (powerpc
-ppc64_defconfig) produced these warnings:
-
-fs/btrfs/sysfs.c:76:26: warning: 'btrfs_root_attrs' defined but not used
-fs/btrfs/sysfs.c:97:26: warning: 'btrfs_super_attrs' defined but not used
-fs/btrfs/sysfs.c:153:13: warning: 'btrfs_super_release' defined but not used
-fs/btrfs/sysfs.c:160:13: warning: 'btrfs_root_release' defined but not used
-
-I have started using gcc v4.5.2 (instead of v4.4.4) if that makes a
-difference.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__30_May_2011_11_36_53_+1000_o8uk4EXqcJcBbuII
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN4vS1AAoJEDMEi1NhKgbsj4cH/3Yhe1Yj2R3f9JVd+hvJOP+P
-Uddnm7QkcbUOOJfUOZPI2gZJWX0ph3sjNLOkyZk4l3hmxiu/yaSKKE4brC2ZldyE
-1uHUhGz43HsUc6HtOKF1j/K3cG9F3bigvt6zLKlwEY6OWGV6dGIs+RCf8WGt1wbQ
-PUB7mdS3mh5nKHW3fI+H4saNJ71H/enzUhRJ2ZLsWYCqyri1gQZkMcxUpCangoHj
-+0D2MbegjpFq2F9HHsWoHn9Q4DNFKxHPGZBlH2E+QhfGZCnJ48BpzGd7pCDu54nW
-EFhvgf+cRjOVuzDOMNPB+ijifIylzwn6blWAIKwAiWLPgnzNTjK5SmFM9WaSszs=
-=luuw
------END PGP SIGNATURE-----
-
---Signature=_Mon__30_May_2011_11_36_53_+1000_o8uk4EXqcJcBbuII--
+--Andy
