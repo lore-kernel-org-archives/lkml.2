@@ -1,117 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab1E3VQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 17:16:11 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:39229 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752784Ab1E3VQJ convert rfc822-to-8bit (ORCPT
+	id S1755608Ab1E3VYq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 17:24:46 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33760 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753993Ab1E3VYo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 17:16:09 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=D2DbVVJvq5inw7oWoCiDfq/tRqtCjANMW7aZVN/SwjfMoEC76F0PstCaZpAQThKzO3HynJVdx2Wu4AveBAMknIPg6kaXMFXJEMM7LI/0zujzXVpS3XP9wjcyQXTp9dl/;
-Date: Mon, 30 May 2011 14:16:06 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, David Woodhouse <dwmw2@infradead.org>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
-Message-Id: <20110530141606.a92f8b21.rdunlap@xenotime.net>
-In-Reply-To: <BANLkTik36rFNDqAorY9gn2_mDPMmP_Y=iw@mail.gmail.com>
-References: <1306707270.2029.377.camel@i7.infradead.org>
-	<201105301305.59166.arnd@arndb.de>
-	<20110530102731.fa9fbc4a.rdunlap@xenotime.net>
-	<201105302040.55509.arnd@arndb.de>
-	<BANLkTik36rFNDqAorY9gn2_mDPMmP_Y=iw@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 30 May 2011 17:24:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=SUP6JnLmlJsF3vDYe3oo+knlChYuMP3yGFOuCFS8tKxKWpKVV+u2KiXg1gj4gvCmI7
+         teffqZn5y1Q7a52hfpz+HPgJKUWH84mu/T9yy8ae9fH3AzB8MK89PApGxweIp8TzdZxa
+         K0Clyf+UDU8MAKRS6+/oQJqC4W2B3zlcqbWm0=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1105301349530.5766@asgard.lang.hm>
+References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
+ <201105231012.06928.oneukum@suse.de> <20110525000003.GJ32466@dastard>
+ <201105250850.12179.oneukum@suse.de> <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com>
+ <410B37BE-E380-40D0-82AA-48B56F389E16@mit.edu> <BANLkTimNjt4=9v33Z9Nr12xa6GmyJ-Ue5A@mail.gmail.com>
+ <20110526133155.GH9520@thunk.org> <BANLkTinTzNN2P45tgZAQ9FsL43CqyAJR3Q@mail.gmail.com>
+ <20110526162138.GN9520@thunk.org> <BANLkTinPCcX9-gK7YnMngGUJKftRTmYXNw@mail.gmail.com>
+ <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu> <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm> <BANLkTik69Gb2i1467bhnEU-pJ0WB10mqNQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105301058030.5766@asgard.lang.hm> <BANLkTimtY0ggu28i-9VzWOO1=puZ0JvcAQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105301142030.5766@asgard.lang.hm> <BANLkTimuToT90eRGVRfN9tAHoF9GOSRRDA@mail.gmail.com>
+ <alpine.DEB.2.02.1105301349530.5766@asgard.lang.hm>
+From: "D. Jansen" <d.g.jansen@googlemail.com>
+Date: Mon, 30 May 2011 23:24:03 +0200
+Message-ID: <BANLkTimSLoY3uwtGvA2x5C0HhNEHvmWqzw@mail.gmail.com>
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+To: david@lang.hm
+Cc: Theodore Tso <tytso@mit.edu>, Oliver Neukum <oneukum@suse.de>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 May 2011 16:30:14 -0400 Arnaud Lacombe wrote:
+On Mon, May 30, 2011 at 10:53 PM,  <david@lang.hm> wrote:
+> On Mon, 30 May 2011, D. Jansen wrote:
+>
+>> On Mon, May 30, 2011 at 8:45 PM, Â <david@lang.hm> wrote:
+>>>
+>>>
+>>> the problem is that most users don't know what their system is running,
+>>> or
+>>> what effect disaling fsync would have. those that do can probably use
+>>> LD_PRELOAD to override fsync calls.
+>>
+>> As we found out, they can't. But if we export barrier, I hope a
+>> library could wrap fsyncs into barriers. Is that the case?
+>
+> a library can wrap fsync into anything.
+>
+>>>
+>>> it doesn't take running a mail server, even a mail client will have the
+>>> same
+>>> risk. If you use POP for mail (a very common option) then you download
+>>> messages and tell the server to delete them. if you do not really save
+>>> them
+>>> (one fsync after they are all saved), then you can loose everything that
+>>> you
+>>> downloaded.
+>>
+>> Yes, I know. It's the same argument again and again. I understand not
+>> everybody wants this. But some do. Some prefer working 10-20% longer
+>> on battery (certainty) instead of possibly losing 5 % data
+>> (possibility) or losing all your data (possibility if you use laptop
+>> mode and the hard disk wakes up again and again and eventually wears
+>> out).
+>
+> those are some powerful numbers you are throwing around, can you back them
+> up?
 
-> Hi,
-> 
-> On Mon, May 30, 2011 at 2:40 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Monday 30 May 2011 19:27:31 Randy Dunlap wrote:
-> >> On Mon, 30 May 2011 13:05:58 +0200 Arnd Bergmann wrote:
-> >>
-> >> Ingo recently wrote:
-> >> | When it wont boot straight away (often it does) i use a
-> >> | Kconfig-needed set of minimal set of configs that enables the minimal
-> >> | hardware environment.
-> >>
-> >> which I believe is the same method that is documented in
-> >> Documentation/kbuild/kconfig.txt, subject "KCONFIG_ALLCONFIG": (partial text)
-> >>
-> >> This enables you to create "miniature" config (miniconfig) or custom
-> >> config files containing just the config symbols that you are interested
-> >> in.  Then the kernel config system generates the full .config file,
-> >> including symbols of your miniconfig file.
-> >>
-> >> This 'KCONFIG_ALLCONFIG' file is a config file which contains
-> >> (usually a subset of all) preset config symbols.  These variable
-> >> settings are still subject to normal dependency checks.
-> >>
-> >
-> > Very nice, I didn't know about it. Unfortunately, this seems to
-> > suffer from the same problem as the generic "randconfig" -- it
-> > ignores all "choice" statements and just uses the default:
-> >
-> > Try for instance
-> >
-> > KCONFIG_ALLCONFIG=arch/arm/configs/omap2plus_defconfig make \
-> >        O=obj-allmod/ allnoconfig ARCH=arm
-> >
-> > This is supposed to set CONFIG_ARCH_OMAP, but it instead chooses
-> > CONFIG_ARCH_VERSATILE, which means it's still useless for me.
-> >
-> hum...
-> 
-> % git describe
-> v2.6.39
-> 
-> % KCONFIG_ALLCONFIG=arch/arm/configs/omap2plus_defconfig make ARCH=arm
-> allnoconfig
-> scripts/kconfig/conf --allnoconfig Kconfig
-> arch/arm/configs/omap2plus_defconfig:92:warning: symbol value 'm'
-> invalid for BT_L2CAP
-> arch/arm/configs/omap2plus_defconfig:93:warning: symbol value 'm'
-> invalid for BT_SCO
-> warning: (ARCH_STMP3XXX && ARCH_OMAP3 && ARCH_OMAP4) selects
-> USB_ARCH_HAS_EHCI which has unmet direct dependencies (USB_SUPPORT)
-> warning: (ARCH_OMAP4) selects PL310_ERRATA_588369 which has unmet
-> direct dependencies (CACHE_L2X0)
-> warning: (ARCH_OMAP4) selects PL310_ERRATA_727915 which has unmet
-> direct dependencies (CACHE_L2X0)
-> #
-> # configuration written to .config
-> #
-> 
-> % grep CONFIG_ARCH_OMAP .config
-> CONFIG_ARCH_OMAP=y
-> # CONFIG_ARCH_OMAP1 is not set
-> CONFIG_ARCH_OMAP2PLUS=y
-> # CONFIG_ARCH_OMAP2PLUS_TYPICAL is not set
-> CONFIG_ARCH_OMAP2=y
-> CONFIG_ARCH_OMAP3=y
-> CONFIG_ARCH_OMAP4=y
-> 
-> did I missed something ?
-> 
->  - Arnaud
+Yes. My netbook uses 4.8 W with hard disk off. 0.5 W more with hard
+disk on. A lot of the time, the display is off and the power
+consumption drops to about 3.5 W. I don't know how I got to 20 % atm.
+I can only do this if fsync is disabled. I tried before, but it would
+go on for every write. It died, very prematurely.
+>
+> do you really have so many fsync's going on that the disk spins up so much
+> that you would gain 10-20% battery life?
 
-Hey Arnaud,
+Yes. Every autosave in LibreOffice triggers one. And I want autosave,
+but I want them in memory, not on disk.
+>
+> and what makes you think the extra spin-ups from fsyncs will cause your hard
+> drive to fail significantly earlier? (if you have a hard drive with a
+> limited number of spin-up cycles, you probably don't want to use laptop mode
+> at all)
 
-Thanks.  I thought that I recalled some efforts being made in this area
-and I checked my email folder but not git logs...
+Experience, see above. Also, this is well described behavior. All hard
+disks are only designed to last a certain number of head loads and
+unloads. Spinning up and down even less.
+>
+> why do you think it's a possibility of loosing only 5% of data?
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Well, it really depends on the way your configure laptop mode. But in
+my case the laptop mode window is 20 minutes, the run time then is
+about 10-12 hrs. I can actually lose less than 5 % of the data created
+during the battery run time. It's a certain 1-1.5 hours (10-15 %) more
+work or a possible 20 mins (3.3 % actually) loss of work. I think it's
+a good deal.
