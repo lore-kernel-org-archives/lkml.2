@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757858Ab1E3URW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 16:17:22 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49827 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871Ab1E3URV (ORCPT
+	id S1757896Ab1E3UVE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 16:21:04 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:63838 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab1E3UVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 16:17:21 -0400
-Date: Mon, 30 May 2011 22:17:11 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Rohit Yadav <rohityadav89@gmail.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Arch: x86: process: Fix a compilation warning.
-Message-ID: <20110530201711.GA8320@aftab>
-References: <rohityadav89@gmail.com>
- <1306776629-13404-1-git-send-email-rohityadav89@gmail.com>
- <11791.1306777203@turing-police.cc.vt.edu>
- <BANLkTim2yJkQG=2JzFwxcAUfB3HF_m52Rg@mail.gmail.com>
- <13206.1306779099@turing-police.cc.vt.edu>
- <20110530182221.GA16214@gere.osrc.amd.com>
- <BANLkTikKjjnai0kvvdA9OdBeBhkJWT9=oQ@mail.gmail.com>
+	Mon, 30 May 2011 16:21:02 -0400
+Date: Mon, 30 May 2011 14:20:56 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: Xilinx: Adding zynq platform support
+Message-ID: <20110530202056.GB32035@ponder.secretlab.ca>
+References: <BANLkTiknh4nCviohecbcJEiWnSW-JdMxDw@mail.gmail.com>
+ <alpine.LFD.2.00.1105241435550.3207@xanadu.home>
+ <BANLkTi=hCpCbNzi1ZiKmGnbhmCG2Ce=EkA@mail.gmail.com>
+ <201105261559.41993.arnd@arndb.de>
+ <20110526150655.GA26661@ponder.secretlab.ca>
+ <20110526220120.GN24876@n2100.arm.linux.org.uk>
+ <BANLkTi=mL=J4UeKgFEa9y3C==8f9eKkboA@mail.gmail.com>
+ <BANLkTin40KK-SahXEP3c1EH1+fWgB54aFw@mail.gmail.com>
+ <20110526222512.GO24876@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTikKjjnai0kvvdA9OdBeBhkJWT9=oQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110526222512.GO24876@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 03:52:54PM -0400, Rohit Yadav wrote:
-> > Yep, all valid points. Another one would be to search whether this got
-> > already fixed before wasting effort:
-> >
-> > http://git.kernel.org/tip/598e887d8b01655780c81cc86a9e7820ed091580
+On Thu, May 26, 2011 at 11:25:12PM +0100, Russell King - ARM Linux wrote:
+> On Thu, May 26, 2011 at 04:16:10PM -0600, Grant Likely wrote:
+> > Will you pick up the zynq patch also?
 > 
-> What is the best way to search if something got fixed? There are
-> plenty of repositories at git.kernel.org
-> I'm using this one:
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+> It's about 1000 new lines, and I'm not sure Linus will take that
+> level of addition - certainly not without explanation.
+> 
+> Also, if we adhere to the policy that we don't introduce new code
+> which should be using the consolidated code which we've already
+> introduced, this would need to be updated to use the mmio
+> clocksource stuff at the very least.
+> 
+> I'm also not convinced that this platform would have the ICST PLL
+> chips on it, so why it needs to select ICST I'm not sure (as well
+> as having the PLL parameters in its struct clk.)
 
-Well, you either subscribe to lkml and search in your archives for it
-or use your favourite search engine - they're usu. indexing lkml pretty
-fast.
+This is because it is reusing some of the versatile struct clk
+implementation instead of cloning it's own set of plat-zynq stuff.  I
+recommended to John to not create a completely new struct clk, and
+that Versatile was probable the most generic of the lot.
 
-For example, google already indexed your mail I'm replying to and
-returns it as the first result:
-
-http://www.google.com/search?q=rohit+yadav+if+something+got+fixed
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+g.
