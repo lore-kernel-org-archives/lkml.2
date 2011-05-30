@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab1E3FFR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 01:05:17 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:55143 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751395Ab1E3FFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 01:05:15 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Subject: Re: [PATCH 2/4] clk: Implement clk_set_rate
-Date: Mon, 30 May 2011 01:05:08 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.39; KDE/4.6.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-sh@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-References: <1305876469.326620.351525457111.2.gpush@pororo>
-In-Reply-To: <1305876469.326620.351525457111.2.gpush@pororo>
+	id S1753436Ab1E3FNp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 01:13:45 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48504 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab1E3FNo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 01:13:44 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DE3277D.8070109@jp.fujitsu.com>
+Date: Mon, 30 May 2011 14:13:33 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart14360417.VdBLknXpXf";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: akpm@linux-foundation.org
+CC: vgoyal@redhat.com, xiyou.wangcong@gmail.com, ebiederm@xmission.com,
+        linux-kernel@vger.kernel.org, jwilson@redhat.com
+Subject: Re: [Patch] kexec: remove KMSG_DUMP_KEXEC (was Re: Query about kdump_msg
+ hook into crash_kexec())
+References: <20110203095837.93A2.A69D9226@jp.fujitsu.com>	<20110203020703.GB21603@redhat.com>	<20110203135324.93BC.A69D9226@jp.fujitsu.com> <20110526131028.7052a893.akpm@linux-foundation.org>
+In-Reply-To: <20110526131028.7052a893.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105300105.10258.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart14360417.VdBLknXpXf
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+(2011/05/27 5:10), Andrew Morton wrote:
+> On Thu,  3 Feb 2011 13:53:01 +0900 (JST)
+> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> 
+>>>> I wrote why this is no good idea by another mail. Please see it.
+>>>> Anyway you have a right to don't use this feature.
+>>>>
+>>>
+>>> But you have not explained that why do you need to hook into crash_kexec()
+>>> and you have also not explained why do you need to send out kdump_msg()
+>>> notification if kdump is configured.
+>>>
+>>> Some detailed explanation here would help.
+>>
+>> Hi,
+>>
+>> I send it you now :)
+>>
+> 
+> What happened with this?  kexec-remove-kmsg_dump_kexec.patch has two acks
+> and one unexplained nack :(
 
-On Friday, May 20, 2011 03:27:49 Jeremy Kerr wrote:
->  int clk_set_rate(struct clk *clk, unsigned long rate)
->  {
-> -	/* not yet implemented */
-> -	return -ENOSYS;
-> +	unsigned long parent_rate, new_rate;
-> +	int ret;
-> +
-> +	if (!clk->ops->set_rate)
-> +		return -ENOSYS;
+http://groups.google.com/group/linux.kernel/browse_thread/thread/1084f406573d76ac/ee19e34b45f83536?lnk=raot&pli=1
 
-i thought ENOSYS is only for syscalls.  shouldnt this be ENODEV or perhaps=
-=20
-EOPNOTSUPP ?
-=2Dmike
+At last mail, Vivek proposed move kms_dump() instead remove. and I asked following question and
+I've got no response. I'm still waiting his.
 
---nextPart14360417.VdBLknXpXf
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+> I'm sorry I've missed this mail long time. 
+> 
+>> > --------------------------------------------------------------------- 
+>> > @@ -74,6 +75,7 @@ NORET_TYPE void panic(const char * fmt, ...) 
+>> >         dump_stack(); 
+>> >  #endif 
+>> > +       kmsg_dump(KMSG_DUMP_PANIC); 
+>> >         /* 
+>> >          * If we have crashed and we have a crash kernel loaded let it handle 
+>> >          * everything else. 
+>> >          * Do we want to call this before we try to display a message? 
+>> >          */ 
+>> >         crash_kexec(NULL); 
+>> > --------------------------------------------------------------------- 
+>> And I think to compensate for that somebody introduced additional 
+>> kmsg_dump(KEXEC) call inside crash_kexec() and put it under CONFIG 
+>> option so that one can change the behavior based on config options. 
+>> I think this makes the logic somewhat twisted and an unnecessary call 
+>> inside crash_kexec(). So until and unless there is a strong reason we 
+>> can get rid of KEXEC event and move kmsg_dump call before crash_kexec() 
+>> for now and see how does it go, IMHO. 
+> 
+> 
+> I think I can agree your proposal. But could you please explain why do 
+> you think kmsg _before_ kdump and kmsg _in_ kdump are so different? 
+> I think it is only C level difference. CPU don't care C function and 
+> anyway the kernel call kmsg_dump() because invoke second kernel even 
+> if you proposal applied. 
+> It is only curious. I'm not against your proposal. 
+> Thanks. 
 
-iQIcBAABAgAGBQJN4yWGAAoJEEFjO5/oN/WB+eMP/RxjSuK5Z+UozT0X95+vU2OV
-2LK//CmjY/FsGTn4Vdfi24LVMYIYB4wuIhUkMO6Ry+rb5bAtXE69rHEuroVcXV2V
-Gw8oxpZD5SCrD3QTtOiBJ25d7w5rBDbd+kNm6nex0we3PMN2Ubf45FnBh0IkkN4D
-dnV8z1EdAwHaxlQ8COoBO1zIDOQLYd6r86selmZdxhSHhooDw0CXx55WDIu6IddS
-G5eFWd/N8J3vDZmCFi8aX2irLXF2XR9/jUaMUfYghFr1GqtSnfHwbbbm16C6TUqa
-WDaG5aNvaFuoaeuq6dfWDXh82wDpi8xmHlyqppnZ6wah4+t0AzMKX70rcnF671Ll
-sOYzRAAbhkMKzYfc1pFbCRzlKdiG8EPJaPfqBGBxVZ6KrJw1/QP9Av290HeMI63M
-IWV++tjQ61U7B0zRlLBps6FrVtjzaD/PC8wE9FOHM+9V7uPYkTScITWUZUKAsjQR
-Wcgig3TJqaQ3LxX9Qc+5TjvL13sxNeFKPE7hPZp1RFXPYCcw+rLIrytN89tySmnx
-kxQXj40SHKQpYPmrx+wB7SZMlucr1yrI6FLsLBWAKXNQaX5v2Dxtr27z+YqJCkVI
-TmUIPZn61pwV5x2ju4r/ysytww1mu0ubSgWogQvRXQV4HEBCC7Rgw7gmxsCKoj3E
-pfccE4hA+3kMZ5xIaycd
-=sDAA
------END PGP SIGNATURE-----
 
---nextPart14360417.VdBLknXpXf--
+
+
+
+
