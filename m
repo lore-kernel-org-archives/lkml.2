@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757549Ab1E3QsN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 12:48:13 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55340
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753383Ab1E3QsM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 12:48:12 -0400
-Subject: Re: Very high CPU load when idle with 3.0-rc1
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Damien Wyart <damien.wyart@free.fr>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110530164115.GA21169@linux.vnet.ibm.com>
-References: <20110530055924.GA9169@brouette>
-	 <1306755291.1200.2872.camel@twins>
-	 <20110530162354.GQ2668@linux.vnet.ibm.com>
-	 <20110530164115.GA21169@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 30 May 2011 18:47:16 +0200
-Message-ID: <1306774036.23844.3.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1757557Ab1E3QwR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 12:52:17 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:61456 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383Ab1E3QwQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 12:52:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Z/BOGuU7Ty5cJsUgZza9oaxAHLfUQL2jUNwWdLuHWv93c3wuix+Sr0YsYA7c6wyTh2
+         y4yXLLImcMO93kTd79bQ6TCOWHWqnq8XO2e8EBXTOcL4dK8GnMn7l9FrBO5aFQQQL9Hc
+         sLlqVRGVYrJJ7dLYG3CP1dUdHjqXJ6foJnW+Q=
+MIME-Version: 1.0
+In-Reply-To: <4DE3C652.5090309@zytor.com>
+References: <1305248699-2347-1-git-send-email-daniel.blueman@gmail.com>
+	<69e8f8a9-4e8b-4c02-b566-304ff837d166@email.android.com>
+	<BANLkTi=h5f6o3iVK24sQ20xYYQAMbLavMg@mail.gmail.com>
+	<BANLkTik9BtnXxsOGKuhmoUFsKPbhBwXr3A@mail.gmail.com>
+	<4DE3C652.5090309@zytor.com>
+Date: Tue, 31 May 2011 00:52:15 +0800
+Message-ID: <BANLkTinnEPKC+Nb7zK_PswU+M=sNPxWCig@mail.gmail.com>
+Subject: Re: [PATCH] x86: Add Dell E5420 reboot quirk
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-30 at 09:41 -0700, Paul E. McKenney wrote:
-> > > +static void __cpuinit rcu_wake_one_boost_kthread(struct rcu_node *rnp)
-> > > +{
-> > > +   if (rnp->boost_kthread_task)
-> > > +           wake_up_process(rnp->boost_thread_task);
-> 
-> And this needs to be:
-> 
->         wake_up_process(rnp->boost_kthread_task);
-> 
-> I fixed this in my tree, continuing testing. 
+On 31 May 2011 00:31, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 05/30/2011 07:43 AM, Daniel J Blueman wrote:
+>>
+>> Without this patch, rebooting is like Russian roulette; with quite a
+>> few of these laptops in the field, perhaps it is better to enable the
+>> quirk unless you think there may be an issue in the kernel preventing
+>> correct behaviour that I could debug?
+>>
+>> On the other hand, Dell may later fix the BIOS AML (seen with the
+>> excellent fwts) just as the cure for cancer is found. If they do, I'll
+>> buy whiskey too.
 
-d'oh yes.
+> Enabling the quirk is the right thing; however, if ACPI worked I'd have
+> preferred it since we just switched to ACPI as the default.
+
+Indeed - the new and default ACPI reboot method works perfectly in
+3.0-rc1, whereas with 2.6.39, it didn't, so no further need for this
+patch then.
+
+Thanks again,
+  Daniel
+-- 
+Daniel J Blueman
