@@ -1,106 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab1E3UaR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 16:30:17 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64218 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757908Ab1E3UaO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 16:30:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KORYp32B9qef6+w6y+wnwlzgOWGtEuTD6JdM1Pavw0Gn2NofORut2TZYAwhfYz4F3n
-         rALyK8qK2L6cRD91MfCXPKdbmOW8U4v80Jisd+BqpKBSkAMGY4xBjarw43dWLk5E5EIe
-         fEnDbF+uxO4zc2cvUXGyyvLKBGIeQN/zJ+bXE=
-MIME-Version: 1.0
-In-Reply-To: <201105302040.55509.arnd@arndb.de>
-References: <1306707270.2029.377.camel@i7.infradead.org>
-	<201105301305.59166.arnd@arndb.de>
-	<20110530102731.fa9fbc4a.rdunlap@xenotime.net>
-	<201105302040.55509.arnd@arndb.de>
-Date: Mon, 30 May 2011 16:30:14 -0400
-Message-ID: <BANLkTik36rFNDqAorY9gn2_mDPMmP_Y=iw@mail.gmail.com>
-Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, David Woodhouse <dwmw2@infradead.org>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754994Ab1E3UkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 16:40:08 -0400
+Received: from lo.gmane.org ([80.91.229.12]:58877 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753148Ab1E3UkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 16:40:06 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Mustapha Rabiu <muztapha@gmail.com>
+Subject: Re: Linux 3.0-rc1
+Date: Mon, 30 May 2011 20:33:29 +0000 (UTC)
+Message-ID: <loom.20110530T221016-75@post.gmane.org>
+References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 41.220.69.17 (Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_7; en-us) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Linus Torvalds <torvalds <at> linux-foundation.org> writes:
 
-On Mon, May 30, 2011 at 2:40 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 30 May 2011 19:27:31 Randy Dunlap wrote:
->> On Mon, 30 May 2011 13:05:58 +0200 Arnd Bergmann wrote:
->>
->> Ingo recently wrote:
->> | When it wont boot straight away (often it does) i use a
->> | Kconfig-needed set of minimal set of configs that enables the minimal
->> | hardware environment.
->>
->> which I believe is the same method that is documented in
->> Documentation/kbuild/kconfig.txt, subject "KCONFIG_ALLCONFIG": (partial text)
->>
->> This enables you to create "miniature" config (miniconfig) or custom
->> config files containing just the config symbols that you are interested
->> in.  Then the kernel config system generates the full .config file,
->> including symbols of your miniconfig file.
->>
->> This 'KCONFIG_ALLCONFIG' file is a config file which contains
->> (usually a subset of all) preset config symbols.  These variable
->> settings are still subject to normal dependency checks.
->>
+> 
+> Yay! Let the bikeshed painting discussions about version numbering
+> begin (or at least re-start).
+> 
+> I decided to just bite the bullet, and call the next version 3.0. It
+> will get released close enough to the 20-year mark, which is excuse
+> enough for me, although honestly, the real reason is just that I can
+> no longe rcomfortably count as high as 40.
+> 
+
+Unsurprising, however, congratulations on yet another major release! 
+We applaud the fact that it'll be just as hideous as 2.6.x, without any 
+new or modified features. Might you explain why you didn't just 
+use 2.8.x ?
+
+Also, given that multiple people have asked for a handful of things
+to be merged into the kernel, re: security, I'm puzzled about how 
+you managed to develop this self-styled 'alpha-male' based versioning 
+scheme without addressing unsettling discrepancies such 
+as /proc/pid/auxv, /proc/pid/stack and /proc/pid/syscall based 
+info-leaks or slub cache merging, etc, all of which have been publicly 
+discussed over varying periods of time, (circa ~2008)
+
+> The whole renumbering was discussed at last years Kernel Summit, and
+> there was a plan to take it up this year too. But let's face it -
+> what's the point of being in charge if you can't pick the bike shed
+> color without holding a referendum on it? So I'm just going all
+> alpha-male, and just renumbering it. You'll like it.
+> 
+
+Again, without catering for pre-existing issues.
+
+> Now, my alpha-maleness sadly does not actually extend to all the
+> scripts and Makefile rules, so the kernel is fighting back, and is
+> calling itself 3.0.0-rc1. We'll have the usual 6-7 weeks to wrestle it
+> into submission, and get scripts etc cleaned up, and the final release
+> should be just "3.0". The -stable team can use the third number for
+> their versioning.
+> 
+> So what are the big changes?
+> 
+> NOTHING. Absolutely nothing. 
+
+Relatively disturbing. Again, why not use 2.8.x ?
+
+> Sure, we have the usual two thirds driver
+> changes, and a lot of random fixes, but the point is that 3.0 is
+> *just* about renumbering, we are very much *not* doing a KDE-4 or a
+> Gnome-3 here. No breakage, no special scary new features, nothing at
+> all like that. 
+
+And none of the aforementioned issues.
+
+> We've been doing time-based releases for many years
+> now, this is in no way about features. If you want an excuse for the
+> renumbering, you really should look at the time-based one ("20 years")
+> instead.
+> 
+> So no ABI changes, no API changes, no magical new features - just
+> steady plodding progress. In addition to the driver changes (and the
+> bulk really is driver updates), we've had some nice VFS cleanups,
+> various VM fixes, some nice initial ARM consolidation (yay!) and in
+> general this is supposed to be a fairly normal release cycle. The
+> merge window was a few days shorter than usual, but if that ends up
+> meaning a smaller release and a nice stable 3.0 release, that is all
+> good. There's absolutely no reason to aim for the traditional ".0"
+> problems that so many projects have.
+> 
+> In fact, I think that in addition to the shorter merge window, I'm
+> also considering make this one of my "Linus is being a difficult
+> ^&^hole" releases, where I really want to be pretty strict about what
+> I pull during the stabilization window. 
+
+Well, being an asshole is relatively different. This is a case of being stupid.
+
+> Part of that is that I'm going to be traveling next week with a slow 
+> atom laptop, so you had better convince me I *really* want to 
+> pull from you, because that thing really is not the most impressive 
+> piece of hardware ever built. It does the "git" workflow quite well, 
+> but let's just say that compiling the kernel is not quite the user 
+> experience I've gotten used to.
 >
-> Very nice, I didn't know about it. Unfortunately, this seems to
-> suffer from the same problem as the generic "randconfig" -- it
-> ignores all "choice" statements and just uses the default:
->
-> Try for instance
->
-> KCONFIG_ALLCONFIG=arch/arm/configs/omap2plus_defconfig make \
->        O=obj-allmod/ allnoconfig ARCH=arm
->
-> This is supposed to set CONFIG_ARCH_OMAP, but it instead chooses
-> CONFIG_ARCH_VERSATILE, which means it's still useless for me.
->
-hum...
+> So be nice to me, and send me only really important fixes. And let's
+> make sure we really make the next release not just an all new shiny
+> number, but a good kernel too.
 
-% git describe
-v2.6.39
+Being as most of the issues mentioned above have been prodded by several 
+people over the scope of over five years, to multiple maintainers, including
+yourself, I'm not sure you'd pay any attention to amendments until some sort
+of en-masse all-out holocaust arrives.
 
-% KCONFIG_ALLCONFIG=arch/arm/configs/omap2plus_defconfig make ARCH=arm
-allnoconfig
-scripts/kconfig/conf --allnoconfig Kconfig
-arch/arm/configs/omap2plus_defconfig:92:warning: symbol value 'm'
-invalid for BT_L2CAP
-arch/arm/configs/omap2plus_defconfig:93:warning: symbol value 'm'
-invalid for BT_SCO
-warning: (ARCH_STMP3XXX && ARCH_OMAP3 && ARCH_OMAP4) selects
-USB_ARCH_HAS_EHCI which has unmet direct dependencies (USB_SUPPORT)
-warning: (ARCH_OMAP4) selects PL310_ERRATA_588369 which has unmet
-direct dependencies (CACHE_L2X0)
-warning: (ARCH_OMAP4) selects PL310_ERRATA_727915 which has unmet
-direct dependencies (CACHE_L2X0)
-#
-# configuration written to .config
-#
+> 
+> Ok?
+> 
+> Go forth and test,
+> Linus
+> 
 
-% grep CONFIG_ARCH_OMAP .config
-CONFIG_ARCH_OMAP=y
-# CONFIG_ARCH_OMAP1 is not set
-CONFIG_ARCH_OMAP2PLUS=y
-# CONFIG_ARCH_OMAP2PLUS_TYPICAL is not set
-CONFIG_ARCH_OMAP2=y
-CONFIG_ARCH_OMAP3=y
-CONFIG_ARCH_OMAP4=y
+Yours, sincerely
 
-did I missed something ?
+Mustapha Rabiu.
 
- - Arnaud
+
