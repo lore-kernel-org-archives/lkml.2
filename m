@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1E3Hq2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 03:46:28 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60989 "EHLO mx2.mail.elte.hu"
+	id S1756105Ab1E3Hqd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 03:46:33 -0400
+Received: from cantor.suse.de ([195.135.220.2]:42095 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755829Ab1E3Hq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 03:46:27 -0400
-Date: Mon, 30 May 2011 09:46:08 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andy Lutomirski <luto@MIT.EDU>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>
-Subject: Re: [PATCH v2 08/10] x86-64: Emulate vsyscalls
-Message-ID: <20110530074608.GD27557@elte.hu>
-References: <cover.1306724657.git.luto@mit.edu>
- <07445623494a3d9f02581eb06326420f5f443043.1306724657.git.luto@mit.edu>
+	id S1756014Ab1E3Hqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 03:46:31 -0400
+Date: Mon, 30 May 2011 15:47:22 +0800
+From: Greg KH <gregkh@suse.de>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com,
+        toshiharu-linux@dsn.okisemi.com
+Subject: Re: [PATCH] 8250_pci: add -ENODEV code for Intel EG20T PCH
+Message-ID: <20110530074722.GA7947@suse.de>
+References: <1306741324-4562-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <07445623494a3d9f02581eb06326420f5f443043.1306724657.git.luto@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1306741324-4562-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 30, 2011 at 04:42:04PM +0900, Tomoya MORINAGA wrote:
+> Intel EG20T PCH has UART device which is compatible with 8250.
+> Currently, with general configuration, the PCH UART driver is not loaded but 8250 standard driver is loaded.
+> Therefore, in case of using PCH UART driver, need to disable 8250 pci function.
+> However, this procedure is not best solution.
+> 
+> This patch, in 8250_pci, if the device is the PCH or the family IOH,
+> '-ENODEV' is returned.
+> As a result, disabling 8250-pci processing becomes unnecessary.
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> ---
+>  drivers/tty/serial/8250_pci.c |   13 +++++++++++++
+>  1 files changed, 13 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/8250_pci.c b/drivers/tty/serial/8250_pci.c
+> index 738cec9..2678d9d 100644
+> --- a/drivers/tty/serial/8250_pci.c
+> +++ b/drivers/tty/serial/8250_pci.c
+> @@ -2559,6 +2559,19 @@ pciserial_init_one(struct pci_dev *dev, const struct pci_device_id *ent)
+>  		return -EINVAL;
+>  	}
+>  
+> +#if defined(CONFIG_SERIAL_PCH_UART) || defined(CONFIG_SERIAL_PCH_UART_MODULE)
+> +	if ((dev->vendor == PCI_VENDOR_ID_INTEL && dev->device == 0x8811) ||
+> +	   (dev->vendor == PCI_VENDOR_ID_INTEL && dev->device == 0x8812) ||
+> +	   (dev->vendor == PCI_VENDOR_ID_INTEL && dev->device == 0x8813) ||
+> +	   (dev->vendor == PCI_VENDOR_ID_INTEL && dev->device == 0x8814) ||
+> +	   (dev->vendor == 0x10DB && dev->device == 0x8027) ||
+> +	   (dev->vendor == 0x10DB && dev->device == 0x8028) ||
+> +	   (dev->vendor == 0x10DB && dev->device == 0x8029) ||
+> +	   (dev->vendor == 0x10DB && dev->device == 0x800C) ||
+> +	   (dev->vendor == 0x10DB && dev->device == 0x800D))
+> +		return -ENODEV;
+> +#endif
 
-* Andy Lutomirski <luto@MIT.EDU> wrote:
+Why put this with an #if around it?  Why not just always not bind to
+this driver as we have a "correct" driver for the hardware now?
 
-> There's a fair amount of code in the vsyscall page, and who knows
-> what will happen if an exploit jumps into the middle of it.  Reduce
-> the risk by replacing most of it with short magic incantations that
-> are useless if entered in the middle.  This change can be disabled
-> by CONFIG_UNSAFE_VSYSCALLS (default y).
+thanks,
 
-btw., please flip the default or consider removing the option 
-altogether.
-
-We want to improve security and we want safe vsyscalls the default, 
-and it's no good if we make it too easy for users to keep the fire 
-door open all the time! :-)
-
-Thanks,
-
-	Ingo
+greg k-h
