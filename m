@@ -1,43 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab1E3F4M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 01:56:12 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56994 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab1E3F4L (ORCPT
+	id S1752868Ab1E3GKF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 02:10:05 -0400
+Received: from mailhost-c1-p0.netultra.net ([195.5.209.9]:60137 "EHLO
+	smtp-delay1.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750823Ab1E3GKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 01:56:11 -0400
-Date: Mon, 30 May 2011 06:56:01 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        Sage Weil <sage@newdream.net>
-Subject: [git pull] dentry_unhash() breakage
-Message-ID: <20110530055601.GK11521@ZenIV.linux.org.uk>
-References: <20110530020604.GC561@dastard>
- <20110530034741.GD561@dastard>
- <Pine.LNX.4.64.1105292057570.9134@cobra.newdream.net>
+	Mon, 30 May 2011 02:10:04 -0400
+X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 May 2011 02:10:04 EDT
+Date: Mon, 30 May 2011 07:59:24 +0200
+From: Damien Wyart <damien.wyart@free.fr>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Very high CPU load when idle with 3.0-rc1
+Message-ID: <20110530055924.GA9169@brouette>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1105292057570.9134@cobra.newdream.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A couple of dentry_unhash fallout fixes
+Hi,
 
-Please, pull from usual place -
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
+Testing 3.0-rc1 on a core i7 (4 cores + HT), I get a load average of 9.0
+when idle. No process is shown running or in "D state" in htop. The box
+is behaving normal, no impression of lag or slowness.
 
-Al Viro (1):
-      autofs4: bogus dentry_unhash() added in ->unlink()
+Not sure what other info to include, I guess this should be quite easy
+to reproduce.
 
-Sage Weil (1):
-      vfs: shrink_dcache_parent before rmdir, dir rename
-
- fs/autofs4/root.c |    2 --
- fs/namei.c        |    3 +++
- 2 files changed, 3 insertions(+), 2 deletions(-)
+Best,
+-- 
+Damien Wyart
