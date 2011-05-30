@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938Ab1E3Ws7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 18:48:59 -0400
-Received: from mail.lang.hm ([64.81.33.126]:50989 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753781Ab1E3Ws6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 18:48:58 -0400
-Date: Mon, 30 May 2011 15:48:49 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Mariusz Kozlowski <mk@lab.zgora.pl>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.0-rc1
-In-Reply-To: <20110530200329.GA1833@mako-laptop>
-Message-ID: <alpine.DEB.2.02.1105301545420.5766@asgard.lang.hm>
-References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com> <BANLkTinsO2=tO_UyzzgeU6LE1fObgq+p1Q@mail.gmail.com> <20110530200329.GA1833@mako-laptop>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757857Ab1E3Wy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 18:54:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47404 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab1E3WyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 18:54:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=Pnx3BPNtDp1TqFNQbZ5/qxcvrwZAj1iM+d4upigsrmqj3U1Y8QTltS29E3SJHjXQz9
+         ZKUuw2RzInRTsDbWLXqIybPDhBGhQPqFD7gGwR6Yx+WOsm8hjmhVkG8d+/kwVpAKRUth
+         YlJ72F5iYhxsHYn/aiWfe84vgixDDqHyPWhcM=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <20110530190713.GA20616@redhat.com>
+References: <1302759489-10645-1-git-send-email-vapier@gentoo.org>
+ <1306726753-16128-1-git-send-email-vapier@gentoo.org> <20110530190713.GA20616@redhat.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Mon, 30 May 2011 18:54:04 -0400
+X-Google-Sender-Auth: FwQB3hxwWN6donis7VPDdP_LGwY
+Message-ID: <BANLkTinhNONdTT=sdTkSsTVLA9F50vkyXg@mail.gmail.com>
+Subject: Re: [PATCH] ptrace: unify show_regs() prototype
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 May 2011, Mariusz Kozlowski wrote:
-
-> On Sun, May 29, 2011 at 06:47:57PM -0700, Linus Torvalds wrote:
+On Mon, May 30, 2011 at 15:07, Oleg Nesterov wrote:
+> On 05/29, Mike Frysinger wrote:
+>> --- a/include/linux/ptrace.h
+>> +++ b/include/linux/ptrace.h
+>> +extern void show_regs(struct pt_regs *);
 >
-> [...]
->
->> However, I did *not* rename the git tree, because that would just be a
->> huge inconvenience to git users, so it's still in the same old place
->> and yes, that means that my git tree is still called "linux-2.6.git"
->> on kernel.org. But it has the v3.0-rc1 tag in it.
->>
->> I'll probably add a symlink or something, if people really hate being
->> reminded about our long history with the "2.6" numbering. But that
->> won't be until closer to the real release, methinks.
->
-> You could consider freezing linux-2.6.git repository and creating new
-> linux-3.git repository that would serve for a couple of years until
-> linux-4.git. At the same time development history could be dropped between
-> trees so that inital clones are lighter. Anyone interested in history
-> can download idx/pack from linux-2.6.git repo and attach it using gratf
-> point[1] anyway.
->
-> Pros:
-> - obvious naming scheme wrt repository contents
-> - smaller initial clone
-> - new clean tag namespace
->
-> Cons:
-> - broken bisection for some time
-> - impaired log/blame/whatchanged and friends
+> Not sure ptrace.h is the right place. show_regs() has the callers which
+> have nothing to do with ptrace.
 
-in addition won't there be problems merging in work done on the old tree? 
-(since there would be no common history)
+it needs pt_regs and everyone puts it in their own ptrace.h, so
+linux/ptrace.h was the logical common place for it
 
-everyone would need to re-clone their repository (and attaching history 
-wouldn't help this)
+> Hmm. You know what? show_regs() is already defined in sched.h, probably
+> you can simply remove this chunk.
 
-there are probably others.
-
-frankly I don't see any real benifits from the Pros you list. the initial 
-clone is already rather small, it probably won't make that big a 
-difference to throw away several years of history.
-
-David Lang
+nice, i hadnt noticed.  i'll send a new version.
+-mike
