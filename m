@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab1E3GBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 02:01:16 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58853 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab1E3GBO convert rfc822-to-8bit (ORCPT
+	id S1753375Ab1E3GMi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 02:12:38 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36828 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab1E3GMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 02:01:14 -0400
+	Mon, 30 May 2011 02:12:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:references:in-reply-to:mime-version
-         :content-type:content-transfer-encoding:message-id;
-        b=hlXVkqyZYju9S9un97KAg/K4/LxnuIEOYxYI+dk9HdYgLoilUnaBi8FfN1JQxx8dtp
-         j3u8jKExL0cM0iuuadnV4y7mqJ9+ffRPddcd+MsWYqkMmGKL6DN9PMsG8ZZcMFlTaQwq
-         OvLPaZAjvFYpcmU4qpc3NiDLPNdr4hhhDBbhQ=
-From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.0-rc1
-Date: Mon, 30 May 2011 08:01:10 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39-final-dirty; KDE/4.6.3; x86_64; ; )
-References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com> <20110530020711.GY3956@zip.com.au>
-In-Reply-To: <20110530020711.GY3956@zip.com.au>
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=J0yyFc3/44DraJM9DLR6uJMfmTnx+MOoEfYHQ5n4xB0UHZBtDEJ4IFh82NFcJ/h0pt
+         f47GKMkaRLtP0kQjyoI2i+qkPVbG5dfN7OOOsH9wDNlKVK2URsVPpflD8d7o7D6Yz+3x
+         eecHpCUI6N0AIGJCa7KiEzF2qioeroglJvUus=
+Date: Mon, 30 May 2011 08:12:38 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Richard Cochran <richard.cochran@omicron.at>,
+        "David S. Miller" <davem@davemloft.net>,
+        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        open list <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [patch 1/2] ptp: return -EFAULT on copy_to_user() errors
+Message-ID: <20110530061237.GA3166@riccoc20.at.omicron.at>
+References: <20110529195312.GA3099@shale.localdomain>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105300801.10321.a.miskiewicz@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110529195312.GA3099@shale.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 of May 2011, CaT wrote:
-> On Sun, May 29, 2011 at 06:30:32PM -0700, Linus Torvalds wrote:
-> > Now, my alpha-maleness sadly does not actually extend to all the
-> > scripts and Makefile rules, so the kernel is fighting back, and is
-> > calling itself 3.0.0-rc1. We'll have the usual 6-7 weeks to wrestle it
-> > into submission, and get scripts etc cleaned up, and the final release
-> > should be just "3.0". The -stable team can use the third number for
-> > their versioning.
+On Sun, May 29, 2011 at 10:53:12PM +0300, Dan Carpenter wrote:
+> copy_to_user() returns the number of bytes remaining, but we want a
+> negative error code here.
 > 
-> Why not just keep the sublevel 0 for your release and let stable team
-> modify it for their release. That way you release 3.0.0, 3.1.0, 3.2.0
-> and stable do 3.0.1, 3.1.3, 3.2.1, etc. Less script breakage that way.
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+> 
+> diff --git a/drivers/ptp/ptp_chardev.c b/drivers/ptp/ptp_chardev.c
+> index a8d03ae..93fa22d 100644
+> --- a/drivers/ptp/ptp_chardev.c
+> +++ b/drivers/ptp/ptp_chardev.c
+> @@ -46,7 +46,8 @@ long ptp_ioctl(struct posix_clock *pc, unsigned int cmd, unsigned long arg)
+>  		caps.n_ext_ts = ptp->info->n_ext_ts;
+>  		caps.n_per_out = ptp->info->n_per_out;
+>  		caps.pps = ptp->info->pps;
+> -		err = copy_to_user((void __user *)arg, &caps, sizeof(caps));
+> +		if (copy_to_user((void __user *)arg, &caps, sizeof(caps)))
+> +			err = -EFAULT;
 
-I guess some distros will do that way on their own.
+Yes, right, and thanks for the extra review.
 
--- 
-Arkadiusz Miśkiewicz        PLD/Linux Team
-arekm / maven.pl            http://ftp.pld-linux.org/
+Thomas, can you please queue these two patches for 3.0-rc2?
+
+(Or should John Stultz handle this sort of thing?)
+
+Thanks,
+Richard
