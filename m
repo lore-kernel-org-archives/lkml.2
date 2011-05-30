@@ -1,108 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab1E3VYq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 17:24:46 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33760 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993Ab1E3VYo convert rfc822-to-8bit (ORCPT
+	id S1757521Ab1E3VZG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 17:25:06 -0400
+Received: from SpacedOut.fries.net ([67.64.210.234]:46584 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753986Ab1E3VZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 17:24:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=SUP6JnLmlJsF3vDYe3oo+knlChYuMP3yGFOuCFS8tKxKWpKVV+u2KiXg1gj4gvCmI7
-         teffqZn5y1Q7a52hfpz+HPgJKUWH84mu/T9yy8ae9fH3AzB8MK89PApGxweIp8TzdZxa
-         K0Clyf+UDU8MAKRS6+/oQJqC4W2B3zlcqbWm0=
+	Mon, 30 May 2011 17:25:04 -0400
+Date: Mon, 30 May 2011 16:24:41 -0500
+From: David Fries <david@fries.net>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: akpm@linux-foundation.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+        linville@tuxdriver.com
+Subject: Re: [PATCH] rfcomm/core.c avoid dangling pointer, check session
+ exists
+Message-ID: <20110530212441.GP3935@spacedout.fries.net>
+References: <20110521190253.GA24600@spacedout.fries.net>
+ <20110530204852.GE2556@joana>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1105301349530.5766@asgard.lang.hm>
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
- <201105231012.06928.oneukum@suse.de> <20110525000003.GJ32466@dastard>
- <201105250850.12179.oneukum@suse.de> <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com>
- <410B37BE-E380-40D0-82AA-48B56F389E16@mit.edu> <BANLkTimNjt4=9v33Z9Nr12xa6GmyJ-Ue5A@mail.gmail.com>
- <20110526133155.GH9520@thunk.org> <BANLkTinTzNN2P45tgZAQ9FsL43CqyAJR3Q@mail.gmail.com>
- <20110526162138.GN9520@thunk.org> <BANLkTinPCcX9-gK7YnMngGUJKftRTmYXNw@mail.gmail.com>
- <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu> <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com>
- <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm> <BANLkTik69Gb2i1467bhnEU-pJ0WB10mqNQ@mail.gmail.com>
- <alpine.DEB.2.02.1105301058030.5766@asgard.lang.hm> <BANLkTimtY0ggu28i-9VzWOO1=puZ0JvcAQ@mail.gmail.com>
- <alpine.DEB.2.02.1105301142030.5766@asgard.lang.hm> <BANLkTimuToT90eRGVRfN9tAHoF9GOSRRDA@mail.gmail.com>
- <alpine.DEB.2.02.1105301349530.5766@asgard.lang.hm>
-From: "D. Jansen" <d.g.jansen@googlemail.com>
-Date: Mon, 30 May 2011 23:24:03 +0200
-Message-ID: <BANLkTimSLoY3uwtGvA2x5C0HhNEHvmWqzw@mail.gmail.com>
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-To: david@lang.hm
-Cc: Theodore Tso <tytso@mit.edu>, Oliver Neukum <oneukum@suse.de>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110530204852.GE2556@joana>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Mon, 30 May 2011 16:24:44 -0500 (CDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 10:53 PM,  <david@lang.hm> wrote:
-> On Mon, 30 May 2011, D. Jansen wrote:
->
->> On Mon, May 30, 2011 at 8:45 PM,  <david@lang.hm> wrote:
->>>
->>>
->>> the problem is that most users don't know what their system is running,
->>> or
->>> what effect disaling fsync would have. those that do can probably use
->>> LD_PRELOAD to override fsync calls.
->>
->> As we found out, they can't. But if we export barrier, I hope a
->> library could wrap fsyncs into barriers. Is that the case?
->
-> a library can wrap fsync into anything.
->
->>>
->>> it doesn't take running a mail server, even a mail client will have the
->>> same
->>> risk. If you use POP for mail (a very common option) then you download
->>> messages and tell the server to delete them. if you do not really save
->>> them
->>> (one fsync after they are all saved), then you can loose everything that
->>> you
->>> downloaded.
->>
->> Yes, I know. It's the same argument again and again. I understand not
->> everybody wants this. But some do. Some prefer working 10-20% longer
->> on battery (certainty) instead of possibly losing 5 % data
->> (possibility) or losing all your data (possibility if you use laptop
->> mode and the hard disk wakes up again and again and eventually wears
->> out).
->
-> those are some powerful numbers you are throwing around, can you back them
-> up?
+On Mon, May 30, 2011 at 05:48:52PM -0300, Gustavo F. Padovan wrote:
+> Hi David,
+> 
+> * David Fries <david@fries.net> [2011-05-21 14:02:53 -0500]:
+> 
+> > rfcomm_process_sessions is calling rfcomm_process_rx, but
+> > in this case the session is closed and freed leaving a
+> > dangling pointer that blows up when rfcomm_process_rx returns
+> > and rfcomm_process_dlcs is called with the now dangling session
+> > pointer.  Check to see if the entry is still in the list.
+> > 
+> > Signed-off-by: David Fries <David@Fries.net>
+> > Cc: Marcel Holtmann <marcel@holtmann.org>
+> > Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>
+> > ---
+> > I sent out an ealier patch,
+> > Date: Mon, 21 Mar 2011 21:38:10 -0500
+> > Subject: [PATCH] rfcomm/core.c avoid dangling pointer, check session
+> > 
+> > That version added a return value to rfcomm_session_close to determine
+> > if the session was closed.  I thought this would be cleaner.
+> > 
+> > I can reproduce using blueman-manager on desktop, and Motorola S305 bluetooth
+> > headset, 2.6.39, but it can take a few attempts.  Start out with the
+> > desktop as the last device the S305 paired with.
+> > desktop, connect to the S305,
+> > S305, turn on
+> > desktop (connection fails)
+> > desktop (connection automatically comes up now that S305 is on)
+> > desktop disconnect S305
+> > desktop (kernel panic)
+> > 
+> > While rfcomm_process_sessions looks symmetrical,
+> > rfcomm_session_hold(s);
+> > rfcomm_process_rx
+> > rfcomm_process_dlcs
+> > rfcomm_session_put(s);
+> > 
+> > rfcomm_process_rx
+> > if (sk->sk_state == BT_CLOSED) {
+> >         if (!s->initiator)
+> >                 rfcomm_session_put(s);
+> >         rfcomm_session_close(s, sk->sk_err);
+> > 
+> > Which isn't symmetrical.  I don't know enough about the subsystem to
+> > know if there is a better cleaner way to fix this, or if my patch is
+> > the best solution.
+> > 
+> >  net/bluetooth/rfcomm/core.c |    6 ++++++
+> >  1 files changed, 6 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
+> > index c997393..ac47ef3 100644
+> > --- a/net/bluetooth/rfcomm/core.c
+> > +++ b/net/bluetooth/rfcomm/core.c
+> > @@ -1952,6 +1952,12 @@ static inline void rfcomm_process_sessions(void)
+> >  
+> >  		default:
+> >  			rfcomm_process_rx(s);
+> > +			/* The current session can be closed as part of rx
+> > +			 * in which case s is now dangling.  Check if it
+> > +			 * has been removed.
+> > +			 */
+> > +			if(n->prev != p)
+> > +				continue;
+> >  			break;
+> >  		}
+> 
+> I don't like this, it's not the proper fix. So I'm trying to figure out this
+> and fix it. Can you try this patch:
 
-Yes. My netbook uses 4.8 W with hard disk off. 0.5 W more with hard
-disk on. A lot of the time, the display is off and the power
-consumption drops to about 3.5 W. I don't know how I got to 20 % atm.
-I can only do this if fsync is disabled. I tried before, but it would
-go on for every write. It died, very prematurely.
->
-> do you really have so many fsync's going on that the disk spins up so much
-> that you would gain 10-20% battery life?
+Not without some explaination as to what it's trying to accomplish
+(other than crash my computer), it's just a single CPU system, so it
+isn't a very good test case for crashes in use after free anyway.
+s->sock has been released by sock_release, s has been freed by kfree
+(in rfcomm_session_del), which leaves s->sock-> completely dangling by
+now.  That's why I was using something other than s to determine if
+it's dangling, and looking to see if it was still in the list looked
+like the best way to me.
 
-Yes. Every autosave in LibreOffice triggers one. And I want autosave,
-but I want them in memory, not on disk.
->
-> and what makes you think the extra spin-ups from fsyncs will cause your hard
-> drive to fail significantly earlier? (if you have a hard drive with a
-> limited number of spin-up cycles, you probably don't want to use laptop mode
-> at all)
+I posted an earlier patch, 'Date: Mon, 21 Mar 2011 21:38:10 -0500'
+where I added a return value to to rfcomm_session_put, as another way
+to determine if s has been freed and now dangling.  The other question
+is why check BT_CLOSED outside of default?  It's only
+rfcomm_process_rx that will delete the session with something still
+holding on to it.
 
-Experience, see above. Also, this is well described behavior. All hard
-disks are only designed to last a certain number of head loads and
-unloads. Spinning up and down even less.
->
-> why do you think it's a possibility of loosing only 5% of data?
+I would rather see a fix where rfcomm_process_rx doesn't do the put
+which caused this situation.  Also, now that I look at it,
+rfcomm_process_rx is doing a close after it did a put, which means the
+entire close is dealing with a dangling pointer.  Looks to me like the
+order could be switched, pending the outcome of the propper fix.
 
-Well, it really depends on the way your configure laptop mode. But in
-my case the laptop mode window is 20 minutes, the run time then is
-about 10-12 hrs. I can actually lose less than 5 % of the data created
-during the battery run time. It's a certain 1-1.5 hours (10-15 %) more
-work or a possible 20 mins (3.3 % actually) loss of work. I think it's
-a good deal.
+	if (sk->sk_state == BT_CLOSED) {
+		if (!s->initiator)
+			rfcomm_session_put(s);
+
+		rfcomm_session_close(s, sk->sk_err);
+	}
+
+> padovan bluetooth-next-2.6 $ git diff
+> diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
+> index 5759bb7..75c58ed 100644
+> --- a/net/bluetooth/rfcomm/core.c
+> +++ b/net/bluetooth/rfcomm/core.c
+> @@ -1958,6 +1958,9 @@ static inline void rfcomm_process_sessions(void)
+>                         break;
+>                 }
+>  
+> +               if (s->sock->sk->sk_state == BT_CLOSED)
+> +                       continue;
+> +
+>                 rfcomm_process_dlcs(s);
+>  
+>                 rfcomm_session_put(s);
+> 
+> -- 
+> Gustavo F. Padovan
+> http://profusion.mobi
+
+-- 
+David Fries <david@fries.net>    PGP pub CB1EE8F0
+http://fries.net/~david/
