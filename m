@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab1E3AZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 20:25:28 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:34255 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751117Ab1E3AZ1 (ORCPT
+	id S1751401Ab1E3AR4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 20:17:56 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:59009 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab1E3ARz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 20:25:27 -0400
-X-Sasl-enc: /rmx1QDtZ5T2gbCUwGyyU50RjAHC7IACOmIeeOHUH6bu 1306715125
-Date: Mon, 30 May 2011 08:01:14 +0800
-From: Greg KH <greg@kroah.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Greg KH <gregkh@suse.de>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [stable] [57/71] block: rescan partitions on invalidated devices
- on -ENOMEDIA too
-Message-ID: <20110530000114.GA5135@kroah.com>
-References: <20110519180626.GA16555@kroah.com>
- <20110519180559.722522150@clark.kroah.org>
- <BANLkTi=dKXo=TeTU7a--r3YCxrptNU3VVg@mail.gmail.com>
- <20110519181814.GA17816@suse.de>
- <20110525090927.GD10146@htj.dyndns.org>
+	Sun, 29 May 2011 20:17:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:organization:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=It6UUwAmgwMuPQ3Cp+Aya5DufYKy6sPh54PE4uYJLaZW8OTS+hCZHcNnUJP1l3WGrj
+         WQlHlNypnKz3jKmGZB0ZFxDwWXX6321NDqQZa1T1C2AvWZCk4E31XaJbL+EyLAsQY/jo
+         fVUZuSPedlU44ip8GioWb0cIU/t2HDnpLg7sI=
+From: Grant Coady <gcoady.lk@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: No /proc/diskstats accounting for loopN or md...p. disks??
+Date: Mon, 30 May 2011 10:17:50 +1000
+Organization: scattered
+Message-ID: <hdo5u6d3rqfo7v349262i3854gkde4re10@4ax.com>
+X-Mailer: Forte Agent 6.00/32.1186
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110525090927.GD10146@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 25, 2011 at 11:09:27AM +0200, Tejun Heo wrote:
-> Hello, Greg.
-> 
-> On Thu, May 19, 2011 at 11:18:14AM -0700, Greg KH wrote:
-> > On Thu, May 19, 2011 at 08:12:44PM +0200, Tejun Heo wrote:
-> > > Can you please hold this for a while?  It causes an extra warning
-> > > message to be printed during device detection.  It isn't harmful but
-> > > still.  I'll soon send a patch to resolve the issue and it would be
-> > > better for them to go together.
-> > 
-> > Sure, I've dropped this one for now.  Let me know when I should add it
-> > back to the next round of stable releases.
-> 
-> ff2a9941ca (block: move bd_set_size() above rescan_partitions() in
-> __blkdev_get()) which fixes the warning is now in mainline.  Please
-> apply this and ff2a9941ca to the next -stable.  I also noted it in the
-> commit message of ff2a9941ca.
+I built a RAID box, 6 x 1TB SATA drives, RAID 6, RAID10, runs well, but 
+I notice that /proc/diskstats is not accumulating numbers for loop[0-7] 
+devices, nor does it grab I/O numbers for partitioned mdadm RAIDs.
 
-Now done, thanks for letting me know.
+For that second, I partition the drives, and several RAIDs using different 
+partitions are fine, but if I make a RAID6, then partition that device, 
+then the eg. md125p1 device will not get stats collected, they all go to 
+the parent device.  My 'cure' for this one is 'don't do that'.
 
-greg k-h
+Loop devices simply show all zeroes on /proc/diskstats.  No cure?
+
+So what's the spell to get full /proc/diskstats accounting?  I looked in 
+/sys/... and the same dev gets all zeroes in there too, so it looks as 
+if the numbers are not simply getting calculated.
+
+I'm running 2.6.38.7 on Slackware64-13.1 but this happens on earlier 
+version kernel.  Be upgrading to Slackware64-13.37 soon, but I doubt 
+it's user space...
+
+Happy to do directed testing for you.  Also if you tell me it doesn't 
+work like that, that's okay too, but then loopX should disappear from 
+/proc/diskstats, no?  
+
+Thanks heaps for info, ideas,
+Grant.
