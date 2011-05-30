@@ -1,96 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab1E3KAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 06:00:49 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:15066
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752105Ab1E3KAr (ORCPT
+	id S1755768Ab1E3KGs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 06:06:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44330 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab1E3KGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 06:00:47 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LM06H5-02-0U8-02
-X-M-MSG: 
-Date: Mon, 30 May 2011 12:00:39 +0200
-From: Robert Richter <robert.richter@amd.com>
+	Mon, 30 May 2011 06:06:47 -0400
+Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
+From: David Woodhouse <dwmw2@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL] oprofile fixes for v2.6.40
-Message-ID: <20110530100039.GB20052@erda.amd.com>
-References: <20110526133948.GX20052@erda.amd.com>
- <20110527122301.GA32754@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110527122301.GA32754@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 30 May 2011 11:06:42 +0100
+In-Reply-To: <20110530095333.GA8461@elte.hu>
+References: <1306707270.2029.377.camel@i7.infradead.org>
+	 <20110530072300.GA9802@elte.hu>
+	 <1306745835.2029.389.camel@i7.infradead.org>
+	 <20110530091536.GA2827@elte.hu>
+	 <1306747629.2029.397.camel@i7.infradead.org>
+	 <20110530095333.GA8461@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1306750004.2029.413.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.05.11 08:23:01, Ingo Molnar wrote:
+On Mon, 2011-05-30 at 11:53 +0200, Ingo Molnar wrote:
+> * David Woodhouse <dwmw2@infradead.org> wrote:
+> > Good point. But shouldn't "make i386_defconfig" and "make
+> > x86_64_defconfig" do that?
 > 
-> * Robert Richter <robert.richter@amd.com> wrote:
-> 
-> > Robert Richter (1):
-> >       oprofile, x86: Enable preemption during pci device setup in IBS init
-> 
-> I'm wondering about this bit, as from a preempt_enable()/disable() 
-> pattern POV it looks bogus. It does:
-> 
->         preempt_disable();
->         for (offset = 1; offset < APIC_EILVT_NR_MAX; offset++) {
->                 if (get_eilvt(offset))
->                         break;
->         }
->         preempt_enable();
-> 
-> 	...
-> 
-> 
-> 	ret = setup_ibs_ctl(offset);
-> 
-> So whatever condition it established at the get_eilvt() stage might 
-> not be valid at the setup_ibs_ctl() point: we might be on a different 
-> CPU.
-> 
-> Or are the IBS MSRs (which get twiddled in get_eilvt() absolutely 
-> symmetric across all CPUs, thus making this a preempt invariant 
-> thing? In that case we'd at least need a big fat comment in the code 
-> as it's not obvious at all ...
+> Yeah, we could certainly fix (or extend?) kconfig to allow those 
+> forms too, if you would like to use them.
 
-The MSRC001_103A (IBS Control Register) register contains the LVT
-offset. It is a per-node msr and a read-only copy of F3x1CC (pci
-device register). The offset must be valid (bit set) and not yet taken
-by another vector (kernel keeps track of it in eilvt_offsets).  Though
-offsets must be the same on all nodes, the kernel implementation uses
-same offsets on all cores of the system.
+Those always worked. I actually *broke* it in my previous patch. Before
+that, the 'i386_defconfig' never actually needed to *specify* that it
+wanted CONFIG_64BIT=n, because that would never have been the default.
+Adding '# CONFIG_64BIT is not set' to arch/x86/configs/i386_defconfig
+fixes it.
 
-The BIOS is responsible to setup the vector. If the vector in IBS_CTL
-is invalid or already taken, we reassign a different offset in
-force_ibs_eilvt_setup() (family 10h only).
+> I personally prefer 'make ARCH=i386 defconfig' and 'make ARCH=x86_64 
+> defconfig' because it's a nice conceptual equivalent to:
+> 
+> 	make ARCH=arm defconfig
+> 	make ARCH=mips defconfig
 
-In get_eilvt()/setup_APIC_eilvt() there are reads and writes to the
-local apic. Preemption must be disabled to not be switched to another
-cpu in the middle of a sequence.
+No, ARCH= is just for cross-compiling. If you're *on* an ARM or MIPS
+box, you don't need the ARCH= bit.
 
-> But i really do not see how this can work. get_eilvt() twiddles the 
-> APIC LVT of this current CPU. Does IBS only activate on a single CPU? 
-> How will this LVT entry be cleared on deinit?
+And it *doesn't* follow the pattern you seem to be looking for, because
+it's *not* setting 32-bit or 64-bit compilation. ARM doesn't even *have*
+64-bit support, but let's look at MIPS:
 
-This is done on the current cpu to get the offset which is then used
-on all cpus of the system. The actually per-core setup for ibs is in
-op_amd_setup_ctrs(). Deinit is in op_amd_cpu_shutdown().
+If you want a 64-bit MIPS kernel, you do something like
+	make bigsur_defconfig 
 
--Robert
+If you want a 32-bit MIPS kernel, you do something like
+	make ar7_defconfig
+
+You *don't* set 'ARCH=mips32' or 'ARCH=mips64'; CONFIG_64BIT is just a
+config option.
+
+Of course, MIPS makes it more "interesting" because it doesn't do a
+"generic" kernel that boots on more than one machine. PowerPC is
+probably the better analogy. There, it's:
+
+	make ppc_defconfig
+and	make ppc64_defconfig
+
+And still no 'ARCH=ppc' or 'ARCH=ppc64'. Those got killed off a long
+time ago, when we merged the 32-bit and 64-bit code into arch/powerpc.
+
+And, as before, you don't need the ARCH=powerpc if you are already on a
+PowerPC box. That's just for cross-compilation.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+dwmw2
 
