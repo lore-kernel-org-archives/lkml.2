@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab1E3Ovb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 10:51:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58184 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757214Ab1E3OvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 10:51:12 -0400
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] kbuild: Hack for depmod not handling X.Y versions
-Date: Mon, 30 May 2011 16:50:52 +0200
-Message-Id: <1306767052-15593-5-git-send-email-mmarek@suse.cz>
+	id S1757262Ab1E3OoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 10:44:12 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:61439 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757048Ab1E3OoL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 10:44:11 -0400
+From: Shawn Guo <shawn.guo@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: grant.likely@secretlab.ca, arnd@arndb.de, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org
+Subject: [PATCH 0/4] Move plat-mxc gpio driver into drivers/gpio
+Date: Mon, 30 May 2011 22:52:15 +0800
+Message-Id: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1306767052-15593-1-git-send-email-mmarek@suse.cz>
-References: <1306767052-15593-1-git-send-email-mmarek@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-depmod checks if the argument starts with <num>.<num>.<num>. Until
-depmod is fixed, we cheat with a symlink.
+The patch set moves plat-mxc gpio driver into drivers/gpio.  It's
+based on the following tree, plus Sascha's i.MX consolidation
+patches.
 
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- Makefile |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
+    git://git.pengutronix.de/git/imx/linux-2.6.git imx-for-3.0
 
-diff --git a/Makefile b/Makefile
-index 130e282..0d8d05e 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1533,9 +1533,19 @@ quiet_cmd_rmfiles = $(if $(wildcard $(rm-files)),CLEAN   $(wildcard $(rm-files))
- quiet_cmd_depmod = DEPMOD  $(KERNELRELEASE)
-       cmd_depmod = \
- 	if [ -r System.map -a -x $(DEPMOD) ]; then                              \
-+		if test -z "$(SUBLEVEL)"; then					\
-+			version=99.$(KERNELRELEASE);				\
-+			ln -s $(KERNELRELEASE) 					\
-+				$(INSTALL_MOD_PATH)/lib/modules/$$version;	\
-+		else								\
-+			version=$(KERNELRELEASE);				\
-+		fi;								\
- 		$(DEPMOD) -ae -F System.map                                     \
- 		$(if $(strip $(INSTALL_MOD_PATH)), -b $(INSTALL_MOD_PATH) )     \
--		$(KERNELRELEASE);                                               \
-+		$$version;                                               	\
-+		ret=$$?;							\
-+		rm -f $(INSTALL_MOD_PATH)/lib/modules/99.$(KERNELRELEASE);	\
-+		exit $$ret;							\
- 	fi
- 
- # Create temporary dir for module support files
--- 
-1.7.4.1
+Shawn Guo (4):
+      gpio: gpio-mxc: add gpio driver for Freescale MXC architecture
+      ARM: mxc: migrate mach-mx5 gpio driver to gpio-mxc
+      ARM: mxc: migrate mach-imx gpio driver to gpio-mxc
+      ARM: mxc: remove plat-mxc/gpio driver
 
+ arch/arm/mach-imx/mm-imx1.c                        |    9 -
+ arch/arm/mach-imx/mm-imx21.c                       |   11 -
+ arch/arm/mach-imx/mm-imx25.c                       |    9 -
+ arch/arm/mach-imx/mm-imx27.c                       |   11 -
+ arch/arm/mach-imx/mm-imx31.c                       |    8 -
+ arch/arm/mach-imx/mm-imx35.c                       |    8 -
+ arch/arm/mach-mx5/devices.c                        |   64 ------
+ arch/arm/mach-mx5/mm-mx50.c                        |   11 -
+ arch/arm/mach-mx5/mm.c                             |    6 -
+ arch/arm/plat-mxc/Makefile                         |    2 +-
+ arch/arm/plat-mxc/devices.c                        |   11 +
+ arch/arm/plat-mxc/devices/Makefile                 |    1 +
+ arch/arm/plat-mxc/devices/platform-gpio-mxc.c      |  113 ++++++++++
+ arch/arm/plat-mxc/include/mach/devices-common.h    |    2 +
+ arch/arm/plat-mxc/include/mach/gpio.h              |   27 ---
+ drivers/gpio/Makefile                              |    1 +
+ .../arm/plat-mxc/gpio.c => drivers/gpio/gpio-mxc.c |  218 +++++++++++++-------
+ 17 files changed, 275 insertions(+), 237 deletions(-)
