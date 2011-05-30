@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab1E3Kvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 06:51:45 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:50067 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752908Ab1E3Kvo (ORCPT
+	id S1756085Ab1E3K4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 06:56:54 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:28351 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889Ab1E3K4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 06:51:44 -0400
-Date: Mon, 30 May 2011 12:48:26 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Keith Packard <keithp@keithp.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Fw: [PATCH] drm: i915: correct return status in
- intel_hdmi_mode_valid()
-Message-ID: <20110530124826.74d83b35@absol.kitzblitz>
-Organization: -
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
- AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
- T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
- ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
- BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 30 May 2011 06:56:53 -0400
+Date: Mon, 30 May 2011 12:49:01 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: alsa-devel@alsa-project.org, Daniel Mack <zonque@gmail.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Torsten Schenk <torsten.schenk@zoho.com>, Takashi Iwai <tiwai@suse.de>,
+        Jaroslav Kysela <perex@perex.cz>
+Subject: [PATCH] Sound, 6fire: Don't leak firmware in error path
+Message-ID: <alpine.LNX.2.00.1105301245060.6250@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forwarding to Keith Packard.
-Sorry, initially sent to the previous maintainer instead.
+One of the error paths in 
+sound/usb/6fire/firmware.c::usb6fire_fw_ezusb_upload() neglects to free 
+the memory allocated for the firmware before returning, thus leaking the 
+memory.
 
-Start weitergeleitete Nachricht:
-Datum: Fri, 20 May 2011 18:58:53 +0200
-Von: Nicolas Kaiser <nikai@nikai.net>
-An: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Betreff: [PATCH] drm: i915: correct return status in intel_hdmi_mode_valid()
-
-
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
-Untested: just looks to me like the intention might be
-to return MODE_CLOCK_LOW here, is that correct?
+ firmware.c |    1 +
+ 1 file changed, 1 insertion(+)
 
- drivers/gpu/drm/i915/intel_hdmi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+  patch against 3.0-rc1
+  compile tested only
 
-diff --git a/drivers/gpu/drm/i915/intel_hdmi.c b/drivers/gpu/drm/i915/intel_hdmi.c
-index f289b86..655bbd9 100644
---- a/drivers/gpu/drm/i915/intel_hdmi.c
-+++ b/drivers/gpu/drm/i915/intel_hdmi.c
-@@ -194,7 +194,7 @@ static int intel_hdmi_mode_valid(struct drm_connector *connector,
- 	if (mode->clock > 165000)
- 		return MODE_CLOCK_HIGH;
- 	if (mode->clock < 20000)
--		return MODE_CLOCK_HIGH;
-+		return MODE_CLOCK_LOW;
- 
- 	if (mode->flags & DRM_MODE_FLAG_DBLSCAN)
- 		return MODE_NO_DBLESCAN;
+diff --git a/sound/usb/6fire/firmware.c b/sound/usb/6fire/firmware.c
+index d47beff..a91719d 100644
+--- a/sound/usb/6fire/firmware.c
++++ b/sound/usb/6fire/firmware.c
+@@ -227,6 +227,7 @@ static int usb6fire_fw_ezusb_upload(
+ 	ret = usb6fire_fw_ihex_init(fw, rec);
+ 	if (ret < 0) {
+ 		kfree(rec);
++		release_firmware(fw);
+ 		snd_printk(KERN_ERR PREFIX "error validating ezusb "
+ 				"firmware %s.\n", fwname);
+ 		return ret;
+
+
 -- 
-1.7.5.rc3
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
