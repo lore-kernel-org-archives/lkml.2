@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751401Ab1E3AR4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 20:17:56 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:59009 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab1E3ARz (ORCPT
+	id S1752010Ab1E3A3I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 20:29:08 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51591 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab1E3A3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 20:17:55 -0400
+	Sun, 29 May 2011 20:29:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:subject:date:organization:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=It6UUwAmgwMuPQ3Cp+Aya5DufYKy6sPh54PE4uYJLaZW8OTS+hCZHcNnUJP1l3WGrj
-         WQlHlNypnKz3jKmGZB0ZFxDwWXX6321NDqQZa1T1C2AvWZCk4E31XaJbL+EyLAsQY/jo
-         fVUZuSPedlU44ip8GioWb0cIU/t2HDnpLg7sI=
-From: Grant Coady <gcoady.lk@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: No /proc/diskstats accounting for loopN or md...p. disks??
-Date: Mon, 30 May 2011 10:17:50 +1000
-Organization: scattered
-Message-ID: <hdo5u6d3rqfo7v349262i3854gkde4re10@4ax.com>
-X-Mailer: Forte Agent 6.00/32.1186
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=jPoTlarGgMGbPW+vX1mvrhuh+svRkmhGaBKHF4SBFx79cKCE4fteBOtuEj3iMp4kLe
+         uddEmkQniPjhvn+3hZhR7dNSBEGFKmtYl9s6tlcEmXuRkxDLAY0VfvBCLwKzkmaLGbPR
+         jgyKkQ6MvFFrj7N7OJmRj3cy8Ajgm0CQAVpew=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTim8ngH8ASTk9js-G9DxySWVb7VL3A@mail.gmail.com>
+References: <BANLkTinptn4-+u+jgOr2vf2iuiVS3mmYXA@mail.gmail.com>
+ <BANLkTimDtpVeLYisfon7g_=H80D0XXgkGQ@mail.gmail.com> <BANLkTim8ngH8ASTk9js-G9DxySWVb7VL3A@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sun, 29 May 2011 20:28:46 -0400
+X-Google-Sender-Auth: 3kEtenRV7EhPU0uSv8u5XHy-0FI
+Message-ID: <BANLkTim67zDojKPezhyAM=rzt-Mop1SFeg@mail.gmail.com>
+Subject: Re: Easy portable testcase! (Re: Kernel falls apart under light
+ memory pressure (i.e. linking vmlinux))
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: mgorman@suse.de, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        aarcange@redhat.com, kamezawa.hiroyu@jp.fujitsu.com,
+        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, hannes@cmpxchg.org, riel@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I built a RAID box, 6 x 1TB SATA drives, RAID 6, RAID10, runs well, but 
-I notice that /proc/diskstats is not accumulating numbers for loop[0-7] 
-devices, nor does it grab I/O numbers for partitioned mdadm RAIDs.
+On Sun, May 29, 2011 at 2:28 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+>>
+>> It works only if the zone meets high watermark. If allocation is
+>> faster than reclaim(ie, it's true for slow swap device), the zone
+>> would remain congested.
+>> It means swapout would block.
+>> As we see the OOM log, we can know that DMA32 zone can't meet high watermark.
+>>
+>> Does my guessing make sense?
+>
+> Hi Andrew.
+> I got failed your scenario in my machine so could you be willing to
+> test this patch for proving my above scenario?
+> The patch is just revert patch of 0e093d99[do not sleep on the
+> congestion queue...] for 2.6.38.6.
+> I would like to test it for proving my above zone congestion scenario.
+>
+> I did it based on 2.6.38.6 for your easy apply so you must apply it
+> cleanly on vanilla v2.6.38.6.
+> And you have to add !pgdat_balanced and shrink_slab patch.
 
-For that second, I partition the drives, and several RAIDs using different 
-partitions are fine, but if I make a RAID6, then partition that device, 
-then the eg. md125p1 device will not get stats collected, they all go to 
-the parent device.  My 'cure' for this one is 'don't do that'.
+No, because my laptop just decided that it doesn't like to turn on. :(
 
-Loop devices simply show all zeroes on /proc/diskstats.  No cure?
+I'll test it on my VM on Tuesday and (fingers crossed) on my repaired
+laptop next weekend.
 
-So what's the spell to get full /proc/diskstats accounting?  I looked in 
-/sys/... and the same dev gets all zeroes in there too, so it looks as 
-if the numbers are not simply getting calculated.
-
-I'm running 2.6.38.7 on Slackware64-13.1 but this happens on earlier 
-version kernel.  Be upgrading to Slackware64-13.37 soon, but I doubt 
-it's user space...
-
-Happy to do directed testing for you.  Also if you tell me it doesn't 
-work like that, that's okay too, but then loopX should disappear from 
-/proc/diskstats, no?  
-
-Thanks heaps for info, ideas,
-Grant.
+--Andy
