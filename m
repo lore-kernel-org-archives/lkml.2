@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab1E3M6a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 08:58:30 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47165 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756563Ab1E3M63 (ORCPT
+	id S1756937Ab1E3M6v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 08:58:51 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:51716 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309Ab1E3M6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 08:58:29 -0400
-Date: Mon, 30 May 2011 14:58:22 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sdhci: fix undue iomem warning
-Message-ID: <20110530125822.GD3409@pengutronix.de>
-References: <1306758796-4254-1-git-send-email-daniel.blueman@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yudcn1FV7Hsu/q59"
-Content-Disposition: inline
-In-Reply-To: <1306758796-4254-1-git-send-email-daniel.blueman@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 30 May 2011 08:58:50 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Anca Emanuel <anca.emanuel@gmail.com>, Miles Bader <miles@gnu.org>,
+        Greg KH <greg@kroah.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.0-rc1
+In-Reply-To: Your message of "Mon, 30 May 2011 13:37:13 +0300."
+             <BANLkTikGb2cjHTiNgJLdsbOWhHSPtYNy9g@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com> <20110530020457.GA6494@kroah.com> <buofwnwjzak.fsf@dhlpc061.dev.necel.com> <BANLkTik3E1_7w9fnkRPLL+FC=97gvOFmJg@mail.gmail.com>
+            <BANLkTikGb2cjHTiNgJLdsbOWhHSPtYNy9g@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1306760316_27223P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 30 May 2011 08:58:36 -0400
+Message-ID: <148879.1306760316@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4DE3947F.011A,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---yudcn1FV7Hsu/q59
+--==_Exmh_1306760316_27223P
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Daniel,
+On Mon, 30 May 2011 13:37:13 +0300, Pekka Enberg said:
+> On Mon, May 30, 2011 at 1:09 PM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
+> > Greg, please do NOT give strong alcohol to Linus, jutt give some beer
+> > if yolu like. We want him to be on keyboarrd, and comment if something
+> > is wromg.
+> 
+> Wouldn't it be best that Greg doesn't give strong alcohol to any Linux
+> maintainer until 3.0 is out just to be safe?
 
-> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-> index 936bbca..ae948b0 100644
-> --- a/drivers/mmc/host/sdhci-pci.c
-> +++ b/drivers/mmc/host/sdhci-pci.c
-> @@ -918,8 +918,9 @@ static struct sdhci_pci_slot * __devinit sdhci_pci_pr=
-obe_slot(
->  		return ERR_PTR(-ENODEV);
->  	}
-> =20
-> -	if (pci_resource_len(pdev, bar) !=3D 0x100) {
-> -		dev_err(&pdev->dev, "Invalid iomem size. You may "
-> +	int len =3D pci_resource_len(pdev, bar);
-> +	if (len !=3D 0x100 && len !=3D 0x200) {
+It all depends on exactly *how much* alcohol you give them:
 
-Hmmm,
+https://www.xkcd.com/323/
 
-a) SDHC Specs (even v3) only mention 0x100, so this _is_ the standard.
-   Do the new cards (which ones?) have anything located in the extra
-   area?
-b) your approach won't scale very well
+:)
 
-so, I'd say it is better to keep the old way.
-
-> +		dev_warn(&pdev->dev, "Invalid iomem size. You may "
->  			"experience problems.\n");
-
-I second turning the message into a warning, though.
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---yudcn1FV7Hsu/q59
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+--==_Exmh_1306760316_27223P
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-iEYEARECAAYFAk3jlG4ACgkQD27XaX1/VRsD2QCbBiTgD8QyC17nQN4k5UtoPjdr
-eVgAnAkmWcJQEhUm1D2Sjvjn5l2Re1OX
-=AFp5
+iD8DBQFN45R8cC3lWbTT17ARAmCZAKC710llKIc/YBBK+F9zcihD8DZBmACfbjio
+C8N0Rkiy/gGgW10fIgOCYFY=
+=B8DW
 -----END PGP SIGNATURE-----
 
---yudcn1FV7Hsu/q59--
+--==_Exmh_1306760316_27223P--
+
