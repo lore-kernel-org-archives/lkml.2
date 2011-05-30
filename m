@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab1E3P1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 11:27:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57775 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab1E3P1j (ORCPT
+	id S1757397Ab1E3Phu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 11:37:50 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60039 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab1E3Pht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 11:27:39 -0400
-Message-ID: <4FF0051BF59A4F94A5CB49DFD97F9D4A@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: "Greg KH" <greg@kroah.com>,
-        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <sachi@mistralsolutions.com>, "Samuel Ortiz" <sameo@linux.intel.com>,
-        "open list" <linux-kernel@vger.kernel.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <201105301604.38026.arnd@arndb.de> <2AF43CEDFDB649AE946E8F9F98A5AE48@subhasishg> <201105301643.35997.arnd@arndb.de>
-In-Reply-To: <201105301643.35997.arnd@arndb.de>
-Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver
-Date: Mon, 30 May 2011 20:58:35 +0530
-Organization: Mistral Solutions
+	Mon, 30 May 2011 11:37:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=u8H516ZfqM+AqqUZkHGmpVM1P79v9rbzIqCnKU5bacxndUGsk/IadDeIdZpnw7c+mP
+         aBJt4n3P4z10AKdwtlKXeL6n7qBVtU5LrxjmLbETxPwAFzjjZ0Iy1SPdsiYIjetYStZu
+         LwJj3QRL2UgR9VzVkq0F8pQwv2Fm7nev7aObE=
+Date: Tue, 31 May 2011 00:37:43 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] mm: compaction: fix special case -1 order checks
+Message-ID: <20110530153743.GA2200@barrios-laptop>
+References: <20110530123831.GG20166@tiehlicka.suse.cz>
+ <20110530151633.GB1505@barrios-laptop>
+ <20110530152450.GH20166@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110530152450.GH20166@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Monday 30 May 2011, Subhasish Ghosh wrote:
->> >
->> > During the time when the drivers are in staging, all files need to
->> > be in the same directory, including the header and the drivers using 
->> > it.
->> > They can get moved at the time when the driver gets turned into
->> > a regular non-staging driver.
->>
->> OK, so the UART implementation needs to be moved into staging as well ?
->>
->> And what about the boardfile changes, array of mfd_cells implementation 
->> etc.
->
-> All of that, too.
->
-> Note that you are citing exactly the points that are the reason for the
-> discussion we are having. The mfd_cells are the main concern for the cases
-> where the information is not static.
+On Mon, May 30, 2011 at 05:24:50PM +0200, Michal Hocko wrote:
+> On Tue 31-05-11 00:16:33, Minchan Kim wrote:
+> > >  	/* Direct compactor: Is a suitable page free? */
+> > >  	for (order = cc->order; order < MAX_ORDER; order++) {
+> > >  		/* Job done if page is free of the right migratetype */
+> > 
+> > It looks good to me.
+> > Let's think about another place, compaction_suitable.
+> 
+> Good spotted.
+> 
+> > It has same problem so we can move the check right before zone_watermark_ok.
+> > As I look it more, I thought we need free pages for compaction so we would 
+> > be better to give up early if we can't get enough free pages. But I changed
+> > my mind. It's a totally user request and we can get free pages in migration
+> > progress(ex, other big memory hogger might free his big rss). 
+> > So my conclusion is that we should do *best effort* than early give up.
+> 
+> Agreed
+> 
+> > If you agree with me, how about resending patch with compaction_suitable fix?
+> 
+> Here we go. Thanks
+> 
+> ---
+> mm: compaction: fix special case -1 order checks
+> 
+> 56de7263 (mm: compaction: direct compact when a high-order allocation
+> fails) introduced a check for cc->order == -1 in compact_finished. We
+> should continue compacting in that case because the request came from
+> userspace and there is no particular order to compact for.
+> Similar check has been added by 82478fb7 (mm: compaction:
+> prevent division-by-zero during user-requested compaction) for
+> compaction_suitable.
+> 
+> The check is, however, done after zone_watermark_ok which uses order as
+> a right hand argument for shifts. Not only watermark check is pointless
+> if we can break out without it but it also uses 1 << -1 which is not
+> well defined (at least from C standard). Let's move the -1 check above
+> zone_watermark_ok.
+> 
+> [Minchan Kim <minchan.kim@gmail.com> - caught compaction_suitable]
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-Yes, but by destroying the structure that I have currently in the platform 
-files,
-I will be basically going backwards.
+Thanks.
 
-If only the platform_data is what is going to change with some additions
-of sysfs attributes, then will it be correct to have the platform data
-as an empty pointer and keep the rest as is ?
-
-That way, I can keep the platform changes untouched and move just
-the drivers into staging.
-
-I cannot destroy the complete platform code as there are other drivers
-(PRUSS UIO) depending on them. 
-
+-- 
+Kind regards
+Minchan Kim
