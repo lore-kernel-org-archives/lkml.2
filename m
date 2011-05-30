@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab1E3JJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 05:09:44 -0400
-Received: from mail.perches.com ([173.55.12.10]:2330 "EHLO mail.perches.com"
+	id S1754413Ab1E3JPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 05:15:44 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44901 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753656Ab1E3JJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 05:09:43 -0400
-Subject: Re: [PATCH 1/1] aat2870: Adding backlight, regulator and mfd driver
-From: Joe Perches <joe@perches.com>
-To: Jin Park <jinyoungp@nvidia.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1306743452-26386-2-git-send-email-jinyoungp@nvidia.com>
-References: <1306743452-26386-1-git-send-email-jinyoungp@nvidia.com>
-	 <1306743452-26386-2-git-send-email-jinyoungp@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 30 May 2011 02:09:42 -0700
-Message-ID: <1306746582.20175.13.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753901Ab1E3JPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 05:15:43 -0400
+Date: Mon, 30 May 2011 11:15:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
+Message-ID: <20110530091536.GA2827@elte.hu>
+References: <1306707270.2029.377.camel@i7.infradead.org>
+ <20110530072300.GA9802@elte.hu>
+ <1306745835.2029.389.camel@i7.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306745835.2029.389.camel@i7.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-30 at 17:17 +0900, Jin Park wrote:
-> Adding backlight, regulator and mfd driver for AnalogicTech AAT2870.
-> Signed-off-by: Jin Park <jinyoungp@nvidia.com>
 
-Hi Jin, just trivia
+* David Woodhouse <dwmw2@infradead.org> wrote:
 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-[]
-> +config MFD_AAT2870_CORE
-> +	bool "Support for the AnlogicTech AAT2870"
+> On Mon, 2011-05-30 at 09:23 +0200, Ingo Molnar wrote:
+> > You thoroughly misunderstood my prior regression report, the problem 
+> > with your patch was that your patch actually *broke* existing 
+> > filtered-randconfig behavior, for example trying to get a 64-bit 
+> > randconfig:
+> > 
+> >   make ARCH=x86_64 randconfig
+> > 
+> > ... will today produce a 64-bit randconfig while with your old change 
+> > applied it produced a 32-bit randconfig 50% of the time.
+> 
+> I believe that this 'filtered randconfig' behaviour is now fairly much
+> the *only* use for the old 'ARCH=i386' and 'ARCH=x86_64'.
 
-Analogic
+I use "make ARCH=i386 defconfig" and "make ARCH=x86_64 defconfig" all 
+the time.
 
-> +++ b/drivers/mfd/aat2870-core.c
-[]
-> +static struct aat2870_register aat2870_regs[AAT2870_REG_NUM] = {
+Thanks,
 
-Might describe this as the reg_cache as well.
-readable, writable could be bool.
-
-> +	/* readable, writeable, value */
-> +	{ 0, 1, 0x00 },	/* 0x00 AAT2870_BL_CH_EN */
-
-[]
-
-> diff --git a/drivers/regulator/aat2870-regulator.c b/drivers/regulator/aat2870-regulator.c
-[]
-> +static int aat2870_ldo_voltages[] = {
-
-static const int?
-
-> +	1200000, 1300000, 1500000, 1600000,
-> +	1800000, 2000000, 2200000, 2500000,
-> +	2600000, 2700000, 2800000, 2900000,
-> +	3000000, 3100000, 3200000, 3300000,
-
-[]
-
-> diff --git a/include/linux/mfd/aat2870.h b/include/linux/mfd/aat2870.h
-[]
-> +/* Backlight current magnitude (mA) */
-> +enum aat2870_current {
-> +	AAT2870_CURRENT_0_45 = 0,
-
-Seems odd and error prone to add enum = value
-every 10 places.
-
-> +	AAT2870_CURRENT_0_90,
-> +	AAT2870_CURRENT_1_80,
-> +	AAT2870_CURRENT_2_70,
-> +	AAT2870_CURRENT_3_60,
-> +	AAT2870_CURRENT_4_50,
-> +	AAT2870_CURRENT_5_40,
-> +	AAT2870_CURRENT_6_30,
-> +	AAT2870_CURRENT_7_20,
-> +	AAT2870_CURRENT_8_10,
-> +	AAT2870_CURRENT_9_00 = 10,
-[]
-> +struct aat2870_register {
-> +	int readable;
-> +	int writeable;
-
-bool?
-
-> +struct aat2870_data {
-> +	struct device *dev;
-> +	struct i2c_client *client;
-> +
-> +	struct mutex io_lock;
-> +	struct aat2870_register *reg_cache; /* register cache */
-> +	int en_pin; /* enable GPIO pin (if < 0, ignore this value) */
-> +	int is_enable;
-
-bool?
-
-
+	Ingo
