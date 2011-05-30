@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab1E3LGP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 07:06:15 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:54459 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab1E3LGO (ORCPT
+	id S1756605Ab1E3LHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 07:07:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36683 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889Ab1E3LHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 07:06:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Woodhouse <dwmw2@infradead.org>,
-        John Stultz <john.stultz@linaro.org>
+	Mon, 30 May 2011 07:07:04 -0400
 Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
-Date: Mon, 30 May 2011 13:05:58 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org, linux-kernel@vger.kernel.org
-References: <1306707270.2029.377.camel@i7.infradead.org> <20110530072300.GA9802@elte.hu> <1306745835.2029.389.camel@i7.infradead.org>
-In-Reply-To: <1306745835.2029.389.camel@i7.infradead.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+From: David Woodhouse <dwmw2@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Theodore Tso <tytso@MIT.EDU>, x86@kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 30 May 2011 12:06:56 +0100
+In-Reply-To: <20110530105809.GA20133@elte.hu>
+References: <1306707270.2029.377.camel@i7.infradead.org>
+	 <20110530072300.GA9802@elte.hu>
+	 <1306745835.2029.389.camel@i7.infradead.org>
+	 <20110530104231.GF17821@elte.hu> <20110530104656.GA19532@elte.hu>
+	 <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
+	 <20110530105809.GA20133@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105301305.59166.arnd@arndb.de>
-X-Provags-ID: V02:K0:odHoFDGXt9qsLqcbl54QOFIcp6PanXzHNBz+6XFKh1k
- nf2s/sAqKaR9bs0ncGYeVq0uJWE+/EXrtXi5XRLYxkRgftZWGy
- O2OMf2R0FsuDvAj1wvs9YlcReUqhigcRI87v5b8Q2QjH8VyPtU
- 6I/5lppnObnNyLDY4RxARhvTEDremYpZCmRLptvQMlmdeAUJ+e
- nXWMiDLBBRGlEiWqd1FGg==
+Message-ID: <1306753618.2029.447.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 May 2011, David Woodhouse wrote:
-> And as I said, it's still an incomplete solution if you actually want a
-> 'filtered randconfig' to do anything *useful*. You'd be much better off
-> implementing a real filtered randconfig that allows you to give a list
-> of hard-coded options, rather than relying on a dirty hack that only
-> actually sets one option of the many that you might need to
-> 'hard-code' if you actually wanted a useful build.
+On Mon, 2011-05-30 at 12:58 +0200, Ingo Molnar wrote:
+> 
+> * Theodore Tso <tytso@MIT.EDU> wrote:
+> 
+> > I'd think that "make ARCH=x86_64 oldconfig"
+> > 
+> > ... where the old configuration contained CONFIG_X86_32
+> > should trigger a warning, if not an outright error that 
+> > stops the build....
+> 
+> That would be a rather sad regression for me: i use that command 
+> regularly to transform .configs that came in bugreports into a config 
+> suitable for a testbox that has a different bitness userspace 
+> installed. 
 
-I'm actually looking for a way to do filtered randconfig (and
-all{yes,mod,no}config) for ARM, so hopefully we can come up with
-something useful.
+And if it has a different SCSI or ATA controller? Then you need
+something like:
 
-Our problem today is that we have not just two but dozens of
-incompatible platforms, and with randconfig every 'choice'
-statements still just gets its default, which makes randconfig
-builds fairly useless.
+	'make CONFIG_SATA_MV=y oldconfig'
 
-What I'd like to see is one or both of these two behaviors:
+to make your config actually useful.
 
-* Take a defconfig file (with the new format that only sets
-  non-default options), and keep everything in there but
-  apply the rand/no/yes/mod-config to all other symbols.
+Which only goes to reinforce my point that CONFIG_64BIT *isn't* that
+special.
 
-* Randomize all settings, including choice statements.
+Yes, we should fix the tools so that it's easy to *fix* certain settings
+when running randconfig/oldconfig/all*config. That addresses *all* your
+examples that you posted in a separate mail, doesn't it?
 
-	Arnd
+Without being a dirty hack which only works for *one* setting
+(CONFIG_64BIT), and only works on *one* architecture (there is no
+equivalent ARCH= hack for setting CONFIG_64BIT on
+powerpc/mips/sparc/sh/parisc).
+
+-- 
+dwmw2
+
