@@ -1,82 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab1E3MPw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 08:15:52 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56767 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752885Ab1E3MPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 08:15:51 -0400
-Date: Mon, 30 May 2011 14:15:32 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>
-Subject: Re: [PATCH v2 08/10] x86-64: Emulate vsyscalls
-Message-ID: <20110530121532.GH22324@elte.hu>
-References: <cover.1306724657.git.luto@mit.edu>
- <07445623494a3d9f02581eb06326420f5f443043.1306724657.git.luto@mit.edu>
- <20110530074608.GD27557@elte.hu>
- <BANLkTi=aX5un5ZPVD9u6NRJb-koFG7T=6w@mail.gmail.com>
- <20110530105937.GB20133@elte.hu>
- <BANLkTimhMuN03qABgs0+Z+yti-rco5V82Q@mail.gmail.com>
+	id S1756931Ab1E3MTy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 08:19:54 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:60162 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755512Ab1E3MTx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 08:19:53 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <greg@kroah.com>, <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Subject: [PATCH] staging: synaptics: Implement error handling for rmi4 touch regulator
+Date: Mon, 30 May 2011 14:16:50 +0200
+Message-ID: <1306757810-5291-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimhMuN03qABgs0+Z+yti-rco5V82Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
 
-* Andrew Lutomirski <luto@mit.edu> wrote:
+Implement the error handling for regulator in synaptics
+rmi4 touch screen
 
-> On Mon, May 30, 2011 at 6:59 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Andrew Lutomirski <luto@mit.edu> wrote:
-> >
-> >>
-> >> I'd advocate waiting until glibc 2.14 comes out with this change:
-> >>
-> >> http://sourceware.org/git/?p=glibc.git;a=commit;h=a8509ca540427502bd955f35296ff7b727c7a8a1
-> >>
-> >> I want to add a warning (ratelimited to an extremely low rate) in v3
-> >> whenever any of the vsyscalls get used telling users that their legacy
-> >> code is suffering a performance impact, but it seems like bad form to
-> >> tell people to build glibc from git to avoid a regression.
-> >
-> > But only statically built binaries would be impacted in practice,
-> > right? The number of statically built binaries that heavily rely on
-> > vsyscalls ought to be a very small set ...
-> 
-> With current glibc even dynamic binaries take the hit on time().
+Signed-off-by: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+---
+Somehow this patch has been lost and is pending in my local tree,
+so resending. The slowness of the "big" Synaptics driver to emerge
+gives me ideas about moving this to drivers/input :-P
+---
+ drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c |   43 +++++++++++-------------
+ drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h |    2 -
+ 2 files changed, 20 insertions(+), 25 deletions(-)
 
-Indeed, you are right, i completely forgot that again :)
+diff --git a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+index 3e68d58..36f4cb7 100644
+--- a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
++++ b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+@@ -926,17 +926,19 @@ static int __devinit synaptics_rmi4_probe
+ 		goto err_input;
+ 	}
+ 
+-	if (platformdata->regulator_en) {
+-		rmi4_data->regulator = regulator_get(&client->dev, "vdd");
+-		if (IS_ERR(rmi4_data->regulator)) {
+-			dev_err(&client->dev, "%s:get regulator failed\n",
+-								__func__);
+-			retval = PTR_ERR(rmi4_data->regulator);
+-			goto err_regulator;
+-		}
+-		regulator_enable(rmi4_data->regulator);
++	rmi4_data->regulator = regulator_get(&client->dev, "vdd");
++	if (IS_ERR(rmi4_data->regulator)) {
++		dev_err(&client->dev, "%s:get regulator failed\n",
++							__func__);
++		retval = PTR_ERR(rmi4_data->regulator);
++		goto err_get_regulator;
++	}
++	retval = regulator_enable(rmi4_data->regulator);
++	if (retval < 0) {
++		dev_err(&client->dev, "%s:regulator enable failed\n",
++							__func__);
++		goto err_regulator_enable;
+ 	}
+-
+ 	init_waitqueue_head(&rmi4_data->wait);
+ 	/*
+ 	 * Copy i2c_client pointer into RTID's i2c_client pointer for
+@@ -1011,11 +1013,10 @@ static int __devinit synaptics_rmi4_probe
+ err_free_irq:
+ 	free_irq(platformdata->irq_number, rmi4_data);
+ err_query_dev:
+-	if (platformdata->regulator_en) {
+-		regulator_disable(rmi4_data->regulator);
+-		regulator_put(rmi4_data->regulator);
+-	}
+-err_regulator:
++	regulator_disable(rmi4_data->regulator);
++err_regulator_enable:
++	regulator_put(rmi4_data->regulator);
++err_get_regulator:
+ 	input_free_device(rmi4_data->input_dev);
+ 	rmi4_data->input_dev = NULL;
+ err_input:
+@@ -1039,10 +1040,8 @@ static int __devexit synaptics_rmi4_remove(struct i2c_client *client)
+ 	wake_up(&rmi4_data->wait);
+ 	free_irq(pdata->irq_number, rmi4_data);
+ 	input_unregister_device(rmi4_data->input_dev);
+-	if (pdata->regulator_en) {
+-		regulator_disable(rmi4_data->regulator);
+-		regulator_put(rmi4_data->regulator);
+-	}
++	regulator_disable(rmi4_data->regulator);
++	regulator_put(rmi4_data->regulator);
+ 	kfree(rmi4_data);
+ 
+ 	return 0;
+@@ -1080,8 +1079,7 @@ static int synaptics_rmi4_suspend(struct device *dev)
+ 	if (retval < 0)
+ 		return retval;
+ 
+-	if (pdata->regulator_en)
+-		regulator_disable(rmi4_data->regulator);
++	regulator_disable(rmi4_data->regulator);
+ 
+ 	return 0;
+ }
+@@ -1099,8 +1097,7 @@ static int synaptics_rmi4_resume(struct device *dev)
+ 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+ 	const struct synaptics_rmi4_platform_data *pdata = rmi4_data->board;
+ 
+-	if (pdata->regulator_en)
+-		regulator_enable(rmi4_data->regulator);
++	regulator_enable(rmi4_data->regulator);
+ 
+ 	enable_irq(pdata->irq_number);
+ 	rmi4_data->touch_stopped = false;
+diff --git a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h
+index 3686a2f..384436e 100644
+--- a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h
++++ b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h
+@@ -34,7 +34,6 @@
+  * @irq_type: irq type
+  * @x flip: x flip flag
+  * @y flip: y flip flag
+- * @regulator_en: regulator enable flag
+  *
+  * This structure gives platform data for rmi4.
+  */
+@@ -43,7 +42,6 @@ struct synaptics_rmi4_platform_data {
+ 	int irq_type;
+ 	bool x_flip;
+ 	bool y_flip;
+-	bool regulator_en;
+ };
+ 
+ #endif
+-- 
+1.7.3.2
 
-> With the emulation warning (coming in v3), I get (on a Fedora 
-> 15-based VM):
-> 
-> [    0.635493] init[1] emulated legacy vsyscall time(); upgrade your
-> code to avoid a performance hit. ip:ffffffffff600404 sp:7fff277fe9c8
-> caller:3da3e9e27d in libc.so.6[3da3e00000+192000]
-
-Ok, so we should leave the option enabled by default and distros can 
-flip it as they upgrade/fix glibc, right?
-
-Thanks,
-
-	Ingo
