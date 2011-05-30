@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab1E3GYJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 02:24:09 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50895 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab1E3GYI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 02:24:08 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DE337FB.3000804@jp.fujitsu.com>
-Date: Mon, 30 May 2011 15:23:55 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1754429Ab1E3Gbw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 02:31:52 -0400
+Received: from ozlabs.org ([203.10.76.45]:44650 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751026Ab1E3Gbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 02:31:50 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: Re: [PATCHv2 10/14] virtio_net: limit xmit polling
+In-Reply-To: <20110528200204.GB7046@redhat.com>
+References: <cover.1305846412.git.mst@redhat.com> <aced8619c07018b5495f9ceb2c02d4fbf897a098.1305846412.git.mst@redhat.com> <877h9kvlps.fsf@rustcorp.com.au> <20110522121008.GA12155@redhat.com> <87boyutbjg.fsf@rustcorp.com.au> <20110523111900.GB27212@redhat.com> <8739k3k1fb.fsf@rustcorp.com.au> <20110525060759.GC26352@redhat.com> <87vcwyjg2w.fsf@rustcorp.com.au> <20110528200204.GB7046@redhat.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Mon, 30 May 2011 15:57:39 +0930
+Message-ID: <8739jwk8is.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: vnagarnaik@google.com, rientjes@google.com, mingo@redhat.com,
-        fweisbec@gmail.com, mrubin@google.com, dhsharp@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] trace: Set oom_score_adj to maximum for ring buffer allocating
- process
-References: <1306439537-23706-1-git-send-email-vnagarnaik@google.com>	 <1306519125-19301-1-git-send-email-vnagarnaik@google.com>	 <alpine.DEB.2.00.1105271618470.9445@chino.kir.corp.google.com>	 <BANLkTimfdkpY=9pgEmBZwE3ezCmooEtQTA@mail.gmail.com> <1306547453.3857.44.camel@gandalf.stny.rr.com>
-In-Reply-To: <1306547453.3857.44.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/05/28 10:50), Steven Rostedt wrote:
-> On Fri, 2011-05-27 at 17:44 -0700, Vaibhav Nagarnaik wrote:
+On Sat, 28 May 2011 23:02:04 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Thu, May 26, 2011 at 12:58:23PM +0930, Rusty Russell wrote:
+> > ie. free two packets for every one we're about to add.  For steady state
+> > that would work really well.
 > 
->> That said, I am open to changing it if Steven and you think using
->> oom_killer_disabled is a better solution.
+> Sure, with indirect buffers, but if we
+> don't use indirect (and we discussed switching indirect off
+> dynamically in the past) this becomes harder to
+> be sure about. I think I understand why but
+> does not a simple capacity check make it more obvious?
+
+...
+
+> >  Then we hit the case where the ring
+> > seems full after we do the add: at that point, screw latency, and just
+> > try to free all the buffers we can.
 > 
-> My biggest concern is that we are setting policy in the kernel. If you
-> are concerned about this, why not just have the process that is going to
-> increase the size of the ring buffer adjust its own oom policy
-> with /proc/<pid>/oom_score_adj ? Only a privilege process can increase
-> the size of the ring buffer so it's not like we are worried about any
-> normal user task upping the ring buffer to kill other processes.
+> I see. But the code currently does this:
+> 
+> 	for(..)
+> 		get_buf
+> 	add_buf
+> 	if (capacity < max_sk_frags+2) {
+> 		if (!enable_cb)
+> 			for(..)
+> 				get_buf
+> 	}
+> 
+> 
+> In other words the second get_buf is only called
+> in the unlikely case of race condition.
+> 
+> So we'll need to add *another* call to get_buf.
+> Is it just me or is this becoming messy?
 
-I like Steven's approach.
+Yes, good point.  I really wonder if anyone would be able to measure the
+difference between simply freeing 2 every time (with possible extra
+stalls for strange cases) and the more complete version.
 
-Because even if we apply Vaibhav's patch, we still have a oom issue.
-because when oom-killer killed echo commands, it doesn't shrink ring
-buffer. it only just die. So, the kernel is still under extreme memory
-shortage. Any admins operation may invoke next oom-killer.
+But it runs against my grain to implement heuristics when one more call
+would make it provably reliable.
 
-And -personally- I think any tracing user should know system ram size
-and proper ring buffer size. ;)
+Please find a way to make that for loop less ugly though!
 
+Thanks,
+Rusty.
