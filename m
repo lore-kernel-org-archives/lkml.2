@@ -1,159 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757706Ab1E3RaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 13:30:23 -0400
-Received: from xes-mad.com ([216.165.139.218]:6172 "EHLO xes-mad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757680Ab1E3RaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 13:30:20 -0400
-Subject: Re: [PATCH v6] gpio: Add support for Intel ICHx/3100/Series[56]
- GPIO
-From: Peter Tyser <ptyser@xes-inc.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
-        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Syed S Azam <Syed.Azam@hp.com>,
-        Vincent Palatin <vpalatin@chromium.org>
-In-Reply-To: <BANLkTin9Cy_emoFDs5hgw52ohbbPDKcN9w@mail.gmail.com>
-References: <1299022100-14564-4-git-send-email-ptyser@xes-inc.com>
-	 <1303317354-18188-1-git-send-email-ptyser@xes-inc.com>
-	 <20110527064238.GA31271@ponder.secretlab.ca>
-	 <20110527110130.4b3448f2@endymion.delvare>
-	 <1306506402.22090.14872.camel@petert>
-	 <20110527205526.GJ6645@ponder.secretlab.ca>
-	 <1306531794.10752.19.camel@ptyser-laptop>
-	 <BANLkTin9Cy_emoFDs5hgw52ohbbPDKcN9w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 30 May 2011 12:27:58 -0500
-Message-ID: <1306776478.2882.47.camel@ptyser-laptop>
+	id S1757669Ab1E3R3z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 13:29:55 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.39.38]:38977 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757649Ab1E3R3y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 13:29:54 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Jr5OQH7kzIc5G5pZ5IIBWgwkZTT6jiJz+W6gujug4CwZG3O2iPwKKuxUbRVcboc/lR5SzKJMTVUdyqAipDcGmaywQUIm+abFbGmquzf5SDEnaLUnkwLOmzb0h6ynMFLk;
+Date: Mon, 30 May 2011 10:29:52 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Theodore Tso <tytso@MIT.EDU>, David Woodhouse <dwmw2@infradead.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
+Message-Id: <20110530102952.ede4089a.rdunlap@xenotime.net>
+In-Reply-To: <20110530113036.GA22324@elte.hu>
+References: <1306707270.2029.377.camel@i7.infradead.org>
+	<20110530072300.GA9802@elte.hu>
+	<1306745835.2029.389.camel@i7.infradead.org>
+	<20110530104231.GF17821@elte.hu>
+	<20110530104656.GA19532@elte.hu>
+	<E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
+	<20110530105809.GA20133@elte.hu>
+	<1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
+	<20110530113036.GA22324@elte.hu>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-27 at 17:54 -0600, Grant Likely wrote:
-> On Fri, May 27, 2011 at 3:29 PM, Peter Tyser <ptyser@xes-inc.com> wrote:
-> >> > My own (completely biased) preference would be to use my driver as a
-> >> > starting point, primarily because it supports newer chips that require
-> >> > different access methods, as well as the older-style chips Jean's
-> >> > supports.  Its also been hanging out for about 6 months without many
-> >> > complaints, a tested-by, etc.
-> >>
-> >> I like the /structure/ of Jean's driver better, particularly that it doesn't
-> >> play games with the device model by registering devices at module load
-> >> time.
-> >
-> > But the driver shouldn't be a PCI driver - that's worse in my opinion
-> > than a platform driver.  Multiple drivers currently use the same PCI
-> > device ID as Jean's - they can't all claim the PCI device, so why should
-> > Jean's GPIO driver?  It seems incorrect, and likely to break things in
-> > the future.  Mine has its warts too, but it doesn't have the possibility
-> > of negatively affect other drivers at least, as well as supports more
-> > hardware.
+On Mon, 30 May 2011 13:30:36 +0200 Ingo Molnar wrote:
+
 > 
-> Does it conflict with other drivers in the kernel right now?  If so,
-> then I'll drop it.
-
-It'd take some searching of where all the PCI vendor IDs in the new
-patch are used.  I did a quick search of ICH7 and ESB2 IDs, and it
-looked like:
-Conflict:
-- drivers/leds/leds-ss4200.c (also uses a PCI driver, also uses the GPIO
-functionality of the chip)
-
-Uses the same device, but no conflict:
-- drivers/char/sonypi.c (uses platform driver)
-- drivers/watchdog/iTCO_wdt.c (uses platform driver)
-- drivers/mtd/maps/esb2rom.c (has PCI driver support commented out)
-
-The same search would have to be performed for the other IDs to
-determine if there are conflicts.  So there is one conflict, but its
-probably not a huge deal because someone using leds-ss4200.c likely
-wouldn't be using the ich GPIO driver as well.  leds-ss4200.c should
-probably be converted to use the standard GPIO driver in the future.
-
-However, if the above non-conflicting drivers did use the same PCI
-driver model as the accepted GPIO patch, there would be conflicts -
-that's what I don't care for.  The drivers above are considerate of the
-fact that the device being used is a MFD while the Jean's driver is not.
-
-I followed the iTCO_wdt.c and sonypi.c models for my driver in an
-attempt to play nice with other drivers that might require the same PCI
-device.
-
-> Also, you're directly describing the use case for an MFD type device.
-> I certainly expect either this driver or Jean's driver to be reworked
-> into an MFD style device in the next cycle.
-
-I was following the very "popular" iTCO_wdt.c driver model.  I'd hope
-the current driver could be merged as it follows the current ICHx usage
-pattern, and then they (and possibly other drivers) could all be
-reworked at the same time into an MFD style driver.
-
-> >> If one device performs more than one function, then it should
-> >> register all the interfaces from a single probe, or go in the
-> >> direction of MFD devices and register a bunch of child
-> >> platform_devices.
-> >
-> > In this case its not really "one device performing more than one
-> > function", its one device specifying the location of other devices.  The
-> > device being claimed is used for FWH and IRQ configuration and happens
-> > to have a pointer to a GPIO device (among other things).  Claiming it
-> > for a GPIO device seems very wrong - it has very little to do with GPIO
-> > at all.
+> * Theodore Tso <tytso@MIT.EDU> wrote:
 > 
-> Are you sure?  My reading of the ICH10 manual is that the GPIO
-> controller is very much behind the LPC bridge, and that it is entirely
-> appropriate for the GPIO controller device to be registered by the PCI
-> driver as a child of the PCI device, or to be registered directly by
-> the PCI driver.
-
-I was a bit overzealous in my comment - you are correct that the GPIO
-controller is behind the LPC bridge.  However, there is a lot of other
-stuff in the same device, from the Intel series 5 datasheet : "The LPC
-bridge function of the PCH resides in PCI Device 31:Function 0. This
-function contains many other functional units, such as DMA and Interrupt
-controllers, Timers, Power Management, System Management, GPIO, RTC, and
-LPC Configuration Registers."
- 
-Thus I still don't think its correct to claim the device as only a GPIO
-device - its much more, as can be seen by the current drivers which use
-the same device.  I'm having a tough time seeing how an monopolistic PCI
-driver is considered better than a platform driver that follows the
-structure of other drivers in use.
-
-> >
-> >> I'm going to merge Jean's driver and leave this one out for now
-> >> (sorry), but I reserve the right to replace Jean's with your driver in
-> >> the next merge window.  This is pretty much an arbitrary decision, but
-> >> I may as well merge at least one of them now instead of kicking both
-> >> out for another cycle.  It really seams to me like there is still
-> >> a few architectural issues to sort out in both drivers and to make
-> >> sure that one driver will be useful for both of you.
-> >
-> > I disagree with the logic, and its a bit frustrating to have a patch
-> > hanging out for 6 months to be superseded by a more recent change that
-> > seems to be more likely to cause conflicts.
+> > 
+> > On May 30, 2011, at 6:58 AM, Ingo Molnar wrote:
+> > 
+> > > 
+> > > * Theodore Tso <tytso@MIT.EDU> wrote:
+> > > 
+> > >> I'd think that "make ARCH=x86_64 oldconfig"
+> > >> 
+> > >> ... where the old configuration contained CONFIG_X86_32
+> > >> should trigger a warning, if not an outright error that 
+> > >> stops the build....
+> > > 
+> > > That would be a rather sad regression for me: i use that command 
+> > > regularly to transform .configs that came in bugreports into a config 
+> > > suitable for a testbox that has a different bitness userspace 
+> > > installed.
+> > 
+> > OK, so to clarify, what you want is for ARCH=xxx to always override 
+> > whatever is in .config? [...]
 > 
-> Think about it this way; your patch wasn't going to go in this cycle
-> anyway due to the current concerns I have about structure,
+> If 'xxx' clearly signals both architecture and bitness then it should 
+> override both the architecture and the bitness of the .config - 
+> that's both common-sense and currently implemented (and relied on) 
+> behavior.
+> 
+> 'ARCH=x86 oldconfig' should maintain bitness in the .config like it 
+> does today, because the 'xxx' only specifies the architecture.
+> 
+> [ Btw., 'override the architecture' usecase is not just theoretical: 
+>   i sometimes use this form to convert existing .config's *between* 
+>   architectures, not just from 32-bit to 64-bit. So if i get an ARM 
+>   bugreport that gives me the appearance of a core kernel bug i will 
+>   often start by converting that to an x86 .config via 'make 
+>   ARCH=x86_64 oldconfig'. ]
+> 
+> >  Are we all on the same page here? [...]
+> 
+> I think this thread makes it rather clear that David and me are not 
+> on the same page. Not sure about you :)
+> 
+> > [...]  I thought David was arguing that what was in .config should 
+> > always be more important, since he regards "ARCH=xxxx" as "legacy".
+> 
+> Well i (and current behavior) argue that what the user types actually 
+> has a meaning and a purpose and provides an override to other 
+> environmental data.
+> 
+> > Or maybe I'm missing something here.... since people seem to be 
+> > slinging around examples what should or should not work, as opposed 
+> > to simply saying, "ARCH=xxx" must always override all else, even in 
+> > cases like "oldconfig", "randconfig", etc.  Is that what the patch 
+> > is going to do?
+> 
+> I said it from mail #1 on that "ARCH=xxx" must override the .config 
+> [except in cases like ARCH=x86 where 'xxx' does not imply bitness] 
+> and must modify/filter other typed arguments 
+> (randconfig/allnoconfig/allyesconfig, etc.) in an intuitive and 
+> common-sense fashion.
+> 
+> > All this talk of how it's OK for randconfig to give you i386 50% of 
+> > the time even when ARCH=x86_64 is specified is confusing me?  Maybe 
+> > that was just intended to be sarcasm?
+> 
+> That was the original regression i reported to David. So yes, i do 
+> argue, and argued from day 1 on (which was 2 years ago) that 
+> 'ARCH=i386' and 'ARCH=x86_64' should override secondary sources of 
+> environment.
 
-I attempted to follow the driver model of the existing iTCO_wdt.c file,
-which at a minimum will not negatively affect other drivers unlike the
-potential of the accepted driver.  Any comments about the platform
-driver GPIO approach can also be made to the iTCO_wdt.c driver, as well
-as the sonypi.c driver.  Since cleanup needs to be done anyway on those
-drivers, my hope would be that the platform GPIO driver would be
-accepted since it follows the status quo, and then cleanup on them all
-would occur.
+AFAIK, command line options in kbuild always override other settings,
+so this should remain consistent.
 
-Best,
-Peter
+And yes, I also use lots of these same commands that Ingo uses, both in
+scripts and non-scripted (by hand).
 
+> It's just that David has not accepted my reasoning and has given a 
+> changelog that describes the topic in a rather one-sided fashion.
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
