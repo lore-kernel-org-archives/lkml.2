@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab1E3BkS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 21:40:18 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47099 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab1E3BkQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 21:40:16 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DE2F577.3000105@jp.fujitsu.com>
-Date: Mon, 30 May 2011 10:40:07 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: a.p.zijlstra@chello.nl
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, efault@gmx.de,
-        mingo@elte.hu
-Subject: Re: [PATCH] cpumask: convert cpumask_of_cpu() with cpumask_of()
-References: <1303814572.20212.249.camel@twins>	 <20110426203520.F3AE.A69D9226@jp.fujitsu.com>	 <20110427193419.D17F.A69D9226@jp.fujitsu.com> <1306442327.2497.108.camel@laptop>
-In-Reply-To: <1306442327.2497.108.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753177Ab1E3Bnn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 21:43:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38785 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751920Ab1E3Bnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 21:43:41 -0400
+Date: Mon, 30 May 2011 11:43:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Patrick McHardy <kaber@trash.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org
+Subject: linux-next: build warning in Linus' tree
+Message-Id: <20110530114333.6aa13281.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__30_May_2011_11_43_33_+1000_PCpJtQVSRZ9Xlk63"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> The trick is,
->>  - Typical linux userland applications don't use mempolicy and/or cpusets
->>    API at all.
->>  - Then, 99.99% thread's  tsk->cpus_alloed have cpu_all_mask.
->>  - cpu_all_mask case, every thread can share the same bitmap. It may help to
->>    reduce L1 cache miss in scheduler.
->>
->> What do you think? 
-> 
-> Nice!
-> 
-> If you finish the first patch (sort the TODOs) I'll take it.
+--Signature=_Mon__30_May_2011_11_43_33_+1000_PCpJtQVSRZ9Xlk63
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, now I'm submitting a lot of cpumask cleanup patches to various arch and
-subsystems. So, I expect I can finish this work in June.
+Hi all,
 
-> I'm unsure about the PF_THREAD_UNBOUND thing though, then again, the
-> alternative is adding another struct cpumask * and have that point to
-> the shared mask or the private mask.
+In Linus' tree, today's linux-next build (powerpc ppc64_defconfig)
+produced this warning:
 
-Ahhh, I'm sorry. My explanation was bad. PF_THREAD_UNBOUND is not my point.
-It's only concept proof patch, not for submitting. yes, I did cheat for getting
-number easily. I think the good way is probably to add another cpumask* and
-implement COW shared mask. but I'm ok other way too.
+net/ipv4/netfilter/nf_nat_standalone.c: In function 'nf_nat_fn':
+net/ipv4/netfilter/nf_nat_standalone.c:119:2: warning: case value '4' not i=
+n enumerated type 'enum ip_conntrack_info'
+net/ipv4/netfilter/ipt_CLUSTERIP.c: In function 'clusterip_tg':
+net/ipv4/netfilter/ipt_CLUSTERIP.c:324:3: warning: case value '4' not in en=
+umerated type 'enum ip_conntrack_info'
 
+I am now using gcc v4.5.2.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> But yeah, looks quite feasible.
+--Signature=_Mon__30_May_2011_11_43_33_+1000_PCpJtQVSRZ9Xlk63
+Content-Type: application/pgp-signature
 
-Thank you to pay attention my patch!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJN4vZFAAoJEDMEi1NhKgbsZ0gH/0icvXHPifE7pBoUVkdbbZ01
+vMyADneqGZv5HRWXTPR2UfU8MV7ghR2LOj+BWVd5EGLBoYJsaoEEHjpHCj6FGBON
+1WP1yuIoNRyk1xcESbM+e6A6fTMiL9d/LcSAzDS9uC+8GYMz8+ZgGeI+oyvRSe2C
+gUMvPkvAw9XHzrOvttaoeGTmZBfV33AtLq+U78u8S1lSWFOxtCi3sP0Adda8C1G3
+KOdnFIounHezgVNxstArhbd+gSXK1qaoxiSd9n+f8eo20QTTNj5/949uA1Md0AeA
+zmptwSleMfSm9Ka50EclZGaTOYxMS1GYjF6ZQzR2nCCeBn0+bOktBf5m0Wp282Q=
+=6Q41
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__30_May_2011_11_43_33_+1000_PCpJtQVSRZ9Xlk63--
