@@ -1,123 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab1E3LV6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 07:21:58 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:39331 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751332Ab1E3LV4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 07:21:56 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: Alan Cox <alan@linux.intel.com>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH v2] 8250_pci: add -ENODEV code for Intel EG20T PCH
-Date: Mon, 30 May 2011 20:26:16 +0900
-Message-Id: <1306754776-8077-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1756738Ab1E3Laq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 07:30:46 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42337 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755512Ab1E3Lao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 07:30:44 -0400
+Date: Mon, 30 May 2011 13:30:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: David Woodhouse <dwmw2@infradead.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
+Message-ID: <20110530113036.GA22324@elte.hu>
+References: <1306707270.2029.377.camel@i7.infradead.org>
+ <20110530072300.GA9802@elte.hu>
+ <1306745835.2029.389.camel@i7.infradead.org>
+ <20110530104231.GF17821@elte.hu>
+ <20110530104656.GA19532@elte.hu>
+ <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
+ <20110530105809.GA20133@elte.hu>
+ <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel EG20T PCH has UART device which is compatible with 8250.
-Currently, with general configuration, the PCH UART driver is not loaded but
-8250 standard driver is loaded.
-Therefore, in case of using PCH UART driver, need to disable 8250 pci function.
-However, this procedure is not best solution.
 
-This patch, in 8250_pci, if the device is the PCH or the family IOH,
-'-ENODEV' is returned.
-As a result, disabling 8250-pci processing becomes unnecessary.
+* Theodore Tso <tytso@MIT.EDU> wrote:
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
-V2: Delete #ifdef CONFIG_SERIAL_PCH_UART ~ #endif
-    Use quirk table structure
----
- drivers/tty/serial/8250_pci.c |   54 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 54 insertions(+), 0 deletions(-)
+> 
+> On May 30, 2011, at 6:58 AM, Ingo Molnar wrote:
+> 
+> > 
+> > * Theodore Tso <tytso@MIT.EDU> wrote:
+> > 
+> >> I'd think that "make ARCH=x86_64 oldconfig"
+> >> 
+> >> ... where the old configuration contained CONFIG_X86_32
+> >> should trigger a warning, if not an outright error that 
+> >> stops the build....
+> > 
+> > That would be a rather sad regression for me: i use that command 
+> > regularly to transform .configs that came in bugreports into a config 
+> > suitable for a testbox that has a different bitness userspace 
+> > installed.
+> 
+> OK, so to clarify, what you want is for ARCH=xxx to always override 
+> whatever is in .config? [...]
 
-diff --git a/drivers/tty/serial/8250_pci.c b/drivers/tty/serial/8250_pci.c
-index 738cec9..39c0d62 100644
---- a/drivers/tty/serial/8250_pci.c
-+++ b/drivers/tty/serial/8250_pci.c
-@@ -2541,6 +2541,53 @@ void pciserial_resume_ports(struct serial_private *priv)
- }
- EXPORT_SYMBOL_GPL(pciserial_resume_ports);
- 
-+static struct pci_serial_quirk eg20t_pch_uart[] __refdata = {
-+	{
-+		.vendor         = PCI_VENDOR_ID_INTEL,
-+		.device         = 0x8811,
-+	},
-+	{
-+		.vendor         = PCI_VENDOR_ID_INTEL,
-+		.device         = 0x8812,
-+	},
-+	{
-+		.vendor         = PCI_VENDOR_ID_INTEL,
-+		.device         = 0x8813,
-+	},
-+	{
-+		.vendor         = PCI_VENDOR_ID_INTEL,
-+		.device         = 0x8814,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x8027,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x8028,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x8029,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x800C,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x800D,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x800D,
-+	},
-+	{
-+		.vendor         = PCI_ANY_ID,
-+		.device         = PCI_ANY_ID,
-+	},
-+};
-+
- /*
-  * Probe one serial board.  Unfortunately, there is no rhyme nor reason
-  * to the arrangement of serial ports on a PCI card.
-@@ -2552,6 +2599,7 @@ pciserial_init_one(struct pci_dev *dev, const struct pci_device_id *ent)
- 	const struct pciserial_board *board;
- 	struct pciserial_board tmp;
- 	int rc;
-+	int i;
- 
- 	if (ent->driver_data >= ARRAY_SIZE(pci_boards)) {
- 		printk(KERN_ERR "pci_init_one: invalid driver_data: %ld\n",
-@@ -2559,6 +2607,12 @@ pciserial_init_one(struct pci_dev *dev, const struct pci_device_id *ent)
- 		return -EINVAL;
- 	}
- 
-+	for (i = 0; eg20t_pch_uart[i].vendor != PCI_ANY_ID; i++) {
-+		if (dev->vendor == eg20t_pch_uart[i].vendor &&
-+		    dev->device == eg20t_pch_uart[i].device)
-+			return -ENODEV;
-+	}
-+
- 	board = &pci_boards[ent->driver_data];
- 
- 	rc = pci_enable_device(dev);
--- 
-1.7.4
+If 'xxx' clearly signals both architecture and bitness then it should 
+override both the architecture and the bitness of the .config - 
+that's both common-sense and currently implemented (and relied on) 
+behavior.
 
+'ARCH=x86 oldconfig' should maintain bitness in the .config like it 
+does today, because the 'xxx' only specifies the architecture.
+
+[ Btw., 'override the architecture' usecase is not just theoretical: 
+  i sometimes use this form to convert existing .config's *between* 
+  architectures, not just from 32-bit to 64-bit. So if i get an ARM 
+  bugreport that gives me the appearance of a core kernel bug i will 
+  often start by converting that to an x86 .config via 'make 
+  ARCH=x86_64 oldconfig'. ]
+
+>  Are we all on the same page here? [...]
+
+I think this thread makes it rather clear that David and me are not 
+on the same page. Not sure about you :)
+
+> [...]  I thought David was arguing that what was in .config should 
+> always be more important, since he regards "ARCH=xxxx" as "legacy".
+
+Well i (and current behavior) argue that what the user types actually 
+has a meaning and a purpose and provides an override to other 
+environmental data.
+
+> Or maybe I'm missing something here.... since people seem to be 
+> slinging around examples what should or should not work, as opposed 
+> to simply saying, "ARCH=xxx" must always override all else, even in 
+> cases like "oldconfig", "randconfig", etc.  Is that what the patch 
+> is going to do?
+
+I said it from mail #1 on that "ARCH=xxx" must override the .config 
+[except in cases like ARCH=x86 where 'xxx' does not imply bitness] 
+and must modify/filter other typed arguments 
+(randconfig/allnoconfig/allyesconfig, etc.) in an intuitive and 
+common-sense fashion.
+
+> All this talk of how it's OK for randconfig to give you i386 50% of 
+> the time even when ARCH=x86_64 is specified is confusing me?  Maybe 
+> that was just intended to be sarcasm?
+
+That was the original regression i reported to David. So yes, i do 
+argue, and argued from day 1 on (which was 2 years ago) that 
+'ARCH=i386' and 'ARCH=x86_64' should override secondary sources of 
+environment.
+
+It's just that David has not accepted my reasoning and has given a 
+changelog that describes the topic in a rather one-sided fashion.
+
+Thanks,
+
+	Ingo
