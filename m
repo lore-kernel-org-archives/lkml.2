@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab1E3Tuj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 15:50:39 -0400
-Received: from relay03.digicable.hu ([92.249.128.185]:45599 "EHLO
-	relay03.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261Ab1E3Tui (ORCPT
+	id S1755136Ab1E3TxQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 15:53:16 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:63250 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab1E3TxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 15:50:38 -0400
-Message-ID: <4DE3F502.7060202@freemail.hu>
-Date: Mon, 30 May 2011 21:50:26 +0200
-From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+	Mon, 30 May 2011 15:53:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=KZ4q9PMycfq1ieK5PeA2SR2gZ25HxQpBJx3wi5y46IvnM8tD91o5D1EDl9qjGZnTbw
+         4QYFUCW33f++VmgBxvGy/yPBoIQ/z0Rf3mLtP8GaLwk3LynDW4wgNJuClKogr1NUm9Bb
+         BAwXe0M4X6ul+eWGZturMmDNlD+SRawSl56sM=
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
-        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
-        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] usbip: change dev_attr_group to constant
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Original: 94.21.98.223
+In-Reply-To: <20110530182221.GA16214@gere.osrc.amd.com>
+References: <rohityadav89@gmail.com> <1306776629-13404-1-git-send-email-rohityadav89@gmail.com>
+ <11791.1306777203@turing-police.cc.vt.edu> <BANLkTim2yJkQG=2JzFwxcAUfB3HF_m52Rg@mail.gmail.com>
+ <13206.1306779099@turing-police.cc.vt.edu> <20110530182221.GA16214@gere.osrc.amd.com>
+From: Rohit Yadav <rohityadav89@gmail.com>
+Date: Tue, 31 May 2011 01:22:54 +0530
+Message-ID: <BANLkTikKjjnai0kvvdA9OdBeBhkJWT9=oQ@mail.gmail.com>
+Subject: Re: [PATCH] Arch: x86: process: Fix a compilation warning.
+To: Borislav Petkov <bp@amd64.org>
+Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Márton Németh <nm127@freemail.hu>
+> Yep, all valid points. Another one would be to search whether this got
+> already fixed before wasting effort:
+>
+> http://git.kernel.org/tip/598e887d8b01655780c81cc86a9e7820ed091580
 
-The dev_attr_group variable is never changed and it is only passed
-to the second parameter of sysfs_create_group() and sysfs_remove_group() functions.
-These functions are defined in linux/sysfs.h: the second parameter is a pointer to
-const in both cases.
+What is the best way to search if something got fixed? There are
+plenty of repositories at git.kernel.org
+I'm using this one:
+http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
 
-Signed-off-by: Márton Németh <nm127@freemail.hu>
----
-diff --git a/drivers/staging/usbip/vhci.h b/drivers/staging/usbip/vhci.h
-index d5bc8e7..a208ef0 100644
---- a/drivers/staging/usbip/vhci.h
-+++ b/drivers/staging/usbip/vhci.h
-@@ -105,7 +105,7 @@ struct vhci_hcd {
- };
-
- extern struct vhci_hcd *the_controller;
--extern struct attribute_group dev_attr_group;
-+extern const struct attribute_group dev_attr_group;
- #define hardware (&the_controller->pdev.dev)
-
- /* vhci_hcd.c */
-diff --git a/drivers/staging/usbip/vhci_sysfs.c b/drivers/staging/usbip/vhci_sysfs.c
-index d9736f9..0cd039b 100644
---- a/drivers/staging/usbip/vhci_sysfs.c
-+++ b/drivers/staging/usbip/vhci_sysfs.c
-@@ -239,6 +239,6 @@ static struct attribute *dev_attrs[] = {
- 	NULL,
- };
-
--struct attribute_group dev_attr_group = {
-+const struct attribute_group dev_attr_group = {
- 	.attrs = dev_attrs,
- };
+Thanks.
