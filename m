@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab1E3HLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 03:11:21 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40958 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949Ab1E3HLU convert rfc822-to-8bit (ORCPT
+	id S1754658Ab1E3HNj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 03:13:39 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:53891 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585Ab1E3HNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 03:11:20 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: david@lang.hm
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-Date: Mon, 30 May 2011 09:13:27 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: "D. Jansen" <d.g.jansen@googlemail.com>, Theodore Tso <tytso@mit.edu>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com> <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm>
-In-Reply-To: <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm>
+	Mon, 30 May 2011 03:13:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=MjpTZYEV+GM71HPBt8G1OLO3tiWOCkf8MH9+NswNPvam6Ew8O7+zLExc07GxMihrW8
+         9CRfwAc43z79HE9WgN3nqZch/dryGdWqztqbxOsbplIUCAu43VBdKxo3nNMTAkXZ+D+I
+         lAhXPQrbfXb5w0OT8PGl8fMOYshygl+crzbfU=
+From: Connor Hansen <cmdkhh@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Borislav Petkov <bp@alien8.de>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Connor Hansen <cmdkhh@gmail.com>
+Subject: [PATCH 1/2] ide-cd: Fix signedness warning
+Date: Mon, 30 May 2011 00:13:32 -0700
+Message-Id: <1306739612-29239-1-git-send-email-cmdkhh@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105300913.27971.oneukum@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 30. Mai 2011, 03:53:18 schrieb david@lang.hm:
-> > So what if we would queue the fsyncs along with the writes - we would
-> > just fsync later instead of immediately, in between the writes as they
-> > came in. Then by design previous data could not be corrupted, right?
-> > We would do exactly the same thing, just later.
-> > It'd be kind of a disk write time distortion field.
-> 
-> the problem is that the spec for fsync says that your program stops until 
-> fsync finishes. If you don't do that then you will corrupt and loose data.
+One of the legit warnings 'make W=3 drivers/ide/ide-cd.oÂ´ generates is
 
-It is important to be precise.
-You will loose data, but you will not get corruption.
+drivers/ide/ide-cd.c: In function .ide_cdrom_prep_fs.:
+drivers/ide/ide-cd.c:1314: warning: conversion to .unsigned int. from .int. may change the sign of the result
 
-> so if you delay fsync you will have your application (or desktop manager) 
-> freeze until the fsync completes.
-> 
-> if what you are wanting is the ability to say 'these things must be 
-> written before these other things to keep them from being corrupted, but I 
-> don't care when they get written (or if they get lost in a crash)' then 
-> what you want isn't fsync, it's a barrier.
+because queue_logical_block_size() returns unsigned short but hard_sect
+is defined as int. Fix that no matter how low the potential for this
+becoming a bug is.
 
-Yes, but where is the problem?
+Signed-off-by: Connor Hansen <cmdkhh@gmail.com>
+---
+ drivers/ide/ide-cd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-	Regards
-		Oliver
+diff --git a/drivers/ide/ide-cd.c b/drivers/ide/ide-cd.c
+index 6e5123b..c1de54a 100644
+--- a/drivers/ide/ide-cd.c
++++ b/drivers/ide/ide-cd.c
+@@ -1309,7 +1309,7 @@ static int ide_cdrom_probe_capabilities(ide_drive_t *drive)
+ /* standard prep_rq_fn that builds 10 byte cmds */
+ static int ide_cdrom_prep_fs(struct request_queue *q, struct request *rq)
+ {
+-	int hard_sect = queue_logical_block_size(q);
++	unsigned short hard_sect = queue_logical_block_size(q);
+ 	long block = (long)blk_rq_pos(rq) / (hard_sect >> 9);
+ 	unsigned long blocks = blk_rq_sectors(rq) / (hard_sect >> 9);
+ 
 -- 
-- - - 
-SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
-Maxfeldstraße 5                         
-90409 Nürnberg 
-Germany 
-- - - 
+1.7.4.4
+
