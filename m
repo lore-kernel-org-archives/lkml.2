@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab1E3GQl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 02:16:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41030 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab1E3GQk (ORCPT
+	id S1754250Ab1E3GRI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 02:17:08 -0400
+Received: from smtprelay05.ispgateway.de ([80.67.31.98]:40339 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab1E3GRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 02:16:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=KL+/2m39yKZkcNKo6tMPfIBMGAodpwdXXDyu6D4LXpmzEV2k19jwI7i+55uPw/nmDA
-         Y8lR1GjvCK1PEJUqsiDBDdXMzlPGat9ZfCzVhM6+l+d6bQeSJBqH+CKihnC7AD4Zr8j2
-         cvwf1Eyb6X+VLBTFC3hoYArzYb9zr8Wv5mr5U=
-Date: Mon, 30 May 2011 08:16:40 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Richard Cochran <richard.cochran@omicron.at>,
-        "David S. Miller" <davem@davemloft.net>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        open list <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [patch 2/2] ptp: fix some locking bugs in ptp_read()
-Message-ID: <20110530061640.GB3166@riccoc20.at.omicron.at>
-References: <20110529195407.GB3099@shale.localdomain>
+	Mon, 30 May 2011 02:17:06 -0400
+From: Michael Bauer <michael@m-bauer.org>
+To: linux-input@vger.kernel.org
+Subject: Re: [PATCH] hid: Fix Logitech Driving Force Pro wheel
+Date: Mon, 30 May 2011 08:17:15 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.39-logitech; KDE/4.6.3; x86_64; ; )
+Cc: simon@mungewell.org, linux-kernel@vger.kernel.org,
+        "Jiri Kosina" <jkosina@suse.cz>
+References: <201105282037.22888.michael@m-bauer.org> <201105290846.59531.michael@m-bauer.org> <a49670b80c887da1f9224080e9e62f32.squirrel@host171.canaca.com>
+In-Reply-To: <a49670b80c887da1f9224080e9e62f32.squirrel@host171.canaca.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110529195407.GB3099@shale.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105300817.15986.michael@m-bauer.org>
+X-Df-Sender: michael@m-bauer.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 10:54:07PM +0300, Dan Carpenter wrote:
-> There was an unlock missing on an error path, and a double unlock on
-> another error path.
+Hi all,
+
+> Fair enough, I played a little trying to massage the original descriptor
+> but could not find a sensible solution - so I guess we'll have to provide
+> a full replacement.
+Yes, i also spent some time but it does not seem to be possible in a sensible 
+way.
  
-Sloppy, sloppy me.
+> I don't see the need to comment the original/replacement blocks, so
+> probably a simple 'hex block' would be good.
+Fine for me, i will remove it in the next patch.
 
-Again, please take this for 3.0-rc2.
-
-Thanks,
-Richard
-
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> 
-> diff --git a/drivers/ptp/ptp_chardev.c b/drivers/ptp/ptp_chardev.c
-> index 93fa22d..e7f301da2 100644
-> --- a/drivers/ptp/ptp_chardev.c
-> +++ b/drivers/ptp/ptp_chardev.c
-> @@ -130,8 +130,10 @@ ssize_t ptp_read(struct posix_clock *pc,
->  		return -ERESTARTSYS;
->  	}
->  
-> -	if (ptp->defunct)
-> +	if (ptp->defunct) {
-> +		mutex_unlock(&ptp->tsevq_mux);
->  		return -ENODEV;
-> +	}
->  
->  	spin_lock_irqsave(&queue->lock, flags);
->  
-> @@ -151,10 +153,8 @@ ssize_t ptp_read(struct posix_clock *pc,
->  
->  	mutex_unlock(&ptp->tsevq_mux);
->  
-> -	if (copy_to_user(buf, event, cnt)) {
-> -		mutex_unlock(&ptp->tsevq_mux);
-> +	if (copy_to_user(buf, event, cnt))
->  		return -EFAULT;
-> -	}
->  
->  	return cnt;
->  }
+> Regarding the replacement, you appear to have a lot of unnecessary code
+> there. You could try with something like:
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> ...
+> +0x09, 0x39,         /*          Usage (Hat Switch),             */
+> +0x81, 0x42,         /*          Input (Variable),               */
+> +0x75, 0x08,         /*          Report Size (8),                */
+> +0x95, 0x08,         /*          Report Count (1),               */
+> +0x65, 0x00,         /*          Unit,                           */
+> +0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),             */
+> +0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
+> +0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
+> +0x09, 0x01,         /*          Usage (01h),                    */
+> +0x81, 0x02,         /*          Input (Variable),               */
+> +0xA4,               /*          Push,                           */
+> +0x05, 0x01,         /*          Usage Page (Desktop),           */
+> +0x95, 0x01,         /*          Report Count (2),               */
+> +0x09, 0x31,         /*          Usage (Y),                      */
+> +0x09, 0x35,         /*          Usage (Rz),                     */
+> +0x81, 0x02,         /*          Input (Variable),               */
+> +0xB4,               /*          Pop,                            */
+> +0x81, 0x02,         /*          Input (Variable),               */
+> +0xC0,               /*      End Collection,                     */
+> ...
+> --
+
+Good point - didn't think of the Push/Pop commands... 
+
+I will create an updated patch and submit it here again.
+
+Thanks and regards
+Michael
