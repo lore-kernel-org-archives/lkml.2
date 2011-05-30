@@ -1,156 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab1E3HXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 03:23:11 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33484 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754288Ab1E3HXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 03:23:09 -0400
-Date: Mon, 30 May 2011 09:23:00 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
-Message-ID: <20110530072300.GA9802@elte.hu>
-References: <1306707270.2029.377.camel@i7.infradead.org>
+	id S1755057Ab1E3HZz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 03:25:55 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:38635 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754783Ab1E3HZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 03:25:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Fvcxjq/cMup0ufRqS653vsscTPFJ5AvfSdADIiBqTJYRIn3lMQKkQkcptg86fwc+qQ
+         1WL8ZS23gnmL9HMitLZ7p7nZBnfgtFZAPZNDsw8jW9MAdphZiwGslUsBMAm5yCPYcYG7
+         /+WAZnMhUN0YsxjgH6i2iZ3+Cev3zwM7Keabk=
+Date: Mon, 30 May 2011 16:25:46 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        mgorman@suse.de, riel@redhat.com, aarcange@redhat.com,
+        hannes@cmpxchg.org
+Subject: Re: [PATCH v2 00/10] Prevent LRU churning
+Message-ID: <20110530072546.GA1727@barrios-laptop>
+References: <cover.1306689214.git.minchan.kim@gmail.com>
+ <4DE2F741.7060109@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306707270.2029.377.camel@i7.infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4DE2F741.7060109@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Woodhouse <dwmw2@infradead.org> wrote:
-
-> I wasted a bunch of time today because I'd taken a .config from my 
-> test machine and tried to build it, and the existing setting of 
-> CONFIG_X86_32 got corrupted.
+On Mon, May 30, 2011 at 10:47:45AM +0900, KOSAKI Motohiro wrote:
+> > Minchan Kim (10):
+> >   [1/10] Make clear description of isolate/putback functions
+> >   [2/10] compaction: trivial clean up acct_isolated
+> >   [3/10] Change int mode for isolate mode with enum ISOLATE_PAGE_MODE
+> >   [4/10] Add additional isolation mode
+> >   [5/10] compaction: make isolate_lru_page with filter aware
+> >   [6/10] vmscan: make isolate_lru_page with filter aware
+> >   [7/10] In order putback lru core
+> >   [8/10] migration: make in-order-putback aware
+> >   [9/10] compaction: make compaction use in-order putback
+> >   [10/10] add tracepoints
 > 
-> This patch fixes that. Last time I tried to fix this bug, I had to 
-> contend with Ingo's objection that he didn't actually want 'make 
-> randconfig' to give him a random config... [...]
+> Minchan,
+> 
+> I'm sorry I have no chance to review this patch in this week. I'm getting
+> stuck for LinuxCon. ;)
 
-You thoroughly misunderstood my prior regression report, the problem 
-with your patch was that your patch actually *broke* existing 
-filtered-randconfig behavior, for example trying to get a 64-bit 
-randconfig:
+I hope you will be free from LinuxCon sometime soon.
 
-  make ARCH=x86_64 randconfig
+> That doesn't mean I dislike this series.
 
-... will today produce a 64-bit randconfig while with your old change 
-applied it produced a 32-bit randconfig 50% of the time.
+Thanks for the positive feedback, KOSAKI.
 
-That randconfig behavior is an entirely expected and intuitive: if 
-the ARCH=x86_64 condition is added to the command line then kconfig 
-should not ignore it - why should randconfig override the user's 
-wishes? Furthermore this behavior worked fine before your first patch 
-so not only did your first patch make kconfig behavior less 
-intuitive, it also caused a regression.
+I don't think no comment is a negative feedback. 
+I think they are very busy these days(ex, memcg typhoon, OOM argument, 
+reclaim latency and LinuxCon which I have forgotten.)
+This patch isn't urgent so I will wait review of mm folks in patience.
 
-Similarly, "make ARCH=i386 randconfig" will produce a 32-bit 
-randconfig today, while with your old patch applied it produced a 
-64-bit randconfig 50% of the time.
-
-As i said it two years ago when you first submitted this patch:
-
- | I dont mind the change you are after, but randconfig should work as 
- | expected too: if ARCH=x86_64 is passed it should generate a 64-bit 
- | randconfig, not a 50% 32-bit one.
-
-I still don't mind "make oldconfig" picking up the bitness of the 
-.config instead of the host system's (it is the more intuitive and 
-more correct behavior) - although note that me not minding it is not 
-enough: we still have to be on the lookout for people and tools 
-relying on that behavior.
-
-So instead of complaining about my regression report i've updated the 
-changelog as attached below - if you are fine with that then i'll 
-commit and test it more widely.
-
-Thanks,
-
-	Ingo
-
--------------->
-Subject: x86, kconfig: Pick up the .config arch version in 'make oldconfig'
-From: David Woodhouse <dwmw2@infradead.org>
-Date: Sun, 29 May 2011 23:14:28 +0100
-
-I wasted a bunch of time today because I'd taken a .config from my 
-test machine and tried to build it, and the existing setting of 
-CONFIG_X86_32 got changed to the host system's bitness which was 
-64-bit.
-
-This patch fixes that. Last time I tried to fix this bug, I had 
-introduced a regression that broke:
-
-   make ARCH=x86_64 randconfig
-   make ARCH=i386 randconfig
-
-type of filtered-randconfig behavior which restricted randconfigs to 
-64-bit and 32-bit configs, respectively.
-
-This version fixes that so prior randconfig behavior is maintained.
-
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Link: http://lkml.kernel.org/r/1306707270.2029.377.camel@i7.infradead.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- Makefile          |    3 ++-
- arch/x86/Kconfig  |    2 +-
- arch/x86/Makefile |    4 ++++
- 3 files changed, 7 insertions(+), 2 deletions(-)
-
-Index: linux/Makefile
-===================================================================
---- linux.orig/Makefile
-+++ linux/Makefile
-@@ -165,7 +165,8 @@ export srctree objtree VPATH
- # then ARCH is assigned, getting whatever value it gets normally, and 
- # SUBARCH is subsequently ignored.
- 
--SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
-+SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
-+				  -e s/sun4u/sparc64/ \
- 				  -e s/arm.*/arm/ -e s/sa110/arm/ \
- 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
- 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
-Index: linux/arch/x86/Kconfig
-===================================================================
---- linux.orig/arch/x86/Kconfig
-+++ linux/arch/x86/Kconfig
-@@ -1,7 +1,7 @@
- # Select 32 or 64 bit
- config 64BIT
- 	bool "64-bit kernel" if ARCH = "x86"
--	default ARCH = "x86_64"
-+	default ARCH != "i386"
- 	---help---
- 	  Say yes to build a 64-bit kernel - formerly known as x86_64
- 	  Say no to build a 32-bit kernel - formerly known as i386
-Index: linux/arch/x86/Makefile
-===================================================================
---- linux.orig/arch/x86/Makefile
-+++ linux/arch/x86/Makefile
-@@ -2,7 +2,11 @@
- 
- # select defconfig based on actual architecture
- ifeq ($(ARCH),x86)
-+  ifeq ($(shell uname -m),x86_64)
-+        KBUILD_DEFCONFIG := x86_64_defconfig
-+  else
-         KBUILD_DEFCONFIG := i386_defconfig
-+  endif
- else
-         KBUILD_DEFCONFIG := $(ARCH)_defconfig
- endif
+> 
+> Thanks.
+> 
+> 
+> 
