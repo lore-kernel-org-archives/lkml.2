@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab1E3PNo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 11:13:44 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:52686 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab1E3PNn (ORCPT
+	id S1757248Ab1E3PQf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 11:16:35 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35885 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755385Ab1E3PQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 11:13:43 -0400
+	Mon, 30 May 2011 11:16:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=SltigP1U2lWwOWJAuVGcQselDTISrNyjP2GG2XHysQk2jETx7hLWS9j+HEM3edccVg
-         oGmQb52d7K4io5TaJ/4GS6Ll+i0UA9xF3k+kNJIrNb2/5/uwEMc+ApKvwrPlzraIlpW/
-         r9T4KyNkp4wVLeSu2Jh/G2JDP/4klEPjjcEaM=
-MIME-Version: 1.0
-In-Reply-To: <20110530130949.GB13494@lst.de>
-References: <1306551592.23461.506.camel@haakon2.linux-iscsi.org>
- <BANLkTimt5qisV7EH7NMv1tG8gR_9d-kA3g@mail.gmail.com> <20110530130949.GB13494@lst.de>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Mon, 30 May 2011 17:13:22 +0200
-X-Google-Sender-Auth: KsnWiFHBltF0cFAat6NoGuyrNbE
-Message-ID: <BANLkTikdJcNPv4CV4nLuyuPtAYpCR1cp0Q@mail.gmail.com>
-Subject: Re: [GIT PULL] iscsi-target: Merge for .40-rc1
-To: Christoph Hellwig <hch@lst.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Mike Christie <michaelc@cs.wisc.edu>, Andy Grover <agrover@redhat.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=NEgiKVvkkdjgs/pkmXReJBTk32UqeB5TdN2tct8wleg486wu0cH8Cywhs+inDWah4K
+         ze0xQr9UdLtG4jcnxmtgCoX/CGyuTOaa7shqAT8j859Honug6OBb8xYuYOKsZhZxDQuu
+         eaMoM0z+5eSJp2phJC86rcSENQO4Pg0VxMNJ0=
+From: David Ahern <dsahern@gmail.com>
+To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf script: fix display of IP address for non-callchain path
+Date: Mon, 30 May 2011 09:16:27 -0600
+Message-Id: <1306768587-15376-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 3:09 PM, Christoph Hellwig <hch@lst.de> wrote:
-> Given that we pretty well tested and working code that's used in lots
-> of production setups my vote is for taking it as-is unless someone can
-> actually show a prototype for a nicely working user/kernel split.
+Non-callchain path is using al.addr which prints as:
+  openssl 14564 17672.003587:       7862d _x86_64_AES_encrypt_compact
 
-As far as I know such a user/kernel split has been implemented in both
-IET and SCST and is working fine in both of these projects.
+This should be sample->ip to print as:
+  openssl 14564 17672.003587:  3f7867862d _x86_64_AES_encrypt_compact
 
-And here is another issue that still hasn't been resolved yet:
-http://marc.info/?l=linux-scsi&m=129707890023739&w=2.
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/util/session.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Bart.
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index e6cf0e2..360d8c4 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1247,7 +1247,7 @@ void perf_session__print_ip(union perf_event *event,
+ 		}
+ 
+ 	} else {
+-		printf("%16" PRIx64, al.addr);
++		printf("%16" PRIx64, sample->ip);
+ 		if (print_sym) {
+ 			if (al.sym && al.sym->name)
+ 				symname = al.sym->name;
+-- 
+1.7.5.2
+
