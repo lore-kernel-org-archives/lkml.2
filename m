@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757015Ab1E3M16 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 08:27:58 -0400
-Received: from mx2.imt-systems.com ([89.146.219.34]:44048 "EHLO
-	mx2.imt-systems.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752Ab1E3M15 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 08:27:57 -0400
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 May 2011 08:27:57 EDT
-X-DKIM: Sendmail DKIM Filter v2.8.3 acsinet10.imt-systems.com p4UCMCgk010770
-From: "Morten P.D. Stevens" <mstevens@imt-systems.com>
-To: Damien Wyart <damien.wyart@free.fr>
-CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Mon, 30 May 2011 14:22:09 +0200
-Subject: Re: Very high CPU load when idle with 3.0-rc1
-Thread-Topic: Very high CPU load when idle with 3.0-rc1
-Thread-Index: AcwekCO9oJG5dRY6RCyM6M9VYrnWWQAM/D2Q
-Message-ID: <7222A6B8ACA37D4AA1AC37810C43E8A87DF8E61F64@mail.corp.imt-systems.com>
-References: <20110530055924.GA9169@brouette>
-In-Reply-To: <20110530055924.GA9169@brouette>
-Accept-Language: de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756986Ab1E3MYS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 08:24:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55531 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756962Ab1E3MYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 08:24:17 -0400
+From: Avi Kivity <avi@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        =?UTF-8?q?T=C3=B6r=C3=B6k=20Edwin?= <edwintorok@gmail.com>
+Cc: kvm@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: fix mwait_play_dead() faulting on mwait-incapable cpus
+Date: Mon, 30 May 2011 08:23:57 -0400
+Message-Id: <1306758237-9327-1-git-send-email-avi@redhat.com>
+In-Reply-To: <201105301143.p4UBhco4001230@demeter2.kernel.org>
+References: <201105301143.p4UBhco4001230@demeter2.kernel.org>
 MIME-Version: 1.0
-X-Spam-Score: -0.811 () DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,RCVD_IN_DNSWL_LOW,SPF_PASS,T_RP_MATCHES_RCVD
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/30 Damien Wyart <damien.wyart@free.fr>:
-> Hi,
->
-> Testing 3.0-rc1 on a core i7 (4 cores + HT), I get a load average of 9.0
-> when idle. No process is shown running or in "D state" in htop. The box
-> is behaving normal, no impression of lag or slowness.
->
-> Not sure what other info to include, I guess this should be quite easy
-> to reproduce.
+A logic error in mwait_play_dead() causes the kernel to use mwait
+even on cpus which don't support it, such as KVM virtual cpus.
 
-Same problem here.
+Introduced by 349c004e3d31fd.
 
-# uname -r
-3.0.0-rc1
-# uptime
-14:18:39 up 30 min,  2 users,  load average: 10.00, 10.15, 9.68
+Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=36222
 
-Best regards,
+Reported-by: Török Edwin <edwintorok@gmail.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+---
+ arch/x86/kernel/smpboot.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Morten
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index eefd967..33a0c11 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1332,7 +1332,7 @@ static inline void mwait_play_dead(void)
+ 	void *mwait_ptr;
+ 	struct cpuinfo_x86 *c = __this_cpu_ptr(&cpu_info);
+ 
+-	if (!this_cpu_has(X86_FEATURE_MWAIT) && mwait_usable(c))
++	if (!(this_cpu_has(X86_FEATURE_MWAIT) && mwait_usable(c)))
+ 		return;
+ 	if (!this_cpu_has(X86_FEATURE_CLFLSH))
+ 		return;
+-- 
+1.7.5.3
+
