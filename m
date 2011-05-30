@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab1E3Onq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 10:43:46 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:49431 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab1E3Ono (ORCPT
+	id S1757255Ab1E3Onw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 10:43:52 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:48155 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687Ab1E3Onu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 10:43:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-Subject: Re: [PATCH v4 01/11] mfd: add pruss mfd driver
-Date: Mon, 30 May 2011 16:43:35 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Greg KH" <greg@kroah.com>,
-        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>, linux-arm-kernel@lists.infradead.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        sachi@mistralsolutions.com, "Samuel Ortiz" <sameo@linux.intel.com>,
-        "open list" <linux-kernel@vger.kernel.org>,
-        "Watkins, Melissa" <m-watkins@ti.com>
-References: <1303474109-6212-1-git-send-email-subhasish@mistralsolutions.com> <201105301604.38026.arnd@arndb.de> <2AF43CEDFDB649AE946E8F9F98A5AE48@subhasishg>
-In-Reply-To: <2AF43CEDFDB649AE946E8F9F98A5AE48@subhasishg>
+	Mon, 30 May 2011 10:43:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=RnSstxNOOzO0ESUjV8M/O/OP3/ah02Uv3jy2Et1IqfL1AULH9jtt+W0A1cjNaCqjSC
+         GocUE34OU2t6V3LaoH+5HQx+QlIxteNNNX3ldPBnogRMaye21r/SZJPU9QT4RhLVqx9V
+         hKhqnnus2jrU8hf0ax2A89GB20QaK67GUwfBw=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105301643.35997.arnd@arndb.de>
-X-Provags-ID: V02:K0:LZ9xnZENAHENDPcPTNDHf2LDeKDeb3EiuRAgz8GZMO6
- CYROBnc2nwJNOyNVuQCsJ4dGUVrcHXonHCR7f6jJ+Aj52fPFXN
- BCPkIM3BTEEWnnsPI5RO6EjLNksSV9NIk8GiLDF1qMXWGHvLRx
- Yfdy72WEZoMmvfzAAYuF7a2VFFRATkN7Yms2XQRtFwMN52kWE8
- JvkM9HsMvmz6v/eJ7Tx8A==
+In-Reply-To: <BANLkTi=h5f6o3iVK24sQ20xYYQAMbLavMg@mail.gmail.com>
+References: <1305248699-2347-1-git-send-email-daniel.blueman@gmail.com>
+	<69e8f8a9-4e8b-4c02-b566-304ff837d166@email.android.com>
+	<BANLkTi=h5f6o3iVK24sQ20xYYQAMbLavMg@mail.gmail.com>
+Date: Mon, 30 May 2011 22:43:49 +0800
+Message-ID: <BANLkTik9BtnXxsOGKuhmoUFsKPbhBwXr3A@mail.gmail.com>
+Subject: Re: [PATCH] x86: Add Dell E5420 reboot quirk
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 May 2011, Subhasish Ghosh wrote:
-> >
-> > During the time when the drivers are in staging, all files need to
-> > be in the same directory, including the header and the drivers using it.
-> > They can get moved at the time when the driver gets turned into
-> > a regular non-staging driver.
-> 
-> OK, so the UART implementation needs to be moved into staging as well ?
-> 
-> And what about the boardfile changes, array of mfd_cells implementation etc. 
+Hi hpa, Thomas, Ingo,
 
-All of that, too.
+On 13 May 2011 11:16, Daniel J Blueman <daniel.blueman@gmail.com> wrote:
+> On 13 May 2011 10:44, H. Peter Anvin <hpa@zytor.com> wrote:
+>> Daniel J Blueman <daniel.blueman@gmail.com> wrote:
+>>> Rebooting on the Dell E5420 often hangs with the keyboard method, but is
+>>> reliable via the PCI method. Signed-off-by: Daniel J Blueman
+>>> <daniel.blueman@gmail.com> --- arch/x86/kernel/reboot.c | 8 ++++++++ 1 files
+>>> changed, 8 insertions(+), 0 deletions(-) diff --git
+>>> a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c index 08c44b0..b16032d
+>>> 100644 --- a/arch/x86/kernel/reboot.c +++ b/arch/x86/kernel/reboot.c @@
+>>> -411,6 +411,14 @@ static struct dmi_system_id __initdata
+>>> pci_reboot_dmi_table[] = { DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1"), }, }, + {
+>>> + .callback = set_pci_reboot, + .ident = "Dell Latitude E5420", + .matches =
+>>> { + DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."), + DMI_MATCH(DMI_PRODUCT_NAME,
+>>> "Latitude E5420"), + }, + }, { } }; -- 1.7.4.1
+>
+>> How does it work with ACPI?
+>
+> All other reboot methods including ACPI are unreliable and seem to
+> demonstrate the same failure probability; PCI is the only reliable
+> method alas.
+>
+> I guess the ACPI reboot method is the supported 'official' vector (and
+> is what Windows uses [1]), so there must be some other constraints
+> preventing it work as expected, unless the ACPI tables delivered to
+> Linux are broken, would you say?
+>
+> Daniel
+>
+> [1] http://comments.gmane.org/gmane.linux.kernel/1122388
 
-Note that you are citing exactly the points that are the reason for the
-discussion we are having. The mfd_cells are the main concern for the cases
-where the information is not static.
+Without this patch, rebooting is like Russian roulette; with quite a
+few of these laptops in the field, perhaps it is better to enable the
+quirk unless you think there may be an issue in the kernel preventing
+correct behaviour that I could debug?
 
-	Arnd
+On the other hand, Dell may later fix the BIOS AML (seen with the
+excellent fwts) just as the cure for cancer is found. If they do, I'll
+buy whiskey too.
+
+Thanks,
+  Daniel
+-- 
+Daniel J Blueman
