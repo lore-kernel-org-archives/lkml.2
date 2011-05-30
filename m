@@ -1,40 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048Ab1E3OvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 10:51:00 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57874 "EHLO mx1.suse.de"
+	id S1757382Ab1E3OwL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 10:52:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57920 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752537Ab1E3Ou7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 10:50:59 -0400
+	id S1757224Ab1E3OvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 10:51:04 -0400
 From: Michal Marek <mmarek@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] Fixes for X.Y kernel versions
-Date: Mon, 30 May 2011 16:50:48 +0200
-Message-Id: <1306767052-15593-1-git-send-email-mmarek@suse.cz>
+Subject: [PATCH 1/4] kbuild: Fix KERNELVERSION for X.Y versions
+Date: Mon, 30 May 2011 16:50:49 +0200
+Message-Id: <1306767052-15593-2-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1306767052-15593-1-git-send-email-mmarek@suse.cz>
+References: <1306767052-15593-1-git-send-email-mmarek@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Omit the second dot for releases without SUBLEVEL.
 
-Here are a couple of fixes to allow to name the kernel 3.0. The depmod
-hack is not anything I am proud of, but it worked for me :). The rest
-are no-brainers.
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Michal
-
-Michal Marek (4):
-  kbuild: Fix KERNELVERSION for X.Y versions
-  kbuild: Fix <linux/version.h> for X.Y versions
-  perf: Use make kernelversion instead of parsing the Makefile
-  kbuild: Hack for depmod not handling X.Y versions
-
- Makefile                         |   16 +++++++++++++---
- tools/perf/util/PERF-VERSION-GEN |    7 +------
- 2 files changed, 14 insertions(+), 9 deletions(-)
-
+diff --git a/Makefile b/Makefile
+index afb8e0d..c706ae1 100644
+--- a/Makefile
++++ b/Makefile
+@@ -378,7 +378,7 @@ KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
+ 
+ # Read KERNELRELEASE from include/config/kernel.release (if it exists)
+ KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
+-KERNELVERSION = $(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
++KERNELVERSION = $(VERSION).$(PATCHLEVEL)$(if $(SUBLEVEL),.$(SUBLEVEL))$(EXTRAVERSION)
+ 
+ export VERSION PATCHLEVEL SUBLEVEL KERNELRELEASE KERNELVERSION
+ export ARCH SRCARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC
 -- 
 1.7.4.1
 
