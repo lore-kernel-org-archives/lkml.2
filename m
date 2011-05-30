@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab1E3HoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 03:44:12 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:54859 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755066Ab1E3HoK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 03:44:10 -0400
-X-Sasl-enc: N8RdFkuZhxltSNz0X4gjaz5sdUzlPAdE1KEO7YSfDWlh 1306741449
-Date: Mon, 30 May 2011 15:45:08 +0800
-From: Greg KH <greg@kroah.com>
-To: Xiangliang Yu <yuxiangl@marvell.com>
-Cc: "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jacky Feng <jfeng@marvell.com>
-Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
- coalescing to device 	attributes in sysfs
-Message-ID: <20110530074508.GB7806@kroah.com>
-References: <mvsas-intr-coal>
- <1306247507-6136-1-git-send-email-yxlraid@gmail.com>
- <20110526021809.GA22496@kroah.com>
- <F766E4F80769BD478052FB6533FA745D19FAD846E0@SC-VEXCH4.marvell.com>
- <20110526141430.GD4164@kroah.com>
- <F766E4F80769BD478052FB6533FA745D19FAD848FB@SC-VEXCH4.marvell.com>
- <20110527073302.GA16178@kroah.com>
- <F766E4F80769BD478052FB6533FA745D19FAD84C40@SC-VEXCH4.marvell.com>
+	id S1755949Ab1E3Hq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 03:46:28 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60989 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755829Ab1E3Hq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 03:46:27 -0400
+Date: Mon, 30 May 2011 09:46:08 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andy Lutomirski <luto@MIT.EDU>
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>
+Subject: Re: [PATCH v2 08/10] x86-64: Emulate vsyscalls
+Message-ID: <20110530074608.GD27557@elte.hu>
+References: <cover.1306724657.git.luto@mit.edu>
+ <07445623494a3d9f02581eb06326420f5f443043.1306724657.git.luto@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <F766E4F80769BD478052FB6533FA745D19FAD84C40@SC-VEXCH4.marvell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <07445623494a3d9f02581eb06326420f5f443043.1306724657.git.luto@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 12:26:48AM -0700, Xiangliang Yu wrote:
-> >> +What:          /sys/devices/pci/<devices>/<dev>/host/scsi_host/host/interrupt_coalescing
-> >> +Date:          May 2011
-> >> +Kernel Version:        2.6.39
-> 
-> >2.6.39 was released already, is this file in that release?
-> Yes.
 
-How, doesn't your patch below implement that option?  How can it already
-be in the .39 kernel?
+* Andy Lutomirski <luto@MIT.EDU> wrote:
 
-> >> +Contact:       yuxiangl@marvell.com
-> >> +Description:   Determines the maximum time the 88SE94XX waits after the occurrence of a
-> >> +               Command Done before generating an interrupt.The maximum number of the 
-> >> +               variable is less than 0x10000.
-> 
-> >Why would a user, or anyone else, ever want to be able to change this?
-> Because different platform can get better performance by setting different value
+> There's a fair amount of code in the vsyscall page, and who knows
+> what will happen if an exploit jumps into the middle of it.  Reduce
+> the risk by replacing most of it with short magic incantations that
+> are useless if entered in the middle.  This change can be disabled
+> by CONFIG_UNSAFE_VSYSCALLS (default y).
 
-Then you need to document _how_ to do this tuning, and why someone would
-want to, and lots of other stuff.  Don't just blindly let userspace
-change a value that they know nothing about.
+btw., please flip the default or consider removing the option 
+altogether.
 
-> >Why wouldn't this just be something that the driver handles
-> >automagically so the user never has to worry about it at all?
-> As for now, driver can't do it. The value need to be test, and get the best.
+We want to improve security and we want safe vsyscalls the default, 
+and it's no good if we make it too easy for users to keep the fire 
+door open all the time! :-)
 
-Why don't you test it and set it to the proper value now?  What would
-change in a user's system that require this to be changed?  Size of the
-machine?  Number of disks?  Something else?
+Thanks,
 
-It really should be automatic, people do not ever want to have to
-manually tune their machines anymore they should be smart enough to
-determine the load on them and make the changes without any user needing
-to do it for them.
-
-thanks,
-
-greg k-h
+	Ingo
