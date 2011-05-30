@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab1E3F0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 01:26:50 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:37752 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751449Ab1E3F0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 01:26:49 -0400
-X-ASG-Debug-ID: 1306733208-03d6a512a81c4c0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DE32A95.6090203@fusionio.com>
-Date: Mon, 30 May 2011 07:26:45 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1754239Ab1E3Fm6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 01:42:58 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43229 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752200Ab1E3Fm5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 01:42:57 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DE32E38.7010608@jp.fujitsu.com>
+Date: Mon, 30 May 2011 14:42:16 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Follow up block fixes
-References: <4DDFA2B6.3000404@fusionio.com> <1306723859.6368.1.camel@edumazet-laptop>
-X-ASG-Orig-Subj: Re: [GIT PULL] Follow up block fixes
-In-Reply-To: <1306723859.6368.1.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1306733208
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.65074
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+To: Ingo Molnar <mingo@elte.hu>
+CC: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH 03/12] mce-severity: cleanup severity table
+References: <4DDF21DE.9040705@jp.fujitsu.com> <4DDF22FA.4020406@jp.fujitsu.com> <20110527064647.GC16811@liondog.tnic> <20110527075409.GA19300@elte.hu>
+In-Reply-To: <20110527075409.GA19300@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-30 04:50, Eric Dumazet wrote:
-> Le vendredi 27 mai 2011 à 15:10 +0200, Jens Axboe a écrit :
->> Hi Linus,
+(2011/05/27 16:54), Ingo Molnar wrote:
+> 
+> * Borislav Petkov <bp@alien8.de> wrote:
+> 
+>>> -	BITSET(
+>>> -		MCI_STATUS_PCC,
+>>> -		PANIC, "Processor context corrupt"
+>>> +	MCESEV(
+>>> +		PANIC, "Processor context corrupt",
+>>> +		BITSET(MCI_STATUS_PCC)
+>>>  		),
 >>
->> Mainly pushing this a bit early to resolve an oops that has been
->> reported by Eric Dumazet. 
+>> I'm still wondering whether using the gcc struct assignment syntax could
+>> make those much more readable instead of changing the macro inclusion:
+>>
+>> 	{
+>> 		.sev	= MCE_PANIC_SEVERITY,
+>> 		.msg	= "Processor context corrupt",
+>> 		.mask	= MCI_STATUS_PCC,
+>> 		.result	= MCI_STATUS_PCC,
+>> 	},
+>> 	...
 > 
-> Hi Jens
+> Hidetoshi's version was already an improvement over what we have 
+> currently (what we have now is largely unreadable), but your variant 
+> looks even more readable and isnt all that much longer either.
 > 
-> 3.0.0-rc1 on another machine gives similar problem, but at least machine
-> survives.
+> So, the case for macros is where the initialization can be compressed 
+> into a single *readable* line. If that cannot be done then the least 
+> obfuscated version is generally the better one.
 
-This is crap, I'm reverting the damn change. Really not worth the
-bother.
+Maybe in later we can have another patch to make this table to use
+the gcc's syntax if it is really required. And also it would worth
+considering to re-implement this severity-leveling without the table.
 
--- 
-Jens Axboe
+Since this is a part of "minor" change set and I still like my version
+with existing packed conditions, so at the moment I'd like to keep this
+patch as a non-intrusive change.
+
+
+Thanks,
+H.Seto
 
