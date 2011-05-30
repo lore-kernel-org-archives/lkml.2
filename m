@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab1E3ULZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 16:11:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59357 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753064Ab1E3ULX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 16:11:23 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Subject: [PATCH] kvm: Fix build warnings
-Date: Mon, 30 May 2011 22:11:17 +0200
-Message-Id: <1306786278-12219-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.7.5.rc1.16.g9db1
-In-Reply-To: <20110530124600.GB494@eferding.osrc.amd.com>
-References: <20110530124600.GB494@eferding.osrc.amd.com>
+	id S1757842Ab1E3UM1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 16:12:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38752 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560Ab1E3UMZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 16:12:25 -0400
+Date: Mon, 30 May 2011 21:12:17 +0100 (BST)
+From: David Woodhouse <dwmw2@infradead.org>
+X-X-Sender: dwmw2@localhost6.localdomain6
+To: "Ted Ts'o" <tytso@mit.edu>
+cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
+In-Reply-To: <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
+Message-ID: <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
+References: <1306707270.2029.377.camel@i7.infradead.org> <20110530072300.GA9802@elte.hu> <1306745835.2029.389.camel@i7.infradead.org> <20110530104231.GF17821@elte.hu> <20110530104656.GA19532@elte.hu> <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
+ <20110530105809.GA20133@elte.hu> <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu> <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6> <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3.0-rc1 I get
+On Mon, 30 May 2011, Ted Ts'o wrote:
 
-In file included from arch/x86/kvm/mmu.c:2856:
-arch/x86/kvm/paging_tmpl.h: In function ‘paging32_walk_addr_generic’:
-arch/x86/kvm/paging_tmpl.h:124: warning: ‘ptep_user’ may be used uninitialized in this function
-In file included from arch/x86/kvm/mmu.c:2852:
-arch/x86/kvm/paging_tmpl.h: In function ‘paging64_walk_addr_generic’:
-arch/x86/kvm/paging_tmpl.h:124: warning: ‘ptep_user’ may be used uninitialized in this function
+> So I could imagine two ways of doing this.  One would be a new file,
+> .config-fixed, that contains a series of "CONFIG_XXX=[ymn]" which
+> would have to be satisfied and which override what
+> allyesconfig/allnoconfig/randconfig would otherwise do.
 
-caused by 6e2ca7d1802bf8ed9908435e34daa116662e7790. According to Takuya
-Yoshikawa, ptep_user won't be used uninitialized so shut up gcc.
+Which is apparently what KCONFIG_ALLCONFIG already does? It doesn't work 
+for choices, but it's still fine for setting/clearing CONFIG_64BIT.
+ 
+We'll want to make it simpler to use - so you really can do something like
+   make CONFIG_64BIT=n randconfig
+   make CONFIG_64BIT=n allmodconfig
+   make CONFIG_64BIT=y CONFIG_SATA_MV=y oldconfig
+etc. without having to create a text file. But that's not hard. A simple 
+implementation might just *make* a file with the options on the command 
+line and point KCONFIG_ALLCONFIG at it to start with, although there are 
+probably cleaner ways to implement it.
 
-Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Link: http://lkml.kernel.org/r/20110530094604.GC21833@liondog.tnic
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
- arch/x86/kvm/paging_tmpl.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+And then this legacy trick of using the obsolete $ARCH settings to 
+override the setting of CONFIG_64BIT can be deprecated.
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 6c4dc01..9d03ad4 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -121,7 +121,7 @@ static int FNAME(walk_addr_generic)(struct guest_walker *walker,
- 				    gva_t addr, u32 access)
- {
- 	pt_element_t pte;
--	pt_element_t __user *ptep_user;
-+	pt_element_t __user *uninitialized_var(ptep_user);
- 	gfn_t table_gfn;
- 	unsigned index, pt_access, uninitialized_var(pte_access);
- 	gpa_t pte_gpa;
 -- 
-1.7.5.rc1.16.g9db1
+dwmw2
 
