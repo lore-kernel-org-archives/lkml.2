@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950Ab1E3NLz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 09:11:55 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35307 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751573Ab1E3NLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 09:11:54 -0400
-Date: Mon, 30 May 2011 14:46:00 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        takuya.yoshikawa@gmail.com
-Subject: Re: KVM build warnings
-Message-ID: <20110530124600.GB494@eferding.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-	kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-	takuya.yoshikawa@gmail.com
-References: <20110530094604.GC21833@liondog.tnic>
- <20110530191426.336d23f4.yoshikawa.takuya@oss.ntt.co.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110530191426.336d23f4.yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756174Ab1E3MvO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 08:51:14 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63236 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab1E3MvN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 08:51:13 -0400
+Subject: Re: [PATCH] regulator: twl-regulator: fix n_voltages for twl6030
+ variable LDOs
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1306524327-24150-1-git-send-email-ccross@android.com>
+References: <1306524327-24150-1-git-send-email-ccross@android.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 30 May 2011 13:51:06 +0100
+Message-ID: <1306759866.3227.4.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 07:14:26PM +0900, Takuya Yoshikawa wrote:
-> On Mon, 30 May 2011 11:46:04 +0200
-> Borislav Petkov <bp@alien8.de> wrote:
+On Fri, 2011-05-27 at 12:25 -0700, Colin Cross wrote:
+> The n_voltages initializer for the TWL6030_ADJUSTABLE_LDO macro is
+> off by one, causing the the highest supported voltage to be
+> unreachable.  Setting the machine constraints to only allow the
+> highest voltage causes errors:
 > 
-> > I get the following
-> > 
-> > In file included from arch/x86/kvm/mmu.c:2856:
-> > arch/x86/kvm/paging_tmpl.h: In function ‘paging32_walk_addr_generic’:
-> > arch/x86/kvm/paging_tmpl.h:124: warning: ‘ptep_user’ may be used uninitialized in this function
-> > In file included from arch/x86/kvm/mmu.c:2852:
-> > arch/x86/kvm/paging_tmpl.h: In function ‘paging64_walk_addr_generic’:
-> > arch/x86/kvm/paging_tmpl.h:124: warning: ‘ptep_user’ may be used uninitialized in this function
-> > 
-> > when building -rc1. It looks like it is caused by
-> > 6e2ca7d1802bf8ed9908435e34daa116662e7790 and sticking uninitialized_var() around
-> > the ptep_user declaration looks like the easiest solution. But the code should
-> > still be audited by someone who's familiar with it whether shutting up the
-> > compiler doesn't cause an actual bug.
+> machine_constraints_voltage: VAUX3_6030: unsupportable voltage constraints
+> twl_reg twl_reg.39: can't register VAUX3_6030, -22
+> twl_reg: probe of twl_reg.39 failed with error -22
 > 
-> Sorry, it is my commit.
+> This patch fixes the off by one error.  Tested by setting
+> VAUX3_6030 to 3.3V.
 > 
-> I think the logic guarantees that ptep_user won't be used until it is
-> assigned some value.
+> Signed-off-by: Colin Cross <ccross@android.com>
+> ---
+>  drivers/regulator/twl-regulator.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> It seems to be safe, IIUC.
+> diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+> index 6a29285..afd9c7e 100644
+> --- a/drivers/regulator/twl-regulator.c
+> +++ b/drivers/regulator/twl-regulator.c
+> @@ -520,7 +520,7 @@ static struct regulator_ops twl6030_fixed_resource = {
+>  	.desc = { \
+>  		.name = #label, \
+>  		.id = TWL6030_REG_##label, \
+> -		.n_voltages = (max_mVolts - min_mVolts)/100, \
+> +		.n_voltages = (max_mVolts - min_mVolts)/100 + 1, \
+>  		.ops = &twl6030ldo_ops, \
+>  		.type = REGULATOR_VOLTAGE, \
+>  		.owner = THIS_MODULE, \
 
-Ok, thanks for confirming. I'll send a fix soon if no one beats me to
-it.
+Applied.
 
--- 
-Regards/Gruss,
-Boris.
+Thanks
+
+Liam
+
