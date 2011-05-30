@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757817Ab1E3Sd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 14:33:59 -0400
-Received: from outmail015.snc4.facebook.com ([66.220.144.147]:43505 "EHLO
-	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756909Ab1E3Sd6 (ORCPT
+	id S1757647Ab1E3SlN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 14:41:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60958 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab1E3SlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 14:33:58 -0400
-Message-ID: <4DE3E32E.5000302@fb.com>
-Date: Mon, 30 May 2011 11:34:22 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Mon, 30 May 2011 14:41:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
+Date: Mon, 30 May 2011 20:40:55 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+References: <1306707270.2029.377.camel@i7.infradead.org> <201105301305.59166.arnd@arndb.de> <20110530102731.fa9fbc4a.rdunlap@xenotime.net>
+In-Reply-To: <20110530102731.fa9fbc4a.rdunlap@xenotime.net>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
-        Maximilian Engelhardt <maxi@daemonizer.de>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        StuStaNet Vorstand <vorstand@stusta.mhn.de>,
-        Yann Dupont <Yann.Dupont@univ-nantes.fr>,
-        Denys Fedoryshchenko <denys@visp.net.lb>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Kernel crash after using new Intel NIC (igb)
-References: <4DDEEBC5.80804@fb.com> <1306466831.2543.58.camel@edumazet-laptop> <4DDFE4D6.4010000@fb.com> <1306526219.2533.3.camel@edumazet-laptop> <20110527211419.GA6793@dev1756.snc6.facebook.com> <1306561285.2533.9.camel@edumazet-laptop> <20110528180434.GB12530@elte.hu> <1306654424.30021.7.camel@edumazet-laptop> <20110529073840.GB21254@elte.hu> <1306654983.30021.10.camel@edumazet-laptop> <20110529123318.GB26627@elte.hu>
-In-Reply-To: <20110529123318.GB26627@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201105302040.55509.arnd@arndb.de>
+X-Provags-ID: V02:K0:gUYKq+7tsA1vL5pyGc3eaDwNY4JbBo6Scp2BIFmQ65Y
+ Tq4dT2zlJVrFPnqnHompUNFe+Si9K81gjmkZYvti3917kcANRA
+ byd/dSUOPSRFzAV1SiYpzYWGOOzKXyQXilx8kjbAa66xp/f/ww
+ 5JIgfy5AflCejxclRf89NwftAV6IhXHawfVqUxOGVqdGpjrGA3
+ xmsW+1vWWucKzplFBJSuA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/29/11 5:33 AM, Ingo Molnar wrote:
->
-> * Eric Dumazet<eric.dumazet@gmail.com>  wrote:
->
->> I asked Arun if he wanted to make this himself, because initial
->> idea was coming from him, not because I did not want to make it ;)
->
-> Hey, fair enough and sorry about the fuss! :-)
+On Monday 30 May 2011 19:27:31 Randy Dunlap wrote:
+> On Mon, 30 May 2011 13:05:58 +0200 Arnd Bergmann wrote:
+> 
+> Ingo recently wrote:
+> | When it wont boot straight away (often it does) i use a 
+> | Kconfig-needed set of minimal set of configs that enables the minimal 
+> | hardware environment.
+> 
+> which I believe is the same method that is documented in
+> Documentation/kbuild/kconfig.txt, subject "KCONFIG_ALLCONFIG": (partial text)
+> 
+> This enables you to create "miniature" config (miniconfig) or custom
+> config files containing just the config symbols that you are interested
+> in.  Then the kernel config system generates the full .config file,
+> including symbols of your miniconfig file.
+> 
+> This 'KCONFIG_ALLCONFIG' file is a config file which contains
+> (usually a subset of all) preset config symbols.  These variable
+> settings are still subject to normal dependency checks.
+> 
 
-Sounds like there is general consensus that such a cleanup would be 
-good. I'll try to post a patch that does this cleanup for all archs in 
-the next couple of days - but I won't have a way of testing it on 
-anything other than x86_64.
+Very nice, I didn't know about it. Unfortunately, this seems to
+suffer from the same problem as the generic "randconfig" -- it
+ignores all "choice" statements and just uses the default:
 
-  -Arun
+Try for instance
+
+KCONFIG_ALLCONFIG=arch/arm/configs/omap2plus_defconfig make \
+	O=obj-allmod/ allnoconfig ARCH=arm
+
+This is supposed to set CONFIG_ARCH_OMAP, but it instead chooses
+CONFIG_ARCH_VERSATILE, which means it's still useless for me.
+
+	Arnd
