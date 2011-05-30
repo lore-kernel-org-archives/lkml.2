@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844Ab1E3TY5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 15:24:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6292 "EHLO mx1.redhat.com"
+	id S1757780Ab1E3TYj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 15:24:39 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60782 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317Ab1E3TY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 15:24:56 -0400
-Date: Mon, 30 May 2011 21:22:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-Message-ID: <20110530192255.GB20616@redhat.com>
-References: <1305569849-10448-1-git-send-email-tj@kernel.org> <1305569849-10448-4-git-send-email-tj@kernel.org> <201105180240.56754.vda.linux@googlemail.com> <20110518095539.GU20624@htj.dyndns.org> <20110523124314.GA7232@redhat.com> <20110524102834.GC10334@htj.dyndns.org> <20110525182919.GB16575@redhat.com> <20110526091401.GD9715@htj.dyndns.org> <20110526150150.GD12525@redhat.com> <20110527182121.GA3212@mtj.dyndns.org>
+	id S1751317Ab1E3TYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 15:24:38 -0400
+Date: Mon, 30 May 2011 21:23:44 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Brown, Len" <len.brown@intel.com>
+Cc: Len Brown <lenb@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: build warningiIn Linus' tree
+Message-ID: <20110530192344.GA5393@elte.hu>
+References: <20110530114828.8ef6625b.sfr@canb.auug.org.au>
+ <alpine.LFD.2.02.1105292346340.10035@arrandale.kernel.org>
+ <20110530073445.GA27557@elte.hu>
+ <E87738D94A6AD54789B5B8D1BAEB06CC701ED3BA3E@azsmsx503.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110527182121.GA3212@mtj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <E87738D94A6AD54789B5B8D1BAEB06CC701ED3BA3E@azsmsx503.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27, Tejun Heo wrote:
->
-> On Thu, May 26, 2011 at 05:01:50PM +0200, Oleg Nesterov wrote:
-> > On 05/26, Tejun Heo wrote:
-> > > > Or we can change do_wait() to detach a zombie leader. In this case it
-> > > > is not clear what should we do if the debugger is the real parent.
-> > > > Perhaps do_wait() should do the same: detach a leader (but not reap).
-> > > > When the last thread does, the real parent will be notified again.
-> > > > IOW, wait(tgid) can succeed twice.
-> > >
-> > > Just letting PTRACE_DETACH work for zombies sounds much simpler to me.
-> >
-> > Probably, but please note we have to modify do_wait() anyway. Otherwise
-> > in general the tracer simply can not know the tracee has exited. IOW,
-> > waitpid(zombie_leader_pid, WEXITED) should succeed without reaping if
-> > delay_group_leader(), then the tracer can do PTRACE_DETACH. But this is
-> > not symmetrical with sub-thread zombies.
->
-> Yes, complicated.  The task/process duality conflicts.  wait(2)
-> already is different for group leader and succeeds twice for the
-> ptracer and the real parent (when they're different).
->
-> If we relocate ptrace group leader zombie wait, as suggested, such
-> that it waits for the task itself rather than the whole group, we
-> would be taking away a feature - ptracer waiting for the whole process
 
-Partly yes. The parent will be notified again and it can do another
-wait() later. The problem is, this is confusing.
+* Brown, Len <len.brown@intel.com> wrote:
 
-> I think group leader wait becoming asymmetrical with sub-thread
-> zombies is perfectly fine - it already is.
+> Alan convinced me that the community doesn't move that fast, and 
+> that we should wallow in the swill for a while longer before 
+> deleting. [...]
 
-Well, probably yes... But why? We have to change do_wait() anyway to
-report the death of the leader. If we do this, we can detach it as
-well.
+Yeah, it's much nicer this way.
 
-> But would it be okay to
-> change ptrace wait(2) on group leader to wait for the task itself
-> rather than the whole group?
+> [...] Others volunteered to test the latest upstream kernel on APM 
+> hardware, giving APM's presence in the upstream kernel a life line. 
+> So all I did was add the recommended feature-removal's and warnings 
+> for the stuff which obviously should go.  But if you see some of 
+> your favorite bits on the chopping block, you have at least 6 
+> months to make a case for them :-)
 
-Yes, this is iffy. Simply because this can confuse the userspace.
-May be we can add W_PTRACED_THREAD_EXITED? (should be used instead
-of WEXITED by ptracer). Or, perhaps WEXITED should succeed but put
-something special into status?
+:-)
 
-Oleg.
+I only saw one of the runtime warnings on one of my testboxes - i 
+adjusted the boot parameter setting (the parameter was bogus) and 
+moved on. So life can go on as far as i'm involved :-)
 
+Thanks,
+
+	Ingo
