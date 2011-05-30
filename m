@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab1E3MlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 08:41:10 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59893 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986Ab1E3MlJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 08:41:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=XeXf1H3/5mLxu7KyNJvBW4I7hf+xbRtWzVcqyg1eHop89blWQJ+Ull0kPKvX+EU95w
-         2jSdcW3z+2uNpMWXezvNFR3nX2T1qQGNgJqDyYF/aOF4by442+YRQbja7F/8RvEZ+Toa
-         /pbpkO4vyRQ5Lv6lx/QljWL3lw1nZQAlpY4RI=
+	id S1756950Ab1E3NLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 09:11:55 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35307 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751573Ab1E3NLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 09:11:54 -0400
+Date: Mon, 30 May 2011 14:46:00 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        takuya.yoshikawa@gmail.com
+Subject: Re: KVM build warnings
+Message-ID: <20110530124600.GB494@eferding.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+	kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	takuya.yoshikawa@gmail.com
+References: <20110530094604.GC21833@liondog.tnic>
+ <20110530191426.336d23f4.yoshikawa.takuya@oss.ntt.co.jp>
 MIME-Version: 1.0
-In-Reply-To: <1305851091-10096-1-git-send-email-ccross@android.com>
-References: <1305851091-10096-1-git-send-email-ccross@android.com>
-Date: Mon, 30 May 2011 14:41:08 +0200
-X-Google-Sender-Auth: f8wtiJvoVDO1ky3hTHOk1z8qwP8
-Message-ID: <BANLkTinLXGupiadbE_mX=EeS_g+7oKvzkA@mail.gmail.com>
-Subject: Re: [PATCH v2] ARM: smp_twd: Reconfigure clockevents after cpufreq change
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Colin Cross <ccross@android.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110530191426.336d23f4.yoshikawa.takuya@oss.ntt.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/20 Colin Cross <ccross@android.com>:
+On Mon, May 30, 2011 at 07:14:26PM +0900, Takuya Yoshikawa wrote:
+> On Mon, 30 May 2011 11:46:04 +0200
+> Borislav Petkov <bp@alien8.de> wrote:
+> 
+> > I get the following
+> > 
+> > In file included from arch/x86/kvm/mmu.c:2856:
+> > arch/x86/kvm/paging_tmpl.h: In function ‘paging32_walk_addr_generic’:
+> > arch/x86/kvm/paging_tmpl.h:124: warning: ‘ptep_user’ may be used uninitialized in this function
+> > In file included from arch/x86/kvm/mmu.c:2852:
+> > arch/x86/kvm/paging_tmpl.h: In function ‘paging64_walk_addr_generic’:
+> > arch/x86/kvm/paging_tmpl.h:124: warning: ‘ptep_user’ may be used uninitialized in this function
+> > 
+> > when building -rc1. It looks like it is caused by
+> > 6e2ca7d1802bf8ed9908435e34daa116662e7790 and sticking uninitialized_var() around
+> > the ptep_user declaration looks like the easiest solution. But the code should
+> > still be audited by someone who's familiar with it whether shutting up the
+> > compiler doesn't cause an actual bug.
+> 
+> Sorry, it is my commit.
+> 
+> I think the logic guarantees that ptep_user won't be used until it is
+> assigned some value.
+> 
+> It seems to be safe, IIUC.
 
-> The localtimer's clock changes with the cpu clock. �After a
-> cpufreq transition, update the clockevent's frequency and
-> reprogram the next clock event.
+Ok, thanks for confirming. I'll send a fix soon if no one beats me to
+it.
 
-Colin can you put this into Russells patch tracker with all the ACKs?
-
-Actually I think this is -rc material since it fixes a real bug for us
-atleast, maybe that's just me.
-
-Yours,
-Linus Walleij
+-- 
+Regards/Gruss,
+Boris.
