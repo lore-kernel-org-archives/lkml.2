@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab1E3GpH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 02:45:07 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48022 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556Ab1E3GpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 02:45:06 -0400
-Date: Mon, 30 May 2011 08:45:02 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca, arnd@arndb.de,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org
-Subject: Re: [PATCH v2 0/2] Move Freescale MXS gpio driver into drivers/gpio
-Message-ID: <20110530064502.GC23771@pengutronix.de>
-References: <1306595374-25178-1-git-send-email-shawn.guo@linaro.org>
+	id S1754714Ab1E3GtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 02:49:10 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41869 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753208Ab1E3GtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 02:49:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,290,1304319600"; 
+   d="scan'208";a="6650072"
+Message-ID: <4DE33DDB.2050304@linux.intel.com>
+Date: Mon, 30 May 2011 14:48:59 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-CN; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306595374-25178-1-git-send-email-shawn.guo@linaro.org>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:43:41 up 3 days, 23:45, 18 users,  load average: 0.52, 0.42, 0.30
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Len Brown <lenb@kernel.org>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 0/9] ACPI, APEI patches for 2.6.40
+References: <1305619719-7480-1-git-send-email-ying.huang@intel.com> <alpine.LFD.2.02.1105290252150.7577@arrandale.kernel.org>
+In-Reply-To: <alpine.LFD.2.02.1105290252150.7577@arrandale.kernel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant,
+于 5/29/2011 2:55 PM, Len Brown 写道:
+>> [PATCH 1/9] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
+>> [PATCH 2/9] lib, Add lock-less NULL terminated single list
+>> [PATCH 3/9] lib, Make gen_pool memory allocator lockless
+>> [PATCH 4/9] ACPI, APEI, GHES, printk support for recoverable error via NMI
+>
+> I think the 4 above should go upstream to enable the
+> printk for recoverable errors.  If queuing messages
+> from NMI context gets re-implemented in the future,
+> then so be it.
+>
+> I'll skip the rest, however, except #9:-)
+>
+> thanks,
+> -Len
+>
+>> [PATCH 5/9] HWPoison: add memory_failure_queue()
+>> [PATCH 6/9] ACPI, APEI, GHES: Add hardware memory error recovery support
+>> [PATCH 7/9] PCIe, AER, add aer_recover_queue
+>> [PATCH 8/9] ACPI, APEI, GHES: Add PCIe AER recovery support
+>> [PATCH 9/9] ACPI, APEI, ERST, Prevent erst_dbg from loading if ERST is disabled
+>>
+> --
 
-I suppose we should take this through the architecture tree. Can I have
-your Ack for this?
+Hi, Len
 
-Sascha
+Would you please help to review and merge my patch to fix an issue for 
+ERST debug module ? Here is the link:
+https://patchwork.kernel.org/patch/802662/
 
-On Sat, May 28, 2011 at 11:09:32PM +0800, Shawn Guo wrote:
-> The patch set moves Freescale MXS gpio driver from mach-mxs into
-> drivers/gpio.
-> 
-> Changes since v1:
->  * Squash the 4 gpio-mxs patches into one
->  * Do not add new gpio Kconfig option and use ARCH_MXS directly
->  * Clean up platform-gpio-mxs.c per Arnd's comments
->  * Add device mxs_apbh_bus and set it as the parent of gpio devices
-> 
-> Shawn Guo (2):
->       gpio: gpio-mxs: add gpio driver for Freescale MXS architecture
->       ARM: mxs: use gpio-mxs driver by adding platform device
-> 
->  arch/arm/mach-mxs/Makefile                         |    2 +-
->  arch/arm/mach-mxs/devices.c                        |   11 +
->  arch/arm/mach-mxs/devices/Makefile                 |    1 +
->  arch/arm/mach-mxs/devices/platform-gpio-mxs.c      |   53 +++++
->  arch/arm/mach-mxs/gpio.h                           |   34 ---
->  arch/arm/mach-mxs/include/mach/devices-common.h    |    2 +
->  arch/arm/mach-mxs/mach-mx28evk.c                   |    1 -
->  arch/arm/mach-mxs/mm-mx23.c                        |    1 -
->  arch/arm/mach-mxs/mm-mx28.c                        |    1 -
->  drivers/gpio/Makefile                              |    1 +
->  .../arm/mach-mxs/gpio.c => drivers/gpio/gpio-mxs.c |  228 ++++++++++++--------
-> 
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
