@@ -1,68 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab1E3HDq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 03:03:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40309 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490Ab1E3HDp convert rfc822-to-8bit (ORCPT
+	id S1751588Ab1E3Fy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 01:54:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41368 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab1E3Fy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 03:03:45 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>,
-        linux-usb@vger.kernel.org
-Subject: Re: [2.6.39] crash in acm_ctrl_msg+0x16/0x59
-Date: Mon, 30 May 2011 07:54:14 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oliver Neukum <oliver@neukum.name>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>
-References: <4DE25252.7050503@gmail.com>
-In-Reply-To: <4DE25252.7050503@gmail.com>
+	Mon, 30 May 2011 01:54:26 -0400
+Date: Sun, 29 May 2011 23:54:24 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: gpio: gpio-exynos4 build fails in mainline
+Message-ID: <20110530055424.GB23517@ponder.secretlab.ca>
+References: <20110529083032.d3d16059.randy.dunlap@oracle.com>
+ <20110529083520.41730250.randy.dunlap@oracle.com>
+ <20110529084000.68a6351a.randy.dunlap@oracle.com>
+ <20110529084440.a4803072.rdunlap@xenotime.net>
+ <BANLkTinhXj51dzCnnXhxrCLeW1qQES6CvA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105300754.14490.oneukum@suse.de>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTinhXj51dzCnnXhxrCLeW1qQES6CvA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 29. Mai 2011, 16:04:02 schrieb Riccardo Magliocchetti:
-
-> mtp-probe: bus: 6, device: 4 was not an MTP device
-> [20462.901834] cdc_acm 6-1:1.0: ttyACM0: USB ACM device
-> [20462.904417] usbcore: registered new interface driver cdc_acm
-> [20462.904420] cdc_acm: v0.26:USB Abstract Control Model driver for USB 
-> modems and ISDN adapters
-> [20463.624142] usb 6-1: USB disconnect, device number 4
-> [20463.641859] CPU 0
+On Mon, May 30, 2011 at 10:24:47AM +0900, Kyungmin Park wrote:
+> On Mon, May 30, 2011 at 12:44 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> > On Sun, 29 May 2011 08:40:00 -0700 Randy Dunlap wrote:
+> >
+> >> On Sun, 29 May 2011 08:35:20 -0700 Randy Dunlap wrote:
+> >>
+> >> > On Sun, 29 May 2011 08:30:32 -0700 Randy Dunlap wrote:
+> >> >
+> >> > > probably should depend on ARM or some ARM sub-arch/mach-type?
+> >> > >
+> >> > >
+> >> > > drivers/gpio/gpio-exynos4.c:18:11: error: unable to open 'mach/map.h'
+> >> > >
+> >> > >
+> >> > > on x86_64
+> >> > >
+> >> > > ---
+> >> >
+> >> > similarly:
+> >> >
+> >> > drivers/gpio/gpio-plat-samsung.c:22:11: error: unable to open 'plat/gpio-core.h'
+> >>
+> >>
+> >> and
+> >>
+> >> drivers/gpio/gpio-s5pc100.c:21:11: error: unable to open 'mach/map.h'
+> >>
+> >>
+> >> (this began as x86_64 allmodconfig)
+> >
+> > and
+> >
+> > drivers/gpio/gpio-s5pv210.c:17:11: error: unable to open 'plat/gpio-core.h'
 > 
-> This is the stracktrace:
+> Hi,
 > 
-> acm_ctrl_msg+0x16/0x59
-> mutex_lock+0x13/0x2a
-> acm_port_down+0x4c/0xcb
-> acm_tty_close+0x75/0x93
-> tty_release+0x1b5/0x47c
-> ? compat_do_readv_write+0x199/0x1ae
-> fput+0xf8/0x1ad
-> filp_close+0x69/0x75
-> sys_close+0x8a/0xea
-> sysenter_dispatch+0x07/0x32
+> Right, now it's just moved from mach directories to drivers/gpio
+> So it requires the proper depends on each ARCH_CPU.
+> 
+> Thank you,
+> Kyungmin Park
 
-So we are trying to talk to a device that is already gone.
-Is there anything unusual about your device? Could you
-post "lsusb -v"?
+A variant on this patch merged and pushed out to the following branch.  Thanks.
 
-	Regards
-		Oliver
+git://git.secretlab.ca/git/linux-2.6 gpio/merge
 
+It should be in linux-next tomorrow.
 
--- 
-- - - 
-SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
-Maxfeldstraße 5                         
-90409 Nürnberg 
-Germany 
-- - - 
+g.
+
+> ---
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 5923976..655babf 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -88,24 +88,28 @@ config GPIO_IT8761E
+> 
+>  config GPIO_EXYNOS4
+>         bool "Samsung Exynos4 GPIO library support"
+> +       depends on CPU_EXYNOS4210
+>         default y if CPU_EXYNOS4210
+>         help
+>           Say yes here to support Samsung Exynos4 series SoCs GPIO library
+> 
+>  config GPIO_PLAT_SAMSUNG
+>         bool "Samsung SoCs GPIO library support"
+> +       depends on SAMSUNG_GPIOLIB_4BIT
+>         default y if SAMSUNG_GPIOLIB_4BIT
+>         help
+>           Say yes here to support Samsung SoCs GPIO library
+> 
+>  config GPIO_S5PC100
+>         bool "Samsung S5PC100 GPIO library support"
+> +       depends on CPU_S5PC100
+>         default y if CPU_S5PC100
+>         help
+>           Say yes here to support Samsung S5PC100 SoCs GPIO library
+> 
+>  config GPIO_S5PV210
+>         bool "Samsung S5PV210/S5PC110 GPIO library support"
+> +       depends on CPU_S5PV210
+>         default y if CPU_S5PV210
+>         help
+>           Say yes here to support Samsung S5PV210/S5PC110 SoCs GPIO library
+> 
+> >
+> >
+> > ---
+> > ~Randy
+> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
