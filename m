@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab1E3QZc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 12:25:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35502 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757473Ab1E3QZb (ORCPT
+	id S1757537Ab1E3Q2k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 12:28:40 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64018 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383Ab1E3Q2i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 12:25:31 -0400
-Date: Mon, 30 May 2011 18:25:28 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] OHCI crash when handover fails
-Message-ID: <20110530162528.GB2386@linutronix.de>
-References: <1306454011.7481.529.camel@pasglop>
- <1306458168.7481.531.camel@pasglop>
+	Mon, 30 May 2011 12:28:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=g5PBWzPBwkaYn6WmVSCrt0//oo7TsuhBEnArsEtdNttUf21LCdSvpdCy/nD8QOqFUs
+         6bASDPCr6FAOjoUTLvsQQEiTsDsNCl9ZrnhDd63upJCR46kZHndKN50ZDtjqesP0SMGz
+         /BvfnDyFhDj7qjJ9ITosrYMcdmpuiiOv9Ze9k=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1306458168.7481.531.camel@pasglop>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DE3688A.4040600@mvista.com>
+References: <20110527151135.cd6f758a.sfr@canb.auug.org.au> <1306591465-9622-1-git-send-email-vapier@gentoo.org>
+ <4DE3688A.4040600@mvista.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Mon, 30 May 2011 12:28:17 -0400
+X-Google-Sender-Auth: Y8gjFjqQ-FvZmLsSHTju1eLRCco
+Message-ID: <BANLkTind_F4-5sLUO1GVxK_yY_eXz_J0Vg@mail.gmail.com>
+Subject: Re: [Kgdb-bugreport] [PATCH] kgdbts: only use new asm-generic/ptrace.h
+ api when needed
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Benjamin Herrenschmidt | 2011-05-27 11:02:48 [+1000]:
+On Mon, May 30, 2011 at 05:51, Sergei Shtylyov wrote:
+> On 28-05-2011 18:04, Mike Frysinger wrote:
+>> The new instruction_pointer_set helper is defined for people who have
+>> converted to asm-generic/ptrace.h, so don't use it generally unless
+>> the arch needs it (in which case it has been converted).  This should
+>> fix building of kgdb tests for arches not yet converted.
+>
+>> --- a/drivers/misc/kgdbts.c
+>> +++ b/drivers/misc/kgdbts.c
+>> @@ -304,7 +304,10 @@ static int check_and_rewind_pc(char *put_str, char
+>> *arg)
+>>                return 1;
+>>        }
+>>        /* Readjust the instruction pointer if needed */
+>> -       instruction_pointer_set(&kgdbts_regs, ip + offset);
+>> +       ip += offset;
+>
+>   Since 'íp' is local, incrementing it is pointless here unless you have
+> GDB_ADJUSTS_BREAK_OFFSET defined. Why not keep instruction_pointer_set()
+> call as is?
 
->BTW. The same handover failure didn't cause a crash yesterday, so this
->is a regression that happened with whatever Linus pulled last night, I
->probably won't have a chance to bisect it tho for various reasons.
-
-Ben, this is probably fixed by
- http://marc.info/?l=linux-fsdevel&m=130676974227377&w=2
-
->Cheers,
->Ben.
-
-Sebastian
+i prefer to have as much outside of ifdefs as possible.  gcc optimizes
+the result away, so it isnt a code size problem.
+-mike
