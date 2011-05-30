@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab1E3RyL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 13:54:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9116 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751819Ab1E3RyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 13:54:10 -0400
-Date: Mon, 30 May 2011 19:53:34 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Mel Gorman <mel@csn.ul.ie>, akpm@linux-foundation.org,
-        Ury Stankevich <urykhy@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous
-Message-ID: <20110530175334.GI19505@random.random>
-References: <20110530131300.GQ5044@csn.ul.ie>
- <20110530143109.GH19505@random.random>
- <20110530153748.GS5044@csn.ul.ie>
- <20110530165546.GC5118@suse.de>
-MIME-Version: 1.0
+	id S1757418Ab1E3R6f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 13:58:35 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:42147 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab1E3R6e convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 13:58:34 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=H95gfW32JB/XYJSBuOTvJ8IIviFcsPdfxXHbM7LS6jM= c=1 sm=1
+ a=mLLSQZBPk9gA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=pGLkceISAAAA:8 a=Jfd0nZHuj_U1So7eh_wA:9
+ a=ZuHDi5u4xbpHgO1ED3IA:7 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH 1/2] ext4: use little-endian bitops directly
+Mime-Version: 1.0 (Apple Message framework v1082)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110530165546.GC5118@suse.de>
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <BANLkTimyCY9_tAOAtoxyNOw4=e+Y0pO_sw@mail.gmail.com>
+Date: Mon, 30 May 2011 11:58:32 -0600
+Cc: "Ted Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7B5337F4-B0D7-48E1-8D1B-3669B37AA1D5@dilger.ca>
+References: <1306763382-13817-1-git-send-email-akinobu.mita@gmail.com> <09010AAD-7443-4966-BF20-8580FBE8F389@dilger.ca> <20110530154357.GF2890@dhcp-172-31-194-241.cam.corp.google.com> <BANLkTimyCY9_tAOAtoxyNOw4=e+Y0pO_sw@mail.gmail.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 05:55:46PM +0100, Mel Gorman wrote:
-> Even with drift issues, -1 there should be "impossible". Assuming this
-> is a zoneinfo file, that figure is based on global_page_state() which
-> looks like
+On 2011-05-30, at 10:21 AM, Akinobu Mita wrote:
+> 2011/5/31 Ted Ts'o <tytso@mit.edu>:
+>> On Mon, May 30, 2011 at 08:49:43AM -0600, Andreas Dilger wrote:
+>>> On 2011-05-30, at 7:49 AM, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+>>>> s/ext4_set_bit/__test_and_set_bit_le/
+>>>> s/ext4_clear_bit/__test_and_clear_bit_le/
+>>>> s/ext4_test_bit/test_bit_le/
+>>>> s/ext4_find_first_zero_bit/find_first_zero_bit_le/
+>>>> s/ext4_find_next_zero_bit/find_next_zero_bit_le/
+>>>> s/ext4_find_next_bit/find_next_bit_le/
+>>> 
+>>> I'm not souch in favor of making this change. One reason is the need
+>>> for inconsistent test_bit_le() vs __test_and_set_bit_le()
+>>> functions. I think this will make it more difficult to get the
+>>> correct bit operations (I for one do not know the difference between
+>>> the normal and __ versions without looking each time).
+>> 
+>> More to the point, what's the benefit of making this change?
+> 
+> The main purpose is patch 2/2 that replaces __test_and_{set,clear}_bit_le()
+> with __{set,clear}_bit_le(). But there is no ext4_*_bit() macros for
+> __{set,clear}_bit_le(). So I convert to use *_bit_le() directly in this
+> patch instead of introducing another ext4_*_bit() macros.
+> 
+> I don't insist on removing these macros for this purpose against the
+> developper's will.  There is an alternative suggestion that changes
+> ext4_*_bit() macros like below.
+> 
+> #define ext4_test_and_set_bit	__test_and_set_bit_le
+> #define ext4_set_bit		__set_bit_le
+> #define ext4_set_bit_atomic	ext2_set_bit_atomic
+> #define ext4_test_and_clear_bit	__test_and_clear_bit_le
+> #define ext4_clear_bit		__clear_bit_le
+> #define ext4_clear_bit_atomic	ext2_clear_bit_atomic
+> #define ext4_test_bit		test_bit_le
+> #define ext4_find_first_zero_bit	find_first_zero_bit_le
+> #define ext4_find_next_zero_bit		find_next_zero_bit_le
+> #define ext4_find_next_bit		find_next_bit_le
+> 
+> By this chage, ext4_test_and_{set,clear}_bit are added and
+> ext4_{set,clear}_bit are changed.
 
-The two cases reproducing this long hang in D state, had from SMP=n
-PREEMPT=y. Clearly not common config these days. Also it didn't seem
-apparent that any task was running in a code path that kept pages
-isolated.
+I think this second option is a far preferable solution.
 
-> unsigned long, and callers are using unsigned long, is there any
-> possibility the "if (x < 0)" is being optimised out? If you aware
+Looking more closely at these operations, ext4_set_bit_atomic() is not used anywhere in the code and could be removed.
 
-It was eliminated by cpp.
+There is only one place where ext4_clear_bit_atomic() is used (ext4_add_groupblocks()), and this is likely incorrect.  None of the other ext4 code is using ext4_set_bit_atomic(), and all of the ext2_clear_bit_atomic() macros are silently ignoring the "lock" argument, so these changes are done without ext4_group_lock() being held for that group.  I suspect this is never a problem in normal usage because ext4_add_groupblocks() is only used during filesystem resizing, which is rare, and doubly rare for any allocations to be made in the same group concurrently.
 
-> of users reporting this problem (like the users in thread "iotop:
-> khugepaged at 99.99% (2.6.38.3)"), do you know if they had a particular
-> compiler in common?
+This one usage of ext4_clear_bit_atomic() should just be moved inside the ext4_lock_group() a few lines down and then use ext4_clear_bit() for consistency, and ext4_clear_bit_atomic() can be removed entirely.
 
-I had no reason to worry about the compiler yet but that's always good
-idea to keep in mind. The thread were the bug is reported is the
-"iotop" one you mentioned, and there's a tarball attached to one of
-the last emails of the thread with the debug data I grepped. It was
-/proc/zoneinfo file yes. That's the file I asked when I noticed
-something had to be wrong with too_many_isolated and I expected either
-nr_isolated or nr_inactive going wrong, it turned out it was
-nr_isolated (apparently, I don't have full picture on the problem
-yet). I added you in CC to a few emails but you weren't in all
-replies.
+A further cleanup would be to change this whole function to use mb_clear_bits(), which is not only faster because it operates on many bits at once, but also doesn't require that the buddy bitmap be marked invalid ("NEED_INIT") after these changes are made, but that is work for a separate patch.
 
-The debug data you can find on lkml in this email: Message-Id:
-<201105232005.56840.johannes.hirte@fem.tu-ilmenau.de>.
+I would also encourage you to finish off this patch series by pushing up the generic ext2_{set,clear}_bit_atomic() to the few places that are currently using ext2_{set,clear}_bit_atomic() directly (looks like only fs/nilfs2/alloc.h and include/linux/ext3.h) and then removing them from the arch headers.
 
-The other relevant sysrq+t here http://pastebin.com/raw.php?i=VG28YRbi
+Cheers, Andreas
 
-better save the latter (I did) as I'm worried it has a timeout on it.
 
-Your patch was for reports with CONFIG_SMP=y? I'd prefer to clear out
-this error before improving the too_many_isolated, in fact while
-reviewing this code I was not impressed by too_many_isolated. For
-vmscan.c if there's an huge nr_active* list and a tiny nr_inactive
-(like after a truncate of filebacked pages or munmap of anon memory)
-there's no reason to stall, it's better to go ahead and let it refile
-more active pages. The too_many_isolated in compaction.c looks a whole
-lot better than the vmscan.c one as that takes into account the active
-pages too... But I refrained to make any change in this area as I
-don't think the bug is in too_many_isolated itself.
 
-I noticed the count[] array is unsigned int, but it looks ok
-(especially for 32bit ;) because the isolation is limited.
 
-Both bugs were reported on 32bit x86 UP builds with PREEMPT=y. The
-stat accounting seem to use atomics on UP so irqs on off or
-PREEMPT=y/n shouldn't matter if the increment is 1 insn long (plus no
-irq code should ever mess with nr_isolated)... If it wasn't atomic and
-irqs or preempt aren't disabled it could be preempt. To avoid
-confusion: it's not proven that PREEMPT is related, it may be an
-accident both .config had it on. I'm also unsure why it moves from
--1,0,1 I wouldn't expect a single page to be isolated like -1 pages to
-be isolated, it just looks weird...
+
