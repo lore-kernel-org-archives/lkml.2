@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab1E3ItN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 04:49:13 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39437 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab1E3ItL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 04:49:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=N8rAovTqC1iWtq/hNQDdE4X/clgAS80MVs3ioeL/6ws2/a7RL+pyf6siRjc8JuUVPK
-         n5M/sTjiZzHqEiKkbzN7+LV7xOYTa/nfRH0RDap/N4nBHXZnupxSY3AH0+rQC5jX2CdS
-         g8oOaFkQRG3ASG/bsfuSPV53yKH9k7ocaPuBg=
-Date: Mon, 30 May 2011 10:49:06 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: jan.kratochvil@redhat.com, oleg@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-Subject: Re: execve-under-ptrace API bug (was Re: Ptrace documentation, draft
- #3)
-Message-ID: <20110530084906.GA11773@htj.dyndns.org>
-References: <BANLkTikH4k0MfTwNzNJN-P85ER4-hKdifw@mail.gmail.com>
- <20110525143250.GJ10146@htj.dyndns.org>
- <201105300528.17384.vda.linux@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105300528.17384.vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753506Ab1E3IyO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 04:54:14 -0400
+Received: from smtp.nokia.com ([147.243.1.48]:26287 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751041Ab1E3IyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 04:54:13 -0400
+Subject: Re: [PATCH 0/2] Support for the ST-Ericsson HSI controller
+From: Carlos Chinea <carlos.chinea@nokia.com>
+To: ext Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Pawel Szyszuk <pawel.szyszuk@stericsson.com>
+In-Reply-To: <1306340839-31331-1-git-send-email-linus.walleij@stericsson.com>
+References: <1306340839-31331-1-git-send-email-linus.walleij@stericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 30 May 2011 11:50:39 +0300
+Message-ID: <1306745439.2819.10050.camel@groo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Denys.
+Hi Linus,
 
-On Mon, May 30, 2011 at 05:28:17AM +0200, Denys Vlasenko wrote:
-> On Wednesday 25 May 2011 16:32, Tejun Heo wrote:
-> > > 	1.x execve under ptrace.
-> > > 
-> > ...
-> > >   ** we get death notification: leader died: **
-> > >  PID0 exit(0)                            = ?
-> > >   ** we get syscall-entry-stop in thread 1: **
-> > >  PID1 execve("/bin/foo", "foo" <unfinished ...>
-> > >   ** we get syscall-entry-stop in thread 2: **
-> > >  PID2 execve("/bin/bar", "bar" <unfinished ...>
-> > >   ** we get PTRACE_EVENT_EXEC for PID0, we issue PTRACE_SYSCALL **
-> > >   ** we get syscall-exit-stop for PID0: **
-> > >  PID0 <... execve resumed> )             = 0
-> > > 
-> > > ??? Question: WHICH execve succeeded? Can tracer figure it out?
-> > 
-> > Hmmm... I don't know.  Maybe we can set ptrace message to the original
-> > tid?
+On Wed, 2011-05-25 at 18:27 +0200, ext Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> The problem with execve is bigger than merely reporting this pid.
->
-> Consider how strace tracks its tracees. Currently, it remembers
-> their pids - sometimes by remembering clone's return values!
-> This is hopelessly broken wrt pid namespaces.
-
-I'm not too familiar with pid namespaces but don't all threads of the
-same process belong to the same namespace?  I don't think strace would
-need to track pids all the time.  It just needs to store pids of
-in-flight exec's and match it on exec completion.  I'm probably
-missing something but why wouldn't that work?
-
-> This works (I have a patch against a somewhat older strace),
-> but now in light of this "interesting" execve-under-ptrace
-> behavior it appears to have a flaw: all threads except the
-> execve'ing one disappear without any notification to strace,
-> therefore strace doesn't know which tracee data ("struct tcb"
-> in strace-speak) need to be dropped!
+> Hi Carlos,
 > 
-> I am not sure current strace handles this correctly either.
-> I will be very surprised if it does.
+> here is the pending patch to add support for ST-Ericssons HSI controller
+> in your new HSI subsystem.
 > 
-> I think the API needs fixing. Tracee must never disappear like that
-> on execve (or in any other case). They must always deliver a
-> WIFEXITED or WIFSIGNALED notification, allowing tracer to know
-> that they are gone. We probably also need to document how are these
-> "I died on execve" notifications are ordered wrt PTRACE_EVENT_EXEC
-> stop in execve-ing thread.
+> It would be great if you could carry this as part of the HSI patchset until
+> it gets merged so you have full control over it, but I think we need to
+> split out the <mash/hsi.h> file from the second patch and put it into
+> the hsi include dir first for that.
+> 
 
-A problem is that by the time de-threading is in progress, it's
-already too deep and there's no way back and the exec'ing thread has
-to wait for completion in uninterruptible sleeps - ie. it expects
-de-threading to finish in finite amount of time and to achieve that it
-basically sends SIGKILL to all other threads.  If we introduce a trap
-in de-threading itself, we can easily end up with an unkillable
-task.
+I will be glad to carry this patches with the HSI patchset. I'll do a
+review asap. As first comment I think we can keep mach/hsi.h where it is
+as it looks to me that all the code is tight there is tied to the
+platform.
 
-> Ideas?
+> Anyway, take it as a first sign of life and a review opportunity.
+> 
+> Pawel Szyszuk (2):
+>   HSI: add ST-E HSI controller
+>   mach-ux500: platform data for ST-E HSI controller
+> 
+>  arch/arm/mach-ux500/board-mop500-pins.c    |   10 +
+>  arch/arm/mach-ux500/board-mop500.c         |   65 ++
+>  arch/arm/mach-ux500/clock.c                |    8 +-
+>  arch/arm/mach-ux500/devices-db8500.c       |  118 +++
+>  arch/arm/mach-ux500/include/mach/devices.h |    1 +
+>  arch/arm/mach-ux500/include/mach/hsi.h     |  122 +++
+>  drivers/hsi/controllers/Kconfig            |   10 +
+>  drivers/hsi/controllers/Makefile           |    1 +
+>  drivers/hsi/controllers/ste_hsi.c          | 1536 ++++++++++++++++++++++++++++
+>  9 files changed, 1867 insertions(+), 4 deletions(-)
+>  create mode 100644 arch/arm/mach-ux500/include/mach/hsi.h
+>  create mode 100644 drivers/hsi/controllers/ste_hsi.c
+> 
 
-But, if necessary, I can think of two other ways,
-
-1. Don't allow more than one thread in the same group enter exec(2)
-   path at all.  It's not like parallel execution of exec(2) buys us
-   anything anyway.  One thing to be careful about is that binfmt code
-   may recurse.
-
-2. Add another trap point right before de-threading commences.  It can
-   still back out if de-threading hasn't started yet.  We'll still
-   need to add explicit synchronization there but the window would be
-   much smaller.
-
-Thanks.
+Br,
+Carlos
 
 -- 
-tejun
+Carlos Chinea <carlos.chinea@nokia.com>
+
