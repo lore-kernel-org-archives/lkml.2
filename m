@@ -1,583 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab1E3HVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 03:21:07 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:50123 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754288Ab1E3HVG (ORCPT
+	id S1754952Ab1E3HWg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 03:22:36 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:56759 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754725Ab1E3HWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 03:21:06 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <akpm@linux-foundation.org>
-Cc: <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
-        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
-        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
-        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
-        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
-        <viresh.linux@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] misc/st_pwm: Add support for ST's Pulse Width Modulator
-Date: Mon, 30 May 2011 12:50:19 +0530
-Message-ID: <94cdb41f14f7f086725c4cda66de87e0c337348e.1306739836.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <cover.1306739836.git.viresh.kumar@st.com>
-References: <cover.1306739836.git.viresh.kumar@st.com>
+	Mon, 30 May 2011 03:22:34 -0400
+Message-ID: <4DE345B0.8020505@in.ibm.com>
+Date: Mon, 30 May 2011 12:52:24 +0530
+From: Suzuki Poulose <suzuki@in.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain
+To: linux ppc dev <linuxppc-dev@lists.ozlabs.org>
+CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [RFC][PATCH] Kexec support for PPC440x
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for ST Microelectronics Pulse Width Modulator. This is
-currently used by ST's SPEAr platform and tested on the same.
+KEXEC Support for ppc440X
 
-Reviewed-by: Stanley Miao <stanley.miao@windriver.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+The patch adds kexec support for PPC440x based boards. This work is based
+on the KEXEC patches for FSL BookE.
+
+The FSL BookE patch and the code flow could be found at the link below:
+
+http://patchwork.ozlabs.org/patch/49359/
+
+We invalidate all the TLB entries except the one this code is run from,
+and create a 1:1 mapping for 0-2GiB in blocks of 256M. Later we jump to
+the 1:1 mapping.
+
+I have tested this patches on Ebony and Sequoia boards. It would be great
+if somebody could test this on the other boards.
+
+Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
 ---
- MAINTAINERS           |    5 +
- drivers/misc/Kconfig  |    7 +
- drivers/misc/Makefile |    1 +
- drivers/misc/st_pwm.c |  486 +++++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 499 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/st_pwm.c
+  arch/powerpc/Kconfig                    |    2
+  arch/powerpc/include/asm/kexec.h        |    2
+  arch/powerpc/kernel/44x_kexec_mapping.S |   66 ++++++++++++++++++++++++++++++++
+  arch/powerpc/kernel/misc_32.S           |   22 ++++++++++
+  4 files changed, 90 insertions(+), 2 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 48b0a4f..7c74b99 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6031,6 +6031,11 @@ M:	Jan-Benedict Glaw <jbglaw@lug-owl.de>
- S:	Maintained
- F:	arch/alpha/kernel/srm_env.c
- 
-+ST Microelectronics Pulse Width Modulator Support
-+M:	Viresh Kumar <viresh.kumar@st.com>
-+S:	Maintained
-+F:	drivers/misc/st_pwm.c
-+
- STABLE BRANCH
- M:	Greg Kroah-Hartman <greg@kroah.com>
- L:	stable@kernel.org
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 4e349cd..ae5f250 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -425,6 +425,13 @@ config SPEAR13XX_PCIE_GADGET
- 	 entry will be created for that controller. User can use these
- 	 sysfs node to configure PCIe EP as per his requirements.
- 
-+config ST_PWM
-+	tristate "ST Microelectronics Pulse Width Modulator"
-+	default n
-+	help
-+	  Support for ST Microelectronics Pulse Width Modulator. Currently it is
-+	  present and tested on SPEAr Platform only.
-+
- config TI_DAC7512
- 	tristate "Texas Instruments DAC7512"
- 	depends on SPI && SYSFS
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 5f03172..3361411 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -39,6 +39,7 @@ obj-$(CONFIG_HMC6352)		+= hmc6352.o
- obj-y				+= eeprom/
- obj-y				+= cb710/
- obj-$(CONFIG_SPEAR13XX_PCIE_GADGET)	+= spear13xx_pcie_gadget.o
-+obj-$(CONFIG_ST_PWM)		+= st_pwm.o
- obj-$(CONFIG_VMWARE_BALLOON)	+= vmw_balloon.o
- obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
- obj-$(CONFIG_PCH_PHUB)		+= pch_phub.o
-diff --git a/drivers/misc/st_pwm.c b/drivers/misc/st_pwm.c
-new file mode 100644
-index 0000000..9556dd2
+Index: powerpc/arch/powerpc/Kconfig
+===================================================================
+--- powerpc.orig/arch/powerpc/Kconfig
++++ powerpc/arch/powerpc/Kconfig
+@@ -349,7 +349,7 @@ config ARCH_ENABLE_MEMORY_HOTREMOVE
+  
+  config KEXEC
+  	bool "kexec system call (EXPERIMENTAL)"
+-	depends on (PPC_BOOK3S || FSL_BOOKE) && EXPERIMENTAL
++	depends on (PPC_BOOK3S || FSL_BOOKE || (44x && !SMP && !47x)) && EXPERIMENTAL
+  	help
+  	  kexec is a system call that implements the ability to shutdown your
+  	  current kernel, and to start another kernel.  It is like a reboot
+Index: powerpc/arch/powerpc/include/asm/kexec.h
+===================================================================
+--- powerpc.orig/arch/powerpc/include/asm/kexec.h
++++ powerpc/arch/powerpc/include/asm/kexec.h
+@@ -2,7 +2,7 @@
+  #define _ASM_POWERPC_KEXEC_H
+  #ifdef __KERNEL__
+  
+-#ifdef CONFIG_FSL_BOOKE
++#if defined(CONFIG_FSL_BOOKE) || defined(CONFIG_44x)
+  
+  /*
+   * On FSL-BookE we setup a 1:1 mapping which covers the first 2GiB of memory
+Index: powerpc/arch/powerpc/kernel/44x_kexec_mapping.S
+===================================================================
 --- /dev/null
-+++ b/drivers/misc/st_pwm.c
-@@ -0,0 +1,486 @@
++++ powerpc/arch/powerpc/kernel/44x_kexec_mapping.S
+@@ -0,0 +1,66 @@
 +/*
-+ * drivers/misc/st_pwm.c
++ * Copyright (C) 2011 IBM
 + *
-+ * ST Microelectronics Pulse Width Modulator driver
++ * Author : Suzuki K. Poulose <suzuki@in.ibm.com>
 + *
-+ * Copyright (C) 2010-2011 ST Microelectronics
-+ * Viresh Kumar<viresh.kumar@st.com>
++ * This source code is licensed under the GNU General Public License,
++ * Version 2.  See the file COPYING for more details.
 + *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
++ * Code for setting up 1:1 mapping for PPC440x for KEXEC
++ *
++ * We cannot switch off the MMU on PPC44x.
++ * So we:
++ * 1) Invalidate all the mappings except the one we are
++ * running from.
++ * 2) Create a 1:1 mapping for 0-2GiB
++ *
++ * - Based on the kexec support code for FSL BookE
++ * - Based on the boot up code for ppc44x from head_44x.S
++ * - Doesn't support 47x yet.
++ * - Doesn't support SMP.
++ *
 + */
-+
-+/* Tested on ST's SPEAr Platform */
-+
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/ioport.h>
-+#include <linux/kernel.h>
-+#include <linux/math64.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+
-+/* PWM registers and bits definitions */
-+#define PWMCR			0x00
-+#define PWMDCR			0x04
-+#define PWMPCR			0x08
-+
-+#define PWM_EN_MASK		0x1
-+#define MIN_PRESCALE		0x00
-+#define MAX_PRESCALE		0x3FFF
-+#define PRESCALE_SHIFT		2
-+#define MIN_DUTY		0x0001
-+#define MAX_DUTY		0xFFFF
-+#define MAX_PERIOD		0xFFFF
-+#define MIN_PERIOD		0x0001
-+
-+#define PWM_DEVICE_PER_IP	4
-+#define PWM_DEVICE_OFFSET	0x10
-+
-+/* lock for pwm_list */
-+static DEFINE_SPINLOCK(list_lock);
-+/* list of all pwm ips available in system */
-+static LIST_HEAD(pwm_list);
-+
-+/**
-+ * struct pwm_device: struct representing pwm device/channel
-+ *
-+ * pwmd_id: id of pwm device
-+ * pwm: pointer to parent pwm ip
-+ * label: used for storing label passed in pwm_request
-+ * offset: base address offset from parent pwm mmio_base
-+ * busy: represents usage status of a pwm device
-+ * lock: lock specific to a pwm device
-+ * node: node for adding device to parent pwm's devices list
-+ *
-+ * Each pwm IP contains four independent pwm device/channels. Some or all of
-+ * which may be present in our configuration.
-+ */
-+struct pwm_device {
-+	unsigned pwmd_id;
-+	struct pwm *pwm;
-+	const char *label;
-+	unsigned offset;
-+	unsigned busy;
-+	spinlock_t lock;
-+	struct list_head node;
-+};
-+
-+/**
-+ * struct pwm: struct representing pwm ip
-+ *
-+ * id: id of pwm ip
-+ * mmio_base: base address of pwm
-+ * clk: pointer to clk structure of pwm ip
-+ * clk_enabled: clock enable status
-+ * pdev: pointer to pdev structure of pwm
-+ * lock: lock specific to current pwm ip
-+ * devices: list of devices/childrens of pwm ip
-+ * node: node for adding pwm to global list of all pwm ips
-+ */
-+struct pwm {
-+	unsigned id;
-+	void __iomem *mmio_base;
-+	struct clk *clk;
-+	int clk_enabled;
-+	struct platform_device *pdev;
-+	spinlock_t lock;
-+	struct list_head devices;
-+	struct list_head node;
-+};
++	bl	nxtins				/* Find our address */
++nxtins:	mflr	r5				/* Make it accessible */
++	tlbsx	r23,0,r5			/* Find entry we are in */
++	li	r4,0				/* Start at TLB entry 0 */
++	li	r3,0				/* Set PAGEID inval value */
++1:	cmpw	r23,r4				/* Is this our entry? */
++	beq	skip				/* If so, skip the inval */
++	tlbwe	r3,r4,PPC44x_TLB_PAGEID		/* If not, inval the entry */
++skip:	addi	r4,r4,1				/* Increment */
++	cmpwi	r4,64				/* Are we done? */
++	bne	1b				/* If not, repeat */
++	isync
 +
 +/*
-+ * period_ns = 10^9 * (PRESCALE + 1) * PV / PWM_CLK_RATE
-+ * duty_ns = 10^9 * (PRESCALE + 1) * DC / PWM_CLK_RATE
-+ *
-+ * PV = (PWM_CLK_RATE * period_ns)/ (10^9 * (PRESCALE + 1))
-+ * DC = (PWM_CLK_RATE * duty_ns)/ (10^9 * (PRESCALE + 1))
++ * Setup 1:1 mapping  for 0-2GiB in blocks of 256M.
++ * r23 is the index to the mapping of this code.
++ * Skip it.
 + */
-+int pwm_config(struct pwm_device *pwmd, int duty_ns, int period_ns)
-+{
-+	u64 val, div, clk_rate;
-+	unsigned long prescale = MIN_PRESCALE, pv, dc;
-+	int ret = 0;
++	/* attribute fields. rwx for SUPERVISOR mode */
++	li	r5, 0
++	ori	r5, r5, (PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | PPC44x_TLB_G)
 +
-+	if (!pwmd) {
-+		pr_err("pwm: config - NULL pwm device pointer\n");
-+		return -EFAULT;
-+	}
++	li	r11, 0				/* PageNumber */
++	li	r6, 0				/* TLB Index  */
 +
-+	if (period_ns == 0 || duty_ns > period_ns) {
-+		ret = -EINVAL;
-+		goto err;
-+	}
++next_tlb:
++	rotlwi	r3, r11, 28			/* Create EPN (bits 0-3) */
++	mr	r4, r3				/* RPN = EPN  */
++	ori	r3, r3, PPC44x_TLB_VALID | PPC44x_TLB_256M /* SIZE = 256M, Valid */
++	cmpw	r6, r23				/* Is this our TLB entry ? */
++	bne	write_tlb
++	addi	r6, r6, 1			/* Skip our entry */
 +
-+	/* TODO: Need to optimize this loop */
-+	while (1) {
-+		div = 1000000000;
-+		div *= 1 + prescale;
-+		clk_rate = clk_get_rate(pwmd->pwm->clk);
-+		val = clk_rate * period_ns;
-+		pv = div64_u64(val, div);
-+		val = clk_rate * duty_ns;
-+		dc = div64_u64(val, div);
++write_tlb:
++	tlbwe	r3, r6, PPC44x_TLB_PAGEID	/* PageID field : EPN, V, SIZE */
++	tlbwe	r4, r6, PPC44x_TLB_XLAT		/* Address translation : RPN   */
++	tlbwe	r5, r6, PPC44x_TLB_ATTRIB	/* Attributes */
 +
-+		if ((pv == 0) || (dc == 0)) {
-+			ret = -EINVAL;
-+			goto err;
-+		}
-+		if ((pv > MAX_PERIOD) || (dc > MAX_DUTY)) {
-+			prescale++;
-+			if (prescale > MAX_PRESCALE) {
-+				ret = -EINVAL;
-+				goto err;
-+			}
-+			continue;
-+		}
-+		if ((pv < MIN_PERIOD) || (dc < MIN_DUTY)) {
-+			ret = -EINVAL;
-+			goto err;
-+		}
-+		break;
-+	}
++	addi	r11, r11, 1			/* Increment PN */
++	addi	r6, r6, 1			/* Increment TLB Index */
++	cmpwi	r11, 8				/* Are we done ? */
++	bne	next_tlb
++	isync
 +
-+	/*
-+	 * NOTE: the clock to PWM has to be enabled first
-+	 * before writing to the registers
-+	 */
-+	spin_lock(&pwmd->pwm->lock);
-+	ret = clk_enable(pwmd->pwm->clk);
-+	if (ret) {
-+		spin_unlock(&pwmd->pwm->lock);
-+		goto err;
-+	}
+Index: powerpc/arch/powerpc/kernel/misc_32.S
+===================================================================
+--- powerpc.orig/arch/powerpc/kernel/misc_32.S
++++ powerpc/arch/powerpc/kernel/misc_32.S
+@@ -736,6 +736,28 @@ relocate_new_kernel:
+  	mr      r5, r31
+  
+  	li	r0, 0
++#elif defined(CONFIG_44x)  && !defined(CONFIG_47x)
 +
-+	spin_lock(&pwmd->lock);
-+	writel(prescale << PRESCALE_SHIFT, pwmd->pwm->mmio_base +
-+			pwmd->offset + PWMCR);
-+	writel(dc, pwmd->pwm->mmio_base + pwmd->offset + PWMDCR);
-+	writel(pv, pwmd->pwm->mmio_base + pwmd->offset + PWMPCR);
-+	spin_unlock(&pwmd->lock);
-+	clk_disable(pwmd->pwm->clk);
-+	spin_unlock(&pwmd->pwm->lock);
++	mr	r29, r3
++	mr	r30, r4
++	mr	r31, r5
 +
-+	return 0;
-+err:
-+	dev_err(&pwmd->pwm->pdev->dev, "pwm config fail\n");
-+	return ret;
-+}
-+EXPORT_SYMBOL(pwm_config);
++#include "44x_kexec_mapping.S"
 +
-+int pwm_enable(struct pwm_device *pwmd)
-+{
-+	int ret = 0;
-+	u32 val = 0;
++	mr	r3, r29
++	mr	r4, r30
++	mr	r5, r31
 +
-+	if (!pwmd) {
-+		pr_err("pwm: enable - NULL pwm device pointer\n");
-+		return -EFAULT;
-+	}
++	li	r0, 0
 +
-+	spin_lock(&pwmd->pwm->lock);
-+	ret = clk_enable(pwmd->pwm->clk);
-+	if (!ret)
-+		pwmd->pwm->clk_enabled++;
-+	else {
-+		spin_unlock(&pwmd->pwm->lock);
-+		goto err;
-+	}
-+
-+	spin_lock(&pwmd->lock);
-+	val = readl(pwmd->pwm->mmio_base + pwmd->offset + PWMCR);
-+	writel(val | PWM_EN_MASK, pwmd->pwm->mmio_base + pwmd->offset + PWMCR);
-+	spin_unlock(&pwmd->lock);
-+	spin_unlock(&pwmd->pwm->lock);
-+	return 0;
-+err:
-+	dev_err(&pwmd->pwm->pdev->dev, "pwm enable fail\n");
-+	return ret;
-+}
-+EXPORT_SYMBOL(pwm_enable);
-+
-+void pwm_disable(struct pwm_device *pwmd)
-+{
-+	if (!pwmd) {
-+		pr_err("pwm: disable - NULL pwm device pointer\n");
-+		return;
-+	}
-+
-+	spin_lock(&pwmd->pwm->lock);
-+	spin_lock(&pwmd->lock);
-+	writel(0, pwmd->pwm->mmio_base + pwmd->offset + PWMCR);
-+	if (pwmd->pwm->clk_enabled) {
-+		clk_disable(pwmd->pwm->clk);
-+		pwmd->pwm->clk_enabled--;
-+	}
-+	spin_unlock(&pwmd->lock);
-+	spin_unlock(&pwmd->pwm->lock);
-+}
-+EXPORT_SYMBOL(pwm_disable);
-+
-+struct pwm_device *pwm_request(int pwmd_id, const char *label)
-+{
-+	int found = 0;
-+	struct pwm *pwm;
-+	struct pwm_device *pwmd = NULL;
-+
-+	spin_lock(&list_lock);
-+	list_for_each_entry(pwm, &pwm_list, node) {
-+		spin_lock(&pwm->lock);
-+		list_for_each_entry(pwmd, &pwm->devices, node) {
-+			if (pwmd->pwmd_id == pwmd_id) {
-+				found = 1;
-+				break;
-+			}
-+		}
-+		spin_unlock(&pwm->lock);
-+		if (found)
-+			break;
-+	}
-+	spin_unlock(&list_lock);
-+
-+	if (found) {
-+		spin_lock(&pwmd->lock);
-+		if (pwmd->busy == 0) {
-+			pwmd->busy++;
-+			pwmd->label = label;
-+		} else
-+			pwmd = ERR_PTR(-EBUSY);
-+		spin_unlock(&pwmd->lock);
-+	} else
-+		pwmd = ERR_PTR(-ENOENT);
-+
-+	if (IS_ERR(pwmd))
-+		pr_err("pwm: request fail\n");
-+
-+	return pwmd;
-+}
-+EXPORT_SYMBOL(pwm_request);
-+
-+void pwm_free(struct pwm_device *pwmd)
-+{
-+	if (!pwmd) {
-+		pr_err("pwm: disable - NULL pwm device pointer\n");
-+		return;
-+	}
-+
-+	spin_lock(&pwmd->lock);
-+	if (pwmd->busy) {
-+		pwmd->busy--;
-+		pwmd->label = NULL;
-+	} else {
-+		spin_unlock(&pwmd->lock);
-+		dev_warn(&pwmd->pwm->pdev->dev, "pwm device already freed\n");
-+		return;
-+	}
-+
-+	spin_unlock(&pwmd->lock);
-+}
-+EXPORT_SYMBOL(pwm_free);
-+
-+/* creates and add pwmd device to parent pwm's devices list */
-+static int add_pwm_device(unsigned int pwmd_id, struct pwm *pwm)
-+{
-+	struct pwm_device *pwmd;
-+
-+	pwmd = kzalloc(sizeof(*pwmd), GFP_KERNEL);
-+	if (!pwmd)
-+		return -ENOMEM;
-+
-+	pwmd->pwm = pwm;
-+	pwmd->busy = 0;
-+	pwmd->pwmd_id = pwmd_id + pwm->id * PWM_DEVICE_PER_IP;
-+	pwmd->offset = pwmd_id * PWM_DEVICE_OFFSET;
-+	spin_lock_init(&pwmd->lock);
-+
-+	spin_lock(&pwm->lock);
-+	list_add_tail(&pwmd->node, &pwm->devices);
-+	spin_unlock(&pwm->lock);
-+
-+	return 0;
-+}
-+
-+/* removes all pwmd devices from parent pwm's devices list */
-+static void remove_pwm_devices(struct pwm *pwm)
-+{
-+	struct pwm_device *pwmd;
-+
-+	spin_lock(&pwm->lock);
-+	list_for_each_entry(pwmd, &pwm->devices, node) {
-+		list_del(&pwmd->node);
-+		kfree(pwmd);
-+	}
-+	spin_unlock(&pwm->lock);
-+}
-+
-+static int __devinit st_pwm_probe(struct platform_device *pdev)
-+{
-+	struct pwm *pwm = NULL;
-+	struct resource *res;
-+	int ret = 0, pwmd_id = 0;
-+
-+	pwm = kzalloc(sizeof(*pwm), GFP_KERNEL);
-+	if (!pwm) {
-+		ret = -ENOMEM;
-+		dev_dbg(&pdev->dev, "failed to allocate memory\n");
-+		goto err;
-+	}
-+
-+	pwm->clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(pwm->clk)) {
-+		ret = PTR_ERR(pwm->clk);
-+		dev_dbg(&pdev->dev, "Error getting clock\n");
-+		goto err_free;
-+	}
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		ret = -ENODEV;
-+		dev_dbg(&pdev->dev, "no memory resource defined\n");
-+		goto err_free_clk;
-+	}
-+
-+	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
-+		ret = -EBUSY;
-+		dev_dbg(&pdev->dev, "failed to request memory resource\n");
-+		goto err_free_clk;
-+	}
-+
-+	pwm->mmio_base = ioremap(res->start, resource_size(res));
-+	if (!pwm->mmio_base) {
-+		ret = -ENOMEM;
-+		dev_dbg(&pdev->dev, "failed to ioremap\n");
-+		goto err_free_mem;
-+	}
-+
-+	/* initialize pwm structure */
-+	pwm->clk_enabled = 0;
-+	pwm->pdev = pdev;
-+	/* if pdev->id is -1, only one pwm ip is present */
-+	if (pdev->id == -1)
-+		pwm->id = 0;
-+	else
-+		pwm->id = pdev->id;
-+
-+	spin_lock_init(&pwm->lock);
-+	INIT_LIST_HEAD(&pwm->devices);
-+	platform_set_drvdata(pdev, pwm);
-+
-+	/* add pwm to pwm list */
-+	spin_lock(&list_lock);
-+	list_add_tail(&pwm->node, &pwm_list);
-+	spin_unlock(&list_lock);
-+
-+	/* add pwm devices */
-+	for (pwmd_id = 0; pwmd_id < PWM_DEVICE_PER_IP; pwmd_id++) {
-+		ret = add_pwm_device(pwmd_id, pwm);
-+		if (!ret)
-+			continue;
-+		dev_err(&pdev->dev, "Add device fail for pwm device id: %d\n",
-+				pwmd_id);
-+	}
-+
-+	if (list_empty(&pwm->node))
-+		goto err_remove_pwm;
-+
-+	dev_info(&pdev->dev, "Initialization successful\n");
-+	return 0;
-+
-+err_remove_pwm:
-+	spin_lock(&list_lock);
-+	list_del(&pwm->node);
-+	spin_unlock(&list_lock);
-+
-+	platform_set_drvdata(pdev, NULL);
-+	iounmap(pwm->mmio_base);
-+err_free_mem:
-+	release_mem_region(res->start, resource_size(res));
-+err_free_clk:
-+	clk_put(pwm->clk);
-+err_free:
-+	kfree(pwm);
-+err:
-+	dev_err(&pdev->dev, "Initialization Fail. Error: %d\n", ret);
-+
-+	return ret;
-+}
-+
-+static int __devexit st_pwm_remove(struct platform_device *pdev)
-+{
-+	struct pwm *pwm;
-+	struct resource *res;
-+	int ret = 0;
-+
-+	pwm = platform_get_drvdata(pdev);
-+	if (pwm == NULL) {
-+		ret = -ENODEV;
-+		dev_dbg(&pdev->dev, "Remove: get_drvdata fail\n");
-+		goto err;
-+	}
-+	platform_set_drvdata(pdev, NULL);
-+
-+	/* remove pwm devices */
-+	remove_pwm_devices(pwm);
-+
-+	/* remove pwm from pwm_list */
-+	spin_lock(&list_lock);
-+	list_del(&pwm->node);
-+	spin_unlock(&list_lock);
-+
-+	iounmap(pwm->mmio_base);
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		ret = -ENODEV;
-+		dev_dbg(&pdev->dev, "Remove: get_resource fail\n");
-+		goto err;
-+	}
-+	release_mem_region(res->start, resource_size(res));
-+
-+	if (pwm->clk_enabled)
-+		clk_disable(pwm->clk);
-+	clk_put(pwm->clk);
-+
-+	kfree(pwm);
-+	return 0;
-+
-+err:
-+	dev_err(&pdev->dev, "Remove: Fail - %d\n", ret);
-+	return ret;
-+}
-+
-+static struct platform_driver st_pwm_driver = {
-+	.driver = {
-+		.name = "st_pwm",
-+		.bus = &platform_bus_type,
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = st_pwm_probe,
-+	.remove = __devexit_p(st_pwm_remove)
-+};
-+
-+static int __init st_pwm_init(void)
-+{
-+	int ret = 0;
-+
-+	ret = platform_driver_register(&st_pwm_driver);
-+	if (ret)
-+		pr_err("failed to register st_pwm_driver\n");
-+
-+	return ret;
-+}
-+module_init(st_pwm_init);
-+
-+static void __exit st_pwm_exit(void)
-+{
-+	platform_driver_unregister(&st_pwm_driver);
-+}
-+module_exit(st_pwm_exit);
-+
-+MODULE_AUTHOR("Viresh Kumar <viresh.kumar@st.com>");
-+MODULE_DESCRIPTION("ST PWM Driver");
-+MODULE_LICENSE("GPL");
--- 
-1.7.2.2
-
++	/* Jump back to the 1:1 address */
++	mr	r8, r0
++	mtspr	SPRN_SRR1, r8
++	addi	r8, r4, 1f - relocate_new_kernel
++	mtspr	SPRN_SRR0, r8
++	sync
++	rfi
++1:
+  #else
+  	li	r0, 0
+  
