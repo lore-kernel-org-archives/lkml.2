@@ -1,102 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab1E3NnT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 09:43:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63380 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab1E3NnR (ORCPT
+	id S1753852Ab1E3Nqd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 09:46:33 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38338 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab1E3Nqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 09:43:17 -0400
+	Mon, 30 May 2011 09:46:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=YA+ah15UvE9BlceHELkgI8tMGSGssXhpxqjjJELXRws8/QUH/KuSGDDjbXn44PsLeC
-         MDFEzq9bkL1qPOTKnW0wA50CBlP64YO8Xf4oxyq8dc/QWw8r1S5g0xBKBxwDu835H3Wd
-         BnqcfenoNqpMimhoVnG2bXmktN5B3VEhRREnM=
-Date: Mon, 30 May 2011 16:43:14 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Christoph Hellwig <hch@lst.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Sage Weil <sage@newdream.net>, reiserfs-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] reiserfs: NULL pointer deference in open_xa_dir()
-Message-ID: <20110530134314.GA4574@swordfish.minsk.epam.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Bweba/SKPxfm2h7ZS4SQEdByXJpsjj8njBS+Pk8t3szFCvHU5i4q+DYMzGkeCiI7Kr
+         Svw6SPXhOFLxrrokn1TTGDu9WCclcNjpz93WZn9t7lkXHM1V8dIZvu58MUeCEiwUNPwk
+         OloUjrZt7sZxBvCtyFO83ZjZuFB10UoIA/4cY=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: [PATCH 1/2] ext3: use little-endian bitops directly
+Date: Mon, 30 May 2011 22:47:15 +0900
+Message-Id: <1306763236-13751-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit
-> commit cc350c2764a657ee012efd5bd260a6cd5be2f877
-> reiserfs: remove unnecessary dentry_unhash from rmdir, dir rename
-> Reiserfs does not have problems with references to unlinked directories.
+s/ext3_set_bit/__test_and_set_bit_le/
+s/ext3_clear_bit/__test_and_clear_bit_le/
+s/ext3_test_bit/test_bit_le/
+s/ext3_find_first_zero_bit/find_first_zero_bit_le/
+s/ext3_find_next_zero_bit/find_next_zero_bit_le/
 
-removed dentry_unhash() from rmdir, dir rename functions. That 
-caused 
-NULL pointer dereference at open_xa_dir+0x3f/01b3
+This change reveals that there are some __test_and_{set,clear}_bit_le()
+calls which ignore the return value. These can be replaced with
+__{set,clear}_bit_le().
 
-Trace:
-?xattr_unlink()
-reiserfs_for_each_xattr()
-?mutex_lock_nested()
-?get_parent_ip()
-reiserfs_delete_xattrs()
-reiserfs_evict_inode()
-[..]
-
-Patch reverts cc350c2764a657ee012efd5bd260a6cd5be2f877. The difference
-is that reiserfs_rmdir() calls dentry_unhash() only for xattr dirs, since
-(as commit message states) references to unlinked non-xattrs directories 
-are handled by reiserfs.
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org
 ---
+ fs/ext3/balloc.c        |   20 ++++++++++----------
+ fs/ext3/ialloc.c        |    8 ++++----
+ fs/ext3/inode.c         |    2 +-
+ fs/ext3/resize.c        |   14 +++++++-------
+ include/linux/ext3_fs.h |    5 -----
+ 5 files changed, 22 insertions(+), 27 deletions(-)
 
- fs/reiserfs/namei.c |    7 +++++++
- fs/reiserfs/xattr.c |    1 +
- 2 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/fs/reiserfs/namei.c b/fs/reiserfs/namei.c
-index 1186626..3d3cc6c 100644
---- a/fs/reiserfs/namei.c
-+++ b/fs/reiserfs/namei.c
-@@ -831,6 +831,10 @@ static int reiserfs_rmdir(struct inode *dir, struct dentry *dentry)
- 	INITIALIZE_PATH(path);
- 	struct reiserfs_dir_entry de;
+diff --git a/fs/ext3/balloc.c b/fs/ext3/balloc.c
+index fe52297..8365b3d 100644
+--- a/fs/ext3/balloc.c
++++ b/fs/ext3/balloc.c
+@@ -112,21 +112,21 @@ static int ext3_valid_block_bitmap(struct super_block *sb,
+ 	/* check whether block bitmap block number is set */
+ 	bitmap_blk = le32_to_cpu(desc->bg_block_bitmap);
+ 	offset = bitmap_blk - group_first_block;
+-	if (!ext3_test_bit(offset, bh->b_data))
++	if (!test_bit_le(offset, bh->b_data))
+ 		/* bad block bitmap */
+ 		goto err_out;
  
-+	/* This is the xattr dir, handle specially. */
-+	if (S_ISDIR(dentry->d_inode->i_mode))
-+		dentry_unhash(dentry);
-+
- 	/* we will be doing 2 balancings and update 2 stat data, we change quotas
- 	 * of the owner of the directory and of the owner of the parent directory.
- 	 * The quota structure is possibly deleted only on last iput => outside
-@@ -1225,6 +1229,9 @@ static int reiserfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	unsigned long savelink = 1;
- 	struct timespec ctime;
+ 	/* check whether the inode bitmap block number is set */
+ 	bitmap_blk = le32_to_cpu(desc->bg_inode_bitmap);
+ 	offset = bitmap_blk - group_first_block;
+-	if (!ext3_test_bit(offset, bh->b_data))
++	if (!test_bit_le(offset, bh->b_data))
+ 		/* bad block bitmap */
+ 		goto err_out;
  
-+	if (new_dentry->d_inode && S_ISDIR(new_dentry->d_inode->i_mode))
-+		dentry_unhash(new_dentry);
-+
- 	/* three balancings: (1) old name removal, (2) new name insertion
- 	   and (3) maybe "save" link insertion
- 	   stat data updates: (1) old directory,
-diff --git a/fs/reiserfs/xattr.c b/fs/reiserfs/xattr.c
-index e8a62f4..50f1abc 100644
---- a/fs/reiserfs/xattr.c
-+++ b/fs/reiserfs/xattr.c
-@@ -98,6 +98,7 @@ static int xattr_rmdir(struct inode *dir, struct dentry *dentry)
+ 	/* check whether the inode table block number is set */
+ 	bitmap_blk = le32_to_cpu(desc->bg_inode_table);
+ 	offset = bitmap_blk - group_first_block;
+-	next_zero_bit = ext3_find_next_zero_bit(bh->b_data,
++	next_zero_bit = find_next_zero_bit_le(bh->b_data,
+ 				offset + EXT3_SB(sb)->s_itb_per_group,
+ 				offset);
+ 	if (next_zero_bit >= offset + EXT3_SB(sb)->s_itb_per_group)
+@@ -722,14 +722,14 @@ static int ext3_test_allocatable(ext3_grpblk_t nr, struct buffer_head *bh)
+ 	int ret;
+ 	struct journal_head *jh = bh2jh(bh);
  
- 	reiserfs_mutex_lock_nested_safe(&dentry->d_inode->i_mutex,
- 					I_MUTEX_CHILD, dir->i_sb);
-+	dentry_unhash(dentry);
- 	error = dir->i_op->rmdir(dir, dentry);
- 	if (!error)
- 		dentry->d_inode->i_flags |= S_DEAD;
-
+-	if (ext3_test_bit(nr, bh->b_data))
++	if (test_bit_le(nr, bh->b_data))
+ 		return 0;
+ 
+ 	jbd_lock_bh_state(bh);
+ 	if (!jh->b_committed_data)
+ 		ret = 1;
+ 	else
+-		ret = !ext3_test_bit(nr, jh->b_committed_data);
++		ret = !test_bit_le(nr, jh->b_committed_data);
+ 	jbd_unlock_bh_state(bh);
+ 	return ret;
+ }
+@@ -752,14 +752,14 @@ bitmap_search_next_usable_block(ext3_grpblk_t start, struct buffer_head *bh,
+ 	struct journal_head *jh = bh2jh(bh);
+ 
+ 	while (start < maxblocks) {
+-		next = ext3_find_next_zero_bit(bh->b_data, maxblocks, start);
++		next = find_next_zero_bit_le(bh->b_data, maxblocks, start);
+ 		if (next >= maxblocks)
+ 			return -1;
+ 		if (ext3_test_allocatable(next, bh))
+ 			return next;
+ 		jbd_lock_bh_state(bh);
+ 		if (jh->b_committed_data)
+-			start = ext3_find_next_zero_bit(jh->b_committed_data,
++			start = find_next_zero_bit_le(jh->b_committed_data,
+ 							maxblocks, next);
+ 		jbd_unlock_bh_state(bh);
+ 	}
+@@ -798,7 +798,7 @@ find_next_usable_block(ext3_grpblk_t start, struct buffer_head *bh,
+ 		ext3_grpblk_t end_goal = (start + 63) & ~63;
+ 		if (end_goal > maxblocks)
+ 			end_goal = maxblocks;
+-		here = ext3_find_next_zero_bit(bh->b_data, end_goal, start);
++		here = find_next_zero_bit_le(bh->b_data, end_goal, start);
+ 		if (here < end_goal && ext3_test_allocatable(here, bh))
+ 			return here;
+ 		ext3_debug("Bit not found near goal\n");
+@@ -845,7 +845,7 @@ claim_block(spinlock_t *lock, ext3_grpblk_t block, struct buffer_head *bh)
+ 	if (ext3_set_bit_atomic(lock, block, bh->b_data))
+ 		return 0;
+ 	jbd_lock_bh_state(bh);
+-	if (jh->b_committed_data && ext3_test_bit(block,jh->b_committed_data)) {
++	if (jh->b_committed_data && test_bit_le(block, jh->b_committed_data)) {
+ 		ext3_clear_bit_atomic(lock, block, bh->b_data);
+ 		ret = 0;
+ 	} else {
+@@ -1697,7 +1697,7 @@ allocated:
+ 		int i;
+ 
+ 		for (i = 0; i < num; i++) {
+-			if (ext3_test_bit(grp_alloc_blk+i,
++			if (test_bit_le(grp_alloc_blk + i,
+ 					bh2jh(bitmap_bh)->b_committed_data)) {
+ 				printk("%s: block was unexpectedly set in "
+ 					"b_committed_data\n", __func__);
+diff --git a/fs/ext3/ialloc.c b/fs/ext3/ialloc.c
+index bfc2dc4..8796fbc 100644
+--- a/fs/ext3/ialloc.c
++++ b/fs/ext3/ialloc.c
+@@ -460,7 +460,7 @@ struct inode *ext3_new_inode(handle_t *handle, struct inode * dir,
+ 		ino = 0;
+ 
+ repeat_in_this_group:
+-		ino = ext3_find_next_zero_bit((unsigned long *)
++		ino = find_next_zero_bit_le(
+ 				bitmap_bh->b_data, EXT3_INODES_PER_GROUP(sb), ino);
+ 		if (ino < EXT3_INODES_PER_GROUP(sb)) {
+ 
+@@ -654,7 +654,7 @@ struct inode *ext3_orphan_get(struct super_block *sb, unsigned long ino)
+ 	 * is a valid orphan (no e2fsck run on fs).  Orphans also include
+ 	 * inodes that were being truncated, so we can't check i_nlink==0.
+ 	 */
+-	if (!ext3_test_bit(bit, bitmap_bh->b_data))
++	if (!test_bit_le(bit, bitmap_bh->b_data))
+ 		goto bad_orphan;
+ 
+ 	inode = ext3_iget(sb, ino);
+@@ -680,9 +680,9 @@ iget_failed:
+ bad_orphan:
+ 	ext3_warning(sb, __func__,
+ 		     "bad orphan inode %lu!  e2fsck was run?", ino);
+-	printk(KERN_NOTICE "ext3_test_bit(bit=%d, block=%llu) = %d\n",
++	printk(KERN_NOTICE "test_bit_le(bit=%d, block=%llu) = %d\n",
+ 	       bit, (unsigned long long)bitmap_bh->b_blocknr,
+-	       ext3_test_bit(bit, bitmap_bh->b_data));
++	       test_bit_le(bit, bitmap_bh->b_data));
+ 	printk(KERN_NOTICE "inode=%p\n", inode);
+ 	if (inode) {
+ 		printk(KERN_NOTICE "is_bad_inode(inode)=%d\n",
+diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
+index 3451d23..57432a6 100644
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -2727,7 +2727,7 @@ static int __ext3_get_inode_loc(struct inode *inode,
+ 			for (i = start; i < start + inodes_per_buffer; i++) {
+ 				if (i == inode_offset)
+ 					continue;
+-				if (ext3_test_bit(i, bitmap_bh->b_data))
++				if (test_bit_le(i, bitmap_bh->b_data))
+ 					break;
+ 			}
+ 			brelse(bitmap_bh);
+diff --git a/fs/ext3/resize.c b/fs/ext3/resize.c
+index 7916e4c..213a794 100644
+--- a/fs/ext3/resize.c
++++ b/fs/ext3/resize.c
+@@ -148,7 +148,7 @@ static void mark_bitmap_end(int start_bit, int end_bit, char *bitmap)
+ 
+ 	ext3_debug("mark end bits +%d through +%d used\n", start_bit, end_bit);
+ 	for (i = start_bit; i < ((start_bit + 7) & ~7UL); i++)
+-		ext3_set_bit(i, bitmap);
++		__test_and_set_bit_le(i, bitmap);
+ 	if (i < end_bit)
+ 		memset(bitmap + (i >> 3), 0xff, (end_bit - i) >> 3);
+ }
+@@ -222,7 +222,7 @@ static int setup_new_group_blocks(struct super_block *sb,
+ 
+ 	if (ext3_bg_has_super(sb, input->group)) {
+ 		ext3_debug("mark backup superblock %#04lx (+0)\n", start);
+-		ext3_set_bit(0, bh->b_data);
++		__test_and_set_bit_le(0, bh->b_data);
+ 	}
+ 
+ 	/* Copy all of the GDT blocks into the backup in this group */
+@@ -254,7 +254,7 @@ static int setup_new_group_blocks(struct super_block *sb,
+ 			brelse(gdb);
+ 			goto exit_bh;
+ 		}
+-		ext3_set_bit(bit, bh->b_data);
++		__test_and_set_bit_le(bit, bh->b_data);
+ 		brelse(gdb);
+ 	}
+ 
+@@ -278,15 +278,15 @@ static int setup_new_group_blocks(struct super_block *sb,
+ 			brelse(gdb);
+ 			goto exit_bh;
+ 		}
+-		ext3_set_bit(bit, bh->b_data);
++		__test_and_set_bit_le(bit, bh->b_data);
+ 		brelse(gdb);
+ 	}
+ 	ext3_debug("mark block bitmap %#04x (+%ld)\n", input->block_bitmap,
+ 		   input->block_bitmap - start);
+-	ext3_set_bit(input->block_bitmap - start, bh->b_data);
++	__test_and_set_bit_le(input->block_bitmap - start, bh->b_data);
+ 	ext3_debug("mark inode bitmap %#04x (+%ld)\n", input->inode_bitmap,
+ 		   input->inode_bitmap - start);
+-	ext3_set_bit(input->inode_bitmap - start, bh->b_data);
++	__test_and_set_bit_le(input->inode_bitmap - start, bh->b_data);
+ 
+ 	/* Zero out all of the inode table blocks */
+ 	for (i = 0, block = input->inode_table, bit = block - start;
+@@ -309,7 +309,7 @@ static int setup_new_group_blocks(struct super_block *sb,
+ 			goto exit_bh;
+ 		}
+ 		brelse(it);
+-		ext3_set_bit(bit, bh->b_data);
++		__test_and_set_bit_le(bit, bh->b_data);
+ 	}
+ 
+ 	err = extend_or_restart_transaction(handle, 2, bh);
+diff --git a/include/linux/ext3_fs.h b/include/linux/ext3_fs.h
+index 5e06acf..6caadd0 100644
+--- a/include/linux/ext3_fs.h
++++ b/include/linux/ext3_fs.h
+@@ -418,13 +418,8 @@ struct ext3_inode {
+ #define EXT2_MOUNT_DATA_FLAGS		EXT3_MOUNT_DATA_FLAGS
+ #endif
+ 
+-#define ext3_set_bit			__test_and_set_bit_le
+ #define ext3_set_bit_atomic		ext2_set_bit_atomic
+-#define ext3_clear_bit			__test_and_clear_bit_le
+ #define ext3_clear_bit_atomic		ext2_clear_bit_atomic
+-#define ext3_test_bit			test_bit_le
+-#define ext3_find_first_zero_bit	find_first_zero_bit_le
+-#define ext3_find_next_zero_bit		find_next_zero_bit_le
+ 
+ /*
+  * Maximal mount counts between two filesystem checks
+-- 
+1.7.4.4
 
