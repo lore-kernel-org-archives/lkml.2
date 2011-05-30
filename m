@@ -1,20 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab1E3OvO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 10:51:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57942 "EHLO mx1.suse.de"
+	id S1757372Ab1E3Ovb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 10:51:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58184 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757333Ab1E3OvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 10:51:11 -0400
+	id S1757214Ab1E3OvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 10:51:12 -0400
 From: Michal Marek <mmarek@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 3/4] perf: Use make kernelversion instead of parsing the Makefile
-Date: Mon, 30 May 2011 16:50:51 +0200
-Message-Id: <1306767052-15593-4-git-send-email-mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] kbuild: Hack for depmod not handling X.Y versions
+Date: Mon, 30 May 2011 16:50:52 +0200
+Message-Id: <1306767052-15593-5-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1306767052-15593-1-git-send-email-mmarek@suse.cz>
 References: <1306767052-15593-1-git-send-email-mmarek@suse.cz>
@@ -22,33 +19,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+depmod checks if the argument starts with <num>.<num>.<num>. Until
+depmod is fixed, we cheat with a symlink.
+
 Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- tools/perf/util/PERF-VERSION-GEN |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+ Makefile |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index 26d4d3f..9c5fb4d 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -23,12 +23,7 @@ if test -d ../../.git -o -f ../../.git &&
- then
- 	VN=$(echo "$VN" | sed -e 's/-/./g');
- else
--	eval $(grep '^VERSION[[:space:]]*=' ../../Makefile|tr -d ' ')
--	eval $(grep '^PATCHLEVEL[[:space:]]*=' ../../Makefile|tr -d ' ')
--	eval $(grep '^SUBLEVEL[[:space:]]*=' ../../Makefile|tr -d ' ')
--	eval $(grep '^EXTRAVERSION[[:space:]]*=' ../../Makefile|tr -d ' ')
--
--	VN="${VERSION}.${PATCHLEVEL}.${SUBLEVEL}${EXTRAVERSION}"
-+	VN=$(make -sC ../.. kernelversion)
- fi
+diff --git a/Makefile b/Makefile
+index 130e282..0d8d05e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1533,9 +1533,19 @@ quiet_cmd_rmfiles = $(if $(wildcard $(rm-files)),CLEAN   $(wildcard $(rm-files))
+ quiet_cmd_depmod = DEPMOD  $(KERNELRELEASE)
+       cmd_depmod = \
+ 	if [ -r System.map -a -x $(DEPMOD) ]; then                              \
++		if test -z "$(SUBLEVEL)"; then					\
++			version=99.$(KERNELRELEASE);				\
++			ln -s $(KERNELRELEASE) 					\
++				$(INSTALL_MOD_PATH)/lib/modules/$$version;	\
++		else								\
++			version=$(KERNELRELEASE);				\
++		fi;								\
+ 		$(DEPMOD) -ae -F System.map                                     \
+ 		$(if $(strip $(INSTALL_MOD_PATH)), -b $(INSTALL_MOD_PATH) )     \
+-		$(KERNELRELEASE);                                               \
++		$$version;                                               	\
++		ret=$$?;							\
++		rm -f $(INSTALL_MOD_PATH)/lib/modules/99.$(KERNELRELEASE);	\
++		exit $$ret;							\
+ 	fi
  
- VN=$(expr "$VN" : v*'\(.*\)')
+ # Create temporary dir for module support files
 -- 
 1.7.4.1
 
