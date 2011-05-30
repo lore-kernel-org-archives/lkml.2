@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309Ab1E3Ooc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 10:44:32 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:61439 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757210Ab1E3Oo3 (ORCPT
+	id S1757320Ab1E3Oop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 10:44:45 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:43888 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757176Ab1E3Oon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 10:44:29 -0400
+	Mon, 30 May 2011 10:44:43 -0400
 From: Shawn Guo <shawn.guo@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: grant.likely@secretlab.ca, arnd@arndb.de, kernel@pengutronix.de,
         linux-arm-kernel@lists.infradead.org, patches@linaro.org,
         Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 2/4] ARM: mxc: migrate mach-mx5 gpio driver to gpio-mxc
-Date: Mon, 30 May 2011 22:52:17 +0800
-Message-Id: <1306767139-24763-3-git-send-email-shawn.guo@linaro.org>
+Subject: [PATCH 3/4] ARM: mxc: migrate mach-imx gpio driver to gpio-mxc
+Date: Mon, 30 May 2011 22:52:18 +0800
+Message-Id: <1306767139-24763-4-git-send-email-shawn.guo@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org>
 References: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org>
@@ -22,280 +22,246 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It adds platform device for drivers/gpio/gpio-mxc, and migrates
-mx50/mx51/mx53 gpio driver to gpio-mxc.
+It migrates mx1/mx21/mx25/mx27/mx31/mx35 gpio driver to
+drivers/gpio/gpio-mxc.
 
 Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 ---
- arch/arm/mach-mx5/devices.c                     |   64 ---------------------
- arch/arm/mach-mx5/mm-mx50.c                     |   11 ----
- arch/arm/mach-mx5/mm.c                          |    6 --
- arch/arm/plat-mxc/devices.c                     |   11 ++++
- arch/arm/plat-mxc/devices/Makefile              |    1 +
- arch/arm/plat-mxc/devices/platform-gpio-mxc.c   |   69 +++++++++++++++++++++++
- arch/arm/plat-mxc/include/mach/devices-common.h |    2 +
- 7 files changed, 83 insertions(+), 81 deletions(-)
- create mode 100644 arch/arm/plat-mxc/devices/platform-gpio-mxc.c
+ arch/arm/mach-imx/mm-imx1.c                   |    9 -----
+ arch/arm/mach-imx/mm-imx21.c                  |   11 ------
+ arch/arm/mach-imx/mm-imx25.c                  |    9 -----
+ arch/arm/mach-imx/mm-imx27.c                  |   11 ------
+ arch/arm/mach-imx/mm-imx31.c                  |    8 ----
+ arch/arm/mach-imx/mm-imx35.c                  |    8 ----
+ arch/arm/plat-mxc/devices/platform-gpio-mxc.c |   44 +++++++++++++++++++++++++
+ 7 files changed, 44 insertions(+), 56 deletions(-)
 
-diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
-index 153ada5..371ca8c 100644
---- a/arch/arm/mach-mx5/devices.c
-+++ b/arch/arm/mach-mx5/devices.c
-@@ -12,7 +12,6 @@
+diff --git a/arch/arm/mach-imx/mm-imx1.c b/arch/arm/mach-imx/mm-imx1.c
+index 2e482ba..621ee4c 100644
+--- a/arch/arm/mach-imx/mm-imx1.c
++++ b/arch/arm/mach-imx/mm-imx1.c
+@@ -23,7 +23,6 @@
  
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
--#include <linux/gpio.h>
+ #include <mach/common.h>
  #include <mach/hardware.h>
- #include <mach/imx-uart.h>
+-#include <mach/gpio.h>
  #include <mach/irqs.h>
-@@ -119,66 +118,3 @@ struct platform_device mxc_usbh2_device = {
- 		.coherent_dma_mask = DMA_BIT_MASK(32),
- 	},
- };
--
--static struct mxc_gpio_port mxc_gpio_ports[] = {
--	{
--		.chip.label = "gpio-0",
--		.base = MX51_IO_ADDRESS(MX51_GPIO1_BASE_ADDR),
--		.irq = MX51_MXC_INT_GPIO1_LOW,
--		.irq_high = MX51_MXC_INT_GPIO1_HIGH,
--		.virtual_irq_start = MXC_GPIO_IRQ_START
--	},
--	{
--		.chip.label = "gpio-1",
--		.base = MX51_IO_ADDRESS(MX51_GPIO2_BASE_ADDR),
--		.irq = MX51_MXC_INT_GPIO2_LOW,
--		.irq_high = MX51_MXC_INT_GPIO2_HIGH,
--		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 1
--	},
--	{
--		.chip.label = "gpio-2",
--		.base = MX51_IO_ADDRESS(MX51_GPIO3_BASE_ADDR),
--		.irq = MX51_MXC_INT_GPIO3_LOW,
--		.irq_high = MX51_MXC_INT_GPIO3_HIGH,
--		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 2
--	},
--	{
--		.chip.label = "gpio-3",
--		.base = MX51_IO_ADDRESS(MX51_GPIO4_BASE_ADDR),
--		.irq = MX51_MXC_INT_GPIO4_LOW,
--		.irq_high = MX51_MXC_INT_GPIO4_HIGH,
--		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 3
--	},
--	{
--		.chip.label = "gpio-4",
--		.base = MX53_IO_ADDRESS(MX53_GPIO5_BASE_ADDR),
--		.irq = MX53_INT_GPIO5_LOW,
--		.irq_high = MX53_INT_GPIO5_HIGH,
--		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 4
--	},
--	{
--		.chip.label = "gpio-5",
--		.base = MX53_IO_ADDRESS(MX53_GPIO6_BASE_ADDR),
--		.irq = MX53_INT_GPIO6_LOW,
--		.irq_high = MX53_INT_GPIO6_HIGH,
--		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 5
--	},
--	{
--		.chip.label = "gpio-6",
--		.base = MX53_IO_ADDRESS(MX53_GPIO7_BASE_ADDR),
--		.irq = MX53_INT_GPIO7_LOW,
--		.irq_high = MX53_INT_GPIO7_HIGH,
--		.virtual_irq_start = MXC_GPIO_IRQ_START + 32 * 6
--	},
+ #include <mach/iomux-v1.h>
+ 
+@@ -44,15 +43,7 @@ void __init imx1_init_early(void)
+ 			MX1_NUM_GPIO_PORT);
+ }
+ 
+-static struct mxc_gpio_port imx1_gpio_ports[] = {
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX1, 0, 1, MX1_GPIO_INT_PORTA),
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX1, 1, 2, MX1_GPIO_INT_PORTB),
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX1, 2, 3, MX1_GPIO_INT_PORTC),
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX1, 3, 4, MX1_GPIO_INT_PORTD),
 -};
 -
--int __init imx51_register_gpios(void)
--{
--	return mxc_gpio_init(mxc_gpio_ports, 4);
--}
--
--int __init imx53_register_gpios(void)
--{
--	return mxc_gpio_init(mxc_gpio_ports, ARRAY_SIZE(mxc_gpio_ports));
--}
--
-diff --git a/arch/arm/mach-mx5/mm-mx50.c b/arch/arm/mach-mx5/mm-mx50.c
-index b9c363b..e1377ca 100644
---- a/arch/arm/mach-mx5/mm-mx50.c
-+++ b/arch/arm/mach-mx5/mm-mx50.c
-@@ -26,7 +26,6 @@
- #include <mach/hardware.h>
+ void __init mx1_init_irq(void)
+ {
+ 	mxc_init_irq(MX1_IO_ADDRESS(MX1_AVIC_BASE_ADDR));
+-	mxc_gpio_init(imx1_gpio_ports,	ARRAY_SIZE(imx1_gpio_ports));
+ }
+diff --git a/arch/arm/mach-imx/mm-imx21.c b/arch/arm/mach-imx/mm-imx21.c
+index 7a0c500..a00ffe1 100644
+--- a/arch/arm/mach-imx/mm-imx21.c
++++ b/arch/arm/mach-imx/mm-imx21.c
+@@ -24,7 +24,6 @@
  #include <mach/common.h>
+ #include <asm/pgtable.h>
+ #include <asm/mach/map.h>
+-#include <mach/gpio.h>
+ #include <mach/irqs.h>
+ #include <mach/iomux-v1.h>
+ 
+@@ -70,17 +69,7 @@ void __init imx21_init_early(void)
+ 			MX21_NUM_GPIO_PORT);
+ }
+ 
+-static struct mxc_gpio_port imx21_gpio_ports[] = {
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX21, 0, 1, MX21_INT_GPIO),
+-	DEFINE_IMX_GPIO_PORT(MX21, 1, 2),
+-	DEFINE_IMX_GPIO_PORT(MX21, 2, 3),
+-	DEFINE_IMX_GPIO_PORT(MX21, 3, 4),
+-	DEFINE_IMX_GPIO_PORT(MX21, 4, 5),
+-	DEFINE_IMX_GPIO_PORT(MX21, 5, 6),
+-};
+-
+ void __init mx21_init_irq(void)
+ {
+ 	mxc_init_irq(MX21_IO_ADDRESS(MX21_AVIC_BASE_ADDR));
+-	mxc_gpio_init(imx21_gpio_ports,	ARRAY_SIZE(imx21_gpio_ports));
+ }
+diff --git a/arch/arm/mach-imx/mm-imx25.c b/arch/arm/mach-imx/mm-imx25.c
+index 02f7b5c..3866c88 100644
+--- a/arch/arm/mach-imx/mm-imx25.c
++++ b/arch/arm/mach-imx/mm-imx25.c
+@@ -27,7 +27,6 @@
+ #include <mach/hardware.h>
+ #include <mach/mx25.h>
  #include <mach/iomux-v3.h>
 -#include <mach/gpio.h>
  #include <mach/irqs.h>
  
  /*
-@@ -56,17 +55,7 @@ void __init imx50_init_early(void)
- 	mxc_arch_reset_init(MX50_IO_ADDRESS(MX50_WDOG_BASE_ADDR));
+@@ -57,16 +56,8 @@ void __init imx25_init_early(void)
+ 	mxc_arch_reset_init(MX25_IO_ADDRESS(MX25_WDOG_BASE_ADDR));
  }
  
--static struct mxc_gpio_port imx50_gpio_ports[] = {
--	DEFINE_IMX_GPIO_PORT_IRQ_HIGH(MX50, 0, 1, MX50_INT_GPIO1_LOW, MX50_INT_GPIO1_HIGH),
--	DEFINE_IMX_GPIO_PORT_IRQ_HIGH(MX50, 1, 2, MX50_INT_GPIO2_LOW, MX50_INT_GPIO2_HIGH),
--	DEFINE_IMX_GPIO_PORT_IRQ_HIGH(MX50, 2, 3, MX50_INT_GPIO3_LOW, MX50_INT_GPIO3_HIGH),
--	DEFINE_IMX_GPIO_PORT_IRQ_HIGH(MX50, 3, 4, MX50_INT_GPIO3_LOW, MX50_INT_GPIO3_HIGH),
--	DEFINE_IMX_GPIO_PORT_IRQ_HIGH(MX50, 4, 5, MX50_INT_GPIO3_LOW, MX50_INT_GPIO3_HIGH),
--	DEFINE_IMX_GPIO_PORT_IRQ_HIGH(MX50, 5, 6, MX50_INT_GPIO3_LOW, MX50_INT_GPIO3_HIGH),
+-static struct mxc_gpio_port imx25_gpio_ports[] = {
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX25, 0, 1, MX25_INT_GPIO1),
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX25, 1, 2, MX25_INT_GPIO2),
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX25, 2, 3, MX25_INT_GPIO3),
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX25, 3, 4, MX25_INT_GPIO4),
 -};
 -
- void __init mx50_init_irq(void)
+ void __init mx25_init_irq(void)
  {
- 	tzic_init_irq(MX50_IO_ADDRESS(MX50_TZIC_BASE_ADDR));
--	mxc_gpio_init(imx50_gpio_ports,	ARRAY_SIZE(imx50_gpio_ports));
- }
-diff --git a/arch/arm/mach-mx5/mm.c b/arch/arm/mach-mx5/mm.c
-index ff55730..ccc6ceb 100644
---- a/arch/arm/mach-mx5/mm.c
-+++ b/arch/arm/mach-mx5/mm.c
-@@ -69,8 +69,6 @@ void __init imx53_init_early(void)
- 	mxc_arch_reset_init(MX53_IO_ADDRESS(MX53_WDOG1_BASE_ADDR));
+ 	mxc_init_irq(MX25_IO_ADDRESS(MX25_AVIC_BASE_ADDR));
+-	mxc_gpio_init(imx25_gpio_ports,	ARRAY_SIZE(imx25_gpio_ports));
  }
  
--int imx51_register_gpios(void);
+diff --git a/arch/arm/mach-imx/mm-imx27.c b/arch/arm/mach-imx/mm-imx27.c
+index a6761a3..b98eb7a 100644
+--- a/arch/arm/mach-imx/mm-imx27.c
++++ b/arch/arm/mach-imx/mm-imx27.c
+@@ -24,7 +24,6 @@
+ #include <mach/common.h>
+ #include <asm/pgtable.h>
+ #include <asm/mach/map.h>
+-#include <mach/gpio.h>
+ #include <mach/irqs.h>
+ #include <mach/iomux-v1.h>
+ 
+@@ -70,17 +69,7 @@ void __init imx27_init_early(void)
+ 			MX27_NUM_GPIO_PORT);
+ }
+ 
+-static struct mxc_gpio_port imx27_gpio_ports[] = {
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX27, 0, 1, MX27_INT_GPIO),
+-	DEFINE_IMX_GPIO_PORT(MX27, 1, 2),
+-	DEFINE_IMX_GPIO_PORT(MX27, 2, 3),
+-	DEFINE_IMX_GPIO_PORT(MX27, 3, 4),
+-	DEFINE_IMX_GPIO_PORT(MX27, 4, 5),
+-	DEFINE_IMX_GPIO_PORT(MX27, 5, 6),
+-};
 -
- void __init mx51_init_irq(void)
+ void __init mx27_init_irq(void)
  {
- 	unsigned long tzic_addr;
-@@ -86,11 +84,8 @@ void __init mx51_init_irq(void)
- 		panic("unable to map TZIC interrupt controller\n");
+ 	mxc_init_irq(MX27_IO_ADDRESS(MX27_AVIC_BASE_ADDR));
+-	mxc_gpio_init(imx27_gpio_ports,	ARRAY_SIZE(imx27_gpio_ports));
+ }
+diff --git a/arch/arm/mach-imx/mm-imx31.c b/arch/arm/mach-imx/mm-imx31.c
+index 86b9b45..afcca7b 100644
+--- a/arch/arm/mach-imx/mm-imx31.c
++++ b/arch/arm/mach-imx/mm-imx31.c
+@@ -26,7 +26,6 @@
+ #include <mach/common.h>
+ #include <mach/hardware.h>
+ #include <mach/iomux-v3.h>
+-#include <mach/gpio.h>
+ #include <mach/irqs.h>
  
- 	tzic_init_irq(tzic_virt);
--	imx51_register_gpios();
+ static struct map_desc mx31_io_desc[] __initdata = {
+@@ -53,14 +52,7 @@ void __init imx31_init_early(void)
+ 	mxc_arch_reset_init(MX31_IO_ADDRESS(MX31_WDOG_BASE_ADDR));
  }
  
--int imx53_register_gpios(void);
+-static struct mxc_gpio_port imx31_gpio_ports[] = {
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX31, 0, 1, MX31_INT_GPIO1),
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX31, 1, 2, MX31_INT_GPIO2),
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX31, 2, 3, MX31_INT_GPIO3),
+-};
 -
- void __init mx53_init_irq(void)
+ void __init mx31_init_irq(void)
  {
- 	unsigned long tzic_addr;
-@@ -103,5 +98,4 @@ void __init mx53_init_irq(void)
- 		panic("unable to map TZIC interrupt controller\n");
- 
- 	tzic_init_irq(tzic_virt);
--	imx53_register_gpios();
+ 	mxc_init_irq(MX31_IO_ADDRESS(MX31_AVIC_BASE_ADDR));
+-	mxc_gpio_init(imx31_gpio_ports,	ARRAY_SIZE(imx31_gpio_ports));
  }
-diff --git a/arch/arm/plat-mxc/devices.c b/arch/arm/plat-mxc/devices.c
-index eee1b60..fb166b2 100644
---- a/arch/arm/plat-mxc/devices.c
-+++ b/arch/arm/plat-mxc/devices.c
-@@ -89,3 +89,14 @@ err:
+diff --git a/arch/arm/mach-imx/mm-imx35.c b/arch/arm/mach-imx/mm-imx35.c
+index c880e6d..ac9d031 100644
+--- a/arch/arm/mach-imx/mm-imx35.c
++++ b/arch/arm/mach-imx/mm-imx35.c
+@@ -27,7 +27,6 @@
+ #include <mach/common.h>
+ #include <mach/hardware.h>
+ #include <mach/iomux-v3.h>
+-#include <mach/gpio.h>
+ #include <mach/irqs.h>
  
- 	return pdev;
+ static struct map_desc mx35_io_desc[] __initdata = {
+@@ -50,14 +49,7 @@ void __init imx35_init_early(void)
+ 	mxc_arch_reset_init(MX35_IO_ADDRESS(MX35_WDOG_BASE_ADDR));
  }
-+
-+struct device mxc_aips_bus = {
-+	.init_name	= "mxc_aips",
-+	.parent		= &platform_bus,
-+};
-+
-+static int __init mxc_device_init(void)
-+{
-+	return device_register(&mxc_aips_bus);
-+}
-+core_initcall(mxc_device_init);
-diff --git a/arch/arm/plat-mxc/devices/Makefile b/arch/arm/plat-mxc/devices/Makefile
-index ad2922a..b41bf97 100644
---- a/arch/arm/plat-mxc/devices/Makefile
-+++ b/arch/arm/plat-mxc/devices/Makefile
-@@ -2,6 +2,7 @@ obj-$(CONFIG_IMX_HAVE_PLATFORM_FEC) += platform-fec.o
- obj-$(CONFIG_IMX_HAVE_PLATFORM_FLEXCAN) += platform-flexcan.o
- obj-$(CONFIG_IMX_HAVE_PLATFORM_FSL_USB2_UDC) += platform-fsl-usb2-udc.o
- obj-$(CONFIG_IMX_HAVE_PLATFORM_GPIO_KEYS) += platform-gpio_keys.o
-+obj-y += platform-gpio-mxc.o
- obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX21_HCD) += platform-imx21-hcd.o
- obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX2_WDT) += platform-imx2-wdt.o
- obj-$(CONFIG_IMX_HAVE_PLATFORM_IMXDI_RTC) += platform-imxdi_rtc.o
+ 
+-static struct mxc_gpio_port imx35_gpio_ports[] = {
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX35, 0, 1, MX35_INT_GPIO1),
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX35, 1, 2, MX35_INT_GPIO2),
+-	DEFINE_IMX_GPIO_PORT_IRQ(MX35, 2, 3, MX35_INT_GPIO3),
+-};
+-
+ void __init mx35_init_irq(void)
+ {
+ 	mxc_init_irq(MX35_IO_ADDRESS(MX35_AVIC_BASE_ADDR));
+-	mxc_gpio_init(imx35_gpio_ports,	ARRAY_SIZE(imx35_gpio_ports));
+ }
 diff --git a/arch/arm/plat-mxc/devices/platform-gpio-mxc.c b/arch/arm/plat-mxc/devices/platform-gpio-mxc.c
-new file mode 100644
-index 0000000..3b10da0
---- /dev/null
+index 3b10da0..07fee19 100644
+--- a/arch/arm/plat-mxc/devices/platform-gpio-mxc.c
 +++ b/arch/arm/plat-mxc/devices/platform-gpio-mxc.c
-@@ -0,0 +1,69 @@
-+/*
-+ * Copyright 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Copyright 2011 Linaro Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify it under
-+ * the terms of the GNU General Public License version 2 as published by the
-+ * Free Software Foundation.
-+ */
-+#include <linux/compiler.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
-+
-+#include <mach/hardware.h>
-+#include <mach/devices-common.h>
-+
-+static struct platform_device *__init mxc_add_gpio(int id,
-+	resource_size_t iobase, resource_size_t iosize, int irq, int irq_high)
-+{
-+	struct resource res[] = {
-+		{
-+			.start = iobase,
-+			.end = iobase + iosize - 1,
-+			.flags = IORESOURCE_MEM,
-+		}, {
-+			.start = irq,
-+			.end = irq,
-+			.flags = IORESOURCE_IRQ,
-+		}, {
-+			.start = irq_high,
-+			.end = irq_high,
-+			.flags = IORESOURCE_IRQ,
-+		},
-+	};
-+
-+	return platform_device_register_resndata(&mxc_aips_bus,
-+			"gpio-mxc", id, res, ARRAY_SIZE(res), NULL, 0);
-+}
-+
-+static int __init mxc_add_mxc_gpio(void)
-+{
-+	if (cpu_is_mx50()) {
-+		mxc_add_gpio(0, MX50_GPIO1_BASE_ADDR, SZ_16K, MX50_INT_GPIO1_LOW, MX50_INT_GPIO1_HIGH);
-+		mxc_add_gpio(1, MX50_GPIO2_BASE_ADDR, SZ_16K, MX50_INT_GPIO2_LOW, MX50_INT_GPIO2_HIGH);
-+		mxc_add_gpio(2, MX50_GPIO3_BASE_ADDR, SZ_16K, MX50_INT_GPIO3_LOW, MX50_INT_GPIO3_HIGH);
-+		mxc_add_gpio(3, MX50_GPIO4_BASE_ADDR, SZ_16K, MX50_INT_GPIO4_LOW, MX50_INT_GPIO4_HIGH);
-+		mxc_add_gpio(4, MX50_GPIO5_BASE_ADDR, SZ_16K, MX50_INT_GPIO5_LOW, MX50_INT_GPIO5_HIGH);
-+		mxc_add_gpio(5, MX50_GPIO6_BASE_ADDR, SZ_16K, MX50_INT_GPIO6_LOW, MX50_INT_GPIO6_HIGH);
-+	}
-+
-+	if (cpu_is_mx51()) {
-+		mxc_add_gpio(0, MX51_GPIO1_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO1_LOW, MX51_MXC_INT_GPIO1_HIGH);
-+		mxc_add_gpio(1, MX51_GPIO2_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO2_LOW, MX51_MXC_INT_GPIO2_HIGH);
-+		mxc_add_gpio(2, MX51_GPIO3_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO3_LOW, MX51_MXC_INT_GPIO3_HIGH);
-+		mxc_add_gpio(3, MX51_GPIO4_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO4_LOW, MX51_MXC_INT_GPIO4_HIGH);
-+	}
-+
-+	if (cpu_is_mx53()) {
-+		mxc_add_gpio(0, MX53_GPIO1_BASE_ADDR, SZ_16K, MX53_INT_GPIO1_LOW, MX53_INT_GPIO1_HIGH);
-+		mxc_add_gpio(1, MX53_GPIO2_BASE_ADDR, SZ_16K, MX53_INT_GPIO2_LOW, MX53_INT_GPIO2_HIGH);
-+		mxc_add_gpio(2, MX53_GPIO3_BASE_ADDR, SZ_16K, MX53_INT_GPIO3_LOW, MX53_INT_GPIO3_HIGH);
-+		mxc_add_gpio(3, MX53_GPIO4_BASE_ADDR, SZ_16K, MX53_INT_GPIO4_LOW, MX53_INT_GPIO4_HIGH);
-+		mxc_add_gpio(4, MX53_GPIO5_BASE_ADDR, SZ_16K, MX53_INT_GPIO5_LOW, MX53_INT_GPIO5_HIGH);
-+		mxc_add_gpio(5, MX53_GPIO6_BASE_ADDR, SZ_16K, MX53_INT_GPIO6_LOW, MX53_INT_GPIO6_HIGH);
-+		mxc_add_gpio(6, MX53_GPIO7_BASE_ADDR, SZ_16K, MX53_INT_GPIO7_LOW, MX53_INT_GPIO7_HIGH);
-+	}
-+
-+	return 0;
-+}
-+postcore_initcall(mxc_add_mxc_gpio);
-diff --git a/arch/arm/plat-mxc/include/mach/devices-common.h b/arch/arm/plat-mxc/include/mach/devices-common.h
-index fa84773..03f6266 100644
---- a/arch/arm/plat-mxc/include/mach/devices-common.h
-+++ b/arch/arm/plat-mxc/include/mach/devices-common.h
-@@ -10,6 +10,8 @@
- #include <linux/platform_device.h>
- #include <linux/init.h>
+@@ -38,6 +38,50 @@ static struct platform_device *__init mxc_add_gpio(int id,
  
-+extern struct device mxc_aips_bus;
+ static int __init mxc_add_mxc_gpio(void)
+ {
++	if (cpu_is_mx1()) {
++		mxc_add_gpio(0, MX1_GPIO1_BASE_ADDR, SZ_4K, MX1_GPIO_INT_PORTA, 0);
++		mxc_add_gpio(1, MX1_GPIO2_BASE_ADDR, SZ_4K, MX1_GPIO_INT_PORTB, 0);
++		mxc_add_gpio(2, MX1_GPIO3_BASE_ADDR, SZ_4K, MX1_GPIO_INT_PORTC, 0);
++		mxc_add_gpio(3, MX1_GPIO4_BASE_ADDR, SZ_4K, MX1_GPIO_INT_PORTD, 0);
++	}
 +
- struct platform_device *imx_add_platform_device_dmamask(
- 		const char *name, int id,
- 		const struct resource *res, unsigned int num_resources,
++	if (cpu_is_mx21()) {
++		mxc_add_gpio(0, MX21_GPIO1_BASE_ADDR, SZ_4K, MX21_INT_GPIO, 0);
++		mxc_add_gpio(1, MX21_GPIO2_BASE_ADDR, SZ_4K, MX21_INT_GPIO, 0);
++		mxc_add_gpio(2, MX21_GPIO3_BASE_ADDR, SZ_4K, MX21_INT_GPIO, 0);
++		mxc_add_gpio(3, MX21_GPIO4_BASE_ADDR, SZ_4K, MX21_INT_GPIO, 0);
++		mxc_add_gpio(4, MX21_GPIO5_BASE_ADDR, SZ_4K, MX21_INT_GPIO, 0);
++		mxc_add_gpio(5, MX21_GPIO6_BASE_ADDR, SZ_4K, MX21_INT_GPIO, 0);
++	}
++
++	if (cpu_is_mx25()) {
++		mxc_add_gpio(0, MX25_GPIO1_BASE_ADDR, SZ_16K, MX25_INT_GPIO1, 0);
++		mxc_add_gpio(1, MX25_GPIO2_BASE_ADDR, SZ_16K, MX25_INT_GPIO2, 0);
++		mxc_add_gpio(2, MX25_GPIO3_BASE_ADDR, SZ_16K, MX25_INT_GPIO3, 0);
++		mxc_add_gpio(3, MX25_GPIO4_BASE_ADDR, SZ_16K, MX25_INT_GPIO4, 0);
++	}
++
++	if (cpu_is_mx27()) {
++		mxc_add_gpio(0, MX27_GPIO1_BASE_ADDR, SZ_4K, MX27_INT_GPIO, 0);
++		mxc_add_gpio(1, MX27_GPIO2_BASE_ADDR, SZ_4K, MX27_INT_GPIO, 0);
++		mxc_add_gpio(2, MX27_GPIO3_BASE_ADDR, SZ_4K, MX27_INT_GPIO, 0);
++		mxc_add_gpio(3, MX27_GPIO4_BASE_ADDR, SZ_4K, MX27_INT_GPIO, 0);
++		mxc_add_gpio(4, MX27_GPIO5_BASE_ADDR, SZ_4K, MX27_INT_GPIO, 0);
++		mxc_add_gpio(5, MX27_GPIO6_BASE_ADDR, SZ_4K, MX27_INT_GPIO, 0);
++	}
++
++	if (cpu_is_mx31()) {
++		mxc_add_gpio(0, MX31_GPIO1_BASE_ADDR, SZ_16K, MX31_INT_GPIO1, 0);
++		mxc_add_gpio(1, MX31_GPIO2_BASE_ADDR, SZ_16K, MX31_INT_GPIO2, 0);
++		mxc_add_gpio(2, MX31_GPIO3_BASE_ADDR, SZ_16K, MX31_INT_GPIO3, 0);
++	}
++
++	if (cpu_is_mx35()) {
++		mxc_add_gpio(0, MX35_GPIO1_BASE_ADDR, SZ_16K, MX35_INT_GPIO1, 0);
++		mxc_add_gpio(1, MX35_GPIO2_BASE_ADDR, SZ_16K, MX35_INT_GPIO2, 0);
++		mxc_add_gpio(2, MX35_GPIO3_BASE_ADDR, SZ_16K, MX35_INT_GPIO3, 0);
++	}
++
+ 	if (cpu_is_mx50()) {
+ 		mxc_add_gpio(0, MX50_GPIO1_BASE_ADDR, SZ_16K, MX50_INT_GPIO1_LOW, MX50_INT_GPIO1_HIGH);
+ 		mxc_add_gpio(1, MX50_GPIO2_BASE_ADDR, SZ_16K, MX50_INT_GPIO2_LOW, MX50_INT_GPIO2_HIGH);
 -- 
 1.7.4.1
 
