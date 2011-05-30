@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab1E3Nzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 09:55:48 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38122 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab1E3Nzq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 09:55:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=LB69j1x6Zf0oBSuDWEgBErvwsm4mCjacnXp0AJqUI1dIIKrmD0tke49aGZ0theTtsH
-         k0BeWD9Ytatvd+rnXtj7foZ38SfzBvr1y+b5qCaL7AK8siC8QGJn3mDnPM+Sg31RztSq
-         jhpfd4F9WWsRE6BLxSNn5aZbVB8lFz8yw4a2Q=
+	id S1755613Ab1E3N5y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 09:57:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753330Ab1E3N5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 09:57:53 -0400
+Date: Mon, 30 May 2011 15:56:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: execve-under-ptrace API bug (was Re: Ptrace documentation,
+	draft #3)
+Message-ID: <20110530135623.GC4739@redhat.com>
+References: <BANLkTikH4k0MfTwNzNJN-P85ER4-hKdifw@mail.gmail.com> <20110525143250.GJ10146@htj.dyndns.org> <201105300528.17384.vda.linux@googlemail.com> <20110530084906.GA11773@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm>
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com>
- <201105231012.06928.oneukum@suse.de> <20110525000003.GJ32466@dastard>
- <201105250850.12179.oneukum@suse.de> <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com>
- <410B37BE-E380-40D0-82AA-48B56F389E16@mit.edu> <BANLkTimNjt4=9v33Z9Nr12xa6GmyJ-Ue5A@mail.gmail.com>
- <20110526133155.GH9520@thunk.org> <BANLkTinTzNN2P45tgZAQ9FsL43CqyAJR3Q@mail.gmail.com>
- <20110526162138.GN9520@thunk.org> <BANLkTinPCcX9-gK7YnMngGUJKftRTmYXNw@mail.gmail.com>
- <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu> <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com>
- <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm>
-From: "D. Jansen" <d.g.jansen@googlemail.com>
-Date: Mon, 30 May 2011 15:55:06 +0200
-Message-ID: <BANLkTik69Gb2i1467bhnEU-pJ0WB10mqNQ@mail.gmail.com>
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-To: david@lang.hm, Theodore Tso <tytso@mit.edu>
-Cc: Oliver Neukum <oneukum@suse.de>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        njs@pobox.com, bart@samwel.tk
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110530084906.GA11773@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 3:53 AM,  <david@lang.hm> wrote:
-> On Sun, 29 May 2011, D. Jansen wrote:
->> On Fri, May 27, 2011 at 4:17 PM, Theodore Tso <tytso@mit.edu> wrote:
->>> On May 27, 2011, at 3:12 AM, D. Jansen wrote:
->>>> That reordering is exactly what I'm talking about. It wasn't my idea.
->>>> But if I understood it correctly, it's possible that the kernel
->>>> commits writes of an application, _to one and the same file_, in a
->>>> non-FIFO order, if the application does not fsync. And this _afaiu_
->>>> could result in the loss not only of new data, but complete corruption
->>>> of previously existing data in laptop mode without fsync.
->>>
->>> No, you're not understanding the problem.   All layers of the storage
->>> stack -- including the hard drive -- is allowed to reorder writes.  So
->>> even if the kernel sends data to the disk in the exact same order that
->>> the application wrote it, it could still get written in a different
->>> order,
->>> because the hard drive itself can reorder writes.   This is necessary
->>> for performance; if you didn't have this, the storage stack would be
->>> dog slow, and would consume even more power.
->>>
->>> So at least level, the only thing you can count upon is that if you want
->>> to make sure everything is flushed to stable store, you need to send
->>> an fsync() command at the application to file system level, or a barrier
->>> or flush command at the OS to hard drive level.
->> (...)
->>> Ordering doesn't matter, because nothing, including the hard drive,
->>> guarantees ordering.  What does matter is that the fsync() commands
->>> act like barriers; writes before the fsync() command are guaranteed
->>> to be written to the disk, and survive a reboot, before any writes after
->>> the fsync() are processed.  See?
->>
->> Ok, thanks a lot! I understand a lot better now!
->> So we can't live without the fsyncs.
->>
->> So what if we would queue the fsyncs along with the writes - we would
->> just fsync later instead of immediately, in between the writes as they
->> came in. Then by design previous data could not be corrupted, right?
->> We would do exactly the same thing, just later.
->> It'd be kind of a disk write time distortion field.
+On 05/30, Tejun Heo wrote:
 >
-> the problem is that the spec for fsync says that your program stops until
-> fsync finishes. If you don't do that then you will corrupt and loose data.
->
-> so if you delay fsync you will have your application (or desktop manager)
-> freeze until the fsync completes.
+> A problem is that by the time de-threading is in progress, it's
+> already too deep and there's no way back and the exec'ing thread has
+> to wait for completion in uninterruptible sleeps - ie. it expects
+> de-threading to finish in finite amount of time and to achieve that it
+> basically sends SIGKILL to all other threads.  If we introduce a trap
+> in de-threading itself, we can easily end up with an unkillable
+> task.
 
-So that would not be an option. Freezing until the end of the write
-window is not what we want.
-Neither is ignoring the fsync because that could corrupt data, esp. in
-databases like sqlite.
->
-> if what you are wanting is the ability to say 'these things must be written
-> before these other things to keep them from being corrupted, but I don't
-> care when they get written (or if they get lost in a crash)' then what you
-> want isn't fsync, it's a barrier.
+"unkillable" is not the problem, afaics. But the new trap is problematic,
+we do not want the TASK_TRACED task holding the mutexes taken by the
+callers of de_thread.
 
-That sounds great!
-So an fsync call in laptop mode could be interpreted as a barrier
-and we would be reasonably save from corrupting old existing data?
+> 1. Don't allow more than one thread in the same group enter exec(2)
+>    path at all.
+
+This is already done, see do_execve()->prepare_bprm_creds().
+cred_guard_mutex serializes exec. Btw, probably this allows us to do
+more cleanups/simplifications in do_execve() paths.
+
+> 2. Add another trap point right before de-threading commences.
+
+See above.
+
+Oleg.
+
