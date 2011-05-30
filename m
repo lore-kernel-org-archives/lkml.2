@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab1E3Uxw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 16:53:52 -0400
-Received: from mail.lang.hm ([64.81.33.126]:34897 "EHLO bifrost.lang.hm"
+	id S1756648Ab1E3U5Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 16:57:16 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:44276 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754044Ab1E3Uxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 16:53:51 -0400
-Date: Mon, 30 May 2011 13:53:30 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: "D. Jansen" <d.g.jansen@googlemail.com>
-cc: Theodore Tso <tytso@mit.edu>, Oliver Neukum <oneukum@suse.de>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-In-Reply-To: <BANLkTimuToT90eRGVRfN9tAHoF9GOSRRDA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1105301349530.5766@asgard.lang.hm>
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <201105231012.06928.oneukum@suse.de> <20110525000003.GJ32466@dastard> <201105250850.12179.oneukum@suse.de> <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com> <410B37BE-E380-40D0-82AA-48B56F389E16@mit.edu>
- <BANLkTimNjt4=9v33Z9Nr12xa6GmyJ-Ue5A@mail.gmail.com> <20110526133155.GH9520@thunk.org> <BANLkTinTzNN2P45tgZAQ9FsL43CqyAJR3Q@mail.gmail.com> <20110526162138.GN9520@thunk.org> <BANLkTinPCcX9-gK7YnMngGUJKftRTmYXNw@mail.gmail.com> <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu>
- <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com> <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm> <BANLkTik69Gb2i1467bhnEU-pJ0WB10mqNQ@mail.gmail.com> <alpine.DEB.2.02.1105301058030.5766@asgard.lang.hm> <BANLkTimtY0ggu28i-9VzWOO1=puZ0JvcAQ@mail.gmail.com>
- <alpine.DEB.2.02.1105301142030.5766@asgard.lang.hm> <BANLkTimuToT90eRGVRfN9tAHoF9GOSRRDA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1750871Ab1E3U5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 16:57:14 -0400
+Message-ID: <4DE404A5.1040400@sgi.com>
+Date: Mon, 30 May 2011 13:57:09 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Chris Wright <chrisw@sous-sol.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Mike Habeck <habeck@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
+        Derek Fults <dfults@sgi.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        stable@kernel.org, iommu@lists.linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] Intel pci: Fix various problems with Intel IOMMU
+ code
+References: <20110528181501.896092225@gulag1.americas.sgi.com> <1306627925.2029.341.camel@i7.infradead.org>
+In-Reply-To: <1306627925.2029.341.camel@i7.infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 May 2011, D. Jansen wrote:
 
-> On Mon, May 30, 2011 at 8:45 PM,  <david@lang.hm> wrote:
+
+On 05/28/2011 05:12 PM, David Woodhouse wrote:
+> On Sat, 2011-05-28 at 13:15 -0500, Mike Travis wrote:
+>> 	Various problems exist in the Intel IOMMU PCI driver when
+>> 	using DMA remapping in 1:1 identity mode on UV systems and
+>> 	devices cannot address all of physical memory.
 >>
->>
->> the problem is that most users don't know what their system is running, or
->> what effect disaling fsync would have. those that do can probably use
->> LD_PRELOAD to override fsync calls.
+>> 	This patchset addresses those problems.
 >
-> As we found out, they can't. But if we export barrier, I hope a
-> library could wrap fsyncs into barriers. Is that the case?
-
-a library can wrap fsync into anything.
-
->>
->> it doesn't take running a mail server, even a mail client will have the same
->> risk. If you use POP for mail (a very common option) then you download
->> messages and tell the server to delete them. if you do not really save them
->> (one fsync after they are all saved), then you can loose everything that you
->> downloaded.
+> Patches 1-6 applied to iommu-2.6.git. Please test. Thanks.
 >
-> Yes, I know. It's the same argument again and again. I understand not
-> everybody wants this. But some do. Some prefer working 10-20% longer
-> on battery (certainty) instead of possibly losing 5 % data
-> (possibility) or losing all your data (possibility if you use laptop
-> mode and the hard disk wakes up again and again and eventually wears
-> out).
-
-those are some powerful numbers you are throwing around, can you back them 
-up?
-
-do you really have so many fsync's going on that the disk spins up so much 
-that you would gain 10-20% battery life?
-
-and what makes you think the extra spin-ups from fsyncs will cause your 
-hard drive to fail significantly earlier? (if you have a hard drive with a 
-limited number of spin-up cycles, you probably don't want to use laptop 
-mode at all)
-
-why do you think it's a possibility of loosing only 5% of data?
-
-David Lang
-
-> That's why there's laptop mode. And this would play into laptop
-> mode and prevent the hard disk from breaking down prematurely and
-> saving battery.
+> Please note for future reference that 'From:' lines such as the one in
+> your patch 1/7 should be *first* in the body of your email. The git-am
+> tool doesn't find them and set the authorship if you put them with the
+> Signed-off-bys. Also please avoid putting whitespace at the beginning of
+> every line of your commit comments.
 >
-> Please try it out before you say that it's not necessary in your use
-> case. It's useful and necessary in mine and other mobile use cases.
-> Please don't assume that all distributions activate this by default
-> and mailservers world wide use all their emails because they all crash
-> with laptop mode active.
+> I still hate patch 7, but the point was that I wouldn't have to care
+> about it. Once your patches 1-6 are included in known stable releases
+> that your SCU can recognise, it can just pass 'iommu=pt' for those.
 >
-> I really don't care if it's in the kernel or elsewhere. But I care
-> that old data is not corrupted. And it seems this is not (yet)
-> possible with user space, e.g. a library in ld_preload. So I'm happy
-> for any hints how to accomplish this.
+> It's only the "probably buggy" kernels with older release numbers that
+> you'll pass 'forcedac,pt64' to, so your mission is to get patch 7 or
+> some variant of it accepted into *those* kernels.
 >
+
+Thanks David, all noted.  The From: thing is swallowed by the
+quilt mail command if it's first.  I'll see if I can't fix that.
+
+Cheers.
