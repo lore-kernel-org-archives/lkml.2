@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557Ab1E3QwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 12:52:17 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:61456 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383Ab1E3QwQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 12:52:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Z/BOGuU7Ty5cJsUgZza9oaxAHLfUQL2jUNwWdLuHWv93c3wuix+Sr0YsYA7c6wyTh2
-         y4yXLLImcMO93kTd79bQ6TCOWHWqnq8XO2e8EBXTOcL4dK8GnMn7l9FrBO5aFQQQL9Hc
-         sLlqVRGVYrJJ7dLYG3CP1dUdHjqXJ6foJnW+Q=
+	id S1757520Ab1E3Qzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 12:55:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34481 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753448Ab1E3Qzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 12:55:51 -0400
+Date: Mon, 30 May 2011 17:55:46 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, akpm@linux-foundation.org,
+        Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110530165546.GC5118@suse.de>
+References: <20110530131300.GQ5044@csn.ul.ie>
+ <20110530143109.GH19505@random.random>
+ <20110530153748.GS5044@csn.ul.ie>
 MIME-Version: 1.0
-In-Reply-To: <4DE3C652.5090309@zytor.com>
-References: <1305248699-2347-1-git-send-email-daniel.blueman@gmail.com>
-	<69e8f8a9-4e8b-4c02-b566-304ff837d166@email.android.com>
-	<BANLkTi=h5f6o3iVK24sQ20xYYQAMbLavMg@mail.gmail.com>
-	<BANLkTik9BtnXxsOGKuhmoUFsKPbhBwXr3A@mail.gmail.com>
-	<4DE3C652.5090309@zytor.com>
-Date: Tue, 31 May 2011 00:52:15 +0800
-Message-ID: <BANLkTinnEPKC+Nb7zK_PswU+M=sNPxWCig@mail.gmail.com>
-Subject: Re: [PATCH] x86: Add Dell E5420 reboot quirk
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110530153748.GS5044@csn.ul.ie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 May 2011 00:31, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/30/2011 07:43 AM, Daniel J Blueman wrote:
->>
->> Without this patch, rebooting is like Russian roulette; with quite a
->> few of these laptops in the field, perhaps it is better to enable the
->> quirk unless you think there may be an issue in the kernel preventing
->> correct behaviour that I could debug?
->>
->> On the other hand, Dell may later fix the BIOS AML (seen with the
->> excellent fwts) just as the cure for cancer is found. If they do, I'll
->> buy whiskey too.
+On Mon, May 30, 2011 at 04:37:49PM +0100, Mel Gorman wrote:
+> > Or how do you explain this -1 value out of nr_isolated_file? Clearly
+> > when that value goes to -1, compaction.c:too_many_isolated will hang,
+> > I think we should fix the -1 value before worrying about the rest...
+> > 
+> > grep nr_isolated_file zoneinfo-khugepaged 
+> >     nr_isolated_file 1
+> >     nr_isolated_file 4294967295
+> 
+> Can you point me at the thread that this file appears on and what the
+> conditions were? If vmstat is going to -1, it is indeed a problem
+> because it implies an imbalance in increments and decrements to the
+> isolated counters.
 
-> Enabling the quirk is the right thing; however, if ACPI worked I'd have
-> preferred it since we just switched to ACPI as the default.
+Even with drift issues, -1 there should be "impossible". Assuming this
+is a zoneinfo file, that figure is based on global_page_state() which
+looks like
 
-Indeed - the new and default ACPI reboot method works perfectly in
-3.0-rc1, whereas with 2.6.39, it didn't, so no further need for this
-patch then.
+static inline unsigned long global_page_state(enum zone_stat_item item)
+{
+        long x = atomic_long_read(&vm_stat[item]);
+#ifdef CONFIG_SMP
+        if (x < 0)
+                x = 0;
+#endif
+        return x;
+}
 
-Thanks again,
-  Daniel
+So even if isolated counts were going negative for short periods of
+time, the returned value should be 0. As this is an inline returning
+unsigned long, and callers are using unsigned long, is there any
+possibility the "if (x < 0)" is being optimised out? If you aware
+of users reporting this problem (like the users in thread "iotop:
+khugepaged at 99.99% (2.6.38.3)"), do you know if they had a particular
+compiler in common?
+
 -- 
-Daniel J Blueman
+Mel Gorman
+SUSE Labs
