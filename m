@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab1E3GRI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 02:17:08 -0400
-Received: from smtprelay05.ispgateway.de ([80.67.31.98]:40339 "EHLO
-	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab1E3GRG (ORCPT
+	id S1754095Ab1E3GYJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 02:24:09 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50895 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab1E3GYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 02:17:06 -0400
-From: Michael Bauer <michael@m-bauer.org>
-To: linux-input@vger.kernel.org
-Subject: Re: [PATCH] hid: Fix Logitech Driving Force Pro wheel
-Date: Mon, 30 May 2011 08:17:15 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39-logitech; KDE/4.6.3; x86_64; ; )
-Cc: simon@mungewell.org, linux-kernel@vger.kernel.org,
-        "Jiri Kosina" <jkosina@suse.cz>
-References: <201105282037.22888.michael@m-bauer.org> <201105290846.59531.michael@m-bauer.org> <a49670b80c887da1f9224080e9e62f32.squirrel@host171.canaca.com>
-In-Reply-To: <a49670b80c887da1f9224080e9e62f32.squirrel@host171.canaca.com>
+	Mon, 30 May 2011 02:24:08 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DE337FB.3000804@jp.fujitsu.com>
+Date: Mon, 30 May 2011 15:23:55 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: rostedt@goodmis.org
+CC: vnagarnaik@google.com, rientjes@google.com, mingo@redhat.com,
+        fweisbec@gmail.com, mrubin@google.com, dhsharp@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trace: Set oom_score_adj to maximum for ring buffer allocating
+ process
+References: <1306439537-23706-1-git-send-email-vnagarnaik@google.com>	 <1306519125-19301-1-git-send-email-vnagarnaik@google.com>	 <alpine.DEB.2.00.1105271618470.9445@chino.kir.corp.google.com>	 <BANLkTimfdkpY=9pgEmBZwE3ezCmooEtQTA@mail.gmail.com> <1306547453.3857.44.camel@gandalf.stny.rr.com>
+In-Reply-To: <1306547453.3857.44.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105300817.15986.michael@m-bauer.org>
-X-Df-Sender: michael@m-bauer.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+(2011/05/28 10:50), Steven Rostedt wrote:
+> On Fri, 2011-05-27 at 17:44 -0700, Vaibhav Nagarnaik wrote:
+> 
+>> That said, I am open to changing it if Steven and you think using
+>> oom_killer_disabled is a better solution.
+> 
+> My biggest concern is that we are setting policy in the kernel. If you
+> are concerned about this, why not just have the process that is going to
+> increase the size of the ring buffer adjust its own oom policy
+> with /proc/<pid>/oom_score_adj ? Only a privilege process can increase
+> the size of the ring buffer so it's not like we are worried about any
+> normal user task upping the ring buffer to kill other processes.
 
-> Fair enough, I played a little trying to massage the original descriptor
-> but could not find a sensible solution - so I guess we'll have to provide
-> a full replacement.
-Yes, i also spent some time but it does not seem to be possible in a sensible 
-way.
- 
-> I don't see the need to comment the original/replacement blocks, so
-> probably a simple 'hex block' would be good.
-Fine for me, i will remove it in the next patch.
+I like Steven's approach.
 
-> Regarding the replacement, you appear to have a lot of unnecessary code
-> there. You could try with something like:
-> --
-> ...
-> +0x09, 0x39,         /*          Usage (Hat Switch),             */
-> +0x81, 0x42,         /*          Input (Variable),               */
-> +0x75, 0x08,         /*          Report Size (8),                */
-> +0x95, 0x08,         /*          Report Count (1),               */
-> +0x65, 0x00,         /*          Unit,                           */
-> +0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),             */
-> +0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
-> +0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
-> +0x09, 0x01,         /*          Usage (01h),                    */
-> +0x81, 0x02,         /*          Input (Variable),               */
-> +0xA4,               /*          Push,                           */
-> +0x05, 0x01,         /*          Usage Page (Desktop),           */
-> +0x95, 0x01,         /*          Report Count (2),               */
-> +0x09, 0x31,         /*          Usage (Y),                      */
-> +0x09, 0x35,         /*          Usage (Rz),                     */
-> +0x81, 0x02,         /*          Input (Variable),               */
-> +0xB4,               /*          Pop,                            */
-> +0x81, 0x02,         /*          Input (Variable),               */
-> +0xC0,               /*      End Collection,                     */
-> ...
-> --
+Because even if we apply Vaibhav's patch, we still have a oom issue.
+because when oom-killer killed echo commands, it doesn't shrink ring
+buffer. it only just die. So, the kernel is still under extreme memory
+shortage. Any admins operation may invoke next oom-killer.
 
-Good point - didn't think of the Push/Pop commands... 
+And -personally- I think any tracing user should know system ram size
+and proper ring buffer size. ;)
 
-I will create an updated patch and submit it here again.
-
-Thanks and regards
-Michael
