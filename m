@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757602Ab1E3R7K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 13:59:10 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:33664 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab1E3R7I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 13:59:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=I+se9Zaf0elbvP7gwemXtQMd3GQjfGLOYcLi2vNw747nfSwDq/f1ZX5+GthrpASglY
-         kfJslVjmvnR86tDCLKlA8Lyva9LmBWPtWWKSHKfx7zF5n1ymeLbjbUXazekZWCFF8Aa5
-         1qFVVi2HUP5J38S0KTJSmx/s72VmKLO6oXKj8=
+	id S1757613Ab1E3SDC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 14:03:02 -0400
+Received: from mail.lang.hm ([64.81.33.126]:60198 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751757Ab1E3SDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 14:03:01 -0400
+Date: Mon, 30 May 2011 11:02:05 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "D. Jansen" <d.g.jansen@googlemail.com>
+cc: Theodore Tso <tytso@mit.edu>, Oliver Neukum <oneukum@suse.de>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+In-Reply-To: <BANLkTik69Gb2i1467bhnEU-pJ0WB10mqNQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1105301058030.5766@asgard.lang.hm>
+References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <201105231012.06928.oneukum@suse.de> <20110525000003.GJ32466@dastard> <201105250850.12179.oneukum@suse.de> <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com> <410B37BE-E380-40D0-82AA-48B56F389E16@mit.edu>
+ <BANLkTimNjt4=9v33Z9Nr12xa6GmyJ-Ue5A@mail.gmail.com> <20110526133155.GH9520@thunk.org> <BANLkTinTzNN2P45tgZAQ9FsL43CqyAJR3Q@mail.gmail.com> <20110526162138.GN9520@thunk.org> <BANLkTinPCcX9-gK7YnMngGUJKftRTmYXNw@mail.gmail.com> <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu>
+ <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com> <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm> <BANLkTik69Gb2i1467bhnEU-pJ0WB10mqNQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <11791.1306777203@turing-police.cc.vt.edu>
-References: <rohityadav89@gmail.com> <1306776629-13404-1-git-send-email-rohityadav89@gmail.com>
- <11791.1306777203@turing-police.cc.vt.edu>
-From: Rohit Yadav <rohityadav89@gmail.com>
-Date: Mon, 30 May 2011 23:28:47 +0530
-Message-ID: <BANLkTim2yJkQG=2JzFwxcAUfB3HF_m52Rg@mail.gmail.com>
-Subject: Re: [PATCH] Arch: x86: process: Fix a compilation warning.
-To: Valdis.Kletnieks@vt.edu
-Cc: len.brown@intel.com, trenn@suse.de, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=00151748e70c2efdaa04a4820b8a
+Content-Type: MULTIPART/MIXED; BOUNDARY="680960-162631439-1306778527=:5766"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00151748e70c2efdaa04a4820b8a
-Content-Type: text/plain; charset=ISO-8859-1
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> I think what was *intended* was:
+--680960-162631439-1306778527=:5766
+Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
+
+On Mon, 30 May 2011, D. Jansen wrote:
+
+> On Mon, May 30, 2011 at 3:53 AM,  <david@lang.hm> wrote:
+>> On Sun, 29 May 2011, D. Jansen wrote:
+>>> On Fri, May 27, 2011 at 4:17 PM, Theodore Tso <tytso@mit.edu> wrote:
+>>>> On May 27, 2011, at 3:12 AM, D. Jansen wrote:
+>>>>> That reordering is exactly what I'm talking about. It wasn't my idea.
+>>>>> But if I understood it correctly, it's possible that the kernel
+>>>>> commits writes of an application, _to one and the same file_, in a
+>>>>> non-FIFO order, if the application does not fsync. And this _afaiu_
+>>>>> could result in the loss not only of new data, but complete corruption
+>>>>> of previously existing data in laptop mode without fsync.
+>>>>
+>>>> No, you're not understanding the problem.   All layers of the storage
+>>>> stack -- including the hard drive -- is allowed to reorder writes.  So
+>>>> even if the kernel sends data to the disk in the exact same order that
+>>>> the application wrote it, it could still get written in a different
+>>>> order,
+>>>> because the hard drive itself can reorder writes.   This is necessary
+>>>> for performance; if you didn't have this, the storage stack would be
+>>>> dog slow, and would consume even more power.
+>>>>
+>>>> So at least level, the only thing you can count upon is that if you want
+>>>> to make sure everything is flushed to stable store, you need to send
+>>>> an fsync() command at the application to file system level, or a barrier
+>>>> or flush command at the OS to hard drive level.
+>>> (...)
+>>>> Ordering doesn't matter, because nothing, including the hard drive,
+>>>> guarantees ordering.  What does matter is that the fsync() commands
+>>>> act like barriers; writes before the fsync() command are guaranteed
+>>>> to be written to the disk, and survive a reboot, before any writes after
+>>>> the fsync() are processed.  See?
+>>>
+>>> Ok, thanks a lot! I understand a lot better now!
+>>> So we can't live without the fsyncs.
+>>>
+>>> So what if we would queue the fsyncs along with the writes - we would
+>>> just fsync later instead of immediately, in between the writes as they
+>>> came in. Then by design previous data could not be corrupted, right?
+>>> We would do exactly the same thing, just later.
+>>> It'd be kind of a disk write time distortion field.
+>>
+>> the problem is that the spec for fsync says that your program stops until
+>> fsync finishes. If you don't do that then you will corrupt and loose data.
+>>
+>> so if you delay fsync you will have your application (or desktop manager)
+>> freeze until the fsync completes.
 >
-> WARN_ONCE(1, "\"idle=mwait\" will be removed in 2012\n");
+> So that would not be an option. Freezing until the end of the write
+> window is not what we want.
+> Neither is ignoring the fsync because that could corrupt data, esp. in
+> databases like sqlite.
+>>
+>> if what you are wanting is the ability to say 'these things must be written
+>> before these other things to keep them from being corrupted, but I don't
+>> care when they get written (or if they get lost in a crash)' then what you
+>> want isn't fsync, it's a barrier.
+>
+> That sounds great!
+> So an fsync call in laptop mode could be interpreted as a barrier
+> and we would be reasonably save from corrupting old existing data?
 
-Sure, anyway it was just an exercise, writing and submitting my first
-Linux kernel patch.
-Attached: New patch.
+no, you cannot just change a fsync to a barrier, in some cases the data 
+absolutly needs to be saved, not just ordered (remember the example of a 
+mail server telling the other system that the data can be deleted after a 
+fsync returns)
 
---00151748e70c2efdaa04a4820b8a
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-Arch-x86-process-Fix-a-compilation-warning.patch"
-Content-Disposition: attachment; 
-	filename="0001-Arch-x86-process-Fix-a-compilation-warning.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gobq007k1
-
-RnJvbSBhYjQ5M2IyYWYxZDZmZTY3OTJiMjFmZTAxNjA4YWMyMjc3Y2M3OWU3IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBSb2hpdCBZYWRhdiA8cm9oaXR5YWRhdjg5QGdtYWlsLmNvbT4K
-RGF0ZTogTW9uLCAzMCBNYXkgMjAxMSAyMjoxNjo1NCArMDUzMApTdWJqZWN0OiBbUEFUQ0hdIEFy
-Y2g6IHg4NjogcHJvY2VzczogRml4IGEgY29tcGlsYXRpb24gd2FybmluZy4KClJlbW92ZSB1bmtu
-b3duIGVzY2FwZSBzZXF1ZW5jZSBcaSBpbiBpZGxlX3NldHVwLgoKU2lnbmVkLW9mZi1ieTogUm9o
-aXQgWWFkYXYgPHJvaGl0eWFkYXY4OUBnbWFpbC5jb20+Ci0tLQogYXJjaC94ODYva2VybmVsL3By
-b2Nlc3MuYyB8ICAgIDIgKy0KIDEgZmlsZXMgY2hhbmdlZCwgMSBpbnNlcnRpb25zKCspLCAxIGRl
-bGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2FyY2gveDg2L2tlcm5lbC9wcm9jZXNzLmMgYi9hcmNo
-L3g4Ni9rZXJuZWwvcHJvY2Vzcy5jCmluZGV4IDQyNmE1YjYuLmVkMmRhMjkgMTAwNjQ0Ci0tLSBh
-L2FyY2gveDg2L2tlcm5lbC9wcm9jZXNzLmMKKysrIGIvYXJjaC94ODYva2VybmVsL3Byb2Nlc3Mu
-YwpAQCAtNjQyLDcgKzY0Miw3IEBAIHN0YXRpYyBpbnQgX19pbml0IGlkbGVfc2V0dXAoY2hhciAq
-c3RyKQogCQlib290X29wdGlvbl9pZGxlX292ZXJyaWRlID0gSURMRV9QT0xMOwogCX0gZWxzZSBp
-ZiAoIXN0cmNtcChzdHIsICJtd2FpdCIpKSB7CiAJCWJvb3Rfb3B0aW9uX2lkbGVfb3ZlcnJpZGUg
-PSBJRExFX0ZPUkNFX01XQUlUOwotCQlXQVJOX09OQ0UoMSwgIlxpZGxlPW13YWl0XCIgd2lsbCBi
-ZSByZW1vdmVkIGluIDIwMTJcIlxuIik7CisJCVdBUk5fT05DRSgxLCAiXCJpZGxlPW13YWl0XCIg
-d2lsbCBiZSByZW1vdmVkIGluIDIwMTIuXG4iKTsKIAl9IGVsc2UgaWYgKCFzdHJjbXAoc3RyLCAi
-aGFsdCIpKSB7CiAJCS8qCiAJCSAqIFdoZW4gdGhlIGJvb3Qgb3B0aW9uIG9mIGlkbGU9aGFsdCBp
-cyBhZGRlZCwgaGFsdCBpcwotLSAKMS43LjQuMQoK
---00151748e70c2efdaa04a4820b8a--
+David Lang
+--680960-162631439-1306778527=:5766--
