@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319Ab1E3Dty (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 23:49:54 -0400
+	id S1755301Ab1E3DuH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 23:50:07 -0400
 Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:43323 "EHLO
 	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755240Ab1E3Dtu (ORCPT
+	by vger.kernel.org with ESMTP id S1755269Ab1E3Dtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 23:49:50 -0400
-X-AuditID: 12074424-b7bc6ae000005a77-87-4de313dd8333
+	Sun, 29 May 2011 23:49:53 -0400
+X-AuditID: 12074424-b7bc6ae000005a77-8b-4de313e1d97a
 From: Andy Lutomirski <luto@MIT.EDU>
 To: Ingo Molnar <mingo@elte.hu>, x86@kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
@@ -18,170 +18,154 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         Jan Beulich <JBeulich@novell.com>,
         richard -rw- weinberger <richard.weinberger@gmail.com>,
         Mikael Pettersson <mikpe@it.uu.se>, Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v2 09/10] x86-64: Randomize int 0xcc magic al values at boot
-Date: Sun, 29 May 2011 23:48:46 -0400
-Message-Id: <8b62323bc1a06b2b3f2cf52dc42a07a374569685.1306724657.git.luto@mit.edu>
+Subject: [PATCH v2 10/10] x86-64: Document some of entry_64.S
+Date: Sun, 29 May 2011 23:48:47 -0400
+Message-Id: <dbaa4069dec9bae213e136ff6e045236b3396b87.1306724657.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1306724657.git.luto@mit.edu>
 References: <cover.1306724657.git.luto@mit.edu>
 In-Reply-To: <cover.1306724657.git.luto@mit.edu>
 References: <cover.1306724657.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsUixG6nontX+LGvwasDehZz1q9hs+i7cpTd
-	YtY1XovPG/6xWRz49ZTN4v3V7WwWl3fNYbN40nyd0WLLpWZWiw8TN7BZbN40ldniUd9bdosf
-	Gx6zOvB6fG/tY/E4duYwo8ettj/MHjtn3WX32LxCy+P/yyNsHptWdbJ5vDt3jt3jxIzfLB7H
-	zzh7fN4kF8AdxWWTkpqTWZZapG+XwJXxatpCloKlKhVXbsxga2DcKdvFyMkhIWAiceTuNVYI
-	W0ziwr31bF2MXBxCAvsYJT7Nmc0CkhAS2MAo8flzEETiGZPE39/HGUESbAIqEh1LHzB1MXJw
-	iAjoS1z9zAhSwyzwnFniwcNdYFOFBXwkGmYvYAOxWQRUJRpmNoEN5RUIkjjxfSYbxGYFiStX
-	5oHFOQUMJE7euQe1WF9i3q23bLjEJzAKLGBkWMUom5JbpZubmJlTnJqsW5ycmJeXWqRrrpeb
-	WaKXmlK6iREcIS4qOxibDykdYhTgYFTi4TUreuQrxJpYVlyZe4hRkoNJSZT3keBjXyG+pPyU
-	yozE4oz4otKc1OJDjBIczEoivOq/gMp5UxIrq1KL8mFS0hwsSuK88yTVfYUE0hNLUrNTUwtS
-	i2CyMhwcShK8D4SAhgoWpaanVqRl5pQgpJk4OEGG8wAN1wdZzFtckJhbnJkOkT/FqMvRuHbH
-	QUYhlrz8vFQpcd47IIMEQIoySvPg5sAS2ytGcaC3hHmvgFTxAJMi3KRXQEuYgJb0vnsIsqQk
-	ESEl1cCoKt8vsbv4yCy9D9qL/j7dJvQ+WOQDc590+XSOgtRz2aouFsZlXO3Fjdc+M9TfDbRh
-	YhS9ZZaxL2iJ56bsFwE/5IWEqzdI7VgvH8RSe1Pw5uLFb58nSZv1KBvvFL7mvD1q0/OfM9Nm
-	KUfU1N91dV/SahW3cs5NpqST0beWSi478LAiUIefu1uJpTgj0VCLuag4EQBGLH4CRwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNKsWRmVeSWpSXmKPExsUixCmqrPtQ+LGvwZQObos569ewWfRdOcpu
+	Mesar8XnDf/YLA78espm8f7qdjaLy7vmsFk8ab7OaLHlUjOrxYeJG9gsNm+aymzxqO8tu8WP
+	DY9ZHXg9vrf2sXgcO3OY0eNW2x9mj52z7rJ7bF6h5fH/5RE2j02rOtk83p07x+5xYsZvFo/j
+	Z5w9Pm+SC+CO4rJJSc3JLEst0rdL4Mo4tPoCW0GjWsXvU8dYGhg/ynUxcnJICJhIbF+0gR3C
+	FpO4cG89WxcjF4eQwD5GiUnnLjJCOBsYJRra5kM5z5gkbm57zAbSwiagItGx9AFTFyMHh4iA
+	vsTVz2A1zALPmSUePNzFClIjLGArsWTzarAVLAKqEneXHAaL8woESfR/7GOFWK0gceXKPBYQ
+	m1PAQOLknXtgthDQzHm33rLhEp/AKLCAkWEVo2xKbpVubmJmTnFqsm5xcmJeXmqRrrlebmaJ
+	XmpK6SZGUIywu6jsYGw+pHSIUYCDUYmH16zoka8Qa2JZcWXuIUZJDiYlUd5Hgo99hfiS8lMq
+	MxKLM+KLSnNSiw8xSnAwK4nwqv8CKudNSaysSi3Kh0lJc7AoifPOk1T3FRJITyxJzU5NLUgt
+	gsnKcHAoSfA+EAIaKliUmp5akZaZU4KQZuLgBBnOAzRcH2Qxb3FBYm5xZjpE/hSjMcf1tVsP
+	MnI0rt1xkFGIJS8/L1VKnPcOyDgBkNKM0jy4abA094pRHOg5Yd4rIFU8wBQJN+8V0ComoFW9
+	7x6CrCpJREhJNTD6Ou7/uS4gYJl4TbPjq/K7n44ZxW3iPrzeu+NqcfoOmZivYat/iwtcsw/0
+	93l272B4b94dTuZIT85dc1ad7clnEuvZ7DKbJyM+SfPe2tsds3luLb7wf/ZnfqaSiIPd4s7+
+	1fIMcTu/3v7gPXMCU4treqT+9iXfZlSJcpWGqGifuWl/+IbIeyclluKMREMt5qLiRAA6E3Qu
+	TgMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not a security feature.  It's to prevent the int 0xcc
-sequence from becoming ABI.
-
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/kernel/vsyscall_64.c |   65 ++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 61 insertions(+), 4 deletions(-)
+ Documentation/x86/entry_64.txt |   95 ++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/entry_64.S     |    2 +
+ 2 files changed, 97 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/x86/entry_64.txt
 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 5b3d62a..f53f490 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -34,6 +34,8 @@
- #include <linux/notifier.h>
- #include <linux/syscalls.h>
- #include <linux/ratelimit.h>
-+#include <linux/random.h>
-+#include <linux/highmem.h>
- 
- #include <asm/vsyscall.h>
- #include <asm/pgtable.h>
-@@ -54,6 +56,19 @@ DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
- 	.lock = SEQLOCK_UNLOCKED,
- };
- 
-+static u8 vsyscall_nr_offset;  /* Cyclic permutation of al. */
+diff --git a/Documentation/x86/entry_64.txt b/Documentation/x86/entry_64.txt
+new file mode 100644
+index 0000000..081c405
+--- /dev/null
++++ b/Documentation/x86/entry_64.txt
+@@ -0,0 +1,95 @@
++This file documents some of the kernel entries in
++arch/x86/kernel/entry_64.S.  A lot of this explanation is adapted from
++an email from Ingo Molnar:
 +
-+static inline u8 mangle_al(u8 al)
-+{
-+	/* Permute among 0xcc, 0xce, and 0xf0. */
-+	return (al - 0xcc + 2*vsyscall_nr_offset) % 6 + 0xcc;
-+}
++http://lkml.kernel.org/r/<20110529191055.GC9835%40elte.hu>
 +
-+static inline u8 demangle_vsyscall_nr(u8 nr)
-+{
-+	return (nr + 3 - vsyscall_nr_offset) % 3;
-+}
++The x86 architecture has quite a few different ways to jump into
++kernel code.  Most of these entry points are registered in
++arch/x86/kernel/traps.c and implemented in arch/x86/kernel/entry_64.S.
 +
- void update_vsyscall_tz(void)
- {
- 	unsigned long flags;
-@@ -94,11 +109,12 @@ static void warn_bad_vsyscall(struct pt_regs *regs, bool is_warning,
- 
- 	tsk = current;
- 
--	printk("%s%s[%d] %s ip:%lx sp:%lx ax:%lx si:%lx di:%lx",
-+	printk("%s%s[%d] %s ip:%lx sp:%lx ax:%lx offset:%d si:%lx di:%lx",
- 	       is_warning ? KERN_WARNING : KERN_INFO,
- 	       tsk->comm, task_pid_nr(tsk),
- 	       message,
--	       regs->ip - 2, regs->sp, regs->ax, regs->si, regs->di);
-+	       regs->ip - 2, regs->sp, regs->ax, (int)vsyscall_nr_offset,
-+	       regs->si, regs->di);
- 	if (!in_vsyscall_page(regs->ip - 2))
- 		print_vma_addr(" in ", regs->ip - 2);
- 	printk("\n");
-@@ -125,7 +141,8 @@ static __always_inline int fallback_gettimeofday(struct timeval *tv)
- 	 * Invoke do_emulate_vsyscall.  Intentionally incompatible with
- 	 * the CONFIG_UNSAFE_VSYSCALLS=n case.
- 	 */
--	asm volatile("mov $0xce, %%al;\n\t"
-+	asm volatile("fallback_gtod_movb:\n\t"
-+		     "movb $0xce, %%al;\n\t"
- 		     "int %[vec]"
- 		     : "=a" (ret)
- 		     : "D" (tv), [vec] "i" (VSYSCALL_EMU_VECTOR));
-@@ -250,7 +267,7 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
- 
- 	local_irq_enable();
- 
--	if ((regs->ax & 0xFF) != 0xce) {
-+	if ((regs->ax & 0xFF) != mangle_al(0xce)) {
- 		warn_bad_vsyscall(regs, false, "illegal int 0xcc "
- 				  "(exploit attempt?)");
- 		force_sig(SIGSEGV, current);
-@@ -316,6 +333,7 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
- 		force_sig(SIGSEGV, current);
- 		goto out;
- 	}
-+	vsyscall_nr = demangle_vsyscall_nr(vsyscall_nr);
- 
- 	if (regs->ip - 2 != vsyscall_intcc_addr(vsyscall_nr)) {
- 		if (in_vsyscall_page(regs->ip - 2)) {
-@@ -438,15 +456,54 @@ void __init map_vsyscall(void)
- 		     (unsigned long)VVAR_ADDRESS);
- }
- 
-+static void __init mangle_vsyscall_movb(void *mapping,
-+					unsigned long movb_addr, u8 initial)
-+{
-+	u8 *imm8;
-+	BUG_ON(movb_addr >= 4095);
++The IDT vector assignments are listed in arch/x86/include/irq_vectors.h.
 +
-+	imm8 = (char*)(mapping) + movb_addr + 1;
++Some of these entries are:
 +
-+	BUG_ON(*imm8 != initial);
-+	*imm8 = mangle_al(*imm8);
-+}
++ - system_call: syscall instruction from 64-bit code.
 +
- static int __init vsyscall_init(void)
- {
-+	struct page *vsyscall_page;
-+	extern char __vsyscall_0;
-+	void *mapping;
++ - ia32_syscall: int 0x80 from 32-bit or 64-bit code; compat syscall
++   either way.
 +
- #ifdef CONFIG_UNSAFE_VSYSCALLS
-+	extern char fallback_gtod_movb;
++ - ia32_syscall, ia32_sysenter: syscall and sysenter from 32-bit code
 +
- 	BUG_ON(((unsigned long) &vgettimeofday !=
- 			VSYSCALL_ADDR(__NR_vgettimeofday)));
- 	BUG_ON((unsigned long) &vtime != VSYSCALL_ADDR(__NR_vtime));
- 	BUG_ON((VSYSCALL_ADDR(0) != __fix_to_virt(VSYSCALL_FIRST_PAGE)));
- 	BUG_ON((unsigned long) &vgetcpu != VSYSCALL_ADDR(__NR_vgetcpu));
- #endif
++ - interrupt: An array of entries.  Every IDT vector that doesn't
++   explicitly point somewhere else gets set to the corresponding value
++   in interrupts.  These point to a whole array of magically-generated
++   functions that make their way to do_IRQ with the interrupt number
++   as a parameter.
 +
-+	/*
-+	 * Randomize the magic al values for int 0xcc invocation.  This
-+	 * isn't really a security feature; it's to make sure that
-+	 * dynamic binary instrumentation tools don't start to think
-+	 * that the int 0xcc magic incantation is ABI.
-+	 */
-+	vsyscall_nr_offset = get_random_int() % 3;
-+	vsyscall_page = pfn_to_page(__pa_symbol(&__vsyscall_0) >> PAGE_SHIFT);
-+	mapping = kmap_atomic(vsyscall_page);
-+#ifdef CONFIG_UNSAFE_VSYSCALLS
-+	mangle_vsyscall_movb(mapping,
-+			     &fallback_gtod_movb - (char*)&vgettimeofday, 0xce);
-+#else
-+	/* It's easier to hardcode the addresses -- they're ABI. */
-+	mangle_vsyscall_movb(mapping, 0, 0xcc);
-+	mangle_vsyscall_movb(mapping, 1024, 0xce);
-+	mangle_vsyscall_movb(mapping, 2048, 0xf0);
-+#endif
-+	kunmap_atomic(mapping);
++ - emulate_vsyscall: int 0xcc, a special non-ABI entry used by
++   vsyscall emulation.
 +
- 	on_each_cpu(cpu_vsyscall_init, NULL, 1);
- 	/* notifier priority > KVM */
- 	hotcpu_notifier(cpu_vsyscall_notifier, 30);
++ - APIC interrupts: Various special-purpose interrupts for things like
++   TLB shootdown.
++
++ - Architecturally-defined exceptions like divide_error.
++
++There are a few complexities here.  The different x86-64 entries have
++different calling conventions.  The syscall and sysenter instructions
++have their own peculiar calling conventions.  Some of the IDT entries
++push an error code onto the stack; others don't.  IDT entries using
++the IST alternative stack mechanism need their own magic to get the
++stack frames right.  (You can find some documentation in the Intel
++SDM, Volume 3, Chapter 6.)
++
++Dealing with the swapgs instruction is especially tricky.  Swapgs
++toggles whether gs is the kernel gs or the user gs.  The swapgs
++instruction is rather fragile: it must nest perfectly and only in
++single depth, it should only be used if entering from user mode to
++kernel mode and then when returning to user-space, and precisely
++so. If we mess that up even slightly, we crash.
++
++So when we have a secondary entry, already in kernel mode, we *must
++not* use SWAPGS blindly - nor must we forget doing a SWAPGS when it's
++not switched/swapped yet.
++
++Now, there's a secondary complication: there's a cheap way to test
++which mode the CPU is in and an expensive way.
++
++The cheap way is to pick this info off the entry frame on the kernel
++stack, from the CS of the ptregs area of the kernel stack:
++
++	xorl %ebx,%ebx
++	testl $3,CS+8(%rsp)
++	je error_kernelspace
++	SWAPGS
++
++The expensive (paranoid) way is to read back the MSR_GS_BASE value
++(which is what SWAPGS modifies):
++
++	movl $1,%ebx
++	movl $MSR_GS_BASE,%ecx
++	rdmsr
++	testl %edx,%edx
++	js 1f   /* negative -> in kernel */
++	SWAPGS
++	xorl %ebx,%ebx
++1:	ret
++
++and the whole paranoid non-paranoid macro complexity is about whether
++to suffer that RDMSR cost.
++
++If we are at an interrupt or user-trap/gate-alike boundary then we can
++use the faster check: the stack will be a reliable indicator of
++whether SWAPGS was already done: if we see that we are a secondary
++entry interrupting kernel mode execution, then we know that the GS
++base has already been switched. If it says that we interrupted
++user-space execution then we must do the SWAPGS.
++
++But if we are in an NMI/MCE/DEBUG/whatever super-atomic entry context,
++which might have triggered right after a normal entry wrote CS to the
++stack but before we executed SWAPGS, then the only safe way to check
++for GS is the slower method: the RDMSR.
++
++So we try only to mark those entry methods 'paranoid' that absolutely
++need the more expensive check for the GS base - and we generate all
++'normal' entry points with the regular (faster) entry macros.
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index bee7e81..e949793 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -9,6 +9,8 @@
+ /*
+  * entry.S contains the system-call and fault low-level handling routines.
+  *
++ * Some of this is documented in Documentation/x86/entry_64.txt
++ *
+  * NOTE: This code handles signal-recognition, which happens every time
+  * after an interrupt and after each system call.
+  *
 -- 
 1.7.5.1
 
