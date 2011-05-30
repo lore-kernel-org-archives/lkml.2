@@ -1,117 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab1E3Ho0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 03:44:26 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49009 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755892Ab1E3HoY (ORCPT
+	id S1755874Ab1E3HoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 03:44:12 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:54859 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755066Ab1E3HoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 03:44:24 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DE34AD0.1060905@jp.fujitsu.com>
-Date: Mon, 30 May 2011 16:44:16 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Mon, 30 May 2011 03:44:10 -0400
+X-Sasl-enc: N8RdFkuZhxltSNz0X4gjaz5sdUzlPAdE1KEO7YSfDWlh 1306741449
+Date: Mon, 30 May 2011 15:45:08 +0800
+From: Greg KH <greg@kroah.com>
+To: Xiangliang Yu <yuxiangl@marvell.com>
+Cc: "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jacky Feng <jfeng@marvell.com>
+Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
+ coalescing to device 	attributes in sysfs
+Message-ID: <20110530074508.GB7806@kroah.com>
+References: <mvsas-intr-coal>
+ <1306247507-6136-1-git-send-email-yxlraid@gmail.com>
+ <20110526021809.GA22496@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD846E0@SC-VEXCH4.marvell.com>
+ <20110526141430.GD4164@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD848FB@SC-VEXCH4.marvell.com>
+ <20110527073302.GA16178@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD84C40@SC-VEXCH4.marvell.com>
 MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com
-Subject: Re: [PATCH v2 1/3] vmscan,memcg: memcg aware swap token
-References: <4DD480DD.2040307@jp.fujitsu.com> <20110526133551.8c158f1c.akpm@linux-foundation.org>
-In-Reply-To: <20110526133551.8c158f1c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F766E4F80769BD478052FB6533FA745D19FAD84C40@SC-VEXCH4.marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> CONFIG_CGROUPS=n:
+On Mon, May 30, 2011 at 12:26:48AM -0700, Xiangliang Yu wrote:
+> >> +What:          /sys/devices/pci/<devices>/<dev>/host/scsi_host/host/interrupt_coalescing
+> >> +Date:          May 2011
+> >> +Kernel Version:        2.6.39
 > 
-> mm/thrash.c: In function 'grab_swap_token':
-> mm/thrash.c:73: error: implicit declaration of function 'css_put'
+> >2.6.39 was released already, is this file in that release?
+> Yes.
+
+How, doesn't your patch below implement that option?  How can it already
+be in the .39 kernel?
+
+> >> +Contact:       yuxiangl@marvell.com
+> >> +Description:   Determines the maximum time the 88SE94XX waits after the occurrence of a
+> >> +               Command Done before generating an interrupt.The maximum number of the 
+> >> +               variable is less than 0x10000.
 > 
-> I don't think that adding a null stub for css_put() is the right fix
-> here...
+> >Why would a user, or anyone else, ever want to be able to change this?
+> Because different platform can get better performance by setting different value
 
-My bad. Following patch fixes this issue.
+Then you need to document _how_ to do this tuning, and why someone would
+want to, and lots of other stuff.  Don't just blindly let userspace
+change a value that they know nothing about.
 
-Thanks.
+> >Why wouldn't this just be something that the driver handles
+> >automagically so the user never has to worry about it at all?
+> As for now, driver can't do it. The value need to be test, and get the best.
 
+Why don't you test it and set it to the proper value now?  What would
+change in a user's system that require this to be changed?  Size of the
+machine?  Number of disks?  Something else?
 
+It really should be automatic, people do not ever want to have to
+manually tune their machines anymore they should be smart enough to
+determine the load on them and make the changes without any user needing
+to do it for them.
 
->From 6a824b46219cb2f11b125e9a33f65e0f01899d09 Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Mon, 30 May 2011 15:47:32 +0900
-Subject: [PATCH] swap-token: fix compilation error when CONFIG_CGROUPS=n
+thanks,
 
-Andrew Morton pointed out css_put() is not defined when
-CONFIG_CGROUPS=n.
-
-: CONFIG_CGROUPS=n:
-:
-: mm/thrash.c: In function 'grab_swap_token':
-: mm/thrash.c:73: error: implicit declaration of function 'css_put'
-
-Thus, this patch move the whole logic into CONFIG_CGROUP_MEM_RES_CTLR
-condtion.
-
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/thrash.c |   24 +++++++++++++++++++-----
- 1 files changed, 19 insertions(+), 5 deletions(-)
-
-diff --git a/mm/thrash.c b/mm/thrash.c
-index 8832edb..cd06606 100644
---- a/mm/thrash.c
-+++ b/mm/thrash.c
-@@ -31,11 +31,28 @@ static DEFINE_SPINLOCK(swap_token_lock);
- struct mm_struct *swap_token_mm;
- struct mem_cgroup *swap_token_memcg;
-
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-+static struct mem_cgroup* swap_token_memcg_from_mm(struct mm_struct *mm)
-+{
-+	struct mem_cgroup *memcg;
-+
-+	memcg = try_get_mem_cgroup_from_mm(mm);
-+	if (memcg)
-+		css_put(mem_cgroup_css(memcg));
-+
-+	return memcg;
-+}
-+#else
-+static struct mem_cgroup* swap_token_memcg_from_mm(struct mm_struct *mm)
-+{
-+	return NULL;
-+}
-+#endif
-+
- void grab_swap_token(struct mm_struct *mm)
- {
- 	int current_interval;
- 	unsigned int old_prio = mm->token_priority;
--	struct mem_cgroup *memcg;
- 	static unsigned int global_faults;
- 	static unsigned int last_aging;
-
-@@ -93,12 +110,9 @@ out:
-
- replace_token:
- 	mm->token_priority += 2;
--	memcg = try_get_mem_cgroup_from_mm(mm);
--	if (memcg)
--		css_put(mem_cgroup_css(memcg));
- 	trace_replace_swap_token(swap_token_mm, mm);
- 	swap_token_mm = mm;
--	swap_token_memcg = memcg;
-+	swap_token_memcg = swap_token_memcg_from_mm(mm);
- 	last_aging = global_faults;
- 	goto out;
- }
--- 
-1.7.3.1
-
-
-
-
+greg k-h
