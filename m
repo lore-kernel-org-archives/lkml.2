@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab1E3MKR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 08:10:17 -0400
-Received: from smtpout01.highway.telekom.at ([195.3.96.112]:10401 "EHLO
-	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751444Ab1E3MKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 08:10:15 -0400
-From: Melchior FRANZ <melchior.franz@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: [3.0-rc1 regression] (was: Re: [2.6.39 regression] i915/kms: garbled screen because of 49183b281)
-Date: Mon, 30 May 2011 14:10:10 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39; KDE/4.6.3; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        dri-devel@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-References: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com> <201105121849.09225@rk-nord.at>
-In-Reply-To: <201105121849.09225@rk-nord.at>
-X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
-X-PGP: http://members.aon.at/mfranz/melchior.franz
+	id S1756900Ab1E3MLu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 08:11:50 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55817 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751444Ab1E3MLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 08:11:49 -0400
+Date: Mon, 30 May 2011 14:11:37 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
+Message-ID: <20110530121137.GF22324@elte.hu>
+References: <20110530091536.GA2827@elte.hu>
+ <1306747629.2029.397.camel@i7.infradead.org>
+ <20110530095333.GA8461@elte.hu>
+ <1306750004.2029.413.camel@i7.infradead.org>
+ <20110530102502.GC17821@elte.hu>
+ <1306753314.2029.442.camel@i7.infradead.org>
+ <20110530110432.GA21429@elte.hu>
+ <1306753958.2029.450.camel@i7.infradead.org>
+ <20110530114214.GC22324@elte.hu>
+ <alpine.LFD.2.02.1105301248110.3164@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105301410.11270@rk-nord.at>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1105301248110.3164@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Melchior FRANZ -- Thursday 12 May 2011:
-> > Chris Wilson (4):
-> >       drm/i915: Only enable the plane after setting the fb base (pre-ILK)
-> 
-> This patch introduces a bug on my infamous "Acer Travelmate
-> 5735Z-452G32Mnss": when KMS takes over, the frame buffer contents
-> get completely garbled up on screen, with colored stripes and
-> unreadable text (photo on request). Only when X11 is started, the
-> screen gets restored again. Closing and re-opening the lid partly
-> cures the mess, too: it makes the font readable, though horizontally
-> stretched.
-> 
-> Reverting 49183b2818de6899383bb82bc032f9344d6791ff fixes the
-> bug.
 
-This got fixed after my bug report, but now it's back with exactly
-the same description. Bisection result to come ...
+* David Woodhouse <dwmw2@infradead.org> wrote:
 
-m.
+> On Mon, 30 May 2011, Ingo Molnar wrote:
+> 
+> > 
+> > What kind of replacement are you suggesting?
+> 
+> I suspect that
+>     make CONFIG_64BIT=y CONFIG_SATA_MV=y whateverconfig
+> 
+> ought to work for all the examples shown so far?
+
+Well, some people will argue that:
+
+	make ARCH=i386 whateverconfig
+
+is less typing than:
+
+	make CONFIG_64BIT=y whateverconfig                 # set bitness
+	make CONFIG_64BIT=y ARCH=x86 whateverconfig        # set architecture and bitness
+
+but yes, in the long run i agree that 'ARCH=i386' would simply be a 
+(legacy) shortcut for:
+ 
+        CONFIG_64BIT=y ARCH=x86
+
+and 'ARCH=x86_64' should be a (legacy) shortcut for:
+
+        CONFIG_64BIT=n ARCH=x86
+
+Thanks,
+
+	Ingo
