@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab1E3NNy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 09:13:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63233 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490Ab1E3NNx (ORCPT
+	id S1756882Ab1E3NQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 09:16:57 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:47051 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490Ab1E3NQ4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 09:13:53 -0400
+	Mon, 30 May 2011 09:16:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=JDvw/zNOhgWxaJxUN5jZCrHSo9q9+ys9lGgieGIKtwa4DYB0kiGk/5Bq+31f8Ve9qj
-         j5b6GqhCBCCUwEFC3MMQlaR8xKeUYu4vWxRyfduNPmhjDnPxhZVjdOEsAs4JFuygOzKu
-         ynCZSJ24klXbNnfcP+CuJH6MCKOcmeO7NRKP8=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=x4H8Nzbb4km/pcoHUC1YADXc1bo0uVDWBBobMfL9G7DsAkNRhoFKCzhesldBepXXDt
+         stpwPAnpLwufuUTrMpRw==
 MIME-Version: 1.0
-Date: Mon, 30 May 2011 10:13:52 -0300
-Message-ID: <BANLkTim2Fc44BvYDkFqWMdphjeoJZf6cAQ@mail.gmail.com>
-Subject: inodes: df -i vs /proc/sys/fs/inode-nr
-From: Marco Shaw <marco.shaw@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1306761074.1200.2975.camel@twins>
+References: <20110523161252.GA11607@quad>
+	<1306761074.1200.2975.camel@twins>
+Date: Mon, 30 May 2011 15:16:50 +0200
+Message-ID: <BANLkTim5N_KhF1GHjTcvb-OAbO1_J=r7tA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] perf_events: fix validation of events using an extra
+ reg (v3)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, Lin Ming <ming.m.lin@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(I've tried, but failed to find this answer elsewhere, or at least a
-definite answer, without trying to look at the source code.)
+On Mon, May 30, 2011 at 3:11 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> On Mon, 2011-05-23 at 18:12 +0200, Stephane Eranian wrote:
+> > +static struct cpu_hw_events *allocate_fake_cpuc(void)
+> > +{
+> > +       struct cpu_hw_events *cpuc;
+> > +       int cpu = smp_processor_id();
+> > +
+> > +       cpuc = kzalloc(sizeof(*cpuc), GFP_KERNEL);
+> > +       if (!cpuc)
+> > +               return ERR_PTR(-ENOMEM);
+> > +
+> > +       /* only needed, if we have extra_regs */
+> > +       if (x86_pmu.extra_regs) {
+> > +               cpuc->shared_regs = allocate_shared_regs(cpu);
+> > +               if (!cpuc->shared_regs)
+> > +                       goto error;
+> > +       }
+> > +       return cpuc;
+> > +error:
+> > +       free_fake_cpuc(cpuc);
+> > +       return ERR_PTR(-ENOMEM);
+> > +}
+>
+> Ingo found a case where that use of allocate_shared_regs() failed to
+> compile but didn't provide a .config. I suspect its CONFIG_CPU_SUP_INTEL
+> and the below should fix it. I will try to push that again later today.
+>
+Yes, it is quite possible. I think you are right about the cause of
+this problem.
+The alloate routine is in the Intel-specific code. If you don't
+compile for Intel
+then you will get an undefined symbol. It is not clear to me why you would
+compile with Intel support, though.
 
-Is there anything online that contrasts what "df -i" reports and the
-values provided by /proc/sys/fs/inode-nr?  Is there a connection?  I
-have a decent grasp on VFS-related "inodes" on disk, but inode-nr
-reports "in-memory inodes"(?), and I don't understand what that means.
-
-For a particular system, for example, df -i reports 1% to 4% inode
-utilization for different FSs, while /proc/sys/fs/inode-nr reports 70%
-(even 100% at some point) used (see Note 1 below).
-
-For example, what happens when the inode-nr reports 100% used on a
-system?  I opened a support case with my vendor, and at one point an
-engineer indicates that "if inode-nr reports 100% utilization, there
-could be all kinds of problems", but then another engineer goes on to
-indicate something along the lines that "with kernel 2.6, this is no
-longer a problem and the kernel will dynamically adjust the maximum".
-
-So, should I monitor /proc/sys/fs/inode-nr?  Should I only monitoring
-it on 2.4.x because it is "meaningless" (or at least not a cause of
-concern) on 2.6.x?
-
-Marco
-
-Note 1: inode_used_percent = 100*(inode_alloc - inode_free)/inode_alloc
+> ---
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 41178c8..cf90e31 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -1528,4 +1623,9 @@ static int intel_pmu_init(void)
+>        return 0;
+>  }
+>
+> +static struct intel_shared_regs *allocate_shared_regs(int cpu)
+> +{
+> +       return NULL;
+> +}
+> +
+>  #endif /* CONFIG_CPU_SUP_INTEL */
+>
