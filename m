@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab1E3MFx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 08:05:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47546 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754025Ab1E3MFw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 08:05:52 -0400
-X-ExtLoop1: 1
-From: "Zhang, Shijie" <shijie.zhang@intel.com>
-To: "wanlong.gao@gmail.com" <wanlong.gao@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>
-CC: Anca Emanuel <anca.emanuel@gmail.com>, Miles Bader <miles@gnu.org>,
-        Greg KH <greg@kroah.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 30 May 2011 20:05:46 +0800
-Subject: RE: Linux 3.0-rc1
-Thread-Topic: Linux 3.0-rc1
-Thread-Index: Acwewa3QzdjUQ0lJTAyrlSaQwrm9KAAABKsQ
-Message-ID: <6D7A567890E70E4BA49B8A9B365980FA55527A08@shsmsx501.ccr.corp.intel.com>
-References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
-	<20110530020457.GA6494@kroah.com>	<buofwnwjzak.fsf@dhlpc061.dev.necel.com>
-	<BANLkTik3E1_7w9fnkRPLL+FC=97gvOFmJg@mail.gmail.com>
-	<BANLkTikGb2cjHTiNgJLdsbOWhHSPtYNy9g@mail.gmail.com>
- <BANLkTimUvzrMsZ3whBQvVJDJGJZ23DwDmQ@mail.gmail.com>
-In-Reply-To: <BANLkTimUvzrMsZ3whBQvVJDJGJZ23DwDmQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756894Ab1E3MKR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 08:10:17 -0400
+Received: from smtpout01.highway.telekom.at ([195.3.96.112]:10401 "EHLO
+	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751444Ab1E3MKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 08:10:15 -0400
+From: Melchior FRANZ <melchior.franz@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: [3.0-rc1 regression] (was: Re: [2.6.39 regression] i915/kms: garbled screen because of 49183b281)
+Date: Mon, 30 May 2011 14:10:10 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.39; KDE/4.6.3; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        dri-devel@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
+References: <BANLkTi=9fGdBw=r_dDE3KSPfjU0UjXBZFw@mail.gmail.com> <201105121849.09225@rk-nord.at>
+In-Reply-To: <201105121849.09225@rk-nord.at>
+X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
+X-PGP: http://members.aon.at/mfranz/melchior.franz
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105301410.11270@rk-nord.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux 3.0 sounds good. A new era for open source Linux. 
+* Melchior FRANZ -- Thursday 12 May 2011:
+> > Chris Wilson (4):
+> >       drm/i915: Only enable the plane after setting the fb base (pre-ILK)
+> 
+> This patch introduces a bug on my infamous "Acer Travelmate
+> 5735Z-452G32Mnss": when KMS takes over, the frame buffer contents
+> get completely garbled up on screen, with colored stripes and
+> unreadable text (photo on request). Only when X11 is started, the
+> screen gets restored again. Closing and re-opening the lid partly
+> cures the mess, too: it makes the font readable, though horizontally
+> stretched.
+> 
+> Reverting 49183b2818de6899383bb82bc032f9344d6791ff fixes the
+> bug.
 
------Original Message-----
-From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Wanlong Gao
-Sent: Monday, May 30, 2011 8:04 PM
-To: Pekka Enberg
-Cc: Anca Emanuel; Miles Bader; Greg KH; Linus Torvalds; Linux Kernel Mailing List
-Subject: Re: Linux 3.0-rc1
+This got fixed after my bug report, but now it's back with exactly
+the same description. Bisection result to come ...
 
-On 5/30/11, Pekka Enberg <penberg@kernel.org> wrote:
-> On Mon, May 30, 2011 at 1:09 PM, Anca Emanuel <anca.emanuel@gmail.com>
-> wrote:
->> Greg, please do NOT give strong alcohol to Linus, jutt give some beer
->> if yolu like. We want him to be on keyboarrd, and comment if something
->> is wromg.
->
-> Wouldn't it be best that Greg doesn't give strong alcohol to any Linux
-> maintainer until 3.0 is out just to be safe?
-Maybe,  the strong alcohol makes more powerfully for 3.0 ?
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+m.
