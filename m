@@ -1,110 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab1E3PM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 11:12:26 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:62342 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab1E3PMY (ORCPT
+	id S1757063Ab1E3PNo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 11:13:44 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52686 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355Ab1E3PNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 11:12:24 -0400
+	Mon, 30 May 2011 11:13:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=Ije1BxZbLhkFAn1btv+A9MQANDLJzi9c5+EumFyIsc3RGisLYfUH2JdwAxb7q2qaA/
-         G5F82wmUpTpy9ZokTbag1iejcFtK08CH2GCG/Ti7TFrlOy2YJbeg7Kfr0XCVVsez6B34
-         OAkXG9pkjXmDSNK/L2V2KQo6OEOu7GJv9qZ1M=
-Date: Tue, 31 May 2011 00:12:14 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Message-ID: <20110530151213.GA1505@barrios-laptop>
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=SltigP1U2lWwOWJAuVGcQselDTISrNyjP2GG2XHysQk2jETx7hLWS9j+HEM3edccVg
+         oGmQb52d7K4io5TaJ/4GS6Ll+i0UA9xF3k+kNJIrNb2/5/uwEMc+ApKvwrPlzraIlpW/
+         r9T4KyNkp4wVLeSu2Jh/G2JDP/4klEPjjcEaM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110530130949.GB13494@lst.de>
+References: <1306551592.23461.506.camel@haakon2.linux-iscsi.org>
+ <BANLkTimt5qisV7EH7NMv1tG8gR_9d-kA3g@mail.gmail.com> <20110530130949.GB13494@lst.de>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Mon, 30 May 2011 17:13:22 +0200
+X-Google-Sender-Auth: KsnWiFHBltF0cFAat6NoGuyrNbE
+Message-ID: <BANLkTikdJcNPv4CV4nLuyuPtAYpCR1cp0Q@mail.gmail.com>
+Subject: Re: [GIT PULL] iscsi-target: Merge for .40-rc1
+To: Christoph Hellwig <hch@lst.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Mike Christie <michaelc@cs.wisc.edu>, Andy Grover <agrover@redhat.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Su bject: Re: [PATCH] mm: fix special case -1 order check in compact_finished
-Reply-To: 
-In-Reply-To: <20110530123831.GG20166@tiehlicka.suse.cz>
+On Mon, May 30, 2011 at 3:09 PM, Christoph Hellwig <hch@lst.de> wrote:
+> Given that we pretty well tested and working code that's used in lots
+> of production setups my vote is for taking it as-is unless someone can
+> actually show a prototype for a nicely working user/kernel split.
 
-Hi Michal,
+As far as I know such a user/kernel split has been implemented in both
+IET and SCST and is working fine in both of these projects.
 
-On Mon, May 30, 2011 at 02:38:31PM +0200, Michal Hocko wrote:
-> 56de7263 (mm: compaction: direct compact when a high-order allocation
-> fails) introduced a check for cc->order == -1 in compact_finished. We
-> should continue compacting in that case because the request came from
-> userspace and there is no particular order to compact for.
-> 
-> The check is, however, done after zone_watermark_ok which uses order as
-> a right hand argument for shifts. Not only watermark check is pointless
-> if we can break out without it but it also uses 1 << -1 which is not
-> well defined (at least from C standard). Let's move the -1 check above
-> zone_watermark_ok.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> Cc: Mel Gorman <mgorman@suse.de>
-> ---
->  compaction.c |   14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
-> Index: linus_tree/mm/compaction.c
-> ===================================================================
-> --- linus_tree.orig/mm/compaction.c	2011-05-30 14:19:58.000000000 +0200
-> +++ linus_tree/mm/compaction.c	2011-05-30 14:20:40.000000000 +0200
-> @@ -420,13 +420,6 @@ static int compact_finished(struct zone
->  	if (cc->free_pfn <= cc->migrate_pfn)
->  		return COMPACT_COMPLETE;
->  
-> -	/* Compaction run is not finished if the watermark is not met */
-> -	watermark = low_wmark_pages(zone);
-> -	watermark += (1 << cc->order);
-> -
-> -	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
-> -		return COMPACT_CONTINUE;
-> -
->  	/*
->  	 * order == -1 is expected when compacting via
->  	 * /proc/sys/vm/compact_memory
-> @@ -434,6 +427,13 @@ static int compact_finished(struct zone
->  	if (cc->order == -1)
->  		return COMPACT_CONTINUE;
->  
-> +	/* Compaction run is not finished if the watermark is not met */
-> +	watermark = low_wmark_pages(zone);
-> 	watermark += (1 << cc->order);
-> +
-> +	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
-> +		return COMPACT_CONTINUE;
-> +
->  	/* Direct compactor: Is a suitable page free? */
->  	for (order = cc->order; order < MAX_ORDER; order++) {
->  		/* Job done if page is free of the right migratetype */
+And here is another issue that still hasn't been resolved yet:
+http://marc.info/?l=linux-scsi&m=129707890023739&w=2.
 
-It looks good to me.
-Let's think about another place, compaction_suitable.
-It has same problem so we can move the check right before zone_watermark_ok.
-As I look it more, I thought we need free pages for compaction so we would 
-be better to give up early if we can't get enough free pages. But I changed
-my mind. It's a totally user request and we can get free pages in migration
-progress(ex, other big memory hogger might free his big rss). 
-So my conclusion is that we should do *best effort* than early give up.
-If you agree with me, how about resending patch with compaction_suitable fix?
-
-> -- 
-> Michal Hocko
-> SUSE Labs
-> SUSE LINUX s.r.o.
-> Lihovarska 1060/12
-> 190 00 Praha 9    
-> Czech Republic
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Bart.
