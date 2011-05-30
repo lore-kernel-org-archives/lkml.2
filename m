@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab1E3Nqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 09:46:39 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38338 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab1E3Nqe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 09:46:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=AeoBm3hOEsoPMA6ipGKYRulihdUroExgW/j4FV4wN7vcNA2sprquiHp+0O5Bt1VfJW
-         IQw33bq5UeZwFKSwJOPRTJu2m5sLYqxsMfIEFe+GL3nv6L80bW/F62fqagtP7O5Udh8+
-         aGbP0OxbaeYasv9R9sRVZZyMaoqawQIU9qfIQ=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [PATCH 2/2] ext3: use proper little-endian bitops
-Date: Mon, 30 May 2011 22:47:16 +0900
-Message-Id: <1306763236-13751-2-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1306763236-13751-1-git-send-email-akinobu.mita@gmail.com>
-References: <1306763236-13751-1-git-send-email-akinobu.mita@gmail.com>
+	id S1754888Ab1E3Nu7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 09:50:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61105 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753104Ab1E3Nu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 09:50:58 -0400
+Date: Mon, 30 May 2011 15:49:25 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu
+Subject: Re: execve-under-ptrace API bug (was Re: Ptrace documentation,
+	draft #3)
+Message-ID: <20110530134925.GB4739@redhat.com>
+References: <BANLkTikH4k0MfTwNzNJN-P85ER4-hKdifw@mail.gmail.com> <20110525143250.GJ10146@htj.dyndns.org> <201105300528.17384.vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201105300528.17384.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using __test_and_set_bit_le() with ignoring its return value
-can be replaced with __set_bit_le().
+On 05/30, Denys Vlasenko wrote:
+>
+> Consider how strace tracks its tracees. Currently, it remembers
+> their pids - sometimes by remembering clone's return values!
+> This is hopelessly broken wrt pid namespaces.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org
----
- fs/ext3/resize.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+Yes. Unless the tracer lives in the same namespace it can't use
+RAX as the pid. This return value is only makes sense inside the
+tracee's namespace.
 
-diff --git a/fs/ext3/resize.c b/fs/ext3/resize.c
-index 213a794..c7918f5 100644
---- a/fs/ext3/resize.c
-+++ b/fs/ext3/resize.c
-@@ -148,7 +148,7 @@ static void mark_bitmap_end(int start_bit, int end_bit, char *bitmap)
- 
- 	ext3_debug("mark end bits +%d through +%d used\n", start_bit, end_bit);
- 	for (i = start_bit; i < ((start_bit + 7) & ~7UL); i++)
--		__test_and_set_bit_le(i, bitmap);
-+		__set_bit_le(i, bitmap);
- 	if (i < end_bit)
- 		memset(bitmap + (i >> 3), 0xff, (end_bit - i) >> 3);
- }
-@@ -222,7 +222,7 @@ static int setup_new_group_blocks(struct super_block *sb,
- 
- 	if (ext3_bg_has_super(sb, input->group)) {
- 		ext3_debug("mark backup superblock %#04lx (+0)\n", start);
--		__test_and_set_bit_le(0, bh->b_data);
-+		__set_bit_le(0, bh->b_data);
- 	}
- 
- 	/* Copy all of the GDT blocks into the backup in this group */
-@@ -254,7 +254,7 @@ static int setup_new_group_blocks(struct super_block *sb,
- 			brelse(gdb);
- 			goto exit_bh;
- 		}
--		__test_and_set_bit_le(bit, bh->b_data);
-+		__set_bit_le(bit, bh->b_data);
- 		brelse(gdb);
- 	}
- 
-@@ -278,15 +278,15 @@ static int setup_new_group_blocks(struct super_block *sb,
- 			brelse(gdb);
- 			goto exit_bh;
- 		}
--		__test_and_set_bit_le(bit, bh->b_data);
-+		__set_bit_le(bit, bh->b_data);
- 		brelse(gdb);
- 	}
- 	ext3_debug("mark block bitmap %#04x (+%ld)\n", input->block_bitmap,
- 		   input->block_bitmap - start);
--	__test_and_set_bit_le(input->block_bitmap - start, bh->b_data);
-+	__set_bit_le(input->block_bitmap - start, bh->b_data);
- 	ext3_debug("mark inode bitmap %#04x (+%ld)\n", input->inode_bitmap,
- 		   input->inode_bitmap - start);
--	__test_and_set_bit_le(input->inode_bitmap - start, bh->b_data);
-+	__set_bit_le(input->inode_bitmap - start, bh->b_data);
- 
- 	/* Zero out all of the inode table blocks */
- 	for (i = 0, block = input->inode_table, bit = block - start;
-@@ -309,7 +309,7 @@ static int setup_new_group_blocks(struct super_block *sb,
- 			goto exit_bh;
- 		}
- 		brelse(it);
--		__test_and_set_bit_le(bit, bh->b_data);
-+		__set_bit_le(bit, bh->b_data);
- 	}
- 
- 	err = extend_or_restart_transaction(handle, 2, bh);
--- 
-1.7.4.4
+There is another problem, tracehook_report_clone_complete()
+sets PTRACE_GETEVENTMSG == global_pid. IOW, this value can't
+be used unless the tracer runs in the root namespace.
+
+> So I looked at removing all pid tracking from strace,
+
+I am not sure... but you certainly know better what strace
+can/should do.
+
+> The idea is that strace can simply create a new tracee's data
+> structure when it sees a new, never before seen pid popping up
+> from waitpid
+
+This can probably work for strace. Note that this means strace
+can't detach all tracees gracefully, it simply doesn't know them
+all. But probably strace doesn't need this.
+
+> This works (I have a patch against a somewhat older strace),
+> but now in light of this "interesting" execve-under-ptrace
+> behavior it appears to have a flaw: all threads except the
+> execve'ing one disappear without any notification to strace,
+> therefore strace doesn't know which tracee data ("struct tcb"
+> in strace-speak) need to be dropped!
+
+I think there is no choice currently, strace should remember tgid.
+
+> I think the API needs fixing.
+
+ptrace() should not be pid/thread based ;) But this is offtopic now.
+
+Oleg.
 
