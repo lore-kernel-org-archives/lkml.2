@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab1E3DNI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 23:13:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62484 "EHLO mga01.intel.com"
+	id S1754191Ab1E3DOb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 23:14:31 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:46739 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611Ab1E3DNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 23:13:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,290,1304319600"; 
-   d="scan'208";a="9265046"
-Subject: Re: [PATCH 2/3] introduce intel_rapl driver
-From: Zhang Rui <rui.zhang@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@lists.linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, "acme@redhat.com" <acme@redhat.com>,
-        "Lin, Ming M" <ming.m.lin@intel.com>, "Brown, Len" <lenb@kernel.org>,
-        Matt Fleming <matt@console-pimps.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>
-In-Reply-To: <1306526195.2497.475.camel@laptop>
-References: <1306398857.2207.157.camel@rui> <1306403003.1200.41.camel@twins>
-	 <1306484810.16581.375.camel@rui>  <1306526195.2497.475.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 30 May 2011 11:11:09 +0800
-Message-ID: <1306725069.32738.43.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751389Ab1E3DOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 23:14:30 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-arch@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+Subject: [PATCH/RFC] asm-generic/mutex-dec.h: add SMP support
+Date: Sun, 29 May 2011 23:19:28 -0400
+Message-Id: <1306725568-10922-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.5.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-05-28 at 03:56 +0800, Peter Zijlstra wrote:
-> On Fri, 2011-05-27 at 16:26 +0800, Zhang Rui wrote:
-> > 
-> > > Currently there isn't a way to expose the events in sysfs, but we do
-> > > want that, its mostly a matter of getting all involved parties to agree
-> > > on a format and implementing it.
-> > > 
-> > I talked with Lin Ming just now, and he said that it should work in this
-> > way:
-> > First, only one pmu for RAPL interfaces, with four different kinds of
-> > events, pkg/core/uncore/dram,
-> > and the sysfs I/F is:
-> > /sys/bus/event_source/devices/rapl/---|---type
-> >                                       |---pkg
-> >                                       |---core
-> >                                       |---uncore
-> >                                       |---dram
-> 
-> Actually something like:
-> 
->  /sys/bus/.../rapl/ -- | -- type
->                        | -- events -- | -- pkg
->                                       | -- core
->                                       | ...
-> 
-> was one of the latest proposals, but then someone (can't remember who)
-> offered the opinion that having sub-groups of event might also be
-> wanted.
-> 
-> Furthermore a 'format' file was proposed which ought to contain a
-> description of how to compose a ::config value, but we never got around
-> to discussing a valid/useful syntax that could express all existing
-> cases (let alone be future proof).
-> 
-> > to use it, users can issue something like:
-> > perf stat -P rapl -e pkg/core/uncore/dram foo
-> > so that event->attr.type equals rapl_pmu.type and event->attr.config
-> > equals one of the rapl_domain_id.
-> 
-> Right, something like that, or simply something like -e rapl:pkg, which
-> again reminds me that people were working on a full EBNF syntax for the
-> -e argument.
-> 
-> > This sounds good. I can rewrite the code to work in this way, but it
-> > doesn't work for now, until both sysfs I/F and perf tool being ready,
-> > right? 
-> 
-> Right, so the only thing missing is the event bits (and some userspace
-> bits to use it all). The hardest part of it is getting those definitions
-> sorted, writing the patches shouldn't be too hard.
-> 
-Okay. So should I finish the kernel code first, which just checks the
-event->attr.type/config value, no matter how they are passed to kernel?
+To make these guys work on SMP systems, we just need to sprinkle a few
+barriers around.
 
-thanks,
-rui
-> 
-> 
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+note: this is what the Blackfin SMP port is using, but it doesn't seem
+like other SMP ports are ... so I wonder if we're just trying too hard
+and these barriers aren't actually necessary ?
 
+ include/asm-generic/mutex-dec.h |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/include/asm-generic/mutex-dec.h b/include/asm-generic/mutex-dec.h
+index f104af7..e746c3c 100644
+--- a/include/asm-generic/mutex-dec.h
++++ b/include/asm-generic/mutex-dec.h
+@@ -22,6 +22,8 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+ {
+ 	if (unlikely(atomic_dec_return(count) < 0))
+ 		fail_fn(count);
++	else
++		smp_mb();
+ }
+ 
+ /**
+@@ -39,6 +41,7 @@ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
+ {
+ 	if (unlikely(atomic_dec_return(count) < 0))
+ 		return fail_fn(count);
++	smp_mb();
+ 	return 0;
+ }
+ 
+@@ -58,6 +61,7 @@ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
+ static inline void
+ __mutex_fastpath_unlock(atomic_t *count, void (*fail_fn)(atomic_t *))
+ {
++	smp_mb();
+ 	if (unlikely(atomic_inc_return(count) <= 0))
+ 		fail_fn(count);
+ }
+@@ -82,8 +86,10 @@ __mutex_fastpath_unlock(atomic_t *count, void (*fail_fn)(atomic_t *))
+ static inline int
+ __mutex_fastpath_trylock(atomic_t *count, int (*fail_fn)(atomic_t *))
+ {
+-	if (likely(atomic_cmpxchg(count, 1, 0) == 1))
++	if (likely(atomic_cmpxchg(count, 1, 0) == 1)) {
++		smp_mb();
+ 		return 1;
++	}
+ 	return 0;
+ }
+ 
+-- 
+1.7.5.rc3
 
