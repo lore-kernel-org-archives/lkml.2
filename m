@@ -1,47 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab1E3SG1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 14:06:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55948 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756569Ab1E3SG0 convert rfc822-to-8bit (ORCPT
+	id S1757654Ab1E3SLo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 14:11:44 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64174 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757608Ab1E3SLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 14:06:26 -0400
-Subject: Re: Very high CPU values in top on idle system (3.0-rc1)
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20110530173916.GA1746@x4.trippels.de>
-References: <20110530173916.GA1746@x4.trippels.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 30 May 2011 20:05:43 +0200
-Message-ID: <1306778743.23844.5.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 30 May 2011 14:11:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=GShfyxJcqEoMY9CLdsSiKqiyHGHHCxGOGMXx1INBrP8hZjfIx3Xkb2vpbD1qZhM0i2
+         F2swv1WRD9v7XmVpCazwswf/j7SS1ZHitLow0wGLM21y33ewFVP2X6eH5pwNnIIu+/dI
+         S0Kff0D0/VOSUpeUvd6BWd38m6pzDOoYR+jtk=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTikqRod7B30RCEf2V8Rq5zsz=QeZag@mail.gmail.com>
+References: <BANLkTikH4k0MfTwNzNJN-P85ER4-hKdifw@mail.gmail.com>
+ <20110525143250.GJ10146@htj.dyndns.org> <201105300528.17384.vda.linux@googlemail.com>
+ <20110530084906.GA11773@htj.dyndns.org> <BANLkTinYRKKZL-9zntYuxLoa9NxSo70JGA@mail.gmail.com>
+ <BANLkTikqRod7B30RCEf2V8Rq5zsz=QeZag@mail.gmail.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Mon, 30 May 2011 20:11:21 +0200
+Message-ID: <BANLkTinF7AUUAzWz2jGGXPiJNb23rHyPFQ@mail.gmail.com>
+Subject: Re: execve-under-ptrace API bug (was Re: Ptrace documentation, draft #3)
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, oleg@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+Content-Type: multipart/mixed; boundary=0016e6de044420e89604a48238e3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-30 at 19:39 +0200, Markus Trippelsdorf wrote:
-> I get very high CPU values when I run 'top' on my (mostly) idle system
-> with 3.0-rc1. For example mpd was always in the 1-2% range and is now
-> constantly over 50%. 
-> 
-> This is caused by:
-> 
-> commit 317f394160e9beb97d19a84c39b7e5eb3d7815a8
-> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date:   Tue Apr 5 17:23:58 2011 +0200
-> 
->     sched: Move the second half of ttwu() to the remote cpu
-> 
-> When I revert the above I see sane CPU values again.
+--0016e6de044420e89604a48238e3
+Content-Type: text/plain; charset=ISO-8859-1
 
-So: echo NO_TTWU_QUEUE > /debug/sched_features, also cures it?
+> Ok, let's take a deeper look at API needs. What we need to report, and when?
+>
+> We have three kinds of threads at execve:
+> 1. execve'ing thread,
+> 2. leader, two cases: (2a) leader is still alive, (2b) leader has exited by now.
+> 3. other threads.
+>
+> (3) is the most simple: API should report death of these threads.
+> There is no need to ensure these death notifications are reported
+> before execve syscall exit is reported. They can be consumed
+> by tracer later.
+>
+> (1) execve'ing thread is obviously alive. current kernel already
+> reports its execve success. The only thing we need to add is
+> a way to retrieve its former pid, so that tracer can drop
+> former pid's data, and also to cater for the "two execve's" case.
+> PTRACE_EVENT_EXEC seems to be a good place to do it.
+> Say, using GETEVENTMSG?
+>
+> (2) is the most problematic. If leader is still alive, should
+> we report its death? This makes sense since if we do,
+> and if we ensure its death is always reported before
+> PTRACE_EVENT_EXEC, then the rule is pretty simple:
+> at PTRACE_EVENT_EXEC, leader is always reported dead.
+>
+> However, I don't see why we _must_ do it this way.
+> The life of tracer is not that much worse if at
+> PTRACE_EVENT_EXEC leader which is still alive
+> is simply "supplanted" by the execve'ed process.
+>
+> We definitely must ensure, though, that if leader races with
+> execve'ing thread and enters exit(2), its death is never reported
+> *after* PTRACE_EVENT_EXEC - that'd confuse the tracer for sure!
+> Process which has exited but is still alive?! Not good!
 
-What architecture, what .config, and can you see it with anything other
-than mpd (yum search mpd, only seems to result in mpd clients not the
-actual server).
 
+FWIW, here is the current behavior (2.6.38.6-27.fc15.i686.PAE).
 
+Test program creates two threads and execve's from last thread.
+PTRACE_O_TRACECLONE | PTRACE_O_TRACEEXIT | PTRACE_O_TRACEEXEC
+is requested by tracer.
+
+Compiled attached program with gcc -Wall threaded-execve.c,
+ran it and I see this:
+
+6797: thread leader
+6797: status:0003057f WIFSTOPPED sig:5 (TRAP) event:CLONE
+6798: status:0000137f WIFSTOPPED sig:19 (STOP) event:(null)
+6797: status:0003057f WIFSTOPPED sig:5 (TRAP) event:CLONE
+6799: status:0000137f WIFSTOPPED sig:19 (STOP) event:(null)
+6798: status:0006057f WIFSTOPPED sig:5 (TRAP) event:EXIT
+6797: status:0006057f WIFSTOPPED sig:5 (TRAP) event:EXIT
+6798: status:00000000 WIFEXITED exitcode:0
+6797: status:0004057f WIFSTOPPED sig:5 (TRAP) event:EXEC
+6797: status:0003057f WIFSTOPPED sig:5 (TRAP) event:CLONE
+6800: status:0000137f WIFSTOPPED sig:19 (STOP) event:(null)
+6797: status:0003057f WIFSTOPPED sig:5 (TRAP) event:CLONE
+6801: status:0000137f WIFSTOPPED sig:19 (STOP) event:(null)
+6800: status:0006057f WIFSTOPPED sig:5 (TRAP) event:EXIT
+6797: status:0006057f WIFSTOPPED sig:5 (TRAP) event:EXIT
+6800: status:00000000 WIFEXITED exitcode:0
+6797: status:0004057f WIFSTOPPED sig:5 (TRAP) event:EXEC
+...
+...
+...
+
+In short, it doesn't look too bad:  we do get EXIT events for both
+destroyed threads, and even get WIFEXITED for the non-leader.
+(IOW: maybe PTRACE_O_TRACEEXIT is not even needed!)
+EXEC event is reported last (also good!)
+
+Oleg, does it look like it works as intended, or am I just lucky?
+
+I guess I need to test larger number of threads, and throw in some races...
+
+-- 
+vda
+
+--0016e6de044420e89604a48238e3
+Content-Type: text/x-csrc; charset=US-ASCII; name="threaded-execve.c"
+Content-Disposition: attachment; filename="threaded-execve.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gobq6dd60
+
+LyogLi4uREVTQ1JJVElPTi4uLgoKICAgVGhpcyBzb2Z0d2FyZSBpcyBwcm92aWRlZCAnYXMtaXMn
+LCB3aXRob3V0IGFueSBleHByZXNzIG9yIGltcGxpZWQKICAgd2FycmFudHkuICBJbiBubyBldmVu
+dCB3aWxsIHRoZSBhdXRob3JzIGJlIGhlbGQgbGlhYmxlIGZvciBhbnkgZGFtYWdlcwogICBhcmlz
+aW5nIGZyb20gdGhlIHVzZSBvZiB0aGlzIHNvZnR3YXJlLgoKICAgUGVybWlzc2lvbiBpcyBncmFu
+dGVkIHRvIGFueW9uZSB0byB1c2UgdGhpcyBzb2Z0d2FyZSBmb3IgYW55IHB1cnBvc2UsCiAgIGlu
+Y2x1ZGluZyBjb21tZXJjaWFsIGFwcGxpY2F0aW9ucywgYW5kIHRvIGFsdGVyIGl0IGFuZCByZWRp
+c3RyaWJ1dGUgaXQKICAgZnJlZWx5LiAgKi8KCiNkZWZpbmUgX0dOVV9TT1VSQ0UgMQojaW5jbHVk
+ZSA8YXNzZXJ0Lmg+CiNpbmNsdWRlIDxsaW1pdHMuaD4KI2luY2x1ZGUgPHN0ZGRlZi5oPgojaW5j
+bHVkZSA8c3RkbGliLmg+CiNpbmNsdWRlIDxzdHJpbmcuaD4KI2luY2x1ZGUgPHVuaXN0ZC5oPgoj
+aW5jbHVkZSA8ZXJybm8uaD4KI2luY2x1ZGUgPHN0ZGlvLmg+CiNpbmNsdWRlIDxzY2hlZC5oPgoj
+aW5jbHVkZSA8c2lnbmFsLmg+CiNpbmNsdWRlIDxkaXJlbnQuaD4KI2luY2x1ZGUgPGZjbnRsLmg+
+CiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4KI2luY2x1ZGUgPHN5cy93YWl0Lmg+CiNpbmNsdWRlIDxz
+eXMvc3lzY2FsbC5oPgovKiAjaW5jbHVkZSA8cHRocmVhZC5oPiAqLwovKiBEYW5jZSBhcm91bmQg
+cHRyYWNlLmggKyB1c2VyLmggaW5jb21wYXRpYmlsaXR5ICovCiNpZmRlZiBfX2lhNjRfXwojIGRl
+ZmluZSBpYTY0X2ZwcmVnIGlhNjRfZnByZWdfRElTQUJMRQojIGRlZmluZSBwdF9hbGxfdXNlcl9y
+ZWdzIHB0X2FsbF91c2VyX3JlZ3NfRElTQUJMRQojZW5kaWYKI2luY2x1ZGUgPHN5cy9wdHJhY2Uu
+aD4KI2luY2x1ZGUgPGxpbnV4L3B0cmFjZS5oPgojaWZkZWYgX19pYTY0X18KIyB1bmRlZiBpYTY0
+X2ZwcmVnCiMgdW5kZWYgcHRfYWxsX3VzZXJfcmVncwojZW5kaWYKI2luY2x1ZGUgPHN5cy91c2Vy
+Lmg+CiNpZiBkZWZpbmVkIF9faTM4Nl9fIHx8IGRlZmluZWQgX194ODZfNjRfXwojIGluY2x1ZGUg
+PHN5cy9kZWJ1Z3JlZy5oPgojZW5kaWYKLyogRGVmaW5lIGNsb25lMiBmb3IgYWxsIGFyY2hlcyAq
+LwojaWZkZWYgX19pYTY0X18KZXh0ZXJuIGludCBfX2Nsb25lMihpbnQgKCpmbikgKHZvaWQgKiks
+IHZvaWQgKmNoaWxkX3N0YWNrX2Jhc2UsCiAgICAgICAgICAgICAgICAgICAgIHNpemVfdCBzdGFj
+a19zaXplLCBpbnQgZmxhZ3MsIHZvaWQgKmFyZywgLi4uKTsKI2RlZmluZSBjbG9uZTIgX19jbG9u
+ZTIKI2Vsc2UKI2RlZmluZSBjbG9uZTIoZnVuYywgc3RhY2tfYmFzZSwgc2l6ZSwgZmxhZ3MsIGFy
+Zy4uLikgXAogICAgICAgIGNsb25lKGZ1bmMsIChzdGFja19iYXNlKSArIChzaXplKSwgZmxhZ3Ms
+IGFyZykKI2VuZGlmCgoKc3RhdGljIGludCB2ZXJib3NlOwoKI2RlZmluZSBWRVJCT1NFKC4uLikg
+ZG8geyBcCglpZiAodmVyYm9zZSkgeyBcCgkJcHJpbnRmKF9fVkFfQVJHU19fKTsgZmZsdXNoKHN0
+ZG91dCk7IFwKCX0gXAp9IHdoaWxlICgwKQoKc3RhdGljIHBpZF90IGNoaWxkOwovKnN0YXRpYyBw
+aWRfdCBncmFuZGNoaWxkOyovCgpzdGF0aWMgdm9pZApzaWdraWxsKHBpZF90ICpwcCkKewoJcGlk
+X3QgcGlkID0gKnBwOwoJKnBwID0gMDsKCWlmIChwaWQgPiAwKQoJCWtpbGwocGlkLCBTSUdLSUxM
+KTsKfQoKc3RhdGljIHZvaWQKY2xlYW51cCh2b2lkKQp7CgkvKnNpZ2tpbGwoJmdyYW5kY2hpbGQp
+OyovCglzaWdraWxsKCZjaGlsZCk7Cgl3aGlsZSAod2FpdHBpZCgtMSwgTlVMTCwgX19XQUxMKSA+
+IDApCgkJY29udGludWU7Cn0KCnN0YXRpYyB2b2lkCmhhbmRsZXJfZmFpbChpbnQgc2lnbm8pCnsK
+CVZFUkJPU0UoImFsYXJtIHRpbWVkIG91dFxuIik7CglzaWdzZXRfdCBzZXQ7CglzaWduYWwoU0lH
+QUJSVCwgU0lHX0RGTCk7CglzaWduYWwoU0lHQUxSTSwgU0lHX0RGTCk7CgkvKiBTSUdBTFJNIG1h
+eSBiZSBibG9ja2VkIGluIHNpZ2hhbmRsZXIsIG5lZWQgdG8gdW5ibG9jayAqLwoJc2lnZmlsbHNl
+dCgmc2V0KTsKCXNpZ3Byb2NtYXNrKFNJR19VTkJMT0NLLCAmc2V0LCBOVUxMKTsKCS8qIER1ZSB0
+byBrZXJuZWwgYnVncywgd2FpdHBpZCBtYXkgYmxvY2suIE5lZWQgdG8gaGF2ZSBhIHRpbWVvdXQg
+Ki8KCWFsYXJtKDEpOwoJY2xlYW51cCgpOwoJYXNzZXJ0KDApOwp9CgpzdGF0aWMgY29uc3QgY2hh
+ciogc2lnX25hbWUodW5zaWduZWQgc2lnKQp7CglzdGF0aWMgY29uc3QgY2hhciAqY29uc3Qgc2ln
+c1tdID0gewoJCVtTSUdTVE9QXSA9ICJTVE9QIiwgW1NJR1RSQVBdID0gIlRSQVAiLCBbU0lHS0lM
+TF0gPSAiS0lMTCIsCgkJW1NJR1RFUk1dID0gIlRFUk0iLCBbU0lHSU5UIF0gPSAiSU5UICIsIFsw
+ICAgICAgXSA9ICIwICAgIiwKCQlbU0lHVFJBUHwweDgwXSA9ICJUUkFQfDgwIiwKCX07CglzdGF0
+aWMgY29uc3QgdW5zaWduZWQgbnVtX3NpZ3MgPSBzaXplb2Yoc2lncykgLyBzaXplb2Yoc2lnc1sw
+XSk7CglpZiAoc2lnIDwgbnVtX3NpZ3MpCgkJcmV0dXJuIHNpZ3Nbc2lnXTsKCXJldHVybiAiU0lH
+Pz8/PyI7Cn0KCnN0YXRpYyBjb25zdCBjaGFyKiBldmVudF9uYW1lKGludCBzdGF0dXMpCnsKCXN0
+YXRpYyBjb25zdCBjaGFyICpjb25zdCBldmVudHNbXSA9IHsKCQlbUFRSQUNFX0VWRU5UX0ZPUksg
+ICAgICBdID0gIkZPUksiLAoJCVtQVFJBQ0VfRVZFTlRfVkZPUksgICAgIF0gPSAiVkZPUksiLAoJ
+CVtQVFJBQ0VfRVZFTlRfQ0xPTkUgICAgIF0gPSAiQ0xPTkUiLAoJCVtQVFJBQ0VfRVZFTlRfRVhF
+QyAgICAgIF0gPSAiRVhFQyIsCgkJW1BUUkFDRV9FVkVOVF9WRk9SS19ET05FXSA9ICJWRk9SS19E
+T05FIiwKCQlbUFRSQUNFX0VWRU5UX0VYSVQgICAgICBdID0gIkVYSVQiLAoJfTsKCXN0YXRpYyBj
+b25zdCB1bnNpZ25lZCBudW1fZXZlbnRzID0gc2l6ZW9mKGV2ZW50cykgLyBzaXplb2YoZXZlbnRz
+WzBdKTsKCXN0YXR1cyA9ICh1bnNpZ25lZClzdGF0dXMgPj4gMTY7CglpZiAoc3RhdHVzIDwgbnVt
+X2V2ZW50cykKCQlyZXR1cm4gZXZlbnRzW3N0YXR1c107CglyZXR1cm4gIkVWPz8/IjsKfQoKLyoq
+KioqKioqKioqKioqKioqKiBTdGFuZGFyZCBzY2FmZm9sZGluZyBlbmRzIGhlcmUgKioqKioqKioq
+KioqKioqKi8KCi8qCiAqIEV4dGVuZGVkIGNvbW1lbnRhcnkgb2YgdGhlIGVudGlyZSB0ZXN0Lgog
+KgogKiBXaGF0IGtlcm5lbHMgLyBwYXRjaGVzIGV4aGliaXQgaXQ/IFdoZW4gaXQgd2FzIGZpeGVk
+PwogKiBJcyBpdCBDUFUgdmVuZG9yL21vZGVsIGRlcGVuZGVudD8gU01QIGRlcGVuZGVudD8KICog
+SXMgaXQgZGV0ZXJtaW5pc3RpYz8KICogSG93IGVhc3kvaGFyZCBpcyB0byByZXByb2R1Y2UgaXQK
+ICogKGFsd2F5cz8gYSBkb3plbiBsb29wcz8gYSBzZWNvbmQ/IG1pbnV0ZT8gZXRjKQogKi8KCi8q
+IElmIHRoZSB0ZXN0IGlzIG5vdCBkZXRlcm1pbmlzdGljOgogKiBBbW91bnQgb2Ygc2Vjb25kcyBu
+ZWVkZWQgdG8gYWxtb3N0IDEwMCUgY2F0Y2ggaXQgKi8KLy8jZGVmaW5lIERFRkFVTFRfVEVTVFRJ
+TUUgNQovKiBvciAoaWYgcmVwcm9kdWNpYmxlIGluIGEgZmV3IGxvb3BzIG9ubHkpICovCi8vI2Rl
+ZmluZSBERUZBVUxUX0xPT1BTIDEwMAoKc3RhdGljIGludAp0aHJlYWQxKHZvaWQgKnVudXNlZCkK
+ewoJZm9yKDs7KSBwYXVzZSgpOwoJcmV0dXJuIDA7Cn0KCnN0YXRpYyBpbnQKdGhyZWFkMih2b2lk
+ICp1bnVzZWQpCnsKCWV4ZWNsKCIvcHJvYy9zZWxmL2V4ZSIsICJleGUiLCBOVUxMKTsKCWZvcig7
+OykgcGF1c2UoKTsKCXJldHVybiAwOwp9CgpzdGF0aWMgaW50CnRocmVhZF9sZWFkZXIodm9pZCAq
+dW51c2VkKQp7CgkvKiBtYWxsb2MgZ2l2ZXMgc3VmZmljaWVudGx5IGFsaWduZWQgYnVmZmVyLgoJ
+ICogbG9uZyBidWZbXSBkb2VzIG5vdCEgKG9uIGlhNjQpLgoJICovCgkvKiBBcyBzZWVuIGluIHB0
+aHJlYWRfY3JlYXRlKCk6ICovCgljbG9uZTIodGhyZWFkMSwgbWFsbG9jKDE2ICogMTAyNCksIDE2
+ICogMTAyNCwgMAoJCXwgQ0xPTkVfVk0KCQl8IENMT05FX0ZTCgkJfCBDTE9ORV9GSUxFUyB8IENM
+T05FX1NJR0hBTkQgfCBDTE9ORV9USFJFQUQgfCBDTE9ORV9TWVNWU0VNCi8vCQl8IENMT05FX1BU
+UkFDRQoJCXwgMCAgICAgICAgLyogbm8gc2lnbmFsIHRvIHNlbmQgb24gZGVhdGggKi8KCQksIE5V
+TEwpOwoJdXNsZWVwKDUwKjEwMDApOwoJY2xvbmUyKHRocmVhZDIsIG1hbGxvYygxNiAqIDEwMjQp
+LCAxNiAqIDEwMjQsIDAKCQl8IENMT05FX1ZNCgkJfCBDTE9ORV9GUwoJCXwgQ0xPTkVfRklMRVMg
+fCBDTE9ORV9TSUdIQU5EIHwgQ0xPTkVfVEhSRUFEIHwgQ0xPTkVfU1lTVlNFTQovLwkJfCBDTE9O
+RV9QVFJBQ0UKCQl8IDAgICAgICAgIC8qIG5vIHNpZ25hbCB0byBzZW5kIG9uIGRlYXRoICovCgkJ
+LCBOVUxMKTsKCWZvcig7OykgcGF1c2UoKTsKCXJldHVybiAwOwp9CgovKiBJZiBub3RoaW5nIHN0
+cmFuZ2UgaGFwcGVucywganVzdCByZXR1cm5zLgogKiBOb3RhYmxlIGV2ZW50cyAod2hpY2ggYXJl
+IG5vdCBidWdzKSBwcmludCBzb21lIHNvcnQgb2YgbWFya2VyCiAqIGlzIHZlcmJvc2UgaXMgb24s
+IGJ1dCBzdGlsbCBjb250aW51ZSBhbmQgcmV0dXJuIG5vcm1hbGx5LgogKiBLbm93biBidWdzIGFs
+c28gcHJpbnQgYSBtZXNzYWdlIGlmIHZlcmJvc2UsIGJ1dCB0aGV5IGV4aXQoMSkuCiAqIE5ldyBi
+dWdzIGFyZSBsaWtlbHkgdG8gdHJpcCBhc3NlcnRzIG9yIGNhdXNlIGhhbmcva2VybmVsIGNyYXNo
+IDopCiAqLwpzdGF0aWMgdm9pZApyZXByb2R1Y2Uodm9pZCkKewoJaW50IHN0YXR1czsKCXBpZF90
+IHBpZDsKCglWRVJCT1NFKCIuIik7CglhbGFybSgxKTsKCgkvKiBUeXBpY2FsIHNjZW5hcmlvIHN0
+YXJ0cyBsaWtlIHRoaXMuICAqLwoJY2hpbGQgPSBmb3JrKCk7Cglhc3NlcnQoY2hpbGQgIT0gLTEp
+OwoJaWYgKGNoaWxkID09IDApIHsKCQkvKiBjaGlsZCAqLwoJCWVycm5vID0gMDsKCQlwdHJhY2Uo
+UFRSQUNFX1RSQUNFTUUsIDAsICh2b2lkICopIDAsICh2b2lkICopIDApOwoJCWFzc2VydF9wZXJy
+b3IoZXJybm8pOwoJCXJhaXNlKFNJR1NUT1ApOwoJCWFzc2VydF9wZXJyb3IoZXJybm8pOwoKCQlw
+cmludGYoIiVkOiB0aHJlYWQgbGVhZGVyXG4iLCBnZXRwaWQoKSk7CgkJdGhyZWFkX2xlYWRlcihO
+VUxMKTsKCX0KCgkvKiBXZSBhcmUgcGFyZW50IHRyYWNlciAqLwoJYXNzZXJ0KGNoaWxkID4gMCk7
+CgllcnJubyA9IDA7CgoJLyogQ2hpbGQgaGFzIHN0b3BwZWQgaXRzZWxmLCBjaGVja2luZyAqLwoJ
+cGlkID0gd2FpdHBpZChjaGlsZCwgJnN0YXR1cywgMCk7Cglhc3NlcnQocGlkID09IGNoaWxkKTsK
+CWFzc2VydChXSUZTVE9QUEVEIChzdGF0dXMpKTsKCWFzc2VydChXU1RPUFNJRyAoc3RhdHVzKSA9
+PSBTSUdTVE9QKTsKCglwdHJhY2UoUFRSQUNFX1NFVE9QVElPTlMsIGNoaWxkLCBOVUxMLAoJCVBU
+UkFDRV9PX1RSQUNFU1lTR09PRAoJCXwgUFRSQUNFX09fVFJBQ0VDTE9ORQoJCXwgUFRSQUNFX09f
+VFJBQ0VFWElUCgkJfCBQVFJBQ0VfT19UUkFDRUVYRUMpOwoJYXNzZXJ0X3BlcnJvcihlcnJubyk7
+CgoJcHRyYWNlKFBUUkFDRV9DT05ULCBjaGlsZCwgTlVMTCwgKHZvaWQgKikgMCk7Cglhc3NlcnRf
+cGVycm9yKGVycm5vKTsKCgkvKiBMZXQncyBqdXN0IGxvb2sgb24gdGhlIHJlc3VsdGluZyBzZXF1
+ZW5jZSBvZiBldmVudHMgKi8KCWZvciAoOzspIHsKCQlwaWRfdCBwaWQgPSB3YWl0cGlkKC0xLCAm
+c3RhdHVzLCBfX1dBTEwpOwoJCWlmIChwaWQgPD0gMCkgewoJCQlwcmludGYoIndhaXRwaWQgcmV0
+dXJuZWQgJWRcbiIsIHBpZCk7CgkJCXJldHVybjsKCQl9CgkJaWYgKFdJRlNUT1BQRUQoc3RhdHVz
+KSkgewoJCQlwcmludGYoIiVkOiBzdGF0dXM6JTA4eCBXSUZTVE9QUEVEIHNpZzolZCAoJXMpIGV2
+ZW50OiVzXG4iLAoJCQkJcGlkLCBzdGF0dXMsCgkJCQlXU1RPUFNJRyhzdGF0dXMpLCBzaWdfbmFt
+ZShXU1RPUFNJRyhzdGF0dXMpKSwKCQkJCWV2ZW50X25hbWUoc3RhdHVzKQoJCQkpOwoJCQlwdHJh
+Y2UoUFRSQUNFX0NPTlQsIHBpZCwgTlVMTCwgKHZvaWQgKikwKTsKCQkJYXNzZXJ0X3BlcnJvcihl
+cnJubyk7CgkJfQoJCWVsc2UgaWYgKFdJRkVYSVRFRChzdGF0dXMpKQoJCQlwcmludGYoIiVkOiBz
+dGF0dXM6JTA4eCBXSUZFWElURUQgZXhpdGNvZGU6JWRcbiIsCgkJCQlwaWQsIHN0YXR1cywgV0VY
+SVRTVEFUVVMoc3RhdHVzKSk7CgkJZWxzZSBpZiAoV0lGU0lHTkFMRUQoc3RhdHVzKSkKCQkJcHJp
+bnRmKCIlZDogc3RhdHVzOiUwOHggV0lGU0lHTkFMRUQgc2lnOiVkICglcylcbiIsCgkJCQlwaWQs
+IHN0YXR1cywgV1RFUk1TSUcoc3RhdHVzKSwgc2lnX25hbWUoV1RFUk1TSUcoc3RhdHVzKSkpOwoJ
+CWVsc2UKCQkJcHJpbnRmKCIlZDogc3RhdHVzOiUwOHggLSA/Pz9cbiIsCgkJCQlwaWQsIHN0YXR1
+cyk7Cgl9CgoJY2xlYW51cCgpOwp9CgppbnQKbWFpbihpbnQgYXJnYywgY2hhciAqKmFyZ3YpCnsK
+CXNldGJ1ZihzdGRvdXQsIE5VTEwpOwoKCWlmIChzdHJjbXAoYXJndlswXSwgImV4ZSIpID09IDAp
+CgkJdGhyZWFkX2xlYWRlcihOVUxMKTsKCiNpZiBkZWZpbmVkIERFRkFVTFRfVEVTVFRJTUUgfHwg
+ZGVmaW5lZCBERUZBVUxUX0xPT1BTCglpbnQgaTsKCWNoYXIgKmVudl90ZXN0dGltZSA9IGdldGVu
+digiVEVTVFRJTUUiKTsgIC8qIG1pc25vbWVyICovCglpbnQgdGVzdHRpbWUgPSAoZW52X3Rlc3R0
+aW1lID8gYXRvaShlbnZfdGVzdHRpbWUpIDogMSk7CiNlbmRpZgoKCWF0ZXhpdChjbGVhbnVwKTsK
+CXNpZ25hbChTSUdJTlQsIGhhbmRsZXJfZmFpbCk7CglzaWduYWwoU0lHQUJSVCwgaGFuZGxlcl9m
+YWlsKTsKCXNpZ25hbChTSUdBTFJNLCBoYW5kbGVyX2ZhaWwpOwoJdmVyYm9zZSA9IChhcmdjIC0g
+MSk7CgojaWYgZGVmaW5lZCBERUZBVUxUX1RFU1RUSU1FCgl0ZXN0dGltZSAqPSBERUZBVUxUX1RF
+U1RUSU1FOwoJZm9yKGkgPSAwOyBpIDwgdGVzdHRpbWU7IGkrKykgewoJCXRpbWVfdCB0ID0gdGlt
+ZShOVUxMKTsKCQl3aGlsZSAodCA9PSB0aW1lKE5VTEwpKQoJCXJlcHJvZHVjZSgpOwoJfQoJVkVS
+Qk9TRSgiXG4iKTsKI2VsaWYgZGVmaW5lZCBERUZBVUxUX0xPT1BTCgl0ZXN0dGltZSAqPSBERUZB
+VUxUX0xPT1BTOwoJZm9yKGkgPSAwOyBpIDwgdGVzdHRpbWU7IGkrKykKCQlyZXByb2R1Y2UoKTsK
+CVZFUkJPU0UoIlxuIik7CiNlbHNlCglyZXByb2R1Y2UoKTsKI2VuZGlmCgoJcmV0dXJuIDA7Cn0K
+--0016e6de044420e89604a48238e3--
