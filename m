@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab1E3Gqi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 02:46:38 -0400
-Received: from smtp.turknetserver.com ([193.192.122.40]:55953 "EHLO
-	smtp.turknetserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961Ab1E3Gqh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 02:46:37 -0400
-X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 May 2011 02:46:37 EDT
-Message-ID: <4DE33B90.60407@turknetserver.com>
-Date: Mon, 30 May 2011 09:39:12 +0300
-From: Tarkan Erimer <tarkan@turknetserver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0a2) Gecko/20110420 Thunderbird/3.3a4pre
+	id S1754481Ab1E3GoO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 02:44:14 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:60741 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751490Ab1E3GoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 02:44:13 -0400
+Date: Mon, 30 May 2011 08:43:57 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] small perf fix for v3.0-rc1
+Message-ID: <20110530064357.GA5911@elte.hu>
+References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.0-rc1
-References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com> <20110530020457.GA6494@kroah.com>
-In-Reply-To: <20110530020457.GA6494@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2011 05:04 AM, Greg KH wrote:
-> On Sun, May 29, 2011 at 06:30:32PM -0700, Linus Torvalds wrote:
->> Yay! Let the bikeshed painting discussions about version numbering
->> begin (or at least re-start).
->>
->> I decided to just bite the bullet, and call the next version 3.0. It
->> will get released close enough to the 20-year mark, which is excuse
->> enough for me, although honestly, the real reason is just that I can
->> no longe rcomfortably count as high as 40.
->>
->> The whole renumbering was discussed at last years Kernel Summit, and
->> there was a plan to take it up this year too. But let's face it -
->> what's the point of being in charge if you can't pick the bike shed
->> color without holding a referendum on it? So I'm just going all
->> alpha-male, and just renumbering it. You'll like it.
->>
->> Now, my alpha-maleness sadly does not actually extend to all the
->> scripts and Makefile rules, so the kernel is fighting back, and is
->> calling itself 3.0.0-rc1. We'll have the usual 6-7 weeks to wrestle it
->> into submission, and get scripts etc cleaned up, and the final release
->> should be just "3.0". The -stable team can use the third number for
->> their versioning.
-> Wonderful, I personally really appreciate this, as I think the numbering
-> sequence of the kernel affects me the most at times with the stable
-> work.
->
-> What kind of whiskey should I get for you in Tokyo.  Any
-> recommendations?
->
-> greg "happy as a clam" k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
-My suggestion is "Jack Daniel's Silver Select", if Linus desires of 
-course :-)
+Linus,
+
+Please pull the latest perf-urgent-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-urgent-for-linus
+
+I kept this one really simple, because AFAICS this is the first ever 
+3.0 pull request sent to you on lkml, and i do not want to go down in 
+history as the idiot who sent the first broken tree to you in this 
+new and exciting 3.0 kernel age! ;-)
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Steven Rostedt (1):
+      x86: Put back -pg to tsc.o and add no GCOV to vread_tsc_64.o
 
 
+ arch/x86/kernel/Makefile |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index f5abe3a..90b06d4 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -8,6 +8,7 @@ CPPFLAGS_vmlinux.lds += -U$(UTS_MACHINE)
+ 
+ ifdef CONFIG_FUNCTION_TRACER
+ # Do not profile debug and lowlevel utilities
++CFLAGS_REMOVE_tsc.o = -pg
+ CFLAGS_REMOVE_rtc.o = -pg
+ CFLAGS_REMOVE_paravirt-spinlocks.o = -pg
+ CFLAGS_REMOVE_pvclock.o = -pg
+@@ -28,6 +29,7 @@ CFLAGS_paravirt.o	:= $(nostackp)
+ GCOV_PROFILE_vsyscall_64.o	:= n
+ GCOV_PROFILE_hpet.o		:= n
+ GCOV_PROFILE_tsc.o		:= n
++GCOV_PROFILE_vread_tsc_64.o	:= n
+ GCOV_PROFILE_paravirt.o		:= n
+ 
+ # vread_tsc_64 is hot and should be fully optimized:
