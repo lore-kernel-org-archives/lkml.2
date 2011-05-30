@@ -1,55 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab1E3PQf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 11:16:35 -0400
+	id S1757339Ab1E3PQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 11:16:42 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:35885 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755385Ab1E3PQd (ORCPT
+	with ESMTP id S1757210Ab1E3PQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 11:16:33 -0400
+	Mon, 30 May 2011 11:16:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=NEgiKVvkkdjgs/pkmXReJBTk32UqeB5TdN2tct8wleg486wu0cH8Cywhs+inDWah4K
-         ze0xQr9UdLtG4jcnxmtgCoX/CGyuTOaa7shqAT8j859Honug6OBb8xYuYOKsZhZxDQuu
-         eaMoM0z+5eSJp2phJC86rcSENQO4Pg0VxMNJ0=
-From: David Ahern <dsahern@gmail.com>
-To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf script: fix display of IP address for non-callchain path
-Date: Mon, 30 May 2011 09:16:27 -0600
-Message-Id: <1306768587-15376-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=K+ZTosKmjtZE8BC27Yj6igLtV+vfVm0pS3GwRsCSx9d3zW12R+TOQbeuzueu3nuCc6
+         LILV8E1qckP0NNueKEQN5G9iX3h7SdhuLo4eHWoE/EZAAV9GqvT7yPX47adgB5ZZhMDw
+         a8edKEsgOLS5+l2zBLIb45b2TJh+EprF3dFHo=
+Date: Tue, 31 May 2011 00:16:33 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: fix special case -1 order check in compact_finished
+Message-ID: <20110530151633.GB1505@barrios-laptop>
+References: <20110530123831.GG20166@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110530123831.GG20166@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Non-callchain path is using al.addr which prints as:
-  openssl 14564 17672.003587:       7862d _x86_64_AES_encrypt_compact
+Sorry for breaking thread.
+I resend.
 
-This should be sample->ip to print as:
-  openssl 14564 17672.003587:  3f7867862d _x86_64_AES_encrypt_compact
+On Mon, May 30, 2011 at 02:38:31PM +0200, Michal Hocko wrote:
+> 56de7263 (mm: compaction: direct compact when a high-order allocation
+> fails) introduced a check for cc->order == -1 in compact_finished. We
+> should continue compacting in that case because the request came from
+> userspace and there is no particular order to compact for.
+> 
+> The check is, however, done after zone_watermark_ok which uses order as
+> a right hand argument for shifts. Not only watermark check is pointless
+> if we can break out without it but it also uses 1 << -1 which is not
+> well defined (at least from C standard). Let's move the -1 check above
+> zone_watermark_ok.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Cc: Mel Gorman <mgorman@suse.de>
+> ---
+>  compaction.c |   14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
+> Index: linus_tree/mm/compaction.c
+> ===================================================================
+> --- linus_tree.orig/mm/compaction.c	2011-05-30 14:19:58.000000000 +0200
+> +++ linus_tree/mm/compaction.c	2011-05-30 14:20:40.000000000 +0200
+> @@ -420,13 +420,6 @@ static int compact_finished(struct zone
+>  	if (cc->free_pfn <= cc->migrate_pfn)
+>  		return COMPACT_COMPLETE;
+>  
+> -	/* Compaction run is not finished if the watermark is not met */
+> -	watermark = low_wmark_pages(zone);
+> -	watermark += (1 << cc->order);
+> -
+> -	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
+> -		return COMPACT_CONTINUE;
+> -
+>  	/*
+>  	 * order == -1 is expected when compacting via
+>  	 * /proc/sys/vm/compact_memory
+> @@ -434,6 +427,13 @@ static int compact_finished(struct zone
+>  	if (cc->order == -1)
+>  		return COMPACT_CONTINUE;
+>  
+> +	/* Compaction run is not finished if the watermark is not met */
+> +	watermark = low_wmark_pages(zone);
+> +	watermark += (1 << cc->order);
+> +
+> +	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
+> +		return COMPACT_CONTINUE;
+> +
+>  	/* Direct compactor: Is a suitable page free? */
+>  	for (order = cc->order; order < MAX_ORDER; order++) {
+>  		/* Job done if page is free of the right migratetype */
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/util/session.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+It looks good to me.
+Let's think about another place, compaction_suitable.
+It has same problem so we can move the check right before zone_watermark_ok.
+As I look it more, I thought we need free pages for compaction so we would 
+be better to give up early if we can't get enough free pages. But I changed
+my mind. It's a totally user request and we can get free pages in migration
+progress(ex, other big memory hogger might free his big rss). 
+So my conclusion is that we should do *best effort* than early give up.
+If you agree with me, how about resending patch with compaction_suitable fix?
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index e6cf0e2..360d8c4 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1247,7 +1247,7 @@ void perf_session__print_ip(union perf_event *event,
- 		}
- 
- 	} else {
--		printf("%16" PRIx64, al.addr);
-+		printf("%16" PRIx64, sample->ip);
- 		if (print_sym) {
- 			if (al.sym && al.sym->name)
- 				symname = al.sym->name;
--- 
-1.7.5.2
 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> SUSE LINUX s.r.o.
+> Lihovarska 1060/12
+> 190 00 Praha 9    
+> Czech Republic
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
