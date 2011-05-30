@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab1E3PHz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 11:07:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:62354 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab1E3PHx (ORCPT
+	id S1756913Ab1E3PI6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 11:08:58 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:35494 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab1E3PI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 11:07:53 -0400
-X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=XYJHFtupD_QA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=HCBNgsfdGUPPDC8Y-sQA:9 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Mon, 30 May 2011 11:07:50 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Mon, 30 May 2011 11:08:56 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Michal Marek <mmarek@suse.cz>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.0-rc1
-Message-ID: <20110530150750.GD10792@home.goodmis.org>
-References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
- <201105300359.28515.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105300359.28515.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] kbuild: Fix <linux/version.h> for X.Y versions
+In-Reply-To: Your message of "Mon, 30 May 2011 16:50:50 +0200."
+             <1306767052-15593-3-git-send-email-mmarek@suse.cz>
+From: Valdis.Kletnieks@vt.edu
+References: <1306767052-15593-1-git-send-email-mmarek@suse.cz>
+            <1306767052-15593-3-git-send-email-mmarek@suse.cz>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1306768129_2897P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 30 May 2011 11:08:49 -0400
+Message-ID: <5164.1306768129@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020A.4DE3B302.0161,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 03:59:28AM +0200, Rafael J. Wysocki wrote:
-> > 
-> > So no ABI changes, no API changes,
-> 
-> Well, actually there is one. ;-)  The shutdown/suspend/resume callbacks have
-> been removed from struct sysdev_class and struct sysdev_driver.
+--==_Exmh_1306768129_2897P
+Content-Type: text/plain; charset=us-ascii
 
-And there's another one. The function tracer now allows different users
-to pick different functions to trace! We don't actually have any true
-users of that yet (perf will be the first, hopefully in 3.1), but it is
-a new feature.
+On Mon, 30 May 2011 16:50:50 +0200, Michal Marek said:
 
-> 
-> Not that this is important to anyone except for the 10 people or so who care,
-> but still. :-)
+> +	expr $(VERSION) \* 65536 + $(PATCHLEVEL) \* 256 + 0$(SUBLEVEL));    \
 
-I think you have 9 more people that care about your change than mine ;)
+expr isn't going to interpret that last field as octal, is it?
 
--- Steve
+--==_Exmh_1306768129_2897P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFN47MBcC3lWbTT17ARAjs8AKDuRh/ZlXbZuvJAx9aur73aDQAgNgCgqpe1
+oNA5NbC+ZtkyW6R9aAX6sGQ=
+=nC+B
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1306768129_2897P--
+
