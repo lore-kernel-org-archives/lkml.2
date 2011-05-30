@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab1E3LB6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 07:01:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44952 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756363Ab1E3LB5 (ORCPT
+	id S1756618Ab1E3LD0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 07:03:26 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:34852 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756431Ab1E3LDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 07:01:57 -0400
-Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
-From: David Woodhouse <dwmw2@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 30 May 2011 12:01:52 +0100
-In-Reply-To: <20110530102502.GC17821@elte.hu>
-References: <1306707270.2029.377.camel@i7.infradead.org>
-	 <20110530072300.GA9802@elte.hu>
-	 <1306745835.2029.389.camel@i7.infradead.org>
-	 <20110530091536.GA2827@elte.hu>
-	 <1306747629.2029.397.camel@i7.infradead.org>
-	 <20110530095333.GA8461@elte.hu>
-	 <1306750004.2029.413.camel@i7.infradead.org>
-	 <20110530102502.GC17821@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1306753314.2029.442.camel@i7.infradead.org>
+	Mon, 30 May 2011 07:03:24 -0400
+Date: Mon, 30 May 2011 13:02:09 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] thp: unbalanced parenthesis
+Message-ID: <20110530130209.7ea4d55d@absol.kitzblitz>
+In-Reply-To: <20110507205549.6bb0f49f@absol.kitzblitz>
+References: <20110507205549.6bb0f49f@absol.kitzblitz>
+Organization: -
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
+ AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
+ T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
+ ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
+ BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
+X-Mailer: Claws Mail (Linux)
 Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-30 at 12:25 +0200, Ingo Molnar wrote:
-> Oh, that needs fixing then.
+Cc'ed Andrea Arcangeli.
 
-Yeah, it was fixed in v2, which you should have received 15 minutes
-before sending your mail at 12:25 +0200? 
-
-> 	make ARCH=i386 oldconfig
-> 	make ARCH=x86_64 oldconfig
-> to switch a .config over from 32-bit to 64-bit. Please make sure this 
-> still works with your patch applied.
-
-Yes, that still works. The ARCH=i386 and ARCH=x86_64 behaviour should
-not have changed at all; this patch should *only* affect ARCH=x86
-behaviour (and make ARCH=x86 the default for x86 hosts, unless specified
-on the make command line).
-
--- 
-dwmw2
-
+* Nicolas Kaiser <nikai@nikai.net>:
+> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+> ---
+> Untested.
+> 
+>  include/asm-generic/pgtable.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+> index b4bfe33..b80daee 100644
+> --- a/include/asm-generic/pgtable.h
+> +++ b/include/asm-generic/pgtable.h
+> @@ -88,7 +88,7 @@ static inline pmd_t pmdp_get_and_clear(struct mm_struct *mm,
+>  	pmd_t pmd = *pmdp;
+>  	pmd_clear(mm, address, pmdp);
+>  	return pmd;
+> -})
+> +}
+>  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+>  #endif
+>  
