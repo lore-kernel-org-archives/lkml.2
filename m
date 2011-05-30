@@ -1,86 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab1E3Upv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 16:45:51 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:41536 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab1E3Upu (ORCPT
+	id S1757336Ab1E3UtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 16:49:19 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59361 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab1E3UtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 16:45:50 -0400
-Date: Mon, 30 May 2011 22:45:48 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Very high CPU values in top on idle system (3.0-rc1)
-Message-ID: <20110530204548.GA1762@x4.trippels.de>
-References: <20110530173916.GA1746@x4.trippels.de>
- <1306778743.23844.5.camel@twins>
- <20110530182356.GA1762@x4.trippels.de>
+	Mon, 30 May 2011 16:49:11 -0400
+Date: Mon, 30 May 2011 17:48:52 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: David Fries <david@fries.net>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: Re: [PATCH] rfcomm/core.c avoid dangling pointer, check session
+ exists
+Message-ID: <20110530204852.GE2556@joana>
+Mail-Followup-To: David Fries <david@fries.net>,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Marcel Holtmann <marcel@holtmann.org>
+References: <20110521190253.GA24600@spacedout.fries.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110530182356.GA1762@x4.trippels.de>
+In-Reply-To: <20110521190253.GA24600@spacedout.fries.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.05.30 at 20:23 +0200, Markus Trippelsdorf wrote:
-> On 2011.05.30 at 20:05 +0200, Peter Zijlstra wrote:
-> > On Mon, 2011-05-30 at 19:39 +0200, Markus Trippelsdorf wrote:
-> > > I get very high CPU values when I run 'top' on my (mostly) idle system
-> > > with 3.0-rc1. For example mpd was always in the 1-2% range and is now
-> > > constantly over 50%. 
-> > > 
-> > > This is caused by:
-> > > 
-> > > commit 317f394160e9beb97d19a84c39b7e5eb3d7815a8
-> > > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > Date:   Tue Apr 5 17:23:58 2011 +0200
-> > > 
-> > >     sched: Move the second half of ttwu() to the remote cpu
-> > > 
-> > > When I revert the above I see sane CPU values again.
-> > 
-> > So: echo NO_TTWU_QUEUE > /debug/sched_features, also cures it?
+Hi David,
+
+* David Fries <david@fries.net> [2011-05-21 14:02:53 -0500]:
+
+> rfcomm_process_sessions is calling rfcomm_process_rx, but
+> in this case the session is closed and freed leaving a
+> dangling pointer that blows up when rfcomm_process_rx returns
+> and rfcomm_process_dlcs is called with the now dangling session
+> pointer.  Check to see if the entry is still in the list.
 > 
-> Yes.
+> Signed-off-by: David Fries <David@Fries.net>
+> Cc: Marcel Holtmann <marcel@holtmann.org>
+> Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>
+> ---
+> I sent out an ealier patch,
+> Date: Mon, 21 Mar 2011 21:38:10 -0500
+> Subject: [PATCH] rfcomm/core.c avoid dangling pointer, check session
 > 
-> > What architecture, what .config, and can you see it with anything other
-> > than mpd (yum search mpd, only seems to result in mpd clients not the
-> > actual server).
+> That version added a return value to rfcomm_session_close to determine
+> if the session was closed.  I thought this would be cleaner.
 > 
-> Yes, mpd was just an example. _Every_ program that would normally show in
-> the 1-5% CPU range is now in the 30-70% range (X, xterm, etc.).
+> I can reproduce using blueman-manager on desktop, and Motorola S305 bluetooth
+> headset, 2.6.39, but it can take a few attempts.  Start out with the
+> desktop as the last device the S305 paired with.
+> desktop, connect to the S305,
+> S305, turn on
+> desktop (connection fails)
+> desktop (connection automatically comes up now that S305 is on)
+> desktop disconnect S305
+> desktop (kernel panic)
+> 
+> While rfcomm_process_sessions looks symmetrical,
+> rfcomm_session_hold(s);
+> rfcomm_process_rx
+> rfcomm_process_dlcs
+> rfcomm_session_put(s);
+> 
+> rfcomm_process_rx
+> if (sk->sk_state == BT_CLOSED) {
+>         if (!s->initiator)
+>                 rfcomm_session_put(s);
+>         rfcomm_session_close(s, sk->sk_err);
+> 
+> Which isn't symmetrical.  I don't know enough about the subsystem to
+> know if there is a better cleaner way to fix this, or if my patch is
+> the best solution.
+> 
+>  net/bluetooth/rfcomm/core.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
+> index c997393..ac47ef3 100644
+> --- a/net/bluetooth/rfcomm/core.c
+> +++ b/net/bluetooth/rfcomm/core.c
+> @@ -1952,6 +1952,12 @@ static inline void rfcomm_process_sessions(void)
+>  
+>  		default:
+>  			rfcomm_process_rx(s);
+> +			/* The current session can be closed as part of rx
+> +			 * in which case s is now dangling.  Check if it
+> +			 * has been removed.
+> +			 */
+> +			if(n->prev != p)
+> +				continue;
+>  			break;
+>  		}
 
-IOW:
+I don't like this, it's not the proper fix. So I'm trying to figure out this
+and fix it. Can you try this patch:
 
-% sudo echo TTWU_QUEUE >| /sys/kernel/debug/sched_features
-% top -b -n 1
-top - 22:40:38 up  1:46, 11 users,  load average: 0.00, 0.02, 0.05
-Tasks: 109 total,   1 running, 108 sleeping,   0 stopped,   0 zombie
-Cpu(s):  1.0%us,  0.9%sy,  0.0%ni, 98.0%id,  0.1%wa,  0.0%hi,  0.0%si,  0.0%st
-Mem:   8183132k total,  1365724k used,  6817408k free,     1632k buffers
-Swap:  2097148k total,        0k used,  2097148k free,   655208k cached
 
-  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
-  881 mpd       20   0  122m  20m 4832 S   74  0.3   4:25.22 mpd
- 1564 root      20   0 99428  40m 4716 S   36  0.5   3:36.15 X
- 1648 markus    20   0 1147m 340m  39m S   16  4.3   1:17.90 firefox-bin
- 1649 markus    20   0  237m  33m  17m S    6  0.4   1:02.31 konsole
-
-% sudo echo NO_TTWU_QUEUE >| /sys/kernel/debug/sched_features
-% top -b -n 1
-top - 22:42:07 up  1:48, 11 users,  load average: 0.00, 0.01, 0.05
-Tasks: 110 total,   1 running, 109 sleeping,   0 stopped,   0 zombie
-Cpu(s):  1.0%us,  0.9%sy,  0.0%ni, 98.0%id,  0.1%wa,  0.0%hi,  0.0%si,  0.0%st
-Mem:   8183132k total,  1377308k used,  6805824k free,     1632k buffers
-Swap:  2097148k total,        0k used,  2097148k free,   659896k cached
-
-  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
- 1649 markus    20   0  237m  33m  17m S    2  0.4   1:17.69 konsole
-    1 root      20   0   160   28   12 S    0  0.0   0:16.95 minit
-    2 root      20   0     0    0    0 S    0  0.0   0:00.36 kthreadd
-
+padovan bluetooth-next-2.6 $ git diff
+diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
+index 5759bb7..75c58ed 100644
+--- a/net/bluetooth/rfcomm/core.c
++++ b/net/bluetooth/rfcomm/core.c
+@@ -1958,6 +1958,9 @@ static inline void rfcomm_process_sessions(void)
+                        break;
+                }
+ 
++               if (s->sock->sk->sk_state == BT_CLOSED)
++                       continue;
++
+                rfcomm_process_dlcs(s);
+ 
+                rfcomm_session_put(s);
 
 -- 
-Markus
+Gustavo F. Padovan
+http://profusion.mobi
