@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab1E3KhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 06:37:16 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:45291 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab1E3KhO (ORCPT
+	id S1753923Ab1E3KkY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 06:40:24 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47051 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab1E3KkX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 06:37:14 -0400
+	Mon, 30 May 2011 06:40:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=e6ZVSM8IRr+3EjP6Yw9+Z6qMp2uC11PUTPwidrrUKo0FfYJB07eF9MDF2dxYFv8MKB
-         gAWeqBmlfT5Tl1OJ8UYLBenms0pUVhNMwlwfMoUov/7T21yyfqGT4SfXOGFYranelyKR
-         C4sko1nSF93CU68XbAJ/D7F/xU7b3+aWV0oWY=
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:content-type
+         :content-transfer-encoding;
+        b=qWAm8ayZwYAzJWeVVdDIPfl3axpi90FrF7uGqq0Yf/GfwFMy+Q2bfgTEbn53qpg9xI
+         Eu20tJXNPBjSBwvbwJCKKWjUF8RlHWrb4GVu0Mvibt06b+wfnRWPLC7Iwgc8vUKym0kl
+         6TfPlfEbZRlUnEOTsajhVBXtPIRsjlJoZxVRY=
 MIME-Version: 1.0
-In-Reply-To: <BANLkTik3E1_7w9fnkRPLL+FC=97gvOFmJg@mail.gmail.com>
-References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
-	<20110530020457.GA6494@kroah.com>
-	<buofwnwjzak.fsf@dhlpc061.dev.necel.com>
-	<BANLkTik3E1_7w9fnkRPLL+FC=97gvOFmJg@mail.gmail.com>
-Date: Mon, 30 May 2011 13:37:13 +0300
-X-Google-Sender-Auth: 591BxK7fG-bxPuJ9lQy9pSpKxxU
-Message-ID: <BANLkTikGb2cjHTiNgJLdsbOWhHSPtYNy9g@mail.gmail.com>
-Subject: Re: Linux 3.0-rc1
-From: Pekka Enberg <penberg@kernel.org>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: Miles Bader <miles@gnu.org>, Greg KH <greg@kroah.com>,
+In-Reply-To: <20110530075924.GE6720@liondog.tnic>
+References: <cover.1306724657.git.luto@mit.edu> <dbaa4069dec9bae213e136ff6e045236b3396b87.1306724657.git.luto@mit.edu>
+ <20110530075924.GE6720@liondog.tnic>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 30 May 2011 06:40:03 -0400
+X-Google-Sender-Auth: JkI0hqZz-_OkV9nj4o-KeQ7Jjzw
+Message-ID: <BANLkTi=5DK7XUwQZvC8tSM4vXu5LObBHjQ@mail.gmail.com>
+Subject: Re: [PATCH v2 10/10] x86-64: Document some of entry_64.S
+To: Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@mit.edu>,
+        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 1:09 PM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
-> Greg, please do NOT give strong alcohol to Linus, jutt give some beer
-> if yolu like. We want him to be on keyboarrd, and comment if something
-> is wromg.
+On Mon, May 30, 2011 at 3:59 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Sun, May 29, 2011 at 11:48:47PM -0400, Andy Lutomirski wrote:
+>> Signed-off-by: Andy Lutomirski <luto@mit.edu>
+>
+> Oh yeah!
+>
+> Acked-by: Borislav Petkov <bp@alien8.de>
+>
+>> +The x86 architecture has quite a few different ways to jump into
+>> +kernel code.  Most of these entry points are registered in
+>> +arch/x86/kernel/traps.c and implemented in arch/x86/kernel/entry_64.S
+>
+> and arch/x86/ia32/ia32entry.S
 
-Wouldn't it be best that Greg doesn't give strong alcohol to any Linux
-maintainer until 3.0 is out just to be safe?
+I was hedging by saying "most".  Will fix.
+
+>> +
+>> +There are a few complexities here.  The different x86-64 entries have
+>> +different calling conventions.  The syscall and sysenter instructions
+>> +have their own peculiar calling conventions.  Some of the IDT entries
+>> +push an error code onto the stack; others don't.  IDT entries using
+>> +the IST alternative stack mechanism need their own magic to get the
+>> +stack frames right.  (You can find some documentation in the Intel
+>> +SDM, Volume 3, Chapter 6.)
+>
+> and the AMD APM Volume 2, Chapter 8.
+
+Of course.  I think I like that version even better.  Page 243 is a
+great summary.
+
+(And whose idea was it to have pushing the error code be optional?)
+
+
+--Andy
