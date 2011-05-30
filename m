@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab1E3IRX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 04:17:23 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:43236 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755707Ab1E3IRV (ORCPT
+	id S1756426Ab1E3IRb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 04:17:31 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12737 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756303Ab1E3IR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 04:17:21 -0400
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Greg KH'" <gregkh@suse.de>
-Cc: "'Alan Cox'" <alan@linux.intel.com>, <linux-kernel@vger.kernel.org>,
-        <linux-serial@vger.kernel.org>, <qi.wang@intel.com>,
-        <yong.y.wang@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>, <toshiharu-linux@dsn.okisemi.com>
-References: <1306741324-4562-1-git-send-email-tomoya-linux@dsn.okisemi.com> <20110530074722.GA7947@suse.de>
-Subject: RE: [PATCH] 8250_pci: add -ENODEV code for Intel EG20T PCH
-Date: Mon, 30 May 2011 17:17:19 +0900
-Message-ID: <346D35FD8BD841329CFDA7803DDB899E@hacdom.okisemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcwenbTdqq1H3weGQvy9Xx/lbjyo3QAAJKRA
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-In-Reply-To: <20110530074722.GA7947@suse.de>
+	Mon, 30 May 2011 04:17:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 30 May 2011 01:17:27 -0700
+From: Jin Park <jinyoungp@nvidia.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Jin Park <jinyoungp@nvidia.com>
+Subject: [PATCH 0/1] Submitting aat2870 driver
+Date: Mon, 30 May 2011 17:17:31 +0900
+Message-Id: <1306743452-26386-1-git-send-email-jinyoungp@nvidia.com>
+X-Mailer: git-send-email 1.7.1
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 30, 2011 4:47 PM,  Greg KH wrote:
+Hi, Samuel
 
-> Why put this with an #if around it? 
-> Why not just always not 
-> bind to this driver as we have a "correct" driver for the 
-> hardware now?
+I would like to contribute my driver to Linux Kernel.
+The driver is for AnalogicTech AAT2870 and include backlight, regulator
+and mfd driver.
+It was written by me and verified on NVIDIA Tegra platform.
+And following patches are based on for-next branch in your repository.
+(git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6.git)
+Please review my driver.
 
-Let me clarify your saying.
-Which does your saying mean,  (1) or (2) or else?
+Thanks,
+Jin Park.
 
-(1)
-> +#if defined(CONFIG_SERIAL_PCH_UART) || defined(CONFIG_SERIAL_PCH_UART_MODULE)
-> +		return -ENODEV;
-> +#endif
+Jin Park (1):
+  aat2870: Adding backlight, regulator and mfd driver
 
-(2)
-> +	if ((dev->vendor == PCI_VENDOR_ID_INTEL && dev->device == 0x8811) ||
-> +	   (dev->vendor == PCI_VENDOR_ID_INTEL && dev->device == 0x8812) ||
-> +	   (dev->vendor == PCI_VENDOR_ID_INTEL && dev->device == 0x8813) ||
-> +	   (dev->vendor == PCI_VENDOR_ID_INTEL && dev->device == 0x8814) ||
-> +	   (dev->vendor == 0x10DB && dev->device == 0x8027) ||
-> +	   (dev->vendor == 0x10DB && dev->device == 0x8028) ||
-> +	   (dev->vendor == 0x10DB && dev->device == 0x8029) ||
-> +	   (dev->vendor == 0x10DB && dev->device == 0x800C) ||
-> +	   (dev->vendor == 0x10DB && dev->device == 0x800D))
-> +		return -ENODEV;
-
-With Best Regards,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+ drivers/mfd/Kconfig                   |    7 +
+ drivers/mfd/Makefile                  |    1 +
+ drivers/mfd/aat2870-core.c            |  532 +++++++++++++++++++++++++++++++++
+ drivers/regulator/Kconfig             |    7 +
+ drivers/regulator/Makefile            |    1 +
+ drivers/regulator/aat2870-regulator.c |  265 ++++++++++++++++
+ drivers/video/backlight/Kconfig       |    7 +
+ drivers/video/backlight/Makefile      |    1 +
+ drivers/video/backlight/aat2870_bl.c  |  246 +++++++++++++++
+ include/linux/mfd/aat2870.h           |  182 +++++++++++
+ 10 files changed, 1249 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/aat2870-core.c
+ create mode 100644 drivers/regulator/aat2870-regulator.c
+ create mode 100644 drivers/video/backlight/aat2870_bl.c
+ create mode 100644 include/linux/mfd/aat2870.h
 
