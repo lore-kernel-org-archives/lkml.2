@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab1E3J5A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 05:57:00 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58058 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab1E3J46 (ORCPT
+	id S1755833Ab1E3KAt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 06:00:49 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:15066
+	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752105Ab1E3KAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 05:56:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=d9NywqbwzE+PirzmFQ5Oi6+/hZ83i91VC7I48DsknR7FCDLVb3utO9QkfUdNOAFihD
-         J5U3KrV1es1M0qkveeUp6/q42F4eeZRv8/8Yk3vLlMz067UWLWbNgy/Dr8M9L0pa0GwO
-         gXcBLTuvTsu2nLopSfz7Jnm3sSOakP7bDAeOw=
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-To: linux-usb@vger.kernel.org
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Subject: [PATCH] [RFC] usb: Broaden range of vendor codes for xhci
-Date: Mon, 30 May 2011 11:56:46 +0200
-Message-Id: <1306749406-21124-1-git-send-email-m.b.lankhorst@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Mon, 30 May 2011 06:00:47 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LM06H5-02-0U8-02
+X-M-MSG: 
+Date: Mon, 30 May 2011 12:00:39 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sourceforge.net" 
+	<oprofile-list@lists.sourceforge.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL] oprofile fixes for v2.6.40
+Message-ID: <20110530100039.GB20052@erda.amd.com>
+References: <20110526133948.GX20052@erda.amd.com>
+ <20110527122301.GA32754@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110527122301.GA32754@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My asrock P67 chipset sends code 192 on device reset. Allowing >= 192 to be treated as success fixes it, and allows me to use my USB3 port.
+On 27.05.11 08:23:01, Ingo Molnar wrote:
+> 
+> * Robert Richter <robert.richter@amd.com> wrote:
+> 
+> > Robert Richter (1):
+> >       oprofile, x86: Enable preemption during pci device setup in IBS init
+> 
+> I'm wondering about this bit, as from a preempt_enable()/disable() 
+> pattern POV it looks bogus. It does:
+> 
+>         preempt_disable();
+>         for (offset = 1; offset < APIC_EILVT_NR_MAX; offset++) {
+>                 if (get_eilvt(offset))
+>                         break;
+>         }
+>         preempt_enable();
+> 
+> 	...
+> 
+> 
+> 	ret = setup_ibs_ctl(offset);
+> 
+> So whatever condition it established at the get_eilvt() stage might 
+> not be valid at the setup_ibs_ctl() point: we might be on a different 
+> CPU.
+> 
+> Or are the IBS MSRs (which get twiddled in get_eilvt() absolutely 
+> symmetric across all CPUs, thus making this a preempt invariant 
+> thing? In that case we'd at least need a big fat comment in the code 
+> as it's not obvious at all ...
 
-Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+The MSRC001_103A (IBS Control Register) register contains the LVT
+offset. It is a per-node msr and a read-only copy of F3x1CC (pci
+device register). The offset must be valid (bit set) and not yet taken
+by another vector (kernel keeps track of it in eilvt_offsets).  Though
+offsets must be the same on all nodes, the kernel implementation uses
+same offsets on all cores of the system.
 
----
-There still appears to be a possible regression though. I can't currently use my usb headset, but since my xhci port never worked, I can't tell for sure if it ever worked.
+The BIOS is responsible to setup the vector. If the vector in IBS_CTL
+is invalid or already taken, we reassign a different offset in
+force_ibs_eilvt_setup() (family 10h only).
 
-Resending, forgot to add relevant maintainers.
----
- drivers/usb/host/xhci-ring.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+In get_eilvt()/setup_APIC_eilvt() there are reads and writes to the
+local apic. Preemption must be disabled to not be switched to another
+cpu in the middle of a sequence.
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 7437386..f8b9f79 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1464,7 +1464,7 @@ static int xhci_requires_manual_halt_cleanup(struct xhci_hcd *xhci,
- 
- int xhci_is_vendor_info_code(struct xhci_hcd *xhci, unsigned int trb_comp_code)
- {
--	if (trb_comp_code >= 224 && trb_comp_code <= 255) {
-+	if (trb_comp_code >= 192 && trb_comp_code <= 255) {
- 		/* Vendor defined "informational" completion code,
- 		 * treat as not-an-error.
- 		 */
+> But i really do not see how this can work. get_eilvt() twiddles the 
+> APIC LVT of this current CPU. Does IBS only activate on a single CPU? 
+> How will this LVT entry be cleared on deinit?
+
+This is done on the current cpu to get the offset which is then used
+on all cpus of the system. The actually per-core setup for ibs is in
+op_amd_setup_ctrs(). Deinit is in op_amd_cpu_shutdown().
+
+-Robert
+
 -- 
-1.7.4.1
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
