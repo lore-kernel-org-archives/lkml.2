@@ -1,85 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701Ab1E3LWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 07:22:51 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:55921 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751086Ab1E3LWu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 07:22:50 -0400
-From: Xiangliang Yu <yuxiangl@marvell.com>
-To: Greg KH <greg@kroah.com>
-CC: "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jacky Feng <jfeng@marvell.com>
-Date: Mon, 30 May 2011 04:22:40 -0700
-Subject: RE: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
- coalescing to device 	attributes in sysfs
-Thread-Topic: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
- coalescing to device 	attributes in sysfs
-Thread-Index: AcwenV27D2LO2dQyRH6cFCcgI0x7UgABQ+cg
-Message-ID: <F766E4F80769BD478052FB6533FA745D19FAD84CD9@SC-VEXCH4.marvell.com>
-References: <mvsas-intr-coal>
- <1306247507-6136-1-git-send-email-yxlraid@gmail.com>
- <20110526021809.GA22496@kroah.com>
- <F766E4F80769BD478052FB6533FA745D19FAD846E0@SC-VEXCH4.marvell.com>
- <20110526141430.GD4164@kroah.com>
- <F766E4F80769BD478052FB6533FA745D19FAD848FB@SC-VEXCH4.marvell.com>
- <20110527073302.GA16178@kroah.com>
- <F766E4F80769BD478052FB6533FA745D19FAD84C40@SC-VEXCH4.marvell.com>
- <20110530074508.GB7806@kroah.com>
-In-Reply-To: <20110530074508.GB7806@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1756646Ab1E3LV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 07:21:58 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:39331 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751332Ab1E3LV4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 07:21:56 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: Alan Cox <alan@linux.intel.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH v2] 8250_pci: add -ENODEV code for Intel EG20T PCH
+Date: Mon, 30 May 2011 20:26:16 +0900
+Message-Id: <1306754776-8077-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Intel EG20T PCH has UART device which is compatible with 8250.
+Currently, with general configuration, the PCH UART driver is not loaded but
+8250 standard driver is loaded.
+Therefore, in case of using PCH UART driver, need to disable 8250 pci function.
+However, this procedure is not best solution.
 
->> >> +What:          /sys/devices/pci/<devices>/<dev>/host/scsi_host/host/interrupt_coalescing
->> >> +Date:          May 2011
->> >> +Kernel Version:        2.6.39
->> 
->> >2.6.39 was released already, is this file in that release?
->> Yes.
+This patch, in 8250_pci, if the device is the PCH or the family IOH,
+'-ENODEV' is returned.
+As a result, disabling 8250-pci processing becomes unnecessary.
 
->How, doesn't your patch below implement that option?  How can it already
->be in the .39 kernel?
-oh, that is my fault, I read the README and find out the misunderstanding of Kernel
-Version. How about 2.6.40?
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+V2: Delete #ifdef CONFIG_SERIAL_PCH_UART ~ #endif
+    Use quirk table structure
+---
+ drivers/tty/serial/8250_pci.c |   54 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 54 insertions(+), 0 deletions(-)
 
->> >> +Contact:       yuxiangl@marvell.com
->> >> +Description:   Determines the maximum time the 88SE94XX waits after the occurrence of a
->> >> +               Command Done before generating an interrupt.The maximum number of the 
->> >> +               variable is less than 0x10000.
->> 
->> >Why would a user, or anyone else, ever want to be able to change this?
->> Because different platform can get better performance by setting different value
+diff --git a/drivers/tty/serial/8250_pci.c b/drivers/tty/serial/8250_pci.c
+index 738cec9..39c0d62 100644
+--- a/drivers/tty/serial/8250_pci.c
++++ b/drivers/tty/serial/8250_pci.c
+@@ -2541,6 +2541,53 @@ void pciserial_resume_ports(struct serial_private *priv)
+ }
+ EXPORT_SYMBOL_GPL(pciserial_resume_ports);
+ 
++static struct pci_serial_quirk eg20t_pch_uart[] __refdata = {
++	{
++		.vendor         = PCI_VENDOR_ID_INTEL,
++		.device         = 0x8811,
++	},
++	{
++		.vendor         = PCI_VENDOR_ID_INTEL,
++		.device         = 0x8812,
++	},
++	{
++		.vendor         = PCI_VENDOR_ID_INTEL,
++		.device         = 0x8813,
++	},
++	{
++		.vendor         = PCI_VENDOR_ID_INTEL,
++		.device         = 0x8814,
++	},
++	{
++		.vendor         = 0x10DB,
++		.device         = 0x8027,
++	},
++	{
++		.vendor         = 0x10DB,
++		.device         = 0x8028,
++	},
++	{
++		.vendor         = 0x10DB,
++		.device         = 0x8029,
++	},
++	{
++		.vendor         = 0x10DB,
++		.device         = 0x800C,
++	},
++	{
++		.vendor         = 0x10DB,
++		.device         = 0x800D,
++	},
++	{
++		.vendor         = 0x10DB,
++		.device         = 0x800D,
++	},
++	{
++		.vendor         = PCI_ANY_ID,
++		.device         = PCI_ANY_ID,
++	},
++};
++
+ /*
+  * Probe one serial board.  Unfortunately, there is no rhyme nor reason
+  * to the arrangement of serial ports on a PCI card.
+@@ -2552,6 +2599,7 @@ pciserial_init_one(struct pci_dev *dev, const struct pci_device_id *ent)
+ 	const struct pciserial_board *board;
+ 	struct pciserial_board tmp;
+ 	int rc;
++	int i;
+ 
+ 	if (ent->driver_data >= ARRAY_SIZE(pci_boards)) {
+ 		printk(KERN_ERR "pci_init_one: invalid driver_data: %ld\n",
+@@ -2559,6 +2607,12 @@ pciserial_init_one(struct pci_dev *dev, const struct pci_device_id *ent)
+ 		return -EINVAL;
+ 	}
+ 
++	for (i = 0; eg20t_pch_uart[i].vendor != PCI_ANY_ID; i++) {
++		if (dev->vendor == eg20t_pch_uart[i].vendor &&
++		    dev->device == eg20t_pch_uart[i].device)
++			return -ENODEV;
++	}
++
+ 	board = &pci_boards[ent->driver_data];
+ 
+ 	rc = pci_enable_device(dev);
+-- 
+1.7.4
 
->Then you need to document _how_ to do this tuning, and why someone would
->want to, and lots of other stuff.  Don't just blindly let userspace
->change a value that they know nothing about.
-How about this HOW_TO: you can get a better I/O throughput by decreasing the value of Interrupt coalescing, or you can get a better CPU think time if you increase the value. 
-
->> >Why wouldn't this just be something that the driver handles
-> >>automagically so the user never has to worry about it at all?
-> >>As for now, driver can't do it. The value need to be test, and get the best.
->Why don't you test it and set it to the proper value now?  What would
->change in a user's system that require this to be changed?  Size of the
->machine?  Number of disks?  Something else?
->It really should be automatic, people do not ever want to have to
->manually tune their machines anymore they should be smart enough to
->determine the load on them and make the changes without any user needing
->to do it for them.
-The default value is best for normal situation, but sometime user need to tune
-The value. For example, the system has more than 16 SATA SSD disks, CPU need more time to schedule other jobs while running I/O, but the user want to do lots of other jobs at the same time, so, the user can write a bigger number to the sysfs, the CPU can execute other jobs more quickly. This is a balance
-between CPU think time and I/O throughput. But the value is depend on the system environment, like as: disk number, what kind of platform, etc. Actually, the most important reason for tuning is what the user want, I/O throughput or think time.
-By default, the value don't need to be changed.
