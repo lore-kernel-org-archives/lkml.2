@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab1E3A3I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 20:29:08 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51591 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab1E3A3H (ORCPT
+	id S1752207Ab1E3Afb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 20:35:31 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55643 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab1E3Afa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 20:29:07 -0400
+	Sun, 29 May 2011 20:35:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=jPoTlarGgMGbPW+vX1mvrhuh+svRkmhGaBKHF4SBFx79cKCE4fteBOtuEj3iMp4kLe
-         uddEmkQniPjhvn+3hZhR7dNSBEGFKmtYl9s6tlcEmXuRkxDLAY0VfvBCLwKzkmaLGbPR
-         jgyKkQ6MvFFrj7N7OJmRj3cy8Ajgm0CQAVpew=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=fc/lF9aqUipz8Y3YxbnpnrTR1Gn39Q+fG3PBZsjbZUFB4XRs5Zr9k65qNXdP5LFxsg
+         +0rbI4X82Oo8QDcri0yXaAdHzaZYWM+Whrhe8kYzrZlWwkKByl2q2bCmouTwZ8UTMLGH
+         ooHTsnIO5o4Y5XWoCYbATJsI+qB/1hmaXlMug=
 MIME-Version: 1.0
-In-Reply-To: <BANLkTim8ngH8ASTk9js-G9DxySWVb7VL3A@mail.gmail.com>
-References: <BANLkTinptn4-+u+jgOr2vf2iuiVS3mmYXA@mail.gmail.com>
- <BANLkTimDtpVeLYisfon7g_=H80D0XXgkGQ@mail.gmail.com> <BANLkTim8ngH8ASTk9js-G9DxySWVb7VL3A@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sun, 29 May 2011 20:28:46 -0400
-X-Google-Sender-Auth: 3kEtenRV7EhPU0uSv8u5XHy-0FI
-Message-ID: <BANLkTim67zDojKPezhyAM=rzt-Mop1SFeg@mail.gmail.com>
-Subject: Re: Easy portable testcase! (Re: Kernel falls apart under light
- memory pressure (i.e. linking vmlinux))
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: mgorman@suse.de, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        aarcange@redhat.com, kamezawa.hiroyu@jp.fujitsu.com,
-        fengguang.wu@intel.com, andi@firstfloor.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, hannes@cmpxchg.org, riel@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1306701498-10846-1-git-send-email-cesarb@cesarb.net>
+References: <1306701498-10846-1-git-send-email-cesarb@cesarb.net>
+Date: Mon, 30 May 2011 09:35:29 +0900
+Message-ID: <BANLkTikX+dKsdwGOxG10Q2LVd_rCxEBRHw@mail.gmail.com>
+Subject: Re: [PATCH] cleancache: use __read_mostly for cleancache_enabled
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-mm@kvack.org, Jan Beulich <JBeulich@novell.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger@sun.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 2:28 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
->>
->> It works only if the zone meets high watermark. If allocation is
->> faster than reclaim(ie, it's true for slow swap device), the zone
->> would remain congested.
->> It means swapout would block.
->> As we see the OOM log, we can know that DMA32 zone can't meet high watermark.
->>
->> Does my guessing make sense?
+On Mon, May 30, 2011 at 5:38 AM, Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+> The global variable cleancache_enabled is read often but written to
+> rarely. Use __read_mostly to prevent it being on the same cacheline as
+> another variable which is written to often, which would cause cacheline
+> bouncing.
 >
-> Hi Andrew.
-> I got failed your scenario in my machine so could you be willing to
-> test this patch for proving my above scenario?
-> The patch is just revert patch of 0e093d99[do not sleep on the
-> congestion queue...] for 2.6.38.6.
-> I would like to test it for proving my above zone congestion scenario.
->
-> I did it based on 2.6.38.6 for your easy apply so you must apply it
-> cleanly on vanilla v2.6.38.6.
-> And you have to add !pgdat_balanced and shrink_slab patch.
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-No, because my laptop just decided that it doesn't like to turn on. :(
 
-I'll test it on my VM on Tuesday and (fingers crossed) on my repaired
-laptop next weekend.
-
---Andy
+-- 
+Kind regards,
+Minchan Kim
