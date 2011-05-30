@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab1E3NHf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 09:07:35 -0400
-Received: from gretna.indigovision.com ([62.7.85.227]:54131 "EHLO
-	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab1E3NHe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 09:07:34 -0400
-From: Bruce Stenning <b.stenning@indigovision.com>
-To: Mark Lord <kernel@teksavvy.com>
-CC: Tejun Heo <htejun@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Date: Mon, 30 May 2011 14:07:31 +0100
-Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Thread-Index: AcwbKuYKuEMMBBI3QCqRDVctVjsW1wDn4MGw
-Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32C7777DD92@gretna.indigovision.com>
-References: <20110423005610.GC1576@mtj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C775549E4@gretna.indigovision.com>
- <20110425162242.GB30828@mtj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C77554BDC@gretna.indigovision.com>
- <20110426135027.GI878@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com>
- <20110426155229.GM878@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C77554C91@gretna.indigovision.com>
- <20110430140109.GJ29280@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com>
- <20110525094127.GF10146@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C7770967B@gretna.indigovision.com>
- <4DDD823F.5090904@teksavvy.com>
-In-Reply-To: <4DDD823F.5090904@teksavvy.com>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="utf-8"
+	id S1756797Ab1E3NJv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 09:09:51 -0400
+Received: from verein.lst.de ([213.95.11.211]:37460 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755882Ab1E3NJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 09:09:50 -0400
+Date: Mon, 30 May 2011 15:09:49 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        Andy Grover <agrover@redhat.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] iscsi-target: Merge for .40-rc1
+Message-ID: <20110530130949.GB13494@lst.de>
+References: <1306551592.23461.506.camel@haakon2.linux-iscsi.org> <BANLkTimt5qisV7EH7NMv1tG8gR_9d-kA3g@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimt5qisV7EH7NMv1tG8gR_9d-kA3g@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p4UD7jv6001286
 
-> > Mark, did you get a chance to clean up the sata_mv spinlock addition in
-> > mv_set_main_irq_mask?
->
-> Not yet.  I've been waiting to hear back from you as to
-> whether they visibly fix anything or not.
+On Sun, May 29, 2011 at 11:49:08AM -0700, Linus Torvalds wrote:
+> I don't feel confident or motivated enough about iscsi-target, so
+> after some (little) thought I ended up not pulling this. I really need
+> a lot of acks from people who actually work on and care about SCSI,
+> and right now I feel like with me being away for the next week, I
+> can't handle it.
+> 
+> I just don't want to be in the situation where I pull something that
+> is apparently contentious in the SCSI space in general, but that's
+> _particularly_ true this release. So I'm afraid that this essentially
+> got pushed out to the next release.
 
-Having now tested with Tejun's two patches and without the spinlock in
-mv_set_main_irq_mask for a reasonable time, the hotplug seems to be very
-reliable.  So I think it's probably best to leave the spinlock out and
-continue to observe the behaviour with further testing.
+The main contention right now is wether to put the authentification
+into kernel space or not.  Doing the slow path in userspace worked
+out okay but not great on the initiator, but it has the potential
+to become a nightmare worse than oprofile if the split ends up not
+beeing perfect.
 
-Thanks,
-Bruce.
+Given that we pretty well tested and working code that's used in lots
+of production setups my vote is for taking it as-is unless someone can
+actually show a prototype for a nicely working user/kernel split.
 
-
-Latest News at: http://www.indigovision.com/index.php/en/news.html
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
