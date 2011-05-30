@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab1E3NPI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 09:15:08 -0400
-Received: from lo.gmane.org ([80.91.229.12]:52288 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753986Ab1E3NPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 09:15:06 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Camille Moncelier <camille@moncelier.fr>
-Subject: Re: Linux 3.0-rc1
-Date: Mon, 30 May 2011 15:38:26 +0200
-Message-ID: <20110530153826.456c63f8@rasalhague>
-References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 93.182.239.239
-X-Newsreader: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
+	id S1753000Ab1E3Njx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 09:39:53 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51024 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab1E3Njw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 09:39:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=pMpyAssyzoSqOnQMmi0pNFtdZmmKBughhxF89GAoH/J95Vhpys5hWvqg0IH73fAwWp
+         hQihuh4mNNh+R09X5vmLHRN3Arg6rTLDxB+DqcsISe63aNFDDSgvEMn7gneBIcJoqNoR
+         f6GsYDL7GMDe6uZ1ZggYpSpM2RINT5WBAUJ/k=
+MIME-Version: 1.0
+Date: Mon, 30 May 2011 21:39:50 +0800
+Message-ID: <BANLkTimfOsJ91_PJdB5-H02EGS0S5eJ5cA@mail.gmail.com>
+Subject: [PATCH] sched: fix rt_nr_migratory corruption raised in push_rt_task()
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 29 May 2011 18:30:32 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
-> I decided to just bite the bullet, and call the next version 3.0. It
-> will get released close enough to the 20-year mark, which is excuse
-> enough for me, although honestly, the real reason is just that I can
-> no longe rcomfortably count as high as 40.
+When pushing, if a pushable task could not be pushed, it is dequeued with no
+updating the rt_nr_migratory element of RT run-queue, then rt_nr_migratory is
+corrupted, which is fixed by removing the dequeue operation.
 
-So, this is a <odd>.x.y release right ? According to you the schedule
-was:
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
+ kernel/sched_rt.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-> - 2.6.<odd>: still a stable kernel, but accept bigger changes leading
->   up to it (timeframe: a month or two).
-> - 2.<odd>.x: aim for big changes that may destabilize the kernel for 
->   several releases (timeframe: a year or two)
-> - <odd>.x.x: Linus went crazy, broke absolutely _everything_, and
->   rewrote the kernel to be a microkernel using a special
->   message-passing version of Visual Basic. (timeframe: "we expect that
->   he will be released from the mental institution in a decade or
->   two").
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index 88725c9..496e06a 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -1378,6 +1378,7 @@ static int push_rt_task(struct rq *rq)
+ {
+ 	struct task_struct *next_task;
+ 	struct rq *lowest_rq;
++	int ret = 1;
 
-Then the big question is where's that microkernel stuff you promised ?
-Does the travel you are planning next week has anything to do with the
-mental institution ?
+ 	if (!rq->rt.overloaded)
+ 		return 0;
+@@ -1425,7 +1426,7 @@ retry:
+ 			 * since the other cpus will pull from us when they
+ 			 * are ready.
+ 			 */
+-			dequeue_pushable_task(rq, next_task);
++			ret = 0;
+ 			goto out;
+ 		}
 
+@@ -1452,7 +1453,7 @@ retry:
+ out:
+ 	put_task_struct(next_task);
 
+-	return 1;
++	return ret;
+ }
 
+ static void push_rt_tasks(struct rq *rq)
