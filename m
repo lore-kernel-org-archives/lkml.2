@@ -1,181 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab1E3HWg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 03:22:36 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:56759 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754725Ab1E3HWe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 03:22:34 -0400
-Message-ID: <4DE345B0.8020505@in.ibm.com>
-Date: Mon, 30 May 2011 12:52:24 +0530
-From: Suzuki Poulose <suzuki@in.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1755002Ab1E3HXL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 03:23:11 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33484 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754288Ab1E3HXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 03:23:09 -0400
+Date: Mon, 30 May 2011 09:23:00 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
+Message-ID: <20110530072300.GA9802@elte.hu>
+References: <1306707270.2029.377.camel@i7.infradead.org>
 MIME-Version: 1.0
-To: linux ppc dev <linuxppc-dev@lists.ozlabs.org>
-CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [RFC][PATCH] Kexec support for PPC440x
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306707270.2029.377.camel@i7.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KEXEC Support for ppc440X
 
-The patch adds kexec support for PPC440x based boards. This work is based
-on the KEXEC patches for FSL BookE.
+* David Woodhouse <dwmw2@infradead.org> wrote:
 
-The FSL BookE patch and the code flow could be found at the link below:
+> I wasted a bunch of time today because I'd taken a .config from my 
+> test machine and tried to build it, and the existing setting of 
+> CONFIG_X86_32 got corrupted.
+> 
+> This patch fixes that. Last time I tried to fix this bug, I had to 
+> contend with Ingo's objection that he didn't actually want 'make 
+> randconfig' to give him a random config... [...]
 
-http://patchwork.ozlabs.org/patch/49359/
+You thoroughly misunderstood my prior regression report, the problem 
+with your patch was that your patch actually *broke* existing 
+filtered-randconfig behavior, for example trying to get a 64-bit 
+randconfig:
 
-We invalidate all the TLB entries except the one this code is run from,
-and create a 1:1 mapping for 0-2GiB in blocks of 256M. Later we jump to
-the 1:1 mapping.
+  make ARCH=x86_64 randconfig
 
-I have tested this patches on Ebony and Sequoia boards. It would be great
-if somebody could test this on the other boards.
+... will today produce a 64-bit randconfig while with your old change 
+applied it produced a 32-bit randconfig 50% of the time.
 
-Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+That randconfig behavior is an entirely expected and intuitive: if 
+the ARCH=x86_64 condition is added to the command line then kconfig 
+should not ignore it - why should randconfig override the user's 
+wishes? Furthermore this behavior worked fine before your first patch 
+so not only did your first patch make kconfig behavior less 
+intuitive, it also caused a regression.
+
+Similarly, "make ARCH=i386 randconfig" will produce a 32-bit 
+randconfig today, while with your old patch applied it produced a 
+64-bit randconfig 50% of the time.
+
+As i said it two years ago when you first submitted this patch:
+
+ | I dont mind the change you are after, but randconfig should work as 
+ | expected too: if ARCH=x86_64 is passed it should generate a 64-bit 
+ | randconfig, not a 50% 32-bit one.
+
+I still don't mind "make oldconfig" picking up the bitness of the 
+.config instead of the host system's (it is the more intuitive and 
+more correct behavior) - although note that me not minding it is not 
+enough: we still have to be on the lookout for people and tools 
+relying on that behavior.
+
+So instead of complaining about my regression report i've updated the 
+changelog as attached below - if you are fine with that then i'll 
+commit and test it more widely.
+
+Thanks,
+
+	Ingo
+
+-------------->
+Subject: x86, kconfig: Pick up the .config arch version in 'make oldconfig'
+From: David Woodhouse <dwmw2@infradead.org>
+Date: Sun, 29 May 2011 23:14:28 +0100
+
+I wasted a bunch of time today because I'd taken a .config from my 
+test machine and tried to build it, and the existing setting of 
+CONFIG_X86_32 got changed to the host system's bitness which was 
+64-bit.
+
+This patch fixes that. Last time I tried to fix this bug, I had 
+introduced a regression that broke:
+
+   make ARCH=x86_64 randconfig
+   make ARCH=i386 randconfig
+
+type of filtered-randconfig behavior which restricted randconfigs to 
+64-bit and 32-bit configs, respectively.
+
+This version fixes that so prior randconfig behavior is maintained.
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Link: http://lkml.kernel.org/r/1306707270.2029.377.camel@i7.infradead.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
-  arch/powerpc/Kconfig                    |    2
-  arch/powerpc/include/asm/kexec.h        |    2
-  arch/powerpc/kernel/44x_kexec_mapping.S |   66 ++++++++++++++++++++++++++++++++
-  arch/powerpc/kernel/misc_32.S           |   22 ++++++++++
-  4 files changed, 90 insertions(+), 2 deletions(-)
+ Makefile          |    3 ++-
+ arch/x86/Kconfig  |    2 +-
+ arch/x86/Makefile |    4 ++++
+ 3 files changed, 7 insertions(+), 2 deletions(-)
 
-Index: powerpc/arch/powerpc/Kconfig
+Index: linux/Makefile
 ===================================================================
---- powerpc.orig/arch/powerpc/Kconfig
-+++ powerpc/arch/powerpc/Kconfig
-@@ -349,7 +349,7 @@ config ARCH_ENABLE_MEMORY_HOTREMOVE
-  
-  config KEXEC
-  	bool "kexec system call (EXPERIMENTAL)"
--	depends on (PPC_BOOK3S || FSL_BOOKE) && EXPERIMENTAL
-+	depends on (PPC_BOOK3S || FSL_BOOKE || (44x && !SMP && !47x)) && EXPERIMENTAL
-  	help
-  	  kexec is a system call that implements the ability to shutdown your
-  	  current kernel, and to start another kernel.  It is like a reboot
-Index: powerpc/arch/powerpc/include/asm/kexec.h
+--- linux.orig/Makefile
++++ linux/Makefile
+@@ -165,7 +165,8 @@ export srctree objtree VPATH
+ # then ARCH is assigned, getting whatever value it gets normally, and 
+ # SUBARCH is subsequently ignored.
+ 
+-SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
++SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
++				  -e s/sun4u/sparc64/ \
+ 				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+ 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+ 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+Index: linux/arch/x86/Kconfig
 ===================================================================
---- powerpc.orig/arch/powerpc/include/asm/kexec.h
-+++ powerpc/arch/powerpc/include/asm/kexec.h
-@@ -2,7 +2,7 @@
-  #define _ASM_POWERPC_KEXEC_H
-  #ifdef __KERNEL__
-  
--#ifdef CONFIG_FSL_BOOKE
-+#if defined(CONFIG_FSL_BOOKE) || defined(CONFIG_44x)
-  
-  /*
-   * On FSL-BookE we setup a 1:1 mapping which covers the first 2GiB of memory
-Index: powerpc/arch/powerpc/kernel/44x_kexec_mapping.S
+--- linux.orig/arch/x86/Kconfig
++++ linux/arch/x86/Kconfig
+@@ -1,7 +1,7 @@
+ # Select 32 or 64 bit
+ config 64BIT
+ 	bool "64-bit kernel" if ARCH = "x86"
+-	default ARCH = "x86_64"
++	default ARCH != "i386"
+ 	---help---
+ 	  Say yes to build a 64-bit kernel - formerly known as x86_64
+ 	  Say no to build a 32-bit kernel - formerly known as i386
+Index: linux/arch/x86/Makefile
 ===================================================================
---- /dev/null
-+++ powerpc/arch/powerpc/kernel/44x_kexec_mapping.S
-@@ -0,0 +1,66 @@
-+/*
-+ * Copyright (C) 2011 IBM
-+ *
-+ * Author : Suzuki K. Poulose <suzuki@in.ibm.com>
-+ *
-+ * This source code is licensed under the GNU General Public License,
-+ * Version 2.  See the file COPYING for more details.
-+ *
-+ * Code for setting up 1:1 mapping for PPC440x for KEXEC
-+ *
-+ * We cannot switch off the MMU on PPC44x.
-+ * So we:
-+ * 1) Invalidate all the mappings except the one we are
-+ * running from.
-+ * 2) Create a 1:1 mapping for 0-2GiB
-+ *
-+ * - Based on the kexec support code for FSL BookE
-+ * - Based on the boot up code for ppc44x from head_44x.S
-+ * - Doesn't support 47x yet.
-+ * - Doesn't support SMP.
-+ *
-+ */
-+	bl	nxtins				/* Find our address */
-+nxtins:	mflr	r5				/* Make it accessible */
-+	tlbsx	r23,0,r5			/* Find entry we are in */
-+	li	r4,0				/* Start at TLB entry 0 */
-+	li	r3,0				/* Set PAGEID inval value */
-+1:	cmpw	r23,r4				/* Is this our entry? */
-+	beq	skip				/* If so, skip the inval */
-+	tlbwe	r3,r4,PPC44x_TLB_PAGEID		/* If not, inval the entry */
-+skip:	addi	r4,r4,1				/* Increment */
-+	cmpwi	r4,64				/* Are we done? */
-+	bne	1b				/* If not, repeat */
-+	isync
-+
-+/*
-+ * Setup 1:1 mapping  for 0-2GiB in blocks of 256M.
-+ * r23 is the index to the mapping of this code.
-+ * Skip it.
-+ */
-+	/* attribute fields. rwx for SUPERVISOR mode */
-+	li	r5, 0
-+	ori	r5, r5, (PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | PPC44x_TLB_G)
-+
-+	li	r11, 0				/* PageNumber */
-+	li	r6, 0				/* TLB Index  */
-+
-+next_tlb:
-+	rotlwi	r3, r11, 28			/* Create EPN (bits 0-3) */
-+	mr	r4, r3				/* RPN = EPN  */
-+	ori	r3, r3, PPC44x_TLB_VALID | PPC44x_TLB_256M /* SIZE = 256M, Valid */
-+	cmpw	r6, r23				/* Is this our TLB entry ? */
-+	bne	write_tlb
-+	addi	r6, r6, 1			/* Skip our entry */
-+
-+write_tlb:
-+	tlbwe	r3, r6, PPC44x_TLB_PAGEID	/* PageID field : EPN, V, SIZE */
-+	tlbwe	r4, r6, PPC44x_TLB_XLAT		/* Address translation : RPN   */
-+	tlbwe	r5, r6, PPC44x_TLB_ATTRIB	/* Attributes */
-+
-+	addi	r11, r11, 1			/* Increment PN */
-+	addi	r6, r6, 1			/* Increment TLB Index */
-+	cmpwi	r11, 8				/* Are we done ? */
-+	bne	next_tlb
-+	isync
-+
-Index: powerpc/arch/powerpc/kernel/misc_32.S
-===================================================================
---- powerpc.orig/arch/powerpc/kernel/misc_32.S
-+++ powerpc/arch/powerpc/kernel/misc_32.S
-@@ -736,6 +736,28 @@ relocate_new_kernel:
-  	mr      r5, r31
-  
-  	li	r0, 0
-+#elif defined(CONFIG_44x)  && !defined(CONFIG_47x)
-+
-+	mr	r29, r3
-+	mr	r30, r4
-+	mr	r31, r5
-+
-+#include "44x_kexec_mapping.S"
-+
-+	mr	r3, r29
-+	mr	r4, r30
-+	mr	r5, r31
-+
-+	li	r0, 0
-+
-+	/* Jump back to the 1:1 address */
-+	mr	r8, r0
-+	mtspr	SPRN_SRR1, r8
-+	addi	r8, r4, 1f - relocate_new_kernel
-+	mtspr	SPRN_SRR0, r8
-+	sync
-+	rfi
-+1:
-  #else
-  	li	r0, 0
-  
+--- linux.orig/arch/x86/Makefile
++++ linux/arch/x86/Makefile
+@@ -2,7 +2,11 @@
+ 
+ # select defconfig based on actual architecture
+ ifeq ($(ARCH),x86)
++  ifeq ($(shell uname -m),x86_64)
++        KBUILD_DEFCONFIG := x86_64_defconfig
++  else
+         KBUILD_DEFCONFIG := i386_defconfig
++  endif
+ else
+         KBUILD_DEFCONFIG := $(ARCH)_defconfig
+ endif
