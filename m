@@ -1,51 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757857Ab1E3Wy1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 18:54:27 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47404 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752688Ab1E3WyZ (ORCPT
+	id S1757901Ab1E3XLY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 19:11:24 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:34826 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754770Ab1E3XLW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 18:54:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=Pnx3BPNtDp1TqFNQbZ5/qxcvrwZAj1iM+d4upigsrmqj3U1Y8QTltS29E3SJHjXQz9
-         ZKUuw2RzInRTsDbWLXqIybPDhBGhQPqFD7gGwR6Yx+WOsm8hjmhVkG8d+/kwVpAKRUth
-         YlJ72F5iYhxsHYn/aiWfe84vgixDDqHyPWhcM=
+	Mon, 30 May 2011 19:11:22 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+LVy1710yL4zFD+UkikR5x2Yx7YkkPOqXf5TeYfe
+	rOBkumtP/Rywxj
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Andre Bartke <andre.bartke@googlemail.com>
+Subject: Re: [PATCH] staging: altera-stapl: Fix memory leak of altera_init()
+Date: Tue, 31 May 2011 01:11:17 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.38.6; KDE/4.4.5; x86_64; ; )
+Cc: devel@linuxdriverproject.org, mchehab@redhat.com,
+        devel@driverdev.osuosl.org, Andre Bartke <andre.bartke@gmail.com>,
+        linux-kernel@vger.kernel.org
+References: <1306788304-21794-1-git-send-email-andre.bartke@gmail.com>
+In-Reply-To: <1306788304-21794-1-git-send-email-andre.bartke@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110530190713.GA20616@redhat.com>
-References: <1302759489-10645-1-git-send-email-vapier@gentoo.org>
- <1306726753-16128-1-git-send-email-vapier@gentoo.org> <20110530190713.GA20616@redhat.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Mon, 30 May 2011 18:54:04 -0400
-X-Google-Sender-Auth: FwQB3hxwWN6donis7VPDdP_LGwY
-Message-ID: <BANLkTinhNONdTT=sdTkSsTVLA9F50vkyXg@mail.gmail.com>
-Subject: Re: [PATCH] ptrace: unify show_regs() prototype
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201105310111.18056.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 15:07, Oleg Nesterov wrote:
-> On 05/29, Mike Frysinger wrote:
->> --- a/include/linux/ptrace.h
->> +++ b/include/linux/ptrace.h
->> +extern void show_regs(struct pt_regs *);
->
-> Not sure ptrace.h is the right place. show_regs() has the callers which
-> have nothing to do with ptrace.
+Am Montag 30 Mai 2011, 22:45:04 schrieb Andre Bartke:
+> In case kzalloc() fails the second or third time
+> we should free the previous allocated resources.
 
-it needs pt_regs and everyone puts it in their own ptrace.h, so
-linux/ptrace.h was the logical common place for it
+Good catch!
+Personally I prefer putting the cleanup logic to the bottom, maybe like this - but that's just personal preference.
 
-> Hmm. You know what? show_regs() is already defined in sched.h, probably
-> you can simply remove this chunk.
+>From 1a13a1d7a2bad26f050ecc342741b6c07cac2b8a Mon Sep 17 00:00:00 2001
+From: Peter Huewe <peterhuewe@gmx.de>
+Date: Tue, 31 May 2011 00:54:27 +0200
+Subject: [PATCH] staging: altera-stapl: Fix memory leak of altera_init()
 
-nice, i hadnt noticed.  i'll send a new version.
--mike
+In case kzalloc() fails the second or third time
+we should free the previous allocated resources.
+In order to keep one return point and to keep the cleanup code to one
+place, some reordering was necessary.
+
+Also while at it, removed the *sizeof(char) - to quote Linus:
+"" Also removed the silly "* sizeof(u8)".  If that isn't 1, we have way
+   deeper problems than a simple multiplication can fix. """
+
+Reported-by: Andre Bartke <andre.bartke@gmail.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/altera-stapl/altera.c |   33 +++++++++++++++++++++------------
+ 1 files changed, 21 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/staging/altera-stapl/altera.c b/drivers/staging/altera-stapl/altera.c
+index 05aad35..09392ce 100644
+--- a/drivers/staging/altera-stapl/altera.c
++++ b/drivers/staging/altera-stapl/altera.c
+@@ -2430,16 +2430,23 @@ int altera_init(struct altera_config *config, const struct firmware *fw)
+ 	int index = 0;
+ 	s32 offset = 0L;
+ 	s32 error_address = 0L;
++	int retval = 0;
+ 
+-	key = kzalloc(33 * sizeof(char), GFP_KERNEL);
+-	if (!key)
+-		return -ENOMEM;
+-	value = kzalloc(257 * sizeof(char), GFP_KERNEL);
+-	if (!value)
+-		return -ENOMEM;
++	key = kzalloc(33, GFP_KERNEL);
++	if (!key) {
++		retval = -ENOMEM;
++		goto out;
++	}
++	value = kzalloc(257, GFP_KERNEL);
++	if (!value) {
++		retval = -ENOMEM;
++		goto free_key;
++	}
+ 	astate = kzalloc(sizeof(struct altera_state), GFP_KERNEL);
+-	if (!astate)
+-		return -ENOMEM;
++	if (!astate) {
++		retval = -ENOMEM;
++		goto free_value;
++	}
+ 
+ 	astate->config = config;
+ 	if (!astate->config->jtag_io) {
+@@ -2518,10 +2525,12 @@ int altera_init(struct altera_config *config, const struct firmware *fw)
+ 	} else if (exec_result)
+ 		printk(KERN_ERR "%s: error %d\n", __func__, exec_result);
+ 
+-	kfree(key);
+-	kfree(value);
+ 	kfree(astate);
+-
+-	return 0;
++free_value:
++	kfree(value);
++free_key:
++	kfree(key);
++out:
++	return retval;
+ }
+ EXPORT_SYMBOL(altera_init);
+-- 
+1.7.3.4
+
