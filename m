@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab1E3Jxp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 05:53:45 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44931 "EHLO mx2.mail.elte.hu"
+	id S1756251Ab1E3KJn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 06:09:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6429 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755265Ab1E3Jxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 05:53:44 -0400
-Date: Mon, 30 May 2011 11:53:33 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
-Message-ID: <20110530095333.GA8461@elte.hu>
-References: <1306707270.2029.377.camel@i7.infradead.org>
- <20110530072300.GA9802@elte.hu>
- <1306745835.2029.389.camel@i7.infradead.org>
- <20110530091536.GA2827@elte.hu>
- <1306747629.2029.397.camel@i7.infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306747629.2029.397.camel@i7.infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751077Ab1E3KJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 06:09:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,290,1304319600"; 
+   d="scan'208";a="9374551"
+Date: Mon, 30 May 2011 10:56:33 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
+Subject: Re: [PATCH] 8250_pci: add -ENODEV code for Intel EG20T PCH
+Message-ID: <20110530105633.596ab8ab@bob.linux.org.uk>
+In-Reply-To: <20110530074722.GA7947@suse.de>
+References: <1306741324-4562-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+	<20110530074722.GA7947@suse.de>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 30 May 2011 15:47:22 +0800
+Greg KH <gregkh@suse.de> wrote:
 
-* David Woodhouse <dwmw2@infradead.org> wrote:
-
-> On Mon, 2011-05-30 at 11:15 +0200, Ingo Molnar wrote:
+> On Mon, May 30, 2011 at 04:42:04PM +0900, Tomoya MORINAGA wrote:
+> > Intel EG20T PCH has UART device which is compatible with 8250.
+> > Currently, with general configuration, the PCH UART driver is not
+> > loaded but 8250 standard driver is loaded. Therefore, in case of
+> > using PCH UART driver, need to disable 8250 pci function. However,
+> > this procedure is not best solution.
 > > 
-> > > I believe that this 'filtered randconfig' behaviour is now fairly much
-> > > the *only* use for the old 'ARCH=i386' and 'ARCH=x86_64'.
+> > This patch, in 8250_pci, if the device is the PCH or the family IOH,
+> > '-ENODEV' is returned.
+> > As a result, disabling 8250-pci processing becomes unnecessary.
 > > 
-> > I use "make ARCH=i386 defconfig" and "make ARCH=x86_64 defconfig" all 
-> > the time.
+> > Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> > ---
+> >  drivers/tty/serial/8250_pci.c |   13 +++++++++++++
+> >  1 files changed, 13 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/tty/serial/8250_pci.c
+> > b/drivers/tty/serial/8250_pci.c index 738cec9..2678d9d 100644
+> > --- a/drivers/tty/serial/8250_pci.c
+> > +++ b/drivers/tty/serial/8250_pci.c
+> > @@ -2559,6 +2559,19 @@ pciserial_init_one(struct pci_dev *dev,
+> > const struct pci_device_id *ent) return -EINVAL;
+> >  	}
+> >  
+> > +#if defined(CONFIG_SERIAL_PCH_UART) ||
+> > defined(CONFIG_SERIAL_PCH_UART_MODULE)
+> > +	if ((dev->vendor == PCI_VENDOR_ID_INTEL && dev->device ==
+> > 0x8811) ||
+> > +	   (dev->vendor == PCI_VENDOR_ID_INTEL && dev->device ==
+> > 0x8812) ||
+> > +	   (dev->vendor == PCI_VENDOR_ID_INTEL && dev->device ==
+> > 0x8813) ||
+> > +	   (dev->vendor == PCI_VENDOR_ID_INTEL && dev->device ==
+> > 0x8814) ||
+> > +	   (dev->vendor == 0x10DB && dev->device == 0x8027) ||
+> > +	   (dev->vendor == 0x10DB && dev->device == 0x8028) ||
+> > +	   (dev->vendor == 0x10DB && dev->device == 0x8029) ||
+> > +	   (dev->vendor == 0x10DB && dev->device == 0x800C) ||
+> > +	   (dev->vendor == 0x10DB && dev->device == 0x800D))
+> > +		return -ENODEV;
+> > +#endif
 > 
-> Good point. But shouldn't "make i386_defconfig" and "make
-> x86_64_defconfig" do that?
+> Why put this with an #if around it?  Why not just always not bind to
+> this driver as we have a "correct" driver for the hardware now?
 
-Yeah, we could certainly fix (or extend?) kconfig to allow those 
-forms too, if you would like to use them.
+Because if the PCH driver is not available you want to bind it to the
+8250 driver, which also works with it but less efficiently.
 
-I personally prefer 'make ARCH=i386 defconfig' and 'make ARCH=x86_64 
-defconfig' because it's a nice conceptual equivalent to:
+The giant if probably should be a pci match table however
 
-	make ARCH=arm defconfig
-	make ARCH=mips defconfig
-
-et al.
-
-'make ARCH=x86 defconfig' should probably default to the host bitness 
-version, or always default to 64-bit - right now it defaults to 
-i386_defconfig.
-
-[ Note that some of the architectures are a bit weird there: for 
-  example 'make ARCH=powerpc' will only work if you use a PPC 
-  cross-compiler - but it generally works fine and i rely on that for 
-  cross-build tooling. ]
-
-As for your fix patch, is the wording i provided fine to you so i can 
-commit it? I think we should treat it differently from any defconfig 
-related fixes/enhancements and not delay it - the 2 years of delay 
-was already too long IMHO! ;-)
-
-Thanks,
-
-	Ingo
+Alan
