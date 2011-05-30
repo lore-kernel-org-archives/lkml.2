@@ -1,332 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab1E3DeS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 23:34:18 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:44581 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753275Ab1E3DeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 23:34:15 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Subject: [PATCH] ptrace: unify show_regs() prototype
-Date: Sun, 29 May 2011 23:39:13 -0400
-Message-Id: <1306726753-16128-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.5.rc3
-In-Reply-To: <1302759489-10645-1-git-send-email-vapier@gentoo.org>
-References: <1302759489-10645-1-git-send-email-vapier@gentoo.org>
+	id S1754336Ab1E3Drq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 23:47:46 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:26060 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753275Ab1E3Drp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 23:47:45 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiIEAJwS4015LCoegWdsb2JhbABVhEmhYBUBARYmJYhxrHGPWw6BHYNsgQcEn3s
+Date: Mon, 30 May 2011 13:47:41 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [regression, 3.0-rc1] dentry cache growth during unlinks, XFS
+ performance way down
+Message-ID: <20110530034741.GD561@dastard>
+References: <20110530020604.GC561@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110530020604.GC561@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
-andrew: can you pick this up ?  sent a few months ago w/no love.
+On Mon, May 30, 2011 at 12:06:04PM +1000, Dave Chinner wrote:
+> Folks,
+> 
+> I just booted up a 3.0-rc1 kernel, and mounted an XFS filesystem
+> with 50M files in it. Running:
+> 
+> $ for i in /mnt/scratch/*; do sudo /usr/bin/time rm -rf $i 2>&1 & done
+> 
+> runs an 8-way parallel unlink on the files. Normally this runs at
+> around 80k unlinks/s, and it runs with about 500k-1m dentries and
+> inodes cached in the steady state.
+> 
+> The steady state behaviour with 3.0-rc1 is that there are around 10m
+> cached dentries - all negative dentries - consuming about 1.6GB of
+> RAM (of 4GB total). Previous steady state was, IIRC, around 200MB of
+> dentries. My initial suspicions are that the dentry unhashing
+> changeѕ may be the cause of this...
 
- arch/alpha/include/asm/ptrace.h          |    1 -
- arch/avr32/include/asm/ptrace.h          |    2 --
- arch/blackfin/include/asm/ptrace.h       |    1 -
- arch/cris/include/arch-v10/arch/ptrace.h |    1 -
- arch/cris/include/arch-v32/arch/ptrace.h |    1 -
- arch/frv/include/asm/ptrace.h            |    1 -
- arch/h8300/include/asm/ptrace.h          |    1 -
- arch/ia64/include/asm/ptrace.h           |    1 -
- arch/m32r/include/asm/ptrace.h           |    2 --
- arch/m68k/include/asm/ptrace.h           |    1 -
- arch/microblaze/include/asm/ptrace.h     |    2 --
- arch/mn10300/include/asm/ptrace.h        |    1 -
- arch/parisc/include/asm/ptrace.h         |    1 -
- arch/powerpc/include/asm/system.h        |    1 -
- arch/s390/include/asm/ptrace.h           |    1 -
- arch/sh/include/asm/ptrace.h             |    2 --
- arch/sparc/include/asm/ptrace.h          |    2 --
- arch/tile/include/asm/ptrace.h           |    2 --
- arch/um/include/asm/ptrace-generic.h     |    2 --
- arch/x86/include/asm/kdebug.h            |    1 -
- arch/xtensa/include/asm/ptrace.h         |    1 -
- include/linux/ptrace.h                   |    1 +
- 22 files changed, 1 insertions(+), 28 deletions(-)
+So a bisect lands on:
 
-diff --git a/arch/alpha/include/asm/ptrace.h b/arch/alpha/include/asm/ptrace.h
-index 65cf3e2..fd698a1 100644
---- a/arch/alpha/include/asm/ptrace.h
-+++ b/arch/alpha/include/asm/ptrace.h
-@@ -72,7 +72,6 @@ struct switch_stack {
- #define user_mode(regs) (((regs)->ps & 8) != 0)
- #define instruction_pointer(regs) ((regs)->pc)
- #define profile_pc(regs) instruction_pointer(regs)
--extern void show_regs(struct pt_regs *);
- 
- #define task_pt_regs(task) \
-   ((struct pt_regs *) (task_stack_page(task) + 2*PAGE_SIZE) - 1)
-diff --git a/arch/avr32/include/asm/ptrace.h b/arch/avr32/include/asm/ptrace.h
-index e53dd0d..c67a007 100644
---- a/arch/avr32/include/asm/ptrace.h
-+++ b/arch/avr32/include/asm/ptrace.h
-@@ -132,8 +132,6 @@ struct pt_regs {
- #define instruction_pointer(regs)       ((regs)->pc)
- #define profile_pc(regs)                instruction_pointer(regs)
- 
--extern void show_regs (struct pt_regs *);
--
- static __inline__ int valid_user_regs(struct pt_regs *regs)
- {
- 	/*
-diff --git a/arch/blackfin/include/asm/ptrace.h b/arch/blackfin/include/asm/ptrace.h
-index 7854d43..10d8641 100644
---- a/arch/blackfin/include/asm/ptrace.h
-+++ b/arch/blackfin/include/asm/ptrace.h
-@@ -102,7 +102,6 @@ struct pt_regs {
- /* user_mode returns true if only one bit is set in IPEND, other than the
-    master interrupt enable.  */
- #define user_mode(regs) (!(((regs)->ipend & ~0x10) & (((regs)->ipend & ~0x10) - 1)))
--extern void show_regs(struct pt_regs *);
- 
- #define arch_has_single_step()	(1)
- /* common code demands this function */
-diff --git a/arch/cris/include/arch-v10/arch/ptrace.h b/arch/cris/include/arch-v10/arch/ptrace.h
-index 2f464ea..1a23273 100644
---- a/arch/cris/include/arch-v10/arch/ptrace.h
-+++ b/arch/cris/include/arch-v10/arch/ptrace.h
-@@ -112,7 +112,6 @@ struct switch_stack {
- #define user_mode(regs) (((regs)->dccr & 0x100) != 0)
- #define instruction_pointer(regs) ((regs)->irp)
- #define profile_pc(regs) instruction_pointer(regs)
--extern void show_regs(struct pt_regs *);
- 
- #endif  /*  __KERNEL__  */
- 
-diff --git a/arch/cris/include/arch-v32/arch/ptrace.h b/arch/cris/include/arch-v32/arch/ptrace.h
-index ffca8d0..19773d3 100644
---- a/arch/cris/include/arch-v32/arch/ptrace.h
-+++ b/arch/cris/include/arch-v32/arch/ptrace.h
-@@ -111,7 +111,6 @@ struct switch_stack {
- #define arch_has_single_step() (1)
- #define user_mode(regs) (((regs)->ccs & (1 << (U_CCS_BITNR + CCS_SHIFT))) != 0)
- #define instruction_pointer(regs) ((regs)->erp)
--extern void show_regs(struct pt_regs *);
- #define profile_pc(regs) instruction_pointer(regs)
- 
- #endif  /*  __KERNEL__  */
-diff --git a/arch/frv/include/asm/ptrace.h b/arch/frv/include/asm/ptrace.h
-index 6bfad4c..ef6635c 100644
---- a/arch/frv/include/asm/ptrace.h
-+++ b/arch/frv/include/asm/ptrace.h
-@@ -78,7 +78,6 @@ register struct pt_regs *__frame asm("gr28");
- #define user_stack_pointer(regs)	((regs)->sp)
- 
- extern unsigned long user_stack(const struct pt_regs *);
--extern void show_regs(struct pt_regs *);
- #define profile_pc(regs) ((regs)->pc)
- 
- #define task_pt_regs(task) ((task)->thread.frame0)
-diff --git a/arch/h8300/include/asm/ptrace.h b/arch/h8300/include/asm/ptrace.h
-index d866c0e..d09c440 100644
---- a/arch/h8300/include/asm/ptrace.h
-+++ b/arch/h8300/include/asm/ptrace.h
-@@ -60,7 +60,6 @@ struct pt_regs {
- #define user_mode(regs) (!((regs)->ccr & PS_S))
- #define instruction_pointer(regs) ((regs)->pc)
- #define profile_pc(regs) instruction_pointer(regs)
--extern void show_regs(struct pt_regs *);
- #endif /* __KERNEL__ */
- #endif /* __ASSEMBLY__ */
- #endif /* _H8300_PTRACE_H */
-diff --git a/arch/ia64/include/asm/ptrace.h b/arch/ia64/include/asm/ptrace.h
-index 7ae9c3f..f5cb276 100644
---- a/arch/ia64/include/asm/ptrace.h
-+++ b/arch/ia64/include/asm/ptrace.h
-@@ -286,7 +286,6 @@ static inline unsigned long user_stack_pointer(struct pt_regs *regs)
-   struct task_struct;			/* forward decl */
-   struct unw_frame_info;		/* forward decl */
- 
--  extern void show_regs (struct pt_regs *);
-   extern void ia64_do_show_stack (struct unw_frame_info *, void *);
-   extern unsigned long ia64_get_user_rbs_end (struct task_struct *, struct pt_regs *,
- 					      unsigned long *);
-diff --git a/arch/m32r/include/asm/ptrace.h b/arch/m32r/include/asm/ptrace.h
-index 840a123..5275275 100644
---- a/arch/m32r/include/asm/ptrace.h
-+++ b/arch/m32r/include/asm/ptrace.h
-@@ -138,8 +138,6 @@ extern void init_debug_traps(struct task_struct *);
- #define instruction_pointer(regs) ((regs)->bpc)
- #define profile_pc(regs) instruction_pointer(regs)
- 
--extern void show_regs(struct pt_regs *);
--
- extern void withdraw_debug_trap(struct pt_regs *regs);
- 
- #define task_pt_regs(task) \
-diff --git a/arch/m68k/include/asm/ptrace.h b/arch/m68k/include/asm/ptrace.h
-index 6e6e3ac..65322b1 100644
---- a/arch/m68k/include/asm/ptrace.h
-+++ b/arch/m68k/include/asm/ptrace.h
-@@ -85,7 +85,6 @@ struct switch_stack {
- #define user_mode(regs) (!((regs)->sr & PS_S))
- #define instruction_pointer(regs) ((regs)->pc)
- #define profile_pc(regs) instruction_pointer(regs)
--extern void show_regs(struct pt_regs *);
- 
- #define arch_has_single_step()	(1)
- 
-diff --git a/arch/microblaze/include/asm/ptrace.h b/arch/microblaze/include/asm/ptrace.h
-index d9b6630..816bee6 100644
---- a/arch/microblaze/include/asm/ptrace.h
-+++ b/arch/microblaze/include/asm/ptrace.h
-@@ -61,8 +61,6 @@ struct pt_regs {
- #define instruction_pointer(regs)	((regs)->pc)
- #define profile_pc(regs)		instruction_pointer(regs)
- 
--void show_regs(struct pt_regs *);
--
- #else /* __KERNEL__ */
- 
- /* pt_regs offsets used by gdbserver etc in ptrace syscalls */
-diff --git a/arch/mn10300/include/asm/ptrace.h b/arch/mn10300/include/asm/ptrace.h
-index b696181..55b79ef 100644
---- a/arch/mn10300/include/asm/ptrace.h
-+++ b/arch/mn10300/include/asm/ptrace.h
-@@ -89,7 +89,6 @@ struct pt_regs {
- #define user_mode(regs)			(((regs)->epsw & EPSW_nSL) == EPSW_nSL)
- #define instruction_pointer(regs)	((regs)->pc)
- #define user_stack_pointer(regs)	((regs)->sp)
--extern void show_regs(struct pt_regs *);
- 
- #define arch_has_single_step()	(1)
- 
-diff --git a/arch/parisc/include/asm/ptrace.h b/arch/parisc/include/asm/ptrace.h
-index 7f09533..250ae35 100644
---- a/arch/parisc/include/asm/ptrace.h
-+++ b/arch/parisc/include/asm/ptrace.h
-@@ -56,7 +56,6 @@ struct pt_regs {
- #define instruction_pointer(regs)	((regs)->iaoq[0] & ~3)
- #define user_stack_pointer(regs)	((regs)->gr[30])
- unsigned long profile_pc(struct pt_regs *);
--extern void show_regs(struct pt_regs *);
- 
- 
- #endif /* __KERNEL__ */
-diff --git a/arch/powerpc/include/asm/system.h b/arch/powerpc/include/asm/system.h
-index 2dc595d..e30a13d 100644
---- a/arch/powerpc/include/asm/system.h
-+++ b/arch/powerpc/include/asm/system.h
-@@ -120,7 +120,6 @@ extern void do_dabr(struct pt_regs *regs, unsigned long address,
- 		    unsigned long error_code);
- #endif
- extern void print_backtrace(unsigned long *);
--extern void show_regs(struct pt_regs * regs);
- extern void flush_instruction_cache(void);
- extern void hard_reset_now(void);
- extern void poweroff_now(void);
-diff --git a/arch/s390/include/asm/ptrace.h b/arch/s390/include/asm/ptrace.h
-index 9ad628a..62fd80c 100644
---- a/arch/s390/include/asm/ptrace.h
-+++ b/arch/s390/include/asm/ptrace.h
-@@ -539,7 +539,6 @@ struct user_regs_struct
-  * These are defined as per linux/ptrace.h, which see.
-  */
- #define arch_has_single_step()	(1)
--extern void show_regs(struct pt_regs * regs);
- 
- #define user_mode(regs) (((regs)->psw.mask & PSW_MASK_PSTATE) != 0)
- #define instruction_pointer(regs) ((regs)->psw.addr & PSW_ADDR_INSN)
-diff --git a/arch/sh/include/asm/ptrace.h b/arch/sh/include/asm/ptrace.h
-index 40725b4..3f2a6e7 100644
---- a/arch/sh/include/asm/ptrace.h
-+++ b/arch/sh/include/asm/ptrace.h
-@@ -43,8 +43,6 @@
- #define kernel_stack_pointer(_regs)	((unsigned long)(_regs)->regs[15])
- #define GET_USP(regs) ((regs)->regs[15])
- 
--extern void show_regs(struct pt_regs *);
--
- #define arch_has_single_step()	(1)
- 
- /*
-diff --git a/arch/sparc/include/asm/ptrace.h b/arch/sparc/include/asm/ptrace.h
-index c7ad3fe..45d9a6a 100644
---- a/arch/sparc/include/asm/ptrace.h
-+++ b/arch/sparc/include/asm/ptrace.h
-@@ -212,7 +212,6 @@ extern unsigned long profile_pc(struct pt_regs *);
- #else
- #define profile_pc(regs) instruction_pointer(regs)
- #endif
--extern void show_regs(struct pt_regs *);
- #endif /* (__KERNEL__) */
- 
- #else /* __ASSEMBLY__ */
-@@ -256,7 +255,6 @@ static inline bool pt_regs_clear_syscall(struct pt_regs *regs)
- #define instruction_pointer(regs) ((regs)->pc)
- #define user_stack_pointer(regs) ((regs)->u_regs[UREG_FP])
- unsigned long profile_pc(struct pt_regs *);
--extern void show_regs(struct pt_regs *);
- #endif /* (__KERNEL__) */
- 
- #else /* (!__ASSEMBLY__) */
-diff --git a/arch/tile/include/asm/ptrace.h b/arch/tile/include/asm/ptrace.h
-index 6be2246..c6cddd7 100644
---- a/arch/tile/include/asm/ptrace.h
-+++ b/arch/tile/include/asm/ptrace.h
-@@ -112,8 +112,6 @@ struct pt_regs *get_pt_regs(struct pt_regs *);
- /* Trace the current syscall. */
- extern void do_syscall_trace(void);
- 
--extern void show_regs(struct pt_regs *);
--
- #define arch_has_single_step()	(1)
- 
- /*
-diff --git a/arch/um/include/asm/ptrace-generic.h b/arch/um/include/asm/ptrace-generic.h
-index b7c5bab..ae084ad 100644
---- a/arch/um/include/asm/ptrace-generic.h
-+++ b/arch/um/include/asm/ptrace-generic.h
-@@ -47,8 +47,6 @@ extern int get_fpregs(struct user_i387_struct __user *buf,
- extern int set_fpregs(struct user_i387_struct __user *buf,
- 		      struct task_struct *child);
- 
--extern void show_regs(struct pt_regs *regs);
--
- extern int arch_copy_tls(struct task_struct *new);
- extern void clear_flushed_tls(struct task_struct *task);
- 
-diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
-index fe2cc6e..d73f157 100644
---- a/arch/x86/include/asm/kdebug.h
-+++ b/arch/x86/include/asm/kdebug.h
-@@ -28,7 +28,6 @@ extern void show_registers(struct pt_regs *regs);
- extern void show_trace(struct task_struct *t, struct pt_regs *regs,
- 		       unsigned long *sp, unsigned long bp);
- extern void __show_regs(struct pt_regs *regs, int all);
--extern void show_regs(struct pt_regs *regs);
- extern unsigned long oops_begin(void);
- extern void oops_end(unsigned long, struct pt_regs *, int signr);
- #ifdef CONFIG_KEXEC
-diff --git a/arch/xtensa/include/asm/ptrace.h b/arch/xtensa/include/asm/ptrace.h
-index 0d42c93..d85d38d 100644
---- a/arch/xtensa/include/asm/ptrace.h
-+++ b/arch/xtensa/include/asm/ptrace.h
-@@ -120,7 +120,6 @@ struct pt_regs {
-   (task_stack_page(tsk) + KERNEL_STACK_SIZE - (XCHAL_NUM_AREGS-16)*4) - 1)
- # define user_mode(regs) (((regs)->ps & 0x00000020)!=0)
- # define instruction_pointer(regs) ((regs)->pc)
--extern void show_regs(struct pt_regs *);
- 
- # ifndef CONFIG_SMP
- #  define profile_pc(regs) instruction_pointer(regs)
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 9178d5c..65cb6bc 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -100,6 +100,7 @@
- #include <linux/sched.h>		/* For struct task_struct.  */
- 
- 
-+extern void show_regs(struct pt_regs *);
- extern long arch_ptrace(struct task_struct *child, long request,
- 			unsigned long addr, unsigned long data);
- extern int ptrace_readdata(struct task_struct *tsk, unsigned long src, char __user *dst, int len);
+$ git bisect good
+79bf7c732b5ff75b96022ed9d29181afd3d2509c is the first bad commit
+commit 79bf7c732b5ff75b96022ed9d29181afd3d2509c
+Author: Sage Weil <sage@newdream.net>
+Date:   Tue May 24 13:06:06 2011 -0700
+
+    vfs: push dentry_unhash on rmdir into file systems
+
+    Only a few file systems need this.  Start by pushing it down into each
+    fs rmdir method (except gfs2 and xfs) so it can be dealt with on a per-fs
+    basis.
+
+    This does not change behavior for any in-tree file systems.
+
+    Acked-by: Christoph Hellwig <hch@lst.de>
+    Signed-off-by: Sage Weil <sage@newdream.net>
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+:040000 040000 c45d58718d33f7ca1da87f99fa538f65eaa3fe2c ec71cbecc59e8b142a7bfcabd469fa67486bef30 M        fs
+
+Ok, so the question has to be asked - why wasn't dentry_unhash()
+pushed down into XFS?
+
+Further, now that dentry_unhash() has been removed from most
+filesystems, what is replacing the shrink_dcache_parent() call that
+was cleaning up the "we can never reference again" child dentries of
+the unlinked directories? It appears that they are now being left in
+memory on the dentry LRU. It also appears that they have
+D_REFERENCED bit set, so they do not get immediately reclaimed by
+the shrinker.
+
+Hence they much more difficult to remove from memory than in 2.6.39,
+and with the rate at which they are being created the shrinker is
+simply not aggressive enough to free them at the same rate as in
+2.6.39 and hence the memory balance of the caches is significantly
+changed.
+
+It would seem to me that we still need the call to
+shrink_dcache_parent() for unlinked directories - that part of the
+dentry_unhash() still needs to be run to ensure that we don't
+pollute memory with stale dentries. The original patch series
+suggests that this is a per-filesystem decision; I think this
+problem shows that it is really necessary for most filesystems.
+So, do i just fix this in XFS, or should I re-add calls to
+shrink_dcache_parent() in the VFS for rmdir and rename?
+
+> of about 20s, where the peak is about 80k unlinks/s, and the trough
+> is around 20k unlinks/s. The runtime of the 50m inode delete has
+> gone from around 10m on 2.6.39, to:
+> 
+> 11.71user 470.08system 15:07.91elapsed 53%CPU (0avgtext+0avgdata 133184maxresident)k
+> 0inputs+0outputs (30major+497228minor)pagefaults 0swaps
+> 11.50user 468.30system 15:14.35elapsed 52%CPU (0avgtext+0avgdata 133168maxresident)k
+> 0inputs+0outputs (42major+497268minor)pagefaults 0swaps
+> 11.34user 466.66system 15:26.04elapsed 51%CPU (0avgtext+0avgdata 133216maxresident)k
+> 0inputs+0outputs (18major+497121minor)pagefaults 0swaps
+> 12.14user 470.46system 15:26.60elapsed 52%CPU (0avgtext+0avgdata 133216maxresident)k
+> 0inputs+0outputs (44major+497309minor)pagefaults 0swaps
+> 12.06user 463.74system 15:28.84elapsed 51%CPU (0avgtext+0avgdata 133232maxresident)k
+> 0inputs+0outputs (25major+497046minor)pagefaults 0swaps
+> 11.37user 468.18system 15:29.07elapsed 51%CPU (0avgtext+0avgdata 133184maxresident)k
+> 0inputs+0outputs (55major+497056minor)pagefaults 0swaps
+> 11.69user 474.46system 15:47.45elapsed 51%CPU (0avgtext+0avgdata 133232maxresident)k
+> 0inputs+0outputs (61major+497284minor)pagefaults 0swaps
+> 11.32user 476.93system 16:05.14elapsed 50%CPU (0avgtext+0avgdata 133184maxresident)k
+> 0inputs+0outputs (30major+497225minor)pagefaults 0swaps
+> 
+> About 16 minutes. I'm not sure yet whether this change of cache
+> behaviour is the cause of the entire performance regression, but
+> it's a good chance that it is a contributing factor.
+
+The cache size growth bug does not appear to be responsible for any
+of the performance regression.
+
+Cheers,
+
+Dave.
 -- 
-1.7.5.rc3
-
+Dave Chinner
+david@fromorbit.com
