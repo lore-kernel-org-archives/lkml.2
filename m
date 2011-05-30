@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab1E3Br6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 21:47:58 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55324 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725Ab1E3Br4 (ORCPT
+	id S1753382Ab1E3BsW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 21:48:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37715 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752920Ab1E3BsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 21:47:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DE2F741.7060109@jp.fujitsu.com>
-Date: Mon, 30 May 2011 10:47:45 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Sun, 29 May 2011 21:48:21 -0400
 MIME-Version: 1.0
-To: minchan.kim@gmail.com
-CC: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        mgorman@suse.de, riel@redhat.com, aarcange@redhat.com,
-        hannes@cmpxchg.org
-Subject: Re: [PATCH v2 00/10] Prevent LRU churning
-References: <cover.1306689214.git.minchan.kim@gmail.com>
-In-Reply-To: <cover.1306689214.git.minchan.kim@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
+References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 29 May 2011 18:47:57 -0700
+Message-ID: <BANLkTinsO2=tO_UyzzgeU6LE1fObgq+p1Q@mail.gmail.com>
+Subject: Re: Linux 3.0-rc1
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Minchan Kim (10):
->   [1/10] Make clear description of isolate/putback functions
->   [2/10] compaction: trivial clean up acct_isolated
->   [3/10] Change int mode for isolate mode with enum ISOLATE_PAGE_MODE
->   [4/10] Add additional isolation mode
->   [5/10] compaction: make isolate_lru_page with filter aware
->   [6/10] vmscan: make isolate_lru_page with filter aware
->   [7/10] In order putback lru core
->   [8/10] migration: make in-order-putback aware
->   [9/10] compaction: make compaction use in-order putback
->   [10/10] add tracepoints
+Oh, and as some people already noticed, the numbering means that the
+tar-balls and patches are now in a new directory:
 
-Minchan,
+    /pub/linux/kernel/v3.0
 
-I'm sorry I have no chance to review this patch in this week. I'm getting
-stuck for LinuxCon. ;)
-That doesn't mean I dislike this series.
+(under "testing/", since that's what we do with -rc releases).
+However, I did *not* rename the git tree, because that would just be a
+huge inconvenience to git users, so it's still in the same old place
+and yes, that means that my git tree is still called "linux-2.6.git"
+on kernel.org. But it has the v3.0-rc1 tag in it.
 
-Thanks.
+I'll probably add a symlink or something, if people really hate being
+reminded about our long history with the "2.6" numbering. But that
+won't be until closer to the real release, methinks.
 
-
-
+                            Linus
