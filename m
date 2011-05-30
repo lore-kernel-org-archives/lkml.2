@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757846Ab1E3Sq0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 14:46:26 -0400
-Received: from mail.lang.hm ([64.81.33.126]:56237 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757821Ab1E3SqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 14:46:25 -0400
-Date: Mon, 30 May 2011 11:45:42 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: "D. Jansen" <d.g.jansen@googlemail.com>
-cc: Theodore Tso <tytso@mit.edu>, Oliver Neukum <oneukum@suse.de>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-In-Reply-To: <BANLkTimtY0ggu28i-9VzWOO1=puZ0JvcAQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1105301142030.5766@asgard.lang.hm>
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <201105231012.06928.oneukum@suse.de> <20110525000003.GJ32466@dastard> <201105250850.12179.oneukum@suse.de> <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com> <410B37BE-E380-40D0-82AA-48B56F389E16@mit.edu>
- <BANLkTimNjt4=9v33Z9Nr12xa6GmyJ-Ue5A@mail.gmail.com> <20110526133155.GH9520@thunk.org> <BANLkTinTzNN2P45tgZAQ9FsL43CqyAJR3Q@mail.gmail.com> <20110526162138.GN9520@thunk.org> <BANLkTinPCcX9-gK7YnMngGUJKftRTmYXNw@mail.gmail.com> <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu>
- <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com> <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm> <BANLkTik69Gb2i1467bhnEU-pJ0WB10mqNQ@mail.gmail.com> <alpine.DEB.2.02.1105301058030.5766@asgard.lang.hm>
- <BANLkTimtY0ggu28i-9VzWOO1=puZ0JvcAQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1752987Ab1E3S4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 14:56:21 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:45701 "HELO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751317Ab1E3S4U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 14:56:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=nanometrics.ca; s=google;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=VmHfDcgP+M2UI+ZLpP2q3KlCtmHM1nOmA63s4QJpjH7qt8QWGaJcOoX0e6OZ0ZVg8y
+         QIuWghVhsGThZaK5tCwwMKfOjgoIX5VlcAV/+IW8EwxtvSmrV+TYh0ea6p1qJxN7+7ps
+         B/a49TnYcDlVtiQvj+ibo3gMXTiHj80AU65xs=
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Matthew L. Creech" <mlcreech@gmail.com>
+Subject: [PATCH 0/3] fix-up free space earlier in mount_ubifs()
+Date: Mon, 30 May 2011 14:56:13 -0400
+Message-Id: <cover.1306780983.git.bengardiner@nanometrics.ca>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 May 2011, D. Jansen wrote:
+In testing Mattew Creech's free-space-fixup flag series I found that was unable
+to boot a da850evm which had flashed to it's NAND a ubinized image containing a
+UBIFS that has the free-space-fixup flag set.
 
-> On Mon, May 30, 2011 at 8:02 PM,  <david@lang.hm> wrote:
->>
->> no, you cannot just change a fsync to a barrier, in some cases the data
->> absolutly needs to be saved, not just ordered (remember the example of a
->> mail server telling the other system that the data can be deleted after a
->> fsync returns)
->
-> I'm not really sure I why shouldn't have that choice as a user. Just
-> because someone else could be running a mailserver on his system and
-> configure it in a way that it doesn't behave as it should?
-> If he really wants to do that there's really nothing we can do to stop
-> him. I'm sure there are other ways existing kernel options can be used
-> to make software behave different than it should. Are we going to
-> remove them all now?
->
-> The big problem is that so far only fsync existed and lots of software
-> seemingly abuses it as an expensive write barrier. And it would really
-> be lovely to have the choice to stop that on an opt-in basis in laptop
-> mode.
+The cause of the problem was found to be the call to ubifs_write_master() from
+mount_ubifs() as is evidenced the backtrace produced by the assertion
+introduced in the first patch of this series; where the assertion introduced is
+that c->space_fixup is false when ubifs_write_node() is called.
 
-is the benifit of not spinning up the disk really worth the risk of 
-loosing data?
+UBIFS assert failed in ubifs_write_node at 766 (pid 1)
+Backtrace:
+[<c002dd8c>] (dump_backtrace+0x0/0x10c) from [<c02ecb8c>] (dump_stack+0x18/0x1c)
+ r7:00000001 r6:c782c000 r5:c781f000 r4:c03fb468
+[<c02ecb74>] (dump_stack+0x0/0x1c) from [<c015cd68>] (ubifs_write_node+0x20c/0x230)
+[<c015cb5c>] (ubifs_write_node+0x0/0x230) from [<c0162930>] (ubifs_write_master+0xbc/0x228)
+[<c0162874>] (ubifs_write_master+0x0/0x228) from [<c0158108>] (ubifs_fill_super+0x1d54/0x1ed8)
+ r6:0001e5a0 r5:00000000 r4:00000000
+[<c01563b4>] (ubifs_fill_super+0x0/0x1ed8) from [<c01584fc>] (ubifs_mount+0x270/0x3a4)
+[<c015828c>] (ubifs_mount+0x0/0x3a4) from [<c00afe5c>] (mount_fs+0x1c/0xe8)
+[<c00afe40>] (mount_fs+0x0/0xe8) from [<c00cc8c0>] (vfs_kern_mount+0x58/0x94)
+ r6:00008000 r5:c780c780 r4:c7a6e9e0
+[<c00cc868>] (vfs_kern_mount+0x0/0x94) from [<c00cc958>] (do_kern_mount+0x3c/0xd4)
+ r9:c782dee8 r8:c03ebaa8 r7:c7a6ea00 r6:00000000 r5:c7a6e9e0
+r4:00008000
+[<c00cc91c>] (do_kern_mount+0x0/0xd4) from [<c00ccb3c>] (do_mount+0x14c/0x734)
+ r9:c782dee8 r8:00000020 r7:c7a6ea00 r6:c7a6e9e0 r5:00008000
+r4:00000000
+[<c00cc9f0>] (do_mount+0x0/0x734) from [<c00cd1c4>] (sys_mount+0xa0/0xd0)
+[<c00cd124>] (sys_mount+0x0/0xd0) from [<c0008dd4>] (mount_block_root+0x98/0x2c8)
+ r7:c0023e88 r6:c781b000 r5:00008000 r4:c781b000
+[<c0008d3c>] (mount_block_root+0x0/0x2c8) from [<c00090f0>] (prepare_namespace+0x80/0x1c4)
+[<c0009070>] (prepare_namespace+0x0/0x1c4) from [<c0008480>] (kernel_init+0x110/0x158)
+ r7:00000013 r6:c0023300 r5:c0023668 r4:c0023668
+[<c0008370>] (kernel_init+0x0/0x158) from [<c0043d58>] (do_exit+0x0/0x750)
+ r7:00000013 r6:c0043d58 r5:c0008370 r4:00000000
 
-and should this really be a global across-the-board option?
+Moving the free-space-fixup to before the call to ubifs_write_master() requires that the
+LPT be initialiazed first; therefore the second patch of this series moves the 
+ubifs_lpt_init() call to before the call to ubifs_write_master() in preparation of moving
+the free-space fixup. 
 
-the problem is that most users don't know what their system is running, or 
-what effect disaling fsync would have. those that do can probably use 
-LD_PRELOAD to override fsync calls.
+Finally, the free-space fixup is moved to earlier in the mounting process -- in testing this
+has resulted in a bootable da850evm and no assertion errors.
 
-it doesn't take running a mail server, even a mail client will have the 
-same risk. If you use POP for mail (a very common option) then you 
-download messages and tell the server to delete them. if you do not really 
-save them (one fsync after they are all saved), then you can loose 
-everything that you downloaded.
+Ben Gardiner (3):
+  UBIFS: assert no fixup when writing a node
+  UBIFS: intialize the LPT earlier
+  UBIFS: fix-up free space earlier
 
-David Lang
+ fs/ubifs/io.c    |    2 ++
+ fs/ubifs/super.c |   24 ++++++++++++------------
+ 2 files changed, 14 insertions(+), 12 deletions(-)
+
+-- 
+1.7.4.1
+
