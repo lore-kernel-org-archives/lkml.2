@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754958Ab1E3Jns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 05:43:48 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46451 "EHLO mx1.suse.de"
+	id S1754929Ab1E3JqK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 05:46:10 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47714 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754721Ab1E3Jnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 05:43:46 -0400
-Date: Mon, 30 May 2011 11:43:37 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Am??rico Wang <xiyou.wangcong@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [Patch] mm: remove noswapaccount kernel parameter
-Message-ID: <20110530094337.GF20166@tiehlicka.suse.cz>
-References: <BANLkTinLvqa0DiayLOwvxE9zBmqb4Y7Rww@mail.gmail.com>
- <20110523112558.GC11439@tiehlicka.suse.cz>
- <BANLkTi=2SwKFfwBxrQr3xLYSUzoGOy6oKA@mail.gmail.com>
+	id S1751689Ab1E3JqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 05:46:07 -0400
+Date: Mon, 30 May 2011 11:46:04 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: KVM build warnings
+Message-ID: <20110530094604.GC21833@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+	kvm@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <BANLkTi=2SwKFfwBxrQr3xLYSUzoGOy6oKA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 23-05-11 19:50:21, Am??rico Wang wrote:
-> On Mon, May 23, 2011 at 7:25 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Mon 23-05-11 19:08:08, Am??rico Wang wrote:
-> >> noswapaccount is deprecated by swapaccount=0, and it is scheduled
-> >> to be removed in 2.6.40.
-> >
-> > Similar patch is already in the Andrew's tree
-> 
-> Ah, my google search failed to find it. :-/
-> 
-> > (memsw-remove-noswapaccount-kernel-parameter.patch). Andrew, are you
-> > going to push it?
-> > Btw. the patch is missing documentation part which is present here.
-> >
-> 
-> Hmm, maybe I should send a delta patch... Andrew?
+I get the following
 
-Have you reposted that patch? The primary patch which removes the
-paramter already hit the Linus tree (a2c8990a).
+In file included from arch/x86/kvm/mmu.c:2856:
+arch/x86/kvm/paging_tmpl.h: In function ‘paging32_walk_addr_generic’:
+arch/x86/kvm/paging_tmpl.h:124: warning: ‘ptep_user’ may be used uninitialized in this function
+In file included from arch/x86/kvm/mmu.c:2852:
+arch/x86/kvm/paging_tmpl.h: In function ‘paging64_walk_addr_generic’:
+arch/x86/kvm/paging_tmpl.h:124: warning: ‘ptep_user’ may be used uninitialized in this function
+
+when building -rc1. It looks like it is caused by
+6e2ca7d1802bf8ed9908435e34daa116662e7790 and sticking uninitialized_var() around
+the ptep_user declaration looks like the easiest solution. But the code should
+still be audited by someone who's familiar with it whether shutting up the
+compiler doesn't cause an actual bug.
+
+Thanks.
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Regards/Gruss,
+    Boris.
