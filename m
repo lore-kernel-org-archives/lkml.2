@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab1E3Mg4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 08:36:56 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34326 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab1E3Mgy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 08:36:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=gg62C73m9dJ0Uu5rsrhiLfKPNNq2SdpHnF033tUosbWOlcBh4Y+TC7TzKMS00LvWr+
-         CRWR6ZqslLq7c+MqUr6kasgA0wT2Ywi9ciURfSAL5vY4OzjnI5GEL4BhiGorpcCc44cs
-         kFoDDAkTGm1tOYqP+YUzTfyQzTV4czhPAIIdc=
-Message-ID: <4DE38F62.3000508@gmail.com>
-Date: Mon, 30 May 2011 15:36:50 +0300
-From: =?UTF-8?B?VMO2csO2ayBFZHdpbg==?= <edwintorok@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110510 Icedove/3.1.10
+	id S1754405Ab1E3Mih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 08:38:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53248 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751675Ab1E3Mig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 08:38:36 -0400
+Date: Mon, 30 May 2011 14:38:31 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm: fix special case -1 order check in compact_finished
+Message-ID: <20110530123831.GG20166@tiehlicka.suse.cz>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        kvm@vger.kernel.org, Christoph Lameter <cl@linux.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: fix mwait_play_dead() faulting on mwait-incapable
- cpus
-References: <201105301143.p4UBhco4001230@demeter2.kernel.org> <1306758237-9327-1-git-send-email-avi@redhat.com>
-In-Reply-To: <1306758237-9327-1-git-send-email-avi@redhat.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2011 03:23 PM, Avi Kivity wrote:
-> A logic error in mwait_play_dead() causes the kernel to use mwait
-> even on cpus which don't support it, such as KVM virtual cpus.
-> 
-> Introduced by 349c004e3d31fd.
-> 
-> Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=36222
+56de7263 (mm: compaction: direct compact when a high-order allocation
+fails) introduced a check for cc->order == -1 in compact_finished. We
+should continue compacting in that case because the request came from
+userspace and there is no particular order to compact for.
 
-Confirmed that it fixes it.
+The check is, however, done after zone_watermark_ok which uses order as
+a right hand argument for shifts. Not only watermark check is pointless
+if we can break out without it but it also uses 1 << -1 which is not
+well defined (at least from C standard). Let's move the -1 check above
+zone_watermark_ok.
 
->
-> Reported-by: Török Edwin <edwintorok@gmail.com>
-> Signed-off-by: Avi Kivity <avi@redhat.com>
-
-You can add this if you want to:
-Tested-by: Török Edwin <edwintorok@gmail.com>
-
-Thanks,
---Edwin
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+---
+ compaction.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+Index: linus_tree/mm/compaction.c
+===================================================================
+--- linus_tree.orig/mm/compaction.c	2011-05-30 14:19:58.000000000 +0200
++++ linus_tree/mm/compaction.c	2011-05-30 14:20:40.000000000 +0200
+@@ -420,13 +420,6 @@ static int compact_finished(struct zone
+ 	if (cc->free_pfn <= cc->migrate_pfn)
+ 		return COMPACT_COMPLETE;
+ 
+-	/* Compaction run is not finished if the watermark is not met */
+-	watermark = low_wmark_pages(zone);
+-	watermark += (1 << cc->order);
+-
+-	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
+-		return COMPACT_CONTINUE;
+-
+ 	/*
+ 	 * order == -1 is expected when compacting via
+ 	 * /proc/sys/vm/compact_memory
+@@ -434,6 +427,13 @@ static int compact_finished(struct zone
+ 	if (cc->order == -1)
+ 		return COMPACT_CONTINUE;
+ 
++	/* Compaction run is not finished if the watermark is not met */
++	watermark = low_wmark_pages(zone);
++	watermark += (1 << cc->order);
++
++	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
++		return COMPACT_CONTINUE;
++
+ 	/* Direct compactor: Is a suitable page free? */
+ 	for (order = cc->order; order < MAX_ORDER; order++) {
+ 		/* Job done if page is free of the right migratetype */
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
