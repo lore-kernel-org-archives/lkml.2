@@ -1,163 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab1E3NtD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 09:49:03 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58383 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab1E3Ns4 (ORCPT
+	id S1756964Ab1E3Nww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 09:52:52 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33187 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab1E3Nwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 09:48:56 -0400
+	Mon, 30 May 2011 09:52:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=sIyM1Zq+X/hB9vtq/DAMMuwp4RwNva4f3WMIcuCpiReyC2vpZm8C3pHP/dowZTgcrA
-         ED5uwSuC3fimstUxiBulsQlwZvnosTezEjJ03n9yXc2odQf41DNOhXpw0ImAqmxi+WDm
-         z6zbYmzO1AWw7BjumS6fKA6tHceXhb3TU7SQ4=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [PATCH 2/2] ext4: use proper little-endian bitops
-Date: Mon, 30 May 2011 22:49:42 +0900
-Message-Id: <1306763382-13817-2-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1306763382-13817-1-git-send-email-akinobu.mita@gmail.com>
-References: <1306763382-13817-1-git-send-email-akinobu.mita@gmail.com>
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=gF2hpNGBy6w5vll28l5Y0NNQ2dHSVVD1ai+BMRFgLvZ2Fioc5loMY3aA6FM9af1JzR
+         DHvF+rLISoESl5GEVa3rvLrueABaAb4lNYrl2ks3oTiEYa9l43lXviYNtxEka10delJv
+         pMMeOAz0ULyWA1IuKgAMhd5dx7eVIVN2+0LDg=
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Wanlong Gao <wanlong.gao@gmail.com>
+Subject: [PATCH] FS:remove the spare space in super.c
+Date: Mon, 30 May 2011 21:52:19 +0800
+Message-Id: <1306763539-3932-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using __test_and_{set,clear}_bit_le() with ignoring its return value
-can be replaced with __{set,clear}_bit_le().
+Remove the spare space in super.c.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org
+Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
 ---
- fs/ext4/balloc.c  |    8 ++++----
- fs/ext4/ialloc.c  |    2 +-
- fs/ext4/mballoc.c |    4 ++--
- fs/ext4/resize.c  |   12 ++++++------
- 4 files changed, 13 insertions(+), 13 deletions(-)
+ fs/super.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
-index 6230bf0..470bc03 100644
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -144,7 +144,7 @@ unsigned ext4_init_block_bitmap(struct super_block *sb, struct buffer_head *bh,
- 		int flex_bg = 0;
- 
- 		for (bit = 0; bit < bit_max; bit++)
--			__test_and_set_bit_le(bit, bh->b_data);
-+			__set_bit_le(bit, bh->b_data);
- 
- 		start = ext4_group_first_block_no(sb, block_group);
- 
-@@ -155,18 +155,18 @@ unsigned ext4_init_block_bitmap(struct super_block *sb, struct buffer_head *bh,
- 		/* Set bits for block and inode bitmaps, and inode table */
- 		tmp = ext4_block_bitmap(sb, gdp);
- 		if (!flex_bg || ext4_block_in_group(sb, tmp, block_group))
--			__test_and_set_bit_le(tmp - start, bh->b_data);
-+			__set_bit_le(tmp - start, bh->b_data);
- 
- 		tmp = ext4_inode_bitmap(sb, gdp);
- 		if (!flex_bg || ext4_block_in_group(sb, tmp, block_group))
--			__test_and_set_bit_le(tmp - start, bh->b_data);
-+			__set_bit_le(tmp - start, bh->b_data);
- 
- 		tmp = ext4_inode_table(sb, gdp);
- 		for (; tmp < ext4_inode_table(sb, gdp) +
- 				sbi->s_itb_per_group; tmp++) {
- 			if (!flex_bg ||
- 				ext4_block_in_group(sb, tmp, block_group))
--				__test_and_set_bit_le(tmp - start, bh->b_data);
-+				__set_bit_le(tmp - start, bh->b_data);
- 		}
- 		/*
- 		 * Also if the number of blocks within the group is
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 450d149..061a2406 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -59,7 +59,7 @@ void ext4_mark_bitmap_end(int start_bit, int end_bit, char *bitmap)
- 
- 	ext4_debug("mark end bits +%d through +%d used\n", start_bit, end_bit);
- 	for (i = start_bit; i < ((start_bit + 7) & ~7UL); i++)
--		__test_and_set_bit_le(i, bitmap);
-+		__set_bit_le(i, bitmap);
- 	if (i < end_bit)
- 		memset(bitmap + (i >> 3), 0xff, (end_bit - i) >> 3);
+diff --git a/fs/super.c b/fs/super.c
+index c755939..dc2d5f7 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -521,7 +521,7 @@ restart:
+ 	spin_unlock(&sb_lock);
+ 	return NULL;
  }
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 15b1716..80c7eb9 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -384,13 +384,13 @@ static inline int mb_test_bit(int bit, void *addr)
- static inline void mb_set_bit(int bit, void *addr)
+- 
++
+ struct super_block *user_get_super(dev_t dev)
  {
- 	addr = mb_correct_addr_and_bit(&bit, addr);
--	__test_and_set_bit_le(bit, addr);
-+	__set_bit_le(bit, addr);
- }
- 
- static inline void mb_clear_bit(int bit, void *addr)
- {
- 	addr = mb_correct_addr_and_bit(&bit, addr);
--	__test_and_clear_bit_le(bit, addr);
-+	__clear_bit_le(bit, addr);
- }
- 
- static inline int mb_find_next_zero_bit(void *addr, int max, int start)
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index 09e7f54..53d17fa 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -194,7 +194,7 @@ static int setup_new_group_blocks(struct super_block *sb,
- 
- 	if (ext4_bg_has_super(sb, input->group)) {
- 		ext4_debug("mark backup superblock %#04llx (+0)\n", start);
--		__test_and_set_bit_le(0, bh->b_data);
-+		__set_bit_le(0, bh->b_data);
- 	}
- 
- 	/* Copy all of the GDT blocks into the backup in this group */
-@@ -225,7 +225,7 @@ static int setup_new_group_blocks(struct super_block *sb,
- 			brelse(gdb);
- 			goto exit_bh;
- 		}
--		__test_and_set_bit_le(bit, bh->b_data);
-+		__set_bit_le(bit, bh->b_data);
- 		brelse(gdb);
- 	}
- 
-@@ -237,14 +237,14 @@ static int setup_new_group_blocks(struct super_block *sb,
- 	if (err)
- 		goto exit_bh;
- 	for (i = 0, bit = gdblocks + 1; i < reserved_gdb; i++, bit++)
--		__test_and_set_bit_le(bit, bh->b_data);
-+		__set_bit_le(bit, bh->b_data);
- 
- 	ext4_debug("mark block bitmap %#04llx (+%llu)\n", input->block_bitmap,
- 		   input->block_bitmap - start);
--	__test_and_set_bit_le(input->block_bitmap - start, bh->b_data);
-+	__set_bit_le(input->block_bitmap - start, bh->b_data);
- 	ext4_debug("mark inode bitmap %#04llx (+%llu)\n", input->inode_bitmap,
- 		   input->inode_bitmap - start);
--	__test_and_set_bit_le(input->inode_bitmap - start, bh->b_data);
-+	__set_bit_le(input->inode_bitmap - start, bh->b_data);
- 
- 	/* Zero out all of the inode table blocks */
- 	block = input->inode_table;
-@@ -255,7 +255,7 @@ static int setup_new_group_blocks(struct super_block *sb,
- 		goto exit_bh;
- 	for (i = 0, bit = input->inode_table - start;
- 	     i < sbi->s_itb_per_group; i++, bit++)
--		__test_and_set_bit_le(bit, bh->b_data);
-+		__set_bit_le(bit, bh->b_data);
- 
- 	if ((err = extend_or_restart_transaction(handle, 2, bh)))
- 		goto exit_bh;
+ 	struct super_block *sb;
 -- 
-1.7.4.4
+1.7.4.1
 
