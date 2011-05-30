@@ -1,68 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab1E3Lfz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 07:35:55 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:60256 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756764Ab1E3Lfx (ORCPT
+	id S1756763Ab1E3LkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 07:40:25 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45040 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab1E3LkY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 07:35:53 -0400
+	Mon, 30 May 2011 07:40:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=YNqElr5A1DVoNyITVsXPqpa2el5Auos+dwIvLBWiTO1UniSB9pWMk8xTwOPkvva1T9
-         9vMpDqopNmbO7fIrqRhPrGB93yrVr0RSsJ2b8Ps9QPIHr4M8u0VzVJLC9IkpfYmpuDV9
-         cTPgBeEPCuvaQtJAXLR4HeCj/Q/p3yAbhgHRM=
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=MnpXa7JWJlaXt5gwf8Jjp43edEsbnC+5oELB8vF03ih25iGNxSjwXlt7Gn7019Cjxf
+         UZiQHURLIxBweO78xZH+M+xc0rrsRN8jPtapGZlqlC+XbqAR3Vlls/k5Nbq7CuRqMslD
+         EonJjaeM/Dk21jtE+HS9GU3bLG9H1VHYNuvYY=
 MIME-Version: 1.0
-In-Reply-To: <20110530105937.GB20133@elte.hu>
-References: <cover.1306724657.git.luto@mit.edu> <07445623494a3d9f02581eb06326420f5f443043.1306724657.git.luto@mit.edu>
- <20110530074608.GD27557@elte.hu> <BANLkTi=aX5un5ZPVD9u6NRJb-koFG7T=6w@mail.gmail.com>
- <20110530105937.GB20133@elte.hu>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Mon, 30 May 2011 07:35:33 -0400
-X-Google-Sender-Auth: AdvhR5PK-TSFifNtE56pE8LQPis
-Message-ID: <BANLkTimhMuN03qABgs0+Z+yti-rco5V82Q@mail.gmail.com>
-Subject: Re: [PATCH v2 08/10] x86-64: Emulate vsyscalls
-To: Ingo Molnar <mingo@elte.hu>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>
+In-Reply-To: <20110530084906.GA11773@htj.dyndns.org>
+References: <BANLkTikH4k0MfTwNzNJN-P85ER4-hKdifw@mail.gmail.com>
+ <20110525143250.GJ10146@htj.dyndns.org> <201105300528.17384.vda.linux@googlemail.com>
+ <20110530084906.GA11773@htj.dyndns.org>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Mon, 30 May 2011 13:40:03 +0200
+Message-ID: <BANLkTinYRKKZL-9zntYuxLoa9NxSo70JGA@mail.gmail.com>
+Subject: Re: execve-under-ptrace API bug (was Re: Ptrace documentation, draft #3)
+To: Tejun Heo <tj@kernel.org>
+Cc: jan.kratochvil@redhat.com, oleg@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 6:59 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Andrew Lutomirski <luto@mit.edu> wrote:
->
+On Mon, May 30, 2011 at 10:49 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Mon, May 30, 2011 at 05:28:17AM +0200, Denys Vlasenko wrote:
+>> On Wednesday 25 May 2011 16:32, Tejun Heo wrote:
+>> > >   1.x execve under ptrace.
+>> > >
+>> > ...
+>> > >   ** we get death notification: leader died: **
+>> > >  PID0 exit(0)                            = ?
+>> > >   ** we get syscall-entry-stop in thread 1: **
+>> > >  PID1 execve("/bin/foo", "foo" <unfinished ...>
+>> > >   ** we get syscall-entry-stop in thread 2: **
+>> > >  PID2 execve("/bin/bar", "bar" <unfinished ...>
+>> > >   ** we get PTRACE_EVENT_EXEC for PID0, we issue PTRACE_SYSCALL **
+>> > >   ** we get syscall-exit-stop for PID0: **
+>> > >  PID0 <... execve resumed> )             = 0
+>> > >
+>> > > ??? Question: WHICH execve succeeded? Can tracer figure it out?
+>> >
+>> > Hmmm... I don't know.  Maybe we can set ptrace message to the original
+>> > tid?
 >>
->> I'd advocate waiting until glibc 2.14 comes out with this change:
+>> The problem with execve is bigger than merely reporting this pid.
 >>
->> http://sourceware.org/git/?p=glibc.git;a=commit;h=a8509ca540427502bd955f35296ff7b727c7a8a1
->>
->> I want to add a warning (ratelimited to an extremely low rate) in v3
->> whenever any of the vsyscalls get used telling users that their legacy
->> code is suffering a performance impact, but it seems like bad form to
->> tell people to build glibc from git to avoid a regression.
+>> Consider how strace tracks its tracees. Currently, it remembers
+>> their pids - sometimes by remembering clone's return values!
+>> This is hopelessly broken wrt pid namespaces.
 >
-> But only statically built binaries would be impacted in practice,
-> right? The number of statically built binaries that heavily rely on
-> vsyscalls ought to be a very small set ...
+> I'm not too familiar with pid namespaces but don't all threads of the
+> same process belong to the same namespace?  I don't think strace would
+> need to track pids all the time.  It just needs to store pids of
+> in-flight exec's and match it on exec completion.  I'm probably
+> missing something but why wouldn't that work?
 
-With current glibc even dynamic binaries take the hit on time().
+I think I was not clear (or elaborate) enough. I am not worrying
+about "two execve's in two threads at once" scenario. I am worried about
+the following scenario:
 
-With the emulation warning (coming in v3), I get (on a Fedora 15-based VM):
+* strace is run as "strace -f PROG ARGS" - that is, "trace children too" mode.
+* PROG forks a few times. Now strace traces several processes.
+* Now some of those processes create threads. Now, strace traces
+several processes, some (or even all) of them are multi-threaded.
+* From strace POW, it just knows a bunch of pids it traces. It doesn't
+maintain information who is whose parent *or sibling*.
+* One of threads in one of the processes execves.
+* Because of execve, _some_ threads (not _all_ straced pids, but only some!),
+more precisely, only those which comprise the thread group
+of the execve'ing thread, are dying, and execve'ing thread
+changes its pid on syscall exit and continues executing
+as a thread leader of the newly forked, (so far) single-threaded process.
+* PROBLEM: how strace knows which of its tracees are dead now?
 
-[    0.635493] init[1] emulated legacy vsyscall time(); upgrade your
-code to avoid a performance hit. ip:ffffffffff600404 sp:7fff277fe9c8
-caller:3da3e9e27d in libc.so.6[3da3e00000+192000]
+IOW: consider the following program (pseudo-C):
 
---Andy
+/* we are pid0 now: thread leader. Single-threaded so far... */
+/* create an ordinary child (not a thread) */
+child = fork();
+if (child==0) { sleep(0.001); exit(0); }
+/* create two threads */
+pid1 = clone();
+pid2 = clone();
+/* we have three threads now */
+if (we are not pid2) sleep(1); else execve("/proc/self/exe");
+/* pid0 and pid1 died, pid2 execve'ed and become "new" pid0 */
+/* go back to the beginning */
+
+Now imagine that you run it under "strace -f".
+If on execve strace would not bother deleting malloced
+struct tcb's which correspond to each running thread,
+it will leak memory on each execve.
+And because of the fork, it cannot delete ALL struct tcb's
+on execve - the child is not killed by execve, it must be
+still tracked!
+
+
+>> This works (I have a patch against a somewhat older strace),
+>> but now in light of this "interesting" execve-under-ptrace
+>> behavior it appears to have a flaw: all threads except the
+>> execve'ing one disappear without any notification to strace,
+>> therefore strace doesn't know which tracee data ("struct tcb"
+>> in strace-speak) need to be dropped!
+>>
+>> I am not sure current strace handles this correctly either.
+>> I will be very surprised if it does.
+>>
+>> I think the API needs fixing. Tracee must never disappear like that
+>> on execve (or in any other case). They must always deliver a
+>> WIFEXITED or WIFSIGNALED notification, allowing tracer to know
+>> that they are gone. We probably also need to document how are these
+>> "I died on execve" notifications are ordered wrt PTRACE_EVENT_EXEC
+>> stop in execve-ing thread.
+>
+> A problem is that by the time de-threading is in progress, it's
+> already too deep and there's no way back and the exec'ing thread has
+> to wait for completion in uninterruptible sleeps - ie. it expects
+> de-threading to finish in finite amount of time and to achieve that it
+> basically sends SIGKILL to all other threads.
+
+Which is fine. Can we make the death from this "internal SIGKILL"
+visible to the tracer of killed tracees?
+
+
+>  If we introduce a trap
+> in de-threading itself, we can easily end up with an unkillable
+> task.
+
+I don't see the need to ensure that de-threading deaths are visible to tracer
+before execve returns. They can be queued and seen by tracer later.
+
+
+-- 
+vda
