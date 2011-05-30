@@ -1,118 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980Ab1E3D00 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 23:26:26 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41465 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab1E3D0Y convert rfc822-to-8bit (ORCPT
+	id S1754063Ab1E3D2V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 23:28:21 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61676 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab1E3D2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 23:26:24 -0400
+	Sun, 29 May 2011 23:28:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=nvWeTV/RO7tWi9Nae20X5le75KqSwrTfUZP/5xvNV6DZ6g/KLqM0+ruDExdhI6OpPM
-         XkXa3II04t18t4ZN2DiWf0uGHVOpvDrEmb8er6hur+knrVdcV3LsiYboDBc1agN8NNNF
-         NcDWGyO+bZu0NwSv78dghRlk4lc9hEXbFktKY=
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=g1bvD0XaVdgFNVUek25yiBdfRv6osBns0Au43y5GFxwwmQOuFSyeKMSyicXnzyOyvH
+         Gtk7I9cMNuMhe6g0wNZ5hDIEhF527QPjSTKroIN8oCstlnlxqTgnMPcPIijMUMS+xH2V
+         7inoGXLTm0+C0L4RY1YjcnO5iMnvUVEhVz8N4=
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Tejun Heo <tj@kernel.org>
+Subject: execve-under-ptrace API bug (was Re: Ptrace documentation, draft #3)
+Date: Mon, 30 May 2011 05:28:17 +0200
+User-Agent: KMail/1.8.2
+Cc: jan.kratochvil@redhat.com, oleg@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
+References: <BANLkTikH4k0MfTwNzNJN-P85ER4-hKdifw@mail.gmail.com> <20110525143250.GJ10146@htj.dyndns.org>
+In-Reply-To: <20110525143250.GJ10146@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=zxA3xzc0pR14rqwaOUXUAyF__MQ@mail.gmail.com>
-References: <alpine.LFD.2.02.1105262049180.3078@ionos> <4DDEC589.3010201@mit.edu>
- <20110527061208.GB9260@elte.hu> <BANLkTinOQ_C_-Bix4FTQxHqP3aavmTRrzg@mail.gmail.com>
- <BANLkTikKAx=KXZuECAXaskhZOre-2ZHutw@mail.gmail.com> <20110528153536.GB27104@elte.hu>
- <19938.23219.306163.24059@pilspetsen.it.uu.se> <BANLkTi=y2vGbj_LMqyXzj4JPL+w_KL+=yQ@mail.gmail.com>
- <19938.28108.250080.666938@pilspetsen.it.uu.se> <BANLkTimXoLANJabAK8JfHsGi8OfDgPuhCA@mail.gmail.com>
- <19938.35645.288213.802394@pilspetsen.it.uu.se> <BANLkTi=zxA3xzc0pR14rqwaOUXUAyF__MQ@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sun, 29 May 2011 23:26:03 -0400
-X-Google-Sender-Auth: 0Wdf42psjRyWKTpN6qmJdafcTrw
-Message-ID: <BANLkTik1c9BvaoTKTdpTi9MRJYBLsNH4vA@mail.gmail.com>
-Subject: Re: [GIT pull] x86 vdso updates
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201105300528.17384.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 2:44 PM, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Sun, May 29, 2011 at 2:06 PM, Mikael Pettersson <mikpe@it.uu.se> wrote:
->> Andrew Lutomirski writes:
->>  > On Sun, May 29, 2011 at 12:01 PM, Mikael Pettersson <mikpe@it.uu.se> wrote:
->>  > > Andrew Lutomirski writes:
->>  > >  >
->>  > >  > All of the vsyscalls have vDSO versions that work like any other code.
->>  > >
->>  > > Easiest would be if we can simply map int $0xcc with rAX==FOO to syscall or
->>  > > int 0x80 with rAX==BAR.
->>  >
->>  > Yes and no.
->>  >
->>  > With the code I just posted (and am fixing up now) that will work.
->>  > But if we want to replace the entire vsyscall page with three int 0xcc
->>  > and 4090 int3 instructions, then we can't look at eax because it won't
->>  > contain anything meaningful.
->>
->> I can relatively easily also consider the original application rIP
->> when decoding and translating these instructions.
->>
->>  >
->>  > --Andy
->>  >
->>  > >
->>  > > We currently don't even know about the vDSO, it's all just user-space code
->>  > > to us.
->>  > >
->>  > >  > Alternatively, if the dynamic instrumentation code knew about
->>  > >  > vsyscalls, it could just not instrument addresses in the vsyscall
->>  > >  > page.
->>  > >
->>  > > Not instrumenting code is not an option, unless we can prove that the
->>  > > code in question has no relevant side-effects or unexpected control-flow.
->>  > > (Where "side-effects" relate both to the integrity of the instrumentation
->>  > > engine and the application-specific payload it's attaching to the code.)
->>  >
->>  > Calls to 0xffffffffff600000, 0xffffffffff600400, and
->>  > 0xffffffffff600800 are syscalls, as an (unfortunate) part of the ABI.
->>  >
->>  > >
->>  > >  > What existing applications would get broken?
->>  > >
->>  > > My concern is ThreadSpotter, but any user-space dynamic binary instrumentation
->>  > > engine that instruments down to the raw kernel interface (syscall/sysenter/int
->>  > > instructions) would have a problem with syscalls that only work at specific
->>  > > addresses.
->>  >
->>  > I'll look.
->>  >
->>  > >
->>  > > Anyway, if I can map that vsyscall to a plain proper syscall, then I'm OK.
->>  >
->>  > All three vsyscalls can be replaced with real syscalls without side
->>  > effects.  Would it be possible to teach the instrumentation code to
->>  > deal with that?
->>
->> Yes, I just need to know how to identify them and what their equivalents are.
->> E.g., an int3 at <known address> becomes syscall rAX=<some constant>.
->>
->> Sounds like this change will be manageable after all.  Thanks.
->
-> I'm not entirely sure I like that -- that way if we ever change it
-> again we break your stuff again.
->
-> Here are two proposals.
->
-> 1. Teach your code that call 0xffffffffff600000 means
-> gettimeofday(rdi, rsi).  That's guaranteed to never change and will
-> keep working even if we start to emulate vsyscalls by marking the page
-> not present and trapping the instruction fetch fault.
+On Wednesday 25 May 2011 16:32, Tejun Heo wrote:
+> > 	1.x execve under ptrace.
+> > 
+> ...
+> >   ** we get death notification: leader died: **
+> >  PID0 exit(0)                            = ?
+> >   ** we get syscall-entry-stop in thread 1: **
+> >  PID1 execve("/bin/foo", "foo" <unfinished ...>
+> >   ** we get syscall-entry-stop in thread 2: **
+> >  PID2 execve("/bin/bar", "bar" <unfinished ...>
+> >   ** we get PTRACE_EVENT_EXEC for PID0, we issue PTRACE_SYSCALL **
+> >   ** we get syscall-exit-stop for PID0: **
+> >  PID0 <... execve resumed> )             = 0
+> > 
+> > ??? Question: WHICH execve succeeded? Can tracer figure it out?
+> 
+> Hmmm... I don't know.  Maybe we can set ptrace message to the original
+> tid?
 
-valgrind might be doing this.  It does not appear to trace directly
-into vsyscalls, or at least it doesn't copy the int 0xcc instruction
-out of them.
+The problem with execve is bigger than merely reporting this pid.
 
---Andy
+Consider how strace tracks its tracees. Currently, it remembers
+their pids - sometimes by remembering clone's return values!
+This is hopelessly broken wrt pid namespaces.
+
+So I looked at removing all pid tracking from strace, because
+it uses pids only for some (extremely fragile) workarounds
+for old kernel bugs, such as: it suspends waitpid's in tracees
+until there is a child it can wait for; it detaches from
+a tracee if it gets signaled with a fatal signal or calls exit;
+and similar madness.
+
+There are many bugs in strace in this area, because it cannot
+properly emulate a lot of things (such as signal interrupting
+waitpid, waitpid(-PGID), etc).
+
+Therefore I plan to delete this madness.
+
+The idea is that strace can simply create a new tracee's data
+structure when it sees a new, never before seen pid popping up
+from waitpid - this means that [v]fork/clone created a child,
+and now it is traced too. It does not need to know beforehand
+about its pid. It does not need to know who is whose parent
+or sibling.
+
+This works (I have a patch against a somewhat older strace),
+but now in light of this "interesting" execve-under-ptrace
+behavior it appears to have a flaw: all threads except the
+execve'ing one disappear without any notification to strace,
+therefore strace doesn't know which tracee data ("struct tcb"
+in strace-speak) need to be dropped!
+
+I am not sure current strace handles this correctly either.
+I will be very surprised if it does.
+
+I think the API needs fixing. Tracee must never disappear like that
+on execve (or in any other case). They must always deliver a
+WIFEXITED or WIFSIGNALED notification, allowing tracer to know
+that they are gone. We probably also need to document how are these
+"I died on execve" notifications are ordered wrt PTRACE_EVENT_EXEC
+stop in execve-ing thread.
+
+Ideas?
+
+
+-- 
+vda
+
+
