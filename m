@@ -1,120 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757336Ab1E3UtT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 16:49:19 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59361 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab1E3UtL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 16:49:11 -0400
-Date: Mon, 30 May 2011 17:48:52 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: David Fries <david@fries.net>
-Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [PATCH] rfcomm/core.c avoid dangling pointer, check session
- exists
-Message-ID: <20110530204852.GE2556@joana>
-Mail-Followup-To: David Fries <david@fries.net>,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Marcel Holtmann <marcel@holtmann.org>
-References: <20110521190253.GA24600@spacedout.fries.net>
+	id S1755704Ab1E3UtM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 16:49:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55285 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752950Ab1E3UtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 16:49:10 -0400
+Message-ID: <4DE402BD.4060407@zytor.com>
+Date: Mon, 30 May 2011 13:49:01 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110521190253.GA24600@spacedout.fries.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Turning off the incremental diff robot
+References: <4DE3E9E7.8020008@zytor.com> <20110530194500.GE10792@home.goodmis.org>
+In-Reply-To: <20110530194500.GE10792@home.goodmis.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On 05/30/2011 12:45 PM, Steven Rostedt wrote:
+> On Mon, May 30, 2011 at 12:03:03PM -0700, H. Peter Anvin wrote:
+>> Hi all,
+>>
+>> With the v3.0 name change I was looking over what might break, and I'm
+>> seriously considering turning off the incremental diff robot on
+>> kernel.org.  It's not clear to me that it is actually useful anymore,
+>> with git and all.
+> 
+> What is the incremental diff robot?
+> 
+> Does it make the patches between 2.6.x to 2.6.x+1?
+> 
 
-* David Fries <david@fries.net> [2011-05-21 14:02:53 -0500]:
+No, but it generates the patches between, say, 2.6.x.y and 2.6.x.y+1 or
+2.6.x-rcy and 2.6.x-rcy+1.  Anything in an "incr" directory.
 
-> rfcomm_process_sessions is calling rfcomm_process_rx, but
-> in this case the session is closed and freed leaving a
-> dangling pointer that blows up when rfcomm_process_rx returns
-> and rfcomm_process_dlcs is called with the now dangling session
-> pointer.  Check to see if the entry is still in the list.
-> 
-> Signed-off-by: David Fries <David@Fries.net>
-> Cc: Marcel Holtmann <marcel@holtmann.org>
-> Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>
-> ---
-> I sent out an ealier patch,
-> Date: Mon, 21 Mar 2011 21:38:10 -0500
-> Subject: [PATCH] rfcomm/core.c avoid dangling pointer, check session
-> 
-> That version added a return value to rfcomm_session_close to determine
-> if the session was closed.  I thought this would be cleaner.
-> 
-> I can reproduce using blueman-manager on desktop, and Motorola S305 bluetooth
-> headset, 2.6.39, but it can take a few attempts.  Start out with the
-> desktop as the last device the S305 paired with.
-> desktop, connect to the S305,
-> S305, turn on
-> desktop (connection fails)
-> desktop (connection automatically comes up now that S305 is on)
-> desktop disconnect S305
-> desktop (kernel panic)
-> 
-> While rfcomm_process_sessions looks symmetrical,
-> rfcomm_session_hold(s);
-> rfcomm_process_rx
-> rfcomm_process_dlcs
-> rfcomm_session_put(s);
-> 
-> rfcomm_process_rx
-> if (sk->sk_state == BT_CLOSED) {
->         if (!s->initiator)
->                 rfcomm_session_put(s);
->         rfcomm_session_close(s, sk->sk_err);
-> 
-> Which isn't symmetrical.  I don't know enough about the subsystem to
-> know if there is a better cleaner way to fix this, or if my patch is
-> the best solution.
-> 
->  net/bluetooth/rfcomm/core.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
-> index c997393..ac47ef3 100644
-> --- a/net/bluetooth/rfcomm/core.c
-> +++ b/net/bluetooth/rfcomm/core.c
-> @@ -1952,6 +1952,12 @@ static inline void rfcomm_process_sessions(void)
->  
->  		default:
->  			rfcomm_process_rx(s);
-> +			/* The current session can be closed as part of rx
-> +			 * in which case s is now dangling.  Check if it
-> +			 * has been removed.
-> +			 */
-> +			if(n->prev != p)
-> +				continue;
->  			break;
->  		}
-
-I don't like this, it's not the proper fix. So I'm trying to figure out this
-and fix it. Can you try this patch:
-
-
-padovan bluetooth-next-2.6 $ git diff
-diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
-index 5759bb7..75c58ed 100644
---- a/net/bluetooth/rfcomm/core.c
-+++ b/net/bluetooth/rfcomm/core.c
-@@ -1958,6 +1958,9 @@ static inline void rfcomm_process_sessions(void)
-                        break;
-                }
- 
-+               if (s->sock->sk->sk_state == BT_CLOSED)
-+                       continue;
-+
-                rfcomm_process_dlcs(s);
- 
-                rfcomm_session_put(s);
+	-hpa
 
 -- 
-Gustavo F. Padovan
-http://profusion.mobi
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
