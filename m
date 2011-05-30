@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab1E3QZE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 12:25:04 -0400
-Received: from grimli.r00tworld.net ([83.169.44.195]:42954 "EHLO
-	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754666Ab1E3QZD (ORCPT
+	id S1757485Ab1E3QVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 12:21:12 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:56335 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756410Ab1E3QVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 12:25:03 -0400
-X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 May 2011 12:25:03 EDT
-From: Mathias Krause <minipli@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mathias Krause <minipli@googlemail.com>, stable@kernel.org
-Subject: [PATCH] init: use KERNEL_DS when trying to start init process
-Date: Mon, 30 May 2011 18:17:08 +0200
-Message-Id: <1306772228-1603-1-git-send-email-minipli@googlemail.com>
-X-Mailer: git-send-email 1.5.6.5
+	Mon, 30 May 2011 12:21:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=SQR7JUBSAbktQxuNjjwU3Me98KKeA+1WTmliGYMl5cICiq165vm3iUoZRsCaN5rd3K
+         YKcgJa3g0QPDFHe0oH1WhTEKPZYyolaMvWBfgBHZ29vhPpt9GU10r38ilcouiPlxCSiK
+         OwwM8mA/zK9lfN53PAAQnt6Q/QD3JzS3GQ1+k=
+MIME-Version: 1.0
+In-Reply-To: <20110530154357.GF2890@dhcp-172-31-194-241.cam.corp.google.com>
+References: <1306763382-13817-1-git-send-email-akinobu.mita@gmail.com>
+	<09010AAD-7443-4966-BF20-8580FBE8F389@dilger.ca>
+	<20110530154357.GF2890@dhcp-172-31-194-241.cam.corp.google.com>
+Date: Tue, 31 May 2011 01:21:10 +0900
+Message-ID: <BANLkTimyCY9_tAOAtoxyNOw4=e+Y0pO_sw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ext4: use little-endian bitops directly
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@dilger.ca>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use kernel_execve() to transfer control of the init procces from
-kernel to userland. If the program to start as init process isn't given
-on the kernel command line or fails to start we use a few hardcoded
-fallbacks. This fallback mechanism does not work when we encounter a
-file that is executable but fails to start, e.g. due to a missing
-library dependency or by having an unsupported file format.
+2011/5/31 Ted Ts'o <tytso@mit.edu>:
+> On Mon, May 30, 2011 at 08:49:43AM -0600, Andreas Dilger wrote:
+>> On 2011-05-30, at 7:49 AM, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+>> > s/ext4_set_bit/__test_and_set_bit_le/
+>> > s/ext4_clear_bit/__test_and_clear_bit_le/
+>> > s/ext4_test_bit/test_bit_le/
+>> > s/ext4_find_first_zero_bit/find_first_zero_bit_le/
+>> > s/ext4_find_next_zero_bit/find_next_zero_bit_le/
+>> > s/ext4_find_next_bit/find_next_bit_le/
+>>
+>> I'm not souch in favor of making this change. One reason is the need
+>> for inconsistent test_bit_le() vs __test_and_set_bit_le()
+>> functions. I think this will make it more difficult to get the
+>> correct bit operations (I for one do not know the difference between
+>> the normal and __ versions without looking each time).
+>
+> More to the point, what's the benefit of making this change?
 
-The bug is, that search_binary_handler() sets the address limit to
-USER_DS but doesn't reset it on error which will make all further
-attempts fail with -EFAULT because argv[0] is a pointer to kernel
-memory, not userland.
+The main purpose is patch 2/2 that replaces __test_and_{set,clear}_bit_le()
+with __{set,clear}_bit_le(). But there is no ext4_*_bit() macros for
+__{set,clear}_bit_le(). So I convert to use *_bit_le() directly in this
+patch instead of introducing another ext4_*_bit() macros.
 
-The bug can easily be reproduced by starting a 32 bit kernel with a 64
-bit executable as /init and a 32 bit version as /sbin/init within an
-initramfs. The hardcoded defaults should make /init fail because of the
-unsupported file format but should make /sbin/init succeed. This doesn't
-happen because the string "/sbin/init" lives in kernel memory and is no
-longer allowed because of the modified address limit to USER_DS after
-the failed execution attempt of /init.
+I don't insist on removing these macros for this purpose against the
+developper's will.  There is an alternative suggestion that changes
+ext4_*_bit() macros like below.
 
-Fixing the only user of kernel_execve that needs this tweaking was far
-more easy than changing the implementation for all architectures. This
-also makes backporting far more easy as this bug is in there from the
-very beginning -- at least it's in v2.6.12, too.
+#define ext4_test_and_set_bit	__test_and_set_bit_le
+#define ext4_set_bit		__set_bit_le
+#define ext4_set_bit_atomic	ext2_set_bit_atomic
+#define ext4_test_and_clear_bit	__test_and_clear_bit_le
+#define ext4_clear_bit		__clear_bit_le
+#define ext4_clear_bit_atomic	ext2_clear_bit_atomic
+#define ext4_test_bit		test_bit_le
+#define ext4_find_first_zero_bit	find_first_zero_bit_le
+#define ext4_find_next_zero_bit		find_next_zero_bit_le
+#define ext4_find_next_bit		find_next_bit_le
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-CC: stable@kernel.org
----
- init/main.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/init/main.c b/init/main.c
-index cafba67..4ee893a 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -731,6 +731,9 @@ static void __init do_pre_smp_initcalls(void)
- 
- static void run_init_process(const char *init_filename)
- {
-+	/* Ensure we can access in-kernel filenames -- previous exec attempts
-+	 * might have set the address limit to USER_DS */
-+	set_fs(KERNEL_DS);
- 	argv_init[0] = init_filename;
- 	kernel_execve(init_filename, argv_init, envp_init);
- }
--- 
-1.5.6.5
-
+By this chage, ext4_test_and_{set,clear}_bit are added and
+ext4_{set,clear}_bit are changed.
