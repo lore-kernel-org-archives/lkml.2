@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab1E3N1M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 09:27:12 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:65363 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab1E3N1K convert rfc822-to-8bit (ORCPT
+	id S1756997Ab1E3Ndy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 09:33:54 -0400
+Received: from mailx.hitachi.co.jp ([133.145.228.49]:64599 "EHLO
+	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755882Ab1E3Ndx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 09:27:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ELqHc56gtV9CW88HlyyRbFJ+n22YCTKVvEJn6FifdbxOGEFaamMg9NZHMUvPGYIOey
-         Djgmq3SY/MdDWEGYDuxoL+wOOmvaswFjWgHDmEI04HOK/SIOywN0S8Yk89gXJP0DxmNm
-         zhJY860Lt11gqpeToWXcYzH0QtAWu+E4SoXJM=
+	Mon, 30 May 2011 09:33:53 -0400
+X-AuditID: b753bd60-a3cc8ba000003bac-6d-4de39c3bed4a
+X-AuditID: b753bd60-a3cc8ba000003bac-6d-4de39c3bed4a
+Message-ID: <4DE39C31.1070600@hitachi.com>
+Date: Mon, 30 May 2011 22:31:29 +0900
+From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110530125822.GD3409@pengutronix.de>
-References: <1306758796-4254-1-git-send-email-daniel.blueman@gmail.com>
-	<20110530125822.GD3409@pengutronix.de>
-Date: Mon, 30 May 2011 21:27:09 +0800
-Message-ID: <BANLkTinL3ZvaNhYnsRMZQ4zBRLx6_F-O6Q@mail.gmail.com>
-Subject: Re: [PATCH] sdhci: fix undue iomem warning
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        pp-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH -tip v4 0/7] perf: Introduce branch sub commands
+References: <20110526050246.30011.86048.stgit@localhost6.localdomain6> <20110526132833.GC21815@nowhere> <4DDE7EAD.7000603@gmail.com>
+In-Reply-To: <4DDE7EAD.7000603@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
-
-On 30 May 2011 20:58, Wolfram Sang <w.sang@pengutronix.de> wrote:
-> Hi Daniel,
+(2011/05/27 1:24), David Ahern wrote:
 >
->> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
->> index 936bbca..ae948b0 100644
->> --- a/drivers/mmc/host/sdhci-pci.c
->> +++ b/drivers/mmc/host/sdhci-pci.c
->> @@ -918,8 +918,9 @@ static struct sdhci_pci_slot * __devinit sdhci_pci_probe_slot(
->>               return ERR_PTR(-ENODEV);
->>       }
+>
+> On 05/26/2011 07:28 AM, Frederic Weisbecker wrote:
+>> (Adding David Ahern in Cc)
 >>
->> -     if (pci_resource_len(pdev, bar) != 0x100) {
->> -             dev_err(&pdev->dev, "Invalid iomem size. You may "
->> +     int len = pci_resource_len(pdev, bar);
->> +     if (len != 0x100 && len != 0x200) {
+>> Ok that's all good except this needs to use the "perf script" centralized
+>> dump.
+>>
+>> Currently running "perf script" without an actual script dumps
+>> the events by default, whatever kind of event they are: hardware,
+>> software, tracepoints, ...
+>> So we want the branch output to be supported there, so we can reuse
+>> some code and interface.
+>>
+>> For example, "perf script -f branch:comm,tid,sym" would print the
+>> comm, tid and the sym for to and from addresses.
+>>
+>> That's better than creating a new set of options in a new command
+>> that people need to relearn while everybody could simply get
+>> familiarized with common perf script options.
+>>
+>> Of course we can still have a "perf branch" command, which could
+>> be a tiny shortcut that maps to perf record and perf script.
+>>
+>> Like:
+>>
+>> 	perf branch record
+>> 	perf branch [trace] -f tid,sym,comm
+>>
+>> Would map to:
+>>
+>> 	perf record branch:u
+>> 	perf script -f branch:tid,sym,comm
+>>
+>> And may be if one day we can do something more tricky than a
+>> linear output for branches (like source code coloring/browsing),
+>> then it may be implemented inside perf branch and not rely on
+>> another subcommand. Until then we are only dealing with raw linear
+>> dump, and that's a core job for perf script where we want to
+>> centralize that kind of facility.
 >
-> Hmmm,
+> I mentioned that when v3 was posted.
 >
-> a) SDHC Specs (even v3) only mention 0x100, so this _is_ the standard.
->   Do the new cards (which ones?) have anything located in the extra
->   area?
+> The sample address can be converted to symbols and the output can be
+> added to perf-script rather easily. Attached is an example. I was going
+> to submit it back in April and got distracted. I'll rebase, move the
+> addr->sym conversion to a function and submit later today.
+OK.
+I agreed with implementing it on perf script.
+I'd like to try it.
 
-This controller is a dual-slot one, so has two register sets (though
-one set of pins aren't wired to a socket).
+Thank you.
 
-> b) your approach won't scale very well
-
-True - a more scalable test would be to check for non-zero length and
-a multiple of 256 bytes, would you say?
-
-This would be in-tune with page 2 of:
-http://www.sdcard.org/developers/tech/host_controller/simple_spec/Simplified_SD_Host_Controller_Spec.pdf
-
-> so, I'd say it is better to keep the old way.
 >
->> +             dev_warn(&pdev->dev, "Invalid iomem size. You may "
->>                       "experience problems.\n");
+> David
 >
-> I second turning the message into a warning, though.
-
-If the latter method is preferred, I'll adjust the patch and resend.
-
-Thanks,
-  Daniel
--- 
-Daniel J Blueman
+>>
+>> Thanks.
+>>
