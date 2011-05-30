@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab1E3Bxx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 21:53:53 -0400
-Received: from mail.lang.hm ([64.81.33.126]:40354 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751389Ab1E3Bxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 21:53:52 -0400
-Date: Sun, 29 May 2011 18:53:18 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: "D. Jansen" <d.g.jansen@googlemail.com>
-cc: Theodore Tso <tytso@mit.edu>, Oliver Neukum <oneukum@suse.de>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-In-Reply-To: <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm>
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <201105231012.06928.oneukum@suse.de> <20110525000003.GJ32466@dastard> <201105250850.12179.oneukum@suse.de> <BANLkTincvGV735PKb60Kg0dLX6a1CZ-iNA@mail.gmail.com> <410B37BE-E380-40D0-82AA-48B56F389E16@mit.edu>
- <BANLkTimNjt4=9v33Z9Nr12xa6GmyJ-Ue5A@mail.gmail.com> <20110526133155.GH9520@thunk.org> <BANLkTinTzNN2P45tgZAQ9FsL43CqyAJR3Q@mail.gmail.com> <20110526162138.GN9520@thunk.org> <BANLkTinPCcX9-gK7YnMngGUJKftRTmYXNw@mail.gmail.com> <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu>
- <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753040Ab1E3B6Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 21:58:25 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56565 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229Ab1E3B6Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 21:58:24 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4DE2F9BA.5030802@jp.fujitsu.com>
+Date: Mon, 30 May 2011 10:58:18 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="680960-2052966338-1306720399=:5766"
+To: linux@treblig.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: sparse build breakage with 903c0c7cdc21f2ccb7562a7bbc70289c0c2b16ad
+References: <20110529003857.GA9898@gallifrey>
+In-Reply-To: <20110529003857.GA9898@gallifrey>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+(2011/05/29 9:38), Dr. David Alan Gilbert wrote:
+> Hi Kosaki,
+>   I'm getting a problem when running the current (5dbe0af47f8a8f968bac2991c3ec974c6e3eaabc)
+> kernel tree through sparse, and I think it's down to an
+> interaction between your commit
+> 
+> 903c0c7cdc21f2ccb7562a7bbc70289c0c2b16ad sparse: define dummy BUILD_BUG_ON definition for sparse
+> 
+> and the __module_param_call code in moduleparam.h
+> 
+> The error is:
+> init/main.c:643:1: error: Syntax error in unary expression
+> 
+> core_param(initcall_debug, initcall_debug, bool, 0644);
+> 
+> this calls __module_param_call which is defined as:
+> 
+> 
+> #define __module_param_call(prefix, name, ops, arg, isbool, perm)       \
+>         /* Default value instead of permissions? */                     \
+>         static int __param_perm_check_##name __attribute__((unused)) =  \
+>         BUILD_BUG_ON_ZERO((perm) < 0 || (perm) > 0777 || ((perm) & 2))  \
+>         + BUILD_BUG_ON_ZERO(sizeof(""prefix) > MAX_PARAM_PREFIX_LEN);   \
+>         static const char __param_str_##name[] = prefix #name;          \
+>         static struct kernel_param __moduleparam_const __param_##name   \
+>         __used                                                          \
+>     __attribute__ ((unused,__section__ ("__param"),aligned(sizeof(void *)))) \
+>         = { __param_str_##name, ops, perm, isbool ? KPARAM_ISBOOL : 0,  \
+>             { arg } }
+> 
+> which ends up with a postprocessed line of:
+> 
+> static inline void __check_initcall_debug(void) {; }; static int __param_perm_check_initcall_debug __attribute__((unused)) = +; static const char __param_str_initcall_debug[] = "" "initcall_debug"; static struct kernel_param const __param_initcall_debug __attribute__((__used__)) __attribute__ ((unused,__section__ ("__param"),aligned(sizeof(void *)))) = { __param_str_initcall_debug, &param_ops_bool, 0644, __builtin_types_compatible_p(typeof(initcall_debug), typeof(bool)) ? 2 : 0, { &initcall_debug } };
+> 
+> Note the '+;' being assigned to __param_perm_check_initcall_debug
+> 
+> So I think your dummy BUILD_BUG_ON_ZERO's needs to have a value:
+> 
+> The following diff seems to fix it, but I've not let
+> a fuller sparse run complete yet:
+> 
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index fb0e732..953352a 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -671,8 +671,8 @@ struct sysinfo {
+>  
+>  #ifdef __CHECKER__
+>  #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
+> -#define BUILD_BUG_ON_ZERO(e)
+> -#define BUILD_BUG_ON_NULL(e)
+> +#define BUILD_BUG_ON_ZERO(e) (0)
+> +#define BUILD_BUG_ON_NULL(e) ((void*)0)
+>  #define BUILD_BUG_ON(condition)
+>  #else /* __CHECKER__ */
+>  
 
---680960-2052966338-1306720399=:5766
-Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Hi David,
 
-On Sun, 29 May 2011, D. Jansen wrote:
+Right you are. Can you please send a formal patch and append following line?
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-> On Fri, May 27, 2011 at 4:17 PM, Theodore Tso <tytso@mit.edu> wrote:
->> On May 27, 2011, at 3:12 AM, D. Jansen wrote:
->>> That reordering is exactly what I'm talking about. It wasn't my idea.
->>> But if I understood it correctly, it's possible that the kernel
->>> commits writes of an application, _to one and the same file_, in a
->>> non-FIFO order, if the application does not fsync. And this _afaiu_
->>> could result in the loss not only of new data, but complete corruption
->>> of previously existing data in laptop mode without fsync.
->>
->> No, you're not understanding the problem.   All layers of the storage
->> stack -- including the hard drive -- is allowed to reorder writes.  So
->> even if the kernel sends data to the disk in the exact same order that
->> the application wrote it, it could still get written in a different order,
->> because the hard drive itself can reorder writes.   This is necessary
->> for performance; if you didn't have this, the storage stack would be
->> dog slow, and would consume even more power.
->>
->> So at least level, the only thing you can count upon is that if you want
->> to make sure everything is flushed to stable store, you need to send
->> an fsync() command at the application to file system level, or a barrier
->> or flush command at the OS to hard drive level.
-> (...)
->> Ordering doesn't matter, because nothing, including the hard drive,
->> guarantees ordering.  What does matter is that the fsync() commands
->> act like barriers; writes before the fsync() command are guaranteed
->> to be written to the disk, and survive a reboot, before any writes after
->> the fsync() are processed.  See?
->
-> Ok, thanks a lot! I understand a lot better now!
-> So we can't live without the fsyncs.
->
-> So what if we would queue the fsyncs along with the writes - we would
-> just fsync later instead of immediately, in between the writes as they
-> came in. Then by design previous data could not be corrupted, right?
-> We would do exactly the same thing, just later.
-> It'd be kind of a disk write time distortion field.
+Thanks.
 
-the problem is that the spec for fsync says that your program stops until 
-fsync finishes. If you don't do that then you will corrupt and loose data.
 
-so if you delay fsync you will have your application (or desktop manager) 
-freeze until the fsync completes.
 
-if what you are wanting is the ability to say 'these things must be 
-written before these other things to keep them from being corrupted, but I 
-don't care when they get written (or if they get lost in a crash)' then 
-what you want isn't fsync, it's a barrier.
 
-David Lang
---680960-2052966338-1306720399=:5766--
+
+
+
