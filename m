@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab1E3NJv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 09:09:51 -0400
-Received: from verein.lst.de ([213.95.11.211]:37460 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755882Ab1E3NJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 09:09:50 -0400
-Date: Mon, 30 May 2011 15:09:49 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Andy Grover <agrover@redhat.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] iscsi-target: Merge for .40-rc1
-Message-ID: <20110530130949.GB13494@lst.de>
-References: <1306551592.23461.506.camel@haakon2.linux-iscsi.org> <BANLkTimt5qisV7EH7NMv1tG8gR_9d-kA3g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimt5qisV7EH7NMv1tG8gR_9d-kA3g@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1756852Ab1E3NKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 09:10:49 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:45487 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751573Ab1E3NKs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 09:10:48 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18PqX5IrU8PwYtP/mI5yzLx5bMJGiIRmYyP/tTXcR
+	E9IqWCS5WmvNEi
+Subject: Re: Very high CPU load when idle with 3.0-rc1
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Damien Wyart <damien.wyart@free.fr>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1306755291.1200.2872.camel@twins>
+References: <20110530055924.GA9169@brouette>
+	 <1306755291.1200.2872.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 30 May 2011 15:10:43 +0200
+Message-ID: <1306761043.7415.5.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 11:49:08AM -0700, Linus Torvalds wrote:
-> I don't feel confident or motivated enough about iscsi-target, so
-> after some (little) thought I ended up not pulling this. I really need
-> a lot of acks from people who actually work on and care about SCSI,
-> and right now I feel like with me being away for the next week, I
-> can't handle it.
+On Mon, 2011-05-30 at 13:34 +0200, Peter Zijlstra wrote:
+> On Mon, 2011-05-30 at 07:59 +0200, Damien Wyart wrote:
+> > Hi,
+> > 
+> > Testing 3.0-rc1 on a core i7 (4 cores + HT), I get a load average of 9.0
+> > when idle. No process is shown running or in "D state" in htop. The box
+> > is behaving normal, no impression of lag or slowness.
+> > 
+> > Not sure what other info to include, I guess this should be quite easy
+> > to reproduce.
 > 
-> I just don't want to be in the situation where I pull something that
-> is apparently contentious in the SCSI space in general, but that's
-> _particularly_ true this release. So I'm afraid that this essentially
-> got pushed out to the next release.
+> 
+> ---
+> Subject: rcu: Cure load woes
+> 
+> Commit cc3ce5176d83 (rcu: Start RCU kthreads in TASK_INTERRUPTIBLE
+> state) fudges a sleeping task' state, resulting in the scheduler seeing
+> a TASK_UNINTERRUPTIBLE task going to sleep, but a TASK_INTERRUPTIBLE
+> task waking up. The result is unbalanced load calculation.
 
-The main contention right now is wether to put the authentification
-into kernel space or not.  Doing the slow path in userspace worked
-out okay but not great on the initiator, but it has the potential
-to become a nightmare worse than oprofile if the split ends up not
-beeing perfect.
+(darn, 'which' poked me in the eye, but 'how' didn't)
 
-Given that we pretty well tested and working code that's used in lots
-of production setups my vote is for taking it as-is unless someone can
-actually show a prototype for a nicely working user/kernel split.
+Yup, all better.
+
+	-Mike
 
