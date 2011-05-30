@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab1E3SVK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 14:21:10 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54902 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab1E3SVH (ORCPT
+	id S1757275Ab1E3SWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 14:22:20 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:36013 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638Ab1E3SWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 14:21:07 -0400
-Date: Mon, 30 May 2011 20:21:03 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+	Mon, 30 May 2011 14:22:20 -0400
+Date: Mon, 30 May 2011 20:22:21 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Rohit Yadav <rohityadav89@gmail.com>, len.brown@intel.com, trenn@suse.de,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sdhci: fix undue iomem warning
-Message-ID: <20110530182103.GA2674@pengutronix.de>
-References: <1306758796-4254-1-git-send-email-daniel.blueman@gmail.com>
- <20110530125822.GD3409@pengutronix.de>
- <BANLkTinL3ZvaNhYnsRMZQ4zBRLx6_F-O6Q@mail.gmail.com>
+Subject: Re: [PATCH] Arch: x86: process: Fix a compilation warning.
+Message-ID: <20110530182221.GA16214@gere.osrc.amd.com>
+References: <rohityadav89@gmail.com>
+ <1306776629-13404-1-git-send-email-rohityadav89@gmail.com>
+ <11791.1306777203@turing-police.cc.vt.edu>
+ <BANLkTim2yJkQG=2JzFwxcAUfB3HF_m52Rg@mail.gmail.com>
+ <13206.1306779099@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mP3DRpeJDSE+ciuQ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTinL3ZvaNhYnsRMZQ4zBRLx6_F-O6Q@mail.gmail.com>
+In-Reply-To: <13206.1306779099@turing-police.cc.vt.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 30, 2011 at 02:11:39PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 30 May 2011 23:28:47 +0530, Rohit Yadav said:
+> 
+> > Attached: New patch.
+> 
+> Still needs help:
+> 
+> > Remove unknown escape sequence \i in idle_setup.
+> 
+> > -		WARN_ONCE(1, "\idle=mwait\" will be removed in 2012\"\n");
+> > +		WARN_ONCE(1, "\"idle=mwait\" will be removed in 2012.\n");
+> 
+> Changelog should say "Fix mismatched escaped quotes to resolve compiler warning" or
+> similar. You should explain *what* the patch does (fix the quotes) and *why*
+> (because it's broken and won't compile).
 
---mP3DRpeJDSE+ciuQ
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yep, all valid points. Another one would be to search whether this got
+already fixed before wasting effort:
 
+http://git.kernel.org/tip/598e887d8b01655780c81cc86a9e7820ed091580
 
-> > a) SDHC Specs (even v3) only mention 0x100, so this _is_ the standard.
-> > =A0 Do the new cards (which ones?) have anything located in the extra
-> > =A0 area?
->=20
-> This controller is a dual-slot one, so has two register sets (though
-> one set of pins aren't wired to a socket).
+But it's not like there's nothing else that needs fixing in Linux. I'd
+suggest using the new 'make W=' (do 'make help' for more info) build
+option to build single objects and have gcc do more extensive checks.
+Some of them actually are valid and need fixing.
 
-There are two controllers and they are packed into one PCI-bar? :( I guess =
-this
-needs refactoring of the probe_slot routine then. Just silencing the warning
-will just hide the problem.
+Thanks.
 
-> > b) your approach won't scale very well
->=20
-> True - a more scalable test would be to check for non-zero length and
-> a multiple of 256 bytes, would you say?
+-- 
+Regards/Gruss,
+Boris.
 
-That wouldn't alarm for 0x10000 or the like, so no gain as well.
-
-> >> + =A0 =A0 =A0 =A0 =A0 =A0 dev_warn(&pdev->dev, "Invalid iomem size. Yo=
-u may "
-> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 "experience problems.\n");
-> >
-> > I second turning the message into a warning, though.
->=20
-> If the latter method is preferred, I'll adjust the patch and resend.
-
-Reconsidering: Given the current situation, an error message is maybe not a
-that bad idea, until the code can handle two controllers in one bar.
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---mP3DRpeJDSE+ciuQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk3j4A8ACgkQD27XaX1/VRstGACgr0L5lhHGESrKJg0HpmDn7THX
-ZJEAn2GoYrKEEJYKxADe3OxVjr/kix9Y
-=sJiG
------END PGP SIGNATURE-----
-
---mP3DRpeJDSE+ciuQ--
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
