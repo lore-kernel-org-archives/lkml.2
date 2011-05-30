@@ -1,105 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab1E3D2V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 May 2011 23:28:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61676 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab1E3D2U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 May 2011 23:28:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=g1bvD0XaVdgFNVUek25yiBdfRv6osBns0Au43y5GFxwwmQOuFSyeKMSyicXnzyOyvH
-         Gtk7I9cMNuMhe6g0wNZ5hDIEhF527QPjSTKroIN8oCstlnlxqTgnMPcPIijMUMS+xH2V
-         7inoGXLTm0+C0L4RY1YjcnO5iMnvUVEhVz8N4=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Tejun Heo <tj@kernel.org>
-Subject: execve-under-ptrace API bug (was Re: Ptrace documentation, draft #3)
-Date: Mon, 30 May 2011 05:28:17 +0200
-User-Agent: KMail/1.8.2
-Cc: jan.kratochvil@redhat.com, oleg@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-References: <BANLkTikH4k0MfTwNzNJN-P85ER4-hKdifw@mail.gmail.com> <20110525143250.GJ10146@htj.dyndns.org>
-In-Reply-To: <20110525143250.GJ10146@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201105300528.17384.vda.linux@googlemail.com>
+	id S1754257Ab1E3Dfl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 May 2011 23:35:41 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46515 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751389Ab1E3Dfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 May 2011 23:35:39 -0400
+Date: Mon, 30 May 2011 13:35:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for May 30
+Message-Id: <20110530133531.847630f2.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__30_May_2011_13_35_31_+1000_qEb2aSW6IuX.YwbL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 25 May 2011 16:32, Tejun Heo wrote:
-> > 	1.x execve under ptrace.
-> > 
-> ...
-> >   ** we get death notification: leader died: **
-> >  PID0 exit(0)                            = ?
-> >   ** we get syscall-entry-stop in thread 1: **
-> >  PID1 execve("/bin/foo", "foo" <unfinished ...>
-> >   ** we get syscall-entry-stop in thread 2: **
-> >  PID2 execve("/bin/bar", "bar" <unfinished ...>
-> >   ** we get PTRACE_EVENT_EXEC for PID0, we issue PTRACE_SYSCALL **
-> >   ** we get syscall-exit-stop for PID0: **
-> >  PID0 <... execve resumed> )             = 0
-> > 
-> > ??? Question: WHICH execve succeeded? Can tracer figure it out?
-> 
-> Hmmm... I don't know.  Maybe we can set ptrace message to the original
-> tid?
+--Signature=_Mon__30_May_2011_13_35_31_+1000_qEb2aSW6IuX.YwbL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The problem with execve is bigger than merely reporting this pid.
+Hi all,
 
-Consider how strace tracks its tracees. Currently, it remembers
-their pids - sometimes by remembering clone's return values!
-This is hopelessly broken wrt pid namespaces.
+Changes since 20110527:
 
-So I looked at removing all pid tracking from strace, because
-it uses pids only for some (extremely fragile) workarounds
-for old kernel bugs, such as: it suspends waitpid's in tracees
-until there is a child it can wait for; it detaches from
-a tracee if it gets signaled with a fatal signal or calls exit;
-and similar madness.
+Linus' tree still has its build failure for which I reverted a commit.
 
-There are many bugs in strace in this area, because it cannot
-properly emulate a lot of things (such as signal interrupting
-waitpid, waitpid(-PGID), etc).
+The nfs tree lost its buiild failure.
 
-Therefore I plan to delete this madness.
+The idle-test tree gained conflicts against Linus' tree.
 
-The idea is that strace can simply create a new tracee's data
-structure when it sees a new, never before seen pid popping up
-from waitpid - this means that [v]fork/clone created a child,
-and now it is traced too. It does not need to know beforehand
-about its pid. It does not need to know who is whose parent
-or sibling.
+The scsi tree lost its build failure.
 
-This works (I have a patch against a somewhat older strace),
-but now in light of this "interesting" execve-under-ptrace
-behavior it appears to have a flaw: all threads except the
-execve'ing one disappear without any notification to strace,
-therefore strace doesn't know which tracee data ("struct tcb"
-in strace-speak) need to be dropped!
+The async_tx tree lost its conflict.
 
-I am not sure current strace handles this correctly either.
-I will be very surprised if it does.
+The mtd tree lost its conflicts.
 
-I think the API needs fixing. Tracee must never disappear like that
-on execve (or in any other case). They must always deliver a
-WIFEXITED or WIFSIGNALED notification, allowing tracer to know
-that they are gone. We probably also need to document how are these
-"I died on execve" notifications are ordered wrt PTRACE_EVENT_EXEC
-stop in execve-ing thread.
+The drivers-x86 tree lost its conflicts.
 
-Ideas?
+----------------------------------------------------------------------------
 
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
 
--- 
-vda
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
 
+Below is a summary of the state of the merge.
 
+We are up to 191 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+CONFLICT (content): Merge conflict in arch/sparc/include/asm/smp_32.h
+CONFLICT (content): Merge conflict in arch/sparc/kernel/smp_32.c
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+CONFLICT (content): Merge conflict in drivers/rtc/Kconfig
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+CONFLICT (content): Merge conflict in arch/x86/include/asm/processor.h
+CONFLICT (content): Merge conflict in arch/x86/kernel/cpu/common.c
+CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging bluetooth/master
+CONFLICT (content): Merge conflict in net/bluetooth/l2cap_core.c
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging cpufreq-move/move-drivers
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+CONFLICT (content): Merge conflict in drivers/mfd/Kconfig
+CONFLICT (content): Merge conflict in drivers/mfd/Makefile
+CONFLICT (content): Merge conflict in drivers/regulator/Makefile
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging gpio/gpio/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging kvm/linux-next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+Merging slabh/slabh
+Merging bkl-config/config
+Merging cleancache/linux-next
+Merging arm-dt/devicetree/arm-next
+Merging scsi-post-merge/merge-base:master
+[master 81cd8a9] Revert "kgdbts: unify/generalize gdb breakpoint adjustment"
+
+--Signature=_Mon__30_May_2011_13_35_31_+1000_qEb2aSW6IuX.YwbL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN4xCDAAoJEDMEi1NhKgbs9DwH/1e1h7RI13j8AhfrEhmLgzaC
+D7sqc/79vp5zdr4xskP6pse+V5QyC49TM16pAO+WX1qU1d/6RhhWWAuJNQsOduLq
+jv5DnVNyeb5DTbzRTV+npTpMtQsMG5ts2EN2lfgt3Htc3zk4AwMvPbjeUIWGHbZH
+49H8egYatGEq5OA+XtL511zFCCXhn0VMwt6D95y6YOC/vD1MMoT+uUqZ/hSZpZ/X
+CQqvOwPDyJjHJ1Z2AkS6bv2QRimQh07mBX3qoMhXk3K++chFfKhEL1bykMahdi92
+/JzB8NZdMKAClrMQQaDBg3azlqzzkc+H8aUw+xaDvnxbQ6zRt1Dv4d8y70cy704=
+=9oCD
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__30_May_2011_13_35_31_+1000_qEb2aSW6IuX.YwbL--
