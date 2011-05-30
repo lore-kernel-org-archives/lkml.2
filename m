@@ -1,352 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab1E3HfO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 03:35:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39200 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731Ab1E3HfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 03:35:08 -0400
-Date: Mon, 30 May 2011 09:35:03 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@MIT.EDU>
-Cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>
-Subject: Re: [PATCH v2 08/10] x86-64: Emulate vsyscalls
-Message-ID: <20110530073503.GC6720@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Andy Lutomirski <luto@MIT.EDU>, Ingo Molnar <mingo@elte.hu>,
-	x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-	linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Arjan van de Ven <arjan@infradead.org>,
-	Jan Beulich <JBeulich@novell.com>,
-	richard -rw- weinberger <richard.weinberger@gmail.com>,
-	Mikael Pettersson <mikpe@it.uu.se>
-References: <cover.1306724657.git.luto@mit.edu>
- <07445623494a3d9f02581eb06326420f5f443043.1306724657.git.luto@mit.edu>
+	id S1755784Ab1E3HlV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 03:41:21 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:57257 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755655Ab1E3HlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 03:41:18 -0400
+Date: Mon, 30 May 2011 09:41:15 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: torvalds@osdl.org
+Cc: cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu,
+        Thomas Renninger <trenn@suse.de>, linux-pm@lists.linux-foundation.org,
+        lenb@kernel.org
+Subject: Re: [git pull] cpupowerutils
+Message-ID: <20110530074115.GA16638@isilmar-3.linta.de>
+Mail-Followup-To: torvalds@osdl.org, cpufreq@vger.kernel.org,
+	linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	mingo@elte.hu, Thomas Renninger <trenn@suse.de>,
+	linux-pm@lists.linux-foundation.org, lenb@kernel.org
+References: <20110524092500.GB28923@comet.dominikbrodowski.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <07445623494a3d9f02581eb06326420f5f443043.1306724657.git.luto@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110524092500.GB28923@comet.dominikbrodowski.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 11:48:45PM -0400, Andy Lutomirski wrote:
-> There's a fair amount of code in the vsyscall page, and who knows
-> what will happen if an exploit jumps into the middle of it.  Reduce
-> the risk by replacing most of it with short magic incantations that
-> are useless if entered in the middle.  This change can be disabled
-> by CONFIG_UNSAFE_VSYSCALLS (default y).
-> 
-> This causes vsyscalls to be a little more expensive than real
-> syscalls.  Fortunately sensible programs don't use them.
-> 
-> Some care is taken to make sure that tools like valgrind and
-> ThreadSpotter still work.
-> 
-> This patch is not perfect: the vread_tsc and vread_hpet functions
-> are still at a fixed address.  Fixing that might involve making
-> alternative patching work in the vDSO.
-> 
-> Signed-off-by: Andy Lutomirski <luto@mit.edu>
-> ---
->  arch/x86/Kconfig                  |   17 +++++
->  arch/x86/kernel/Makefile          |    3 +
->  arch/x86/kernel/vsyscall_64.c     |  121 +++++++++++++++++++++++++++++++++++--
->  arch/x86/kernel/vsyscall_emu_64.S |   40 ++++++++++++
->  4 files changed, 176 insertions(+), 5 deletions(-)
->  create mode 100644 arch/x86/kernel/vsyscall_emu_64.S
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index cc6c53a..186018b 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1650,6 +1650,23 @@ config COMPAT_VDSO
->  
->  	  If unsure, say Y.
->  
-> +config UNSAFE_VSYSCALLS
-> +	def_bool y
-> +	prompt "Unsafe fast legacy vsyscalls"
-> +	depends on X86_64
-> +	---help---
-> +	  Legacy user code expects to be able to issue three syscalls
-> +	  by calling fixed addresses in kernel space.  If you say N,
-> +	  then the kernel traps and emulates these calls.  If you say
-> +	  Y, then there is actual executable code at a fixed address
-> +	  to implement these calls efficiently.
-> +
-> +	  On a system with recent enough glibc (probably 2.14 or
-> +	  newer) and no static binaries, you can say N without a
-> +	  performance penalty to improve security
-> +
-> +	  If unsure, say Y.
-> +
->  config CMDLINE_BOOL
->  	bool "Built-in kernel command line"
->  	---help---
-> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-> index a24521b..b901781 100644
-> --- a/arch/x86/kernel/Makefile
-> +++ b/arch/x86/kernel/Makefile
-> @@ -42,6 +42,9 @@ obj-$(CONFIG_X86_32)	+= probe_roms_32.o
->  obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
->  obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
->  obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o vread_tsc_64.o
-> +ifndef CONFIG_UNSAFE_VSYSCALLS
-> +	obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
-> +endif
->  obj-y			+= bootflag.o e820.o
->  obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
->  obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
-> diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-> index 71fa506..5b3d62a 100644
-> --- a/arch/x86/kernel/vsyscall_64.c
-> +++ b/arch/x86/kernel/vsyscall_64.c
-> @@ -48,9 +48,6 @@
->  #include <asm/vgtod.h>
->  #include <asm/traps.h>
->  
-> -#define __vsyscall(nr) \
-> -		__attribute__ ((unused, __section__(".vsyscall_" #nr))) notrace
-> -
->  DEFINE_VVAR(int, vgetcpu_mode);
->  DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
->  {
-> @@ -96,6 +93,7 @@ static void warn_bad_vsyscall(struct pt_regs *regs, bool is_warning,
->  		return;
->  
->  	tsk = current;
-> +
->  	printk("%s%s[%d] %s ip:%lx sp:%lx ax:%lx si:%lx di:%lx",
->  	       is_warning ? KERN_WARNING : KERN_INFO,
->  	       tsk->comm, task_pid_nr(tsk),
-> @@ -106,6 +104,12 @@ static void warn_bad_vsyscall(struct pt_regs *regs, bool is_warning,
->  	printk("\n");
->  }
->  
-> +#ifdef CONFIG_UNSAFE_VSYSCALLS
-> +
-> +#define __vsyscall(nr)							\
-> +	__attribute__ ((unused, __section__(".vsyscall_" #nr))) notrace
-> +
-> +
->  /* RED-PEN may want to readd seq locking, but then the variable should be
->   * write-once.
->   */
-> @@ -117,8 +121,11 @@ static __always_inline void do_get_tz(struct timezone * tz)
->  static __always_inline int fallback_gettimeofday(struct timeval *tv)
->  {
->  	int ret;
-> -	/* Invoke do_emulate_vsyscall. */
-> -	asm volatile("movb $0xce, %%al;\n\t"
-> +	/*
-> +	 * Invoke do_emulate_vsyscall.  Intentionally incompatible with
-> +	 * the CONFIG_UNSAFE_VSYSCALLS=n case.
-> +	 */
-> +	asm volatile("mov $0xce, %%al;\n\t"
->  		     "int %[vec]"
->  		     : "=a" (ret)
->  		     : "D" (tv), [vec] "i" (VSYSCALL_EMU_VECTOR));
-> @@ -237,6 +244,8 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
->  	long ret;
->  
->  	/* Kernel code must never get here. */
-> +	if (!user_mode(regs))
-> +		early_printk("oh crap!\n");
->  	BUG_ON(!user_mode(regs));
->  
->  	local_irq_enable();
-> @@ -278,6 +287,106 @@ out:
->  	local_irq_disable();
->  }
->  
-> +#else /* CONFIG_UNSAFE_VSYSCALLS=n below */
-> +
-> +static inline unsigned long vsyscall_intcc_addr(int vsyscall_nr)
-> +{
-> +	return VSYSCALL_START + 1024*vsyscall_nr + 2;
-> +}
-> +
-> +void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
-> +{
-> +	u8 vsyscall_nr, al;
-> +	long ret;
-> +
-> +	/* Kernel code must never get here. */
-> +	BUG_ON(!user_mode(regs));
-> +
-> +	local_irq_enable();
-> +
-> +	/*
-> +	 * Decode the vsyscall number.
-> +	 * 0xcc -> 0, 0xce -> 1, 0xf0 -> 2; see vsyscall_emu_64.S for why.
-> +	 */
-> +	al = regs->ax & 0xff;
-> +	vsyscall_nr = (al - 0xcc) >> 1;
+Linus,
 
-Ok, but
+wouldn't the upcoming 3.0 kernel release be a wonderful reason to merge
+a few more kernel-related utilities into your tree? Especially one such
+project -- cpupowerutils -- which did ask to be merged one week ago, still
+well within the merge window, but tragically got lost amid all the
+discussions on how the next release shall be called?
 
-	(0xf0 - 0xcc) >> 1 == 0x12
+Best,
+	Dominik
 
-Don't you mean 0xd0 here? Although 0xd0 is opcode for all those
-rotate/shift insns. What am I missing?
-
-> +	if (vsyscall_nr > 2 || al != (vsyscall_nr << 1) + 0xcc) {
-> +		warn_bad_vsyscall(regs, false, "illegal int 0xcc "
-> +				  "(exploit attempt?)");
-> +		force_sig(SIGSEGV, current);
-> +		goto out;
-> +	}
-> +
-> +	if (regs->ip - 2 != vsyscall_intcc_addr(vsyscall_nr)) {
-> +		if (in_vsyscall_page(regs->ip - 2)) {
-> +			/* This should not be possible. */
-> +			warn_bad_vsyscall(regs, true, "int 0xcc severe badness"
-> +					  " (exploit attempt?)");
-> +			force_sig(SIGSEGV, current);
-> +			goto out;
-> +		} else {
-> +			/*
-> +			 * We allow the call because tools like ThreadSpotter
-> +			 * might copy the int 0xcc instruction to user memory.
-> +			 * We make it annoying, though, to try to persuade
-> +			 * the authors to stop doing that...
-> +			 */
-> +			warn_bad_vsyscall(regs, true, "int 0xcc in user code "
-> +					  "(exploit attempt? legacy "
-> +					  "instrumented code?)");
-> +		}
-> +	}
-> +
-> +	if (current->seccomp.mode) {
-> +		do_exit(SIGKILL);
-> +		goto out;
-> +	}
-> +
-> +	switch(vsyscall_nr)
-> +	{
-> +	case 0:
-> +		ret = sys_gettimeofday(
-> +			(struct timeval __user *)regs->di,
-> +			(struct timezone __user *)regs->si);
-> +		break;
-> +
-> +	case 1:
-> +		ret = sys_time((time_t __user *)regs->di);
-> +		break;
-> +
-> +	case 2:
-> +		ret = sys_getcpu((unsigned __user *)regs->di,
-> +				 (unsigned __user *)regs->si,
-> +				 0);
-> +		break;
-> +
-> +	default:
-> +		unreachable();
-> +	}
-> +
-> +	if (ret == -EFAULT) {
-> +		/*
-> +		 * Bad news -- userspace fed a bad pointer to a vsyscall.
-> +		 *
-> +		 * With a real vsyscall, that would have caused SIGSEGV.
-> +		 * To make writing reliable exploits using the emulated
-> +		 * vsyscalls harder, generate SIGSEGV here as well.
-> +		 */
-> +		warn_bad_vsyscall(regs, false,
-> +				  "vsyscall fault (exploit attempt?)");
-> +		force_sig(SIGSEGV, current);
-> +		goto out;
-> +	}
-> +
-> +	regs->ax = ret;
-> +
-> +out:
-> +	local_irq_disable();
-> +	return;
-> +}
-> +
-> +#endif /* CONFIG_UNSAFE_VSYSCALLS */
-> +
->  /* Assume __initcall executes before all user space. Hopefully kmod
->     doesn't violate that. We'll find out if it does. */
->  static void __cpuinit vsyscall_set_cpu(int cpu)
-> @@ -331,11 +440,13 @@ void __init map_vsyscall(void)
->  
->  static int __init vsyscall_init(void)
->  {
-> +#ifdef CONFIG_UNSAFE_VSYSCALLS
->  	BUG_ON(((unsigned long) &vgettimeofday !=
->  			VSYSCALL_ADDR(__NR_vgettimeofday)));
->  	BUG_ON((unsigned long) &vtime != VSYSCALL_ADDR(__NR_vtime));
->  	BUG_ON((VSYSCALL_ADDR(0) != __fix_to_virt(VSYSCALL_FIRST_PAGE)));
->  	BUG_ON((unsigned long) &vgetcpu != VSYSCALL_ADDR(__NR_vgetcpu));
-> +#endif
->  	on_each_cpu(cpu_vsyscall_init, NULL, 1);
->  	/* notifier priority > KVM */
->  	hotcpu_notifier(cpu_vsyscall_notifier, 30);
-> diff --git a/arch/x86/kernel/vsyscall_emu_64.S b/arch/x86/kernel/vsyscall_emu_64.S
-> new file mode 100644
-> index 0000000..3e1cad2
-> --- /dev/null
-> +++ b/arch/x86/kernel/vsyscall_emu_64.S
-> @@ -0,0 +1,40 @@
-> +/*
-> + * vsyscall_emu_64.S: Vsyscall emulation page
-> + * Copyright (c) 2011 Andy Lutomirski
-> + * Subject to the GNU General Public License, version 2
-> +*/
-> +
-> +#include <linux/linkage.h>
-> +#include <asm/irq_vectors.h>
-> +
-> +/*
-> + * These magic incantations are chosen so that they fault if entered anywhere
-> + * other than an instruction boundary.  The movb instruction is two bytes, and
-> + * the int imm8 instruction is also two bytes, so the only misaligned places
-> + * to enter are the immediate values for the two instructions.  0xcc is int3
-> + * (always faults), 0xce is into (faults on x64-64, and 32-bit code can't get
-> + * here), and 0xf0 is lock (lock int is invalid).
-> + *
-> + * The unused parts of the page are filled with 0xcc by the linker script.
-> + */
-> +
-> +.section .vsyscall_0, "a"
-> +ENTRY(vsyscall_0)
-> +	movb $0xcc, %al
-> +	int $VSYSCALL_EMU_VECTOR
-> +	ret
-> +END(vsyscall_0)
-> +
-> +.section .vsyscall_1, "a"
-> +ENTRY(vsyscall_1)
-> +	movb $0xce, %al
-> +	int $VSYSCALL_EMU_VECTOR
-> +	ret
-> +END(vsyscall_1)
-> +
-> +.section .vsyscall_2, "a"
-> +ENTRY(vsyscall_2)
-> +	movb $0xf0, %al
-> +	int $VSYSCALL_EMU_VECTOR
-> +	ret
-> +END(vsyscall_2)
-> -- 
-> 1.7.5.1
+On Tue, May 24, 2011 at 11:25:00AM +0200, Dominik Brodowski wrote:
+> the git tree
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/brodo/cpupowerutils.git master
+> 
+> contains a new utility called "cpupowerutils" which is laregely based on
+> the well known "cpufrequtils", but extended to provide much more information
+> about other power-related features of modern CPUs, such as idle states.
+> 
+> Users and Developers want to have *one* tool to get an overview what
+> their system supports and to monitor and debug CPU power management
+> in detail. The tool should compile and work on as many architectures
+> as possible.
+> 
+> To reach these goals, Thomas Renninger suggested -- and implemented most
+> of the parts -- to convert the external tool cpufrequtils to a userspace
+> tool residing in tools/power/cpupower/ .
+> 
+> Once this stabilizes, it is intended to replace cpufrequtils and the
+> Intel-specific tools in tools/power/x86 .
+> 
+> A list of patches and the diffstat are appended to this messages.
+> 
+> Best,
+> 	Dominik
 > 
 > 
-
--- 
-Regards/Gruss,
-    Boris.
+> Dominik Brodowski (10):
+>       cpupowerutils - cpufrequtils extended with quite some features
+>       cpupowerutils: use COPYING, CREDITS from top-level directory
+>       cpupowerutils: remove ccdv, use kernel quiet/verbose mechanism
+>       cpupowerutils: do not update po files on each and every compile
+>       cpupowerutils: bench - ConfigStyle bugfixes
+>       cpupowerutils: lib - ConfigStyle bugfixes
+>       cpupowerutils: idle_monitor - ConfigStyle bugfixes
+>       cpupowerutils: helpers - ConfigStyle bugfixes
+>       cpupowerutils: utils - ConfigStyle bugfixes
+>       cpupowerutils: use kernel version-derived version string
+> 
+> Roman Vasiyarov (1):
+>       cpupowerutils: increase MAX_LINE_LEN
+> 
+> Thomas Renninger (2):
+>       cpupowerutils: Rename: libcpufreq->libcpupower
+>       cpupower: Rename package from cpupowerutils to cpupower
+> 
+>  CREDITS                                            |   17 +-
+>  MAINTAINERS                                        |    6 +
+>  tools/power/cpupower/.gitignore                    |   22 +
+>  tools/power/cpupower/Makefile                      |  279 ++++++
+>  tools/power/cpupower/README                        |   49 +
+>  tools/power/cpupower/ToDo                          |   11 +
+>  tools/power/cpupower/bench/Makefile                |   29 +
+>  tools/power/cpupower/bench/README-BENCH            |  124 +++
+>  tools/power/cpupower/bench/benchmark.c             |  194 ++++
+>  tools/power/cpupower/bench/benchmark.h             |   29 +
+>  tools/power/cpupower/bench/config.h                |   36 +
+>  tools/power/cpupower/bench/cpufreq-bench_plot.sh   |  104 +++
+>  tools/power/cpupower/bench/cpufreq-bench_script.sh |  101 ++
+>  tools/power/cpupower/bench/example.cfg             |   11 +
+>  tools/power/cpupower/bench/main.c                  |  202 ++++
+>  tools/power/cpupower/bench/parse.c                 |  225 +++++
+>  tools/power/cpupower/bench/parse.h                 |   53 ++
+>  tools/power/cpupower/bench/system.c                |  191 ++++
+>  tools/power/cpupower/bench/system.h                |   29 +
+>  tools/power/cpupower/debug/i386/Makefile           |   20 +
+>  tools/power/cpupower/debug/i386/centrino-decode.c  |  113 +++
+>  tools/power/cpupower/debug/i386/dump_psb.c         |  196 ++++
+>  tools/power/cpupower/debug/i386/intel_gsic.c       |   78 ++
+>  .../power/cpupower/debug/i386/powernow-k8-decode.c |   96 ++
+>  tools/power/cpupower/debug/kernel/Makefile         |   23 +
+>  .../power/cpupower/debug/kernel/cpufreq-test_tsc.c |  113 +++
+>  tools/power/cpupower/debug/x86_64/Makefile         |   14 +
+>  .../power/cpupower/debug/x86_64/centrino-decode.c  |    1 +
+>  .../cpupower/debug/x86_64/powernow-k8-decode.c     |    1 +
+>  tools/power/cpupower/lib/cpufreq.c                 |  208 +++++
+>  tools/power/cpupower/lib/cpufreq.h                 |  223 +++++
+>  tools/power/cpupower/lib/sysfs.c                   |  672 ++++++++++++++
+>  tools/power/cpupower/lib/sysfs.h                   |   31 +
+>  tools/power/cpupower/man/cpupower-frequency-info.1 |   76 ++
+>  tools/power/cpupower/man/cpupower-frequency-set.1  |   54 ++
+>  tools/power/cpupower/man/cpupower-info.1           |   19 +
+>  tools/power/cpupower/man/cpupower-monitor.1        |  179 ++++
+>  tools/power/cpupower/man/cpupower-set.1            |  103 +++
+>  tools/power/cpupower/man/cpupower.1                |   72 ++
+>  tools/power/cpupower/po/cs.po                      |  944 +++++++++++++++++++
+>  tools/power/cpupower/po/de.po                      |  961 ++++++++++++++++++++
+>  tools/power/cpupower/po/fr.po                      |  947 +++++++++++++++++++
+>  tools/power/cpupower/po/it.po                      |  961 ++++++++++++++++++++
+>  tools/power/cpupower/po/pt.po                      |  957 +++++++++++++++++++
+>  tools/power/cpupower/utils/builtin.h               |   18 +
+>  tools/power/cpupower/utils/cpufreq-info.c          |  678 ++++++++++++++
+>  tools/power/cpupower/utils/cpufreq-set.c           |  358 ++++++++
+>  tools/power/cpupower/utils/cpuidle-info.c          |  244 +++++
+>  tools/power/cpupower/utils/cpupower-info.c         |  153 ++++
+>  tools/power/cpupower/utils/cpupower-set.c          |  153 ++++
+>  tools/power/cpupower/utils/cpupower.c              |  203 ++++
+>  tools/power/cpupower/utils/helpers/amd.c           |  137 +++
+>  tools/power/cpupower/utils/helpers/bitmask.c       |  292 ++++++
+>  tools/power/cpupower/utils/helpers/bitmask.h       |   33 +
+>  tools/power/cpupower/utils/helpers/cpuid.c         |  143 +++
+>  tools/power/cpupower/utils/helpers/helpers.h       |  180 ++++
+>  tools/power/cpupower/utils/helpers/misc.c          |   35 +
+>  tools/power/cpupower/utils/helpers/msr.c           |  122 +++
+>  tools/power/cpupower/utils/helpers/pci.c           |   44 +
+>  tools/power/cpupower/utils/helpers/sysfs.c         |  358 ++++++++
+>  tools/power/cpupower/utils/helpers/sysfs.h         |   28 +
+>  tools/power/cpupower/utils/helpers/topology.c      |  108 +++
+>  .../cpupower/utils/idle_monitor/amd_fam14h_idle.c  |  338 +++++++
+>  .../cpupower/utils/idle_monitor/cpuidle_sysfs.c    |  196 ++++
+>  .../cpupower/utils/idle_monitor/cpupower-monitor.c |  448 +++++++++
+>  .../cpupower/utils/idle_monitor/cpupower-monitor.h |   68 ++
+>  .../cpupower/utils/idle_monitor/idle_monitors.def  |    7 +
+>  .../cpupower/utils/idle_monitor/idle_monitors.h    |   18 +
+>  .../cpupower/utils/idle_monitor/mperf_monitor.c    |  255 ++++++
+>  tools/power/cpupower/utils/idle_monitor/nhm_idle.c |  216 +++++
+>  tools/power/cpupower/utils/idle_monitor/snb_idle.c |  190 ++++
+>  tools/power/cpupower/utils/version-gen.sh          |   35 +
+>  72 files changed, 13831 insertions(+), 1 deletions(-)
+>  create mode 100644 tools/power/cpupower/.gitignore
+>  create mode 100644 tools/power/cpupower/Makefile
+>  create mode 100644 tools/power/cpupower/README
+>  create mode 100644 tools/power/cpupower/ToDo
+>  create mode 100644 tools/power/cpupower/bench/Makefile
+>  create mode 100644 tools/power/cpupower/bench/README-BENCH
+>  create mode 100644 tools/power/cpupower/bench/benchmark.c
+>  create mode 100644 tools/power/cpupower/bench/benchmark.h
+>  create mode 100644 tools/power/cpupower/bench/config.h
+>  create mode 100644 tools/power/cpupower/bench/cpufreq-bench_plot.sh
+>  create mode 100644 tools/power/cpupower/bench/cpufreq-bench_script.sh
+>  create mode 100644 tools/power/cpupower/bench/example.cfg
+>  create mode 100644 tools/power/cpupower/bench/main.c
+>  create mode 100644 tools/power/cpupower/bench/parse.c
+>  create mode 100644 tools/power/cpupower/bench/parse.h
+>  create mode 100644 tools/power/cpupower/bench/system.c
+>  create mode 100644 tools/power/cpupower/bench/system.h
+>  create mode 100644 tools/power/cpupower/debug/i386/Makefile
+>  create mode 100644 tools/power/cpupower/debug/i386/centrino-decode.c
+>  create mode 100644 tools/power/cpupower/debug/i386/dump_psb.c
+>  create mode 100644 tools/power/cpupower/debug/i386/intel_gsic.c
+>  create mode 100644 tools/power/cpupower/debug/i386/powernow-k8-decode.c
+>  create mode 100644 tools/power/cpupower/debug/kernel/Makefile
+>  create mode 100644 tools/power/cpupower/debug/kernel/cpufreq-test_tsc.c
+>  create mode 100644 tools/power/cpupower/debug/x86_64/Makefile
+>  create mode 120000 tools/power/cpupower/debug/x86_64/centrino-decode.c
+>  create mode 120000 tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
+>  create mode 100644 tools/power/cpupower/lib/cpufreq.c
+>  create mode 100644 tools/power/cpupower/lib/cpufreq.h
+>  create mode 100644 tools/power/cpupower/lib/sysfs.c
+>  create mode 100644 tools/power/cpupower/lib/sysfs.h
+>  create mode 100644 tools/power/cpupower/man/cpupower-frequency-info.1
+>  create mode 100644 tools/power/cpupower/man/cpupower-frequency-set.1
+>  create mode 100644 tools/power/cpupower/man/cpupower-info.1
+>  create mode 100644 tools/power/cpupower/man/cpupower-monitor.1
+>  create mode 100644 tools/power/cpupower/man/cpupower-set.1
+>  create mode 100644 tools/power/cpupower/man/cpupower.1
+>  create mode 100644 tools/power/cpupower/po/cs.po
+>  create mode 100644 tools/power/cpupower/po/de.po
+>  create mode 100644 tools/power/cpupower/po/fr.po
+>  create mode 100644 tools/power/cpupower/po/it.po
+>  create mode 100644 tools/power/cpupower/po/pt.po
+>  create mode 100644 tools/power/cpupower/utils/builtin.h
+>  create mode 100644 tools/power/cpupower/utils/cpufreq-info.c
+>  create mode 100644 tools/power/cpupower/utils/cpufreq-set.c
+>  create mode 100644 tools/power/cpupower/utils/cpuidle-info.c
+>  create mode 100644 tools/power/cpupower/utils/cpupower-info.c
+>  create mode 100644 tools/power/cpupower/utils/cpupower-set.c
+>  create mode 100644 tools/power/cpupower/utils/cpupower.c
+>  create mode 100644 tools/power/cpupower/utils/helpers/amd.c
+>  create mode 100644 tools/power/cpupower/utils/helpers/bitmask.c
+>  create mode 100644 tools/power/cpupower/utils/helpers/bitmask.h
+>  create mode 100644 tools/power/cpupower/utils/helpers/cpuid.c
+>  create mode 100644 tools/power/cpupower/utils/helpers/helpers.h
+>  create mode 100644 tools/power/cpupower/utils/helpers/misc.c
+>  create mode 100644 tools/power/cpupower/utils/helpers/msr.c
+>  create mode 100644 tools/power/cpupower/utils/helpers/pci.c
+>  create mode 100644 tools/power/cpupower/utils/helpers/sysfs.c
+>  create mode 100644 tools/power/cpupower/utils/helpers/sysfs.h
+>  create mode 100644 tools/power/cpupower/utils/helpers/topology.c
+>  create mode 100644 tools/power/cpupower/utils/idle_monitor/amd_fam14h_idle.c
+>  create mode 100644 tools/power/cpupower/utils/idle_monitor/cpuidle_sysfs.c
+>  create mode 100644 tools/power/cpupower/utils/idle_monitor/cpupower-monitor.c
+>  create mode 100644 tools/power/cpupower/utils/idle_monitor/cpupower-monitor.h
+>  create mode 100644 tools/power/cpupower/utils/idle_monitor/idle_monitors.def
+>  create mode 100644 tools/power/cpupower/utils/idle_monitor/idle_monitors.h
+>  create mode 100644 tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
+>  create mode 100644 tools/power/cpupower/utils/idle_monitor/nhm_idle.c
+>  create mode 100644 tools/power/cpupower/utils/idle_monitor/snb_idle.c
+>  create mode 100755 tools/power/cpupower/utils/version-gen.sh
