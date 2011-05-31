@@ -1,125 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab1EaKcE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 06:32:04 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:42239 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753224Ab1EaKcB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 06:32:01 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: Alan Cox <alan@linux.intel.com>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH v4] 8250_pci: add -ENODEV code for Intel EG20T PCH
-Date: Tue, 31 May 2011 19:35:30 +0900
-Message-Id: <1306838130-3644-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1754496Ab1EaKhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 06:37:17 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:42494 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753069Ab1EaKhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 06:37:15 -0400
+X-ASG-Debug-ID: 1306838234-03d6a512ab20c40001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DE4C4D7.9060107@fusionio.com>
+Date: Tue, 31 May 2011 12:37:11 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@gmail.com>
+CC: Christoph Hellwig <hch@infradead.org>, Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/2] blktrace: treat flush as barrier
+References: <1306501883-23498-1-git-send-email-namhyung@gmail.com>	 <20110527131237.GA27647@infradead.org>	 <BANLkTi=8jQPdBNJYfM=geuXFsAXJJgfq=Q@mail.gmail.com>	 <1306509182.1351.1.camel@leonhard> <4DE006C5.4010906@fusionio.com>	 <20110527202747.GA4803@infradead.org> <1306548581.1679.12.camel@leonhard>
+X-ASG-Orig-Subj: Re: [PATCH 1/2] blktrace: treat flush as barrier
+In-Reply-To: <1306548581.1679.12.camel@leonhard>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1306838234
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.65189
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel EG20T PCH has UART device which is compatible with 8250.
-Currently, with general configuration, the PCH UART driver is not loaded but
-8250 standard driver is loaded.
-Therefore, in case of using PCH UART driver, need to disable 8250 pci function.
-However, this procedure is not best solution.
-This patch, in 8250_pci, if the device is the PCH or the family IOH,
-'-ENODEV' is returned.
-As a result, disabling 8250-pci processing becomes unnecessary.
+On 2011-05-28 04:09, Namhyung Kim wrote:
+> 2011-05-27 (금), 16:27 -0400, Christoph Hellwig:
+>> On Fri, May 27, 2011 at 10:17:09PM +0200, Jens Axboe wrote:
+>>> Agree on Christophs comments, we should not pretend they are the same
+>>> (since they are not). Since flush is a request on its own, F works
+>>> nicely. For FUA it's associated with a write, so F should work there too
+>>> indicating Write Fua (and easily humanly parsed as that, or Write
+>>> Flush). WU would look confusing.
+>>
+>> REQ_FLUSH can also be set on a write bio, it only gets split at the
+>> request level.  And even there we're at least pondering allowing it
+>> to stay as part of the write for some paravirtualized storage protocols.
+>>
+> 
+> Hi,
+> 
+> AFAIK FLUSH always precedes WRITE and then followed by FUA, so how about
+> using the same F for both of them and distinguishing by position?
+> 
+>  - WRITE:            W
+>  - WRITE_FLUSH:      FW
+>  - WRITE_FUA:        WF
+>  - WRITE_FLUSH_FUA:  FWF
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
-V4: Rename own_init to return_ENODEV
-    Add #if defined ~ #endif
+That looks fine. 'U' would be an illogical choice.
 
-V3: add own init() and set the init() to quirk table.
-
-V2: Delete #ifdef CONFIG_SERIAL_PCH_UART ~ #endif
-    Use quirk table structure
----
- drivers/tty/serial/8250_pci.c |   59 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 59 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/tty/serial/8250_pci.c b/drivers/tty/serial/8250_pci.c
-index 738cec9..fe8d371 100644
---- a/drivers/tty/serial/8250_pci.c
-+++ b/drivers/tty/serial/8250_pci.c
-@@ -988,6 +988,15 @@ static int skip_tx_en_setup(struct serial_private *priv,
- 	return pci_default_setup(priv, board, port, idx);
- }
- 
-+static int return_ENODEV(struct pci_dev *dev)
-+{
-+#if defined(CONFIG_SERIAL_PCH_UART) || defined(CONFIG_SERIAL_PCH_UART_MODULE)
-+	return -ENODEV;
-+#else
-+	return 0;
-+#endif
-+}
-+
- /* This should be in linux/pci_ids.h */
- #define PCI_VENDOR_ID_SBSMODULARIO	0x124B
- #define PCI_SUBVENDOR_ID_SBSMODULARIO	0x124B
-@@ -1430,6 +1439,56 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
- 		.init		= pci_oxsemi_tornado_init,
- 		.setup		= pci_default_setup,
- 	},
-+	{
-+		.vendor         = PCI_VENDOR_ID_INTEL,
-+		.device         = 0x8811,
-+		.init		= return_ENODEV,
-+	},
-+	{
-+		.vendor         = PCI_VENDOR_ID_INTEL,
-+		.device         = 0x8812,
-+		.init		= return_ENODEV,
-+	},
-+	{
-+		.vendor         = PCI_VENDOR_ID_INTEL,
-+		.device         = 0x8813,
-+		.init		= return_ENODEV,
-+	},
-+	{
-+		.vendor         = PCI_VENDOR_ID_INTEL,
-+		.device         = 0x8814,
-+		.init		= return_ENODEV,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x8027,
-+		.init		= return_ENODEV,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x8028,
-+		.init		= return_ENODEV,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x8029,
-+		.init		= return_ENODEV,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x800C,
-+		.init		= return_ENODEV,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x800D,
-+		.init		= return_ENODEV,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x800D,
-+		.init		= return_ENODEV,
-+	},
- 	/*
- 	 * Default "match everything" terminator entry
- 	 */
 -- 
-1.7.4
+Jens Axboe
 
