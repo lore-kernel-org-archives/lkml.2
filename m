@@ -1,149 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab1EaCo2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 22:44:28 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:29212 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337Ab1EaCo1 (ORCPT
+	id S1754764Ab1EaDDU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 23:03:20 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:26370 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab1EaDDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 22:44:27 -0400
-X-SpamScore: -11
-X-BigFish: VS-11(zz1432N14e3M98dKc8kzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Tue, 31 May 2011 10:47:30 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Olof Johansson <olof@lixom.net>
-CC: Shawn Guo <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@secretlab.ca>, <arnd@arndb.de>, <kernel@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>, <patches@linaro.org>
-Subject: Re: [PATCH 2/4] ARM: mxc: migrate mach-mx5 gpio driver to gpio-mxc
-Message-ID: <20110531024729.GB31928@S2100-06.ap.freescale.net>
-References: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org>
- <1306767139-24763-3-git-send-email-shawn.guo@linaro.org>
- <20110531001634.GB3411@quad.lixom.net>
+	Mon, 30 May 2011 23:03:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=ACjNDuruC+F0PXI7MXk/VwoJxt5ULl/QNCG5NAuJhqEVrM5MyR0E7MOoqkTY3O/Obm
+         bSM9T57r2i/F0UiW0cjQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110531001634.GB3411@quad.lixom.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <BANLkTikm0fkii_SyoJ4W1j+nZD-ErS+o-A@mail.gmail.com>
+References: <4DD5452F.9050108@radicalsystems.co.za> <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com>
+ <sig.512079e334.4DD57D44.50009@radicalsystems.co.za> <BANLkTikHQNQdWoDS2dXUC9gTPWvtmUM=yA@mail.gmail.com>
+ <sig.51214cae32.4DD61B48.8010601@radicalsystems.co.za> <BANLkTi=jTKp9+_KDmTxYfGXe6Ln02GLmDA@mail.gmail.com>
+ <sig.6125c0d242.4DDB86FE.5090809@radicalsystems.co.za> <BANLkTi=FTkPCVEMdKBgwg61hKDvgpJ6oRA@mail.gmail.com>
+ <BANLkTikm0fkii_SyoJ4W1j+nZD-ErS+o-A@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 30 May 2011 21:02:54 -0600
+Message-ID: <BANLkTi=SGVoEK0YxeRVGvh34FTg3=qX0SA@mail.gmail.com>
+Subject: Re: PCI BAR1 Unassigned
+To: Jan Zwiegers <jan@radicalsystems.co.za>
+Cc: Xianghua Xiao <xiaoxianghua@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=001e680f14002dad0c04a489a53c
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 05:16:34PM -0700, Olof Johansson wrote:
-> Hi,
-> 
-> On Mon, May 30, 2011 at 10:52:17PM +0800, Shawn Guo wrote:
-> > It adds platform device for drivers/gpio/gpio-mxc, and migrates
-> > mx50/mx51/mx53 gpio driver to gpio-mxc.
-> > 
-> 
-> [...]
-> 
-> > diff --git a/arch/arm/plat-mxc/devices/platform-gpio-mxc.c b/arch/arm/plat-mxc/devices/platform-gpio-mxc.c
-> > new file mode 100644
-> > index 0000000..3b10da0
-> > --- /dev/null
-> > +++ b/arch/arm/plat-mxc/devices/platform-gpio-mxc.c
-> > @@ -0,0 +1,69 @@
-> > +/*
-> > + * Copyright 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-> > + * Copyright 2011 Linaro Limited
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify it under
-> > + * the terms of the GNU General Public License version 2 as published by the
-> > + * Free Software Foundation.
-> > + */
-> > +#include <linux/compiler.h>
-> > +#include <linux/err.h>
-> > +#include <linux/init.h>
-> > +
-> > +#include <mach/hardware.h>
-> > +#include <mach/devices-common.h>
-> > +
-> > +static struct platform_device *__init mxc_add_gpio(int id,
-> > +	resource_size_t iobase, resource_size_t iosize, int irq, int irq_high)
-> > +{
-> > +	struct resource res[] = {
-> > +		{
-> > +			.start = iobase,
-> > +			.end = iobase + iosize - 1,
-> > +			.flags = IORESOURCE_MEM,
-> > +		}, {
-> > +			.start = irq,
-> > +			.end = irq,
-> > +			.flags = IORESOURCE_IRQ,
-> > +		}, {
-> > +			.start = irq_high,
-> > +			.end = irq_high,
-> > +			.flags = IORESOURCE_IRQ,
-> > +		},
-> > +	};
-> > +
-> > +	return platform_device_register_resndata(&mxc_aips_bus,
-> > +			"gpio-mxc", id, res, ARRAY_SIZE(res), NULL, 0);
-> 
-> Why bother returning the value, it's never checked below?
-> 
-Please help me understand.  You are saying the return value should be
-checked below?
+--001e680f14002dad0c04a489a53c
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> > +static int __init mxc_add_mxc_gpio(void)
-> 
-> Minor nits: Redundant mxcs? Also, 'gpios' would be more accurate naming.
-> 
-The first one is the namespace of plat-mxc function, and the second
-one is to reflect gpio driver name 'mxc gpio'.
+On Thu, May 26, 2011 at 2:38 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> Jan, would you mind testing the attached patch? =A0This is against
+> current upstream, but I think it will apply without much trouble to
+> 2.6.35; I don't think there have been many changes in that area.
+> Thanks.
 
-> > +{
-> > +	if (cpu_is_mx50()) {
-> > +		mxc_add_gpio(0, MX50_GPIO1_BASE_ADDR, SZ_16K, MX50_INT_GPIO1_LOW, MX50_INT_GPIO1_HIGH);
-> > +		mxc_add_gpio(1, MX50_GPIO2_BASE_ADDR, SZ_16K, MX50_INT_GPIO2_LOW, MX50_INT_GPIO2_HIGH);
-> > +		mxc_add_gpio(2, MX50_GPIO3_BASE_ADDR, SZ_16K, MX50_INT_GPIO3_LOW, MX50_INT_GPIO3_HIGH);
-> > +		mxc_add_gpio(3, MX50_GPIO4_BASE_ADDR, SZ_16K, MX50_INT_GPIO4_LOW, MX50_INT_GPIO4_HIGH);
-> > +		mxc_add_gpio(4, MX50_GPIO5_BASE_ADDR, SZ_16K, MX50_INT_GPIO5_LOW, MX50_INT_GPIO5_HIGH);
-> > +		mxc_add_gpio(5, MX50_GPIO6_BASE_ADDR, SZ_16K, MX50_INT_GPIO6_LOW, MX50_INT_GPIO6_HIGH);
-> > +	}
-> > +
-> > +	if (cpu_is_mx51()) {
-> > +		mxc_add_gpio(0, MX51_GPIO1_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO1_LOW, MX51_MXC_INT_GPIO1_HIGH);
-> > +		mxc_add_gpio(1, MX51_GPIO2_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO2_LOW, MX51_MXC_INT_GPIO2_HIGH);
-> > +		mxc_add_gpio(2, MX51_GPIO3_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO3_LOW, MX51_MXC_INT_GPIO3_HIGH);
-> > +		mxc_add_gpio(3, MX51_GPIO4_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO4_LOW, MX51_MXC_INT_GPIO4_HIGH);
-> > +	}
-> > +
-> > +	if (cpu_is_mx53()) {
-> > +		mxc_add_gpio(0, MX53_GPIO1_BASE_ADDR, SZ_16K, MX53_INT_GPIO1_LOW, MX53_INT_GPIO1_HIGH);
-> > +		mxc_add_gpio(1, MX53_GPIO2_BASE_ADDR, SZ_16K, MX53_INT_GPIO2_LOW, MX53_INT_GPIO2_HIGH);
-> > +		mxc_add_gpio(2, MX53_GPIO3_BASE_ADDR, SZ_16K, MX53_INT_GPIO3_LOW, MX53_INT_GPIO3_HIGH);
-> > +		mxc_add_gpio(3, MX53_GPIO4_BASE_ADDR, SZ_16K, MX53_INT_GPIO4_LOW, MX53_INT_GPIO4_HIGH);
-> > +		mxc_add_gpio(4, MX53_GPIO5_BASE_ADDR, SZ_16K, MX53_INT_GPIO5_LOW, MX53_INT_GPIO5_HIGH);
-> > +		mxc_add_gpio(5, MX53_GPIO6_BASE_ADDR, SZ_16K, MX53_INT_GPIO6_LOW, MX53_INT_GPIO6_HIGH);
-> > +		mxc_add_gpio(6, MX53_GPIO7_BASE_ADDR, SZ_16K, MX53_INT_GPIO7_LOW, MX53_INT_GPIO7_HIGH);
-> > +	}
-> 
-> The above tables are pretty crazy, and they only get worse later in the series
-> when the other SoCs are added. Is it really worth it to have a common initcall
-> entry for the various SoCs here?
-> 
-This common initcall seems a good place to concentrate the gpio device
-registration.  It's easy to look at the common/different things among
-these SoCs.  The only problem you reminded me is the scanning of the
-long cpu_is_mx list.  It can be optimized a little bit by sorting the
-list from the latest (most used) SoC to the oldest (least used) one,
-and breaking out the scanning immediately when hitting one.
+Hi Jan,
 
-> It'd seem cleaner to me to just call the registration function for the
-> family you're running from in per-family-init code such as where it was
-> removed above (irq init, which makes some sense since the gpios provide
-> interrupt sources as well).
-> 
-I just gave it a test, and it's not working at all.  (too early
-to register device in irq init?)
+If you haven't tested the patch yet, can you substitute this one?  It
+should be functionally equivalent, but I did tweak it a bit.
 
--- 
-Regards,
-Shawn
+Bjorn
 
+--001e680f14002dad0c04a489a53c
+Content-Type: application/octet-stream; name="patch.pci2"
+Content-Disposition: attachment; filename="patch.pci2"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_goc9hjuu1
+
+Y29tbWl0IDU4YTEwNTgxNDBjNzQ1YzI3OTYxZTVhMjk3ZTQ0ZDI3NGQ2MTFhNmMKQXV0aG9yOiBC
+am9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpEYXRlOiAgIFR1ZSBNYXkgMjQgMDY6
+NDg6MjIgMjAxMSAtMDYwMAoKICAgIFBDSTogcGFzcyBwY2lfZGV2IHRvIGRlY29kZV9iYXIoKSBm
+b3IgdXNlIGluIGRldl93YXJuKCkKICAgIAogICAgUGFzcyBwY2lfZGV2IHBvaW50ZXIgZG8gZGVj
+b2RlX2JhcigpIGZvciBmdXR1cmUgdXNlIGluIHdhcm5pbmcgbWVzc2FnZXMuCiAgICAKICAgIFNp
+Z25lZC1vZmYtYnk6IEJqb3JuIEhlbGdhYXMgPGJoZWxnYWFzQGdvb2dsZS5jb20+CgpkaWZmIC0t
+Z2l0IGEvZHJpdmVycy9wY2kvcHJvYmUuYyBiL2RyaXZlcnMvcGNpL3Byb2JlLmMKaW5kZXggNDg4
+NDlmZi4uOGUxZTRlNSAxMDA2NDQKLS0tIGEvZHJpdmVycy9wY2kvcHJvYmUuYworKysgYi9kcml2
+ZXJzL3BjaS9wcm9iZS5jCkBAIC0xMDAsNyArMTAwLDggQEAgc3RhdGljIHU2NCBwY2lfc2l6ZSh1
+NjQgYmFzZSwgdTY0IG1heGJhc2UsIHU2NCBtYXNrKQogCXJldHVybiBzaXplOwogfQogCi1zdGF0
+aWMgaW5saW5lIGVudW0gcGNpX2Jhcl90eXBlIGRlY29kZV9iYXIoc3RydWN0IHJlc291cmNlICpy
+ZXMsIHUzMiBiYXIpCitzdGF0aWMgaW5saW5lIGVudW0gcGNpX2Jhcl90eXBlIGRlY29kZV9iYXIo
+c3RydWN0IHBjaV9kZXYgKmRldiwKKwkJCQkJICAgc3RydWN0IHJlc291cmNlICpyZXMsIHUzMiBi
+YXIpCiB7CiAJaWYgKChiYXIgJiBQQ0lfQkFTRV9BRERSRVNTX1NQQUNFKSA9PSBQQ0lfQkFTRV9B
+RERSRVNTX1NQQUNFX0lPKSB7CiAJCXJlcy0+ZmxhZ3MgPSBiYXIgJiB+UENJX0JBU0VfQUREUkVT
+U19JT19NQVNLOwpAQCAtMTY0LDcgKzE2NSw3IEBAIGludCBfX3BjaV9yZWFkX2Jhc2Uoc3RydWN0
+IHBjaV9kZXYgKmRldiwgZW51bSBwY2lfYmFyX3R5cGUgdHlwZSwKIAkJbCA9IDA7CiAKIAlpZiAo
+dHlwZSA9PSBwY2lfYmFyX3Vua25vd24pIHsKLQkJdHlwZSA9IGRlY29kZV9iYXIocmVzLCBsKTsK
+KwkJdHlwZSA9IGRlY29kZV9iYXIoZGV2LCByZXMsIGwpOwogCQlyZXMtPmZsYWdzIHw9IHBjaV9j
+YWxjX3Jlc291cmNlX2ZsYWdzKGwpIHwgSU9SRVNPVVJDRV9TSVpFQUxJR047CiAJCWlmICh0eXBl
+ID09IHBjaV9iYXJfaW8pIHsKIAkJCWwgJj0gUENJX0JBU0VfQUREUkVTU19JT19NQVNLOwpjb21t
+aXQgMTJiNTMzOThhOWIwNTA4YjZhNjVhMTM4YWRmNmJhNTRhMzZmMzJlNQpBdXRob3I6IEJqb3Ju
+IEhlbGdhYXMgPGJoZWxnYWFzQGdvb2dsZS5jb20+CkRhdGU6ICAgRnJpIE1heSAyMCAwODozNjoz
+MCAyMDExIC0wNjAwCgogICAgUENJOiB0cmVhdCBtZW0gQkFSIHR5cGUgIjExIiAocmVzZXJ2ZWQp
+IGFzIDMyLWJpdCwgbm90IDY0LWJpdCwgQkFSCiAgICAKICAgIFRoZSBsb3cgZm91ciBiaXRzIG9m
+IGEgbWVtb3J5IEJBUiBhcmUgIlBUVDAiIHdoZXJlIFA9MSBmb3IgcHJlZmV0Y2hhYmxlCiAgICBC
+QVJzLCBhbmQgVFQgaXMgYXMgZm9sbG93czoKICAgIAogICAgICAwMCAgMzItYml0IEJBUiwgYW55
+d2hlcmUgaW4gbG93ZXIgNEdCCiAgICAgIDAxICBhbnl3aGVyZSBiZWxvdyAxTUIgKHJlc2VydmVk
+IGFzIG9mIFBDSSAyLjIpCiAgICAgIDEwICA2NC1iaXQgQkFSCiAgICAgIDExICByZXNlcnZlZAog
+ICAgCiAgICBQcmlvciB0byBlMzU0NTk3Y2NlLCB3ZSB0cmVhdGVkICIwMTAwIiBhcyBhIDY0LWJp
+dCBCQVIgYW5kIGFsbCBvdGhlcnMgYXMKICAgIDMyLWJpdCBCQVJzLiAgVGhpcyB3YXMgb2J2aW91
+c2x5IHdyb25nIGJlY2F1c2UgcHJlZmV0Y2hhYmxlIDY0LWJpdCBCQVJzCiAgICAoIjExMDAiKSB3
+ZXJlIHRyZWF0ZWQgYXMgMzItYml0IEJBUnMuCiAgICAKICAgIFRoZSBlMzU0NTk3Y2NlIGZpeCwg
+d2hpY2ggYXBwZWFyZWQgaW4gMi42LjI4LCB3YXMgdG8gdHJlYXQgIngxeDAiIGFzIDY0LWJpdAog
+ICAgQkFScywgYnV0IHRoaXMgY2hhbmdlZCAocHJvYmFibHkgdW5pbnRlbnRpb25hbGx5KSBvdXIg
+aGFuZGxpbmcgb2YgcmVzZXJ2ZWQKICAgIHR5cGUgIngxMTAiIGZyb20gMzItYml0IHRvIDY0LWJp
+dC4KICAgIAogICAgSGFyZHdhcmUgc2hvdWxkIG5vdCBiZSB1c2luZyB0aGUgIjExIiB0eXBlLCBi
+dXQgaWYgaXQgZGlkIGhhcHBlbiB0byB1c2UgaXQKICAgIGZvciBhIDMyLWJpdCBCQVIsIGl0IHdv
+cmtlZCBiZWZvcmUgZTM1NDU5N2NjZSBhbmQgZGlkbid0IHdvcmsgYWZ0ZXJ3YXJkcy4KICAgIEph
+biBoYXMgYSBwaWVjZSBvZiBzdWNoIGhhcmR3YXJlLgogICAgCiAgICBUaGlzIHBhdGNoIHJldHVy
+bnMgdG8gdHJlYXRpbmcgdGhlIHJlc2VydmVkICIxMSIgdHlwZSBhcyBhIDMyLWJpdCBCQVIgYW5k
+CiAgICBhZGRzIGEgd2FybmluZyBpZiB3ZSBzZWUgaXQuCiAgICAKICAgIEl0IGFsc28gbG9ncyBh
+IG5vdGUgaWYgd2Ugc2VlIGEgMU0gQkFSLiAgVGhpcyBpcyBub3QgYSB3YXJuaW5nLCBiZWNhdXNl
+CiAgICBzdWNoIGhhcmR3YXJlIGNvbmZvcm1zIHRvIHByZS1QQ0kgMi4yIHNwZWMsIGJ1dCBJIHRo
+aW5rIGl0J3Mgd29ydGggbm90aW5nCiAgICBiZWNhdXNlIExpbnV4IGlnbm9yZXMgdGhlIDFNIHJl
+c3RyaWN0aW9uIGlmIGl0IGV2ZXIgaGFzIHRvIGFzc2lnbiB0aGUgQkFSLgogICAgCiAgICBDQzog
+UGV0ZXIgQ2h1YmIgPHBldGVyY0BnZWxhdG8udW5zdy5lZHUuYXU+CiAgICBCdWd6aWxsYTogaHR0
+cHM6Ly9idWd6aWxsYS5rZXJuZWwub3JnL3Nob3dfYnVnLmNnaT9pZD0zNTk1MgogICAgUmVwb3J0
+ZWQtYnk6IEphbiBad2llZ2VycyA8amFuQHJhZGljYWxzeXN0ZW1zLmNvLnphPgogICAgU2lnbmVk
+LW9mZi1ieTogQmpvcm4gSGVsZ2FhcyA8YmhlbGdhYXNAZ29vZ2xlLmNvbT4KCmRpZmYgLS1naXQg
+YS9kcml2ZXJzL3BjaS9wcm9iZS5jIGIvZHJpdmVycy9wY2kvcHJvYmUuYwppbmRleCA4ZTFlNGU1
+Li5mM2FjMDk2IDEwMDY0NAotLS0gYS9kcml2ZXJzL3BjaS9wcm9iZS5jCisrKyBiL2RyaXZlcnMv
+cGNpL3Byb2JlLmMKQEAgLTEwMyw2ICsxMDMsOCBAQCBzdGF0aWMgdTY0IHBjaV9zaXplKHU2NCBi
+YXNlLCB1NjQgbWF4YmFzZSwgdTY0IG1hc2spCiBzdGF0aWMgaW5saW5lIGVudW0gcGNpX2Jhcl90
+eXBlIGRlY29kZV9iYXIoc3RydWN0IHBjaV9kZXYgKmRldiwKIAkJCQkJICAgc3RydWN0IHJlc291
+cmNlICpyZXMsIHUzMiBiYXIpCiB7CisJdTMyIG1lbV90eXBlOworCiAJaWYgKChiYXIgJiBQQ0lf
+QkFTRV9BRERSRVNTX1NQQUNFKSA9PSBQQ0lfQkFTRV9BRERSRVNTX1NQQUNFX0lPKSB7CiAJCXJl
+cy0+ZmxhZ3MgPSBiYXIgJiB+UENJX0JBU0VfQUREUkVTU19JT19NQVNLOwogCQlyZXR1cm4gcGNp
+X2Jhcl9pbzsKQEAgLTExMCw4ICsxMTIsMjEgQEAgc3RhdGljIGlubGluZSBlbnVtIHBjaV9iYXJf
+dHlwZSBkZWNvZGVfYmFyKHN0cnVjdCBwY2lfZGV2ICpkZXYsCiAKIAlyZXMtPmZsYWdzID0gYmFy
+ICYgflBDSV9CQVNFX0FERFJFU1NfTUVNX01BU0s7CiAKLQlpZiAocmVzLT5mbGFncyAmIFBDSV9C
+QVNFX0FERFJFU1NfTUVNX1RZUEVfNjQpCisJbWVtX3R5cGUgPSBiYXIgJiBQQ0lfQkFTRV9BRERS
+RVNTX01FTV9UWVBFX01BU0s7CisJc3dpdGNoIChtZW1fdHlwZSkgeworCWNhc2UgUENJX0JBU0Vf
+QUREUkVTU19NRU1fVFlQRV8zMjoKKwkJYnJlYWs7CisJY2FzZSBQQ0lfQkFTRV9BRERSRVNTX01F
+TV9UWVBFXzFNOgorCQlkZXZfaW5mbygmZGV2LT5kZXYsICIxTSBtZW0gQkFSIHRyZWF0ZWQgYXMg
+MzItYml0IEJBUlxuIik7CisJCWJyZWFrOworCWNhc2UgUENJX0JBU0VfQUREUkVTU19NRU1fVFlQ
+RV82NDoKIAkJcmV0dXJuIHBjaV9iYXJfbWVtNjQ7CisJZGVmYXVsdDoKKwkJZGV2X3dhcm4oJmRl
+di0+ZGV2LAorCQkJICJtZW0gdW5rbm93biB0eXBlICV4IHRyZWF0ZWQgYXMgMzItYml0IEJBUlxu
+IiwKKwkJCSBtZW1fdHlwZSk7CisJCWJyZWFrOworCX0KIAlyZXR1cm4gcGNpX2Jhcl9tZW0zMjsK
+IH0KIAo=
+--001e680f14002dad0c04a489a53c--
