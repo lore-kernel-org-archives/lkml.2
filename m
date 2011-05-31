@@ -1,103 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab1EaOyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 10:54:52 -0400
-Received: from fnarfbargle.com ([93.93.131.224]:33598 "EHLO fnarfbargle.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753443Ab1EaOyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 10:54:50 -0400
-Message-ID: <4DE4FBB0.9080708@fnarfbargle.com>
-Date: Tue, 31 May 2011 22:31:12 +0800
-From: Brad Campbell <lists2009@fnarfbargle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: 2.6.39 kernel panic w/screenshots & kernel cfg link provided
-References: <alpine.DEB.2.02.1105280755050.4345@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.02.1105280755050.4345@p34.internal.lan>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756693Ab1EaOcA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 10:32:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50058 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab1EaOb7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 10:31:59 -0400
+Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
+From: David Woodhouse <dwmw2@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Ted Ts'o" <tytso@mit.edu>, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Date: Tue, 31 May 2011 15:31:49 +0100
+In-Reply-To: <20110531135627.GB15598@elte.hu>
+References: <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
+	 <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
+	 <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
+	 <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
+	 <20110531075306.GB20798@elte.hu>
+	 <1306832148.2029.484.camel@i7.infradead.org>
+	 <20110531104106.GD24172@elte.hu>
+	 <1306842211.2029.531.camel@i7.infradead.org>
+	 <20110531124537.GA10249@elte.hu>
+	 <1306849477.2029.570.camel@i7.infradead.org>
+	 <20110531135627.GB15598@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1306852312.2029.596.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/05/11 20:01, Justin Piszcz wrote:
-> Hello,
->
-> Since I updated to 2.6.39, my system has been crashing on a random
-> basis, can someone identify what is going on here?
->
-> I've checked the hardware it is OK and this only started to occur after
-> I moved to 2.6.39 from what I can tell..
->
-> Kernel crash/panic, hang:
-> http://home.comcast.net/~jpiszcz/20110528/2639-ss1.jpg
-> http://home.comcast.net/~jpiszcz/20110528/2639-ss2.jpg
->
-> Kernel .config:
-> http://home.comcast.net/~jpiszcz/20110528/config-2.6.39.txt
+On Tue, 2011-05-31 at 15:56 +0200, Ingo Molnar wrote:
+> The architecture *inside* the .config is not inherited automatically 
+> but overriden by the host architecture, so due to this assymetry i 
+> prefer to use explicit ARCH=xxx lines whenever i deal with configs.
 
-Just a me too I'm afraid.
-On a 2.6.39 kernel I get these from about 3 of 4 boots.
-If I append "panic=30" to the command line and leave it go, eventually I 
-get into a working kernel.
+Yes. That is why you *don't* need to run 'make ARCH=foo oldconfig' to
+convert it to your native architecture; just 'make oldconfig' will work
+fine.
 
-I've seen them on a 2.6.38.7 kernel also, but far harder to hit and I've 
-not seen them at all on a 2.6.38.2 kernel.
+I appreciate that you *like* to type it out anyway, and that's fine. Not
+entirely sure how it's relevant to the rest of the discussion, except to
+make you look a little sillier when you complain about the horrendous
+amount of extra typing it is to use the new clean generic 'CONFIG_FOO='
+interface instead of using the legacy ARCH values to set CONFIG_64BIT.
 
-Once the kernel is running I don't seem to have an issue.
+> > >     "I believe that this 'filtered randconfig' behaviour is now fairly much
+> > >      the *only* use for the old 'ARCH=i386' and 'ARCH=x86_64'."
+> > > 
+> > > You are wrong again - it isnt, as me and others pointed it out.
+> > 
+> > Not *so* wrong that all those other use cases couldn't be addressed 
+> > in the same, simple patch to allow CONFIG_FOO on the 'make' command 
+> > line.
+> 
+> So "partially wrong" is not wrong? Indeed, if defined that way then i 
+> agree that you must almost never be wrong ;-)
 
-brad@srv:~$ lspci
-00:00.0 Host bridge: Advanced Micro Devices [AMD] RS880 Host Bridge
-00:01.0 PCI bridge: ASRock Incorporation Device 9602
-00:02.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge 
-(ext gfx port 0)
-00:03.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge 
-(ext gfx port 1)
-00:04.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge 
-(PCIE port 0)
-00:09.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge 
-(PCIE port 4)
-00:0a.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge 
-(PCIE port 5)
-00:11.0 SATA controller: ATI Technologies Inc SB700/SB800 SATA 
-Controller [AHCI mode] (rev 40)
-00:12.0 USB Controller: ATI Technologies Inc SB700/SB800 USB OHCI0 
-Controller
-00:12.2 USB Controller: ATI Technologies Inc SB700/SB800 USB EHCI Controller
-00:13.0 USB Controller: ATI Technologies Inc SB700/SB800 USB OHCI0 
-Controller
-00:13.2 USB Controller: ATI Technologies Inc SB700/SB800 USB EHCI Controller
-00:14.0 SMBus: ATI Technologies Inc SBx00 SMBus Controller (rev 41)
-00:14.2 Audio device: ATI Technologies Inc SBx00 Azalia (Intel HDA) (rev 40)
-00:14.3 ISA bridge: ATI Technologies Inc SB700/SB800 LPC host controller 
-(rev 40)
-00:14.4 PCI bridge: ATI Technologies Inc SBx00 PCI to PCI Bridge (rev 40)
-00:14.5 USB Controller: ATI Technologies Inc SB700/SB800 USB OHCI2 
-Controller
-00:16.0 USB Controller: ATI Technologies Inc SB700/SB800 USB OHCI0 
-Controller
-00:16.2 USB Controller: ATI Technologies Inc SB700/SB800 USB EHCI Controller
-00:18.0 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
-HyperTransport Configuration
-00:18.1 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
-Address Map
-00:18.2 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
-DRAM Controller
-00:18.3 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
-Miscellaneous Control
-00:18.4 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
-Link Control
-01:05.0 VGA compatible controller: ATI Technologies Inc RS880 [Radeon HD 
-4250]
-02:00.0 USB Controller: NEC Corporation uPD720200 USB 3.0 Host 
-Controller (rev 03)
-03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. 
-RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 06)
-04:00.0 RAID bus controller: LSI Logic / Symbios Logic MegaRAID SAS 9240 
-(rev 02)
-05:00.0 RAID bus controller: LSI Logic / Symbios Logic MegaRAID SAS 9240 
-(rev 02)
-07:00.0 SCSI storage controller: Marvell Technology Group Ltd. 88SX7042 
-PCI-e 4-port SATA-II (rev 02)
+I said "this is fairly much the only remaining use", and some more use
+cases were pointed out that were almost identical to the ones we'd
+already discussed, and that were handled by the same patch.
+
+Gosh, how wrong I was! You should shoot me now!
+
+> Really, i have little interest in continuing the 'who was wrong' 
+> angle of this discussion 
+
+Very sensible. Hopefully we can agree that:
+
+ - The only thing that ARCH=i386 and ARCH=x86_64 now do, since the
+   merge into arch/x86, is override the setting of CONFIG_64BIT.
+
+ - Until now, that override has also happened even when the user
+   *didn't* pass any ARCH= on the command line. Instead of using the
+   value of CONFIG_64BIT from the .config, it would automatically get
+   changed to match the host!
+
+ - This meant that people were forced to set ARCH= on the command line,
+   just to make the build system honour the existing .config file.
+
+ - The patch I submitted will make that override happen *only* when
+   ARCH is explicitly specified as i386 or x86_64, which you use.
+   It will *stop* it from happening when no ARCH= is specified. Yay!
+
+ - The second patch I submitted will allow you to set *any* visible
+   config symbol from the command line, which will be useful in many
+   ways in addition to letting you set CONFIG_64BIT.
+
+ - Now that you can set CONFIG_64BIT on the command line, the only
+   remaining use of ARCH=i386 and ARCH=x86_64 is redundant.
+
+
+Note that I've carefully avoided saying 'obsolete'. Only 'redundant',
+which I'm sure you won't disagree with.
+
+-- 
+dwmw2
+
