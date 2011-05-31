@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab1EaK1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 06:27:13 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34737 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752302Ab1EaK1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 06:27:11 -0400
-Date: Tue, 31 May 2011 12:26:55 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Subject: Re: [PATCH] kvm: Fix build warnings
-Message-ID: <20110531102655.GC24172@elte.hu>
-References: <20110530124600.GB494@eferding.osrc.amd.com>
- <1306786278-12219-1-git-send-email-bp@alien8.de>
- <20110531073824.GA17999@elte.hu>
- <4DE4A4E7.80503@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DE4A4E7.80503@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753949Ab1EaK12 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 06:27:28 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:48300 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753471Ab1EaK1Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 06:27:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=HoP2Efmrx2q368cvnF9ELin+s2A7wSwMK6fuP5OJp9TdtDTqsqDIOf3b4ffXNFVKrK
+         NvcZ1xX/5h9Otbl7+F+7D+FK6HbhCPf3Rn+zeBWb0qRqrVgk0ljNR1kb5ilrSuk9S96n
+         ralpTzMDIOf+bAh/nsHr1VYZks8NsLvKSPYkI=
+Subject: Re: [PATCH 1/2] blktrace: treat flush as barrier
+From: Namhyung Kim <namhyung@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Mike Snitzer <snitzer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+In-Reply-To: <20110528074449.GB22382@infradead.org>
+References: <1306501883-23498-1-git-send-email-namhyung@gmail.com>
+	 <20110527131237.GA27647@infradead.org>
+	 <BANLkTi=8jQPdBNJYfM=geuXFsAXJJgfq=Q@mail.gmail.com>
+	 <1306509182.1351.1.camel@leonhard> <4DE006C5.4010906@fusionio.com>
+	 <20110527202747.GA4803@infradead.org> <1306548581.1679.12.camel@leonhard>
+	 <20110528074449.GB22382@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 May 2011 19:27:16 +0900
+Message-ID: <1306837636.1464.15.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Avi Kivity <avi@redhat.com> wrote:
-
-> On 05/31/2011 10:38 AM, Ingo Molnar wrote:
-> >* Borislav Petkov<bp@alien8.de>  wrote:
-> >
-> >>  +++ b/arch/x86/kvm/paging_tmpl.h
-> >>  @@ -121,7 +121,7 @@ static int FNAME(walk_addr_generic)(struct guest_walker *walker,
-> >>   				gva_t addr, u32 access)
-> >>   {
-> >>   	pt_element_t pte;
-> >>  -	pt_element_t __user *ptep_user;
-> >>  +	pt_element_t __user *uninitialized_var(ptep_user);
-> >
-> >Note that doing this is actually actively dangerous for two reasons.
-> >
-> >
+2011-05-28 (토), 03:44 -0400, Christoph Hellwig:
+> On Sat, May 28, 2011 at 11:09:41AM +0900, Namhyung Kim wrote:
+> > AFAIK FLUSH always precedes WRITE and then followed by FUA, so how about
 > 
-> <snip lots of good advice>
+> Right now most do because that's how the old barriers worked, but it's
+> going to change.  For $NEXT + 1 I have a patch that for will make
+> xfs sends FUA without flushes in a lot of cases, and afaik some device
+> mapper code already does now.
 > 
-> > Please fix it instead.
-> 
-> s/instead/in addition/; while all those changes are good, they are 
-> much too large for 3.0.  Let's push the simple fix for 3.0 and 
-> queue the bigger refactoring to 3.1.
 
-Yeah, that's probably wise, this is a tricky function.
+OK, thanks for the explanation.
 
-Thanks,
+Btw, the point was it seems possible that we can use the 'F' for both
+FLUSH and FUA if we distinguish them by their (relative) position in the
+output. How do you think? Do you still prefer F/U flags?
 
-	Ingo
+Thanks.
+
+
+-- 
+Regards,
+Namhyung Kim
+
+
