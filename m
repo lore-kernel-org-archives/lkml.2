@@ -1,130 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab1EaDDU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 23:03:20 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:26370 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab1EaDDS (ORCPT
+	id S1755078Ab1EaDNt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 23:13:49 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:51524 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab1EaDNs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 23:03:18 -0400
+	Mon, 30 May 2011 23:13:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=ACjNDuruC+F0PXI7MXk/VwoJxt5ULl/QNCG5NAuJhqEVrM5MyR0E7MOoqkTY3O/Obm
-         bSM9T57r2i/F0UiW0cjQ==
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=WWnzLgNXL3PBZp3AzRlDVc2tTQjqsROXEXy98ujTgooT79cv+zBOOAP++tYGSH9dVJ
+         XgTdq5oh5Ot/SWLQOvdumyS4qwsIL7Dv7GgH15dlBcq83tRjiRlraXbJHq3SxUj6q+D/
+         STlPQIwu7K/7tGRMaVnBvr1mOGc9a0Sa+CHW4=
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikm0fkii_SyoJ4W1j+nZD-ErS+o-A@mail.gmail.com>
-References: <4DD5452F.9050108@radicalsystems.co.za> <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com>
- <sig.512079e334.4DD57D44.50009@radicalsystems.co.za> <BANLkTikHQNQdWoDS2dXUC9gTPWvtmUM=yA@mail.gmail.com>
- <sig.51214cae32.4DD61B48.8010601@radicalsystems.co.za> <BANLkTi=jTKp9+_KDmTxYfGXe6Ln02GLmDA@mail.gmail.com>
- <sig.6125c0d242.4DDB86FE.5090809@radicalsystems.co.za> <BANLkTi=FTkPCVEMdKBgwg61hKDvgpJ6oRA@mail.gmail.com>
- <BANLkTikm0fkii_SyoJ4W1j+nZD-ErS+o-A@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 30 May 2011 21:02:54 -0600
-Message-ID: <BANLkTi=SGVoEK0YxeRVGvh34FTg3=qX0SA@mail.gmail.com>
-Subject: Re: PCI BAR1 Unassigned
-To: Jan Zwiegers <jan@radicalsystems.co.za>
-Cc: Xianghua Xiao <xiaoxianghua@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001e680f14002dad0c04a489a53c
-X-System-Of-Record: true
+In-Reply-To: <20110531083859.98e4ff43.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1306774744.4061.5.camel@localhost.localdomain>
+	<20110531083859.98e4ff43.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 31 May 2011 09:13:47 +0600
+Message-ID: <BANLkTinTqijGxCpZ_nRwWZHYsR-u2zojZA@mail.gmail.com>
+Subject: Re: [PATCH] mm, vmstat: Use cond_resched only when !CONFIG_PREEMPT
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Christoph Lameter <cl@linux.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001e680f14002dad0c04a489a53c
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, May 31, 2011 at 5:38 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Mon, 30 May 2011 22:59:04 +0600
+> Rakib Mullick <rakib.mullick@gmail.com> wrote:
+>
+>> commit 468fd62ed9 (vmstats: add cond_resched() to refresh_cpu_vm_stats()) added cond_resched() in refresh_cpu_vm_stats. Purpose of that patch was to allow other threads to run in non-preemptive case. This patch, makes sure that cond_resched() gets called when !CONFIG_PREEMPT is set. In a preemptiable kernel we don't need to call cond_resched().
+>>
+>> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+>
+> Hmm, what benefit do we get by adding this extra #ifdef in the code directly ?
+> Other cond_resched() callers are not guilty in !CONFIG_PREEMPT ?
+>
+Well, in preemptible kernel this context will get preempted if
+requires, so we don't need cond_resched(). If you checkout the git log
+of the mentioned commit, you'll find the explanation. It says:
+        "Adding a cond_resched() to allow other threads to run in the
+non-preemptive
+    case."
 
-On Thu, May 26, 2011 at 2:38 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> Jan, would you mind testing the attached patch? =A0This is against
-> current upstream, but I think it will apply without much trouble to
-> 2.6.35; I don't think there have been many changes in that area.
-> Thanks.
+So, let cond_resched() be in non-preemptive case.
 
-Hi Jan,
+Thanks,
+Rakib
 
-If you haven't tested the patch yet, can you substitute this one?  It
-should be functionally equivalent, but I did tweak it a bit.
-
-Bjorn
-
---001e680f14002dad0c04a489a53c
-Content-Type: application/octet-stream; name="patch.pci2"
-Content-Disposition: attachment; filename="patch.pci2"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_goc9hjuu1
-
-Y29tbWl0IDU4YTEwNTgxNDBjNzQ1YzI3OTYxZTVhMjk3ZTQ0ZDI3NGQ2MTFhNmMKQXV0aG9yOiBC
-am9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpEYXRlOiAgIFR1ZSBNYXkgMjQgMDY6
-NDg6MjIgMjAxMSAtMDYwMAoKICAgIFBDSTogcGFzcyBwY2lfZGV2IHRvIGRlY29kZV9iYXIoKSBm
-b3IgdXNlIGluIGRldl93YXJuKCkKICAgIAogICAgUGFzcyBwY2lfZGV2IHBvaW50ZXIgZG8gZGVj
-b2RlX2JhcigpIGZvciBmdXR1cmUgdXNlIGluIHdhcm5pbmcgbWVzc2FnZXMuCiAgICAKICAgIFNp
-Z25lZC1vZmYtYnk6IEJqb3JuIEhlbGdhYXMgPGJoZWxnYWFzQGdvb2dsZS5jb20+CgpkaWZmIC0t
-Z2l0IGEvZHJpdmVycy9wY2kvcHJvYmUuYyBiL2RyaXZlcnMvcGNpL3Byb2JlLmMKaW5kZXggNDg4
-NDlmZi4uOGUxZTRlNSAxMDA2NDQKLS0tIGEvZHJpdmVycy9wY2kvcHJvYmUuYworKysgYi9kcml2
-ZXJzL3BjaS9wcm9iZS5jCkBAIC0xMDAsNyArMTAwLDggQEAgc3RhdGljIHU2NCBwY2lfc2l6ZSh1
-NjQgYmFzZSwgdTY0IG1heGJhc2UsIHU2NCBtYXNrKQogCXJldHVybiBzaXplOwogfQogCi1zdGF0
-aWMgaW5saW5lIGVudW0gcGNpX2Jhcl90eXBlIGRlY29kZV9iYXIoc3RydWN0IHJlc291cmNlICpy
-ZXMsIHUzMiBiYXIpCitzdGF0aWMgaW5saW5lIGVudW0gcGNpX2Jhcl90eXBlIGRlY29kZV9iYXIo
-c3RydWN0IHBjaV9kZXYgKmRldiwKKwkJCQkJICAgc3RydWN0IHJlc291cmNlICpyZXMsIHUzMiBi
-YXIpCiB7CiAJaWYgKChiYXIgJiBQQ0lfQkFTRV9BRERSRVNTX1NQQUNFKSA9PSBQQ0lfQkFTRV9B
-RERSRVNTX1NQQUNFX0lPKSB7CiAJCXJlcy0+ZmxhZ3MgPSBiYXIgJiB+UENJX0JBU0VfQUREUkVT
-U19JT19NQVNLOwpAQCAtMTY0LDcgKzE2NSw3IEBAIGludCBfX3BjaV9yZWFkX2Jhc2Uoc3RydWN0
-IHBjaV9kZXYgKmRldiwgZW51bSBwY2lfYmFyX3R5cGUgdHlwZSwKIAkJbCA9IDA7CiAKIAlpZiAo
-dHlwZSA9PSBwY2lfYmFyX3Vua25vd24pIHsKLQkJdHlwZSA9IGRlY29kZV9iYXIocmVzLCBsKTsK
-KwkJdHlwZSA9IGRlY29kZV9iYXIoZGV2LCByZXMsIGwpOwogCQlyZXMtPmZsYWdzIHw9IHBjaV9j
-YWxjX3Jlc291cmNlX2ZsYWdzKGwpIHwgSU9SRVNPVVJDRV9TSVpFQUxJR047CiAJCWlmICh0eXBl
-ID09IHBjaV9iYXJfaW8pIHsKIAkJCWwgJj0gUENJX0JBU0VfQUREUkVTU19JT19NQVNLOwpjb21t
-aXQgMTJiNTMzOThhOWIwNTA4YjZhNjVhMTM4YWRmNmJhNTRhMzZmMzJlNQpBdXRob3I6IEJqb3Ju
-IEhlbGdhYXMgPGJoZWxnYWFzQGdvb2dsZS5jb20+CkRhdGU6ICAgRnJpIE1heSAyMCAwODozNjoz
-MCAyMDExIC0wNjAwCgogICAgUENJOiB0cmVhdCBtZW0gQkFSIHR5cGUgIjExIiAocmVzZXJ2ZWQp
-IGFzIDMyLWJpdCwgbm90IDY0LWJpdCwgQkFSCiAgICAKICAgIFRoZSBsb3cgZm91ciBiaXRzIG9m
-IGEgbWVtb3J5IEJBUiBhcmUgIlBUVDAiIHdoZXJlIFA9MSBmb3IgcHJlZmV0Y2hhYmxlCiAgICBC
-QVJzLCBhbmQgVFQgaXMgYXMgZm9sbG93czoKICAgIAogICAgICAwMCAgMzItYml0IEJBUiwgYW55
-d2hlcmUgaW4gbG93ZXIgNEdCCiAgICAgIDAxICBhbnl3aGVyZSBiZWxvdyAxTUIgKHJlc2VydmVk
-IGFzIG9mIFBDSSAyLjIpCiAgICAgIDEwICA2NC1iaXQgQkFSCiAgICAgIDExICByZXNlcnZlZAog
-ICAgCiAgICBQcmlvciB0byBlMzU0NTk3Y2NlLCB3ZSB0cmVhdGVkICIwMTAwIiBhcyBhIDY0LWJp
-dCBCQVIgYW5kIGFsbCBvdGhlcnMgYXMKICAgIDMyLWJpdCBCQVJzLiAgVGhpcyB3YXMgb2J2aW91
-c2x5IHdyb25nIGJlY2F1c2UgcHJlZmV0Y2hhYmxlIDY0LWJpdCBCQVJzCiAgICAoIjExMDAiKSB3
-ZXJlIHRyZWF0ZWQgYXMgMzItYml0IEJBUnMuCiAgICAKICAgIFRoZSBlMzU0NTk3Y2NlIGZpeCwg
-d2hpY2ggYXBwZWFyZWQgaW4gMi42LjI4LCB3YXMgdG8gdHJlYXQgIngxeDAiIGFzIDY0LWJpdAog
-ICAgQkFScywgYnV0IHRoaXMgY2hhbmdlZCAocHJvYmFibHkgdW5pbnRlbnRpb25hbGx5KSBvdXIg
-aGFuZGxpbmcgb2YgcmVzZXJ2ZWQKICAgIHR5cGUgIngxMTAiIGZyb20gMzItYml0IHRvIDY0LWJp
-dC4KICAgIAogICAgSGFyZHdhcmUgc2hvdWxkIG5vdCBiZSB1c2luZyB0aGUgIjExIiB0eXBlLCBi
-dXQgaWYgaXQgZGlkIGhhcHBlbiB0byB1c2UgaXQKICAgIGZvciBhIDMyLWJpdCBCQVIsIGl0IHdv
-cmtlZCBiZWZvcmUgZTM1NDU5N2NjZSBhbmQgZGlkbid0IHdvcmsgYWZ0ZXJ3YXJkcy4KICAgIEph
-biBoYXMgYSBwaWVjZSBvZiBzdWNoIGhhcmR3YXJlLgogICAgCiAgICBUaGlzIHBhdGNoIHJldHVy
-bnMgdG8gdHJlYXRpbmcgdGhlIHJlc2VydmVkICIxMSIgdHlwZSBhcyBhIDMyLWJpdCBCQVIgYW5k
-CiAgICBhZGRzIGEgd2FybmluZyBpZiB3ZSBzZWUgaXQuCiAgICAKICAgIEl0IGFsc28gbG9ncyBh
-IG5vdGUgaWYgd2Ugc2VlIGEgMU0gQkFSLiAgVGhpcyBpcyBub3QgYSB3YXJuaW5nLCBiZWNhdXNl
-CiAgICBzdWNoIGhhcmR3YXJlIGNvbmZvcm1zIHRvIHByZS1QQ0kgMi4yIHNwZWMsIGJ1dCBJIHRo
-aW5rIGl0J3Mgd29ydGggbm90aW5nCiAgICBiZWNhdXNlIExpbnV4IGlnbm9yZXMgdGhlIDFNIHJl
-c3RyaWN0aW9uIGlmIGl0IGV2ZXIgaGFzIHRvIGFzc2lnbiB0aGUgQkFSLgogICAgCiAgICBDQzog
-UGV0ZXIgQ2h1YmIgPHBldGVyY0BnZWxhdG8udW5zdy5lZHUuYXU+CiAgICBCdWd6aWxsYTogaHR0
-cHM6Ly9idWd6aWxsYS5rZXJuZWwub3JnL3Nob3dfYnVnLmNnaT9pZD0zNTk1MgogICAgUmVwb3J0
-ZWQtYnk6IEphbiBad2llZ2VycyA8amFuQHJhZGljYWxzeXN0ZW1zLmNvLnphPgogICAgU2lnbmVk
-LW9mZi1ieTogQmpvcm4gSGVsZ2FhcyA8YmhlbGdhYXNAZ29vZ2xlLmNvbT4KCmRpZmYgLS1naXQg
-YS9kcml2ZXJzL3BjaS9wcm9iZS5jIGIvZHJpdmVycy9wY2kvcHJvYmUuYwppbmRleCA4ZTFlNGU1
-Li5mM2FjMDk2IDEwMDY0NAotLS0gYS9kcml2ZXJzL3BjaS9wcm9iZS5jCisrKyBiL2RyaXZlcnMv
-cGNpL3Byb2JlLmMKQEAgLTEwMyw2ICsxMDMsOCBAQCBzdGF0aWMgdTY0IHBjaV9zaXplKHU2NCBi
-YXNlLCB1NjQgbWF4YmFzZSwgdTY0IG1hc2spCiBzdGF0aWMgaW5saW5lIGVudW0gcGNpX2Jhcl90
-eXBlIGRlY29kZV9iYXIoc3RydWN0IHBjaV9kZXYgKmRldiwKIAkJCQkJICAgc3RydWN0IHJlc291
-cmNlICpyZXMsIHUzMiBiYXIpCiB7CisJdTMyIG1lbV90eXBlOworCiAJaWYgKChiYXIgJiBQQ0lf
-QkFTRV9BRERSRVNTX1NQQUNFKSA9PSBQQ0lfQkFTRV9BRERSRVNTX1NQQUNFX0lPKSB7CiAJCXJl
-cy0+ZmxhZ3MgPSBiYXIgJiB+UENJX0JBU0VfQUREUkVTU19JT19NQVNLOwogCQlyZXR1cm4gcGNp
-X2Jhcl9pbzsKQEAgLTExMCw4ICsxMTIsMjEgQEAgc3RhdGljIGlubGluZSBlbnVtIHBjaV9iYXJf
-dHlwZSBkZWNvZGVfYmFyKHN0cnVjdCBwY2lfZGV2ICpkZXYsCiAKIAlyZXMtPmZsYWdzID0gYmFy
-ICYgflBDSV9CQVNFX0FERFJFU1NfTUVNX01BU0s7CiAKLQlpZiAocmVzLT5mbGFncyAmIFBDSV9C
-QVNFX0FERFJFU1NfTUVNX1RZUEVfNjQpCisJbWVtX3R5cGUgPSBiYXIgJiBQQ0lfQkFTRV9BRERS
-RVNTX01FTV9UWVBFX01BU0s7CisJc3dpdGNoIChtZW1fdHlwZSkgeworCWNhc2UgUENJX0JBU0Vf
-QUREUkVTU19NRU1fVFlQRV8zMjoKKwkJYnJlYWs7CisJY2FzZSBQQ0lfQkFTRV9BRERSRVNTX01F
-TV9UWVBFXzFNOgorCQlkZXZfaW5mbygmZGV2LT5kZXYsICIxTSBtZW0gQkFSIHRyZWF0ZWQgYXMg
-MzItYml0IEJBUlxuIik7CisJCWJyZWFrOworCWNhc2UgUENJX0JBU0VfQUREUkVTU19NRU1fVFlQ
-RV82NDoKIAkJcmV0dXJuIHBjaV9iYXJfbWVtNjQ7CisJZGVmYXVsdDoKKwkJZGV2X3dhcm4oJmRl
-di0+ZGV2LAorCQkJICJtZW0gdW5rbm93biB0eXBlICV4IHRyZWF0ZWQgYXMgMzItYml0IEJBUlxu
-IiwKKwkJCSBtZW1fdHlwZSk7CisJCWJyZWFrOworCX0KIAlyZXR1cm4gcGNpX2Jhcl9tZW0zMjsK
-IH0KIAo=
---001e680f14002dad0c04a489a53c--
+> Thanks,
+> -Kame
+>
+>> ---
+>>
+>> diff --git a/mm/vmstat.c b/mm/vmstat.c
+>> index 20c18b7..72cf857 100644
+>> --- a/mm/vmstat.c
+>> +++ b/mm/vmstat.c
+>> @@ -461,7 +461,11 @@ void refresh_cpu_vm_stats(int cpu)
+>>                               p->expire = 3;
+>>  #endif
+>>                       }
+>> +
+>> +#ifndef CONFIG_PREEMPT
+>>               cond_resched();
+>> +#endif
+>> +
+>>  #ifdef CONFIG_NUMA
+>>               /*
+>>                * Deal with draining the remote pageset of this
+>>
+>>
+>
+>
