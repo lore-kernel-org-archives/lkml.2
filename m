@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab1EaM7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 08:59:06 -0400
-Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:43958 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751046Ab1EaM7E (ORCPT
+	id S1751819Ab1EaNEi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 09:04:38 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40081 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789Ab1EaNEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 08:59:04 -0400
-Date: Tue, 31 May 2011 14:59:02 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] irq: catch more wrong return values from interrupt
- handlers
-Message-ID: <20110531125902.GA13217@Chamillionaire.breakpoint.cc>
-References: <1306824972-27067-1-git-send-email-sebastian@breakpoint.cc>
- <1306824972-27067-3-git-send-email-sebastian@breakpoint.cc>
- <alpine.LFD.2.02.1105311231150.3078@ionos>
+	Tue, 31 May 2011 09:04:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=TO37Z79wdR+a3y7YN3Oo3QGwKXH75gG+ha8lR/xNNCa75Go7vOoa/c3XxeJC76GDnj
+         7OHAMczYBIfXmb87hZWrswEYqqzy0lN7ZNt/zSQP/53cX6Br0BzSEyWerMVXpYrAET3L
+         LHXv63TyDFEjQv1OaKuXcw1EXy+FeU0MooE2s=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1105311231150.3078@ionos>
-X-Key-Id: FE3F4706
-X-Key-Fingerprint: FFDA BBBB 3563 1B27 75C9  925B 98D5 5C1C FE3F 4706
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 31 May 2011 21:04:36 +0800
+Message-ID: <BANLkTikG4v6xPGcKU6YVTYhXCnxWaWwoKg@mail.gmail.com>
+Subject: [PATCH] sched: check and preempt the current task at right place
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner | 2011-05-31 12:32:58 [+0200]:
+When switching a task to RT, it is the right place to preempt the current
+running task if the task is not running. Same scenario also rises when the
+priority of task has changed.
 
->On Tue, 31 May 2011, Sebastian Andrzej Siewior wrote:
->
->> We now also accept return value IRQ_WAKE_THREAD from a threaded
->> interrupt or IRQ_HANDLED | IRQ_WAKE_THREAD from primary and theaded
->> handler which is wrong. We need to accept the later on shared handlers
->> where one handler is primary only and the second is a threaded handler.
->> This patch attempts to catch them. Unfortunately this patch introduces
->> two new types so I'm not sure if it is worth it.
->
->I'd rather avoid that ugliness. If driver writers are that stupid,
->there is probably more significant wreckage than this.
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
+ kernel/sched_rt.c |   19 +++----------------
+ 1 files changed, 3 insertions(+), 16 deletions(-)
 
-Sure. It is just that the "old" code ensured that either NONE or HANDLED
-is returned and nothing else and the previous patch broke that check.
-This patch just points it out :)
-Do you want bad_action_ret() removed or kept as it?
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index 88725c9..4a9553e 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -1671,25 +1671,13 @@ static inline void init_sched_rt_class(void)
+  */
+ static void switched_to_rt(struct rq *rq, struct task_struct *p)
+ {
+-	int check_resched = 1;
+-
+ 	/*
+ 	 * If we are already running, then there's nothing
+ 	 * that needs to be done. But if we are not running
+ 	 * we may need to preempt the current running task.
+-	 * If that current running task is also an RT task
+-	 * then see if we can move to another run queue.
+ 	 */
+-	if (p->on_rq && rq->curr != p) {
+-#ifdef CONFIG_SMP
+-		if (rq->rt.overloaded && push_rt_task(rq) &&
+-		    /* Don't resched if we changed runqueues */
+-		    rq != task_rq(p))
+-			check_resched = 0;
+-#endif /* CONFIG_SMP */
+-		if (check_resched && p->prio < rq->curr->prio)
+-			resched_task(rq->curr);
+-	}
++	if (p->on_rq && rq->curr != p)
++		check_preempt_curr_rt(rq, p, 0);
+ }
 
->Thanks,
->
->	tglx
-
-Sebastian
+ /*
+@@ -1729,8 +1717,7 @@ prio_changed_rt(struct rq *rq, struct
+task_struct *p, int oldprio)
+ 		 * greater than the current running task
+ 		 * then reschedule.
+ 		 */
+-		if (p->prio < rq->curr->prio)
+-			resched_task(rq->curr);
++		check_preempt_curr_rt(rq, p, 0);
+ 	}
+ }
