@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757705Ab1EaUDM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 16:03:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:40269 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab1EaUDK (ORCPT
+	id S1757775Ab1EaUET (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 16:04:19 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:63971 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab1EaUES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 16:03:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=opRTllvN/lWQYWeYWQ/ds+y+Y7Pmyes6r3MRhlm9eqWbRMNGmunPh39ySUDzoc4NQr
-         7UbPLYXaRyQupLtcfLyQ==
-Date: Tue, 31 May 2011 13:03:03 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Eric Miao <eric.y.miao@gmail.com>, Samuel Ortiz <samuel@sortiz.org>
-Subject: Re: IrDA driver fails on PXA255
-In-Reply-To: <20110531072650.GC21382@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.00.1105311253510.5646@chino.kir.corp.google.com>
-References: <20110528205701.GA1788@doriath.ww600.siemens.net> <alpine.DEB.2.00.1105281628480.9934@chino.kir.corp.google.com> <BANLkTim9YdhjY75CzMsSOCVKZWi-WKZ5wA@mail.gmail.com> <alpine.DEB.2.00.1105291410450.9658@chino.kir.corp.google.com>
- <20110529215656.GA5576@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105302202510.18793@chino.kir.corp.google.com> <20110531072650.GC21382@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 31 May 2011 16:04:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [kernel.org users] Turning off the incremental diff robot
+Date: Tue, 31 May 2011 22:04:02 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <4DE3E9E7.8020008@zytor.com> <20110531194358.GA4424@elf.ucw.cz>
+In-Reply-To: <20110531194358.GA4424@elf.ucw.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201105312204.02722.arnd@arndb.de>
+X-Provags-ID: V02:K0:WEdUF2/kJM4XNSpdxmausPjQnTtPBPR1r4xNhhtKZG/
+ T0ORykuAlZkQ900q7bRjDdclJa+9X7WCFTLWElQuJk4mbbPXj5
+ iWegQzk7D1ze8LAfKUbDKyia+zH0JMGHfgCMqZgtKgBVHR22mA
+ EqMIZ45KuiUA/jv0nyCbTYgh6Jz8VqkyfOj75gBMoLrxTApxZi
+ cUWsrFVJQGONE+2rm6Mww==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 May 2011, Russell King - ARM Linux wrote:
+On Tuesday 31 May 2011 21:43:59 Pavel Machek wrote:
+> > With the v3.0 name change I was looking over what might break, and I'm
+> > seriously considering turning off the incremental diff robot on
+> > kernel.org.  It's not clear to me that it is actually useful anymore,
+> > with git and all.
 
-> Enabling CONFIG_ZONE_DMA is not a fix, it's making the problem vanish off
-> the radar.  It will mean that the drivers using GFP_DMA will never get
-> fixed up.
+Are you talking about just ftp://ftp.kernel.org/pub/linux/kernel/*/incr/
+or also about ftp://ftp.kernel.org/pub/linux/kernel/v2.6/patch-* and
+Changelog-*?
+
+I can see reasons to keep the latter, but not necessarily the former.
+
+> > Do anyone actually use these anymore?
 > 
-
-Disabling CONFIG_ZONE_DMA is an optimization, do you agree?  I asked 
-on Sunday what the downsides of enabling the option on arm are, and you 
-didn't mention any.  So what's the problem with my patch to enable it for 
-this driver since it is using GFP_DMA?  You claim that it'll never get 
-removed again to return to the _optimized_ case, yet my patch is 
-guaranteed to work for that driver in all configurations at the moment.  I 
-don't think we should be fighting for the optimized case where the 
-alternative has no downside.
-
- [ Patching the page allocator to also emit a line to the dmesg to direct 
-   users directly to enabling CONFIG_ZONE_DMA wouldn't be a problem, 
-   either. ]
-
-> Change it to be a soft WARN_ON for one release.  Anything else will just
-> result in the problem being IGNORED.
+> Yes.
 > 
+> Usecase one is zaurus, which is just not powerful enough for git, and
+> usecase two are companies that only work with releases... ketchup is
+> very useful for both.
 
-The problem certainly isn't being ignored in this thread, or in the patch 
-that I sent to fix Dmitry's issue by default, so that doesn't seem to be 
-the case.  What would be ignored, though, is if it just emitted a 
-WARN_ON() without failing the allocation so everything works perfectly.
+For usecase one, is it possible to replace the download links with
+links into http://git.kernel.org/ ?
+
+For usecase two, why wouldn't those be able to just download the entire
+release tarball? At least, I would expect that there is no need for
+the small incremental patches in their case, only for the full
+inter-release patches.
+
+	Arnd
