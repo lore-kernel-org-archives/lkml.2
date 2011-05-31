@@ -1,36 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758485Ab1EaJB4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 05:01:56 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57000 "EHLO mx1.suse.de"
+	id S1758504Ab1EaJCZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 05:02:25 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47612 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752439Ab1EaJBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 05:01:54 -0400
-Message-ID: <4DE4AE80.9040904@suse.cz>
-Date: Tue, 31 May 2011 11:01:52 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1752439Ab1EaJCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 05:02:23 -0400
+Date: Tue, 31 May 2011 11:02:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Subject: Re: [PATCH] kvm: Fix build warnings
+Message-ID: <20110531090219.GA26762@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+	Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>,
+	Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+References: <20110530124600.GB494@eferding.osrc.amd.com>
+ <1306786278-12219-1-git-send-email-bp@alien8.de>
+ <20110531073824.GA17999@elte.hu>
+ <4DE4A4E7.80503@redhat.com>
 MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] kbuild: Fix <linux/version.h> for X.Y versions
-References: <1306767052-15593-1-git-send-email-mmarek@suse.cz>            <1306767052-15593-3-git-send-email-mmarek@suse.cz> <5164.1306768129@turing-police.cc.vt.edu>
-In-Reply-To: <5164.1306768129@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4DE4A4E7.80503@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.5.2011 17:08, Valdis.Kletnieks@vt.edu wrote:
-> On Mon, 30 May 2011 16:50:50 +0200, Michal Marek said:
->
->> +	expr $(VERSION) \* 65536 + $(PATCHLEVEL) \* 256 + 0$(SUBLEVEL));    \
->
-> expr isn't going to interpret that last field as octal, is it?
+On Tue, May 31, 2011 at 11:20:55AM +0300, Avi Kivity wrote:
+> On 05/31/2011 10:38 AM, Ingo Molnar wrote:
+> >* Borislav Petkov<bp@alien8.de>  wrote:
+> >
+> >>  +++ b/arch/x86/kvm/paging_tmpl.h
+> >>  @@ -121,7 +121,7 @@ static int FNAME(walk_addr_generic)(struct guest_walker *walker,
+> >>   				gva_t addr, u32 access)
+> >>   {
+> >>   	pt_element_t pte;
+> >>  -	pt_element_t __user *ptep_user;
+> >>  +	pt_element_t __user *uninitialized_var(ptep_user);
+> >
+> >Note that doing this is actually actively dangerous for two reasons.
+> >
+> >
+> 
+> <snip lots of good advice>
+> 
+> >Please fix it instead.
+> 
+> s/instead/in addition/; while all those changes are good, they are
+> much too large for 3.0.  Let's push the simple fix for 3.0 and queue
+> the bigger refactoring to 3.1.
 
-As I wrote in the changelog: "expr treats all numbers as decimals, so 
-prepending a zero is safe." POSIX requires this, FWIW.
+Just to clarify: Hell, it is _not_ I who's fixing this! Virtualization
+folks are crazy anyway and I'm not touching their code except for
+trivial fixes :-).
 
-Michal
+The story: I saw the humongous function and being lazier than Ingo, I
+just wanted to shut up the warning. Knowing that uninitialized_var()
+is a dangerous thing to use, I asked whether people who know the code
+can guarantee that ptep_user is not going to be used uninitialized and
+Takuya confirmed.
+
+But yes, it'll be much better if kvm people could take a good hard look
+at it and try to simplify it. Also, while they're at it, I'd suggest
+they actually trace whether that unlikely() annotation actually brings
+any performance speedup - if it doesn't, out the door with it and here's
+more simplification right there.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
