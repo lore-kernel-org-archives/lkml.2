@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621Ab1EaRBN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 13:01:13 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:51415 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756881Ab1EaRBK (ORCPT
+	id S1757603Ab1EaRBD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 13:01:03 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.39.38]:51341 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757303Ab1EaRBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 13:01:10 -0400
-Message-ID: <4DE51EB7.7010606@stericsson.com>
-Date: Tue, 31 May 2011 19:00:39 +0200
-From: Mattias Wallin <mattias.wallin@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 2/3] clocksource: add DB8500 PRCMU Timer support
-References: <1306830661-9546-1-git-send-email-mattias.wallin@stericsson.com> <alpine.LFD.2.02.1105311236250.3078@ionos>
-In-Reply-To: <alpine.LFD.2.02.1105311236250.3078@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 31 May 2011 13:01:00 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=RkbuOcNBKs26m411nlUhjSfdb5tyALCh0xVjnXXtOerXsWyr8Bd7EtCotaQeD0NpvOywKPAwfY9u0ZwuXzecplLdBPqltNdE/PTNF2SP8n8FcflMnQvptZ7VHvwUoYXO;
+Date: Tue, 31 May 2011 10:00:40 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-pci@vger.kernel.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, konrad@kernel.org
+Subject: Re: [Xen-devel] Re: [PATCH v6] xen pci backend driver.
+Message-ID: <20110531100040.60ade056@jbarnes-desktop>
+In-Reply-To: <20110527152220.GA10031@dumpdata.com>
+References: <1303333640-5994-1-git-send-email-konrad.wilk@oracle.com>
+	<20110425115850.48b7d254@jbarnes-desktop>
+	<20110527152220.GA10031@dumpdata.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2011 12:38 PM, Thomas Gleixner wrote:
-> On Tue, 31 May 2011, Mattias Wallin wrote:
->> +static cycle_t clksrc_db8500_prcmu_read(struct clocksource *cs)
->> +{
->> +	u32 count, count2;
->> +
->> +	do {
->> +		count = readl(PRCMU_TIMER_4_DOWNCOUNT);
->> +		count2 = readl(PRCMU_TIMER_4_DOWNCOUNT);
->> +	} while (count2 != count);
->
-> What's the point of this exercise ?
-It is a software workaround for a HW bug. If the timer is read exactly 
-when the logic is in the process of flipping over to a new value you 
-will get wrong value (large deviations). The problem was found running 
-LTP tests reporting "Timer going backwards". Reading it two times will 
-take long enough for the timer to stabilise according to our HW guys 
-measurements.
-I agree with you that it is odd enough to deserve a comment in the code. 
-I will comment it in next version.
->
->> +	clocksource_calc_mult_shift(&clocksource_db8500_prcmu,
->> +		RATE_32K, SCHED_CLOCK_MIN_WRAP);
->> +	clocksource_register(&clocksource_db8500_prcmu);
->
-> Please use clocksource_register_hz()
-Ok.
->
->> diff --git a/include/linux/clksrc-db8500-prcmu.h b/include/linux/clksrc-db8500-prcmu.h
->> new file mode 100644
->> index 0000000..42b8587
->> --- /dev/null
->> +++ b/include/linux/clksrc-db8500-prcmu.h
->
-> Huch, why needs this to be a separate head in include/linux ?
-I will move the header file to mach-ux500/include/mach/. Ok?
+On Fri, 27 May 2011 11:22:20 -0400
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-(I have long time ago been thought to avoid include mach headers from 
-the drivers. But if I understand it correct it is not true any more and 
-in this case it certainly makes no sense since I break that rule myself.)
->
->> @@ -0,0 +1,17 @@
->> +/*
->> + * Copyright (C) ST-Ericsson SA 2011
->> + *
->> + * License Terms: GNU General Public License v2
->> + * Author: Mattias Wallin<mattias.wallin@stericsson.com>
->> + *
->> + */
->> +#ifndef __CLKSRC_DB8500_PRCMU_H
->> +#define __CLKSRC_DB8500_PRCMU_H
->> +
->> +#ifdef CONFIG_CLKSRC_DB8500_PRCMU
->> +void __init clksrc_db8500_prcmu_init(void);
->> +#else
->> +void __init clksrc_db8500_prcmu_init(void) {}
->> +#endif
->> +
->> +#endif
->> --
->> 1.7.4.3
->>
->>
+> On Mon, Apr 25, 2011 at 11:58:50AM -0700, Jesse Barnes wrote:
+> > On Wed, 20 Apr 2011 17:07:19 -0400
+> > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > 
+> > > The following patch implements the Xen pci backend for upstream Linux.
+> > > This is the host side counterpart to the frontend driver in
+> > > drivers/pci/xen-pcifront.c. The PV protocol is also implemented by
+> > > frontend drivers in other OSes too, such as the BSDs.
+> > > 
+> > > This driver has a long history as an out of tree driver but I am
+> > > submitting it here as a single monolithic patch to aid review. Once it
+> > > has been reviewed and is considered suitable for merging can we perhaps
+> > > consider merging the equivalent git branch which maintains much of
+> > > history?
+> > 
+> > It looks pretty clean at first glance (though 128k worth of patch isn't
+> > an ideal way to split it).
+> > 
+> > But maybe the back end belongs in arch/x86/xen as it's really a arch
+> > specific PCI implementation at heart?  I don't want to be a bottleneck
+> > for any Xen specific PCI patches in the future, and other arches have a
+> > similar split (though not always with an ideal core vs arch split).
+> 
+> Jesse,
+> 
+> Xen has a drivers/xen directory. In the past we have put some of the
+> "backends" in there, such as the SWIOTLB one. Perhaps some of it (or all?)
+> of this driver should go in there? If you are OK with this I can do it
+> that way and start chasing folks to review this driver?
 
+Yeah, I'm fine with that.  Each arch typically has a chunk of PCI code
+under arch/ anyway (some more than others), so doing it that way is ok
+with me.
+ 
+> > Figuring out some way to preserve the git history is probably a good
+> > idea, assuming it's not too much of a mess.  If it is, a more
+> 
+> I tried to keep it clean.. Most of the stuff is from me thought so I might
+> as well just squash it in one.
+
+Yeah that's up to you; presumably you just want to preserve the useful
+parts of the history, or maybe just make the initial changelog big
+enough to include all the important bits you've learned over the
+years. :)
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
