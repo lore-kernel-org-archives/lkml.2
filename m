@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab1EaN4u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 09:56:50 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59826 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752285Ab1EaN4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 09:56:47 -0400
-Date: Tue, 31 May 2011 15:56:27 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
-Message-ID: <20110531135627.GB15598@elte.hu>
-References: <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
- <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
- <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
- <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
- <20110531075306.GB20798@elte.hu>
- <1306832148.2029.484.camel@i7.infradead.org>
- <20110531104106.GD24172@elte.hu>
- <1306842211.2029.531.camel@i7.infradead.org>
- <20110531124537.GA10249@elte.hu>
- <1306849477.2029.570.camel@i7.infradead.org>
+	id S1755508Ab1EaN4n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 09:56:43 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33112 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801Ab1EaN4m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 09:56:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=puCWWzkcInm/Iwcpwt8pCEYrN4hrBQnnS12eZ6NKj+6sNfRiRa5lOmjb125SMt4pDN
+         ubHVoPU7jMbqQp/aPxPZ9KyEfOurWjuVVauSQdzNmro2ympfucGt+ovrr5hw3wkt7Wui
+         /y0BPqUEWzkX4DNPWs5E6JKNZgqcBZWS0K+gA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306849477.2029.570.camel@i7.infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1306827397.7536.10.camel@marge.simson.net>
+References: <BANLkTimfOsJ91_PJdB5-H02EGS0S5eJ5cA@mail.gmail.com>
+	<1306827397.7536.10.camel@marge.simson.net>
+Date: Tue, 31 May 2011 21:56:39 +0800
+Message-ID: <BANLkTi=YXK7pCJqei6oz4dzLzHgJC_m=2g@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix rt_nr_migratory corruption raised in push_rt_task()
+From: Hillf Danton <dhillf@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 31, 2011 at 3:36 PM, Mike Galbraith <efault@gmx.de> wrote:
+> On Mon, 2011-05-30 at 21:39 +0800, Hillf Danton wrote:
+>> When pushing, if a pushable task could not be pushed, it is dequeued with no
+>> updating the rt_nr_migratory element of RT run-queue, then rt_nr_migratory is
+>> corrupted, which is fixed by removing the dequeue operation.
+>
+> Hm.  I think you're right that this dequeue_pushable_task() call can be
+> removed, at least I didn't see it's reason for existing.  I'd word it a
+> bit differently though, and not return 1 unless we really did push.
+>
 
-* David Woodhouse <dwmw2@infradead.org> wrote:
+Hi Mike
 
-> On Tue, 2011-05-31 at 14:45 +0200, Ingo Molnar wrote:
-> > * David Woodhouse <dwmw2@infradead.org> wrote:
-> > 
-> > > > Also, i prefer to type out the architecture due to:
-> > > >  |                                              ...So if i get an ARM
-> > > >  |  bugreport that gives me the appearance of a core kernel bug i will
-> > > >  |  often start by converting that to an x86 .config via 'make
-> > > >  |  ARCH=x86_64 oldconfig'. ]
-> > > 
-> > > So first you point out that it's automatic, and then you still specify
-> > > it manually?
-> > 
-> > Currently it's not automatic so i prefer to type it out.
-> 
-> No, you were right the first time. It *is* automatic.
+Your message shows what is called professional work, but something lost,
 
-The architecture *inside* the .config is not inherited automatically 
-but overriden by the host architecture, so due to this assymetry i 
-prefer to use explicit ARCH=xxx lines whenever i deal with configs.
+> From: Hillf Danton <dhillf@gmail.com>
+>
+> sched, rt: fix rq->rt.pushable_tasks bug in push_rt_task()
+>
+> Do not call dequeue_pushable_task() when failing to push an eligible
+> task, as it remains pushable, merely not at this particular moment.
+>
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
 
-> >     "I believe that this 'filtered randconfig' behaviour is now fairly much
-> >      the *only* use for the old 'ARCH=i386' and 'ARCH=x86_64'."
-> > 
-> > You are wrong again - it isnt, as me and others pointed it out.
-> 
-> Not *so* wrong that all those other use cases couldn't be addressed 
-> in the same, simple patch to allow CONFIG_FOO on the 'make' command 
-> line.
+Signed-off-by: Mike Galbraith <efault@gmx.de>
 
-So "partially wrong" is not wrong? Indeed, if defined that way then i 
-agree that you must almost never be wrong ;-)
+right?
 
-Really, i have little interest in continuing the 'who was wrong' 
-angle of this discussion - i think people can read and i think people 
-have made it rather clear what they are using and why, and what 
-they'd like to see continue work, which requirements i'll try to 
-apply to related patches you send. The last version of your patch 
-looked good at first sight, except the changelog.
+> ---
+>  kernel/sched_rt.c |   15 ++++++++-------
+>  1 file changed, 8 insertions(+), 7 deletions(-)
+>
+> Index: linux-2.6.40.git/kernel/sched_rt.c
+> ===================================================================
 
-Thanks,
+And how to drive git to print the above two lines?
 
-	Ingo
+thanks
+            Hillf
