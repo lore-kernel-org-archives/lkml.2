@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757178Ab1EaPtX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:49:23 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:40204 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754674Ab1EaPtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:49:21 -0400
-From: Richard Weinberger <richard@nod.at>
-To: Christoph Lameter <cl@linux.com>
-Subject: Re: slub: UML and CONFIG_CMPXCHG_LOCAL
-Date: Tue, 31 May 2011 17:47:19 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, penberg@kernel.org
-References: <201105292225.46544.richard@nod.at> <alpine.DEB.2.00.1105310929230.18004@router.home>
-In-Reply-To: <alpine.DEB.2.00.1105310929230.18004@router.home>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1757043Ab1EaPtK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 11:49:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51308 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab1EaPtI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 11:49:08 -0400
+Subject: Re: [PATCH] Enable 'make CONFIG_FOO=y oldconfig'
+From: David Woodhouse <dwmw2@infradead.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Date: Tue, 31 May 2011 16:48:56 +0100
+In-Reply-To: <BANLkTik=uHr1eX44XV1pAHUfVQ-MorzOnw@mail.gmail.com>
+References: <1306707270.2029.377.camel@i7.infradead.org>
+	 <20110530072300.GA9802@elte.hu>
+	 <1306745835.2029.389.camel@i7.infradead.org>
+	 <20110530104231.GF17821@elte.hu> <20110530104656.GA19532@elte.hu>
+	 <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
+	 <20110530105809.GA20133@elte.hu>
+	 <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
+	 <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
+	 <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
+	 <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
+	 <1306795186.2029.459.camel@i7.infradead.org>
+	 <BANLkTik=uHr1eX44XV1pAHUfVQ-MorzOnw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105311747.19467.richard@nod.at>
+Message-ID: <1306856937.27477.3.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag 31 Mai 2011, 16:30:21 schrieb Christoph Lameter:
-> > Is there anything I can do to have slub on UML?
-> 
-> Yes, rely on the generic implementation of this_cpu_cmpxchg.
+On Mon, 2011-05-30 at 20:24 -0400, Arnaud Lacombe wrote:
+> It would seem that the underlying symbol is not visible, triggering
+> the failure of sym_set_tristate_value().
 
-Thanks for the pointer.
-You helped me a lot!
+Yes, this only lets you set *visible* symbols. If the symbol you're
+interested in is not visible because some of its dependencies are not
+set, it doesn't go and automatically enable those.
 
-//richard
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
