@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263Ab1EaT4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 15:56:12 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42743 "EHLO mx3.mail.elte.hu"
+	id S1758290Ab1EaT5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 15:57:42 -0400
+Received: from hyde.gogi.tv ([87.106.161.174]:60563 "EHLO hyde.gogi.tv"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757862Ab1EaT4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 15:56:09 -0400
-Date: Tue, 31 May 2011 21:55:51 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Matthew Garrett <mjg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, davej@redhat.com,
-        torvalds@linux-foundation.org, adobriyan@gmail.com, eranian@google.com,
-        penberg@kernel.org, davem@davemloft.net,
-        Arjan van de Ven <arjan@infradead.org>, Valdis.Kletnieks@vt.edu,
-        Andrew Morton <akpm@linux-foundation.org>, pageexec@freemail.hu,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-Message-ID: <20110531195551.GC26970@elte.hu>
-References: <1306269105.21443.20.camel@dan>
- <1306442367.2279.25.camel@dan>
- <20110531165252.GB8971@srcf.ucam.org>
- <4DE5360D.5070809@zytor.com>
- <20110531185122.GA11998@srcf.ucam.org>
- <1306868609.6317.25.camel@dan>
+	id S1757862Ab1EaT5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 15:57:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306868609.6317.25.camel@dan>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Tue, 31 May 2011 20:57:39 +0100
+From: Daniel Haid <d.haid@gogi.tv>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: Question about iommu on =?UTF-8?Q?x=38=36=5F=36=34=20and=20ra?=
+ =?UTF-8?Q?deon=20driver=2E?=
+In-Reply-To: <20110531190412.GA21245@dumpdata.com>
+References: <m2wrhf4sw5.fsf@firstfloor.org>
+ <08370791664f069624d25c757ed101c0@admin.gogi.tv>
+ <20110525125752.GB3467@dumpdata.com>
+ <dfd8bfd19ba1fb77d6448bff97123e13@admin.gogi.tv>
+ <20110527155507.GB11273@dumpdata.com>
+ <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv>
+ <20110531134519.GC14641@dumpdata.com>
+ <59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv>
+ <20110531160221.GA31659@dumpdata.com>
+ <0a8cb4bcad7fcf091a6bbe158323bba0@admin.gogi.tv>
+ <20110531190412.GA21245@dumpdata.com>
+Message-ID: <d0ce6a4ba6092a1a9ef0f1e8f3cac9c9@admin.gogi.tv>
+User-Agent: Roundcube Webmail/0.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ Just another question, the problem seems to be an issue with
 
-* Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+ swiotlb=force
 
-> Just for the record, I've put this patch on hold until there's some 
-> more consensus about whether boot-time randomization of the 
-> physical kernel address is the best approach. [...]
+ and I assume that without "force" DMA with addresses that
+ already are below 4GB should be handled without any
+ bounce-buffer, and with "force" everything goes through
+ the bounce-buffer, is this correct?
 
-Well, if you use the suggestion i made: to skip the e820 map fiddling 
-altogether and just allocate half a megabyte of 'hole' at the end of 
-the kernel image - which would allow the kernel to be randomized 
-freely upwards by 0-128 pages - then the 'dynamic' versus 'static' 
-solution could be used at once!
+ Now I have a VIA chipset where the IOMMU does not work, so
+ swiotlb is activated, but is it activated in force mode or
+ in normal mode? How can I find out?
 
-The 'static' method would use the same hole, just at install time, 
-while the 'dynamic' method would use it during bootup.
+ If it is activated in force mode, maybe the problem will
+ go away in normal mode?
 
-Also, if this method is used then most of the controversy about the 
-dynamic approach goes away (which was the memory maps interpretation 
-fragility).
-
-Your last patch would need only minor modifications to get the hole 
-added: you'd need to add the tail-hole in the linker map:
-
-   arch/x86/kernel/vmlinux.lds.S
-
-So ... could you *please* not shelf this idea just because people 
-used lkml for what it was invented: argued with each other rather 
-forcefully? :-)
-
-Thanks,
-
-	Ingo
