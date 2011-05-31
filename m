@@ -1,67 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595Ab1EaPzz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:55:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14313 "EHLO mx1.redhat.com"
+	id S932554Ab1EaPxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 11:53:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10103 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932513Ab1EaPxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:53:36 -0400
-Date: Tue, 31 May 2011 11:53:35 -0400
+	id S932408Ab1EaPxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 11:53:42 -0400
+Date: Tue, 31 May 2011 11:53:42 -0400
 From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org, gregkh@suse.de
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
 Cc: Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20110531155335.3609.13041.sendpatchset@prarit.bos.redhat.com>
+Message-Id: <20110531155341.3615.68693.sendpatchset@prarit.bos.redhat.com>
 Content-Type: text/x-c; charset=us-ascii
-Subject: [RFC PATCH 27/35] drivers/tty changes for SMBIOS and System Firmware
+Subject: [RFC PATCH 28/35] drivers/usb changes for SMBIOS and System Firmware
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/tty changes for SMBIOS and System Firmware
+drivers/usb changes for SMBIOS and System Firmware
 
 ---
- drivers/tty/serial/pch_uart.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
+ drivers/usb/host/pci-quirks.c |   19 ++++++++++++++-----
+ drivers/usb/host/uhci-hcd.c   |    2 +-
+ drivers/usb/host/uhci-pci.c   |   15 +++++++++++----
+ 3 files changed, 26 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index f2cb750..ab2e2af 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -21,7 +21,7 @@
- #include <linux/serial_core.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index fd93061..ae2a681 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -14,7 +14,7 @@
+ #include <linux/init.h>
+ #include <linux/delay.h>
+ #include <linux/acpi.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include "pci-quirks.h"
+ #include "xhci-ext-caps.h"
+ 
+@@ -507,6 +507,18 @@ static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ 	iounmap(base);
+ }
+ 
++static const struct sysfw_id __devinitdata ehci_bios_handoff_table[] = {
++	{
++		.ident = "Pegatron Lucid (ExoPC) Tablet",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "EXOPG06411"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "Lucid-CE-133"),
++		},
++		.exactmatch = 1,
++	},
++	{}
++};
++
+ static void __devinit ehci_bios_handoff(struct pci_dev *pdev,
+ 					void __iomem *op_reg_base,
+ 					u32 cap, u8 offset)
+@@ -517,10 +529,7 @@ static void __devinit ehci_bios_handoff(struct pci_dev *pdev,
+ 	 * seconds trying the handoff on its unused controller.  Skip
+ 	 * it. */
+ 	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
+-		const char *dmi_bn = dmi_get_system_info(DMI_BOARD_NAME);
+-		const char *dmi_bv = dmi_get_system_info(DMI_BIOS_VERSION);
+-		if (dmi_bn && !strcmp(dmi_bn, "EXOPG06411") &&
+-		    dmi_bv && !strcmp(dmi_bv, "Lucid-CE-133"))
++		if (sysfw_callback(ehci_bios_handoff_table))
+ 			try_handoff = 0;
+ 	}
+ 
+diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
+index fba99b1..1b03b7a 100644
+--- a/drivers/usb/host/uhci-hcd.c
++++ b/drivers/usb/host/uhci-hcd.c
+@@ -40,7 +40,7 @@
+ #include <linux/usb.h>
+ #include <linux/usb/hcd.h>
+ #include <linux/bitops.h>
 -#include <linux/dmi.h>
 +#include <linux/sysfw.h>
  
- #include <linux/dmaengine.h>
- #include <linux/pch_dma.h>
-@@ -1386,6 +1386,16 @@ static struct uart_driver pch_uart_driver = {
- 	.nr = PCH_UART_NR,
- };
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+diff --git a/drivers/usb/host/uhci-pci.c b/drivers/usb/host/uhci-pci.c
+index c300bd2f7..ef3de10 100644
+--- a/drivers/usb/host/uhci-pci.c
++++ b/drivers/usb/host/uhci-pci.c
+@@ -88,18 +88,25 @@ static int uhci_pci_resume_detect_interrupts_are_broken(struct uhci_hcd *uhci)
+ 	return 0;
+ }
  
-+static const struct sysfw_id pcih_uart_quirk_id[] = {
++static const struct sysfw_id bad_Asus_board_id[] = {
 +	{
-+		.ident = "CM-iTC",
++		.ident = "A7V8X",
 +		.matches = {
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "CM-iTC"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "A7V8X"),
 +		},
 +	},
 +	{}
 +};
 +
- static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 					     const struct pci_device_id *id)
+ static int uhci_pci_global_suspend_mode_is_broken(struct uhci_hcd *uhci)
  {
-@@ -1412,7 +1422,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	base_baud = 1843200; /* 1.8432MHz */
+ 	int port;
+-	const char *sys_info;
+-	static const char bad_Asus_board[] = "A7V8X";
  
- 	/* quirk for CM-iTC board */
--	if (strstr(dmi_get_system_info(DMI_BOARD_NAME), "CM-iTC"))
-+	if (sysfw_callback(pcih_uart_quirk_id))
- 		base_baud = 192000000; /* 192.0MHz */
- 
- 	switch (port_type) {
+ 	/* One of Asus's motherboards has a bug which causes it to
+ 	 * wake up immediately from suspend-to-RAM if any of the ports
+ 	 * are connected.  In such cases we will not set EGSM.
+ 	 */
+-	sys_info = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (sys_info && !strcmp(sys_info, bad_Asus_board)) {
++	if (sysfw_callback(bad_Asus_board_id)) {
+ 		for (port = 0; port < uhci->rh_numports; ++port) {
+ 			if (inw(uhci->io_addr + USBPORTSC1 + port * 2) &
+ 					USBPORTSC_CCS)
 -- 
 1.7.5.1
 
