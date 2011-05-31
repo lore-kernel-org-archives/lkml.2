@@ -1,303 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab1EaEtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 00:49:46 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60319 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752176Ab1EaEto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 00:49:44 -0400
-Date: Tue, 31 May 2011 14:49:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for May 31
-Message-Id: <20110531144935.35b9ad52.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__31_May_2011_14_49_35_+1000_TXJY0F8DhIB5_0yE"
+	id S1756161Ab1EaEwS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 00:52:18 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:45959 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab1EaEwR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 00:52:17 -0400
+Date: Tue, 31 May 2011 00:52:05 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, rientjes@google.com, hughd@google.com,
+        kamezawa hiroyu <kamezawa.hiroyu@jp.fujitsu.com>,
+        minchan kim <minchan.kim@gmail.com>, oleg@redhat.com
+Message-ID: <1973273.317151.1306817525160.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <4DE46A4B.40401@jp.fujitsu.com>
+Subject: Re: [PATCH v2 0/5] Fix oom killer doesn't work at all if system
+ have > gigabytes memory  (aka CAI founded issue)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__31_May_2011_14_49_35_+1000_TXJY0F8DhIB5_0yE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
 
-[The kernel.org mirroring is being slow today]
-
-Changes since 20110530:
-
-Linus' tree still has its build failure for which I reverted a commit.
-
-The idle-test tree lost its conflicts.
-
-The bluetooth tree lost its conflict.
-
-The tip tree gained a conflict against the idle-test tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 191 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-CONFLICT (content): Merge conflict in arch/sparc/include/asm/smp_32.h
-CONFLICT (content): Merge conflict in arch/sparc/kernel/smp_32.c
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging at91/at91-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging xilinx/arm-next
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
-CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-CONFLICT (content): Merge conflict in drivers/rtc/Kconfig
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/dev
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging docs/docs-move
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging powertools/tools-test
-Merging cpupowerutils/master
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging cpufreq-move/move-drivers
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging suspend/linux-next
-Merging apm/for-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging gpio/gpio/next
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
-Merging rcu/rcu/next
-Merging kvm/linux-next
-Merging oprofile/for-next
-Merging ptrace/ptrace
-Merging xen/upstream/xen
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging namespace/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-Merging staging/staging-next
-Merging slabh/slabh
-Merging bkl-config/config
-Merging cleancache/linux-next
-Merging arm-dt/devicetree/arm-next
-Merging scsi-post-merge/merge-base:master
-[master 3f921c6] Revert "kgdbts: unify/generalize gdb breakpoint adjustment"
-
---Signature=_Tue__31_May_2011_14_49_35_+1000_TXJY0F8DhIB5_0yE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN5HNfAAoJEDMEi1NhKgbsHbIH/3x7ojMklZzZIDwHnvOI424D
-bp8EtM4Xlll6QZsf6bTePWPxXdtTRKFeSPIrGenELz5huA1R/DWoze7Rk6yxzBTP
-vQ4SAX3s1AFCzSJJMZkTdZ5kfIXy6aAD+7ns7eH/QoWQK8rjDGcCidIlAV31XV0e
-gRaezFYF/bftnxP4gymWHS+G4ILhqQtISnG7c28SEwKZD+/djGdF/MgAgjbvboRS
-9/KIuQDPIQaYB5ai4Q1QAgq9zSkkliAPUjzi8J6Bqdb3+PGVo1UE75rbeB4pCeWi
-tMhvqDifz9M7JrWAQpiH91Lcwm3uocAfM6Np595PxIGQHNqzV+T5U+7Zb9zH7q4=
-=3f9S
------END PGP SIGNATURE-----
-
---Signature=_Tue__31_May_2011_14_49_35_+1000_TXJY0F8DhIB5_0yE--
+----- Original Message -----
+> (2011/05/31 10:33), CAI Qian wrote:
+> > Hello,
+> >
+> > Have tested those patches rebased from KOSAKI for the latest
+> > mainline.
+> > It still killed random processes and recevied a panic at the end by
+> > using root user. The full oom output can be found here.
+> > http://people.redhat.com/qcai/oom
+> 
+> You ran fork-bomb as root. Therefore unprivileged process was killed
+> at first.
+> It's no random. It's intentional and desirable. I mean
+> 
+> - If you run the same progream as non-root, python will be killed at
+> first.
+> Because it consume a lot of memory than daemons.
+> - If you run the same program as root, non root process and privilege
+> explicit
+> dropping processes (e.g. irqbalance) will be killed at first.
+Hmm, at least there were some programs were root processes but were killed
+first.
+[   pid]   ppid   uid total_vm      rss     swap score_adj name
+[  5720]   5353     0    24421      257        0         0 sshd
+[  5353]      1     0    15998      189        0         0 sshd
+[  5451]      1     0    19648      235        0         0 master
+[  1626]      1     0     2287      129        0         0 dhclient
+> 
+> Look, your log says, highest oom score process was killed first.
+> 
+> Out of memory: Kill process 5462 (abrtd) points:393 total-vm:262300kB,
+> anon-rss:1024kB, file-rss:0kB
+> Out of memory: Kill process 5277 (hald) points:303 total-vm:25444kB,
+> anon-rss:1116kB, file-rss:0kB
+> Out of memory: Kill process 5720 (sshd) points:258 total-vm:97684kB,
+> anon-rss:824kB, file-rss:0kB
+> Out of memory: Kill process 5457 (pickup) points:236 total-vm:78672kB,
+> anon-rss:768kB, file-rss:0kB
+> Out of memory: Kill process 5451 (master) points:235 total-vm:78592kB,
+> anon-rss:796kB, file-rss:0kB
+> Out of memory: Kill process 5458 (qmgr) points:233 total-vm:78740kB,
+> anon-rss:764kB, file-rss:0kB
+> Out of memory: Kill process 5353 (sshd) points:189 total-vm:63992kB,
+> anon-rss:620kB, file-rss:0kB
+> Out of memory: Kill process 1626 (dhclient) points:129
+> total-vm:9148kB, anon-rss:484kB, file-rss:0kB
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org. For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign
+> http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
