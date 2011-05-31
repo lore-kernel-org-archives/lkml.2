@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab1EaM4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 08:56:25 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45591 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab1EaM4Y (ORCPT
+	id S1753237Ab1EaM7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 08:59:06 -0400
+Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:43958 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751046Ab1EaM7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 08:56:24 -0400
-Date: Tue, 31 May 2011 14:56:21 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: a.p.zijlstra@chello.nl
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        markus@trippelsdorf.de, tglx@linutronix.de, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/urgent] sched: Fix cross-cpu clock sync on remote
- wakeups
-Message-ID: <20110531125621.GA24439@gere.osrc.amd.com>
-References: <1306835745.2353.3.camel@twins>
- <tip-f01114cb59d670e9b4f2c335930dd57db96e9360@git.kernel.org>
+	Tue, 31 May 2011 08:59:04 -0400
+Date: Tue, 31 May 2011 14:59:02 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] irq: catch more wrong return values from interrupt
+ handlers
+Message-ID: <20110531125902.GA13217@Chamillionaire.breakpoint.cc>
+References: <1306824972-27067-1-git-send-email-sebastian@breakpoint.cc>
+ <1306824972-27067-3-git-send-email-sebastian@breakpoint.cc>
+ <alpine.LFD.2.02.1105311231150.3078@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <tip-f01114cb59d670e9b4f2c335930dd57db96e9360@git.kernel.org>
+In-Reply-To: <alpine.LFD.2.02.1105311231150.3078@ionos>
+X-Key-Id: FE3F4706
+X-Key-Fingerprint: FFDA BBBB 3563 1B27 75C9  925B 98D5 5C1C FE3F 4706
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Peter,
+* Thomas Gleixner | 2011-05-31 12:32:58 [+0200]:
 
-On Tue, May 31, 2011 at 12:31:20PM +0000, tip-bot for Peter Zijlstra wrote:
-> Commit-ID:  f01114cb59d670e9b4f2c335930dd57db96e9360
-> Gitweb:     http://git.kernel.org/tip/f01114cb59d670e9b4f2c335930dd57db96e9360
-> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> AuthorDate: Tue, 31 May 2011 12:26:55 +0200
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Tue, 31 May 2011 14:19:56 +0200
-> 
-> sched: Fix cross-cpu clock sync on remote wakeups
-> 
-> Markus reported that commit 317f394160e ("sched: Move the second half
-> of ttwu() to the remote cpu") caused some accounting funnies on his AMD
-> Phenom II X4, such as weird 'top' results.
-> 
-> It turns out that this is due to non-synced TSC
+>On Tue, 31 May 2011, Sebastian Andrzej Siewior wrote:
+>
+>> We now also accept return value IRQ_WAKE_THREAD from a threaded
+>> interrupt or IRQ_HANDLED | IRQ_WAKE_THREAD from primary and theaded
+>> handler which is wrong. We need to accept the later on shared handlers
+>> where one handler is primary only and the second is a threaded handler.
+>> This patch attempts to catch them. Unfortunately this patch introduces
+>> two new types so I'm not sure if it is worth it.
+>
+>I'd rather avoid that ugliness. If driver writers are that stupid,
+>there is probably more significant wreckage than this.
 
-this would mean that his machine doesn't pass the TSC sync check at boot
-but that's a F10h and they usu. have synchronized TSCs?
+Sure. It is just that the "old" code ensured that either NONE or HANDLED
+is returned and nothing else and the previous patch broke that check.
+This patch just points it out :)
+Do you want bad_action_ret() removed or kept as it?
 
-I'm confused.
+>Thanks,
+>
+>	tglx
 
-> and the queued remote
-> wakeups stopped coupeling the two relevant cpu clocks, which leads to
-> wakeups seeing time jumps, which in turn lead to skewed runtime stats.
-> 
-> Add an explicit call to sched_clock_cpu() to couple the per-cpu clocks
-> to restore the normal flow of time.
-> 
-> Reported-and-tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Link: http://lkml.kernel.org/r/1306835745.2353.3.camel@twins
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Sebastian
