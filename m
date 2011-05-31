@@ -1,137 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab1EaLGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 07:06:41 -0400
-Received: from mail-pw0-f66.google.com ([209.85.160.66]:57219 "EHLO
-	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab1EaLGk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 07:06:40 -0400
-X-Greylist: delayed 797 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 May 2011 07:06:40 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=bcc:mime-version:date:message-id:subject:from:to:content-type;
-        b=NjAU/k7WSz2tvN6OuxBLB9jjgO6JPduKcxeBlVJ5qepfL2lrk+G3tue4CImwLYx5g3
-         +SithlhrUWuYtFKZ4ICm0Xf5gXineIgh2dme68iPyQ+fG8ljGysc/rSydHG4Dq3VSm2k
-         ZCIsVWr4t4SkDRqhVrkalp7LUvZxLkaQbOZ3s=
+	id S1754664Ab1EaK7o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 06:59:44 -0400
+Received: from cantor.suse.de ([195.135.220.2]:32904 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753098Ab1EaK7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 06:59:42 -0400
+Date: Tue, 31 May 2011 12:59:39 +0200
+From: Jan Kara <jack@suse.cz>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Jan Kara <jack@suse.cz>, Akinobu Mita <akinobu.mita@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/2] ext3: use little-endian bitops directly
+Message-ID: <20110531105939.GC5614@quack.suse.cz>
+References: <1306763236-13751-1-git-send-email-akinobu.mita@gmail.com>
+ <20110530145733.GE4075@quack.suse.cz>
+ <C7E71901-41F8-4A5A-B926-DB587E1F98EE@dilger.ca>
 MIME-Version: 1.0
-Date: Tue, 31 May 2011 12:53:16 +0200
-Message-ID: <BANLkTi=fu1Tns_njuwQRMjoR8moRxCr5dQ@mail.gmail.com>
-Subject: CONFIDENTIAL OFFER "MESSAGE ATTACHED"
-From: ramos silva <ramossilva127@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: multipart/mixed; boundary=001636e0a4e018f19504a4903631
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C7E71901-41F8-4A5A-B926-DB587E1F98EE@dilger.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001636e0a4e018f19504a4903631
-Content-Type: text/plain; charset=ISO-8859-1
+On Mon 30-05-11 10:22:51, Andreas Dilger wrote:
+> On 2011-05-30, at 8:57 AM, Jan Kara wrote:
+> > On Mon 30-05-11 22:47:15, Akinobu Mita wrote:
+> >> s/ext3_set_bit/__test_and_set_bit_le/
+> >> s/ext3_clear_bit/__test_and_clear_bit_le/
+> >> s/ext3_test_bit/test_bit_le/
+> >> s/ext3_find_first_zero_bit/find_first_zero_bit_le/
+> >> s/ext3_find_next_zero_bit/find_next_zero_bit_le/
+> >> 
+> >> This change reveals that there are some __test_and_{set,clear}_bit_le()
+> >> calls which ignore the return value. These can be replaced with
+> >> __{set,clear}_bit_le().
+> > 
+> > OK, after some though this is probably an improvement in readability.
+> > Added to my tree.
+> 
+> Really?  There are many different varieties of bitops, and once the
+> ext3_* bitops are removed it is no longer clear to the developer which
+> version is the right one to use for the ext3 operations.
+> test_and_set_bit() vs. __test_and_set_bit() vs. test_and_set_bit_lock()
+> vs. sync_test_and_set_bit() vs. __test_and_set_bit_le() vs.
+> test_and_set_bit_le()?  I think it will lead to confusion and bugs being
+> added to the code in the future as different types of operations are
+> incorrectly used in the code.
+  On the other hand hiding the real function behind some wrapper obscures
+the gurantees the particular function provides. That's why I decided to
+include the patch in the end. But I see your point and yes, I can imagine
+someone will use e.g. test_bit() instead of test_bit_le(). That's probably
+more likely so I've removed the patches.
 
+								Honza
 
-
---001636e0a4e018f19504a4903631
-Content-Type: application/rtf; name="Confidential offer.rtf"
-Content-Disposition: attachment; filename="Confidential offer.rtf"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: file0
-
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZvbnR0Ymx7XGYwXGZz
-d2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5lcmF0b3IgTXNmdGVkaXQgNS40MS4xNS4x
-NTA3O31cdmlld2tpbmQ0XHVjMVxwYXJkXGYwXGZzMjAgSGVsbG8sXHBhcg0KIFxwYXINCiBccGFy
-DQogXHBhcg0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgQ29uZmlkZW50
-aWFsIG9mZmVyXHBhcg0KIFxwYXINCiBccGFyDQogXHBhcg0KT2lsIGxpY2Vuc2UgNzg5NzQ5L0Mt
-U1RQIFxwYXINCiBccGFyDQpSZXBseSBFbWFpbDogIHJhbW9zc2lsdmExMTExQHlhaG9vLmNvbVxw
-YXINCiBccGFyDQogXHBhcg0KVGhpcyBpcyBhIGNvbmZpZGVudGlhbCBidXNpbmVzcyBvZmZlciBm
-cm9tIHRoZSBvaWwgcmljaCBTYW8gVG9tZSBhbmRccGFyDQogXHBhcg0KUHJpbmNpcGUuICBQbGVh
-c2UgZW5zdXJlIHRoYXQgeW91IHJlcGx5IHRoaXMgZW1haWwgc3RyaWN0bHkgYXRccGFyDQogXHBh
-cg0KcmFtb3NzaWx2YTExMTFAeWFob28uY29tIFxwYXINCiBccGFyDQogSSBtYWtlIHRoaXMgaW50
-cm9kdWN0aW9uIGJhc2VkIG9uIG15IHJlZ2FyZCBmb3IgeW91ciBjcmVkaWJpbGl0eS4gTXlccGFy
-DQogXHBhcg0KbmFtZSBpcyBFbmcuIFJhbW9zIFNpbHZhLiBJIHdvcmsgd2l0aCB0aGUgU2FvIFRv
-bWUgYW5kIFByaW5jaXBlXHBhcg0KIFxwYXINCm5hdGlvbmFsIHBldHJvbGV1bSBhZ2VuY3kuXHBh
-cg0KIFxwYXINCiBccGFyDQpUbyBiZSBwcmVjaXNlLCBJIG92ZXJzZWUgdGhlIGlzc3VhbmNlIG9m
-IG9pbCBhbGxvY2F0aW9uIGxpY2Vuc2UgZm9yXHBhcg0KIFxwYXINCm91ciBvaWwgY29tcGFueS5c
-cGFyDQogXHBhcg0KIE15IHBvc2l0aW9uIGluIHRoZSBhZ2VuY3kgZW50aXRsZXMgbWUgdG8gcmVj
-b21tZW5kIG9pbCBhbGxvY2F0aW9uXHBhcg0KIFxwYXINCmJpZGRlcnMgYW5kIGFjdHVhbGl6ZSBv
-aWwgbGlmdGluZyBhbmQgZXhwbG9yYXRpb24gYWxsb2NhdGlvbiBsaWNlbnNlc1xwYXINCiBccGFy
-DQp0byBteSBjYW5kaWRhdGVzIGJhc2VkIG9uIG15IGludGVyZXN0LiBJIGFsc28gb3ZlcnNlYSBh
-bmQgYXBwcm92ZSB0aGVccGFyDQogXHBhcg0KaXNzdWFuY2Ugb2YgdGhlIGxpY2Vuc2UgZm9yIG9p
-bCBhbGxvY2F0aW9uIGluIG91ciBjb21wYW55IGFuZCBhbHNvXHBhcg0KIFxwYXINCm1vbml0b3Ig
-dGhlIGxpZnRpbmcgcHJvY2VkdXJlcyBpbiBvdXIgY29tcGFueS5ccGFyDQogXHBhcg0KIFxwYXIN
-CiBccGFyDQogSW4gSnVuZSAyMDA3LCBJIGZhY2lsaXRhdGVkIGFuZCBhY3R1YWxpemVkIHRoZSBs
-aWNlbnNlIG9mIGFccGFyDQogXHBhcg0KY2FuZGlkYXRlLiBBIGJ1c2luZXNzIG1hbiBmcm9tIEtv
-cmVhIChDb21wcmVoZW5zaXZlIGRldGFpbHMgdG8gYmVccGFyDQogXHBhcg0KcHJvdmlkZWQgc3Vi
-c2VxdWVudGx5KS5UaGUgbGljZW5zZSB3YXMgZm9yIDEgeWVhciBhdCAyNCBtaWxsaW9uXHBhcg0K
-IFxwYXINCkJCTFMvMTIgbW9udGhzLiBJbmNpZGVudGFsbHkgdGhlIGNhbmRpZGF0ZSB3YXMgbm8g
-bW9yZS4gVGhlIGxpY2Vuc2VccGFyDQogXHBhcg0KaGFzIGJlZW4gdmFsaWQgdGlsbCBkYXRlIChh
-cyBJIGFsd2F5cyBlbnN1cmUgdGhhdCBJIGtlZXAgdG8gbXkgc2lkZSBvZlxwYXINCiBccGFyDQp0
-aGUgYmFyZ2FpbiksIEkgaGF2ZSBkZWNpZGVkIHRvIGJlZ2luIHVzaW5nIHRoZSBsaWNlbnNlIGZy
-b20gTUFZXHBhcg0KIFxwYXINCjIwMTEuIEkgYW0gaW4gbmVlZCBvZiBhIHBhcnRuZXIgZnJvbSB5
-b3VyIGNvdW50cnkgd2hvbSBJIGNhbiB0cnVzdC4gSVxwYXINCiBccGFyDQp3aWxsIHBhY2thZ2Ug
-dGhpcyBwYXJ0bmVyIGFzIHRoZSBhbGxvY2F0aW9uIGxpY2Vuc2UgYmVuZWZpY2lhcnkgYW5kXHBh
-cg0KIFxwYXINCmFzc2lnbiB0aGUgbGljZW5zZSB0byB0aGlzIHBhcnRuZXIuIER1ZSB0byBteSBw
-b3NpdGlvbiBpbiB0aGVccGFyDQogXHBhcg0KcGV0cm9sZXVtIGFnZW5jeSwgSSBjYW5ub3QgaGFu
-ZGxlIHRoaXMgcG9zaXRpb24uIFlvdXIgcHJvZmlsZSBmaXRzXHBhcg0KIFxwYXINCmludG8gdGhl
-IGNyaXRlcmlhIG9mIGEgcGFydG5lciBJIG5lZWQuIFRoaXMgaXMgd2h5IEkgYW0gY29udGFjdGlu
-Z1xwYXINCiBccGFyDQp5b3UuIFdpdGggdGhlIHRyZW5kIG9mIGV2ZW50cyBpbiBTYW8gVG9tZSBh
-bmQgUHJpbmNpcGUgLCB3ZSBzaGFsbCBiZVxwYXINCiBccGFyDQphYmxlIHRvIGxpZnQgYSBtaW5p
-bXVtIG9mIDMwMCwwMDAgYmFycmVscyBvZiBCTENPIHBlciBtb250aC4gVGhpcyB3aWxsXHBhcg0K
-IFxwYXINCmZldGNoIHVzIGFuIGF2ZXJhZ2Ugb2YgVVMkMjggbWlsbGlvbiBwZXIgbW9udGguIEFu
-ZCB3ZSBoYXZlIGZyb20gSlVORVxwYXINCiBccGFyDQoyMDExIHVwIHVudGlsIEpVTFkgMjAxMiB0
-byBsaWZ0IGNydWRlIG9pbCB3aGljaCB3aWxsIGZldGNoIHVzXHBhcg0KIFxwYXINCmFwcHJveGlt
-YXRlbHkgKDEyKSB4ICgyOCkgTWlsbGlvbiBkb2xsYXJzLiBXaGljaCBpcyBhcHByb3hpbWF0ZWx5
-IDMzNlxwYXINCiBccGFyDQpNaWxsaW9uIGRvbGxhcnMgZm9yIHRoZSByZXN0IG9mIHRoZSB0aW1l
-IG9mIHRoZSBsaWNlbnNlIGFsbG9jYXRpb24uICBJXHBhcg0KIFxwYXINCmhhdmUgcmVhZHkgYnV5
-ZXJzIHdobyBhcmUgd2FpdGluZyBhbmQgd291bGQgYmUgcmVhZHkgdG8gICBzY3JhbWJsZSBmb3Jc
-cGFyDQogXHBhcg0KYW55IG51bWJlciBvZiBiYXJyZWxzIHdlIGxpZnQuIEFsc28gSSB3aWxsIG92
-ZXJzZWUgYWxsIGxpZnRpbmdccGFyDQogXHBhcg0KcHJvY2VkdXJlcyB3aXRoIHRoZSBhdmFpbGFi
-bGUgbWVyY2VuYXJ5IGFyb3VuZC5ccGFyDQogXHBhcg0KIFxwYXINCiBccGFyDQpUaGlzIGlzIHdo
-YXQgSSBwcm9wb3NlOlxwYXINCiBccGFyDQogXHBhcg0KIFxwYXINCjEuIFlvdXIgY29tcGFueSBw
-cm9maWxlIHNoYWxsIGJlIHVzZWQgaW4gcGxhY2Ugb2YgdGhlIGluaXRpYWwgbGljZW5zZVxwYXIN
-CiBccGFyDQpPcGVyYXRvci4gVGhpcyBJIHNoYWxsIGhhbmRsZSB3aXRoIG15IGNhcGFjaXR5IGlu
-IHRoZSBjb21wYW55LlxwYXINCiBccGFyDQogXHBhcg0KIFxwYXINCiAyLiBJIHdpbGwgZW5zdXJl
-IHRoYXQgeW91ciBjb21wYW55J3MgcHJvZmlsZSBpcyByZWNvZ25pemVkIGFzIHRoZVxwYXINCiBc
-cGFyDQpjdXJyZW50IGxpY2Vuc2Ugb3BlcmF0b3IgYW5kIHRoYXQgd2UgaGF2ZSBhIG1hbmRhdGUg
-Zm9yIGF0IGxlYXN0IG1pblxwYXINCiBccGFyDQpvZiAzMDAsMDAwIGJhcnJlbHMgcGVyIG1vbnRo
-LCBhIG1heGltdW0gb2YgNTAwLDAwMCBiYXJyZWxzIHBlciBtb250aC5ccGFyDQogXHBhcg0KU3Rh
-cnRpbmcgZnJvbSBKVU5FLlxwYXINCiBccGFyDQogXHBhcg0KIFxwYXINCjMuIEkgd2lsbCBlbnN1
-cmUgdGhhdCBhbGwgbGlmdGluZyBwcm9jZWR1cmVzIGFyZSBpbiBwbGFjZSBhbmQgYnV5ZXJzXHBh
-cg0KIFxwYXINCnJlYWRpbHkgYXZhaWxhYmxlIHRvIHB1cmNoYXNlIHRoZSBwcm9kdWN0LlxwYXIN
-CiBccGFyDQogXHBhcg0KIFxwYXINCjQuIFlvdSBzaGFsbCBzdGFuZCBpbiBhcyB0aGUgbGljZW5z
-ZSBvcGVyYXRvciBmb3IgYWxsIGxpZnRpbmcgYW5kXHBhcg0KIFxwYXINCnNhbGVzIHRyYW5zYWN0
-aW9uczsgd2Ugc2hhbGwgb3BlbiBhbiBhY2NvdW50IGZvciB0aGUgcmVjZWlwdCBvZiB0aGVccGFy
-DQogXHBhcg0Kb2lsIHNhbGUgcHJvY2VlZHMgaW4gd2hpY2ggYm90aCBvZiB1cyBzaGFsbCBiZSBz
-aWduYXRvcmllcyB0byB0aGVccGFyDQogXHBhcg0KYWNjb3VudCBvciB5b3UgY2FuIHByb3ZpZGUg
-eW91ciBwZXJzb25hbCBvciBjb21wYW55IGJhbmsgYWNjb3VudCB0byByZWNlaXZlIHRoZSBwYXlt
-ZW50cyBvbiBvdXIgYmVoYWxmLlxwYXINCiBccGFyDQogXHBhcg0KIFxwYXINCiA1LiBXZSBzaGFs
-bCBzcGxpdCB0aGUgb2lsIHNhbGUgcHJvY2VlZHMgaW4gdGhlIHJhdGlvIG9mIDYwOjQwIGVxdWl0
-eVxwYXINCiBccGFyDQpzaGFyZXMuIEkgc2hhbGwgYmUgZW50aXRsZWQgdG8gNjAlIHNoYXJlIHdo
-aWxlIHlvdXIgY29tcGFueSBzaGFsbCBiZVxwYXINCiBccGFyDQplbnRpdGxlZCB0byA0MCUgc2hh
-cmUuXHBhcg0KIFxwYXINCiBQbGVhc2Ugbm90ZTogbm8gdGhpcmQgcGFydHkgYXJyYW5nZW1lbnQg
-c2hhbGwgYmUgYWxsb3dlZC4gSSBiZWxpZXZlXHBhcg0KIFxwYXINCnlvdSBhcmUgYSBtYW4gb2Yg
-d2lzZG9tIGFuZCBpbnRlbGxpZ2VuY2UuXHBhcg0KIFxwYXINCiBccGFyDQogXHBhcg0KVGhpcyBv
-ZmZlciBJIG1ha2UgdG8geW91IGlzIGJhc2VkIG9uIHV0bW9zdCBnb29kIGZhaXRoLiBJIGNvdWxk
-IGJlXHBhcg0KIFxwYXINCkplb3BhcmRpemluZyBteSBwb3NpdGlvbiBpbiB0aGUgYWdlbmN5IGlm
-IGEgd29yZCBvZiB0aGlzIGdvZXMgb3V0LlxwYXINCiBccGFyDQpUaGVyZWZvcmUgd2l0aG91dCBt
-aW5jaW5nIHdvcmRzLCBJIHJlbHkgb24geW91IGZvciB1dG1vc3RccGFyDQogXHBhcg0KY29uZmlk
-ZW50aWFsaXR5IG9uIGV2ZXJ5IGJpdCBvZiBkZXRhaWwgcmVsYXRpbmcgdG8gdGhpcyB0cmFuc2Fj
-dGlvbi5ccGFyDQogXHBhcg0KUGxlYXNlIHJlcGx5IHRoaXMgZW1haWwgc3RyaWN0bHkgYXQgcmFt
-b3NzaWx2YTExMTFAeWFob28uY29tIFxwYXINCiBccGFyDQogXHBhcg0KSSBhbSBpbiBMb25kb24g
-YXQgdGhlIG1vbWVudCB3YWl0aW5nIGZvciB5b3VyIHJlc3BvbnNlLiBVcG9uIHlvdXJccGFyDQog
-XHBhcg0KcG9zaXRpdmUgcmVzcG9uc2UsIEkgd2lsbCBiZSB3aWxsaW5nIHRvIGZvcndhcmQgdG8g
-eW91IHByb29mIG9mIG15XHBhcg0KIFxwYXINCnByb3Bvc2l0aW9uIGFuZCBteSBwZXJzb25hbCBp
-ZGVudGl0eS4gQWxzbyBJIHNoYWxsIGZseSBiYWNrIHRvIFNhb1xwYXINCiBccGFyDQpUb21lIGFu
-ZCBQcmluY2lwZSBhbmQgZnJvbSB0aGVyZSB3ZSBzaGFsbCBjb21tZW5jZSBvcGVyYXRpb25zLiBJ
-IHNoYWxsXHBhcg0KIFxwYXINCmFsc28gcHJvdmlkZSB5b3UgZGV0YWlscyBvZiB0aGUgZm9ybWVy
-IGxpY2Vuc2Ugb3BlcmF0b3IgYW5kIGEgY29weSBvZlxwYXINCiBccGFyDQp0aGUgbGljZW5zZSBp
-c3N1ZWQgdG8gaGltIGZvciB0aGUgbGlmdGluZyBvZiBjcnVkZSBvaWwgaW4gb3VyIGNvbXBhbnlc
-cGFyDQogXHBhcg0Kd2hpY2ggSSBwZXJzb25hbGx5IGFwcHJvdmVkIGFuZCBlbmRvcnNlZC4gQWxz
-byBwcm9jZWR1cmVzIGZvciBsaWNlbnNlXHBhcg0KIFxwYXINCnJlYXNzaWdubWVudCBhbmQgYWN0
-dWFsaXppbmcgdGhlIHJlc3Qgb2YgdGhlIHByb2plY3Qgc2hhbGwgYmUgcHJvdmlkZWRccGFyDQog
-XHBhcg0KdG8geW91LlxwYXINCiBccGFyDQogXHBhcg0KIFBsZWFzZSBpbiByZXNwb25zZSB0byB0
-aGlzIGVtYWlsLCBxdW90ZSB0aGUgcmVmZXJlbmNlIG51bWJlcjpccGFyDQpPaWwgbGljZW5zZSA3
-ODk3NDkvQy1TVFAgXHBhcg0KIFxwYXINCkkgbG9vayBmb3J3YXJkIHRvIGEgcHJvc3BlY3RpdmUg
-YnVzaW5lc3MgcmVsYXRpb25zaGlwIGJldHdlZW4gdXMuXHBhcg0KIFxwYXINCiBccGFyDQogVGhh
-bmtzXHBhcg0KIFxwYXINCiBccGFyDQogRW5nci4gUmFtb3MgU2lsdmFccGFyDQpccGFyDQogXHBh
-cg0KfQ0KAA==
---001636e0a4e018f19504a4903631--
+>  I doubt most kernel developers understand all of the differences between
+>  those different bitops on different architectures.  What works on one
+>  arch (especially x86) may not work correctly on another arch, and
+>  corrupt the filesystem for only a small number of users, producing
+>  hard-to-debug problems.
+> 
+> Note that I'm all in favour of removing the ext2_{set,clear}_bit_atomic()
+> variants of the bitops as global bitops functions, and change the
+> ext3_{set,clear}_bit() definitions to using test_and_{set,clear}_bit()
+> functions directly, but it makes sense to keep the ext3_*() bitops macros
+> and their use in the code for consistency, and as a clear guide to the
+> programmer about.
+> 
+> There are many examples of helper macro/inline functions to provide
+> uniform access to low-level bitmaps, like cpumask_test_and_set_cpu(),
+> cpu_test_and_set(), tasklet_try_lock(), zone_test_and_set_flag(),
+> node_test_and_set(), etc.  These are all in place so that there is a
+> single uniform way of accessing and modifying these structures. 
+> 
+> >> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> >> Cc: Jan Kara <jack@suse.cz>
+> >> Cc: Andrew Morton <akpm@linux-foundation.org>
+> >> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+> >> Cc: linux-ext4@vger.kernel.org
+> >> ---
+> >> fs/ext3/balloc.c        |   20 ++++++++++----------
+> >> fs/ext3/ialloc.c        |    8 ++++----
+> >> fs/ext3/inode.c         |    2 +-
+> >> fs/ext3/resize.c        |   14 +++++++-------
+> >> include/linux/ext3_fs.h |    5 -----
+> >> 5 files changed, 22 insertions(+), 27 deletions(-)
+> >> 
+> >> diff --git a/fs/ext3/balloc.c b/fs/ext3/balloc.c
+> >> index fe52297..8365b3d 100644
+> >> --- a/fs/ext3/balloc.c
+> >> +++ b/fs/ext3/balloc.c
+> >> @@ -112,21 +112,21 @@ static int ext3_valid_block_bitmap(struct super_block *sb,
+> >> 	/* check whether block bitmap block number is set */
+> >> 	bitmap_blk = le32_to_cpu(desc->bg_block_bitmap);
+> >> 	offset = bitmap_blk - group_first_block;
+> >> -	if (!ext3_test_bit(offset, bh->b_data))
+> >> +	if (!test_bit_le(offset, bh->b_data))
+> >> 		/* bad block bitmap */
+> >> 		goto err_out;
+> >> 
+> >> 	/* check whether the inode bitmap block number is set */
+> >> 	bitmap_blk = le32_to_cpu(desc->bg_inode_bitmap);
+> >> 	offset = bitmap_blk - group_first_block;
+> >> -	if (!ext3_test_bit(offset, bh->b_data))
+> >> +	if (!test_bit_le(offset, bh->b_data))
+> >> 		/* bad block bitmap */
+> >> 		goto err_out;
+> >> 
+> >> 	/* check whether the inode table block number is set */
+> >> 	bitmap_blk = le32_to_cpu(desc->bg_inode_table);
+> >> 	offset = bitmap_blk - group_first_block;
+> >> -	next_zero_bit = ext3_find_next_zero_bit(bh->b_data,
+> >> +	next_zero_bit = find_next_zero_bit_le(bh->b_data,
+> >> 				offset + EXT3_SB(sb)->s_itb_per_group,
+> >> 				offset);
+> >> 	if (next_zero_bit >= offset + EXT3_SB(sb)->s_itb_per_group)
+> >> @@ -722,14 +722,14 @@ static int ext3_test_allocatable(ext3_grpblk_t nr, struct buffer_head *bh)
+> >> 	int ret;
+> >> 	struct journal_head *jh = bh2jh(bh);
+> >> 
+> >> -	if (ext3_test_bit(nr, bh->b_data))
+> >> +	if (test_bit_le(nr, bh->b_data))
+> >> 		return 0;
+> >> 
+> >> 	jbd_lock_bh_state(bh);
+> >> 	if (!jh->b_committed_data)
+> >> 		ret = 1;
+> >> 	else
+> >> -		ret = !ext3_test_bit(nr, jh->b_committed_data);
+> >> +		ret = !test_bit_le(nr, jh->b_committed_data);
+> >> 	jbd_unlock_bh_state(bh);
+> >> 	return ret;
+> >> }
+> >> @@ -752,14 +752,14 @@ bitmap_search_next_usable_block(ext3_grpblk_t start, struct buffer_head *bh,
+> >> 	struct journal_head *jh = bh2jh(bh);
+> >> 
+> >> 	while (start < maxblocks) {
+> >> -		next = ext3_find_next_zero_bit(bh->b_data, maxblocks, start);
+> >> +		next = find_next_zero_bit_le(bh->b_data, maxblocks, start);
+> >> 		if (next >= maxblocks)
+> >> 			return -1;
+> >> 		if (ext3_test_allocatable(next, bh))
+> >> 			return next;
+> >> 		jbd_lock_bh_state(bh);
+> >> 		if (jh->b_committed_data)
+> >> -			start = ext3_find_next_zero_bit(jh->b_committed_data,
+> >> +			start = find_next_zero_bit_le(jh->b_committed_data,
+> >> 							maxblocks, next);
+> >> 		jbd_unlock_bh_state(bh);
+> >> 	}
+> >> @@ -798,7 +798,7 @@ find_next_usable_block(ext3_grpblk_t start, struct buffer_head *bh,
+> >> 		ext3_grpblk_t end_goal = (start + 63) & ~63;
+> >> 		if (end_goal > maxblocks)
+> >> 			end_goal = maxblocks;
+> >> -		here = ext3_find_next_zero_bit(bh->b_data, end_goal, start);
+> >> +		here = find_next_zero_bit_le(bh->b_data, end_goal, start);
+> >> 		if (here < end_goal && ext3_test_allocatable(here, bh))
+> >> 			return here;
+> >> 		ext3_debug("Bit not found near goal\n");
+> >> @@ -845,7 +845,7 @@ claim_block(spinlock_t *lock, ext3_grpblk_t block, struct buffer_head *bh)
+> >> 	if (ext3_set_bit_atomic(lock, block, bh->b_data))
+> >> 		return 0;
+> >> 	jbd_lock_bh_state(bh);
+> >> -	if (jh->b_committed_data && ext3_test_bit(block,jh->b_committed_data)) {
+> >> +	if (jh->b_committed_data && test_bit_le(block, jh->b_committed_data)) {
+> >> 		ext3_clear_bit_atomic(lock, block, bh->b_data);
+> >> 		ret = 0;
+> >> 	} else {
+> >> @@ -1697,7 +1697,7 @@ allocated:
+> >> 		int i;
+> >> 
+> >> 		for (i = 0; i < num; i++) {
+> >> -			if (ext3_test_bit(grp_alloc_blk+i,
+> >> +			if (test_bit_le(grp_alloc_blk + i,
+> >> 					bh2jh(bitmap_bh)->b_committed_data)) {
+> >> 				printk("%s: block was unexpectedly set in "
+> >> 					"b_committed_data\n", __func__);
+> >> diff --git a/fs/ext3/ialloc.c b/fs/ext3/ialloc.c
+> >> index bfc2dc4..8796fbc 100644
+> >> --- a/fs/ext3/ialloc.c
+> >> +++ b/fs/ext3/ialloc.c
+> >> @@ -460,7 +460,7 @@ struct inode *ext3_new_inode(handle_t *handle, struct inode * dir,
+> >> 		ino = 0;
+> >> 
+> >> repeat_in_this_group:
+> >> -		ino = ext3_find_next_zero_bit((unsigned long *)
+> >> +		ino = find_next_zero_bit_le(
+> >> 				bitmap_bh->b_data, EXT3_INODES_PER_GROUP(sb), ino);
+> >> 		if (ino < EXT3_INODES_PER_GROUP(sb)) {
+> >> 
+> >> @@ -654,7 +654,7 @@ struct inode *ext3_orphan_get(struct super_block *sb, unsigned long ino)
+> >> 	 * is a valid orphan (no e2fsck run on fs).  Orphans also include
+> >> 	 * inodes that were being truncated, so we can't check i_nlink==0.
+> >> 	 */
+> >> -	if (!ext3_test_bit(bit, bitmap_bh->b_data))
+> >> +	if (!test_bit_le(bit, bitmap_bh->b_data))
+> >> 		goto bad_orphan;
+> >> 
+> >> 	inode = ext3_iget(sb, ino);
+> >> @@ -680,9 +680,9 @@ iget_failed:
+> >> bad_orphan:
+> >> 	ext3_warning(sb, __func__,
+> >> 		     "bad orphan inode %lu!  e2fsck was run?", ino);
+> >> -	printk(KERN_NOTICE "ext3_test_bit(bit=%d, block=%llu) = %d\n",
+> >> +	printk(KERN_NOTICE "test_bit_le(bit=%d, block=%llu) = %d\n",
+> >> 	       bit, (unsigned long long)bitmap_bh->b_blocknr,
+> >> -	       ext3_test_bit(bit, bitmap_bh->b_data));
+> >> +	       test_bit_le(bit, bitmap_bh->b_data));
+> >> 	printk(KERN_NOTICE "inode=%p\n", inode);
+> >> 	if (inode) {
+> >> 		printk(KERN_NOTICE "is_bad_inode(inode)=%d\n",
+> >> diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
+> >> index 3451d23..57432a6 100644
+> >> --- a/fs/ext3/inode.c
+> >> +++ b/fs/ext3/inode.c
+> >> @@ -2727,7 +2727,7 @@ static int __ext3_get_inode_loc(struct inode *inode,
+> >> 			for (i = start; i < start + inodes_per_buffer; i++) {
+> >> 				if (i == inode_offset)
+> >> 					continue;
+> >> -				if (ext3_test_bit(i, bitmap_bh->b_data))
+> >> +				if (test_bit_le(i, bitmap_bh->b_data))
+> >> 					break;
+> >> 			}
+> >> 			brelse(bitmap_bh);
+> >> diff --git a/fs/ext3/resize.c b/fs/ext3/resize.c
+> >> index 7916e4c..213a794 100644
+> >> --- a/fs/ext3/resize.c
+> >> +++ b/fs/ext3/resize.c
+> >> @@ -148,7 +148,7 @@ static void mark_bitmap_end(int start_bit, int end_bit, char *bitmap)
+> >> 
+> >> 	ext3_debug("mark end bits +%d through +%d used\n", start_bit, end_bit);
+> >> 	for (i = start_bit; i < ((start_bit + 7) & ~7UL); i++)
+> >> -		ext3_set_bit(i, bitmap);
+> >> +		__test_and_set_bit_le(i, bitmap);
+> >> 	if (i < end_bit)
+> >> 		memset(bitmap + (i >> 3), 0xff, (end_bit - i) >> 3);
+> >> }
+> >> @@ -222,7 +222,7 @@ static int setup_new_group_blocks(struct super_block *sb,
+> >> 
+> >> 	if (ext3_bg_has_super(sb, input->group)) {
+> >> 		ext3_debug("mark backup superblock %#04lx (+0)\n", start);
+> >> -		ext3_set_bit(0, bh->b_data);
+> >> +		__test_and_set_bit_le(0, bh->b_data);
+> >> 	}
+> >> 
+> >> 	/* Copy all of the GDT blocks into the backup in this group */
+> >> @@ -254,7 +254,7 @@ static int setup_new_group_blocks(struct super_block *sb,
+> >> 			brelse(gdb);
+> >> 			goto exit_bh;
+> >> 		}
+> >> -		ext3_set_bit(bit, bh->b_data);
+> >> +		__test_and_set_bit_le(bit, bh->b_data);
+> >> 		brelse(gdb);
+> >> 	}
+> >> 
+> >> @@ -278,15 +278,15 @@ static int setup_new_group_blocks(struct super_block *sb,
+> >> 			brelse(gdb);
+> >> 			goto exit_bh;
+> >> 		}
+> >> -		ext3_set_bit(bit, bh->b_data);
+> >> +		__test_and_set_bit_le(bit, bh->b_data);
+> >> 		brelse(gdb);
+> >> 	}
+> >> 	ext3_debug("mark block bitmap %#04x (+%ld)\n", input->block_bitmap,
+> >> 		   input->block_bitmap - start);
+> >> -	ext3_set_bit(input->block_bitmap - start, bh->b_data);
+> >> +	__test_and_set_bit_le(input->block_bitmap - start, bh->b_data);
+> >> 	ext3_debug("mark inode bitmap %#04x (+%ld)\n", input->inode_bitmap,
+> >> 		   input->inode_bitmap - start);
+> >> -	ext3_set_bit(input->inode_bitmap - start, bh->b_data);
+> >> +	__test_and_set_bit_le(input->inode_bitmap - start, bh->b_data);
+> >> 
+> >> 	/* Zero out all of the inode table blocks */
+> >> 	for (i = 0, block = input->inode_table, bit = block - start;
+> >> @@ -309,7 +309,7 @@ static int setup_new_group_blocks(struct super_block *sb,
+> >> 			goto exit_bh;
+> >> 		}
+> >> 		brelse(it);
+> >> -		ext3_set_bit(bit, bh->b_data);
+> >> +		__test_and_set_bit_le(bit, bh->b_data);
+> >> 	}
+> >> 
+> >> 	err = extend_or_restart_transaction(handle, 2, bh);
+> >> diff --git a/include/linux/ext3_fs.h b/include/linux/ext3_fs.h
+> >> index 5e06acf..6caadd0 100644
+> >> --- a/include/linux/ext3_fs.h
+> >> +++ b/include/linux/ext3_fs.h
+> >> @@ -418,13 +418,8 @@ struct ext3_inode {
+> >> #define EXT2_MOUNT_DATA_FLAGS		EXT3_MOUNT_DATA_FLAGS
+> >> #endif
+> >> 
+> >> -#define ext3_set_bit			__test_and_set_bit_le
+> >> #define ext3_set_bit_atomic		ext2_set_bit_atomic
+> >> -#define ext3_clear_bit			__test_and_clear_bit_le
+> >> #define ext3_clear_bit_atomic		ext2_clear_bit_atomic
+> >> -#define ext3_test_bit			test_bit_le
+> >> -#define ext3_find_first_zero_bit	find_first_zero_bit_le
+> >> -#define ext3_find_next_zero_bit		find_next_zero_bit_le
+> >> 
+> >> /*
+> >> * Maximal mount counts between two filesystem checks
+> >> -- 
+> >> 1.7.4.4
+> >> 
+> > -- 
+> > Jan Kara <jack@suse.cz>
+> > SUSE Labs, CR
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
