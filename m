@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab1EaVS1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 17:18:27 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:36604 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932497Ab1EaVS0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 17:18:26 -0400
+	id S932628Ab1EaVVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 17:21:44 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:57024
+	"EHLO CH1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932542Ab1EaVVn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 17:21:43 -0400
+X-SpamScore: -15
+X-BigFish: VPS-15(zz1447R1432Nzz1202hzz8275bhz2ei2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPVD:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
+From: Mike Marciniszyn <mike.marciniszyn@qlogic.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: "roland@kernel.org" <roland@kernel.org>,
+        "sean.hefty@intel.com" <sean.hefty@intel.com>,
+        "hal.rosenstock@gmail.com" <hal.rosenstock@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        Ralph Campbell <ralph.campbell@qlogic.com>
+Date: Tue, 31 May 2011 14:21:32 -0700
+Subject: RE: [PATCH] infiniband, qib: convert old cpumask api into new one.
+Thread-Topic: [PATCH] infiniband, qib: convert old cpumask api into new one.
+Thread-Index: AcwVwR0fWt6erITHTgCXHjIPlGcvyAKF4Oag
+Message-ID: <35AAF1E4A771E142979F27B51793A4888838CD0EE3@AVEXMB1.qlogic.org>
+References: <4DD46D39.3060408@jp.fujitsu.com>
+In-Reply-To: <4DD46D39.3060408@jp.fujitsu.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <4DE51EB7.7010606@stericsson.com>
-References: <1306830661-9546-1-git-send-email-mattias.wallin@stericsson.com>
-	<alpine.LFD.2.02.1105311236250.3078@ionos>
-	<4DE51EB7.7010606@stericsson.com>
-Date: Tue, 31 May 2011 23:18:25 +0200
-Message-ID: <BANLkTinPKbUu40066+wr3cdFRc2di-Uv6g@mail.gmail.com>
-Subject: Re: [PATCH 2/3] clocksource: add DB8500 PRCMU Timer support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mattias Wallin <mattias.wallin@stericsson.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 7:00 PM, Mattias Wallin
-<mattias.wallin@stericsson.com> wrote:
-> On 05/31/2011 12:38 PM, Thomas Gleixner wrote:
-
->>> +++ b/include/linux/clksrc-db8500-prcmu.h
-
->> Huch, why needs this to be a separate head in include/linux ?
 >
-> I will move the header file to mach-ux500/include/mach/. Ok?
+> Adapt new APIs. we plan to remove old one later and plan to
+> change current->cpus_allowed implementation.
 >
-> (I have long time ago been thought to avoid include mach headers from the
-> drivers. But if I understand it correct it is not true any more and in this
-> case it certainly makes no sense since I break that rule myself.)
+> No functional change.
 
-Keeping it under include/linux is probably wise since we want drivers
-OUT of the ARM tree, but I don't know if there is much consensus on that?
+Thanks for the patch!
 
-I was more understanding the question as why it was needed at all.
+Acked-by: Mike Marciniszyn <mike.marciniszyn@qlogic.com>
 
-Does it work to register the clocksource with say a core_initcall()
-and avoid the header altogether?
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
 
-Else a header is needed since we need to call out from the platform timer
-init function to this clocksource to register it.
-
-Thanks,
-Linus Walleij
