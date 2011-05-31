@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab1EaNTj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 09:19:39 -0400
+	id S1756159Ab1EaNTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 09:19:43 -0400
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:23084 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755802Ab1EaNTd (ORCPT
+	with ESMTP id S1755941Ab1EaNTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 09:19:33 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6362"; a="94423479"
+	Tue, 31 May 2011 09:19:38 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6362"; a="94423499"
 From: Tatyana Brokhman <tlinder@codeaurora.org>
 To: greg@kroah.com
 Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
         ablay@codeaurora.org, Tatyana Brokhman <tlinder@codeaurora.org>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v14 7/9] usb:gadget: Add SuperSpeed support to the Gadget Framework
-Date: Tue, 31 May 2011 16:18:27 +0300
-Message-Id: <1306847914-19876-8-git-send-email-tlinder@codeaurora.org>
+Subject: [PATCH/RESEND v14 8/9] usb:dummy_hcd: use the shared_hcd infrastructure
+Date: Tue, 31 May 2011 16:18:28 +0300
+Message-Id: <1306847914-19876-9-git-send-email-tlinder@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <1306847914-19876-1-git-send-email-tlinder@codeaurora.org>
 References: <1306847914-19876-1-git-send-email-tlinder@codeaurora.org>
@@ -23,625 +23,1100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the SuperSpeed functionality to the gadget framework.
-Support for new SuperSpeed BOS descriptor was added.
-Support for SET_FEATURE and GET_STATUS requests in SuperSpeed mode was
-added.
+This patch is a preparation for adding SuperSpeed support to dummy hcd.
+It takes the master side fields out of the struct dummy to a separate
+structure. The init process was also modified to resemble the way it is
+done by xHCI.
 
 Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 
 ---
- drivers/usb/gadget/Kconfig      |    6 +
- drivers/usb/gadget/composite.c  |  257 ++++++++++++++++++++++++++++++++++++---
- drivers/usb/gadget/epautoconf.c |    6 +-
- include/linux/usb/composite.h   |   14 ++
- include/linux/usb/gadget.h      |   31 +++++
- 5 files changed, 293 insertions(+), 21 deletions(-)
+ drivers/usb/gadget/dummy_hcd.c |  501 +++++++++++++++++++++-------------------
+ 1 files changed, 266 insertions(+), 235 deletions(-)
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 58456d1..5927541 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -640,6 +640,12 @@ config USB_GADGET_DUALSPEED
- 	  Means that gadget drivers should include extra descriptors
- 	  and code to handle dual-speed controllers.
+diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
+index d92a660..6ecda10 100644
+--- a/drivers/usb/gadget/dummy_hcd.c
++++ b/drivers/usb/gadget/dummy_hcd.c
+@@ -152,6 +152,22 @@ enum dummy_rh_state {
+ 	DUMMY_RH_RUNNING
+ };
  
-+# Selected by UDC drivers that support super-speed opperation
-+config USB_GADGET_SUPERSPEED
-+	bool
-+	depends on USB_GADGET
-+	depends on USB_GADGET_DUALSPEED
++struct dummy_hcd {
++	struct dummy			*dum;
++	enum dummy_rh_state		rh_state;
++	struct timer_list		timer;
++	u32				port_status;
++	u32				old_status;
++	unsigned long			re_timeout;
 +
- #
- # USB Gadget Drivers
- #
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index 897e4f5..d825dbc 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -27,7 +27,7 @@
- #include <linux/utsname.h>
++	struct usb_device		*udev;
++	struct list_head		urbp_list;
++
++	unsigned			active:1;
++	unsigned			old_active:1;
++	unsigned			resuming:1;
++};
++
+ struct dummy {
+ 	spinlock_t			lock;
  
- #include <linux/usb/composite.h>
+@@ -167,36 +183,26 @@ struct dummy {
+ 	u16				devstatus;
+ 	unsigned			udc_suspended:1;
+ 	unsigned			pullup:1;
+-	unsigned			active:1;
+-	unsigned			old_active:1;
+ 
+ 	/*
+ 	 * MASTER/HOST side support
+ 	 */
+-	enum dummy_rh_state		rh_state;
+-	struct timer_list		timer;
+-	u32				port_status;
+-	u32				old_status;
+-	unsigned			resuming:1;
+-	unsigned long			re_timeout;
 -
-+#include <linux/unaligned/access_ok.h>
+-	struct usb_device		*udev;
+-	struct list_head		urbp_list;
++	struct dummy_hcd		*hs_hcd;
+ };
  
- /*
-  * The code in this file is utility code, used to build a gadget driver
-@@ -128,6 +128,9 @@ int config_ep_by_speed(struct usb_gadget *g,
- 	struct usb_endpoint_descriptor *chosen_desc = NULL;
- 	struct usb_descriptor_header **speed_desc = NULL;
+-static inline struct dummy *hcd_to_dummy (struct usb_hcd *hcd)
++static inline struct dummy_hcd *hcd_to_dummy_hcd(struct usb_hcd *hcd)
+ {
+-	return (struct dummy *) (hcd->hcd_priv);
++	return (struct dummy_hcd *) (hcd->hcd_priv);
+ }
  
-+	struct usb_ss_ep_comp_descriptor *comp_desc = NULL;
-+	int want_comp_desc = 0;
+-static inline struct usb_hcd *dummy_to_hcd (struct dummy *dum)
++static inline struct usb_hcd *dummy_hcd_to_hcd(struct dummy_hcd *dum)
+ {
+ 	return container_of((void *) dum, struct usb_hcd, hcd_priv);
+ }
+ 
+-static inline struct device *dummy_dev (struct dummy *dum)
++static inline struct device *dummy_dev(struct dummy_hcd *dum)
+ {
+-	return dummy_to_hcd(dum)->self.controller;
++	return dummy_hcd_to_hcd(dum)->self.controller;
+ }
+ 
+ static inline struct device *udc_dev (struct dummy *dum)
+@@ -209,9 +215,10 @@ static inline struct dummy *ep_to_dummy (struct dummy_ep *ep)
+ 	return container_of (ep->gadget, struct dummy, gadget);
+ }
+ 
+-static inline struct dummy *gadget_to_dummy (struct usb_gadget *gadget)
++static inline struct dummy_hcd *gadget_to_dummy_hcd(struct usb_gadget *gadget)
+ {
+-	return container_of (gadget, struct dummy, gadget);
++	struct dummy *dum = container_of(gadget, struct dummy, gadget);
++	return dum->hs_hcd;
+ }
+ 
+ static inline struct dummy *gadget_dev_to_dummy (struct device *dev)
+@@ -219,7 +226,7 @@ static inline struct dummy *gadget_dev_to_dummy (struct device *dev)
+ 	return container_of (dev, struct dummy, gadget.dev);
+ }
+ 
+-static struct dummy			*the_controller;
++static struct dummy			the_controller;
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -260,60 +267,64 @@ stop_activity (struct dummy *dum)
+ }
+ 
+ /* caller must hold lock */
+-static void
+-set_link_state (struct dummy *dum)
++static void set_link_state(struct dummy_hcd *dum_hcd)
+ {
+-	dum->active = 0;
+-	if ((dum->port_status & USB_PORT_STAT_POWER) == 0)
+-		dum->port_status = 0;
++	struct dummy *dum = dum_hcd->dum;
 +
- 	struct usb_descriptor_header **d_spd; /* cursor for speed desc */
++	dum_hcd->active = 0;
++	if ((dum_hcd->port_status & USB_PORT_STAT_POWER) == 0)
++		dum_hcd->port_status = 0;
  
- 	if (!g || !f || !_ep)
-@@ -135,6 +138,13 @@ int config_ep_by_speed(struct usb_gadget *g,
+ 	/* UDC suspend must cause a disconnect */
+ 	else if (!dum->pullup || dum->udc_suspended) {
+-		dum->port_status &= ~(USB_PORT_STAT_CONNECTION |
++		dum_hcd->port_status &= ~(USB_PORT_STAT_CONNECTION |
+ 					USB_PORT_STAT_ENABLE |
+ 					USB_PORT_STAT_LOW_SPEED |
+ 					USB_PORT_STAT_HIGH_SPEED |
+ 					USB_PORT_STAT_SUSPEND);
+-		if ((dum->old_status & USB_PORT_STAT_CONNECTION) != 0)
+-			dum->port_status |= (USB_PORT_STAT_C_CONNECTION << 16);
++		if ((dum_hcd->old_status & USB_PORT_STAT_CONNECTION) != 0)
++			dum_hcd->port_status |=
++				(USB_PORT_STAT_C_CONNECTION << 16);
+ 	} else {
+-		dum->port_status |= USB_PORT_STAT_CONNECTION;
+-		if ((dum->old_status & USB_PORT_STAT_CONNECTION) == 0)
+-			dum->port_status |= (USB_PORT_STAT_C_CONNECTION << 16);
+-		if ((dum->port_status & USB_PORT_STAT_ENABLE) == 0)
+-			dum->port_status &= ~USB_PORT_STAT_SUSPEND;
+-		else if ((dum->port_status & USB_PORT_STAT_SUSPEND) == 0 &&
+-				dum->rh_state != DUMMY_RH_SUSPENDED)
+-			dum->active = 1;
++		dum_hcd->port_status |= USB_PORT_STAT_CONNECTION;
++		if ((dum_hcd->old_status & USB_PORT_STAT_CONNECTION) == 0)
++			dum_hcd->port_status |=
++				(USB_PORT_STAT_C_CONNECTION << 16);
++		if ((dum_hcd->port_status & USB_PORT_STAT_ENABLE) == 0)
++			dum_hcd->port_status &= ~USB_PORT_STAT_SUSPEND;
++		else if ((dum_hcd->port_status & USB_PORT_STAT_SUSPEND) == 0 &&
++				dum_hcd->rh_state != DUMMY_RH_SUSPENDED)
++			dum_hcd->active = 1;
+ 	}
  
- 	/* select desired speed */
- 	switch (g->speed) {
-+	case USB_SPEED_SUPER:
-+		if (gadget_is_superspeed(g)) {
-+			speed_desc = f->ss_descriptors;
-+			want_comp_desc = 1;
-+			break;
-+		}
-+		/* else: Fall trough */
- 	case USB_SPEED_HIGH:
- 		if (gadget_is_dualspeed(g)) {
- 			speed_desc = f->hs_descriptors;
-@@ -156,7 +166,36 @@ ep_found:
- 	/* commit results */
- 	_ep->maxpacket = le16_to_cpu(chosen_desc->wMaxPacketSize);
- 	_ep->desc = chosen_desc;
-+	_ep->comp_desc = NULL;
-+	_ep->maxburst = 0;
-+	_ep->mult = 0;
-+	if (!want_comp_desc)
-+		return 0;
+-	if ((dum->port_status & USB_PORT_STAT_ENABLE) == 0 || dum->active)
+-		dum->resuming = 0;
++	if ((dum_hcd->port_status & USB_PORT_STAT_ENABLE) == 0 ||
++	     dum_hcd->active)
++		dum_hcd->resuming = 0;
  
+-	if ((dum->port_status & USB_PORT_STAT_CONNECTION) == 0 ||
+-			(dum->port_status & USB_PORT_STAT_RESET) != 0) {
+-		if ((dum->old_status & USB_PORT_STAT_CONNECTION) != 0 &&
+-				(dum->old_status & USB_PORT_STAT_RESET) == 0 &&
++	if ((dum_hcd->port_status & USB_PORT_STAT_CONNECTION) == 0 ||
++			(dum_hcd->port_status & USB_PORT_STAT_RESET) != 0) {
++		if ((dum_hcd->old_status & USB_PORT_STAT_CONNECTION) != 0 &&
++			(dum_hcd->old_status & USB_PORT_STAT_RESET) == 0 &&
+ 				dum->driver) {
+ 			stop_activity (dum);
+ 			spin_unlock (&dum->lock);
+ 			dum->driver->disconnect (&dum->gadget);
+ 			spin_lock (&dum->lock);
+ 		}
+-	} else if (dum->active != dum->old_active) {
+-		if (dum->old_active && dum->driver->suspend) {
++	} else if (dum_hcd->active != dum_hcd->old_active) {
++		if (dum_hcd->old_active && dum->driver->suspend) {
+ 			spin_unlock (&dum->lock);
+ 			dum->driver->suspend (&dum->gadget);
+ 			spin_lock (&dum->lock);
+-		} else if (!dum->old_active && dum->driver->resume) {
++		} else if (!dum_hcd->old_active && dum->driver->resume) {
+ 			spin_unlock (&dum->lock);
+ 			dum->driver->resume (&dum->gadget);
+ 			spin_lock (&dum->lock);
+ 		}
+ 	}
+ 
+-	dum->old_status = dum->port_status;
+-	dum->old_active = dum->active;
++	dum_hcd->old_status = dum_hcd->port_status;
++	dum_hcd->old_active = dum_hcd->active;
+ }
+ 
+ /*-------------------------------------------------------------------------*/
+@@ -332,6 +343,7 @@ static int
+ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+ {
+ 	struct dummy		*dum;
++	struct dummy_hcd	*dum_hcd;
+ 	struct dummy_ep		*ep;
+ 	unsigned		max;
+ 	int			retval;
+@@ -341,9 +353,17 @@ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+ 			|| desc->bDescriptorType != USB_DT_ENDPOINT)
+ 		return -EINVAL;
+ 	dum = ep_to_dummy (ep);
+-	if (!dum->driver || !is_enabled (dum))
++	if (!dum->driver)
++		return -ESHUTDOWN;
++	dum_hcd = dum->hs_hcd;
++	if (!is_enabled(dum_hcd))
+ 		return -ESHUTDOWN;
+-	max = le16_to_cpu(desc->wMaxPacketSize) & 0x3ff;
++
 +	/*
-+	 * Companion descriptor should follow EP descriptor
-+	 * USB 3.0 spec, #9.6.7
++	 * For HS/FS devices only bits 0..10 of the wMaxPacketSize represent the
++	 * maximum packet size.
 +	 */
-+	comp_desc = (struct usb_ss_ep_comp_descriptor *)*(++d_spd);
-+	if (!comp_desc ||
-+	    (comp_desc->bDescriptorType != USB_DT_SS_ENDPOINT_COMP))
-+		return -EIO;
-+	_ep->comp_desc = comp_desc;
-+	if (g->speed == USB_SPEED_SUPER) {
-+		switch (usb_endpoint_type(_ep->desc)) {
-+		case USB_ENDPOINT_XFER_BULK:
-+		case USB_ENDPOINT_XFER_INT:
-+			_ep->maxburst = comp_desc->bMaxBurst;
-+			break;
-+		case USB_ENDPOINT_XFER_ISOC:
-+			/* mult: bits 1:0 of bmAttributes */
-+			_ep->mult = comp_desc->bmAttributes & 0x3;
-+			break;
-+		default:
-+			/* Do nothing for control endpoints */
-+			break;
-+		}
-+	}
++	max = le16_to_cpu(desc->wMaxPacketSize) & 0x7ff;
+ 
+ 	/* drivers must not request bad settings, since lower levels
+ 	 * (hardware or its drivers) may not check.  some endpoints
+@@ -515,6 +535,7 @@ dummy_queue (struct usb_ep *_ep, struct usb_request *_req,
+ 	struct dummy_ep		*ep;
+ 	struct dummy_request	*req;
+ 	struct dummy		*dum;
++	struct dummy_hcd	*dum_hcd;
+ 	unsigned long		flags;
+ 
+ 	req = usb_request_to_dummy_request (_req);
+@@ -526,7 +547,8 @@ dummy_queue (struct usb_ep *_ep, struct usb_request *_req,
+ 		return -EINVAL;
+ 
+ 	dum = ep_to_dummy (ep);
+-	if (!dum->driver || !is_enabled (dum))
++	dum_hcd = dum->hs_hcd;
++	if (!dum->driver || !is_enabled(dum_hcd))
+ 		return -ESHUTDOWN;
+ 
+ #if 0
+@@ -670,24 +692,24 @@ static int dummy_g_get_frame (struct usb_gadget *_gadget)
+ 
+ static int dummy_wakeup (struct usb_gadget *_gadget)
+ {
+-	struct dummy	*dum;
++	struct dummy_hcd *dum_hcd;
+ 
+-	dum = gadget_to_dummy (_gadget);
+-	if (!(dum->devstatus &	( (1 << USB_DEVICE_B_HNP_ENABLE)
++	dum_hcd = gadget_to_dummy_hcd(_gadget);
++	if (!(dum_hcd->dum->devstatus & ((1 << USB_DEVICE_B_HNP_ENABLE)
+ 				| (1 << USB_DEVICE_REMOTE_WAKEUP))))
+ 		return -EINVAL;
+-	if ((dum->port_status & USB_PORT_STAT_CONNECTION) == 0)
++	if ((dum_hcd->port_status & USB_PORT_STAT_CONNECTION) == 0)
+ 		return -ENOLINK;
+-	if ((dum->port_status & USB_PORT_STAT_SUSPEND) == 0 &&
+-			 dum->rh_state != DUMMY_RH_SUSPENDED)
++	if ((dum_hcd->port_status & USB_PORT_STAT_SUSPEND) == 0 &&
++			 dum_hcd->rh_state != DUMMY_RH_SUSPENDED)
+ 		return -EIO;
+ 
+ 	/* FIXME: What if the root hub is suspended but the port isn't? */
+ 
+ 	/* hub notices our request, issues downstream resume, etc */
+-	dum->resuming = 1;
+-	dum->re_timeout = jiffies + msecs_to_jiffies(20);
+-	mod_timer (&dummy_to_hcd (dum)->rh_timer, dum->re_timeout);
++	dum_hcd->resuming = 1;
++	dum_hcd->re_timeout = jiffies + msecs_to_jiffies(20);
++	mod_timer(&dummy_hcd_to_hcd(dum_hcd)->rh_timer, dum_hcd->re_timeout);
  	return 0;
  }
  
-@@ -208,6 +247,8 @@ int usb_add_function(struct usb_configuration *config,
- 		config->fullspeed = true;
- 	if (!config->highspeed && function->hs_descriptors)
- 		config->highspeed = true;
-+	if (!config->superspeed && function->ss_descriptors)
-+		config->superspeed = true;
+@@ -695,7 +717,7 @@ static int dummy_set_selfpowered (struct usb_gadget *_gadget, int value)
+ {
+ 	struct dummy	*dum;
  
- done:
+-	dum = gadget_to_dummy (_gadget);
++	dum = (gadget_to_dummy_hcd(_gadget))->dum;
  	if (value)
-@@ -351,10 +392,17 @@ static int config_buf(struct usb_configuration *config,
- 	list_for_each_entry(f, &config->functions, list) {
- 		struct usb_descriptor_header **descriptors;
+ 		dum->devstatus |= (1 << USB_DEVICE_SELF_POWERED);
+ 	else
+@@ -708,13 +730,12 @@ static int dummy_pullup (struct usb_gadget *_gadget, int value)
+ 	struct dummy	*dum;
+ 	unsigned long	flags;
  
--		if (speed == USB_SPEED_HIGH)
-+		switch (speed) {
-+		case USB_SPEED_SUPER:
-+			descriptors = f->ss_descriptors;
-+			break;
-+		case USB_SPEED_HIGH:
- 			descriptors = f->hs_descriptors;
--		else
-+			break;
-+		default:
- 			descriptors = f->descriptors;
-+		}
-+
- 		if (!descriptors)
- 			continue;
- 		status = usb_descriptor_fillbuf(next, len,
-@@ -377,9 +425,10 @@ static int config_desc(struct usb_composite_dev *cdev, unsigned w_value)
- 	u8				type = w_value >> 8;
- 	enum usb_device_speed		speed = USB_SPEED_UNKNOWN;
- 
--	if (gadget_is_dualspeed(gadget)) {
--		int			hs = 0;
+-	dum = gadget_to_dummy (_gadget);
++	dum = gadget_to_dummy_hcd(_gadget)->dum;
+ 	spin_lock_irqsave (&dum->lock, flags);
+ 	dum->pullup = (value != 0);
+-	set_link_state (dum);
++	set_link_state(dum->hs_hcd);
+ 	spin_unlock_irqrestore (&dum->lock, flags);
 -
-+	if (gadget->speed == USB_SPEED_SUPER)
-+		speed = gadget->speed;
-+	else if (gadget_is_dualspeed(gadget)) {
-+		int	hs = 0;
- 		if (gadget->speed == USB_SPEED_HIGH)
- 			hs = 1;
- 		if (type == USB_DT_OTHER_SPEED_CONFIG)
-@@ -393,13 +442,20 @@ static int config_desc(struct usb_composite_dev *cdev, unsigned w_value)
- 	w_value &= 0xff;
- 	list_for_each_entry(c, &cdev->configs, list) {
- 		/* ignore configs that won't work at this speed */
--		if (speed == USB_SPEED_HIGH) {
-+		switch (speed) {
-+		case USB_SPEED_SUPER:
-+			if (!c->superspeed)
-+				continue;
-+			break;
-+		case USB_SPEED_HIGH:
- 			if (!c->highspeed)
- 				continue;
--		} else {
-+			break;
-+		default:
- 			if (!c->fullspeed)
- 				continue;
- 		}
-+
- 		if (w_value == 0)
- 			return config_buf(c, speed, cdev->req->buf, type);
- 		w_value--;
-@@ -413,16 +469,22 @@ static int count_configs(struct usb_composite_dev *cdev, unsigned type)
- 	struct usb_configuration	*c;
- 	unsigned			count = 0;
- 	int				hs = 0;
-+	int				ss = 0;
- 
- 	if (gadget_is_dualspeed(gadget)) {
- 		if (gadget->speed == USB_SPEED_HIGH)
- 			hs = 1;
-+		if (gadget->speed == USB_SPEED_SUPER)
-+			ss = 1;
- 		if (type == USB_DT_DEVICE_QUALIFIER)
- 			hs = !hs;
- 	}
- 	list_for_each_entry(c, &cdev->configs, list) {
- 		/* ignore configs that won't work at this speed */
--		if (hs) {
-+		if (ss) {
-+			if (!c->superspeed)
-+				continue;
-+		} else if (hs) {
- 			if (!c->highspeed)
- 				continue;
- 		} else {
-@@ -434,6 +496,71 @@ static int count_configs(struct usb_composite_dev *cdev, unsigned type)
- 	return count;
+-	usb_hcd_poll_rh_status (dummy_to_hcd (dum));
++	usb_hcd_poll_rh_status(dummy_hcd_to_hcd(dum->hs_hcd));
+ 	return 0;
  }
  
-+/**
-+ * bos_desc() - prepares the BOS descriptor.
-+ * @cdev: pointer to usb_composite device to generate the bos
-+ *	descriptor for
-+ *
-+ * This function generates the BOS (Binary Device Object)
-+ * descriptor and its device capabilities descriptors. The BOS
-+ * descriptor should be supported by a SuperSpeed device.
-+ */
-+static int bos_desc(struct usb_composite_dev *cdev)
-+{
-+	struct usb_ext_cap_descriptor	*usb_ext;
-+	struct usb_ss_cap_descriptor	*ss_cap;
-+	struct usb_dcd_config_params	dcd_config_params;
-+	struct usb_bos_descriptor	*bos = cdev->req->buf;
-+
-+	bos->bLength = USB_DT_BOS_SIZE;
-+	bos->bDescriptorType = USB_DT_BOS;
-+
-+	bos->wTotalLength = cpu_to_le16(USB_DT_BOS_SIZE);
-+	bos->bNumDeviceCaps = 0;
-+
-+	/*
-+	 * A SuperSpeed device shall include the USB2.0 extension descriptor
-+	 * and shall support LPM when operating in USB2.0 HS mode.
-+	 */
-+	usb_ext = cdev->req->buf + le16_to_cpu(bos->wTotalLength);
-+	bos->bNumDeviceCaps++;
-+	le16_add_cpu(&bos->wTotalLength, USB_DT_USB_EXT_CAP_SIZE);
-+	usb_ext->bLength = USB_DT_USB_EXT_CAP_SIZE;
-+	usb_ext->bDescriptorType = USB_DT_DEVICE_CAPABILITY;
-+	usb_ext->bDevCapabilityType = USB_CAP_TYPE_EXT;
-+	usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT);
-+
-+	/*
-+	 * The Superspeed USB Capability descriptor shall be implemented by all
-+	 * SuperSpeed devices.
-+	 */
-+	ss_cap = cdev->req->buf + le16_to_cpu(bos->wTotalLength);
-+	bos->bNumDeviceCaps++;
-+	le16_add_cpu(&bos->wTotalLength, USB_DT_USB_SS_CAP_SIZE);
-+	ss_cap->bLength = USB_DT_USB_SS_CAP_SIZE;
-+	ss_cap->bDescriptorType = USB_DT_DEVICE_CAPABILITY;
-+	ss_cap->bDevCapabilityType = USB_SS_CAP_TYPE;
-+	ss_cap->bmAttributes = 0; /* LTM is not supported yet */
-+	ss_cap->wSpeedSupported = cpu_to_le16(USB_LOW_SPEED_OPERATION |
-+				USB_FULL_SPEED_OPERATION |
-+				USB_HIGH_SPEED_OPERATION |
-+				USB_5GBPS_OPERATION);
-+	ss_cap->bFunctionalitySupport = USB_LOW_SPEED_OPERATION;
-+
-+	/* Get Controller configuration */
-+	if (cdev->gadget->ops->get_config_params)
-+		cdev->gadget->ops->get_config_params(&dcd_config_params);
-+	else {
-+		dcd_config_params.bU1devExitLat = USB_DEFULT_U1_DEV_EXIT_LAT;
-+		dcd_config_params.bU2DevExitLat =
-+			cpu_to_le16(USB_DEFULT_U2_DEV_EXIT_LAT);
-+	}
-+	ss_cap->bU1devExitLat = dcd_config_params.bU1devExitLat;
-+	ss_cap->bU2DevExitLat = dcd_config_params.bU2DevExitLat;
-+
-+	return le16_to_cpu(bos->wTotalLength);
-+}
-+
- static void device_qual(struct usb_composite_dev *cdev)
+@@ -759,7 +780,7 @@ int
+ usb_gadget_probe_driver(struct usb_gadget_driver *driver,
+ 		int (*bind)(struct usb_gadget *))
  {
- 	struct usb_qualifier_descriptor	*qual = cdev->req->buf;
-@@ -477,20 +604,27 @@ static int set_config(struct usb_composite_dev *cdev,
- 	unsigned		power = gadget_is_otg(gadget) ? 8 : 100;
- 	int			tmp;
+-	struct dummy	*dum = the_controller;
++	struct dummy	*dum = &the_controller;
+ 	int		retval, i;
  
--	if (cdev->config)
--		reset_config(cdev);
+ 	if (!dum)
+@@ -795,7 +816,8 @@ usb_gadget_probe_driver(struct usb_gadget_driver *driver,
+ 	}
+ 
+ 	dum->gadget.ep0 = &dum->ep [0].ep;
+-	dum->ep [0].ep.maxpacket = 64;
++	dum->gadget.speed = min((u8)driver->speed, (u8)USB_SPEED_HIGH) ;
++	dum->ep[0].ep.maxpacket = 64;
+ 	list_del_init (&dum->ep [0].ep.ep_list);
+ 	INIT_LIST_HEAD(&dum->fifo_req.queue);
+ 
+@@ -814,10 +836,12 @@ usb_gadget_probe_driver(struct usb_gadget_driver *driver,
+ 	/* khubd will enumerate this in a while */
+ 	spin_lock_irq (&dum->lock);
+ 	dum->pullup = 1;
+-	set_link_state (dum);
++	dum->gadget.is_otg =
++		(dummy_hcd_to_hcd(dum->hs_hcd)->self.otg_port != 0);
++	set_link_state(dum->hs_hcd);
+ 	spin_unlock_irq (&dum->lock);
+ 
+-	usb_hcd_poll_rh_status (dummy_to_hcd (dum));
++	usb_hcd_poll_rh_status(dummy_hcd_to_hcd(dum->hs_hcd));
+ 	return 0;
+ }
+ EXPORT_SYMBOL(usb_gadget_probe_driver);
+@@ -825,7 +849,7 @@ EXPORT_SYMBOL(usb_gadget_probe_driver);
+ int
+ usb_gadget_unregister_driver (struct usb_gadget_driver *driver)
+ {
+-	struct dummy	*dum = the_controller;
++	struct dummy	*dum = &the_controller;
+ 	unsigned long	flags;
+ 
+ 	if (!dum)
+@@ -838,7 +862,7 @@ usb_gadget_unregister_driver (struct usb_gadget_driver *driver)
+ 
+ 	spin_lock_irqsave (&dum->lock, flags);
+ 	dum->pullup = 0;
+-	set_link_state (dum);
++	set_link_state(dum->hs_hcd);
+ 	spin_unlock_irqrestore (&dum->lock, flags);
+ 
+ 	driver->unbind (&dum->gadget);
+@@ -847,10 +871,9 @@ usb_gadget_unregister_driver (struct usb_gadget_driver *driver)
+ 
+ 	spin_lock_irqsave (&dum->lock, flags);
+ 	dum->pullup = 0;
+-	set_link_state (dum);
++	set_link_state(dum->hs_hcd);
+ 	spin_unlock_irqrestore (&dum->lock, flags);
 -
- 	if (number) {
- 		list_for_each_entry(c, &cdev->configs, list) {
- 			if (c->bConfigurationValue == number) {
-+				/*
-+				 * We disable the FDs of the previous
-+				 * configuration only if the new configuration
-+				 * is a valid one
-+				 */
-+				if (cdev->config)
-+					reset_config(cdev);
- 				result = 0;
- 				break;
+-	usb_hcd_poll_rh_status (dummy_to_hcd (dum));
++	usb_hcd_poll_rh_status(dummy_hcd_to_hcd(dum->hs_hcd));
+ 	return 0;
+ }
+ EXPORT_SYMBOL (usb_gadget_unregister_driver);
+@@ -872,25 +895,18 @@ EXPORT_SYMBOL (net2280_set_fifo_mode);
+ static void
+ dummy_gadget_release (struct device *dev)
+ {
+-	struct dummy	*dum = gadget_dev_to_dummy (dev);
+-
+-	usb_put_hcd (dummy_to_hcd (dum));
++	return;
+ }
+ 
+ static int dummy_udc_probe (struct platform_device *pdev)
+ {
+-	struct dummy	*dum = the_controller;
++	struct dummy	*dum = &the_controller;
+ 	int		rc;
+ 
+-	usb_get_hcd(dummy_to_hcd(dum));
+-
+ 	dum->gadget.name = gadget_name;
+ 	dum->gadget.ops = &dummy_ops;
+ 	dum->gadget.is_dualspeed = 1;
+ 
+-	/* maybe claim OTG support, though we won't complete HNP */
+-	dum->gadget.is_otg = (dummy_to_hcd(dum)->self.otg_port != 0);
+-
+ 	dev_set_name(&dum->gadget.dev, "gadget");
+ 	dum->gadget.dev.parent = &pdev->dev;
+ 	dum->gadget.dev.release = dummy_gadget_release;
+@@ -925,10 +941,10 @@ static int dummy_udc_suspend (struct platform_device *pdev, pm_message_t state)
+ 	dev_dbg (&pdev->dev, "%s\n", __func__);
+ 	spin_lock_irq (&dum->lock);
+ 	dum->udc_suspended = 1;
+-	set_link_state (dum);
++	set_link_state(dum->hs_hcd);
+ 	spin_unlock_irq (&dum->lock);
+ 
+-	usb_hcd_poll_rh_status (dummy_to_hcd (dum));
++	usb_hcd_poll_rh_status(dummy_hcd_to_hcd(dum->hs_hcd));
+ 	return 0;
+ }
+ 
+@@ -939,10 +955,10 @@ static int dummy_udc_resume (struct platform_device *pdev)
+ 	dev_dbg (&pdev->dev, "%s\n", __func__);
+ 	spin_lock_irq (&dum->lock);
+ 	dum->udc_suspended = 0;
+-	set_link_state (dum);
++	set_link_state(dum->hs_hcd);
+ 	spin_unlock_irq (&dum->lock);
+ 
+-	usb_hcd_poll_rh_status (dummy_to_hcd (dum));
++	usb_hcd_poll_rh_status(dummy_hcd_to_hcd(dum->hs_hcd));
+ 	return 0;
+ }
+ 
+@@ -976,7 +992,7 @@ static int dummy_urb_enqueue (
+ 	struct urb			*urb,
+ 	gfp_t				mem_flags
+ ) {
+-	struct dummy	*dum;
++	struct dummy_hcd *dum_hcd;
+ 	struct urbp	*urbp;
+ 	unsigned long	flags;
+ 	int		rc;
+@@ -989,51 +1005,51 @@ static int dummy_urb_enqueue (
+ 		return -ENOMEM;
+ 	urbp->urb = urb;
+ 
+-	dum = hcd_to_dummy (hcd);
+-	spin_lock_irqsave (&dum->lock, flags);
++	dum_hcd = hcd_to_dummy_hcd(hcd);
++	spin_lock_irqsave(&dum_hcd->dum->lock, flags);
+ 	rc = usb_hcd_link_urb_to_ep(hcd, urb);
+ 	if (rc) {
+ 		kfree(urbp);
+ 		goto done;
+ 	}
+ 
+-	if (!dum->udev) {
+-		dum->udev = urb->dev;
+-		usb_get_dev (dum->udev);
+-	} else if (unlikely (dum->udev != urb->dev))
+-		dev_err (dummy_dev(dum), "usb_device address has changed!\n");
++	if (!dum_hcd->udev) {
++		dum_hcd->udev = urb->dev;
++		usb_get_dev(dum_hcd->udev);
++	} else if (unlikely(dum_hcd->udev != urb->dev))
++		dev_err(dummy_dev(dum_hcd), "usb_device address has changed!\n");
+ 
+-	list_add_tail (&urbp->urbp_list, &dum->urbp_list);
++	list_add_tail(&urbp->urbp_list, &dum_hcd->urbp_list);
+ 	urb->hcpriv = urbp;
+ 	if (usb_pipetype (urb->pipe) == PIPE_CONTROL)
+ 		urb->error_count = 1;		/* mark as a new urb */
+ 
+ 	/* kick the scheduler, it'll do the rest */
+-	if (!timer_pending (&dum->timer))
+-		mod_timer (&dum->timer, jiffies + 1);
++	if (!timer_pending(&dum_hcd->timer))
++		mod_timer(&dum_hcd->timer, jiffies + 1);
+ 
+  done:
+-	spin_unlock_irqrestore(&dum->lock, flags);
++	spin_unlock_irqrestore(&dum_hcd->dum->lock, flags);
+ 	return rc;
+ }
+ 
+ static int dummy_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
+ {
+-	struct dummy	*dum;
++	struct dummy_hcd *dum_hcd;
+ 	unsigned long	flags;
+ 	int		rc;
+ 
+ 	/* giveback happens automatically in timer callback,
+ 	 * so make sure the callback happens */
+-	dum = hcd_to_dummy (hcd);
+-	spin_lock_irqsave (&dum->lock, flags);
++	dum_hcd = hcd_to_dummy_hcd(hcd);
++	spin_lock_irqsave(&dum_hcd->dum->lock, flags);
+ 
+ 	rc = usb_hcd_check_unlink_urb(hcd, urb, status);
+-	if (!rc && dum->rh_state != DUMMY_RH_RUNNING &&
+-			!list_empty(&dum->urbp_list))
+-		mod_timer (&dum->timer, jiffies);
++	if (!rc && dum_hcd->rh_state != DUMMY_RH_RUNNING &&
++			!list_empty(&dum_hcd->urbp_list))
++		mod_timer(&dum_hcd->timer, jiffies);
+ 
+-	spin_unlock_irqrestore (&dum->lock, flags);
++	spin_unlock_irqrestore(&dum_hcd->dum->lock, flags);
+ 	return rc;
+ }
+ 
+@@ -1173,7 +1189,7 @@ static int periodic_bytes (struct dummy *dum, struct dummy_ep *ep)
+ 	return limit;
+ }
+ 
+-#define is_active(dum)	((dum->port_status & \
++#define is_active(dum_hcd)	((dum_hcd->port_status & \
+ 		(USB_PORT_STAT_CONNECTION | USB_PORT_STAT_ENABLE | \
+ 			USB_PORT_STAT_SUSPEND)) \
+ 		== (USB_PORT_STAT_CONNECTION | USB_PORT_STAT_ENABLE))
+@@ -1182,7 +1198,7 @@ static struct dummy_ep *find_endpoint (struct dummy *dum, u8 address)
+ {
+ 	int		i;
+ 
+-	if (!is_active (dum))
++	if (!is_active(dum->hs_hcd))
+ 		return NULL;
+ 	if ((address & ~USB_DIR_IN) == 0)
+ 		return &dum->ep [0];
+@@ -1219,11 +1235,12 @@ static struct dummy_ep *find_endpoint (struct dummy *dum, u8 address)
+  *	  1 - if the request wasn't handles
+  *	  error code on error
+  */
+-static int handle_control_request(struct dummy *dum, struct urb *urb,
++static int handle_control_request(struct dummy_hcd *dum_hcd, struct urb *urb,
+ 				  struct usb_ctrlrequest *setup,
+ 				  int *status)
+ {
+ 	struct dummy_ep		*ep2;
++	struct dummy		*dum = dum_hcd->dum;
+ 	int			ret_val = 1;
+ 	unsigned	w_index;
+ 	unsigned	w_value;
+@@ -1342,9 +1359,10 @@ static int handle_control_request(struct dummy *dum, struct urb *urb,
+ /* drive both sides of the transfers; looks like irq handlers to
+  * both drivers except the callbacks aren't in_irq().
+  */
+-static void dummy_timer (unsigned long _dum)
++static void dummy_timer(unsigned long _dum_hcd)
+ {
+-	struct dummy		*dum = (struct dummy *) _dum;
++	struct dummy_hcd	*dum_hcd = (struct dummy_hcd *) _dum_hcd;
++	struct dummy		*dum = dum_hcd->dum;
+ 	struct urbp		*urbp, *tmp;
+ 	unsigned long		flags;
+ 	int			limit, total;
+@@ -1362,7 +1380,7 @@ static void dummy_timer (unsigned long _dum)
+ 		total = 512/*bytes*/ * 13/*packets*/ * 8/*uframes*/;
+ 		break;
+ 	default:
+-		dev_err (dummy_dev(dum), "bogus device speed\n");
++		dev_err(dummy_dev(dum_hcd), "bogus device speed\n");
+ 		return;
+ 	}
+ 
+@@ -1371,8 +1389,8 @@ static void dummy_timer (unsigned long _dum)
+ 	/* look at each urb queued by the host side driver */
+ 	spin_lock_irqsave (&dum->lock, flags);
+ 
+-	if (!dum->udev) {
+-		dev_err (dummy_dev(dum),
++	if (!dum_hcd->udev) {
++		dev_err(dummy_dev(dum_hcd),
+ 				"timer fired with no URBs pending?\n");
+ 		spin_unlock_irqrestore (&dum->lock, flags);
+ 		return;
+@@ -1385,7 +1403,7 @@ static void dummy_timer (unsigned long _dum)
+ 	}
+ 
+ restart:
+-	list_for_each_entry_safe (urbp, tmp, &dum->urbp_list, urbp_list) {
++	list_for_each_entry_safe(urbp, tmp, &dum_hcd->urbp_list, urbp_list) {
+ 		struct urb		*urb;
+ 		struct dummy_request	*req;
+ 		u8			address;
+@@ -1396,7 +1414,7 @@ restart:
+ 		urb = urbp->urb;
+ 		if (urb->unlinked)
+ 			goto return_urb;
+-		else if (dum->rh_state != DUMMY_RH_RUNNING)
++		else if (dum_hcd->rh_state != DUMMY_RH_RUNNING)
+ 			continue;
+ 		type = usb_pipetype (urb->pipe);
+ 
+@@ -1414,7 +1432,7 @@ restart:
+ 		ep = find_endpoint(dum, address);
+ 		if (!ep) {
+ 			/* set_configuration() disagreement */
+-			dev_dbg (dummy_dev(dum),
++			dev_dbg(dummy_dev(dum_hcd),
+ 				"no ep configured for urb %p\n",
+ 				urb);
+ 			status = -EPROTO;
+@@ -1430,7 +1448,7 @@ restart:
+ 		}
+ 		if (ep->halted && !ep->setup_stage) {
+ 			/* NOTE: must not be iso! */
+-			dev_dbg (dummy_dev(dum), "ep %s halted, urb %p\n",
++			dev_dbg(dummy_dev(dum_hcd), "ep %s halted, urb %p\n",
+ 					ep->ep.name, urb);
+ 			status = -EPIPE;
+ 			goto return_urb;
+@@ -1465,7 +1483,7 @@ restart:
+ 			ep->setup_stage = 0;
+ 			ep->halted = 0;
+ 
+-			value = handle_control_request(dum, urb, &setup,
++			value = handle_control_request(dum_hcd, urb, &setup,
+ 						       &status);
+ 
+ 			/* gadget driver handles all other requests.  block
+@@ -1535,20 +1553,20 @@ return_urb:
+ 		if (ep)
+ 			ep->already_seen = ep->setup_stage = 0;
+ 
+-		usb_hcd_unlink_urb_from_ep(dummy_to_hcd(dum), urb);
++		usb_hcd_unlink_urb_from_ep(dummy_hcd_to_hcd(dum_hcd), urb);
+ 		spin_unlock (&dum->lock);
+-		usb_hcd_giveback_urb(dummy_to_hcd(dum), urb, status);
++		usb_hcd_giveback_urb(dummy_hcd_to_hcd(dum_hcd), urb, status);
+ 		spin_lock (&dum->lock);
+ 
+ 		goto restart;
+ 	}
+ 
+-	if (list_empty (&dum->urbp_list)) {
+-		usb_put_dev (dum->udev);
+-		dum->udev = NULL;
+-	} else if (dum->rh_state == DUMMY_RH_RUNNING) {
++	if (list_empty(&dum_hcd->urbp_list)) {
++		usb_put_dev(dum_hcd->udev);
++		dum_hcd->udev = NULL;
++	} else if (dum_hcd->rh_state == DUMMY_RH_RUNNING) {
+ 		/* want a 1 msec delay here */
+-		mod_timer (&dum->timer, jiffies + msecs_to_jiffies(1));
++		mod_timer(&dum_hcd->timer, jiffies + msecs_to_jiffies(1));
+ 	}
+ 
+ 	spin_unlock_irqrestore (&dum->lock, flags);
+@@ -1565,32 +1583,32 @@ return_urb:
+ 
+ static int dummy_hub_status (struct usb_hcd *hcd, char *buf)
+ {
+-	struct dummy		*dum;
++	struct dummy_hcd	*dum_hcd;
+ 	unsigned long		flags;
+ 	int			retval = 0;
+ 
+-	dum = hcd_to_dummy (hcd);
++	dum_hcd = hcd_to_dummy_hcd(hcd);
+ 
+-	spin_lock_irqsave (&dum->lock, flags);
++	spin_lock_irqsave(&dum_hcd->dum->lock, flags);
+ 	if (!HCD_HW_ACCESSIBLE(hcd))
+ 		goto done;
+ 
+-	if (dum->resuming && time_after_eq (jiffies, dum->re_timeout)) {
+-		dum->port_status |= (USB_PORT_STAT_C_SUSPEND << 16);
+-		dum->port_status &= ~USB_PORT_STAT_SUSPEND;
+-		set_link_state (dum);
++	if (dum_hcd->resuming && time_after_eq(jiffies, dum_hcd->re_timeout)) {
++		dum_hcd->port_status |= (USB_PORT_STAT_C_SUSPEND << 16);
++		dum_hcd->port_status &= ~USB_PORT_STAT_SUSPEND;
++		set_link_state(dum_hcd);
+ 	}
+ 
+-	if ((dum->port_status & PORT_C_MASK) != 0) {
++	if ((dum_hcd->port_status & PORT_C_MASK) != 0) {
+ 		*buf = (1 << 1);
+-		dev_dbg (dummy_dev(dum), "port status 0x%08x has changes\n",
+-				dum->port_status);
++		dev_dbg(dummy_dev(dum_hcd), "port status 0x%08x has changes\n",
++				dum_hcd->port_status);
+ 		retval = 1;
+-		if (dum->rh_state == DUMMY_RH_SUSPENDED)
++		if (dum_hcd->rh_state == DUMMY_RH_SUSPENDED)
+ 			usb_hcd_resume_root_hub (hcd);
+ 	}
+ done:
+-	spin_unlock_irqrestore (&dum->lock, flags);
++	spin_unlock_irqrestore(&dum_hcd->dum->lock, flags);
+ 	return retval;
+ }
+ 
+@@ -1614,39 +1632,40 @@ static int dummy_hub_control (
+ 	char		*buf,
+ 	u16		wLength
+ ) {
+-	struct dummy	*dum;
++	struct dummy_hcd *dum_hcd;
+ 	int		retval = 0;
+ 	unsigned long	flags;
+ 
+ 	if (!HCD_HW_ACCESSIBLE(hcd))
+ 		return -ETIMEDOUT;
+ 
+-	dum = hcd_to_dummy (hcd);
+-	spin_lock_irqsave (&dum->lock, flags);
++	dum_hcd = hcd_to_dummy_hcd(hcd);
++
++	spin_lock_irqsave(&dum_hcd->dum->lock, flags);
+ 	switch (typeReq) {
+ 	case ClearHubFeature:
+ 		break;
+ 	case ClearPortFeature:
+ 		switch (wValue) {
+ 		case USB_PORT_FEAT_SUSPEND:
+-			if (dum->port_status & USB_PORT_STAT_SUSPEND) {
++			if (dum_hcd->port_status & USB_PORT_STAT_SUSPEND) {
+ 				/* 20msec resume signaling */
+-				dum->resuming = 1;
+-				dum->re_timeout = jiffies +
++				dum_hcd->resuming = 1;
++				dum_hcd->re_timeout = jiffies +
+ 						msecs_to_jiffies(20);
+ 			}
+ 			break;
+ 		case USB_PORT_FEAT_POWER:
+-			if (dum->port_status & USB_PORT_STAT_POWER)
+-				dev_dbg (dummy_dev(dum), "power-off\n");
++			if (dum_hcd->port_status & USB_PORT_STAT_POWER)
++				dev_dbg(dummy_dev(dum_hcd), "power-off\n");
+ 			/* FALLS THROUGH */
+ 		default:
+-			dum->port_status &= ~(1 << wValue);
+-			set_link_state (dum);
++			dum_hcd->port_status &= ~(1 << wValue);
++			set_link_state(dum_hcd);
+ 		}
+ 		break;
+ 	case GetHubDescriptor:
+-		hub_descriptor ((struct usb_hub_descriptor *) buf);
++		hub_descriptor((struct usb_hub_descriptor *) buf);
+ 		break;
+ 	case GetHubStatus:
+ 		*(__le32 *) buf = cpu_to_le32 (0);
+@@ -1658,39 +1677,38 @@ static int dummy_hub_control (
+ 		/* whoever resets or resumes must GetPortStatus to
+ 		 * complete it!!
+ 		 */
+-		if (dum->resuming &&
+-				time_after_eq (jiffies, dum->re_timeout)) {
+-			dum->port_status |= (USB_PORT_STAT_C_SUSPEND << 16);
+-			dum->port_status &= ~USB_PORT_STAT_SUSPEND;
++		if (dum_hcd->resuming &&
++				time_after_eq(jiffies, dum_hcd->re_timeout)) {
++			dum_hcd->port_status |= (USB_PORT_STAT_C_SUSPEND << 16);
++			dum_hcd->port_status &= ~USB_PORT_STAT_SUSPEND;
+ 		}
+-		if ((dum->port_status & USB_PORT_STAT_RESET) != 0 &&
+-				time_after_eq (jiffies, dum->re_timeout)) {
+-			dum->port_status |= (USB_PORT_STAT_C_RESET << 16);
+-			dum->port_status &= ~USB_PORT_STAT_RESET;
+-			if (dum->pullup) {
+-				dum->port_status |= USB_PORT_STAT_ENABLE;
+-				/* give it the best speed we agree on */
+-				dum->gadget.speed = dum->driver->speed;
+-				dum->gadget.ep0->maxpacket = 64;
+-				switch (dum->gadget.speed) {
++		if ((dum_hcd->port_status & USB_PORT_STAT_RESET) != 0 &&
++				time_after_eq(jiffies, dum_hcd->re_timeout)) {
++			dum_hcd->port_status |= (USB_PORT_STAT_C_RESET << 16);
++			dum_hcd->port_status &= ~USB_PORT_STAT_RESET;
++			if (dum_hcd->dum->pullup) {
++				dum_hcd->port_status |= USB_PORT_STAT_ENABLE;
++				switch (dum_hcd->dum->gadget.speed) {
+ 				case USB_SPEED_HIGH:
+-					dum->port_status |=
+-						USB_PORT_STAT_HIGH_SPEED;
++					dum_hcd->port_status |=
++					      USB_PORT_STAT_HIGH_SPEED;
+ 					break;
+ 				case USB_SPEED_LOW:
+-					dum->gadget.ep0->maxpacket = 8;
+-					dum->port_status |=
++					dum_hcd->dum->gadget.ep0->
++						maxpacket = 8;
++					dum_hcd->port_status |=
+ 						USB_PORT_STAT_LOW_SPEED;
+ 					break;
+ 				default:
+-					dum->gadget.speed = USB_SPEED_FULL;
++					dum_hcd->dum->gadget.speed =
++						USB_SPEED_FULL;
+ 					break;
+ 				}
  			}
  		}
- 		if (result < 0)
- 			goto done;
--	} else
-+	} else { /* Zero configuration value - need to reset the config */
-+		if (cdev->config)
-+			reset_config(cdev);
- 		result = 0;
-+	}
+-		set_link_state (dum);
+-		((__le16 *) buf)[0] = cpu_to_le16 (dum->port_status);
+-		((__le16 *) buf)[1] = cpu_to_le16 (dum->port_status >> 16);
++		set_link_state(dum_hcd);
++		((__le16 *) buf)[0] = cpu_to_le16 (dum_hcd->port_status);
++		((__le16 *) buf)[1] = cpu_to_le16 (dum_hcd->port_status >> 16);
+ 		break;
+ 	case SetHubFeature:
+ 		retval = -EPIPE;
+@@ -1698,87 +1716,91 @@ static int dummy_hub_control (
+ 	case SetPortFeature:
+ 		switch (wValue) {
+ 		case USB_PORT_FEAT_SUSPEND:
+-			if (dum->active) {
+-				dum->port_status |= USB_PORT_STAT_SUSPEND;
++			if (dum_hcd->active) {
++				dum_hcd->port_status |= USB_PORT_STAT_SUSPEND;
  
- 	INFO(cdev, "%s speed config #%d: %s\n",
- 		({ char *speed;
-@@ -504,6 +638,9 @@ static int set_config(struct usb_composite_dev *cdev,
- 		case USB_SPEED_HIGH:
- 			speed = "high";
+ 				/* HNP would happen here; for now we
+ 				 * assume b_bus_req is always true.
+ 				 */
+-				set_link_state (dum);
++				set_link_state(dum_hcd);
+ 				if (((1 << USB_DEVICE_B_HNP_ENABLE)
+-						& dum->devstatus) != 0)
+-					dev_dbg (dummy_dev(dum),
++						& dum_hcd->dum->devstatus) != 0)
++					dev_dbg(dummy_dev(dum_hcd),
+ 							"no HNP yet!\n");
+ 			}
  			break;
-+		case USB_SPEED_SUPER:
-+			speed = "super";
-+			break;
+ 		case USB_PORT_FEAT_POWER:
+-			dum->port_status |= USB_PORT_STAT_POWER;
+-			set_link_state (dum);
++			dum_hcd->port_status |= USB_PORT_STAT_POWER;
++			set_link_state(dum_hcd);
+ 			break;
+ 		case USB_PORT_FEAT_RESET:
+ 			/* if it's already enabled, disable */
+-			dum->port_status &= ~(USB_PORT_STAT_ENABLE
++			dum_hcd->port_status &= ~(USB_PORT_STAT_ENABLE
+ 					| USB_PORT_STAT_LOW_SPEED
+ 					| USB_PORT_STAT_HIGH_SPEED);
+-			dum->devstatus = 0;
+-			/* 50msec reset signaling */
+-			dum->re_timeout = jiffies + msecs_to_jiffies(50);
++			/*
++			 * We want to reset device status. All but the
++			 * Self powered feature
++			 */
++			dum_hcd->dum->devstatus &=
++				(1 << USB_DEVICE_SELF_POWERED);
++			dum_hcd->re_timeout = jiffies + msecs_to_jiffies(50);
+ 			/* FALLS THROUGH */
  		default:
- 			speed = "?";
- 			break;
-@@ -528,10 +665,16 @@ static int set_config(struct usb_composite_dev *cdev,
- 		 * function's setup callback instead of the current
- 		 * configuration's setup callback.
- 		 */
--		if (gadget->speed == USB_SPEED_HIGH)
-+		switch (gadget->speed) {
-+		case USB_SPEED_SUPER:
-+			descriptors = f->ss_descriptors;
-+			break;
-+		case USB_SPEED_HIGH:
- 			descriptors = f->hs_descriptors;
--		else
-+			break;
-+		default:
- 			descriptors = f->descriptors;
-+		}
- 
- 		for (; *descriptors; ++descriptors) {
- 			struct usb_endpoint_descriptor *ep;
-@@ -624,8 +767,9 @@ int usb_add_config(struct usb_composite_dev *cdev,
- 	} else {
- 		unsigned	i;
- 
--		DBG(cdev, "cfg %d/%p speeds:%s%s\n",
-+		DBG(cdev, "cfg %d/%p speeds:%s%s%s\n",
- 			config->bConfigurationValue, config,
-+			config->superspeed ? " super" : "",
- 			config->highspeed ? " high" : "",
- 			config->fullspeed
- 				? (gadget_is_dualspeed(cdev->gadget)
-@@ -904,6 +1048,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
- 	struct usb_composite_dev	*cdev = get_gadget_data(gadget);
- 	struct usb_request		*req = cdev->req;
- 	int				value = -EOPNOTSUPP;
-+	int				status = 0;
- 	u16				w_index = le16_to_cpu(ctrl->wIndex);
- 	u8				intf = w_index & 0xFF;
- 	u16				w_value = le16_to_cpu(ctrl->wValue);
-@@ -931,18 +1076,29 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
- 		case USB_DT_DEVICE:
- 			cdev->desc.bNumConfigurations =
- 				count_configs(cdev, USB_DT_DEVICE);
-+			cdev->desc.bMaxPacketSize0 =
-+				cdev->gadget->ep0->maxpacket;
-+			if (gadget_is_superspeed(gadget)) {
-+				if (gadget->speed >= USB_SPEED_SUPER)
-+					cdev->desc.bcdUSB = cpu_to_le16(0x0300);
-+				else
-+					cdev->desc.bcdUSB = cpu_to_le16(0x0210);
-+			}
-+
- 			value = min(w_length, (u16) sizeof cdev->desc);
- 			memcpy(req->buf, &cdev->desc, value);
- 			break;
- 		case USB_DT_DEVICE_QUALIFIER:
--			if (!gadget_is_dualspeed(gadget))
-+			if (!gadget_is_dualspeed(gadget) ||
-+			    gadget->speed >= USB_SPEED_SUPER)
- 				break;
- 			device_qual(cdev);
- 			value = min_t(int, w_length,
- 				sizeof(struct usb_qualifier_descriptor));
- 			break;
- 		case USB_DT_OTHER_SPEED_CONFIG:
--			if (!gadget_is_dualspeed(gadget))
-+			if (!gadget_is_dualspeed(gadget) ||
-+			    gadget->speed >= USB_SPEED_SUPER)
- 				break;
- 			/* FALLTHROUGH */
- 		case USB_DT_CONFIG:
-@@ -956,6 +1112,12 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
- 			if (value >= 0)
- 				value = min(w_length, (u16) value);
- 			break;
-+		case USB_DT_BOS:
-+			if (gadget_is_superspeed(gadget)) {
-+				value = bos_desc(cdev);
-+				value = min(w_length, (u16) value);
-+			}
-+			break;
+-			if ((dum->port_status & USB_PORT_STAT_POWER) != 0) {
+-				dum->port_status |= (1 << wValue);
+-				set_link_state (dum);
++			if ((dum_hcd->port_status &
++			     USB_PORT_STAT_POWER) != 0) {
++				dum_hcd->port_status |= (1 << wValue);
++				set_link_state(dum_hcd);
+ 			}
  		}
  		break;
  
-@@ -1023,6 +1185,61 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
- 		*((u8 *)req->buf) = value;
- 		value = min(w_length, (u16) 1);
- 		break;
-+
-+	/*
-+	 * USB 3.0 additions:
-+	 * Function driver should handle get_status request. If such cb
-+	 * wasn't supplied we respond with default value = 0
-+	 * Note: function driver should supply such cb only for the first
-+	 * interface of the function
-+	 */
-+	case USB_REQ_GET_STATUS:
-+		if (!gadget_is_superspeed(gadget))
-+			goto unknown;
-+		if (ctrl->bRequestType != (USB_DIR_IN | USB_RECIP_INTERFACE))
-+			goto unknown;
-+		value = 2;	/* This is the length of the get_status reply */
-+		put_unaligned_le16(0, req->buf);
-+		if (!cdev->config || intf >= MAX_CONFIG_INTERFACES)
-+			break;
-+		f = cdev->config->interface[intf];
-+		if (!f)
-+			break;
-+		status = f->get_status ? f->get_status(f) : 0;
-+		if (status < 0)
-+			break;
-+		put_unaligned_le16(status & 0x0000ffff, req->buf);
-+		break;
-+	/*
-+	 * Function drivers should handle SetFeature/ClearFeature
-+	 * (FUNCTION_SUSPEND) request. function_suspend cb should be supplied
-+	 * only for the first interface of the function
-+	 */
-+	case USB_REQ_CLEAR_FEATURE:
-+	case USB_REQ_SET_FEATURE:
-+		if (!gadget_is_superspeed(gadget))
-+			goto unknown;
-+		if (ctrl->bRequestType != (USB_DIR_OUT | USB_RECIP_INTERFACE))
-+			goto unknown;
-+		switch (w_value) {
-+		case USB_INTRF_FUNC_SUSPEND:
-+			if (!cdev->config || intf >= MAX_CONFIG_INTERFACES)
-+				break;
-+			f = cdev->config->interface[intf];
-+			if (!f)
-+				break;
-+			value = 0;
-+			if (f->func_suspend)
-+				value = f->func_suspend(f, w_index >> 8);
-+			if (value < 0) {
-+				ERROR(cdev,
-+				      "func_suspend() returned error %d\n",
-+				      value);
-+				value = 0;
-+			}
-+			break;
-+		}
-+		break;
  	default:
- unknown:
- 		VDBG(cdev,
-@@ -1340,7 +1557,11 @@ composite_resume(struct usb_gadget *gadget)
- /*-------------------------------------------------------------------------*/
- 
- static struct usb_gadget_driver composite_driver = {
-+#ifdef CONFIG_USB_GADGET_SUPERSPEED
-+	.speed		= USB_SPEED_SUPER,
-+#else
- 	.speed		= USB_SPEED_HIGH,
-+#endif /* CONFIG_USB_GADGET_SUPERSPEED */
- 
- 	.unbind		= composite_unbind,
- 
-diff --git a/drivers/usb/gadget/epautoconf.c b/drivers/usb/gadget/epautoconf.c
-index 91c032f..7a7e6b7 100644
---- a/drivers/usb/gadget/epautoconf.c
-+++ b/drivers/usb/gadget/epautoconf.c
-@@ -161,13 +161,13 @@ ep_matches (
- 	max = 0x7ff & le16_to_cpu(desc->wMaxPacketSize);
- 	switch (type) {
- 	case USB_ENDPOINT_XFER_INT:
--		/* INT:  limit 64 bytes full speed, 1024 high speed */
-+		/* INT:  limit 64 bytes full speed, 1024 high/super speed */
- 		if (!gadget->is_dualspeed && max > 64)
- 			return 0;
- 		/* FALLTHROUGH */
- 
- 	case USB_ENDPOINT_XFER_ISOC:
--		/* ISO:  limit 1023 bytes full speed, 1024 high speed */
-+		/* ISO:  limit 1023 bytes full speed, 1024 high/super speed */
- 		if (ep->maxpacket < max)
- 			return 0;
- 		if (!gadget->is_dualspeed && max > 1023)
-@@ -202,7 +202,7 @@ ep_matches (
+-		dev_dbg (dummy_dev(dum),
++		dev_dbg(dummy_dev(dum_hcd),
+ 			"hub control req%04x v%04x i%04x l%d\n",
+ 			typeReq, wValue, wIndex, wLength);
+-
+ 		/* "protocol stall" on error */
+ 		retval = -EPIPE;
  	}
+-	spin_unlock_irqrestore (&dum->lock, flags);
++	spin_unlock_irqrestore(&dum_hcd->dum->lock, flags);
  
- 	/* report (variable) full speed bulk maxpacket */
--	if (USB_ENDPOINT_XFER_BULK == type) {
-+	if ((USB_ENDPOINT_XFER_BULK == type) && !ep_comp) {
- 		int size = ep->maxpacket;
- 
- 		/* min() doesn't work on bitfields with gcc-3.5 */
-diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
-index a3e72df..a316fba 100644
---- a/include/linux/usb/composite.h
-+++ b/include/linux/usb/composite.h
-@@ -59,6 +59,10 @@ struct usb_configuration;
-  * @hs_descriptors: Table of high speed descriptors, using interface and
-  *	string identifiers assigned during @bind().  If this pointer is null,
-  *	the function will not be available at high speed.
-+ * @ss_descriptors: Table of super speed descriptors, using interface and
-+ *	string identifiers assigned during @bind(). If this
-+ *	pointer is null after initiation, the function will not
-+ *	be available at super speed.
-  * @config: assigned when @usb_add_function() is called; this is the
-  *	configuration with which this function is associated.
-  * @bind: Before the gadget can register, all of its functions bind() to the
-@@ -77,6 +81,10 @@ struct usb_configuration;
-  * @setup: Used for interface-specific control requests.
-  * @suspend: Notifies functions when the host stops sending USB traffic.
-  * @resume: Notifies functions when the host restarts USB traffic.
-+ * @get_status: Returns function status as a reply to
-+ *	GetStatus() request when the recepient is Interface.
-+ * @func_suspend: callback to be called when
-+ *	SetFeature(FUNCTION_SUSPEND) is reseived
-  *
-  * A single USB function uses one or more interfaces, and should in most
-  * cases support operation at both full and high speeds.  Each function is
-@@ -106,6 +114,7 @@ struct usb_function {
- 	struct usb_gadget_strings	**strings;
- 	struct usb_descriptor_header	**descriptors;
- 	struct usb_descriptor_header	**hs_descriptors;
-+	struct usb_descriptor_header	**ss_descriptors;
- 
- 	struct usb_configuration	*config;
- 
-@@ -132,6 +141,10 @@ struct usb_function {
- 	void			(*suspend)(struct usb_function *);
- 	void			(*resume)(struct usb_function *);
- 
-+	/* USB 3.0 additions */
-+	int			(*get_status)(struct usb_function *);
-+	int			(*func_suspend)(struct usb_function *,
-+						u8 suspend_opt);
- 	/* private: */
- 	/* internals */
- 	struct list_head		list;
-@@ -219,6 +232,7 @@ struct usb_configuration {
- 	struct list_head	list;
- 	struct list_head	functions;
- 	u8			next_interface_id;
-+	unsigned		superspeed:1;
- 	unsigned		highspeed:1;
- 	unsigned		fullspeed:1;
- 	struct usb_function	*interface[MAX_CONFIG_INTERFACES];
-diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-index 1ab9951..66d461e 100644
---- a/include/linux/usb/gadget.h
-+++ b/include/linux/usb/gadget.h
-@@ -135,6 +135,8 @@ struct usb_ep_ops {
-  *      the endpoint descriptor used to configure the endpoint.
-  * @max_streams: The maximum number of streams supported
-  *	by this EP (0 - 16, actual number is 2^n)
-+ * @mult: multiplier, 'mult' value for SS Isoc EPs
-+ * @maxburst: the maximum number of bursts supported by this EP (for usb3)
-  * @driver_data:for use by the gadget driver.
-  * @address: used to identify the endpoint when finding descriptor that
-  *	matches connection speed
-@@ -155,6 +157,8 @@ struct usb_ep {
- 	struct list_head	ep_list;
- 	unsigned		maxpacket:16;
- 	unsigned		max_streams:16;
-+	unsigned		mult:2;
-+	unsigned		maxburst:4;
- 	u8			address;
- 	const struct usb_endpoint_descriptor	*desc;
- 	const struct usb_ss_ep_comp_descriptor	*comp_desc;
-@@ -425,6 +429,14 @@ static inline void usb_ep_fifo_flush(struct usb_ep *ep)
- 
- /*-------------------------------------------------------------------------*/
- 
-+struct usb_dcd_config_params {
-+	__u8  bU1devExitLat;	/* U1 Device exit Latency */
-+#define USB_DEFULT_U1_DEV_EXIT_LAT	0x01	/* Less then 1 microsec */
-+	__le16 bU2DevExitLat;	/* U2 Device exit Latency */
-+#define USB_DEFULT_U2_DEV_EXIT_LAT	0x1F4	/* Less then 500 microsec */
-+};
-+
-+
- struct usb_gadget;
- 
- /* the rest of the api to the controller hardware: device operations,
-@@ -439,6 +451,7 @@ struct usb_gadget_ops {
- 	int	(*pullup) (struct usb_gadget *, int is_on);
- 	int	(*ioctl)(struct usb_gadget *,
- 				unsigned code, unsigned long param);
-+	void	(*get_config_params)(struct usb_dcd_config_params *);
- };
- 
- /**
-@@ -530,6 +543,24 @@ static inline int gadget_is_dualspeed(struct usb_gadget *g)
+-	if ((dum->port_status & PORT_C_MASK) != 0)
++	if ((dum_hcd->port_status & PORT_C_MASK) != 0)
+ 		usb_hcd_poll_rh_status (hcd);
+ 	return retval;
  }
  
- /**
-+ * gadget_is_superspeed() - return true if the hardware handles
-+ * supperspeed
-+ * @g: controller that might support supper speed
-+ */
-+static inline int gadget_is_superspeed(struct usb_gadget *g)
+ static int dummy_bus_suspend (struct usb_hcd *hcd)
+ {
+-	struct dummy *dum = hcd_to_dummy (hcd);
++	struct dummy_hcd *dum_hcd = hcd_to_dummy_hcd(hcd);
+ 
+ 	dev_dbg (&hcd->self.root_hub->dev, "%s\n", __func__);
+ 
+-	spin_lock_irq (&dum->lock);
+-	dum->rh_state = DUMMY_RH_SUSPENDED;
+-	set_link_state (dum);
++	spin_lock_irq(&dum_hcd->dum->lock);
++	dum_hcd->rh_state = DUMMY_RH_SUSPENDED;
++	set_link_state(dum_hcd);
+ 	hcd->state = HC_STATE_SUSPENDED;
+-	spin_unlock_irq (&dum->lock);
++	spin_unlock_irq(&dum_hcd->dum->lock);
+ 	return 0;
+ }
+ 
+ static int dummy_bus_resume (struct usb_hcd *hcd)
+ {
+-	struct dummy *dum = hcd_to_dummy (hcd);
++	struct dummy_hcd *dum_hcd = hcd_to_dummy_hcd(hcd);
+ 	int rc = 0;
+ 
+ 	dev_dbg (&hcd->self.root_hub->dev, "%s\n", __func__);
+ 
+-	spin_lock_irq (&dum->lock);
++	spin_lock_irq(&dum_hcd->dum->lock);
+ 	if (!HCD_HW_ACCESSIBLE(hcd)) {
+ 		rc = -ESHUTDOWN;
+ 	} else {
+-		dum->rh_state = DUMMY_RH_RUNNING;
+-		set_link_state (dum);
+-		if (!list_empty(&dum->urbp_list))
+-			mod_timer (&dum->timer, jiffies);
++		dum_hcd->rh_state = DUMMY_RH_RUNNING;
++		set_link_state(dum_hcd);
++		if (!list_empty(&dum_hcd->urbp_list))
++			mod_timer(&dum_hcd->timer, jiffies);
+ 		hcd->state = HC_STATE_RUNNING;
+ 	}
+-	spin_unlock_irq (&dum->lock);
++	spin_unlock_irq(&dum_hcd->dum->lock);
+ 	return rc;
+ }
+ 
+@@ -1830,43 +1852,41 @@ static ssize_t
+ show_urbs (struct device *dev, struct device_attribute *attr, char *buf)
+ {
+ 	struct usb_hcd		*hcd = dev_get_drvdata (dev);
+-	struct dummy		*dum = hcd_to_dummy (hcd);
++	struct dummy_hcd	*dum_hcd = hcd_to_dummy_hcd(hcd);
+ 	struct urbp		*urbp;
+ 	size_t			size = 0;
+ 	unsigned long		flags;
+ 
+-	spin_lock_irqsave (&dum->lock, flags);
+-	list_for_each_entry (urbp, &dum->urbp_list, urbp_list) {
++	spin_lock_irqsave(&dum_hcd->dum->lock, flags);
++	list_for_each_entry(urbp, &dum_hcd->urbp_list, urbp_list) {
+ 		size_t		temp;
+ 
+ 		temp = show_urb (buf, PAGE_SIZE - size, urbp->urb);
+ 		buf += temp;
+ 		size += temp;
+ 	}
+-	spin_unlock_irqrestore (&dum->lock, flags);
++	spin_unlock_irqrestore(&dum_hcd->dum->lock, flags);
+ 
+ 	return size;
+ }
+ static DEVICE_ATTR (urbs, S_IRUGO, show_urbs, NULL);
+ 
+-static int dummy_start (struct usb_hcd *hcd)
++static int dummy_start(struct usb_hcd *hcd)
+ {
+-	struct dummy		*dum;
+-
+-	dum = hcd_to_dummy (hcd);
++	struct dummy_hcd	*dum_hcd = hcd_to_dummy_hcd(hcd);
+ 
+ 	/*
+ 	 * MASTER side init ... we emulate a root hub that'll only ever
+ 	 * talk to one device (the slave side).  Also appears in sysfs,
+ 	 * just like more familiar pci-based HCDs.
+ 	 */
+-	spin_lock_init (&dum->lock);
+-	init_timer (&dum->timer);
+-	dum->timer.function = dummy_timer;
+-	dum->timer.data = (unsigned long) dum;
+-	dum->rh_state = DUMMY_RH_RUNNING;
++	spin_lock_init(&dum_hcd->dum->lock);
++	init_timer(&dum_hcd->timer);
++	dum_hcd->timer.function = dummy_timer;
++	dum_hcd->timer.data = (unsigned long)dum_hcd;
++	dum_hcd->rh_state = DUMMY_RH_RUNNING;
+ 
+-	INIT_LIST_HEAD (&dum->urbp_list);
++	INIT_LIST_HEAD(&dum_hcd->urbp_list);
+ 
+ 	hcd->power_budget = POWER_BUDGET;
+ 	hcd->state = HC_STATE_RUNNING;
+@@ -1877,18 +1897,17 @@ static int dummy_start (struct usb_hcd *hcd)
+ #endif
+ 
+ 	/* FIXME 'urbs' should be a per-device thing, maybe in usbcore */
+-	return device_create_file (dummy_dev(dum), &dev_attr_urbs);
++	return device_create_file(dummy_dev(dum_hcd), &dev_attr_urbs);
+ }
+ 
+ static void dummy_stop (struct usb_hcd *hcd)
+ {
+ 	struct dummy		*dum;
+ 
+-	dum = hcd_to_dummy (hcd);
+-
+-	device_remove_file (dummy_dev(dum), &dev_attr_urbs);
++	dum = (hcd_to_dummy_hcd(hcd))->dum;
++	device_remove_file(dummy_dev(hcd_to_dummy_hcd(hcd)), &dev_attr_urbs);
+ 	usb_gadget_unregister_driver (dum->driver);
+-	dev_info (dummy_dev(dum), "stopped\n");
++	dev_info(dummy_dev(hcd_to_dummy_hcd(hcd)), "stopped\n");
+ }
+ 
+ /*-------------------------------------------------------------------------*/
+@@ -1898,13 +1917,26 @@ static int dummy_h_get_frame (struct usb_hcd *hcd)
+ 	return dummy_g_get_frame (NULL);
+ }
+ 
++static int dummy_setup(struct usb_hcd *hcd)
 +{
-+#ifdef CONFIG_USB_GADGET_SUPERSPEED
-+	/*
-+	 * runtime test would check "g->is_superspeed" ... that might be
-+	 * useful to work around hardware bugs, but is mostly pointless
-+	 */
-+	return 1;
-+#else
++	if (usb_hcd_is_primary_hcd(hcd)) {
++		the_controller.hs_hcd = hcd_to_dummy_hcd(hcd);
++		the_controller.hs_hcd->dum = &the_controller;
++		/* Mark the first roothub as being USB 2.0. */
++		hcd->speed = HCD_USB2;
++		hcd->self.root_hub->speed = USB_SPEED_HIGH;
++	}
 +	return 0;
-+#endif
 +}
 +
-+/**
-  * gadget_is_otg - return true iff the hardware is OTG-ready
-  * @g: controller that might have a Mini-AB connector
-  *
+ static const struct hc_driver dummy_hcd = {
+ 	.description =		(char *) driver_name,
+ 	.product_desc =		"Dummy host controller",
+-	.hcd_priv_size =	sizeof(struct dummy),
++	.hcd_priv_size =	sizeof(struct dummy_hcd),
+ 
+ 	.flags =		HCD_USB2,
+ 
++	.reset =		dummy_setup,
+ 	.start =		dummy_start,
+ 	.stop =			dummy_stop,
+ 
+@@ -1921,46 +1953,45 @@ static const struct hc_driver dummy_hcd = {
+ 
+ static int dummy_hcd_probe(struct platform_device *pdev)
+ {
+-	struct usb_hcd		*hcd;
++	struct usb_hcd		*hs_hcd;
+ 	int			retval;
+ 
+ 	dev_info(&pdev->dev, "%s, driver " DRIVER_VERSION "\n", driver_desc);
+ 
+-	hcd = usb_create_hcd(&dummy_hcd, &pdev->dev, dev_name(&pdev->dev));
+-	if (!hcd)
++	hs_hcd = usb_create_hcd(&dummy_hcd, &pdev->dev, dev_name(&pdev->dev));
++	if (!hs_hcd)
+ 		return -ENOMEM;
+-	the_controller = hcd_to_dummy (hcd);
+ 
+-	retval = usb_add_hcd(hcd, 0, 0);
++	retval = usb_add_hcd(hs_hcd, 0, 0);
+ 	if (retval != 0) {
+-		usb_put_hcd (hcd);
+-		the_controller = NULL;
++		usb_put_hcd(hs_hcd);
++		the_controller.hs_hcd = NULL;
+ 	}
+ 	return retval;
+ }
+ 
+ static int dummy_hcd_remove (struct platform_device *pdev)
+ {
+-	struct usb_hcd		*hcd;
++	struct dummy		*dum;
+ 
+-	hcd = platform_get_drvdata (pdev);
+-	usb_remove_hcd (hcd);
+-	usb_put_hcd (hcd);
+-	the_controller = NULL;
++	dum = (hcd_to_dummy_hcd(platform_get_drvdata(pdev)))->dum;
++	usb_remove_hcd(dummy_hcd_to_hcd(dum->hs_hcd));
++	usb_put_hcd(dummy_hcd_to_hcd(dum->hs_hcd));
++	the_controller.hs_hcd = NULL;
+ 	return 0;
+ }
+ 
+ static int dummy_hcd_suspend (struct platform_device *pdev, pm_message_t state)
+ {
+ 	struct usb_hcd		*hcd;
+-	struct dummy		*dum;
++	struct dummy_hcd	*dum_hcd;
+ 	int			rc = 0;
+ 
+ 	dev_dbg (&pdev->dev, "%s\n", __func__);
+ 
+ 	hcd = platform_get_drvdata (pdev);
+-	dum = hcd_to_dummy (hcd);
+-	if (dum->rh_state == DUMMY_RH_RUNNING) {
++	dum_hcd = hcd_to_dummy_hcd(hcd);
++	if (dum_hcd->rh_state == DUMMY_RH_RUNNING) {
+ 		dev_warn(&pdev->dev, "Root hub isn't suspended!\n");
+ 		rc = -EBUSY;
+ 	} else
+@@ -2020,7 +2051,7 @@ static int __init init (void)
+ 	retval = platform_device_add(the_hcd_pdev);
+ 	if (retval < 0)
+ 		goto err_add_hcd;
+-	if (!the_controller) {
++	if (!the_controller.hs_hcd) {
+ 		/*
+ 		 * The hcd was added successfully but its probe function failed
+ 		 * for some reason.
 -- 
 1.7.3.3
 
