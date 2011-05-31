@@ -1,128 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333Ab1EaP44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:56:56 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:57136 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757405Ab1EaP4w convert rfc822-to-8bit (ORCPT
+	id S1757360Ab1EaQCo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 12:02:44 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:65412 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757264Ab1EaQCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:56:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=sLzDmVINxWZs9av/0ltckLtS+WGkmLe1oxK8xsrHWXWVh4ky0pLdtys+KPuAulfq8r
-         25iwpNnLV+RCXgqeVJ0z5kElrLWYi27d9HlfKm0eElUDJShVNIBBvqYN7OluhEE9OsYV
-         HSzNBt++2SCcM1FfLKwkl4N5NOLOrROuYSn/E=
+	Tue, 31 May 2011 12:02:42 -0400
+Date: Tue, 31 May 2011 12:02:21 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel Haid <d.haid@gogi.tv>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: Question about iommu on x86_64 and radeon driver.
+Message-ID: <20110531160221.GA31659@dumpdata.com>
+References: <20110523220536.GB11961@dumpdata.com>
+ <756073831c36e0404199a4e8239bcb70@admin.gogi.tv>
+ <m2wrhf4sw5.fsf@firstfloor.org>
+ <08370791664f069624d25c757ed101c0@admin.gogi.tv>
+ <20110525125752.GB3467@dumpdata.com>
+ <dfd8bfd19ba1fb77d6448bff97123e13@admin.gogi.tv>
+ <20110527155507.GB11273@dumpdata.com>
+ <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv>
+ <20110531134519.GC14641@dumpdata.com>
+ <59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv>
 MIME-Version: 1.0
-In-Reply-To: <20110531154012.GB30353@elte.hu>
-References: <cover.1306851090.git.luto@mit.edu> <75a00aee647302e22c86a5c5fac0478b9776481a.1306851090.git.luto@mit.edu>
- <20110531154012.GB30353@elte.hu>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 31 May 2011 11:56:30 -0400
-X-Google-Sender-Auth: KgdRadlrhUcqZg2-9hBuCqa0zMg
-Message-ID: <BANLkTimGAtCPuvwvKfD6TLcabVzqKZhfGg@mail.gmail.com>
-Subject: Re: [PATCH v4 09/10] x86-64: Randomize int 0xcc magic al values at boot
-To: Ingo Molnar <mingo@elte.hu>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4DE51119.0125:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 11:40 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Andy Lutomirski <luto@MIT.EDU> wrote:
->
->> This is not a security feature.  It's to prevent the int 0xcc
->> sequence from becoming ABI.
->
-> Hm, what kind of ABI reliance could be built on it?
+On Tue, May 31, 2011 at 04:34:33PM +0100, Daniel Haid wrote:
+> >Noo.. It does, but the normal assumption of 'phys_to_virt' ==
+> >'phys_to_bus' is
+> >not valid anymore. Think of a buffer (swiotlb) which has a pool
+> >of pages and when a PCI device wants a page, it hands one out. It
+> >also has
+> >other functionality such as 'mapping' of an already allocated
+> >page. If the
+> >PCI device asks the IOMMU (swiotlb) to map a page (and if you have
+> >'swiotlb=force'
+> >the page provided has been allocated above 4GB and the device can
+> >only handle
+> >up to 32-bit),
+> 
+> Does the radeon driver allocate without DMA32, possibly above 4GB, ...
 
-See:
+On some pages, yes.
+> 
+> >then swiotlb gives out a page from its own pool. You now have
+> >two addresses: the one from the PCI pool (swiotlb) and the one you
+> >already
+> >allocated.
+> 
+> ... or does it allocate under 4GB but nevertheless get a page from
+> the swiotlb pool?
 
-http://lkml.kernel.org/r/<BANLkTi=zxA3xzc0pR14rqwaOUXUAyF__MQ%40mail.gmail.com>
+Only if the swiotlb is turned on and if the dma_mask is 32-bit.
+Or if the swiotlb=force is set, then _every_ DMA operation goes
+throught the swiotlb page pool.
 
-I was surprised, too.
+> 
+> >You are suppose to program your PCI card to read/write data to the
+> >page provided from the IOMMU (so the swiotlb), which means that it
+> >won't
+> >write to the page you had allocated. Hence there are a calls, such as
+> >'sync_page'..
+> >which will copy the contents from the swiotlb page to the one you had
+> >allocated
+> >(or vice-versa). This is called 'bounce buffer'.
+> >
+> >The radeon (and nouveau) don't have the code to call the
+> >'sync_page', and
+> >you wouldn't really want to do so - as it slows down the
+> >performance of the
+> >machine. There exists another mechanism which is to allocate the
+> >pages
+> >at the start, and not do mapping later one.
+> 
+> Why can the radeon not simply allocate addresses under 4GB and not
+> request
+> adresses from the iommu at all?
 
->
->> +static void __init mangle_vsyscall_movb(void *mapping,
->> +                                     unsigned long movb_addr, u8 initial)
->> +{
->> +     u8 *imm8;
->> +     BUG_ON(movb_addr >= 4095);
->
-> Please put newlines after local variable definitions.
+It does on some. But not on all. It needs to go through
+the PCI API to work with the graphic card and you need to map the
+pages to the IOMMU.
 
-Yep.
+> 
+> I assume that if you request a page from the IOMMU, you are required
+> to do
+> these sync_page calls (and that they get optimized away with a
+> hardware IOMMU?).
 
->
->>  static int __init vsyscall_init(void)
->>  {
->> +     extern char __vsyscall_0;
->
-> Please don't put extern definitions in the middle of a .c file - if
-> then it should be in a .h file. (even if only a single function uses
-> it)
+Sure.. but not all drivers do it.
+> 
+> So if the radeon uses the IOMMU but does not call sync_page even if
+> required to
+> the code seems to be broken. If this is indeed the case would it not
+> be possible to
+> simply add the sync_page calls for now (and thus fix the code), if
+> it is not
+> difficult, and implement the method with more performance later?
 
-I thought the convention (and existing practice in vsyscall_64.c) was
-that if the extern reference is to a magic linker symbol then it goes
-in the function that uses it.  But I can find it a header file.
-
->
->> +     /*
->> +      * Randomize the magic al values for int 0xcc invocation.  This
->> +      * isn't really a security feature; it's to make sure that
->> +      * dynamic binary instrumentation tools don't start to think
->> +      * that the int 0xcc magic incantation is ABI.
->> +      */
->> +     vsyscall_nr_offset = get_random_int() % 3;
->> +     vsyscall_page = pfn_to_page(__pa_symbol(&__vsyscall_0) >> PAGE_SHIFT);
->> +     mapping = kmap_atomic(vsyscall_page);
->> +     /* It's easier to hardcode the addresses -- they're ABI. */
->> +     mangle_vsyscall_movb(mapping, 0, 0xcc);
->
-> what about filling it with zeroes?
-
-Fill what with zeroes?  I'm just patching one byte here.
-
->
->> +#ifndef CONFIG_UNSAFE_VSYSCALLS
->> +     mangle_vsyscall_movb(mapping, 1024, 0xce);
->> +#endif
->> +     mangle_vsyscall_movb(mapping, 2048, 0xf0);
->
-> Dunno, this all looks rather ugly.
-
-Agreed.  Better ideas are welcome.
-
-We could scrap int 0xcc entirely and emulate on page fault, but that
-is slower and has other problems (like breaking anything that thinks
-it can look at a call target in a binary and dereference that
-address).
-
-Here's a possibly dumb/evil idea:
-
-Put real syscalls in the vsyscall page but mark the page NX.  Then
-emulate the vsyscalls on the PF_INSTR fault when userspace jumps to
-the correct address but send SIGSEGV for the wrong address.
-
-Down side: it's even more complexity for the same silly case.
-
---Andy
-
->
-> Thanks,
->
->        Ingo
->
+Why not fix it right the first time?
