@@ -1,81 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab1EaJWl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 05:22:41 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1932 "EHLO MMS3.broadcom.com"
+	id S1758502Ab1EaJW2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 05:22:28 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:1931 "EHLO MMS3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756421Ab1EaJW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755721Ab1EaJW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 May 2011 05:22:26 -0400
 X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
 From: "Arend van Spriel" <arend@broadcom.com>
 To: linville@tuxdriver.com
 cc: "Arend van Spriel" <arend@broadcom.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, "Dan Carpenter" <error27@gmail.com>,
-        "George Spelvin" <linux@horizon.com>,
-        "Randy Dunlap" <rdunlap@xenotime.net>
-Subject: [PATCH 1/2] lib: crc8: add new library module providing crc8
- algorithm
-Date: Tue, 31 May 2011 11:22:15 +0200
-Message-ID: <1306833736-8143-2-git-send-email-arend@broadcom.com>
+        linux-wireless@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "Dan Carpenter" <error27@gmail.com>,
+        "Randy Dunlap" <rdunlap@xenotime.net>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>
+Subject: [PATCH 2/2] lib: cordic: add library module providing cordic
+ angle calculation
+Date: Tue, 31 May 2011 11:22:16 +0200
+Message-ID: <1306833736-8143-3-git-send-email-arend@broadcom.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1306833736-8143-1-git-send-email-arend@broadcom.com>
 References: <1306833736-8143-1-git-send-email-arend@broadcom.com>
 MIME-Version: 1.0
-X-WSS-ID: 61FA6BBA4NS13843201-01-01
+X-WSS-ID: 61FA6BBA4NS13843201-02-01
 Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The brcm80211 driver in staging tree uses a crc8 function. Based on
-feedback from John Linville to move this to lib directory, the linux
-source has been searched. Although there is currently only one other
-kernel driver using this algorithm (ie. drivers/ssb) we are providing
-this as a library function for others to use.
+The brcm80211 driver in the staging tree has a cordic function to
+determine cosine and sine for a given angle. Feedback received from
+John Linville suggested that these kind of functions should be made
+available to others as a library function in the kernel tree. The
+b43 driver also has a cordic angle calculation implemented.
 
 V1:
-- functionality taken from brcm80211 utility function as is.
-- documented the crc8 header file using kernel-doc syntax.
-- compilation verified in-kernel and as module for x86, x86_64, arm, and mips.
+- code taken from brcm80211 driver and added kernel-doc comments.
+- code compiled and tested for x86 architecture using brcm80211 driver.
+- code compiled for x86_64, ARM, and MIPS architectures.
 
 V2:
-- ran checkpatch after sending V1 (sorry for that mortal sin) so fixed that.
-
-V3:
-- added function crc8_create().
-- crc8_create() takes polynomial and bit direction as parameters.
-
-V4:
-- exported bit direction specific functions for crc table creation.
-- remove bit direction enumeration as it is no longer needed.
-
-V5:
-- fixed minor comment from Randy Dunlap
+- fixed code based on comments from Randy Dunlap and Larry Finger.
 
 Cc: linux-kernel@vger.kernel.org
 Cc: linux-wireless@vger.kernel.org
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Dan Carpenter <error27@gmail.com>
-Cc: George Spelvin <linux@horizon.com>
 Cc: Randy Dunlap <rdunlap@xenotime.net>
-Reviewed-by: Henry Ptasinski <henryp@broadcom.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
 Reviewed-by: Roland Vossen <rvossen@broadcom.com>
-Reviewed-by: "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
+Reviewed-by: Henry Ptasinski <henryp@broadcom.com>
+Reviewed-by: Franky (Zhenhui) Lin <frankyl@broadcom.com>
 Signed-off-by: Arend van Spriel <arend@broadcom.com>
 ---
- include/linux/crc8.h |  101 ++++++++++++++++++++++++++++++++++++++++++++++++++
- lib/Kconfig          |    7 +++
- lib/Makefile         |    1 +
- lib/crc8.c           |   86 ++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 195 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/crc8.h
- create mode 100644 lib/crc8.c
+ include/linux/cordic.h                             |   48 +++++++++
+ lib/Kconfig                                        |    7 ++
+ lib/Makefile                                       |    2 +
+ lib/cordic.c                                       |  101 ++++++++++++++++++++
+ 4 files changed, 158 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/cordic.h
+ create mode 100644 lib/cordic.c
 
-diff --git a/include/linux/crc8.h b/include/linux/crc8.h
+diff --git a/include/linux/cordic.h b/include/linux/cordic.h
 new file mode 100644
-index 0000000..13c8dab
+index 0000000..f932093
 --- /dev/null
-+++ b/include/linux/crc8.h
++++ b/include/linux/cordic.h
+@@ -0,0 +1,48 @@
++/*
++ * Copyright (c) 2011 Broadcom Corporation
++ *
++ * Permission to use, copy, modify, and/or distribute this software for any
++ * purpose with or without fee is hereby granted, provided that the above
++ * copyright notice and this permission notice appear in all copies.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
++ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
++ * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
++ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
++ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
++ * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
++ */
++#ifndef __CORDIC_H_
++#define __CORDIC_H_
++
++#include <linux/types.h>
++
++/**
++ * struct cordic_iq - i/q coordinate.
++ *
++ * @i: real part of coordinate (in phase).
++ * @q: imaginary part of coordinate (quadrature).
++ */
++struct cordic_iq {
++	s32 i;
++	s32 q;
++};
++
++/**
++ * cordic_calc_iq() - calculates the i/q coordinate for given angle.
++ *
++ * @theta: angle in degrees for which i/q coordinate is to be calculated.
++ * @coord: function output parameter holding the i/q coordinate.
++ *
++ * The function calculates the i/q coordinate for a given angle using
++ * cordic algorithm. The coordinate consists of a real (i) and an
++ * imaginary (q) part. The real part is essentially the cosine of the
++ * angle and the imaginary part is the sine of the angle. The returned
++ * values are scaled by 2^16 for precision. The range for theta is
++ * for -180 degrees to +180 degrees. Passed values outside this range are
++ * converted before doing the actual calculation.
++ */
++struct cordic_iq cordic_calc_iq(s32 theta);
++
++#endif /* __CORDIC_H_ */
+diff --git a/lib/Kconfig b/lib/Kconfig
+index ff9e5a3..5c70204 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -279,4 +279,11 @@ config AVERAGE
+ 
+ 	  If unsure, say N.
+ 
++config CORDIC
++	tristate "Cordic function"
++	help
++	  The option provides arithmetic function using cordic algorithm
++	  so its calculations are in fixed point. Modules can select this
++	  when they require this function. Module will be called cordic.
++
+ endmenu
+diff --git a/lib/Makefile b/lib/Makefile
+index 704959d..9e3c1b0 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -117,6 +117,8 @@ obj-$(CONFIG_AVERAGE) += average.o
+ 
+ obj-$(CONFIG_CPU_RMAP) += cpu_rmap.o
+ 
++obj-$(CONFIG_CORDIC) += cordic.o
++
+ hostprogs-y	:= gen_crc32table
+ clean-files	:= crc32table.h
+ 
+diff --git a/lib/cordic.c b/lib/cordic.c
+new file mode 100644
+index 0000000..aa27a88
+--- /dev/null
++++ b/lib/cordic.c
 @@ -0,0 +1,101 @@
 +/*
 + * Copyright (c) 2011 Broadcom Corporation
@@ -92,212 +167,90 @@ index 0000000..13c8dab
 + * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 + * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 + */
-+#ifndef __CRC8_H_
-+#define __CRC8_H_
-+
-+#include <linux/types.h>
-+
-+/* see usage of this value in crc8() description */
-+#define CRC8_INIT_VALUE		0xFF
-+
-+/*
-+ * Return value of crc8() indicating valid message+crc. This is true
-+ * if a CRC is inverted before transmission. The CRC computed over the
-+ * whole received bitstream is _table[x], where x is the bit pattern
-+ * of the modification (almost always 0xff).
-+ */
-+#define CRC8_GOOD_VALUE(_table)	(_table[0xFF])
-+
-+/* required table size for crc8 algorithm */
-+#define CRC8_TABLE_SIZE			256
-+
-+/* helper macro assuring right table size is used */
-+#define DECLARE_CRC8_TABLE(_table) \
-+	static u8 _table[CRC8_TABLE_SIZE]
-+
-+/**
-+ * crc8_populate_lsb - fill crc table for given polynomial in regular bit order.
-+ *
-+ * @table:	table to be filled.
-+ * @polynomial:	polynomial for which table is to be filled.
-+ *
-+ * This function fills the provided table according the polynomial provided for
-+ * regular bit order (lsb first). Polynomials in CRC algorithms are typically
-+ * represented as shown below.
-+ *
-+ *	poly = x^8 + x^7 + x^6 + x^4 + x^2 + 1
-+ *
-+ * For lsb first direction x^7 maps to the lsb. So the polynomial is as below.
-+ *
-+ * - lsb first: poly = 10101011(1) = 0xAB
-+ */
-+void crc8_populate_lsb(u8 table[CRC8_TABLE_SIZE], u8 polynomial);
-+
-+/**
-+ * crc8_populate_msb - fill crc table for given polynomial in reverse bit order.
-+ *
-+ * @table:	table to be filled.
-+ * @polynomial:	polynomial for which table is to be filled.
-+ *
-+ * This function fills the provided table according the polynomial provided for
-+ * reverse bit order (msb first). Polynomials in CRC algorithms are typically
-+ * represented as shown below.
-+ *
-+ *	poly = x^8 + x^7 + x^6 + x^4 + x^2 + 1
-+ *
-+ * For msb first direction x^7 maps to the msb. So the polynomial is as below.
-+ *
-+ * - msb first: poly = (1)11010101 = 0xD5
-+ */
-+void crc8_populate_msb(u8 table[CRC8_TABLE_SIZE], u8 polynomial);
-+
-+/**
-+ * crc8() - calculate a crc8 over the given input data.
-+ *
-+ * @table:	crc table used for calculation.
-+ * @pdata:	pointer to data buffer.
-+ * @nbytes:	number of bytes in data buffer.
-+ * @crc:	previous returned crc8 value.
-+ *
-+ * The CRC8 is calculated using the polynomial given in crc8_populate_msb()
-+ * or crc8_populate_lsb().
-+ *
-+ * The caller provides the initial value (either %CRC8_INIT_VALUE
-+ * or the previous returned value) to allow for processing of
-+ * discontiguous blocks of data.  When generating the CRC the
-+ * caller is responsible for complementing the final return value
-+ * and inserting it into the byte stream.  When validating a byte
-+ * stream (including CRC8), a final return value of %CRC8_GOOD_VALUE
-+ * indicates the byte stream data can be considered valid.
-+ *
-+ * Reference:
-+ * "A Painless Guide to CRC Error Detection Algorithms", ver 3, Aug 1993
-+ * Williams, Ross N., ross<at>ross.net
-+ * (see URL http://www.ross.net/crc/download/crc_v3.txt).
-+ */
-+u8 crc8(const u8 table[CRC8_TABLE_SIZE], u8 *pdata, size_t nbytes, u8 crc);
-+
-+#endif /* __CRC8_H_ */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 9c10e38..ff9e5a3 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -89,6 +89,13 @@ config LIBCRC32C
- 	  require M here.  See Castagnoli93.
- 	  Module will be libcrc32c.
- 
-+config CRC8
-+	tristate "CRC8 function"
-+	help
-+	  This option provides CRC8 function. Drivers may select this
-+	  when they need to do cyclic redundancy check according CRC8
-+	  algorithm. Module will be called crc8.
-+
- config AUDIT_GENERIC
- 	bool
- 	depends on AUDIT && !AUDIT_ARCH
-diff --git a/lib/Makefile b/lib/Makefile
-index 4b49a24..704959d 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -65,6 +65,7 @@ obj-$(CONFIG_CRC_ITU_T)	+= crc-itu-t.o
- obj-$(CONFIG_CRC32)	+= crc32.o
- obj-$(CONFIG_CRC7)	+= crc7.o
- obj-$(CONFIG_LIBCRC32C)	+= libcrc32c.o
-+obj-$(CONFIG_CRC8)	+= crc8.o
- obj-$(CONFIG_GENERIC_ALLOCATOR) += genalloc.o
- 
- obj-$(CONFIG_ZLIB_INFLATE) += zlib_inflate/
-diff --git a/lib/crc8.c b/lib/crc8.c
-new file mode 100644
-index 0000000..87b59ca
---- /dev/null
-+++ b/lib/crc8.c
-@@ -0,0 +1,86 @@
-+/*
-+ * Copyright (c) 2011 Broadcom Corporation
-+ *
-+ * Permission to use, copy, modify, and/or distribute this software for any
-+ * purpose with or without fee is hereby granted, provided that the above
-+ * copyright notice and this permission notice appear in all copies.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-+ * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
-+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-+ * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-+ */
-+
-+#define pr_fmt(fmt)		KBUILD_MODNAME ": " fmt
-+
 +#include <linux/module.h>
-+#include <linux/crc8.h>
-+#include <linux/printk.h>
++#include <linux/cordic.h>
++
++#define CORDIC_ANGLE_GEN	39797
++#define CORDIC_PRECISION_SHIFT	16
++#define	CORDIC_NUM_ITER		(CORDIC_PRECISION_SHIFT + 2)
++
++#define	FIXED(X)	((s32)((X) << CORDIC_PRECISION_SHIFT))
++#define	FLOAT(X)	(((X) >= 0) \
++		? ((((X) >> (CORDIC_PRECISION_SHIFT - 1)) + 1) >> 1) \
++		: -((((-(X)) >> (CORDIC_PRECISION_SHIFT - 1)) + 1) >> 1))
++
++static const s32 arctan_table[] = {
++	2949120,
++	1740967,
++	919879,
++	466945,
++	234379,
++	117304,
++	58666,
++	29335,
++	14668,
++	7334,
++	3667,
++	1833,
++	917,
++	458,
++	229,
++	115,
++	57,
++	29
++};
 +
 +/*
-+ * crc8_populate_msb - fill crc table for given polynomial in reverse bit order.
++ * cordic_calc_iq() - calculates the i/q coordinate for given angle
 + *
-+ * table:	table to be filled.
-+ * polynomial:	polynomial for which table is to be filled.
++ * theta: angle in degrees for which i/q coordinate is to be calculated
++ * coord: function output parameter holding the i/q coordinate
 + */
-+void crc8_populate_msb(u8 table[CRC8_TABLE_SIZE], u8 polynomial)
++struct cordic_iq cordic_calc_iq(s32 theta)
 +{
-+	int i, j;
-+	const u8 msbit = 0x80;
-+	u8 t = msbit;
++	struct cordic_iq coord;
++	s32 angle, valtmp;
++	unsigned iter;
++	int signx = 1;
++	int signtheta;
 +
-+	table[0] = 0;
++	coord.i = CORDIC_ANGLE_GEN;
++	coord.q = 0;
++	angle = 0;
 +
-+	for (i = 1; i < CRC8_TABLE_SIZE; i *= 2) {
-+		t = (t << 1) ^ (t & msbit ? polynomial : 0);
-+		for (j = 0; j < i; j++)
-+			table[i+j] = table[j] ^ t;
++	theta = FIXED(theta);
++	signtheta = (theta < 0) ? -1 : 1;
++	theta = ((theta + FIXED(180) * signtheta) % FIXED(360)) -
++		FIXED(180) * signtheta;
++
++	if (FLOAT(theta) > 90) {
++		theta -= FIXED(180);
++		signx = -1;
++	} else if (FLOAT(theta) < -90) {
++		theta += FIXED(180);
++		signx = -1;
 +	}
-+}
-+EXPORT_SYMBOL(crc8_populate_msb);
 +
-+/*
-+ * crc8_populate_lsb - fill crc table for given polynomial in regular bit order.
-+ *
-+ * table:	table to be filled.
-+ * polynomial:	polynomial for which table is to be filled.
-+ */
-+void crc8_populate_lsb(u8 table[CRC8_TABLE_SIZE], u8 polynomial)
-+{
-+	int i, j;
-+	u8 t = 1;
-+
-+	table[0] = 0;
-+
-+	for (i = (CRC8_TABLE_SIZE >> 1); i; i >>= 1) {
-+		t = (t >> 1) ^ (t & 1 ? polynomial : 0);
-+		for (j = 0; j < CRC8_TABLE_SIZE; j += 2*i)
-+			table[i+j] = table[j] ^ t;
++	for (iter = 0; iter < CORDIC_NUM_ITER; iter++) {
++		if (theta > angle) {
++			valtmp = coord.i - (coord.q >> iter);
++			coord.q += (coord.i >> iter);
++			angle += arctan_table[iter];
++		} else {
++			valtmp = coord.i + (coord.q >> iter);
++			coord.q -= (coord.i >> iter);
++			angle -= arctan_table[iter];
++		}
++		coord.i = valtmp;
 +	}
++
++	coord.i *= signx;
++	coord.q *= signx;
++	return coord;
 +}
-+EXPORT_SYMBOL(crc8_populate_lsb);
++EXPORT_SYMBOL(cordic_calc_iq);
 +
-+/*
-+ * crc8 - calculate a crc8 over the given input data.
-+ *
-+ * table: crc table used for calculation.
-+ * pdata: pointer to data buffer.
-+ * nbytes: number of bytes in data buffer.
-+ * crc:	previous returned crc8 value.
-+ */
-+u8 crc8(const u8 table[CRC8_TABLE_SIZE], u8 *pdata, size_t nbytes, u8 crc)
-+{
-+	/* loop over the buffer data */
-+	while (nbytes-- > 0)
-+		crc = table[(crc ^ *pdata++) & 0xff];
-+
-+	return crc;
-+}
-+EXPORT_SYMBOL(crc8);
-+
-+MODULE_DESCRIPTION("CRC8 (by Williams, Ross N.) function");
++MODULE_DESCRIPTION("Cordic functions");
 +MODULE_AUTHOR("Broadcom Corporation");
 +MODULE_LICENSE("Dual BSD/GPL");
 -- 
