@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757182Ab1EaAxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 20:53:13 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49775 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318Ab1EaAxM (ORCPT
+	id S1757644Ab1EaAyH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 20:54:07 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:53133 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab1EaAyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 20:53:12 -0400
-Date: Mon, 30 May 2011 17:53:15 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca, arnd@arndb.de,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org
-Subject: Re: [PATCH 1/4] gpio: gpio-mxc: add gpio driver for Freescale MXC
- architecture
-Message-ID: <20110531005315.GC3411@quad.lixom.net>
-References: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org>
- <1306767139-24763-2-git-send-email-shawn.guo@linaro.org>
+	Mon, 30 May 2011 20:54:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=GnC0Q65fswuo9di8QFvYw6RCCxoL5DZuBjD1tjxNgUdDBiPjwtW4d5+3xjPpiduoGa
+         zUZ2nd7K0uGEwduN1Adw==
+Date: Mon, 30 May 2011 17:54:00 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 13/14] mm: pincer in truncate_inode_pages_range
+In-Reply-To: <alpine.LSU.2.00.1105301726180.5482@sister.anvils>
+Message-ID: <alpine.LSU.2.00.1105301752410.5482@sister.anvils>
+References: <alpine.LSU.2.00.1105301726180.5482@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306767139-24763-2-git-send-email-shawn.guo@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+truncate_inode_pages_range()'s final loop has a nice pincer property,
+bringing start and end together, squeezing out the last pages.  But
+the range handling missed out on that, just sliding up the range,
+perhaps letting pages come in behind it.  Add one more test to give
+it the same pincer effect.
 
-On Mon, May 30, 2011 at 10:52:16PM +0800, Shawn Guo wrote:
-> Add gpio-mxc driver by copying arch/arm/plat-mxc/gpio.c into
-> drivers/gpio with the following changes.
-> 
->  * Use readl/writel to replace mach-specific accessors
->    __raw_readl/__raw_writel
-> 
->  * Migrate to platform driver by adding .probe function
-> 
->  * Add a list to save all mx2 ports references, so that
->    mx2_gpio_irq_handler can walk through all interrupt status
->    registers
-> 
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> ---
->  arch/arm/plat-mxc/include/mach/gpio.h |    2 +
->  drivers/gpio/Makefile                 |    1 +
->  drivers/gpio/gpio-mxc.c               |  423 +++++++++++++++++++++++++++++++++
->  3 files changed, 426 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/gpio/gpio-mxc.c
-> 
-> diff --git a/arch/arm/plat-mxc/include/mach/gpio.h b/arch/arm/plat-mxc/include/mach/gpio.h
-> index a2747f1..87bd4ef 100644
-> --- a/arch/arm/plat-mxc/include/mach/gpio.h
-> +++ b/arch/arm/plat-mxc/include/mach/gpio.h
-> @@ -37,7 +37,9 @@
->  #define irq_to_gpio(irq)	((irq) - MXC_GPIO_IRQ_START)
->  
->  struct mxc_gpio_port {
-> +	struct list_head node;
->  	void __iomem *base;
-> +	int id;
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+ mm/truncate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-What's id for? You assign it based on pdev->id in the probe function but
-never use it anywhere else.
-
-
--Olof
+--- linux.orig/mm/truncate.c	2011-05-30 15:01:01.660093602 -0700
++++ linux/mm/truncate.c	2011-05-30 15:03:28.688822856 -0700
+@@ -269,7 +269,7 @@ void truncate_inode_pages_range(struct a
+ 			index = start;
+ 			continue;
+ 		}
+-		if (pvec.pages[0]->index > end) {
++		if (index == start && pvec.pages[0]->index > end) {
+ 			pagevec_release(&pvec);
+ 			break;
+ 		}
