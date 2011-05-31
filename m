@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab1EaNQe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 09:16:34 -0400
-Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:58630 "EHLO
+	id S1754264Ab1EaNQl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 09:16:41 -0400
+Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:52418 "EHLO
 	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753516Ab1EaNQc (ORCPT
+	by vger.kernel.org with ESMTP id S1753955Ab1EaNQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 09:16:32 -0400
-X-AuditID: 1209190d-b7bdeae0000004f8-4d-4de4e9ef8617
+	Tue, 31 May 2011 09:16:38 -0400
+X-AuditID: 1209190d-b7bdeae0000004f8-69-4de4e9f56aa8
 From: Andy Lutomirski <luto@MIT.EDU>
 To: Ingo Molnar <mingo@elte.hu>, x86@kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
@@ -19,54 +19,157 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         richard -rw- weinberger <richard.weinberger@gmail.com>,
         Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
         Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v3 01/10] x86-64: Fix alignment of jiffies variable
-Date: Tue, 31 May 2011 09:15:55 -0400
-Message-Id: <4728c7db2fc6c5029434f75f956a4122451db744.1306847455.git.luto@mit.edu>
+Subject: [PATCH v3 02/10] x86-64: Document some of entry_64.S
+Date: Tue, 31 May 2011 09:15:56 -0400
+Message-Id: <52b45172573dca297d878398560d897ef571ac73.1306847455.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1306847455.git.luto@mit.edu>
 References: <cover.1306847455.git.luto@mit.edu>
 In-Reply-To: <cover.1306847455.git.luto@mit.edu>
 References: <cover.1306847455.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHKsWRmVeSWpSXmKPExsUixCmqrfv+5RNfg+btXBZz1q9hs+i7cpTd
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCKsWRmVeSWpSXmKPExsUixG6novv15RNfg45/yhZz1q9hs+i7cpTd
 	4si17+wWs67xWnze8I/N4sCvp2wW769uZ7O4vGsOm8WT5uuMFlsuNbNafJi4gc1i86apzBaP
 	+t6yW/zY8JjVgc/je2sfi8exM4cZPW61/WH2mL/zI6PHzll32T02r9Dy+P/yCJvHplWdbB7v
-	zp1j9zgx4zeLx/Ezzh6fN8kF8ERx2aSk5mSWpRbp2yVwZfw6cIm94B1rxfaLK5gbGP+wdDFy
-	ckgImEhMfbyVFcIWk7hwbz1bFyMXh5DAPkaJzp3fGUESQgIbGCWWHauFSDxjknj3fj8TSIJN
-	QEWiY+kDIJuDQ0RAX+LqZ0aQGmaBSSwSh/+eBtsgLOAssfDrSmYQm0VAVeLi/2NgcV6BIInO
-	6TPYITYrSFy5Mg8szilgING8cg0bxGJ9iftPrjDjEp/AKLCAkWEVo2xKbpVubmJmTnFqsm5x
-	cmJeXmqRrpFebmaJXmpK6SZGcNRI8u5gfHdQ6RCjAAejEg8v6/7HvkKsiWXFlbmHGCU5mJRE
-	eWWAMSfEl5SfUpmRWJwRX1Sak1p8iFGCg1lJhPcbH1CONyWxsiq1KB8mJc3BoiTOO1NS3VdI
-	ID2xJDU7NbUgtQgmK8PBoSTBmwIyVLAoNT21Ii0zpwQhzcTBCTKcB2h4KEgNb3FBYm5xZjpE
-	/hSjLkfj2h0HGYVY8vLzUqXEebNAigRAijJK8+DmwJLdK0ZxoLeEeb1BqniAiRJu0iugJUxA
-	S3rfPQRZUpKIkJJqYLSTKiyye1y9SCjBfsZJZ+dGuV1d9xVtRHbIlxa1NbIzbNvSfio9xprL
-	SnzHy6vex2Xa2JR9zrBYW1aX//jltvhY/oZXPrz9OwI+XJHieLzqVobNzik/tfu5c80KTzC4
-	90UEz9Qpvh385MDjtfYmlsu7by3OkZTMNc8t/Rl48n7o1ttBsXZPlFiKMxINtZiLihMBSqLt
-	y1EDAAA=
+	zp1j9zgx4zeLx/Ezzh6fN8kF8ERx2aSk5mSWpRbp2yVwZVz4+omp4KxaxccNy1kbGNfJdzFy
+	ckgImEhMv76TCcIWk7hwbz1bFyMXh5DAPkaJv5uXMUE4Gxgldp+ZyQLhPGOSmHrlIiNIC5uA
+	ikTH0gdAVRwcIgL6Elc/M4LUMAtMYpE4/Pc0C0iNsICtxOsHX5lBbBYBVYl9B5cxgtTzCgRJ
+	XJ3oBbFZQeLKlXlg5ZwCBhLNK9ewgdhCQCPvP7nCjEt8AqPAAkaGVYyyKblVurmJmTnFqcm6
+	xcmJeXmpRbpGermZJXqpKaWbGEFRwynJu4Px3UGlQ4wCHIxKPLys+x/7CrEmlhVX5h5ilORg
+	UhLlPQuMOSG+pPyUyozE4oz4otKc1OJDjBIczEoivN/4gHK8KYmVValF+TApaQ4WJXHemZLq
+	vkIC6YklqdmpqQWpRTBZGQ4OJQneGSBDBYtS01Mr0jJzShDSTBycIMN5gIafBKnhLS5IzC3O
+	TIfIn2I05ri+dutBRo7GtTsOMgqx5OXnpUqJ8y4EKRUAKc0ozYObBkt8rxjFgZ4T5u0HqeIB
+	Jk24ea+AVjEBrep99xBkVUkiQkqqgdH9+IOO0g9L20Iuna7dkxXitTlu0ubbHVuYHsYfS7M4
+	HRTU+8Hafpf6xb6Lr3N/bantrrhk9n+eZklik2riXI0rq1b8WaJrwfa0KOGKXvX//HPLm10+
+	dlrUpHBOLXYVvBPz/2rDI641ahfuqiXILzT4J9NjPF25TWIJ013v0G9TNp99YrJ+/Q4lluKM
+	REMt5qLiRAAB9FGKVwMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's declared __attribute__((aligned(16)) but it's explicitly not
-aligned.  This is probably harmless but it's a bit embarrassing.
-
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/include/asm/vvar.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ Documentation/x86/entry_64.txt |   98 ++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/entry_64.S     |    2 +
+ 2 files changed, 100 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/x86/entry_64.txt
 
-diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
-index 341b355..a4eaca4 100644
---- a/arch/x86/include/asm/vvar.h
-+++ b/arch/x86/include/asm/vvar.h
-@@ -45,7 +45,7 @@
- /* DECLARE_VVAR(offset, type, name) */
- 
- DECLARE_VVAR(0, volatile unsigned long, jiffies)
--DECLARE_VVAR(8, int, vgetcpu_mode)
-+DECLARE_VVAR(16, int, vgetcpu_mode)
- DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
- 
- #undef DECLARE_VVAR
+diff --git a/Documentation/x86/entry_64.txt b/Documentation/x86/entry_64.txt
+new file mode 100644
+index 0000000..7869f14
+--- /dev/null
++++ b/Documentation/x86/entry_64.txt
+@@ -0,0 +1,98 @@
++This file documents some of the kernel entries in
++arch/x86/kernel/entry_64.S.  A lot of this explanation is adapted from
++an email from Ingo Molnar:
++
++http://lkml.kernel.org/r/<20110529191055.GC9835%40elte.hu>
++
++The x86 architecture has quite a few different ways to jump into
++kernel code.  Most of these entry points are registered in
++arch/x86/kernel/traps.c and implemented in arch/x86/kernel/entry_64.S
++and arch/x86/ia32/ia32entry.S.
++
++The IDT vector assignments are listed in arch/x86/include/irq_vectors.h.
++
++Some of these entries are:
++
++ - system_call: syscall instruction from 64-bit code.
++
++ - ia32_syscall: int 0x80 from 32-bit or 64-bit code; compat syscall
++   either way.
++
++ - ia32_syscall, ia32_sysenter: syscall and sysenter from 32-bit
++   code
++
++ - interrupt: An array of entries.  Every IDT vector that doesn't
++   explicitly point somewhere else gets set to the corresponding
++   value in interrupts.  These point to a whole array of
++   magically-generated functions that make their way to do_IRQ with
++   the interrupt number as a parameter.
++
++ - emulate_vsyscall: int 0xcc, a special non-ABI entry used by
++   vsyscall emulation.
++
++ - APIC interrupts: Various special-purpose interrupts for things
++   like TLB shootdown.
++
++ - Architecturally-defined exceptions like divide_error.
++
++There are a few complexities here.  The different x86-64 entries
++have different calling conventions.  The syscall and sysenter
++instructions have their own peculiar calling conventions.  Some of
++the IDT entries push an error code onto the stack; others don't.
++IDT entries using the IST alternative stack mechanism need their own
++magic to get the stack frames right.  (You can find some
++documentation in the AMD APM, Volume 2, Chapter 8 and the Intel SDM,
++Volume 3, Chapter 6.)
++
++Dealing with the swapgs instruction is especially tricky.  Swapgs
++toggles whether gs is the kernel gs or the user gs.  The swapgs
++instruction is rather fragile: it must nest perfectly and only in
++single depth, it should only be used if entering from user mode to
++kernel mode and then when returning to user-space, and precisely
++so. If we mess that up even slightly, we crash.
++
++So when we have a secondary entry, already in kernel mode, we *must
++not* use SWAPGS blindly - nor must we forget doing a SWAPGS when it's
++not switched/swapped yet.
++
++Now, there's a secondary complication: there's a cheap way to test
++which mode the CPU is in and an expensive way.
++
++The cheap way is to pick this info off the entry frame on the kernel
++stack, from the CS of the ptregs area of the kernel stack:
++
++	xorl %ebx,%ebx
++	testl $3,CS+8(%rsp)
++	je error_kernelspace
++	SWAPGS
++
++The expensive (paranoid) way is to read back the MSR_GS_BASE value
++(which is what SWAPGS modifies):
++
++	movl $1,%ebx
++	movl $MSR_GS_BASE,%ecx
++	rdmsr
++	testl %edx,%edx
++	js 1f   /* negative -> in kernel */
++	SWAPGS
++	xorl %ebx,%ebx
++1:	ret
++
++and the whole paranoid non-paranoid macro complexity is about whether
++to suffer that RDMSR cost.
++
++If we are at an interrupt or user-trap/gate-alike boundary then we can
++use the faster check: the stack will be a reliable indicator of
++whether SWAPGS was already done: if we see that we are a secondary
++entry interrupting kernel mode execution, then we know that the GS
++base has already been switched. If it says that we interrupted
++user-space execution then we must do the SWAPGS.
++
++But if we are in an NMI/MCE/DEBUG/whatever super-atomic entry context,
++which might have triggered right after a normal entry wrote CS to the
++stack but before we executed SWAPGS, then the only safe way to check
++for GS is the slower method: the RDMSR.
++
++So we try only to mark those entry methods 'paranoid' that absolutely
++need the more expensive check for the GS base - and we generate all
++'normal' entry points with the regular (faster) entry macros.
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 8a445a0..72c4a77 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -9,6 +9,8 @@
+ /*
+  * entry.S contains the system-call and fault low-level handling routines.
+  *
++ * Some of this is documented in Documentation/x86/entry_64.txt
++ *
+  * NOTE: This code handles signal-recognition, which happens every time
+  * after an interrupt and after each system call.
+  *
 -- 
 1.7.5.1
 
