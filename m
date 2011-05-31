@@ -1,91 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab1EaHZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 03:25:10 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52951 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab1EaHZI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 03:25:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ZM4EWhI9LhDFSASdOzSSmvidflfoFILnPXZmbAKmfThu/FMu4bUOas8tmO+nGOa8j0
-         OwjIfeEUuu4EbTyXkPJ6z5H+cojxJKIFkfZZqqYWM91xqtea9KGAyuOiEvDIiHKt1/Fr
-         ngM/k4z+M5EaTYthXLKbfdTu7DNqkZ2QpiqAU=
-MIME-Version: 1.0
-In-Reply-To: <20110531054008.GA1906@mako-laptop>
-References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
-	<BANLkTinsO2=tO_UyzzgeU6LE1fObgq+p1Q@mail.gmail.com>
-	<20110530200329.GA1833@mako-laptop>
-	<alpine.DEB.2.02.1105301545420.5766@asgard.lang.hm>
-	<20110531054008.GA1906@mako-laptop>
-Date: Tue, 31 May 2011 09:25:06 +0200
-X-Google-Sender-Auth: L9IglTwFRo17HRHi3BQ7X_gC8LI
-Message-ID: <BANLkTi=gEDrw1fkByVEhkqhQPAOTQU=R_w@mail.gmail.com>
-Subject: Re: Linux 3.0-rc1
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mariusz Kozlowski <mk@lab.zgora.pl>
-Cc: david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754972Ab1EaH3O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 03:29:14 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:59842 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751324Ab1EaH3M convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 03:29:12 -0400
+From: Xiangliang Yu <yuxiangl@marvell.com>
+To: Greg KH <greg@kroah.com>
+CC: "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jacky Feng <jfeng@marvell.com>
+Date: Tue, 31 May 2011 00:26:45 -0700
+Subject: RE: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
+ coalescing to device 	attributes in sysfs
+Thread-Topic: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
+ coalescing to device 	attributes in sysfs
+Thread-Index: Acwe2P+QYiV1XDJnSieuhsfIw4INfAAiCImw
+Message-ID: <F766E4F80769BD478052FB6533FA745D19FAD84E1E@SC-VEXCH4.marvell.com>
+References: <mvsas-intr-coal>
+ <1306247507-6136-1-git-send-email-yxlraid@gmail.com>
+ <20110526021809.GA22496@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD846E0@SC-VEXCH4.marvell.com>
+ <20110526141430.GD4164@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD848FB@SC-VEXCH4.marvell.com>
+ <20110527073302.GA16178@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD84C40@SC-VEXCH4.marvell.com>
+ <20110530074508.GB7806@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD84CD9@SC-VEXCH4.marvell.com>
+ <20110530144815.GB2689@kroah.com>
+In-Reply-To: <20110530144815.GB2689@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 07:40, Mariusz Kozlowski <mk@lab.zgora.pl> wrote:
-> On Mon, May 30, 2011 at 03:48:49PM -0700, david@lang.hm wrote:
->> >You could consider freezing linux-2.6.git repository and creating new
->> >linux-3.git repository that would serve for a couple of years until
->> >linux-4.git. At the same time development history could be dropped between
->> >trees so that inital clones are lighter. Anyone interested in history
->> >can download idx/pack from linux-2.6.git repo and attach it using gratf
->> >point[1] anyway.
->> >
->> >Pros:
->> >- obvious naming scheme wrt repository contents
->> >- smaller initial clone
->> >- new clean tag namespace
->> >
->> >Cons:
->> >- broken bisection for some time
->> >- impaired log/blame/whatchanged and friends
->>
->> in addition won't there be problems merging in work done on the old
->> tree? (since there would be no common history)
->
-> Everyone would need to restart and probably reapply they changes on top
-> of new tree (because of lack of common history).
->
->> everyone would need to re-clone their repository (and attaching
->> history wouldn't help this)
->>
->> there are probably others.
->>
->> frankly I don't see any real benifits from the Pros you list. the
->> initial clone is already rather small, it probably won't make that
->> big a difference to throw away several years of history.
->
-> linux-2.6.git is all about lots of small changes so size isn't all that
-> big today but there are quite many objects. Using grafts might help
-> decreasing size of repository. I just mentioned it because it is a bit
-> of a revolution time anyway and otherwise current tree will grow for next
-> decade or so.
 
-NAK. I regularly look into full-history-linux as linux-2.6.git doesn't
-have enough
-history for me. Please don't make it worse.
+>Then I would strongly recommend never exporting this value to allow it
+>to be changed at all then.  It doesn't sound worth it.
+OK, Thanks!
+I remove the sysfs file and the modified patch is:
 
-Gr{oetje,eeting}s,
+drivers/scsi/mvsas/mv_64xx.c |   25 ++++++++++++++++++++++++-
+ drivers/scsi/mvsas/mv_94xx.c |   26 +++++++++++++++++++++++++-
+ drivers/scsi/mvsas/mv_init.c |    5 +++++
+ drivers/scsi/mvsas/mv_sas.h  |    2 ++
+ 4 files changed, 56 insertions(+), 2 deletions(-)
 
-                        Geert
+diff --git a/drivers/scsi/mvsas/mv_64xx.c b/drivers/scsi/mvsas/mv_64xx.c
+index 0e13e64..c88b8a7 100644
+--- a/drivers/scsi/mvsas/mv_64xx.c
++++ b/drivers/scsi/mvsas/mv_64xx.c
+@@ -402,7 +402,7 @@ static int __devinit mvs_64xx_init(struct mvs_info *mvi)
+ 	tmp = 0;
+ 	mw32(MVS_INT_COAL, tmp);
+ 
+-	tmp = 0x100;
++	tmp = 0x10000 | interrupt_coalescing;
+ 	mw32(MVS_INT_COAL_TMOUT, tmp);
+ 
+ 	/* ladies and gentlemen, start your engines */
+@@ -758,6 +758,28 @@ void mvs_64xx_fix_dma(dma_addr_t buf_dma, int buf_len, int from, void *prd)
+ }
+ #endif
+ 
++static void mvs_64xx_tune_interrupt(struct mvs_info *mvi, u32 time)
++{
++	void __iomem *regs = mvi->regs;
++	u32 tmp = 0;
++	/* interrupt coalescing may cause missing HW interrput in some case,
++	 * and the max count is 0x1ff, while our max slot is 0x200,
++	 * it will make count 0.
++	 */
++	if (time == 0) {
++		mw32(MVS_INT_COAL, 0);
++		mw32(MVS_INT_COAL_TMOUT, 0x10000);
++	} else {
++		if (MVS_CHIP_SLOT_SZ > 0x1ff)
++			mw32(MVS_INT_COAL, 0x1ff|COAL_EN);
++		else
++			mw32(MVS_INT_COAL, MVS_CHIP_SLOT_SZ|COAL_EN);
++
++		tmp = 0x10000 | time;
++		mw32(MVS_INT_COAL_TMOUT, tmp);
++	}
++}
++
+ const struct mvs_dispatch mvs_64xx_dispatch = {
+ 	"mv64xx",
+ 	mvs_64xx_init,
+@@ -811,6 +833,7 @@ const struct mvs_dispatch mvs_64xx_dispatch = {
+ #ifndef DISABLE_HOTPLUG_DMA_FIX
+ 	mvs_64xx_fix_dma,
+ #endif
++	mvs_64xx_tune_interrupt,
+ 	NULL,
+ };
+ 
+diff --git a/drivers/scsi/mvsas/mv_94xx.c b/drivers/scsi/mvsas/mv_94xx.c
+index 3f2ad93..e589f31 100644
+--- a/drivers/scsi/mvsas/mv_94xx.c
++++ b/drivers/scsi/mvsas/mv_94xx.c
+@@ -475,7 +475,7 @@ static int __devinit mvs_94xx_init(struct mvs_info *mvi)
+ 	tmp = 0;
+ 	mw32(MVS_INT_COAL, tmp);
+ 
+-	tmp = 0x100;
++	tmp = 0x10000 | interrupt_coalescing;
+ 	mw32(MVS_INT_COAL_TMOUT, tmp);
+ 
+ 	/* ladies and gentlemen, start your engines */
+@@ -894,6 +894,29 @@ static void mvs_94xx_clear_srs_irq(struct mvs_info *mvi, u8 reg_set,
+ {
+ }
+ 
++static void mvs_94xx_tune_interrupt(struct mvs_info *mvi, u32 time)
++{
++	void __iomem *regs = mvi->regs;
++	u32 tmp = 0;
++	/* interrupt coalescing may cause missing HW interrput in some case,
++	 * and the max count is 0x1ff, while our max slot is 0x200,
++	 * it will make count 0.
++	 */
++	if (time == 0) {
++		mw32(MVS_INT_COAL, 0);
++		mw32(MVS_INT_COAL_TMOUT, 0x10000);
++	} else {
++		if (MVS_CHIP_SLOT_SZ > 0x1ff)
++			mw32(MVS_INT_COAL, 0x1ff|COAL_EN);
++		else
++			mw32(MVS_INT_COAL, MVS_CHIP_SLOT_SZ|COAL_EN);
++
++		tmp = 0x10000 | time;
++		mw32(MVS_INT_COAL_TMOUT, tmp);
++	}
++
++}
++
+ const struct mvs_dispatch mvs_94xx_dispatch = {
+ 	"mv94xx",
+ 	mvs_94xx_init,
+@@ -947,6 +970,7 @@ const struct mvs_dispatch mvs_94xx_dispatch = {
+ #ifndef DISABLE_HOTPLUG_DMA_FIX
+ 	mvs_94xx_fix_dma,
+ #endif
++	mvs_94xx_tune_interrupt,
+ 	mvs_94xx_non_spec_ncq_error,
+ };
+ 
+diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
+index 9f1cccc..d977684 100644
+--- a/drivers/scsi/mvsas/mv_init.c
++++ b/drivers/scsi/mvsas/mv_init.c
+@@ -34,6 +34,8 @@ MODULE_PARM_DESC(collector, "\n"
+ 	"\tThe mvsas SAS LLDD supports both modes.\n"
+ 	"\tDefault: 1 (Direct Mode).\n");
+ 
++int interrupt_coalescing = 0x80;
++
+ static struct scsi_transport_template *mvs_stt;
+ struct kmem_cache *mvs_task_list_cache;
+ static const struct mvs_chip_info mvs_chips[] = {
+@@ -48,6 +50,8 @@ static const struct mvs_chip_info mvs_chips[] = {
+ 	[chip_1320] =	{ 2, 4, 0x800, 17, 64,  9, &mvs_94xx_dispatch, },
+ };
+ 
++struct device_attribute *mvst_host_attrs[] = { NULL };
++
+ #define SOC_SAS_NUM 2
+ #define SG_MX 64
+ 
+@@ -74,6 +78,7 @@ static struct scsi_host_template mvs_sht = {
+ 	.slave_alloc		= mvs_slave_alloc,
+ 	.target_destroy		= sas_target_destroy,
+ 	.ioctl			= sas_ioctl,
++	.shost_attrs		= mvst_host_attrs,
+ };
+ 
+ static struct sas_domain_function_template mvs_transport_ops = {
+diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
+index 8740b78..fed8495 100644
+--- a/drivers/scsi/mvsas/mv_sas.h
++++ b/drivers/scsi/mvsas/mv_sas.h
+@@ -64,6 +64,7 @@
+ #endif
+ #define MV_MAX_U32			0xffffffff
+ 
++extern int interrupt_coalescing;
+ extern struct mvs_tgt_initiator mvs_tgt;
+ extern struct mvs_info *tgt_mvi;
+ extern const struct mvs_dispatch mvs_64xx_dispatch;
+@@ -170,6 +171,7 @@ struct mvs_dispatch {
+ #ifndef DISABLE_HOTPLUG_DMA_FIX
+ 	void (*dma_fix)(dma_addr_t buf_dma, int buf_len, int from, void *prd);
+ #endif
++	void (*tune_interrupt)(struct mvs_info *mvi, u32 time);
+ 	void (*non_spec_ncq_error)(struct mvs_info *mvi);
+ 
+ };
+-- 
+1.7.4.4
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
