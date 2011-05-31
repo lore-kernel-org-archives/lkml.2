@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956Ab1EaP2P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:28:15 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:63098 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756816Ab1EaP2O (ORCPT
+	id S1757012Ab1EaP2l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 11:28:41 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:58373 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755802Ab1EaP2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:28:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH 2/4] ARM: mxc: migrate mach-mx5 gpio driver to gpio-mxc
-Date: Tue, 31 May 2011 17:27:55 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>, Shawn Guo <shawn.guo@linaro.org>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org
-References: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org> <201105311328.18012.arnd@arndb.de> <20110531151019.GA32275@S2100-06.ap.freescale.net>
-In-Reply-To: <20110531151019.GA32275@S2100-06.ap.freescale.net>
+	Tue, 31 May 2011 11:28:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=eafOqDa15tfiE7wuRlnUcfl36ZsVg7CbADAvz+if7PWBDQ5YU1/XSjfldrGRAfkFeD
+         cTvyPqaNfqYZlmNKwIWoVBDGBhXeLvqOB+Kx0A6D45jGcQm4le6a3/k7wmtEfR9QjCAk
+         9jHTm9RdozKEVSN9w595nixgwqEPqbdaE75hI=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105311727.55985.arnd@arndb.de>
-X-Provags-ID: V02:K0:xuhe3pByZsj5P++YmlkcFC8gjfh/LtDWuZVOwm+medi
- xzAXLsapGxLIzUPJHepapLL1r3JrEVu1Qw6975OA25wDPvj6r7
- CyeIXqed3I9EVLlFS0kph7qGeqtwnJN1D6C4z4EvqPcBqEo6LH
- 2ApiIP1Ld0W39fu0iAMP5RRedopPB/BrpTyr8u1llTt8uiOUdJ
- XfMbHHoDuxirBFIkKkUSw==
+In-Reply-To: <da8dbb76f0cb3762227d8d0a99eaff21@localhost>
+References: <1305715384-81716-1-git-send-email-tsunanet@gmail.com>
+ <20110518.152653.1486764697527722925.davem@davemloft.net> <BANLkTik-6wh8=jb6oMEpJvYC8+KTGGsMsw@mail.gmail.com>
+ <20110518.155200.801089483916944725.davem@davemloft.net> <20110518202025.GC4175@nuttenaction>
+ <BANLkTimtA9BB7g5cOm8c9sGChQjf1P0Q-Q@mail.gmail.com> <fc49a1b4c32eee9b5cbfbeec4729eef5@localhost>
+ <BANLkTi=p1V1x+y=-cH-Q7bvueu_4_D1ywQ@mail.gmail.com> <BANLkTimqtjskX5q2ovTp_c05MdqBDOWsRg@mail.gmail.com>
+ <da8dbb76f0cb3762227d8d0a99eaff21@localhost>
+From: tsuna <tsunanet@gmail.com>
+Date: Tue, 31 May 2011 08:28:18 -0700
+Message-ID: <BANLkTikuW7VF8AUPFYHYzGe7mXp5H_emjA@mail.gmail.com>
+Subject: Re: [PATCH] tcp: Expose the initial RTO via a new sysctl.
+To: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>,
+        David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
+        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 31 May 2011, Shawn Guo wrote:
-> 
-> On Tue, May 31, 2011 at 01:28:17PM +0200, Arnd Bergmann wrote:
-> > On Tuesday 31 May 2011, Shawn Guo wrote:
-> > > > Just open-code the mxc_add_mxc_gpio() by moving the individual calls to
-> > > > mxc_add_gpio() into the respective callers. Having a global
-> > > > mxc_add_mxc_gpio() function that does something different for each
-> > > > caller seems entirely pointless to me.
-> > > > 
-> > > Right now, mxc_add_mxc_gpio() is a postcore_initcall.  Moving
-> > > individual mxc_add_gpio() call into irq_init function does not work.
-> > > And I need to find a proper caller for each SoC to call mxc_add_gpio
-> > > to register gpio devices.
-> >  
-> > Why not init_machine? That is an arch_initcall(), so it's probably close
-> > enough.
-> > 
-> The init_machine is mostly a board specific function than SoC specific
-> one.  That is to say we will call mxc_add_gpio() in every single board
-> init function even for the same SoC.
+On Tue, May 31, 2011 at 8:25 AM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
+> Skip sysctl, it is deprecated.
 
-But the machine is the only place that knows what SOC is being used.
-Your patch right now detects it by looking at the CPU type that is
-also being set by the board file using the init_early call, which
-is a bit silly.
+Sorry I meant a knob such as /proc/sys/net/ipv4/tcp_initrto.
 
-I would leave e.g. the imx51_register_gpios() in place, but only
-change the definition and the caller to
+> The initRTO is the ideal candidate for a
+> per route knob. And happily you will solve 2) with the per route thing too!
 
-void __init imx51_register_gpios(void)
-{
-        mxc_add_gpio(0, MX51_GPIO1_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO1_LOW, MX51_MXC_INT_GPIO1_HIGH);
-        mxc_add_gpio(1, MX51_GPIO2_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO2_LOW, MX51_MXC_INT_GPIO2_HIGH);
-        mxc_add_gpio(2, MX51_GPIO3_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO3_LOW, MX51_MXC_INT_GPIO3_HIGH);
-        mxc_add_gpio(3, MX51_GPIO4_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO4_LOW, MX51_MXC_INT_GPIO4_HIGH);
-}
+You still need a knob for the default system-wide value, don't you?
 
-Then you can call that function from each i.mx51 based board, or
-from a new imx51_soc_init() function that groups multiple such
-functions.
-
-	Arnd
+-- 
+Benoit "tsuna" Sigoure
+Software Engineer @ www.StumbleUpon.com
