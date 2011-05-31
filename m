@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab1EaVIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 17:08:42 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40795 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932326Ab1EaVIl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 17:08:41 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: RE: [PATCH 1/14] mm: invalidate_mapping_pages flush cleancache
-In-reply-to: <alpine.LSU.2.00.1105310951160.1719@sister.anvils>
-References: <ba74b4e5-500e-4662-ade0-c0b714b8f570@default> <alpine.LSU.2.00.1105310951160.1719@sister.anvils>
-Date: Tue, 31 May 2011 17:08:25 -0400
-Message-Id: <1306875919-sup-647@shiny>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4DE558D5.00AF:SCFMA922111,ss=1,fgs=0
+	id S932581Ab1EaVKw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 17:10:52 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:20244
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932326Ab1EaVKv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 17:10:51 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(zz1447R1432Nzz1202hzz8275bhz2fh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPVD:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
+From: Mike Marciniszyn <mike.marciniszyn@qlogic.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "roland@kernel.org" <roland@kernel.org>,
+        "sean.hefty@intel.com" <sean.hefty@intel.com>,
+        "hal.rosenstock@gmail.com" <hal.rosenstock@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        Dept_Infinipath <Dept_Infinipath@qlogic.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 31 May 2011 14:10:04 -0700
+Subject: RE: [PATCH] infiniband, ipath: convert old cpumask api into new one
+Thread-Topic: [PATCH] infiniband, ipath: convert old cpumask api into new one
+Thread-Index: AcwVwMeVIub1xTFNSiWzC4rg8YHc5wKFgXbQ
+Message-ID: <35AAF1E4A771E142979F27B51793A4888838CD0EDE@AVEXMB1.qlogic.org>
+References: <4DD46CAA.9030609@jp.fujitsu.com>
+In-Reply-To: <4DD46CAA.9030609@jp.fujitsu.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Hugh Dickins's message of 2011-05-31 13:05:27 -0400:
-> On Tue, 31 May 2011, Dan Magenheimer wrote:
-> > > 
-> > > truncate_inode_pages_range() and invalidate_inode_pages2_range()
-> > > call cleancache_flush_inode(mapping) before and after: shouldn't
-> > > invalidate_mapping_pages() be doing the same?
-> > 
-> > I don't claim to be an expert on VFS, and so I have cc'ed
-> > Chris Mason who originally placed the cleancache hooks
-> > in VFS, but I think this patch is unnecessary.  Instead
-> > of flushing ALL of the cleancache pages belonging to
-> > the inode with cleancache_flush_inode, the existing code
-> > eventually calls __delete_from_page_cache on EACH page
-> > that is being invalidated.
-> 
-> On each one that's in pagecache (and satisfies the other "can we
-> do it easily?" conditions peculiar to invalidate_mapping_pages()).
-> But there may be other slots in the range that don't reach
-> __delete_from_page_cache() e.g. because not currently in pagecache,
-> but whose cleancache ought to be flushed.  I think that's what a
-> caller of invalidate_mapping_pages(), e.g. drop caches, expects.
+> Subject: [PATCH] infiniband, ipath: convert old cpumask api into new
+> one
+>
+> Adapt new api. we plan to remove old one later. Almost change are
+> trivial. but there is one real fix. following code is unsafe.
+>
+>       int ncpus = num_online_cpus()
+>       for (i = 0; i < ncpus; i++) {
+>               ..
+>       }
+>
 
-We call invalidate_mapping_pages from prune_icache, so if we drop the
-cleancache there we lose the cache entries any time the inode is dropped
-from ram.
+Thanks for the patch!
 
-Is there a specific case you're thinking of where we want to drop the
-cleancache but don't have the pages?
+Acked-by: Mike Marciniszyn <mike.marciniszyn@qlogic.com>
 
-O_DIRECT perhaps?
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
 
--chris
