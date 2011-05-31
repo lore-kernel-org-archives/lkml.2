@@ -1,59 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab1EaGqN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 02:46:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52214 "EHLO mx2.suse.de"
+	id S1757986Ab1EaGvS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 02:51:18 -0400
+Received: from linux-sh.org ([111.68.239.195]:34789 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757947Ab1EaGqM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 02:46:12 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: david@lang.hm
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-Date: Tue, 31 May 2011 08:48:14 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: "D. Jansen" <d.g.jansen@googlemail.com>, Theodore Tso <tytso@mit.edu>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
-References: <BANLkTikGxbcMBD=3W_9_mpZBoVDc8HrX8A@mail.gmail.com> <BANLkTimtY0ggu28i-9VzWOO1=puZ0JvcAQ@mail.gmail.com> <alpine.DEB.2.02.1105301142030.5766@asgard.lang.hm>
-In-Reply-To: <alpine.DEB.2.02.1105301142030.5766@asgard.lang.hm>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201105310848.15148.oneukum@suse.de>
+	id S1751368Ab1EaGvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 02:51:16 -0400
+Date: Tue, 31 May 2011 15:50:51 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <damm@opensource.se>
+Subject: Re: [PATCH 1/2] dmaengine: shdma: fix locking
+Message-ID: <20110531065051.GA16157@linux-sh.org>
+References: <Pine.LNX.4.64.1104291901200.17813@axis700.grange> <Pine.LNX.4.64.1104291908090.17813@axis700.grange> <Pine.LNX.4.64.1104291901200.17813@axis700.grange> <Pine.LNX.4.64.1104291906140.17813@axis700.grange>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1104291908090.17813@axis700.grange> <Pine.LNX.4.64.1104291906140.17813@axis700.grange>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 30. Mai 2011, 20:45:42 schrieb david@lang.hm:
-> > The big problem is that so far only fsync existed and lots of software
-> > seemingly abuses it as an expensive write barrier. And it would really
-> > be lovely to have the choice to stop that on an opt-in basis in laptop
-> > mode.
-> 
-> is the benifit of not spinning up the disk really worth the risk of 
-> loosing data?
+On Fri, Apr 29, 2011 at 07:09:21PM +0200, Guennadi Liakhovetski wrote:
+>  static int sh_dmae_rst(struct sh_dmae_device *shdev)
+>  {
+..
+> +	dmaor_write(shdev, dmaor | shdev->pdata->dmaor_init);
 
-That is a policy question.
+On Fri, Apr 29, 2011 at 07:09:25PM +0200, Guennadi Liakhovetski wrote:
+> +static int sh_dmae_runtime_resume(struct device *dev)
+> +{
+> +	struct sh_dmae_device *shdev = dev_get_drvdata(dev);
+> +
+> +	return sh_dmae_rst(shdev);
+..
 
-> and should this really be a global across-the-board option?
+Yet in sh_dmae_probe() we have:
 
-Possibly not. However this is a secondary question.
+        shdev->pdata = pdata;
 
-> the problem is that most users don't know what their system is running, or 
-> what effect disaling fsync would have. those that do can probably use 
-> LD_PRELOAD to override fsync calls.
+        pm_runtime_enable(&pdev->dev);
+        pm_runtime_get_sync(&pdev->dev);
 
-Not without a loss of ordering, as we have discussed.
+..
 
-	Regards
-		Oliver
--- 
-- - - 
-SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
-Maxfeldstraße 5                         
-90409 Nürnberg 
-Germany 
-- - - 
+        /* reset dma controller - only needed as a test */
+        err = sh_dmae_rst(shdev);
+        if (err)
+                goto rst_err;
+
+..
+
+        pm_runtime_put(&pdev->dev);
+
+        platform_set_drvdata(pdev, shdev);
+        dma_async_device_register(&shdev->common);
+
+        return err;
+..
+
+So I'm wondering how this was ever actually tested. The original sh_dmae_rst()
+call is safe due to passing along the shdev pointer with pdata initialized
+explicitly, while the runtime PM bits fetch the pointer via dev_get_drvdata()
+at a time where drvdata hasn't even been initialized yet, resulting in a rather
+predictable oops:
+
+	Unable to handle kernel NULL pointer dereference at virtual address 000000c4
+	pc = 8025adee
+	*pde = 00000000
+	Oops: 0000 [#1]
+	Modules linked in:
+
+	Pid : 1, Comm:           swapper
+	CPU : 0                  Not tainted  (3.0.0-rc1-00012-g9436b4a-dirty #1456)
+
+	PC is at sh_dmae_rst+0x28/0x86
+	PR is at sh_dmae_rst+0x22/0x86
+	PC  : 8025adee SP  : 9e803d10 SR  : 400080f1 TEA : 000000c4
+	R0  : 000000c4 R1  : 0000fff8 R2  : 00000000 R3  : 00000040
+	R4  : 000000f0 R5  : 00000000 R6  : 00000000 R7  : 804f184c
+	R8  : 00000000 R9  : 804dd0e8 R10 : 80283204 R11 : ffffffda
+	R12 : 000000a0 R13 : 804dd18c R14 : 9e803d10
+	MACH: 00000000 MACL: 00008f20 GBR : 00000000 PR  : 8025ade8
+
+	Call trace:
+	[<8025ae70>] sh_dmae_runtime_resume+0x24/0x34
+	[<80283238>] pm_generic_runtime_resume+0x34/0x3c
+	[<80283370>] rpm_callback+0x4a/0x7e
+	[<80283efc>] rpm_resume+0x240/0x384
+	[<80283f54>] rpm_resume+0x298/0x384
+	[<8028428c>] __pm_runtime_resume+0x44/0x7c
+	[<8038a358>] __ioremap_caller+0x0/0xec
+	[<80284296>] __pm_runtime_resume+0x4e/0x7c
+	[<8038a358>] __ioremap_caller+0x0/0xec
+	[<80666254>] sh_dmae_probe+0x180/0x6a0
+	[<802803ae>] platform_drv_probe+0x26/0x2e
+
+I've fixed this up now, but I am growing rather weary of applying anything with
+runtime PM in the subject that alleges to have been tested.
+
+The next runtime PM patch that doesn't even boot will be immediately reverted
+and have a kernel version or two to sit things out in order to try to get
+things in demonstrable functional order.
