@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab1EaPFc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:05:32 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:7326
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751478Ab1EaPF3 (ORCPT
+	id S1756141Ab1EaPNP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 11:13:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:48260 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab1EaPNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:05:29 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Tue, 31 May 2011 23:10:20 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Olof Johansson <olof@lixom.net>, Shawn Guo <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
-        <kernel@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>,
-        <patches@linaro.org>
-Subject: Re: [PATCH 2/4] ARM: mxc: migrate mach-mx5 gpio driver to gpio-mxc
-Message-ID: <20110531151019.GA32275@S2100-06.ap.freescale.net>
-References: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org>
- <201105311026.11947.arnd@arndb.de>
- <20110531103011.GB32096@S2100-06.ap.freescale.net>
- <201105311328.18012.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <201105311328.18012.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Tue, 31 May 2011 11:13:14 -0400
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=MXrvIagEJvMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=TcubTWQpJJrLgIdQNo8A:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] ftrace: tracepoint of net_dev_xmit sees freed skb and
+ causes panic
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        nhorman@tuxdriver.com, mingo@elte.hu, fweisbec@gmail.com,
+        mathieu.desnoyers@efficios.com, tglx@linutronix.de,
+        kosaki.motohiro@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kaneshige.kenji@jp.fujitsu.com
+In-Reply-To: <4DE49D52.709@jp.fujitsu.com>
+References: <4DE49D52.709@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 31 May 2011 11:13:11 -0400
+Message-ID: <1306854791.11899.30.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 01:28:17PM +0200, Arnd Bergmann wrote:
-> On Tuesday 31 May 2011, Shawn Guo wrote:
-> > > Just open-code the mxc_add_mxc_gpio() by moving the individual calls to
-> > > mxc_add_gpio() into the respective callers. Having a global
-> > > mxc_add_mxc_gpio() function that does something different for each
-> > > caller seems entirely pointless to me.
-> > > 
-> > Right now, mxc_add_mxc_gpio() is a postcore_initcall.  Moving
-> > individual mxc_add_gpio() call into irq_init function does not work.
-> > And I need to find a proper caller for each SoC to call mxc_add_gpio
-> > to register gpio devices.
->  
-> Why not init_machine? That is an arch_initcall(), so it's probably close
-> enough.
-> 
-The init_machine is mostly a board specific function than SoC specific
-one.  That is to say we will call mxc_add_gpio() in every single board
-init function even for the same SoC.
+On Tue, 2011-05-31 at 16:48 +0900, Koki Sanagi wrote:
+> Because there is a possibility that skb is kfree_skb()ed and zero cleared
+> after ndo_start_xmit, we should not see the contents of skb like skb->len and
+> skb->dev->name after ndo_start_xmit. But trace_net_dev_xmit does that
+> and causes panic by NULL pointer dereference.
+> This patch fixes trace_net_dev_xmit not to see the contents of skb directly.
 
--- 
-Regards,
-Shawn
+
+>  
+>  	if (likely(!skb->next)) {
+>  		u32 features;
+> @@ -2139,8 +2140,9 @@ int dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev,
+>  			}
+>  		}
+>  
+> +		skb_len = skb->len;
+>  		rc = ops->ndo_start_xmit(skb, dev);
+> -		trace_net_dev_xmit(skb, rc);
+> +		trace_net_dev_xmit(skb, rc, dev, skb_len);
+>  		if (rc == NETDEV_TX_OK)
+>  			txq_trans_update(txq);
+>  		return rc;
+> @@ -2160,8 +2162,9 @@ gso:
+>  		if (dev->priv_flags & IFF_XMIT_DST_RELEASE)
+>  			skb_dst_drop(nskb);
+>  
+> +		skb_len = nskb->len;
+>  		rc = ops->ndo_start_xmit(nskb, dev);
+> -		trace_net_dev_xmit(nskb, rc);
+> +		trace_net_dev_xmit(nskb, rc, dev, skb_len);
+
+What if you just put the tracepoint before the call to
+ops->ndo_start_xmit?
+
+-- Steve
+
+>  		if (unlikely(rc != NETDEV_TX_OK)) {
+>  			if (rc & ~NETDEV_TX_MASK)
+>  				goto out_kfree_gso_skb;
+
 
