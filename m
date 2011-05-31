@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758290Ab1EaT5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 15:57:42 -0400
-Received: from hyde.gogi.tv ([87.106.161.174]:60563 "EHLO hyde.gogi.tv"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757862Ab1EaT5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 15:57:41 -0400
+	id S1758220Ab1EaUHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 16:07:49 -0400
+Received: from webmail-out2.one.com ([91.198.169.17]:14141 "EHLO
+	webmail-out2.b-one.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484Ab1EaUHr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 16:07:47 -0400
+X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 May 2011 16:07:47 EDT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Tue, 31 May 2011 20:57:39 +0100
-From: Daniel Haid <d.haid@gogi.tv>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: Question about iommu on =?UTF-8?Q?x=38=36=5F=36=34=20and=20ra?=
- =?UTF-8?Q?deon=20driver=2E?=
-In-Reply-To: <20110531190412.GA21245@dumpdata.com>
-References: <m2wrhf4sw5.fsf@firstfloor.org>
- <08370791664f069624d25c757ed101c0@admin.gogi.tv>
- <20110525125752.GB3467@dumpdata.com>
- <dfd8bfd19ba1fb77d6448bff97123e13@admin.gogi.tv>
- <20110527155507.GB11273@dumpdata.com>
- <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv>
- <20110531134519.GC14641@dumpdata.com>
- <59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv>
- <20110531160221.GA31659@dumpdata.com>
- <0a8cb4bcad7fcf091a6bbe158323bba0@admin.gogi.tv>
- <20110531190412.GA21245@dumpdata.com>
-Message-ID: <d0ce6a4ba6092a1a9ef0f1e8f3cac9c9@admin.gogi.tv>
-User-Agent: Roundcube Webmail/0.4.2
+From: "Eric Andersson" <eric.andersson@unixphere.com>
+To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>, dmitry.torokhov@gmail.com
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
+        "Albert Zhang" <xu.zhang@bosch-sensortec.com>
+Subject: Re: [PATCH] input: add driver for Bosch Sensortec's BMA150 
+ accelerometer
+Date: Tue, 31 May 2011 22:00:30 +0200
+X-Mailer: One.com webmail
+X-Originating-Ip: 81.236.173.254
+In-Reply-To: <20110531172320.0fcadfef@lxorguk.ukuu.org.uk>
+References: <1306857314-655-1-git-send-email-eric.andersson@unixphere.com>
+ <20110531172320.0fcadfef@lxorguk.ukuu.org.uk>
+Message-Id: <20110531200031.01097304A02D@bmail00.one.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Just another question, the problem seems to be an issue with
+On May 31, 2011 18:23 "Alan Cox" <alan@lxorguk.ukuu.org.uk> wrote:
+> See the driver I posted some time ago. It's in rather better state than
+> this one and as it's been through most of the review process and also
+> handles the BMA023 and SMB380 so I think would be a better place to start
+> from. I'll report that driver in a moment.
+I wasn't aware of that patch! Thanks for pointing it out! Regarding BMA023 and
+SMB380, these are also supported by this driver, which should probably have been
+stated in the Kconfig file.
 
- swiotlb=force
+> Some of the first immediately obvious questions though - in particular
+> the lack of clear locking ...
+Thanks for reviewing!
 
- and I assume that without "force" DMA with addresses that
- already are below 4GB should be handled without any
- bounce-buffer, and with "force" everything goes through
- the bounce-buffer, is this correct?
+Dimitry, I guess it's up to you to decide which version of the driver you prefer
+before we go through another round in the review process.
 
- Now I have a VIA chipset where the IOMMU does not work, so
- swiotlb is activated, but is it activated in force mode or
- in normal mode? How can I find out?
+Best regards,
+ Eric
 
- If it is activated in force mode, maybe the problem will
- go away in normal mode?
+http://www.unixphere.com
 
