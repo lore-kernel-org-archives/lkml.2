@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757217Ab1EaDpS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 23:45:18 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36687 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754435Ab1EaDpQ convert rfc822-to-8bit (ORCPT
+	id S1757417Ab1EaD6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 23:58:42 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46730 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756334Ab1EaD6l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 23:45:16 -0400
+	Mon, 30 May 2011 23:58:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=Z3kjWGiiO7/6Wcmz+NTc4arOy71jBJ9A+5v3JMlTaZZl1y6wEz1FiBH/WdI5StxHHD
-         Gk+UGgYAZFTs6IqiVUmtVmWYHZmV3PWZX/AQfnwfD0VQKlYbg/4a30JqPsrgRAN7tjAZ
-         s1ORinehaVPlNCX7Uom/DqrK8j6BH5tir/X90=
+        b=k6G499ttWll16KBZ4VuXS7UYniumP7XtrA8piGqtFa5f0CjYOflNTZIEvBQpx3pJ4B
+         +4/rytMg+JHkpPJKpOHIKllU/OJbNNkzyF7y6JVAsiFU7XVs+ucoHQ88dV5nV3dMlJgu
+         XIVs/UOkCdn1rV7ugF86Wr7137RIvcMpl7zyw=
 MIME-Version: 1.0
-In-Reply-To: <7B5337F4-B0D7-48E1-8D1B-3669B37AA1D5@dilger.ca>
-References: <1306763382-13817-1-git-send-email-akinobu.mita@gmail.com>
-	<09010AAD-7443-4966-BF20-8580FBE8F389@dilger.ca>
-	<20110530154357.GF2890@dhcp-172-31-194-241.cam.corp.google.com>
-	<BANLkTimyCY9_tAOAtoxyNOw4=e+Y0pO_sw@mail.gmail.com>
-	<7B5337F4-B0D7-48E1-8D1B-3669B37AA1D5@dilger.ca>
-Date: Tue, 31 May 2011 12:45:15 +0900
-Message-ID: <BANLkTin64T9-QEdE6DC6VoB=7d6m0qFcuQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ext4: use little-endian bitops directly
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: "Ted Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+In-Reply-To: <20110531121815.67523361.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1306774744.4061.5.camel@localhost.localdomain>
+	<20110531083859.98e4ff43.kamezawa.hiroyu@jp.fujitsu.com>
+	<BANLkTinTqijGxCpZ_nRwWZHYsR-u2zojZA@mail.gmail.com>
+	<20110531121815.67523361.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 31 May 2011 09:58:40 +0600
+Message-ID: <BANLkTiksAjyCBAPdCB58tAWhXcdqXM4EcA@mail.gmail.com>
+Subject: Re: [PATCH] mm, vmstat: Use cond_resched only when !CONFIG_PREEMPT
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Christoph Lameter <cl@linux.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/5/31 Andreas Dilger <adilger@dilger.ca>:
-
-> Looking more closely at these operations, ext4_set_bit_atomic() is not used anywhere in the code and could be removed.
+On Tue, May 31, 2011 at 9:18 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Tue, 31 May 2011 09:13:47 +0600
+> Rakib Mullick <rakib.mullick@gmail.com> wrote:
 >
-> There is only one place where ext4_clear_bit_atomic() is used (ext4_add_groupblocks()), and this is likely incorrect.  None of the other ext4 code is using ext4_set_bit_atomic(), and all of the ext2_clear_bit_atomic() macros are silently ignoring the "lock" argument, so these changes are done without ext4_group_lock() being held for that group.  I suspect this is never a problem in normal usage because ext4_add_groupblocks() is only used during filesystem resizing, which is rare, and doubly rare for any allocations to be made in the same group concurrently.
+>> On Tue, May 31, 2011 at 5:38 AM, KAMEZAWA Hiroyuki
+>> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> > On Mon, 30 May 2011 22:59:04 +0600
+>> > Rakib Mullick <rakib.mullick@gmail.com> wrote:
+>> >
+>> >> commit 468fd62ed9 (vmstats: add cond_resched() to refresh_cpu_vm_stats()) added cond_resched() in refresh_cpu_vm_stats. Purpose of that patch was to allow other threads to run in non-preemptive case. This patch, makes sure that cond_resched() gets called when !CONFIG_PREEMPT is set. In a preemptiable kernel we don't need to call cond_resched().
+>> >>
+>> >> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+>> >
+>> > Hmm, what benefit do we get by adding this extra #ifdef in the code directly ?
+>> > Other cond_resched() callers are not guilty in !CONFIG_PREEMPT ?
+>> >
+>> Well, in preemptible kernel this context will get preempted if
+>> requires, so we don't need cond_resched(). If you checkout the git log
+>> of the mentioned commit, you'll find the explanation. It says:
+>>         "Adding a cond_resched() to allow other threads to run in the
+>> non-preemptive
+>>     case."
+>>
 >
-> This one usage of ext4_clear_bit_atomic() should just be moved inside the ext4_lock_group() a few lines down and then use ext4_clear_bit() for consistency, and ext4_clear_bit_atomic() can be removed entirely.
+> IOW, my question is "why only this cond_resched() should be fixed ?"
+
+cond_resched() forces this thread to be scheduled. I'm just trying
+pointing out the use of cond_resched(), until unless I'm not missing
+anything.
+
+> What's bad with all cond_resched() in the kernel as no-op in CONFIG_PREEMPT ?
 >
-> A further cleanup would be to change this whole function to use mb_clear_bits(), which is not only faster because it operates on many bits at once, but also doesn't require that the buddy bitmap be marked invalid ("NEED_INIT") after these changes are made, but that is work for a separate patch.
+cond_resched() basically checks whether it needs to be scheduled or
+not. But, we know in advance that we don't need cond_resched in
+CONFIG_PREEMPT.
 
-Looks like this is already done by the commit
-e73a347b7723757bb5fb5c502814dc205a7f496d ("ext4: implement
-ext4_add_groupblocks() by freeing blocks")
+Thanks,
+Rakib
 
-So we can remove ext4_{set,clear}_bit_atomic now.
-
-> I would also encourage you to finish off this patch series by pushing up the generic ext2_{set,clear}_bit_atomic() to the few places that are currently using ext2_{set,clear}_bit_atomic() directly (looks like only fs/nilfs2/alloc.h and include/linux/ext3.h) and then removing them from the arch headers.
-
-The difficulty of doing this is that there are two different
-implementations of ext2_{set,clear}_bit_atomic (spin lock version and
-test_and_{set,clear}_bit_le version).  If we can switch to one of which
-on all architectures, the change is easy.  But I don't have less messy idea
-to keep current behavior on all architectures.
+> Thanks,
+> -Kame
+>
+>
+>
