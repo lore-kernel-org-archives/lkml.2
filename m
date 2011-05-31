@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab1EaA5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 20:57:25 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56310 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab1EaA5Y (ORCPT
+	id S1755261Ab1EaAmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 20:42:21 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:41213 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab1EaAmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 20:57:24 -0400
+	Mon, 30 May 2011 20:42:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=u7WhAjIQpobOSYdjYg77wXYLzDybzKERofH8vQ0OBCnZw+0ZFBg7vZ0Kw6vpwzBJxZ
-         lJFhy3olHiC3aDFkitY1lkXlMKQYfySdIGPIy10PGl/riiSqgG2nk1e/7zTHExnnGZPK
-         UA3UqmcSRO4YuZdqJjIBnEZ7QGD/lXjw87U3o=
-Message-ID: <4DE4393E.1080703@gmail.com>
-Date: Mon, 30 May 2011 18:41:34 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=AA8KBNVya1ZKGn2RHVkZCz2/yOY9s9FC2y0xlNzdD1BEy8Mmh1R238U33cOqp26FfU
+         DSS2wkyimnjoPfcv8hkA==
+Date: Mon, 30 May 2011 17:42:17 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Thomas Hellstrom <thellstrom@vmware.com>, Dave Airlie <airlied@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 5/14] drm/ttm: use shmem_read_mapping_page
+In-Reply-To: <alpine.LSU.2.00.1105301726180.5482@sister.anvils>
+Message-ID: <alpine.LSU.2.00.1105301741020.5482@sister.anvils>
+References: <alpine.LSU.2.00.1105301726180.5482@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Ashwin Chaugule <ashbertslists@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: perf: h/w counters not counted and no error/info reported to
- user
-References: <4DDECFC8.7090903@gmail.com>	<20110527095036.GK21386@elte.hu>	<4DDFBD83.3020105@gmail.com>	<4DDFD2F7.1050305@gmail.com> <BANLkTi=uKSKNJCJquKm44ofMwcTmfwAPyw@mail.gmail.com>
-In-Reply-To: <BANLkTi=uKSKNJCJquKm44ofMwcTmfwAPyw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Soon tmpfs will stop supporting ->readpage and read_mapping_page():
+once "tmpfs: add shmem_read_mapping_page_gfp" has been applied,
+this patch can be applied to ease the transition.
 
+ttm_tt_swapin() and ttm_tt_swapout() use shmem_read_mapping_page()
+in place of read_mapping_page(), since their swap_space has been
+created with shmem_file_setup().
 
-On 05/30/2011 03:04 PM, Ashwin Chaugule wrote:
-> Hi David,
-> 
-> On Fri, May 27, 2011 at 12:36 PM, David Ahern <dsahern@gmail.com> wrote:
->>
->> Ok, I got it now. On some occasions for simple programs -- like sleep 1
->> -- the counter reads show:
->>
->> cycles: 0 1066485 0
->>
->> While the counter value is non-0, the time enabled and running values
->> are 0 and those latter two are used by stat to say "not-counted".
-> 
-> I've seen time-enabled = 0 too, but I suspected that's because on my
-> kernel the sched_clock implementation was missing. (defaults to a
-> jiffies based timer)
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: Dave Airlie <airlied@redhat.com>
+---
+ drivers/gpu/drm/ttm/ttm_tt.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I think in the case of 'perf stat -- sleep 1' it runs so quickly that
-sometimes it does not cross timer ticks and the time_enabled comes out 0.
-
-> I saw your patch for initializing the fd's to -1's, but I'm unable to
-> see how that makes the value of time-enabled non zero ?
-
-It doesn't. That patch addresses unsupported counters in the default
-list (e.g., -ddd on a T9550 Core2Duo). The first open fails (cpu 0,
-thread 0) and the entire FD array is not reset to -1 (from its
-initialization to 0).
-
-David
-
-> 
-> Cheers,
-> Ashwin
+--- linux.orig/drivers/gpu/drm/ttm/ttm_tt.c	2011-05-30 13:56:10.112796608 -0700
++++ linux/drivers/gpu/drm/ttm/ttm_tt.c	2011-05-30 14:25:59.641670407 -0700
+@@ -484,7 +484,7 @@ static int ttm_tt_swapin(struct ttm_tt *
+ 	swap_space = swap_storage->f_path.dentry->d_inode->i_mapping;
+ 
+ 	for (i = 0; i < ttm->num_pages; ++i) {
+-		from_page = read_mapping_page(swap_space, i, NULL);
++		from_page = shmem_read_mapping_page(swap_space, i);
+ 		if (IS_ERR(from_page)) {
+ 			ret = PTR_ERR(from_page);
+ 			goto out_err;
+@@ -557,7 +557,7 @@ int ttm_tt_swapout(struct ttm_tt *ttm, s
+ 		from_page = ttm->pages[i];
+ 		if (unlikely(from_page == NULL))
+ 			continue;
+-		to_page = read_mapping_page(swap_space, i, NULL);
++		to_page = shmem_read_mapping_page(swap_space, i);
+ 		if (unlikely(IS_ERR(to_page))) {
+ 			ret = PTR_ERR(to_page);
+ 			goto out_err;
