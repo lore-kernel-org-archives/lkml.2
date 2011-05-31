@@ -1,51 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757012Ab1EaP2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:28:41 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:58373 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755802Ab1EaP2j (ORCPT
+	id S1757044Ab1EaPcS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 11:32:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46723 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754549Ab1EaPcQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:28:39 -0400
+	Tue, 31 May 2011 11:32:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=eafOqDa15tfiE7wuRlnUcfl36ZsVg7CbADAvz+if7PWBDQ5YU1/XSjfldrGRAfkFeD
-         cTvyPqaNfqYZlmNKwIWoVBDGBhXeLvqOB+Kx0A6D45jGcQm4le6a3/k7wmtEfR9QjCAk
-         9jHTm9RdozKEVSN9w595nixgwqEPqbdaE75hI=
+        h=mime-version:sender:from:date:x-google-sender-auth:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=kW9yuQGgWuOUO2GebwnL5bhwiqNBpfTOFMQebajSSYQ6/U3R+Ts9pIetMN1jiRiwao
+         bsSwClRgKfAc/V0GWVOXHaXCdmpo6OVykFs+9CiF6ZVoV4Pnx3Pd177iqFN75u7OP439
+         QsNKhkX/Pv2cSltr70Pyjv8XuoIUAWXeYesc4=
 MIME-Version: 1.0
-In-Reply-To: <da8dbb76f0cb3762227d8d0a99eaff21@localhost>
-References: <1305715384-81716-1-git-send-email-tsunanet@gmail.com>
- <20110518.152653.1486764697527722925.davem@davemloft.net> <BANLkTik-6wh8=jb6oMEpJvYC8+KTGGsMsw@mail.gmail.com>
- <20110518.155200.801089483916944725.davem@davemloft.net> <20110518202025.GC4175@nuttenaction>
- <BANLkTimtA9BB7g5cOm8c9sGChQjf1P0Q-Q@mail.gmail.com> <fc49a1b4c32eee9b5cbfbeec4729eef5@localhost>
- <BANLkTi=p1V1x+y=-cH-Q7bvueu_4_D1ywQ@mail.gmail.com> <BANLkTimqtjskX5q2ovTp_c05MdqBDOWsRg@mail.gmail.com>
- <da8dbb76f0cb3762227d8d0a99eaff21@localhost>
-From: tsuna <tsunanet@gmail.com>
-Date: Tue, 31 May 2011 08:28:18 -0700
-Message-ID: <BANLkTikuW7VF8AUPFYHYzGe7mXp5H_emjA@mail.gmail.com>
-Subject: Re: [PATCH] tcp: Expose the initial RTO via a new sysctl.
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>,
-        David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
-        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 31 May 2011 11:31:55 -0400
+X-Google-Sender-Auth: NIYjaG7WA03ybEbYrpxz6z1Rs08
+Message-ID: <BANLkTinC=bL6NvRzU2hrFLgmbyFu6L-8zA@mail.gmail.com>
+Subject: Question about alternatives (Re: [PATCH 0/5] x86-64: Remove syscall
+ instructions at fixed addresses)
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 8:25 AM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
-> Skip sysctl, it is deprecated.
+On Tue, May 31, 2011 at 9:17 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Tue, May 31, 2011 at 9:11 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>>
+>> * Andrew Lutomirski <luto@mit.edu> wrote:
+>>
+>>> > You could start with picking the more compatible alternative
+>>> > instruction initially. I don't at all mind losing half a cycle of
+>>> > performance in that case ... this code should be secure first.
+>>>
+>>> The more compatible one is mfence, which in some cases could (I
+>>> think) be a lot more than half a cycle.
+>>
+>> I'd still suggest to do the mfence change now and remove the
+>> alternatives patching for now - if it's more than half a cycle then
+>> it sure will be implemented properly, right?
+>
+> I don't know.  I just cut 5 ns off the thing a couple weeks ago and no
+> one beat me to it :)
+>
+> I'll take a look at how hard the patching will be.
 
-Sorry I meant a knob such as /proc/sys/net/ipv4/tcp_initrto.
+I don't think it'll be that hard to get the alternatives code to work
+on the vdso, but there's an annoyance: the alt_instr descriptor
+contains the absolute addresses of the old and new code.  That means
+that if we generate a shared object with alternatives, that shared
+object will contain relocations, and I'd rather not teach the kernel
+how to relocate the vdso image.
 
-> The initRTO is the ideal candidate for a
-> per route knob. And happily you will solve 2) with the per route thing too!
+Would you be okay with changing the addresses to be relative, like
+this: (sorry, whitespace damaged):
 
-You still need a knob for the default system-wide value, don't you?
+diff --git a/arch/x86/include/asm/alternative.h
+b/arch/x86/include/asm/alternative.h
+index bf535f9..de25be6 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -84,8 +84,8 @@ static inline int alternatives_text_reserved(void
+*start, void *end)
+       "661:\n\t" oldinstr "\n662:\n"                                   \
+       ".section .altinstructions,\"a\"\n"                              \
+       _ASM_ALIGN "\n"                                                  \
+-      _ASM_PTR "661b\n"                                /* label
+    */   \
+-      _ASM_PTR "663f\n"                                /* new
+instruction */   \
++      _ASM_PTR "661b - .\n"                    /* label           */   \
++      _ASM_PTR "663f - .\n"                    /* new instruction */   \
+       "         .word " __stringify(feature) "\n"      /* feature bit
+    */   \
+       "         .byte 662b-661b\n"                     /* sourcelen
+    */   \
+       "         .byte 664f-663f\n"                     /*
+replacementlen  */   \
 
--- 
-Benoit "tsuna" Sigoure
-Software Engineer @ www.StumbleUpon.com
+This won't result in relocations.
+
+(Obviously I'd have to change the asm version and the patching code to
+match it.)
+
+--Andy
