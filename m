@@ -1,31 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932752Ab1EaWBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 18:01:49 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:25640 "EHLO
+	id S932737Ab1EaWLu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 18:11:50 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:37129 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758298Ab1EaWBs (ORCPT
+	with ESMTP id S932529Ab1EaWLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 18:01:48 -0400
+	Tue, 31 May 2011 18:11:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
          :references:user-agent:mime-version:content-type;
-        b=Wsc1f7ENXviyuisbNtKUWxYxyW35zKKXBJ5LFSG6HOOk+Hxg2TVTqmv6M/JjndVqdX
-         HdtmUm+zn+Qybf7yWoMg==
-Date: Tue, 31 May 2011 15:01:36 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Chris Mason <chris.mason@oracle.com>
-cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        b=ipQDdhnhJR5D9JGifT4+mjDz5vawHaFAvgXjH7XT4/g5j0Kg41zonGpwCk4y5v4oVJ
+         8t+dyOlLEkubUv/K+lVw==
+Date: Tue, 31 May 2011 15:11:40 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: RE: [PATCH 1/14] mm: invalidate_mapping_pages flush cleancache
-In-Reply-To: <1306875919-sup-647@shiny>
-Message-ID: <alpine.LSU.2.00.1105311500440.20988@sister.anvils>
-References: <ba74b4e5-500e-4662-ade0-c0b714b8f570@default> <alpine.LSU.2.00.1105310951160.1719@sister.anvils> <1306875919-sup-647@shiny>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        Eric Miao <eric.y.miao@gmail.com>, Samuel Ortiz <samuel@sortiz.org>
+Subject: Re: IrDA driver fails on PXA255
+In-Reply-To: <20110531210027.GA3660@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.00.1105311501570.16259@chino.kir.corp.google.com>
+References: <20110528205701.GA1788@doriath.ww600.siemens.net> <alpine.DEB.2.00.1105281628480.9934@chino.kir.corp.google.com> <BANLkTim9YdhjY75CzMsSOCVKZWi-WKZ5wA@mail.gmail.com> <alpine.DEB.2.00.1105291410450.9658@chino.kir.corp.google.com>
+ <20110529215656.GA5576@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105302202510.18793@chino.kir.corp.google.com> <20110531072650.GC21382@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105311253510.5646@chino.kir.corp.google.com>
+ <20110531210027.GA3660@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 X-System-Of-Record: true
@@ -33,64 +37,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 May 2011, Chris Mason wrote:
-> Excerpts from Hugh Dickins's message of 2011-05-31 13:05:27 -0400:
-> > On Tue, 31 May 2011, Dan Magenheimer wrote:
-> > > > 
-> > > > truncate_inode_pages_range() and invalidate_inode_pages2_range()
-> > > > call cleancache_flush_inode(mapping) before and after: shouldn't
-> > > > invalidate_mapping_pages() be doing the same?
-> > > 
-> > > I don't claim to be an expert on VFS, and so I have cc'ed
-> > > Chris Mason who originally placed the cleancache hooks
-> > > in VFS, but I think this patch is unnecessary.  Instead
-> > > of flushing ALL of the cleancache pages belonging to
-> > > the inode with cleancache_flush_inode, the existing code
-> > > eventually calls __delete_from_page_cache on EACH page
-> > > that is being invalidated.
-> > 
-> > On each one that's in pagecache (and satisfies the other "can we
-> > do it easily?" conditions peculiar to invalidate_mapping_pages()).
-> > But there may be other slots in the range that don't reach
-> > __delete_from_page_cache() e.g. because not currently in pagecache,
-> > but whose cleancache ought to be flushed.  I think that's what a
-> > caller of invalidate_mapping_pages(), e.g. drop caches, expects.
+On Tue, 31 May 2011, Russell King - ARM Linux wrote:
+
+> > The problem certainly isn't being ignored in this thread, or in the patch 
+> > that I sent to fix Dmitry's issue by default, so that doesn't seem to be 
+> > the case.  What would be ignored, though, is if it just emitted a 
+> > WARN_ON() without failing the allocation so everything works perfectly.
 > 
-> We call invalidate_mapping_pages from prune_icache, so if we drop the
-> cleancache there we lose the cache entries any time the inode is dropped
-> from ram.
-
-I hadn't noticed that use of invalidate_mapping_pages().  Right,
-I can understand that you wouldn't want to drop the cleancache there.
-
-I was more conscious of the dispose_list() at the end of prune_icache(),
-which would call truncate_inode_pages(), which would flush cleancache.
-
-Ah, but inode only gets on the freeable list if can_unuse(inode),
-and one of the reasons to retain the inode is if nrpages is non-0.
-
-All rather odd, and what it adds up to, I think, is that if that
-invalidate_mapping_pages() succeeds in removing all the pages from
-the page cache (but leaving some in cleancache), then the inode may
-advance to truncate_inode_pages(), and meet cleancache_flush_inode()
-there.  (It happens to be called before the mapping->nrpages test.)
-
-All rather odd, both the pruning decisions and the cleancache decisions.
-
+> Sorry, you did not send a patch to fix it.  You sent a *bodge* to enable
+> the DMA zone.  As long as you insist that's a valid fix, you're going
+> to carry zero credibility with me.
 > 
-> Is there a specific case you're thinking of where we want to drop the
-> cleancache but don't have the pages?
-
-The case I was thinking of, where I'd met invalidate_mapping_pages()
-before, is fs/drop_caches.c ... which is about, er, dropping caches.
-
-(But in general, why would you care to keep the cleancache when you
-do have the pages?  I thought its use was for the pages we don't have.)
-
+> The fact is that this driver should not be using GFP_DMA to allocate
+> things which aren't even DMA buffers, and its use of GFP_DMA should be
+> removed.  But rather than look at that and work it out, and then produce
+> a patch to sort that out, the only thing you can do is come up with
+> bodge to enable the DMA zone, and continue to insist that's the right
+> solution.
 > 
-> O_DIRECT perhaps?
 
-Hadn't given it a thought.  But now you mention it, yes,
-that one looks like a worry too.
+I'm not going to hack on an arm driver when I have no idea what its DMA 
+requirements are and have no ability to test the change.  I'll rely on the 
+authors or maintainers of that driver to figure it out.  In the meantime, 
+I suggested enabling CONFIG_ZONE_DMA for that driver because, in its 
+current state, it is using GFP_DMA and you haven't provided a single 
+reason why enabling CONFIG_ZONE_DMA is going to cause an issue.
 
-Hugh
+In other words, I cannot do your work for you: if GFP_DMA can be removed 
+from that driver, great, in the meantime it should enable CONFIG_ZONE_DMA 
+to fix the invalid configurations that are currently allowed.  It's 
+simple: if you're going to pass GFP_DMA to the page allocator, you need to 
+require CONFIG_ZONE_DMA for it to be useful.  Anything else is an invalid 
+configuration and is error prone.
+
+> Your whinge that we should re-enable the DMA zone which has been
+> disabled for quite a long time now to work around this new restriction
+> is extremely idiotic.
+> 
+
+The restriction isn't new: GFP_DMA only makes sense with CONFIG_ZONE_DMA.  
+The fact that the page allocator completely ignored GFP_DMA in the past 
+for CONFIG_ZONE_DMA=n doesn't change that.  That's obviously error prone 
+since it will return memory from anywhere simply because of the fact that 
+it is an invalid configuration.
