@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289Ab1EaI0R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 04:26:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61788 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758100Ab1EaI0P (ORCPT
+	id S1758379Ab1EaIfR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 04:35:17 -0400
+Received: from forward13.mail.yandex.net ([95.108.130.120]:39624 "EHLO
+	forward13.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753655Ab1EaIfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 04:26:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH 2/4] ARM: mxc: migrate mach-mx5 gpio driver to gpio-mxc
-Date: Tue, 31 May 2011 10:26:11 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>, Shawn Guo <shawn.guo@linaro.org>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org
-References: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org> <20110531001634.GB3411@quad.lixom.net> <20110531024729.GB31928@S2100-06.ap.freescale.net>
-In-Reply-To: <20110531024729.GB31928@S2100-06.ap.freescale.net>
+	Tue, 31 May 2011 04:35:11 -0400
+X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 May 2011 04:35:11 EDT
+X-Yandex-Spam: 1
+From: Dmitry Dmitriev <dimondmm@yandex.ru>
+To: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org
+Subject: =?utf-8?B?UFJPQkxFTTogQ29ycnVwdCBpbm9kZSBmbGFncyB3aGVuIHJlbW92ZSBBVFRSX1NZUyBmbGFnIG9uIGZh?=
+	=?utf-8?B?dCBmaWxlIHN5c3RlbSBtb3VudGVkIHdpdGgg4oCcc3lzX2ltbXV0YWJsZeKAnSBtb3VudCBvcHRpb24u?=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105311026.11947.arnd@arndb.de>
-X-Provags-ID: V02:K0:l6hd2kw9N4XPCV9YMviPRuHGEV71uMBhGugspS2vkjF
- 27+v+gIyZmnl2LualFvlfwDHTUbZhw8i3eIDt78gJ/d/kXIX2m
- 880smoeEGAsLmO3NQ09a9UJ+wLVjH4gzR+rO7HyDJYQO32AWuB
- mJJFAswLiLFPGh0c7P+rdOydjshquiiFxxnGElRBooGmlAYNy8
- jDT3EWnKvZagmQmK4NQOg==
+Message-Id: <31181306830445@web159.yandex.ru>
+Date: Tue, 31 May 2011 12:27:24 +0400
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 31 May 2011, Shawn Guo wrote:
-> > The above tables are pretty crazy, and they only get worse later in the series
-> > when the other SoCs are added. Is it really worth it to have a common initcall
-> > entry for the various SoCs here?
-> > 
-> This common initcall seems a good place to concentrate the gpio device
-> registration.  It's easy to look at the common/different things among
-> these SoCs.  The only problem you reminded me is the scanning of the
-> long cpu_is_mx list.  It can be optimized a little bit by sorting the
-> list from the latest (most used) SoC to the oldest (least used) one,
-> and breaking out the scanning immediately when hitting one.
+Hello,
 
-No, better make them separate functions.
+Inode flags are corrupted when removing ATTR_SYS flag by FAT_IOCTL_SET_ATTRIBUTES ioctl on fat file system mounted with “sys_immutable” mount option. In this case S_IMMUTABLE flag must be removed from inode flags, but actually removed all other flags except S_IMMUTABLE. This problem observed on 2.6.34 kernel, but it seems still exist( after examine of 2.6.39 kernel source code ).
 
-> > It'd seem cleaner to me to just call the registration function for the
-> > family you're running from in per-family-init code such as where it was
-> > removed above (irq init, which makes some sense since the gpios provide
-> > interrupt sources as well).
-> > 
-> I just gave it a test, and it's not working at all.  (too early
-> to register device in irq init?)
+The problem in fat_ioctl_set_attributes function( fs/fat/file.c ). This function contains following code(2.6.39 kernel):
+ 101        if (sbi->options.sys_immutable) {
+ 102                if (attr & ATTR_SYS)
+ 103                        inode->i_flags |= S_IMMUTABLE;
+ 104                else
+ 105                        inode->i_flags &= S_IMMUTABLE;
+ 106        }
 
-Just open-code the mxc_add_mxc_gpio() by moving the individual calls to
-mxc_add_gpio() into the respective callers. Having a global
-mxc_add_mxc_gpio() function that does something different for each
-caller seems entirely pointless to me.
+Instead of removing S_IMMUTABLE flag from inode flags on line 105 function removes all other flags from inode flags. I think that line 105 must be following:
 
-Best think of it from the point of view how it should look like when
-everything is converted to the device tree. In that case, you would
-have a function scanning the device tree that calls mxc_add_gpio
-for each entry.
+ 105                        inode->i_flags &= ~S_IMMUTABLE;
 
-	Arnd
+Regards,
+Dmitry
