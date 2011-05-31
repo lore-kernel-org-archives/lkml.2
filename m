@@ -1,104 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab1EPSQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 May 2011 14:16:06 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:42943 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab1EPSQD (ORCPT
+	id S932757Ab1EaWA3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 18:00:29 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59805 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758419Ab1EaWA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 May 2011 14:16:03 -0400
-Date: Mon, 16 May 2011 14:13:49 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: "olof@lixom.net" <olof@lixom.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: wireless-next-2.6 rebased -- Re: [PATCH v2] net: rfkill: add generic
- gpio rfkill driver
-Message-ID: <20110516181348.GD6551@tuxdriver.com>
-References: <1305189092.3461.10.camel@jlt3.sipsolutions.net>
- <1305224592.10961.10.camel@rklein-linux2>
- <1305225648.3461.37.camel@jlt3.sipsolutions.net>
- <1305226377.10961.12.camel@rklein-linux2>
- <1305226969.3461.38.camel@jlt3.sipsolutions.net>
- <1305235386.10961.13.camel@rklein-linux2>
- <1305270943.3487.5.camel@jlt3.sipsolutions.net>
- <1305313374.10961.23.camel@rklein-linux2>
- <20110513192019.GC10555@tuxdriver.com>
- <20110513201130.GA10403@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110513201130.GA10403@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 31 May 2011 18:00:28 -0400
+From: Niels de Vos <ndevos@redhat.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Niels de Vos <ndevos@redhat.com>
+Subject: [PATCH] ehci-hcd: remove EOL from MODULE_PARM_DESC for 'hird' option
+Date: Tue, 31 May 2011 23:00:10 +0100
+Message-Id: <1306879210-4988-1-git-send-email-ndevos@redhat.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI, I'm rebasing wireless-next to avoid pushing this bad commit to
-net-next-2.6.  If you pulled wireless-next-2.6.git over the weekend,
-you may experience some rebase-related problems.
+There is no need to have a "\n" on a MODULE_PARM_DESC, remove it
 
-John
+Signed-off-by: Niels de Vos <ndevos@redhat.com>
+---
+ drivers/usb/host/ehci-hcd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Fri, May 13, 2011 at 04:11:31PM -0400, John W. Linville wrote:
-> On Fri, May 13, 2011 at 03:20:20PM -0400, John W. Linville wrote:
-> > On Fri, May 13, 2011 at 12:02:54PM -0700, Rhyland Klein wrote:
-> > > On Fri, 2011-05-13 at 00:15 -0700, Johannes Berg wrote:
-> > > > On Thu, 2011-05-12 at 14:23 -0700, Rhyland Klein wrote:
-> > > > > On Thu, 2011-05-12 at 12:02 -0700, Johannes Berg wrote:
-> > > > > > On Thu, 2011-05-12 at 11:52 -0700, Rhyland Klein wrote:
-> > > > > > 
-> > > > > > > > If, on the other hand, rfkill decides that at the time of loading the
-> > > > > > > > driver wifi should be on, then the first change would be +1 and it'll
-> > > > > > > > flip between 0 and +1.
-> > > > > > > > 
-> > > > > > > > This seems like it'll cause issues at some point, so I think you should
-> > > > > > > > either allow the driver to set the initial state or hardcode one of
-> > > > > > > > these possibilities (so at least it's predictable)
-> > > > > > 
-> > > > > > > I won't go negative, if you look, it only will disable clock if it knows
-> > > > > > > it has already enabled it. 
-> > > > > > 
-> > > > > > Ah, you're right, I misread the macros.
-> > > > 
-> > > > > So the patch is good as is?
-> > > > 
-> > > > I think so, yes.
-> > > > 
-> > > > johannes
-> > > > 
-> > > 
-> > > John, Johannes suggested you are able to pull in this patch?
-> > 
-> > I've got it, thanks.
-> 
->   Building modules, stage 2.
->   MODPOST 2346 modules
-> ERROR: "clk_get" [net/rfkill/rfkill-gpio.ko] undefined!
-> ERROR: "clk_enable" [net/rfkill/rfkill-gpio.ko] undefined!
-> ERROR: "clk_put" [net/rfkill/rfkill-gpio.ko] undefined!
-> ERROR: "clk_disable" [net/rfkill/rfkill-gpio.ko] undefined!
-> WARNING: modpost: Found 5 section mismatch(es).
-> To see full details build your kernel with:
-> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-> make[1]: *** [__modpost] Error 1
-> make: *** [modules] Error 2
-> 
-> Is there something we should add to Kconfig to prevent this?
-> 
-> John
-> -- 
-> John W. Linville		Someday the world will need a hero, and you
-> linville@tuxdriver.com			might be all we have.  Be ready.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index b435ed6..e18862c 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -110,7 +110,7 @@ MODULE_PARM_DESC (ignore_oc, "ignore bogus hardware overcurrent indications");
+ /* for link power management(LPM) feature */
+ static unsigned int hird;
+ module_param(hird, int, S_IRUGO);
+-MODULE_PARM_DESC(hird, "host initiated resume duration, +1 for each 75us\n");
++MODULE_PARM_DESC(hird, "host initiated resume duration, +1 for each 75us");
+ 
+ #define	INTR_MASK (STS_IAA | STS_FATAL | STS_PCD | STS_ERR | STS_INT)
+ 
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+1.7.4.4
+
