@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405Ab1EaTya (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 15:54:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35859 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372Ab1EaTy1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 15:54:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=oJKMqcHRripmY3Tk2VKspqQrRyD0WuQclViixt0/FFvlrKsvNTnk6naYVt+OVc0oQ+
-         sjLkk64bvFqBfPT7iWZedQx+RYO7d4GRWl+X+HTwCjuy3LYIQ1WruNCjXLGq33/2zwB2
-         sDDFHii5Fkx0OGaGUjH8TiubRYubJqoa1r034=
+	id S1758263Ab1EaT4M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 15:56:12 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:42743 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757862Ab1EaT4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 15:56:09 -0400
+Date: Tue, 31 May 2011 21:55:51 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Matthew Garrett <mjg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, davej@redhat.com,
+        torvalds@linux-foundation.org, adobriyan@gmail.com, eranian@google.com,
+        penberg@kernel.org, davem@davemloft.net,
+        Arjan van de Ven <arjan@infradead.org>, Valdis.Kletnieks@vt.edu,
+        Andrew Morton <akpm@linux-foundation.org>, pageexec@freemail.hu,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+Message-ID: <20110531195551.GC26970@elte.hu>
+References: <1306269105.21443.20.camel@dan>
+ <1306442367.2279.25.camel@dan>
+ <20110531165252.GB8971@srcf.ucam.org>
+ <4DE5360D.5070809@zytor.com>
+ <20110531185122.GA11998@srcf.ucam.org>
+ <1306868609.6317.25.camel@dan>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
-References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
-Date: Tue, 31 May 2011 21:54:26 +0200
-X-Google-Sender-Auth: EG12IUkgE_2vJQ4_KUSvgFZALX4
-Message-ID: <BANLkTinsMhQZSeO_ujtYEJuOcAa=FRh-6g@mail.gmail.com>
-Subject: Re: m68k: Convert to genirq (WIP)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306868609.6317.25.camel@dan>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
 
-On Sat, May 28, 2011 at 20:32, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Next on my list is Amiga, which will cover autovectored and chained interrupts.
+* Dan Rosenberg <drosenberg@vsecurity.com> wrote:
 
-Plain chained interrupts should be handled by calling irq_set_chained_handler()
-to register an irq_flow_handler_t, and let the handler call
-generic_handle_irq() for
-each successive interrupt, right?
+> Just for the record, I've put this patch on hold until there's some 
+> more consensus about whether boot-time randomization of the 
+> physical kernel address is the best approach. [...]
 
-However, on Amiga we have interrupts (IRQ_AMIGA_PORTS and
-IRQ_AMIGA_EXTER) that are a combination of chained (for the CIA interrupt
-controllers) and shared level interrupts (for motherboard hardware and
-Zorro expansion
-boards).
-But irq_set_chained_handler() sets IRQ_NOREQUEST, i.e. the interrupt cannot
-be requested anymore via request_irq(), so this rules out using it with shared
-level interrupts.
+Well, if you use the suggestion i made: to skip the e820 map fiddling 
+altogether and just allocate half a megabyte of 'hole' at the end of 
+the kernel image - which would allow the kernel to be randomized 
+freely upwards by 0-128 pages - then the 'dynamic' versus 'static' 
+solution could be used at once!
 
-What's the preferred way to handle this? Is there are standard way, or should I
-write my own specialized irq_flow_handler_t that handles both?
+The 'static' method would use the same hole, just at install time, 
+while the 'dynamic' method would use it during bootup.
 
-In the old scheme, we just registered the chain handlers with
-request_irq(), so they
-worked nicely together with the shared level interrupts (cfr.
-arch/m68k/amiga/cia.c)
+Also, if this method is used then most of the controversy about the 
+dynamic approach goes away (which was the memory maps interpretation 
+fragility).
 
-Thanks!
+Your last patch would need only minor modifications to get the hole 
+added: you'd need to add the tail-hole in the linker map:
 
-Gr{oetje,eeting}s,
+   arch/x86/kernel/vmlinux.lds.S
 
-                        Geert
+So ... could you *please* not shelf this idea just because people 
+used lkml for what it was invented: argued with each other rather 
+forcefully? :-)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Thanks,
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+	Ingo
