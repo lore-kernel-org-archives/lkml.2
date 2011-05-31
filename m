@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab1EaMcp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 08:32:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55752 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab1EaMcn (ORCPT
+	id S1751223Ab1EaMiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 08:38:15 -0400
+Received: from mtagate2.uk.ibm.com ([194.196.100.162]:46886 "EHLO
+	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab1EaMiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 08:32:43 -0400
-Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
-From: David Woodhouse <dwmw2@infradead.org>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Date: Tue, 31 May 2011 13:32:37 +0100
-In-Reply-To: <20110531121215.GA4215@thunk.org>
-References: <20110530104231.GF17821@elte.hu>
-	 <20110530104656.GA19532@elte.hu>
-	 <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
-	 <20110530105809.GA20133@elte.hu>
-	 <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
-	 <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
-	 <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
-	 <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
-	 <20110531075306.GB20798@elte.hu>
-	 <1306832148.2029.484.camel@i7.infradead.org>
-	 <20110531121215.GA4215@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1306845158.2029.543.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 31 May 2011 08:38:14 -0400
+Date: Tue, 31 May 2011 14:38:11 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Turning off the incremental diff robot
+Message-ID: <20110531123811.GA2457@osiris.boeblingen.de.ibm.com>
+References: <4DE3E9E7.8020008@zytor.com>
+ <20110530194500.GE10792@home.goodmis.org>
+ <4DE402BD.4060407@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DE402BD.4060407@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-31 at 08:12 -0400, Ted Ts'o wrote:
-> I don't know why Ingo needs ARCH=x86 on the command line, but I
-> regularly type "make ARCH=i386" when building 32-bit kernels on a
-> 64-bit system, and my scripts use "make ARCH=x86_64" when building
-> 64-bit kernels (just in case I happen to have booted a 32-bit
-> kernel). 
+On Mon, May 30, 2011 at 01:49:01PM -0700, H. Peter Anvin wrote:
+> On 05/30/2011 12:45 PM, Steven Rostedt wrote:
+> > On Mon, May 30, 2011 at 12:03:03PM -0700, H. Peter Anvin wrote:
+> >> Hi all,
+> >>
+> >> With the v3.0 name change I was looking over what might break, and I'm
+> >> seriously considering turning off the incremental diff robot on
+> >> kernel.org.  It's not clear to me that it is actually useful anymore,
+> >> with git and all.
+> > 
+> > What is the incremental diff robot?
+> > 
+> > Does it make the patches between 2.6.x to 2.6.x+1?
+> > 
+> 
+> No, but it generates the patches between, say, 2.6.x.y and 2.6.x.y+1 or
+> 2.6.x-rcy and 2.6.x-rcy+1.  Anything in an "incr" directory.
 
-Yes. That's because of the problem described in $SUBJECT.
-
-Historically, the setting of CONFIG_64BIT in your .config file was just
-completely ignored in most cases.
-
-If you specified ARCH=i386 or ARCH=x86_64 on the command line it would
-be set accordingly, but if you *didn't* set it explicitly then the build
-system would *still* ignore what's in the existing .config, and just
-override it to match the host!
-
-The *only* time that the .config would be honoured was if you explicitly
-added ARCH=x86 to the command line.
-
-That's why your scripts grew these hacks, presumably.
-
--- 
-dwmw2
-
+Yep, I use those incremental patches over here.
