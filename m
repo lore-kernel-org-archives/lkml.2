@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab1EaMcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 08:32:55 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41675 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751038Ab1EaMcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 08:32:52 -0400
-Date: Tue, 31 May 2011 12:32:13 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-74c355fbdfedd3820046dba4f537876cea54c207@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@redhat.com, bblum@andrew.cmu.edu, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        bblum@andrew.cmu.edu, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1306767651.1200.2990.camel@twins>
-References: <1306767651.1200.2990.camel@twins>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf, cgroups: Fix up for new API
-Git-Commit-ID: 74c355fbdfedd3820046dba4f537876cea54c207
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 31 May 2011 12:32:18 +0000 (UTC)
+	id S1752482Ab1EaMcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 08:32:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55752 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab1EaMcn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 08:32:43 -0400
+Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
+From: David Woodhouse <dwmw2@infradead.org>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Date: Tue, 31 May 2011 13:32:37 +0100
+In-Reply-To: <20110531121215.GA4215@thunk.org>
+References: <20110530104231.GF17821@elte.hu>
+	 <20110530104656.GA19532@elte.hu>
+	 <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
+	 <20110530105809.GA20133@elte.hu>
+	 <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
+	 <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
+	 <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
+	 <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
+	 <20110531075306.GB20798@elte.hu>
+	 <1306832148.2029.484.camel@i7.infradead.org>
+	 <20110531121215.GA4215@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1306845158.2029.543.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  74c355fbdfedd3820046dba4f537876cea54c207
-Gitweb:     http://git.kernel.org/tip/74c355fbdfedd3820046dba4f537876cea54c207
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Mon, 30 May 2011 16:48:06 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 31 May 2011 14:20:25 +0200
+On Tue, 2011-05-31 at 08:12 -0400, Ted Ts'o wrote:
+> I don't know why Ingo needs ARCH=x86 on the command line, but I
+> regularly type "make ARCH=i386" when building 32-bit kernels on a
+> 64-bit system, and my scripts use "make ARCH=x86_64" when building
+> 64-bit kernels (just in case I happen to have booted a 32-bit
+> kernel). 
 
-perf, cgroups: Fix up for new API
+Yes. That's because of the problem described in $SUBJECT.
 
-Ben changed the cgroup API in commit f780bdb7c1c (cgroups: add
-per-thread subsystem callbacks) in an incompatible way, but
-forgot to convert the perf cgroup bits.
+Historically, the setting of CONFIG_64BIT in your .config file was just
+completely ignored in most cases.
 
-Avoid compile warnings and runtime splats and convert perf too ;-)
+If you specified ARCH=i386 or ARCH=x86_64 on the command line it would
+be set accordingly, but if you *didn't* set it explicitly then the build
+system would *still* ignore what's in the existing .config, and just
+override it to match the host!
 
-Acked-by: Ben Blum <bblum@andrew.cmu.edu>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1306767651.1200.2990.camel@twins
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/events/core.c |   22 ++++------------------
- 1 files changed, 4 insertions(+), 18 deletions(-)
+The *only* time that the .config would be honoured was if you explicitly
+added ARCH=x86 to the command line.
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index c09767f..8a15944 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7394,26 +7394,12 @@ static int __perf_cgroup_move(void *info)
- 	return 0;
- }
- 
--static void perf_cgroup_move(struct task_struct *task)
-+static void
-+perf_cgroup_attach_task(struct cgroup *cgrp, struct task_struct *task)
- {
- 	task_function_call(task, __perf_cgroup_move, task);
- }
- 
--static void perf_cgroup_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
--		struct cgroup *old_cgrp, struct task_struct *task,
--		bool threadgroup)
--{
--	perf_cgroup_move(task);
--	if (threadgroup) {
--		struct task_struct *c;
--		rcu_read_lock();
--		list_for_each_entry_rcu(c, &task->thread_group, thread_group) {
--			perf_cgroup_move(c);
--		}
--		rcu_read_unlock();
--	}
--}
--
- static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 		struct cgroup *old_cgrp, struct task_struct *task)
- {
-@@ -7425,7 +7411,7 @@ static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 	if (!(task->flags & PF_EXITING))
- 		return;
- 
--	perf_cgroup_move(task);
-+	perf_cgroup_attach_task(cgrp, task);
- }
- 
- struct cgroup_subsys perf_subsys = {
-@@ -7434,6 +7420,6 @@ struct cgroup_subsys perf_subsys = {
- 	.create		= perf_cgroup_create,
- 	.destroy	= perf_cgroup_destroy,
- 	.exit		= perf_cgroup_exit,
--	.attach		= perf_cgroup_attach,
-+	.attach_task	= perf_cgroup_attach_task,
- };
- #endif /* CONFIG_CGROUP_PERF */
+That's why your scripts grew these hacks, presumably.
+
+-- 
+dwmw2
+
