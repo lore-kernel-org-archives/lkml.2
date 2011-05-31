@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab1EaBqG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 21:46:06 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:50158 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754232Ab1EaBqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 21:46:04 -0400
-Date: Mon, 30 May 2011 18:45:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Damien Wyart <damien.wyart@free.fr>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
-Subject: Re: Very high CPU load when idle with 3.0-rc1
-Message-ID: <20110531014557.GV2668@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110530055924.GA9169@brouette>
- <1306755291.1200.2872.camel@twins>
- <20110530162354.GQ2668@linux.vnet.ibm.com>
- <1306773981.23844.2.camel@twins>
- <20110530212955.GT2668@linux.vnet.ibm.com>
- <1306791328.23844.13.camel@twins>
+	id S1755172Ab1EaCDL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 22:03:11 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:55268 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753061Ab1EaCDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 22:03:10 -0400
+Date: Mon, 30 May 2011 22:03:00 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: "D. Jansen" <d.g.jansen@googlemail.com>
+Cc: david@lang.hm, Oliver Neukum <oneukum@suse.de>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
+        njs@pobox.com, bart@samwel.tk
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+Message-ID: <20110531020300.GJ2890@dhcp-172-31-194-241.cam.corp.google.com>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	"D. Jansen" <d.g.jansen@googlemail.com>, david@lang.hm,
+	Oliver Neukum <oneukum@suse.de>, akpm@linux-foundation.org,
+	linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
+	njs@pobox.com, bart@samwel.tk
+References: <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu>
+ <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm>
+ <BANLkTik69Gb2i1467bhnEU-pJ0WB10mqNQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105301058030.5766@asgard.lang.hm>
+ <BANLkTimtY0ggu28i-9VzWOO1=puZ0JvcAQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105301142030.5766@asgard.lang.hm>
+ <BANLkTimuToT90eRGVRfN9tAHoF9GOSRRDA@mail.gmail.com>
+ <alpine.DEB.2.02.1105301349530.5766@asgard.lang.hm>
+ <BANLkTimSLoY3uwtGvA2x5C0HhNEHvmWqzw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306791328.23844.13.camel@twins>
+In-Reply-To: <BANLkTimSLoY3uwtGvA2x5C0HhNEHvmWqzw@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 11:35:28PM +0200, Peter Zijlstra wrote:
-> On Mon, 2011-05-30 at 14:29 -0700, Paul E. McKenney wrote:
-> > But I should be able to move them back in under "if (cpu_online(cpu))",
-> > right? 
+On Mon, May 30, 2011 at 11:24:03PM +0200, D. Jansen wrote:
+> > do you really have so many fsync's going on that the disk spins up so much
+> > that you would gain 10-20% battery life?
 > 
-> Yeah, you should be able to put the wakeup in the spawn function when
-> made conditional on cpu_online(), although I'm not quite sure how to do
-> that for the rnp case, but I guess you'll have a better grasp on that.
+> Yes. Every autosave in LibreOffice triggers one. And I want autosave,
+> but I want them in memory, not on disk.
 
-OK, will give it a go.
+What on *heck* good does an autosave to memory do?  Are you afraid
+your X server is going to go poof, or OpenOffice is going to crash on
+you?  I can't remember the last time this has happened to me.  It's
+typically a system crash or a power loss that causes me to lose an
+OpenOffice session.
 
-							Thanx, Paul
+> > and what makes you think the extra spin-ups from fsyncs will cause your hard
+> > drive to fail significantly earlier? (if you have a hard drive with a
+> > limited number of spin-up cycles, you probably don't want to use laptop mode
+> > at all)
+> 
+> Experience, see above. Also, this is well described behavior. All hard
+> disks are only designed to last a certain number of head loads and
+> unloads. Spinning up and down even less.
+
+Modern laptop drives are designed for 600,000 to a million head loads
+and unloads.  Open Office by default autosaves once every 15 minutes.
+So if you leave your system running (on battery?!?) 24x7, with open
+office open all that time, even with HDD which is only rated for 600k
+load cycles, that's 4.5 years.  And of course, normally such a system
+is powered all the time, and the hard drive shouldn't be spinning down
+if you're on the AC mains.
+
+The real fix is that applications need to be fixed to be less
+write-happy.  Firefox example, used to request a transactional update
+to a sqllite database on every web click.  Laptop mode isn't the right
+place to fix this, since if you try to stop the writes from hitting
+the disk, you'll still end up burning memory that can't be released
+until the data is written to disk.  My guess is that it's not
+OpenOffice which is causing you the problem, unless you've adjusted
+the autosave interval, in which case it's your own fault.  It's
+probably some application like firefox, or syslog.  (Syslog can be
+fixed by prefixing syslog.conf entries with the '-' character so that
+the files aren't sync'ed after every log update, for example.  Or not
+to log as much in the first place.)
+
+					- Ted
+
+
