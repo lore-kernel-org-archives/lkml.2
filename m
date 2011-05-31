@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab1EaFiL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 01:38:11 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48415 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064Ab1EaFiJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 01:38:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=iW/KAgI0Q2WE7MzuGyZ4yI7UIIDssCZwP1lqjuKhJukQLZddHiX74xB+R7uzI0FVGO
-         N9qBZw471/U5RnpgvvLmS49JAkLMRTR1cS2eD0lmsiKp7UcksrU1p2sLZTTCWBOK84+r
-         eVd8xWQtctOQ2SpMeFH+jG7/ky11zS5e/eIeo=
-Date: Tue, 31 May 2011 14:38:02 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, akpm@linux-foundation.org,
-        Ury Stankevich <urykhy@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous
-Message-ID: <20110531053802.GA1519@barrios-laptop>
-References: <20110530131300.GQ5044@csn.ul.ie>
- <20110531134835.b7c9edc2.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1756904Ab1EaFkR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 01:40:17 -0400
+Received: from unix.wroclaw.pl ([94.23.28.62]:43398 "EHLO unix.wroclaw.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751346Ab1EaFkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 01:40:16 -0400
+Date: Tue, 31 May 2011 07:40:08 +0200
+From: Mariusz Kozlowski <mk@lab.zgora.pl>
+To: david@lang.hm
+Cc: Mariusz Kozlowski <mk@lab.zgora.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.0-rc1
+Message-ID: <20110531054008.GA1906@mako-laptop>
+References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
+ <BANLkTinsO2=tO_UyzzgeU6LE1fObgq+p1Q@mail.gmail.com>
+ <20110530200329.GA1833@mako-laptop>
+ <alpine.DEB.2.02.1105301545420.5766@asgard.lang.hm>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110531134835.b7c9edc2.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.DEB.2.02.1105301545420.5766@asgard.lang.hm>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Report: SpamAssassin 3.2.5 (2008-06-10) on unix.wroclaw.pl
+	Spam=No score=-1.4 bayes=0.5 autolearn=disabled
+	Spam Tests:
+	* -1.4 ALL_TRUSTED Passed through trusted hosts only via SMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kame,
+On Mon, May 30, 2011 at 03:48:49PM -0700, david@lang.hm wrote:
+> >You could consider freezing linux-2.6.git repository and creating new
+> >linux-3.git repository that would serve for a couple of years until
+> >linux-4.git. At the same time development history could be dropped between
+> >trees so that inital clones are lighter. Anyone interested in history
+> >can download idx/pack from linux-2.6.git repo and attach it using gratf
+> >point[1] anyway.
+> >
+> >Pros:
+> >- obvious naming scheme wrt repository contents
+> >- smaller initial clone
+> >- new clean tag namespace
+> >
+> >Cons:
+> >- broken bisection for some time
+> >- impaired log/blame/whatchanged and friends
+> 
+> in addition won't there be problems merging in work done on the old
+> tree? (since there would be no common history)
 
-On Tue, May 31, 2011 at 01:48:35PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Mon, 30 May 2011 14:13:00 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > Asynchronous compaction is used when promoting to huge pages. This is
-> > all very nice but if there are a number of processes in compacting
-> > memory, a large number of pages can be isolated. An "asynchronous"
-> > process can stall for long periods of time as a result with a user
-> > reporting that firefox can stall for 10s of seconds. This patch aborts
-> > asynchronous compaction if too many pages are isolated as it's better to
-> > fail a hugepage promotion than stall a process.
-> > 
-> > If accepted, this should also be considered for 2.6.39-stable. It should
-> > also be considered for 2.6.38-stable but ideally [11bc82d6: mm:
-> > compaction: Use async migration for __GFP_NO_KSWAPD and enforce no
-> > writeback] would be applied to 2.6.38 before consideration.
-> > 
-> > Reported-and-Tested-by: Ury Stankevich <urykhy@gmail.com>
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> 
-> 
-> 
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> BTW, I'm surprised to see both of vmscan.c and compaction.c has too_many_isolated()..
-> in different logic ;)
-> 
-> BTW, compaction ignores UNEVICTABLE LRU ?
+Everyone would need to restart and probably reapply they changes on top
+of new tree (because of lack of common history).
 
-Good point.
-Yes. now compaction doesn't work with unevictable LRU but I think we have no reason
-to work well with unveictable pages. 
-If we don't support unevictable lru, it would be a problem in lots of
-mlocked pages workload.
-It would be a good enhance point on compaction.
-
+> everyone would need to re-clone their repository (and attaching
+> history wouldn't help this)
 > 
-> Thanks,
-> -Kame
+> there are probably others.
+> 
+> frankly I don't see any real benifits from the Pros you list. the
+> initial clone is already rather small, it probably won't make that
+> big a difference to throw away several years of history.
+
+linux-2.6.git is all about lots of small changes so size isn't all that
+big today but there are quite many objects. Using grafts might help
+decreasing size of repository. I just mentioned it because it is a bit
+of a revolution time anyway and otherwise current tree will grow for next
+decade or so.
+
+It's just an idea, I'm happy either way.
+
+Thanks.
 -- 
-Kind regards
-Minchan Kim
+Mariusz Kozlowski
