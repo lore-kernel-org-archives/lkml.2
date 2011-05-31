@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424Ab1EaOSM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 10:18:12 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:37041 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756186Ab1EaOSK (ORCPT
+	id S1756311Ab1EaOYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 10:24:17 -0400
+Received: from vt.electrainfo.com ([207.136.236.70]:60534 "EHLO
+	black.electrainfo.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754782Ab1EaOYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 10:18:10 -0400
-Date: Tue, 31 May 2011 10:18:09 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-cc: greg@kroah.com, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <balbi@ti.com>,
-        <ablay@codeaurora.org>, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v14 9/9] usb: Adding SuperSpeed support to dummy_hcd
-In-Reply-To: <1306847914-19876-10-git-send-email-tlinder@codeaurora.org>
-Message-ID: <Pine.LNX.4.44L0.1105311014160.30678-100000@netrider.rowland.org>
+	Tue, 31 May 2011 10:24:16 -0400
+Date: Tue, 31 May 2011 10:24:15 -0400
+From: Whit Blauvelt <whit@transpect.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: recursive fault in 2.6.35.5
+Message-ID: <20110531142415.GA17781@black.transpect.com>
+References: <20110529162738.GA7832@black.transpect.com>
+ <1306723709.4895.4.camel@marge.simson.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306723709.4895.4.camel@marge.simson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 May 2011, Tatyana Brokhman wrote:
+On Mon, May 30, 2011 at 04:48:29AM +0200, Mike Galbraith wrote:
 
-> This patch adds SS support to the dummy hcd module. It may be used to test
-> SS device when no (SS) HW is available.
-> USB 3.0 hub includes 2 hubs - HS and SS ones.
-> This patch adds support for a SS hub in the dummy_hcd module. Thus, when
-> dummy_hcd enabled it will register 2 root hubs (SS and HS).
-> A new module parameter was added to simulate a SuperSpeed connection.
-> When a new device is connected it will enumerate via the HS root hub by
-> default. In order to simulate SuperSpeed connection set the is_super_speed module
-> parameter to true.
+> No, you've been bitten by an annoyingly elusive load balancing bug.
 
-If is_super_speed is false, shouldn't you avoid registering the
-SuperSpeed hub?  Or would that add too many complications?
+Thanks Mike. Can that bug be avoided by leaving out some kernel option? The
+system that happened on had it's identical twin fail the day before. For
+both, it was a time of relatively more load (although not excessive). On the
+twin we didn't look at the console before rebooting though.
 
-> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
-> 
-> ---
->  drivers/usb/gadget/Kconfig     |    1 +
->  drivers/usb/gadget/dummy_hcd.c |  556 +++++++++++++++++++++++++++++++++-------
->  2 files changed, 469 insertions(+), 88 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-> index 5927541..d5f0af7 100644
-> --- a/drivers/usb/gadget/Kconfig
-> +++ b/drivers/usb/gadget/Kconfig
-> @@ -626,6 +626,7 @@ config USB_DUMMY_HCD
->  	depends on USB_GADGET_DUMMY_HCD
->  	default USB_GADGET
->  	select USB_GADGET_SELECTED
-> +	select USB_GADGET_SUPERSPEED
+On the other hand, we'd run for months with no problem up until this.
 
-This belongs under USB_GADGET_DUMMY_HCD, next to the "select
-USB_GADGET_DUALSPEED" line.
-
-Alan Stern
+Regards,
+Whit
 
