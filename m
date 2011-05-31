@@ -1,44 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab1EaKfS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 06:35:18 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36559 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623Ab1EaKfQ (ORCPT
+	id S1753764Ab1EaKcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 06:32:04 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:42239 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753224Ab1EaKcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 06:35:16 -0400
-Date: Tue, 31 May 2011 12:35:14 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] irq: handle spurios irq detection for threaded
- irqs
-In-Reply-To: <1306824972-27067-2-git-send-email-sebastian@breakpoint.cc>
-Message-ID: <alpine.LFD.2.02.1105311233020.3078@ionos>
-References: <1306824972-27067-1-git-send-email-sebastian@breakpoint.cc> <1306824972-27067-2-git-send-email-sebastian@breakpoint.cc>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 31 May 2011 06:32:01 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: Alan Cox <alan@linux.intel.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH v4] 8250_pci: add -ENODEV code for Intel EG20T PCH
+Date: Tue, 31 May 2011 19:35:30 +0900
+Message-Id: <1306838130-3644-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 May 2011, Sebastian Andrzej Siewior wrote:
->  			raw_spin_unlock_irq(&desc->lock);
-> -			handler_fn(desc, action);
-> +			action_ret = handler_fn(desc, action);
-> +			if (!noirqdebug) {
-> +				raw_spin_lock_irq(&desc->lock);
+Intel EG20T PCH has UART device which is compatible with 8250.
+Currently, with general configuration, the PCH UART driver is not loaded but
+8250 standard driver is loaded.
+Therefore, in case of using PCH UART driver, need to disable 8250 pci function.
+However, this procedure is not best solution.
+This patch, in 8250_pci, if the device is the PCH or the family IOH,
+'-ENODEV' is returned.
+As a result, disabling 8250-pci processing becomes unnecessary.
 
-Hmm. This will deadlock in __report_bad_irq().
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+V4: Rename own_init to return_ENODEV
+    Add #if defined ~ #endif
 
-> +				note_interrupt(action->irq, desc, action_ret);
-> +				raw_spin_unlock_irq(&desc->lock);
-> +			}
+V3: add own init() and set the init() to quirk table.
 
-Thanks,
+V2: Delete #ifdef CONFIG_SERIAL_PCH_UART ~ #endif
+    Use quirk table structure
+---
+ drivers/tty/serial/8250_pci.c |   59 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 59 insertions(+), 0 deletions(-)
 
-	tglx
+diff --git a/drivers/tty/serial/8250_pci.c b/drivers/tty/serial/8250_pci.c
+index 738cec9..fe8d371 100644
+--- a/drivers/tty/serial/8250_pci.c
++++ b/drivers/tty/serial/8250_pci.c
+@@ -988,6 +988,15 @@ static int skip_tx_en_setup(struct serial_private *priv,
+ 	return pci_default_setup(priv, board, port, idx);
+ }
+ 
++static int return_ENODEV(struct pci_dev *dev)
++{
++#if defined(CONFIG_SERIAL_PCH_UART) || defined(CONFIG_SERIAL_PCH_UART_MODULE)
++	return -ENODEV;
++#else
++	return 0;
++#endif
++}
++
+ /* This should be in linux/pci_ids.h */
+ #define PCI_VENDOR_ID_SBSMODULARIO	0x124B
+ #define PCI_SUBVENDOR_ID_SBSMODULARIO	0x124B
+@@ -1430,6 +1439,56 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
+ 		.init		= pci_oxsemi_tornado_init,
+ 		.setup		= pci_default_setup,
+ 	},
++	{
++		.vendor         = PCI_VENDOR_ID_INTEL,
++		.device         = 0x8811,
++		.init		= return_ENODEV,
++	},
++	{
++		.vendor         = PCI_VENDOR_ID_INTEL,
++		.device         = 0x8812,
++		.init		= return_ENODEV,
++	},
++	{
++		.vendor         = PCI_VENDOR_ID_INTEL,
++		.device         = 0x8813,
++		.init		= return_ENODEV,
++	},
++	{
++		.vendor         = PCI_VENDOR_ID_INTEL,
++		.device         = 0x8814,
++		.init		= return_ENODEV,
++	},
++	{
++		.vendor         = 0x10DB,
++		.device         = 0x8027,
++		.init		= return_ENODEV,
++	},
++	{
++		.vendor         = 0x10DB,
++		.device         = 0x8028,
++		.init		= return_ENODEV,
++	},
++	{
++		.vendor         = 0x10DB,
++		.device         = 0x8029,
++		.init		= return_ENODEV,
++	},
++	{
++		.vendor         = 0x10DB,
++		.device         = 0x800C,
++		.init		= return_ENODEV,
++	},
++	{
++		.vendor         = 0x10DB,
++		.device         = 0x800D,
++		.init		= return_ENODEV,
++	},
++	{
++		.vendor         = 0x10DB,
++		.device         = 0x800D,
++		.init		= return_ENODEV,
++	},
+ 	/*
+ 	 * Default "match everything" terminator entry
+ 	 */
+-- 
+1.7.4
+
