@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757998Ab1EaSBM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 14:01:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:22818 "EHLO mga11.intel.com"
+	id S1758040Ab1EaSGr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 14:06:47 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55158 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753216Ab1EaSBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 14:01:10 -0400
+	id S1753670Ab1EaSGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 14:06:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,298,1304319600"; 
-   d="scan'208";a="9944906"
-Date: Tue, 31 May 2011 11:01:07 -0700
+   d="scan'208";a="9946838"
+Date: Tue, 31 May 2011 11:06:43 -0700
 From: Andi Kleen <ak@linux.intel.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Will Deacon <Will.Deacon@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, sam@ravnborg.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Disable -fconserve-stack on ARM
-Message-ID: <20110531180107.GA9261@alboin.amr.corp.intel.com>
-References: <BANLkTim2TOZgB-3Vkv5RcK572Qr07s3=CA@mail.gmail.com>
- <1306429854.26735.9.camel@e102144-lin.cambridge.arm.com>
- <alpine.LFD.2.00.1105261650330.3207@xanadu.home>
- <20110526215101.GL24876@n2100.arm.linux.org.uk>
- <20110527083806.GA21100@e102109-lin.cambridge.arm.com>
- <20110527085414.GP24876@n2100.arm.linux.org.uk>
- <20110527095111.GC21100@e102109-lin.cambridge.arm.com>
- <yw1xlixse2fl.fsf@unicorn.mansr.com>
- <20110528153417.GB25869@alboin.amr.corp.intel.com>
- <20110531163026.GB771@e102109-lin.cambridge.arm.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        chris.mason@oracle.com, josef@redhat.com, agruen@linbit.com,
+        "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: Re: [PATCH 1/4] Cache xattr security drop check for write v2
+Message-ID: <20110531180643.GB9261@alboin.amr.corp.intel.com>
+References: <1306596354-18453-1-git-send-email-andi@firstfloor.org>
+ <1306849896.2816.22.camel@menhir>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110531163026.GB771@e102109-lin.cambridge.arm.com>
+In-Reply-To: <1306849896.2816.22.camel@menhir>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Didn't work, on the gcc command line we get -fno-conserve-stack followed
-> by -fconserve-stack from the top makefile and it seems that the latter
-> takes priority.
+> It sounds like a good idea, but cluster filesystems will need to clear
+> the flag when they update their in-core inodes. Without that we could
+> have:
+> 
+>  Node A looks up inode and sets S_NOSEC since its not suid
+>  Node B does chmod +s on the inode
+>  Node A now has S_NOSEC set, but inode is suid, so writes don't clear
+> suid
 
-Ah ok need to move it up then too in the top level Makefile.
-Like this.
+Good point. I assume that's also true for network file systems.
+
+This would essentially argue that for those putting the helper
+into the inode read paths is not optional. I'll look into this
+later.
+
+> -	flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
+> +	flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC|S_NOSEC);
+> +	if (!is_sxid(inode->i_mode))
+> +		flags |= S_NOSEC;
+
+Doesn't that need a check for no xattr too? or do you not support
+those currently?
+
+Note I added a helper for this in the latest version:
+inode_has_no_xattr()
 
 -Andi
-
----
-Disable -fconserve-stack on ARM v2
-
-There are reports that -fconserve-stack misaligns variables on the stack.
-Disable it for ARM to work around this gcc bug.
-
-v2: Move top level flags definition up
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
-diff --git a/Makefile b/Makefile
-index 529d93f..08d848f 100644
---- a/Makefile
-+++ b/Makefile
-@@ -564,6 +564,10 @@ else
- KBUILD_CFLAGS	+= -O2
- endif
- 
-+# conserve stack if available
-+# do this early so that an architecture can override it.
-+KBUILD_CFLAGS   += $(call cc-option,-fconserve-stack)
-+
- include $(srctree)/arch/$(SRCARCH)/Makefile
- 
- ifneq ($(CONFIG_FRAME_WARN),0)
-@@ -629,9 +633,6 @@ KBUILD_CFLAGS += $(call cc-disable-warning, pointer-sign)
- # disable invalid "can't wrap" optimizations for signed / pointers
- KBUILD_CFLAGS	+= $(call cc-option,-fno-strict-overflow)
- 
--# conserve stack if available
--KBUILD_CFLAGS   += $(call cc-option,-fconserve-stack)
--
- # use the deterministic mode of AR if available
- KBUILD_ARFLAGS := $(call ar-option,D)
- 
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index f5b2b39..902fec9 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -41,6 +41,10 @@ ifeq ($(CONFIG_CC_STACKPROTECTOR),y)
- KBUILD_CFLAGS	+=-fstack-protector
- endif
- 
-+# ARM gcc developers unfortunately broke -fconserve-stack. It misaligns
-+# variables on the stack
-+KBUILD_CFLAGS += $(call cc-option,-fno-conserve-stack)
-+
- ifeq ($(CONFIG_CPU_BIG_ENDIAN),y)
- KBUILD_CPPFLAGS	+= -mbig-endian
- AS		+= -EB
