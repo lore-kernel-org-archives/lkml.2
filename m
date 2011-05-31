@@ -1,109 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129Ab1EaRZB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 13:25:01 -0400
-Received: from lo.gmane.org ([80.91.229.12]:44160 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757794Ab1EaRY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 13:24:59 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Tim Blechmann <tim@klingt.org>
-Subject: [3.0-rc1] nouveau lockup
-Followup-To: gmane.linux.kernel
-Date: Tue, 31 May 2011 19:24:45 +0200
-Message-ID: <is388t$ji2$1@dough.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7Bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 85-127-90-20.dynamic.xdsl-line.inode.at
-User-Agent: KNode/4.4.10
+	id S932167Ab1EaR1D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 13:27:03 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64699 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932079Ab1EaR1B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 13:27:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=q2SVqtVpMHLti7jG4mJem71R4KlMha5dTHT8gm1yn8QfaquqwLD2geuaJlkksO/awP
+         eInahzrOGIDcJm+GWJM7GymGe2u65NCUhuO83py2LrgE/tWK3gym5ptV7Det7W0nBwld
+         InYJOWjTmlCxz9o84zobkrYeqrckljq1QxqpQ=
+Date: Tue, 31 May 2011 20:26:51 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] sched: RCU-protect __set_task_cpu() in set_task_cpu()
+Message-ID: <20110531172651.GA4478@swordfish.minsk.epam.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-running 3.0-rc1, i experienced a lockup of my machine, which is related to
-nouveau:
+Wrap __set_task_cpu() with RCU read-side critical section. 
+__set_task_cpu() calls task_group() that performs rcu dereference check in 
+task_subsys_state_check(), causing:
 
-after using chromium for some time, the x server crashed and the machine was
-hardly responding any more: however i was able to log into the terminal, and 
-dump the system log, which tells me:
+ [  152.262791] kernel/sched.c:619 invoked rcu_dereference_check() without protection!
+ [  152.262795] 
+ [  152.262841] stack backtrace:
+ [  152.262846] Pid: 16, comm: watchdog/1 Not tainted 3.0.0-rc1-dbg-00441-g1d5f9cc-dirty #599
+ [  152.262851] Call Trace:
+ [  152.262860]  [<ffffffff8106e17b>] lockdep_rcu_dereference+0xa7/0xaf
+ [  152.262868]  [<ffffffff810369f4>] set_task_cpu+0x1ed/0x3ce
+ [  152.262876]  [<ffffffff8123a5d7>] ? plist_check_head+0x94/0x98
+ [  152.262883]  [<ffffffff8123a72d>] ? plist_del+0x82/0x89
+ [  152.262889]  [<ffffffff8102b139>] ? dequeue_task_rt+0x33/0x38
+ [  152.262895]  [<ffffffff8102e3ac>] ? dequeue_task+0x82/0x89
+ [  152.262902]  [<ffffffff81036fc0>] push_rt_task.part.131+0x1bb/0x247
+ [  152.262909]  [<ffffffff81037138>] post_schedule_rt+0x1b/0x24
+ [  152.262918]  [<ffffffff81477c1c>] schedule+0x989/0xa9e
+ [  152.262923]  [<ffffffff814775e6>] ? schedule+0x353/0xa9e
+ [  152.262931]  [<ffffffff8147de58>] ? sub_preempt_count+0x8f/0xa3
+ [  152.262938]  [<ffffffff8109fd2c>] ? watchdog_enable+0x195/0x195
+ [  152.262946]  [<ffffffff810072e5>] ? native_sched_clock+0x38/0x65
+ [  152.262953]  [<ffffffff81062c0c>] ? cpu_clock+0x4a/0x5f
+ [  152.262958]  [<ffffffff8109fd2c>] ? watchdog_enable+0x195/0x195
+ [  152.262965]  [<ffffffff81071a15>] ? trace_hardirqs_on_caller+0x10d/0x131
+ [  152.262971]  [<ffffffff81071a46>] ? trace_hardirqs_on+0xd/0xf
+ [  152.262977]  [<ffffffff8109fd2c>] ? watchdog_enable+0x195/0x195
+ [  152.262983]  [<ffffffff8109fd94>] watchdog+0x68/0xab
+ [  152.262990]  [<ffffffff8105cb82>] kthread+0x9a/0xa2
+ [  152.262999]  [<ffffffff81481e24>] kernel_thread_helper+0x4/0x10
+ [  152.263005]  [<ffffffff8102d6bf>] ? finish_task_switch+0x76/0xf0
+ [  152.263012]  [<ffffffff8147b258>] ? retint_restore_args+0x13/0x13
+ [  152.263019]  [<ffffffff8105cae8>] ? __init_kthread_worker+0x53/0x53
+ [  152.263024]  [<ffffffff81481e20>] ? gs_change+0x13/0x13
 
-[15993.183701] [drm] nouveau 0000:02:00.0: PGRAPH - DATA_ERROR INVALID_ENUM
-[15993.183706] [drm] nouveau 0000:02:00.0: PGRAPH - DATA_ERROR
-[15993.183710] [drm] nouveau 0000:02:00.0: PGRAPH - ch 5 (0x000d510000) subc 6 class 0x502d mthd 0x17b0 data 0x00000000
-[15993.183717] [drm] nouveau 0000:02:00.0: PGRAPH - DATA_ERROR INVALID_VALUE
-[15993.183719] [drm] nouveau 0000:02:00.0: PGRAPH - DATA_ERROR
-[15993.183722] [drm] nouveau 0000:02:00.0: PGRAPH - ch 5 (0x000d510000) subc 6 class 0x502d mthd 0x1420 data 0x00000000
-[16000.923008] [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_CCACHE FAULT
-[16000.923019] [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_CCACHE 00000080 00000000 00000000 00000000 00000000 00000004 00080000
-[16000.923021] [drm] nouveau 0000:02:00.0: PGRAPH - TRAP
-[16000.923024] [drm] nouveau 0000:02:00.0: PGRAPH - ch 2 (0x0000a30000) subc 5 class 0x8297 mthd 0x0f04 data 0x00000000
-[16000.923033] [drm] nouveau 0000:02:00.0: VM: trapped read at 0x002000f000 on ch 2 [0x00000a30] PFIFO/PFIFO_READ/SEMAPHORE reason: DMAOBJ_LIMIT
-[16002.548678] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16004.169350] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16005.790022] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16007.410696] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16008.325449] ieee80211 phy0: wlan%d: No probe response from AP 00:24:fe:09:94:18 after 500ms, disconnecting.
-[16009.031369] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16010.652040] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16012.272712] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16013.893383] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16015.514054] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16017.134725] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16018.755396] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16020.376068] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16021.996740] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16023.617414] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16023.620766] cfg80211: All devices are disconnected, going to restore regulatory settings
-[16023.620770] cfg80211: Restoring regulatory settings
-[16023.620774] cfg80211: Calling CRDA to update world regulatory domain
-[16025.238086] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16025.244737] cfg80211: Updating information on frequency 2412 MHz for a 20 MHz width channel with regulatory rule:
-[16025.244740] cfg80211: 2402000 KHz - 2472000 KHz @  KHz), (300 mBi, 2000 mBm)
-[16025.244742] cfg80211: Updating information on frequency 2417 MHz for a 20 MHz width channel with regulatory rule:
-[snip some cfg80211 messages]
-[16026.858760] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16028.479433] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16030.100105] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16031.720776] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16033.341447] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16034.962120] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16036.582792] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16038.203464] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16039.824138] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16041.444812] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16043.065484] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16044.686332] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16046.307463] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16046.525924] [drm] nouveau 0000:02:00.0: GPU lockup - switching to software fbcon
-[16048.150234] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16049.772210] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16050.165951] wlan%d: authenticate with 00:24:fe:09:94:18 (try 1)
-[16050.167354] wlan%d: authenticated
-[16050.167372] wlan%d: associate with 00:24:fe:09:94:18 (try 1)
-[16050.169528] wlan%d: RX AssocResp from 00:24:fe:09:94:18 (capab=0x401 status=0 aid=1)
-[16050.169530] wlan%d: associated
-[16056.681585] chromium-browse[16337]: segfault at 0 ip 00007fe3c275e240 sp 00007fe3b46336c0 error 6 in chromium-browser[7fe3c1bd7000+35cf000]
-[16059.685075] [drm] nouveau 0000:02:00.0: Failed to idle channel 5.
-[16061.305839] [drm] nouveau 0000:02:00.0: Ctxprog is still running
-[16062.926967] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16064.547681] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16066.168397] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16067.789110] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16069.409824] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
-[16071.030538] [drm] nouveau 0000:02:00.0: PGRAPH TLB flush idle timeout fail: 0x00000701 0x00000009 0x00000000 0x00000000
 
-... continuing until i reboot the machine ...
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-tim
+---
 
--- 
-tim@klingt.org
-http://tim.klingt.org
+ kernel/sched.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-You can play a shoestring if you're sincere
-  John Coltrane
-
+diff --git a/kernel/sched.c b/kernel/sched.c
+index cbb3a0e..cf0dd8a 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2212,7 +2212,9 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+ 		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, 1, NULL, 0);
+ 	}
+ 
++	rcu_read_lock();
+ 	__set_task_cpu(p, new_cpu);
++	rcu_read_unlock();
+ }
+ 
+ struct migration_arg {
 
