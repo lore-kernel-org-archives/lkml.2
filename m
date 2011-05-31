@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758118Ab1EaSey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 14:34:54 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:45452 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757164Ab1EaSex (ORCPT
+	id S1758140Ab1EaShz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 14:37:55 -0400
+Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:46817
+	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758096Ab1EaShx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 14:34:53 -0400
-Date: Tue, 31 May 2011 20:34:48 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Andy Lutomirski <luto@MIT.EDU>
-Cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v4 10/10] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
-Message-ID: <20110531183448.GA27166@one.firstfloor.org>
-References: <cover.1306851090.git.luto@mit.edu> <1660d1687db01852ec58bbf970e22868db367d53.1306851090.git.luto@mit.edu>
-Mime-Version: 1.0
+	Tue, 31 May 2011 14:37:53 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de p4VIbg8T015770
+From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+To: "Robert P. J. Day" <rpjday@crashcourse.ca>
+Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [3.0-rc1] i915: blank screen on Lenovo Ideapad U160
+In-Reply-To: <alpine.DEB.2.00.1105311406210.5012@localhost6.localdomain6>
+	(Robert P. J. Day's message of "Tue, 31 May 2011 14:08:48 -0400
+	(EDT)")
+References: <gi1uzevjl4.fsf@mx10.gouders.net>
+	<alpine.DEB.2.00.1105311406210.5012@localhost6.localdomain6>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+Date: Tue, 31 May 2011 20:37:41 +0200
+Message-ID: <gitycau362.fsf@mx10.gouders.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1660d1687db01852ec58bbf970e22868db367d53.1306851090.git.luto@mit.edu>
-User-Agent: Mutt/1.4.2.2i
+X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Tue, 31 May 2011 20:37:42 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +What:	CONFIG_UNSAFE_VSYSCALLS (x86_64)
-> +When:	When glibc 2.14 or newer is ubitquitous.  Perhaps mid-2012.
-> +Why:	Having user-executable code at a fixed address is a security problem.
-> +	Turning off CONFIG_UNSAFE_VSYSCALLS mostly removes the risk but will
-> +	make the time() function slower on glibc versions 2.13 and below.
+"Robert P. J. Day" <rpjday@crashcourse.ca> writes:
 
-I disagree with this description (and the whole idea really)
+> On Tue, 31 May 2011, Dirk Gouders wrote:
+>
+>> Hello,
+>>
+>> I tested 3.0.0-rc1 on my notebook which has never been the best friend
+>> of the i915 driver.  With linux-2.6.38-gentoo-r4 it has the problem
+>> that the screen remains blank after the lid is closed and reopened, but
+>> that problem I can live with.  With 3.0.0-r1 I am back to a former
+>> problem that the screen goes (and remains) blank while booting.
+>>
+>> The next step I will do is to test linux-2.6.39-gentoo, probably I
+>> did not notice information that I have to adjust boot parameters or the
+>> kernel config?
+>
+>   based on my having lived through the i915 "black screen of death",
+> pulling out my handy "git bisect" and with advice from chris wilson,
+> these days, i simply apply this patch to the source:
+>
+> diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+> index d2c7104..a1a5d03 100644
+> --- a/drivers/gpu/drm/i915/intel_opregion.c
+> +++ b/drivers/gpu/drm/i915/intel_opregion.c
+> @@ -152,6 +152,8 @@ static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
+>  	struct opregion_asle *asle = dev_priv->opregion.asle;
+>  	u32 max;
+>
+> +return ASLE_BACKLIGHT_FAILED; // rday
+> +
+>  	if (!(bclp & ASLE_BCLP_VALID))
+>  		return ASLE_BACKLIGHT_FAILED;
+>
+>
+>   i tried taking it out a couple of times and immediately got the same
+> i915-related problem so until i hear differently, the patch stays in.
 
-First it's time+gettimeofday+vgetcu, not just time.
+Thanks for the hint.  I tested the patch with 3.0.0-rc1 and
+unfortunately the symptoms remain the same.
 
-A more accurate description is 
+Meanwhile, I tested 2.6.39-gentoo as well and it also causes that
+problem.  So, this is not really a (new) 3.0.0-rc1 issue.
 
-"will make all x86-64 Linux programs written to the original pre
-vDSO syscall ABI significantly slower"
+Best regards,
 
-And the assumption that all world is using glibc is still as bad
-as it was on the first po.st
-
-And it's still a bad idea. Especially since there's a much better
-alternative anyways for the "security problem" which has none of 
-these drawbacks.
-
--Andi
+Dirk
