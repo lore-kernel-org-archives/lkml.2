@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427Ab1EaSlR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 14:41:17 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:44022 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab1EaSlO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 14:41:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6362"; a="94504342"
-Message-ID: <f9d67e63898f6f307e602f856fa5c001.squirrel@www.codeaurora.org>
-In-Reply-To: <Pine.LNX.4.44L0.1105311014160.30678-100000@netrider.rowland.org>
-References: <Pine.LNX.4.44L0.1105311014160.30678-100000@netrider.rowland.org>
-Date: Tue, 31 May 2011 11:40:44 -0700 (PDT)
-Subject: Re: [PATCH v14 9/9] usb: Adding SuperSpeed support to dummy_hcd
-From: "Brokhman Tatyana" <tlinder@codeaurora.org>
-To: "Alan Stern" <stern@rowland.harvard.edu>
-Cc: "Tatyana Brokhman" <tlinder@codeaurora.org>, greg@kroah.com,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
-        ablay@codeaurora.org, "open list" <linux-kernel@vger.kernel.org>
-Reply-To: tlinder@codeaurora.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	id S932391Ab1EaSlC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 14:41:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56850 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932176Ab1EaSlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 14:41:00 -0400
+Subject: Re: [PATCH 1/4] Cache xattr security drop check for write v2
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        chris.mason@oracle.com, josef@redhat.com, agruen@linbit.com,
+        "Serge E. Hallyn" <serue@us.ibm.com>
+In-Reply-To: <20110531180643.GB9261@alboin.amr.corp.intel.com>
+References: <1306596354-18453-1-git-send-email-andi@firstfloor.org>
+	 <1306849896.2816.22.camel@menhir>
+	 <20110531180643.GB9261@alboin.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Tue, 31 May 2011 19:42:26 +0100
+Message-ID: <1306867346.2816.49.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+Hi,
 
-> If is_super_speed is false, shouldn't you avoid registering the
-> SuperSpeed hub?  Or would that add too many complications?
+On Tue, 2011-05-31 at 11:06 -0700, Andi Kleen wrote:
+> > It sounds like a good idea, but cluster filesystems will need to clear
+> > the flag when they update their in-core inodes. Without that we could
+> > have:
+> > 
+> >  Node A looks up inode and sets S_NOSEC since its not suid
+> >  Node B does chmod +s on the inode
+> >  Node A now has S_NOSEC set, but inode is suid, so writes don't clear
+> > suid
+> 
+> Good point. I assume that's also true for network file systems.
+> 
+> This would essentially argue that for those putting the helper
+> into the inode read paths is not optional. I'll look into this
+> later.
+> 
+> > -	flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
+> > +	flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC|S_NOSEC);
+> > +	if (!is_sxid(inode->i_mode))
+> > +		flags |= S_NOSEC;
+> 
+> Doesn't that need a check for no xattr too? or do you not support
+> those currently?
+> 
+> Note I added a helper for this in the latest version:
+> inode_has_no_xattr()
+> 
+> -Andi
 
-It woun't add too many complications but I would prefere not to do that.
-My goal was to simulate as much as posible "real" USB connection so the
-is_super_speed flag simulates the USB port you connect to, HS/SS. When
-working with a real host if you connect a HS device to a SS port it
-connects to a HS root hub but the SS root hub is functional and
-registered. So I don't see any reason not to register it for dummy_hcd as
-well.
+Yes, it should test for xattr too,
 
->> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
->> index 5927541..d5f0af7 100644
->> --- a/drivers/usb/gadget/Kconfig
->> +++ b/drivers/usb/gadget/Kconfig
->> @@ -626,6 +626,7 @@ config USB_DUMMY_HCD
->>  	depends on USB_GADGET_DUMMY_HCD
->>  	default USB_GADGET
->>  	select USB_GADGET_SELECTED
->> +	select USB_GADGET_SUPERSPEED
->
-> This belongs under USB_GADGET_DUMMY_HCD, next to the "select
-> USB_GADGET_DUALSPEED" line.
-
-ok, thanks. Will update.
-
-Thanks,
-Tanya Brokhman
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Steve.
 
 
