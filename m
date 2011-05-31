@@ -1,93 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab1EaPxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:53:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37778 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932330Ab1EaPx3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:53:29 -0400
-MIME-Version: 1.0
-Message-ID: <ba74b4e5-500e-4662-ade0-c0b714b8f570@default>
-Date: Tue, 31 May 2011 08:49:02 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, chris.mason@oracle.com
-Subject: RE: [PATCH 1/14] mm: invalidate_mapping_pages flush cleancache
-References: <alpine.LSU.2.00.1105301726180.5482@sister.anvils
- alpine.LSU.2.00.1105301733500.5482@sister.anvils>
-In-Reply-To: <alpine.LSU.2.00.1105301733500.5482@sister.anvils>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
+	id S1757187Ab1EaPur (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 11:50:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20948 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752409Ab1EaPuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 11:50:46 -0400
+Date: Tue, 31 May 2011 11:50:40 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org, x86@kernel.org,
+        linux-acpi@vger.kernel.org, linux-ide@vger.kernel.org,
+        openipmi-developer@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-crypto@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, lm-sensors@lm-sensors.org,
+        linux-i2c@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mmc@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, rtc-linux@googlegroups.com,
+        evel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org,
+        linux-watchdog@vger.kernel.org
+Cc: grant.likely@secretlab.ca, dz@debian.org, rpurdie@rpsys.net,
+        eric.piel@tremplin-utc.net, abelay@mit.edu, johnpol@2ka.mipt.ru,
+        Prarit Bhargava <prarit@redhat.com>
+Message-Id: <20110531155040.3457.15296.sendpatchset@prarit.bos.redhat.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090207.4DE50ED4.00F8:SCFSTAT5015188,ss=1,fgs=0
+Subject: [RFC PATCH]: System Firmware and SMBIOS Support
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Hugh Dickins [mailto:hughd@google.com]
-> Sent: Monday, May 30, 2011 6:36 PM
-> To: Andrew Morton
-> Cc: Dan Magenheimer; linux-kernel@vger.kernel.org; linux-mm@kvack.org
-> Subject: [PATCH 1/14] mm: invalidate_mapping_pages flush cleancache
-> 
-> truncate_inode_pages_range() and invalidate_inode_pages2_range()
-> call cleancache_flush_inode(mapping) before and after: shouldn't
-> invalidate_mapping_pages() be doing the same?
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-> ---
->  mm/truncate.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> --- linux.orig/mm/truncate.c	2011-05-30 13:56:10.416798124 -0700
-> +++ linux/mm/truncate.c	2011-05-30 14:08:46.612547848 -0700
-> @@ -333,6 +333,7 @@ unsigned long invalidate_mapping_pages(s
->  	unsigned long count = 0;
->  	int i;
-> 
-> +	cleancache_flush_inode(mapping);
->  	pagevec_init(&pvec, 0);
->  	while (next <= end &&
->  			pagevec_lookup(&pvec, mapping, next, PAGEVEC_SIZE)) {
-> @@ -373,6 +374,7 @@ unsigned long invalidate_mapping_pages(s
->  		mem_cgroup_uncharge_end();
->  		cond_resched();
->  	}
-> +	cleancache_flush_inode(mapping);
->  	return count;
->  }
->  EXPORT_SYMBOL(invalidate_mapping_pages);
+Sorry for the wide-distribution.  The list of modified files is quite large.
 
-Hi Hugh --
+P.
 
-I don't claim to be an expert on VFS, and so I have cc'ed
-Chris Mason who originally placed the cleancache hooks
-in VFS, but I think this patch is unnecessary.  Instead
-of flushing ALL of the cleancache pages belonging to
-the inode with cleancache_flush_inode, the existing code
-eventually calls __delete_from_page_cache on EACH page
-that is being invalidated. And since __delete_from_page_cache
-calls cleancache_flush_page, only that subset of pages
-in the mapping that invalidate_mapping_pages() would
-invalidate (which, from the comment above the routine
-indicates, is only *unlocked* pages) is removed from
-cleancache.
+----8<----
 
-However, there may be some path through VFS I am missing
-or something else subtle I am misunderstanding so please
-clarify if either is true.
+DMI, or the Desktop Management Interface, provides access to OEM and hardware
+specific details about the x86 or ia64 system the kernel is currently runnig
+on.  DMI has been deprecated since 2003, which was the last update of the DMI
+Specification.
 
-Thanks,
-Dan
----
-Thanks... for the memory!
-I really could use more / my throughput's on the floor
-The balloon is flat / my swap disk's fat / I've OOM's in store
-Overcommitted so much
-(with apologies to Bob Hope)
+The System Management BIOS, or SMBIOS, supercedes DMI -- the SMBIOS tables
+include the possibility of a _DMI_ entry and tables.  However, in the
+Linux kernel we do not access any of the DMI data and only access SMBIOS data.
 
+Currently, the kernel uses dmi_* functions (as defined in
+drivers/firmware/dmi_scan.c) to access the data.  The functions allow kernel
+subsystems and modules to set specific options based on the platform and BIOS
+version.
+
+The dmi_* functions in the kernel fail in several ways.  First, as
+mentioned the dmi_* functions are really accessing SMBIOS data.  The existing
+code queries for the _SMB_ entry and determines data access after that.  The
+existing dmi_* functions create an array of x86 and ia64 specific entries
+which are defined as part of x86 and ia64 specific udev entries, and allows
+drivers and subsystems to make platform specific decisions.  In addition to
+the arch specific code, the dmi_* code creates a list of "devices" to which
+makes updating very difficult and does not easily scale.
+
+Another key issue with the existing code is that several drivers do their
+own search through the SMBIOS, for example, see drivers/pci/hotplug/cpqphp*.c.
+
+A month (or so) ago I proposed a patch which was based on a simple request
+from a colleague --  create a sysfs file that would export the SMBIOS version.
+This simple request was not something that was easy to do given the layout of
+the existing DMI code.  The request resulted in having to create a new smbios
+class within the kernel, and essentially doing a separate search through
+memory.
+
+This new patchset reworks the existing DMI code into two separate layers.  It is
+based off of the feedback I received previously when discussing the SMBIOS
+version patch on LKML.
+
+The first layer is the System Firmware Interface, which is based upon Alan
+Cox's suggestion of a common platform driver (unfortunately, platform driver
+is already defined and used within the kernel).  This is meant to be an
+arch independent subsystem in the kernel for all arches.  It is a common
+interface which provides access to specific system values in the kernel such
+as the Chassis Manufacturer, the BIOS developer, or the BIOS date.  The
+System Firmware Interface, or sysfw allows for easy updating by simply adding
+fields to an array in include/linux/mod_devicetable.h.
+Standard simple searching functions, sysfw_lookup() and sysfw_callback()
+are provided to the kernel and modules.  sysfw_callback() is similar to
+dmi_check_system() but the new function allows for exact matching which some
+drivers required.
+
+The second layer introduced in this patchset is the SMBIOS sysfw driver.  This
+driver (obviously) registers with the interface and also provides it's own
+interface.  The reason for the separate interface is that specific drivers
+have their own need to search the SMBIOS for OEM or platform specific
+information (see, for example, drivers/watchdog/hpwdt.c, or
+drivers/pci/pci-label.c).  This new driver provides a function, smbios_walk()
+which allows individual drivers or subsystems to traverse the SMBIOS table
+looking for OEM or platform specific data.  The new SMBIOS driver can be
+easily updated by adding SMBIOS structure information to the smbios_struct
+union in include/linux/smbios.h.
+
+These changes are targeted for at least 3.0.1.
+
+A git tree with these changes has been set up here:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/prarit/smbios.git
+
+with the latest changes in the smbios-3.0-rc1 branch, and well-tested changes
+on the smbios-2.6.39 branch.
+
+P.
