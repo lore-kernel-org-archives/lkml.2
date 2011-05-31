@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757538Ab1EaQ4C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 12:56:02 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:24390 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757023Ab1EaQ4B (ORCPT
+	id S1757504Ab1EaQ5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 12:57:20 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:36107 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751368Ab1EaQ5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 12:56:01 -0400
+	Tue, 31 May 2011 12:57:18 -0400
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: eQHHYMUVM1nAHZgi6MIP_X5rhb8a4sUPN19Wvwz6ElSlVI0
- VbP9DtouYv6UrsgdIv3Mo3ey72ILsQj1aTafQjkRgkzkPrGI8AOVZMouqkKV
- 4go07Yo_SVQtR6OIjFDIx7IoLQzZy9inJwP.drk92iJWVRUzDrE3.eUJPQeC
- LcWC5ezZVEtor5v0DFJdfHGsffeqJ0R9T4qxJDkmB_Fx7zhUHWH27P_xlq3A
- ALoYKQYXD9qeBeVnFFhMsTma.2kme.Ji0nvo0shoX9EZIIA_KgZgCBa8QK0D
- RZJSkAk1TZNG9Zv3crbkA_blX18j8i3FZFrU0hHxITRrmoX.zQ88as6D48h1
- dLgj7BQi9AV6RCc5qafeUbFxJ
+X-YMail-OSG: oTDN7xIVM1l6HnuM_LEwGVf_J0iyGKEEEES9KzujlLhdH1c
+ b.LyY2xHM4y2UNcV7Bymy3FmgNoWgihoFdIUUep5rO8v68EoBbWYIk2P54In
+ B86om9LxByOlJ4wcNi7bZusWFXRRePvB3kHpoCsiB9OpKVq4sxQHmEFR8GKn
+ pMuCUK3A2SrqKUq_SkaNf4dRvWje1PO4AeVQvTGUNry.RXoXj8CIH2Qxslzy
+ 3gUU2dNENQIJHBSFWj_BBRCHenTE7.RBaaViXu7Czv7AM0Bh7Zvhz4tcnPjn
+ rhZHXHO.VU6kt_jrBw0htDQIpHZlPRjLeEztFCDnp0m17KUrF
 X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 31 May 2011 11:55:58 -0500 (CDT)
+Date: Tue, 31 May 2011 11:57:15 -0500 (CDT)
 From: Christoph Lameter <cl@linux.com>
 X-X-Sender: cl@router.home
 To: David Rientjes <rientjes@google.com>
@@ -24,10 +23,11 @@ cc: Pekka Enberg <penberg@cs.helsinki.fi>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [slubllv6 01/17] slub: Push irq disable into allocate_slab()
-In-Reply-To: <alpine.DEB.2.00.1105261348490.26952@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1105311155050.19928@router.home>
-References: <20110526181442.789868308@linux.com> <20110526181501.946180879@linux.com> <alpine.DEB.2.00.1105261348490.26952@chino.kir.corp.google.com>
+Subject: Re: [slubllv6 02/17] slub: Do not use frozen page flag but a bit in
+ the page counters
+In-Reply-To: <alpine.DEB.2.00.1105261417550.10790@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1105311156140.19928@router.home>
+References: <20110526181442.789868308@linux.com> <20110526181502.558602037@linux.com> <alpine.DEB.2.00.1105261417550.10790@chino.kir.corp.google.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -37,89 +37,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 26 May 2011, David Rientjes wrote:
 
-> > +	if (flags & __GFP_WAIT)
-> > +		local_irq_disable();
-> > +
-> > +	if (!page)
-> > +		return NULL;
-> > +
+> > Also all page start out as frozen pages so set the bit
+> > when the page is allocated.
+> >
 >
-> This changes the meaning of ORDER_FALLBACK from its previous meaning,
-> which was "number of times the preferred order could not be allocated and
-> then minimum order could be allocated" to "number of times the preferred
-> order could not be allocated, regardless of whether the minimum order
-> allocation was successful."  The former is the true meaning of the word
-> "fallback," so is this semantics change avoidable?  Otherwise it seems
-> like the statistic should be renamed (NEW_SLAB_FAIL?)
+> This comment is probably intended for the next patch in the series, which
+> modifies new_slab() to set the bit on allocation.  There's no new behavior
+> introduced by this patch.
 
-Ok that needs to be fixed:
+Right.
 
-Subject: slub: Push irq disable into allocate_slab()
+> The PG_slub_frozen entry in enum pageflags also needs to be removed.
 
-Do the irq handling in allocate_slab() instead of __slab_alloc().
+Ok.
 
-__slab_alloc() is already cluttered and allocate_slab() is already
-fiddling around with gfp flags.
+Subject: slub: Do not use frozen page flag but a bit in the page counters
 
-v6->v7:
-	Only increment ORDER_FALLBACK if we get a page during fallback
+Do not use a page flag for the frozen bit. It needs to be part
+of the state that is handled with cmpxchg_double(). So use a bit
+in the counter struct in the page struct for that purpose.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
----
- mm/slub.c |   23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
 
+---
+ include/linux/mm_types.h   |    5 +++--
+ include/linux/page-flags.h |    5 -----
+ mm/slub.c                  |   12 ++++++------
+ 3 files changed, 9 insertions(+), 13 deletions(-)
+
+Index: linux-2.6/include/linux/mm_types.h
+===================================================================
+--- linux-2.6.orig/include/linux/mm_types.h	2011-05-31 09:40:57.402990070 -0500
++++ linux-2.6/include/linux/mm_types.h	2011-05-31 09:42:53.632989323 -0500
+@@ -41,8 +41,9 @@ struct page {
+ 					 * & limit reverse map searches.
+ 					 */
+ 		struct {		/* SLUB */
+-			u16 inuse;
+-			u16 objects;
++			unsigned inuse:16;
++			unsigned objects:15;
++			unsigned frozen:1;
+ 		};
+ 	};
+ 	union {
+Index: linux-2.6/include/linux/page-flags.h
+===================================================================
+--- linux-2.6.orig/include/linux/page-flags.h	2011-05-31 09:40:57.392990068 -0500
++++ linux-2.6/include/linux/page-flags.h	2011-05-31 09:43:25.402989115 -0500
+@@ -124,9 +124,6 @@ enum pageflags {
+
+ 	/* SLOB */
+ 	PG_slob_free = PG_private,
+-
+-	/* SLUB */
+-	PG_slub_frozen = PG_active,
+ };
+
+ #ifndef __GENERATING_BOUNDS_H
+@@ -212,8 +209,6 @@ PAGEFLAG(SwapBacked, swapbacked) __CLEAR
+
+ __PAGEFLAG(SlobFree, slob_free)
+
+-__PAGEFLAG(SlubFrozen, slub_frozen)
+-
+ /*
+  * Private page markings that may be used by the filesystem that owns the page
+  * for its own purposes.
 Index: linux-2.6/mm/slub.c
 ===================================================================
---- linux-2.6.orig/mm/slub.c	2011-05-26 16:13:58.085604969 -0500
-+++ linux-2.6/mm/slub.c	2011-05-31 09:42:08.102989621 -0500
-@@ -1187,6 +1187,11 @@ static struct page *allocate_slab(struct
- 	struct kmem_cache_order_objects oo = s->oo;
- 	gfp_t alloc_gfp;
+--- linux-2.6.orig/mm/slub.c	2011-05-31 09:42:08.102989621 -0500
++++ linux-2.6/mm/slub.c	2011-05-31 09:42:53.632989323 -0500
+@@ -166,7 +166,7 @@ static inline int kmem_cache_debug(struc
 
-+	flags &= gfp_allowed_mask;
-+
-+	if (flags & __GFP_WAIT)
-+		local_irq_enable();
-+
- 	flags |= s->allocflags;
+ #define OO_SHIFT	16
+ #define OO_MASK		((1 << OO_SHIFT) - 1)
+-#define MAX_OBJS_PER_PAGE	65535 /* since page.objects is u16 */
++#define MAX_OBJS_PER_PAGE	32767 /* since page.objects is u15 */
 
- 	/*
-@@ -1203,12 +1208,17 @@ static struct page *allocate_slab(struct
- 		 * Try a lower order alloc if possible
- 		 */
- 		page = alloc_slab_page(flags, node, oo);
--		if (!page)
--			return NULL;
-
--		stat(s, ORDER_FALLBACK);
-+		if (page)
-+			stat(s, ORDER_FALLBACK);
+ /* Internal SLUB flags */
+ #define __OBJECT_POISON		0x80000000UL /* Poison object */
+@@ -1025,7 +1025,7 @@ static noinline int free_debug_processin
  	}
 
-+	if (flags & __GFP_WAIT)
-+		local_irq_disable();
-+
-+	if (!page)
-+		return NULL;
-+
- 	if (kmemcheck_enabled
- 		&& !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
- 		int pages = 1 << oo_order(oo);
-@@ -1849,15 +1859,8 @@ new_slab:
+ 	/* Special debug activities for freeing objects */
+-	if (!PageSlubFrozen(page) && !page->freelist)
++	if (!page->frozen && !page->freelist)
+ 		remove_full(s, page);
+ 	if (s->flags & SLAB_STORE_USER)
+ 		set_track(s, object, TRACK_FREE, addr);
+@@ -1424,7 +1424,7 @@ static inline int lock_and_freeze_slab(s
+ {
+ 	if (slab_trylock(page)) {
+ 		__remove_partial(n, page);
+-		__SetPageSlubFrozen(page);
++		page->frozen = 1;
+ 		return 1;
+ 	}
+ 	return 0;
+@@ -1538,7 +1538,7 @@ static void unfreeze_slab(struct kmem_ca
+ {
+ 	struct kmem_cache_node *n = get_node(s, page_to_nid(page));
+
+-	__ClearPageSlubFrozen(page);
++	page->frozen = 0;
+ 	if (page->inuse) {
+
+ 		if (page->freelist) {
+@@ -1868,7 +1868,7 @@ new_slab:
+ 			flush_slab(s, c);
+
+ 		slab_lock(page);
+-		__SetPageSlubFrozen(page);
++		page->frozen = 1;
+ 		c->node = page_to_nid(page);
+ 		c->page = page;
  		goto load_freelist;
+@@ -2048,7 +2048,7 @@ static void __slab_free(struct kmem_cach
+ 	page->freelist = object;
+ 	page->inuse--;
+
+-	if (unlikely(PageSlubFrozen(page))) {
++	if (unlikely(page->frozen)) {
+ 		stat(s, FREE_FROZEN);
+ 		goto out_unlock;
  	}
-
--	gfpflags &= gfp_allowed_mask;
--	if (gfpflags & __GFP_WAIT)
--		local_irq_enable();
--
- 	page = new_slab(s, gfpflags, node);
-
--	if (gfpflags & __GFP_WAIT)
--		local_irq_disable();
--
- 	if (page) {
- 		c = __this_cpu_ptr(s->cpu_slab);
- 		stat(s, ALLOC_SLAB);
