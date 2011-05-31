@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758022Ab1EaHOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 03:14:49 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38020 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767Ab1EaHOt (ORCPT
+	id S1757944Ab1EaHSB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 03:18:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37300 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab1EaHSA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 03:14:49 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DE4955E.5010503@jp.fujitsu.com>
-Date: Tue, 31 May 2011 16:14:38 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: mel@csn.ul.ie
-CC: akpm@linux-foundation.org, urykhy@gmail.com, aarcange@redhat.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous
-References: <20110530131300.GQ5044@csn.ul.ie>
-In-Reply-To: <20110530131300.GQ5044@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	Tue, 31 May 2011 03:18:00 -0400
+Subject: Re: perf: [patch] regression with PERF_EVENT_IOC_REFRESH
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vince Weaver <vince@deater.net>
+Cc: Vince Weaver <vweaver1@eecs.utk.edu>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, paulus@samba.org, acme@redhat.com
+In-Reply-To: <Pine.LNX.4.64.1105302129210.7601@pianoman.cluster.toy>
+References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu>
+	 <1306182141.2497.5.camel@laptop>
+	 <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu>
+	 <1306233036.2497.15.camel@laptop>
+	 <alpine.DEB.2.00.1105272332400.9313@cl320.eecs.utk.edu>
+	 <1306578144.1200.1150.camel@twins>
+	 <alpine.DEB.2.00.1105291253270.6774@cl320.eecs.utk.edu>
+	 <Pine.LNX.4.64.1105302129210.7601@pianoman.cluster.toy>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 31 May 2011 09:17:47 +0200
+Message-ID: <1306826267.2530.3.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/05/30 22:13), Mel Gorman wrote:
-> Asynchronous compaction is used when promoting to huge pages. This is
-> all very nice but if there are a number of processes in compacting
-> memory, a large number of pages can be isolated. An "asynchronous"
-> process can stall for long periods of time as a result with a user
-> reporting that firefox can stall for 10s of seconds. This patch aborts
-> asynchronous compaction if too many pages are isolated as it's better to
-> fail a hugepage promotion than stall a process.
+On Mon, 2011-05-30 at 21:33 -0400, Vince Weaver wrote:
+> On Sun, 29 May 2011, Vince Weaver wrote:
 > 
-> If accepted, this should also be considered for 2.6.39-stable. It should
-> also be considered for 2.6.38-stable but ideally [11bc82d6: mm:
-> compaction: Use async migration for __GFP_NO_KSWAPD and enforce no
-> writeback] would be applied to 2.6.38 before consideration.
+> > On Sat, 28 May 2011, Peter Zijlstra wrote:
+> > 
+> > > On Fri, 2011-05-27 at 23:38 -0400, Vince Weaver wrote:
+> > > > on that note (and while trying to document exactly what the ioctls do) it 
+> > > > seems that a PERF_EVENT_IOC_REFRESH with an argument of anything higher 
+> > > > than one does not work on kernels 2.6.36 and newer.  The behavior acts
+> > > > as if 1 was passed, even if you pass in, say, 3.
+> > > 
+> > > Urgh, no that should definitely work. Thanks for the test-case, I'll
+> > > work on that (probably not until Monday though, but who knows).
+> > > 
+> > 
+> > after a painfully long bisection, it turns out that this problem was in
+> > theory introduced by the following commit:
+> > 
+> >   d57e34fdd60be7ffd0b1d86bfa1a553df86b7172
+> > 
+> >   perf: Simplify the ring-buffer logic: make perf_buffer_alloc() do everything needed
+> > 
+> > I'll see if I can come up with a patch, but it's a bit non-obvious why
+> > this commit is affecting the REFRESH value at all.
 > 
-> Reported-and-Tested-by: Ury Stankevich <urykhy@gmail.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> the problem was the mentioned commit tried to optimize the use of 
+> watermark and wakeup_watermark without taking into account that 
+> wakeup_watermark is a union with wakeup_events.
+> 
+> The patch below *should* fix it,
 
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Awesome thanks!
 
+>  but something unrelated has broken 
+> overflow support between 2.6.39 and 3.0-rc1 which I haven't had time to 
+> investigate.  The overflow count is suddenly about 10x what it should be 
+> though.  So the below is semi-untested and I possibly need to do another 
+> bisect.  *sigh*
 
-
+Yeah, I noticed, I was hunting that as well..
