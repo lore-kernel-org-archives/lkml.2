@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab1EaDTG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 23:19:06 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:43820 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051Ab1EaDTF convert rfc822-to-8bit (ORCPT
+	id S1756926Ab1EaD0b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 23:26:31 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:59648 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752493Ab1EaD0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 23:19:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lYdLF6U1lTpPcF/SrjpKKABuWv94c58GYk/IvgIGGX7hT4eE+huBw5nGrK03pauryI
-         82yXG7ofcUf3kmhaYXzcLA5UXJ4OKKFDFbl6Pl8+teNa+zZbTeo8UfGbaE3/EE5Zc5Qk
-         nxXMgP07G9knXJ519A4uleTjWVzQ+TB1k4yEI=
-MIME-Version: 1.0
-In-Reply-To: <4DE45119.9040108@jp.fujitsu.com>
-References: <1306774744.4061.5.camel@localhost.localdomain>
-	<4DE45119.9040108@jp.fujitsu.com>
-Date: Tue, 31 May 2011 09:19:03 +0600
-Message-ID: <BANLkTinX0+i=QS_0uL8R-b=-TgzAYEtcEA@mail.gmail.com>
-Subject: Re: [PATCH] mm, vmstat: Use cond_resched only when !CONFIG_PREEMPT
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, cl@linux.com,
-        kamezawa.hiroyu@jp.fujitsu.com, mel@csn.ul.ie
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 May 2011 23:26:30 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX187+slcE2Q7QomwQqGegiumf+4kCBltTeNAfwxxb7
+	48uj74Zh/SpNAG
+Subject: Re: [PATCH] sched: fix need_resched() when checking peempt
+From: Mike Galbraith <efault@gmx.de>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Yong Zhang <yong.zhang0@gmail.com>
+In-Reply-To: <BANLkTin2r7omjQC9ro0f2_qEc8SzPX33Pg@mail.gmail.com>
+References: <BANLkTin4OiDiPO3znMvKTVZcYukHReydMQ@mail.gmail.com>
+	 <1306244383.1465.59.camel@gandalf.stny.rr.com>
+	 <BANLkTin2r7omjQC9ro0f2_qEc8SzPX33Pg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 May 2011 05:26:24 +0200
+Message-ID: <1306812384.7903.3.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 8:23 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> diff --git a/mm/vmstat.c b/mm/vmstat.c
->> index 20c18b7..72cf857 100644
->> --- a/mm/vmstat.c
->> +++ b/mm/vmstat.c
->> @@ -461,7 +461,11 @@ void refresh_cpu_vm_stats(int cpu)
->>                               p->expire = 3;
->>  #endif
->>                       }
->> +
->> +#ifndef CONFIG_PREEMPT
->>               cond_resched();
->> +#endif
->> +
->
-> In general, we should avoid #ifdef CONFIG_PREEMPT for maintainancebility as far as possible.
-> Is there any observable benefit? Can you please demonstrate it?
->
-On my system I'm not sure whether it shows demonstratable benefit or
-not. Although, I try. It will be helpful if you give me a hint about
-how to measure its benefit.
+On Tue, 2011-05-24 at 21:50 +0800, Hillf Danton wrote:
+> On Tue, May 24, 2011 at 9:39 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Tue, 2011-05-24 at 21:27 +0800, Hillf Danton wrote:
+> >> When checking if current task could be preempted by a newly woken task,
+> >> further check could be bypassed if the current thread is different from
+> >> the current task of run-queue, and it is corrected accordingly.
+> >
+> > Ug, that change log is an obfuscated mess. But looking at the actual
+> > patch, I figured what you wanted to say. How about this:
+> >
+> > ----
+> > The RT preempt check tests the wrong task if NEED_RESCHED is set. It
+> > currently checks the local CPU task. It is suppose to check the task
+> > that is running on the run queue we are about to wake another task on.
+> > ----
+> >
+> Thanks, it is great changelog:)
 
-Thanks,
-Rakib
->
->
->
+Has this been queued, or is it awaiting re-submission?
+
+	-Mike
+
