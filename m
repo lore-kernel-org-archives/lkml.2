@@ -1,184 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab1EaQVn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 12:21:43 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54703 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757091Ab1EaQVm (ORCPT
+	id S1757464Ab1EaQZS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 12:25:18 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:32835 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757396Ab1EaQZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 12:21:42 -0400
-Date: Tue, 31 May 2011 17:23:20 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Eric Andersson <eric.andersson@unixphere.com>
-Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zhengguang.guo@bosch-sensortec.com,
-        stefan.nilsson@unixphere.com,
-        Albert Zhang <xu.zhang@bosch-sensortec.com>
-Subject: Re: [PATCH] input: add driver for Bosch Sensortec's BMA150
- accelerometer
-Message-ID: <20110531172320.0fcadfef@lxorguk.ukuu.org.uk>
-In-Reply-To: <1306857314-655-1-git-send-email-eric.andersson@unixphere.com>
-References: <1306857314-655-1-git-send-email-eric.andersson@unixphere.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 31 May 2011 12:25:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:in-reply-to:message-id:references:mime-version:
+	content-type; q=dns; s=newdream.net; b=dgtm6ouHACDD94tE0pzs441Il
+	McsC3mhfu3rpCuhGoru7yW6H5dYHv6r0Ttof2TWq2Vw7XW8qs0MrAqN/uNaQgMou
+	N5h7RPCavmnXeYAqWWYWY4lKwEhrKrDKkTZOSwk/D/OwSHG43W+kfR5DpYxvdGYm
+	Hr32iMHxHkqldKjbgM=
+Date: Tue, 31 May 2011 09:26:52 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: Christoph Hellwig <hch@infradead.org>
+cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [git pull] dentry_unhash() breakage
+In-Reply-To: <20110530085922.GA11336@infradead.org>
+Message-ID: <Pine.LNX.4.64.1105310924040.25709@cobra.newdream.net>
+References: <20110530020604.GC561@dastard> <20110530034741.GD561@dastard>
+ <Pine.LNX.4.64.1105292057570.9134@cobra.newdream.net>
+ <20110530055601.GK11521@ZenIV.linux.org.uk> <20110530085922.GA11336@infradead.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-See the driver I posted some time ago. It's in rather better state than
-this one and as it's been through most of the review process and also
-handles the BMA023 and SMB380 so I think would be a better place to start
-from. I'll report that driver in a moment.
+On Mon, 30 May 2011, Christoph Hellwig wrote:
+> On Mon, May 30, 2011 at 06:56:01AM +0100, Al Viro wrote:
+> > A couple of dentry_unhash fallout fixes
+> 
+> Shouldn't we do the shrink_dcache_parent only after a successfull
+> rmdir or rename?
 
-Alan
+Yeah, that makes more sense to me...
 
-
-Some of the first immediately obvious questions though - in particular
-the lack of clear locking ...
-
-
-> +struct bma150acc {
-> +	s16	x,
-> +		y,
-> +		z;
-> +};
-
-Why does this need to be a struct ?
-
-> +	if ((mode != BMA150_MODE_NORMAL) &&
-> +	    (mode != BMA150_MODE_SLEEP) &&
-> +	    (mode != BMA150_MODE_WAKE_UP))
-> +		return -EINVAL;
-
-How can any other mode get passed ?
-
-> +
-> +	data1 = i2c_smbus_read_byte_data(client, BMA150_WAKE_UP_REG);
-> +	if (data1 < 0)
-> +		return ret;
-> +
-> +	data1 = (data1 & ~BMA150_WAKE_UP_MSK) |
-> +		((mode << BMA150_WAKE_UP_POS) & BMA150_WAKE_UP_MSK);
-> +
-> +	data2 = i2c_smbus_read_byte_data(client, BMA150_SLEEP_REG);
-> +	if (data2 < 0)
-> +		return ret;
-> +
-> +	data2 = (data2 & ~BMA150_SLEEP_MSK) |
-> +		(((mode>>1) << BMA150_SLEEP_POS) & BMA150_SLEEP_MSK);
-> +
-> +	ret = i2c_smbus_write_byte_data(client, BMA150_WAKE_UP_REG, data1);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = i2c_smbus_write_byte_data(client, BMA150_SLEEP_REG, data2);
-> +	if (ret < 0)
-> +		return ret;
-
-What locks this SMBUS transaction against others
-
-> +static int bma150_set_range(struct i2c_client *client, unsigned char range)
-> +{
-> +	int ret;
-> +	unsigned char data;
-> +
-> +	if (range > BMA150_RANGE_8G)
-> +		return -EINVAL;
-
-This should be actual values not a register range
-
-> +
-> +	data = i2c_smbus_read_byte_data(client, BMA150_RANGE_REG);
-> +	if (data < 0)
-> +		return ret;
-> +
-> +	data = (data & ~BMA150_RANGE_MSK) |
-> +		((range << BMA150_RANGE_POS) & BMA150_RANGE_MSK);
-> +
-> +	ret = i2c_smbus_write_byte_data(client, BMA150_RANGE_REG, data);
-
-What locks this ?
-
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return 0;
-
-Why this pointless if ?
-
-> +}
-> +
-> +static int bma150_get_range(struct i2c_client *client, unsigned char *range)
-> +{
-> +	int ret;
-> +	unsigned char data;
-> +
-> +	data = i2c_smbus_read_byte_data(client, BMA150_RANGE_REG);
-> +	if (data < 0)
-> +		return ret;
-> +
-> +	*range = (data & BMA150_RANGE_MSK) >> BMA150_RANGE_POS;
-> +	return 0;
-
-See comments above
-
-> +}
-> +
-> +static int bma150_set_bandwidth(struct i2c_client *client, unsigned char bw)
-
-Similar problem
+sage
 
 
-> +static int bma150_read_accel_xyz(struct i2c_client *client,
-> +		struct bma150acc *acc)
-> +{
-> +	unsigned char data[6];
-> +	int ret = i2c_smbus_read_i2c_block_data(client,
-> +			BMA150_ACC_X_LSB_REG, 6, data);
-> +	if (ret != 6)
-> +		return -EIO;
-> +
-> +	acc->x = ((0xC0 & data[0]) >> 6) | (data[1] << 2);
-> +	acc->y = ((0xC0 & data[2]) >> 6) | (data[3] << 2);
-> +	acc->z = ((0xC0 & data[4]) >> 6) | (data[5] << 2);
-> +
-> +	/* sign extension */
-> +	acc->x = (s16) (acc->x << 6) >> 6;
-> +	acc->y = (s16) (acc->y << 6) >> 6;
-> +	acc->z = (s16) (acc->z << 6) >> 6;
-> +
-> +	return 0;
+>From 4e9be5f3fc5f9995b0b1966cda95bb5386e20444 Mon Sep 17 00:00:00 2001
+From: Sage Weil <sage@newdream.net>
+Date: Tue, 31 May 2011 09:26:13 -0700
+Subject: [PATCH] vfs: shrink_dcache_parent on rmdir, dir rename only on success
 
-Why the separate function and struct
+Only prune the dentries of the rmdir or dir rename succeeds.  Doing so on
+failure makes no sense (though it's mostly harmless).
 
-> +}
-> +
-> +static void bma150_work_func(struct work_struct *work)
-> +{
+Signed-off-by: Sage Weil <sage@newdream.net>
+---
+ fs/namei.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-Threaded IRQ ?
-
-
-> +static ssize_t bma150_mode_show(struct device *dev,
-> +		struct device_attribute *attr, char *buf)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	struct bma150_data *bma150 = i2c_get_clientdata(client);
-> +
-> +	return sprintf(buf, "%d\n", bma150->mode);
-
-API definition ?
-
-
-> +	schedule_delayed_work(&data->work,
-> +			msecs_to_jiffies(atomic_read(&data->delay)));
-> +
-
-Why the atomic read ?
-
-
-And there are a ton more issues unfixed in this driver
+diff --git a/fs/namei.c b/fs/namei.c
+index e2e4e8d..72b0370 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2579,11 +2579,11 @@ int vfs_rmdir(struct inode *dir, struct dentry *dentry)
+ 	if (error)
+ 		goto out;
+ 
+-	shrink_dcache_parent(dentry);
+ 	error = dir->i_op->rmdir(dir, dentry);
+ 	if (error)
+ 		goto out;
+ 
++	shrink_dcache_parent(dentry);
+ 	dentry->d_inode->i_flags |= S_DEAD;
+ 	dont_mount(dentry);
+ 
+@@ -2994,13 +2994,12 @@ static int vfs_rename_dir(struct inode *old_dir, struct dentry *old_dentry,
+ 	if (d_mountpoint(old_dentry) || d_mountpoint(new_dentry))
+ 		goto out;
+ 
+-	if (target)
+-		shrink_dcache_parent(new_dentry);
+ 	error = old_dir->i_op->rename(old_dir, old_dentry, new_dir, new_dentry);
+ 	if (error)
+ 		goto out;
+ 
+ 	if (target) {
++		shrink_dcache_parent(new_dentry);
+ 		target->i_flags |= S_DEAD;
+ 		dont_mount(new_dentry);
+ 	}
+-- 
+1.7.0
 
