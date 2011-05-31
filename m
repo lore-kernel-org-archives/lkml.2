@@ -1,98 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab1EaNsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 09:48:52 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45173 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751087Ab1EaNsv (ORCPT
+	id S1756830Ab1EaOh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 10:37:59 -0400
+Received: from smtpauth03.mfg.siteprotect.com ([64.26.60.137]:45302 "EHLO
+	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756777Ab1EaOh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 09:48:51 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Implement support for multiple WM831x devices
-Date: Tue, 31 May 2011 14:48:44 +0100
-Message-Id: <1306849724-27546-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.1
+	Tue, 31 May 2011 10:37:58 -0400
+Date: Tue, 31 May 2011 09:49:52 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: Vince Weaver <vweaver1@eecs.utk.edu>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, paulus@samba.org, acme@redhat.com
+Subject: Re: perf: [patch] regression with PERF_EVENT_IOC_REFRESH
+In-Reply-To: <1306826593.2530.7.camel@twins>
+Message-ID: <Pine.LNX.4.64.1105310942410.9995@pianoman.cluster.toy>
+References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu> 
+ <1306182141.2497.5.camel@laptop>  <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu>
+  <1306233036.2497.15.camel@laptop>  <alpine.DEB.2.00.1105272332400.9313@cl320.eecs.utk.edu>
+  <1306578144.1200.1150.camel@twins>  <alpine.DEB.2.00.1105291253270.6774@cl320.eecs.utk.edu>
+  <Pine.LNX.4.64.1105302129210.7601@pianoman.cluster.toy> <1306826593.2530.7.camel@twins>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Systems using this functionality will be uncommon.
+On Tue, 31 May 2011, Peter Zijlstra wrote:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm831x-core.c |   18 ++++++++++++------
- 1 files changed, 12 insertions(+), 6 deletions(-)
+> On Mon, 2011-05-30 at 21:33 -0400, Vince Weaver wrote:
+> > the problem was the mentioned commit tried to optimize the use of 
+> > watermark and wakeup_watermark without taking into account that 
+> > wakeup_watermark is a union with wakeup_events. 
+> 
+> Note that wake_events isn't related to IOC_REFRESH, wake_events is how
+> much events to buffer in the mmap-buffer before issuing a wakeup.
+> 
+> IOC_REFRESH increments event_limit, which is how many events to run
+> before disabling yourself.
+> 
+> What I gather is that due to that SIGIO bug (fixed by f506b3dc0e), you
+> had to have both an mmap and a wakeup in order for that signal to
+> arrive.
 
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index 265f75f..04994b2 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -1440,7 +1440,7 @@ static struct mfd_cell backlight_devs[] = {
- int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- {
- 	struct wm831x_pdata *pdata = wm831x->dev->platform_data;
--	int rev;
-+	int rev, wm831x_num;
- 	enum wm831x_parent parent;
- 	int ret, i;
- 
-@@ -1592,6 +1592,12 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 		}
- 	}
- 
-+	/* Multiply by 10 as we have many subdevices of the same type */
-+	if (pdata && pdata->wm831x_num)
-+		wm831x_num = pdata->wm831x_num * 10;
-+	else
-+		wm831x_num = -1;
-+
- 	ret = wm831x_irq_init(wm831x, irq);
- 	if (ret != 0)
- 		goto err;
-@@ -1609,19 +1615,19 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 	/* The core device is up, instantiate the subdevices. */
- 	switch (parent) {
- 	case WM8310:
--		ret = mfd_add_devices(wm831x->dev, -1,
-+		ret = mfd_add_devices(wm831x->dev, wm831x_num,
- 				      wm8310_devs, ARRAY_SIZE(wm8310_devs),
- 				      NULL, wm831x->irq_base);
- 		break;
- 
- 	case WM8311:
--		ret = mfd_add_devices(wm831x->dev, -1,
-+		ret = mfd_add_devices(wm831x->dev, wm831x_num,
- 				      wm8311_devs, ARRAY_SIZE(wm8311_devs),
- 				      NULL, wm831x->irq_base);
- 		break;
- 
- 	case WM8312:
--		ret = mfd_add_devices(wm831x->dev, -1,
-+		ret = mfd_add_devices(wm831x->dev, wm831x_num,
- 				      wm8312_devs, ARRAY_SIZE(wm8312_devs),
- 				      NULL, wm831x->irq_base);
- 		break;
-@@ -1630,7 +1636,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 	case WM8321:
- 	case WM8325:
- 	case WM8326:
--		ret = mfd_add_devices(wm831x->dev, -1,
-+		ret = mfd_add_devices(wm831x->dev, wm831x_num,
- 				      wm8320_devs, ARRAY_SIZE(wm8320_devs),
- 				      NULL, wm831x->irq_base);
- 		break;
-@@ -1647,7 +1653,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 
- 	if (pdata && pdata->backlight) {
- 		/* Treat errors as non-critical */
--		ret = mfd_add_devices(wm831x->dev, -1, backlight_devs,
-+		ret = mfd_add_devices(wm831x->dev, wm831x_num, backlight_devs,
- 				      ARRAY_SIZE(backlight_devs), NULL,
- 				      wm831x->irq_base);
- 		if (ret < 0)
--- 
-1.7.5.1
+yes, but due to a bug in the mentioned changeset, the buffer watermark 
+value was being set to a low value even if *watermark* was 0.  So if you 
+were using IOC_REFRESH to set the *wakeup_events* value, it was also 
+setting the *wakeup_watermark* value (it's a union) and the buffer setup 
+was then unconditionally setting the buffer watermark to the value of the 
+supposedly unrelated *wakeup_watermark*.  Normally the wakeup watermark 
+would default to something like 2048, but if you were trying to set the 
+wakeup_events value to something like 3 then wakeup_watermark would be set 
+to that too, causing a lot more overflow events.
 
+I verified all the above painfully using a lot of printks.
+
+I agree this does seem to be a combination of bugs, as even with a 
+properlyu set value on affected kernels you'd get spurious watermark 
+overflow events if you weren't consuming the ring buffer.
+
+In any case, I can provide a cleaner patch than the one before that isn't 
+as intrusive.
+
+I'm also bisecting the other problem I mentioned, the one where overflows 
+are 10x too large on 3.0-rc1.  I'm at work with a Nehalem machine so the 
+bisect should go faster than the bisect I had to do on an atom machine 
+this weekend.  
+
+A power outage over the weekend has taken part of the 
+network down here though so my e-mail access is a bit limited, so I 
+apologize if I've been missing comments sent to my other e-mail address.
+
+Vince
