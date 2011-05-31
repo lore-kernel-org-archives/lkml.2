@@ -1,32 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773Ab1EaKsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 06:48:53 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44316 "EHLO mx2.mail.elte.hu"
+	id S1754274Ab1EaKud (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 06:50:33 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54553 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751079Ab1EaKsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 06:48:51 -0400
-Date: Tue, 31 May 2011 12:48:39 +0200
+	id S1752180Ab1EaKub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 06:50:31 -0400
+Date: Tue, 31 May 2011 12:50:19 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: David Woodhouse <dwmw2@infradead.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
-Message-ID: <20110531104839.GE24172@elte.hu>
-References: <1306707270.2029.377.camel@i7.infradead.org>
- <20110530072300.GA9802@elte.hu>
- <1306745835.2029.389.camel@i7.infradead.org>
- <20110530091536.GA2827@elte.hu>
- <1306747629.2029.397.camel@i7.infradead.org>
- <20110530095333.GA8461@elte.hu>
- <1306750004.2029.413.camel@i7.infradead.org>
- <20110530102502.GC17821@elte.hu>
- <BANLkTi=X2PzoqJy_dY0oBA9=y_hGt-fX4g@mail.gmail.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
+        Maximilian Engelhardt <maxi@daemonizer.de>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        StuStaNet Vorstand <vorstand@stusta.mhn.de>,
+        Yann Dupont <Yann.Dupont@univ-nantes.fr>,
+        Denys Fedoryshchenko <denys@visp.net.lb>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Kernel crash after using new Intel NIC (igb)
+Message-ID: <20110531105019.GF24172@elte.hu>
+References: <4DDFE4D6.4010000@fb.com>
+ <1306526219.2533.3.camel@edumazet-laptop>
+ <20110527211419.GA6793@dev1756.snc6.facebook.com>
+ <1306561285.2533.9.camel@edumazet-laptop>
+ <20110528180434.GB12530@elte.hu>
+ <1306654424.30021.7.camel@edumazet-laptop>
+ <20110529073840.GB21254@elte.hu>
+ <1306654983.30021.10.camel@edumazet-laptop>
+ <20110529123318.GB26627@elte.hu>
+ <4DE3E32E.5000302@fb.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=X2PzoqJy_dY0oBA9=y_hGt-fX4g@mail.gmail.com>
+In-Reply-To: <4DE3E32E.5000302@fb.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -40,31 +45,25 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+* Arun Sharma <asharma@fb.com> wrote:
 
-> On Mon, May 30, 2011 at 12:25, Ingo Molnar <mingo@elte.hu> wrote:
-> >> > I personally prefer 'make ARCH=i386 defconfig' and 'make ARCH=x86_64
-> >> > defconfig' because it's a nice conceptual equivalent to:
-> >> >
-> >> >     make ARCH=arm defconfig
-> >> >     make ARCH=mips defconfig
-> >>
-> >> No, ARCH= is just for cross-compiling. If you're *on* an ARM or MIPS
-> >> box, you don't need the ARCH= bit.
+> On 5/29/11 5:33 AM, Ingo Molnar wrote:
 > >
-> > Still note that 'make ARCH=arm defconfig' will just work fine even
-> > without cross-building, so i often use just that if i want to see
-> > what default core kernel options ARM (or MIPS) has enabled these
-> > days.
+> >* Eric Dumazet<eric.dumazet@gmail.com>  wrote:
+> >
+> >>I asked Arun if he wanted to make this himself, because initial
+> >>idea was coming from him, not because I did not want to make it ;)
+> >
+> >Hey, fair enough and sorry about the fuss! :-)
 > 
-> That's still the first part of "cross-building", so the issue is moot.
+> Sounds like there is general consensus that such a cleanup would be 
+> good. I'll try to post a patch that does this cleanup for all archs 
+> in the next couple of days - but I won't have a way of testing it 
+> on anything other than x86_64.
 
-The .config is sometimes the only bit i'm interested in - does an 
-architecture's "most important defconfig" turn on a particular core 
-kernel feature or not?
-
-I dont want to pick one of the 123 ARM defconfigs. (123 is the 
-current upstream count of ARM defconfigs)
+-mm is a good place to do such many-arch kind of facility 
+cleanups/extensions so please Cc: Andrew if you think the patch is 
+ready to be tested on that level.
 
 Thanks,
 
