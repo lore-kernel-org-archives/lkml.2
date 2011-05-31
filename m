@@ -1,47 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab1EaCdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 22:33:38 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:59307 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab1EaCdh (ORCPT
+	id S1756832Ab1EaCo2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 22:44:28 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:29212 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab1EaCo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 22:33:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=cpgf9HZy2ZlwE+YN/wmB3jb8mKlLROlvUrSz9BlmA33oMobhWhHHG+o6KJtAF9l8+r
-         2coWskvl0V7luEIcEqTspNvVf9Fe0USXMvhbee6e9QHtMwxDBECV/VvhVxjef3aru/FR
-         A6qcEZlQ94RjHo1UEC2BC04PcoZvDnZmSXZPE=
+	Mon, 30 May 2011 22:44:27 -0400
+X-SpamScore: -11
+X-BigFish: VS-11(zz1432N14e3M98dKc8kzz1202hzzz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 31 May 2011 10:47:30 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Olof Johansson <olof@lixom.net>
+CC: Shawn Guo <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@secretlab.ca>, <arnd@arndb.de>, <kernel@pengutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>, <patches@linaro.org>
+Subject: Re: [PATCH 2/4] ARM: mxc: migrate mach-mx5 gpio driver to gpio-mxc
+Message-ID: <20110531024729.GB31928@S2100-06.ap.freescale.net>
+References: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org>
+ <1306767139-24763-3-git-send-email-shawn.guo@linaro.org>
+ <20110531001634.GB3411@quad.lixom.net>
 MIME-Version: 1.0
-In-Reply-To: <20110529191924.GD9835@elte.hu>
-References: <cover.1306517576.git.luto@mit.edu> <20110529191924.GD9835@elte.hu>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Mon, 30 May 2011 22:33:17 -0400
-X-Google-Sender-Auth: mOPH0Lzb8dyQrE5_6JY4-UeekmY
-Message-ID: <BANLkTin9xfS_X9Bscf1qnNZMK=JBgpzV8Q@mail.gmail.com>
-Subject: Re: [PATCH 0/5] x86-64: Remove syscall instructions at fixed addresses
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110531001634.GB3411@quad.lixom.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 3:19 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> Btw., do you know CONFIG_X86_PTDUMP=y and /debug/kernel_page_tables?
-> You could use that to double check that after your patches all
-> executable (and fixed address) pages are removed [or are harmless].
+On Mon, May 30, 2011 at 05:16:34PM -0700, Olof Johansson wrote:
+> Hi,
+> 
+> On Mon, May 30, 2011 at 10:52:17PM +0800, Shawn Guo wrote:
+> > It adds platform device for drivers/gpio/gpio-mxc, and migrates
+> > mx50/mx51/mx53 gpio driver to gpio-mxc.
+> > 
+> 
+> [...]
+> 
+> > diff --git a/arch/arm/plat-mxc/devices/platform-gpio-mxc.c b/arch/arm/plat-mxc/devices/platform-gpio-mxc.c
+> > new file mode 100644
+> > index 0000000..3b10da0
+> > --- /dev/null
+> > +++ b/arch/arm/plat-mxc/devices/platform-gpio-mxc.c
+> > @@ -0,0 +1,69 @@
+> > +/*
+> > + * Copyright 2011 Freescale Semiconductor, Inc. All Rights Reserved.
+> > + * Copyright 2011 Linaro Limited
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify it under
+> > + * the terms of the GNU General Public License version 2 as published by the
+> > + * Free Software Foundation.
+> > + */
+> > +#include <linux/compiler.h>
+> > +#include <linux/err.h>
+> > +#include <linux/init.h>
+> > +
+> > +#include <mach/hardware.h>
+> > +#include <mach/devices-common.h>
+> > +
+> > +static struct platform_device *__init mxc_add_gpio(int id,
+> > +	resource_size_t iobase, resource_size_t iosize, int irq, int irq_high)
+> > +{
+> > +	struct resource res[] = {
+> > +		{
+> > +			.start = iobase,
+> > +			.end = iobase + iosize - 1,
+> > +			.flags = IORESOURCE_MEM,
+> > +		}, {
+> > +			.start = irq,
+> > +			.end = irq,
+> > +			.flags = IORESOURCE_IRQ,
+> > +		}, {
+> > +			.start = irq_high,
+> > +			.end = irq_high,
+> > +			.flags = IORESOURCE_IRQ,
+> > +		},
+> > +	};
+> > +
+> > +	return platform_device_register_resndata(&mxc_aips_bus,
+> > +			"gpio-mxc", id, res, ARRAY_SIZE(res), NULL, 0);
+> 
+> Why bother returning the value, it's never checked below?
+> 
+Please help me understand.  You are saying the return value should be
+checked below?
 
-Done.  Now there's only one user-executable page and it's mostly harmless.
+> > +static int __init mxc_add_mxc_gpio(void)
+> 
+> Minor nits: Redundant mxcs? Also, 'gpios' would be more accurate naming.
+> 
+The first one is the namespace of plat-mxc function, and the second
+one is to reflect gpio driver name 'mxc gpio'.
 
-Maybe I'll try to get rid of vread_tsc and vread_hpet later on to make
-it even more harmless.
+> > +{
+> > +	if (cpu_is_mx50()) {
+> > +		mxc_add_gpio(0, MX50_GPIO1_BASE_ADDR, SZ_16K, MX50_INT_GPIO1_LOW, MX50_INT_GPIO1_HIGH);
+> > +		mxc_add_gpio(1, MX50_GPIO2_BASE_ADDR, SZ_16K, MX50_INT_GPIO2_LOW, MX50_INT_GPIO2_HIGH);
+> > +		mxc_add_gpio(2, MX50_GPIO3_BASE_ADDR, SZ_16K, MX50_INT_GPIO3_LOW, MX50_INT_GPIO3_HIGH);
+> > +		mxc_add_gpio(3, MX50_GPIO4_BASE_ADDR, SZ_16K, MX50_INT_GPIO4_LOW, MX50_INT_GPIO4_HIGH);
+> > +		mxc_add_gpio(4, MX50_GPIO5_BASE_ADDR, SZ_16K, MX50_INT_GPIO5_LOW, MX50_INT_GPIO5_HIGH);
+> > +		mxc_add_gpio(5, MX50_GPIO6_BASE_ADDR, SZ_16K, MX50_INT_GPIO6_LOW, MX50_INT_GPIO6_HIGH);
+> > +	}
+> > +
+> > +	if (cpu_is_mx51()) {
+> > +		mxc_add_gpio(0, MX51_GPIO1_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO1_LOW, MX51_MXC_INT_GPIO1_HIGH);
+> > +		mxc_add_gpio(1, MX51_GPIO2_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO2_LOW, MX51_MXC_INT_GPIO2_HIGH);
+> > +		mxc_add_gpio(2, MX51_GPIO3_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO3_LOW, MX51_MXC_INT_GPIO3_HIGH);
+> > +		mxc_add_gpio(3, MX51_GPIO4_BASE_ADDR, SZ_16K, MX51_MXC_INT_GPIO4_LOW, MX51_MXC_INT_GPIO4_HIGH);
+> > +	}
+> > +
+> > +	if (cpu_is_mx53()) {
+> > +		mxc_add_gpio(0, MX53_GPIO1_BASE_ADDR, SZ_16K, MX53_INT_GPIO1_LOW, MX53_INT_GPIO1_HIGH);
+> > +		mxc_add_gpio(1, MX53_GPIO2_BASE_ADDR, SZ_16K, MX53_INT_GPIO2_LOW, MX53_INT_GPIO2_HIGH);
+> > +		mxc_add_gpio(2, MX53_GPIO3_BASE_ADDR, SZ_16K, MX53_INT_GPIO3_LOW, MX53_INT_GPIO3_HIGH);
+> > +		mxc_add_gpio(3, MX53_GPIO4_BASE_ADDR, SZ_16K, MX53_INT_GPIO4_LOW, MX53_INT_GPIO4_HIGH);
+> > +		mxc_add_gpio(4, MX53_GPIO5_BASE_ADDR, SZ_16K, MX53_INT_GPIO5_LOW, MX53_INT_GPIO5_HIGH);
+> > +		mxc_add_gpio(5, MX53_GPIO6_BASE_ADDR, SZ_16K, MX53_INT_GPIO6_LOW, MX53_INT_GPIO6_HIGH);
+> > +		mxc_add_gpio(6, MX53_GPIO7_BASE_ADDR, SZ_16K, MX53_INT_GPIO7_LOW, MX53_INT_GPIO7_HIGH);
+> > +	}
+> 
+> The above tables are pretty crazy, and they only get worse later in the series
+> when the other SoCs are added. Is it really worth it to have a common initcall
+> entry for the various SoCs here?
+> 
+This common initcall seems a good place to concentrate the gpio device
+registration.  It's easy to look at the common/different things among
+these SoCs.  The only problem you reminded me is the scanning of the
+long cpu_is_mx list.  It can be optimized a little bit by sorting the
+list from the latest (most used) SoC to the oldest (least used) one,
+and breaking out the scanning immediately when hitting one.
 
---Andy
+> It'd seem cleaner to me to just call the registration function for the
+> family you're running from in per-family-init code such as where it was
+> removed above (irq init, which makes some sense since the gpios provide
+> interrupt sources as well).
+> 
+I just gave it a test, and it's not working at all.  (too early
+to register device in irq init?)
+
+-- 
+Regards,
+Shawn
+
