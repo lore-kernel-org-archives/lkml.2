@@ -1,102 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758042Ab1EaHvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 03:51:25 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:50568 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753571Ab1EaHvY (ORCPT
+	id S1758114Ab1EaHvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 03:51:44 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59714 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab1EaHvm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 03:51:24 -0400
-Date: Tue, 31 May 2011 03:50:45 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, rientjes@google.com, hughd@google.com,
-        kamezawa hiroyu <kamezawa.hiroyu@jp.fujitsu.com>,
-        minchan kim <minchan.kim@gmail.com>, oleg@redhat.com
-Message-ID: <1685840459.318633.1306828245496.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <4DE49314.3070105@jp.fujitsu.com>
-Subject: Re: [PATCH v2 0/5] Fix oom killer doesn't work at all if system
- have > gigabytes memory  (aka CAI founded issue)
+	Tue, 31 May 2011 03:51:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=LvuPUGIvJvZyZ7WRfHJP5+Ky8byI7C31IVBKOiK1KpFgH1aKfR6dA4ND3lhJ5TL4m9
+         uE9wQuTuNAkz8kKXFXk+oNM+UkdC8JMyRY8786nxUMPPI8C8KUkCzWNER05/AtTpAU6l
+         A2gkauAEPcXEs2TIi6/qBq9Dnn9oP6WXzScGg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.71]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
+In-Reply-To: <BANLkTi=YE4fSVQTNaYAwZ1YijqsUfTRmHg@mail.gmail.com>
+References: <1306006756-32009-1-git-send-email-geert@linux-m68k.org>
+	<BANLkTi=YE4fSVQTNaYAwZ1YijqsUfTRmHg@mail.gmail.com>
+Date: Tue, 31 May 2011 09:51:40 +0200
+X-Google-Sender-Auth: ad0v1MjiAArLjlwL2MprB59GKYg
+Message-ID: <BANLkTinm9uHHmRscV7w6y5WxGroGH0hSNQ@mail.gmail.com>
+Subject: Re: [PATCH 0/4] resources: Add lookup_resource()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-m68k@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 31, 2011 at 09:47, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> As I got two acks from David for the sparc bits and no objections, I
+> queued these on my for-2.6.41 and for-next branches.
 
+Did I really write that??? for-3.1, of course ;-)
 
------ Original Message -----
-> >> - If you run the same program as root, non root process and
-> >> privilege
-> >> explicit
-> >> dropping processes (e.g. irqbalance) will be killed at first.
-> > Hmm, at least there were some programs were root processes but were
-> > killed
-> > first.
-> > [ pid] ppid uid total_vm rss swap score_adj name
-> > [ 5720] 5353 0 24421 257 0 0 sshd
-> > [ 5353] 1 0 15998 189 0 0 sshd
-> > [ 5451] 1 0 19648 235 0 0 master
-> > [ 1626] 1 0 2287 129 0 0 dhclient
-> 
-> Hi
-> 
-> I can't reproduce this too. Are you sure these processes have a full
-> root privilege?
-> I've made new debugging patch. After applying following patch, do
-> these processes show
-> cap=1?
-No, all of them had cap=0. Wondering why something like sshd not been
-made cap=1 to avoid early oom kill.
-> 
-> 
-> 
-> index f0e34d4..fe788df 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -429,7 +429,7 @@ static void dump_tasks(const struct mem_cgroup
-> *mem, const nodemask_t *no
-> struct task_struct *p;
-> struct task_struct *task;
-> 
-> - pr_info("[ pid] ppid uid total_vm rss swap score_adj name\n");
-> + pr_info("[ pid] ppid uid cap total_vm rss swap score_adj name\n");
-> for_each_process(p) {
-> if (oom_unkillable_task(p, mem, nodemask))
-> continue;
-> @@ -444,9 +444,9 @@ static void dump_tasks(const struct mem_cgroup
-> *mem, const nodemask_t *no
-> continue;
-> }
-> 
-> - pr_info("[%6d] %6d %5d %8lu %8lu %8lu %9d %s\n",
-> + pr_info("[%6d] %6d %5d %3d %8lu %8lu %8lu %9d %s\n",
-> task_tgid_nr(task), task_tgid_nr(task->real_parent),
-> - task_uid(task),
-> + task_uid(task), has_capability_noaudit(task, CAP_SYS_ADMIN),
-> task->mm->total_vm,
-> get_mm_rss(task->mm) + task->mm->nr_ptes,
-> get_mm_counter(task->mm, MM_SWAPENTS),
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org. For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign
-> http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Gr{oetje,eeting}s,
+
+                        Geert (heading for coffee)
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
