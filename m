@@ -1,213 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab1EaH3O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 03:29:14 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:59842 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751324Ab1EaH3M convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 03:29:12 -0400
-From: Xiangliang Yu <yuxiangl@marvell.com>
-To: Greg KH <greg@kroah.com>
-CC: "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jacky Feng <jfeng@marvell.com>
-Date: Tue, 31 May 2011 00:26:45 -0700
-Subject: RE: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
- coalescing to device 	attributes in sysfs
-Thread-Topic: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
- coalescing to device 	attributes in sysfs
-Thread-Index: Acwe2P+QYiV1XDJnSieuhsfIw4INfAAiCImw
-Message-ID: <F766E4F80769BD478052FB6533FA745D19FAD84E1E@SC-VEXCH4.marvell.com>
-References: <mvsas-intr-coal>
- <1306247507-6136-1-git-send-email-yxlraid@gmail.com>
- <20110526021809.GA22496@kroah.com>
- <F766E4F80769BD478052FB6533FA745D19FAD846E0@SC-VEXCH4.marvell.com>
- <20110526141430.GD4164@kroah.com>
- <F766E4F80769BD478052FB6533FA745D19FAD848FB@SC-VEXCH4.marvell.com>
- <20110527073302.GA16178@kroah.com>
- <F766E4F80769BD478052FB6533FA745D19FAD84C40@SC-VEXCH4.marvell.com>
- <20110530074508.GB7806@kroah.com>
- <F766E4F80769BD478052FB6533FA745D19FAD84CD9@SC-VEXCH4.marvell.com>
- <20110530144815.GB2689@kroah.com>
-In-Reply-To: <20110530144815.GB2689@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758051Ab1EaH1N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 03:27:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47303 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab1EaH1L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 03:27:11 -0400
+Date: Tue, 31 May 2011 08:26:50 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Rientjes <rientjes@google.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Eric Miao <eric.y.miao@gmail.com>, Samuel Ortiz <samuel@sortiz.org>
+Subject: Re: IrDA driver fails on PXA255
+Message-ID: <20110531072650.GC21382@n2100.arm.linux.org.uk>
+References: <20110528205701.GA1788@doriath.ww600.siemens.net> <alpine.DEB.2.00.1105281628480.9934@chino.kir.corp.google.com> <BANLkTim9YdhjY75CzMsSOCVKZWi-WKZ5wA@mail.gmail.com> <alpine.DEB.2.00.1105291410450.9658@chino.kir.corp.google.com> <20110529215656.GA5576@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105302202510.18793@chino.kir.corp.google.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1105302202510.18793@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 30, 2011 at 10:05:38PM -0700, David Rientjes wrote:
+> On Sun, 29 May 2011, Russell King - ARM Linux wrote:
+> > Again, no.  This change has caused a load of previously working drivers
+> > to suddenly start failing without _any_ explanation why or even warning
+> > about the change.  It needs to start off as a WARN_ON() so that stuff
+> > can be fixed, and then changed to a hard error.
+> > 
+> 
+> I haven't seen a "load" of error reports where this is causing an issue, 
+> maybe it is much more popular on arm?
+> 
+> This also isn't a hard error, admins should be able to enable 
+> CONFIG_ZONE_DMA and rebuild so that the driver being loaded can get the 
+> type of memory it is requesting.  Just putting a WARN_ON() doesn't provide 
+> any incentive to ever get this stuff fixed.
 
->Then I would strongly recommend never exporting this value to allow it
->to be changed at all then.  It doesn't sound worth it.
-OK, Thanks!
-I remove the sysfs file and the modified patch is:
+I completely and violently disagree with your approach on this, and I'll
+continue to state that I believe you are wrong until you change your
+position.
 
-drivers/scsi/mvsas/mv_64xx.c |   25 ++++++++++++++++++++++++-
- drivers/scsi/mvsas/mv_94xx.c |   26 +++++++++++++++++++++++++-
- drivers/scsi/mvsas/mv_init.c |    5 +++++
- drivers/scsi/mvsas/mv_sas.h  |    2 ++
- 4 files changed, 56 insertions(+), 2 deletions(-)
+Enabling CONFIG_ZONE_DMA is not a fix, it's making the problem vanish off
+the radar.  It will mean that the drivers using GFP_DMA will never get
+fixed up.
 
-diff --git a/drivers/scsi/mvsas/mv_64xx.c b/drivers/scsi/mvsas/mv_64xx.c
-index 0e13e64..c88b8a7 100644
---- a/drivers/scsi/mvsas/mv_64xx.c
-+++ b/drivers/scsi/mvsas/mv_64xx.c
-@@ -402,7 +402,7 @@ static int __devinit mvs_64xx_init(struct mvs_info *mvi)
- 	tmp = 0;
- 	mw32(MVS_INT_COAL, tmp);
- 
--	tmp = 0x100;
-+	tmp = 0x10000 | interrupt_coalescing;
- 	mw32(MVS_INT_COAL_TMOUT, tmp);
- 
- 	/* ladies and gentlemen, start your engines */
-@@ -758,6 +758,28 @@ void mvs_64xx_fix_dma(dma_addr_t buf_dma, int buf_len, int from, void *prd)
- }
- #endif
- 
-+static void mvs_64xx_tune_interrupt(struct mvs_info *mvi, u32 time)
-+{
-+	void __iomem *regs = mvi->regs;
-+	u32 tmp = 0;
-+	/* interrupt coalescing may cause missing HW interrput in some case,
-+	 * and the max count is 0x1ff, while our max slot is 0x200,
-+	 * it will make count 0.
-+	 */
-+	if (time == 0) {
-+		mw32(MVS_INT_COAL, 0);
-+		mw32(MVS_INT_COAL_TMOUT, 0x10000);
-+	} else {
-+		if (MVS_CHIP_SLOT_SZ > 0x1ff)
-+			mw32(MVS_INT_COAL, 0x1ff|COAL_EN);
-+		else
-+			mw32(MVS_INT_COAL, MVS_CHIP_SLOT_SZ|COAL_EN);
-+
-+		tmp = 0x10000 | time;
-+		mw32(MVS_INT_COAL_TMOUT, tmp);
-+	}
-+}
-+
- const struct mvs_dispatch mvs_64xx_dispatch = {
- 	"mv64xx",
- 	mvs_64xx_init,
-@@ -811,6 +833,7 @@ const struct mvs_dispatch mvs_64xx_dispatch = {
- #ifndef DISABLE_HOTPLUG_DMA_FIX
- 	mvs_64xx_fix_dma,
- #endif
-+	mvs_64xx_tune_interrupt,
- 	NULL,
- };
- 
-diff --git a/drivers/scsi/mvsas/mv_94xx.c b/drivers/scsi/mvsas/mv_94xx.c
-index 3f2ad93..e589f31 100644
---- a/drivers/scsi/mvsas/mv_94xx.c
-+++ b/drivers/scsi/mvsas/mv_94xx.c
-@@ -475,7 +475,7 @@ static int __devinit mvs_94xx_init(struct mvs_info *mvi)
- 	tmp = 0;
- 	mw32(MVS_INT_COAL, tmp);
- 
--	tmp = 0x100;
-+	tmp = 0x10000 | interrupt_coalescing;
- 	mw32(MVS_INT_COAL_TMOUT, tmp);
- 
- 	/* ladies and gentlemen, start your engines */
-@@ -894,6 +894,29 @@ static void mvs_94xx_clear_srs_irq(struct mvs_info *mvi, u8 reg_set,
- {
- }
- 
-+static void mvs_94xx_tune_interrupt(struct mvs_info *mvi, u32 time)
-+{
-+	void __iomem *regs = mvi->regs;
-+	u32 tmp = 0;
-+	/* interrupt coalescing may cause missing HW interrput in some case,
-+	 * and the max count is 0x1ff, while our max slot is 0x200,
-+	 * it will make count 0.
-+	 */
-+	if (time == 0) {
-+		mw32(MVS_INT_COAL, 0);
-+		mw32(MVS_INT_COAL_TMOUT, 0x10000);
-+	} else {
-+		if (MVS_CHIP_SLOT_SZ > 0x1ff)
-+			mw32(MVS_INT_COAL, 0x1ff|COAL_EN);
-+		else
-+			mw32(MVS_INT_COAL, MVS_CHIP_SLOT_SZ|COAL_EN);
-+
-+		tmp = 0x10000 | time;
-+		mw32(MVS_INT_COAL_TMOUT, tmp);
-+	}
-+
-+}
-+
- const struct mvs_dispatch mvs_94xx_dispatch = {
- 	"mv94xx",
- 	mvs_94xx_init,
-@@ -947,6 +970,7 @@ const struct mvs_dispatch mvs_94xx_dispatch = {
- #ifndef DISABLE_HOTPLUG_DMA_FIX
- 	mvs_94xx_fix_dma,
- #endif
-+	mvs_94xx_tune_interrupt,
- 	mvs_94xx_non_spec_ncq_error,
- };
- 
-diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
-index 9f1cccc..d977684 100644
---- a/drivers/scsi/mvsas/mv_init.c
-+++ b/drivers/scsi/mvsas/mv_init.c
-@@ -34,6 +34,8 @@ MODULE_PARM_DESC(collector, "\n"
- 	"\tThe mvsas SAS LLDD supports both modes.\n"
- 	"\tDefault: 1 (Direct Mode).\n");
- 
-+int interrupt_coalescing = 0x80;
-+
- static struct scsi_transport_template *mvs_stt;
- struct kmem_cache *mvs_task_list_cache;
- static const struct mvs_chip_info mvs_chips[] = {
-@@ -48,6 +50,8 @@ static const struct mvs_chip_info mvs_chips[] = {
- 	[chip_1320] =	{ 2, 4, 0x800, 17, 64,  9, &mvs_94xx_dispatch, },
- };
- 
-+struct device_attribute *mvst_host_attrs[] = { NULL };
-+
- #define SOC_SAS_NUM 2
- #define SG_MX 64
- 
-@@ -74,6 +78,7 @@ static struct scsi_host_template mvs_sht = {
- 	.slave_alloc		= mvs_slave_alloc,
- 	.target_destroy		= sas_target_destroy,
- 	.ioctl			= sas_ioctl,
-+	.shost_attrs		= mvst_host_attrs,
- };
- 
- static struct sas_domain_function_template mvs_transport_ops = {
-diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
-index 8740b78..fed8495 100644
---- a/drivers/scsi/mvsas/mv_sas.h
-+++ b/drivers/scsi/mvsas/mv_sas.h
-@@ -64,6 +64,7 @@
- #endif
- #define MV_MAX_U32			0xffffffff
- 
-+extern int interrupt_coalescing;
- extern struct mvs_tgt_initiator mvs_tgt;
- extern struct mvs_info *tgt_mvi;
- extern const struct mvs_dispatch mvs_64xx_dispatch;
-@@ -170,6 +171,7 @@ struct mvs_dispatch {
- #ifndef DISABLE_HOTPLUG_DMA_FIX
- 	void (*dma_fix)(dma_addr_t buf_dma, int buf_len, int from, void *prd);
- #endif
-+	void (*tune_interrupt)(struct mvs_info *mvi, u32 time);
- 	void (*non_spec_ncq_error)(struct mvs_info *mvi);
- 
- };
--- 
-1.7.4.4
+I don't care whether you say "it's easy enough to audit the source code" -
+who's going to do that work?  If you make the problem go away the answer
+to that will be NO ONE.
 
+Change it to be a soft WARN_ON for one release.  Anything else will just
+result in the problem being IGNORED.
