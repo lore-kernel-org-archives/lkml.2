@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758472Ab1EaVf4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 17:35:56 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:46571 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758248Ab1EaVfz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 17:35:55 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Christoph Hellwig <hch@tuxera.com>, Anton Salikhmetov <alexo@tuxera.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] hfsplus: add missing call to bio_put()
-Date: Tue, 31 May 2011 16:35:50 -0500
-Message-Id: <1306877750-6613-1-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1758536Ab1EaVhm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 17:37:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758244Ab1EaVhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 17:37:41 -0400
+Date: Tue, 31 May 2011 17:37:04 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Americo Wang <xiyou.wangcong@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jarod Wilson <jwilson@redhat.com>
+Subject: Re: [Patch] kexec: remove KMSG_DUMP_KEXEC (was Re: Query about
+ kdump_msg hook into crash_kexec())
+Message-ID: <20110531213704.GV16382@redhat.com>
+References: <20110203095837.93A2.A69D9226@jp.fujitsu.com>
+ <20110203020703.GB21603@redhat.com>
+ <20110203135324.93BC.A69D9226@jp.fujitsu.com>
+ <20110526131028.7052a893.akpm@linux-foundation.org>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C17324B79@USINDEVS01.corp.hds.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C17324B79@USINDEVS01.corp.hds.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hfsplus leaks bio objects by failing to call bio_put() on the bios
-it allocates. Add the missing call to fix the leak.
+On Tue, May 31, 2011 at 04:58:00PM -0400, Seiji Aguchi wrote:
+> Hi,
+> 
+> As Americo said, sometimes kdump doesn't work in the real world.
+> 
+> So, I would like to keep discussing implementation of kmsg_dump(KMSG_DUMP_KEXEC)
+> rather than just removing it.
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Cc: <stable@kernel.org> # .38.x, .39.x
----
- fs/hfsplus/wrapper.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+What are you using kmsg_dump() for? Using mtdoops, ramoops or something
+else?  Is it working reliably for you?
 
-diff --git a/fs/hfsplus/wrapper.c b/fs/hfsplus/wrapper.c
-index 3031d81..4ac88ff 100644
---- a/fs/hfsplus/wrapper.c
-+++ b/fs/hfsplus/wrapper.c
-@@ -36,6 +36,7 @@ int hfsplus_submit_bio(struct block_device *bdev, sector_t sector,
- {
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 	struct bio *bio;
-+	int ret = 0;
- 
- 	bio = bio_alloc(GFP_NOIO, 1);
- 	bio->bi_sector = sector;
-@@ -54,8 +55,10 @@ int hfsplus_submit_bio(struct block_device *bdev, sector_t sector,
- 	wait_for_completion(&wait);
- 
- 	if (!bio_flagged(bio, BIO_UPTODATE))
--		return -EIO;
--	return 0;
-+		ret = -EIO;
-+
-+	bio_put(bio);
-+	return ret;
- }
- 
- static int hfsplus_read_mdb(void *bufptr, struct hfsplus_wd *wd)
--- 
-1.7.4.1
-
+Thanks
+Vivek
