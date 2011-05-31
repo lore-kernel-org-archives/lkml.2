@@ -1,94 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab1EaL7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 07:59:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35335 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753916Ab1EaL7E convert rfc822-to-8bit (ORCPT
+	id S1753354Ab1EaMFS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 08:05:18 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:50705 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab1EaMFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 07:59:04 -0400
-Subject: Re: Fix for critical bogoMIPS intermittent calculation failure
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrew Worsley <amworsley@gmail.com>, linux-kernel@vger.kernel.org,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>
-In-Reply-To: <20110407151745.d2e682c6.akpm@linux-foundation.org>
-References: <AANLkTikTjBAZGBF2BirRpayiL6PX=ewmh+ZEnZkZBr=s@mail.gmail.com>
-	 <20110407151745.d2e682c6.akpm@linux-foundation.org>
+	Tue, 31 May 2011 08:05:16 -0400
+Subject: Re: [PATCH v5 00/21] EVM
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: David Safford <safford@watson.ibm.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+In-Reply-To: <20110529065818.GA2122@elf.ucw.cz>
+References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <20110518172552.6d482c7a.akpm@linux-foundation.org>
+	 <20110526060842.GA13933@localhost.ucw.cz>
+	 <4DDE80FE.7010005@schaufler-ca.com>
+	 <1306433514.24986.26.camel@localhost.localdomain>
+	 <20110526183849.GA4563@ucw.cz>
+	 <1306439347.3092.89.camel@localhost.localdomain>
+	 <20110526201725.GC15959@elf.ucw.cz>
+	 <1306518351.24986.102.camel@localhost.localdomain>
+	 <20110529065818.GA2122@elf.ucw.cz>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 31 May 2011 13:58:45 +0200
-Message-ID: <1306843125.2353.7.camel@twins>
+Date: Tue, 31 May 2011 08:05:08 -0400
+Message-ID: <1306843508.3181.94.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-04-07 at 15:17 -0700, Andrew Morton wrote:
-> On Thu, 10 Mar 2011 17:03:51 +1100
-> Andrew Worsley <amworsley@gmail.com> wrote:
+On Sun, 2011-05-29 at 08:58 +0200, Pavel Machek wrote:
+> On Fri 2011-05-27 13:45:51, David Safford wrote:
+> > On Thu, 2011-05-26 at 22:17 +0200, Pavel Machek wrote:
+> > 
+> > > I suggest you explain the patchset in the emails, then? Everyone here
+> > > seems to be confused... Attack it protects against, and what kind of
+> > > hardware is needed for the protection to be effective?
+> > 
+> > The white paper is over 15 pages, and it barely scratches the surface.
+> > Every customer has different security threat models and requirements.
+> > Discussing this in general on the mailing list is really hard.
+> > 
+> > So let's try to simplify this just down to digital signatures in
+> > the cellphone environment, as you state:
+> 
+> Good.
+> 
+> > > Because AFAICT, file signatures, as proposed, are only useful for
+> > > locking down my cellphone against myself. (That's -- evil).
+> > 
+> > The proposed digital signatures can enforce authenticity of a file's 
+> > data (IMA-Appraisal with Digital Signature), and of a file's metadata
+> > (EVM with Digital Signature). For most users, enforcing authenticity
+> > of files is a good thing - a user knows that they are running authentic
+> > software signed by their phone manufacturer, and not malicious files
+> > that they, or someone else installed. In this threat model, EVM is 
+> 
+> Ok, so lets talk about smartphone, similar to my HTC Dream (developer
+> version, unlocked bootloader, flashable from kernel (*)).
+> 
+> Yes, I could install the crazy EVM/IMA infastructure to prevent
+> applications modifying selected files.
+> 
+> But... I could just do chattr +i on selected files, I do not need
+> fancy EVM/IMA for that.
+
+For files that you don't expect to change, such as ELF executables, you
+probably could use the immutable flag, but using a digital signature
+provides authenticity as well, which the immutable flag does not
+provide.
+
+> > Blocking signature verification would serve only to punish Linux 
+> > users who care about the authenticity of their files, while doing 
+> > _nothing_ to stop manufacturers from locking their bootloaders.
+> 
+> chattr already protects authenticity of my files, as do standard unix
+> permissions.
+> 
+> So... where's the difference?
+> 								Pavel
+
+Neither digital signatures nor the immutable flag work for files that
+change, such as config files.  For these files, ima-appraisal would
+store a file hash.
+
+> (*) but it does not change anything.
+> 
+> True; determined attacker could steal my cellphone, open it up,
+> desolder the flash, and change attributes of the filesystem.
+
+With EVM, assuming that i_flag is included in the EVM HMAC, which it
+currently isn't, you would be able to detect the change and prevent the
+file from being accessed.
+
+> 
+> But... the same determined attacker can also replace
+> bootloader&kernel&filesystem -- that is in the same flash! -- with
+> unlocked versions. So the argumentation is the same for locked down
+> phone.
 > 
 
-> Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  init/calibrate.c |   70 +++++++++++++++++++++++++++++++++++++++++----
->  1 file changed, 65 insertions(+), 5 deletions(-)
-> 
-> diff -puN init/calibrate.c~init-calibratec-fix-for-critical-bogomips-intermittent-calculation-failure init/calibrate.c
-> --- a/init/calibrate.c~init-calibratec-fix-for-critical-bogomips-intermittent-calculation-failure
-> +++ a/init/calibrate.c
-> @@ -38,6 +38,9 @@ static unsigned long __cpuinit calibrate
->  	unsigned long timer_rate_min, timer_rate_max;
->  	unsigned long good_timer_sum = 0;
->  	unsigned long good_timer_count = 0;
-> +	unsigned long measured_times[MAX_DIRECT_CALIBRATION_RETRIES];
-> +	int max = -1; /* index of measured_times with max/min values or not set */
-> +	int min = -1;
->  	int i;
->  
->  	if (read_current_timer(&pre_start) < 0 )
-> @@ -90,17 +93,74 @@ static unsigned long __cpuinit calibrate
->  		 * If the upper limit and lower limit of the timer_rate is
->  		 * >= 12.5% apart, redo calibration.
->  		 */
-> -		if (pre_start != 0 && pre_end != 0 &&
-> +		printk(KERN_DEBUG
-> +"calibrate_delay_direct() timer_rate_max=%lu timer_rate_min=%lu pre_start=%lu pre_end=%lu\n",
-> +			  timer_rate_max, timer_rate_min, pre_start, pre_end);
+As EVM is not involved in the boot process, it can not and does not
+address this, but other technologies could.
 
+thanks,
 
-Can we please remove this printk(), I'm not really enjoying the 120
-lines of dmesg spew this creates on my dev-box.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- init/calibrate.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/init/calibrate.c b/init/calibrate.c
-index cfd7000..a24efd3 100644
---- a/init/calibrate.c
-+++ b/init/calibrate.c
-@@ -93,14 +93,12 @@ static unsigned long __cpuinit calibrate_delay_direct(void)
- 		 * If the upper limit and lower limit of the timer_rate is
- 		 * >= 12.5% apart, redo calibration.
- 		 */
--		printk(KERN_DEBUG "calibrate_delay_direct() timer_rate_max=%lu "
--			    "timer_rate_min=%lu pre_start=%lu pre_end=%lu\n",
--			  timer_rate_max, timer_rate_min, pre_start, pre_end);
--		if (start >= post_end)
-+		if (start >= post_end) {
- 			printk(KERN_NOTICE "calibrate_delay_direct() ignoring "
- 					"timer_rate as we had a TSC wrap around"
- 					" start=%lu >=post_end=%lu\n",
- 				start, post_end);
-+		}
- 		if (start < post_end && pre_start != 0 && pre_end != 0 &&
- 		    (timer_rate_max - timer_rate_min) < (timer_rate_max >> 3)) {
- 			good_timer_count++;
+Mimi
 
