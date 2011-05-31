@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757775Ab1EaUET (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 16:04:19 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63971 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab1EaUES (ORCPT
+	id S1758201Ab1EaUFJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 16:05:09 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51783 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754886Ab1EaUFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 16:04:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [kernel.org users] Turning off the incremental diff robot
-Date: Tue, 31 May 2011 22:04:02 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39-rc4+; KDE/4.5.1; x86_64; ; )
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <4DE3E9E7.8020008@zytor.com> <20110531194358.GA4424@elf.ucw.cz>
-In-Reply-To: <20110531194358.GA4424@elf.ucw.cz>
+	Tue, 31 May 2011 16:05:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=xN/J+p7rzQ0mbaM2HpssJh/Lz/kQW05EfqmqdmUzGDXsNvAc8AeK3YhC7u9kxD5AR9
+         6a8GGyGCMIUk9RJ9W0XXnMQZAj0RjMTnjMSb/lhRbAXUXIvbJEax8Gh8B5jcXgQHTCoa
+         ytldi68ZT8a+RQ7hSnE+OeGp/wf8zbLHqEoJA=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105312204.02722.arnd@arndb.de>
-X-Provags-ID: V02:K0:WEdUF2/kJM4XNSpdxmausPjQnTtPBPR1r4xNhhtKZG/
- T0ORykuAlZkQ900q7bRjDdclJa+9X7WCFTLWElQuJk4mbbPXj5
- iWegQzk7D1ze8LAfKUbDKyia+zH0JMGHfgCMqZgtKgBVHR22mA
- EqMIZ45KuiUA/jv0nyCbTYgh6Jz8VqkyfOj75gBMoLrxTApxZi
- cUWsrFVJQGONE+2rm6Mww==
+In-Reply-To: <20110531193602.GA26535@elte.hu>
+References: <cover.1306851090.git.luto@mit.edu>
+	<1660d1687db01852ec58bbf970e22868db367d53.1306851090.git.luto@mit.edu>
+	<20110531183448.GA27166@one.firstfloor.org>
+	<BANLkTinXSDJoT6Uege6zLZqSp87oURfh0w@mail.gmail.com>
+	<20110531192833.GA23458@elte.hu>
+	<20110531193602.GA26535@elte.hu>
+Date: Tue, 31 May 2011 16:05:07 -0400
+X-Google-Sender-Auth: y2JyutP_rW6ZRm8sUZ2f1LgyJs0
+Message-ID: <BANLkTinQ-y-g_3OKOWwOJ-sWxjJgh_G-=Q@mail.gmail.com>
+Subject: Re: [PATCH v4 10/10] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+From: Andrew Lutomirski <luto@mit.edu>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 31 May 2011 21:43:59 Pavel Machek wrote:
-> > With the v3.0 name change I was looking over what might break, and I'm
-> > seriously considering turning off the incremental diff robot on
-> > kernel.org.  It's not clear to me that it is actually useful anymore,
-> > with git and all.
+[Sorry, possible resend.]
 
-Are you talking about just ftp://ftp.kernel.org/pub/linux/kernel/*/incr/
-or also about ftp://ftp.kernel.org/pub/linux/kernel/v2.6/patch-* and
-Changelog-*?
+On 5/31/11, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Ingo Molnar <mingo@elte.hu> wrote:
+>
+>> [...] solution that filters the caller RIP at the generic syscall
+>> entry point and checks RCX against the 'expected' SYSCALL
+>> instruction address, which is the (per task) vdso-address +
+>> constant-offset.
+>
+> Note that this solution would allow the vsyscall page to be
+> 'filtered' to the 3 allowed system calls rather efficiently, via a
+> second level check.
+>
+> This second check does not affect the fastpath, and it could be put
+> behind a CONFIG_COMPAT_VSYSCALL deprecation define once glibc does
+> not put vsyscall references anywhere - but we could even keep it
+> around forever, as this way it's defanged permanently.
+>
 
-I can see reasons to keep the latter, but not necessarily the former.
+Are you thinking about the 32-bit vDSO? I think that 64-bit code puts
+syscalls instructions all over the place.
 
-> > Do anyone actually use these anymore?
-> 
-> Yes.
-> 
-> Usecase one is zaurus, which is just not powerful enough for git, and
-> usecase two are companies that only work with releases... ketchup is
-> very useful for both.
+How is this better than v2 of my series, stopping after the int cc fallback?
 
-For usecase one, is it possible to replace the download links with
-links into http://git.kernel.org/ ?
+--Andy
 
-For usecase two, why wouldn't those be able to just download the entire
-release tarball? At least, I would expect that there is no need for
-the small incremental patches in their case, only for the full
-inter-release patches.
-
-	Arnd
+> Thanks,
+>
+> 	Ingo
+>
