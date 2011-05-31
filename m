@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932932Ab1EaXKF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 19:10:05 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:30836 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932879Ab1EaXKE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 19:10:04 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6362"; a="94560411"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nico@fluxnic.net>
-Subject: [PATCH] msm: timer: Fix SMP build error
-Date: Tue, 31 May 2011 16:10:00 -0700
-Message-Id: <1306883400-32711-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.5.3.367.ga9930
+	id S1161020Ab1FACW1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 22:22:27 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:36893 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161004Ab1FACW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 22:22:26 -0400
+Date: Tue, 31 May 2011 19:28:15 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Sam Gandhi <samgandhi9@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Can someone explain s_xattr field in the superblock?
+Message-ID: <20110531232815.GA4837@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Sam Gandhi <samgandhi9@gmail.com>, linux-kernel@vger.kernel.org
+References: <BANLkTikuz1c9dCB65PqrHCXMSt+7_cS11w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikuz1c9dCB65PqrHCXMSt+7_cS11w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix build breakage on SMP=y builds due to 0f7b332 (ARM:
-consolidate SMP cross call implementation, 2011-04-03)
+On Sat, May 28, 2011 at 08:52:41AM -0700, Sam Gandhi wrote:
+> 
+> I have seen some file systems like jffs2/ext4 etc setup the s_xattr
+> field in the superblock structure.
+> But there are files systems that  do not initialize s_xattr field in
+> the superblock.
+> 
+> Can someone kindly explain what functionality  does s_xattr on super
+> block provides? What kinds of things file system wouldn't be able to
+> do if the superblock doesn't have this initialized?
 
-arch/arm/mach-msm/timer.c: In function 'local_timer_setup':
-arch/arm/mach-msm/timer.c:295: error: implicit declaration of
-function 'gic_enable_ppi'
+It provides support for extended attributes, which is often
+abbreviated as (not surpisingly) xattr.  Some file systems don't
+support extended attributes, so they don't need to setup s_xattr.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mach-msm/timer.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+For more information, read the attr(5) man page: "man 5 attr".
 
-diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
-index 38b95e9..9bfdd5a 100644
---- a/arch/arm/mach-msm/timer.c
-+++ b/arch/arm/mach-msm/timer.c
-@@ -23,6 +23,8 @@
- #include <linux/io.h>
- 
- #include <asm/mach/time.h>
-+#include <asm/hardware/gic.h>
-+
- #include <mach/msm_iomap.h>
- #include <mach/cpu.h>
- 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+    	 	      	       	       	   - Ted
