@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab1EaL2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 07:28:36 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55034 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488Ab1EaL2f (ORCPT
+	id S1754114Ab1EaL2w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 07:28:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44299 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab1EaL2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 07:28:35 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH 2/4] ARM: mxc: migrate mach-mx5 gpio driver to gpio-mxc
-Date: Tue, 31 May 2011 13:28:17 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>, Shawn Guo <shawn.guo@linaro.org>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org
-References: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org> <201105311026.11947.arnd@arndb.de> <20110531103011.GB32096@S2100-06.ap.freescale.net>
-In-Reply-To: <20110531103011.GB32096@S2100-06.ap.freescale.net>
+	Tue, 31 May 2011 07:28:51 -0400
+Message-ID: <4DE4D0EE.20907@linutronix.de>
+Date: Tue, 31 May 2011 13:28:46 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Daniel Drake <dsd@laptop.org>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, dilinger@queued.net
+Subject: Re: [PATCH 07/11] x86, olpc-xo1-sci: Add GPE handler and ebook switch
+ functionality
+References: <1304166750-31125-1-git-send-email-dsd@laptop.org>	<1304166750-31125-8-git-send-email-dsd@laptop.org>	<20110516090813.GA26487@linutronix.de> <BANLkTimpFYMpQFY9J7pa0NygGoQ8dLdArA@mail.gmail.com>
+In-Reply-To: <BANLkTimpFYMpQFY9J7pa0NygGoQ8dLdArA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201105311328.18012.arnd@arndb.de>
-X-Provags-ID: V02:K0:aoXhuJ5WxzNPFXtKo5FzyNQOMUFfck6ctMYNRbAGR+K
- K/RN0ICbtscEPOENfB/F8VkPbV8+daT77SIEXfce6RPxX+mIWo
- um3GuXAMiltTzsIpmuV1SgRWGiG545LHsr41tNQ2g3O0QBAxfc
- fEdBp4vG+TDtyUdBLfcRNkVQ3lxK0I1uYQ2ezUyszkHGA/0DR1
- t16oI3UL8Ko94A0B/M0jg==
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 31 May 2011, Shawn Guo wrote:
-> > Just open-code the mxc_add_mxc_gpio() by moving the individual calls to
-> > mxc_add_gpio() into the respective callers. Having a global
-> > mxc_add_mxc_gpio() function that does something different for each
-> > caller seems entirely pointless to me.
-> > 
-> Right now, mxc_add_mxc_gpio() is a postcore_initcall.  Moving
-> individual mxc_add_gpio() call into irq_init function does not work.
-> And I need to find a proper caller for each SoC to call mxc_add_gpio
-> to register gpio devices.
- 
-Why not init_machine? That is an arch_initcall(), so it's probably close
-enough.
+Daniel Drake wrote:
+> I looked into irq_chip alongside the CS5535 docs. Initially this
+> looked like a good suggestion - any CS5535 GPIO can be mapped to one
+> of 8 PIC-level interrupts, which seems like a good match for irq_chip.
+> 
+> However, this isn't what we're doing here.
+> 
+> CS5535 GPIOs can either be mapped to interrupts, *or* to a Power
+> Management Event (PME). A PME is a CS5535-specific concept; its an
+> event that will bring the system out of suspend if it is sleeping. In
+> this case, we are mapping a GPIO to a PME. I'm not aware of any
+> appropriate Linux abstraction for this. Thats all done in
+> cs5535_gpio_setup_event().
 
-	Arnd
+Is this something like pin multiplexing? So it is either a GPIO pin with 
+interrupt ability _or_ that PME thingy.
+If so, would it make sense to hide it behind enable_irq_wake()? That call
+could fail if you have already gpio_request() users for instance.
+
+> The CS5535 also has a highly programmable PIC, with loads of possible
+> input and mapping options. The call to cs5535_gpio_set_irq() then
+> programs the PIC to map PME input to an IRQ line. This function is
+> both misnamed and misplaced; it is unrelated to GPIOs and is simply
+> one of the many generic knobs on the PIC. If there was one, this
+> function should belong in a cs5535-pic driver, named something
+> according to "IRQ Mapper Unrestricted Z Select High".
+
+And once that is done, you can not use as a GPIO anymore, right?
+
+> Thanks,
+> Daniel
+
+Sebastian
