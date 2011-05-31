@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab1EaTFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 15:05:03 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49245 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750751Ab1EaTFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 15:05:00 -0400
-Date: Tue, 31 May 2011 21:04:36 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Joe Perches <joe@perches.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>
-Subject: Re: [GIT PULL] x86 fixes
-Message-ID: <20110531190436.GA22173@elte.hu>
-References: <20110531163022.GA15435@elte.hu>
- <1306859709.20175.27.camel@Joe-Laptop>
- <20110531181650.GA1854@gere.osrc.amd.com>
+	id S1754396Ab1EaTFk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 15:05:40 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:59176 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750751Ab1EaTFj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 15:05:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=aXe+FWgHDahpolprPIfzkKc+k5K9fz60NmL1sUFT3iN5kmBs6+vVrWgOG67VZ/lMtR
+         WJ2qhOiXKL/S4uCZ1O9YT/RY+b+P6eTXnFiT4MJ+gXaX9/w+SNUNS9Fxw8nSqL4zdzdK
+         TRpaa7rU74yvlLfoKqf8EfiRsGFHwVuiEq3uw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110531181650.GA1854@gere.osrc.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <alpine.DEB.2.02.1105311138570.30137@asgard.lang.hm>
+References: <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu> <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm> <BANLkTik69Gb2i1467bhnEU-pJ0WB10mqNQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105301058030.5766@asgard.lang.hm> <BANLkTimtY0ggu28i-9VzWOO1=puZ0JvcAQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105301142030.5766@asgard.lang.hm> <BANLkTimuToT90eRGVRfN9tAHoF9GOSRRDA@mail.gmail.com>
+ <alpine.DEB.2.02.1105301349530.5766@asgard.lang.hm> <BANLkTimSLoY3uwtGvA2x5C0HhNEHvmWqzw@mail.gmail.com>
+ <20110531020300.GJ2890@dhcp-172-31-194-241.cam.corp.google.com>
+ <BANLkTim0pFS=Fs6ga2CV5LwOs2xxbh9svA@mail.gmail.com> <alpine.DEB.2.02.1105311122250.30137@asgard.lang.hm>
+ <BANLkTi=PzyjVPCLfxa9=B6A25_vgHD3o8Q@mail.gmail.com> <alpine.DEB.2.02.1105311138570.30137@asgard.lang.hm>
+From: "D. Jansen" <d.g.jansen@googlemail.com>
+Date: Tue, 31 May 2011 21:04:59 +0200
+Message-ID: <BANLkTimu2W4AXTGZsf-3QhO8YwgVMc6Riw@mail.gmail.com>
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+To: david@lang.hm
+Cc: "Ted Ts'o" <tytso@mit.edu>, Oliver Neukum <oneukum@suse.de>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 31, 2011 at 8:54 PM,  <david@lang.hm> wrote:
+> On Tue, 31 May 2011, D. Jansen wrote:
+>
+>> On Tue, May 31, 2011 at 8:23 PM,  <david@lang.hm> wrote:
+>>>
+>>> On Tue, 31 May 2011, D. Jansen wrote:
+>>>
+>>>> On Tue, May 31, 2011 at 4:03 AM, Ted Ts'o <tytso@mit.edu> wrote:
+>>
+>>>>> I can't remember the last time this has happened to me.  It's
+>>>>> typically a system crash or a power loss that causes me to lose an
+>>>>> OpenOffice session.
+>>>>
+>>>> Well, good for you! Power loss didn't ever occur to me on the other
+>>>> hand, at least not on my netbook.
+>>>
+>>> failure to resume is effectivly power loss. a autosave to ram would be
+>>> lost,
+>>> just like with a power loss or system crash.
+>>>
+>> Well in my case only X crashes and the autosave is saved.
+>
+> but you have no guarantee that it would be saved without fsync.
 
-* Borislav Petkov <bp@amd64.org> wrote:
+But I would with barriers.
+>
+> it looks like libreoffice does 2 fsyncs per snapshot saved. This is why your
+> data is saved.
+>
+> If this is only every 15 minutes (the default), and you have the disk
+> spin-up time set to every 20 minutes, you will be spinning up the disk just
+> about as frequently anyway.
+>
+> now if the system isn't flushing things to disk when it spins up for the
+> fsync, then there is something wrong.
+>
+> but if it is working as designed, you get one spin-up every 15 min instead
+> of one spin-up every 20 minutes, that should not be enough to kill anything.
 
-> On Tue, May 31, 2011 at 09:35:09AM -0700, Joe Perches wrote:
-> > On Tue, 2011-05-31 at 18:30 +0200, Ingo Molnar wrote:
-> > > diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-> > []
-> > > @@ -642,7 +642,7 @@ static int __init idle_setup(char *str)
-> > >  		boot_option_idle_override = IDLE_POLL;
-> > >  	} else if (!strcmp(str, "mwait")) {
-> > >  		boot_option_idle_override = IDLE_FORCE_MWAIT;
-> > > -		WARN_ONCE(1, "\idle=mwait\" will be removed in 2012\"\n");
-> > > +		WARN_ONCE(1, "\"idle=mwait\" will be removed in 2012\"\n");
-> > 
-> > Extra quote at end.  More likely you want:
-> > 
-> > 		WARN_ONCE(1, "\"idle=mwait\" will be removed in 2012\n");
-> 
-> Crap, there's no fixing this string :)
-> 
-> Reportedly, there's another fix from Len:
-> 
-> lkml.kernel.org/r/20110531101934.2737dc90.sfr@canb.auug.org.au
-> 
-> which is more complete. Ingo, you could drop this one.
-
-Well, the primary problem, which needed x86/urgent treatment, was the 
-annoying build warning affecting all users.
-
-The message itself is exceedingly rare, so we can fix it via lower 
-prio pathways.
-
-Len, a small detail: mind resolving the conflict once it occurs by 
-dropping the \" but keeping the \n? Your commit:
-
-  8a27ef90237f: x86 idle: fix build warning for WARN_ONCE("idle=mwait")
-
-removes the \n from the end of a printk-alike string - we generally 
-keep the \n even though WARN_*() will accept \n-less strings.
-
-Thanks,
-
-	Ingo
+Yes, if there was nothing else, that's probably true. But _many_
+applications use fsync, even KDE's plasma shell I think.
