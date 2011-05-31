@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab1EaSlC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 14:41:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56850 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932176Ab1EaSlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 14:41:00 -0400
-Subject: Re: [PATCH 1/4] Cache xattr security drop check for write v2
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        chris.mason@oracle.com, josef@redhat.com, agruen@linbit.com,
-        "Serge E. Hallyn" <serue@us.ibm.com>
-In-Reply-To: <20110531180643.GB9261@alboin.amr.corp.intel.com>
-References: <1306596354-18453-1-git-send-email-andi@firstfloor.org>
-	 <1306849896.2816.22.camel@menhir>
-	 <20110531180643.GB9261@alboin.amr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Tue, 31 May 2011 19:42:26 +0100
-Message-ID: <1306867346.2816.49.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757969Ab1EaSua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 14:50:30 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:30051 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754200Ab1EaSu3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 14:50:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=v9bYfS6OcwTGJO0EkphgAB97t4ns+tpCiCBW//B740e9nxrIVhDe8rFBV8wkcRgjFE
+         qhqx/rNT4cRWAqFIqxrg==
+MIME-Version: 1.0
+In-Reply-To: <20110531124208.GF11352@atomide.com>
+References: <1304546278-28965-1-git-send-email-ccross@android.com>
+	<20110531124208.GF11352@atomide.com>
+Date: Tue, 31 May 2011 11:50:23 -0700
+X-Google-Sender-Auth: DHfZHm246YNZmnYqw7Z7TysArUI
+Message-ID: <BANLkTikfXs1oLott64+C5wy59G24Mux0TJ52et7GTEMQrfqRFQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: omap4: Pass core and wakeup mux tables to omap4_mux_init
+From: Colin Cross <ccross@android.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        l-o <linux-omap@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, May 31, 2011 at 5:42 AM, Tony Lindgren <tony@atomide.com> wrote:
+> * Colin Cross <ccross@android.com> [110504 14:54]:
+>> OMAP4 contains two separate instances of the padconf registers,
+>> one in the core system config and one in the wakeup system config.
+>> Pass in two tables to apply the correct values to each instance.
+>
+> Hmm good catch thanks. Will queue this as a fix.
 
-On Tue, 2011-05-31 at 11:06 -0700, Andi Kleen wrote:
-> > It sounds like a good idea, but cluster filesystems will need to clear
-> > the flag when they update their in-core inodes. Without that we could
-> > have:
-> > 
-> >  Node A looks up inode and sets S_NOSEC since its not suid
-> >  Node B does chmod +s on the inode
-> >  Node A now has S_NOSEC set, but inode is suid, so writes don't clear
-> > suid
-> 
-> Good point. I assume that's also true for network file systems.
-> 
-> This would essentially argue that for those putting the helper
-> into the inode read paths is not optional. I'll look into this
-> later.
-> 
-> > -	flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
-> > +	flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC|S_NOSEC);
-> > +	if (!is_sxid(inode->i_mode))
-> > +		flags |= S_NOSEC;
-> 
-> Doesn't that need a check for no xattr too? or do you not support
-> those currently?
-> 
-> Note I added a helper for this in the latest version:
-> inode_has_no_xattr()
-> 
-> -Andi
-
-Yes, it should test for xattr too,
-
-Steve.
-
-
+This patch doesn't work without another fix to allow NULL to be passed
+to omap4_mux_init.  Do you prefer allowing NULL, or adding empty
+board_wkup_mux arrays to every board file?  I have a patch for the
+first option.
