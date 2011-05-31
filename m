@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab1EaPPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:15:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48418 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab1EaPPs (ORCPT
+	id S1755432Ab1EaPWl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 11:22:41 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49360 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab1EaPWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:15:48 -0400
-Message-ID: <4DE50617.7090509@linutronix.de>
-Date: Tue, 31 May 2011 17:15:35 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Tue, 31 May 2011 11:22:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=qG8lNQHEafBYeaU+313JS7du9AmdY7RmaN6iDsBDozrD10AXWaiIc96boYm0nyNsxG
+         adGMTr8SjWweez9zx0SDaOmmHA7dYjwLSjWOQZj8dAORK6YSWcElS3WMBWi4khR51AhX
+         3eichvcjkypYBd8xtTZD8ytAS02RhZcOcfPmA=
 MIME-Version: 1.0
-To: Suzuki Poulose <suzuki@in.ibm.com>
-CC: linux ppc dev <linuxppc-dev@lists.ozlabs.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] Kexec support for PPC440x
-References: <4DE345B0.8020505@in.ibm.com>
-In-Reply-To: <4DE345B0.8020505@in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <BANLkTikPqkDON4mzBEko46JdgACrbTOiiA@mail.gmail.com>
+References: <cover.1306780983.git.bengardiner@nanometrics.ca>
+	<BANLkTinu7dX5Tfhs0ak0BEfc212mpJKb+w@mail.gmail.com>
+	<BANLkTikPqkDON4mzBEko46JdgACrbTOiiA@mail.gmail.com>
+Date: Tue, 31 May 2011 11:22:39 -0400
+Message-ID: <BANLkTi=_8nSWYt=7+EgoORiYHqpRhOQurw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] fix-up free space earlier in mount_ubifs()
+From: "Matthew L. Creech" <mlcreech@gmail.com>
+To: Ben Gardiner <bengardiner@nanometrics.ca>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 31, 2011 at 10:52 AM, Ben Gardiner
+<bengardiner@nanometrics.ca> wrote:
+>
+> Thank you for your endorsement. Can we take that as a Reviewed-by ?
+>
 
-Suzuki Poulose wrote:
-> Index: powerpc/arch/powerpc/kernel/44x_kexec_mapping.S
-> ===================================================================
-> --- /dev/null
-> +++ powerpc/arch/powerpc/kernel/44x_kexec_mapping.S
-....
+Sure, looks good to me:
 
-> + *
-> + */
-> +    bl    nxtins                /* Find our address */
-> +nxtins:    mflr    r5                /* Make it accessible */
+Reviewed-by: Matthew L. Creech <mlcreech@gmail.com>
 
-Please don't mix labels and instructions.
-
-> +    tlbsx    r23,0,r5            /* Find entry we are in */
-
-using tabs instead of spaces would make it look nice. Please also separate 
-the arguments of the instruction i.e.
-	tlbsx	r23, 0, r5
-
-
-> Index: powerpc/arch/powerpc/kernel/misc_32.S
-> ===================================================================
-> --- powerpc.orig/arch/powerpc/kernel/misc_32.S
-> +++ powerpc/arch/powerpc/kernel/misc_32.S
-> @@ -736,6 +736,28 @@ relocate_new_kernel:
->      mr      r5, r31
->  
->      li    r0, 0
-> +#elif defined(CONFIG_44x)  && !defined(CONFIG_47x)
-> +
-> +    mr    r29, r3
-> +    mr    r30, r4
-> +    mr    r31, r5
-> +
-> +#include "44x_kexec_mapping.S"
-
-The way you setup the 1:1 mapping should be close to what you are doing on
-kernel entry. Isn't it possible to include the file here and in the entry
-code?
-
-Sebastian
+-- 
+Matthew L. Creech
