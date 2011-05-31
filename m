@@ -1,117 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab1EaMFS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 08:05:18 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:50705 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab1EaMFQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 08:05:16 -0400
-Subject: Re: [PATCH v5 00/21] EVM
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: David Safford <safford@watson.ibm.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-In-Reply-To: <20110529065818.GA2122@elf.ucw.cz>
-References: <1305557115-15652-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <20110518172552.6d482c7a.akpm@linux-foundation.org>
-	 <20110526060842.GA13933@localhost.ucw.cz>
-	 <4DDE80FE.7010005@schaufler-ca.com>
-	 <1306433514.24986.26.camel@localhost.localdomain>
-	 <20110526183849.GA4563@ucw.cz>
-	 <1306439347.3092.89.camel@localhost.localdomain>
-	 <20110526201725.GC15959@elf.ucw.cz>
-	 <1306518351.24986.102.camel@localhost.localdomain>
-	 <20110529065818.GA2122@elf.ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 May 2011 08:05:08 -0400
-Message-ID: <1306843508.3181.94.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1753750Ab1EaMMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 08:12:00 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:45273 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752587Ab1EaML7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 08:11:59 -0400
+Date: Tue, 31 May 2011 14:11:50 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH v2 02/10] compaction: trivial clean up acct_isolated
+Message-ID: <20110531121150.GA3190@cmpxchg.org>
+References: <cover.1306689214.git.minchan.kim@gmail.com>
+ <d2a446699fd72bf439b0e538f798e3d600314d92.1306689214.git.minchan.kim@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <d2a446699fd72bf439b0e538f798e3d600314d92.1306689214.git.minchan.kim@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-05-29 at 08:58 +0200, Pavel Machek wrote:
-> On Fri 2011-05-27 13:45:51, David Safford wrote:
-> > On Thu, 2011-05-26 at 22:17 +0200, Pavel Machek wrote:
-> > 
-> > > I suggest you explain the patchset in the emails, then? Everyone here
-> > > seems to be confused... Attack it protects against, and what kind of
-> > > hardware is needed for the protection to be effective?
-> > 
-> > The white paper is over 15 pages, and it barely scratches the surface.
-> > Every customer has different security threat models and requirements.
-> > Discussing this in general on the mailing list is really hard.
-> > 
-> > So let's try to simplify this just down to digital signatures in
-> > the cellphone environment, as you state:
+On Mon, May 30, 2011 at 03:13:41AM +0900, Minchan Kim wrote:
+> acct_isolated of compaction uses page_lru_base_type which returns only
+> base type of LRU list so it never returns LRU_ACTIVE_ANON or LRU_ACTIVE_FILE.
+> In addtion, cc->nr_[anon|file] is used in only acct_isolated so it doesn't have
+> fields in conpact_control.
+> This patch removes fields from compact_control and makes clear function of
+> acct_issolated which counts the number of anon|file pages isolated.
 > 
-> Good.
-> 
-> > > Because AFAICT, file signatures, as proposed, are only useful for
-> > > locking down my cellphone against myself. (That's -- evil).
-> > 
-> > The proposed digital signatures can enforce authenticity of a file's 
-> > data (IMA-Appraisal with Digital Signature), and of a file's metadata
-> > (EVM with Digital Signature). For most users, enforcing authenticity
-> > of files is a good thing - a user knows that they are running authentic
-> > software signed by their phone manufacturer, and not malicious files
-> > that they, or someone else installed. In this threat model, EVM is 
-> 
-> Ok, so lets talk about smartphone, similar to my HTC Dream (developer
-> version, unlocked bootloader, flashable from kernel (*)).
-> 
-> Yes, I could install the crazy EVM/IMA infastructure to prevent
-> applications modifying selected files.
-> 
-> But... I could just do chattr +i on selected files, I do not need
-> fancy EVM/IMA for that.
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-For files that you don't expect to change, such as ELF executables, you
-probably could use the immutable flag, but using a digital signature
-provides authenticity as well, which the immutable flag does not
-provide.
-
-> > Blocking signature verification would serve only to punish Linux 
-> > users who care about the authenticity of their files, while doing 
-> > _nothing_ to stop manufacturers from locking their bootloaders.
-> 
-> chattr already protects authenticity of my files, as do standard unix
-> permissions.
-> 
-> So... where's the difference?
-> 								Pavel
-
-Neither digital signatures nor the immutable flag work for files that
-change, such as config files.  For these files, ima-appraisal would
-store a file hash.
-
-> (*) but it does not change anything.
-> 
-> True; determined attacker could steal my cellphone, open it up,
-> desolder the flash, and change attributes of the filesystem.
-
-With EVM, assuming that i_flag is included in the EVM HMAC, which it
-currently isn't, you would be able to detect the change and prevent the
-file from being accessed.
-
-> 
-> But... the same determined attacker can also replace
-> bootloader&kernel&filesystem -- that is in the same flash! -- with
-> unlocked versions. So the argumentation is the same for locked down
-> phone.
-> 
-
-As EVM is not involved in the boot process, it can not and does not
-address this, but other technologies could.
-
-thanks,
-
-Mimi
-
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
