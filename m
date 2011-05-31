@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758443Ab1EaVcN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 17:32:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48320 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752321Ab1EaVcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 17:32:12 -0400
-Message-ID: <4DE55E5A.5050206@redhat.com>
-Date: Tue, 31 May 2011 17:32:10 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100505 Fedora/3.0.4-2.el6 Thunderbird/3.0.4
+	id S1758479Ab1EaVc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 17:32:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33587 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758252Ab1EaVcz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 17:32:55 -0400
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 09/35] drivers/gpio changes for SMBIOS and System
- Firmware
-References: <20110531155140.3507.6599.sendpatchset@prarit.bos.redhat.com> <BANLkTi=eRoTKNsBxp483kr1ZFh=MQKi2kQ@mail.gmail.com>
-In-Reply-To: <BANLkTi=eRoTKNsBxp483kr1ZFh=MQKi2kQ@mail.gmail.com>
+In-Reply-To: <20110531190809.GA20691@redhat.com>
+References: <201105180240.56754.vda.linux@googlemail.com> <20110518095539.GU20624@htj.dyndns.org>
+ <20110523124314.GA7232@redhat.com> <20110524102834.GC10334@htj.dyndns.org>
+ <20110525182919.GB16575@redhat.com> <20110526091401.GD9715@htj.dyndns.org>
+ <20110526150150.GD12525@redhat.com> <20110527182121.GA3212@mtj.dyndns.org>
+ <20110530192255.GB20616@redhat.com> <BANLkTimupSd774N-VBoswOj+Dza=5ofvWQ@mail.gmail.com>
+ <20110531190809.GA20691@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 1 Jun 2011 06:32:31 +0900
+Message-ID: <BANLkTinEXW=nS6KoH7SKHbTit=nKfG7NOw@mail.gmail.com>
+Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, indan@nul.nu,
+        Tejun Heo <tj@kernel.org>, bdonlan@gmail.com,
+        linux-kernel@vger.kernel.org, jan.kratochvil@redhat.com,
+        akpm@linux-foundation.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 05/31/2011 03:17 PM, Grant Likely wrote:
-> Hi Prarit
+On Wed, Jun 1, 2011 at 4:08 AM, Oleg Nesterov <oleg@redhat.com> wrote:
 >
-> I could use some background on why the mod_devicetable.h include is
-> being removed from basic_mmio_gpio (need a commit description).  
+> On a seriouse note, of course you are right, but what we should do?
 
-Grant, this was part of a cleanup of the dmi* code.  Currently DMI*
-(which have now been changed to SYSFW*) definitions are in
-mod_devicetable.h.  AFAICT, mod_devicetable.h is not needed in the gpio
-file.
+Have we *ever* gotten a bug-report about these kinds of things from
+actual users?
 
-> Also,
-> any reason why this change isn't squashed in the patch that
-> necessitates it?
->   
+IOW, it may be an annoying issue from a theoretical standpoint, but
+afaik it's not an annoying issue from a practical user standpoint.
 
-Purely organization of the patchset -- the SYSFW & SMBIOS code touches
-close to 180 different files.  I decided that a directory-by-directory
-breakout of the drivers/* patches was the best way to go.
+Compare it to the _practically_ annoying issue we had with ^C and
+bash, where it was fundamentally impossible to know whether the child
+actually exited due to the ^C or not due to the interfaces. That one
+caused actual practical issues that people hit, and that were
+impossible to work around in theory, and hard to work around in
+practice..
 
-P.
+In comparison, I don't think pid-vs-namespace issues for ptrace or
+some subtle interaction with execve is really all that big of a
+problem in practice.
 
-> g.
->
-> On Tue, May 31, 2011 at 9:51 AM, Prarit Bhargava <prarit@redhat.com> wrote:
->   
->>     
->
->
->   
+Keep the eye on the ball: look around what people actually complain
+about for practical reason that they hit, rather than issues that
+people say "wouldn't it be nice if.." about.
+
+             Linus
