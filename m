@@ -1,48 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957Ab1EaCFC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 22:05:02 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:53082 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751662Ab1EaCFB (ORCPT
+	id S1755038Ab1EaCUG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 22:20:06 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39894 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318Ab1EaCUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 22:05:01 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAE1M5E1Ld/sX/2dsb2JhbAAMR4RJ1h2QQoErg2yBBwSYD4d2
-X-IronPort-AV: E=Sophos;i="4.65,295,1304308800"; 
-   d="scan'208";a="115006171"
-Message-ID: <4DE44CCA.20608@teksavvy.com>
-Date: Mon, 30 May 2011 22:04:58 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Mon, 30 May 2011 22:20:04 -0400
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, jaxboe@fusionio.com,
+        msb@chromium.org, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: [PATCH 2/3] block: Move non-rotational flag to queue limits
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <4DDEA689.2090004@fusionio.com>
+	<1306464169-4291-1-git-send-email-martin.petersen@oracle.com>
+	<1306464169-4291-3-git-send-email-martin.petersen@oracle.com>
+	<20110527130248.GA17219@redhat.com>
+Date: Mon, 30 May 2011 22:19:49 -0400
+In-Reply-To: <20110527130248.GA17219@redhat.com> (Mike Snitzer's message of
+	"Fri, 27 May 2011 09:02:49 -0400")
+Message-ID: <yq1k4d7zk56.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.110013 (No Gnus v0.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Bruce Stenning <b.stenning@indigovision.com>
-CC: Tejun Heo <htejun@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-References: <20110423005610.GC1576@mtj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C775549E4@gretna.indigovision.com> <20110425162242.GB30828@mtj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554BDC@gretna.indigovision.com> <20110426135027.GI878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C70@gretna.indigovision.com> <20110426155229.GM878@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C77554C91@gretna.indigovision.com> <20110430140109.GJ29280@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com> <20110525094127.GF10146@htj.dyndns.org> <C1438B59050E1B4C9482FF3266AD6BA32C7770967B@gretna.indigovision.com> <4DDD823F.5090904@teksavvy.com> <C1438B59050E1B4C9482FF3266AD6BA32C7777DD92@gretna.indigovision.com>
-In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32C7777DD92@gretna.indigovision.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4DE45050.00A4:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-05-30 09:07 AM, Bruce Stenning wrote:
->>> Mark, did you get a chance to clean up the sata_mv spinlock addition in
->>> mv_set_main_irq_mask?
->>
->> Not yet.  I've been waiting to hear back from you as to
->> whether they visibly fix anything or not.
-> 
-> Having now tested with Tejun's two patches and without the spinlock in
-> mv_set_main_irq_mask for a reasonable time, the hotplug seems to be very
-> reliable.  So I think it's probably best to leave the spinlock out and
-> continue to observe the behaviour with further testing.
+>>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
 
-Peachy.  I'll have another look at some point -- I think I thought
-the spinlock was still needed for ATAPI under some conditions.
-Gotta look closer to make sure.
+Mike> blk_queue_nonrot vs blk_queue_non_rotational lends itself to a
+Mike> small amount of confusion.
 
-Thanks.
+Yeah, I just didn't feel like mucking with the existing call. But it
+looks like there are only a handful of users.
+
+
+Mike> What about:
+Mike>  s/blk_queue_nonrot/blk_queue_non_rotational/
+Mike>  s/blk_queue_non_rotational/blk_queue_set_non_rotational/
+Mike> ?
+
+Most of our other block layer calls take the form blk_queue_max_foo()
+for setting foo and {bdev,queue}_max_foo() for querying.
+
+So I guess the most appropriate thing to do would be to do something
+like this?
+
+
+block: Move non-rotational flag to queue limits
+
+To avoid special-casing the non-rotational flag when stacking it is
+moved from the queue flags to be part of the queue limits. This allows
+us to handle it like the remaining I/O topology information.
+
+Also rename blk_queue_nonrot() to be consistent with block layer calling
+conventions.
+
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+
+diff --git a/block/blk-settings.c b/block/blk-settings.c
+index b373721..f95760d 100644
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -124,6 +124,7 @@ void blk_set_default_limits(struct queue_limits *lim)
+ 	lim->io_opt = 0;
+ 	lim->misaligned = 0;
+ 	lim->cluster = 1;
++	lim->non_rotational = 0;
+ }
+ EXPORT_SYMBOL(blk_set_default_limits);
+ 
+@@ -143,6 +144,7 @@ void blk_set_stacking_limits(struct queue_limits *lim)
+ 	lim->max_hw_sectors = INT_MAX;
+ 	lim->max_sectors = BLK_DEF_MAX_SECTORS;
+ 	lim->discard_zeroes_data = 1;
++	lim->non_rotational = 1;
+ }
+ EXPORT_SYMBOL(blk_set_stacking_limits);
+ 
+@@ -471,6 +473,22 @@ void blk_queue_io_opt(struct request_queue *q, unsigned int opt)
+ EXPORT_SYMBOL(blk_queue_io_opt);
+ 
+ /**
++ * blk_queue_non_rotational - set this queue as non-rotational
++ * @q:	the request queue for the device
++ *
++ * Description:
++ *   This setting may be used by drivers to indicate that the physical
++ *   device is non-rotational (solid state device, array with
++ *   non-volatile cache). Setting this may affect I/O scheduler
++ *   decisions and readahead behavior.
++ */
++void blk_queue_non_rotational(struct request_queue *q)
++{
++	q->limits.non_rotational = 1;
++}
++EXPORT_SYMBOL(blk_queue_non_rotational);
++
++/**
+  * blk_queue_stack_limits - inherit underlying queue limits for stacked drivers
+  * @t:	the stacking driver (top)
+  * @b:  the underlying device (bottom)
+@@ -552,6 +570,7 @@ int blk_stack_limits(struct queue_limits *t, struct queue_limits *b,
+ 
+ 	t->cluster &= b->cluster;
+ 	t->discard_zeroes_data &= b->discard_zeroes_data;
++	t->non_rotational &= b->non_rotational;
+ 
+ 	/* Physical block size a multiple of the logical block size? */
+ 	if (t->physical_block_size & (t->logical_block_size - 1)) {
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index d935bd8..2669b15 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -186,6 +186,22 @@ static ssize_t queue_max_hw_sectors_show(struct request_queue *q, char *page)
+ 	return queue_var_show(max_hw_sectors_kb, (page));
+ }
+ 
++static ssize_t queue_rotational_show(struct request_queue *q, char *page)
++{
++	return queue_var_show(!queue_non_rotational(q), page);
++}
++
++static ssize_t queue_rotational_store(struct request_queue *q,
++				      const char *page, size_t count)
++{
++	unsigned long rotational;
++	ssize_t ret = queue_var_store(&rotational, page, count);
++
++	q->limits.non_rotational = !rotational;
++
++	return ret;
++}
++
+ #define QUEUE_SYSFS_BIT_FNS(name, flag, neg)				\
+ static ssize_t								\
+ queue_show_##name(struct request_queue *q, char *page)			\
+@@ -212,7 +228,6 @@ queue_store_##name(struct request_queue *q, const char *page, size_t count) \
+ 	return ret;							\
+ }
+ 
+-QUEUE_SYSFS_BIT_FNS(nonrot, NONROT, 1);
+ QUEUE_SYSFS_BIT_FNS(random, ADD_RANDOM, 0);
+ QUEUE_SYSFS_BIT_FNS(iostats, IO_STAT, 0);
+ #undef QUEUE_SYSFS_BIT_FNS
+@@ -352,8 +367,8 @@ static struct queue_sysfs_entry queue_discard_zeroes_data_entry = {
+ 
+ static struct queue_sysfs_entry queue_nonrot_entry = {
+ 	.attr = {.name = "rotational", .mode = S_IRUGO | S_IWUSR },
+-	.show = queue_show_nonrot,
+-	.store = queue_store_nonrot,
++	.show = queue_rotational_show,
++	.store = queue_rotational_store,
+ };
+ 
+ static struct queue_sysfs_entry queue_nomerges_entry = {
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 7c52d68..c84b539 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1961,7 +1961,7 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 
+ 	/* We do for queues that were marked with idle window flag. */
+ 	if (cfq_cfqq_idle_window(cfqq) &&
+-	   !(blk_queue_nonrot(cfqd->queue) && cfqd->hw_tag))
++	   !(queue_non_rotational(cfqd->queue) && cfqd->hw_tag))
+ 		return true;
+ 
+ 	/*
+@@ -1986,7 +1986,7 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+ 	 * for devices that support queuing, otherwise we still have a problem
+ 	 * with sync vs async workloads.
+ 	 */
+-	if (blk_queue_nonrot(cfqd->queue) && cfqd->hw_tag)
++	if (queue_non_rotational(cfqd->queue) && cfqd->hw_tag)
+ 		return;
+ 
+ 	WARN_ON(!RB_EMPTY_ROOT(&cfqq->sort_list));
+@@ -3237,7 +3237,7 @@ cfq_update_io_seektime(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 	}
+ 
+ 	cfqq->seek_history <<= 1;
+-	if (blk_queue_nonrot(cfqd->queue))
++	if (queue_non_rotational(cfqd->queue))
+ 		cfqq->seek_history |= (n_sec < CFQQ_SECT_THR_NONROT);
+ 	else
+ 		cfqq->seek_history |= (sdist > CFQQ_SEEK_THR);
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index e6fc716..fd96b44 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -774,7 +774,7 @@ static int __init nbd_init(void)
+ 		/*
+ 		 * Tell the block layer that we are not a rotational device
+ 		 */
+-		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, disk->queue);
++		blk_queue_non_rotational(queue);
+ 	}
+ 
+ 	if (register_blkdev(NBD_MAJOR, "nbd")) {
+diff --git a/drivers/ide/ide-disk.c b/drivers/ide/ide-disk.c
+index 2747980..422c558 100644
+--- a/drivers/ide/ide-disk.c
++++ b/drivers/ide/ide-disk.c
+@@ -682,7 +682,7 @@ static void ide_disk_setup(ide_drive_t *drive)
+ 	       queue_max_sectors(q) / 2);
+ 
+ 	if (ata_id_is_ssd(id))
+-		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, q);
++		blk_queue_non_rotational(q);
+ 
+ 	/* calculate drive capacity, and select LBA if possible */
+ 	ide_disk_get_capacity(drive);
+diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+index c07322c..9adce86 100644
+--- a/drivers/mmc/card/queue.c
++++ b/drivers/mmc/card/queue.c
+@@ -127,7 +127,7 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card, spinlock_t *lock
+ 	mq->req = NULL;
+ 
+ 	blk_queue_prep_rq(mq->queue, mmc_prep_request);
+-	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, mq->queue);
++	blk_queue_non_rotational(mq->queue);
+ 	if (mmc_can_erase(card)) {
+ 		queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, mq->queue);
+ 		mq->queue->limits.max_discard_sectors = UINT_MAX;
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index bd0806e..7a5cf28 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2257,7 +2257,7 @@ static void sd_read_block_characteristics(struct scsi_disk *sdkp)
+ 	rot = get_unaligned_be16(&buffer[4]);
+ 
+ 	if (rot == 1)
+-		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, sdkp->disk->queue);
++		blk_queue_non_rotational(sdkp->disk->queue);
+ 
+  out:
+ 	kfree(buffer);
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index aab4ec4..9bd0874 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -538,7 +538,7 @@ int zram_init_device(struct zram *zram)
+ 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+ 
+ 	/* zram devices sort of resembles non-rotational disks */
+-	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
++	blk_queue_non_rotational(zram->disk->queue);
+ 
+ 	zram->mem_pool = xv_create_pool();
+ 	if (!zram->mem_pool) {
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index c7367ae..b32650c 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -588,7 +588,7 @@ static int __btrfs_open_devices(struct btrfs_fs_devices *fs_devices,
+ 		device->in_fs_metadata = 0;
+ 		device->mode = flags;
+ 
+-		if (!blk_queue_nonrot(bdev_get_queue(bdev)))
++		if (!bdev_non_rotational(bdev))
+ 			fs_devices->rotating = 1;
+ 
+ 		fs_devices->open_devices++;
+@@ -1619,7 +1619,7 @@ int btrfs_init_new_device(struct btrfs_root *root, char *device_path)
+ 	root->fs_info->fs_devices->rw_devices++;
+ 	root->fs_info->fs_devices->total_rw_bytes += device->total_bytes;
+ 
+-	if (!blk_queue_nonrot(bdev_get_queue(bdev)))
++	if (!bdev_non_rotational(bdev))
+ 		root->fs_info->fs_devices->rotating = 1;
+ 
+ 	total_bytes = btrfs_super_total_bytes(&root->fs_info->super_copy);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 517247d..fb8da90 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -258,6 +258,8 @@ struct queue_limits {
+ 	unsigned char		discard_misaligned;
+ 	unsigned char		cluster;
+ 	unsigned char		discard_zeroes_data;
++
++	unsigned char		non_rotational;
+ };
+ 
+ struct request_queue
+@@ -396,13 +398,11 @@ struct request_queue
+ #define QUEUE_FLAG_SAME_COMP	9	/* force complete on same CPU */
+ #define QUEUE_FLAG_FAIL_IO     10	/* fake timeout */
+ #define QUEUE_FLAG_STACKABLE   11	/* supports request stacking */
+-#define QUEUE_FLAG_NONROT      12	/* non-rotational device (SSD) */
+-#define QUEUE_FLAG_VIRT        QUEUE_FLAG_NONROT /* paravirt device */
+-#define QUEUE_FLAG_IO_STAT     13	/* do IO stats */
+-#define QUEUE_FLAG_DISCARD     14	/* supports DISCARD */
+-#define QUEUE_FLAG_NOXMERGES   15	/* No extended merges */
+-#define QUEUE_FLAG_ADD_RANDOM  16	/* Contributes to random pool */
+-#define QUEUE_FLAG_SECDISCARD  17	/* supports SECDISCARD */
++#define QUEUE_FLAG_IO_STAT     12	/* do IO stats */
++#define QUEUE_FLAG_DISCARD     13	/* supports DISCARD */
++#define QUEUE_FLAG_NOXMERGES   14	/* No extended merges */
++#define QUEUE_FLAG_ADD_RANDOM  15	/* Contributes to random pool */
++#define QUEUE_FLAG_SECDISCARD  16	/* supports SECDISCARD */
+ 
+ #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
+ 				 (1 << QUEUE_FLAG_STACKABLE)	|	\
+@@ -479,7 +479,6 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
+ #define blk_queue_nomerges(q)	test_bit(QUEUE_FLAG_NOMERGES, &(q)->queue_flags)
+ #define blk_queue_noxmerges(q)	\
+ 	test_bit(QUEUE_FLAG_NOXMERGES, &(q)->queue_flags)
+-#define blk_queue_nonrot(q)	test_bit(QUEUE_FLAG_NONROT, &(q)->queue_flags)
+ #define blk_queue_io_stat(q)	test_bit(QUEUE_FLAG_IO_STAT, &(q)->queue_flags)
+ #define blk_queue_add_random(q)	test_bit(QUEUE_FLAG_ADD_RANDOM, &(q)->queue_flags)
+ #define blk_queue_stackable(q)	\
+@@ -821,6 +820,7 @@ extern void blk_limits_io_min(struct queue_limits *limits, unsigned int min);
+ extern void blk_queue_io_min(struct request_queue *q, unsigned int min);
+ extern void blk_limits_io_opt(struct queue_limits *limits, unsigned int opt);
+ extern void blk_queue_io_opt(struct request_queue *q, unsigned int opt);
++extern void blk_queue_non_rotational(struct request_queue *q);
+ extern void blk_set_default_limits(struct queue_limits *lim);
+ extern void blk_set_stacking_limits(struct queue_limits *lim);
+ extern int blk_stack_limits(struct queue_limits *t, struct queue_limits *b,
+@@ -1028,6 +1028,16 @@ static inline int bdev_io_opt(struct block_device *bdev)
+ 	return queue_io_opt(bdev_get_queue(bdev));
+ }
+ 
++static inline unsigned int queue_non_rotational(struct request_queue *q)
++{
++	return q->limits.non_rotational;
++}
++
++static inline unsigned int bdev_non_rotational(struct block_device *bdev)
++{
++	return queue_non_rotational(bdev_get_queue(bdev));
++}
++
+ static inline int queue_alignment_offset(struct request_queue *q)
+ {
+ 	if (q->limits.misaligned)
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index d537d29..3f35457 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -2110,7 +2110,7 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
+ 	}
+ 
+ 	if (p->bdev) {
+-		if (blk_queue_nonrot(bdev_get_queue(p->bdev))) {
++		if (bdev_non_rotational(p->bdev)) {
+ 			p->flags |= SWP_SOLIDSTATE;
+ 			p->cluster_next = 1 + (random32() % p->highest_bit);
+ 		}
