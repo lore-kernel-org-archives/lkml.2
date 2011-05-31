@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab1EaTFk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 15:05:40 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:59176 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab1EaTFj convert rfc822-to-8bit (ORCPT
+	id S1757659Ab1EaTH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 15:07:28 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:52960 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754480Ab1EaTH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 15:05:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=aXe+FWgHDahpolprPIfzkKc+k5K9fz60NmL1sUFT3iN5kmBs6+vVrWgOG67VZ/lMtR
-         WJ2qhOiXKL/S4uCZ1O9YT/RY+b+P6eTXnFiT4MJ+gXaX9/w+SNUNS9Fxw8nSqL4zdzdK
-         TRpaa7rU74yvlLfoKqf8EfiRsGFHwVuiEq3uw=
+	Tue, 31 May 2011 15:07:27 -0400
+Date: Tue, 31 May 2011 15:07:24 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Brokhman Tatyana <tlinder@codeaurora.org>
+cc: greg@kroah.com, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <balbi@ti.com>,
+        <ablay@codeaurora.org>, open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v14 9/9] usb: Adding SuperSpeed support to dummy_hcd
+In-Reply-To: <d79240883d4be37a08d6720830423a6a.squirrel@www.codeaurora.org>
+Message-ID: <Pine.LNX.4.44L0.1105311453350.1830-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1105311138570.30137@asgard.lang.hm>
-References: <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu> <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com>
- <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm> <BANLkTik69Gb2i1467bhnEU-pJ0WB10mqNQ@mail.gmail.com>
- <alpine.DEB.2.02.1105301058030.5766@asgard.lang.hm> <BANLkTimtY0ggu28i-9VzWOO1=puZ0JvcAQ@mail.gmail.com>
- <alpine.DEB.2.02.1105301142030.5766@asgard.lang.hm> <BANLkTimuToT90eRGVRfN9tAHoF9GOSRRDA@mail.gmail.com>
- <alpine.DEB.2.02.1105301349530.5766@asgard.lang.hm> <BANLkTimSLoY3uwtGvA2x5C0HhNEHvmWqzw@mail.gmail.com>
- <20110531020300.GJ2890@dhcp-172-31-194-241.cam.corp.google.com>
- <BANLkTim0pFS=Fs6ga2CV5LwOs2xxbh9svA@mail.gmail.com> <alpine.DEB.2.02.1105311122250.30137@asgard.lang.hm>
- <BANLkTi=PzyjVPCLfxa9=B6A25_vgHD3o8Q@mail.gmail.com> <alpine.DEB.2.02.1105311138570.30137@asgard.lang.hm>
-From: "D. Jansen" <d.g.jansen@googlemail.com>
-Date: Tue, 31 May 2011 21:04:59 +0200
-Message-ID: <BANLkTimu2W4AXTGZsf-3QhO8YwgVMc6Riw@mail.gmail.com>
-Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
-To: david@lang.hm
-Cc: "Ted Ts'o" <tytso@mit.edu>, Oliver Neukum <oneukum@suse.de>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 8:54 PM,  <david@lang.hm> wrote:
-> On Tue, 31 May 2011, D. Jansen wrote:
->
->> On Tue, May 31, 2011 at 8:23 PM,  <david@lang.hm> wrote:
->>>
->>> On Tue, 31 May 2011, D. Jansen wrote:
->>>
->>>> On Tue, May 31, 2011 at 4:03 AM, Ted Ts'o <tytso@mit.edu> wrote:
->>
->>>>> I can't remember the last time this has happened to me.  It's
->>>>> typically a system crash or a power loss that causes me to lose an
->>>>> OpenOffice session.
->>>>
->>>> Well, good for you! Power loss didn't ever occur to me on the other
->>>> hand, at least not on my netbook.
->>>
->>> failure to resume is effectivly power loss. a autosave to ram would be
->>> lost,
->>> just like with a power loss or system crash.
->>>
->> Well in my case only X crashes and the autosave is saved.
->
-> but you have no guarantee that it would be saved without fsync.
+On Tue, 31 May 2011, Brokhman Tatyana wrote:
 
-But I would with barriers.
->
-> it looks like libreoffice does 2 fsyncs per snapshot saved. This is why your
-> data is saved.
->
-> If this is only every 15 minutes (the default), and you have the disk
-> spin-up time set to every 20 minutes, you will be spinning up the disk just
-> about as frequently anyway.
->
-> now if the system isn't flushing things to disk when it spins up for the
-> fsync, then there is something wrong.
->
-> but if it is working as designed, you get one spin-up every 15 min instead
-> of one spin-up every 20 minutes, that should not be enough to kill anything.
+> Hi Alan,
+> 
+> > If is_super_speed is false, shouldn't you avoid registering the
+> > SuperSpeed hub?  Or would that add too many complications?
+> 
+> It woun't add too many complications but I would prefere not to do that.
+> My goal was to simulate as much as posible "real" USB connection so the
+> is_super_speed flag simulates the USB port you connect to, HS/SS.
 
-Yes, if there was nothing else, that's probably true. But _many_
-applications use fsync, even KDE's plasma shell I think.
+The terms "HS port" and "SS port" don't really mean anything.  A
+physical port connected to a USB-3 controller will run at either HS or
+SS depending on the cable and device plugged into it.
+
+>  When
+> working with a real host if you connect a HS device to a SS port it
+> connects to a HS root hub but the SS root hub is functional and
+> registered.
+
+The correct way to express this is: If you connect a HS device to a
+USB-3 controller then it connects to the HS root hub, but the SS root
+hub is functional and present.
+
+That's true, but it misses the point of my question.  Does the
+"is_super_speed" module parameter refer to dummy-hcd's emulated _host_
+controller or to the emulated _device_ controller?  (Or does it perhaps 
+refer to both?)
+
+If it refers to the emulated host controller then there should be no SS
+root hub.  But if it refers only to the emulated device controller then
+there should be.
+
+Let's put it another way.  If the "is_super_speed" module parameter is 
+set to False then we know that the emulated connection will never run 
+at SS.  Therefore there's no point in registering a SS root hub.
+
+Alan Stern
+
