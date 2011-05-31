@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139Ab1EaIo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 04:44:29 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:41770 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752383Ab1EaIo2 (ORCPT
+	id S1758277Ab1EaIxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 04:53:35 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:49835 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756152Ab1EaIxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 04:44:28 -0400
-Date: Tue, 31 May 2011 09:44:24 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca, arnd@arndb.de,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org
-Subject: Re: [PATCH 1/4] gpio: gpio-mxc: add gpio driver for Freescale MXC
- architecture
-Message-ID: <20110531084424.GA2266@pulham.picochip.com>
-References: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org>
- <1306767139-24763-2-git-send-email-shawn.guo@linaro.org>
+	Tue, 31 May 2011 04:53:34 -0400
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <linux-arm-kernel@lists.infradead.org>, <arnd@arndb.de>
+Cc: <armando.visconti@st.com>, <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
+        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
+        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
+        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
+        <viresh.linux@gmail.com>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH V2 0/3] Add drivers/pwm and drivers/pwm/st_pwm.c
+Date: Tue, 31 May 2011 14:21:50 +0530
+Message-ID: <cover.1306831238.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306767139-24763-2-git-send-email-shawn.guo@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shawn,
+This patchset adds drivers/pwm directory as suggested by Arnd Bergmann in
+following discussion:
 
-On Mon, May 30, 2011 at 10:52:16PM +0800, Shawn Guo wrote:
-> Add gpio-mxc driver by copying arch/arm/plat-mxc/gpio.c into
-> drivers/gpio with the following changes.
-> 
->  * Use readl/writel to replace mach-specific accessors
->    __raw_readl/__raw_writel
-> 
->  * Migrate to platform driver by adding .probe function
-> 
->  * Add a list to save all mx2 ports references, so that
->    mx2_gpio_irq_handler can walk through all interrupt status
->    registers
-> 
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> ---
+http://comments.gmane.org/gmane.linux.ports.arm.kernel/118651
 
-Could you use the stuff in drivers/gpio/basic_mmio_gpio.c for 
-implementing the gpio_chip?  I had a go a little while ago [1] but since 
-then we've made it possible to embed the bgpio_chip in your own 
-structure which may be cleaner.
+and also adds support for ST Microelectronics Pulse Width Modulator. This is
+currently used by ST's SPEAr platform and tested on the same.
 
-Jamie
+Changes since V1:
+ - Moved driver to drivers/pwm/ directory from drivers/misc
+ - arch/arm/configs/spear3xx_defconfig updated accordingly.
 
-1. http://permalink.gmane.org/gmane.linux.ports.arm.kernel/113139
+Changes since earlier patchset:
+ - Moved driver to drivers/misc/ directory.
+
+It was earlier reviewed as part of following patchset:
+"[PATCH V6 00/17] Adding devices support for all spear machines"
+
+Viresh Kumar (3):
+  drivers/pwm st_pwm: Add support for ST's Pulse Width Modulator
+  SPEAr3xx: Add machine support for ST's PWM IP
+  SPEAr3xx: Update defconfig for ST's PWM
+
+ MAINTAINERS                                   |    5 +
+ arch/arm/configs/spear3xx_defconfig           |    2 +
+ arch/arm/mach-spear3xx/include/mach/generic.h |    1 +
+ arch/arm/mach-spear3xx/spear320.c             |   16 +
+ arch/arm/mach-spear3xx/spear320_evb.c         |    1 +
+ drivers/Kconfig                               |    1 +
+ drivers/Makefile                              |    1 +
+ drivers/pwm/Kconfig                           |   22 ++
+ drivers/pwm/Makefile                          |    5 +
+ drivers/pwm/st_pwm.c                          |  486 +++++++++++++++++++++++++
+ 10 files changed, 540 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/pwm/Kconfig
+ create mode 100644 drivers/pwm/Makefile
+ create mode 100644 drivers/pwm/st_pwm.c
+
+-- 
+1.7.2.2
+
