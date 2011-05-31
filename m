@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab1EaPkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:40:33 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52950 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756890Ab1EaPkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:40:32 -0400
-Date: Tue, 31 May 2011 17:40:12 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andy Lutomirski <luto@MIT.EDU>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v4 09/10] x86-64: Randomize int 0xcc magic al values at
- boot
-Message-ID: <20110531154012.GB30353@elte.hu>
-References: <cover.1306851090.git.luto@mit.edu>
- <75a00aee647302e22c86a5c5fac0478b9776481a.1306851090.git.luto@mit.edu>
+	id S1757258Ab1EaPn1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 11:43:27 -0400
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:34105 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753302Ab1EaPn0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 11:43:26 -0400
+To: tsuna <tsunanet@gmail.com>
+Subject: Re: [PATCH] tcp: Expose the initial RTO via a new sysctl.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <75a00aee647302e22c86a5c5fac0478b9776481a.1306851090.git.luto@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Date: Tue, 31 May 2011 17:43:25 +0200
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>,
+        David Miller <davem@davemloft.net>, <kuznet@ms2.inr.ac.ru>,
+        <pekkas@netcore.fi>, <jmorris@namei.org>, <yoshfuji@linux-ipv6.org>,
+        <kaber@trash.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTikuW7VF8AUPFYHYzGe7mXp5H_emjA@mail.gmail.com>
+References: <1305715384-81716-1-git-send-email-tsunanet@gmail.com>
+ <20110518.152653.1486764697527722925.davem@davemloft.net>
+ <BANLkTik-6wh8=jb6oMEpJvYC8+KTGGsMsw@mail.gmail.com>
+ <20110518.155200.801089483916944725.davem@davemloft.net>
+ <20110518202025.GC4175@nuttenaction>
+ <BANLkTimtA9BB7g5cOm8c9sGChQjf1P0Q-Q@mail.gmail.com>
+ <fc49a1b4c32eee9b5cbfbeec4729eef5@localhost>
+ <BANLkTi=p1V1x+y=-cH-Q7bvueu_4_D1ywQ@mail.gmail.com>
+ <BANLkTimqtjskX5q2ovTp_c05MdqBDOWsRg@mail.gmail.com>
+ <da8dbb76f0cb3762227d8d0a99eaff21@localhost>
+ <BANLkTikuW7VF8AUPFYHYzGe7mXp5H_emjA@mail.gmail.com>
+Message-ID: <0328b2351e8e11a19301262842ef0491@localhost>
+User-Agent: RoundCube Webmail/0.1-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Andy Lutomirski <luto@MIT.EDU> wrote:
+On Tue, 31 May 2011 08:28:18 -0700, tsuna <tsunanet@gmail.com> wrote:
 
-> This is not a security feature.  It's to prevent the int 0xcc
-> sequence from becoming ABI.
+> Sorry I meant a knob such as /proc/sys/net/ipv4/tcp_initrto.
 
-Hm, what kind of ABI reliance could be built on it?
+That's the same! ;-)
 
-> +static void __init mangle_vsyscall_movb(void *mapping,
-> +					unsigned long movb_addr, u8 initial)
-> +{
-> +	u8 *imm8;
-> +	BUG_ON(movb_addr >= 4095);
+>> The initRTO is the ideal candidate for a
+>> per route knob. And happily you will solve 2) with the per route thing
+>> too!
+> 
+> You still need a knob for the default system-wide value, don't you?
 
-Please put newlines after local variable definitions.
+Yes, try to re-read the emails. Sysctl is a no-go, with a per route
+interface you have the ability to tune the values. Talk with Jerry once
+again - he wrote that at Google they already have a patch for this. And
+with a per route knob you can select a even smaller value for your local
+network (e.g. datacenter) and a larger value for all other routes. It makes
+sense to provide a knob for this on a route basis, not on a global sysctl
+basis.
 
->  static int __init vsyscall_init(void)
->  {
-> +	extern char __vsyscall_0;
+But once again: talk with Jerry - he has the expert knowledge!
 
-Please don't put extern definitions in the middle of a .c file - if 
-then it should be in a .h file. (even if only a single function uses 
-it)
-
-> +	/*
-> +	 * Randomize the magic al values for int 0xcc invocation.  This
-> +	 * isn't really a security feature; it's to make sure that
-> +	 * dynamic binary instrumentation tools don't start to think
-> +	 * that the int 0xcc magic incantation is ABI.
-> +	 */
-> +	vsyscall_nr_offset = get_random_int() % 3;
-> +	vsyscall_page = pfn_to_page(__pa_symbol(&__vsyscall_0) >> PAGE_SHIFT);
-> +	mapping = kmap_atomic(vsyscall_page);
-> +	/* It's easier to hardcode the addresses -- they're ABI. */
-> +	mangle_vsyscall_movb(mapping, 0, 0xcc);
-
-what about filling it with zeroes?
-
-> +#ifndef CONFIG_UNSAFE_VSYSCALLS
-> +	mangle_vsyscall_movb(mapping, 1024, 0xce);
-> +#endif
-> +	mangle_vsyscall_movb(mapping, 2048, 0xf0);
-
-Dunno, this all looks rather ugly.
-
-Thanks,
-
-	Ingo
+Hagen
