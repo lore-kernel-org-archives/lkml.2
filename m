@@ -1,40 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757965Ab1EaGBQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 02:01:16 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43134 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab1EaGBP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 02:01:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=IF/U00CBhBn/AgqG4tawNlYOY0WSUDLm0jnq3+74PBU3OKH18mJSaVRCYi7dOFW6Bh
-         8klXPoWZNGrr12ErgtYAEFcvqKmI5CbRKYYp6cbrWZdxue7ziCRBsXnw7/lfy0uj6GUJ
-         wKlauBmpqOUAdU7aaQlQ0gnMb2uepJC88Usx8=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
-References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
-Date: Tue, 31 May 2011 16:01:14 +1000
-Message-ID: <BANLkTi=AWgZ12M=SCGFkiJfax24TxDP6MQ@mail.gmail.com>
-Subject: Re: Linux 3.0-rc1
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757680Ab1EaFxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 01:53:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52888 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751150Ab1EaFxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 01:53:31 -0400
+Subject: Re: [PATCH] depmod: Handle X.Y kernel versions
+From: Jon Masters <jcm@redhat.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-modules@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kyle McMartin <kmcmartin@redhat.com>
+In-Reply-To: <1306802774.4987.18.camel@constitution.bos.jonmasters.org>
+References: <1306763923-11892-1-git-send-email-mmarek@suse.cz>
+	 <BANLkTinU9DoY4gUXK2kaoUiNvbG905-ngQ@mail.gmail.com>
+	 <4DE3AF93.40405@suse.cz>
+	 <1306802774.4987.18.camel@constitution.bos.jonmasters.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat, Inc.
+Date: Tue, 31 May 2011 02:02:06 -0400
+Message-ID: <1306821726.4987.37.camel@constitution.bos.jonmasters.org>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 11:30 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Yay! Let the bikeshed painting discussions about version numbering
-> begin (or at least re-start).
+On Mon, 2011-05-30 at 20:46 -0400, Jon Masters wrote:
 
-There's a rumour going around you broke module-init-tools.
+> Well, for tonight I'm just killing off the 3 number check and taking the
+> patch from Michal that matches on two numbers (thanks Kyle for sending
+> another version earlier in the day too but we don't need to be quite so
+> cleaver, just distinguish between a version and module path passed in).
+> I'll post a separate email announcing a new release with this fix.
 
-So this is an ABI break? so can I break all my stuff as well ;-)
+FYI, I pushed 3.13 up to hera earlier but it's not yet syncing. I'll
+have updates out for Fedora (rawhide) and F15 testing by the morning.
 
-Dave.
+Jon.
+
+
