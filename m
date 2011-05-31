@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab1EaT3C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 15:29:02 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34728 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523Ab1EaT3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 15:29:00 -0400
-Date: Tue, 31 May 2011 21:28:33 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>
-Subject: Re: [PATCH v4 10/10] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to
- feature-removal-schedule
-Message-ID: <20110531192833.GA23458@elte.hu>
-References: <cover.1306851090.git.luto@mit.edu>
- <1660d1687db01852ec58bbf970e22868db367d53.1306851090.git.luto@mit.edu>
- <20110531183448.GA27166@one.firstfloor.org>
- <BANLkTinXSDJoT6Uege6zLZqSp87oURfh0w@mail.gmail.com>
+	id S932215Ab1EaT33 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 15:29:29 -0400
+Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:59545
+	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753523Ab1EaT32 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 15:29:28 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de p4VJTG0h016071
+From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+To: "Robert P. J. Day" <rpjday@crashcourse.ca>
+Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [3.0-rc1] i915: blank screen on Lenovo Ideapad U160
+In-Reply-To: <gitycau362.fsf@mx10.gouders.net> (Dirk Gouders's message of
+	"Tue, 31 May 2011 20:37:41 +0200")
+References: <gi1uzevjl4.fsf@mx10.gouders.net>
+	<alpine.DEB.2.00.1105311406210.5012@localhost6.localdomain6>
+	<gitycau362.fsf@mx10.gouders.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+Date: Tue, 31 May 2011 21:29:15 +0200
+Message-ID: <giei3eoeic.fsf@mx10.gouders.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinXSDJoT6Uege6zLZqSp87oURfh0w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Tue, 31 May 2011 21:29:17 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> writes:
 
-* Andrew Lutomirski <luto@mit.edu> wrote:
+> "Robert P. J. Day" <rpjday@crashcourse.ca> writes:
+>
+>> On Tue, 31 May 2011, Dirk Gouders wrote:
+>>
+>>> Hello,
+>>>
+>>> I tested 3.0.0-rc1 on my notebook which has never been the best friend
+>>> of the i915 driver.  With linux-2.6.38-gentoo-r4 it has the problem
+>>> that the screen remains blank after the lid is closed and reopened, but
+>>> that problem I can live with.  With 3.0.0-r1 I am back to a former
+>>> problem that the screen goes (and remains) blank while booting.
+>>>
+>>> The next step I will do is to test linux-2.6.39-gentoo, probably I
+>>> did not notice information that I have to adjust boot parameters or the
+>>> kernel config?
+>>
+>>   based on my having lived through the i915 "black screen of death",
+>> pulling out my handy "git bisect" and with advice from chris wilson,
+>> these days, i simply apply this patch to the source:
+>>
+>> diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+>> index d2c7104..a1a5d03 100644
+>> --- a/drivers/gpu/drm/i915/intel_opregion.c
+>> +++ b/drivers/gpu/drm/i915/intel_opregion.c
+>> @@ -152,6 +152,8 @@ static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
+>>  	struct opregion_asle *asle = dev_priv->opregion.asle;
+>>  	u32 max;
+>>
+>> +return ASLE_BACKLIGHT_FAILED; // rday
+>> +
+>>  	if (!(bclp & ASLE_BCLP_VALID))
+>>  		return ASLE_BACKLIGHT_FAILED;
+>>
+>>
+>>   i tried taking it out a couple of times and immediately got the same
+>> i915-related problem so until i hear differently, the patch stays in.
+>
+> Thanks for the hint.  I tested the patch with 3.0.0-rc1 and
+> unfortunately the symptoms remain the same.
+>
+> Meanwhile, I tested 2.6.39-gentoo as well and it also causes that
+> problem.  So, this is not really a (new) 3.0.0-rc1 issue.
+>
+> Best regards,
+>
+> Dirk
 
-> > And it's still a bad idea. Especially since there's a much better 
-> > alternative anyways for the "security problem" which has none of 
-> > these drawbacks.
-> 
-> What's the alternative?
+Your patch reminded me of another patch of Chris that caused problems
+for several other people, but manually applied to the changed context in
+3.0.0-rc1 again works for me:
 
-Well, Andi likes to draw out such answers and likes to keep any 
-answer as minimally helpful as possible (to demonstrate his 
-superiority), but my guess would be that he is thinking of the 
-(trivial) solution that filters the caller RIP at the generic syscall 
-entry point and checks RCX against the 'expected' SYSCALL instruction 
-address, which is the (per task) vdso-address + constant-offset.
+--- linux-3.0-rc1/drivers/gpu/drm/i915/intel_bios.c     2011-05-30 02:43:36.000000000 +0200
++++ /usr/src/linux-3.0-rc1/drivers/gpu/drm/i915/intel_bios.c    2011-05-31 20:53:35.000000000 +0200
+@@ -267,7 +267,7 @@
+        case 4:
+                return alternate ? 100 : 96;
+        default:
+-               return alternate ? 100 : 120;
++               return alternate ? 120 : 100;
+        }
+ }
 
-That method has a big disadvantage:
+The strange thing is that I am pretty sure that I did not have to modify
+2.6.28-gentoo{,-r4} what I at that time also reported here:
+https://bugs.freedesktop.org/show_bug.cgi?id=31596
 
- - it slows down the syscall fastpath with two or three unnecessary 
-   instructions.
+Best regards,
 
-It has two advantages:
-
- - it's the simplest method of all
-
- - it also *only* allows the vdso address to be used for system calls,
-   so if an attacker manages to find an executable SYSCALL 
-   instruction somewhere in the executable space of an application,
-   that entry point will not be usable.
-
-... so this method is not completely off the table.
-
-If everyone agrees that the generic syscall overhead is acceptable we 
-could try this too.
-
-Thoughts?
-
-Thanks,
-
-	Ingo
+Dirk
