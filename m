@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757918Ab1EaF6F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 01:58:05 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58582 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab1EaF6E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 01:58:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YBWgW53bXvmQ5p8yu2opP/OfBJekQxYE9skJYTVQ69WBwSonFEhC7vurxziokSdGY7
-         QbsLt+CwrX3fbgV28Hx8exNODue5+wFhDsryvOTVVfVUzmI2FIamRlTB0d4sseR52Fyv
-         l5TuDrCPy03urS4gWH1iOADX+zxjnIo2j0oAA=
-Date: Tue, 31 May 2011 14:57:57 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Christoph Lameter <cl@linux.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH] mm, vmstat: Use cond_resched only when !CONFIG_PREEMPT
-Message-ID: <20110531055756.GA2829@barrios-laptop>
-References: <1306774744.4061.5.camel@localhost.localdomain>
- <20110531055528.GB1519@barrios-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110531055528.GB1519@barrios-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757950Ab1EaF7q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 01:59:46 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59044 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751150Ab1EaF7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 01:59:45 -0400
+Subject: Re: Linux 3.0-rc1
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
+References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 May 2011 15:59:38 +1000
+Message-ID: <1306821578.7481.646.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 02:55:28PM +0900, Minchan Kim wrote:
-> On Mon, May 30, 2011 at 10:59:04PM +0600, Rakib Mullick wrote:
-> > commit 468fd62ed9 (vmstats: add cond_resched() to refresh_cpu_vm_stats()) added cond_resched() in refresh_cpu_vm_stats. Purpose of that patch was to allow other threads to run in non-preemptive case. This patch, makes sure that cond_resched() gets called when !CONFIG_PREEMPT is set. In a preemptiable kernel we don't need to call cond_resched().
-> > 
-> > Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+On Sun, 2011-05-29 at 18:30 -0700, Linus Torvalds wrote:
 > 
-> Let me ask questions.
-> 
-> 1. What's bad if we call cond_resched on CONFIG_PREEMPT?
->    Is refresh_cpu_vm_stats a hot path?
-> 2. There is no help to call explicit scheduling point on CONFIG_PREEMPTION?
->  
-> We used cond_resched without any ifdef/endif of CONFIG_PREEMPT.
-> In addtion, cond_resched includes __might_sleep which is debugging help for lock.
-> So I hope let it be if you have a big concern.
-		typo  ^^
-		      unless
+> Now, my alpha-maleness sadly does not actually extend to all the
+> scripts and Makefile rules, so the kernel is fighting back, and is
+> calling itself 3.0.0-rc1. We'll have the usual 6-7 weeks to wrestle it
+> into submission, and get scripts etc cleaned up, and the final release
+> should be just "3.0". The -stable team can use the third number for
+> their versioning. 
 
--- 
-Kind regards
-Minchan Kim
+So a bit of bike shedding :-)
+
+Why don't we just keep the 3 digits ? You release 3.x.0 and Greg
+increments the last one ?
+
+That means existing tools don't break, and number of digits doesn't
+change all the time anymore, less likely to get wrong...
+
+Cheers,
+Ben.
+
+
