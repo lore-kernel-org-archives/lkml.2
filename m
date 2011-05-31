@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab1EaBah (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 21:30:37 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:9236 "EHLO
-	VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755747Ab1EaBae (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 21:30:34 -0400
-X-SpamScore: -19
-X-BigFish: VS-19(zz1447R1432N98dKzz1202hzz8275dhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Tue, 31 May 2011 09:35:16 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Olof Johansson <olof@lixom.net>
-CC: Shawn Guo <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@secretlab.ca>, <arnd@arndb.de>, <kernel@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>, <patches@linaro.org>
-Subject: Re: [PATCH 1/4] gpio: gpio-mxc: add gpio driver for Freescale MXC
- architecture
-Message-ID: <20110531013515.GA31928@S2100-06.ap.freescale.net>
-References: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org>
- <1306767139-24763-2-git-send-email-shawn.guo@linaro.org>
- <20110531005315.GC3411@quad.lixom.net>
+	id S1753317Ab1EaBoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 21:44:32 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:51634 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751662Ab1EaBob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 May 2011 21:44:31 -0400
+Date: Mon, 30 May 2011 21:44:18 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
+Message-ID: <20110531014418.GI2890@dhcp-172-31-194-241.cam.corp.google.com>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	David Woodhouse <dwmw2@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+	x86@kernel.org, linux-kernel@vger.kernel.org
+References: <20110530072300.GA9802@elte.hu>
+ <1306745835.2029.389.camel@i7.infradead.org>
+ <20110530104231.GF17821@elte.hu>
+ <20110530104656.GA19532@elte.hu>
+ <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
+ <20110530105809.GA20133@elte.hu>
+ <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
+ <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
+ <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
+ <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110531005315.GC3411@quad.lixom.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olof,
-
-Thanks for the review.
-
-On Mon, May 30, 2011 at 05:53:15PM -0700, Olof Johansson wrote:
-> Hi,
+On Mon, May 30, 2011 at 09:12:17PM +0100, David Woodhouse wrote:
 > 
-> On Mon, May 30, 2011 at 10:52:16PM +0800, Shawn Guo wrote:
-> > Add gpio-mxc driver by copying arch/arm/plat-mxc/gpio.c into
-> > drivers/gpio with the following changes.
-> > 
-> >  * Use readl/writel to replace mach-specific accessors
-> >    __raw_readl/__raw_writel
-> > 
-> >  * Migrate to platform driver by adding .probe function
-> > 
-> >  * Add a list to save all mx2 ports references, so that
-> >    mx2_gpio_irq_handler can walk through all interrupt status
-> >    registers
-> > 
-> > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> > ---
-> >  arch/arm/plat-mxc/include/mach/gpio.h |    2 +
-> >  drivers/gpio/Makefile                 |    1 +
-> >  drivers/gpio/gpio-mxc.c               |  423 +++++++++++++++++++++++++++++++++
-> >  3 files changed, 426 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/gpio/gpio-mxc.c
-> > 
-> > diff --git a/arch/arm/plat-mxc/include/mach/gpio.h b/arch/arm/plat-mxc/include/mach/gpio.h
-> > index a2747f1..87bd4ef 100644
-> > --- a/arch/arm/plat-mxc/include/mach/gpio.h
-> > +++ b/arch/arm/plat-mxc/include/mach/gpio.h
-> > @@ -37,7 +37,9 @@
-> >  #define irq_to_gpio(irq)	((irq) - MXC_GPIO_IRQ_START)
-> >  
-> >  struct mxc_gpio_port {
-> > +	struct list_head node;
-> >  	void __iomem *base;
-> > +	int id;
-> 
-> What's id for? You assign it based on pdev->id in the probe function but
-> never use it anywhere else.
-> 
-Yes, it is only used in probe function right now, and can be removed.
-I feel it will be needed someday when more cleanup and consolidation
-works happen, but we can add it back then.  So, yes, I will remove it
-for now.
+> Which is apparently what KCONFIG_ALLCONFIG already does? It doesn't work 
+> for choices, but it's still fine for setting/clearing CONFIG_64BIT.
+>  
+> We'll want to make it simpler to use - so you really can do something like
+>    make CONFIG_64BIT=n randconfig
+>    make CONFIG_64BIT=n allmodconfig
+>    make CONFIG_64BIT=y CONFIG_SATA_MV=y oldconfig
+> etc. without having to create a text file. But that's not hard. A simple 
+> implementation might just *make* a file with the options on the command 
+> line and point KCONFIG_ALLCONFIG at it to start with, although there are 
+> probably cleaner ways to implement it.
 
--- 
-Regards,
-Shawn
+On some architectures, I suspect there will be a dozen or more CONFIG
+that have to be a certain way in order for the machine to boot.  Are
+you really going to want to put them all on the command line?
 
+I suppose the question is whether people are using randconfig for
+simple compile testing, or just for something that they actually try
+to boot, either on real hardware or on a KVM system.  I was under the
+impression Ingo and others actually tried to boot their randconfig
+kernels, correct?
+
+    	   	    	    	     	 - Ted
