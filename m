@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757111Ab1EaPgT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:36:19 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36921 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754802Ab1EaPgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:36:18 -0400
-Date: Tue, 31 May 2011 17:35:51 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andy Lutomirski <luto@mit.edu>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v4 08/10] x86-64: Emulate legacy vsyscalls
-Message-ID: <20110531153551.GA30353@elte.hu>
-References: <cover.1306851090.git.luto@mit.edu>
- <ab5842ae2ac57f4004c3e86fdb9234451b1f4ac2.1306851090.git.luto@mit.edu>
+	id S1757082Ab1EaPhu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 11:37:50 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38216 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038Ab1EaPht (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 11:37:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DN8vo8Knkt5EilwLiMo1k3Ojg2goDY4zqcmGXCsV2BGLvd5kY2VGEAMXTdBMq5HnQG
+         4wEYULyqAxLYQVqZ5iEFjpoxMGDWCTpdHpp3RueFsVJ6WRlKvBfU8hDknRsg45nyq2jm
+         C0S8N+Xjw+bsN5X3LIh5ZWq2DgL4v/5esTyTg=
+Date: Wed, 1 Jun 2011 00:37:44 +0900
+From: Tejun Heo <tj@kernel.org>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: blkdev_get() change causes OOPS...
+Message-ID: <20110531153744.GB9048@mtj.dyndns.org>
+References: <20110530.223506.424661345.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ab5842ae2ac57f4004c3e86fdb9234451b1f4ac2.1306851090.git.luto@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110530.223506.424661345.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 30, 2011 at 10:35:07PM -0700, David Miller wrote:
+> 
+> I don't think whole->bd_disk is guaranteed to be non-NULL where you're
+> dereferencing it in blkdev_get() after commit
+> d4dc210f69bcb0b4bef5a83b1c323817be89bad1 ("block: don't block events
+> on excl write for non-optical devices")
 
-* Andy Lutomirski <luto@mit.edu> wrote:
+Ah... right, it's there if open succeeded.  I should have put the test
+after !res test.  Does the following patch fix the problem?
 
-> +#ifdef CONFIG_X86_64
-> +# define VSYSCALL_EMU_VECTOR		0xcc
-> +#endif
+Thanks.
 
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -872,6 +872,10 @@ void __init trap_init(void)
->  	set_bit(SYSCALL_VECTOR, used_vectors);
->  #endif
->  
-> +	BUG_ON(test_bit(VSYSCALL_EMU_VECTOR, used_vectors));
-> +	set_system_intr_gate(VSYSCALL_EMU_VECTOR, &emulate_vsyscall);
-> +	set_bit(VSYSCALL_EMU_VECTOR, used_vectors);
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 1f2b199..1a2421f 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1272,8 +1272,8 @@ int blkdev_get(struct block_device *bdev, fmode_t mode, void *holder)
+ 		 * individual writeable reference is too fragile given the
+ 		 * way @mode is used in blkdev_get/put().
+ 		 */
+-		if ((disk->flags & GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE) &&
+-		    !res && (mode & FMODE_WRITE) && !bdev->bd_write_holder) {
++		if (!res && (mode & FMODE_WRITE) && !bdev->bd_write_holder &&
++		    (disk->flags & GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE)) {
+ 			bdev->bd_write_holder = true;
+ 			disk_block_events(disk);
+ 		}
 
-That is a generic section of traps.c so it won't build (and makes no 
-point) on 32-bit.
-
-	Ingo
