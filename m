@@ -1,118 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab1EaHsi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 03:48:38 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38345 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754094Ab1EaHsg (ORCPT
+	id S1758042Ab1EaHvZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 03:51:25 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:50568 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753571Ab1EaHvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 03:48:36 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DE49D52.709@jp.fujitsu.com>
-Date: Tue, 31 May 2011 16:48:34 +0900
-From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Tue, 31 May 2011 03:51:24 -0400
+Date: Tue, 31 May 2011 03:50:45 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, rientjes@google.com, hughd@google.com,
+        kamezawa hiroyu <kamezawa.hiroyu@jp.fujitsu.com>,
+        minchan kim <minchan.kim@gmail.com>, oleg@redhat.com
+Message-ID: <1685840459.318633.1306828245496.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <4DE49314.3070105@jp.fujitsu.com>
+Subject: Re: [PATCH v2 0/5] Fix oom killer doesn't work at all if system
+ have > gigabytes memory  (aka CAI founded issue)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: netdev@vger.kernel.org, davem@davemloft.net, nhorman@tuxdriver.com,
-        rostedt@goodmis.org, mingo@elte.hu, fweisbec@gmail.com,
-        mathieu.desnoyers@efficios.com, tglx@linutronix.de,
-        kosaki.motohiro@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kaneshige.kenji@jp.fujitsu.com
-Subject: [PATCH] ftrace: tracepoint of net_dev_xmit sees freed skb and causes
- panic
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.71]
+X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because there is a possibility that skb is kfree_skb()ed and zero cleared
-after ndo_start_xmit, we should not see the contents of skb like skb->len and
-skb->dev->name after ndo_start_xmit. But trace_net_dev_xmit does that
-and causes panic by NULL pointer dereference.
-This patch fixes trace_net_dev_xmit not to see the contents of skb directly.
 
-If you want to reproduce this panic,
 
-1. Get tracepoint of net_dev_xmit on
-2. Create 2 guests on KVM
-2. Make 2 guests use virtio_net
-4. Execute netperf from one to another for a long time as a network burden
-5. host will panic(It takes about 30 minutes)
-
-Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
----
- include/trace/events/net.h |   12 +++++++-----
- net/core/dev.c             |    7 +++++--
- 2 files changed, 12 insertions(+), 7 deletions(-)
-
-diff --git a/include/trace/events/net.h b/include/trace/events/net.h
-index 5f247f5..f99645d 100644
---- a/include/trace/events/net.h
-+++ b/include/trace/events/net.h
-@@ -12,22 +12,24 @@
- TRACE_EVENT(net_dev_xmit,
- 
- 	TP_PROTO(struct sk_buff *skb,
--		 int rc),
-+		 int rc,
-+		 struct net_device *dev,
-+		 unsigned int skb_len),
- 
--	TP_ARGS(skb, rc),
-+	TP_ARGS(skb, rc, dev, skb_len),
- 
- 	TP_STRUCT__entry(
- 		__field(	void *,		skbaddr		)
- 		__field(	unsigned int,	len		)
- 		__field(	int,		rc		)
--		__string(	name,		skb->dev->name	)
-+		__string(	name,		dev->name	)
- 	),
- 
- 	TP_fast_assign(
- 		__entry->skbaddr = skb;
--		__entry->len = skb->len;
-+		__entry->len = skb_len;
- 		__entry->rc = rc;
--		__assign_str(name, skb->dev->name);
-+		__assign_str(name, dev->name);
- 	),
- 
- 	TP_printk("dev=%s skbaddr=%p len=%u rc=%d",
-diff --git a/net/core/dev.c b/net/core/dev.c
-index d945379..f0e15df 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2089,6 +2089,7 @@ int dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev,
- {
- 	const struct net_device_ops *ops = dev->netdev_ops;
- 	int rc = NETDEV_TX_OK;
-+	unsigned int skb_len;
- 
- 	if (likely(!skb->next)) {
- 		u32 features;
-@@ -2139,8 +2140,9 @@ int dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev,
- 			}
- 		}
- 
-+		skb_len = skb->len;
- 		rc = ops->ndo_start_xmit(skb, dev);
--		trace_net_dev_xmit(skb, rc);
-+		trace_net_dev_xmit(skb, rc, dev, skb_len);
- 		if (rc == NETDEV_TX_OK)
- 			txq_trans_update(txq);
- 		return rc;
-@@ -2160,8 +2162,9 @@ gso:
- 		if (dev->priv_flags & IFF_XMIT_DST_RELEASE)
- 			skb_dst_drop(nskb);
- 
-+		skb_len = nskb->len;
- 		rc = ops->ndo_start_xmit(nskb, dev);
--		trace_net_dev_xmit(nskb, rc);
-+		trace_net_dev_xmit(nskb, rc, dev, skb_len);
- 		if (unlikely(rc != NETDEV_TX_OK)) {
- 			if (rc & ~NETDEV_TX_MASK)
- 				goto out_kfree_gso_skb;
-
+----- Original Message -----
+> >> - If you run the same program as root, non root process and
+> >> privilege
+> >> explicit
+> >> dropping processes (e.g. irqbalance) will be killed at first.
+> > Hmm, at least there were some programs were root processes but were
+> > killed
+> > first.
+> > [ pid] ppid uid total_vm rss swap score_adj name
+> > [ 5720] 5353 0 24421 257 0 0 sshd
+> > [ 5353] 1 0 15998 189 0 0 sshd
+> > [ 5451] 1 0 19648 235 0 0 master
+> > [ 1626] 1 0 2287 129 0 0 dhclient
+> 
+> Hi
+> 
+> I can't reproduce this too. Are you sure these processes have a full
+> root privilege?
+> I've made new debugging patch. After applying following patch, do
+> these processes show
+> cap=1?
+No, all of them had cap=0. Wondering why something like sshd not been
+made cap=1 to avoid early oom kill.
+> 
+> 
+> 
+> index f0e34d4..fe788df 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -429,7 +429,7 @@ static void dump_tasks(const struct mem_cgroup
+> *mem, const nodemask_t *no
+> struct task_struct *p;
+> struct task_struct *task;
+> 
+> - pr_info("[ pid] ppid uid total_vm rss swap score_adj name\n");
+> + pr_info("[ pid] ppid uid cap total_vm rss swap score_adj name\n");
+> for_each_process(p) {
+> if (oom_unkillable_task(p, mem, nodemask))
+> continue;
+> @@ -444,9 +444,9 @@ static void dump_tasks(const struct mem_cgroup
+> *mem, const nodemask_t *no
+> continue;
+> }
+> 
+> - pr_info("[%6d] %6d %5d %8lu %8lu %8lu %9d %s\n",
+> + pr_info("[%6d] %6d %5d %3d %8lu %8lu %8lu %9d %s\n",
+> task_tgid_nr(task), task_tgid_nr(task->real_parent),
+> - task_uid(task),
+> + task_uid(task), has_capability_noaudit(task, CAP_SYS_ADMIN),
+> task->mm->total_vm,
+> get_mm_rss(task->mm) + task->mm->nr_ptes,
+> get_mm_counter(task->mm, MM_SWAPENTS),
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org. For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign
+> http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
