@@ -1,105 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab1EaKBV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 06:01:21 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45967 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752675Ab1EaKBU (ORCPT
+	id S1752613Ab1EaKEi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 06:04:38 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:36786 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab1EaKEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 06:01:20 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DE4BC64.3040807@jp.fujitsu.com>
-Date: Tue, 31 May 2011 19:01:08 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Tue, 31 May 2011 06:04:37 -0400
+Date: Tue, 31 May 2011 12:04:34 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: Very high CPU values in top on idle system (3.0-rc1)
+Message-ID: <20110531100434.GA1759@x4.trippels.de>
+References: <20110530173916.GA1746@x4.trippels.de>
+ <1306778743.23844.5.camel@twins>
+ <20110530182356.GA1762@x4.trippels.de>
+ <20110530204548.GA1762@x4.trippels.de>
+ <1306793579.2530.2.camel@twins>
+ <1306835745.2353.3.camel@twins>
 MIME-Version: 1.0
-To: caiqian@redhat.com
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, rientjes@google.com, hughd@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, minchan.kim@gmail.com, oleg@redhat.com
-Subject: Re: [PATCH v2 0/5] Fix oom killer doesn't work at all if system have
- > gigabytes memory  (aka CAI founded issue)
-References: <348391538.318712.1306828778575.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <4DE4A2A0.6090704@jp.fujitsu.com>
-In-Reply-To: <4DE4A2A0.6090704@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306835745.2353.3.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/05/31 17:11), KOSAKI Motohiro wrote:
->>> Then, I believe your distro applying distro specific patch to ssh.
->>> Which distro are you using now?
->> It is a Fedora-like distro.
+On 2011.05.31 at 11:55 +0200, Peter Zijlstra wrote:
+> On Tue, 2011-05-31 at 00:12 +0200, Peter Zijlstra wrote:
+> > 
+> > I poked around with some skip_rq_update bits but couldn't make it go
+> > away, will try more tomorrow.
+> 
+> Gah, that was annoying, and explains why I wasn't seeing it on my main
+> dev box but could see it on my desktop (wsm tsc is much better synced
+> than the core2 tsc).
+> 
+> Could you confirm that this indeed cures the problem?
 
-So, Does this makes sense?
+Yes, indeed it does. Many thanks Peter.
 
-
-
->From e47fedaa546499fa3d4196753194db0609cfa2e5 Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Tue, 31 May 2011 18:28:30 +0900
-Subject: [PATCH] oom: use euid instead of CAP_SYS_ADMIN for protection root process
-
-Recently, many userland daemon prefer to use libcap-ng and drop
-all privilege just after startup. Because of (1) Almost privilege
-are necessary only when special file open, and aren't necessary
-read and write. (2) In general, privilege dropping brings better
-protection from exploit when bugs are found in the daemon.
-
-But, it makes suboptimal oom-killer behavior. CAI Qian reported
-oom killer killed some important daemon at first on his fedora
-like distro. Because they've lost CAP_SYS_ADMIN.
-
-Of course, we recommend to drop privileges as far as possible
-instead of keeping them. Thus, oom killer don't have to check
-any capability. It implicitly suggest wrong programming style.
-
-This patch change root process check way from CAP_SYS_ADMIN to
-just euid==0.
-
-Reported-by: CAI Qian <caiqian@redhat.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/oom_kill.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 59eda6e..4e1e8a5 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -203,7 +203,7 @@ unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *mem,
- 	 * Root processes get 3% bonus, just like the __vm_enough_memory()
- 	 * implementation used by LSMs.
- 	 */
--	if (protect_root && has_capability_noaudit(p, CAP_SYS_ADMIN)) {
-+	if (protect_root && (task_euid(p) == 0)) {
- 		if (points >= totalpages / 32)
- 			points -= totalpages / 32;
- 		else
-@@ -429,7 +429,7 @@ static void dump_tasks(const struct mem_cgroup *mem, const nodemask_t *nodemask)
- 	struct task_struct *p;
- 	struct task_struct *task;
-
--	pr_info("[   pid]   ppid   uid cap total_vm      rss     swap score_adj name\n");
-+	pr_info("[   pid]   ppid   uid  euid total_vm      rss     swap score_adj name\n");
- 	for_each_process(p) {
- 		if (oom_unkillable_task(p, mem, nodemask))
- 			continue;
-@@ -444,9 +444,9 @@ static void dump_tasks(const struct mem_cgroup *mem, const nodemask_t *nodemask)
- 			continue;
- 		}
-
--		pr_info("[%6d] %6d %5d %3d %8lu %8lu %8lu %9d %s\n",
-+		pr_info("[%6d] %6d %5d %5d %8lu %8lu %8lu %9d %s\n",
- 			task_tgid_nr(task), task_tgid_nr(task->real_parent),
--			task_uid(task),	has_capability_noaudit(task, CAP_SYS_ADMIN),
-+			task_uid(task),	task_euid(task),
- 			task->mm->total_vm,
- 			get_mm_rss(task->mm) + task->mm->nr_ptes,
- 			get_mm_counter(task->mm, MM_SWAPENTS),
 -- 
-1.7.3.1
-
-
-
+Markus
