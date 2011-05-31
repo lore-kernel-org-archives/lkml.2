@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758300Ab1EaIfK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 04:35:10 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50979 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655Ab1EaIfI convert rfc822-to-8bit (ORCPT
+	id S1758313Ab1EaIhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 04:37:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58737 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755256Ab1EaIhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 04:35:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=FajFGi66+iF2cbWK3If9akKfU7Vp36CzHfWjnWNmOnKCulESh2gNH4wxVz06KURgqz
-         C683qBhAySi+x1sTZ/1xhtjR3YvYUwM9hAm4eSm5sUTWlPkI69tagxuqwWnhPNO+cWT1
-         Z7I4I9haKsdhYzAQwCL7B5KT87GCSevGqFo1c=
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
-References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
-Date: Tue, 31 May 2011 10:35:06 +0200
-X-Google-Sender-Auth: rDhV1ZFlJB1Y2zAngNdCSsMa-Ow
-Message-ID: <BANLkTikxb_tJvXoHma7U41TrZKmZr=4u0g@mail.gmail.com>
-Subject: Re: m68k: Convert to genirq (WIP)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Linux/m68k" <linux-m68k@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 31 May 2011 04:37:11 -0400
+Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
+From: David Woodhouse <dwmw2@infradead.org>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 31 May 2011 09:37:03 +0100
+In-Reply-To: <20110531014418.GI2890@dhcp-172-31-194-241.cam.corp.google.com>
+References: <20110530072300.GA9802@elte.hu>
+	 <1306745835.2029.389.camel@i7.infradead.org>
+	 <20110530104231.GF17821@elte.hu> <20110530104656.GA19532@elte.hu>
+	 <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
+	 <20110530105809.GA20133@elte.hu>
+	 <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
+	 <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
+	 <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
+	 <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
+	 <20110531014418.GI2890@dhcp-172-31-194-241.cam.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1306831025.2029.477.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 28, 2011 at 20:32, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> | NR_IRQS:72
-> | ------------[ cut here ]------------
-> | WARNING: at linux/kernel/irq/chip.c:559 0x2a191a()
-> | Modules linked in:
-> | Call Trace: [<0002767e>] warn_slowpath_common+0x4c/0x64
-> |  [<0004e81c>] irq_set_chip+0x0/0x66
-> |  [<000276aa>] warn_slowpath_null+0x14/0x1a
-> |  [<0004e728>] __irq_set_handler+0x11c/0x13c
-> |  [<0004ec7e>] handle_level_irq+0x0/0x9c
-> |  [<00003ef4>] m68k_setup_irq_controller+0x3c/0x50
-> |  [<0004ec7e>] handle_level_irq+0x0/0x9c
-> |  [<0004e81c>] irq_set_chip+0x0/0x66
-> |  [<00027dc8>] printk+0x0/0x1a
-> |  [<00322022>] __alloc_bootmem+0x0/0x1a
-> |  [<0031dea4>] atari_init_IRQ+0x2a/0xe8
-> |  [<0004ec7e>] handle_level_irq+0x0/0x9c
-> |  [<0031c450>] init_IRQ+0x28/0x2e
-> |  [<00027dc8>] printk+0x0/0x1a
-> |  [<0031a012>] start_kernel+0x196/0x3b0
-> |  [<0031931e>] _sinittext+0x31e/0x9c0
-> |
-> | ---[ end trace 139ce121c98e96c9 ]---
+On Mon, 2011-05-30 at 21:44 -0400, Ted Ts'o wrote:
+> On some architectures, I suspect there will be a dozen or more CONFIG
+> that have to be a certain way in order for the machine to boot.  Are
+> you really going to want to put them all on the command line?
 
-whitespace-challenged diff --git a/arch/m68k/kernel/ints.c
-b/arch/m68k/kernel/ints.c
-index f4804f3..8d8a1e9 100644
---- a/arch/m68k/kernel/ints.c
-+++ b/arch/m68k/kernel/ints.c
-@@ -285,7 +285,7 @@ void m68k_setup_irq_controller(struct irq_chip *chip,
-        for (i = 0; i < cnt; i++) {
-                irq_set_chip(irq + i, chip);
-                if (handle)
--                       irq_set_handler(i, handle);
-+                       irq_set_handler(irq + i, handle);
-        }
- }
+No. This is just a convenience for setting/clearing a few options
+(although "make `cat my-config-overrides` oldconfig" would also work if
+you have a bunch of them, I suppose.)
 
-Gr{oetje,eeting}s,
+Remember, we're having this discussion because Ingo needs a command-line
+method to override *just* CONFIG_64BIT. Nothing more. That's all that's
+really holding us back from finally completing the i386/x86_64 -> x86
+merge.
 
-                        Geert
+> I suppose the question is whether people are using randconfig for
+> simple compile testing, or just for something that they actually try
+> to boot, either on real hardware or on a KVM system.  I was under the
+> impression Ingo and others actually tried to boot their randconfig
+> kernels, correct? 
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+I *sincerely* hope that isn't the reason for this requirement. If they
+*are* actually booting these kernels, then they'll need more than just
+one setting to be hard-coded, as you correctly observe.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+That would mean that they must already be using KCONFIG_ALLCONFIG, or an
+'all.config' file which overrides the settings they need for their
+storage hardware, for CGROUPS to match their userspace if they have
+systemd, etc.
+
+And that, in turn, would mean that all this whining about needing an
+easier way to set CONFIG_64BIT is *pure* nonsense, because they could
+have just added it to their existing list.
+
+
+So no, allowing CONFIG_FOO= on the make command line was not intended as
+a way to set options in bulk. We have *other* ways of doing that, which
+do take them from a file.
+
+-- 
+dwmw2
+
