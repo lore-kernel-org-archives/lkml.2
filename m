@@ -1,48 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758429Ab1EaUb3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 16:31:29 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:60003 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758399Ab1EaUb1 (ORCPT
+	id S1758511Ab1EaUcA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 16:32:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63362 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758495Ab1EaUb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 16:31:27 -0400
-Date: Tue, 31 May 2011 22:31:06 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [kernel.org users] Turning off the incremental diff robot
-Message-ID: <20110531203106.GB4424@elf.ucw.cz>
-References: <4DE3E9E7.8020008@zytor.com>
- <20110531194358.GA4424@elf.ucw.cz>
- <201105312204.02722.arnd@arndb.de>
- <4DE54BFF.5090508@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DE54BFF.5090508@zytor.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 31 May 2011 16:31:58 -0400
+X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=DyQkDb8ePfQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=oWH7QCMftfZiGsOD6twA:9 a=bYJLwAeIRuB0rfDNpQMA:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=UXVmiyVkT6AA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] sched: check and preempt the current task at right
+ place
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <BANLkTikG4v6xPGcKU6YVTYhXCnxWaWwoKg@mail.gmail.com>
+References: <BANLkTikG4v6xPGcKU6YVTYhXCnxWaWwoKg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 31 May 2011 16:31:55 -0400
+Message-ID: <1306873915.10135.11.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2011-05-31 13:13:51, H. Peter Anvin wrote:
-> On 05/31/2011 01:04 PM, Arnd Bergmann wrote:
-> > 
-> > Are you talking about just ftp://ftp.kernel.org/pub/linux/kernel/*/incr/
-> > or also about ftp://ftp.kernel.org/pub/linux/kernel/v2.6/patch-* and
-> > Changelog-*?
-> > 
-> > I can see reasons to keep the latter, but not necessarily the former.
+On Tue, 2011-05-31 at 21:04 +0800, Hillf Danton wrote:
+> When switching a task to RT, it is the right place to preempt the current
+> running task if the task is not running. Same scenario also rises when the
+> priority of task has changed.
 > 
-> The former only.
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
+>  kernel/sched_rt.c |   19 +++----------------
+>  1 files changed, 3 insertions(+), 16 deletions(-)
+> 
+> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+> index 88725c9..4a9553e 100644
+> --- a/kernel/sched_rt.c
+> +++ b/kernel/sched_rt.c
+> @@ -1671,25 +1671,13 @@ static inline void init_sched_rt_class(void)
+>   */
+>  static void switched_to_rt(struct rq *rq, struct task_struct *p)
+>  {
+> -	int check_resched = 1;
+> -
+>  	/*
+>  	 * If we are already running, then there's nothing
+>  	 * that needs to be done. But if we are not running
+>  	 * we may need to preempt the current running task.
+> -	 * If that current running task is also an RT task
+> -	 * then see if we can move to another run queue.
+>  	 */
+> -	if (p->on_rq && rq->curr != p) {
+> -#ifdef CONFIG_SMP
+> -		if (rq->rt.overloaded && push_rt_task(rq) &&
+> -		    /* Don't resched if we changed runqueues */
+> -		    rq != task_rq(p))
+> -			check_resched = 0;
+> -#endif /* CONFIG_SMP */
+> -		if (check_resched && p->prio < rq->curr->prio)
+> -			resched_task(rq->curr);
+> -	}
+> +	if (p->on_rq && rq->curr != p)
+> +		check_preempt_curr_rt(rq, p, 0);
 
-Aha, I guess I have to agree... /incr/ is not terribly
-important. Anyone doing _that_ kind of development probably has git.
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Note, although it works now, there's no guarantee that
+check_preempt_curr_rt() will work with something other than an rt task
+on the runqueue.
+
+Also, this code removes the push_rt_task(rq) entirely, which means that
+if we don't preempt current, and p is an RT task (as it is), we wont
+push it off to another rq even if one is available for it to run on.
+
+-- Steve
+
+
+>  }
+> 
+>  /*
+> @@ -1729,8 +1717,7 @@ prio_changed_rt(struct rq *rq, struct
+> task_struct *p, int oldprio)
+>  		 * greater than the current running task
+>  		 * then reschedule.
+>  		 */
+> -		if (p->prio < rq->curr->prio)
+> -			resched_task(rq->curr);
+> +		check_preempt_curr_rt(rq, p, 0);
+>  	}
+>  }
+
+
