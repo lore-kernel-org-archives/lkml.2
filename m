@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab1EaXHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 19:07:08 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59603 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932897Ab1EaXHH (ORCPT
+	id S932932Ab1EaXKF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 19:10:05 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:30836 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932879Ab1EaXKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 19:07:07 -0400
-Date: Tue, 31 May 2011 16:07:02 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Mark Fasheh <mfasheh@suse.com>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH] ocfs2: use proper little-endian bitops
-Message-ID: <20110531230702.GE31742@noexit.corp.google.com>
-Mail-Followup-To: Mark Fasheh <mfasheh@suse.com>,
-	Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-	ocfs2-devel@oss.oracle.com
-References: <1306760285-4364-1-git-send-email-akinobu.mita@gmail.com>
- <20110531225713.GA10985@wotan.suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110531225713.GA10985@wotan.suse.de>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 31 May 2011 19:10:04 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6362"; a="94560411"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: [PATCH] msm: timer: Fix SMP build error
+Date: Tue, 31 May 2011 16:10:00 -0700
+Message-Id: <1306883400-32711-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.5.3.367.ga9930
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 03:57:13PM -0700, Mark Fasheh wrote:
-> On Mon, May 30, 2011 at 09:58:05PM +0900, Akinobu Mita wrote:
-> > Using __test_and_{set,clear}_bit_le() with ignoring its return value
-> > can be replaced with __{set,clear}_bit_le().
-> > 
-> > Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> > Cc: Joel Becker <jlbec@evilplan.org>
-> > Cc: Mark Fasheh <mfasheh@suse.com>
-> > Cc: ocfs2-devel@oss.oracle.com
-> 
-> Looks reasonable to me...
-> 
-> Signed-off-by: Mark Fasheh <mfasheh@suse.com>
-> 
-> Joel?
+Fix build breakage on SMP=y builds due to 0f7b332 (ARM:
+consolidate SMP cross call implementation, 2011-04-03)
 
-	No argument here.  Akinobu, do you want me to send it with ocfs2
-fixes, or are you going to push it along?
+arch/arm/mach-msm/timer.c: In function 'local_timer_setup':
+arch/arm/mach-msm/timer.c:295: error: implicit declaration of
+function 'gic_enable_ppi'
 
-Acked-by: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mach-msm/timer.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Joel
-
+diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+index 38b95e9..9bfdd5a 100644
+--- a/arch/arm/mach-msm/timer.c
++++ b/arch/arm/mach-msm/timer.c
+@@ -23,6 +23,8 @@
+ #include <linux/io.h>
+ 
+ #include <asm/mach/time.h>
++#include <asm/hardware/gic.h>
++
+ #include <mach/msm_iomap.h>
+ #include <mach/cpu.h>
+ 
 -- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-"Lately I've been talking in my sleep.
- Can't imagine what I'd have to say.
- Except my world will be right
- When love comes back my way."
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
