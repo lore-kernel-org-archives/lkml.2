@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684Ab1EaNuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 09:50:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52801 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751652Ab1EaNuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 09:50:11 -0400
-Subject: Re: [PATCH 1/4] Cache xattr security drop check for write v2
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        chris.mason@oracle.com, josef@redhat.com, agruen@linbit.com,
-        "Serge E. Hallyn" <serue@us.ibm.com>
-In-Reply-To: <1306596354-18453-1-git-send-email-andi@firstfloor.org>
-References: <1306596354-18453-1-git-send-email-andi@firstfloor.org>
+	id S1754584Ab1EaNwo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 09:52:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41647 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab1EaNwm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 09:52:42 -0400
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+ locks up on ARM
+From: Peter Zijlstra <peterz@infradead.org>
+To: monstr@monstr.eu
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ingo Molnar <mingo@elte.hu>, Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <4DE4EF1B.80805@monstr.eu>
+References: <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
+	 <1306405979.1200.63.camel@twins>
+	 <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
+	 <1306409575.1200.71.camel@twins> <1306412511.1200.90.camel@twins>
+	 <20110526122623.GA11875@elte.hu>
+	 <20110526123137.GG24876@n2100.arm.linux.org.uk>
+	 <20110526125007.GA27083@elte.hu>
+	 <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com>
+	 <20110527120629.GA32617@elte.hu>
+	 <20110527205240.GT24876@n2100.arm.linux.org.uk>
+	 <1306588381.2497.481.camel@laptop>  <4DE4CC33.7090404@petalogix.com>
+	 <1306848137.2353.91.camel@twins>  <4DE4EF1B.80805@monstr.eu>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Tue, 31 May 2011 14:51:36 +0100
-Message-ID: <1306849896.2816.22.camel@menhir>
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 31 May 2011 15:52:31 +0200
+Message-ID: <1306849951.2353.108.camel@twins>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2011-05-31 at 15:37 +0200, Michal Simek wrote:
 
-On Sat, 2011-05-28 at 08:25 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+> I briefly looked at it and it probably come from copy_thread function (process.c 
+> - line: childregs->msr |= MSR_IE;)
+> When context switch happen, childregs->msr value is loaded to MSR (machine 
+> status register) which caused that IE is enabled ( entry.S:~977 lwi	r12, r11, 
+> CC_MSR; 	mts	rmsr, r12)
 > 
-> Some recent benchmarking on btrfs showed that a major scaling bottleneck
-> on large systems on btrfs is currently the xattr lookup on every write.
+> NOTE: MSR stores flags for IE, i/d-cache ON/OFF, virtual memory/user mode etc.
 > 
-> Why xattr lookup on every write I hear you ask?
-> 
-> write wants to drop suid and security related xattrs that could set o
-> capabilities for executables.  To do that it currently looks up
-> security.capability on EVERY write (even for non executables) to decide
-> whether to drop it or not.
-> 
-It sounds like a good idea, but cluster filesystems will need to clear
-the flag when they update their in-core inodes. Without that we could
-have:
+> This is no problem if context switch is done with irq on. But maybe there is 
+> another place which is causing some problems.
 
- Node A looks up inode and sets S_NOSEC since its not suid
- Node B does chmod +s on the inode
- Node A now has S_NOSEC set, but inode is suid, so writes don't clear
-suid
+Ahh, no wonder I didn't find that ;-)
 
-For GFS2 it should simply be a case of adjusting gfs2_set_inode_flags()
-to update S_NOSEC appropriately, something like this (untested):
+> Where exactly should be IRQ reenable after context switch?
 
-diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-index a9f5cbe..3d856e4 100644
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -174,7 +174,9 @@ void gfs2_set_inode_flags(struct inode *inode)
- 	struct gfs2_inode *ip = GFS2_I(inode);
- 	unsigned int flags = inode->i_flags;
- 
--	flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
-+	flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC|S_NOSEC);
-+	if (!is_sxid(inode->i_mode))
-+		flags |= S_NOSEC;
- 	if (ip->i_diskflags & GFS2_DIF_IMMUTABLE)
- 		flags |= S_IMMUTABLE;
- 	if (ip->i_diskflags & GFS2_DIF_APPENDONLY)
+the tail end of finish_lock_switch(), where it does:
+raw_spin_unlock_irq(&rq->lock).
 
+> I would like to also check some things.
+> 1. When schedule should be called from arch specific code?
+> Currently we are calling schedule after syscall/exception/interrupt happen.
+> Is there any place where schedule should/shouldn't be called?
 
-Note that this also serves the dual purpose of setting the flag for
-newly created inodes as well, as per the patches for the other
-filesystems,
+It should be called on the return to userspace path when
+TIF_NEED_RESCHED is set. It should not be called from non-preemptible
+contexts like non-zero preempt_count or IRQ-disabled.
 
-Steve.
+[ with the exception of CONFIG_PREEMPT which calls preempt_schedule()
+which checks both those things ]
 
+> 2. For syscall and exception handling - interrupt is ON but it is only masked.
 
+I'm having trouble understanding: on but masked.
+
+> When schedule is called from that any code has to enable IRQ if generic code 
+> doesn't do that. Not sure if it does.
+
+generic code isn't supposed to call schedule() with IRQs disabled (and
+doesn't afaik)
