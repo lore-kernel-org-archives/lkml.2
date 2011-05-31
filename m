@@ -1,44 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178Ab1EaEsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 00:48:37 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:40397 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab1EaEsg (ORCPT
+	id S1757100Ab1EaEzb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 00:55:31 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38715 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab1EaEza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 00:48:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=aKhNCLEIG/Jsv41/z5cWI+RuG+1o8JHHT5PM4PMOqvaH6YdgvZKs0zJiVv4Aq+UKm6
-         L+KqqwYO5/NQEg5b8fpQ==
-Date: Mon, 30 May 2011 21:48:30 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, caiqian@redhat.com, hughd@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, minchan.kim@gmail.com, oleg@redhat.com
-Subject: Re: [PATCH 4/5] oom: don't kill random process
-In-Reply-To: <4DE2F028.6020608@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1105302147250.18793@chino.kir.corp.google.com>
-References: <4DD61F80.1020505@jp.fujitsu.com> <4DD6207E.1070300@jp.fujitsu.com> <alpine.DEB.2.00.1105231529340.17840@chino.kir.corp.google.com> <4DDB0B45.2080507@jp.fujitsu.com> <alpine.DEB.2.00.1105231838420.17729@chino.kir.corp.google.com>
- <4DDB1028.7000600@jp.fujitsu.com> <alpine.DEB.2.00.1105231856210.18353@chino.kir.corp.google.com> <4DDB11F4.2070903@jp.fujitsu.com> <alpine.DEB.2.00.1105251645270.29729@chino.kir.corp.google.com> <4DE2F028.6020608@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Tue, 31 May 2011 00:55:30 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 31 May 2011 13:48:35 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: akpm@linux-foundation.org, Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-Id: <20110531134835.b7c9edc2.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110530131300.GQ5044@csn.ul.ie>
+References: <20110530131300.GQ5044@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 May 2011, KOSAKI Motohiro wrote:
+On Mon, 30 May 2011 14:13:00 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-> Never mind.
+> Asynchronous compaction is used when promoting to huge pages. This is
+> all very nice but if there are a number of processes in compacting
+> memory, a large number of pages can be isolated. An "asynchronous"
+> process can stall for long periods of time as a result with a user
+> reporting that firefox can stall for 10s of seconds. This patch aborts
+> asynchronous compaction if too many pages are isolated as it's better to
+> fail a hugepage promotion than stall a process.
 > 
-> You never see to increase tasklist_lock. You never seen all processes
-> have root privilege case.
+> If accepted, this should also be considered for 2.6.39-stable. It should
+> also be considered for 2.6.38-stable but ideally [11bc82d6: mm:
+> compaction: Use async migration for __GFP_NO_KSWAPD and enforce no
+> writeback] would be applied to 2.6.38 before consideration.
 > 
+> Reported-and-Tested-by: Ury Stankevich <urykhy@gmail.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-I don't really understand what you're trying to say, sorry.
+
+
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+BTW, I'm surprised to see both of vmscan.c and compaction.c has too_many_isolated()..
+in different logic ;)
+
+BTW, compaction ignores UNEVICTABLE LRU ?
+
+Thanks,
+-Kame
+
+
+> ---
+>  mm/compaction.c |   32 ++++++++++++++++++++++++++------
+>  1 files changed, 26 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 021a296..331a2ee 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -240,11 +240,20 @@ static bool too_many_isolated(struct zone *zone)
+>  	return isolated > (inactive + active) / 2;
+>  }
+>  
+> +/* possible outcome of isolate_migratepages */
+> +typedef enum {
+> +	ISOLATE_ABORT,		/* Abort compaction now */
+> +	ISOLATE_NONE,		/* No pages isolated, continue scanning */
+> +	ISOLATE_SUCCESS,	/* Pages isolated, migrate */
+> +} isolate_migrate_t;
+> +
+>  /*
+>   * Isolate all pages that can be migrated from the block pointed to by
+>   * the migrate scanner within compact_control.
+> + *
+> + * Returns false if compaction should abort at this point due to congestion.
+>   */
+> -static unsigned long isolate_migratepages(struct zone *zone,
+> +static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>  					struct compact_control *cc)
+>  {
+>  	unsigned long low_pfn, end_pfn;
+> @@ -261,7 +270,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>  	/* Do not cross the free scanner or scan within a memory hole */
+>  	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
+>  		cc->migrate_pfn = end_pfn;
+> -		return 0;
+> +		return ISOLATE_NONE;
+>  	}
+>  
+>  	/*
+> @@ -270,10 +279,14 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>  	 * delay for some time until fewer pages are isolated
+>  	 */
+>  	while (unlikely(too_many_isolated(zone))) {
+> +		/* async migration should just abort */
+> +		if (!cc->sync)
+> +			return ISOLATE_ABORT;
+> +
+>  		congestion_wait(BLK_RW_ASYNC, HZ/10);
+>  
+>  		if (fatal_signal_pending(current))
+> -			return 0;
+> +			return ISOLATE_ABORT;
+>  	}
+>  
+>  	/* Time to isolate some pages for migration */
+> @@ -358,7 +371,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>  
+>  	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
+>  
+> -	return cc->nr_migratepages;
+> +	return ISOLATE_SUCCESS;
+>  }
+>  
+>  /*
+> @@ -522,9 +535,15 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>  		unsigned long nr_migrate, nr_remaining;
+>  		int err;
+>  
+> -		if (!isolate_migratepages(zone, cc))
+> +		switch (isolate_migratepages(zone, cc)) {
+> +		case ISOLATE_ABORT:
+> +			goto out;
+> +		case ISOLATE_NONE:
+>  			continue;
+> -
+> +		case ISOLATE_SUCCESS:
+> +			;
+> +		}
+> +		
+>  		nr_migrate = cc->nr_migratepages;
+>  		err = migrate_pages(&cc->migratepages, compaction_alloc,
+>  				(unsigned long)cc, false,
+> @@ -547,6 +566,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>  
+>  	}
+>  
+> +out:
+>  	/* Release free pages and check accounting */
+>  	cc->nr_freepages -= release_freepages(&cc->freepages);
+>  	VM_BUG_ON(cc->nr_freepages != 0);
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
