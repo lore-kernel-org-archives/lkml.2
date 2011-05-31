@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab1EaUbZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 16:31:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37121 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758190Ab1EaUbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 16:31:24 -0400
-Message-ID: <4DE54FFF.4010500@zytor.com>
-Date: Tue, 31 May 2011 13:30:55 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1758429Ab1EaUb3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 16:31:29 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:60003 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758399Ab1EaUb1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 16:31:27 -0400
+Date: Tue, 31 May 2011 22:31:06 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [kernel.org users] Turning off the incremental diff robot
+Message-ID: <20110531203106.GB4424@elf.ucw.cz>
+References: <4DE3E9E7.8020008@zytor.com>
+ <20110531194358.GA4424@elf.ucw.cz>
+ <201105312204.02722.arnd@arndb.de>
+ <4DE54BFF.5090508@zytor.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Dan Rosenberg <drosenberg@vsecurity.com>, Matthew Garrett <mjg@redhat.com>,
-        Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, davej@redhat.com,
-        torvalds@linux-foundation.org, adobriyan@gmail.com, eranian@google.com,
-        penberg@kernel.org, davem@davemloft.net,
-        Arjan van de Ven <arjan@infradead.org>, Valdis.Kletnieks@vt.edu,
-        Andrew Morton <akpm@linux-foundation.org>, pageexec@freemail.hu,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
-References: <1306269105.21443.20.camel@dan> <1306442367.2279.25.camel@dan> <20110531165252.GB8971@srcf.ucam.org> <4DE5360D.5070809@zytor.com> <20110531185122.GA11998@srcf.ucam.org> <1306868609.6317.25.camel@dan> <20110531195551.GC26970@elte.hu> <4DE54C66.10106@zytor.com> <20110531202712.GB28731@elte.hu>
-In-Reply-To: <20110531202712.GB28731@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DE54BFF.5090508@zytor.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2011 01:27 PM, Ingo Molnar wrote:
+On Tue 2011-05-31 13:13:51, H. Peter Anvin wrote:
+> On 05/31/2011 01:04 PM, Arnd Bergmann wrote:
+> > 
+> > Are you talking about just ftp://ftp.kernel.org/pub/linux/kernel/*/incr/
+> > or also about ftp://ftp.kernel.org/pub/linux/kernel/v2.6/patch-* and
+> > Changelog-*?
+> > 
+> > I can see reasons to keep the latter, but not necessarily the former.
 > 
->> Other than that, Ingo's idea at least have the merit that it would 
->> break only older bootloaders doing things wrong.
-> 
-> I'm wondering, why would it break older bootloaders? It's just a 
-> slightly larger than usual kernel image, nothing is visible to the 
-> bootloader.
-> 
+> The former only.
 
-Older boot loaders did not know how big the kernel image was, therefore
-had no way to avoid memory space collision.  That is fixed in boot
-protocol 2.10.
+Aha, I guess I have to agree... /incr/ is not terribly
+important. Anyone doing _that_ kind of development probably has git.
 
-	-hpa
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
