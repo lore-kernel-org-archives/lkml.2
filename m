@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab1EaHk7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 03:40:59 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:51705 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754064Ab1EaHk5 (ORCPT
+	id S1758112Ab1EaHlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 03:41:09 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:41962 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754064Ab1EaHlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 03:40:57 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1//DdCwHfIrQugBbMdfHjqV
-Date: Tue, 31 May 2011 00:40:54 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch/arm/mach-omap1/dma.c: Invert calls to
- platform_device_put and platform_device_del
-Message-ID: <20110531074054.GL11352@atomide.com>
-References: <1305305170-16922-1-git-send-email-julia@diku.dk>
+	Tue, 31 May 2011 03:41:05 -0400
+X-Sasl-enc: RcZrE55c4xnvAEZ9nRlc+0Rw5m2QvjeFjqCZaAx0jjzp 1306827663
+Date: Tue, 31 May 2011 15:41:16 +0800
+From: Greg KH <greg@kroah.com>
+To: Xiangliang Yu <yuxiangl@marvell.com>
+Cc: "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jacky Feng <jfeng@marvell.com>
+Subject: Re: [PATCH 3/9] [SCSI] mvsas: Add driver version and interrupt
+ coalescing to device 	attributes in sysfs
+Message-ID: <20110531074116.GB6099@kroah.com>
+References: <20110526021809.GA22496@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD846E0@SC-VEXCH4.marvell.com>
+ <20110526141430.GD4164@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD848FB@SC-VEXCH4.marvell.com>
+ <20110527073302.GA16178@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD84C40@SC-VEXCH4.marvell.com>
+ <20110530074508.GB7806@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD84CD9@SC-VEXCH4.marvell.com>
+ <20110530144815.GB2689@kroah.com>
+ <F766E4F80769BD478052FB6533FA745D19FAD84E1E@SC-VEXCH4.marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1305305170-16922-1-git-send-email-julia@diku.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <F766E4F80769BD478052FB6533FA745D19FAD84E1E@SC-VEXCH4.marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Julia Lawall <julia@diku.dk> [110513 09:42]:
-> From: Julia Lawall <julia@diku.dk>
+On Tue, May 31, 2011 at 12:26:45AM -0700, Xiangliang Yu wrote:
 > 
-> Platform_device_del should be called before platform_device_put, as
-> platform_device_put can delete the structure.
-> 
-> Additionally, improve the error handling code for the call to ioremap, so
-> that it calls platform_device_put.
-> 
-> The semantic match that finds this problem is:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression e1,e2;
-> @@
-> 
-> *platform_device_put(e1);
-> ... when != e1 = e2
-> *platform_device_del(e1);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+> >Then I would strongly recommend never exporting this value to allow it
+> >to be changed at all then.  It doesn't sound worth it.
+> OK, Thanks!
+> I remove the sysfs file and the modified patch is:
 
-Thanks, applying into fixes.
+Thanks for removing it, but you still left part of it in the patch, see
+below.
 
-> 
-> ---
-> Is an ioremap needed also?  Not clear, because dma_base i a global variable.
-
-I guess you mean iounmap instead of ioremap? In this case we have static
-mappings for ioremap, so iounmap is not doing anything. But should be done
-for correct handling.
-
-Regards,
-
-Tony
- 
->  arch/arm/mach-omap1/dma.c |   11 ++++++-----
->  1 file changed, 6 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap1/dma.c b/arch/arm/mach-omap1/dma.c
-> index d855934..f5a5220 100644
-> --- a/arch/arm/mach-omap1/dma.c
-> +++ b/arch/arm/mach-omap1/dma.c
-> @@ -284,14 +284,15 @@ static int __init omap1_system_dma_init(void)
->  	dma_base = ioremap(res[0].start, resource_size(&res[0]));
->  	if (!dma_base) {
->  		pr_err("%s: Unable to ioremap\n", __func__);
-> -		return -ENODEV;
-> +		ret = -ENODEV;
-> +		goto exit_device_put;
->  	}
+> diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
+> index 9f1cccc..d977684 100644
+> --- a/drivers/scsi/mvsas/mv_init.c
+> +++ b/drivers/scsi/mvsas/mv_init.c
+> @@ -34,6 +34,8 @@ MODULE_PARM_DESC(collector, "\n"
+>  	"\tThe mvsas SAS LLDD supports both modes.\n"
+>  	"\tDefault: 1 (Direct Mode).\n");
 >  
->  	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
->  	if (ret) {
->  		dev_err(&pdev->dev, "%s: Unable to add resources for %s%d\n",
->  			__func__, pdev->name, pdev->id);
-> -		goto exit_device_del;
-> +		goto exit_device_put;
->  	}
+> +int interrupt_coalescing = 0x80;
+
+This should be named something else, or made static, as you just made it
+a global name, which is not good at all.
+
+> @@ -48,6 +50,8 @@ static const struct mvs_chip_info mvs_chips[] = {
+>  	[chip_1320] =	{ 2, 4, 0x800, 17, 64,  9, &mvs_94xx_dispatch, },
+>  };
 >  
->  	p = kzalloc(sizeof(struct omap_system_dma_plat_info), GFP_KERNEL);
-> @@ -299,7 +300,7 @@ static int __init omap1_system_dma_init(void)
->  		dev_err(&pdev->dev, "%s: Unable to allocate 'p' for %s\n",
->  			__func__, pdev->name);
->  		ret = -ENOMEM;
-> -		goto exit_device_put;
-> +		goto exit_device_del;
->  	}
+> +struct device_attribute *mvst_host_attrs[] = { NULL };
+> +
+>  #define SOC_SAS_NUM 2
+>  #define SG_MX 64
 >  
->  	d = kzalloc(sizeof(struct omap_dma_dev_attr), GFP_KERNEL);
-> @@ -380,10 +381,10 @@ exit_release_d:
->  	kfree(d);
->  exit_release_p:
->  	kfree(p);
-> -exit_device_put:
-> -	platform_device_put(pdev);
->  exit_device_del:
->  	platform_device_del(pdev);
-> +exit_device_put:
-> +	platform_device_put(pdev);
->  
->  	return ret;
->  }
-> 
+> @@ -74,6 +78,7 @@ static struct scsi_host_template mvs_sht = {
+>  	.slave_alloc		= mvs_slave_alloc,
+>  	.target_destroy		= sas_target_destroy,
+>  	.ioctl			= sas_ioctl,
+> +	.shost_attrs		= mvst_host_attrs,
+
+Here, you don't need these at all now, right?
+
+thanks,
+
+greg k-h
