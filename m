@@ -1,135 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab1EaAky (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 20:40:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:12368 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318Ab1EaAkx (ORCPT
+	id S1757952Ab1EaA5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 20:57:25 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56310 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab1EaA5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 20:40:53 -0400
+	Mon, 30 May 2011 20:57:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=VboY9wwgIMrTTNPQMSQLiUemhSeQQsaWb8TkFrW6lGsxBSmjX1VZxhPJQS2MIbFtJQ
-         N9Pyr6iXUgwGPs++9PTQ==
-Date: Mon, 30 May 2011 17:40:51 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH 4/14] tmpfs: add shmem_read_mapping_page_gfp
-In-Reply-To: <alpine.LSU.2.00.1105301726180.5482@sister.anvils>
-Message-ID: <alpine.LSU.2.00.1105301739080.5482@sister.anvils>
-References: <alpine.LSU.2.00.1105301726180.5482@sister.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=u7WhAjIQpobOSYdjYg77wXYLzDybzKERofH8vQ0OBCnZw+0ZFBg7vZ0Kw6vpwzBJxZ
+         lJFhy3olHiC3aDFkitY1lkXlMKQYfySdIGPIy10PGl/riiSqgG2nk1e/7zTHExnnGZPK
+         UA3UqmcSRO4YuZdqJjIBnEZ7QGD/lXjw87U3o=
+Message-ID: <4DE4393E.1080703@gmail.com>
+Date: Mon, 30 May 2011 18:41:34 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Ashwin Chaugule <ashbertslists@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: perf: h/w counters not counted and no error/info reported to
+ user
+References: <4DDECFC8.7090903@gmail.com>	<20110527095036.GK21386@elte.hu>	<4DDFBD83.3020105@gmail.com>	<4DDFD2F7.1050305@gmail.com> <BANLkTi=uKSKNJCJquKm44ofMwcTmfwAPyw@mail.gmail.com>
+In-Reply-To: <BANLkTi=uKSKNJCJquKm44ofMwcTmfwAPyw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although it is used (by i915) on nothing but tmpfs, read_cache_page_gfp()
-is unsuited to tmpfs, because it inserts a page into pagecache before
-calling the filesystem's ->readpage: tmpfs may have pages in swapcache
-which only it knows how to locate and switch to filecache.
 
-At present tmpfs provides a ->readpage method, and copes with this by
-copying pages; but soon we can simplify it by removing its ->readpage.
-Provide now a shmem_read_mapping_page_gfp() ready for that transition,
-and a shmem_read_mapping_page() inline for its common mapping_gfp case.
 
-(shmem_read_mapping_page_gfp or shmem_read_cache_page_gfp?  Generally
-the read_mapping_page functions use the mapping's ->readpage, and the
-read_cache_page functions use the supplied filler, so I think
-read_cache_page_gfp was slightly misnamed.)
+On 05/30/2011 03:04 PM, Ashwin Chaugule wrote:
+> Hi David,
+> 
+> On Fri, May 27, 2011 at 12:36 PM, David Ahern <dsahern@gmail.com> wrote:
+>>
+>> Ok, I got it now. On some occasions for simple programs -- like sleep 1
+>> -- the counter reads show:
+>>
+>> cycles: 0 1066485 0
+>>
+>> While the counter value is non-0, the time enabled and running values
+>> are 0 and those latter two are used by stat to say "not-counted".
+> 
+> I've seen time-enabled = 0 too, but I suspected that's because on my
+> kernel the sched_clock implementation was missing. (defaults to a
+> jiffies based timer)
 
-Tidy up the nearby declarations in pagemap.h.
+I think in the case of 'perf stat -- sleep 1' it runs so quickly that
+sometimes it does not cross timer ticks and the time_enabled comes out 0.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Christoph Hellwig <hch@infradead.org>
----
- include/linux/pagemap.h |   22 +++++++++++++++-------
- mm/shmem.c              |   23 +++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 7 deletions(-)
+> I saw your patch for initializing the fd's to -1's, but I'm unable to
+> see how that makes the value of time-enabled non zero ?
 
---- linux.orig/include/linux/pagemap.h	2011-05-30 13:56:10.212797101 -0700
-+++ linux/include/linux/pagemap.h	2011-05-30 14:25:32.665536626 -0700
-@@ -255,31 +255,39 @@ static inline struct page *grab_cache_pa
- extern struct page * grab_cache_page_nowait(struct address_space *mapping,
- 				pgoff_t index);
- extern struct page * read_cache_page_async(struct address_space *mapping,
--				pgoff_t index, filler_t *filler,
--				void *data);
-+				pgoff_t index, filler_t *filler, void *data);
- extern struct page * read_cache_page(struct address_space *mapping,
--				pgoff_t index, filler_t *filler,
--				void *data);
-+				pgoff_t index, filler_t *filler, void *data);
- extern struct page * read_cache_page_gfp(struct address_space *mapping,
- 				pgoff_t index, gfp_t gfp_mask);
- extern int read_cache_pages(struct address_space *mapping,
- 		struct list_head *pages, filler_t *filler, void *data);
- 
- static inline struct page *read_mapping_page_async(
--						struct address_space *mapping,
--						     pgoff_t index, void *data)
-+				struct address_space *mapping,
-+				pgoff_t index, void *data)
- {
- 	filler_t *filler = (filler_t *)mapping->a_ops->readpage;
- 	return read_cache_page_async(mapping, index, filler, data);
- }
- 
- static inline struct page *read_mapping_page(struct address_space *mapping,
--					     pgoff_t index, void *data)
-+				pgoff_t index, void *data)
- {
- 	filler_t *filler = (filler_t *)mapping->a_ops->readpage;
- 	return read_cache_page(mapping, index, filler, data);
- }
- 
-+extern struct page *shmem_read_mapping_page_gfp(struct address_space *mapping,
-+				pgoff_t index, gfp_t gfp_mask);
-+
-+static inline struct page *shmem_read_mapping_page(
-+				struct address_space *mapping, pgoff_t index)
-+{
-+	return shmem_read_mapping_page_gfp(mapping, index,
-+				mapping_gfp_mask(mapping));
-+}
-+
- /*
-  * Return byte-offset into filesystem object for page.
-  */
---- linux.orig/mm/shmem.c	2011-05-30 14:13:03.569821995 -0700
-+++ linux/mm/shmem.c	2011-05-30 14:25:32.665536626 -0700
-@@ -3028,3 +3028,26 @@ int shmem_zero_setup(struct vm_area_stru
- 	vma->vm_flags |= VM_CAN_NONLINEAR;
- 	return 0;
- }
-+
-+/**
-+ * shmem_read_mapping_page_gfp - read into page cache, using specified page allocation flags.
-+ * @mapping:	the page's address_space
-+ * @index:	the page index
-+ * @gfp:	the page allocator flags to use if allocating
-+ *
-+ * This behaves as a tmpfs "read_cache_page_gfp(mapping, index, gfp)",
-+ * with any new page allocations done using the specified allocation flags.
-+ * But read_cache_page_gfp() uses the ->readpage() method: which does not
-+ * suit tmpfs, since it may have pages in swapcache, and needs to find those
-+ * for itself; although drivers/gpu/drm i915 and ttm rely upon this support.
-+ *
-+ * Provide a stub for those callers to start using now, then later
-+ * flesh it out to call shmem_getpage() with additional gfp mask, when
-+ * shmem_file_splice_read() is added and shmem_readpage() is removed.
-+ */
-+struct page *shmem_read_mapping_page_gfp(struct address_space *mapping,
-+					 pgoff_t index, gfp_t gfp)
-+{
-+	return read_cache_page_gfp(mapping, index, gfp);
-+}
-+EXPORT_SYMBOL_GPL(shmem_read_mapping_page_gfp);
+It doesn't. That patch addresses unsupported counters in the default
+list (e.g., -ddd on a T9550 Core2Duo). The first open fails (cpu 0,
+thread 0) and the entire FD array is not reset to -1 (from its
+initialization to 0).
+
+David
+
+> 
+> Cheers,
+> Ashwin
