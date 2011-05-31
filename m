@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819Ab1EaNEi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 09:04:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40081 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab1EaNEh (ORCPT
+	id S1751662Ab1EaNHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 09:07:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42307 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab1EaNHG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 09:04:37 -0400
+	Tue, 31 May 2011 09:07:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=TO37Z79wdR+a3y7YN3Oo3QGwKXH75gG+ha8lR/xNNCa75Go7vOoa/c3XxeJC76GDnj
-         7OHAMczYBIfXmb87hZWrswEYqqzy0lN7ZNt/zSQP/53cX6Br0BzSEyWerMVXpYrAET3L
-         LHXv63TyDFEjQv1OaKuXcw1EXy+FeU0MooE2s=
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=GLLaXjZJSz7hnlW1xixq8g+zcOVghWVzC+gLVmv0j/QbgffIBtcxz6VUGnVXtJnLLj
+         Qz0lL8yCphHfXgU1S6ZNCZvCFwVwaSIAjkCeznHr+jCp5n9WFjOipxHEMJ02+trtTuHZ
+         aOiE5JzW8l/vMt60u722YR19EbHg+4BPXxEg8=
 MIME-Version: 1.0
-Date: Tue, 31 May 2011 21:04:36 +0800
-Message-ID: <BANLkTikG4v6xPGcKU6YVTYhXCnxWaWwoKg@mail.gmail.com>
-Subject: [PATCH] sched: check and preempt the current task at right place
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110531125415.GD10249@elte.hu>
+References: <cover.1306517576.git.luto@mit.edu> <20110529191924.GD9835@elte.hu>
+ <BANLkTin9xfS_X9Bscf1qnNZMK=JBgpzV8Q@mail.gmail.com> <20110531080758.GA24172@elte.hu>
+ <BANLkTi=Gi_0Uyj+dA6GjriRU9fCzKuLU=g@mail.gmail.com> <20110531125415.GD10249@elte.hu>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 31 May 2011 09:06:45 -0400
+X-Google-Sender-Auth: 6gqR4BRuYzEYj0alSBiVoSSDRgU
+Message-ID: <BANLkTinqGUoFTp3YcuUTAPUOUwBCQaw07g@mail.gmail.com>
+Subject: Re: [PATCH 0/5] x86-64: Remove syscall instructions at fixed addresses
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When switching a task to RT, it is the right place to preempt the current
-running task if the task is not running. Same scenario also rises when the
-priority of task has changed.
+On Tue, May 31, 2011 at 8:54 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Andrew Lutomirski <luto@mit.edu> wrote:
+>
+>> [...] More importantly, vread_tsc contains an alternative and the
+>> vDSO can't currently contain alternative instructions.  That can
+>> probably be fixed, but it'll take a bit of work.
+>
+> You could start with picking the more compatible alternative
+> instruction initially. I don't at all mind losing half a cycle of
+> performance in that case ... this code should be secure first.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
- kernel/sched_rt.c |   19 +++----------------
- 1 files changed, 3 insertions(+), 16 deletions(-)
+The more compatible one is mfence, which in some cases could (I think)
+be a lot more than half a cycle.
 
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index 88725c9..4a9553e 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -1671,25 +1671,13 @@ static inline void init_sched_rt_class(void)
-  */
- static void switched_to_rt(struct rq *rq, struct task_struct *p)
- {
--	int check_resched = 1;
--
- 	/*
- 	 * If we are already running, then there's nothing
- 	 * that needs to be done. But if we are not running
- 	 * we may need to preempt the current running task.
--	 * If that current running task is also an RT task
--	 * then see if we can move to another run queue.
- 	 */
--	if (p->on_rq && rq->curr != p) {
--#ifdef CONFIG_SMP
--		if (rq->rt.overloaded && push_rt_task(rq) &&
--		    /* Don't resched if we changed runqueues */
--		    rq != task_rq(p))
--			check_resched = 0;
--#endif /* CONFIG_SMP */
--		if (check_resched && p->prio < rq->curr->prio)
--			resched_task(rq->curr);
--	}
-+	if (p->on_rq && rq->curr != p)
-+		check_preempt_curr_rt(rq, p, 0);
- }
+A better option might be rdtscp, which is actually documented to work,
+but I'm not sure it's available on all supported CPUs.
 
- /*
-@@ -1729,8 +1717,7 @@ prio_changed_rt(struct rq *rq, struct
-task_struct *p, int oldprio)
- 		 * greater than the current running task
- 		 * then reschedule.
- 		 */
--		if (p->prio < rq->curr->prio)
--			resched_task(rq->curr);
-+		check_preempt_curr_rt(rq, p, 0);
- 	}
- }
+I'm content to wait a bit on this one.  I say let's get the rest done
+first and tackle the last little hard part at the end.
+
+--Andy
+
+>
+> Thanks,
+>
+>        Ingo
+>
