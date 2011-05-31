@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab1EaSbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 14:31:44 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:42730 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754891Ab1EaSbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 14:31:43 -0400
-Date: Tue, 31 May 2011 11:31:41 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] AppArmor: fix oops in apparmor_setprocattr
-Message-ID: <20110531183141.GH19633@outflux.net>
-MIME-Version: 1.0
+	id S1758118Ab1EaSey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 14:34:54 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:45452 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757164Ab1EaSex (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 14:34:53 -0400
+Date: Tue, 31 May 2011 20:34:48 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andy Lutomirski <luto@MIT.EDU>
+Cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v4 10/10] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+Message-ID: <20110531183448.GA27166@one.firstfloor.org>
+References: <cover.1306851090.git.luto@mit.edu> <1660d1687db01852ec58bbf970e22868db367d53.1306851090.git.luto@mit.edu>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <1660d1687db01852ec58bbf970e22868db367d53.1306851090.git.luto@mit.edu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When invalid parameters are passed to apparmor_setprocattr a NULL deref
-oops occurs when it tries to record an audit message. This is because
-it is passing NULL for the profile parameter for aa_audit. But aa_audit
-now requires that the profile passed is not NULL.
+> +What:	CONFIG_UNSAFE_VSYSCALLS (x86_64)
+> +When:	When glibc 2.14 or newer is ubitquitous.  Perhaps mid-2012.
+> +Why:	Having user-executable code at a fixed address is a security problem.
+> +	Turning off CONFIG_UNSAFE_VSYSCALLS mostly removes the risk but will
+> +	make the time() function slower on glibc versions 2.13 and below.
 
-Fix this by passing the current profile on the task that is trying to
-setprocattr.
+I disagree with this description (and the whole idea really)
 
-Signed-off-by: Kees Cook <kees@ubuntu.com>
-Signed-off-by: John Johansen <john.johansen@canonical.com>
----
- security/apparmor/lsm.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+First it's time+gettimeofday+vgetcu, not just time.
 
-diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-index ae3a698..ec1bcec 100644
---- a/security/apparmor/lsm.c
-+++ b/security/apparmor/lsm.c
-@@ -593,7 +593,8 @@ static int apparmor_setprocattr(struct task_struct *task, char *name,
- 			sa.aad.op = OP_SETPROCATTR;
- 			sa.aad.info = name;
- 			sa.aad.error = -EINVAL;
--			return aa_audit(AUDIT_APPARMOR_DENIED, NULL, GFP_KERNEL,
-+			return aa_audit(AUDIT_APPARMOR_DENIED,
-+					__aa_current_profile(), GFP_KERNEL,
- 					&sa, NULL);
- 		}
- 	} else if (strcmp(name, "exec") == 0) {
--- 
-1.7.4.1
+A more accurate description is 
 
+"will make all x86-64 Linux programs written to the original pre
+vDSO syscall ABI significantly slower"
 
--- 
-Kees Cook
-Ubuntu Security Team
+And the assumption that all world is using glibc is still as bad
+as it was on the first po.st
+
+And it's still a bad idea. Especially since there's a much better
+alternative anyways for the "security problem" which has none of 
+these drawbacks.
+
+-Andi
