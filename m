@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757969Ab1EaSua (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 14:50:30 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:30051 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab1EaSu3 (ORCPT
+	id S1758147Ab1EaSvp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 14:51:45 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:56392 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756654Ab1EaSvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 14:50:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=v9bYfS6OcwTGJO0EkphgAB97t4ns+tpCiCBW//B740e9nxrIVhDe8rFBV8wkcRgjFE
-         qhqx/rNT4cRWAqFIqxrg==
+	Tue, 31 May 2011 14:51:44 -0400
+Date: Tue, 31 May 2011 19:51:22 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>, Tony Luck <tony.luck@gmail.com>,
+        linux-kernel@vger.kernel.org, kees.cook@canonical.com,
+        davej@redhat.com, torvalds@linux-foundation.org, adobriyan@gmail.com,
+        eranian@google.com, penberg@kernel.org, davem@davemloft.net,
+        Arjan van de Ven <arjan@infradead.org>, Valdis.Kletnieks@vt.edu,
+        Andrew Morton <akpm@linux-foundation.org>, pageexec@freemail.hu,
+        Ingo Molnar <mingo@elte.hu>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+Message-ID: <20110531185122.GA11998@srcf.ucam.org>
+References: <1306269105.21443.20.camel@dan>
+ <1306442367.2279.25.camel@dan>
+ <20110531165252.GB8971@srcf.ucam.org>
+ <4DE5360D.5070809@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <20110531124208.GF11352@atomide.com>
-References: <1304546278-28965-1-git-send-email-ccross@android.com>
-	<20110531124208.GF11352@atomide.com>
-Date: Tue, 31 May 2011 11:50:23 -0700
-X-Google-Sender-Auth: DHfZHm246YNZmnYqw7Z7TysArUI
-Message-ID: <BANLkTikfXs1oLott64+C5wy59G24Mux0TJ52et7GTEMQrfqRFQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: omap4: Pass core and wakeup mux tables to omap4_mux_init
-From: Colin Cross <ccross@android.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        l-o <linux-omap@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DE5360D.5070809@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 5:42 AM, Tony Lindgren <tony@atomide.com> wrote:
-> * Colin Cross <ccross@android.com> [110504 14:54]:
->> OMAP4 contains two separate instances of the padconf registers,
->> one in the core system config and one in the wakeup system config.
->> Pass in two tables to apply the correct values to each instance.
->
-> Hmm good catch thanks. Will queue this as a fix.
+On Tue, May 31, 2011 at 11:40:13AM -0700, H. Peter Anvin wrote:
+> On 05/31/2011 09:52 AM, Matthew Garrett wrote:
+> > The BIOS E820 map, or the kernel representation? In either case, this 
+> > isn't going to work well with EFI. There are regions that will be marked 
+> > as available in the E820 map that we *mustn't* touch until we've entered 
+> > EFI virtual mode.
+> > 
+> > (This is, clearly, insane).
+> > 
+> 
+> I believe we could (should!) mark them reserved, not available, in the
+> E820 map and free them later.
 
-This patch doesn't work without another fix to allow NULL to be passed
-to omap4_mux_init.  Do you prefer allowing NULL, or adding empty
-board_wkup_mux arrays to every board file?  I have a patch for the
-first option.
+That was my original approach, but it requires that the bootloader be 
+modified and it turns out that it's a lot harder to hand reserved 
+regions back to the OS than it is to just reserve it in-kernel. The 
+complete inflexibility of e820 is massively unhelpful here. It's just 
+not possible to represent all of the EFI memory map data in it.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
