@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692Ab1EaVRE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 17:17:04 -0400
-Received: from outmail003.snc4.facebook.com ([66.220.144.135]:55601 "EHLO
-	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932497Ab1EaVRC (ORCPT
+	id S932709Ab1EaVS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 17:18:27 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:36604 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932497Ab1EaVS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 17:17:02 -0400
-Message-ID: <4DE55AE9.90505@fb.com>
-Date: Tue, 31 May 2011 14:17:29 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Tue, 31 May 2011 17:18:26 -0400
 MIME-Version: 1.0
-To: Mike Frysinger <vapier.adi@gmail.com>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        David Miller <davem@davemloft.net>, Andrew Morton <akpm@osdl.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH 2/2] atomic: move atomic_add_unless to generic code
-References: <1306869046-20172-1-git-send-email-asharma@fb.com> <1306869046-20172-2-git-send-email-asharma@fb.com> <BANLkTi=Tg=t5LrnvR2Sn08K0Ktm8ZKNCCA@mail.gmail.com>
-In-Reply-To: <BANLkTi=Tg=t5LrnvR2Sn08K0Ktm8ZKNCCA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4DE51EB7.7010606@stericsson.com>
+References: <1306830661-9546-1-git-send-email-mattias.wallin@stericsson.com>
+	<alpine.LFD.2.02.1105311236250.3078@ionos>
+	<4DE51EB7.7010606@stericsson.com>
+Date: Tue, 31 May 2011 23:18:25 +0200
+Message-ID: <BANLkTinPKbUu40066+wr3cdFRc2di-Uv6g@mail.gmail.com>
+Subject: Re: [PATCH 2/3] clocksource: add DB8500 PRCMU Timer support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mattias Wallin <mattias.wallin@stericsson.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/31/11 1:21 PM, Mike Frysinger wrote:
-> On Tue, May 31, 2011 at 15:10, Arun Sharma wrote:
->> This is in preparation for more generic atomic
->> primitives based on __atomic_add_unless.
+On Tue, May 31, 2011 at 7:00 PM, Mattias Wallin
+<mattias.wallin@stericsson.com> wrote:
+> On 05/31/2011 12:38 PM, Thomas Gleixner wrote:
+
+>>> +++ b/include/linux/clksrc-db8500-prcmu.h
+
+>> Huch, why needs this to be a separate head in include/linux ?
 >
-> i think you might have to have those primitives in place before this
-> patch makes sense.  the only thing this does is hoist a single
-> comparison out of arch atomic.h's and into linux/atomic.h.  this
-> savings alone looks simply like over engineering to me.
+> I will move the header file to mach-ux500/include/mach/. Ok?
+>
+> (I have long time ago been thought to avoid include mach headers from the
+> drivers. But if I understand it correct it is not true any more and in this
+> case it certainly makes no sense since I break that rule myself.)
 
-Some of the context is buried in the lkml-reference. The main motivation 
-for the patch is commit 686a7e3.
+Keeping it under include/linux is probably wise since we want drivers
+OUT of the ARM tree, but I don't know if there is much consensus on that?
 
-The idea is to move atomic_add_unless_return() into linux/atomic.h
+I was more understanding the question as why it was needed at all.
 
-  -Arun
+Does it work to register the clocksource with say a core_initcall()
+and avoid the header altogether?
 
+Else a header is needed since we need to call out from the platform timer
+init function to this clocksource to register it.
+
+Thanks,
+Linus Walleij
