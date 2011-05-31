@@ -1,46 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab1EaOaa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 10:30:30 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:34706 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754134Ab1EaOaY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 10:30:24 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: OlcIi4EVM1mtblSWc5M0e4Ho8nGS2XFKlPA54LZh8F..G0P
- ccMHEg82d48C.Pu_n3ttzH.Tg1DPqFsSZyECQPoxNkHmuNmrRGPGoRuawO6S
- oFEz9J3mKjjsg.htQmlL7HVyjHzJxnBUPe7CMA6unz2BfoFjbuGNVrq9TlkT
- kijTLyEWgfnR5Qu.NLSsw9J8ln0vxCD_nGpsOVjRnVz9_W_4BtRk6nnI3LNh
- Dtg3WjddkWdMsKH50y2vH7oD_fGPOE0QzgLAYy3bf7qLB5luzix4b1Uxxtrd
- 0Ff2_VI.Gy9R7Omwfdgio2QEk4yz17KSmYGuEaSM_XXyvK6ycAZB2_Dnj6_h
- H_eiMXVt_kSvTZ0SP1bR6vvvs
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 31 May 2011 09:30:21 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Richard Weinberger <richard@nod.at>
-cc: linux-kernel@vger.kernel.org, penberg@kernel.org
-Subject: Re: slub: UML and CONFIG_CMPXCHG_LOCAL
-In-Reply-To: <201105292225.46544.richard@nod.at>
-Message-ID: <alpine.DEB.2.00.1105310929230.18004@router.home>
-References: <201105292225.46544.richard@nod.at>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756685Ab1EaOyw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 10:54:52 -0400
+Received: from fnarfbargle.com ([93.93.131.224]:33598 "EHLO fnarfbargle.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753443Ab1EaOyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 10:54:50 -0400
+Message-ID: <4DE4FBB0.9080708@fnarfbargle.com>
+Date: Tue, 31 May 2011 22:31:12 +0800
+From: Brad Campbell <lists2009@fnarfbargle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: 2.6.39 kernel panic w/screenshots & kernel cfg link provided
+References: <alpine.DEB.2.02.1105280755050.4345@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.02.1105280755050.4345@p34.internal.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 29 May 2011, Richard Weinberger wrote:
+On 28/05/11 20:01, Justin Piszcz wrote:
+> Hello,
+>
+> Since I updated to 2.6.39, my system has been crashing on a random
+> basis, can someone identify what is going on here?
+>
+> I've checked the hardware it is OK and this only started to occur after
+> I moved to 2.6.39 from what I can tell..
+>
+> Kernel crash/panic, hang:
+> http://home.comcast.net/~jpiszcz/20110528/2639-ss1.jpg
+> http://home.comcast.net/~jpiszcz/20110528/2639-ss2.jpg
+>
+> Kernel .config:
+> http://home.comcast.net/~jpiszcz/20110528/config-2.6.39.txt
 
-> With commit 1759415e you've removed all #ifdef CONFIG_CMPXCHG_LOCAL's from slub.
-> This change breaks slub (again) on UML.
-> UML does not implement this_cpu_cmpxchg16b_emu().
+Just a me too I'm afraid.
+On a 2.6.39 kernel I get these from about 3 of 4 boots.
+If I append "panic=30" to the command line and leave it go, eventually I 
+get into a working kernel.
 
-It does not have to implement it. The this_cpu_ops can fall back to
-generic implementations.
+I've seen them on a 2.6.38.7 kernel also, but far harder to hit and I've 
+not seen them at all on a 2.6.38.2 kernel.
 
-> Is there anything I can do to have slub on UML?
+Once the kernel is running I don't seem to have an issue.
 
-Yes, rely on the generic implementation of this_cpu_cmpxchg.
+brad@srv:~$ lspci
+00:00.0 Host bridge: Advanced Micro Devices [AMD] RS880 Host Bridge
+00:01.0 PCI bridge: ASRock Incorporation Device 9602
+00:02.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge 
+(ext gfx port 0)
+00:03.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge 
+(ext gfx port 1)
+00:04.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge 
+(PCIE port 0)
+00:09.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge 
+(PCIE port 4)
+00:0a.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge 
+(PCIE port 5)
+00:11.0 SATA controller: ATI Technologies Inc SB700/SB800 SATA 
+Controller [AHCI mode] (rev 40)
+00:12.0 USB Controller: ATI Technologies Inc SB700/SB800 USB OHCI0 
+Controller
+00:12.2 USB Controller: ATI Technologies Inc SB700/SB800 USB EHCI Controller
+00:13.0 USB Controller: ATI Technologies Inc SB700/SB800 USB OHCI0 
+Controller
+00:13.2 USB Controller: ATI Technologies Inc SB700/SB800 USB EHCI Controller
+00:14.0 SMBus: ATI Technologies Inc SBx00 SMBus Controller (rev 41)
+00:14.2 Audio device: ATI Technologies Inc SBx00 Azalia (Intel HDA) (rev 40)
+00:14.3 ISA bridge: ATI Technologies Inc SB700/SB800 LPC host controller 
+(rev 40)
+00:14.4 PCI bridge: ATI Technologies Inc SBx00 PCI to PCI Bridge (rev 40)
+00:14.5 USB Controller: ATI Technologies Inc SB700/SB800 USB OHCI2 
+Controller
+00:16.0 USB Controller: ATI Technologies Inc SB700/SB800 USB OHCI0 
+Controller
+00:16.2 USB Controller: ATI Technologies Inc SB700/SB800 USB EHCI Controller
+00:18.0 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
+HyperTransport Configuration
+00:18.1 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
+Address Map
+00:18.2 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
+DRAM Controller
+00:18.3 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
+Miscellaneous Control
+00:18.4 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
+Link Control
+01:05.0 VGA compatible controller: ATI Technologies Inc RS880 [Radeon HD 
+4250]
+02:00.0 USB Controller: NEC Corporation uPD720200 USB 3.0 Host 
+Controller (rev 03)
+03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. 
+RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 06)
+04:00.0 RAID bus controller: LSI Logic / Symbios Logic MegaRAID SAS 9240 
+(rev 02)
+05:00.0 RAID bus controller: LSI Logic / Symbios Logic MegaRAID SAS 9240 
+(rev 02)
+07:00.0 SCSI storage controller: Marvell Technology Group Ltd. 88SX7042 
+PCI-e 4-port SATA-II (rev 02)
