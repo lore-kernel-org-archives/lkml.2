@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab1EaTEh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 15:04:37 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52387 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978Ab1EaTEf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 15:04:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=CmfOQRrG+CM/Jn180zV4HPS/5BTkjAeof9OXmB0XOlw+s0qGdO/sECQKEbf/pZ+JGP
-         hfcttSlH8LTxqE5ENq0bLHZW8VN65h0EP1RD8bfPzHvaJt0t4IiUUQis1DfWsjRu1jR2
-         YMr29edvt7U3auas6BY4P71QQlg/isgiHUufw=
-From: Andre Bartke <andre.bartke@googlemail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Andre Bartke <andre.bartke@gmail.com>
-Subject: [PATCH] staging: intel_sst: Fix memory leak
-Date: Tue, 31 May 2011 21:03:56 +0200
-Message-Id: <1306868636-23367-1-git-send-email-andre.bartke@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
+	id S1753882Ab1EaTFD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 15:05:03 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:49245 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750751Ab1EaTFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 15:05:00 -0400
+Date: Tue, 31 May 2011 21:04:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Joe Perches <joe@perches.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>
+Subject: Re: [GIT PULL] x86 fixes
+Message-ID: <20110531190436.GA22173@elte.hu>
+References: <20110531163022.GA15435@elte.hu>
+ <1306859709.20175.27.camel@Joe-Laptop>
+ <20110531181650.GA1854@gere.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110531181650.GA1854@gere.osrc.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of an error stream_bufs is not freed here.
 
-Signed-off-by: Andre Bartke <andre.bartke@gmail.com>
----
- .../staging/intel_sst/intel_sst_app_interface.c    |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+* Borislav Petkov <bp@amd64.org> wrote:
 
-diff --git a/drivers/staging/intel_sst/intel_sst_app_interface.c b/drivers/staging/intel_sst/intel_sst_app_interface.c
-index b8c7ddb..93b41a2 100644
---- a/drivers/staging/intel_sst/intel_sst_app_interface.c
-+++ b/drivers/staging/intel_sst/intel_sst_app_interface.c
-@@ -430,8 +430,10 @@ static int snd_sst_fill_kernel_list(struct stream_info *stream,
- 				return -ENOMEM;
- 			if (copy_from_user((void *) &rar_handle,
- 					iovec[index].iov_base,
--					sizeof(__u32)))
-+					sizeof(__u32))) {
-+				kfree(stream_bufs);
- 				return -EFAULT;
-+			}
- 			stream_bufs->addr = (char *)rar_handle;
- 			stream_bufs->in_use = false;
- 			stream_bufs->size = iovec[0].iov_len;
--- 
-1.7.5.2
+> On Tue, May 31, 2011 at 09:35:09AM -0700, Joe Perches wrote:
+> > On Tue, 2011-05-31 at 18:30 +0200, Ingo Molnar wrote:
+> > > diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+> > []
+> > > @@ -642,7 +642,7 @@ static int __init idle_setup(char *str)
+> > >  		boot_option_idle_override = IDLE_POLL;
+> > >  	} else if (!strcmp(str, "mwait")) {
+> > >  		boot_option_idle_override = IDLE_FORCE_MWAIT;
+> > > -		WARN_ONCE(1, "\idle=mwait\" will be removed in 2012\"\n");
+> > > +		WARN_ONCE(1, "\"idle=mwait\" will be removed in 2012\"\n");
+> > 
+> > Extra quote at end.  More likely you want:
+> > 
+> > 		WARN_ONCE(1, "\"idle=mwait\" will be removed in 2012\n");
+> 
+> Crap, there's no fixing this string :)
+> 
+> Reportedly, there's another fix from Len:
+> 
+> lkml.kernel.org/r/20110531101934.2737dc90.sfr@canb.auug.org.au
+> 
+> which is more complete. Ingo, you could drop this one.
 
+Well, the primary problem, which needed x86/urgent treatment, was the 
+annoying build warning affecting all users.
+
+The message itself is exceedingly rare, so we can fix it via lower 
+prio pathways.
+
+Len, a small detail: mind resolving the conflict once it occurs by 
+dropping the \" but keeping the \n? Your commit:
+
+  8a27ef90237f: x86 idle: fix build warning for WARN_ONCE("idle=mwait")
+
+removes the \n from the end of a printk-alike string - we generally 
+keep the \n even though WARN_*() will accept \n-less strings.
+
+Thanks,
+
+	Ingo
