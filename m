@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab1EaQL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 12:11:29 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:50861 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757003Ab1EaQL2 (ORCPT
+	id S1757274Ab1EaQNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 12:13:01 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55310 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752977Ab1EaQM7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 12:11:28 -0400
-Date: Tue, 31 May 2011 12:11:15 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Koki Sanagi <sanagi.koki@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, davem@davemloft.net, mingo@elte.hu,
-        fweisbec@gmail.com, mathieu.desnoyers@efficios.com, tglx@linutronix.de,
-        kosaki.motohiro@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kaneshige.kenji@jp.fujitsu.com
-Subject: Re: [PATCH] ftrace: tracepoint of net_dev_xmit sees freed skb and
- causes panic
-Message-ID: <20110531161115.GA3267@hmsreliant.think-freely.org>
-References: <4DE49D52.709@jp.fujitsu.com>
- <1306854791.11899.30.camel@gandalf.stny.rr.com>
+	Tue, 31 May 2011 12:12:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=k9aplUrt9h3Y1g74Z9iFAykwJwd3TAkPecW+dXPSzC54KD8t90/nN2+SJZqa62F9Jw
+         FwkjSSPrAH7iFIi+XGuI/JZFSd4ukGQPOhu6suvqg43s17kB1SKtwn126xuaoq8c59KO
+         Da87H63C3oKSKPVLuLENs1DVi0zCLqIbZWbt4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306854791.11899.30.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -1.2 (-)
+In-Reply-To: <1306856937.27477.3.camel@i7.infradead.org>
+References: <1306707270.2029.377.camel@i7.infradead.org>
+	<20110530072300.GA9802@elte.hu>
+	<1306745835.2029.389.camel@i7.infradead.org>
+	<20110530104231.GF17821@elte.hu>
+	<20110530104656.GA19532@elte.hu>
+	<E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
+	<20110530105809.GA20133@elte.hu>
+	<1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
+	<alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
+	<20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
+	<alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
+	<1306795186.2029.459.camel@i7.infradead.org>
+	<BANLkTik=uHr1eX44XV1pAHUfVQ-MorzOnw@mail.gmail.com>
+	<1306856937.27477.3.camel@i7.infradead.org>
+Date: Tue, 31 May 2011 12:12:58 -0400
+Message-ID: <BANLkTi=VoL8ze0AcdkG_QmEH5049X2K6Zw@mail.gmail.com>
+Subject: Re: [PATCH] Enable 'make CONFIG_FOO=y oldconfig'
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 11:13:11AM -0400, Steven Rostedt wrote:
-> On Tue, 2011-05-31 at 16:48 +0900, Koki Sanagi wrote:
-> > Because there is a possibility that skb is kfree_skb()ed and zero cleared
-> > after ndo_start_xmit, we should not see the contents of skb like skb->len and
-> > skb->dev->name after ndo_start_xmit. But trace_net_dev_xmit does that
-> > and causes panic by NULL pointer dereference.
-> > This patch fixes trace_net_dev_xmit not to see the contents of skb directly.
-> 
-> 
-> >  
-> >  	if (likely(!skb->next)) {
-> >  		u32 features;
-> > @@ -2139,8 +2140,9 @@ int dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev,
-> >  			}
-> >  		}
-> >  
-> > +		skb_len = skb->len;
-> >  		rc = ops->ndo_start_xmit(skb, dev);
-> > -		trace_net_dev_xmit(skb, rc);
-> > +		trace_net_dev_xmit(skb, rc, dev, skb_len);
-> >  		if (rc == NETDEV_TX_OK)
-> >  			txq_trans_update(txq);
-> >  		return rc;
-> > @@ -2160,8 +2162,9 @@ gso:
-> >  		if (dev->priv_flags & IFF_XMIT_DST_RELEASE)
-> >  			skb_dst_drop(nskb);
-> >  
-> > +		skb_len = nskb->len;
-> >  		rc = ops->ndo_start_xmit(nskb, dev);
-> > -		trace_net_dev_xmit(nskb, rc);
-> > +		trace_net_dev_xmit(nskb, rc, dev, skb_len);
-> 
-> What if you just put the tracepoint before the call to
-> ops->ndo_start_xmit?
-> 
-Then you won't know the return code of ndo_start_xmit, which this tracepoint
-records.
-Neil
+Hi,
 
-> -- Steve
-> 
-> >  		if (unlikely(rc != NETDEV_TX_OK)) {
-> >  			if (rc & ~NETDEV_TX_MASK)
-> >  				goto out_kfree_gso_skb;
-> 
-> 
-> 
+On Tue, May 31, 2011 at 11:48 AM, David Woodhouse <dwmw2@infradead.org> wrote:
+> On Mon, 2011-05-30 at 20:24 -0400, Arnaud Lacombe wrote:
+>> It would seem that the underlying symbol is not visible, triggering
+>> the failure of sym_set_tristate_value().
+>
+> Yes, this only lets you set *visible* symbols. If the symbol you're
+> interested in is not visible because some of its dependencies are not
+> set, it doesn't go and automatically enable those.
+>
+As for this choice, it *is* visible. You are missing a call to
+`sym_calc_value()' (actually sym_calc_visibility() but it is not
+exported) before the conditional to correct the visibility.
+
+Beside that, if the environment is to influence the configuration
+unconditionally, it would rather be better to do that when the Kconfig
+are parsed.
+
+ - Arnaud
+
+> --
+> David Woodhouse                            Open Source Technology Centre
+> David.Woodhouse@intel.com                              Intel Corporation
+>
+>
