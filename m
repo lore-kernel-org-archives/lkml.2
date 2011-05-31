@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220Ab1EaUHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 16:07:49 -0400
-Received: from webmail-out2.one.com ([91.198.169.17]:14141 "EHLO
-	webmail-out2.b-one.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484Ab1EaUHr convert rfc822-to-8bit (ORCPT
+	id S1757705Ab1EaUDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 16:03:12 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:40269 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab1EaUDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 16:07:47 -0400
-X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 May 2011 16:07:47 EDT
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
+	Tue, 31 May 2011 16:03:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=opRTllvN/lWQYWeYWQ/ds+y+Y7Pmyes6r3MRhlm9eqWbRMNGmunPh39ySUDzoc4NQr
+         7UbPLYXaRyQupLtcfLyQ==
+Date: Tue, 31 May 2011 13:03:03 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Eric Miao <eric.y.miao@gmail.com>, Samuel Ortiz <samuel@sortiz.org>
+Subject: Re: IrDA driver fails on PXA255
+In-Reply-To: <20110531072650.GC21382@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.00.1105311253510.5646@chino.kir.corp.google.com>
+References: <20110528205701.GA1788@doriath.ww600.siemens.net> <alpine.DEB.2.00.1105281628480.9934@chino.kir.corp.google.com> <BANLkTim9YdhjY75CzMsSOCVKZWi-WKZ5wA@mail.gmail.com> <alpine.DEB.2.00.1105291410450.9658@chino.kir.corp.google.com>
+ <20110529215656.GA5576@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105302202510.18793@chino.kir.corp.google.com> <20110531072650.GC21382@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-From: "Eric Andersson" <eric.andersson@unixphere.com>
-To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>, dmitry.torokhov@gmail.com
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
-        "Albert Zhang" <xu.zhang@bosch-sensortec.com>
-Subject: Re: [PATCH] input: add driver for Bosch Sensortec's BMA150 
- accelerometer
-Date: Tue, 31 May 2011 22:00:30 +0200
-X-Mailer: One.com webmail
-X-Originating-Ip: 81.236.173.254
-In-Reply-To: <20110531172320.0fcadfef@lxorguk.ukuu.org.uk>
-References: <1306857314-655-1-git-send-email-eric.andersson@unixphere.com>
- <20110531172320.0fcadfef@lxorguk.ukuu.org.uk>
-Message-Id: <20110531200031.01097304A02D@bmail00.one.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 31, 2011 18:23 "Alan Cox" <alan@lxorguk.ukuu.org.uk> wrote:
-> See the driver I posted some time ago. It's in rather better state than
-> this one and as it's been through most of the review process and also
-> handles the BMA023 and SMB380 so I think would be a better place to start
-> from. I'll report that driver in a moment.
-I wasn't aware of that patch! Thanks for pointing it out! Regarding BMA023 and
-SMB380, these are also supported by this driver, which should probably have been
-stated in the Kconfig file.
+On Tue, 31 May 2011, Russell King - ARM Linux wrote:
 
-> Some of the first immediately obvious questions though - in particular
-> the lack of clear locking ...
-Thanks for reviewing!
+> Enabling CONFIG_ZONE_DMA is not a fix, it's making the problem vanish off
+> the radar.  It will mean that the drivers using GFP_DMA will never get
+> fixed up.
+> 
 
-Dimitry, I guess it's up to you to decide which version of the driver you prefer
-before we go through another round in the review process.
+Disabling CONFIG_ZONE_DMA is an optimization, do you agree?  I asked 
+on Sunday what the downsides of enabling the option on arm are, and you 
+didn't mention any.  So what's the problem with my patch to enable it for 
+this driver since it is using GFP_DMA?  You claim that it'll never get 
+removed again to return to the _optimized_ case, yet my patch is 
+guaranteed to work for that driver in all configurations at the moment.  I 
+don't think we should be fighting for the optimized case where the 
+alternative has no downside.
 
-Best regards,
- Eric
+ [ Patching the page allocator to also emit a line to the dmesg to direct 
+   users directly to enabling CONFIG_ZONE_DMA wouldn't be a problem, 
+   either. ]
 
-http://www.unixphere.com
+> Change it to be a soft WARN_ON for one release.  Anything else will just
+> result in the problem being IGNORED.
+> 
 
+The problem certainly isn't being ignored in this thread, or in the patch 
+that I sent to fix Dmitry's issue by default, so that doesn't seem to be 
+the case.  What would be ignored, though, is if it just emitted a 
+WARN_ON() without failing the allocation so everything works perfectly.
