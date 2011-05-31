@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757473Ab1EaE4u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 00:56:50 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:54563 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978Ab1EaE4t convert rfc822-to-8bit (ORCPT
+	id S1757599Ab1EaFBX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 01:01:23 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:33368 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab1EaFBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 00:56:49 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=H95gfW32JB/XYJSBuOTvJ8IIviFcsPdfxXHbM7LS6jM= c=1 sm=1
- a=mLLSQZBPk9gA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=FfQabjCKTg6ZKtnMlyAA:9
- a=guX_zSlqSZt3L7ZVegUA:7 a=CjuIK1q_8ugA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH 1/2] ext4: use little-endian bitops directly
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <BANLkTin64T9-QEdE6DC6VoB=7d6m0qFcuQ@mail.gmail.com>
-Date: Mon, 30 May 2011 22:56:48 -0600
-Cc: "Ted Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4B858003-053B-4895-BAD7-71861AAFB00E@dilger.ca>
-References: <1306763382-13817-1-git-send-email-akinobu.mita@gmail.com> <09010AAD-7443-4966-BF20-8580FBE8F389@dilger.ca> <20110530154357.GF2890@dhcp-172-31-194-241.cam.corp.google.com> <BANLkTimyCY9_tAOAtoxyNOw4=e+Y0pO_sw@mail.gmail.com> <7B5337F4-B0D7-48E1-8D1B-3669B37AA1D5@dilger.ca> <BANLkTin64T9-QEdE6DC6VoB=7d6m0qFcuQ@mail.gmail.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-X-Mailer: Apple Mail (2.1082)
+	Tue, 31 May 2011 01:01:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=r5zOiU+W1cG0jKC/HzOMz0EDmkF+3SHJRkL7DsRvh2x2xRlko4QCTX1Srs+9EezHCW
+         D8VwjQdBatba5WrSQXMQ==
+Date: Mon, 30 May 2011 22:01:14 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Eric Miao <eric.y.miao@gmail.com>, Samuel Ortiz <samuel@sortiz.org>
+Subject: Re: IrDA driver fails on PXA255
+In-Reply-To: <20110529215805.GB5576@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.00.1105302156190.18793@chino.kir.corp.google.com>
+References: <20110528205701.GA1788@doriath.ww600.siemens.net> <alpine.DEB.2.00.1105281628480.9934@chino.kir.corp.google.com> <20110528234614.GV24876@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105281913490.15709@chino.kir.corp.google.com>
+ <20110529072516.GW24876@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105291417090.9658@chino.kir.corp.google.com> <20110529215805.GB5576@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-30, at 9:45 PM, Akinobu Mita wrote:
-> 2011/5/31 Andreas Dilger <adilger@dilger.ca>:
->> I would also encourage you to finish off this patch series by pushing up the generic ext2_{set,clear}_bit_atomic() to the few places that are currently using ext2_{set,clear}_bit_atomic() directly (looks like only fs/nilfs2/alloc.h and include/linux/ext3.h) and then removing them from the arch headers.
+On Sun, 29 May 2011, Russell King - ARM Linux wrote:
+
+> We might as well enable CONFIG_ZONE_DMA for everything if that's what
+> you're proposing, because it's not just this driver which will be affected.
+
+I'd certainly suggest at least defaulting it to on for arm if you're going 
+to be using GFP_DMA in drivers.
+
+> And as soon as we do that, we completely lose the warnings that stuff
+> needs fixing.
 > 
-> The difficulty of doing this is that there are two different
-> implementations of ext2_{set,clear}_bit_atomic (spin lock version and
-> test_and_{set,clear}_bit_le version).  If we can switch to one of which
-> on all architectures, the change is easy.  But I don't have less messy idea
-> to keep current behavior on all architectures.
 
-It looks like all of the versions that are #defined in arch/*/asm/bitops.h are really just re-implementations of test_and_{set,clear}_bit_le(), since they ignore the "lock" parameter entirely.
+That's because nothing needs fixing at that point, the page allocator is 
+guaranteed to return lowmem if GFP_DMA is passed and CONFIG_ZONE_DMA is 
+enabled, or NULL.  Whether GFP_DMA is correct in the memory allocator is a 
+different subject, but those types of audits can easily be done on the 
+source code.  In my opinion, we should be doing "select ZONE_DMA" on any 
+Kconfig option that builds a driver that unconditionally uses GFP_DMA.
 
-It would be sufficient to replace all of those implementations with:
-
-#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-#include <asm-generic/bitops/ext2-atomic.h>
-
-and then change the ext2-atomic.h to check for this:
-
-#ifdef ARCH_NO_EXT2_ATOMIC_SPINLOCK
-#define EXT2_SPIN_LOCK(lock)   do {} while(0)
-#define EXT2_SPIN_UNLOCK(lock) do {} while(0)
-#else
-#define EXT2_SPIN_LOCK(lock)   spin_lock(lock)
-#define EXT2_SPIN_UNLOCK(lock) spin_unlock(lock)
-#endif
-
-#define ext2_set_bit_atomic(lock, nr, addr)             \
-       ({                                              \
-               int ret;                                \
-               EXT2_SPIN_LOCK(lock);                   \
-               ret = __test_and_set_bit_le(nr, addr);  \
-               EXT2_SPIN_UNLOCK(lock);                 \
-               ret;                                    \
-       })
-
-#define ext2_clear_bit_atomic(lock, nr, addr)           \
-       ({                                              \
-               int ret;                                \
-               EXT2_SPIN_LOCK(lock);                   \
-               ret = __test_and_clear_bit_le(nr, addr);\
-               EXT2_SPIN_UNLOCK(lock);                 \
-               ret;                                    \
-       })
-
-
-Cheers, Andreas
-
-
-
-
-
+The current behavior exists so that the admin reports the error here so it 
+can get fixed up (either by finding that GFP_DMA is unnecessary, selective 
+depending on the particular hardware, or modifying the Kconfig) and can 
+workaround the problem by forcing CONFIG_ZONE_DMA.
