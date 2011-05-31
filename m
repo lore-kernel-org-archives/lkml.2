@@ -1,123 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757791Ab1EaROs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 13:14:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15213 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757566Ab1EaROr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 13:14:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,298,1304319600"; 
-   d="scan'208";a="7339047"
-Date: Tue, 31 May 2011 10:14:46 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: "Xu, Andiry" <Andiry.Xu@amd.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] usb: Do not attempt to reset the device while it
- is disabled
-Message-ID: <20110531171446.GB6776@xanatos>
-References: <1306749406-21124-1-git-send-email-m.b.lankhorst@gmail.com>
- <2DEEA3AB13739D45A22ADDB5086AEA0B016C1261@sshaexmb1.amd.com>
- <4DE4F166.8020207@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757773Ab1EaRXG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 13:23:06 -0400
+Received: from bohort.kerlabs.com ([90.80.97.101]:41681 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606Ab1EaRXE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 13:23:04 -0400
+X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 May 2011 13:23:04 EDT
+Date: Tue, 31 May 2011 19:17:43 +0200
+From: Louis Rilling <Louis.Rilling@kerlabs.com>
+To: Andy Lutomirski <luto@MIT.EDU>
+Cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v4 03/10] x86-64: Give vvars their own page
+Message-ID: <20110531171743.GC22918@hawkmoon.kerlabs.com>
+Mail-Followup-To: Andy Lutomirski <luto@MIT.EDU>,
+	Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+	Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+	Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Arjan van de Ven <arjan@infradead.org>,
+	Jan Beulich <JBeulich@novell.com>,
+	richard -rw- weinberger <richard.weinberger@gmail.com>,
+	Mikael Pettersson <mikpe@it.uu.se>,
+	Andi Kleen <andi@firstfloor.org>
+References: <cover.1306851090.git.luto@mit.edu> <efce8d02493c030177895a8e65134aad3e774815.1306851090.git.luto@mit.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-18040-1306862174-0001-2"
 Content-Disposition: inline
-In-Reply-To: <4DE4F166.8020207@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <efce8d02493c030177895a8e65134aad3e774815.1306851090.git.luto@mit.edu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 03:47:18PM +0200, Maarten Lankhorst wrote:
-> Hey Andiry,
-> 
-> Op 31-05-11 02:34, Xu, Andiry schreef:
-> >>-----Original Message-----
-> >>From:linux-usb-owner@vger.kernel.org  [mailto:linux-usb-
-> >>owner@vger.kernel.org] On Behalf Of Maarten Lankhorst
-> >>Sent: Monday, May 30, 2011 5:57 PM
-> >>To:linux-usb@vger.kernel.org
-> >>Cc: Sarah Sharp;linux-kernel@vger.kernel.org; Maarten Lankhorst
-> >>Subject: [PATCH] [RFC] usb: Broaden range of vendor codes for xhci
-> >>
-> >>My asrock P67 chipset sends code 192 on device reset. Allowing>= 192
-> >>to be treated as success fixes it, and allows me to use my USB3 port.
-> >>
-> >TRB completion code 192-223 is defined as Vendor defined error. Your
-> >host
-> >controller returns a error - don't know what causes the error since it's
-> >vendor defined.
-> Ahh, making it the same as COMP_EBADSLT/COMP_CTX_STATE I get this:
-> [72677.470421] xhci_hcd 0000:04:00.0: Can't reset device (slot ID 1)
-> in enabled/disabled state
+This is a MIME-formatted message.  If you see this text it means that your
+E-mail software does not support MIME-formatted messages.
 
-Yes, because that's what those error codes mean.  But your host
-controller did not return that error code, it returned a vendor-specific
-error code.
+--=_bohort-18040-1306862174-0001-2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Should reset_device even be called when in that state? The comments
-> above claim:
-> /* The Reset Device command can't fail, according to the 0.95/0.96 spec,
->  * unless we tried to reset a slot ID that wasn't enabled,
->  * or the device wasn't in the addressed or configured state.
->  */
-
-The code shouldn't happen, but we cover the error condition in case
-there is a future bug in the USB core, or a buggy host controller.  But
-that's really beside the point.  Your host returned a different error
-code, and there's no telling what that means without vendor specific
-documentation.  Can you send me the lspci for the host?
-
-> Ignoring the error seems to make it work fine. It seems to me that
-> device reset shouldn't even be attempted since it hasn't been
-> brought up yet. The reset that fails is the one that happens on the
-> original hub_port_init when it calls hub_port_reset which calls
-> xhci_discover_or_reset_device. The failure I'm getting seems to be a
-> vendor specific variant of "you're trying to reset the device while
-> it wasn't enabled".
-
-Yes, the USB core resets a device during the standard enumeration
-process.  The host controller is supposed to be able to handle that
-case.  Why it returns a vendor specific error is something that company
-needs to answer.
-
-Can you send me the full dmesg with CONFIG_USB_XHCI_HCD_DEBUGGING turned
-on?  I'd like to see the full debug log for this and see if the host or
-driver is falling over in an earlier spot.
-
-> Signed-off-by: Maarten Lankhorst<m.b.lankhorst@gmail.com>
-> 
+On 31/05/11 10:14 -0400, Andy Lutomirski wrote:
+> Move vvars out of the vsyscall page into their own page and mark it
+> NX.
+>=20
+> Without this patch, an attacker who can force a daemon to call some
+> fixed address could wait until the time contains, say, 0xCD80, and
+> then execute the current time.
+>=20
+> Signed-off-by: Andy Lutomirski <luto@mit.edu>
 > ---
-> index 81b976e..9a869b2 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -2307,6 +2307,10 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
->  			return -EINVAL;
+>  arch/x86/include/asm/fixmap.h        |    1 +
+>  arch/x86/include/asm/pgtable_types.h |    2 ++
+>  arch/x86/include/asm/vvar.h          |   22 ++++++++++------------
+>  arch/x86/kernel/vmlinux.lds.S        |   27 ++++++++++++++++-----------
+>  arch/x86/kernel/vsyscall_64.c        |    5 +++++
+>  5 files changed, 34 insertions(+), 23 deletions(-)
+>=20
+
+[...]
+
+> diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+> index 89aed99..3d89a00 100644
+> --- a/arch/x86/kernel/vmlinux.lds.S
+> +++ b/arch/x86/kernel/vmlinux.lds.S
+> @@ -161,12 +161,6 @@ SECTIONS
+> =20
+>  #define VVIRT_OFFSET (VSYSCALL_ADDR - __vsyscall_0)
+>  #define VVIRT(x) (ADDR(x) - VVIRT_OFFSET)
+> -#define EMIT_VVAR(x, offset) .vsyscall_var_ ## x	\
+> -	ADDR(.vsyscall_0) + offset		 	\
+> -	: AT(VLOAD(.vsyscall_var_ ## x)) {     		\
+> -		*(.vsyscall_var_ ## x)			\
+> -	}						\
+> -	x =3D VVIRT(.vsyscall_var_ ## x);
+> =20
+>  	. =3D ALIGN(4096);
+>  	__vsyscall_0 =3D .;
+> @@ -192,17 +186,28 @@ SECTIONS
+>  		*(.vsyscall_3)
 >  	}
-> 
-> +	if (GET_SLOT_STATE(xhci_get_slot_ctx(xhci, virt_dev->out_ctx)->dev_state) == 0&&
-> +	    (xhci_get_ep_ctx(xhci, virt_dev->out_ctx, 0)->ep_info&  EP_STATE_MASK) == EP_STATE_DISABLED)
-> +		return 0;
+> =20
+> -#define __VVAR_KERNEL_LDS
+> -#include <asm/vvar.h>
+> -#undef __VVAR_KERNEL_LDS
+> -
+> -	. =3D __vsyscall_0 + PAGE_SIZE;
+> +	. =3D ALIGN(__vsyscall_0 + PAGE_SIZE, PAGE_SIZE);
+> =20
+>  #undef VSYSCALL_ADDR
+>  #undef VLOAD_OFFSET
+>  #undef VLOAD
+>  #undef VVIRT_OFFSET
+>  #undef VVIRT
 > +
+> +	__vvar_page =3D .;
+> +
+> +#define EMIT_VVAR(name, offset) .vvar_ ## name		\
+> +	(__vvar_page + offset) :			\
+> +	 AT(ADDR(.vvar_ ## name) - LOAD_OFFSET) {	\
+> +		*(.vvar_ ## x)				\
+                            ^
+Maybe s/x/name/ ? -----------|
 
-Why are you looking at the endpoint state?  The control endpoint state
-has nothing to do with the outcome of the Reset Device command.  The
-host controller is only allowed to reject the command if the device slot
-is not in the addressed or configured state (according to the 0.96 spec,
-I assume this host isn't a 1.0 host).  So the control endpoint state
-should have nothing to do with whether the command succeeds.
+Thanks,
 
-I'm also confused as to why this code works.  The control endpoint is
-never disabled until the USB core deallocates a device.  Once the xHCI
-driver allocates a slot and issues an Address Device command, the
-control endpoint's output context should move from the disabled state to
-the running state.  But if this conditional actually ran, then either
-the host controller didn't update the output context for the control
-endpoint, the Address Device command failed, or something very strange
-is going on.
+Louis
 
-Full dmesg with the xHCI driver debug will help me figure this out.
-What kernel are you running?
+> +	} :data
+> +
+> +#define __VVAR_KERNEL_LDS
+> +#include <asm/vvar.h>
+> +#undef __VVAR_KERNEL_LDS
+> +
+> +       . =3D ALIGN(__vvar_page + PAGE_SIZE, PAGE_SIZE);
+> +
+>  #undef EMIT_VVAR
+> =20
+>  #endif /* CONFIG_X86_64 */
+> diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+> index 3e68218..3cf1cef 100644
+> --- a/arch/x86/kernel/vsyscall_64.c
+> +++ b/arch/x86/kernel/vsyscall_64.c
+> @@ -284,9 +284,14 @@ void __init map_vsyscall(void)
+>  {
+>  	extern char __vsyscall_0;
+>  	unsigned long physaddr_page0 =3D __pa_symbol(&__vsyscall_0);
+> +	extern char __vvar_page;
+> +	unsigned long physaddr_vvar_page =3D __pa_symbol(&__vvar_page);
+> =20
+>  	/* Note that VSYSCALL_MAPPED_PAGES must agree with the code below. */
+>  	__set_fixmap(VSYSCALL_FIRST_PAGE, physaddr_page0, PAGE_KERNEL_VSYSCALL);
+> +	__set_fixmap(VVAR_PAGE, physaddr_vvar_page, PAGE_KERNEL_VVAR);
+> +	BUILD_BUG_ON((unsigned long)__fix_to_virt(VVAR_PAGE) !=3D
+> +		     (unsigned long)VVAR_ADDRESS);
+>  }
+> =20
+>  static int __init vsyscall_init(void)
+> --=20
+> 1.7.5.1
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Sarah Sharp
+--=20
+Dr Louis Rilling			Kerlabs
+Skype: louis.rilling			Batiment Germanium
+Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
+http://www.kerlabs.com/			35700 Rennes
+
+--=_bohort-18040-1306862174-0001-2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAk3lIrcACgkQVKcRuvQ9Q1RmPwCfdSycZ7aGHhJn9e6GZwrhrvVH
+yFkAniACzqHT9jzZhQHeHtDM2i4BEq28
+=W6wE
+-----END PGP SIGNATURE-----
+
+--=_bohort-18040-1306862174-0001-2--
