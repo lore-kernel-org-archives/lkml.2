@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932794Ab1EaWZE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 18:25:04 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:56690 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498Ab1EaWZB convert rfc822-to-8bit (ORCPT
+	id S932773Ab1EaWY7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 18:24:59 -0400
+Received: from usindmx04.hds.com ([207.126.252.15]:39169 "EHLO
+	usindmx04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932498Ab1EaWY6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 18:25:01 -0400
-Date: Tue, 31 May 2011 15:23:46 -0700 (PDT)
-Message-Id: <20110531.152346.160925902.davem@davemloft.net>
-To: cmdkhh@gmail.com
-Cc: bp@alien8.de, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ide-cd: Fix signedness warning
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1306739612-29239-1-git-send-email-cmdkhh@gmail.com>
-References: <1306739612-29239-1-git-send-email-cmdkhh@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
+	Tue, 31 May 2011 18:24:58 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Americo Wang <xiyou.wangcong@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jarod Wilson <jwilson@redhat.com>
+Date: Tue, 31 May 2011 18:24:14 -0400
+Subject: RE: [Patch] kexec: remove KMSG_DUMP_KEXEC (was Re: Query about
+ kdump_msg hook into crash_kexec())
+Thread-Topic: [Patch] kexec: remove KMSG_DUMP_KEXEC (was Re: Query about
+ kdump_msg hook into crash_kexec())
+Thread-Index: Acwf2uSQJoETBjzZTKW3jybJgVyGygABBPNw
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C17324BB9@USINDEVS01.corp.hds.com>
+References: <20110203095837.93A2.A69D9226@jp.fujitsu.com>
+ <20110203020703.GB21603@redhat.com>
+ <20110203135324.93BC.A69D9226@jp.fujitsu.com>
+ <20110526131028.7052a893.akpm@linux-foundation.org>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C17324B79@USINDEVS01.corp.hds.com>
+ <20110531213704.GV16382@redhat.com>
+In-Reply-To: <20110531213704.GV16382@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 31 May 2011 15:23:47 -0700 (PDT)
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Connor Hansen <cmdkhh@gmail.com>
-Date: Mon, 30 May 2011 00:13:32 -0700
+Hi,
 
-> One of the legit warnings 'make W=3 drivers/ide/ide-cd.o´ generates is
-> 
-> drivers/ide/ide-cd.c: In function .ide_cdrom_prep_fs.:
-> drivers/ide/ide-cd.c:1314: warning: conversion to .unsigned int. from .int. may change the sign of the result
-> 
-> because queue_logical_block_size() returns unsigned short but hard_sect
-> is defined as int. Fix that no matter how low the potential for this
-> becoming a bug is.
-> 
-> Signed-off-by: Connor Hansen <cmdkhh@gmail.com>
+>What are you using kmsg_dump() for? Using mtdoops, ramoops or something
+>else?  Is it working reliably for you?
 
-An 'int' can always hold as large a value as an "unsigned short" can ever
-hold, so there is no real problem here.
+I plan to use kmsg_dump() for set_variable service of UEFI.
+I proposed a prototype patch this month and will improve it.
+(kmsg_dump is used inside pstore.)
 
-I'm not applying this.
+https://lkml.org/lkml/2011/5/10/340
+
+Seiji
+
