@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab1EaQUF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 12:20:05 -0400
-Received: from hyde.gogi.tv ([87.106.161.174]:49092 "EHLO hyde.gogi.tv"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757143Ab1EaQUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 12:20:03 -0400
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
+	id S1757994Ab1EaRyK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 13:54:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:49921 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757975Ab1EaRyH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 13:54:07 -0400
+X-Authority-Analysis: v=1.1 cv=u/eXSd3k4P+OuNmbl5aZU3ellt6eTxbOnGssQLT4hSY= c=1 sm=0 a=MXrvIagEJvMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=H8pkIGVybOjKD7cp2BsA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] ftrace: tracepoint of net_dev_xmit sees freed skb and
+ causes panic
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Koki Sanagi <sanagi.koki@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, davem@davemloft.net, mingo@elte.hu,
+        fweisbec@gmail.com, mathieu.desnoyers@efficios.com, tglx@linutronix.de,
+        kosaki.motohiro@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kaneshige.kenji@jp.fujitsu.com
+In-Reply-To: <20110531161115.GA3267@hmsreliant.think-freely.org>
+References: <4DE49D52.709@jp.fujitsu.com>
+	 <1306854791.11899.30.camel@gandalf.stny.rr.com>
+	 <20110531161115.GA3267@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 31 May 2011 12:21:30 -0400
+Message-ID: <1306858890.11899.32.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-Date: Tue, 31 May 2011 17:20:02 +0100
-From: Daniel Haid <d.haid@gogi.tv>
-To: <linux-kernel@vger.kernel.org>
-Subject: Re: Question about iommu on =?UTF-8?Q?x=38=36=5F=36=34=20and=20ra?=
- =?UTF-8?Q?deon=20driver=2E?=
-In-Reply-To: <0a8cb4bcad7fcf091a6bbe158323bba0@admin.gogi.tv>
-References: <20110523220536.GB11961@dumpdata.com>
- <756073831c36e0404199a4e8239bcb70@admin.gogi.tv>
- <m2wrhf4sw5.fsf@firstfloor.org>
- <08370791664f069624d25c757ed101c0@admin.gogi.tv>
- <20110525125752.GB3467@dumpdata.com>
- <dfd8bfd19ba1fb77d6448bff97123e13@admin.gogi.tv>
- <20110527155507.GB11273@dumpdata.com>
- <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv>
- <20110531134519.GC14641@dumpdata.com>
- <59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv>
- <20110531160221.GA31659@dumpdata.com>
- <0a8cb4bcad7fcf091a6bbe158323bba0@admin.gogi.tv>
-Message-ID: <cf5f8577f464560818dc220baee674e8@admin.gogi.tv>
-User-Agent: Roundcube Webmail/0.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Why not fix it right the first time?
- 
- I meant it only if the fix was trivial, like adding a few lines of
- sync_page calls. In that case maybe it could go into 3.0.0
- and those people with via chipsets or xen could have a working system.
+On Tue, 2011-05-31 at 12:11 -0400, Neil Horman wrote:
+>  			skb_dst_drop(nskb);
+> > >  
+> > > +		skb_len = nskb->len;
+> > >  		rc = ops->ndo_start_xmit(nskb, dev);
+> > > -		trace_net_dev_xmit(nskb, rc);
+> > > +		trace_net_dev_xmit(nskb, rc, dev, skb_len);
+> > 
+> > What if you just put the tracepoint before the call to
+> > ops->ndo_start_xmit?
+> > 
+> Then you won't know the return code of ndo_start_xmit, which this tracepoint
+> records.
 
- If there is no trivial fix then of course you are right.
+Doh! Yeah, I see that now ;)
+
+-- Steve
+
 
