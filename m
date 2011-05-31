@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab1EaO1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 10:27:10 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36241 "EHLO
+	id S1756008Ab1EaO22 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 10:28:28 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37775 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426Ab1EaO1I (ORCPT
+	with ESMTP id S1753470Ab1EaO21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 10:27:08 -0400
-Date: Tue, 31 May 2011 10:26:35 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Greg KH <greg@kroah.com>
-Cc: kevin.tian@intel.com, dkiper@net-space.pl, stable@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [stable] [PATCH] Xen bug-fixes for 2.6.39 (already in 2.6.40)
-Message-ID: <20110531142635.GI14641@dumpdata.com>
-References: <1306359456-3627-1-git-send-email-konrad.wilk@oracle.com>
- <20110526070239.GB29833@kroah.com>
- <20110526123921.GB3386@dumpdata.com>
- <20110530094046.GF11601@kroah.com>
+	Tue, 31 May 2011 10:28:27 -0400
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mike Snitzer <snitzer@redhat.com>,
+        "msb\@chromium.org" <msb@chromium.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dm-devel\@redhat.com" <dm-devel@redhat.com>
+Subject: Re: [PATCH 2/3] block: Move non-rotational flag to queue limits
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <4DDEA689.2090004@fusionio.com>
+	<1306464169-4291-1-git-send-email-martin.petersen@oracle.com>
+	<1306464169-4291-3-git-send-email-martin.petersen@oracle.com>
+	<20110527130248.GA17219@redhat.com>
+	<yq1k4d7zk56.fsf@sermon.lab.mkp.net> <4DE4E9A6.8060006@fusionio.com>
+Date: Tue, 31 May 2011 10:28:01 -0400
+In-Reply-To: <4DE4E9A6.8060006@fusionio.com> (Jens Axboe's message of "Tue, 31
+	May 2011 15:14:14 +0200")
+Message-ID: <yq1d3izx7v2.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.110013 (No Gnus v0.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110530094046.GF11601@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090207.4DE4FAAF.0159:SCFSTAT5015188,ss=1,fgs=0
+Content-Type: text/plain
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090209.4DE4FB02.0059:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > 
-> > (who is the Xen maintainer)
-> > 
-> > Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > (who is also the original patch author on some of the patches)
-> 
-> Thanks, as you didn't send the original request from your maintainer
-> address, how was I to know that you were the same Konrad Rzeszutek Wilk?  :)
+>>>>> "Jens" == Jens Axboe <jaxboe@fusionio.com> writes:
 
-Sorry, I somehow mangled the git-send-email and managed to have my name
-be split up and the domain name of machine I was on inserted. Ended up with
-'Konrad@dumpdata.com', and 'Rzeszutek@dumpdata.com',.. <sigh>
+Jens> On 2011-05-31 04:19, Martin K. Petersen wrote:
+>> - queue_flag_set_unlocked(QUEUE_FLAG_NONROT, disk->queue);
+>> + blk_queue_non_rotational(queue);
 
-Anyhow, thank you for taking the git commits.
+Jens> I don't like this part of the change. Before it was immediately
+Jens> apparently that we were setting this flag, know you have no idea
+Jens> what it does. Please make that blk_queue_set_non_rotational().
+
+I was just trying to mimic the rest of the topology calls.
+
+How about:
+
+  blk_queue_rotational(q, BLK_QUEUE_ROTATIONAL|BLK_QUEUE_NON_ROTATIONAL)
+
+Doing it that way would make the code clearer a few places too, I
+think...
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
