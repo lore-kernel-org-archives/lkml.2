@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab1EaMri (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 08:47:38 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:43098 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750830Ab1EaMrh (ORCPT
+	id S1753138Ab1EaMtJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 08:49:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39299 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab1EaMtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 08:47:37 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+L8QMm4plZfgRcFyuH42qu
-Date: Tue, 31 May 2011 05:47:33 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Syed Mohammed Khasim <x0khasim@ti.com>,
-        Grazvydas Ignotas <notasas@gmail.com>,
-        Steve Sakoman <steve@sakoman.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: OMAP2: Add missing include of linux/gpio.h
-Message-ID: <20110531124733.GG11352@atomide.com>
-References: <1306845769.27719.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306845769.27719.1.camel@phoenix>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 31 May 2011 08:49:08 -0400
+X-Authority-Analysis: v=1.1 cv=y6zMVzRGPZqd+EkIbWgKRW0ZY5+85Abqc3bXR1aXymM= c=1 sm=0 a=mh_q4EFMtyMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=KiueqiaNGVLnDfz0aTQA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Turning off the incremental diff robot
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110531123811.GA2457@osiris.boeblingen.de.ibm.com>
+References: <4DE3E9E7.8020008@zytor.com>
+	 <20110530194500.GE10792@home.goodmis.org> <4DE402BD.4060407@zytor.com>
+	 <20110531123811.GA2457@osiris.boeblingen.de.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 31 May 2011 08:49:05 -0400
+Message-ID: <1306846145.11899.13.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Axel Lin <axel.lin@gmail.com> [110531 05:39]:
-> I got some build error like below while executing "make omap2plus_defconfig".
+On Tue, 2011-05-31 at 14:38 +0200, Heiko Carstens wrote:
+
+> > No, but it generates the patches between, say, 2.6.x.y and 2.6.x.y+1 or
+> > 2.6.x-rcy and 2.6.x-rcy+1.  Anything in an "incr" directory.
 > 
->   CC      arch/arm/mach-omap2/board-2430sdp.o
-> arch/arm/mach-omap2/board-2430sdp.c: In function 'omap_2430sdp_init':
-> arch/arm/mach-omap2/board-2430sdp.c:247: error: 'GPIOF_OUT_INIT_LOW' undeclared (first use in this function)
-> arch/arm/mach-omap2/board-2430sdp.c:247: error: (Each undeclared identifier is reported only once
-> arch/arm/mach-omap2/board-2430sdp.c:247: error: for each function it appears in.)
-> make[1]: *** [arch/arm/mach-omap2/board-2430sdp.o] Error 1
-> make: *** [arch/arm/mach-omap2] Error 2
-> 
-> This patch fixes the build error.
+> Yep, I use those incremental patches over here.
 
-Can you please update this to also remove the wrong mach/gpio.h include?
+And the ketchup utility does too. But that needs to be fixed as well.
+Luckily I just handed over maintainership of ketchup to someone else :)
 
-Thanks,
+-- Steve
 
-Tony
+
