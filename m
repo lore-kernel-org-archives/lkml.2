@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194Ab1EaSNT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 14:13:19 -0400
-Received: from smtpout03.highway.telekom.at ([195.3.96.115]:31427 "EHLO
-	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751638Ab1EaSNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 14:13:18 -0400
-From: Melchior FRANZ <melchior.franz@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] drm/i915: add missing intel_enable_plane() call to i9xx_crtc_mode_set()
-Date: Tue, 31 May 2011 20:13:14 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39; KDE/4.6.3; x86_64; ; )
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, dri-devel@lists.freedesktop.org,
-        Keith Packard <keithp@keithp.com>
-X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
-X-PGP: http://members.aon.at/mfranz/melchior.franz
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201105312013.14986@rk-nord.at>
+	id S1758054Ab1EaSOh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 14:14:37 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:35758 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757841Ab1EaSOg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 14:14:36 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6362"; a="94658397"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] strict user copy checks on x86_64
+Date: Tue, 31 May 2011 11:14:29 -0700
+Message-Id: <1306865673-20560-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.5.3.367.ga9930
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Melchior FRANZ <mfranz@aon.at>
+Andrew,
 
-Fix garbled up virtual linux console on Acer TM 5735Z-452G32Mnss
-(colored stripes, unreadable text) by adding the intel_enable_plane()
-call also to i9xx_crtc_mode_set(), which didn't inherit it from
-intel_crtc_mode_set() like its twin ironlake_crtc_mode_set().
+I'm sending this to you because these weren't picked up
+last round and the final patch is cross architecture.
 
-Signed-off-by: Melchior FRANZ <mfranz@aon.at>
----
+Backstory
+---------
+It turns out that strict user copy checks (also known as
+CONFIG_DEBUG_STRICT_USER_COPY_CHECKS) isn't actually implemented
+on x86_64 and thus we aren't catching potential security holes
+at compile time.
 
-The bug was originally introduced with 49183b2818 and fixed with
-982b2035d9, but re-introduced by a recent drm/i915 branch merge.
+This series adds support for strict user copy checks on x86_64
+and silences all the benign warnings in the x86_64 allyesconfig for
+linux-next 20110531.
 
+The final patch consolidates the config option as its duplicated
+across mutliple arches.
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index f553ddf..5d20579 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4735,6 +4735,8 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
- 
- 	I915_WRITE(DSPCNTR(plane), dspcntr);
- 	POSTING_READ(DSPCNTR(plane));
-+	if (!HAS_PCH_SPLIT(dev))
-+		intel_enable_plane(dev_priv, plane, pipe);
- 
- 	ret = intel_pipe_set_base(crtc, x, y, old_fb);
- 
+Stephen Boyd (4):
+  lpfc: Silence DEBUG_STRICT_USER_COPY_CHECKS=y warning
+  kprobes: Silence DEBUG_STRICT_USER_COPY_CHECKS=y warning
+  x86: Implement strict user copy checks for x86_64
+  Consolidate CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
+
+ arch/parisc/Kconfig               |    1 +
+ arch/parisc/Kconfig.debug         |   14 --------------
+ arch/s390/Kconfig                 |    1 +
+ arch/s390/Kconfig.debug           |   14 --------------
+ arch/s390/lib/Makefile            |    1 -
+ arch/s390/lib/usercopy.c          |    8 --------
+ arch/sparc/lib/Makefile           |    1 -
+ arch/sparc/lib/usercopy.c         |    8 --------
+ arch/tile/Kconfig                 |    8 +-------
+ arch/tile/include/asm/uaccess.h   |    7 ++++++-
+ arch/tile/lib/uaccess.c           |    8 --------
+ arch/x86/Kconfig                  |    1 +
+ arch/x86/Kconfig.debug            |   14 --------------
+ arch/x86/include/asm/uaccess_64.h |   12 +++++++++---
+ arch/x86/lib/usercopy_32.c        |    6 ------
+ drivers/scsi/lpfc/lpfc_debugfs.c  |    3 ++-
+ kernel/kprobes.c                  |    2 +-
+ lib/Kconfig.debug                 |   18 ++++++++++++++++++
+ lib/Makefile                      |    1 +
+ lib/usercopy.c                    |    8 ++++++++
+ 20 files changed, 49 insertions(+), 87 deletions(-)
+ delete mode 100644 arch/s390/lib/usercopy.c
+ delete mode 100644 arch/sparc/lib/usercopy.c
+ create mode 100644 lib/usercopy.c
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
