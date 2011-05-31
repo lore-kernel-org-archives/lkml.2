@@ -1,129 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab1EaVvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 17:51:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758298Ab1EaVvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 17:51:40 -0400
-Date: Tue, 31 May 2011 17:51:26 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: akpm@linux-foundation.org, xiyou.wangcong@gmail.com, ebiederm@xmission.com,
-        linux-kernel@vger.kernel.org, jwilson@redhat.com
-Subject: Re: [Patch] kexec: remove KMSG_DUMP_KEXEC (was Re: Query about
- kdump_msg hook into crash_kexec())
-Message-ID: <20110531215126.GW16382@redhat.com>
-References: <20110203095837.93A2.A69D9226@jp.fujitsu.com>
- <20110203020703.GB21603@redhat.com>
- <20110203135324.93BC.A69D9226@jp.fujitsu.com>
- <20110526131028.7052a893.akpm@linux-foundation.org>
- <4DE3277D.8070109@jp.fujitsu.com>
+	id S932729Ab1EaVyv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 17:54:51 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34886 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758298Ab1EaVyu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 17:54:50 -0400
+Date: Tue, 31 May 2011 14:54:43 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>, linux-kernel@vger.kernel.org,
+        Sunil Mushran <sunil.mushran@oracle.com>
+Subject: Re: Cleancache and shared filesystems
+Message-ID: <20110531215443.GC31742@noexit.corp.google.com>
+Mail-Followup-To: Dan Magenheimer <dan.magenheimer@oracle.com>,
+	Steven Whitehouse <swhiteho@redhat.com>,
+	linux-kernel@vger.kernel.org,
+	Sunil Mushran <sunil.mushran@oracle.com>
+References: <1306504300.2857.14.camel@menhir>
+ <6f0e746a-d3d1-4708-9e16-3d02ddeab824@default>
+ <1306513179.2857.38.camel@menhir20110527233331.GC30232@noexit.corp.google.com>
+ <790b3e0b-14b6-44da-9f4c-a4315b58e2c5@default>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DE3277D.8070109@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <790b3e0b-14b6-44da-9f4c-a4315b58e2c5@default>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 02:13:33PM +0900, KOSAKI Motohiro wrote:
-> (2011/05/27 5:10), Andrew Morton wrote:
-> > On Thu,  3 Feb 2011 13:53:01 +0900 (JST)
-> > KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-> > 
-> >>>> I wrote why this is no good idea by another mail. Please see it.
-> >>>> Anyway you have a right to don't use this feature.
-> >>>>
-> >>>
-> >>> But you have not explained that why do you need to hook into crash_kexec()
-> >>> and you have also not explained why do you need to send out kdump_msg()
-> >>> notification if kdump is configured.
-> >>>
-> >>> Some detailed explanation here would help.
-> >>
-> >> Hi,
-> >>
-> >> I send it you now :)
-> >>
-> > 
-> > What happened with this?  kexec-remove-kmsg_dump_kexec.patch has two acks
-> > and one unexplained nack :(
+On Tue, May 31, 2011 at 07:51:36AM -0700, Dan Magenheimer wrote:
+> > Hey Dan,
+> > 	Steven makes a good point here.  ocfs2 could also take advantage
+> > of local filesystem behavior when running in local mode.
 > 
-> http://groups.google.com/group/linux.kernel/browse_thread/thread/1084f406573d76ac/ee19e34b45f83536?lnk=raot&pli=1
-> 
-> At last mail, Vivek proposed move kms_dump() instead remove. and I asked following question and
-> I've got no response. I'm still waiting his.
-> 
-> 
-> > I'm sorry I've missed this mail long time. 
-> > 
-> >> > --------------------------------------------------------------------- 
-> >> > @@ -74,6 +75,7 @@ NORET_TYPE void panic(const char * fmt, ...) 
-> >> >         dump_stack(); 
-> >> >  #endif 
-> >> > +       kmsg_dump(KMSG_DUMP_PANIC); 
-> >> >         /* 
-> >> >          * If we have crashed and we have a crash kernel loaded let it handle 
-> >> >          * everything else. 
-> >> >          * Do we want to call this before we try to display a message? 
-> >> >          */ 
-> >> >         crash_kexec(NULL); 
-> >> > --------------------------------------------------------------------- 
-> >> And I think to compensate for that somebody introduced additional 
-> >> kmsg_dump(KEXEC) call inside crash_kexec() and put it under CONFIG 
-> >> option so that one can change the behavior based on config options. 
-> >> I think this makes the logic somewhat twisted and an unnecessary call 
-> >> inside crash_kexec(). So until and unless there is a strong reason we 
-> >> can get rid of KEXEC event and move kmsg_dump call before crash_kexec() 
-> >> for now and see how does it go, IMHO. 
-> > 
-> > 
-> > I think I can agree your proposal. But could you please explain why do 
-> > you think kmsg _before_ kdump and kmsg _in_ kdump are so different? 
-> > I think it is only C level difference. CPU don't care C function and 
-> > anyway the kernel call kmsg_dump() because invoke second kernel even 
-> > if you proposal applied. 
-> > It is only curious. I'm not against your proposal. 
-> > Thanks. 
+> I guess the semantics need to be more clearly defined
+> (or perhaps changed if the shared-fs community wants),
+> but if cleancache_init_shared_fs is called only by
+> a single node, cleancache still enables all the same
+> functionality** as cleancache_init_fs. 
 
-Few reasons.
+	I don't see the ** reference in the footnotes ;-)  You're saying
+that, for a single caller, you will properly keep the pagecache bits
+around in cleancache as you shrink the balloon and give them back when
+requested?  So an ocfs2 calling cleancache_init_share_fs() in only one
+VM will have the same page lifetimes (including life inside cleancache
+but not in guest pagecache) as a similar ext3?  If so, there are no
+changes needed at all.
 
-- There is no correlation between crash_kexec() and kdump_msg(). What
-  you are creating is equivalent of panic notifiers and calling those
-  notifiers before dump happened. So calling it inside of crash_kexec()
-  does not make much sense from code point of view.
+> I'm not sure I fully understand the semantics of
+> local mode though, so please clarify if you think
+> I am wrong or misunderstanding your point.
 
-- Why does somebody need to keep track of event KMSG_DUMP_KEXEC?
+	ocfs2 local mode means that it is not a cluster filesystem.  The
+cluster services are not enabled, and ocfs2 behaves like xfs/extN/btrfs.
 
-- There is one kernel CONFIG option introduce which looks completely
-  superfluous.
+Joel
 
-My general take on the whole issue.
+-- 
 
-- In general I think exporting a hook to module so that they can do
-  anything before crash is a bad idea. Now this can be overloaded to
-  do things like sending crash notifications in clustered environement
-  where we recommend doing it in second kernel.
+"Lately I've been talking in my sleep.
+ Can't imagine what I'd have to say.
+ Except my world will be right
+ When love comes back my way."
 
-- Even if we really have to do it, there seemed to be two concern
-  areas.
-
-	- Reliability of kdump_msg() generic infrastructure and its
-  	  capability in terms of handling races with other cpus and
-	  NMIs.
-
-	- Reliability of module which is getting the callback from
-	  kdump_msg().
-
- I think in one of the mails I was discussing that common infrastructure
- between kdump and kmsg_dump() can be put in a separate function, like
- stopping all cpus etc to avoid races in generic infrastrucutre and
- then first we can all kmsg_dump() and then crash_kexec().
-
- But this still does not provide us any protection against modules getting
- control after crash and possiblly worsen the situation.
-
-Thanks
-Vivek
+			http://www.jlbec.org/
+			jlbec@evilplan.org
