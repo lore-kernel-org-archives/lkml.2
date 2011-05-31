@@ -1,67 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966Ab1EaBMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 21:12:52 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:39535 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755623Ab1EaBMv (ORCPT
+	id S1754637Ab1EaBYJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 21:24:09 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:45181 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab1EaBYG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 21:12:51 -0400
-X-AuditID: cbfee61b-b7c62ae0000056ed-38-4de44091d8ca
-Date: Tue, 31 May 2011 10:12:45 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH] CFQ: Fix typo and remove unnecessary semicolon
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Message-id: <20110531011245.GA7980@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-OriginalArrivalTime: 31 May 2011 01:12:45.0829 (UTC)
- FILETIME=[D967E350:01CC1F2F]
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 30 May 2011 21:24:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=ejjx8CC753gt82vjp9BUMstFT4Uo4SQYMTt91zVeu3zlr8A87d4PPYp2kt1Iu/BrRk
+         CGRu39JfAfKir9/cgwtfigTJ7i6c6SGOyIyT64K7w4UFV+Rstyxm9uMLJnPc3oX/rbcQ
+         4ZvNLv+J1pdEThdV5/gspIKgLHTGKANgdq4AU=
+MIME-Version: 1.0
+In-Reply-To: <20110530234654.GB14366@smp.if.uj.edu.pl>
+References: <20110530161014.GS25813@smp.if.uj.edu.pl> <BANLkTi=7k4XbK6JVDp3oOJRAK_7Ox=aWMw@mail.gmail.com>
+ <20110530234654.GB14366@smp.if.uj.edu.pl>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 30 May 2011 21:23:46 -0400
+X-Google-Sender-Auth: 27hSaNQCw8cHPC0eBEAHK8d_s50
+Message-ID: <BANLkTikO5U_h8mvjoOUU+W9kpZrfaLzPdQ@mail.gmail.com>
+Subject: Re: Kernel OOPS in function_graph_tracer due to the 44259b1. More
+ oopses in tracing...
+To: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+On Mon, May 30, 2011 at 7:46 PM, Witold Baryluk
+<baryluk@smp.if.uj.edu.pl> wrote:
+> On 05-30 16:14, Andrew Lutomirski wrote:
+>> On Mon, May 30, 2011 at 12:10 PM, Witold Baryluk
+>> <baryluk@smp.if.uj.edu.pl> wrote:
+>> > Hi,
+>> >
+>> > I found yesterday a problem when booting system on Pentium-M, 32-bit.
+>> >
+>> > I got approximetly this
+>> >
+>> > [    2.459170] Testing tracer function_graph:
+>> > [    2.466979] BUG: unable to handle kernel paging request at e421cc10
+>>
+>> >
+>> > Reverting commit 44259b1abfaa8bb819d25d41d71e8e33e25dd36a on top of current
+>> > kernel make bug disapear.
+>> >
+>> > Disabling CONFIG_FUNCTION_GRAPH_TRACER also make bug dispear.
+>> >
+>>
+>> Of course, the most trivial of my patches was the one with the most
+>> significant bug.  Can you try this fix:
+>>
+>> http://git.kernel.org/?p=linux/kernel/git/x86/linux-2.6-tip.git;a=commitdiff;h=89e1be50c68eb5e58b873dce87bbac627ee18d1f
+>>
+>> --Andy
+>
+> Well, to add more.
+>
+> It fixed most of crashes and definietl one with function graph tracer.
+>
+> However in 1/10 of boots I still got some kind of crash, oops or panic.
+>
 
-Fix comment typo and remove unnecessary semicolon at macro
 
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 7c52d68..8a02c95 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -185,7 +185,7 @@ struct cfq_group {
- 	int nr_cfqq;
- 
- 	/*
--	 * Per group busy queus average. Useful for workload slice calc. We
-+	 * Per group busy queues average. Useful for workload slice calc. We
- 	 * create the array for each prio class but at run time it is used
- 	 * only for RT and BE class and slot for IDLE class remains unused.
- 	 * This is primarily done to avoid confusion and a gcc warning.
-@@ -369,16 +369,16 @@ CFQ_CFQQ_FNS(wait_busy);
- #define cfq_log_cfqq(cfqd, cfqq, fmt, args...)	\
- 	blk_add_trace_msg((cfqd)->queue, "cfq%d%c %s " fmt, (cfqq)->pid, \
- 			cfq_cfqq_sync((cfqq)) ? 'S' : 'A', \
--			blkg_path(&(cfqq)->cfqg->blkg), ##args);
-+			blkg_path(&(cfqq)->cfqg->blkg), ##args)
- 
- #define cfq_log_cfqg(cfqd, cfqg, fmt, args...)				\
- 	blk_add_trace_msg((cfqd)->queue, "%s " fmt,			\
--				blkg_path(&(cfqg)->blkg), ##args);      \
-+				blkg_path(&(cfqg)->blkg), ##args)       \
- 
- #else
- #define cfq_log_cfqq(cfqd, cfqq, fmt, args...)	\
- 	blk_add_trace_msg((cfqd)->queue, "cfq%d " fmt, (cfqq)->pid, ##args)
--#define cfq_log_cfqg(cfqd, cfqg, fmt, args...)		do {} while (0);
-+#define cfq_log_cfqg(cfqd, cfqg, fmt, args...)		do {} while (0)
- #endif
- #define cfq_log(cfqd, fmt, args...)	\
- 	blk_add_trace_msg((cfqd)->queue, "cfq " fmt, ##args)
+>
+> ....
+> [    0.035682] CPU: Intel Pentium III (Katmai) stepping 03
+> [    0.038048] ftrace: allocating 6263 entries in 13 pages
+> [    0.050386] BUG: unable to handle kernel paging request at 8a51553a
+> [    0.051031] IP: [<c10587cd>] tick_handle_periodic+0x1d/0x90
+> [    0.051705] *pdpt = 0000000000000000 *pde = f000ff53f000ff53
+> ...
+> CRASH
+
+This is oops1.txt.  The faulting code is:
+
+000003a0 <tick_handle_periodic>:
+ 3a0:   55                      push   %ebp
+ 3a1:   89 e5                   mov    %esp,%ebp
+ 3a3:   57                      push   %edi
+ 3a4:   56                      push   %esi
+ 3a5:   53                      push   %ebx
+ 3a6:   83 ec 0c                sub    $0xc,%esp
+ 3a9:   e8 fc ff ff ff          call   3aa <tick_handle_periodic+0xa>
+ 3ae:   89 c7                   mov    %eax,%edi
+ 3b0:   e8 fc ff ff ff          call   3b1 <tick_handle_periodic+0x11>
+ 3b5:   89 45 f0                mov    %eax,-0x10(%ebp)
+ 3b8:   e8 63 ff ff ff          call   320 <tick_periodic>
+ 3bd:   83 7f 28 03             cmpl   $0x3,0x28(%edi)
+
+^^^ fault was in the dereference of edi + 0x28.
+
+ 3c1:   74 0d                   je     3d0 <tick_handle_periodic+0x30>
+ 3c3:   83 c4 0c                add    $0xc,%esp
+ 3c6:   5b                      pop    %ebx
+ 3c7:   5e                      pop    %esi
+ 3c8:   5f                      pop    %edi
+ 3c9:   5d                      pop    %ebp
+ 3ca:   c3                      ret
+
+The stack trace is garbage, though.
+
+The offending C code is probably this:
+
+        if (dev->mode != CLOCK_EVT_MODE_ONESHOT)
+                return;
+
+I would guess that this isn't related to the vdso changes, and I'm
+mostly out of ideas.
+
+--Andy
