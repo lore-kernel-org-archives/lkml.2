@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab1EaTKO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 15:10:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43442 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753160Ab1EaTKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 15:10:13 -0400
-Date: Tue, 31 May 2011 21:08:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, indan@nul.nu,
-        Tejun Heo <tj@kernel.org>, bdonlan@gmail.com,
-        linux-kernel@vger.kernel.org, jan.kratochvil@redhat.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 03/10] ptrace: implement PTRACE_SEIZE
-Message-ID: <20110531190809.GA20691@redhat.com>
-References: <201105180240.56754.vda.linux@googlemail.com> <20110518095539.GU20624@htj.dyndns.org> <20110523124314.GA7232@redhat.com> <20110524102834.GC10334@htj.dyndns.org> <20110525182919.GB16575@redhat.com> <20110526091401.GD9715@htj.dyndns.org> <20110526150150.GD12525@redhat.com> <20110527182121.GA3212@mtj.dyndns.org> <20110530192255.GB20616@redhat.com> <BANLkTimupSd774N-VBoswOj+Dza=5ofvWQ@mail.gmail.com>
+	id S1758250Ab1EaTSr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 15:18:47 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:46769 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022Ab1EaTSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 15:18:46 -0400
+Date: Tue, 31 May 2011 15:10:39 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org
+Subject: [git pull v3.0-rc1] What branch to base fixes for v3.0-rc1 for block
+ system?
+Message-ID: <20110531191039.GA5269@dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTimupSd774N-VBoswOj+Dza=5ofvWQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4DE53F14.0097:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30, Linus Torvalds wrote:
->
-> Guys, changing interfaces is not going to help user space. The current ones
-> may not be wonderful, but they work.
->
-> Making up some new "better" interface would be just worse for users, they
-> still need to support the old one anyway.
+Hey Jens,
 
-IOW, you are starting to agree that ptrace is not fixable ;)
+I've got two tiny fixes for the xen-blkback (see below):
 
-On a seriouse note, of course you are right, but what we should do?
+  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git for-jens/xen-blkback.fixes
 
-Speaking of this particular problem, it is really annoying. The leader
-exits, and it even notifies the tracer. For what? waitpid() returns 0
-or hangs depending on WNOHANG, any ptrace() request fails with ESRCH.
+and they are based on for-2.6.40/drivers branch. Is that the way you
+prefer to pull patches from sub-trees? Or should I rebase it on 3.0-rc1?
+Or should send bug-fixes just directly to Linus?
 
-Ironically, recently I got the bug-report which blaims this behaviour,
-although it was mentioned many times during the previous discussions.
+Dan Carpenter (1):
+      xen/blkback: potential null dereference in error handling
 
-I agree, we can't change the current behaviour of WEXITED in this case.
+Laszlo Ersek (1):
+      xen/blkback: don't call vbd_size() if bd_disk is NULL
 
-I also agree that if we, say, add WPTRACE_EXITED or change the semantics
-of WEXITED when the traced leader is PT_SEIZED, then probably this new
-feature won't be used by gdb/etc in the forseeable future.
+ drivers/block/xen-blkback/blkback.c |   10 ++++++----
+ drivers/block/xen-blkback/xenbus.c  |    3 +--
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-So what should we do?
+And them combined:
 
-OK, this particular problem is minor, perhaps we can simply ignore it
-and do not try to help the userspace.
 
-But the same objection applies to any new feature in this area. Say,
-PTRACE_INTERRUPT. To me, this request is obviously good/useful and
-nobody argued so far. But, will it ever be used by gdb? I am not sure,
-but at least we add the possibility.
-
-Oleg.
-
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index c73910c..e3c26d1 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -809,11 +809,13 @@ static int __init xen_blkif_init(void)
+  failed_init:
+ 	kfree(blkbk->pending_reqs);
+ 	kfree(blkbk->pending_grant_handles);
+-	for (i = 0; i < mmap_pages; i++) {
+-		if (blkbk->pending_pages[i])
+-			__free_page(blkbk->pending_pages[i]);
++	if (blkback->pending_pages) {
++		for (i = 0; i < mmap_pages; i++) {
++			if (blkbk->pending_pages[i])
++				__free_page(blkbk->pending_pages[i]);
++		}
++		kfree(blkbk->pending_pages);
+ 	}
+-	kfree(blkbk->pending_pages);
+ 	kfree(blkbk);
+ 	blkbk = NULL;
+ 	return rc;
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index 3457082..6cc0db1 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -357,14 +357,13 @@ static int xen_vbd_create(struct xen_blkif *blkif, blkif_vdev_t handle,
+ 	}
+ 
+ 	vbd->bdev = bdev;
+-	vbd->size = vbd_sz(vbd);
+-
+ 	if (vbd->bdev->bd_disk == NULL) {
+ 		DPRINTK("xen_vbd_create: device %08x doesn't exist.\n",
+ 			vbd->pdevice);
+ 		xen_vbd_free(vbd);
+ 		return -ENOENT;
+ 	}
++	vbd->size = vbd_sz(vbd);
+ 
+ 	if (vbd->bdev->bd_disk->flags & GENHD_FL_CD || cdrom)
+ 		vbd->type |= VDISK_CDROM;
