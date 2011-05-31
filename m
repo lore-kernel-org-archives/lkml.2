@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab1EaOPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 10:15:53 -0400
-Received: from DMZ-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.34]:54173 "EHLO
-	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756625Ab1EaOPX (ORCPT
+	id S1756713Ab1EaOP2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 10:15:28 -0400
+Received: from DMZ-MAILSEC-SCANNER-1.MIT.EDU ([18.9.25.12]:51501 "EHLO
+	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755405Ab1EaOPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 10:15:23 -0400
-X-AuditID: 12074422-b7b0eae000007f48-74-4de4f7fd351f
+	Tue, 31 May 2011 10:15:25 -0400
+X-AuditID: 1209190c-b7c65ae00000117c-ec-4de4f804d3a7
 From: Andy Lutomirski <luto@MIT.EDU>
 To: Ingo Molnar <mingo@elte.hu>, x86@kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
@@ -19,147 +19,55 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         richard -rw- weinberger <richard.weinberger@gmail.com>,
         Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
         Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v4 09/10] x86-64: Randomize int 0xcc magic al values at boot
-Date: Tue, 31 May 2011 10:14:07 -0400
-Message-Id: <75a00aee647302e22c86a5c5fac0478b9776481a.1306851090.git.luto@mit.edu>
+Subject: [PATCH v4 10/10] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+Date: Tue, 31 May 2011 10:14:08 -0400
+Message-Id: <1660d1687db01852ec58bbf970e22868db367d53.1306851090.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1306851090.git.luto@mit.edu>
 References: <cover.1306851090.git.luto@mit.edu>
 In-Reply-To: <cover.1306851090.git.luto@mit.edu>
 References: <cover.1306851090.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNKsWRmVeSWpSXmKPExsUixCmqrPv3+xNfgwXXFC3mrF/DZtF35Si7
-	xZFr39ktZl3jtfi84R+bxYFfT9ks3l/dzmZxedccNosnzdcZLbZcama1+DBxA5vF5k1TmS0e
-	9b1lt/ix4TGrA5/H99Y+Fo9jZw4zetxq+8PsMX/nR0aPnbPusntsXqHl8f/lETaPTas62Tze
-	nTvH7nFixm8Wj+NnnD0+b5IL4InisklJzcksSy3St0vgyjjwJL7gokzFr/1f2BoYl4t3MXJy
-	SAiYSJx5coYdwhaTuHBvPVsXIxeHkMA+Ronjm08yQTgbGCW+vv3ODuE8Y5LY0b6EBaSFTUBF
-	omPpA6AqDg4RAX2Jq58ZQWqYBSaxSBz+exqsRljAR+Lvt3XMIDaLgKrE18nbWEDqeQWCJO4d
-	g7pCQeLKlXlg5ZwCBhLbr65iBCkRAhp5/IMuDuEJjAILGBlWMcqm5Fbp5iZm5hSnJusWJyfm
-	5aUW6Zrq5WaW6KWmlG5iBMULu4vSDsafB5UOMQpwMCrx8GYffOwrxJpYVlyZe4hRkoNJSZS3
-	4tsTXyG+pPyUyozE4oz4otKc1OJDjBIczEoivN/4gHK8KYmVValF+TApaQ4WJXHeOZLqvkIC
-	6YklqdmpqQWpRTBZGQ4OJQleI2BaEBIsSk1PrUjLzClBSDNxcIIM5wEaXgiymLe4IDG3ODMd
-	In+KUZejce2Og4xCLHn5ealS4rxWIIMEQIoySvPg5sDS3CtGcaC3hHkVQKp4gCkSbtIroCVM
-	QEt63z0EWVKSiJCSamBsui3ELX3GU41VrvxV5UYb4awLp2ek2q2caPvCzdv71nVV5TahDZEV
-	Wzye7fz5xvQee2TnMnWTW1PTcwO8dHOmNLuGvE/oK7LrrNVpZfiTUrLAxmFa18x2vx2i8g9l
-	dliHftvpfotjVe2u/9ldp+MLxNTXNBmmsUW/3LC2Tneu/sxDlzfHv1ViKc5INNRiLipOBADK
-	qPV7TgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFKsWRmVeSWpSXmKPExsUixG6nosvy44mvwclFChZz1q9hs+i7cpTd
+	4si17+wWs67xWnze8I/N4sCvp2wW769uZ7O4vGsOm8WT5uuMFlsuNbNafJi4gc1i86apzBaP
+	+t6yW/zY8JjVgc/je2sfi8exM4cZPW61/WH2mL/zI6PHzll32T02r9Dy+P/yCJvHplWdbB7v
+	zp1j9zgx4zeLx/Ezzh6fN8kF8ERx2aSk5mSWpRbp2yVwZcz5tIml4Bp7xec/D1gaGM+xdTFy
+	cEgImEi8m5TXxcgJZIpJXLi3ng3EFhLYxyjxYDZvFyMXkL2BUeLWqq3sEM4zJomdSx+CVbEJ
+	qEh0LH3ABDJIREBf4upnRpAaZoFJLBKH/55mAakRFoiUOPFhHlgNi4CqROM5IZAwr0CQxK7X
+	39khFitIXLkyD6ycU8BAYvvVVYwg5UJAI49/0MUhPIFRYAEjwypG2ZTcKt3cxMyc4tRk3eLk
+	xLy81CJdQ73czBK91JTSTYygaOGU5NnB+Oag0iFGAQ5GJR7exIOPfYVYE8uKK3MPMUpyMCmJ
+	8lZ8e+IrxJeUn1KZkVicEV9UmpNafIhRgoNZSYT3Gx9QjjclsbIqtSgfJiXNwaIkzjtDUt1X
+	SCA9sSQ1OzW1ILUIJivDwaEkwWv0HahRsCg1PbUiLTOnBCHNxMEJMpwHaHghyGLe4oLE3OLM
+	dIj8KUZdjsa1Ow4yCrHk5eelSonzWoEMEgApyijNg5sDS3KvGMWB3hLmVQCp4gEmSLhJr4CW
+	MAEt6X33EGRJSSJCSqqBcerWgs/TBEN+9OyRvmVR4rlwbVXJZbvT97KuCWlMyU28eb9Vannk
+	Ii7WBuOK7qTLH3fP8N22k+3dzG3f/m75Kuyws80vVZj1ZsbvPxvuzzc84SIjYdq6ybCjb2r9
+	2rT2qKmcDUy1fpVX5//wPn5Q4iv3iard/jHv3ytGpFuu0Hxy9aeQrsv7QiWW4oxEQy3mouJE
+	AJkRExhNAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not a security feature.  It's to prevent the int 0xcc
-sequence from becoming ABI.
-
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/kernel/vsyscall_64.c |   54 +++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 52 insertions(+), 2 deletions(-)
+ Documentation/feature-removal-schedule.txt |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 52ba392..277c47c 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -34,6 +34,8 @@
- #include <linux/notifier.h>
- #include <linux/syscalls.h>
- #include <linux/ratelimit.h>
-+#include <linux/random.h>
-+#include <linux/highmem.h>
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 1a9446b..94b4470 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -600,3 +600,12 @@ Why:	Superseded by the UVCIOC_CTRL_QUERY ioctl.
+ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
  
- #include <asm/vsyscall.h>
- #include <asm/pgtable.h>
-@@ -54,6 +56,8 @@ DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
- 	.lock = __SEQLOCK_UNLOCKED(__vsyscall_gtod_data.lock),
- };
- 
-+static u8 vsyscall_nr_offset;  /* Cyclic permutation of al. */
+ ----------------------------
 +
- void update_vsyscall_tz(void)
- {
- 	unsigned long flags;
-@@ -95,10 +99,11 @@ static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
- 
- 	tsk = current;
- 
--	printk("%s%s[%d] %s ip:%lx sp:%lx ax:%lx si:%lx di:%lx",
-+	printk("%s%s[%d] %s ip:%lx sp:%lx ax:%lx offset:%d si:%lx di:%lx",
- 	       level, tsk->comm, task_pid_nr(tsk),
- 	       message,
--	       regs->ip - 2, regs->sp, regs->ax, regs->si, regs->di);
-+	       regs->ip - 2, regs->sp, regs->ax, (int)vsyscall_nr_offset,
-+	       regs->si, regs->di);
- 	if (!in_vsyscall_page(regs->ip - 2))
- 		print_vma_addr(" in ", regs->ip - 2);
- 	printk("\n");
-@@ -116,6 +121,17 @@ static int al_to_vsyscall_nr(u8 al)
- 	return -1;
- }
- 
-+static inline u8 mangle_al(u8 al)
-+{
-+	int nr = al_to_vsyscall_nr(al);
-+	return vsyscall_nr_to_al[(nr + vsyscall_nr_offset) % 3];
-+}
++What:	CONFIG_UNSAFE_VSYSCALLS (x86_64)
++When:	When glibc 2.14 or newer is ubitquitous.  Perhaps mid-2012.
++Why:	Having user-executable code at a fixed address is a security problem.
++	Turning off CONFIG_UNSAFE_VSYSCALLS mostly removes the risk but will
++	make the time() function slower on glibc versions 2.13 and below.
++Who:	Andy Lutomirski <luto@mit.edu>
 +
-+static inline int demangle_vsyscall_nr(int nr)
-+{
-+	return (nr + 3 - vsyscall_nr_offset) % 3;
-+}
-+
- #ifdef CONFIG_UNSAFE_VSYSCALLS
- 
- /* This will break when the xtime seconds get inaccurate, but that is
-@@ -165,6 +181,7 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
- 				  "(exploit attempt?)");
- 		goto sigsegv;
- 	}
-+	vsyscall_nr = demangle_vsyscall_nr(vsyscall_nr);
- 
- 	if (regs->ip - 2 != vsyscall_intcc_addr(vsyscall_nr)) {
- 		if (in_vsyscall_page(regs->ip - 2)) {
-@@ -312,10 +329,43 @@ void __init map_vsyscall(void)
- 		     (unsigned long)VVAR_ADDRESS);
- }
- 
-+static void __init mangle_vsyscall_movb(void *mapping,
-+					unsigned long movb_addr, u8 initial)
-+{
-+	u8 *imm8;
-+	BUG_ON(movb_addr >= 4095);
-+
-+	imm8 = (char *)(mapping) + movb_addr + 1;
-+
-+	BUG_ON(*imm8 != initial);
-+	*imm8 = mangle_al(*imm8);
-+}
-+
- static int __init vsyscall_init(void)
- {
-+	extern char __vsyscall_0;
-+	void *mapping;
-+	struct page *vsyscall_page;
-+
- 	BUG_ON(VSYSCALL_ADDR(0) != __fix_to_virt(VSYSCALL_FIRST_PAGE));
- 
-+	/*
-+	 * Randomize the magic al values for int 0xcc invocation.  This
-+	 * isn't really a security feature; it's to make sure that
-+	 * dynamic binary instrumentation tools don't start to think
-+	 * that the int 0xcc magic incantation is ABI.
-+	 */
-+	vsyscall_nr_offset = get_random_int() % 3;
-+	vsyscall_page = pfn_to_page(__pa_symbol(&__vsyscall_0) >> PAGE_SHIFT);
-+	mapping = kmap_atomic(vsyscall_page);
-+	/* It's easier to hardcode the addresses -- they're ABI. */
-+	mangle_vsyscall_movb(mapping, 0, 0xcc);
-+#ifndef CONFIG_UNSAFE_VSYSCALLS
-+	mangle_vsyscall_movb(mapping, 1024, 0xce);
-+#endif
-+	mangle_vsyscall_movb(mapping, 2048, 0xf0);
-+	kunmap_atomic(mapping);
-+
- 	on_each_cpu(cpu_vsyscall_init, NULL, 1);
- 	/* notifier priority > KVM */
- 	hotcpu_notifier(cpu_vsyscall_notifier, 30);
++----------------------------
 -- 
 1.7.5.1
 
