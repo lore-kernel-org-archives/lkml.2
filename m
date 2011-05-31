@@ -1,295 +1,484 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758471Ab1EaJNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 05:13:15 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:17475 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758135Ab1EaJNO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 05:13:14 -0400
-Date: Tue, 31 May 2011 11:11:46 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Len Brown <len.brown@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Rene Herman <rene.herman@gmail.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v3 3/3] thermal: Make THERMAL_HWMON implementation fully
- internal
-Message-ID: <20110531111146.23d8ad50@endymion.delvare>
-In-Reply-To: <20110531110016.7b232c85@endymion.delvare>
-References: <20110531110016.7b232c85@endymion.delvare>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	id S932078Ab1EaJQT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 05:16:19 -0400
+Received: from smtp.nokia.com ([147.243.128.24]:35904 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756816Ab1EaJQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 05:16:16 -0400
+Subject: Re: [PATCH 2/2] mach-ux500: platform data for ST-E HSI controller
+From: Carlos Chinea <carlos.chinea@nokia.com>
+To: ext Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Pawel Szyszuk <pawel.szyszuk@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+In-Reply-To: <1306340858-31397-1-git-send-email-linus.walleij@stericsson.com>
+References: <1306340858-31397-1-git-send-email-linus.walleij@stericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 May 2011 12:12:38 +0300
+Message-ID: <1306833158.2819.11848.camel@groo>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-THERMAL_HWMON is implemented inside the thermal_sys driver and has no
-effect on drivers implementing thermal zones, so they shouldn't see
-anything related to it in <linux/thermal.h>. Making the THERMAL_HWMON
-implementation fully internal has two advantages beyond the cleaner
-design:
-* This avoids rebuilding all thermal drivers if the THERMAL_HWMON
-  implementation changes, or if CONFIG_THERMAL_HWMON gets enabled or
-  disabled.
-* This avoids breaking the thermal kABI in these cases too, which
-  should make distributions happy.
+My 2 cents, a few small things:
 
-The only drawback I can see is slightly higher memory fragmentation,
-as the number of kzalloc() calls will increase by one per thermal zone.
-But I doubt it will be a problem in practice, as I've never seen a
-system with more than two thermal zones.
+On Wed, 2011-05-25 at 18:27 +0200, ext Linus Walleij wrote:
+> From: Pawel Szyszuk <pawel.szyszuk@stericsson.com>
+> 
+> Signed-off-by: Pawel Szyszuk <pawel.szyszuk@stericsson.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  arch/arm/mach-ux500/board-mop500-pins.c    |   10 +++
+>  arch/arm/mach-ux500/board-mop500.c         |   65 +++++++++++++++
+>  arch/arm/mach-ux500/clock.c                |    8 +-
+>  arch/arm/mach-ux500/devices-db8500.c       |  118 +++++++++++++++++++++++++++
+>  arch/arm/mach-ux500/include/mach/devices.h |    1 +
+>  arch/arm/mach-ux500/include/mach/hsi.h     |  122 ++++++++++++++++++++++++++++
+>  6 files changed, 320 insertions(+), 4 deletions(-)
+>  create mode 100644 arch/arm/mach-ux500/include/mach/hsi.h
+> 
+> diff --git a/arch/arm/mach-ux500/board-mop500-pins.c b/arch/arm/mach-ux500/board-mop500-pins.c
+> index fd4cf1c..030324f1 100644
+> --- a/arch/arm/mach-ux500/board-mop500-pins.c
+> +++ b/arch/arm/mach-ux500/board-mop500-pins.c
+> @@ -123,6 +123,16 @@ static pin_cfg_t mop500_pins_common[] = {
+>  	/* Display & HDMI HW sync */
+>  	GPIO68_LCD_VSI0	| PIN_INPUT_PULLUP,
+>  	GPIO69_LCD_VSI1	| PIN_INPUT_PULLUP,
+> +
+> +	/* HSI */
+> +	GPIO219_HSIR_FLA0,
+> +	GPIO220_HSIR_DAT0,
+> +	GPIO221_HSIR_RDY0,
+> +	GPIO222_HSIT_FLA0,
+> +	GPIO223_HSIT_DAT0,
+> +	GPIO224_HSIT_RDY0,
+> +	GPIO225_GPIO	| PIN_INPUT_PULLDOWN, /* CA_WAKE0 */
+> +	GPIO226_GPIO	| PIN_OUTPUT_HIGH, /* AC_WAKE0 */
+>  };
+>  
+>  static pin_cfg_t mop500_pins_default[] = {
+> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+> index 6e1907fa..b1cc44a 100644
+> --- a/arch/arm/mach-ux500/board-mop500.c
+> +++ b/arch/arm/mach-ux500/board-mop500.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/io.h>
+>  #include <linux/i2c.h>
+> +#include <linux/hsi/hsi.h>
+>  #include <linux/gpio.h>
+>  #include <linux/amba/bus.h>
+>  #include <linux/amba/pl022.h>
+> @@ -233,6 +234,62 @@ U8500_I2C_CONTROLLER(1, 0xe, 1, 1, 100000, I2C_FREQ_MODE_STANDARD);
+>  U8500_I2C_CONTROLLER(2,	0xe, 1, 1, 100000, I2C_FREQ_MODE_STANDARD);
+>  U8500_I2C_CONTROLLER(3,	0xe, 1, 1, 100000, I2C_FREQ_MODE_STANDARD);
+>  
+> +#ifdef CONFIG_HSI
+> +static struct hsi_board_info __initdata u8500_hsi_devices[] = {
+> +	{
+> +		.name = "hsi_char",
+> +		.hsi_id = 0,
+> +		.port = 0,
+> +		.tx_cfg = {
+> +			.mode = HSI_MODE_STREAM,
+> +			.channels = 2,
+> +			.speed = 100000,
+> +			{.arb_mode = HSI_ARB_RR},
+> +		},
+> +		.rx_cfg = {
+> +			.mode = HSI_MODE_STREAM,
+> +			.channels = 2,
+> +			.speed = 200000,
+> +			{.flow = HSI_FLOW_SYNC},
+> +		},
+> +	},
+> +	{
+> +		.name = "hsi_test",
+> +		.hsi_id = 0,
+> +		.port = 0,
+> +		.tx_cfg = {
+> +			.mode = HSI_MODE_FRAME,
+> +			.channels = 2,
+> +			.speed = 100000,
+> +			{.arb_mode = HSI_ARB_RR},
+> +		},
+> +		.rx_cfg = {
+> +			.mode = HSI_MODE_FRAME,
+> +			.channels = 2,
+> +			.speed = 200000,
+> +			{.flow = HSI_FLOW_SYNC},
+> +		},
+> +	},
+> +	{
+> +		.name = "cfhsi_v3_driver",
+> +		.hsi_id = 0,
+> +		.port = 0,
+> +		.tx_cfg = {
+> +			.mode = HSI_MODE_STREAM,
+> +			.channels = 2,
+> +			.speed = 20000,
+> +			{.arb_mode = HSI_ARB_RR},
+> +		},
+> +		.rx_cfg = {
+> +			.mode = HSI_MODE_STREAM,
+> +			.channels = 2,
+> +			.speed = 200000,
+> +			{.flow = HSI_FLOW_SYNC},
+> +		},
+> +	},
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Rene Herman <rene.herman@gmail.com>
-Cc: Len Brown <len.brown@intel.com>
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
----
-* If memory fragmentation is really a concern to anyone, it would be
-  possible to save one kalloc for the first temperature input of each
-  zone type, as the price of slightly more complex code.
+I think it is better to add those clients entries together with their
+patchset, but it is up to you. 
 
-* Removal code path is untested, as I have never been able to unload
-the thermal_sys module on any of my systems. Something is pinning it
-and I have no idea what it is.
+> +};
+> +#endif
+> +
+>  static void __init mop500_i2c_init(void)
+>  {
+>  	db8500_add_i2c0(&u8500_i2c0_data);
+> @@ -292,6 +349,9 @@ static void mop500_prox_deactivate(struct device *dev)
+>  /* add any platform devices here - TODO */
+>  static struct platform_device *platform_devs[] __initdata = {
+>  	&mop500_gpio_keys_device,
+> +#ifdef CONFIG_HSI
+> +	&u8500_hsi_device,
+> +#endif
+>  };
+>  
+>  #ifdef CONFIG_STE_DMA40
+> @@ -456,6 +516,11 @@ static void __init mop500_init_machine(void)
+>  	i2c_register_board_info(0, mop500_i2c0_devices, i2c0_devs);
+>  	i2c_register_board_info(2, mop500_i2c2_devices,
+>  				ARRAY_SIZE(mop500_i2c2_devices));
+> +#ifdef CONFIG_HSI
+> +	hsi_register_board_info(u8500_hsi_devices,
+> +				ARRAY_SIZE(u8500_hsi_devices));
+> +#endif
+> +
+>  }
+>  
+>  MACHINE_START(U8500, "ST-Ericsson MOP500 platform")
+> diff --git a/arch/arm/mach-ux500/clock.c b/arch/arm/mach-ux500/clock.c
+> index 32ce908..cf6ff61 100644
+> --- a/arch/arm/mach-ux500/clock.c
+> +++ b/arch/arm/mach-ux500/clock.c
+> @@ -483,8 +483,8 @@ static struct clk_lookup u8500_common_clks[] = {
+>  	CLK(slimclk,	"slim",		NULL),
+>  	CLK(lcdclk,	"lcd",		NULL),
+>  	CLK(bmlclk,	"bml",		NULL),
+> -	CLK(hsitxclk,	"stm-hsi.0",	NULL),
+> -	CLK(hsirxclk,	"stm-hsi.1",	NULL),
+> +	CLK(hsitxclk,	"ste_hsi.0",	"hsit_hsitxclk"),
+> +	CLK(hsirxclk,	"ste_hsi.0",	"hsir_hsirxclk"),
+>  	CLK(hdmiclk,	"hdmi",		NULL),
+>  	CLK(apeatclk,	"apeat",	NULL),
+>  	CLK(apetraceclk,	"apetrace",	NULL),
+> @@ -544,8 +544,8 @@ static struct clk_lookup u8500_v1_clks[] = {
+>  	/* Peripheral Cluster #2 */
+>  	CLK(gpio1_v1,	"gpio.6",	NULL),
+>  	CLK(gpio1_v1,	"gpio.7",	NULL),
+> -	CLK(ssitx_v1,	"ssitx",	NULL),
+> -	CLK(ssirx_v1,	"ssirx",	NULL),
+> +	CLK(ssitx_v1,	"ste_hsi.0",	"hsit_hclk"),
+> +	CLK(ssirx_v1,	"ste_hsi.0",	"hsir_hclk"),
+>  	CLK(spi0_v1,	"spi0",		NULL),
+>  	CLK(sdi3_v1,	"sdi3",		NULL),
+>  	CLK(sdi1_v1,	"sdi1",		NULL),
+> diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
+> index 73b1740..2e685c1 100644
+> --- a/arch/arm/mach-ux500/devices-db8500.c
+> +++ b/arch/arm/mach-ux500/devices-db8500.c
+> @@ -18,6 +18,7 @@
+>  #include <mach/hardware.h>
+>  #include <mach/setup.h>
+>  
+> +#include <mach/hsi.h>
+>  #include "ste-dma40-db8500.h"
+>  
+>  static struct resource dma40_resources[] = {
+> @@ -195,3 +196,120 @@ struct platform_device u8500_ske_keypad_device = {
+>  	.num_resources = ARRAY_SIZE(keypad_resources),
+>  	.resource = keypad_resources,
+>  };
+> +
+> +/*
+> + * HSI
+> + */
+> +#define HSIR_OVERRUN(num) {			    \
+> +	.start  = IRQ_DB8500_HSIR_CH##num##_OVRRUN, \
+> +	.end    = IRQ_DB8500_HSIR_CH##num##_OVRRUN, \
+> +	.flags  = IORESOURCE_IRQ,		    \
+> +	.name   = "hsi_rx_overrun_ch"#num	    \
+> +}
+> +
+> +#define STE_HSI_PORT0_TX_CHANNEL_CFG(n) { \
+> +       .dir = STEDMA40_MEM_TO_PERIPH, \
+> +       .high_priority = false, \
+> +       .mode = STEDMA40_MODE_LOGICAL, \
+> +       .mode_opt = STEDMA40_LCHAN_SRC_LOG_DST_LOG, \
+> +       .src_dev_type = STEDMA40_DEV_SRC_MEMORY, \
+> +       .dst_dev_type = n,\
 
- drivers/thermal/thermal_sys.c |  117 ++++++++++++++++++++++++++++++++---------
- include/linux/thermal.h       |   22 -------
- 2 files changed, 92 insertions(+), 47 deletions(-)
+this should be:
 
---- linux-3.0-rc1.orig/drivers/thermal/thermal_sys.c	2011-05-30 21:38:25.000000000 +0200
-+++ linux-3.0-rc1/drivers/thermal/thermal_sys.c	2011-05-30 21:46:19.000000000 +0200
-@@ -420,6 +420,29 @@ thermal_cooling_device_trip_point_show(s
- 
- /* hwmon sys I/F */
- #include <linux/hwmon.h>
-+
-+/* thermal zone devices with the same type share one hwmon device */
-+struct thermal_hwmon_device {
-+	char type[THERMAL_NAME_LENGTH];
-+	struct device *device;
-+	int count;
-+	struct list_head tz_list;
-+	struct list_head node;
-+};
-+
-+struct thermal_hwmon_attr {
-+	struct device_attribute attr;
-+	char name[16];
-+};
-+
-+/* one temperature input for each thermal zone */
-+struct thermal_hwmon_temp {
-+	struct list_head hwmon_node;
-+	struct thermal_zone_device *tz;
-+	struct thermal_hwmon_attr temp_input;	/* hwmon sys attr */
-+	struct thermal_hwmon_attr temp_crit;	/* hwmon sys attr */
-+};
-+
- static LIST_HEAD(thermal_hwmon_list);
- 
- static ssize_t
-@@ -437,9 +460,10 @@ temp_input_show(struct device *dev, stru
- 	int ret;
- 	struct thermal_hwmon_attr *hwmon_attr
- 			= container_of(attr, struct thermal_hwmon_attr, attr);
--	struct thermal_zone_device *tz
--			= container_of(hwmon_attr, struct thermal_zone_device,
-+	struct thermal_hwmon_temp *temp
-+			= container_of(hwmon_attr, struct thermal_hwmon_temp,
- 				       temp_input);
-+	struct thermal_zone_device *tz = temp->tz;
- 
- 	ret = tz->ops->get_temp(tz, &temperature);
- 
-@@ -455,9 +479,10 @@ temp_crit_show(struct device *dev, struc
- {
- 	struct thermal_hwmon_attr *hwmon_attr
- 			= container_of(attr, struct thermal_hwmon_attr, attr);
--	struct thermal_zone_device *tz
--			= container_of(hwmon_attr, struct thermal_zone_device,
-+	struct thermal_hwmon_temp *temp
-+			= container_of(hwmon_attr, struct thermal_hwmon_temp,
- 				       temp_crit);
-+	struct thermal_zone_device *tz = temp->tz;
- 	long temperature;
- 	int ret;
- 
-@@ -485,10 +510,29 @@ thermal_hwmon_lookup_by_type(const struc
- 	return NULL;
- }
- 
-+/* Find the temperature input matching a given thermal zone */
-+static struct thermal_hwmon_temp *
-+thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
-+			  const struct thermal_zone_device *tz)
-+{
-+	struct thermal_hwmon_temp *temp;
-+
-+	mutex_lock(&thermal_list_lock);
-+	list_for_each_entry(temp, &hwmon->tz_list, hwmon_node)
-+		if (temp->tz == tz) {
-+			mutex_unlock(&thermal_list_lock);
-+			return temp;
-+		}
-+	mutex_unlock(&thermal_list_lock);
-+
-+	return NULL;
-+}
-+
- static int
- thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
- {
- 	struct thermal_hwmon_device *hwmon;
-+	struct thermal_hwmon_temp *temp;
- 	int new_hwmon_device = 1;
- 	int result;
- 
-@@ -515,30 +559,36 @@ thermal_add_hwmon_sysfs(struct thermal_z
- 		goto free_mem;
- 
-  register_sys_interface:
--	tz->hwmon = hwmon;
-+	temp = kzalloc(sizeof(struct thermal_hwmon_temp), GFP_KERNEL);
-+	if (!temp) {
-+		result = -ENOMEM;
-+		goto unregister_name;
-+	}
-+
-+	temp->tz = tz;
- 	hwmon->count++;
- 
--	snprintf(tz->temp_input.name, THERMAL_NAME_LENGTH,
-+	snprintf(temp->temp_input.name, THERMAL_NAME_LENGTH,
- 		 "temp%d_input", hwmon->count);
--	tz->temp_input.attr.attr.name = tz->temp_input.name;
--	tz->temp_input.attr.attr.mode = 0444;
--	tz->temp_input.attr.show = temp_input_show;
--	sysfs_attr_init(&tz->temp_input.attr.attr);
--	result = device_create_file(hwmon->device, &tz->temp_input.attr);
-+	temp->temp_input.attr.attr.name = temp->temp_input.name;
-+	temp->temp_input.attr.attr.mode = 0444;
-+	temp->temp_input.attr.show = temp_input_show;
-+	sysfs_attr_init(&temp->temp_input.attr.attr);
-+	result = device_create_file(hwmon->device, &temp->temp_input.attr);
- 	if (result)
--		goto unregister_name;
-+		goto free_temp_mem;
- 
- 	if (tz->ops->get_crit_temp) {
- 		unsigned long temperature;
- 		if (!tz->ops->get_crit_temp(tz, &temperature)) {
--			snprintf(tz->temp_crit.name, THERMAL_NAME_LENGTH,
-+			snprintf(temp->temp_crit.name, THERMAL_NAME_LENGTH,
- 				"temp%d_crit", hwmon->count);
--			tz->temp_crit.attr.attr.name = tz->temp_crit.name;
--			tz->temp_crit.attr.attr.mode = 0444;
--			tz->temp_crit.attr.show = temp_crit_show;
--			sysfs_attr_init(&tz->temp_crit.attr.attr);
-+			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
-+			temp->temp_crit.attr.attr.mode = 0444;
-+			temp->temp_crit.attr.show = temp_crit_show;
-+			sysfs_attr_init(&temp->temp_crit.attr.attr);
- 			result = device_create_file(hwmon->device,
--						    &tz->temp_crit.attr);
-+						    &temp->temp_crit.attr);
- 			if (result)
- 				goto unregister_input;
- 		}
-@@ -547,13 +597,15 @@ thermal_add_hwmon_sysfs(struct thermal_z
- 	mutex_lock(&thermal_list_lock);
- 	if (new_hwmon_device)
- 		list_add_tail(&hwmon->node, &thermal_hwmon_list);
--	list_add_tail(&tz->hwmon_node, &hwmon->tz_list);
-+	list_add_tail(&temp->hwmon_node, &hwmon->tz_list);
- 	mutex_unlock(&thermal_list_lock);
- 
- 	return 0;
- 
-  unregister_input:
--	device_remove_file(hwmon->device, &tz->temp_input.attr);
-+	device_remove_file(hwmon->device, &temp->temp_input.attr);
-+ free_temp_mem:
-+	kfree(temp);
-  unregister_name:
- 	if (new_hwmon_device) {
- 		device_remove_file(hwmon->device, &dev_attr_name);
-@@ -569,15 +621,30 @@ thermal_add_hwmon_sysfs(struct thermal_z
- static void
- thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
- {
--	struct thermal_hwmon_device *hwmon = tz->hwmon;
-+	struct thermal_hwmon_device *hwmon;
-+	struct thermal_hwmon_temp *temp;
- 
--	tz->hwmon = NULL;
--	device_remove_file(hwmon->device, &tz->temp_input.attr);
-+	hwmon = thermal_hwmon_lookup_by_type(tz);
-+	if (unlikely(!hwmon)) {
-+		/* Should never happen... */
-+		dev_dbg(&tz->device, "hwmon device lookup failed!\n");
-+		return;
-+	}
-+
-+	temp = thermal_hwmon_lookup_temp(hwmon, tz);
-+	if (unlikely(!temp)) {
-+		/* Should never happen... */
-+		dev_dbg(&tz->device, "temperature input lookup failed!\n");
-+		return;
-+	}
-+
-+	device_remove_file(hwmon->device, &temp->temp_input.attr);
- 	if (tz->ops->get_crit_temp)
--		device_remove_file(hwmon->device, &tz->temp_crit.attr);
-+		device_remove_file(hwmon->device, &temp->temp_crit.attr);
- 
- 	mutex_lock(&thermal_list_lock);
--	list_del(&tz->hwmon_node);
-+	list_del(&temp->hwmon_node);
-+	kfree(temp);
- 	if (!list_empty(&hwmon->tz_list)) {
- 		mutex_unlock(&thermal_list_lock);
- 		return;
---- linux-3.0-rc1.orig/include/linux/thermal.h	2011-05-30 21:38:25.000000000 +0200
-+++ linux-3.0-rc1/include/linux/thermal.h	2011-05-30 21:42:22.000000000 +0200
-@@ -85,22 +85,6 @@ struct thermal_cooling_device {
- 				((long)t-2732+5)/10 : ((long)t-2732-5)/10)
- #define CELSIUS_TO_KELVIN(t)	((t)*10+2732)
- 
--#if defined(CONFIG_THERMAL_HWMON)
--/* thermal zone devices with the same type share one hwmon device */
--struct thermal_hwmon_device {
--	char type[THERMAL_NAME_LENGTH];
--	struct device *device;
--	int count;
--	struct list_head tz_list;
--	struct list_head node;
--};
--
--struct thermal_hwmon_attr {
--	struct device_attribute attr;
--	char name[16];
--};
--#endif
--
- struct thermal_zone_device {
- 	int id;
- 	char type[THERMAL_NAME_LENGTH];
-@@ -120,12 +104,6 @@ struct thermal_zone_device {
- 	struct mutex lock;	/* protect cooling devices list */
- 	struct list_head node;
- 	struct delayed_work poll_queue;
--#if defined(CONFIG_THERMAL_HWMON)
--	struct list_head hwmon_node;
--	struct thermal_hwmon_device *hwmon;
--	struct thermal_hwmon_attr temp_input;	/* hwmon sys attr */
--	struct thermal_hwmon_attr temp_crit;	/* hwmon sys attr */
--#endif
- };
- /* Adding event notification support elements */
- #define THERMAL_GENL_FAMILY_NAME                "thermal_event"
+.dst_dev_type = (n),
 
+
+
+> +       .src_info.big_endian = false,\
+> +       .src_info.data_width = STEDMA40_WORD_WIDTH,\
+> +       .dst_info.big_endian = false,\
+> +       .dst_info.data_width = STEDMA40_WORD_WIDTH,\
+> +},
+
+I'll prefer to add the comma separator in the dma declarations
+rather than here, like HSI_OVERRUN macro. But this is up to you.
+
+> +
+> +#define STE_HSI_PORT0_RX_CHANNEL_CFG(n) { \
+> +       .dir = STEDMA40_PERIPH_TO_MEM, \
+> +       .high_priority = false, \
+> +       .mode = STEDMA40_MODE_LOGICAL, \
+> +       .mode_opt = STEDMA40_LCHAN_SRC_LOG_DST_LOG, \
+> +       .src_dev_type = n,\
+
+= (n),
+
+> +       .dst_dev_type = STEDMA40_DEV_DST_MEMORY, \
+> +       .src_info.big_endian = false,\
+> +       .src_info.data_width = STEDMA40_WORD_WIDTH,\
+> +       .dst_info.big_endian = false,\
+> +       .dst_info.data_width = STEDMA40_WORD_WIDTH,\
+> +},
+> +
+> +static struct resource u8500_hsi_resources[] = {
+> +       {
+> +	       .start  = U8500_HSIR_BASE,
+> +	       .end    = U8500_HSIR_BASE + SZ_4K - 1,
+> +	       .flags  = IORESOURCE_MEM,
+> +	       .name   = "hsi_rx_base"
+> +       },
+> +       {
+> +	       .start  = U8500_HSIT_BASE,
+> +	       .end    = U8500_HSIT_BASE + SZ_4K - 1,
+> +	       .flags  = IORESOURCE_MEM,
+> +	       .name   = "hsi_tx_base"
+> +       },
+> +       {
+> +	       .start  = IRQ_DB8500_HSIRD0,
+> +	       .end    = IRQ_DB8500_HSIRD0,
+> +	       .flags  = IORESOURCE_IRQ,
+> +	       .name   = "hsi_rx_irq0"
+> +       },
+> +       {
+> +	       .start  = IRQ_DB8500_HSITD0,
+> +	       .end    = IRQ_DB8500_HSITD0,
+> +	       .flags  = IORESOURCE_IRQ,
+> +	       .name   = "hsi_tx_irq0"
+> +       },
+> +       {
+> +	       .start  = IRQ_DB8500_HSIR_EXCEP,
+> +	       .end    = IRQ_DB8500_HSIR_EXCEP,
+> +	       .flags  = IORESOURCE_IRQ,
+> +	       .name   = "hsi_rx_excep0"
+> +       },
+> +       HSIR_OVERRUN(0),
+> +       HSIR_OVERRUN(1),
+> +       HSIR_OVERRUN(2),
+> +       HSIR_OVERRUN(3),
+> +       HSIR_OVERRUN(4),
+> +       HSIR_OVERRUN(5),
+> +       HSIR_OVERRUN(6),
+> +       HSIR_OVERRUN(7),
+> +};
+> +
+> +#ifdef CONFIG_STE_DMA40
+> +static struct stedma40_chan_cfg ste_hsi_port0_dma_tx_cfg[] = {
+> +       STE_HSI_PORT0_TX_CHANNEL_CFG(DB8500_DMA_DEV20_SLIM0_CH0_TX_HSI_TX_CH0)
+> +       STE_HSI_PORT0_TX_CHANNEL_CFG(DB8500_DMA_DEV21_SLIM0_CH1_TX_HSI_TX_CH1)
+> +       STE_HSI_PORT0_TX_CHANNEL_CFG(DB8500_DMA_DEV22_SLIM0_CH2_TX_HSI_TX_CH2)
+> +       STE_HSI_PORT0_TX_CHANNEL_CFG(DB8500_DMA_DEV23_SLIM0_CH3_TX_HSI_TX_CH3)
+> +};
+> +
+> +static struct stedma40_chan_cfg ste_hsi_port0_dma_rx_cfg[] = {
+> +       STE_HSI_PORT0_RX_CHANNEL_CFG(DB8500_DMA_DEV20_SLIM0_CH0_RX_HSI_RX_CH0)
+> +       STE_HSI_PORT0_RX_CHANNEL_CFG(DB8500_DMA_DEV21_SLIM0_CH1_RX_HSI_RX_CH1)
+> +       STE_HSI_PORT0_RX_CHANNEL_CFG(DB8500_DMA_DEV22_SLIM0_CH2_RX_HSI_RX_CH2)
+> +       STE_HSI_PORT0_RX_CHANNEL_CFG(DB8500_DMA_DEV23_SLIM0_CH3_RX_HSI_RX_CH3)
+> +};
+> +#endif
+> +
+> +static struct ste_hsi_port_cfg ste_hsi_port0_cfg = {
+> +#ifdef CONFIG_STE_DMA40
+> +       .dma_filter = stedma40_filter,
+> +       .dma_tx_cfg = ste_hsi_port0_dma_tx_cfg,
+> +       .dma_rx_cfg = ste_hsi_port0_dma_rx_cfg
+> +#endif
+> +};
+> +
+> +struct ste_hsi_platform_data u8500_hsi_platform_data = {
+> +       .num_ports = 1,
+> +       .use_dma = 1,
+> +       .port_cfg = &ste_hsi_port0_cfg,
+> +};
+> +
+> +struct platform_device u8500_hsi_device = {
+> +       .dev = {
+> +		.platform_data = &u8500_hsi_platform_data,
+> +       },
+> +       .name = "ste_hsi",
+> +       .id = 0,
+> +       .resource = u8500_hsi_resources,
+> +       .num_resources = ARRAY_SIZE(u8500_hsi_resources)
+> +};
+> diff --git a/arch/arm/mach-ux500/include/mach/devices.h b/arch/arm/mach-ux500/include/mach/devices.h
+> index 020b636..176cda7 100644
+> --- a/arch/arm/mach-ux500/include/mach/devices.h
+> +++ b/arch/arm/mach-ux500/include/mach/devices.h
+> @@ -17,6 +17,7 @@ extern struct amba_device ux500_pl031_device;
+>  
+>  extern struct platform_device u8500_dma40_device;
+>  extern struct platform_device ux500_ske_keypad_device;
+> +extern struct platform_device u8500_hsi_device;
+>  
+>  void dma40_u8500ed_fixup(void);
+>  
+> diff --git a/arch/arm/mach-ux500/include/mach/hsi.h b/arch/arm/mach-ux500/include/mach/hsi.h
+> new file mode 100644
+> index 0000000..030e35e
+> --- /dev/null
+> +++ b/arch/arm/mach-ux500/include/mach/hsi.h
+> @@ -0,0 +1,122 @@
+> +/*
+> + * Copyright (C) ST-Ericsson SA 2010
+> + *
+> + * License Terms: GNU General Public License v2
+> + */
+> +
+> +#ifndef __MACH_HSI_H
+> +#define __MACH_HSI_H
+> +
+> +#include <plat/ste_dma40.h>
+> +
+> +/* HSIT register offsets */
+> +#define STE_HSI_TX_ID                  0x000
+> +#define STE_HSI_TX_MODE                0x004
+> +#define STE_HSI_TX_STATE               0x008
+> +#define STE_HSI_TX_IOSTATE             0x00C
+> +#define STE_HSI_TX_BUFSTATE            0x010
+> +#define STE_HSI_TX_DIVISOR             0x014
+> +#define STE_HSI_TX_PARITY              0x018
+> +#define STE_HSI_TX_BREAK               0x01C
+> +#define STE_HSI_TX_CHANNELS            0x020
+> +#define STE_HSI_TX_FLUSHBITS           0x024
+> +#define STE_HSI_TX_PRIORITY            0x028
+> +#define STE_HSI_TX_BURSTLEN            0x02C
+> +#define STE_HSI_TX_PREAMBLE            0x030
+> +#define STE_HSI_TX_DATASWAP            0x034
+> +#define STE_HSI_TX_FRAMELENX           0x080
+> +#define STE_HSI_TX_BUFFERX             0x0C0
+> +#define STE_HSI_TX_BASEX               0x100
+> +#define STE_HSI_TX_SPANX               0x140
+> +#define STE_HSI_TX_GAUGEX              0x180
+> +#define STE_HSI_TX_WATERMARKX          0x1C0
+> +#define STE_HSI_TX_DMAEN               0x200
+> +#define STE_HSI_TX_WATERMARKIS         0x204
+> +#define STE_HSI_TX_WATERMARKIM         0x208
+> +#define STE_HSI_TX_WATERMARKIC         0x20C
+> +#define STE_HSI_TX_WATERMARKID         0x210
+> +#define STE_HSI_TX_PERIPHID0           0xFE0
+> +#define STE_HSI_TX_PERIPHID1           0xFE4
+> +#define STE_HSI_TX_PERIPHID2           0xFE8
+> +#define STE_HSI_TX_PERIPHID3           0xFEC
+> +
+> +/* HSIR register offsets */
+> +#define STE_HSI_RX_ID                  0x000
+> +#define STE_HSI_RX_MODE                0x004
+> +#define STE_HSI_RX_STATE               0x008
+> +#define STE_HSI_RX_BUFSTATE            0x00C
+> +#define STE_HSI_RX_THRESHOLD           0x010
+> +#define STE_HSI_RX_PARITY              0x014
+> +#define STE_HSI_RX_DETECTOR            0x018
+> +#define STE_HSI_RX_EXCEP               0x01C
+> +#define STE_HSI_RX_ACK                 0x020
+> +#define STE_HSI_RX_CHANNELS            0x024
+> +#define STE_HSI_RX_REALTIME            0x028
+> +#define STE_HSI_RX_OVERRUN             0x02C
+> +#define STE_HSI_RX_OVERRUNACK          0x030
+> +#define STE_HSI_RX_PREAMBLE            0x034
+> +#define STE_HSI_RX_PIPEGAUGE           0x038
+> +#define STE_HSI_RX_STATICCONFID        0x03C
+> +#define STE_HSI_RX_BUFFERX             0x080
+> +#define STE_HSI_RX_FRAMELENX           0x0C0
+> +#define STE_HSI_RX_BASEX               0x100
+> +#define STE_HSI_RX_SPANX               0x140
+> +#define STE_HSI_RX_GAUGEX              0x180
+> +#define STE_HSI_RX_WATERMARKX          0x1C0
+> +#define STE_HSI_RX_DMAEN               0x200
+> +#define STE_HSI_RX_WATERMARKIS         0x204
+> +#define STE_HSI_RX_WATERMARKIM         0x208
+> +#define STE_HSI_RX_WATERMARKIC         0x20C
+> +#define STE_HSI_RX_WATERMARKID         0x210
+> +#define STE_HSI_RX_OVERRUNMIS          0x214
+> +#define STE_HSI_RX_OVERRUNIM           0x218
+> +#define STE_HSI_RX_EXCEPMIS            0x21C
+> +#define STE_HSI_RX_EXCEPIM             0x220
+> +#define STE_HSI_RX_PERIPHID0           0xFE0
+> +#define STE_HSI_RX_PERIPHID1           0xFE4
+> +#define STE_HSI_RX_PERIPHID2           0xFE8
+> +#define STE_HSI_RX_PERIPHID3           0xFEC
+> +
+> +/* HSI states */
+> +#define STE_HSI_STATE_IDLE             0x00
+> +#define STE_HSI_STATE_START            0x01
+> +#define STE_HSI_STATE_TRANSMIT         0x02
+> +#define STE_HSI_STATE_BREAK            0x03
+> +#define STE_HSI_STATE_FLUSH            0x04
+> +#define STE_HSI_STATE_HALT             0x05
+> +
+> +/* HSI exceptions */
+> +#define STE_HSI_EXCEP_TIMEOUT          0x01
+> +#define STE_HSI_EXCEP_OVERRUN          0x02
+> +#define STE_HSI_EXCEP_BREAK            0x04
+> +#define STE_HSI_EXCEP_PARITY           0x08
+> +
+> +/* HSI modes */
+> +#define STE_HSI_MODE_SLEEP             0x00
+> +#define STE_HSI_MODE_STREAM            0x01
+> +#define STE_HSI_MODE_FRAME             0x02
+> +#define STE_HSI_MODE_PIPELINED         0x03
+> +#define STE_HSI_MODE_FAILSAFE          0x04
+> +
+> +#define STE_HSI_MAX_BUFFERS            32
+> +
+> +/* Max channels of STE HSI controller */
+> +#define STE_HSI_MAX_CHANNELS           4
+> +
+> +struct stedma40_chan_cfg;
+> +
+> +struct ste_hsi_port_cfg {
+> +#ifdef CONFIG_STE_DMA40
+> +       bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
+> +       struct stedma40_chan_cfg *dma_tx_cfg;
+> +       struct stedma40_chan_cfg *dma_rx_cfg;
+> +#endif
+> +};
+> +
+> +struct ste_hsi_platform_data {
+> +       int num_ports;
+> +       int use_dma;
+> +       struct ste_hsi_port_cfg *port_cfg;
+> +};
+> +
+> +#endif
+
+Br,
 -- 
-Jean Delvare
+Carlos Chinea <carlos.chinea@nokia.com>
+
