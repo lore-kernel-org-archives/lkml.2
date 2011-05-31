@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab1EaNYJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 09:24:09 -0400
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:43664 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab1EaNYF (ORCPT
+	id S1751990Ab1EaNYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 09:24:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53349 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754549Ab1EaNYK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 09:24:05 -0400
-Message-ID: <4DE4EBE0.7050007@linux.vnet.ibm.com>
-Date: Tue, 31 May 2011 10:23:44 -0300
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Tue, 31 May 2011 09:24:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=TRMeqgahwk6BtW3ZE92/4phSU/y8TsETT52GuAiSo4cXFt3edB4Fa0mlc6YA6No+VY
+         nr2ekCUx/goGeVt7T1zmsGAGyuyUNWYhVqJAyjKMiY+5jEIU//r/GPGv8mIeHLxj/d+i
+         CT3XhGmBAqdEylLBqjalDyz7ReKErifkS+sik=
 MIME-Version: 1.0
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-CC: debora@linux.vnet.ibm.com, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        jirislaby@gmail.com, preining@logic.at
-Subject: Re: [PATCH V2 00/12] tpm + tpm_tis : Various fixes
-References: <20110330161322.015113054@linux.vnet.ibm.com> <4DE00FDC.309@linux.vnet.ibm.com>
-In-Reply-To: <4DE00FDC.309@linux.vnet.ibm.com>
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20110531131812.GP11352@atomide.com>
+References: <1306846544.30148.1.camel@phoenix> <20110531131812.GP11352@atomide.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 31 May 2011 21:23:49 +0800
+Message-ID: <BANLkTi=JtnWtoWUOytjcqqvYsQde_SLr9w@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: OMAP2: Add missing include of linux/gpio.h
+To: Tony Lindgren <tony@atomide.com>
+Cc: linux-kernel@vger.kernel.org, Syed Mohammed Khasim <x0khasim@ti.com>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        Steve Sakoman <steve@sakoman.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11053113-8936-0000-0000-00000342FE29
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefan,
-
-Yes, I'll have them reviewed again and in a git pull request real soon.
-
-Thanks, Rajiv Andrade
-Security Development
-IBM Linux Technology Center
-
-On 05/27/2011 05:55 PM, Stefan Berger wrote:
-> Rajiv,
+2011/5/31 Tony Lindgren <tony@atomide.com>:
+> * Axel Lin <axel.lin@gmail.com> [110531 05:51]:
+>> I got some build error like below while executing "make omap2plus_defconfig".
+>>
+>>   CC      arch/arm/mach-omap2/board-2430sdp.o
+>> arch/arm/mach-omap2/board-2430sdp.c: In function 'omap_2430sdp_init':
+>> arch/arm/mach-omap2/board-2430sdp.c:247: error: 'GPIOF_OUT_INIT_LOW' undeclared (first use in this function)
+>> arch/arm/mach-omap2/board-2430sdp.c:247: error: (Each undeclared identifier is reported only once
+>> arch/arm/mach-omap2/board-2430sdp.c:247: error: for each function it appears in.)
+>>
+>> This patch fixes the build error by include linux/gpio.h instead of mach/gpio.h.
 >
->   are you planning to use these patches?
+> Does this happen with next?
+Yes, I build the kernel with today's linux-next tree.
 >
-> Regards,
->    Stefan
->
->
-> On 03/30/2011 12:13 PM, Stefan Berger wrote:
->> This patchset fixes various issues in the general TPM driver and the TPM TIS
->> driver. Some of the patches were previously posted, and are being re-posted
->> without change, while other patches were refactored. This patchset applies to
->> the tip of the main git tree.
->>
->> Patches 1-6 are related to using the timeouts that the TPM reports, along with
->> work-arounds for TPMs that don't report the timeouts in microseconds but
->> rather in milliseconds.
->>
->> Patch 7 fixes the display of the public key of the TPM's Endorsement Key in
->> sysfs.
->>
->> Patch 8 re-enables the TPM's interrupts after resume from S3.
->>
->> Patch 9 is useful if the TPM is run in interrupt mode and delays the S3 suspend
->> until the TPM has finished processing a command.
->>
->> Patch 10 fixes several aspects of the code around the probing for interrupts.
->>
->> Patch 11 introduces automatic probing for the Intel iTPM flaw. The probing
->> is useful in combination with the 'force' module parameter that enables
->> the interrupt mode on some machines but then ends up circumventing ACPI to
->> determine whether an Intel iTPM is present to activate the work-around. So,
->> in that case we can rely on the probing.
->>
->> Patch 12 fixes a typo.
->>
->> I have tested these patches on four different types of machines. They worked
->> fine there even though the TPM could not be used in interrupt mode on all of
->> them (IRQ line not connected?).
->>
->> V2:
->>    - following Rajiv's feedback. Splitting the durations and timeout
->>      patches in 3 parts.
->>    - slightly rearranging the order of the patches
->>
->>    Regards,
->>           Stefan
->> -- 
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-
+> Will queue as a fix anyways.
+Thanks,
+Axel
