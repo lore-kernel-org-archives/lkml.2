@@ -1,100 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab1EaT33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 15:29:29 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:59545
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753523Ab1EaT32 (ORCPT
+	id S1758135Ab1EaT3y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 15:29:54 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:46343 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab1EaT3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 15:29:28 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de p4VJTG0h016071
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [3.0-rc1] i915: blank screen on Lenovo Ideapad U160
-In-Reply-To: <gitycau362.fsf@mx10.gouders.net> (Dirk Gouders's message of
-	"Tue, 31 May 2011 20:37:41 +0200")
-References: <gi1uzevjl4.fsf@mx10.gouders.net>
-	<alpine.DEB.2.00.1105311406210.5012@localhost6.localdomain6>
-	<gitycau362.fsf@mx10.gouders.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Tue, 31 May 2011 21:29:15 +0200
-Message-ID: <giei3eoeic.fsf@mx10.gouders.net>
+	Tue, 31 May 2011 15:29:52 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6362"; a="94678126"
+Message-ID: <6330092a26bc057e48560971214001ac.squirrel@www.codeaurora.org>
+In-Reply-To: <Pine.LNX.4.44L0.1105311453350.1830-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1105311453350.1830-100000@iolanthe.rowland.org>
+Date: Tue, 31 May 2011 12:29:19 -0700 (PDT)
+Subject: Re: [PATCH v14 9/9] usb: Adding SuperSpeed support to dummy_hcd
+From: "Brokhman Tatyana" <tlinder@codeaurora.org>
+To: "Alan Stern" <stern@rowland.harvard.edu>
+Cc: "Brokhman Tatyana" <tlinder@codeaurora.org>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        ablay@codeaurora.org, "open list" <linux-kernel@vger.kernel.org>
+Reply-To: tlinder@codeaurora.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Tue, 31 May 2011 21:29:17 +0200 (CEST)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de> writes:
 
-> "Robert P. J. Day" <rpjday@crashcourse.ca> writes:
 >
->> On Tue, 31 May 2011, Dirk Gouders wrote:
->>
->>> Hello,
->>>
->>> I tested 3.0.0-rc1 on my notebook which has never been the best friend
->>> of the i915 driver.  With linux-2.6.38-gentoo-r4 it has the problem
->>> that the screen remains blank after the lid is closed and reopened, but
->>> that problem I can live with.  With 3.0.0-r1 I am back to a former
->>> problem that the screen goes (and remains) blank while booting.
->>>
->>> The next step I will do is to test linux-2.6.39-gentoo, probably I
->>> did not notice information that I have to adjust boot parameters or the
->>> kernel config?
->>
->>   based on my having lived through the i915 "black screen of death",
->> pulling out my handy "git bisect" and with advice from chris wilson,
->> these days, i simply apply this patch to the source:
->>
->> diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
->> index d2c7104..a1a5d03 100644
->> --- a/drivers/gpu/drm/i915/intel_opregion.c
->> +++ b/drivers/gpu/drm/i915/intel_opregion.c
->> @@ -152,6 +152,8 @@ static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
->>  	struct opregion_asle *asle = dev_priv->opregion.asle;
->>  	u32 max;
->>
->> +return ASLE_BACKLIGHT_FAILED; // rday
->> +
->>  	if (!(bclp & ASLE_BCLP_VALID))
->>  		return ASLE_BACKLIGHT_FAILED;
->>
->>
->>   i tried taking it out a couple of times and immediately got the same
->> i915-related problem so until i hear differently, the patch stays in.
+> Let's put it another way.  If the "is_super_speed" module parameter is
+> set to False then we know that the emulated connection will never run
+> at SS.  Therefore there's no point in registering a SS root hub.
 >
-> Thanks for the hint.  I tested the patch with 3.0.0-rc1 and
-> unfortunately the symptoms remain the same.
->
-> Meanwhile, I tested 2.6.39-gentoo as well and it also causes that
-> problem.  So, this is not really a (new) 3.0.0-rc1 issue.
->
-> Best regards,
->
-> Dirk
 
-Your patch reminded me of another patch of Chris that caused problems
-for several other people, but manually applied to the changed context in
-3.0.0-rc1 again works for me:
+Ok, I'm convinsed. :) Will update.
 
---- linux-3.0-rc1/drivers/gpu/drm/i915/intel_bios.c     2011-05-30 02:43:36.000000000 +0200
-+++ /usr/src/linux-3.0-rc1/drivers/gpu/drm/i915/intel_bios.c    2011-05-31 20:53:35.000000000 +0200
-@@ -267,7 +267,7 @@
-        case 4:
-                return alternate ? 100 : 96;
-        default:
--               return alternate ? 100 : 120;
-+               return alternate ? 120 : 100;
-        }
- }
+Thanks
+Tanya Brokhman
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-The strange thing is that I am pretty sure that I did not have to modify
-2.6.28-gentoo{,-r4} what I at that time also reported here:
-https://bugs.freedesktop.org/show_bug.cgi?id=31596
 
-Best regards,
-
-Dirk
