@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757991Ab1EaGwd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 02:52:33 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40273 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757462Ab1EaGwc (ORCPT
+	id S1757980Ab1EaG4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 02:56:24 -0400
+Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:47677 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751150Ab1EaG4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 02:52:32 -0400
-Date: Tue, 31 May 2011 08:52:28 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>, kernel@pengutronix.de
-Subject: Re: [PATCH] leds: make LEDS_GPIO_REGISTER depend on NEW_LEDS
-Message-ID: <20110531065228.GS9907@pengutronix.de>
-References: <1306576376.10669.12.camel@phoenix>
- <20110528174733.GF9907@pengutronix.de>
- <BANLkTi=F2Gh=+-8ms0nBf+zdLy+7uEOugg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=F2Gh=+-8ms0nBf+zdLy+7uEOugg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 31 May 2011 02:56:23 -0400
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [PATCH 1/3] irq/spurious: dump also the name of the threaded handler
+Date: Tue, 31 May 2011 08:56:10 +0200
+Message-Id: <1306824972-27067-1-git-send-email-sebastian@breakpoint.cc>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 09:38:34AM +0800, Axel Lin wrote:
-> hi Uwe,
-> > Below is a patch that fixes the layout problem but keeps the
-> > functionality as before and intended.
-> >
-> > -----8<-----
-> > leds: move LEDS_GPIO_REGISTER out of menuconfig NEW_LEDS
-> >
-> > From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> >
-> > Commit 4440673a "leds: provide helper to register "leds-gpio" devices"
-> > broke the display of the NEW_LEDS menu as it didn't depend on NEW_LEDS
-> > and so made "LED drivers" and "LED Triggers" appear at the same level as
-> > "LED Support" instead of below it as it was before 4440673a.
-> >
-> > Moving LEDS_GPIO_REGISTER out of the menuconfig NEW_LEDS fixes this
-> > unintended side effect.
-> >
-> > Reported-by: Axel Lin <axel.lin@gmail.com>
-> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > ---
-> Your patch looks good.
-Richard, thoughts? Andrew, do you take my patch provided that Richard is
-OK with it?
+In forced threaded mode (or with explicit threaded handler) we only see
+the primary handler, not the actual threaded handler which does not feel
+to be responsible.
 
-Best regards
-Uwe
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+ kernel/irq/spurious.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
+diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
+index dfbd550..c9a78ba 100644
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -201,10 +201,11 @@ __report_bad_irq(unsigned int irq, struct irq_desc *desc,
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+ 	action = desc->action;
+ 	while (action) {
+-		printk(KERN_ERR "[<%p>]", action->handler);
+-		print_symbol(" (%s)",
+-			(unsigned long)action->handler);
+-		printk("\n");
++		printk(KERN_ERR "[<%p>] %pf", action->handler, action->handler);
++		if (action->thread_fn)
++			printk(KERN_CONT " threaded [<%p>] %pf",
++					action->thread_fn, action->thread_fn);
++		printk(KERN_CONT "\n");
+ 		action = action->next;
+ 	}
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.4.4
+
