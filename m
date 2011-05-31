@@ -1,113 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab1EaOPK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 10:15:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53609 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755435Ab1EaOPA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 10:15:00 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Allow touchscreen to be disabled on wm831x devices
-Date: Tue, 31 May 2011 15:14:56 +0100
-Message-Id: <1306851296-29031-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.1
+	id S1756948Ab1EaORF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 10:17:05 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:44681 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756869Ab1EaOQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 10:16:54 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Brian King <brking@us.ibm.com>
+Cc: kernel-janitors@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/scsi/ipr.c: reorder error handling code to include iounmap
+Date: Tue, 31 May 2011 16:16:49 +0200
+Message-Id: <1306851409-14963-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow platform data to flag the touchscreen as disabled so that if the
-touch driver is built in we don't end up causing lots of work by spuriously
-detecting touchscreen activity on systems where it isn't in use.
+From: Julia Lawall <julia@diku.dk>
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+The out_msi_disable label should be before cleanup_nomem to additionally
+benefit from the call to iounmap.  Subsequent gotos are adjusted to go to
+out_msi_disable instead of cleanup_nomem, which now follows it.  This is
+safe because pci_disable_msi does nothing if pci_enable_msi was not called.
+
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@r@
+expression e1,e2;
+statement S;
+@@
+
+e1 = pci_ioremap_bar(...);
+... when != e1 = e2
+    when != iounmap(e1)
+    when any
+(
+ if (<+...e1...+>) S
+|
+ if(...) { ... return 0; }
+|
+ if (...) { ... when != iounmap(e1)
+                when != if (...) { ... iounmap(e1) ... }
+* return ...;
+ } else S
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
- drivers/mfd/wm831x-core.c        |   27 +++++++++++++++++----------
- include/linux/mfd/wm831x/pdata.h |    3 +++
- 2 files changed, 20 insertions(+), 10 deletions(-)
+ drivers/scsi/ipr.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index 04994b2..ff57a16 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -1125,11 +1125,6 @@ static struct mfd_cell wm8311_devs[] = {
- 		.resources = wm831x_status2_resources,
- 	},
- 	{
--		.name = "wm831x-touch",
--		.num_resources = ARRAY_SIZE(wm831x_touch_resources),
--		.resources = wm831x_touch_resources,
--	},
--	{
- 		.name = "wm831x-watchdog",
- 		.num_resources = ARRAY_SIZE(wm831x_wdt_resources),
- 		.resources = wm831x_wdt_resources,
-@@ -1286,11 +1281,6 @@ static struct mfd_cell wm8312_devs[] = {
- 		.resources = wm831x_status2_resources,
- 	},
- 	{
--		.name = "wm831x-touch",
--		.num_resources = ARRAY_SIZE(wm831x_touch_resources),
--		.resources = wm831x_touch_resources,
--	},
--	{
- 		.name = "wm831x-watchdog",
- 		.num_resources = ARRAY_SIZE(wm831x_wdt_resources),
- 		.resources = wm831x_wdt_resources,
-@@ -1428,6 +1418,15 @@ static struct mfd_cell wm8320_devs[] = {
- 	},
- };
+diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
+index 888086c..8d63630 100644
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -8778,14 +8778,14 @@ static int __devinit ipr_probe_ioa(struct pci_dev *pdev,
+ 	if (rc != PCIBIOS_SUCCESSFUL) {
+ 		dev_err(&pdev->dev, "Failed to save PCI config space\n");
+ 		rc = -EIO;
+-		goto cleanup_nomem;
++		goto out_msi_disable;
+ 	}
  
-+static struct mfd_cell touch_devs[] = {
-+	{
-+		.name = "wm831x-touch",
-+		.num_resources = ARRAY_SIZE(wm831x_touch_resources),
-+		.resources = wm831x_touch_resources,
-+	},
-+};
-+
-+
- static struct mfd_cell backlight_devs[] = {
- 	{
- 		.name = "wm831x-backlight",
-@@ -1624,12 +1623,20 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 		ret = mfd_add_devices(wm831x->dev, wm831x_num,
- 				      wm8311_devs, ARRAY_SIZE(wm8311_devs),
- 				      NULL, wm831x->irq_base);
-+		if (!pdata || !pdata->disable_touch)
-+			mfd_add_devices(wm831x->dev, wm831x_num,
-+					touch_devs, ARRAY_SIZE(touch_devs),
-+					NULL, wm831x->irq_base);
- 		break;
+ 	if ((rc = ipr_save_pcix_cmd_reg(ioa_cfg)))
+-		goto cleanup_nomem;
++		goto out_msi_disable;
  
- 	case WM8312:
- 		ret = mfd_add_devices(wm831x->dev, wm831x_num,
- 				      wm8312_devs, ARRAY_SIZE(wm8312_devs),
- 				      NULL, wm831x->irq_base);
-+		if (!pdata || !pdata->disable_touch)
-+			mfd_add_devices(wm831x->dev, wm831x_num,
-+					touch_devs, ARRAY_SIZE(touch_devs),
-+					NULL, wm831x->irq_base);
- 		break;
+ 	if ((rc = ipr_set_pcix_cmd_reg(ioa_cfg)))
+-		goto cleanup_nomem;
++		goto out_msi_disable;
  
- 	case WM8320:
-diff --git a/include/linux/mfd/wm831x/pdata.h b/include/linux/mfd/wm831x/pdata.h
-index ff42d70..0ba2459 100644
---- a/include/linux/mfd/wm831x/pdata.h
-+++ b/include/linux/mfd/wm831x/pdata.h
-@@ -120,6 +120,9 @@ struct wm831x_pdata {
- 	/** Put the /IRQ line into CMOS mode */
- 	bool irq_cmos;
+ 	if (ioa_cfg->sis64)
+ 		ioa_cfg->cfg_table_size = (sizeof(struct ipr_config_table_hdr64)
+@@ -8800,7 +8800,7 @@ static int __devinit ipr_probe_ioa(struct pci_dev *pdev,
+ 	if (rc < 0) {
+ 		dev_err(&pdev->dev,
+ 			"Couldn't allocate enough memory for device driver!\n");
+-		goto cleanup_nomem;
++		goto out_msi_disable;
+ 	}
  
-+	/** Disable the touchscreen */
-+	bool disable_touch;
-+
- 	int irq_base;
- 	int gpio_base;
- 	int gpio_defaults[WM831X_GPIO_NUM];
--- 
-1.7.5.1
+ 	/*
+@@ -8845,10 +8845,10 @@ out:
+ 
+ cleanup_nolog:
+ 	ipr_free_mem(ioa_cfg);
+-cleanup_nomem:
+-	iounmap(ipr_regs);
+ out_msi_disable:
+ 	pci_disable_msi(pdev);
++cleanup_nomem:
++	iounmap(ipr_regs);
+ out_release_regions:
+ 	pci_release_regions(pdev);
+ out_scsi_host_put:
 
