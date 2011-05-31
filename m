@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab1EaNhi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 09:37:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35857 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab1EaNhh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 09:37:37 -0400
-Message-ID: <4DE4EF1B.80805@monstr.eu>
-Date: Tue, 31 May 2011 15:37:31 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1754720Ab1EaNj4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 09:39:56 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:37833 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751079Ab1EaNjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 09:39:55 -0400
+Date: Tue, 31 May 2011 15:39:50 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH v2 04/10] Add additional isolation mode
+Message-ID: <20110531133950.GA4594@cmpxchg.org>
+References: <cover.1306689214.git.minchan.kim@gmail.com>
+ <5b0f0be7ee441ea27ffcad81d2637ac09407acf3.1306689214.git.minchan.kim@gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ingo Molnar <mingo@elte.hu>, Catalin Marinas <catalin.marinas@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Frank Rowand <frank.rowand@am.sony.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
- locks up on ARM
-References: <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>	 <1306405979.1200.63.camel@twins>	 <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>	 <1306409575.1200.71.camel@twins> <1306412511.1200.90.camel@twins>	 <20110526122623.GA11875@elte.hu>	 <20110526123137.GG24876@n2100.arm.linux.org.uk>	 <20110526125007.GA27083@elte.hu>	 <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com>	 <20110527120629.GA32617@elte.hu>	 <20110527205240.GT24876@n2100.arm.linux.org.uk>	 <1306588381.2497.481.camel@laptop>  <4DE4CC33.7090404@petalogix.com> <1306848137.2353.91.camel@twins>
-In-Reply-To: <1306848137.2353.91.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5b0f0be7ee441ea27ffcad81d2637ac09407acf3.1306689214.git.minchan.kim@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra wrote:
-> On Tue, 2011-05-31 at 13:08 +0200, Michal Simek wrote:
->> please correct me if I am wrong but this is workaround just for ARM.
->> I am not aware that we need to do anything with caches. I enabled that options
->> after our discussion (http://lkml.org/lkml/2009/12/3/204) because of problems 
->> with lockdep. I will look if I can remove that option but it will be necessary 
->> to do some changes in code. switch_to should be called with irq OFF right?
+On Mon, May 30, 2011 at 03:13:43AM +0900, Minchan Kim wrote:
+> There are some places to isolate lru page and I believe
+> users of isolate_lru_page will be growing.
+> The purpose of them is each different so part of isolated pages
+> should put back to LRU, again.
 > 
-> Hmm, so the problem was that interrupts got enabled on microblaze (or
-> lockdep thought they were), so we need to figure out why that is so
-> instead of ensuring that it is so.
+> The problem is when we put back the page into LRU,
+> we lose LRU ordering and the page is inserted at head of LRU list.
+> It makes unnecessary LRU churning so that vm can evict working set pages
+> rather than idle pages.
 > 
-> /me goes poke about in the microblaze code..
+> This patch adds new modes when we isolate page in LRU so we don't isolate pages
+> if we can't handle it. It could reduce LRU churning.
 > 
-> So on fork() the child ip gets set to ret_from_fork(), then when we wake
-> the child we'll eventually schedule to it. So we get a context switch
-> like X -> child.
+> This patch doesn't change old behavior. It's just used by next patches.
 > 
-> Then X calls schedule()->context_switch()->switch_to() which will
-> continue at ret_from_fork()->schedule_tail()->finish_task_switch()->
-> finish_lock_switch()->spin_acquire(&rq->lock.depmap..)
-> 
-> Now the lockdep report says that at that point interrupts were enabled,
-> and I can't quite see how that would happen, we go into switch_to() with
-> interrupts disabled (assuming !__ARCH_WANT_INTERRUPTS_ON_CTXSW), so the
-> whole ret_from_fork()->... path should run with interrupts disabled as
-> well.
-> 
-> I can't find where it would have enabled IRQs. Maybe the current
-> microblaze code doesn't suffer this, or I simply missed it in the
-> entry.S magic -- its not like I can actually read microblaze asm well.
-> 
-> Does it still explode like back then, if so, can you see where it
-> enables IRQs?
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-I briefly looked at it and it probably come from copy_thread function (process.c 
-- line: childregs->msr |= MSR_IE;)
-When context switch happen, childregs->msr value is loaded to MSR (machine 
-status register) which caused that IE is enabled ( entry.S:~977 lwi	r12, r11, 
-CC_MSR; 	mts	rmsr, r12)
-
-NOTE: MSR stores flags for IE, i/d-cache ON/OFF, virtual memory/user mode etc.
-
-This is no problem if context switch is done with irq on. But maybe there is 
-another place which is causing some problems.
-
-Where exactly should be IRQ reenable after context switch?
-
-I would like to also check some things.
-1. When schedule should be called from arch specific code?
-Currently we are calling schedule after syscall/exception/interrupt happen.
-Is there any place where schedule should/shouldn't be called?
-
-2. For syscall and exception handling - interrupt is ON but it is only masked.
-When schedule is called from that any code has to enable IRQ if generic code 
-doesn't do that. Not sure if it does.
-
-Michal
-
-
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
