@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758345Ab1EaIbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 04:31:53 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:40341 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758282Ab1EaIbu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 04:31:50 -0400
-From: Mattias Wallin <mattias.wallin@stericsson.com>
-To: Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Mattias Wallin <mattias.wallin@stericsson.com>
-Subject: [PATCH 3/3] mach-ux500: add support for clocksource DB8500 PRCMU
-Date: Tue, 31 May 2011 10:31:19 +0200
-Message-ID: <1306830679-9591-1-git-send-email-mattias.wallin@stericsson.com>
-X-Mailer: git-send-email 1.7.5.1
+	id S1758360Ab1EaIcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 04:32:23 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:59654 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756577Ab1EaIcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 04:32:21 -0400
+Date: Tue, 31 May 2011 09:32:15 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: akpm@linux-foundation.org, Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110531083215.GT5044@csn.ul.ie>
+References: <20110530131300.GQ5044@csn.ul.ie>
+ <20110530161415.GB2200@barrios-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110530161415.GB2200@barrios-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the DB8500 PRCMU clocksource
-to the mach-ux500 platform.
+On Tue, May 31, 2011 at 01:14:15AM +0900, Minchan Kim wrote:
+> On Mon, May 30, 2011 at 02:13:00PM +0100, Mel Gorman wrote:
+> > Asynchronous compaction is used when promoting to huge pages. This is
+> > all very nice but if there are a number of processes in compacting
+> > memory, a large number of pages can be isolated. An "asynchronous"
+> > process can stall for long periods of time as a result with a user
+> > reporting that firefox can stall for 10s of seconds. This patch aborts
+> > asynchronous compaction if too many pages are isolated as it's better to
+> > fail a hugepage promotion than stall a process.
+> > 
+> > If accepted, this should also be considered for 2.6.39-stable. It should
+> > also be considered for 2.6.38-stable but ideally [11bc82d6: mm:
+> > compaction: Use async migration for __GFP_NO_KSWAPD and enforce no
+> > writeback] would be applied to 2.6.38 before consideration.
+> > 
+> > Reported-and-Tested-by: Ury Stankevich <urykhy@gmail.com>
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> 
 
-Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
- arch/arm/mach-ux500/cpu.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Thanks
 
-diff --git a/arch/arm/mach-ux500/cpu.c b/arch/arm/mach-ux500/cpu.c
-index 1da23bb8..7109921 100644
---- a/arch/arm/mach-ux500/cpu.c
-+++ b/arch/arm/mach-ux500/cpu.c
-@@ -10,6 +10,7 @@
- #include <linux/clk.h>
- #include <linux/mfd/db8500-prcmu.h>
- #include <linux/mfd/db5500-prcmu.h>
-+#include <linux/clksrc-db8500-prcmu.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/hardware/cache-l2x0.h>
-@@ -141,6 +142,7 @@ static void __init ux500_timer_init(void)
- 		ux500_unknown_soc();
- 
- 	nmdk_timer_init();
-+	clksrc_db8500_prcmu_init();
- }
- 
- struct sys_timer ux500_timer = {
+> I have a nitpick below.
+> Otherwise, looks good to me.
+> 
+> > ---
+> >  mm/compaction.c |   32 ++++++++++++++++++++++++++------
+> >  1 files changed, 26 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/mm/compaction.c b/mm/compaction.c
+> > index 021a296..331a2ee 100644
+> > --- a/mm/compaction.c
+> > +++ b/mm/compaction.c
+> > @@ -240,11 +240,20 @@ static bool too_many_isolated(struct zone *zone)
+> >  	return isolated > (inactive + active) / 2;
+> >  }
+> >  
+> > +/* possible outcome of isolate_migratepages */
+> > +typedef enum {
+> > +	ISOLATE_ABORT,		/* Abort compaction now */
+> > +	ISOLATE_NONE,		/* No pages isolated, continue scanning */
+> > +	ISOLATE_SUCCESS,	/* Pages isolated, migrate */
+> > +} isolate_migrate_t;
+> > +
+> >  /*
+> >   * Isolate all pages that can be migrated from the block pointed to by
+> >   * the migrate scanner within compact_control.
+> > + *
+> > + * Returns false if compaction should abort at this point due to congestion.
+> 
+> false? I think it would be better to use explicit word, ISOLATE_ABORT.
+> 
+
+Oops, thanks for pointing that out. I'll post a V2 once it has been
+figured out why NR_ISOLATE_* is getting screwed up on !CONFIG_SMP.
+
 -- 
-1.7.4.3
-
+Mel Gorman
+SUSE Labs
