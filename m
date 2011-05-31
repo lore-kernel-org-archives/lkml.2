@@ -1,116 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933Ab1EaAzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 20:55:51 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:27470 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757742Ab1EaAzu (ORCPT
+	id S1757966Ab1EaBMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 21:12:52 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:39535 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755623Ab1EaBMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 20:55:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=Sg9FE8JEM+wWO+ziGKI5j9mmscIgloMgw4gTILAVoRV53zTjIAHx06bo0UaGbv9jqH
-         zlOR+tjGyZ3uRiAD/1Ew==
-Date: Mon, 30 May 2011 17:55:44 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH 14/14] tmpfs: no need to use i_lock
-In-Reply-To: <alpine.LSU.2.00.1105301726180.5482@sister.anvils>
-Message-ID: <alpine.LSU.2.00.1105301754050.5482@sister.anvils>
-References: <alpine.LSU.2.00.1105301726180.5482@sister.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Mon, 30 May 2011 21:12:51 -0400
+X-AuditID: cbfee61b-b7c62ae0000056ed-38-4de44091d8ca
+Date: Tue, 31 May 2011 10:12:45 +0900
+From: Kyungmin Park <kmpark@infradead.org>
+Subject: [PATCH] CFQ: Fix typo and remove unnecessary semicolon
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Message-id: <20110531011245.GA7980@july>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-OriginalArrivalTime: 31 May 2011 01:12:45.0829 (UTC)
+ FILETIME=[D967E350:01CC1F2F]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36's 7e496299d4d2 to make tmpfs scalable with percpu_counter used
-inode->i_lock in place of sbinfo->stat_lock around i_blocks updates;
-but that was adverse to scalability, and unnecessary, since info->lock
-is already held there in the fast paths.
+From: Kyungmin Park <kyungmin.park@samsung.com>
 
-Remove those uses of i_lock, and add info->lock in the three error
-paths where it's then needed across shmem_free_blocks().  It's not
-actually needed across shmem_unacct_blocks(), but they're so often
-paired that it looks wrong to split them apart.
+Fix comment typo and remove unnecessary semicolon at macro
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- mm/shmem.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
-
---- linux.orig/mm/shmem.c	2011-05-30 14:25:32.665536626 -0700
-+++ linux/mm/shmem.c	2011-05-30 15:03:41.680887254 -0700
-@@ -241,9 +241,7 @@ static void shmem_free_blocks(struct ino
- 	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
- 	if (sbinfo->max_blocks) {
- 		percpu_counter_add(&sbinfo->used_blocks, -pages);
--		spin_lock(&inode->i_lock);
- 		inode->i_blocks -= pages*BLOCKS_PER_PAGE;
--		spin_unlock(&inode->i_lock);
- 	}
- }
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 7c52d68..8a02c95 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -185,7 +185,7 @@ struct cfq_group {
+ 	int nr_cfqq;
  
-@@ -432,9 +430,7 @@ static swp_entry_t *shmem_swp_alloc(stru
- 						sbinfo->max_blocks - 1) >= 0)
- 				return ERR_PTR(-ENOSPC);
- 			percpu_counter_inc(&sbinfo->used_blocks);
--			spin_lock(&inode->i_lock);
- 			inode->i_blocks += BLOCKS_PER_PAGE;
--			spin_unlock(&inode->i_lock);
- 		}
+ 	/*
+-	 * Per group busy queus average. Useful for workload slice calc. We
++	 * Per group busy queues average. Useful for workload slice calc. We
+ 	 * create the array for each prio class but at run time it is used
+ 	 * only for RT and BE class and slot for IDLE class remains unused.
+ 	 * This is primarily done to avoid confusion and a gcc warning.
+@@ -369,16 +369,16 @@ CFQ_CFQQ_FNS(wait_busy);
+ #define cfq_log_cfqq(cfqd, cfqq, fmt, args...)	\
+ 	blk_add_trace_msg((cfqd)->queue, "cfq%d%c %s " fmt, (cfqq)->pid, \
+ 			cfq_cfqq_sync((cfqq)) ? 'S' : 'A', \
+-			blkg_path(&(cfqq)->cfqg->blkg), ##args);
++			blkg_path(&(cfqq)->cfqg->blkg), ##args)
  
- 		spin_unlock(&info->lock);
-@@ -1420,9 +1416,7 @@ repeat:
- 			    shmem_acct_block(info->flags))
- 				goto nospace;
- 			percpu_counter_inc(&sbinfo->used_blocks);
--			spin_lock(&inode->i_lock);
- 			inode->i_blocks += BLOCKS_PER_PAGE;
--			spin_unlock(&inode->i_lock);
- 		} else if (shmem_acct_block(info->flags))
- 			goto nospace;
+ #define cfq_log_cfqg(cfqd, cfqg, fmt, args...)				\
+ 	blk_add_trace_msg((cfqd)->queue, "%s " fmt,			\
+-				blkg_path(&(cfqg)->blkg), ##args);      \
++				blkg_path(&(cfqg)->blkg), ##args)       \
  
-@@ -1433,8 +1427,10 @@ repeat:
- 				spin_unlock(&info->lock);
- 				filepage = shmem_alloc_page(gfp, info, idx);
- 				if (!filepage) {
-+					spin_lock(&info->lock);
- 					shmem_unacct_blocks(info->flags, 1);
- 					shmem_free_blocks(inode, 1);
-+					spin_unlock(&info->lock);
- 					error = -ENOMEM;
- 					goto failed;
- 				}
-@@ -1448,8 +1444,10 @@ repeat:
- 					current->mm, GFP_KERNEL);
- 				if (error) {
- 					page_cache_release(filepage);
-+					spin_lock(&info->lock);
- 					shmem_unacct_blocks(info->flags, 1);
- 					shmem_free_blocks(inode, 1);
-+					spin_unlock(&info->lock);
- 					filepage = NULL;
- 					goto failed;
- 				}
-@@ -1479,10 +1477,10 @@ repeat:
- 			 * be done automatically.
- 			 */
- 			if (ret) {
--				spin_unlock(&info->lock);
--				page_cache_release(filepage);
- 				shmem_unacct_blocks(info->flags, 1);
- 				shmem_free_blocks(inode, 1);
-+				spin_unlock(&info->lock);
-+				page_cache_release(filepage);
- 				filepage = NULL;
- 				if (error)
- 					goto failed;
+ #else
+ #define cfq_log_cfqq(cfqd, cfqq, fmt, args...)	\
+ 	blk_add_trace_msg((cfqd)->queue, "cfq%d " fmt, (cfqq)->pid, ##args)
+-#define cfq_log_cfqg(cfqd, cfqg, fmt, args...)		do {} while (0);
++#define cfq_log_cfqg(cfqd, cfqg, fmt, args...)		do {} while (0)
+ #endif
+ #define cfq_log(cfqd, fmt, args...)	\
+ 	blk_add_trace_msg((cfqd)->queue, "cfq " fmt, ##args)
