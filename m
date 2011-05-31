@@ -1,96 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757044Ab1EaPcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:32:18 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46723 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754549Ab1EaPcQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:32:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=kW9yuQGgWuOUO2GebwnL5bhwiqNBpfTOFMQebajSSYQ6/U3R+Ts9pIetMN1jiRiwao
-         bsSwClRgKfAc/V0GWVOXHaXCdmpo6OVykFs+9CiF6ZVoV4Pnx3Pd177iqFN75u7OP439
-         QsNKhkX/Pv2cSltr70Pyjv8XuoIUAWXeYesc4=
+	id S1757108Ab1EaPeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 11:34:37 -0400
+Received: from hyde.gogi.tv ([87.106.161.174]:41748 "EHLO hyde.gogi.tv"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756573Ab1EaPef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 11:34:35 -0400
 MIME-Version: 1.0
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 31 May 2011 11:31:55 -0400
-X-Google-Sender-Auth: NIYjaG7WA03ybEbYrpxz6z1Rs08
-Message-ID: <BANLkTinC=bL6NvRzU2hrFLgmbyFu6L-8zA@mail.gmail.com>
-Subject: Question about alternatives (Re: [PATCH 0/5] x86-64: Remove syscall
- instructions at fixed addresses)
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Tue, 31 May 2011 16:34:33 +0100
+From: Daniel Haid <d.haid@gogi.tv>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Andi Kleen <andi@firstfloor.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Question about iommu on =?UTF-8?Q?x=38=36=5F=36=34=20and=20ra?=
+ =?UTF-8?Q?deon=20driver=2E?=
+In-Reply-To: <20110531134519.GC14641@dumpdata.com>
+References: <6ac3f6faad655602b767aa14b355e982@admin.gogi.tv>
+ <20110523220536.GB11961@dumpdata.com>
+ <756073831c36e0404199a4e8239bcb70@admin.gogi.tv>
+ <m2wrhf4sw5.fsf@firstfloor.org>
+ <08370791664f069624d25c757ed101c0@admin.gogi.tv>
+ <20110525125752.GB3467@dumpdata.com>
+ <dfd8bfd19ba1fb77d6448bff97123e13@admin.gogi.tv>
+ <20110527155507.GB11273@dumpdata.com>
+ <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv>
+ <20110531134519.GC14641@dumpdata.com>
+Message-ID: <59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv>
+User-Agent: Roundcube Webmail/0.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 9:17 AM, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Tue, May 31, 2011 at 9:11 AM, Ingo Molnar <mingo@elte.hu> wrote:
->>
->> * Andrew Lutomirski <luto@mit.edu> wrote:
->>
->>> > You could start with picking the more compatible alternative
->>> > instruction initially. I don't at all mind losing half a cycle of
->>> > performance in that case ... this code should be secure first.
->>>
->>> The more compatible one is mfence, which in some cases could (I
->>> think) be a lot more than half a cycle.
->>
->> I'd still suggest to do the mfence change now and remove the
->> alternatives patching for now - if it's more than half a cycle then
->> it sure will be implemented properly, right?
+> Noo.. It does, but the normal assumption of 'phys_to_virt' ==
+> 'phys_to_bus' is
+> not valid anymore. Think of a buffer (swiotlb) which has a pool
+> of pages and when a PCI device wants a page, it hands one out. It 
+> also has
+> other functionality such as 'mapping' of an already allocated page. 
+> If the
+> PCI device asks the IOMMU (swiotlb) to map a page (and if you have
+> 'swiotlb=force'
+> the page provided has been allocated above 4GB and the device can 
+> only handle
+> up to 32-bit),
+
+ Does the radeon driver allocate without DMA32, possibly above 4GB, ...
+
+> then swiotlb gives out a page from its own pool. You now have
+> two addresses: the one from the PCI pool (swiotlb) and the one you 
+> already
+> allocated.
+
+ ... or does it allocate under 4GB but nevertheless get a page from
+ the swiotlb pool?
+
+> You are suppose to program your PCI card to read/write data to the
+> page provided from the IOMMU (so the swiotlb), which means that it 
+> won't
+> write to the page you had allocated. Hence there are a calls, such as
+> 'sync_page'..
+> which will copy the contents from the swiotlb page to the one you had
+> allocated
+> (or vice-versa). This is called 'bounce buffer'.
 >
-> I don't know.  I just cut 5 ns off the thing a couple weeks ago and no
-> one beat me to it :)
->
-> I'll take a look at how hard the patching will be.
+> The radeon (and nouveau) don't have the code to call the 'sync_page', 
+> and
+> you wouldn't really want to do so - as it slows down the performance 
+> of the
+> machine. There exists another mechanism which is to allocate the 
+> pages
+> at the start, and not do mapping later one.
 
-I don't think it'll be that hard to get the alternatives code to work
-on the vdso, but there's an annoyance: the alt_instr descriptor
-contains the absolute addresses of the old and new code.  That means
-that if we generate a shared object with alternatives, that shared
-object will contain relocations, and I'd rather not teach the kernel
-how to relocate the vdso image.
+ Why can the radeon not simply allocate addresses under 4GB and not 
+ request
+ adresses from the iommu at all?
 
-Would you be okay with changing the addresses to be relative, like
-this: (sorry, whitespace damaged):
+ I assume that if you request a page from the IOMMU, you are required to 
+ do
+ these sync_page calls (and that they get optimized away with a hardware 
+ IOMMU?).
 
-diff --git a/arch/x86/include/asm/alternative.h
-b/arch/x86/include/asm/alternative.h
-index bf535f9..de25be6 100644
---- a/arch/x86/include/asm/alternative.h
-+++ b/arch/x86/include/asm/alternative.h
-@@ -84,8 +84,8 @@ static inline int alternatives_text_reserved(void
-*start, void *end)
-       "661:\n\t" oldinstr "\n662:\n"                                   \
-       ".section .altinstructions,\"a\"\n"                              \
-       _ASM_ALIGN "\n"                                                  \
--      _ASM_PTR "661b\n"                                /* label
-    */   \
--      _ASM_PTR "663f\n"                                /* new
-instruction */   \
-+      _ASM_PTR "661b - .\n"                    /* label           */   \
-+      _ASM_PTR "663f - .\n"                    /* new instruction */   \
-       "         .word " __stringify(feature) "\n"      /* feature bit
-    */   \
-       "         .byte 662b-661b\n"                     /* sourcelen
-    */   \
-       "         .byte 664f-663f\n"                     /*
-replacementlen  */   \
+ So if the radeon uses the IOMMU but does not call sync_page even if 
+ required to
+ the code seems to be broken. If this is indeed the case would it not be 
+ possible to
+ simply add the sync_page calls for now (and thus fix the code), if it 
+ is not
+ difficult, and implement the method with more performance later?
 
-This won't result in relocations.
-
-(Obviously I'd have to change the asm version and the patching code to
-match it.)
-
---Andy
