@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758098Ab1EaS3W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 14:29:22 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57021 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab1EaS3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 14:29:21 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrew Worsley <amworsley@gmail.com>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH] init, calibrate: Drop annoying warning
-Date: Tue, 31 May 2011 20:29:01 +0200
-Message-Id: <1306866541-17090-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
+	id S1758060Ab1EaSbo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 14:31:44 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:42730 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754891Ab1EaSbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 14:31:43 -0400
+Date: Tue, 31 May 2011 11:31:41 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] AppArmor: fix oops in apparmor_setprocattr
+Message-ID: <20110531183141.GH19633@outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+When invalid parameters are passed to apparmor_setprocattr a NULL deref
+oops occurs when it tries to record an audit message. This is because
+it is passing NULL for the profile parameter for aa_audit. But aa_audit
+now requires that the profile passed is not NULL.
 
-Even though the error message is KERN_DEBUG, it appears when booting
-every core on setups with 'ignore_loglevel' for people who want to test
-latest kernels and scan dmesg for possible issues. Also, it doesn't show
-very useful information to the widest audience of kernel boot message
-gazers so drop it.
+Fix this by passing the current profile on the task that is trying to
+setprocattr.
 
-Introduced by d2b463135f84d15808163cd15638b108e323d3e7.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Kees Cook <kees@ubuntu.com>
+Signed-off-by: John Johansen <john.johansen@canonical.com>
 ---
- init/calibrate.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ security/apparmor/lsm.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/init/calibrate.c b/init/calibrate.c
-index cfd7000..2568d22 100644
---- a/init/calibrate.c
-+++ b/init/calibrate.c
-@@ -93,9 +93,6 @@ static unsigned long __cpuinit calibrate_delay_direct(void)
- 		 * If the upper limit and lower limit of the timer_rate is
- 		 * >= 12.5% apart, redo calibration.
- 		 */
--		printk(KERN_DEBUG "calibrate_delay_direct() timer_rate_max=%lu "
--			    "timer_rate_min=%lu pre_start=%lu pre_end=%lu\n",
--			  timer_rate_max, timer_rate_min, pre_start, pre_end);
- 		if (start >= post_end)
- 			printk(KERN_NOTICE "calibrate_delay_direct() ignoring "
- 					"timer_rate as we had a TSC wrap around"
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+index ae3a698..ec1bcec 100644
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -593,7 +593,8 @@ static int apparmor_setprocattr(struct task_struct *task, char *name,
+ 			sa.aad.op = OP_SETPROCATTR;
+ 			sa.aad.info = name;
+ 			sa.aad.error = -EINVAL;
+-			return aa_audit(AUDIT_APPARMOR_DENIED, NULL, GFP_KERNEL,
++			return aa_audit(AUDIT_APPARMOR_DENIED,
++					__aa_current_profile(), GFP_KERNEL,
+ 					&sa, NULL);
+ 		}
+ 	} else if (strcmp(name, "exec") == 0) {
 -- 
-1.7.4.rc2
+1.7.4.1
 
+
+-- 
+Kees Cook
+Ubuntu Security Team
