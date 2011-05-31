@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051Ab1EaH1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 03:27:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47303 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab1EaH1L (ORCPT
+	id S1758073Ab1EaHaP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 03:30:15 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:35694 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab1EaHaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 03:27:11 -0400
-Date: Tue, 31 May 2011 08:26:50 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Rientjes <rientjes@google.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Eric Miao <eric.y.miao@gmail.com>, Samuel Ortiz <samuel@sortiz.org>
-Subject: Re: IrDA driver fails on PXA255
-Message-ID: <20110531072650.GC21382@n2100.arm.linux.org.uk>
-References: <20110528205701.GA1788@doriath.ww600.siemens.net> <alpine.DEB.2.00.1105281628480.9934@chino.kir.corp.google.com> <BANLkTim9YdhjY75CzMsSOCVKZWi-WKZ5wA@mail.gmail.com> <alpine.DEB.2.00.1105291410450.9658@chino.kir.corp.google.com> <20110529215656.GA5576@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105302202510.18793@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105302202510.18793@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 31 May 2011 03:30:14 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] m68k/amiga: Chip RAM - Offset resource end by CHIP_PHYSADDR
+Date: Tue, 31 May 2011 09:30:08 +0200
+Message-Id: <1306827008-15329-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 10:05:38PM -0700, David Rientjes wrote:
-> On Sun, 29 May 2011, Russell King - ARM Linux wrote:
-> > Again, no.  This change has caused a load of previously working drivers
-> > to suddenly start failing without _any_ explanation why or even warning
-> > about the change.  It needs to start off as a WARN_ON() so that stuff
-> > can be fixed, and then changed to a hard error.
-> > 
-> 
-> I haven't seen a "load" of error reports where this is causing an issue, 
-> maybe it is much more popular on arm?
-> 
-> This also isn't a hard error, admins should be able to enable 
-> CONFIG_ZONE_DMA and rebuild so that the driver being loaded can get the 
-> type of memory it is requesting.  Just putting a WARN_ON() doesn't provide 
-> any incentive to ever get this stuff fixed.
+Technically, the end of Chip RAM should be offset by CHIP_PHYSADDR (which is
+zero).
 
-I completely and violently disagree with your approach on this, and I'll
-continue to state that I believe you are wrong until you change your
-position.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/amiga/chipram.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Enabling CONFIG_ZONE_DMA is not a fix, it's making the problem vanish off
-the radar.  It will mean that the drivers using GFP_DMA will never get
-fixed up.
+diff --git a/arch/m68k/amiga/chipram.c b/arch/m68k/amiga/chipram.c
+index 9d53417..99449fb 100644
+--- a/arch/m68k/amiga/chipram.c
++++ b/arch/m68k/amiga/chipram.c
+@@ -34,7 +34,7 @@ void __init amiga_chip_init(void)
+ 	if (!AMIGAHW_PRESENT(CHIP_RAM))
+ 		return;
+ 
+-	chipram_res.end = amiga_chip_size-1;
++	chipram_res.end = CHIP_PHYSADDR + amiga_chip_size - 1;
+ 	request_resource(&iomem_resource, &chipram_res);
+ 
+ 	atomic_set(&chipavail, amiga_chip_size);
+-- 
+1.7.0.4
 
-I don't care whether you say "it's easy enough to audit the source code" -
-who's going to do that work?  If you make the problem go away the answer
-to that will be NO ONE.
-
-Change it to be a soft WARN_ON for one release.  Anything else will just
-result in the problem being IGNORED.
