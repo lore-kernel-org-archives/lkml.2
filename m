@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013Ab1EaSBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 14:01:17 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40892 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753216Ab1EaSBO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 14:01:14 -0400
+	id S1758029Ab1EaSF2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 14:05:28 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:43643 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757486Ab1EaSFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 14:05:25 -0400
+X-Greylist: delayed 475 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 May 2011 14:05:24 EDT
+Date: Tue, 31 May 2011 19:57:09 +0200
+From: David Sterba <dave@jikos.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Chris Mason <chris.mason@oracle.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Re: linux-next: build warninga in Linus' tree
+Message-ID: <20110531175709.GC12709@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
+	Chris Mason <chris.mason@oracle.com>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+References: <20110530113653.5c7084f0.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20110531174430.GG2393@linux.vnet.ibm.com>
-References: <20110531162726.GA15162@elte.hu> <BANLkTi=aWc2c18OohJVmVn_aniyxDKO9Rw@mail.gmail.com>
- <20110531174430.GG2393@linux.vnet.ibm.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 1 Jun 2011 02:52:59 +0900
-Message-ID: <BANLkTimapK+1vDwB-Akw0eVimM4gHBdqaw@mail.gmail.com>
-Subject: Re: [GIT PULL] RCU fix
-To: paulmck@linux.vnet.ibm.com
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110530113653.5c7084f0.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 1, 2011 at 2:44 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->
-> The reason for the switch is to allow threads blocked in TREE_PREEMPT_RCU
-> and TINY_PREEMPT_RCU RCU read-side critical sections to have their
-> priority boosted in order to avoid OOM.  People have made these OOMs
-> happen, so this is not longer just a theoretical concern.
+Hi,
 
-Quite frankly, that doesn't make much sense.
+On Mon, May 30, 2011 at 11:36:53AM +1000, Stephen Rothwell wrote:
+> After merging the Linus' tree, today's linux-next build (powerpc
+> ppc64_defconfig) produced these warnings:
+> 
+> fs/btrfs/sysfs.c:76:26: warning: 'btrfs_root_attrs' defined but not used
+> fs/btrfs/sysfs.c:97:26: warning: 'btrfs_super_attrs' defined but not used
+> fs/btrfs/sysfs.c:153:13: warning: 'btrfs_super_release' defined but not used
+> fs/btrfs/sysfs.c:160:13: warning: 'btrfs_root_release' defined but not used
+> 
+> I have started using gcc v4.5.2 (instead of v4.4.4) if that makes a
+> difference.
 
-First off, the default for priority boosting is off (and you cannot
-even select it unless you have RT_MUTEX and PREEMPT_RCU), so why the
-heck do we still use the threads even when we don't support the
-boosting at all?
+the warning probably started to show up after one of my cleanup patches,
+removing unused functions (f2a97a9dbd86eb1ef956bdf20e05c507b32beb96).
+The sysfs interface is not being used right now, but there's a unmerged
+patchset which adds the interesting bits like info about available btrfs
+filesystems and devices. I don't know what are the intentions regarding
+sysfs.
 
-Secondly, if a process is in danger of exhausting the RCU resources,
-and it is preemptable, why doesn't the rcu_read_unlock() logic just
-try to force a reschedule and thus an rcu idle period? Using processes
-and process priorities for this seems to be just stupid.
 
-I dunno. After RCU_TINY showed how fragile it was to use kernel
-threads for this, and after this subtle issue just re-inforced that
-conclusion, I just cannot begin to believe that using a thread was the
-right thing to do. It just seems stupid.
-
-                         Linus
+david
