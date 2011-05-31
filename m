@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926Ab1EaD0b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 May 2011 23:26:31 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:59648 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752493Ab1EaD0a (ORCPT
+	id S1757217Ab1EaDpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 May 2011 23:45:18 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:36687 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754435Ab1EaDpQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 May 2011 23:26:30 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX187+slcE2Q7QomwQqGegiumf+4kCBltTeNAfwxxb7
-	48uj74Zh/SpNAG
-Subject: Re: [PATCH] sched: fix need_resched() when checking peempt
-From: Mike Galbraith <efault@gmx.de>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Yong Zhang <yong.zhang0@gmail.com>
-In-Reply-To: <BANLkTin2r7omjQC9ro0f2_qEc8SzPX33Pg@mail.gmail.com>
-References: <BANLkTin4OiDiPO3znMvKTVZcYukHReydMQ@mail.gmail.com>
-	 <1306244383.1465.59.camel@gandalf.stny.rr.com>
-	 <BANLkTin2r7omjQC9ro0f2_qEc8SzPX33Pg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 May 2011 05:26:24 +0200
-Message-ID: <1306812384.7903.3.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Mon, 30 May 2011 23:45:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Z3kjWGiiO7/6Wcmz+NTc4arOy71jBJ9A+5v3JMlTaZZl1y6wEz1FiBH/WdI5StxHHD
+         Gk+UGgYAZFTs6IqiVUmtVmWYHZmV3PWZX/AQfnwfD0VQKlYbg/4a30JqPsrgRAN7tjAZ
+         s1ORinehaVPlNCX7Uom/DqrK8j6BH5tir/X90=
+MIME-Version: 1.0
+In-Reply-To: <7B5337F4-B0D7-48E1-8D1B-3669B37AA1D5@dilger.ca>
+References: <1306763382-13817-1-git-send-email-akinobu.mita@gmail.com>
+	<09010AAD-7443-4966-BF20-8580FBE8F389@dilger.ca>
+	<20110530154357.GF2890@dhcp-172-31-194-241.cam.corp.google.com>
+	<BANLkTimyCY9_tAOAtoxyNOw4=e+Y0pO_sw@mail.gmail.com>
+	<7B5337F4-B0D7-48E1-8D1B-3669B37AA1D5@dilger.ca>
+Date: Tue, 31 May 2011 12:45:15 +0900
+Message-ID: <BANLkTin64T9-QEdE6DC6VoB=7d6m0qFcuQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ext4: use little-endian bitops directly
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: "Ted Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-24 at 21:50 +0800, Hillf Danton wrote:
-> On Tue, May 24, 2011 at 9:39 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Tue, 2011-05-24 at 21:27 +0800, Hillf Danton wrote:
-> >> When checking if current task could be preempted by a newly woken task,
-> >> further check could be bypassed if the current thread is different from
-> >> the current task of run-queue, and it is corrected accordingly.
-> >
-> > Ug, that change log is an obfuscated mess. But looking at the actual
-> > patch, I figured what you wanted to say. How about this:
-> >
-> > ----
-> > The RT preempt check tests the wrong task if NEED_RESCHED is set. It
-> > currently checks the local CPU task. It is suppose to check the task
-> > that is running on the run queue we are about to wake another task on.
-> > ----
-> >
-> Thanks, it is great changelog:)
+2011/5/31 Andreas Dilger <adilger@dilger.ca>:
 
-Has this been queued, or is it awaiting re-submission?
+> Looking more closely at these operations, ext4_set_bit_atomic() is not used anywhere in the code and could be removed.
+>
+> There is only one place where ext4_clear_bit_atomic() is used (ext4_add_groupblocks()), and this is likely incorrect.  None of the other ext4 code is using ext4_set_bit_atomic(), and all of the ext2_clear_bit_atomic() macros are silently ignoring the "lock" argument, so these changes are done without ext4_group_lock() being held for that group.  I suspect this is never a problem in normal usage because ext4_add_groupblocks() is only used during filesystem resizing, which is rare, and doubly rare for any allocations to be made in the same group concurrently.
+>
+> This one usage of ext4_clear_bit_atomic() should just be moved inside the ext4_lock_group() a few lines down and then use ext4_clear_bit() for consistency, and ext4_clear_bit_atomic() can be removed entirely.
+>
+> A further cleanup would be to change this whole function to use mb_clear_bits(), which is not only faster because it operates on many bits at once, but also doesn't require that the buddy bitmap be marked invalid ("NEED_INIT") after these changes are made, but that is work for a separate patch.
 
-	-Mike
+Looks like this is already done by the commit
+e73a347b7723757bb5fb5c502814dc205a7f496d ("ext4: implement
+ext4_add_groupblocks() by freeing blocks")
 
+So we can remove ext4_{set,clear}_bit_atomic now.
+
+> I would also encourage you to finish off this patch series by pushing up the generic ext2_{set,clear}_bit_atomic() to the few places that are currently using ext2_{set,clear}_bit_atomic() directly (looks like only fs/nilfs2/alloc.h and include/linux/ext3.h) and then removing them from the arch headers.
+
+The difficulty of doing this is that there are two different
+implementations of ext2_{set,clear}_bit_atomic (spin lock version and
+test_and_{set,clear}_bit_le version).  If we can switch to one of which
+on all architectures, the change is easy.  But I don't have less messy idea
+to keep current behavior on all architectures.
