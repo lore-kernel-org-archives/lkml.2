@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab1EaUWI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 16:22:08 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42638 "EHLO mail.skyhub.de"
+	id S932461Ab1EaUWE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 16:22:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42629 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758399Ab1EaUWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758190Ab1EaUWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 31 May 2011 16:22:00 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>
-Subject: [PATCH 1/4] x86, asm: Thin down SAVE/RESTORE_* asm macros
-Date: Tue, 31 May 2011 22:21:51 +0200
-Message-Id: <1306873314-32523-2-git-send-email-bp@alien8.de>
+Subject: [PATCH 2/4] x86, asm: Flip SAVE_ARGS arguments logic
+Date: Tue, 31 May 2011 22:21:52 +0200
+Message-Id: <1306873314-32523-3-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.7.5.3.401.gfb674
 In-Reply-To: <1306873314-32523-1-git-send-email-bp@alien8.de>
 References: <1306873314-32523-1-git-send-email-bp@alien8.de>
@@ -20,171 +20,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dwarf2 cfi annotation macros, making SAVE/RESTORE_* marginally more
-readable.
+This saves us the else part of the conditional statement in the macro.
 
 No functionality change.
 
 Signed-off-by: Borislav Petkov <bp@alien8.de>
 ---
- arch/x86/include/asm/calling.h |  101 ++++++++++++++++------------------------
- 1 files changed, 41 insertions(+), 60 deletions(-)
+ arch/x86/ia32/ia32entry.S      |    6 +++---
+ arch/x86/include/asm/calling.h |    8 +++-----
+ arch/x86/kernel/entry_64.S     |    2 +-
+ 3 files changed, 7 insertions(+), 9 deletions(-)
 
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index c1870dd..c5435dc 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -143,7 +143,7 @@ ENTRY(ia32_sysenter_target)
+ 	CFI_REL_OFFSET rip,0
+ 	pushq_cfi %rax
+ 	cld
+-	SAVE_ARGS 0,0,1
++	SAVE_ARGS 0,1,0
+  	/* no need to do an access_ok check here because rbp has been
+  	   32bit zero extended */ 
+ 1:	movl	(%rbp),%ebp
+@@ -289,7 +289,7 @@ ENTRY(ia32_cstar_target)
+ 	 * disabled irqs and here we enable it straight after entry:
+ 	 */
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+-	SAVE_ARGS 8,1,1
++	SAVE_ARGS 8,0,0
+ 	movl 	%eax,%eax	/* zero extension */
+ 	movq	%rax,ORIG_RAX-ARGOFFSET(%rsp)
+ 	movq	%rcx,RIP-ARGOFFSET(%rsp)
+@@ -419,7 +419,7 @@ ENTRY(ia32_syscall)
+ 	cld
+ 	/* note the registers are not zero extended to the sf.
+ 	   this could be a problem. */
+-	SAVE_ARGS 0,0,1
++	SAVE_ARGS 0,1,0
+ 	GET_THREAD_INFO(%r10)
+ 	orl   $TS_COMPAT,TI_status(%r10)
+ 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
 diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
-index 30af5a8..b67e06c 100644
+index b67e06c..b0b7d90 100644
 --- a/arch/x86/include/asm/calling.h
 +++ b/arch/x86/include/asm/calling.h
-@@ -46,6 +46,7 @@ For 32-bit we have the following conventions - kernel is built with
+@@ -85,22 +85,20 @@ For 32-bit we have the following conventions - kernel is built with
+ #define ARGOFFSET	R11
+ #define SWFRAME		ORIG_RAX
  
- */
- 
-+#include "dwarf2.h"
- 
- /*
-  * 64-bit system call stack frame layout defines and helpers, for
-@@ -87,30 +88,25 @@ For 32-bit we have the following conventions - kernel is built with
- 	.macro SAVE_ARGS addskip=0, norcx=0, nor891011=0
+-	.macro SAVE_ARGS addskip=0, norcx=0, nor891011=0
++	.macro SAVE_ARGS addskip=0, save_rcx=1, save_r891011=1
  	subq  $9*8+\addskip, %rsp
  	CFI_ADJUST_CFA_OFFSET	9*8+\addskip
--	movq  %rdi, 8*8(%rsp)
--	CFI_REL_OFFSET	rdi, 8*8
--	movq  %rsi, 7*8(%rsp)
--	CFI_REL_OFFSET	rsi, 7*8
--	movq  %rdx, 6*8(%rsp)
--	CFI_REL_OFFSET	rdx, 6*8
-+	movq_cfi rdi, 8*8
-+	movq_cfi rsi, 7*8
-+	movq_cfi rdx, 6*8
-+
- 	.if \norcx
- 	.else
--	movq  %rcx, 5*8(%rsp)
--	CFI_REL_OFFSET	rcx, 5*8
-+	movq_cfi rcx, 5*8
- 	.endif
--	movq  %rax, 4*8(%rsp)
--	CFI_REL_OFFSET	rax, 4*8
-+
-+	movq_cfi rax, 4*8
-+
- 	.if \nor891011
- 	.else
--	movq  %r8, 3*8(%rsp)
--	CFI_REL_OFFSET	r8,  3*8
--	movq  %r9, 2*8(%rsp)
--	CFI_REL_OFFSET	r9,  2*8
--	movq  %r10, 1*8(%rsp)
--	CFI_REL_OFFSET	r10, 1*8
--	movq  %r11, (%rsp)
--	CFI_REL_OFFSET	r11, 0*8
-+	movq_cfi r8,  3*8
-+	movq_cfi r9,  2*8
-+	movq_cfi r10, 1*8
-+	movq_cfi r11, 0*8
- 	.endif
-+
- 	.endm
+ 	movq_cfi rdi, 8*8
+ 	movq_cfi rsi, 7*8
+ 	movq_cfi rdx, 6*8
  
- #define ARG_SKIP	(9*8)
-@@ -119,37 +115,34 @@ For 32-bit we have the following conventions - kernel is built with
- 			    skipr8910=0, skiprdx=0
- 	.if \skipr11
- 	.else
--	movq (%rsp), %r11
--	CFI_RESTORE r11
-+	movq_cfi_restore 0*8, r11
+-	.if \norcx
+-	.else
++	.if \save_rcx
+ 	movq_cfi rcx, 5*8
  	.endif
-+
- 	.if \skipr8910
- 	.else
--	movq 1*8(%rsp), %r10
--	CFI_RESTORE r10
--	movq 2*8(%rsp), %r9
--	CFI_RESTORE r9
--	movq 3*8(%rsp), %r8
--	CFI_RESTORE r8
-+	movq_cfi_restore 1*8, r10
-+	movq_cfi_restore 2*8, r9
-+	movq_cfi_restore 3*8, r8
- 	.endif
-+
- 	.if \skiprax
- 	.else
--	movq 4*8(%rsp), %rax
--	CFI_RESTORE rax
-+	movq_cfi_restore 4*8, rax
- 	.endif
-+
- 	.if \skiprcx
- 	.else
--	movq 5*8(%rsp), %rcx
--	CFI_RESTORE rcx
-+	movq_cfi_restore 5*8, rcx
- 	.endif
-+
- 	.if \skiprdx
- 	.else
--	movq 6*8(%rsp), %rdx
--	CFI_RESTORE rdx
-+	movq_cfi_restore 6*8, rdx
- 	.endif
--	movq 7*8(%rsp), %rsi
--	CFI_RESTORE rsi
--	movq 8*8(%rsp), %rdi
--	CFI_RESTORE rdi
-+
-+	movq_cfi_restore 7*8, rsi
-+	movq_cfi_restore 8*8, rdi
-+
- 	.if ARG_SKIP+\addskip > 0
- 	addq $ARG_SKIP+\addskip, %rsp
- 	CFI_ADJUST_CFA_OFFSET	-(ARG_SKIP+\addskip)
-@@ -176,33 +169,21 @@ For 32-bit we have the following conventions - kernel is built with
- 	.macro SAVE_REST
- 	subq $REST_SKIP, %rsp
- 	CFI_ADJUST_CFA_OFFSET	REST_SKIP
--	movq %rbx, 5*8(%rsp)
--	CFI_REL_OFFSET	rbx, 5*8
--	movq %rbp, 4*8(%rsp)
--	CFI_REL_OFFSET	rbp, 4*8
--	movq %r12, 3*8(%rsp)
--	CFI_REL_OFFSET	r12, 3*8
--	movq %r13, 2*8(%rsp)
--	CFI_REL_OFFSET	r13, 2*8
--	movq %r14, 1*8(%rsp)
--	CFI_REL_OFFSET	r14, 1*8
--	movq %r15, (%rsp)
--	CFI_REL_OFFSET	r15, 0*8
-+	movq_cfi rbx, 5*8
-+	movq_cfi rbp, 4*8
-+	movq_cfi r12, 3*8
-+	movq_cfi r13, 2*8
-+	movq_cfi r14, 1*8
-+	movq_cfi r15, 0*8
- 	.endm
  
- 	.macro RESTORE_REST
--	movq (%rsp),     %r15
--	CFI_RESTORE r15
--	movq 1*8(%rsp),  %r14
--	CFI_RESTORE r14
--	movq 2*8(%rsp),  %r13
--	CFI_RESTORE r13
--	movq 3*8(%rsp),  %r12
--	CFI_RESTORE r12
--	movq 4*8(%rsp),  %rbp
--	CFI_RESTORE rbp
--	movq 5*8(%rsp),  %rbx
--	CFI_RESTORE rbx
-+	movq_cfi_restore 0*8, r15
-+	movq_cfi_restore 1*8, r14
-+	movq_cfi_restore 2*8, r13
-+	movq_cfi_restore 3*8, r12
-+	movq_cfi_restore 4*8, rbp
-+	movq_cfi_restore 5*8, rbx
- 	addq $REST_SKIP, %rsp
- 	CFI_ADJUST_CFA_OFFSET	-(REST_SKIP)
- 	.endm
+ 	movq_cfi rax, 4*8
+ 
+-	.if \nor891011
+-	.else
++	.if \save_r891011
+ 	movq_cfi r8,  3*8
+ 	movq_cfi r9,  2*8
+ 	movq_cfi r10, 1*8
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 8a445a0..e5ece6b 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -473,7 +473,7 @@ ENTRY(system_call_after_swapgs)
+ 	 * and short:
+ 	 */
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+-	SAVE_ARGS 8,1
++	SAVE_ARGS 8,0
+ 	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
+ 	movq  %rcx,RIP-ARGOFFSET(%rsp)
+ 	CFI_REL_OFFSET rip,RIP-ARGOFFSET
 -- 
 1.7.5.3.401.gfb674
 
