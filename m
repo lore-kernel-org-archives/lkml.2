@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab1EaNVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 09:21:07 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63384 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928Ab1EaNVE (ORCPT
+	id S1755061Ab1EaNWd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 09:22:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40756 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab1EaNWc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 09:21:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=AABKhvEdhGbbBXuJ6AbvuYB8E6A4qHpmqFsma8HIRiQ0MT+PDRu3818/urvJ0HoD/T
-         ctrY1oPh/yvs8UYXgeiEeJNp/5mkibLJ7DlSWfhcA/MvmXE1asGNztZ+T1JAAO623zsw
-         uRsjGz7gIG2GpAQkC3Ukn7uu8Vr/pFKGyk8HY=
-Subject: [PATCH] mtd: OneNAND: OMAP2: Return proper error if regulator_get
- fails
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+	Tue, 31 May 2011 09:22:32 -0400
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+ locks up on ARM
+From: Peter Zijlstra <peterz@infradead.org>
+To: michal.simek@petalogix.com
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ingo Molnar <mingo@elte.hu>, Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Michal Simek <monstr@monstr.eu>
+In-Reply-To: <4DE4CC33.7090404@petalogix.com>
+References: <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com>
+	 <1306405979.1200.63.camel@twins>
+	 <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com>
+	 <1306409575.1200.71.camel@twins> <1306412511.1200.90.camel@twins>
+	 <20110526122623.GA11875@elte.hu>
+	 <20110526123137.GG24876@n2100.arm.linux.org.uk>
+	 <20110526125007.GA27083@elte.hu>
+	 <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com>
+	 <20110527120629.GA32617@elte.hu>
+	 <20110527205240.GT24876@n2100.arm.linux.org.uk>
+	 <1306588381.2497.481.camel@laptop>  <4DE4CC33.7090404@petalogix.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 May 2011 21:20:53 +0800
-Message-ID: <1306848053.13412.1.camel@phoenix>
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 31 May 2011 15:22:17 +0200
+Message-ID: <1306848137.2353.91.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mtd/onenand/omap2.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Tue, 2011-05-31 at 13:08 +0200, Michal Simek wrote:
+> 
+> please correct me if I am wrong but this is workaround just for ARM.
+> I am not aware that we need to do anything with caches. I enabled that options
+> after our discussion (http://lkml.org/lkml/2009/12/3/204) because of problems 
+> with lockdep. I will look if I can remove that option but it will be necessary 
+> to do some changes in code. switch_to should be called with irq OFF right?
 
-diff --git a/drivers/mtd/onenand/omap2.c b/drivers/mtd/onenand/omap2.c
-index a916dec..0d9073d 100644
---- a/drivers/mtd/onenand/omap2.c
-+++ b/drivers/mtd/onenand/omap2.c
-@@ -741,6 +741,7 @@ static int __devinit omap2_onenand_probe(struct platform_device *pdev)
- 		c->regulator = regulator_get(&pdev->dev, "vonenand");
- 		if (IS_ERR(c->regulator)) {
- 			dev_err(&pdev->dev,  "Failed to get regulator\n");
-+			r = PTR_ERR(c->regulator);
- 			goto err_release_dma;
- 		}
- 		c->onenand.enable = omap2_onenand_enable;
--- 
-1.7.4.1
+Hmm, so the problem was that interrupts got enabled on microblaze (or
+lockdep thought they were), so we need to figure out why that is so
+instead of ensuring that it is so.
 
+/me goes poke about in the microblaze code..
 
+So on fork() the child ip gets set to ret_from_fork(), then when we wake
+the child we'll eventually schedule to it. So we get a context switch
+like X -> child.
 
+Then X calls schedule()->context_switch()->switch_to() which will
+continue at ret_from_fork()->schedule_tail()->finish_task_switch()->
+finish_lock_switch()->spin_acquire(&rq->lock.depmap..)
+
+Now the lockdep report says that at that point interrupts were enabled,
+and I can't quite see how that would happen, we go into switch_to() with
+interrupts disabled (assuming !__ARCH_WANT_INTERRUPTS_ON_CTXSW), so the
+whole ret_from_fork()->... path should run with interrupts disabled as
+well.
+
+I can't find where it would have enabled IRQs. Maybe the current
+microblaze code doesn't suffer this, or I simply missed it in the
+entry.S magic -- its not like I can actually read microblaze asm well.
+
+Does it still explode like back then, if so, can you see where it
+enables IRQs?
