@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355Ab1EaPwo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:52:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23431 "EHLO mx1.redhat.com"
+	id S932375Ab1EaPwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 11:52:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19753 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932234Ab1EaPwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:52:40 -0400
-Date: Tue, 31 May 2011 11:52:39 -0400
+	id S932234Ab1EaPwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 11:52:46 -0400
+Date: Tue, 31 May 2011 11:52:45 -0400
 From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+To: linux-kernel@vger.kernel.org
 Cc: Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20110531155239.3558.63991.sendpatchset@prarit.bos.redhat.com>
+Message-Id: <20110531155245.3563.52678.sendpatchset@prarit.bos.redhat.com>
 Content-Type: text/x-c; charset=us-ascii
-Subject: [RFC PATCH 18/35] drivers/mmc changes for SMBIOS and System Firmware
+Subject: [RFC PATCH 19/35] drivers/mtd changes for SMBIOS and System Firmware
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/mmc changes for SMBIOS and System Firmware
+drivers/mtd changes for SMBIOS and System Firmware
 
 ---
- drivers/mmc/host/sdhci-pltfm.c |    1 -
+ drivers/mtd/devices/m25p80.c |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci-pltfm.c b/drivers/mmc/host/sdhci-pltfm.c
-index dbab040..6fd7336 100644
---- a/drivers/mmc/host/sdhci-pltfm.c
-+++ b/drivers/mmc/host/sdhci-pltfm.c
-@@ -24,7 +24,6 @@
- 
- #include <linux/delay.h>
- #include <linux/highmem.h>
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index 35180e4..e418e7e 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -25,7 +25,6 @@
+ #include <linux/math64.h>
+ #include <linux/slab.h>
+ #include <linux/sched.h>
 -#include <linux/mod_devicetable.h>
- #include <linux/platform_device.h>
  
- #include <linux/mmc/host.h>
+ #include <linux/mtd/cfi.h>
+ #include <linux/mtd/mtd.h>
 -- 
 1.7.5.1
 
