@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab1EaOsc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 10:48:32 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:57458 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab1EaOsa (ORCPT
+	id S1756669Ab1EaOwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 10:52:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24815 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab1EaOwL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 10:48:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=H+BKju8paFjRwbzfRC0XTjv20A+P7k5xFyG2UifrpVDzaBssm5QrbbB1ur3pUMiE8s
-         wH0tuVXECtDLe98ZdsD1O8PBcCWrzHYCfTOVLN5ZS3rNmGocIwo3ni8JyO04EbuzJAWq
-         lJXtLFf4AIHdK2WM+zVsfROHbiTxWUoP+q2Xo=
+	Tue, 31 May 2011 10:52:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=p1V1x+y=-cH-Q7bvueu_4_D1ywQ@mail.gmail.com>
-References: <1305715384-81716-1-git-send-email-tsunanet@gmail.com>
- <20110518.152653.1486764697527722925.davem@davemloft.net> <BANLkTik-6wh8=jb6oMEpJvYC8+KTGGsMsw@mail.gmail.com>
- <20110518.155200.801089483916944725.davem@davemloft.net> <20110518202025.GC4175@nuttenaction>
- <BANLkTimtA9BB7g5cOm8c9sGChQjf1P0Q-Q@mail.gmail.com> <fc49a1b4c32eee9b5cbfbeec4729eef5@localhost>
- <BANLkTi=p1V1x+y=-cH-Q7bvueu_4_D1ywQ@mail.gmail.com>
-From: tsuna <tsunanet@gmail.com>
-Date: Tue, 31 May 2011 07:48:09 -0700
-Message-ID: <BANLkTimqtjskX5q2ovTp_c05MdqBDOWsRg@mail.gmail.com>
-Subject: Re: [PATCH] tcp: Expose the initial RTO via a new sysctl.
-To: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
-Cc: Hagen Paul Pfeifer <hagen@jauu.net>, David Miller <davem@davemloft.net>,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <790b3e0b-14b6-44da-9f4c-a4315b58e2c5@default>
+Date: Tue, 31 May 2011 07:51:36 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Joel Becker <jlbec@evilplan.org>, Steven Whitehouse <swhiteho@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Sunil Mushran <sunil.mushran@oracle.com>
+Subject: RE: Cleancache and shared filesystems
+References: <1306504300.2857.14.camel@menhir>
+ <6f0e746a-d3d1-4708-9e16-3d02ddeab824@default>
+ <1306513179.2857.38.camel@menhir
+ 20110527233331.GC30232@noexit.corp.google.com>
+In-Reply-To: <20110527233331.GC30232@noexit.corp.google.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090201.4DE5008E.000A:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 20, 2011 at 5:06 PM, H.K. Jerry Chu <hkjerry.chu@gmail.com> wrote:
-> Yep, that's why we've had a knob for this for years.
+> From: Joel Becker [mailto:jlbec@evilplan.org]
+> Sent: Friday, May 27, 2011 5:34 PM
+> To: Steven Whitehouse
+> Cc: Dan Magenheimer; linux-kernel@vger.kernel.org; Sunil Mushran
+> Subject: Re: Cleancache and shared filesystems
+> 
+> On Fri, May 27, 2011 at 05:19:39PM +0100, Steven Whitehouse wrote:
+> > +	if (ls->ls_ops == &gfs2_dlm_ops) {
+> > +		if (gfs2_uuid_valid(sb->s_uuid))
+> > +			cleancache_init_shared_fs(sb->s_uuid, sb);
+> > +	} else {
+> > +		cleancache_init_fs(sb);
+> > +	}
+> 
+> Hey Dan,
+> 	Steven makes a good point here.  ocfs2 could also take advantage
+> of local filesystem behavior when running in local mode.
 
-I was traveling last week so sorry for not replying earlier to various
-comments people made.
+Hi Joel --
 
-I talked to Jerry and he's agreed to share some patches that Google
-has been using internally for years.  I started this work because
-after leaving Google and taking these changes for granted, I was
-surprised to find that they weren't actually part of the mainline
-Linux kernel.
+I guess the semantics need to be more clearly defined
+(or perhaps changed if the shared-fs community wants),
+but if cleancache_init_shared_fs is called only by
+a single node, cleancache still enables all the same
+functionality** as cleancache_init_fs. 
 
-It seems that David is willing to accept a change that will lower the
-initRTO to 1s (compile-time constant), with a fallback to 3s
-(compile-time constant), as per the draft rfc2988bis.  Others are
-legitimately worried about the impact this would cause in environments
-where RTT is typically (or always) in the 1-3s range.  Some would like
-to see this as a per-destination thing.
+I'm not sure I fully understand the semantics of
+local mode though, so please clarify if you think
+I am wrong or misunderstanding your point.
 
-Personally what I think would be ideal would be:
-  1. A sysctl knob for initRTO, to allow people to adjust this
-appropriately for their environment.
-  2. Apply the srtt / rttvar seen on previous connections to new connections.
+Thanks,
+Dan
 
-Does that sound reasonable?
-
-For 2), I'm not sure how the details would work yet, I believe the
-kernel already has what's necessary to remember these things on a per
-peer basis, but it would be nice if I could specify things like "for
-10.x.0.0/16 (local datacenter) use this aggressive setting, for
-10.0.0.0/8 (my internal backend network) use that, for everything else
-(Internets etc.) use the default".
-
--- 
-Benoit "tsuna" Sigoure
-Software Engineer @ www.StumbleUpon.com
+---
+Thanks... for the memory!
+I really could use more / my throughput's on the floor
+The balloon is flat / my swap disk's fat / I've OOM's in store
+Overcommitted so much
+(with apologies to Bob Hope)
