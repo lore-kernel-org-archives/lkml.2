@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758405Ab1EaUO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 16:14:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43850 "EHLO mail.zytor.com"
+	id S1758374Ab1EaUOE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 16:14:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54333 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758248Ab1EaUO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 16:14:28 -0400
-Message-ID: <4DE54BFD.2090408@zytor.com>
-Date: Tue, 31 May 2011 13:13:49 -0700
+	id S1758348Ab1EaUOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 16:14:01 -0400
+Message-ID: <4DE54BFF.5090508@zytor.com>
+Date: Tue, 31 May 2011 13:13:51 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Pavel Machek <pavel@ucw.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: [kernel.org users] Turning off the incremental diff robot
-References: <4DE3E9E7.8020008@zytor.com> <20110531195201.GB7995@1wt.eu>
-In-Reply-To: <20110531195201.GB7995@1wt.eu>
+References: <4DE3E9E7.8020008@zytor.com> <20110531194358.GA4424@elf.ucw.cz> <201105312204.02722.arnd@arndb.de>
+In-Reply-To: <201105312204.02722.arnd@arndb.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2011 12:52 PM, Willy Tarreau wrote:
+On 05/31/2011 01:04 PM, Arnd Bergmann wrote:
 > 
-> Well, I don't think the incremental patches are *that much* used.
-> Speaking for my case, my longterm release scripts do produce them
-> anyway since it's trivial with git, and I suppose many others do
-> as well.
+> Are you talking about just ftp://ftp.kernel.org/pub/linux/kernel/*/incr/
+> or also about ftp://ftp.kernel.org/pub/linux/kernel/v2.6/patch-* and
+> Changelog-*?
 > 
-> I suggest that we disable the robot and wait for any possible
-> complaints which are to be expected anyway with a version change.
-> Then it'll be more productive to help tree owners to adapt their
-> scripts than it would be to keep the robot running.
+> I can see reasons to keep the latter, but not necessarily the former.
 > 
 
-Yes, this would be one option.  It would at least save the effort of
-chasing problems when it breaks due to tree-owner changes.
+The former only.
+
+>>
+>> Usecase one is zaurus, which is just not powerful enough for git, and
+>> usecase two are companies that only work with releases... ketchup is
+>> very useful for both.
+> 
+> For usecase one, is it possible to replace the download links with
+> links into http://git.kernel.org/ ?
+> 
+> For usecase two, why wouldn't those be able to just download the entire
+> release tarball? At least, I would expect that there is no need for
+> the small incremental patches in their case, only for the full
+> inter-release patches.
+> 
+
+Zaurus I don't consider too important; anyone with a Zaurus is
+realistically going to have a real development platform on hand.
 
 	-hpa
+
