@@ -1,108 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758453Ab1EaUbd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 16:31:33 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:54652 "EHLO mail.skyhub.de"
+	id S932443Ab1EaUZP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 16:25:15 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:56168 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758434Ab1EaUbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 16:31:31 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>
-Subject: [PATCH 4/4] x86, asm: Cleanup thunk_64.S
-Date: Tue, 31 May 2011 22:21:54 +0200
-Message-Id: <1306873314-32523-5-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.7.5.3.401.gfb674
-In-Reply-To: <1306873314-32523-1-git-send-email-bp@alien8.de>
-References: <1306873314-32523-1-git-send-email-bp@alien8.de>
+	id S932380Ab1EaUZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 16:25:14 -0400
+Date: Tue, 31 May 2011 22:24:50 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>
+Subject: Re: [PATCH v4 10/10] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to
+ feature-removal-schedule
+Message-ID: <20110531202450.GA28731@elte.hu>
+References: <cover.1306851090.git.luto@mit.edu>
+ <1660d1687db01852ec58bbf970e22868db367d53.1306851090.git.luto@mit.edu>
+ <20110531183448.GA27166@one.firstfloor.org>
+ <BANLkTinXSDJoT6Uege6zLZqSp87oURfh0w@mail.gmail.com>
+ <20110531192833.GA23458@elte.hu>
+ <20110531193602.GA26535@elte.hu>
+ <BANLkTinQ-y-g_3OKOWwOJ-sWxjJgh_G-=Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinQ-y-g_3OKOWwOJ-sWxjJgh_G-=Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop thunk_ra macro in favor of an additional argument to the thunk
-macro since their bodies are almost identical. Do a whitespace scrubbing
-and use CFI-aware macros for full annotation.
 
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
- arch/x86/lib/thunk_64.S |   46 +++++++++++++++++++---------------------------
- 1 files changed, 19 insertions(+), 27 deletions(-)
+* Andrew Lutomirski <luto@mit.edu> wrote:
 
-diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
-index 782b082..d5b088b 100644
---- a/arch/x86/lib/thunk_64.S
-+++ b/arch/x86/lib/thunk_64.S
-@@ -5,50 +5,42 @@
-  * Added trace_hardirqs callers - Copyright 2007 Steven Rostedt, Red Hat, Inc.
-  * Subject to the GNU public license, v.2. No warranty of any kind.
-  */
-+#include <linux/linkage.h>
-+#include <asm/dwarf2.h>
-+#include <asm/calling.h>
-+#include <asm/rwlock.h>
- 
--	#include <linux/linkage.h>
--	#include <asm/dwarf2.h>
--	#include <asm/calling.h>			
--	#include <asm/rwlock.h>
--		
--	/* rdi:	arg1 ... normal C conventions. rax is saved/restored. */ 	
--	.macro thunk name,func
--	.globl \name
--\name:	
--	CFI_STARTPROC
--	SAVE_ARGS
--	call \func
--	jmp  restore
--	CFI_ENDPROC
--	.endm
--
--#ifdef CONFIG_TRACE_IRQFLAGS
--	/* put return address in rdi (arg1) */
--	.macro thunk_ra name,func
-+	/* rdi:	arg1 ... normal C conventions. rax is saved/restored. */
-+	.macro THUNK name, func, put_ret_addr_in_rdi=0
- 	.globl \name
- \name:
- 	CFI_STARTPROC
-+
-+	/* this one pushes 9 elems, the next one would be %rIP */
- 	SAVE_ARGS
--	/* SAVE_ARGS pushs 9 elements */
--	/* the next element would be the rip */
--	movq 9*8(%rsp), %rdi
-+
-+	.if \put_ret_addr_in_rdi
-+	movq_cfi_restore 9*8, rdi
-+	.endif
-+
- 	call \func
- 	jmp  restore
- 	CFI_ENDPROC
- 	.endm
- 
--	thunk_ra trace_hardirqs_on_thunk,trace_hardirqs_on_caller
--	thunk_ra trace_hardirqs_off_thunk,trace_hardirqs_off_caller
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	THUNK trace_hardirqs_on_thunk,trace_hardirqs_on_caller,1
-+	THUNK trace_hardirqs_off_thunk,trace_hardirqs_off_caller,1
- #endif
- 
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
--	thunk lockdep_sys_exit_thunk,lockdep_sys_exit
-+	THUNK lockdep_sys_exit_thunk,lockdep_sys_exit
- #endif
--	
-+
- 	/* SAVE_ARGS below is used only for the .cfi directives it contains. */
- 	CFI_STARTPROC
- 	SAVE_ARGS
- restore:
- 	RESTORE_ARGS
--	ret	
-+	ret
- 	CFI_ENDPROC
--- 
-1.7.5.3.401.gfb674
+> [Sorry, possible resend.]
+> 
+> On 5/31/11, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> >> [...] solution that filters the caller RIP at the generic syscall
+> >> entry point and checks RCX against the 'expected' SYSCALL
+> >> instruction address, which is the (per task) vdso-address +
+> >> constant-offset.
+> >
+> > Note that this solution would allow the vsyscall page to be
+> > 'filtered' to the 3 allowed system calls rather efficiently, via a
+> > second level check.
+> >
+> > This second check does not affect the fastpath, and it could be put
+> > behind a CONFIG_COMPAT_VSYSCALL deprecation define once glibc does
+> > not put vsyscall references anywhere - but we could even keep it
+> > around forever, as this way it's defanged permanently.
+> >
+> 
+> Are you thinking about the 32-bit vDSO? I think that 64-bit code puts
+> syscalls instructions all over the place.
 
+Yeah, it does in a few dozen places so RCX filtering would only work 
+if we 'knew' about glibc's syscall range (it's available from the 
+vma) and restricted syscalls to that boundary.
+
+... which makes this solution rather fragile so i think we can 
+disregard it.
+
+Thanks,
+
+	Ingo
