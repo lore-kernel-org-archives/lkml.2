@@ -1,106 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab1EaOcA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 10:32:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50058 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab1EaOb7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 10:31:59 -0400
-Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
-From: David Woodhouse <dwmw2@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "Ted Ts'o" <tytso@mit.edu>, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Date: Tue, 31 May 2011 15:31:49 +0100
-In-Reply-To: <20110531135627.GB15598@elte.hu>
-References: <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
-	 <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
-	 <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
-	 <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
-	 <20110531075306.GB20798@elte.hu>
-	 <1306832148.2029.484.camel@i7.infradead.org>
-	 <20110531104106.GD24172@elte.hu>
-	 <1306842211.2029.531.camel@i7.infradead.org>
-	 <20110531124537.GA10249@elte.hu>
-	 <1306849477.2029.570.camel@i7.infradead.org>
-	 <20110531135627.GB15598@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1306852312.2029.596.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1756557Ab1EaOeq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 10:34:46 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49414 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751087Ab1EaOep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 10:34:45 -0400
+Date: Tue, 31 May 2011 15:34:39 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, akpm@linux-foundation.org,
+        Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110531143439.GB7019@csn.ul.ie>
+References: <20110530131300.GQ5044@csn.ul.ie>
+ <20110530143109.GH19505@random.random>
+ <20110530153748.GS5044@csn.ul.ie>
+ <20110530165546.GC5118@suse.de>
+ <20110530175334.GI19505@random.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110530175334.GI19505@random.random>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-31 at 15:56 +0200, Ingo Molnar wrote:
-> The architecture *inside* the .config is not inherited automatically 
-> but overriden by the host architecture, so due to this assymetry i 
-> prefer to use explicit ARCH=xxx lines whenever i deal with configs.
-
-Yes. That is why you *don't* need to run 'make ARCH=foo oldconfig' to
-convert it to your native architecture; just 'make oldconfig' will work
-fine.
-
-I appreciate that you *like* to type it out anyway, and that's fine. Not
-entirely sure how it's relevant to the rest of the discussion, except to
-make you look a little sillier when you complain about the horrendous
-amount of extra typing it is to use the new clean generic 'CONFIG_FOO='
-interface instead of using the legacy ARCH values to set CONFIG_64BIT.
-
-> > >     "I believe that this 'filtered randconfig' behaviour is now fairly much
-> > >      the *only* use for the old 'ARCH=i386' and 'ARCH=x86_64'."
-> > > 
-> > > You are wrong again - it isnt, as me and others pointed it out.
-> > 
-> > Not *so* wrong that all those other use cases couldn't be addressed 
-> > in the same, simple patch to allow CONFIG_FOO on the 'make' command 
-> > line.
+On Mon, May 30, 2011 at 07:53:34PM +0200, Andrea Arcangeli wrote:
+> On Mon, May 30, 2011 at 05:55:46PM +0100, Mel Gorman wrote:
+> > Even with drift issues, -1 there should be "impossible". Assuming this
+> > is a zoneinfo file, that figure is based on global_page_state() which
+> > looks like
 > 
-> So "partially wrong" is not wrong? Indeed, if defined that way then i 
-> agree that you must almost never be wrong ;-)
+> The two cases reproducing this long hang in D state, had from SMP=n
+> PREEMPT=y. Clearly not common config these days. Also it didn't seem
+> apparent that any task was running in a code path that kept pages
+> isolated.
+> 
+> > unsigned long, and callers are using unsigned long, is there any
+> > possibility the "if (x < 0)" is being optimised out? If you aware
+> 
+> It was eliminated by cpp.
+> 
 
-I said "this is fairly much the only remaining use", and some more use
-cases were pointed out that were almost identical to the ones we'd
-already discussed, and that were handled by the same patch.
+Yep, !CONFIG_SMP is important.
 
-Gosh, how wrong I was! You should shoot me now!
+> > of users reporting this problem (like the users in thread "iotop:
+> > khugepaged at 99.99% (2.6.38.3)"), do you know if they had a particular
+> > compiler in common?
+> 
+> I had no reason to worry about the compiler yet but that's always good
+> idea to keep in mind.
 
-> Really, i have little interest in continuing the 'who was wrong' 
-> angle of this discussion 
+I'm no longer considering it if CONFIG_SMP is not set. 
 
-Very sensible. Hopefully we can agree that:
+> The thread were the bug is reported is the
+> "iotop" one you mentioned, and there's a tarball attached to one of
+> the last emails of the thread with the debug data I grepped. It was
+> /proc/zoneinfo file yes. That's the file I asked when I noticed
+> something had to be wrong with too_many_isolated and I expected either
+> nr_isolated or nr_inactive going wrong, it turned out it was
+> nr_isolated (apparently, I don't have full picture on the problem
+> yet). I added you in CC to a few emails but you weren't in all
+> replies.
+> 
 
- - The only thing that ARCH=i386 and ARCH=x86_64 now do, since the
-   merge into arch/x86, is override the setting of CONFIG_64BIT.
+I didn't pay as close attention as I should either. I was out for a few
+days when that thread happened and it had gone quiet by the time I came
+back. I didn't check if it ever got resolved.
 
- - Until now, that override has also happened even when the user
-   *didn't* pass any ARCH= on the command line. Instead of using the
-   value of CONFIG_64BIT from the .config, it would automatically get
-   changed to match the host!
+> The debug data you can find on lkml in this email: Message-Id:
+> <201105232005.56840.johannes.hirte@fem.tu-ilmenau.de>.
+> 
+> The other relevant sysrq+t here http://pastebin.com/raw.php?i=VG28YRbi
+> 
+> better save the latter (I did) as I'm worried it has a timeout on it.
+> 
+> Your patch was for reports with CONFIG_SMP=y?
 
- - This meant that people were forced to set ARCH= on the command line,
-   just to make the build system honour the existing .config file.
+No. Now that I look at the config, CONFIG_SMP was not set.
 
- - The patch I submitted will make that override happen *only* when
-   ARCH is explicitly specified as i386 or x86_64, which you use.
-   It will *stop* it from happening when no ARCH= is specified. Yay!
+> I'd prefer to clear out
+> this error before improving the too_many_isolated,
 
- - The second patch I submitted will allow you to set *any* visible
-   config symbol from the command line, which will be useful in many
-   ways in addition to letting you set CONFIG_64BIT.
+Agreed. So far, it has been a impossible to reproduce but it's
+happened to enough people that it must exist. I have a similar
+config now and have applied a debugging patch to warn when the count
+gets screwed up. It hasn't triggered yet so it must be due to some
+difficult-to-hit-race.
 
- - Now that you can set CONFIG_64BIT on the command line, the only
-   remaining use of ARCH=i386 and ARCH=x86_64 is redundant.
+> in fact while
+> reviewing this code I was not impressed by too_many_isolated. For
+> vmscan.c if there's an huge nr_active* list and a tiny nr_inactive
+> (like after a truncate of filebacked pages or munmap of anon memory)
+> there's no reason to stall, it's better to go ahead and let it refile
+> more active pages.
 
+The rotating of lists should already have happened but you could be
+right if a process was stalled in too_many_isolated for a long period of
+time that the lists would become imbalanced. It'd be saved by kswapd
+running at the same time and rotating the list but it might need to be
+revisisted at some point. It's unrelated to the current problem though.
 
-Note that I've carefully avoided saying 'obsolete'. Only 'redundant',
-which I'm sure you won't disagree with.
+> The too_many_isolated in compaction.c looks a whole
+> lot better than the vmscan.c one as that takes into account the active
+> pages too... But I refrained to make any change in this area as I
+> don't think the bug is in too_many_isolated itself.
+> 
+
+Not a bug that would lock up the machine at least.
+
+> I noticed the count[] array is unsigned int, but it looks ok
+> (especially for 32bit ;) because the isolation is limited.
+> 
+
+Agreed, this is not a wrapping problem.
+
+> Both bugs were reported on 32bit x86 UP builds with PREEMPT=y. The
+> stat accounting seem to use atomics on UP so irqs on off or
+> PREEMPT=y/n shouldn't matter if the increment is 1 insn long (plus no
+> irq code should ever mess with nr_isolated)... If it wasn't atomic and
+> irqs or preempt aren't disabled it could be preempt. To avoid
+> confusion: it's not proven that PREEMPT is related, it may be an
+> accident both .config had it on. I'm also unsure why it moves from
+> -1,0,1 I wouldn't expect a single page to be isolated like -1 pages to
+> be isolated, it just looks weird...
+> 
+
+Hmm, looking at the zoneinfo, we can probably rule out some race
+related to page flags. If we someone isolated a page as anon and put
+it back as file, we'd decrement nr_isolated_file inappropriate to -1
+but nr_isolated_anon would be stuck on 1 to match it.
+
+I'm looking at __collapse_huge_page_isolate and it always assumes
+it isolated anonymous pages. mmap_sem should be held as well as the
+pagetable lock and we hold the page lock while isolating from the LRU
+which seems fine but I wonder could there be another condition that
+allows a !PageSwapBacked page to sneak in there?
 
 -- 
-dwmw2
-
+Mel Gorman
+SUSE Labs
