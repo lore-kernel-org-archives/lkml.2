@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233Ab1EaIk6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 04:40:58 -0400
-Received: from rere.qmqm.pl ([89.167.52.164]:46664 "EHLO rere.qmqm.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752544Ab1EaIkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 04:40:55 -0400
-Date: Tue, 31 May 2011 10:40:53 +0200
-From: =?iso-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq@rere.qmqm.pl>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: Alan Cox <alan@linux.intel.com>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
-Subject: Re: [PATCH v3] 8250_pci: add -ENODEV code for Intel EG20T PCH
-Message-ID: <20110531084052.GA13972@rere.qmqm.pl>
-References: <1306808559-4246-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+	id S1758139Ab1EaIo3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 04:44:29 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:41770 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab1EaIo2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 04:44:28 -0400
+Date: Tue, 31 May 2011 09:44:24 +0100
+From: Jamie Iles <jamie@jamieiles.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca, arnd@arndb.de,
+        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org
+Subject: Re: [PATCH 1/4] gpio: gpio-mxc: add gpio driver for Freescale MXC
+ architecture
+Message-ID: <20110531084424.GA2266@pulham.picochip.com>
+References: <1306767139-24763-1-git-send-email-shawn.guo@linaro.org>
+ <1306767139-24763-2-git-send-email-shawn.guo@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1306808559-4246-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1306767139-24763-2-git-send-email-shawn.guo@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 11:22:39AM +0900, Tomoya MORINAGA wrote:
-> Intel EG20T PCH has UART device which is compatible with 8250.
-> Currently, with general configuration, the PCH UART driver is not loaded but
-> 8250 standard driver is loaded.
-> Therefore, in case of using PCH UART driver, need to disable 8250 pci function.
-> However, this procedure is not best solution.
-> This patch, in 8250_pci, if the device is the PCH or the family IOH,
-> '-ENODEV' is returned.
-> As a result, disabling 8250-pci processing becomes unnecessary.
-[...]
-> +static int pci_eg20tpch_init(struct pci_dev *dev)
-> +{
-> +	return -ENODEV;
-> +}
+Hi Shawn,
 
-You could name it just return_ENODEV() or similar and then while looking
-at the device-id table you would know right away what this entry is doing.
+On Mon, May 30, 2011 at 10:52:16PM +0800, Shawn Guo wrote:
+> Add gpio-mxc driver by copying arch/arm/plat-mxc/gpio.c into
+> drivers/gpio with the following changes.
+> 
+>  * Use readl/writel to replace mach-specific accessors
+>    __raw_readl/__raw_writel
+> 
+>  * Migrate to platform driver by adding .probe function
+> 
+>  * Add a list to save all mx2 ports references, so that
+>    mx2_gpio_irq_handler can walk through all interrupt status
+>    registers
+> 
+> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> ---
 
-Best Regards,
-Micha³ Miros³aw
+Could you use the stuff in drivers/gpio/basic_mmio_gpio.c for 
+implementing the gpio_chip?  I had a go a little while ago [1] but since 
+then we've made it possible to embed the bgpio_chip in your own 
+structure which may be cleaner.
+
+Jamie
+
+1. http://permalink.gmane.org/gmane.linux.ports.arm.kernel/113139
