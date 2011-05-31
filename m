@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab1EaNQs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 09:16:48 -0400
-Received: from DMZ-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.34]:47093 "EHLO
-	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754450Ab1EaNQo (ORCPT
+	id S1754775Ab1EaNQz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 09:16:55 -0400
+Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:63737 "EHLO
+	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754667Ab1EaNQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 09:16:44 -0400
-X-AuditID: 12074422-b7b0eae000007f48-23-4de4ea3ebdea
+	Tue, 31 May 2011 09:16:53 -0400
+X-AuditID: 1209190d-b7bdeae0000004f8-a8-4de4ea04fb2f
 From: Andy Lutomirski <luto@MIT.EDU>
 To: Ingo Molnar <mingo@elte.hu>, x86@kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
@@ -19,223 +19,80 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         richard -rw- weinberger <richard.weinberger@gmail.com>,
         Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
         Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v3 04/10] x86-64: Remove kernel.vsyscall64 sysctl
-Date: Tue, 31 May 2011 09:15:58 -0400
-Message-Id: <2a1966052c8231877e67595e7caf95a9ae57838d.1306847455.git.luto@mit.edu>
+Subject: [PATCH v3 05/10] x86-64: Map the HPET NX
+Date: Tue, 31 May 2011 09:15:59 -0400
+Message-Id: <751f0c7373a987339e4315afb3bc1b269f1f61c2.1306847455.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <cover.1306847455.git.luto@mit.edu>
 References: <cover.1306847455.git.luto@mit.edu>
 In-Reply-To: <cover.1306847455.git.luto@mit.edu>
 References: <cover.1306847455.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsUixG6nrmv36omvwdL7NhZz1q9hs+i7cpTd
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLKsWRmVeSWpSXmKPExsUixCmqrMvy6omvwbuZPBZz1q9hs+i7cpTd
 	4si17+wWs67xWnze8I/N4sCvp2wW769uZ7O4vGsOm8WT5uuMFlsuNbNafJi4gc1i86apzBaP
 	+t6yW/zY8JjVgc/je2sfi8exM4cZPW61/WH2mL/zI6PHzll32T02r9Dy+P/yCJvHplWdbB7v
-	zp1j9zgx4zeLx/Ezzh6fN8kF8ERx2aSk5mSWpRbp2yVwZczZvIa1YL9BRefZ6ewNjK/Vuxg5
-	OSQETCR+d21jgrDFJC7cW8/WxcjFISSwj1Hi4vsjUM4GRomNhx8wQzjPmCQ6H68Ba2ETUJHo
-	WPoAyObgEBHQl7j6mRGkhllgEovE4b+nWUBqhAUcJa6+f8oMYrMIqErcm74ZrJdXIEii9/Nu
-	ZojVChJXrswDq+cUMJBoXrmGDcQWApp5/8kVZlziExgFFjAyrGKUTcmt0s1NzMwpTk3WLU5O
-	zMtLLdI11cvNLNFLTSndxAiOGxelHYw/DyodYhTgYFTi4c0++NhXiDWxrLgy9xCjJAeTkiiv
-	zMsnvkJ8SfkplRmJxRnxRaU5qcWHGCU4mJVEeL/xAeV4UxIrq1KL8mFS0hwsSuK8cyTVfYUE
-	0hNLUrNTUwtSi2CyMhwcShK8M0CGChalpqdWpGXmlCCkmTg4QYbzAA0PBanhLS5IzC3OTIfI
-	n2LU5Whcu+MgoxBLXn5eqpQ4bxZIkQBIUUZpHtwcWLp7xSgO9JYwbz9IFQ8wVcJNegW0hAlo
-	Se+7hyBLShIRUlINjGkhh8KT+A0/2/2z2meeeEZFuLJdv2G+i/ifXdNfP7s36dqs6J23Cpfc
-	Pev/y9a6jreB7+BJhbl3Vt5h0+ncZ/SN/fmkbay5sl2vJjFvOaM1UynrrlJ3NktjlM3hu9JF
-	aya1LLLgq8orfMy7NZWHIfe57mVJiSiHD1scUzxv60Xp/eP89b1JQomlOCPRUIu5qDgRANHQ
-	BXZSAwAA
+	zp1j9zgx4zeLx/Ezzh6fN8kF8ERx2aSk5mSWpRbp2yVwZcycfZmtoFWoovGrZgPjA/4uRk4O
+	CQETic+9E9khbDGJC/fWs3UxcnEICexjlHg87RwLhLOBUeLdp4dQmWdMEuu/XWIBaWETUJHo
+	WPqAqYuRg0NEQF/i6mdGkBpmgUksEof/nmYBiQsLGEos3p0EUs4ioCrx6s1esG28AkESJ27u
+	ZoLYrCBx5co8sJGcAgYSzSvXsIHYQkAj7z+5woxLfAKjwAJGhlWMsim5Vbq5iZk5xanJusXJ
+	iXl5qUW6Rnq5mSV6qSmlmxjBMSPJu4Px3UGlQ4wCHIxKPLys+x/7CrEmlhVX5h5ilORgUhLl
+	Pfvyia8QX1J+SmVGYnFGfFFpTmrxIUYJDmYlEd5vfEA53pTEyqrUonyYlDQHi5I470xJdV8h
+	gfTEktTs1NSC1CKYrAwHh5IE7wyQoYJFqempFWmZOSUIaSYOTpDhPEDDT4LU8BYXJOYWZ6ZD
+	5E8x6nI0rt1xkFGIJS8/L1VKnHchSJEASFFGaR7cHFiqe8UoDvSWMG8/SBUPME3CTXoFtIQJ
+	aEnvu4cgS0oSEVJSDYxbGnx1OVcvfzR/m/+PoIDaHZckO+wWsbjujxepenmpey6jSoPrHUW5
+	b60H9aN2hjsz/v3c+GhvzconqlMaF4rm5Ogw3T5yecWuVzuS/qo1LeY+xKL6fpl1XeLpx60e
+	Aq3a1S+X7/91yr3s6mnLeQt+9CxgZ9uWtidqm5Iz56RvHtM8rD594GdQYinOSDTUYi4qTgQA
+	ACzwRFADAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's unnecessary overhead in code that's supposed to be highly
-optimized.  Removing it allows us to remove one of the two syscall
-instructions in the vsyscall page.
-
-The only sensible use for it is for UML users, and it doesn't fully
-address inconsistent vsyscall results on UML.  The real fix for UML
-is to stop using vsyscalls entirely.
+Currently the HPET mapping is a user-accessible syscall instruction
+at a fixed address some of the time.  A sufficiently determined
+hacker might be able to guess when.
 
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/include/asm/vgtod.h   |    1 -
- arch/x86/kernel/vsyscall_64.c  |   34 +------------------------
- arch/x86/vdso/vclock_gettime.c |   55 +++++++++++++++------------------------
- 3 files changed, 22 insertions(+), 68 deletions(-)
+ arch/x86/include/asm/pgtable_types.h |    4 ++--
+ arch/x86/kernel/hpet.c               |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
-index 646b4c1..aa5add8 100644
---- a/arch/x86/include/asm/vgtod.h
-+++ b/arch/x86/include/asm/vgtod.h
-@@ -11,7 +11,6 @@ struct vsyscall_gtod_data {
- 	time_t		wall_time_sec;
- 	u32		wall_time_nsec;
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 6a29aed6..013286a 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -107,8 +107,8 @@
+ #define __PAGE_KERNEL_NOCACHE		(__PAGE_KERNEL | _PAGE_PCD | _PAGE_PWT)
+ #define __PAGE_KERNEL_UC_MINUS		(__PAGE_KERNEL | _PAGE_PCD)
+ #define __PAGE_KERNEL_VSYSCALL		(__PAGE_KERNEL_RX | _PAGE_USER)
+-#define __PAGE_KERNEL_VSYSCALL_NOCACHE	(__PAGE_KERNEL_VSYSCALL | _PAGE_PCD | _PAGE_PWT)
+ #define __PAGE_KERNEL_VVAR		(__PAGE_KERNEL_RO | _PAGE_USER)
++#define __PAGE_KERNEL_VVAR_NOCACHE	(__PAGE_KERNEL_VVAR | _PAGE_PCD | _PAGE_PWT)
+ #define __PAGE_KERNEL_LARGE		(__PAGE_KERNEL | _PAGE_PSE)
+ #define __PAGE_KERNEL_LARGE_NOCACHE	(__PAGE_KERNEL | _PAGE_CACHE_UC | _PAGE_PSE)
+ #define __PAGE_KERNEL_LARGE_EXEC	(__PAGE_KERNEL_EXEC | _PAGE_PSE)
+@@ -130,8 +130,8 @@
+ #define PAGE_KERNEL_LARGE_NOCACHE	__pgprot(__PAGE_KERNEL_LARGE_NOCACHE)
+ #define PAGE_KERNEL_LARGE_EXEC		__pgprot(__PAGE_KERNEL_LARGE_EXEC)
+ #define PAGE_KERNEL_VSYSCALL		__pgprot(__PAGE_KERNEL_VSYSCALL)
+-#define PAGE_KERNEL_VSYSCALL_NOCACHE	__pgprot(__PAGE_KERNEL_VSYSCALL_NOCACHE)
+ #define PAGE_KERNEL_VVAR		__pgprot(__PAGE_KERNEL_VVAR)
++#define PAGE_KERNEL_VVAR_NOCACHE	__pgprot(__PAGE_KERNEL_VVAR_NOCACHE)
  
--	int		sysctl_enabled;
- 	struct timezone sys_tz;
- 	struct { /* extract of a clocksource struct */
- 		cycle_t (*vread)(void);
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index ee22180..3e8dac7 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -53,7 +53,6 @@ DEFINE_VVAR(int, vgetcpu_mode);
- DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
+ #define PAGE_KERNEL_IO			__pgprot(__PAGE_KERNEL_IO)
+ #define PAGE_KERNEL_IO_NOCACHE		__pgprot(__PAGE_KERNEL_IO_NOCACHE)
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index bfe8f72..bf71830 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -71,7 +71,7 @@ static inline void hpet_set_mapping(void)
  {
- 	.lock = SEQLOCK_UNLOCKED,
--	.sysctl_enabled = 1,
- };
- 
- void update_vsyscall_tz(void)
-@@ -103,15 +102,6 @@ static __always_inline int gettimeofday(struct timeval *tv, struct timezone *tz)
- 	return ret;
+ 	hpet_virt_address = ioremap_nocache(hpet_address, HPET_MMAP_SIZE);
+ #ifdef CONFIG_X86_64
+-	__set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VSYSCALL_NOCACHE);
++	__set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VVAR_NOCACHE);
+ #endif
  }
  
--static __always_inline long time_syscall(long *t)
--{
--	long secs;
--	asm volatile("syscall"
--		: "=a" (secs)
--		: "0" (__NR_time),"D" (t) : __syscall_clobber);
--	return secs;
--}
--
- static __always_inline void do_vgettimeofday(struct timeval * tv)
- {
- 	cycle_t now, base, mask, cycle_delta;
-@@ -122,8 +112,7 @@ static __always_inline void do_vgettimeofday(struct timeval * tv)
- 		seq = read_seqbegin(&VVAR(vsyscall_gtod_data).lock);
- 
- 		vread = VVAR(vsyscall_gtod_data).clock.vread;
--		if (unlikely(!VVAR(vsyscall_gtod_data).sysctl_enabled ||
--			     !vread)) {
-+		if (unlikely(!vread)) {
- 			gettimeofday(tv,NULL);
- 			return;
- 		}
-@@ -165,8 +154,6 @@ time_t __vsyscall(1) vtime(time_t *t)
- {
- 	unsigned seq;
- 	time_t result;
--	if (unlikely(!VVAR(vsyscall_gtod_data).sysctl_enabled))
--		return time_syscall(t);
- 
- 	do {
- 		seq = read_seqbegin(&VVAR(vsyscall_gtod_data).lock);
-@@ -227,22 +214,6 @@ static long __vsyscall(3) venosys_1(void)
- 	return -ENOSYS;
- }
- 
--#ifdef CONFIG_SYSCTL
--static ctl_table kernel_table2[] = {
--	{ .procname = "vsyscall64",
--	  .data = &vsyscall_gtod_data.sysctl_enabled, .maxlen = sizeof(int),
--	  .mode = 0644,
--	  .proc_handler = proc_dointvec },
--	{}
--};
--
--static ctl_table kernel_root_table2[] = {
--	{ .procname = "kernel", .mode = 0555,
--	  .child = kernel_table2 },
--	{}
--};
--#endif
--
- /* Assume __initcall executes before all user space. Hopefully kmod
-    doesn't violate that. We'll find out if it does. */
- static void __cpuinit vsyscall_set_cpu(int cpu)
-@@ -301,9 +272,6 @@ static int __init vsyscall_init(void)
- 	BUG_ON((unsigned long) &vtime != VSYSCALL_ADDR(__NR_vtime));
- 	BUG_ON((VSYSCALL_ADDR(0) != __fix_to_virt(VSYSCALL_FIRST_PAGE)));
- 	BUG_ON((unsigned long) &vgetcpu != VSYSCALL_ADDR(__NR_vgetcpu));
--#ifdef CONFIG_SYSCTL
--	register_sysctl_table(kernel_root_table2);
--#endif
- 	on_each_cpu(cpu_vsyscall_init, NULL, 1);
- 	/* notifier priority > KVM */
- 	hotcpu_notifier(cpu_vsyscall_notifier, 30);
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index a724905..cf54813 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -116,21 +116,21 @@ notrace static noinline int do_monotonic_coarse(struct timespec *ts)
- 
- notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
- {
--	if (likely(gtod->sysctl_enabled))
--		switch (clock) {
--		case CLOCK_REALTIME:
--			if (likely(gtod->clock.vread))
--				return do_realtime(ts);
--			break;
--		case CLOCK_MONOTONIC:
--			if (likely(gtod->clock.vread))
--				return do_monotonic(ts);
--			break;
--		case CLOCK_REALTIME_COARSE:
--			return do_realtime_coarse(ts);
--		case CLOCK_MONOTONIC_COARSE:
--			return do_monotonic_coarse(ts);
--		}
-+	switch (clock) {
-+	case CLOCK_REALTIME:
-+		if (likely(gtod->clock.vread))
-+			return do_realtime(ts);
-+		break;
-+	case CLOCK_MONOTONIC:
-+		if (likely(gtod->clock.vread))
-+			return do_monotonic(ts);
-+		break;
-+	case CLOCK_REALTIME_COARSE:
-+		return do_realtime_coarse(ts);
-+	case CLOCK_MONOTONIC_COARSE:
-+		return do_monotonic_coarse(ts);
-+	}
-+
- 	return vdso_fallback_gettime(clock, ts);
- }
- int clock_gettime(clockid_t, struct timespec *)
-@@ -139,7 +139,7 @@ int clock_gettime(clockid_t, struct timespec *)
- notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
- {
- 	long ret;
--	if (likely(gtod->sysctl_enabled && gtod->clock.vread)) {
-+	if (likely(gtod->clock.vread)) {
- 		if (likely(tv != NULL)) {
- 			BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
- 				     offsetof(struct timespec, tv_nsec) ||
-@@ -161,27 +161,14 @@ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
- int gettimeofday(struct timeval *, struct timezone *)
- 	__attribute__((weak, alias("__vdso_gettimeofday")));
- 
--/* This will break when the xtime seconds get inaccurate, but that is
-- * unlikely */
--
--static __always_inline long time_syscall(long *t)
--{
--	long secs;
--	asm volatile("syscall"
--		     : "=a" (secs)
--		     : "0" (__NR_time), "D" (t) : "cc", "r11", "cx", "memory");
--	return secs;
--}
--
-+/*
-+ * This will break when the xtime seconds get inaccurate, but that is
-+ * unlikely
-+ */
- notrace time_t __vdso_time(time_t *t)
- {
--	time_t result;
--
--	if (unlikely(!VVAR(vsyscall_gtod_data).sysctl_enabled))
--		return time_syscall(t);
--
- 	/* This is atomic on x86_64 so we don't need any locks. */
--	result = ACCESS_ONCE(VVAR(vsyscall_gtod_data).wall_time_sec);
-+	time_t result = ACCESS_ONCE(VVAR(vsyscall_gtod_data).wall_time_sec);
- 
- 	if (t)
- 		*t = result;
 -- 
 1.7.5.1
 
