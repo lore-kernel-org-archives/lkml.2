@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932619Ab1EaV1B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 17:27:01 -0400
-Received: from c-76-21-10-192.hsd1.ca.comcast.net ([76.21.10.192]:58983 "EHLO
-	saboo.goop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932529Ab1EaV07 (ORCPT
+	id S932692Ab1EaVRE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 17:17:04 -0400
+Received: from outmail003.snc4.facebook.com ([66.220.144.135]:55601 "EHLO
+	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932497Ab1EaVRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 17:26:59 -0400
-X-Greylist: delayed 764 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 May 2011 17:26:59 EDT
-Message-ID: <4DE55A26.6040702@goop.org>
-Date: Tue, 31 May 2011 14:14:14 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	Tue, 31 May 2011 17:17:02 -0400
+Message-ID: <4DE55AE9.90505@fb.com>
+Date: Tue, 31 May 2011 14:17:29 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: NetDev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: 3.0-rc1: DMAR errors from iwlagn
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
+To: Mike Frysinger <vapier.adi@gmail.com>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        David Miller <davem@davemloft.net>, Andrew Morton <akpm@osdl.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH 2/2] atomic: move atomic_add_unless to generic code
+References: <1306869046-20172-1-git-send-email-asharma@fb.com> <1306869046-20172-2-git-send-email-asharma@fb.com> <BANLkTi=Tg=t5LrnvR2Sn08K0Ktm8ZKNCCA@mail.gmail.com>
+In-Reply-To: <BANLkTi=Tg=t5LrnvR2Sn08K0Ktm8ZKNCCA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a Lenovo X220 with:
+On 5/31/11 1:21 PM, Mike Frysinger wrote:
+> On Tue, May 31, 2011 at 15:10, Arun Sharma wrote:
+>> This is in preparation for more generic atomic
+>> primitives based on __atomic_add_unless.
+>
+> i think you might have to have those primitives in place before this
+> patch makes sense.  the only thing this does is hoist a single
+> comparison out of arch atomic.h's and into linux/atomic.h.  this
+> savings alone looks simply like over engineering to me.
 
-03:00.0 Network controller: Intel Corporation Centrino Ultimate-N 6300 (rev 35)
-	Subsystem: Intel Corporation Centrino Ultimate-N 6300 3x3 AGN
-	Flags: bus master, fast devsel, latency 0, IRQ 50
-	Memory at d2500000 (64-bit, non-prefetchable) [size=8K]
-	Capabilities: <access denied>
-	Kernel driver in use: iwlagn
-	Kernel modules: iwlagn
+Some of the context is buried in the lkml-reference. The main motivation 
+for the patch is commit 686a7e3.
 
-With 3.0-rc1, I'm seeing these in dmesg:
+The idea is to move atomic_add_unless_return() into linux/atomic.h
 
-DRHD: handling fault status reg 2
-DMAR:[DMA Write] Request device [03:00.0] fault addr ffe8a000 
-DMAR:[fault reason 05] PTE Write access is not set
-DRHD: handling fault status reg 2
-DMAR:[DMA Write] Request device [03:00.0] fault addr ffd5a000 
-DMAR:[fault reason 05] PTE Write access is not set
-DRHD: handling fault status reg 2
-DMAR:[DMA Write] Request device [03:00.0] fault addr ffd52000 
-DMAR:[fault reason 05] PTE Write access is not set
-
-but the device seems to be working OK.
-
-Thanks,
-	J
+  -Arun
 
