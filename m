@@ -1,134 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393Ab1EaPwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 11:52:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11410 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932234Ab1EaPww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 11:52:52 -0400
-Date: Tue, 31 May 2011 11:52:51 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20110531155251.3568.64650.sendpatchset@prarit.bos.redhat.com>
-Content-Type: text/x-c; charset=us-ascii
-Subject: [RFC PATCH 20/35] drivers/net changes for SMBIOS and System Firmware
+	id S932800Ab1EaW3R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 18:29:17 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:58866 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932743Ab1EaW3Q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 18:29:16 -0400
+Subject: Re: perf: [patch] regression with PERF_EVENT_IOC_REFRESH
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vince Weaver <vince@deater.net>
+Cc: Vince Weaver <vweaver1@eecs.utk.edu>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, paulus@samba.org, acme@redhat.com
+In-Reply-To: <Pine.LNX.4.64.1105310942410.9995@pianoman.cluster.toy>
+References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu>
+	 <1306182141.2497.5.camel@laptop>
+	 <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu>
+	 <1306233036.2497.15.camel@laptop>
+	 <alpine.DEB.2.00.1105272332400.9313@cl320.eecs.utk.edu>
+	 <1306578144.1200.1150.camel@twins>
+	 <alpine.DEB.2.00.1105291253270.6774@cl320.eecs.utk.edu>
+	 <Pine.LNX.4.64.1105302129210.7601@pianoman.cluster.toy>
+	 <1306826593.2530.7.camel@twins>
+	 <Pine.LNX.4.64.1105310942410.9995@pianoman.cluster.toy>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 31 May 2011 17:52:53 +0200
+Message-ID: <1306857173.2353.162.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/net changes for SMBIOS and System Firmware
+On Tue, 2011-05-31 at 09:49 -0400, Vince Weaver wrote:
+> On Tue, 31 May 2011, Peter Zijlstra wrote:
+> 
+> > On Mon, 2011-05-30 at 21:33 -0400, Vince Weaver wrote:
+> > > the problem was the mentioned commit tried to optimize the use of 
+> > > watermark and wakeup_watermark without taking into account that 
+> > > wakeup_watermark is a union with wakeup_events. 
+> > 
+> > Note that wake_events isn't related to IOC_REFRESH, wake_events is how
+> > much events to buffer in the mmap-buffer before issuing a wakeup.
+> > 
+> > IOC_REFRESH increments event_limit, which is how many events to run
+> > before disabling yourself.
+> > 
+> > What I gather is that due to that SIGIO bug (fixed by f506b3dc0e), you
+> > had to have both an mmap and a wakeup in order for that signal to
+> > arrive.
+> 
+> yes, but due to a bug in the mentioned changeset, the buffer watermark 
+> value was being set to a low value even if *watermark* was 0.  So if you 
+> were using IOC_REFRESH to set the *wakeup_events* value,
 
----
- drivers/net/skge.c                 |   11 ++++++-----
- drivers/net/via-rhine.c            |   18 ++++++++++--------
- drivers/net/wireless/wl1251/sdio.c |    1 -
- 3 files changed, 16 insertions(+), 14 deletions(-)
+IOC_REFRESH sets event->event_limit, not wakeup_events.
 
-diff --git a/drivers/net/skge.c b/drivers/net/skge.c
-index f4be5c7..1200c53 100644
---- a/drivers/net/skge.c
-+++ b/drivers/net/skge.c
-@@ -43,7 +43,7 @@
- #include <linux/seq_file.h>
- #include <linux/mii.h>
- #include <linux/slab.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- #include <linux/prefetch.h>
- #include <asm/irq.h>
- 
-@@ -4089,12 +4089,13 @@ static struct pci_driver skge_driver = {
- 	.driver.pm =	SKGE_PM_OPS,
- };
- 
--static struct dmi_system_id skge_32bit_dma_boards[] = {
-+static struct sysfw_id skge_32bit_dma_boards[] = {
- 	{
- 		.ident = "Gigabyte nForce boards",
- 		.matches = {
--			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co"),
--			DMI_MATCH(DMI_BOARD_NAME, "nForce"),
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR,
-+				     "Gigabyte Technology Co"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "nForce"),
- 		},
- 	},
- 	{}
-@@ -4102,7 +4103,7 @@ static struct dmi_system_id skge_32bit_dma_boards[] = {
- 
- static int __init skge_init_module(void)
- {
--	if (dmi_check_system(skge_32bit_dma_boards))
-+	if (sysfw_callback(skge_32bit_dma_boards))
- 		only_32bit_dma = 1;
- 	skge_debug_init();
- 	return pci_register_driver(&skge_driver);
-diff --git a/drivers/net/via-rhine.c b/drivers/net/via-rhine.c
-index 7f23ab9..81725d5 100644
---- a/drivers/net/via-rhine.c
-+++ b/drivers/net/via-rhine.c
-@@ -110,7 +110,7 @@ static const int multicast_filter_limit = 32;
- #include <asm/io.h>
- #include <asm/irq.h>
- #include <asm/uaccess.h>
--#include <linux/dmi.h>
-+#include <linux/sysfw.h>
- 
- /* These identify the driver base version and may not be removed. */
- static const char version[] __devinitconst =
-@@ -2294,22 +2294,24 @@ static struct pci_driver rhine_driver = {
- 	.shutdown =	rhine_shutdown,
- };
- 
--static struct dmi_system_id __initdata rhine_dmi_table[] = {
-+static struct sysfw_id __initdata rhine_id_table[] = {
- 	{
- 		.ident = "EPIA-M",
- 		.matches = {
--			DMI_MATCH(DMI_BIOS_VENDOR, "Award Software International, Inc."),
--			DMI_MATCH(DMI_BIOS_VERSION, "6.00 PG"),
-+			SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Award Software International, Inc."),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "6.00 PG"),
- 		},
- 	},
- 	{
- 		.ident = "KV7",
- 		.matches = {
--			DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies, LTD"),
--			DMI_MATCH(DMI_BIOS_VERSION, "6.00 PG"),
-+			SYSFW_MATCH(SYSFW_BIOS_VENDOR,
-+				    "Phoenix Technologies, LTD"),
-+			SYSFW_MATCH(SYSFW_BIOS_VERSION, "6.00 PG"),
- 		},
- 	},
--	{ NULL }
-+	{}
- };
- 
- static int __init rhine_init(void)
-@@ -2318,7 +2320,7 @@ static int __init rhine_init(void)
- #ifdef MODULE
- 	pr_info("%s\n", version);
- #endif
--	if (dmi_check_system(rhine_dmi_table)) {
-+	if (sysfw_callback(rhine_id_table)) {
- 		/* these BIOSes fail at PXE boot if chip is in D3 */
- 		avoid_D3 = 1;
- 		pr_warn("Broken BIOS detected, avoid_D3 enabled\n");
-diff --git a/drivers/net/wireless/wl1251/sdio.c b/drivers/net/wireless/wl1251/sdio.c
-index f51a024..68e36d7 100644
---- a/drivers/net/wireless/wl1251/sdio.c
-+++ b/drivers/net/wireless/wl1251/sdio.c
-@@ -20,7 +20,6 @@
-  * Copyright (C) 2009 Bob Copeland (me@bobcopeland.com)
-  */
- #include <linux/module.h>
--#include <linux/mod_devicetable.h>
- #include <linux/mmc/sdio_func.h>
- #include <linux/mmc/sdio_ids.h>
- #include <linux/platform_device.h>
--- 
-1.7.5.1
+>  it was also 
+> setting the *wakeup_watermark* value (it's a union) and the buffer setup 
+> was then unconditionally setting the buffer watermark to the value of the 
+> supposedly unrelated *wakeup_watermark*.  Normally the wakeup watermark 
+> would default to something like 2048, but if you were trying to set the 
+> wakeup_events value to something like 3 then wakeup_watermark would be set 
+> to that too, causing a lot more overflow events.
 
+poll() wakeups, which were inadvertly linked to SIGIOs
+
+> I verified all the above painfully using a lot of printks.
+
+I prefer to use trace_printk() and /debug/tracing/, that doesn't slow
+stuff down as much.
+
+> I agree this does seem to be a combination of bugs, as even with a 
+> properlyu set value on affected kernels you'd get spurious watermark 
+> overflow events if you weren't consuming the ring buffer.
+
+*nod*
+
+> In any case, I can provide a cleaner patch than the one before that isn't 
+> as intrusive.
+
+Appreciated.
+
+> I'm also bisecting the other problem I mentioned, the one where overflows 
+> are 10x too large on 3.0-rc1.  I'm at work with a Nehalem machine so the 
+> bisect should go faster than the bisect I had to do on an atom machine 
+> this weekend.  
+
+It wouldn't be the SIGIO fix would it?, with that every overflow
+generates a SIGIO, not only the poll() wakeups. And ouch at bisecting
+(or even building a kernel) on an Atom, those things are horridly slow.
+
+> A power outage over the weekend has taken part of the 
+> network down here though so my e-mail access is a bit limited, so I 
+> apologize if I've been missing comments sent to my other e-mail address.
+
+I'm afraid not, I've been mostly tied up with fixing some scheduler
+regressions.
+
+Also, it looks like I just broke stuff even worse in -tip, am bisecting
+that now.
