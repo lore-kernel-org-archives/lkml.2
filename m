@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758433Ab1EaIzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 04:55:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44309 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758232Ab1EaIzx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 04:55:53 -0400
-Subject: Re: [PATCH] Fix corruption of CONFIG_X86_32 in 'make oldconfig'
-From: David Woodhouse <dwmw2@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "Ted Ts'o" <tytso@mit.edu>, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Date: Tue, 31 May 2011 09:55:47 +0100
-In-Reply-To: <20110531075306.GB20798@elte.hu>
-References: <20110530072300.GA9802@elte.hu>
-	 <1306745835.2029.389.camel@i7.infradead.org>
-	 <20110530104231.GF17821@elte.hu> <20110530104656.GA19532@elte.hu>
-	 <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
-	 <20110530105809.GA20133@elte.hu>
-	 <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
-	 <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
-	 <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
-	 <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
-	 <20110531075306.GB20798@elte.hu>
+	id S1758468Ab1EaI4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 04:56:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7531 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758232Ab1EaI4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 04:56:52 -0400
+Subject: Re: Cleancache and shared filesystems
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Joel Becker <jlbec@evilplan.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-kernel@vger.kernel.org,
+        sunil.mushran@oracle.com
+In-Reply-To: <20110527233331.GC30232@noexit.corp.google.com>
+References: <1306504300.2857.14.camel@menhir>
+	 <6f0e746a-d3d1-4708-9e16-3d02ddeab824@default>
+	 <1306513179.2857.38.camel@menhir>
+	 <20110527233331.GC30232@noexit.corp.google.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1306832148.2029.484.camel@i7.infradead.org>
+Organization: Red Hat UK Ltd
+Date: Tue, 31 May 2011 09:58:26 +0100
+Message-ID: <1306832306.2816.3.camel@menhir>
 Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-31 at 09:53 +0200, Ingo Molnar wrote:
-> I'll always prefer typing:
->   make ARCH=x86_64 ...
-> To:
->   make ARCH=x86 CONFIG_64BIT=y ...
+Hi,
 
-You're not building on an x86 box? I always suspected you had some alien
-technology! Does it run Linux?
+On Fri, 2011-05-27 at 16:33 -0700, Joel Becker wrote:
+> On Fri, May 27, 2011 at 05:19:39PM +0100, Steven Whitehouse wrote:
+> > +	if (ls->ls_ops == &gfs2_dlm_ops) {
+> > +		if (gfs2_uuid_valid(sb->s_uuid))
+> > +			cleancache_init_shared_fs(sb->s_uuid, sb);
+> > +	} else {
+> > +		cleancache_init_fs(sb);
+> > +	}
+> 
+> Hey Dan,
+> 	Steven makes a good point here.  ocfs2 could also take advantage
+> of local filesystem behavior when running in local mode.
+> 
+> Joel
+> 
 
-Why else would you need to specify ARCH=x86 on the latter command line? 
+There is a further issue as well - cleancache will only work when all
+nodes can see the same shared cache, so we will need a mount option to
+disable cleancache in the case we have (for example) a cluster of
+virtual machines split over multiple physical hosts.
 
--- 
-dwmw2
+In fact, I think from the principle of least surprise this had better
+default to off and be enabled explicitly. Otherwise I can see that
+people will shoot themselves in the foot which will be very easy since
+there is no automatic way that I can see to verify that all nodes are
+looking at the same cache,
+
+Steve.
+
 
