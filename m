@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab1EaOnN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 10:43:13 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:56808 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab1EaOnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 10:43:12 -0400
-X-ASG-Debug-ID: 1306852990-01de280c1e0dd90001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DE4FE7C.7000903@fusionio.com>
-Date: Tue, 31 May 2011 16:43:08 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1756089Ab1EaOn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 10:43:57 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:55135 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab1EaOn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 10:43:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=UIywy21AfzjFczis8uUfnqUwn9GuTQnaYxb2pR/1b/3+zZl6EvPOTXwNPvOnuJaA5W
+         82IY0/No3bUTvQUHl0YgfWTQ0qpE6QyHhgck1iYmClCatsHpICmvM0uTDkdalsEdNxFZ
+         //KGfh3sLRVdEv4CJwI73m63jd0J/s37/yscE=
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Mike Snitzer <snitzer@redhat.com>, "msb@chromium.org" <msb@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>
-Subject: Re: [PATCH 2/3] block: Move non-rotational flag to queue limits
-References: <4DDEA689.2090004@fusionio.com>	<1306464169-4291-1-git-send-email-martin.petersen@oracle.com>	<1306464169-4291-3-git-send-email-martin.petersen@oracle.com>	<20110527130248.GA17219@redhat.com>	<yq1k4d7zk56.fsf@sermon.lab.mkp.net> <4DE4E9A6.8060006@fusionio.com> <yq1d3izx7v2.fsf@sermon.lab.mkp.net>
-X-ASG-Orig-Subj: Re: [PATCH 2/3] block: Move non-rotational flag to queue limits
-In-Reply-To: <yq1d3izx7v2.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1306852990
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.65206
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <cover.1306780983.git.bengardiner@nanometrics.ca>
+References: <cover.1306780983.git.bengardiner@nanometrics.ca>
+Date: Tue, 31 May 2011 10:43:55 -0400
+Message-ID: <BANLkTinu7dX5Tfhs0ak0BEfc212mpJKb+w@mail.gmail.com>
+Subject: Re: [PATCH 0/3] fix-up free space earlier in mount_ubifs()
+From: "Matthew L. Creech" <mlcreech@gmail.com>
+To: Ben Gardiner <bengardiner@nanometrics.ca>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-05-31 16:28, Martin K. Petersen wrote:
->>>>>> "Jens" == Jens Axboe <jaxboe@fusionio.com> writes:
-> 
-> Jens> On 2011-05-31 04:19, Martin K. Petersen wrote:
->>> - queue_flag_set_unlocked(QUEUE_FLAG_NONROT, disk->queue);
->>> + blk_queue_non_rotational(queue);
-> 
-> Jens> I don't like this part of the change. Before it was immediately
-> Jens> apparently that we were setting this flag, know you have no idea
-> Jens> what it does. Please make that blk_queue_set_non_rotational().
-> 
-> I was just trying to mimic the rest of the topology calls.
-> 
-> How about:
-> 
->   blk_queue_rotational(q, BLK_QUEUE_ROTATIONAL|BLK_QUEUE_NON_ROTATIONAL)
-> 
-> Doing it that way would make the code clearer a few places too, I
-> think...
+On Mon, May 30, 2011 at 2:56 PM, Ben Gardiner
+<bengardiner@nanometrics.ca> wrote:
+> In testing Mattew Creech's free-space-fixup flag series I found that was unable
+> to boot a da850evm which had flashed to it's NAND a ubinized image containing a
+> UBIFS that has the free-space-fixup flag set.
+>
+> The cause of the problem was found to be the call to ubifs_write_master() from
+> mount_ubifs() as is evidenced the backtrace produced by the assertion
+> introduced in the first patch of this series; where the assertion introduced is
+> that c->space_fixup is false when ubifs_write_node() is called.
+>
 
-I prefer having the function names be descriptive instead, but
-consistency is good as well. The problem with the above approach is that
-it usually requires defines to match, otherwise you don't know what the
-arguments do. So lets rather fix up the other names for the next kernel.
+Interesting - so the problem is that if ubifs_read_master() resizes
+the master node, a subsequent attempt to read the first (c->mst_offs +
+c->mst_node_alsz) bytes from the master LEB fails?
+
+I wonder why this is the case when free-space fixup is enabled, and
+not otherwise?  The -EBADMSG seems to imply that this is the original
+problem that the fix-up is intended to solve - i.e. the master node
+has empty pages with non-empty OOB values, and writing to them results
+in a bogus ECC.
+
+Do you happen to know if the same thing occurs when you uncleanly
+reboot (so that recovery is needed on the next boot)?  It looks like
+ubifs_recover_master_node() reads the same data that
+fixup_leb_free_space() does, so I'd expect it to fail similarly if
+that's what's happening, regardless of whether fix-up is performed or
+not.
+
+Just trying to fully understand the error.  :)  That aside, this patch
+set makes sense to me.  Thanks!
 
 -- 
-Jens Axboe
-
+Matthew L. Creech
