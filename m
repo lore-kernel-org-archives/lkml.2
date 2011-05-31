@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950Ab1EaF7q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 01:59:46 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59044 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751150Ab1EaF7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 01:59:45 -0400
-Subject: Re: Linux 3.0-rc1
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+	id S1757965Ab1EaGBQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 02:01:16 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43134 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150Ab1EaGBP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 02:01:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=IF/U00CBhBn/AgqG4tawNlYOY0WSUDLm0jnq3+74PBU3OKH18mJSaVRCYi7dOFW6Bh
+         8klXPoWZNGrr12ErgtYAEFcvqKmI5CbRKYYp6cbrWZdxue7ziCRBsXnw7/lfy0uj6GUJ
+         wKlauBmpqOUAdU7aaQlQ0gnMb2uepJC88Usx8=
+MIME-Version: 1.0
 In-Reply-To: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
 References: <BANLkTinE8eSSovGx6CPPkTeCpqv8AsS2nw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 May 2011 15:59:38 +1000
-Message-ID: <1306821578.7481.646.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Date: Tue, 31 May 2011 16:01:14 +1000
+Message-ID: <BANLkTi=AWgZ12M=SCGFkiJfax24TxDP6MQ@mail.gmail.com>
+Subject: Re: Linux 3.0-rc1
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-05-29 at 18:30 -0700, Linus Torvalds wrote:
-> 
-> Now, my alpha-maleness sadly does not actually extend to all the
-> scripts and Makefile rules, so the kernel is fighting back, and is
-> calling itself 3.0.0-rc1. We'll have the usual 6-7 weeks to wrestle it
-> into submission, and get scripts etc cleaned up, and the final release
-> should be just "3.0". The -stable team can use the third number for
-> their versioning. 
+On Mon, May 30, 2011 at 11:30 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Yay! Let the bikeshed painting discussions about version numbering
+> begin (or at least re-start).
 
-So a bit of bike shedding :-)
+There's a rumour going around you broke module-init-tools.
 
-Why don't we just keep the 3 digits ? You release 3.x.0 and Greg
-increments the last one ?
+So this is an ABI break? so can I break all my stuff as well ;-)
 
-That means existing tools don't break, and number of digits doesn't
-change all the time anymore, less likely to get wrong...
-
-Cheers,
-Ben.
-
-
+Dave.
