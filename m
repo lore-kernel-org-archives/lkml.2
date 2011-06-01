@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759052Ab1FARKZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 13:10:25 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:38607 "EHLO mgw2.diku.dk"
+	id S1759065Ab1FARK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 13:10:26 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:38613 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757767Ab1FARKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758420Ab1FARKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 1 Jun 2011 13:10:19 -0400
 From: Julia Lawall <julia@diku.dk>
-To: David Brownell <dbrownell@users.sourceforge.net>
-Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Eric Miao <eric.y.miao@gmail.com>, Mike Rapoport <mike@compulab.co.il>,
-        Igor Grinberg <grinberg@compulab.co.il>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/10] drivers/usb/host/ohci-pxa27x.c: add missing clk_put
-Date: Wed,  1 Jun 2011 19:10:06 +0200
-Message-Id: <1306948213-20767-3-git-send-email-julia@diku.dk>
+To: Wolfgang Grandegger <wg@grandegger.com>
+Cc: kernel-janitors@vger.kernel.org, socketcan-core@lists.berlios.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/10] drivers/net/can/flexcan.c: add missing clk_put
+Date: Wed,  1 Jun 2011 19:10:07 +0200
+Message-Id: <1306948213-20767-4-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,8 +20,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Add a label before the call to clk_put and jump to that in the error
-handling code that occurs after the call to clk_get has succeeded.
+The failed_get label is used after the call to clk_get has succeeded, so it
+should be moved up above the call to clk_put.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -47,32 +45,21 @@ if (...) { ... when != clk_put(e1)
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/usb/host/ohci-pxa27x.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/can/flexcan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/ohci-pxa27x.c b/drivers/usb/host/ohci-pxa27x.c
-index afef7b0..80be547 100644
---- a/drivers/usb/host/ohci-pxa27x.c
-+++ b/drivers/usb/host/ohci-pxa27x.c
-@@ -312,8 +312,10 @@ int usb_hcd_pxa27x_probe (const struct hc_driver *driver, struct platform_device
- 		return PTR_ERR(usb_clk);
- 
- 	hcd = usb_create_hcd (driver, &pdev->dev, "pxa27x");
--	if (!hcd)
--		return -ENOMEM;
-+	if (!hcd) {
-+		retval = -ENOMEM;
-+		goto err0;
-+	}
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!r) {
-@@ -368,6 +370,7 @@ int usb_hcd_pxa27x_probe (const struct hc_driver *driver, struct platform_device
- 	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
-  err1:
- 	usb_put_hcd(hcd);
-+ err0:
- 	clk_put(usb_clk);
- 	return retval;
+diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+index d499056..121739c 100644
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -978,8 +978,8 @@ static int __devinit flexcan_probe(struct platform_device *pdev)
+  failed_map:
+ 	release_mem_region(mem->start, mem_size);
+  failed_req:
+-	clk_put(clk);
+  failed_get:
++	clk_put(clk);
+  failed_clock:
+ 	return err;
  }
 
