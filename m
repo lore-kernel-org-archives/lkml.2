@@ -1,91 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161031Ab1FAC3E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 22:29:04 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:46852 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933152Ab1FAC3C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 22:29:02 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 1 Jun 2011 10:33:57 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: <vinod.koul@intel.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <dan.j.williams@intel.com>, <patches@linaro.org>
-Subject: Re: [PATCH 1/3] dmaengine: add new dma API for max_segment_number
-Message-ID: <20110601023356.GA1501@S2100-06.ap.freescale.net>
-References: <1306391493-29425-1-git-send-email-shawn.guo@linaro.org>
+	id S1758625Ab1FADCw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 23:02:52 -0400
+Received: from trent.utfs.org ([194.246.123.103]:52308 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758601Ab1FADCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 23:02:51 -0400
+Date: Tue, 31 May 2011 20:02:47 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux ppc dev <linuxppc-dev@lists.ozlabs.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: 3.0-rc1: powerpc hangs at Kernel virtual memory layout
+In-Reply-To: <alpine.DEB.2.01.1105311744000.21697@trent.utfs.org>
+Message-ID: <alpine.DEB.2.01.1105311959000.21697@trent.utfs.org>
+References: <alpine.DEB.2.01.1105311644010.21697@trent.utfs.org> <1306887942.29297.10.camel@pasglop> <alpine.DEB.2.01.1105311744000.21697@trent.utfs.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1306391493-29425-1-git-send-email-shawn.guo@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
+(Cc'in Linus)
 
-Thoughts?
+On Tue, 31 May 2011 at 17:48, Christian Kujau wrote:
+> In the meantime, "git bisect" behaves kinda weird, I don't know what went 
+> wrong here:
+> 
+>  $ git bisect start
+>  $ git bisect good         # Linux 2.6.39
+>  $ git bisect bad v3.0-rc1 # Linux 3.0-rc1
+>  $ git bisect bad          # c44dead70a...
+>  $ git bisect bad          # d93515611b..
+> 
+> ...yet the ./Makefile shows[0] that I'm already way behind: 2.6.39-rc2. 
+> Maybe "git bisect" got confused with that whole 2.6.x -> 3.0 renaming?
 
+Hm, I tried again, from a clean v3.0-rc1 (git reset --hard), but after the 
+2nd "git bad" I'm at 2.6.39-rc2 again - while I /should/ be somwhere 
+inbetween v2.6.39..v3.0-rc1, right?
+
+Help, please!
+Christian.
+
+[0] http://nerdbynature.de/bits/3.0-rc1/
 -- 
-Regards,
-Shawn
+BOFH excuse #54:
 
-On Thu, May 26, 2011 at 02:31:31PM +0800, Shawn Guo wrote:
-> Like dma_set(get)_max_seg_size for max_segment_size, the patch adds
-> max_segment_number into device_dma_parameters and creates the
-> corresponding dmaengine API dma_set(get)_max_seg_number for it.
-> 
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> ---
->  include/linux/device.h      |    1 +
->  include/linux/dma-mapping.h |   15 +++++++++++++++
->  2 files changed, 16 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/device.h b/include/linux/device.h
-> index c66111a..44cb2528 100644
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -487,6 +487,7 @@ struct device_dma_parameters {
->  	 * sg limitations.
->  	 */
->  	unsigned int max_segment_size;
-> +	unsigned int max_segment_number;
->  	unsigned long segment_boundary_mask;
->  };
->  
-> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-> index ba8319a..fd314f4 100644
-> --- a/include/linux/dma-mapping.h
-> +++ b/include/linux/dma-mapping.h
-> @@ -131,6 +131,21 @@ static inline unsigned int dma_set_max_seg_size(struct device *dev,
->  		return -EIO;
->  }
->  
-> +static inline unsigned int dma_get_max_seg_number(struct device *dev)
-> +{
-> +	return dev->dma_parms ? dev->dma_parms->max_segment_number : 1;
-> +}
-> +
-> +static inline unsigned int dma_set_max_seg_number(struct device *dev,
-> +						  unsigned int number)
-> +{
-> +	if (dev->dma_parms) {
-> +		dev->dma_parms->max_segment_number = number;
-> +		return 0;
-> +	} else
-> +		return -EIO;
-> +}
-> +
->  static inline unsigned long dma_get_seg_boundary(struct device *dev)
->  {
->  	return dev->dma_parms ?
-> -- 
-> 1.7.4.1
-
+Evil dogs hypnotised the night shift
