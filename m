@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758251Ab1FAXKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 19:10:07 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42151 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab1FAXKF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 19:10:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=YTf46qEXHiilfiaqQVcY6MCUGHKXnsqoe+5cM0k02l5mq6IB9QFmfoxzQWWPhOblpE
-         B5o1CwtS8vIFaLf73A408GsG6uAQiDqXMXUzqrtOgC6CLJ5bpzbn5DtD0oRoplQKNjSq
-         S6kqdPWSqJ5FVOO4i+BFyF8HKPFbHx1QqJ2ng=
+	id S932466Ab1FAXY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 19:24:56 -0400
+Received: from trent.utfs.org ([194.246.123.103]:55476 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756398Ab1FAXYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 19:24:55 -0400
+Date: Wed, 1 Jun 2011 16:24:52 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Connor H <cmdkhh@gmail.com>
+cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.32: Attempted to kill the idle task?
+In-Reply-To: <BANLkTin8Jb-BWDmZbF_cLTk3rjVU9KQu9A@mail.gmail.com>
+Message-ID: <alpine.DEB.2.01.1106011623240.21697@trent.utfs.org>
+References: <4DE68DD5.4080702@nerdbynature.de> <BANLkTin8Jb-BWDmZbF_cLTk3rjVU9KQu9A@mail.gmail.com>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <4DE66BEB.7040502@redhat.com>
-References: <1306925044-2828-1-git-send-email-imammedo@redhat.com>
-	<20110601123913.GC4266@tiehlicka.suse.cz>
-	<4DE6399C.8070802@redhat.com>
-	<20110601134149.GD4266@tiehlicka.suse.cz>
-	<4DE64F0C.3050203@redhat.com>
-	<20110601152039.GG4266@tiehlicka.suse.cz>
-	<4DE66BEB.7040502@redhat.com>
-Date: Thu, 2 Jun 2011 08:10:04 +0900
-Message-ID: <BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
-Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node to world
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, balbir@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->pc = list_entry(list->prev, struct page_cgroup, lru);
+On Wed, 1 Jun 2011 at 15:06, Connor H wrote:
+> > we have a Debian/lenny system (Dell R410) with its "latest"
+> > 2.6.32+27~bpo50+1 installed. From time to time the system tends to oops.
+> > Can someone have a quick look at the following, if this makes sense at
+> > all? I suspect the "real" oops message has scrolled away, but this is
+> > all we got so far:
+> >
+> > ------------------------------------
+> > [4330423.071859] RSP <ffff88012fffdcb8>
+> > [4330423.071926] ---[ end trace b471cad78827bf8a ]--—
+> > [4330423.071994] Kernel panic - not syncing: Attempted to kill the idle
+> > task? [4330423.072068] rid: 0, comm: swapper Tainted: G D 2.6.32-5-amd64
+> > 81 [4330423.072139] Call Trace:
+> > [4330423.072206] [afffffff81216ee5>] ? panic+0x86/0x141
+> > [4330423.072277] [afffffff812f6fee>1 ? printk+0x4e/0x58
+> > [4330423.072349] [afffffff81041c07>] ? do_exit+0x72/0x6b5
+> > [4330423.072419] [afffffff8104d011>] ? release_console_sem+0xl7e/0xlaf
+> > [4330423.072493] [afffffff812f9c4d>1 ? oops_end+0xaf/0xb4
+> > [4330423.072563] [afffffff81012734>] ? do_divide_error+0x85/0x81
+> Here is the division fail
+> kernel/sched_fair.c #3164
+> 
+> in find_busiest_group
 
-Hmm, I disagree your patch is a fix for mainline. At least, a cgroup
-before completion of
-create() is not populated to userland and you never be able to rmdir()
-it because you can't
-find it.
+Thanks for looking into it!
 
+> sds.avg_load = (SCHED_POWER_SCALE * sds.total_load) / sds.total_pwr;
+> 
+> kernel/sched_fair.c #2853
+> 	sds set from this call
+> 	update_sd_lb_stats(sd, this_cpu, idle, cpus, balance, &sds);
+> 
+> 	which calculates total_pwr by looping all sched_group 's  in
+> 	sds->total_pwr += sg->cpu_power;
+> 	
+> so hopefully Ingo or Peter can shed some light,
+> 
+> Connor
 
- >26:   e8 7d 12 30 00          call   0x3012a8
- >2b:*  8b 73 08                mov    0x8(%ebx),%esi     <-- trapping
-instruction
- >2e:   8b 7c 24 24             mov    0x24(%esp),%edi
- >32:   8b 07                   mov    (%edi),%eax
+Christian.
+-- 
+BOFH excuse #365:
 
-Hm, what is the call 0x3012a8 ?
-
-Thanks,
--Kame
+parallel processors running perpendicular today
