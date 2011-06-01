@@ -1,127 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161456Ab1FALTI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 07:19:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44447 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161186Ab1FALS7 (ORCPT
+	id S1161533Ab1FALTv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 07:19:51 -0400
+Received: from nessie.weebeastie.net ([220.233.7.36]:52430 "EHLO
+	bunyip.billabong.weebeastie.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161268Ab1FALTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 07:18:59 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: [PATCH 8/8] OMAP4: SDP4430: Add twl6040 vibrator platform support
-Date: Wed, 1 Jun 2011 14:17:31 +0300
-Message-ID: <1306927051-8937-9-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.5.3
-In-Reply-To: <1306927051-8937-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1306927051-8937-1-git-send-email-peter.ujfalusi@ti.com>
+	Wed, 1 Jun 2011 07:19:05 -0400
+Date: Wed, 1 Jun 2011 21:18:42 +1000
+From: CaT <cat@zip.com.au>
+To: Brad Campbell <lists2009@fnarfbargle.com>
+Cc: Avi Kivity <avi@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>, netdev <netdev@vger.kernel.org>
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+Message-ID: <20110601111841.GB3956@zip.com.au>
+References: <alpine.LSU.2.00.1105311517480.21107@sister.anvils>
+ <4DE589C5.8030600@fnarfbargle.com>
+ <20110601011527.GN19505@random.random>
+ <alpine.LSU.2.00.1105312120530.22808@sister.anvils>
+ <4DE5DCA8.7070704@fnarfbargle.com>
+ <4DE5E29E.7080009@redhat.com>
+ <4DE60669.9050606@fnarfbargle.com>
+ <4DE60918.3010008@redhat.com>
+ <4DE60940.1070107@redhat.com>
+ <4DE61A2B.7000008@fnarfbargle.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DE61A2B.7000008@fnarfbargle.com>
+Organisation: Furball Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add twl4030_vibra platform data, and the needed regulators
-for twl6040 vibrator.
+On Wed, Jun 01, 2011 at 06:53:31PM +0800, Brad Campbell wrote:
+> I rebooted into a netfilter kernel, and did all the steps I'd used
+> on the no-netfilter kernel and it ticked along happily.
+> 
+> So the result of the experiment is inconclusive. Having said that,
+> the backtraces certainly smell networky.
+> 
+> To get it to crash, I have to start IE in the VM and https to the
+> public address of the machine, which is then redirected by netfilter
+> back into another of the VM's.
+> 
+> I can https directly to the other VM's address, but that does not
+> cause it to crash, however without netfilter loaded I can't bounce
+> off the public IP. It's all rather confusing really.
+> 
+> What next Sherlock?
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- arch/arm/mach-omap2/board-4430sdp.c |   50 ++++++++++++++++++++++++++++++++++-
- 1 files changed, 49 insertions(+), 1 deletions(-)
+I think you're hitting something I've seen. Can you try rewriting
+your firewall rules so that it does not reference any bridge
+interfaces at all. Instead, reference the real interface names
+in their place. I'm betting it wont crash.
 
-diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
-index b324605..6c4c1a3 100644
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -22,6 +22,7 @@
- #include <linux/i2c/twl.h>
- #include <linux/gpio_keys.h>
- #include <linux/regulator/machine.h>
-+#include <linux/regulator/fixed.h>
- #include <linux/leds.h>
- #include <linux/leds_pwm.h>
- 
-@@ -276,11 +277,40 @@ static struct platform_device sdp4430_lcd_device = {
- 	.id		= -1,
- };
- 
-+static struct regulator_consumer_supply sdp4430_vbat_supply[] = {
-+	REGULATOR_SUPPLY("vddvibl", "twl6040-vibra"),
-+	REGULATOR_SUPPLY("vddvibr", "twl6040-vibra"),
-+};
-+
-+static struct regulator_init_data sdp4430_vbat_data = {
-+	.constraints = {
-+		.always_on	= 1,
-+	},
-+	.num_consumer_supplies	= ARRAY_SIZE(sdp4430_vbat_supply),
-+	.consumer_supplies	= sdp4430_vbat_supply,
-+};
-+
-+static struct fixed_voltage_config sdp4430_vbat_pdata = {
-+	.supply_name	= "VBAT",
-+	.microvolts	= 3750000,
-+	.init_data	= &sdp4430_vbat_data,
-+	.gpio		= -EINVAL,
-+};
-+
-+static struct platform_device sdp4430_vbat = {
-+	.name		= "reg-fixed-voltage",
-+	.id		= -1,
-+	.dev = {
-+		.platform_data = &sdp4430_vbat_pdata,
-+	},
-+};
-+
- static struct platform_device *sdp4430_devices[] __initdata = {
- 	&sdp4430_lcd_device,
- 	&sdp4430_gpio_keys_device,
- 	&sdp4430_leds_gpio,
- 	&sdp4430_leds_pwm,
-+	&sdp4430_vbat,
- };
- 
- static struct omap_lcd_config sdp4430_lcd_config __initdata = {
-@@ -522,6 +552,23 @@ static struct regulator_init_data sdp4430_clk32kg = {
- 	},
- };
- 
-+static struct twl4030_vibra_data twl6040_vibra = {
-+	.vibldrv_res = 8,
-+	.vibrdrv_res = 3,
-+	.viblmotor_res = 10,
-+	.vibrmotor_res = 10,
-+	.vddvibl_uV = 0,	/* fixed volt supply - VBAT */
-+	.vddvibr_uV = 0,	/* fixed volt supply - VBAT */
-+};
-+
-+static struct twl4030_audio_data twl6040_audio = {
-+	.codec		= NULL,
-+	.vibra		= &twl6040_vibra,
-+	.audpwron_gpio	= 127,
-+	.naudint_irq	= OMAP44XX_IRQ_SYS_2N,
-+	.irq_base	= TWL6040_CODEC_IRQ_BASE,
-+};
-+
- static struct twl4030_platform_data sdp4430_twldata = {
- 	.irq_base	= TWL6030_IRQ_BASE,
- 	.irq_end	= TWL6030_IRQ_END,
-@@ -538,7 +585,8 @@ static struct twl4030_platform_data sdp4430_twldata = {
- 	.vaux2		= &sdp4430_vaux2,
- 	.vaux3		= &sdp4430_vaux3,
- 	.clk32kg	= &sdp4430_clk32kg,
--	.usb		= &omap4_usbphy_data
-+	.usb		= &omap4_usbphy_data,
-+	.audio		= &twl6040_audio,
- };
- 
- static struct i2c_board_info __initdata sdp4430_i2c_3_boardinfo[] = {
+(netdev added to CC since we're aleady bouncing there)
+
 -- 
-1.7.5.3
-
+  "A search of his car uncovered pornography, a homemade sex aid, women's 
+  stockings and a Jack Russell terrier."
+    - http://www.dailytelegraph.com.au/news/wacky/indeed/story-e6frev20-1111118083480
