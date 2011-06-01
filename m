@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132Ab1FASvj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 14:51:39 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:43543 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755702Ab1FASvi convert rfc822-to-8bit (ORCPT
+	id S1757301Ab1FAS4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 14:56:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57505 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab1FAS4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 14:51:38 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=B6H7B9H5UQZmCzx3o8+YyuG5DPUsjC25QhivSrAnOejvN7P2+NV8o+eln1c3ch3s27ent6UJNw4OcwX81CCTjJrBXC7Byxl/uUZ6sxYn8mFwwGvaS6xvmEo24Y4ynTT8;
-Date: Wed, 1 Jun 2011 11:51:15 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: =?ISO-8859-1?B?TultZXRoIE3hcnRvbg==?= <nm127@freemail.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Julia Lawall <julia@diku.dk>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86 pci acpi: fix type mismatch
-Message-ID: <20110601115115.214427ca@jbarnes-desktop>
-In-Reply-To: <4DCEBB85.8040709@freemail.hu>
-References: <4DCEBB85.8040709@freemail.hu>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Wed, 1 Jun 2011 14:56:08 -0400
+Date: Wed, 1 Jun 2011 20:55:58 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: David Rientjes <rientjes@google.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
+ instead of failing
+In-Reply-To: <20110601181918.GO3660@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.02.1106012043080.3078@ionos>
+References: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com> <BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com> <BANLkTikrRRzGLbMD47_xJz+xpgftCm1C2A@mail.gmail.com> <alpine.DEB.2.00.1106011017260.13089@chino.kir.corp.google.com>
+ <20110601181918.GO3660@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 May 2011 19:27:33 +0200
-Németh Márton <nm127@freemail.hu> wrote:
+On Wed, 1 Jun 2011, Russell King - ARM Linux wrote:
 
-> From: Márton Németh <nm127@freemail.hu>
+> On Wed, Jun 01, 2011 at 10:23:15AM -0700, David Rientjes wrote:
+> > On Wed, 1 Jun 2011, Dmitry Eremin-Solenikov wrote:
+> > 
+> > > I've hit this with IrDA driver on PXA. Also I've seen the report regarding
+> > > other ARM platform (ep-something). Thus I've included Russell in the cc.
+> > > 
+> > 
+> > So you want to continue to allow the page allocator to return pages from 
+> > anywhere, even when GFP_DMA is specified, just as though it was lowmem?
 > 
-> The flags field of struct resource from linux/ioport.h is "unsigned long". Change
-> the "type" parameter of coalesce_windows() function to match that field. This fixes
-> the following warning messages when compiling with "make C=1 W=1 bzImage modules":
+> No.  What *everyone* is asking for is to allow the situation which has
+> persisted thus far to continue for ONE MORE RELEASE but with a WARNING
+> so that these problems can be found without causing REGRESSIONS.
 > 
-> arch/x86/pci/acpi.c: In function ‘coalesce_windows’:
-> arch/x86/pci/acpi.c:198: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result
-> arch/x86/pci/acpi.c:203: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result
-> 
-> Signed-off-by: Márton Németh <nm127@freemail.hu>
-> ---
-> --- linux-2.6.39-rc6/arch/x86/pci/acpi.c.orig	2011-05-04 04:59:13.000000000 +0200
-> +++ linux-2.6.39-rc6/arch/x86/pci/acpi.c	2011-05-14 19:12:42.000000000 +0200
-> @@ -188,7 +188,7 @@ static bool resource_contains(struct res
->  	return false;
->  }
-> 
-> -static void coalesce_windows(struct pci_root_info *info, int type)
-> +static void coalesce_windows(struct pci_root_info *info, unsigned long type)
->  {
->  	int i, j;
->  	struct resource *res1, *res2;
+> That is NOT an unreasonable request, but it seems that its far too much
+> to ask of you.
 
-Applied to my for-linus tree, thanks.
+Full ack.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+David,
+
+stop that nonsense already. You changed the behaviour and broke stuff
+which was working fine before for whatever reason. That behaviour was
+in the kernel for ages and we tolerated the abuse.
+
+So making it a warning for this release and then break stuff which has
+not been fixed is a sensible request and the only sensible approach.
+
+If you think that you need to force that behaviour change now, then
+you better go and audit _ALL_ GFP_DMA users yourself for correctness
+and fix them case by case either by replacing the GFP_DMA flag or by
+selecting ZONE_DMA with a proper changelog for every instance.
+
+It's not up to your total ignorance of reality to break stuff at will
+and then paper over the problems you caused by selecting ZONE_DMA
+which will keep the abusers around forever.
+
+Thanks,
+
+	tglx
