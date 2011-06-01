@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab1FAGSc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 02:18:32 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44139 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab1FAGSb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 02:18:31 -0400
-Date: Wed, 1 Jun 2011 08:18:16 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@amd64.org>, Joe Perches <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86 fixes
-Message-ID: <20110601061816.GB21247@aftab>
-References: <20110531163022.GA15435@elte.hu>
- <1306859709.20175.27.camel@Joe-Laptop>
- <20110531181650.GA1854@gere.osrc.amd.com>
- <BANLkTi=ysOYxxu1_PV3R1BNgjM996A2CKg@mail.gmail.com>
- <20110601060046.GA27375@elte.hu>
+	id S1752710Ab1FAGTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 02:19:08 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43621 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752302Ab1FAGTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 02:19:04 -0400
+Date: Wed, 1 Jun 2011 08:18:43 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>, Matthew Garrett <mjg@redhat.com>,
+        Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, davej@redhat.com,
+        torvalds@linux-foundation.org, adobriyan@gmail.com, eranian@google.com,
+        penberg@kernel.org, davem@davemloft.net,
+        Arjan van de Ven <arjan@infradead.org>, Valdis.Kletnieks@vt.edu,
+        Andrew Morton <akpm@linux-foundation.org>, pageexec@freemail.hu,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFC][PATCH] Randomize kernel base address on boot
+Message-ID: <20110601061843.GA27671@elte.hu>
+References: <1306269105.21443.20.camel@dan>
+ <1306442367.2279.25.camel@dan>
+ <20110531165252.GB8971@srcf.ucam.org>
+ <4DE5360D.5070809@zytor.com>
+ <20110531185122.GA11998@srcf.ucam.org>
+ <1306868609.6317.25.camel@dan>
+ <20110531195551.GC26970@elte.hu>
+ <4DE54C66.10106@zytor.com>
+ <20110531202712.GB28731@elte.hu>
+ <4DE54FFF.4010500@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110601060046.GA27375@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DE54FFF.4010500@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 01, 2011 at 02:00:46AM -0400, Ingo Molnar wrote:
-> 
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
-> > On Wed, Jun 1, 2011 at 3:16 AM, Borislav Petkov <bp@amd64.org> wrote:
-> > >
-> > > Crap, there's no fixing this string :)
+
+* H. Peter Anvin <hpa@zytor.com> wrote:
+
+> On 05/31/2011 01:27 PM, Ingo Molnar wrote:
 > > 
-> > I tried to fix it up in the merge.  We call these "evil merges" in 
-> > git-speak, but I hope the problem was worth doing one ;)
+> >> Other than that, Ingo's idea at least have the merit that it would 
+> >> break only older bootloaders doing things wrong.
+> > 
+> > I'm wondering, why would it break older bootloaders? It's just a 
+> > slightly larger than usual kernel image, nothing is visible to the 
+> > bootloader.
+> > 
 > 
-> You have not pushed it out yet, right? [ Or if you have then the 
-> evilness is well hidden! :-) ]
+> Older boot loaders did not know how big the kernel image was, 
+> therefore had no way to avoid memory space collision.  That is 
+> fixed in boot protocol 2.10.
 
-Oh yeah, looks good: af0d6a0a3a30946f7df69c764791f1b0643f7cd6
+But i loaded really large kernel images way back 10 years ago on 
+various systems and never had any problems until the default 
+allyesconfig hit a ~40 MB kernel image size limit ;-)
 
-Thank you Linus for being evil! :-)
+(which limit was in the kernel, not in the bootloader)
 
--- 
-Regards/Gruss,
-Boris.
+So yes, a large kernel image "can" be an issue with old bootloaders 
+in some situations on weird machines but we don't really "break" them 
+via randomization, they were broken and fragile in some situations to 
+begin with.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+It's fixed in any distro that cares and which would use our (not even 
+released) kernel that might one day have randomization.
+
+Is that a fair summary of the bootloader situation?
+
+Thanks,
+
+	Ingo
