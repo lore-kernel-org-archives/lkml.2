@@ -1,144 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758623Ab1FADEo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 23:04:44 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33237 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758546Ab1FADEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 23:04:43 -0400
-Date: Wed, 1 Jun 2011 13:04:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: linux-next: build failure after merge of the final tree (mmc tree
- related)
-Message-Id: <20110601130431.59f4f0d4.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__1_Jun_2011_13_04_31_+1000_fkVSDzs7jWb2MRU_"
+	id S1758636Ab1FADKo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 23:10:44 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41886 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758614Ab1FADKn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 23:10:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=chromium.org; s=google;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=S3NztVL9Oo2fHB1gx2cDUxE/b+xNCzuLj3DYxdjmty1+6dsBKR4DPIVCzJ4bBEUkMr
+         517Pljh3MHD2oG7JAz4i1HFGt9eaooKVwypr5vgJxyQENaoAkz2SDgZFWBXEhGybFfhS
+         r1ffgextEhCBMAhHc94Uag5SLo+CoMHtystYc=
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: kees.cook@canonical.com, torvalds@linux-foundation.org, tglx@linutronix.de,
+        mingo@elte.hu, rostedt@goodmis.org, jmorris@namei.org,
+        Will Drewry <wad@chromium.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH v3 01/13] tracing: split out filter initialization and clean up.
+Date: Tue, 31 May 2011 22:10:33 -0500
+Message-Id: <1306897845-9393-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <BANLkTimNcag-ZmVTXjUoTyiuJm6jtW0DgA@mail.gmail.com>
+References: <BANLkTimNcag-ZmVTXjUoTyiuJm6jtW0DgA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__1_Jun_2011_13_04_31_+1000_fkVSDzs7jWb2MRU_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Moves the perf-specific profile event allocation and freeing code into
+kernel/perf_event.c where it is called from and two symbols are exported
+via ftrace_event.h for instantiating struct event_filters without
+requiring a change to the core tracing code.
 
-Hi all,
+The change allows globally registered ftrace events to be used in
+event_filter structs.  perf is the current consumer, but a possible
+future consumer is a system call filtering using the secure computing
+hooks (and the existing syscalls subsystem events).
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ include/linux/ftrace_event.h       |    9 +++--
+ kernel/perf_event.c                |    7 +++-
+ kernel/trace/trace_events_filter.c |   60 ++++++++++++++++++++++--------------
+ 3 files changed, 48 insertions(+), 28 deletions(-)
 
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_pltfm_register':
-(.opd+0xd8): multiple definition of `sdhci_pltfm_register'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0xd8): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_pltfm_init':
-(.text+0x568): multiple definition of `.sdhci_pltfm_init'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x568): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_get_of_property':
-(.text+0x34c): multiple definition of `.sdhci_get_of_property'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x34c): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_be32bs_writel':
-(.text+0x13c): multiple definition of `.sdhci_be32bs_writel'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x13c): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_pltfm_resume':
-(.opd+0x120): multiple definition of `sdhci_pltfm_resume'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x120): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_be32bs_readl':
-(.opd+0x0): multiple definition of `sdhci_be32bs_readl'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x0): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_be32bs_readw':
-(.text+0x64): multiple definition of `.sdhci_be32bs_readw'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x64): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_pltfm_free':
-(.text+0x8d0): multiple definition of `.sdhci_pltfm_free'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x8d0): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_pltfm_free':
-(.opd+0xc0): multiple definition of `sdhci_pltfm_free'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0xc0): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_be32bs_readw':
-(.opd+0x18): multiple definition of `sdhci_be32bs_readw'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x18): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_pltfm_unregister':
-(.text+0xa94): multiple definition of `.sdhci_pltfm_unregister'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0xa94): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_be32bs_readb':
-(.text+0xd0): multiple definition of `.sdhci_be32bs_readb'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0xd0): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_be32bs_writew':
-(.text+0x1a0): multiple definition of `.sdhci_be32bs_writew'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x1a0): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_be32bs_writel':
-(.opd+0x48): multiple definition of `sdhci_be32bs_writel'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x48): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_pltfm_unregister':
-(.opd+0xf0): multiple definition of `sdhci_pltfm_unregister'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0xf0): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_be32bs_writew':
-(.opd+0x60): multiple definition of `sdhci_be32bs_writew'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x60): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_pltfm_resume':
-(.text+0xc70): multiple definition of `.sdhci_pltfm_resume'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0xc70): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_be32bs_writeb':
-(.text+0x2ac): multiple definition of `.sdhci_be32bs_writeb'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x2ac): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_pltfm_suspend':
-(.text+0xc04): multiple definition of `.sdhci_pltfm_suspend'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0xc04): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_pltfm_register':
-(.text+0x9c0): multiple definition of `.sdhci_pltfm_register'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x9c0): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_be32bs_readl':
-(.text+0x0): multiple definition of `.sdhci_be32bs_readl'
-drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x0): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_be32bs_writeb':
-(.opd+0x78): multiple definition of `sdhci_be32bs_writeb'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x78): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_pltfm_suspend':
-(.opd+0x108): multiple definition of `sdhci_pltfm_suspend'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x108): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_get_of_property':
-(.opd+0x90): multiple definition of `sdhci_get_of_property'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x90): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_pltfm_init':
-(.opd+0xa8): multiple definition of `sdhci_pltfm_init'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0xa8): first defined here
-drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_be32bs_readb':
-(.opd+0x30): multiple definition of `sdhci_be32bs_readb'
-drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x30): first defined here
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 22b32af..fea9d98 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -216,6 +216,12 @@ extern int filter_current_check_discard(struct ring_buffer *buffer,
+ 					void *rec,
+ 					struct ring_buffer_event *event);
+ 
++extern void ftrace_free_filter(struct event_filter *filter);
++extern int ftrace_parse_filter(struct event_filter **filter,
++			       int event_id,
++			       const char *filter_str);
++extern const char *ftrace_get_filter_string(const struct event_filter *filter);
++
+ enum {
+ 	FILTER_OTHER = 0,
+ 	FILTER_STATIC_STRING,
+@@ -266,9 +272,6 @@ extern int  perf_trace_init(struct perf_event *event);
+ extern void perf_trace_destroy(struct perf_event *event);
+ extern int  perf_trace_add(struct perf_event *event, int flags);
+ extern void perf_trace_del(struct perf_event *event, int flags);
+-extern int  ftrace_profile_set_filter(struct perf_event *event, int event_id,
+-				     char *filter_str);
+-extern void ftrace_profile_free_filter(struct perf_event *event);
+ extern void *perf_trace_buf_prepare(int size, unsigned short type,
+ 				    struct pt_regs *regs, int *rctxp);
+ 
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 8e81a98..1da45e7 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -5588,7 +5588,8 @@ static int perf_event_set_filter(struct perf_event *event, void __user *arg)
+ 	if (IS_ERR(filter_str))
+ 		return PTR_ERR(filter_str);
+ 
+-	ret = ftrace_profile_set_filter(event, event->attr.config, filter_str);
++	ret = ftrace_parse_filter(&event->filter, event->attr.config,
++				  filter_str);
+ 
+ 	kfree(filter_str);
+ 	return ret;
+@@ -5596,7 +5597,9 @@ static int perf_event_set_filter(struct perf_event *event, void __user *arg)
+ 
+ static void perf_event_free_filter(struct perf_event *event)
+ {
+-	ftrace_profile_free_filter(event);
++	struct event_filter *filter = event->filter;
++	event->filter = NULL;
++	ftrace_free_filter(filter);
+ }
+ 
+ #else
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 8008ddc..787b174 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -522,7 +522,7 @@ static void remove_filter_string(struct event_filter *filter)
+ }
+ 
+ static int replace_filter_string(struct event_filter *filter,
+-				 char *filter_string)
++				 const char *filter_string)
+ {
+ 	kfree(filter->filter_string);
+ 	filter->filter_string = kstrdup(filter_string, GFP_KERNEL);
+@@ -1936,21 +1936,27 @@ out_unlock:
+ 	return err;
+ }
+ 
+-#ifdef CONFIG_PERF_EVENTS
+-
+-void ftrace_profile_free_filter(struct perf_event *event)
++/* ftrace_free_filter - frees a parsed filter its internal structures.
++ *
++ * @filter: pointer to the event_filter to free.
++ */
++void ftrace_free_filter(struct event_filter *filter)
+ {
+-	struct event_filter *filter = event->filter;
+-
+-	event->filter = NULL;
+-	__free_filter(filter);
++	if (filter)
++		__free_filter(filter);
+ }
++EXPORT_SYMBOL_GPL(ftrace_free_filter);
+ 
+-int ftrace_profile_set_filter(struct perf_event *event, int event_id,
+-			      char *filter_str)
++/* ftrace_parse_filter - allocates and populates a new event_filter
++ *
++ * @event_id: may be something like syscalls::sys_event_tkill's id.
++ * @filter_str: pointer to the filter string. Ownership IS taken.
++ */
++int ftrace_parse_filter(struct event_filter **filter,
++			int event_id,
++			const char *filter_str)
+ {
+ 	int err;
+-	struct event_filter *filter;
+ 	struct filter_parse_state *ps;
+ 	struct ftrace_event_call *call = NULL;
+ 
+@@ -1966,12 +1972,12 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
+ 		goto out_unlock;
+ 
+ 	err = -EEXIST;
+-	if (event->filter)
++	if (*filter)
+ 		goto out_unlock;
+ 
+-	filter = __alloc_filter();
+-	if (!filter) {
+-		err = PTR_ERR(filter);
++	*filter = __alloc_filter();
++	if (IS_ERR_OR_NULL(*filter)) {
++		err = PTR_ERR(*filter);
+ 		goto out_unlock;
+ 	}
+ 
+@@ -1980,14 +1986,14 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
+ 	if (!ps)
+ 		goto free_filter;
+ 
+-	parse_init(ps, filter_ops, filter_str);
++	replace_filter_string(*filter, filter_str);
++
++	parse_init(ps, filter_ops, (*filter)->filter_string);
+ 	err = filter_parse(ps);
+ 	if (err)
+ 		goto free_ps;
+ 
+-	err = replace_preds(call, filter, ps, filter_str, false);
+-	if (!err)
+-		event->filter = filter;
++	err = replace_preds(call, *filter, ps, (*filter)->filter_string, false);
+ 
+ free_ps:
+ 	filter_opstack_clear(ps);
+@@ -1995,14 +2001,22 @@ free_ps:
+ 	kfree(ps);
+ 
+ free_filter:
+-	if (err)
+-		__free_filter(filter);
++	if (err) {
++		__free_filter(*filter);
++		*filter = NULL;
++	}
+ 
+ out_unlock:
+ 	mutex_unlock(&event_mutex);
+ 
+ 	return err;
+ }
++EXPORT_SYMBOL_GPL(ftrace_parse_filter);
+ 
+-#endif /* CONFIG_PERF_EVENTS */
+-
++const char *ftrace_get_filter_string(const struct event_filter *filter)
++{
++	if (!filter)
++		return NULL;
++	return filter->filter_string;
++}
++EXPORT_SYMBOL_GPL(ftrace_get_filter_string);
+-- 
+1.7.0.4
 
-Presumably caused by commit e2d0d7dc5542 ("mmc: sdhci: make sdhci-of
-device drivers self registered").
-
-I have reverted the merge of the mmc tree for today.
-
-P.S. Chris, some commits in your tree have no SoB from you despite the
-fact that you committed them.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__1_Jun_2011_13_04_31_+1000_fkVSDzs7jWb2MRU_
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN5aw/AAoJEDMEi1NhKgbsJyMH/3e/ova0aZ/6nMvO/kutmlLN
-dawcTWDhunxUmzU90Eg4hmLeKsQeyQMOplYBNaD6gEIYU28umbH+JSrfpv2dJJJM
-dsZXzYsN0R7BSpvfi4OQeSKGtrp38kQH7es3y3UcL8te312RMe6Of5hKjgE9RBpA
-9e5fw0g8KcBjuYqgatkhoTu77C//A9roNiOMSPo/Xg0AYAGb/uhA3kAYQEMA9tk2
-4zmeVIjxv/YVwCJKPDhRDmjuqYBb0WZv4RqHOSDTQNwk5PGveUvy+i7JEualjXAC
-ltFmKQ4x8xpFs9rhhyKmAjWU87H0ZDN/9QCXwF8rH9f5aV/Uvd9dOPGRnbGGyh0=
-=Ht79
------END PGP SIGNATURE-----
-
---Signature=_Wed__1_Jun_2011_13_04_31_+1000_fkVSDzs7jWb2MRU_--
