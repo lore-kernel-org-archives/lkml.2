@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161628Ab1FAJUv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:20:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42825 "EHLO mx2.suse.de"
+	id S1161698Ab1FAJU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:20:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42832 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161328Ab1FAILt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:11:49 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:24 2011
-Message-Id: <20110601080323.623873577@blue.kroah.org>
+	id S1161621Ab1FAILw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:11:52 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:25 2011
+Message-Id: <20110601080324.779067404@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:58 +0900
+Date: Wed, 01 Jun 2011 16:59:59 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David L Stevens <dlstevens@us.ibm.com>,
-        Veaceslav Falico <vfalico@redhat.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
         "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [062/146] igmp: call ip_mc_clear_src() only when we have no users of ip_mc_list
+Subject: [063/146] net: add skb_dst_force() in sock_queue_err_skb()
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,70 +29,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 24cf3af3fed5edcf90bc2a0ed181e6ce1513d2dc ]
+[ Upstream commit abb57ea48fd9431fa320a5c55f73e6b5a44c2efb ]
 
-In igmp_group_dropped() we call ip_mc_clear_src(), which resets the number
-of source filters per mulitcast. However, igmp_group_dropped() is also
-called on NETDEV_DOWN, NETDEV_PRE_TYPE_CHANGE and NETDEV_UNREGISTER, which
-means that the group might get added back on NETDEV_UP, NETDEV_REGISTER and
-NETDEV_POST_TYPE_CHANGE respectively, leaving us with broken source
-filters.
+Commit 7fee226ad239 (add a noref bit on skb dst) forgot to use
+skb_dst_force() on packets queued in sk_error_queue
 
-To fix that, we must clear the source filters only when there are no users
-in the ip_mc_list, i.e. in ip_mc_dec_group() and on device destroy.
+This triggers following warning, for applications using IP_CMSG_PKTINFO
+receiving one error status
 
-Acked-by: David L Stevens <dlstevens@us.ibm.com>
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+------------[ cut here ]------------
+WARNING: at include/linux/skbuff.h:457 ip_cmsg_recv_pktinfo+0xa6/0xb0()
+Hardware name: 2669UYD
+Modules linked in: isofs vboxnetadp vboxnetflt nfsd ebtable_nat ebtables
+lib80211_crypt_ccmp uinput xcbc hdaps tp_smapi thinkpad_ec radeonfb fb_ddc
+radeon ttm drm_kms_helper drm ipw2200 intel_agp intel_gtt libipw i2c_algo_bit
+i2c_i801 agpgart rng_core cfbfillrect cfbcopyarea cfbimgblt video raid10 raid1
+raid0 linear md_mod vboxdrv
+Pid: 4697, comm: miredo Not tainted 2.6.39-rc6-00569-g5895198-dirty #22
+Call Trace:
+ [<c17746b6>] ? printk+0x1d/0x1f
+ [<c1058302>] warn_slowpath_common+0x72/0xa0
+ [<c15bbca6>] ? ip_cmsg_recv_pktinfo+0xa6/0xb0
+ [<c15bbca6>] ? ip_cmsg_recv_pktinfo+0xa6/0xb0
+ [<c1058350>] warn_slowpath_null+0x20/0x30
+ [<c15bbca6>] ip_cmsg_recv_pktinfo+0xa6/0xb0
+ [<c15bbdd7>] ip_cmsg_recv+0x127/0x260
+ [<c154f82d>] ? skb_dequeue+0x4d/0x70
+ [<c1555523>] ? skb_copy_datagram_iovec+0x53/0x300
+ [<c178e834>] ? sub_preempt_count+0x24/0x50
+ [<c15bdd2d>] ip_recv_error+0x23d/0x270
+ [<c15de554>] udp_recvmsg+0x264/0x2b0
+ [<c15ea659>] inet_recvmsg+0xd9/0x130
+ [<c1547752>] sock_recvmsg+0xf2/0x120
+ [<c11179cb>] ? might_fault+0x4b/0xa0
+ [<c15546bc>] ? verify_iovec+0x4c/0xc0
+ [<c1547660>] ? sock_recvmsg_nosec+0x100/0x100
+ [<c1548294>] __sys_recvmsg+0x114/0x1e0
+ [<c1093895>] ? __lock_acquire+0x365/0x780
+ [<c1148b66>] ? fget_light+0xa6/0x3e0
+ [<c1148b7f>] ? fget_light+0xbf/0x3e0
+ [<c1148aee>] ? fget_light+0x2e/0x3e0
+ [<c1549f29>] sys_recvmsg+0x39/0x60
+
+Close bug https://bugzilla.kernel.org/show_bug.cgi?id=34622
+
+Reported-by: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Stephen Hemminger <shemminger@vyatta.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/igmp.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ net/core/skbuff.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -1172,20 +1172,18 @@ static void igmp_group_dropped(struct ip
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2997,6 +2997,9 @@ int sock_queue_err_skb(struct sock *sk,
+ 	skb->destructor = sock_rmem_free;
+ 	atomic_add(skb->truesize, &sk->sk_rmem_alloc);
  
- 	if (!in_dev->dead) {
- 		if (IGMP_V1_SEEN(in_dev))
--			goto done;
-+			return;
- 		if (IGMP_V2_SEEN(in_dev)) {
- 			if (reporter)
- 				igmp_send_report(in_dev, im, IGMP_HOST_LEAVE_MESSAGE);
--			goto done;
-+			return;
- 		}
- 		/* IGMPv3 */
- 		igmpv3_add_delrec(in_dev, im);
- 
- 		igmp_ifc_event(in_dev);
- 	}
--done:
- #endif
--	ip_mc_clear_src(im);
- }
- 
- static void igmp_group_added(struct ip_mc_list *im)
-@@ -1322,6 +1320,7 @@ void ip_mc_dec_group(struct in_device *i
- 				*ip = i->next_rcu;
- 				in_dev->mc_count--;
- 				igmp_group_dropped(i);
-+				ip_mc_clear_src(i);
- 
- 				if (!in_dev->dead)
- 					ip_rt_multicast_event(in_dev);
-@@ -1431,7 +1430,8 @@ void ip_mc_destroy_dev(struct in_device
- 		in_dev->mc_list = i->next_rcu;
- 		in_dev->mc_count--;
- 
--		igmp_group_dropped(i);
-+		/* We've dropped the groups in ip_mc_down already */
-+		ip_mc_clear_src(i);
- 		ip_ma_put(i);
- 	}
- }
++	/* before exiting rcu section, make sure dst is refcounted */
++	skb_dst_force(skb);
++
+ 	skb_queue_tail(&sk->sk_error_queue, skb);
+ 	if (!sock_flag(sk, SOCK_DEAD))
+ 		sk->sk_data_ready(sk, skb->len);
 
 
