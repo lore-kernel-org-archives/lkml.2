@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162797Ab1FAIYN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:24:13 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44817 "EHLO mx1.suse.de"
+	id S1162837Ab1FAImk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:42:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44202 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162784Ab1FAIYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:24:02 -0400
+	id S1162739Ab1FAIYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:24:08 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:51 2011
-Message-Id: <20110601081150.538777643@blue.kroah.org>
+Message-Id: <20110601081151.136342250@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:11 +0900
+Date: Wed, 01 Jun 2011 17:11:12 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [101/165] HID: magicmouse: ignore ivalid report id while switching
+        Andrew Barry <abarry@cray.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [102/165] mm/page_alloc.c: prevent unending loop in
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,56 +25,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- modes
-Content-Length: 1542
-Lines: 48
+ __alloc_pages_slowpath()
+Content-Length: 2450
+Lines: 60
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Andrew Barry <abarry@cray.com>
 
-commit 23746a66d7d9e73402c68ef00d708796b97ebd72 upstream.
+commit cfa54a0fcfc1017c6f122b6f21aaba36daa07f71 upstream.
 
-The device reponds with 'invalid report id' when feature report switching it
-into multitouch mode is sent to it.
+I believe I found a problem in __alloc_pages_slowpath, which allows a
+process to get stuck endlessly looping, even when lots of memory is
+available.
 
-This has been silently ignored before 0825411ade ("HID: bt: Wait for ACK
-on Sent Reports"), but since this commit, it propagates -EIO from the _raw
-callback .
+Running an I/O and memory intensive stress-test I see a 0-order page
+allocation with __GFP_IO and __GFP_WAIT, running on a system with very
+little free memory.  Right about the same time that the stress-test gets
+killed by the OOM-killer, the utility trying to allocate memory gets stuck
+in __alloc_pages_slowpath even though most of the systems memory was freed
+by the oom-kill of the stress-test.
 
-So let the driver ignore -EIO as response to 0xd7,0x01 report, as that's
-how the device reacts in normal mode.
+The utility ends up looping from the rebalance label down through the
+wait_iff_congested continiously.  Because order=0,
+__alloc_pages_direct_compact skips the call to get_page_from_freelist.
+Because all of the reclaimable memory on the system has already been
+reclaimed, __alloc_pages_direct_reclaim skips the call to
+get_page_from_freelist.  Since there is no __GFP_FS flag, the block with
+__alloc_pages_may_oom is skipped.  The loop hits the wait_iff_congested,
+then jumps back to rebalance without ever trying to
+get_page_from_freelist.  This loop repeats infinitely.
 
-Sad, but following reality.
+The test case is pretty pathological.  Running a mix of I/O stress-tests
+that do a lot of fork() and consume all of the system memory, I can pretty
+reliably hit this on 600 nodes, in about 12 hours.  32GB/node.
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=35022
-
-Tested-by: Chase Douglas <chase.douglas@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Andrew Barry <abarry@cray.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: Rik van Riel<riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/hid-magicmouse.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/hid-magicmouse.c
-+++ b/drivers/hid/hid-magicmouse.c
-@@ -501,9 +501,17 @@ static int magicmouse_probe(struct hid_d
- 	}
- 	report->size = 6;
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2064,6 +2064,7 @@ restart:
+ 		first_zones_zonelist(zonelist, high_zoneidx, NULL,
+ 					&preferred_zone);
  
-+	/*
-+	 * The device reponds with 'invalid report id' when feature
-+	 * report switching it into multitouch mode is sent to it.
-+	 *
-+	 * This results in -EIO from the _raw low-level transport callback,
-+	 * but there seems to be no other way of switching the mode.
-+	 * Thus the super-ugly hacky success check below.
-+	 */
- 	ret = hdev->hid_output_raw_report(hdev, feature, sizeof(feature),
- 			HID_FEATURE_REPORT);
--	if (ret != sizeof(feature)) {
-+	if (ret != -EIO) {
- 		hid_err(hdev, "unable to request touch data (%d)\n", ret);
- 		goto err_stop_hw;
- 	}
++rebalance:
+ 	/* This is the last chance, in general, before the goto nopage. */
+ 	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
+ 			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
+@@ -2071,7 +2072,6 @@ restart:
+ 	if (page)
+ 		goto got_pg;
+ 
+-rebalance:
+ 	/* Allocate without watermarks if the context allows */
+ 	if (alloc_flags & ALLOC_NO_WATERMARKS) {
+ 		page = __alloc_pages_high_priority(gfp_mask, order,
 
 
