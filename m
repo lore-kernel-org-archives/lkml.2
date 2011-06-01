@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161214Ab1FALfD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 07:35:03 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55923 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758787Ab1FALfA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 07:35:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=b6L8WYMCghAzCXw+cXjxTk+yVEGlsTlhF8CUUCYZs7woNptTKxoZJrOTGYxaaTavvQ
-         kwobD5A9MdVviQdWcijjuhpAZ6L6l5BPkF2E8iSLVKR+DtsB38OWGKLFzzJCWR/1qGuH
-         /3C80xglk10BOtw/DLH9k2b3I+7Ra/YvsBu00=
-Subject: Re: [PATCH] mtd: OneNAND: OMAP2: Return proper error if
- regulator_get fails
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-In-Reply-To: <1306848053.13412.1.camel@phoenix>
-References: <1306848053.13412.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Jun 2011 14:30:35 +0300
-Message-ID: <1306927835.4405.107.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S1161355Ab1FALkS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 07:40:18 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:39797 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751999Ab1FALkN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 07:40:13 -0400
+From: Alexey ORISHKO <alexey.orishko@stericsson.com>
+To: "Stefan (metze) Metzmacher" <metze@samba.org>
+Cc: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 1 Jun 2011 13:39:57 +0200
+Subject: RE: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
+ mark ncm devices as "mobile broadband devices" with FLAG_WWAN
+Thread-Topic: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
+ mark ncm devices as "mobile broadband devices" with FLAG_WWAN
+Thread-Index: AcwgSVLJIrfB/5moRuW50F+ki2f2VAAAcwsA
+Message-ID: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E64B@EXDCVYMBSTM006.EQ1STM.local>
+References: <1306922913-17803-1-git-send-email-metze@samba.org>
+ <1306922913-17803-2-git-send-email-metze@samba.org>
+ <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E583@EXDCVYMBSTM006.EQ1STM.local>
+ <4DE618B7.5070903@samba.org>
+In-Reply-To: <4DE618B7.5070903@samba.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-31 at 21:20 +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mtd/onenand/omap2.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> -----Original Message-----
+> From: Stefan (metze) Metzmacher [mailto:metze@samba.org]
+> Sent: Wednesday, June 01, 2011 12:47 PM
+> 
+> Would it be possible to add some autodetection for known devices, in a
+> similar way the cdc_ether driver does it.
 
-Pushed to l2-mtd-2.6.git, thank you.
+If you use udev rules and create an alias for your device, you won't
+be dependent on generic driver code.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+Regards,
+alexey
