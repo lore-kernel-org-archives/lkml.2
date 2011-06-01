@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161380Ab1FALS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 07:18:58 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58270 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161186Ab1FALSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 07:18:42 -0400
+	id S1161334Ab1FALS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 07:18:56 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44420 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161246Ab1FALSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 07:18:46 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Samuel Ortiz <sameo@linux.intel.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+CC: <linux-input@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        Misael Lopez Cruz <misael.lopez@ti.com>,
+        Jorge Eduardo Candelaria <jorge.candelaria@ti.com>,
+        Margarita Olaya Cabrera <magi.olaya@ti.com>,
         Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: [PATCH 3/8] MFD: twl4030-audio: Rename platform data
-Date: Wed, 1 Jun 2011 14:17:26 +0300
-Message-ID: <1306927051-8937-4-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 4/8] mfd: twl6040: Add initial support
+Date: Wed, 1 Jun 2011 14:17:27 +0300
+Message-ID: <1306927051-8937-5-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.5.3
 In-Reply-To: <1306927051-8937-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1306927051-8937-1-git-send-email-peter.ujfalusi@ti.com>
@@ -26,510 +30,1202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allign the platform data names for twl4030 audio submodule:
-twl4030_audio_data: for the core MFD driver
-twl4030_codec_data: for ASoC codec driver
-twl4030_vibra_data: for the input/ForceFeedback driver
+From: Misael Lopez Cruz <misael.lopez@ti.com>
 
-To avoid breakage, change all depending drivers, files
-to use the new types.
+TWL6040 IC provides analog high-end audio codec functions for
+handset applications. It contains several audio analog inputs
+and outputs as well as vibrator support. It's connected to the
+host processor via PDM interface for audio data communication.
+The audio modules are controlled by internal registers that
+can be accessed by I2C and PDM interface.
 
+TWL6040 MFD will be registered as a child of TWL-CORE, and will
+have two children of its own: twl6040-codec and twl6040-vibra.
+
+This driver is based on TWL4030 and WM8350 MFD drivers.
+
+Signed-off-by: Misael Lopez Cruz <misael.lopez@ti.com>
+Signed-off-by: Jorge Eduardo Candelaria <jorge.candelaria@ti.com>
+Signed-off-by: Margarita Olaya Cabrera <magi.olaya@ti.com>
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- arch/arm/mach-omap2/board-3430sdp.c          |    8 ++++----
- arch/arm/mach-omap2/board-devkit8000.c       |    8 ++++----
- arch/arm/mach-omap2/board-igep0020.c         |    8 ++++----
- arch/arm/mach-omap2/board-omap3beagle.c      |    8 ++++----
- arch/arm/mach-omap2/board-omap3evm.c         |    8 ++++----
- arch/arm/mach-omap2/board-omap3pandora.c     |    8 ++++----
- arch/arm/mach-omap2/board-omap3stalker.c     |    8 ++++----
- arch/arm/mach-omap2/board-omap3touchbook.c   |    8 ++++----
- arch/arm/mach-omap2/board-overo.c            |    8 ++++----
- arch/arm/mach-omap2/board-rx51-peripherals.c |    6 +++---
- arch/arm/mach-omap2/board-zoom-peripherals.c |   14 +++++++-------
- drivers/input/misc/twl4030-vibra.c           |    2 +-
- drivers/mfd/twl-core.c                       |    8 ++++----
- drivers/mfd/twl4030-audio.c                  |    8 ++++----
- include/linux/i2c/twl.h                      |   12 ++++++------
- sound/soc/codecs/twl4030.c                   |    6 +++---
- sound/soc/codecs/twl6040.c                   |    2 +-
- 17 files changed, 65 insertions(+), 65 deletions(-)
+ arch/arm/plat-omap/include/plat/irqs.h |   12 +-
+ drivers/mfd/Kconfig                    |    6 +
+ drivers/mfd/Makefile                   |    1 +
+ drivers/mfd/twl-core.c                 |    5 +-
+ drivers/mfd/twl6040-core.c             |  589 ++++++++++++++++++++++++++++++++
+ drivers/mfd/twl6040-irq.c              |  205 +++++++++++
+ include/linux/i2c/twl.h                |    1 +
+ include/linux/mfd/twl6040.h            |  260 ++++++++++++++
+ 8 files changed, 1074 insertions(+), 5 deletions(-)
+ create mode 100644 drivers/mfd/twl6040-core.c
+ create mode 100644 drivers/mfd/twl6040-irq.c
+ create mode 100644 include/linux/mfd/twl6040.h
 
-diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
-index ae2963a..36fb018 100644
---- a/arch/arm/mach-omap2/board-3430sdp.c
-+++ b/arch/arm/mach-omap2/board-3430sdp.c
-@@ -463,11 +463,11 @@ static struct regulator_init_data sdp3430_vpll2 = {
- 	.consumer_supplies	= sdp3430_vpll2_supplies,
- };
+diff --git a/arch/arm/plat-omap/include/plat/irqs.h b/arch/arm/plat-omap/include/plat/irqs.h
+index 5a25098..2cfba51 100644
+--- a/arch/arm/plat-omap/include/plat/irqs.h
++++ b/arch/arm/plat-omap/include/plat/irqs.h
+@@ -407,11 +407,19 @@
+ #endif
+ #define TWL6030_IRQ_END		(TWL6030_IRQ_BASE + TWL6030_BASE_NR_IRQS)
  
--static struct twl4030_codec_audio_data sdp3430_audio;
-+static struct twl4030_codec_data sdp3430_codec;
++#define TWL6040_CODEC_IRQ_BASE	TWL6030_IRQ_END
++#ifdef CONFIG_TWL6040_CODEC
++#define TWL6040_CODEC_NR_IRQS	6
++#else
++#define TWL6040_CODEC_NR_IRQS	0
++#endif
++#define TWL6040_CODEC_IRQ_END	(TWL6040_CODEC_IRQ_BASE + TWL6040_CODEC_NR_IRQS)
++
+ /* Total number of interrupts depends on the enabled blocks above */
+-#if (TWL4030_GPIO_IRQ_END > TWL6030_IRQ_END)
++#if (TWL4030_GPIO_IRQ_END > TWL6040_CODEC_IRQ_END)
+ #define TWL_IRQ_END 		TWL4030_GPIO_IRQ_END
+ #else
+-#define TWL_IRQ_END		TWL6030_IRQ_END
++#define TWL_IRQ_END		TWL6040_CODEC_IRQ_END
+ #endif
  
--static struct twl4030_codec_data sdp3430_codec = {
-+static struct twl4030_audio_data sdp3430_audio = {
- 	.audio_mclk = 26000000,
--	.audio = &sdp3430_audio,
-+	.codec = &sdp3430_codec,
- };
+ /* GPMC related */
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 3a6f76a..ac6b4ae 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -233,6 +233,12 @@ config TWL6030_PWM
+ 	  Say yes here if you want support for TWL6030 PWM.
+ 	  This is used to control charging LED brightness.
  
- static struct twl4030_platform_data sdp3430_twldata = {
-@@ -480,7 +480,7 @@ static struct twl4030_platform_data sdp3430_twldata = {
- 	.madc		= &sdp3430_madc_data,
- 	.keypad		= &sdp3430_kp_data,
- 	.usb		= &sdp3430_usb_data,
--	.codec		= &sdp3430_codec,
-+	.audio		= &sdp3430_audio,
++config TWL6040_CORE
++	bool
++	depends on TWL4030_CORE && GENERIC_HARDIRQS
++	select MFD_CORE
++	default n
++
+ config MFD_STMPE
+ 	bool "Support STMicroelectronics STMPE"
+ 	depends on I2C=y && GENERIC_HARDIRQS
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 4cf9465..41f3b61 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -42,6 +42,7 @@ obj-$(CONFIG_TWL4030_MADC)      += twl4030-madc.o
+ obj-$(CONFIG_TWL4030_POWER)    += twl4030-power.o
+ obj-$(CONFIG_MFD_TWL4030_AUDIO)	+= twl4030-audio.o
+ obj-$(CONFIG_TWL6030_PWM)	+= twl6030-pwm.o
++obj-$(CONFIG_TWL6040_CORE)	+= twl6040-core.o twl6040-irq.o
  
- 	.vaux1		= &sdp3430_vaux1,
- 	.vaux2		= &sdp3430_vaux2,
-diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
-index cf520d7..3a83bc4 100644
---- a/arch/arm/mach-omap2/board-devkit8000.c
-+++ b/arch/arm/mach-omap2/board-devkit8000.c
-@@ -337,11 +337,11 @@ static struct twl4030_usb_data devkit8000_usb_data = {
- 	.usb_mode	= T2_USB_MODE_ULPI,
- };
- 
--static struct twl4030_codec_audio_data devkit8000_audio_data;
-+static struct twl4030_codec_data devkit8000_codec_data;
- 
--static struct twl4030_codec_data devkit8000_codec_data = {
-+static struct twl4030_audio_data devkit8000_audio_data = {
- 	.audio_mclk = 26000000,
--	.audio = &devkit8000_audio_data,
-+	.codec = &devkit8000_codec_data,
- };
- 
- static struct twl4030_platform_data devkit8000_twldata = {
-@@ -351,7 +351,7 @@ static struct twl4030_platform_data devkit8000_twldata = {
- 	/* platform_data for children goes here */
- 	.usb		= &devkit8000_usb_data,
- 	.gpio		= &devkit8000_gpio_data,
--	.codec		= &devkit8000_codec_data,
-+	.audio		= &devkit8000_audio_data,
- 	.vmmc1		= &devkit8000_vmmc1,
- 	.vdac		= &devkit8000_vdac,
- 	.vpll1		= &devkit8000_vpll1,
-diff --git a/arch/arm/mach-omap2/board-igep0020.c b/arch/arm/mach-omap2/board-igep0020.c
-index 0c1bfca..89d3999 100644
---- a/arch/arm/mach-omap2/board-igep0020.c
-+++ b/arch/arm/mach-omap2/board-igep0020.c
-@@ -519,11 +519,11 @@ static void __init igep_init_early(void)
- 				  m65kxxxxam_sdrc_params);
- }
- 
--static struct twl4030_codec_audio_data igep2_audio_data;
-+static struct twl4030_codec_data igep2_codec_data;
- 
--static struct twl4030_codec_data igep2_codec_data = {
-+static struct twl4030_audio_data igep2_audio_data = {
- 	.audio_mclk = 26000000,
--	.audio = &igep2_audio_data,
-+	.codec = &igep2_codec_data,
- };
- 
- static int igep2_keymap[] = {
-@@ -588,7 +588,7 @@ static void __init igep_i2c_init(void)
- 		if (ret)
- 			pr_warning("IGEP2: Could not register I2C3 bus (%d)\n", ret);
- 
--		igep_twldata.codec	= &igep2_codec_data;
-+		igep_twldata.audio	= &igep2_audio_data;
- 		igep_twldata.keypad	= &igep2_keypad_pdata;
- 		igep_twldata.vpll2	= &igep2_vpll2;
- 	}
-diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
-index be71426..d8ff23b 100644
---- a/arch/arm/mach-omap2/board-omap3beagle.c
-+++ b/arch/arm/mach-omap2/board-omap3beagle.c
-@@ -387,11 +387,11 @@ static struct twl4030_usb_data beagle_usb_data = {
- 	.usb_mode	= T2_USB_MODE_ULPI,
- };
- 
--static struct twl4030_codec_audio_data beagle_audio_data;
-+static struct twl4030_codec_data beagle_codec_data;
- 
--static struct twl4030_codec_data beagle_codec_data = {
-+static struct twl4030_audio_data beagle_audio_data = {
- 	.audio_mclk = 26000000,
--	.audio = &beagle_audio_data,
-+	.codec = &beagle_codec_data,
- };
- 
- static struct twl4030_platform_data beagle_twldata = {
-@@ -401,7 +401,7 @@ static struct twl4030_platform_data beagle_twldata = {
- 	/* platform_data for children goes here */
- 	.usb		= &beagle_usb_data,
- 	.gpio		= &beagle_gpio_data,
--	.codec		= &beagle_codec_data,
-+	.audio		= &beagle_audio_data,
- 	.vmmc1		= &beagle_vmmc1,
- 	.vsim		= &beagle_vsim,
- 	.vdac		= &beagle_vdac,
-diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
-index b4d4346..76677d0 100644
---- a/arch/arm/mach-omap2/board-omap3evm.c
-+++ b/arch/arm/mach-omap2/board-omap3evm.c
-@@ -442,11 +442,11 @@ static struct twl4030_madc_platform_data omap3evm_madc_data = {
- 	.irq_line	= 1,
- };
- 
--static struct twl4030_codec_audio_data omap3evm_audio_data;
-+static struct twl4030_codec_data omap3evm_codec_data;
- 
--static struct twl4030_codec_data omap3evm_codec_data = {
-+static struct twl4030_audio_data omap3evm_audio_data = {
- 	.audio_mclk = 26000000,
--	.audio = &omap3evm_audio_data,
-+	.codec = &omap3evm_codec_data,
- };
- 
- static struct regulator_consumer_supply omap3_evm_vdda_dac_supply =
-@@ -556,7 +556,7 @@ static struct twl4030_platform_data omap3evm_twldata = {
- 	.madc		= &omap3evm_madc_data,
- 	.usb		= &omap3evm_usb_data,
- 	.gpio		= &omap3evm_gpio_data,
--	.codec		= &omap3evm_codec_data,
-+	.audio		= &omap3evm_audio_data,
- 	.vdac		= &omap3_evm_vdac,
- 	.vpll2		= &omap3_evm_vpll2,
- 	.vio		= &omap3evm_vio,
-diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
-index 1d10736..b30df05 100644
---- a/arch/arm/mach-omap2/board-omap3pandora.c
-+++ b/arch/arm/mach-omap2/board-omap3pandora.c
-@@ -506,11 +506,11 @@ static struct twl4030_usb_data omap3pandora_usb_data = {
- 	.usb_mode	= T2_USB_MODE_ULPI,
- };
- 
--static struct twl4030_codec_audio_data omap3pandora_audio_data;
-+static struct twl4030_codec_data omap3pandora_codec_data;
- 
--static struct twl4030_codec_data omap3pandora_codec_data = {
-+static struct twl4030_audio_data omap3pandora_audio_data = {
- 	.audio_mclk = 26000000,
--	.audio = &omap3pandora_audio_data,
-+	.codec = &omap3pandora_codec_data,
- };
- 
- static struct twl4030_bci_platform_data pandora_bci_data;
-@@ -520,7 +520,7 @@ static struct twl4030_platform_data omap3pandora_twldata = {
- 	.irq_end	= TWL4030_IRQ_END,
- 	.gpio		= &omap3pandora_gpio_data,
- 	.usb		= &omap3pandora_usb_data,
--	.codec		= &omap3pandora_codec_data,
-+	.audio		= &omap3pandora_audio_data,
- 	.vmmc1		= &pandora_vmmc1,
- 	.vmmc2		= &pandora_vmmc2,
- 	.vdac		= &pandora_vdac,
-diff --git a/arch/arm/mach-omap2/board-omap3stalker.c b/arch/arm/mach-omap2/board-omap3stalker.c
-index 0c108a2..f4d6eea 100644
---- a/arch/arm/mach-omap2/board-omap3stalker.c
-+++ b/arch/arm/mach-omap2/board-omap3stalker.c
-@@ -396,11 +396,11 @@ static struct twl4030_madc_platform_data omap3stalker_madc_data = {
- 	.irq_line	= 1,
- };
- 
--static struct twl4030_codec_audio_data omap3stalker_audio_data;
-+static struct twl4030_codec_data omap3stalker_codec_data;
- 
--static struct twl4030_codec_data omap3stalker_codec_data = {
-+static struct twl4030_audio_data omap3stalker_audio_data = {
- 	.audio_mclk	= 26000000,
--	.audio		= &omap3stalker_audio_data,
-+	.codec		= &omap3stalker_codec_data,
- };
- 
- static struct regulator_consumer_supply omap3_stalker_vdda_dac_supply =
-@@ -451,7 +451,7 @@ static struct twl4030_platform_data omap3stalker_twldata = {
- 	.madc		= &omap3stalker_madc_data,
- 	.usb		= &omap3stalker_usb_data,
- 	.gpio		= &omap3stalker_gpio_data,
--	.codec		= &omap3stalker_codec_data,
-+	.audio		= &omap3stalker_audio_data,
- 	.vdac		= &omap3_stalker_vdac,
- 	.vpll2		= &omap3_stalker_vpll2,
- 	.vmmc1		= &omap3stalker_vmmc1,
-diff --git a/arch/arm/mach-omap2/board-omap3touchbook.c b/arch/arm/mach-omap2/board-omap3touchbook.c
-index 82872d7..dca3664 100644
---- a/arch/arm/mach-omap2/board-omap3touchbook.c
-+++ b/arch/arm/mach-omap2/board-omap3touchbook.c
-@@ -242,11 +242,11 @@ static struct twl4030_usb_data touchbook_usb_data = {
- 	.usb_mode	= T2_USB_MODE_ULPI,
- };
- 
--static struct twl4030_codec_audio_data touchbook_audio_data;
-+static struct twl4030_codec_data touchbook_codec_data;
- 
--static struct twl4030_codec_data touchbook_codec_data = {
-+static struct twl4030_audio_data touchbook_audio_data = {
- 	.audio_mclk = 26000000,
--	.audio = &touchbook_audio_data,
-+	.codec = &touchbook_codec_data,
- };
- 
- static struct twl4030_platform_data touchbook_twldata = {
-@@ -256,7 +256,7 @@ static struct twl4030_platform_data touchbook_twldata = {
- 	/* platform_data for children goes here */
- 	.usb		= &touchbook_usb_data,
- 	.gpio		= &touchbook_gpio_data,
--	.codec		= &touchbook_codec_data,
-+	.audio		= &touchbook_audio_data,
- 	.vmmc1		= &touchbook_vmmc1,
- 	.vsim		= &touchbook_vsim,
- 	.vdac		= &touchbook_vdac,
-diff --git a/arch/arm/mach-omap2/board-overo.c b/arch/arm/mach-omap2/board-overo.c
-index 1555918..1395bc9 100644
---- a/arch/arm/mach-omap2/board-overo.c
-+++ b/arch/arm/mach-omap2/board-overo.c
-@@ -482,11 +482,11 @@ static struct regulator_init_data overo_vpll2 = {
- 	.consumer_supplies	= overo_vdds_dsi_supply,
- };
- 
--static struct twl4030_codec_audio_data overo_audio_data;
-+static struct twl4030_codec_data overo_codec_data;
- 
--static struct twl4030_codec_data overo_codec_data = {
-+static struct twl4030_audio_data overo_audio_data = {
- 	.audio_mclk = 26000000,
--	.audio = &overo_audio_data,
-+	.codec = &overo_codec_data,
- };
- 
- static struct twl4030_platform_data overo_twldata = {
-@@ -494,7 +494,7 @@ static struct twl4030_platform_data overo_twldata = {
- 	.irq_end	= TWL4030_IRQ_END,
- 	.gpio		= &overo_gpio_data,
- 	.usb		= &overo_usb_data,
--	.codec		= &overo_codec_data,
-+	.audio		= &overo_audio_data,
- 	.vmmc1		= &overo_vmmc1,
- 	.vdac		= &overo_vdac,
- 	.vpll2		= &overo_vpll2,
-diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-index f6247e7..382057d 100644
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -764,11 +764,11 @@ static struct twl4030_power_data rx51_t2scripts_data __initdata = {
- 	.resource_config = twl4030_rconfig,
- };
- 
--struct twl4030_codec_vibra_data rx51_vibra_data __initdata = {
-+struct twl4030_vibra_data rx51_vibra_data __initdata = {
- 	.coexist	= 0,
- };
- 
--struct twl4030_codec_data rx51_codec_data __initdata = {
-+struct twl4030_audio_data rx51_audio_data __initdata = {
- 	.audio_mclk	= 26000000,
- 	.vibra		= &rx51_vibra_data,
- };
-@@ -783,7 +783,7 @@ static struct twl4030_platform_data rx51_twldata __initdata = {
- 	.madc			= &rx51_madc_data,
- 	.usb			= &rx51_usb_data,
- 	.power			= &rx51_t2scripts_data,
--	.codec			= &rx51_codec_data,
-+	.audio			= &rx51_audio_data,
- 
- 	.vaux1			= &rx51_vaux1,
- 	.vaux2			= &rx51_vaux2,
-diff --git a/arch/arm/mach-omap2/board-zoom-peripherals.c b/arch/arm/mach-omap2/board-zoom-peripherals.c
-index 118c6f5..3060e11 100644
---- a/arch/arm/mach-omap2/board-zoom-peripherals.c
-+++ b/arch/arm/mach-omap2/board-zoom-peripherals.c
-@@ -323,11 +323,11 @@ static struct twl4030_madc_platform_data zoom_madc_data = {
- 	.irq_line	= 1,
- };
- 
--static struct twl4030_codec_audio_data zoom_audio_data;
-+static struct twl4030_codec_data zoom_codec_data;
- 
--static struct twl4030_codec_data zoom_codec_data = {
-+static struct twl4030_audio_data zoom_audio_data = {
- 	.audio_mclk = 26000000,
--	.audio = &zoom_audio_data,
-+	.codec = &zoom_codec_data,
- };
- 
- static struct twl4030_platform_data zoom_twldata = {
-@@ -340,7 +340,7 @@ static struct twl4030_platform_data zoom_twldata = {
- 	.usb		= &zoom_usb_data,
- 	.gpio		= &zoom_gpio_data,
- 	.keypad		= &zoom_kp_twl4030_data,
--	.codec		= &zoom_codec_data,
-+	.audio		= &zoom_audio_data,
- 	.vmmc1          = &zoom_vmmc1,
- 	.vmmc2          = &zoom_vmmc2,
- 	.vsim           = &zoom_vsim,
-@@ -351,9 +351,9 @@ static struct twl4030_platform_data zoom_twldata = {
- static int __init omap_i2c_init(void)
- {
- 	if (machine_is_omap_zoom2()) {
--		zoom_audio_data.ramp_delay_value = 3;	/* 161 ms */
--		zoom_audio_data.hs_extmute = 1;
--		zoom_audio_data.set_hs_extmute = zoom2_set_hs_extmute;
-+		zoom_codec_data.ramp_delay_value = 3;	/* 161 ms */
-+		zoom_codec_data.hs_extmute = 1;
-+		zoom_codec_data.set_hs_extmute = zoom2_set_hs_extmute;
- 	}
- 	omap_pmic_init(1, 2400, "twl5030", INT_34XX_SYS_NIRQ, &zoom_twldata);
- 	omap_register_i2c_bus(2, 400, NULL, 0);
-diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
-index 7abca85..3c1a432 100644
---- a/drivers/input/misc/twl4030-vibra.c
-+++ b/drivers/input/misc/twl4030-vibra.c
-@@ -196,7 +196,7 @@ static SIMPLE_DEV_PM_OPS(twl4030_vibra_pm_ops,
- 
- static int __devinit twl4030_vibra_probe(struct platform_device *pdev)
- {
--	struct twl4030_codec_vibra_data *pdata = pdev->dev.platform_data;
-+	struct twl4030_vibra_data *pdata = pdev->dev.platform_data;
- 	struct vibra_info *info;
- 	int ret;
+ obj-$(CONFIG_MFD_MC13XXX)	+= mc13xxx-core.o
  
 diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index b8f2a4e..f9d7880 100644
+index f9d7880..a2eddc7 100644
 --- a/drivers/mfd/twl-core.c
 +++ b/drivers/mfd/twl-core.c
-@@ -815,20 +815,20 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
+@@ -110,7 +110,7 @@
+ #endif
+ 
+ #if defined(CONFIG_TWL4030_CODEC) || defined(CONFIG_TWL4030_CODEC_MODULE) ||\
+-	defined(CONFIG_SND_SOC_TWL6040) || defined(CONFIG_SND_SOC_TWL6040_MODULE)
++	defined(CONFIG_TWL6040_CORE) || defined(CONFIG_TWL6040_CORE_MODULE)
+ #define twl_has_codec()	true
+ #else
+ #define twl_has_codec()	false
+@@ -824,10 +824,9 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
  			return PTR_ERR(child);
  	}
  
--	if (twl_has_codec() && pdata->codec && twl_class_is_4030()) {
-+	if (twl_has_codec() && pdata->audio && twl_class_is_4030()) {
+-	/* Phoenix codec driver is probed directly atm */
+ 	if (twl_has_codec() && pdata->audio && twl_class_is_6030()) {
  		sub_chip_id = twl_map[TWL_MODULE_AUDIO_VOICE].sid;
- 		child = add_child(sub_chip_id, "twl4030-audio",
--				pdata->codec, sizeof(*pdata->codec),
-+				pdata->audio, sizeof(*pdata->audio),
+-		child = add_child(sub_chip_id, "twl6040-codec",
++		child = add_child(sub_chip_id, "twl6040",
+ 				pdata->audio, sizeof(*pdata->audio),
  				false, 0, 0);
  		if (IS_ERR(child))
- 			return PTR_ERR(child);
- 	}
- 
- 	/* Phoenix codec driver is probed directly atm */
--	if (twl_has_codec() && pdata->codec && twl_class_is_6030()) {
-+	if (twl_has_codec() && pdata->audio && twl_class_is_6030()) {
- 		sub_chip_id = twl_map[TWL_MODULE_AUDIO_VOICE].sid;
- 		child = add_child(sub_chip_id, "twl6040-codec",
--				pdata->codec, sizeof(*pdata->codec),
-+				pdata->audio, sizeof(*pdata->audio),
- 				false, 0, 0);
- 		if (IS_ERR(child))
- 			return PTR_ERR(child);
-diff --git a/drivers/mfd/twl4030-audio.c b/drivers/mfd/twl4030-audio.c
-index 467ddb8..353bce8 100644
---- a/drivers/mfd/twl4030-audio.c
-+++ b/drivers/mfd/twl4030-audio.c
-@@ -159,7 +159,7 @@ EXPORT_SYMBOL_GPL(twl4030_audio_get_mclk);
- static int __devinit twl4030_audio_probe(struct platform_device *pdev)
- {
- 	struct twl4030_audio *audio;
--	struct twl4030_codec_data *pdata = pdev->dev.platform_data;
+diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
+new file mode 100644
+index 0000000..bb36862
+--- /dev/null
++++ b/drivers/mfd/twl6040-core.c
+@@ -0,0 +1,589 @@
++/*
++ * MFD driver for TWL6040 audio device
++ *
++ * Authors:	Misael Lopez Cruz <misael.lopez@ti.com>
++ *		Jorge Eduardo Candelaria <jorge.candelaria@ti.com>
++ * 		Peter Ujfalusi <peter.ujfalusi@ti.com>
++ *
++ * Copyright:	(C) 2011 Texas Instruments, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/slab.h>
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/delay.h>
++#include <linux/i2c/twl.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/twl6040.h>
++
++static struct platform_device *twl6040_dev;
++
++int twl6040_reg_read(struct twl6040 *twl6040, unsigned int reg)
++{
++	int ret;
++	u8 val = 0;
++
++	mutex_lock(&twl6040->io_mutex);
++	ret = twl_i2c_read_u8(TWL_MODULE_AUDIO_VOICE, &val, reg);
++	if (ret < 0) {
++		mutex_unlock(&twl6040->io_mutex);
++		return ret;
++	}
++	mutex_unlock(&twl6040->io_mutex);
++
++	return val;
++}
++EXPORT_SYMBOL(twl6040_reg_read);
++
++int twl6040_reg_write(struct twl6040 *twl6040, unsigned int reg, u8 val)
++{
++	int ret;
++
++	mutex_lock(&twl6040->io_mutex);
++	ret = twl_i2c_write_u8(TWL_MODULE_AUDIO_VOICE, val, reg);
++	mutex_unlock(&twl6040->io_mutex);
++
++	return ret;
++}
++EXPORT_SYMBOL(twl6040_reg_write);
++
++int twl6040_set_bits(struct twl6040 *twl6040, unsigned int reg, u8 mask)
++{
++	int ret;
++	u8 val;
++
++	mutex_lock(&twl6040->io_mutex);
++	ret = twl_i2c_read_u8(TWL_MODULE_AUDIO_VOICE, &val, reg);
++	if (ret)
++		goto out;
++
++	val |= mask;
++	ret = twl_i2c_write_u8(TWL_MODULE_AUDIO_VOICE, val, reg);
++out:
++	mutex_unlock(&twl6040->io_mutex);
++	return ret;
++}
++EXPORT_SYMBOL(twl6040_set_bits);
++
++int twl6040_clear_bits(struct twl6040 *twl6040, unsigned int reg, u8 mask)
++{
++	int ret;
++	u8 val;
++
++	mutex_lock(&twl6040->io_mutex);
++	ret = twl_i2c_read_u8(TWL_MODULE_AUDIO_VOICE, &val, reg);
++	if (ret)
++		goto out;
++
++	val &= ~mask;
++	ret = twl_i2c_write_u8(TWL_MODULE_AUDIO_VOICE, val, reg);
++out:
++	mutex_unlock(&twl6040->io_mutex);
++	return ret;
++}
++EXPORT_SYMBOL(twl6040_clear_bits);
++
++/* twl6040 codec manual power-up sequence */
++static int twl6040_power_up(struct twl6040 *twl6040)
++{
++	u8 ldoctl, ncpctl, lppllctl;
++	int ret;
++
++	/* enable high-side LDO, reference system and internal oscillator */
++	ldoctl = TWL6040_HSLDOENA | TWL6040_REFENA | TWL6040_OSCENA;
++	ret = twl6040_reg_write(twl6040, TWL6040_REG_LDOCTL, ldoctl);
++	if (ret)
++		return ret;
++	usleep_range(10000, 10500);
++
++	/* enable negative charge pump */
++	ncpctl = TWL6040_NCPENA;
++	ret = twl6040_reg_write(twl6040, TWL6040_REG_NCPCTL, ncpctl);
++	if (ret)
++		goto ncp_err;
++	usleep_range(1000, 1500);
++
++	/* enable low-side LDO */
++	ldoctl |= TWL6040_LSLDOENA;
++	ret = twl6040_reg_write(twl6040, TWL6040_REG_LDOCTL, ldoctl);
++	if (ret)
++		goto lsldo_err;
++	usleep_range(1000, 1500);
++
++	/* enable low-power PLL */
++	lppllctl = TWL6040_LPLLENA;
++	ret = twl6040_reg_write(twl6040, TWL6040_REG_LPPLLCTL, lppllctl);
++	if (ret)
++		goto lppll_err;
++	usleep_range(5000, 5500);
++
++	/* disable internal oscillator */
++	ldoctl &= ~TWL6040_OSCENA;
++	ret = twl6040_reg_write(twl6040, TWL6040_REG_LDOCTL, ldoctl);
++	if (ret)
++		goto osc_err;
++
++	return 0;
++
++osc_err:
++	lppllctl &= ~TWL6040_LPLLENA;
++	twl6040_reg_write(twl6040, TWL6040_REG_LPPLLCTL, lppllctl);
++lppll_err:
++	ldoctl &= ~TWL6040_LSLDOENA;
++	twl6040_reg_write(twl6040, TWL6040_REG_LDOCTL, ldoctl);
++lsldo_err:
++	ncpctl &= ~TWL6040_NCPENA;
++	twl6040_reg_write(twl6040, TWL6040_REG_NCPCTL, ncpctl);
++ncp_err:
++	ldoctl &= ~(TWL6040_HSLDOENA | TWL6040_REFENA | TWL6040_OSCENA);
++	twl6040_reg_write(twl6040, TWL6040_REG_LDOCTL, ldoctl);
++
++	return ret;
++}
++
++/* twl6040 manual power-down sequence */
++static void twl6040_power_down(struct twl6040 *twl6040)
++{
++	u8 ncpctl, ldoctl, lppllctl;
++
++	ncpctl = twl6040_reg_read(twl6040, TWL6040_REG_NCPCTL);
++	ldoctl = twl6040_reg_read(twl6040, TWL6040_REG_LDOCTL);
++	lppllctl = twl6040_reg_read(twl6040, TWL6040_REG_LPPLLCTL);
++
++	/* enable internal oscillator */
++	ldoctl |= TWL6040_OSCENA;
++	twl6040_reg_write(twl6040, TWL6040_REG_LDOCTL, ldoctl);
++	usleep_range(1000, 1500);
++
++	/* disable low-power PLL */
++	lppllctl &= ~TWL6040_LPLLENA;
++	twl6040_reg_write(twl6040, TWL6040_REG_LPPLLCTL, lppllctl);
++
++	/* disable low-side LDO */
++	ldoctl &= ~TWL6040_LSLDOENA;
++	twl6040_reg_write(twl6040, TWL6040_REG_LDOCTL, ldoctl);
++
++	/* disable negative charge pump */
++	ncpctl &= ~TWL6040_NCPENA;
++	twl6040_reg_write(twl6040, TWL6040_REG_NCPCTL, ncpctl);
++
++	/* disable high-side LDO, reference system and internal oscillator */
++	ldoctl &= ~(TWL6040_HSLDOENA | TWL6040_REFENA | TWL6040_OSCENA);
++	twl6040_reg_write(twl6040, TWL6040_REG_LDOCTL, ldoctl);
++}
++
++static irqreturn_t twl6040_naudint_handler(int irq, void *data)
++{
++	struct twl6040 *twl6040 = data;
++	u8 intid;
++
++	intid = twl6040_reg_read(twl6040, TWL6040_REG_INTID);
++
++	if (intid & TWL6040_READYINT)
++		complete(&twl6040->ready);
++
++	return IRQ_HANDLED;
++}
++
++static int twl6040_power_up_completion(struct twl6040 *twl6040,
++				       int naudint)
++{
++	int time_left;
++	u8 intid;
++
++	time_left = wait_for_completion_timeout(&twl6040->ready,
++						msecs_to_jiffies(144));
++	if (!time_left) {
++		intid = twl6040_reg_read(twl6040, TWL6040_REG_INTID);
++		if (!(intid & TWL6040_READYINT)) {
++			dev_err(&twl6040_dev->dev,
++				"timeout waiting for READYINT\n");
++			return -ETIMEDOUT;
++		}
++	}
++
++	return 0;
++}
++
++int twl6040_power(struct twl6040 *twl6040, int on)
++{
++	int audpwron = twl6040->audpwron;
++	int naudint = twl6040->irq;
++	int ret = 0;
++
++	mutex_lock(&twl6040->mutex);
++
++	if (on) {
++		/* already powered-up */
++		if (twl6040->power_count++)
++			goto out;
++
++		if (gpio_is_valid(audpwron)) {
++			/* use AUDPWRON line */
++			gpio_set_value(audpwron, 1);
++			/* wait for power-up completion */
++			ret = twl6040_power_up_completion(twl6040, naudint);
++			if (ret) {
++				dev_err(&twl6040_dev->dev,
++					"automatic power-down failed\n");
++				twl6040->power_count = 0;
++				goto out;
++			}
++		} else {
++			/* use manual power-up sequence */
++			ret = twl6040_power_up(twl6040);
++			if (ret) {
++				dev_err(&twl6040_dev->dev,
++					"manual power-up failed\n");
++				twl6040->power_count = 0;
++				goto out;
++			}
++		}
++		twl6040->pll = TWL6040_LPPLL_ID;
++		twl6040->sysclk = 19200000;
++	} else {
++		/* already powered-down */
++		if (!twl6040->power_count) {
++			dev_err(&twl6040_dev->dev,
++				"device is already powered-off\n");
++			ret = -EPERM;
++			goto out;
++		}
++
++		if (--twl6040->power_count)
++			goto out;
++
++		if (gpio_is_valid(audpwron)) {
++			/* use AUDPWRON line */
++			gpio_set_value(audpwron, 0);
++
++			/* power-down sequence latency */
++			udelay(500);
++		} else {
++			/* use manual power-down sequence */
++			twl6040_power_down(twl6040);
++		}
++		twl6040->pll = TWL6040_NOPLL_ID;
++		twl6040->sysclk = 0;
++	}
++
++out:
++	mutex_unlock(&twl6040->mutex);
++	return ret;
++}
++EXPORT_SYMBOL(twl6040_power);
++
++int twl6040_is_powered(struct twl6040 *twl6040)
++{
++	return twl6040->power_count;
++}
++EXPORT_SYMBOL(twl6040_is_powered);
++
++int twl6040_set_pll(struct twl6040 *twl6040, enum twl6040_pll_id id,
++		    unsigned int freq_in, unsigned int freq_out)
++{
++	u8 hppllctl, lppllctl;
++	int ret = 0;
++
++	mutex_lock(&twl6040->mutex);
++
++	hppllctl = twl6040_reg_read(twl6040, TWL6040_REG_HPPLLCTL);
++	lppllctl = twl6040_reg_read(twl6040, TWL6040_REG_LPPLLCTL);
++
++	switch (id) {
++	case TWL6040_LPPLL_ID:
++		/* low-power PLL divider */
++		switch (freq_out) {
++		case 17640000:
++			lppllctl |= TWL6040_LPLLFIN;
++			break;
++		case 19200000:
++			lppllctl &= ~TWL6040_LPLLFIN;
++			break;
++		default:
++			dev_err(&twl6040_dev->dev,
++				"freq_out %d not supported\n", freq_out);
++			ret = -EINVAL;
++			goto pll_out;
++		}
++		twl6040_reg_write(twl6040, TWL6040_REG_LPPLLCTL, lppllctl);
++
++		switch (freq_in) {
++		case 32768:
++			lppllctl |= TWL6040_LPLLENA;
++			twl6040_reg_write(twl6040, TWL6040_REG_LPPLLCTL,
++					  lppllctl);
++			mdelay(5);
++			lppllctl &= ~TWL6040_HPLLSEL;
++			twl6040_reg_write(twl6040, TWL6040_REG_LPPLLCTL,
++					  lppllctl);
++			hppllctl &= ~TWL6040_HPLLENA;
++			twl6040_reg_write(twl6040, TWL6040_REG_HPPLLCTL,
++					  hppllctl);
++			break;
++		default:
++			dev_err(&twl6040_dev->dev,
++				"freq_in %d not supported\n", freq_in);
++			ret = -EINVAL;
++			goto pll_out;
++		}
++
++		twl6040->pll = TWL6040_LPPLL_ID;
++		break;
++	case TWL6040_HPPLL_ID:
++		/* high-performance PLL can provide only 19.2 MHz */
++		if (freq_out != 19200000) {
++			dev_err(&twl6040_dev->dev,
++				"freq_out %d not supported\n", freq_out);
++			ret = -EINVAL;
++			goto pll_out;
++		}
++
++		hppllctl &= ~TWL6040_MCLK_MSK;
++
++		switch (freq_in) {
++		case 12000000:
++			/* PLL enabled, active mode */
++			hppllctl |= TWL6040_MCLK_12000KHZ |
++				    TWL6040_HPLLENA;
++			break;
++		case 19200000:
++			/*
++			 * PLL disabled
++			 * (enable PLL if MCLK jitter quality
++			 *  doesn't meet specification)
++			 */
++			hppllctl |= TWL6040_MCLK_19200KHZ;
++			break;
++		case 26000000:
++			/* PLL enabled, active mode */
++			hppllctl |= TWL6040_MCLK_26000KHZ |
++				    TWL6040_HPLLENA;
++			break;
++		case 38400000:
++			/* PLL enabled, active mode */
++			hppllctl |= TWL6040_MCLK_38400KHZ |
++				    TWL6040_HPLLENA;
++			break;
++		default:
++			dev_err(&twl6040_dev->dev,
++				"freq_in %d not supported\n", freq_in);
++			ret = -EINVAL;
++			goto pll_out;
++		}
++
++		/* enable clock slicer to ensure input waveform is square */
++		hppllctl |= TWL6040_HPLLSQRENA;
++
++		twl6040_reg_write(twl6040, TWL6040_REG_HPPLLCTL, hppllctl);
++		udelay(500);
++		lppllctl |= TWL6040_HPLLSEL;
++		twl6040_reg_write(twl6040, TWL6040_REG_LPPLLCTL, lppllctl);
++		lppllctl &= ~TWL6040_LPLLENA;
++		twl6040_reg_write(twl6040, TWL6040_REG_LPPLLCTL, lppllctl);
++
++		twl6040->pll = TWL6040_HPPLL_ID;
++		break;
++	default:
++		dev_err(&twl6040_dev->dev, "unknown pll id %d\n", id);
++		ret = -EINVAL;
++		goto pll_out;
++	}
++
++	twl6040->sysclk = freq_out;
++
++pll_out:
++	mutex_unlock(&twl6040->mutex);
++	return ret;
++}
++EXPORT_SYMBOL(twl6040_set_pll);
++
++enum twl6040_pll_id twl6040_get_pll(struct twl6040 *twl6040)
++{
++	return twl6040->pll;
++}
++EXPORT_SYMBOL(twl6040_get_pll);
++
++unsigned int twl6040_get_sysclk(struct twl6040 *twl6040)
++{
++	return twl6040->sysclk;
++}
++EXPORT_SYMBOL(twl6040_get_sysclk);
++
++static int __devinit twl6040_probe(struct platform_device *pdev)
++{
 +	struct twl4030_audio_data *pdata = pdev->dev.platform_data;
- 	struct mfd_cell *cell = NULL;
- 	int ret, childs = 0;
- 	u8 val;
-@@ -206,11 +206,11 @@ static int __devinit twl4030_audio_probe(struct platform_device *pdev)
- 	audio->resource[TWL4030_AUDIO_RES_APLL].reg = TWL4030_REG_APLL_CTL;
- 	audio->resource[TWL4030_AUDIO_RES_APLL].mask = TWL4030_APLL_EN;
- 
--	if (pdata->audio) {
++	struct twl6040 *twl6040;
++	struct mfd_cell *cell = NULL;
++	int ret, children = 0;
++
++	if (!pdata) {
++		dev_err(&pdev->dev, "Platform data is missing\n");
++		return -EINVAL;
++	}
++
++	twl6040 = kzalloc(sizeof(struct twl6040), GFP_KERNEL);
++	if (!twl6040)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, twl6040);
++
++	twl6040_dev = pdev;
++	twl6040->dev = &pdev->dev;
++	twl6040->audpwron = pdata->audpwron_gpio;
++	twl6040->irq = pdata->naudint_irq;
++	twl6040->irq_base = pdata->irq_base;
++
++	mutex_init(&twl6040->mutex);
++	mutex_init(&twl6040->io_mutex);
++	init_completion(&twl6040->ready);
++
++	twl6040->rev = twl6040_reg_read(twl6040, TWL6040_REG_ASICREV);
++
++	if (gpio_is_valid(twl6040->audpwron)) {
++		ret = gpio_request(twl6040->audpwron, "audpwron");
++		if (ret)
++			goto gpio1_err;
++
++		ret = gpio_direction_output(twl6040->audpwron, 0);
++		if (ret)
++			goto gpio2_err;
++	}
++
++	/* ERRATA: Automatic power-up is not possible in ES1.0 */
++	if (twl6040_get_rev(twl6040) == TWL6040_REV_ES1_0)
++		twl6040->audpwron = -EINVAL;
++
++	if (twl6040->irq) {
++		/* codec interrupt */
++		ret = twl6040_irq_init(twl6040);
++		if (ret)
++			goto gpio2_err;
++
++		ret = twl6040_request_irq(twl6040, TWL6040_IRQ_READY,
++					  twl6040_naudint_handler, 0,
++					  "twl6040_irq_ready", twl6040);
++		if (ret) {
++			dev_err(twl6040->dev, "READY IRQ request failed: %d\n",
++				ret);
++			goto irq_err;
++		}
++	}
++
++	/* dual-access registers controlled by I2C only */
++	twl6040_set_bits(twl6040, TWL6040_REG_ACCCTL, TWL6040_I2CSEL);
++
 +	if (pdata->codec) {
- 		cell = &audio->cells[childs];
- 		cell->name = "twl4030-codec";
--		cell->platform_data = pdata->audio;
--		cell->pdata_size = sizeof(*pdata->audio);
-+		cell->platform_data = pdata->codec;
-+		cell->pdata_size = sizeof(*pdata->codec);
- 		childs++;
- 	}
- 	if (pdata->vibra) {
++		cell = &twl6040->cells[children];
++		cell->name = "twl6040-codec";
++		/* The codec expects the twl4030_audio_data as platform data */
++		cell->platform_data = pdata;
++		cell->pdata_size = sizeof(*pdata);
++		children++;
++	}
++
++	if (pdata->vibra) {
++		cell = &twl6040->cells[children];
++		cell->name = "twl6040-vibra";
++		cell->platform_data = pdata->vibra;
++		cell->pdata_size = sizeof(*pdata->vibra);
++		children++;
++	}
++
++	if (children) {
++		ret = mfd_add_devices(&pdev->dev, pdev->id, twl6040->cells,
++				      children, NULL, 0);
++		if (ret)
++			goto mfd_err;
++	} else {
++		dev_err(&pdev->dev, "No platform data found for children\n");
++		ret = -ENODEV;
++		goto mfd_err;
++	}
++
++	return 0;
++
++mfd_err:
++	if (twl6040->irq)
++		twl6040_free_irq(twl6040, TWL6040_IRQ_READY, twl6040);
++irq_err:
++	if (twl6040->irq)
++		twl6040_irq_exit(twl6040);
++gpio2_err:
++	if (gpio_is_valid(twl6040->audpwron))
++		gpio_free(twl6040->audpwron);
++gpio1_err:
++	platform_set_drvdata(pdev, NULL);
++	kfree(twl6040);
++	twl6040_dev = NULL;
++	return ret;
++}
++
++static int __devexit twl6040_remove(struct platform_device *pdev)
++{
++	struct twl6040 *twl6040 = platform_get_drvdata(pdev);
++
++	if (twl6040_is_powered(twl6040))
++		twl6040_power(twl6040, 0);
++
++	if (gpio_is_valid(twl6040->audpwron))
++		gpio_free(twl6040->audpwron);
++
++	twl6040_free_irq(twl6040, TWL6040_IRQ_READY, twl6040);
++
++	if (twl6040->irq)
++		twl6040_irq_exit(twl6040);
++
++	mfd_remove_devices(&pdev->dev);
++	platform_set_drvdata(pdev, NULL);
++	kfree(twl6040);
++	twl6040_dev = NULL;
++
++	return 0;
++}
++
++static struct platform_driver twl6040_driver = {
++	.probe		= twl6040_probe,
++	.remove		= __devexit_p(twl6040_remove),
++	.driver		= {
++		.owner	= THIS_MODULE,
++		.name	= "twl6040",
++	},
++};
++
++static int __devinit twl6040_init(void)
++{
++	return platform_driver_register(&twl6040_driver);
++}
++module_init(twl6040_init);
++
++static void __devexit twl6040_exit(void)
++{
++	platform_driver_unregister(&twl6040_driver);
++}
++
++module_exit(twl6040_exit);
++
++MODULE_DESCRIPTION("TWL6040 MFD");
++MODULE_AUTHOR("Misael Lopez Cruz <misael.lopez@ti.com>");
++MODULE_AUTHOR("Jorge Eduardo Candelaria <jorge.candelaria@ti.com>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:twl6040");
+diff --git a/drivers/mfd/twl6040-irq.c b/drivers/mfd/twl6040-irq.c
+new file mode 100644
+index 0000000..9380535
+--- /dev/null
++++ b/drivers/mfd/twl6040-irq.c
+@@ -0,0 +1,205 @@
++/*
++ * Interrupt controller support for TWL6040
++ *
++ * Author:     Misael Lopez Cruz <misael.lopez@ti.com>
++ *
++ * Copyright:   (C) 2011 Texas Instruments, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/twl6040.h>
++
++struct twl6040_irq_data {
++	int mask;
++	int status;
++};
++
++static struct twl6040_irq_data twl6040_irqs[] = {
++	{
++		.mask = TWL6040_THMSK,
++		.status = TWL6040_THINT,
++	},
++	{
++		.mask = TWL6040_PLUGMSK,
++		.status = TWL6040_PLUGINT | TWL6040_UNPLUGINT,
++	},
++	{
++		.mask = TWL6040_HOOKMSK,
++		.status = TWL6040_HOOKINT,
++	},
++	{
++		.mask = TWL6040_HFMSK,
++		.status = TWL6040_HFINT,
++	},
++	{
++		.mask = TWL6040_VIBMSK,
++		.status = TWL6040_VIBINT,
++	},
++	{
++		.mask = TWL6040_READYMSK,
++		.status = TWL6040_READYINT,
++	},
++};
++
++static inline
++struct twl6040_irq_data *irq_to_twl6040_irq(struct twl6040 *twl6040,
++					    int irq)
++{
++	return &twl6040_irqs[irq - twl6040->irq_base];
++}
++
++static void twl6040_irq_lock(struct irq_data *data)
++{
++	struct twl6040 *twl6040 = irq_data_get_irq_chip_data(data);
++
++	mutex_lock(&twl6040->irq_mutex);
++}
++
++static void twl6040_irq_sync_unlock(struct irq_data *data)
++{
++	struct twl6040 *twl6040 = irq_data_get_irq_chip_data(data);
++
++	/* write back to hardware any change in irq mask */
++	if (twl6040->irq_masks_cur != twl6040->irq_masks_cache) {
++		twl6040->irq_masks_cache = twl6040->irq_masks_cur;
++		twl6040_reg_write(twl6040, TWL6040_REG_INTMR,
++				  twl6040->irq_masks_cur);
++	}
++
++	mutex_unlock(&twl6040->irq_mutex);
++}
++
++static void twl6040_irq_enable(struct irq_data *data)
++{
++	struct twl6040 *twl6040 = irq_data_get_irq_chip_data(data);
++	struct twl6040_irq_data *irq_data = irq_to_twl6040_irq(twl6040,
++							       data->irq);
++
++	twl6040->irq_masks_cur &= ~irq_data->mask;
++}
++
++static void twl6040_irq_disable(struct irq_data *data)
++{
++	struct twl6040 *twl6040 = irq_data_get_irq_chip_data(data);
++	struct twl6040_irq_data *irq_data = irq_to_twl6040_irq(twl6040,
++							       data->irq);
++
++	twl6040->irq_masks_cur |= irq_data->mask;
++}
++
++static struct irq_chip twl6040_irq_chip = {
++	.name			= "twl6040",
++	.irq_bus_lock		= twl6040_irq_lock,
++	.irq_bus_sync_unlock	= twl6040_irq_sync_unlock,
++	.irq_enable		= twl6040_irq_enable,
++	.irq_disable		= twl6040_irq_disable,
++};
++
++static irqreturn_t twl6040_irq_thread(int irq, void *data)
++{
++	struct twl6040 *twl6040 = data;
++	u8 intid;
++	int i;
++
++	intid = twl6040_reg_read(twl6040, TWL6040_REG_INTID);
++
++	/* apply masking and report (backwards to handle READYINT first) */
++	for (i = ARRAY_SIZE(twl6040_irqs) - 1; i >= 0; i--) {
++		if (twl6040->irq_masks_cur & twl6040_irqs[i].mask)
++			intid &= ~twl6040_irqs[i].status;
++		if (intid & twl6040_irqs[i].status)
++			handle_nested_irq(twl6040->irq_base + i);
++	}
++
++	/* ack unmasked irqs */
++	twl6040_reg_write(twl6040, TWL6040_REG_INTID, intid);
++
++	return IRQ_HANDLED;
++}
++
++int twl6040_irq_init(struct twl6040 *twl6040)
++{
++	int cur_irq, ret;
++	u8 val;
++
++	mutex_init(&twl6040->irq_mutex);
++
++	/* mask the individual interrupt sources */
++	twl6040->irq_masks_cur = TWL6040_ALLINT_MSK;
++	twl6040->irq_masks_cache = TWL6040_ALLINT_MSK;
++	twl6040_reg_write(twl6040, TWL6040_REG_INTMR, TWL6040_ALLINT_MSK);
++
++	if (!twl6040->irq) {
++		dev_warn(twl6040->dev,
++			 "no interrupt specified, no interrupts\n");
++		twl6040->irq_base = 0;
++		return 0;
++	}
++
++	if (!twl6040->irq_base) {
++		dev_err(twl6040->dev,
++			"no interrupt base specified, no interrupts\n");
++		return 0;
++	}
++
++	/* Register them with genirq */
++	for (cur_irq = twl6040->irq_base;
++	     cur_irq < twl6040->irq_base + ARRAY_SIZE(twl6040_irqs);
++	     cur_irq++) {
++		irq_set_chip_data(cur_irq, twl6040);
++		irq_set_chip_and_handler(cur_irq, &twl6040_irq_chip,
++					 handle_level_irq);
++		irq_set_nested_thread(cur_irq, 1);
++
++		/* ARM needs us to explicitly flag the IRQ as valid
++		 * and will set them noprobe when we do so. */
++#ifdef CONFIG_ARM
++		set_irq_flags(cur_irq, IRQF_VALID);
++#else
++		irq_set_noprobe(cur_irq);
++#endif
++	}
++
++	ret = request_threaded_irq(twl6040->irq, NULL, twl6040_irq_thread,
++				   IRQF_ONESHOT, "twl6040", twl6040);
++	if (ret) {
++		dev_err(twl6040->dev, "failed to request IRQ %d: %d\n",
++			twl6040->irq, ret);
++		return ret;
++	}
++
++	/* reset interrupts */
++	val = twl6040_reg_read(twl6040, TWL6040_REG_INTID);
++
++	/* interrupts cleared on write */
++	twl6040_clear_bits(twl6040, TWL6040_REG_ACCCTL, TWL6040_INTCLRMODE);
++
++	return 0;
++}
++EXPORT_SYMBOL(twl6040_irq_init);
++
++void twl6040_irq_exit(struct twl6040 *twl6040)
++{
++	if (twl6040->irq)
++		free_irq(twl6040->irq, twl6040);
++}
++EXPORT_SYMBOL(twl6040_irq_exit);
 diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index ba4f886..e0aba2b 100644
+index e0aba2b..ea5baa2 100644
 --- a/include/linux/i2c/twl.h
 +++ b/include/linux/i2c/twl.h
-@@ -657,7 +657,7 @@ struct twl4030_power_data {
- extern void twl4030_power_init(struct twl4030_power_data *triton2_scripts);
- extern int twl4030_remove_script(u8 flags);
- 
--struct twl4030_codec_audio_data {
-+struct twl4030_codec_data {
- 	unsigned int digimic_delay; /* in ms */
- 	unsigned int ramp_delay_value;
- 	unsigned int offset_cncl_path;
-@@ -667,14 +667,14 @@ struct twl4030_codec_audio_data {
- 	void (*set_hs_extmute)(int mute);
- };
- 
--struct twl4030_codec_vibra_data {
-+struct twl4030_vibra_data {
- 	unsigned int	coexist;
- };
- 
--struct twl4030_codec_data {
-+struct twl4030_audio_data {
- 	unsigned int	audio_mclk;
--	struct twl4030_codec_audio_data		*audio;
--	struct twl4030_codec_vibra_data		*vibra;
-+	struct twl4030_codec_data *codec;
-+	struct twl4030_vibra_data *vibra;
- 
+@@ -679,6 +679,7 @@ struct twl4030_audio_data {
  	/* twl6040 */
  	int audpwron_gpio;	/* audio power-on gpio */
-@@ -690,7 +690,7 @@ struct twl4030_platform_data {
- 	struct twl4030_keypad_data		*keypad;
- 	struct twl4030_usb_data			*usb;
- 	struct twl4030_power_data		*power;
--	struct twl4030_codec_data		*codec;
-+	struct twl4030_audio_data		*audio;
+ 	int naudint_irq;	/* audio interrupt */
++	unsigned int irq_base;
+ };
  
- 	/* Common LDO regulators for TWL4030/TWL6030 */
- 	struct regulator_init_data		*vdac;
-diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
-index 5e648d3..71674be 100644
---- a/sound/soc/codecs/twl4030.c
-+++ b/sound/soc/codecs/twl4030.c
-@@ -297,7 +297,7 @@ static inline void twl4030_reset_registers(struct snd_soc_codec *codec)
- 
- static void twl4030_init_chip(struct snd_soc_codec *codec)
- {
--	struct twl4030_codec_audio_data *pdata = dev_get_platdata(codec->dev);
-+	struct twl4030_codec_data *pdata = dev_get_platdata(codec->dev);
- 	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
- 	u8 reg, byte;
- 	int i = 0;
-@@ -732,7 +732,7 @@ static int aif_event(struct snd_soc_dapm_widget *w,
- 
- static void headset_ramp(struct snd_soc_codec *codec, int ramp)
- {
--	struct twl4030_codec_audio_data *pdata = codec->dev->platform_data;
-+	struct twl4030_codec_data *pdata = codec->dev->platform_data;
- 	unsigned char hs_gain, hs_pop;
- 	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
- 	/* Base values for ramp delay calculation: 2^19 - 2^26 */
-@@ -2297,7 +2297,7 @@ static struct snd_soc_codec_driver soc_codec_dev_twl4030 = {
- 
- static int __devinit twl4030_codec_probe(struct platform_device *pdev)
- {
--	struct twl4030_codec_audio_data *pdata = pdev->dev.platform_data;
-+	struct twl4030_codec_data *pdata = pdev->dev.platform_data;
- 
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "platform_data is missing\n");
-diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
-index 4c33663..ade6616 100644
---- a/sound/soc/codecs/twl6040.c
-+++ b/sound/soc/codecs/twl6040.c
-@@ -1600,7 +1600,7 @@ static int twl6040_resume(struct snd_soc_codec *codec)
- 
- static int twl6040_probe(struct snd_soc_codec *codec)
- {
--	struct twl4030_codec_data *twl_codec = codec->dev->platform_data;
-+	struct twl4030_audio_data *twl_codec = codec->dev->platform_data;
- 	struct twl6040_data *priv;
- 	int audpwron, naudint;
- 	int ret = 0;
+ struct twl4030_platform_data {
+diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
+new file mode 100644
+index 0000000..23c0d28
+--- /dev/null
++++ b/include/linux/mfd/twl6040.h
+@@ -0,0 +1,260 @@
++/*
++ * MFD driver for twl6040
++ *
++ * Authors:     Jorge Eduardo Candelaria <jorge.candelaria@ti.com>
++ *              Misael Lopez Cruz <misael.lopez@ti.com>
++ *
++ * Copyright:   (C) 2011 Texas Instruments, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ *
++ */
++
++#ifndef __TWL6040_CODEC_H__
++#define __TWL6040_CODEC_H__
++
++#include <linux/interrupt.h>
++#include <linux/mfd/core.h>
++
++#define TWL6040_REG_ASICID		0x01
++#define TWL6040_REG_ASICREV		0x02
++#define TWL6040_REG_INTID		0x03
++#define TWL6040_REG_INTMR		0x04
++#define TWL6040_REG_NCPCTL		0x05
++#define TWL6040_REG_LDOCTL		0x06
++#define TWL6040_REG_HPPLLCTL		0x07
++#define TWL6040_REG_LPPLLCTL		0x08
++#define TWL6040_REG_LPPLLDIV		0x09
++#define TWL6040_REG_AMICBCTL		0x0A
++#define TWL6040_REG_DMICBCTL		0x0B
++#define TWL6040_REG_MICLCTL		0x0C
++#define TWL6040_REG_MICRCTL		0x0D
++#define TWL6040_REG_MICGAIN		0x0E
++#define TWL6040_REG_LINEGAIN		0x0F
++#define TWL6040_REG_HSLCTL		0x10
++#define TWL6040_REG_HSRCTL		0x11
++#define TWL6040_REG_HSGAIN		0x12
++#define TWL6040_REG_EARCTL		0x13
++#define TWL6040_REG_HFLCTL		0x14
++#define TWL6040_REG_HFLGAIN		0x15
++#define TWL6040_REG_HFRCTL		0x16
++#define TWL6040_REG_HFRGAIN		0x17
++#define TWL6040_REG_VIBCTLL		0x18
++#define TWL6040_REG_VIBDATL		0x19
++#define TWL6040_REG_VIBCTLR		0x1A
++#define TWL6040_REG_VIBDATR		0x1B
++#define TWL6040_REG_HKCTL1		0x1C
++#define TWL6040_REG_HKCTL2		0x1D
++#define TWL6040_REG_GPOCTL		0x1E
++#define TWL6040_REG_ALB			0x1F
++#define TWL6040_REG_DLB			0x20
++#define TWL6040_REG_TRIM1		0x28
++#define TWL6040_REG_TRIM2		0x29
++#define TWL6040_REG_TRIM3		0x2A
++#define TWL6040_REG_HSOTRIM		0x2B
++#define TWL6040_REG_HFOTRIM		0x2C
++#define TWL6040_REG_ACCCTL		0x2D
++#define TWL6040_REG_STATUS		0x2E
++
++#define TWL6040_CACHEREGNUM		(TWL6040_REG_STATUS + 1)
++
++#define TWL6040_VIOREGNUM		18
++#define TWL6040_VDDREGNUM		21
++
++/* INTID (0x03) fields */
++
++#define TWL6040_THINT			0x01
++#define TWL6040_PLUGINT			0x02
++#define TWL6040_UNPLUGINT		0x04
++#define TWL6040_HOOKINT			0x08
++#define TWL6040_HFINT			0x10
++#define TWL6040_VIBINT			0x20
++#define TWL6040_READYINT		0x40
++
++/* INTMR (0x04) fields */
++
++#define TWL6040_THMSK			0x01
++#define TWL6040_PLUGMSK			0x02
++#define TWL6040_HOOKMSK			0x08
++#define TWL6040_HFMSK			0x10
++#define TWL6040_VIBMSK			0x20
++#define TWL6040_READYMSK		0x40
++#define TWL6040_ALLINT_MSK		0x7B
++
++/* NCPCTL (0x05) fields */
++
++#define TWL6040_NCPENA			0x01
++#define TWL6040_NCPOPEN			0x40
++
++/* LDOCTL (0x06) fields */
++
++#define TWL6040_LSLDOENA		0x01
++#define TWL6040_HSLDOENA		0x04
++#define TWL6040_REFENA			0x40
++#define TWL6040_OSCENA			0x80
++
++/* HPPLLCTL (0x07) fields */
++
++#define TWL6040_HPLLENA			0x01
++#define TWL6040_HPLLRST			0x02
++#define TWL6040_HPLLBP			0x04
++#define TWL6040_HPLLSQRENA		0x08
++#define TWL6040_MCLK_12000KHZ		(0 << 5)
++#define TWL6040_MCLK_19200KHZ		(1 << 5)
++#define TWL6040_MCLK_26000KHZ		(2 << 5)
++#define TWL6040_MCLK_38400KHZ		(3 << 5)
++#define TWL6040_MCLK_MSK		0x60
++
++/* LPPLLCTL (0x08) fields */
++
++#define TWL6040_LPLLENA			0x01
++#define TWL6040_LPLLRST			0x02
++#define TWL6040_LPLLSEL			0x04
++#define TWL6040_LPLLFIN			0x08
++#define TWL6040_HPLLSEL			0x10
++
++/* HSLCTL (0x10) fields */
++
++#define TWL6040_HSDACMODEL		0x02
++#define TWL6040_HSDRVMODEL		0x08
++
++/* HSRCTL (0x11) fields */
++
++#define TWL6040_HSDACMODER		0x02
++#define TWL6040_HSDRVMODER		0x08
++
++/* VIBCTLL (0x18) fields */
++
++#define TWL6040_VIBENAL			0x01
++#define TWL6040_VIBCTRLL		0x04
++#define TWL6040_VIBCTRLLP		0x08
++#define TWL6040_VIBCTRLLN		0x10
++
++/* VIBDATL (0x19) fields */
++
++#define TWL6040_VIBDAT_MAX		0x64
++
++/* VIBCTLR (0x1A) fields */
++
++#define TWL6040_VIBENAR			0x01
++#define TWL6040_VIBCTRLR		0x04
++#define TWL6040_VIBCTRLRP		0x08
++#define TWL6040_VIBCTRLRN		0x10
++
++/* GPOCTL (0x1E) fields */
++
++#define TWL6040_GPO1			0x01
++#define TWL6040_GPO2			0x02
++#define TWL6040_GPO3			0x03
++
++/* ACCCTL (0x2D) fields */
++
++#define TWL6040_I2CSEL			0x01
++#define TWL6040_RESETSPLIT		0x04
++#define TWL6040_INTCLRMODE		0x08
++
++#define TWL6040_SYSCLK_SEL_LPPLL	1
++#define TWL6040_SYSCLK_SEL_HPPLL	2
++
++/* STATUS (0x2E) fields */
++
++#define TWL6040_PLUGCOMP		0x02
++#define TWL6040_VIBLOCDET		0x10
++#define TWL6040_VIBROCDET		0x20
++
++#define TWL6040_CELLS			2
++
++#define TWL6040_REV_ES1_0		0x00
++#define TWL6040_REV_ES1_1		0x01
++#define TWL6040_REV_ES1_2		0x02
++
++#define TWL6040_IRQ_TH			0
++#define TWL6040_IRQ_PLUG		1
++#define TWL6040_IRQ_HOOK		2
++#define TWL6040_IRQ_HF			3
++#define TWL6040_IRQ_VIB			4
++#define TWL6040_IRQ_READY		5
++
++enum twl6040_pll_id {
++	TWL6040_NOPLL_ID,
++	TWL6040_LPPLL_ID,
++	TWL6040_HPPLL_ID,
++};
++
++struct twl6040 {
++	struct device *dev;
++	struct mutex mutex;
++	struct mutex io_mutex;
++	struct mutex irq_mutex;
++	struct mfd_cell cells[TWL6040_CELLS];
++	struct completion ready;
++
++	int audpwron;
++	int power_count;
++	int rev;
++
++	enum twl6040_pll_id pll;
++	unsigned int sysclk;
++
++	unsigned int irq;
++	unsigned int irq_base;
++	u8 irq_masks_cur;
++	u8 irq_masks_cache;
++};
++
++static inline int twl6040_get_rev(struct twl6040 *twl6040)
++{
++	return twl6040->rev;
++}
++
++static inline int twl6040_request_irq(struct twl6040 *twl6040, int irq,
++				      irq_handler_t handler,
++				      unsigned long irqflags,
++				      const char *name,
++				      void *data)
++{
++	if (!twl6040->irq_base)
++		return -EINVAL;
++
++	return request_threaded_irq(twl6040->irq_base + irq, NULL, handler,
++				    irqflags, name, data);
++}
++
++static inline void twl6040_free_irq(struct twl6040 *twl6040, int irq,
++				    void *data)
++{
++	if (!twl6040->irq_base)
++		return;
++
++	free_irq(twl6040->irq_base + irq, data);
++}
++
++int twl6040_reg_read(struct twl6040 *twl6040, unsigned int reg);
++int twl6040_reg_write(struct twl6040 *twl6040, unsigned int reg,
++		      u8 val);
++int twl6040_set_bits(struct twl6040 *twl6040, unsigned int reg,
++		     u8 mask);
++int twl6040_clear_bits(struct twl6040 *twl6040, unsigned int reg,
++		       u8 mask);
++int twl6040_power(struct twl6040 *twl6040, int on);
++int twl6040_is_powered(struct twl6040 *twl6040);
++int twl6040_set_pll(struct twl6040 *twl6040, enum twl6040_pll_id id,
++		    unsigned int freq_in, unsigned int freq_out);
++enum twl6040_pll_id twl6040_get_pll(struct twl6040 *twl6040);
++unsigned int twl6040_get_sysclk(struct twl6040 *twl6040);
++int twl6040_irq_init(struct twl6040 *twl6040);
++void twl6040_irq_exit(struct twl6040 *twl6040);
++
++#endif  /* End of __TWL6040_CODEC_H__ */
 -- 
 1.7.5.3
 
