@@ -1,51 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541Ab1FAMyB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 08:54:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2522 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751128Ab1FAMx7 convert rfc822-to-8bit (ORCPT
+	id S1161694Ab1FAMqU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 08:46:20 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63694 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab1FAMqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 08:53:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,303,1304319600"; 
-   d="scan'208";a="7826506"
-Date: Wed, 1 Jun 2011 13:41:07 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: =?ISO-8859-14?B?RnLpZOlyaWMgQnJp6HJl?= <fbriere@fbriere.net>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-serial@vger.kernel.org, linux-parport@lists.infradead.org
-Subject: Re: [PATCH 2/2] parport/serial: add support for Timedia/SUNIX cards
- to parport_serial
-Message-ID: <20110601134107.74e4dbf7@bob.linux.org.uk>
-In-Reply-To: <1306696084-17977-2-git-send-email-fbriere@fbriere.net>
-References: <1306696084-17977-1-git-send-email-fbriere@fbriere.net>
-	<1306696084-17977-2-git-send-email-fbriere@fbriere.net>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-14
-Content-Transfer-Encoding: 8BIT
+	Wed, 1 Jun 2011 08:46:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=szeredi.hu; s=google;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=qOalDKKlfpBtHVT4bBmpDpQ+SvRZcpBQNzUol7ZdtkxN/7Zh/wcRYMtGnSA1xmJpQo
+         /QsyoSVHPUtu5ddcdTk+A/5+UOUrRZ68rIXo5t6osvalSJLab5rGUFqsC5t79wwEhQqf
+         X72T5pbR8L+HE9jDBhnSFJPFuPKT7P7g6J4EA=
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de, hramrach@centrum.cz, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, mszeredi@suse.cz
+Subject: [PATCH 0/7] overlay filesystem: request for inclusion
+Date: Wed,  1 Jun 2011 14:46:13 +0200
+Message-Id: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 29 May 2011 15:08:04 -0400
-Frédéric Brière <fbriere@fbriere.net> wrote:
+Linus, Al,
 
-> Timedia/SUNIX PCI cards with both serial and parallel ports are
-> currently supported by 8250_pci and parport_pc individually.  Moving
-> that support into parport_serial allows using both types of ports at
-> the same time.
-> 
-> This was successfully tested with a SUNIX 4079T.
-> 
-> Signed-off-by: Frédéric Brière <fbriere@fbriere.net>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Alan Cox <alan@linux.intel.com>
-> Cc: linux-serial@vger.kernel.org
-> Cc: linux-parport@lists.infradead.org
+I'd like to ask for overlayfs to be merged into 3.1.
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v10
+
+AFAICS the only barrier now is the upcoming changes to the VFS/open
+interface.  Is there anything I can help to get those changes done?
+
+Thanks,
+Miklos
+
+---
+Andy Whitcroft (1):
+      overlayfs: add statfs support
+
+Erez Zadok (1):
+      overlayfs: implement show_options
+
+Miklos Szeredi (4):
+      vfs: add i_op->open()
+      vfs: export do_splice_direct() to modules
+      vfs: introduce clone_private_mount()
+      overlay filesystem
+
+Neil Brown (1):
+      overlay: overlay filesystem documentation
+
+---
+ Documentation/filesystems/overlayfs.txt |  167 ++++++++
+ MAINTAINERS                             |    7 +
+ fs/Kconfig                              |    1 +
+ fs/Makefile                             |    1 +
+ fs/namespace.c                          |   17 +
+ fs/open.c                               |   76 +++--
+ fs/overlayfs/Kconfig                    |    4 +
+ fs/overlayfs/Makefile                   |    7 +
+ fs/overlayfs/copy_up.c                  |  383 +++++++++++++++++++
+ fs/overlayfs/dir.c                      |  607 ++++++++++++++++++++++++++++++
+ fs/overlayfs/inode.c                    |  375 ++++++++++++++++++
+ fs/overlayfs/overlayfs.h                |   62 +++
+ fs/overlayfs/readdir.c                  |  558 +++++++++++++++++++++++++++
+ fs/overlayfs/super.c                    |  625 +++++++++++++++++++++++++++++++
+ fs/splice.c                             |    1 +
+ include/linux/fs.h                      |    2 +
+ include/linux/mount.h                   |    3 +
+ 17 files changed, 2870 insertions(+), 26 deletions(-)
+ create mode 100644 Documentation/filesystems/overlayfs.txt
+ create mode 100644 fs/overlayfs/Kconfig
+ create mode 100644 fs/overlayfs/Makefile
+ create mode 100644 fs/overlayfs/copy_up.c
+ create mode 100644 fs/overlayfs/dir.c
+ create mode 100644 fs/overlayfs/inode.c
+ create mode 100644 fs/overlayfs/overlayfs.h
+ create mode 100644 fs/overlayfs/readdir.c
+ create mode 100644 fs/overlayfs/super.c
+------------------------------------------------------------------------------
+Changes from v9 to v10
+
+- prevent d_delete() from turning upperdentry negative (reported by
+  Erez Zadok)
+
+- show mount options in /proc/mounts and friends (patch by Erez Zadok)
+
+- fix off-by-one error in readdir (reported by Jordi Pujol)
+
+------------------------------------------------------------------------------
+Changes from v8 to v9
+
+- support xattr on tmpfs
+
+- fix build after split-up
+
+- fix remove after rename (reported by Jordi Pujol)
+
+- fix rename failure case
+
+------------------------------------------------------------------------------
+Changes from v7 to v8:
+
+- split overlayfs.c into smaller files
+
+- fix locking for copy up (reported by Al Viro)
+
+- locking analysis of copy up vs. directory rename added as a comment
+
+- tested with lockdep, fixed one lock annotation
+
+- other bug fixes
+
+------------------------------------------------------------------------------
+Changes from v6 to v7
+
+- added patches from Felix Fietkau to fix deadlocks on jffs2
+
+- optimized directory removal
+
+- properly clean up after copy-up and other failures
+
+------------------------------------------------------------------------------
+Changes from v5 to v6
+
+- optimize directory merging
+
+  o use rbtree for weeding out duplicates
+
+  o use a cursor for current position within the stream
+
+- instead of f_op->open_other(), implement i_op->open()
+
+- don't share inodes for non-directory dentries - for now.  I hope
+  this can come back once RCU lookup code has settled.
+
+- misc bug fixes
+
+------------------------------------------------------------------------------
+Changes from v4 to v5
+
+- fix copying up if fs doesn't support xattrs (Andy Whitcroft)
+
+- clone mounts to be used internally to access the underlying
+  filesystems
+
+------------------------------------------------------------------------------
+Changes from v3 to v4
+
+- export security_inode_permission to allow overlayfs to be modular
+  (Andy Whitcroft)
+
+- add statfs support (Andy Whitcroft)
+
+- change BUG_ON to WARN_ON
+
+- Revert "vfs: add flag to allow rename to same inode", instead
+  introduce s_op->is_same_inode()
+
+- overlayfs: fix rename to self
+
+- fix whiteout after rename
+
+------------------------------------------------------------------------------
+Changes from v2 to v3
+
+ - Minimal remount support.  As overlayfs reflects the 'readonly'
+   mount status in write-access to the upper filesystem, we must
+   handle remount and either drop or take write access when the ro
+   status changes. (NeilBrown)
+
+ - Use correct seek function for directories.  It is incorrect to call
+   generic_llseek_file on a file from a different filesystem.  For
+   that we must use the seek function that the filesystem defines,
+   which is called by vfs_llseek.  Also, we only want to seek the
+   realfile when is_real is true.  Otherwise we just want to update
+   our own f_pos pointer, so use generic_llseek_file for
+   that. (NeilBrown)
+
+ - Initialise is_real before use.  The previous patch can use
+   od->is_real before it is properly initialised is llseek is called
+   before readdir.  So factor out the initialisation of is_real and
+   call it from both readdir and llseek when f_pos is 0. (NeilBrown)
+
+ - Rename ovl_fill_cache to ovl_dir_read (NeilBrown)
+
+ - Tiny optimisation in open_other handling (NeilBrown)
+
+ - Assorted updates to Documentation/filesystems/overlayfs.txt (NeilBrown)
+
+ - Make copy-up work for >=4G files, make it killable during copy-up.
+   Need to fix recovery after a failed/interrupted copy-up.
+
+ - Store and reference upper/lower dentries in overlay dentries.
+   Store and reference upper/lower vfsmounts in overlay superblock.
+
+ - Add necessary barriers for setting upper dentry in copyup and for
+   retrieving upper dentry locklessly.
+
+ - Make sure the right file is used for directory fsync() after
+   copy-up.
+
+ - Add locking to ovl_dir_llseek() to prevent concurrent call of
+   ovl_dir_reset() with ovl_dir_read().
+
+ - Get rid of ovl_dentry_iput().  The VFS doesn't provide enough
+   locking for this function that the contents of ->d_fsdata could be
+   safely updated.
+
+ - After copying up a non-directory unhash the dentry.  This way the
+   lower dentry ref, which is no longer necessary, can go away.  This
+   revealed a use-after-free bug in truncate handling in
+   fs/namei.c:finish_open().
+
+ - Fix if a copy-up happens between the follow_linka the put_link
+   calls.
+
+ - Replace some WARN_ONs with BUG_ON.  Some things just _really_
+   shouldn't happen.
+
+ - Extract common code from ovl_unlink and ovl_rmdir to a helper
+   function.
+
+ - After unlink and rmdir unhash the dentry.  This will get rid of the
+   lower and upper dentry references after there are no more users of
+   the deleted dentry.  This is a safe replacement for the removed
+   ->d_iput() functionality.
+
+ - Added checks to unlink, rmdir and rename to verify that the
+   parent-child relationship in the upper filesystem matches that of
+   the overlay.  This is necessary to prevent crash and/or corruption
+   if the upper filesystem topology is being modified while part of
+   the overlay.
+
+ - Optimize checking whiteout and opaque attributes.
+
+ - Optimize copy-up on truncate: don't copy up whole file before
+   truncating
+
+ - Misc bug fixes
+
+------------------------------------------------------------------------------
+Changes from v1 to v2
+
+ - rename "hybrid union filesystem" to "overlay filesystem" or overlayfs
+
+ - added documentation written by Neil
+
+ - correct st_dev for directories (reported by Neil)
+
+ - use getattr() to get attributes from the underlying filesystems,
+   this means that now an overlay filesystem itself can be the lower,
+   read-only layer of another overlay
+
+ - listxattr filters out private extended attributes
+
+ - get write ref on the upper layer on mount unless the overlay
+   itself is mounted read-only
+
+ - raise capabilities for copy up, dealing with whiteouts and opaque
+   directories.  Now the overlay works for non-root users as well
+
+ - "rm -rf" didn't work correctly in all cases if the directory was
+   copied up between opendir and the first readdir, this is now fixed
+   (and the directory operations consolidated)
+
+ - simplified copy up, this broke optimization for truncate and
+   open(O_TRUNC) (now file is copied up to be immediately truncated,
+   will fix)
+
+ - st_nlink for merged directories set to 1, this is an "illegal"
+   value that normal filesystems never have but some use it to
+   indicate that the number of subdirectories is unknown.  Utilities
+   (find, ...) seem to tolerate this well.
+
+ - misc fixes I forgot about
+
