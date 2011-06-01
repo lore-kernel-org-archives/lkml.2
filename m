@@ -1,123 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759701Ab1FATrq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:47:46 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:59160 "EHLO duck.linux-mips.net"
+	id S1759763Ab1FATsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 15:48:13 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:59185 "EHLO duck.linux-mips.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759673Ab1FATrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:47:43 -0400
-Message-Id: <20110601180610.913463093@duck.linux-mips.net>
+	id S1759746Ab1FATsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 15:48:10 -0400
+Message-Id: <20110601180610.984881988@duck.linux-mips.net>
 User-Agent: quilt/0.48-1
-Date: Wed, 01 Jun 2011 19:05:08 +0100
+Date: Wed, 01 Jun 2011 19:05:09 +0100
 From: ralf@linux-mips.org
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-mips@linux-mips.org,
+Cc: Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [patch 12/14] i8253: Move remaining content and delete <asm/i8253.h>
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-alpha@vger.kernel.org, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: [patch 13/14] PCSPKR: Cleanup Kconfig dependencies
 References: <20110601180456.801265664@duck.linux-mips.net>
-Content-Disposition: inline; filename=i8253-sort-remaining-definitions.patch
+Content-Disposition: inline; filename=i8253-use-aux-symbol-for-pcspkr-config.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no really good other place but one line for two out of three
-architectures that have a <asm/i8253.h> file doesn't justify this files
-existence.
+Lenghty lists of the kind "depends on ARCH1 || ARCH2 ... || ARCH123" are
+usually either wrong or too coarse grained.  Or plain an ugly sin.
 
 Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-mips@linux-mips.org
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
+Cc: linux-alpha@vger.kernel.org
+Cc: linux-mips@linux-mips.org
+Cc: linuxppc-dev@lists.ozlabs.org
 
- arch/arm/include/asm/i8253.h  |    4 ----
- arch/mips/include/asm/i8253.h |   10 ----------
- arch/mips/include/asm/time.h  |    5 +++++
- arch/x86/include/asm/i8253.h  |    6 ------
- arch/x86/include/asm/time.h   |    1 +
- include/linux/i8253.h         |    1 -
- 6 files changed, 6 insertions(+), 21 deletions(-)
+ arch/alpha/Kconfig                     |    1 +
+ arch/mips/Kconfig                      |    1 +
+ arch/powerpc/platforms/chrp/Kconfig    |    1 +
+ arch/powerpc/platforms/prep/Kconfig    |    1 +
+ arch/powerpc/platforms/pseries/Kconfig |    1 +
+ arch/x86/Kconfig                       |    1 +
+ init/Kconfig                           |    5 ++++-
+ 7 files changed, 10 insertions(+), 1 deletion(-)
 
-Index: linux-i8253/arch/x86/include/asm/i8253.h
+Index: linux-mips/arch/alpha/Kconfig
 ===================================================================
---- linux-i8253.orig/arch/x86/include/asm/i8253.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef _ASM_X86_I8253_H
--#define _ASM_X86_I8253_H
--
--extern void setup_pit_timer(void);
--
--#endif /* _ASM_X86_I8253_H */
-Index: linux-i8253/include/linux/i8253.h
+--- linux-mips.orig/arch/alpha/Kconfig
++++ linux-mips/arch/alpha/Kconfig
+@@ -6,6 +6,7 @@ config ALPHA
+ 	select HAVE_OPROFILE
+ 	select HAVE_SYSCALL_WRAPPERS
+ 	select HAVE_IRQ_WORK
++	select HAVE_PCSPKR_PLATFORM
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_DMA_ATTRS
+ 	select HAVE_GENERIC_HARDIRQS
+Index: linux-mips/arch/mips/Kconfig
 ===================================================================
---- linux-i8253.orig/include/linux/i8253.h
-+++ linux-i8253/include/linux/i8253.h
-@@ -12,7 +12,6 @@
- #include <linux/param.h>
- #include <linux/spinlock.h>
- #include <linux/timex.h>
--#include <asm/i8253.h>
+--- linux-mips.orig/arch/mips/Kconfig
++++ linux-mips/arch/mips/Kconfig
+@@ -5,6 +5,7 @@ config MIPS
+ 	select HAVE_IDE
+ 	select HAVE_OPROFILE
+ 	select HAVE_IRQ_WORK
++	select HAVE_PCSPKR_PLATFORM
+ 	select HAVE_PERF_EVENTS
+ 	select PERF_USE_VMALLOC
+ 	select HAVE_ARCH_KGDB
+Index: linux-mips/arch/powerpc/platforms/chrp/Kconfig
+===================================================================
+--- linux-mips.orig/arch/powerpc/platforms/chrp/Kconfig
++++ linux-mips/arch/powerpc/platforms/chrp/Kconfig
+@@ -1,6 +1,7 @@
+ config PPC_CHRP
+ 	bool "Common Hardware Reference Platform (CHRP) based machines"
+ 	depends on 6xx
++	select HAVE_PCSPKR_PLATFORM
+ 	select MPIC
+ 	select PPC_I8259
+ 	select PPC_INDIRECT_PCI
+Index: linux-mips/arch/powerpc/platforms/prep/Kconfig
+===================================================================
+--- linux-mips.orig/arch/powerpc/platforms/prep/Kconfig
++++ linux-mips/arch/powerpc/platforms/prep/Kconfig
+@@ -1,6 +1,7 @@
+ config PPC_PREP
+ 	bool "PowerPC Reference Platform (PReP) based machines"
+ 	depends on 6xx && BROKEN
++	select HAVE_PCSPKR_PLATFORM
+ 	select MPIC
+ 	select PPC_I8259
+ 	select PPC_INDIRECT_PCI
+Index: linux-mips/arch/powerpc/platforms/pseries/Kconfig
+===================================================================
+--- linux-mips.orig/arch/powerpc/platforms/pseries/Kconfig
++++ linux-mips/arch/powerpc/platforms/pseries/Kconfig
+@@ -1,6 +1,7 @@
+ config PPC_PSERIES
+ 	depends on PPC64 && PPC_BOOK3S
+ 	bool "IBM pSeries & new (POWER5-based) iSeries"
++	select HAVE_PCSPKR_PLATFORM
+ 	select MPIC
+ 	select PCI_MSI
+ 	select PPC_XICS
+Index: linux-mips/arch/x86/Kconfig
+===================================================================
+--- linux-mips.orig/arch/x86/Kconfig
++++ linux-mips/arch/x86/Kconfig
+@@ -20,6 +20,7 @@ config X86
+ 	select HAVE_UNSTABLE_SCHED_CLOCK
+ 	select HAVE_IDE
+ 	select HAVE_OPROFILE
++	select HAVE_PCSPKR_PLATFORM
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_IRQ_WORK
+ 	select HAVE_IOREMAP_PROT
+Index: linux-mips/init/Kconfig
+===================================================================
+--- linux-mips.orig/init/Kconfig
++++ linux-mips/init/Kconfig
+@@ -1001,12 +1001,15 @@ config ELF_CORE
  
- /* i8253A PIT registers */
- #define PIT_MODE	0x43
-Index: linux-i8253/arch/x86/include/asm/time.h
-===================================================================
---- linux-i8253.orig/arch/x86/include/asm/time.h
-+++ linux-i8253/arch/x86/include/asm/time.h
-@@ -6,6 +6,7 @@
+ config PCSPKR_PLATFORM
+ 	bool "Enable PC-Speaker support" if EXPERT
+-	depends on ALPHA || X86 || MIPS || PPC_PREP || PPC_CHRP || PPC_PSERIES
++	depends on HAVE_PCSPKR_PLATFORM
+ 	default y
+ 	help
+           This option allows to disable the internal PC-Speaker
+           support, saving some memory.
  
- extern void hpet_time_init(void);
- extern void time_init(void);
-+extern void setup_pit_timer(void);
- 
- extern struct clock_event_device *global_clock_event;
- 
-Index: linux-i8253/arch/mips/include/asm/i8253.h
-===================================================================
---- linux-i8253.orig/arch/mips/include/asm/i8253.h
-+++ /dev/null
-@@ -1,10 +0,0 @@
--/*
-- *  Machine specific IO port address definition for generic.
-- *  Written by Osamu Tomita <tomita@cinet.co.jp>
-- */
--#ifndef __ASM_I8253_H
--#define __ASM_I8253_H
--
--extern void setup_pit_timer(void);
--
--#endif /* __ASM_I8253_H */
-Index: linux-i8253/arch/arm/include/asm/i8253.h
-===================================================================
---- linux-i8253.orig/arch/arm/include/asm/i8253.h
-+++ /dev/null
-@@ -1,4 +0,0 @@
--#ifndef __ASMARM_I8253_H
--#define __ASMARM_I8253_H
--
--#endif
-Index: linux-i8253/arch/mips/include/asm/time.h
-===================================================================
---- linux-i8253.orig/arch/mips/include/asm/time.h
-+++ linux-i8253/arch/mips/include/asm/time.h
-@@ -36,6 +36,11 @@ extern int rtc_mips_set_mmss(unsigned lo
- extern void plat_time_init(void);
- 
- /*
-+ * Initialize i8253 / i8254 PIT clockevent device.
-+ */
-+extern void setup_pit_timer(void);
++config HAVE_PCSPKR_PLATFORM
++	bool
 +
-+/*
-  * mips_hpt_frequency - must be set if you intend to use an R4k-compatible
-  * counter as a timer interrupt source.
-  */
+ config BASE_FULL
+ 	default y
+ 	bool "Enable full-sized data structures for core" if EXPERT
 
 
