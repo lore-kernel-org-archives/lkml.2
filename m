@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933038Ab1FAAqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 20:46:20 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:50539 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932955Ab1FAAqT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 20:46:19 -0400
-X-Nat-Received: from [202.181.97.72]:58224 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1306889171.7683
-Message-Id: <201106010046.p510kBaM004304@www262.sakura.ne.jp>
-Subject: Re: [PATCH] AppArmor: fix oops in apparmor_setprocattr
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: jmorris@namei.org
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com
+	id S933052Ab1FAAsU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 20:48:20 -0400
+Received: from trent.utfs.org ([194.246.123.103]:39382 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932673Ab1FAAsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 20:48:19 -0400
+Date: Tue, 31 May 2011 17:48:17 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux ppc dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: 3.0-rc1: powerpc hangs at Kernel virtual memory layout
+In-Reply-To: <1306887942.29297.10.camel@pasglop>
+Message-ID: <alpine.DEB.2.01.1105311744000.21697@trent.utfs.org>
+References: <alpine.DEB.2.01.1105311644010.21697@trent.utfs.org> <1306887942.29297.10.camel@pasglop>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Wed, 01 Jun 2011 09:46:11 +0900
-References: <20110531183141.GH19633@outflux.net> <alpine.LRH.2.00.1106011024150.16178@tundra.namei.org>
-In-Reply-To: <alpine.LRH.2.00.1106011024150.16178@tundra.namei.org>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 31052011 #5451850, status: clean
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Morris wrote:
-> Is this trigger able by unprivileged users?
+On Wed, 1 Jun 2011 at 10:25, Benjamin Herrenschmidt wrote:
+> Hrm, I had it working on a pair of powerbooks yesterday. Can you try
+> something like "udbg-immortal" on your kernel command line to see if
+> that makes a difference in the output ?
 
-Anybody who can call .setprocattr LSM hook can trigger this bug, but for most
-configurations BUG_ON() will prevent NULL pointer dereference.
+I'll try in a minute.
 
-179 int aa_audit(int type, struct aa_profile *profile, gfp_t gfp,
-180              struct common_audit_data *sa,
-181              void (*cb) (struct audit_buffer *, void *))
-182 {
-183         BUG_ON(!profile);
- 
-> From which upstream commit is this an issue?
+In the meantime, "git bisect" behaves kinda weird, I don't know what went 
+wrong here:
 
-Since 2.6.36.
+ $ git bisect start
+ $ git bisect good         # Linux 2.6.39
+ $ git bisect bad v3.0-rc1 # Linux 3.0-rc1
+ $ git bisect bad          # c44dead70a...
+ $ git bisect bad          # d93515611b..
+
+...yet the ./Makefile shows[0] that I'm already way behind: 2.6.39-rc2. 
+Maybe "git bisect" got confused with that whole 2.6.x -> 3.0 renaming?
+
+Christian.
+
+[0] http://nerdbynature.de/bits/3.0-rc1/
+-- 
+BOFH excuse #383:
+
+Your processor has taken a ride to Heaven's Gate on the UFO behind Hale-Bopp's comet.
