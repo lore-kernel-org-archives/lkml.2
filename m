@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162108Ab1FAJFa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:05:30 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43976 "EHLO mx1.suse.de"
+	id S1162040Ab1FAIRD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:17:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43436 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161955Ab1FAIQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:16:49 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:04:29 2011
-Message-Id: <20110601080428.169727909@blue.kroah.org>
+	id S1161994Ab1FAIQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:16:54 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:04:31 2011
+Message-Id: <20110601080429.915817617@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:53 +0900
+Date: Wed, 01 Jun 2011 17:00:54 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Alan Stern <stern@rowland.harvard.edu>,
+        Rodolfo Giometti <giometti@linux.it>, Olav Kongas <ok@artecdesign.ee>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [117/146] OHCI: fix regression caused by nVidia shutdown workaround
+Subject: [118/146] USB: remove remaining usages of hcd->state from usbcore and
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +26,193 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ fix regression
 
 From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 2b7aaf503d56216b847c8265421d2a7d9b42df3e upstream.
+commit 69fff59de4d844f8b4c2454c3c23d32b69dcbfd7 upstream.
 
-This patch (as1463) fixes a regression caused by commit
-3df7169e73fc1d71a39cffeacc969f6840cdf52b (OHCI: work around for nVidia
-shutdown problem).
+This patch (as1467) removes the last usages of hcd->state from
+usbcore.  We no longer check to see if an interrupt handler finds that
+a controller has died; instead we rely on host controller drivers to
+make an explicit call to usb_hc_died().
 
-The original problem encountered by people using NVIDIA chipsets was
-that USB devices were not turning off when the system shut down.  For
-example, the LED on an optical mouse would remain on, draining a
-laptop's battery.  The problem was caused by a bug in the chipset; an
-OHCI controller in the Reset state would continue to drive a bus reset
-signal even after system shutdown.  The workaround was to put the
-controllers into the Suspend state instead.
+This fixes a regression introduced by commit
+9b37596a2e860404503a3f2a6513db60c296bfdc (USB: move usbcore away from
+hcd->state).  It used to be that when a controller shared an IRQ with
+another device and an interrupt arrived while hcd->state was set to
+HC_STATE_HALT, the interrupt handler would be skipped.  The commit
+removed that test; as a result the current code doesn't skip calling
+the handler and ends up believing the controller has died, even though
+it's only temporarily stopped.  The solution is to ignore HC_STATE_HALT
+following the handler's return.
 
-It turns out that later NVIDIA chipsets do not suffer from this bug.
-Instead some have the opposite bug: If a system is shut down while an
-OHCI controller is in the Suspend state, USB devices remain powered!
-On other systems, shutting down with a Suspended controller causes the
-system to reboot immediately.  Thus, working around the original bug
-on some machines exposes other bugs on other machines.
+As a consequence of this change, several of the host controller
+drivers need to be modified.  They can no longer implicitly rely on
+usbcore realizing that a controller has died because of hcd->state.
+The patch adds calls to usb_hc_died() in the appropriate places.
 
-The best solution seems to be to limit the workaround to OHCI
-controllers with a low-numbered PCI product ID.  I don't know exactly
-at what point NVIDIA changed their chipsets; the value used here is a
-guess.  So far it was worked out okay for all the people who have
-tested it.
-
-This fixes Bugzilla #35032.
+The patch also changes a few of the interrupt handlers.  They don't
+expect to be called when hcd->state is equal to HC_STATE_HALT, even if
+the controller is still alive.  Early returns were added to avoid any
+confusion.
 
 Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Andre "Osku" Schmidt <andre.osku.schmidt@googlemail.com>
-Tested-by: Yury Siamashka <yurand2@gmail.com>
+Tested-by: Manuel Lauss <manuel.lauss@googlemail.com>
+CC: Rodolfo Giometti <giometti@linux.it>
+CC: Olav Kongas <ok@artecdesign.ee>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ohci-pci.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/usb/core/hcd.c          |    5 +----
+ drivers/usb/host/ehci-hcd.c     |    4 +++-
+ drivers/usb/host/ehci-sched.c   |    8 ++++++--
+ drivers/usb/host/isp116x-hcd.c  |    1 +
+ drivers/usb/host/ohci-hcd.c     |    4 +++-
+ drivers/usb/host/oxu210hp-hcd.c |    6 +++++-
+ 6 files changed, 19 insertions(+), 9 deletions(-)
 
---- a/drivers/usb/host/ohci-pci.c
-+++ b/drivers/usb/host/ohci-pci.c
-@@ -207,10 +207,18 @@ static int ohci_quirk_amd700(struct usb_
-  */
- static int ohci_quirk_nvidia_shutdown(struct usb_hcd *hcd)
- {
-+	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
- 	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -983,7 +983,7 @@ static int register_root_hub(struct usb_
+ 		spin_unlock_irq (&hcd_root_hub_lock);
  
--	ohci->flags |= OHCI_QUIRK_SHUTDOWN;
--	ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
-+	/* Evidently nVidia fixed their later hardware; this is a guess at
-+	 * the changeover point.
-+	 */
-+#define PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_USB		0x026d
-+
-+	if (pdev->device < PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_USB) {
-+		ohci->flags |= OHCI_QUIRK_SHUTDOWN;
-+		ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
+ 		/* Did the HC die before the root hub was registered? */
+-		if (HCD_DEAD(hcd) || hcd->state == HC_STATE_HALT)
++		if (HCD_DEAD(hcd))
+ 			usb_hc_died (hcd);	/* This time clean up */
+ 	}
+ 
+@@ -2103,9 +2103,6 @@ irqreturn_t usb_hcd_irq (int irq, void *
+ 		rc = IRQ_NONE;
+ 	} else {
+ 		set_bit(HCD_FLAG_SAW_IRQ, &hcd->flags);
+-
+-		if (unlikely(hcd->state == HC_STATE_HALT))
+-			usb_hc_died(hcd);
+ 		rc = IRQ_HANDLED;
+ 	}
+ 
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -776,8 +776,9 @@ static irqreturn_t ehci_irq (struct usb_
+ 		goto dead;
+ 	}
+ 
++	/* Shared IRQ? */
+ 	masked_status = status & INTR_MASK;
+-	if (!masked_status) {		/* irq sharing? */
++	if (!masked_status || unlikely(hcd->state == HC_STATE_HALT)) {
+ 		spin_unlock(&ehci->lock);
+ 		return IRQ_NONE;
+ 	}
+@@ -872,6 +873,7 @@ static irqreturn_t ehci_irq (struct usb_
+ dead:
+ 		ehci_reset(ehci);
+ 		ehci_writel(ehci, 0, &ehci->regs->configured_flag);
++		usb_hc_died(hcd);
+ 		/* generic layer kills/unlinks all urbs, then
+ 		 * uses ehci_stop to clean up the rest
+ 		 */
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -471,8 +471,10 @@ static int enable_periodic (struct ehci_
+ 	 */
+ 	status = handshake_on_error_set_halt(ehci, &ehci->regs->status,
+ 					     STS_PSS, 0, 9 * 125);
+-	if (status)
++	if (status) {
++		usb_hc_died(ehci_to_hcd(ehci));
+ 		return status;
 +	}
  
- 	return 0;
- }
+ 	cmd = ehci_readl(ehci, &ehci->regs->command) | CMD_PSE;
+ 	ehci_writel(ehci, cmd, &ehci->regs->command);
+@@ -510,8 +512,10 @@ static int disable_periodic (struct ehci
+ 	 */
+ 	status = handshake_on_error_set_halt(ehci, &ehci->regs->status,
+ 					     STS_PSS, STS_PSS, 9 * 125);
+-	if (status)
++	if (status) {
++		usb_hc_died(ehci_to_hcd(ehci));
+ 		return status;
++	}
+ 
+ 	cmd = ehci_readl(ehci, &ehci->regs->command) & ~CMD_PSE;
+ 	ehci_writel(ehci, cmd, &ehci->regs->command);
+--- a/drivers/usb/host/isp116x-hcd.c
++++ b/drivers/usb/host/isp116x-hcd.c
+@@ -612,6 +612,7 @@ static irqreturn_t isp116x_irq(struct us
+ 			/* IRQ's are off, we do no DMA,
+ 			   perfectly ready to die ... */
+ 			hcd->state = HC_STATE_HALT;
++			usb_hc_died(hcd);
+ 			ret = IRQ_HANDLED;
+ 			goto done;
+ 		}
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -773,6 +773,7 @@ static irqreturn_t ohci_irq (struct usb_
+ 	if (ints == ~(u32)0) {
+ 		disable (ohci);
+ 		ohci_dbg (ohci, "device removed!\n");
++		usb_hc_died(hcd);
+ 		return IRQ_HANDLED;
+ 	}
+ 
+@@ -780,7 +781,7 @@ static irqreturn_t ohci_irq (struct usb_
+ 	ints &= ohci_readl(ohci, &regs->intrenable);
+ 
+ 	/* interrupt for some other device? */
+-	if (ints == 0)
++	if (ints == 0 || unlikely(hcd->state == HC_STATE_HALT))
+ 		return IRQ_NOTMINE;
+ 
+ 	if (ints & OHCI_INTR_UE) {
+@@ -797,6 +798,7 @@ static irqreturn_t ohci_irq (struct usb_
+ 		} else {
+ 			disable (ohci);
+ 			ohci_err (ohci, "OHCI Unrecoverable Error, disabled\n");
++			usb_hc_died(hcd);
+ 		}
+ 
+ 		ohci_dump (ohci, 1);
+--- a/drivers/usb/host/oxu210hp-hcd.c
++++ b/drivers/usb/host/oxu210hp-hcd.c
+@@ -1884,6 +1884,7 @@ static int enable_periodic(struct oxu_hc
+ 	status = handshake(oxu, &oxu->regs->status, STS_PSS, 0, 9 * 125);
+ 	if (status != 0) {
+ 		oxu_to_hcd(oxu)->state = HC_STATE_HALT;
++		usb_hc_died(oxu_to_hcd(oxu));
+ 		return status;
+ 	}
+ 
+@@ -1909,6 +1910,7 @@ static int disable_periodic(struct oxu_h
+ 	status = handshake(oxu, &oxu->regs->status, STS_PSS, STS_PSS, 9 * 125);
+ 	if (status != 0) {
+ 		oxu_to_hcd(oxu)->state = HC_STATE_HALT;
++		usb_hc_died(oxu_to_hcd(oxu));
+ 		return status;
+ 	}
+ 
+@@ -2449,8 +2451,9 @@ static irqreturn_t oxu210_hcd_irq(struct
+ 		goto dead;
+ 	}
+ 
++	/* Shared IRQ? */
+ 	status &= INTR_MASK;
+-	if (!status) {			/* irq sharing? */
++	if (!status || unlikely(hcd->state == HC_STATE_HALT)) {
+ 		spin_unlock(&oxu->lock);
+ 		return IRQ_NONE;
+ 	}
+@@ -2516,6 +2519,7 @@ static irqreturn_t oxu210_hcd_irq(struct
+ dead:
+ 			ehci_reset(oxu);
+ 			writel(0, &oxu->regs->configured_flag);
++			usb_hc_died(hcd);
+ 			/* generic layer kills/unlinks all urbs, then
+ 			 * uses oxu_stop to clean up the rest
+ 			 */
 
 
