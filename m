@@ -1,138 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759760Ab1FATt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:49:56 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:59165 "EHLO duck.linux-mips.net"
+	id S1759856Ab1FATtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 15:49:12 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:59167 "EHLO duck.linux-mips.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759685Ab1FATrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759689Ab1FATrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 1 Jun 2011 15:47:45 -0400
-Message-Id: <20110601180610.762763451@duck.linux-mips.net>
+Message-Id: <20110601180610.832810002@duck.linux-mips.net>
 User-Agent: quilt/0.48-1
-Date: Wed, 01 Jun 2011 19:05:06 +0100
+Date: Wed, 01 Jun 2011 19:05:07 +0100
 From: ralf@linux-mips.org
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        "Venkatesh Pallipadi (Venki)" <venki@google.com>
-Subject: [patch 10/14] i8253: x86: Consolidate definitions of global_clock_event
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org
+Subject: [patch 11/14] i8253: Consolidate definitions of PIT_LATCH
 References: <20110601180456.801265664@duck.linux-mips.net>
-Content-Disposition: inline; filename=i8253-cleanup-x86-global_clock_event.patch
+Content-Disposition: inline; filename=i8253-sort-out-pit_latch-definitions.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are multiple declarations of global_clock_event in header files
-specific to particular clock event implementatiosn.  Consolidate them
-in <asm/time.h> and make sure all users include that header.
+x86 defines PIT_LATCH as LATCH which in <linux/timex.h> is defined as
+((CLOCK_TICK_RATE + HZ/2) / HZ) and <asm/timex.h> again defines
+CLOCK_TICK_RATE as PIT_TICK_RATE.
+
+MIPS defines PIT_LATCH as LATCH which in <linux/timex.h> is defined as
+((CLOCK_TICK_RATE + HZ/2) / HZ) and <asm/timex.h> again defines
+CLOCK_TICK_RATE as 1193182.
+
+ARM defines PITCH_LATCH as ((PIT_TICK_RATE + HZ / 2) / HZ) - and that's
+the sanest thing and equivalent to above definitions so use that as the
+new definition in <linux/i8253.h>.
 
 Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 To: linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
-Cc: "Venkatesh Pallipadi (Venki)" <venki@google.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-mips@linux-mips.org
 
- arch/x86/include/asm/apb_timer.h |    1 -
- arch/x86/include/asm/i8253.h     |    2 --
- arch/x86/include/asm/time.h      |    6 ++++--
- arch/x86/kernel/apb_timer.c      |    1 +
- arch/x86/kernel/apic/apic.c      |    1 +
- arch/x86/kernel/hpet.c           |    1 +
- arch/x86/kernel/i8253.c          |    1 +
- 7 files changed, 8 insertions(+), 5 deletions(-)
+ arch/arm/include/asm/i8253.h  |    2 --
+ arch/mips/include/asm/i8253.h |    2 --
+ arch/x86/include/asm/i8253.h  |    2 --
+ include/linux/i8253.h         |    4 ++++
+ 4 files changed, 4 insertions(+), 6 deletions(-)
 
-Index: linux-mips/arch/x86/include/asm/apb_timer.h
+Index: linux-mips/arch/arm/include/asm/i8253.h
 ===================================================================
---- linux-mips.orig/arch/x86/include/asm/apb_timer.h
-+++ linux-mips/arch/x86/include/asm/apb_timer.h
-@@ -50,7 +50,6 @@
- #define APBT_DEV_USED  1
+--- linux-mips.orig/arch/arm/include/asm/i8253.h
++++ linux-mips/arch/arm/include/asm/i8253.h
+@@ -1,6 +1,4 @@
+ #ifndef __ASMARM_I8253_H
+ #define __ASMARM_I8253_H
  
- extern void apbt_time_init(void);
--extern struct clock_event_device *global_clock_event;
- extern unsigned long apbt_quick_calibrate(void);
- extern int arch_setup_apbt_irqs(int irq, int trigger, int mask, int cpu);
- extern void apbt_setup_secondary_clock(void);
+-#define PIT_LATCH	((PIT_TICK_RATE + HZ / 2) / HZ)
+-
+ #endif
+Index: linux-mips/arch/mips/include/asm/i8253.h
+===================================================================
+--- linux-mips.orig/arch/mips/include/asm/i8253.h
++++ linux-mips/arch/mips/include/asm/i8253.h
+@@ -5,8 +5,6 @@
+ #ifndef __ASM_I8253_H
+ #define __ASM_I8253_H
+ 
+-#define PIT_LATCH		LATCH
+-
+ extern void setup_pit_timer(void);
+ 
+ #endif /* __ASM_I8253_H */
 Index: linux-mips/arch/x86/include/asm/i8253.h
 ===================================================================
 --- linux-mips.orig/arch/x86/include/asm/i8253.h
 +++ linux-mips/arch/x86/include/asm/i8253.h
-@@ -3,8 +3,6 @@
+@@ -1,8 +1,6 @@
+ #ifndef _ASM_X86_I8253_H
+ #define _ASM_X86_I8253_H
  
- #define PIT_LATCH	LATCH
- 
--extern struct clock_event_device *global_clock_event;
+-#define PIT_LATCH	LATCH
 -
  extern void setup_pit_timer(void);
  
  #endif /* _ASM_X86_I8253_H */
-Index: linux-mips/arch/x86/include/asm/time.h
+Index: linux-mips/include/linux/i8253.h
 ===================================================================
---- linux-mips.orig/arch/x86/include/asm/time.h
-+++ linux-mips/arch/x86/include/asm/time.h
-@@ -1,10 +1,12 @@
- #ifndef _ASM_X86_TIME_H
- #define _ASM_X86_TIME_H
+--- linux-mips.orig/include/linux/i8253.h
++++ linux-mips/include/linux/i8253.h
+@@ -9,7 +9,9 @@
+ #ifndef __LINUX_I8253_H
+ #define __LINUX_I8253_H
  
--extern void hpet_time_init(void);
--
-+#include <linux/clocksource.h>
- #include <asm/mc146818rtc.h>
++#include <linux/param.h>
+ #include <linux/spinlock.h>
++#include <linux/timex.h>
+ #include <asm/i8253.h>
  
-+extern void hpet_time_init(void);
- extern void time_init(void);
+ /* i8253A PIT registers */
+@@ -17,6 +19,8 @@
+ #define PIT_CH0		0x40
+ #define PIT_CH2		0x42
  
-+extern struct clock_event_device *global_clock_event;
++#define PIT_LATCH	((PIT_TICK_RATE + HZ/2) / HZ)
 +
- #endif /* _ASM_X86_TIME_H */
-Index: linux-mips/arch/x86/kernel/apb_timer.c
-===================================================================
---- linux-mips.orig/arch/x86/kernel/apb_timer.c
-+++ linux-mips/arch/x86/kernel/apb_timer.c
-@@ -44,6 +44,7 @@
- #include <asm/fixmap.h>
- #include <asm/apb_timer.h>
- #include <asm/mrst.h>
-+#include <asm/time.h>
+ #define inb_pit         inb_p
+ #define outb_pit        outb_p
  
- #define APBT_MASK			CLOCKSOURCE_MASK(32)
- #define APBT_SHIFT			22
-Index: linux-mips/arch/x86/kernel/apic/apic.c
-===================================================================
---- linux-mips.orig/arch/x86/kernel/apic/apic.c
-+++ linux-mips/arch/x86/kernel/apic/apic.c
-@@ -48,6 +48,7 @@
- #include <asm/hpet.h>
- #include <asm/idle.h>
- #include <asm/mtrr.h>
-+#include <asm/time.h>
- #include <asm/smp.h>
- #include <asm/mce.h>
- #include <asm/tsc.h>
-Index: linux-mips/arch/x86/kernel/hpet.c
-===================================================================
---- linux-mips.orig/arch/x86/kernel/hpet.c
-+++ linux-mips/arch/x86/kernel/hpet.c
-@@ -14,6 +14,7 @@
- 
- #include <asm/fixmap.h>
- #include <asm/hpet.h>
-+#include <asm/time.h>
- 
- #define HPET_MASK			CLOCKSOURCE_MASK(32)
- 
-Index: linux-mips/arch/x86/kernel/i8253.c
-===================================================================
---- linux-mips.orig/arch/x86/kernel/i8253.c
-+++ linux-mips/arch/x86/kernel/i8253.c
-@@ -14,6 +14,7 @@
- #include <linux/io.h>
- 
- #include <asm/hpet.h>
-+#include <asm/time.h>
- #include <asm/smp.h>
- 
- /*
 
 
