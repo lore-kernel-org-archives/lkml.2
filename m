@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207Ab1FADhX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 23:37:23 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:44860 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933173Ab1FADhV (ORCPT
+	id S1161023Ab1FADbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 23:31:06 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:50810
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933173Ab1FADbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 23:37:21 -0400
-Date: Tue, 31 May 2011 20:35:27 -0700 (PDT)
-Message-Id: <20110531.203527.92431501.davem@davemloft.net>
-To: wad@chromium.org
-Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
-        rostedt@goodmis.org, jmorris@namei.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v3 12/13] sparc: select HAVE_SECCOMP_FILTER and provide
- seccomp_execve
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1306897845-9393-12-git-send-email-wad@chromium.org>
-References: <BANLkTimNcag-ZmVTXjUoTyiuJm6jtW0DgA@mail.gmail.com>
-	<1306897845-9393-12-git-send-email-wad@chromium.org>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 31 May 2011 20:35:30 -0700 (PDT)
+	Tue, 31 May 2011 23:31:03 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 1 Jun 2011 11:35:54 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Chris Ball <cjb@laptop.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: manual merge of the mmc tree with Linus' tree
+Message-ID: <20110601033552.GA1902@S2100-06.ap.freescale.net>
+References: <20110601111320.07b07b7f.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110601111320.07b07b7f.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Will Drewry <wad@chromium.org>
-Date: Tue, 31 May 2011 22:10:44 -0500
+Hi Stephen,
 
-> Facilitate the use of CONFIG_SECCOMP_FILTER by wrapping compatibility
-> system call numbering for execve and selecting HAVE_SECCOMP_FILTER.
+On Wed, Jun 01, 2011 at 11:13:20AM +1000, Stephen Rothwell wrote:
+> Hi Chris,
 > 
-> Signed-off-by: Will Drewry <wad@chromium.org>
+> Today's linux-next merge of the mmc tree got a conflict in
+> drivers/mmc/host/sdhci-of-core.c between commit b1608d69cb80
+> ("drivercore: revert addition of of_match to struct device") from Linus'
+> tree and commit e2d0d7dc5542 ("mmc: sdhci: make sdhci-of device drivers
+> self registered") from the mmc tree.
+> 
+> The latter removes the file, so I did that (I *think* that the change
+> from the former is no longer needed, but someone should check).
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Yes, the change of b1608d69cb80 ("drivercore: revert addition of
+of_match to struct device") is no longer needed.
+
+-- 
+Regards,
+Shawn
+
