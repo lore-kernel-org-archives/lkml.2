@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162661Ab1FAIYD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:24:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44191 "EHLO mx2.suse.de"
+	id S1162797Ab1FAIYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:24:13 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44817 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162774Ab1FAIX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:23:57 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:50 2011
-Message-Id: <20110601081149.904678153@blue.kroah.org>
+	id S1162784Ab1FAIYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:24:02 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:51 2011
+Message-Id: <20110601081150.538777643@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:10 +0900
+Date: Wed, 01 Jun 2011 17:11:11 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Mack <zonque@gmail.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [100/165] ASoC: fix raumfeld platform
+        Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [101/165] HID: magicmouse: ignore ivalid report id while switching
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,159 +24,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 4418
-Lines: 152
+ modes
+Content-Length: 1542
+Lines: 48
 
-From: Daniel Mack <zonque@gmail.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 477a66948ef8683f182682cc68e8520baf8a5b43 upstream.
+commit 23746a66d7d9e73402c68ef00d708796b97ebd72 upstream.
 
-Commit f0fba2ad (ASoC: multi-component - ASoC Multi-Component Support)
-broke support for Raumfeld platforms as it didn't take into account the
-different hardware features on individual devices.
+The device reponds with 'invalid report id' when feature report switching it
+into multitouch mode is sent to it.
 
-In particular, Raumfeld speakers have no S/PDIF output, so the members
-of the snd_soc_card struct must be set dynamically.
+This has been silently ignored before 0825411ade ("HID: bt: Wait for ACK
+on Sent Reports"), but since this commit, it propagates -EIO from the _raw
+callback .
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+So let the driver ignore -EIO as response to 0xd7,0x01 report, as that's
+how the device reacts in normal mode.
+
+Sad, but following reality.
+
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=35022
+
+Tested-by: Chase Douglas <chase.douglas@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/pxa/raumfeld.c |   94 +++++++++++++++++++++++++++++------------------
- 1 file changed, 59 insertions(+), 35 deletions(-)
+ drivers/hid/hid-magicmouse.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/sound/soc/pxa/raumfeld.c
-+++ b/sound/soc/pxa/raumfeld.c
-@@ -151,13 +151,13 @@ static struct snd_soc_ops raumfeld_cs427
- 	.hw_params = raumfeld_cs4270_hw_params,
- };
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -501,9 +501,17 @@ static int magicmouse_probe(struct hid_d
+ 	}
+ 	report->size = 6;
  
--static int raumfeld_line_suspend(struct snd_soc_card *card)
-+static int raumfeld_analog_suspend(struct snd_soc_card *card)
- {
- 	raumfeld_enable_audio(false);
- 	return 0;
- }
- 
--static int raumfeld_line_resume(struct snd_soc_card *card)
-+static int raumfeld_analog_resume(struct snd_soc_card *card)
- {
- 	raumfeld_enable_audio(true);
- 	return 0;
-@@ -225,32 +225,53 @@ static struct snd_soc_ops raumfeld_ak410
- 	.hw_params = raumfeld_ak4104_hw_params,
- };
- 
--static struct snd_soc_dai_link raumfeld_dai[] = {
-+#define DAI_LINK_CS4270		\
-+{							\
-+	.name		= "CS4270",			\
-+	.stream_name	= "CS4270",			\
-+	.cpu_dai_name	= "pxa-ssp-dai.0",		\
-+	.platform_name	= "pxa-pcm-audio",		\
-+	.codec_dai_name	= "cs4270-hifi",		\
-+	.codec_name	= "cs4270-codec.0-0048",	\
-+	.ops		= &raumfeld_cs4270_ops,		\
-+}
-+
-+#define DAI_LINK_AK4104		\
-+{							\
-+	.name		= "ak4104",			\
-+	.stream_name	= "Playback",			\
-+	.cpu_dai_name	= "pxa-ssp-dai.1",		\
-+	.codec_dai_name	= "ak4104-hifi",		\
-+	.platform_name	= "pxa-pcm-audio",		\
-+	.ops		= &raumfeld_ak4104_ops,		\
-+	.codec_name	= "spi0.0",			\
-+}
-+
-+static struct snd_soc_dai_link snd_soc_raumfeld_connector_dai[] =
-+{
-+	DAI_LINK_CS4270,
-+	DAI_LINK_AK4104,
-+};
-+
-+static struct snd_soc_dai_link snd_soc_raumfeld_speaker_dai[] =
- {
--	.name		= "ak4104",
--	.stream_name	= "Playback",
--	.cpu_dai_name	= "pxa-ssp-dai.1",
--	.codec_dai_name	= "ak4104-hifi",
--	.platform_name	= "pxa-pcm-audio",
--	.ops		= &raumfeld_ak4104_ops,
--	.codec_name	= "ak4104-codec.0",
--},
--{
--	.name		= "CS4270",
--	.stream_name	= "CS4270",
--	.cpu_dai_name	= "pxa-ssp-dai.0",
--	.platform_name	= "pxa-pcm-audio",
--	.codec_dai_name	= "cs4270-hifi",
--	.codec_name	= "cs4270-codec.0-0048",
--	.ops		= &raumfeld_cs4270_ops,
--},};
--
--static struct snd_soc_card snd_soc_raumfeld = {
--	.name		= "Raumfeld",
--	.dai_link	= raumfeld_dai,
--	.suspend_post	= raumfeld_line_suspend,
--	.resume_pre	= raumfeld_line_resume,
--	.num_links	= ARRAY_SIZE(raumfeld_dai),
-+	DAI_LINK_CS4270,
-+};
-+
-+static struct snd_soc_card snd_soc_raumfeld_connector = {
-+	.name		= "Raumfeld Connector",
-+	.dai_link	= snd_soc_raumfeld_connector_dai,
-+	.num_links	= ARRAY_SIZE(snd_soc_raumfeld_connector_dai),
-+	.suspend_post	= raumfeld_analog_suspend,
-+	.resume_pre	= raumfeld_analog_resume,
-+};
-+
-+static struct snd_soc_card snd_soc_raumfeld_speaker = {
-+	.name		= "Raumfeld Speaker",
-+	.dai_link	= snd_soc_raumfeld_speaker_dai,
-+	.num_links	= ARRAY_SIZE(snd_soc_raumfeld_speaker_dai),
-+	.suspend_post	= raumfeld_analog_suspend,
-+	.resume_pre	= raumfeld_analog_resume,
- };
- 
- static struct platform_device *raumfeld_audio_device;
-@@ -271,22 +292,25 @@ static int __init raumfeld_audio_init(vo
- 
- 	set_max9485_clk(MAX9485_MCLK_FREQ_122880);
- 
--	/* Register LINE and SPDIF */
-+	/* Register analog device */
- 	raumfeld_audio_device = platform_device_alloc("soc-audio", 0);
- 	if (!raumfeld_audio_device)
- 		return -ENOMEM;
- 
--	platform_set_drvdata(raumfeld_audio_device,
--			     &snd_soc_raumfeld);
--	ret = platform_device_add(raumfeld_audio_device);
--
--	/* no S/PDIF on Speakers */
- 	if (machine_is_raumfeld_speaker())
-+		platform_set_drvdata(raumfeld_audio_device,
-+				     &snd_soc_raumfeld_speaker);
-+
-+	if (machine_is_raumfeld_connector())
-+		platform_set_drvdata(raumfeld_audio_device,
-+				     &snd_soc_raumfeld_connector);
-+
-+	ret = platform_device_add(raumfeld_audio_device);
-+	if (ret < 0)
- 		return ret;
- 
- 	raumfeld_enable_audio(true);
--
--	return ret;
-+	return 0;
- }
- 
- static void __exit raumfeld_audio_exit(void)
++	/*
++	 * The device reponds with 'invalid report id' when feature
++	 * report switching it into multitouch mode is sent to it.
++	 *
++	 * This results in -EIO from the _raw low-level transport callback,
++	 * but there seems to be no other way of switching the mode.
++	 * Thus the super-ugly hacky success check below.
++	 */
+ 	ret = hdev->hid_output_raw_report(hdev, feature, sizeof(feature),
+ 			HID_FEATURE_REPORT);
+-	if (ret != sizeof(feature)) {
++	if (ret != -EIO) {
+ 		hid_err(hdev, "unable to request touch data (%d)\n", ret);
+ 		goto err_stop_hw;
+ 	}
 
 
