@@ -1,69 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805Ab1FALJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 07:09:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47336 "EHLO mx1.redhat.com"
+	id S1161235Ab1FALSe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 07:18:34 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58250 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758768Ab1FALJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 07:09:55 -0400
-Message-ID: <4DE61DE0.9030100@redhat.com>
-Date: Wed, 01 Jun 2011 14:09:20 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1161174Ab1FALSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 07:18:31 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: [PATCH 0/8] MFD/ASoC: TWL4030/TWL6040 changes
+Date: Wed, 1 Jun 2011 14:17:23 +0300
+Message-ID: <1306927051-8937-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.5.3
 MIME-Version: 1.0
-To: Brad Campbell <lists2009@fnarfbargle.com>
-CC: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
-References: <4DE44333.9000903@fnarfbargle.com> <20110531054729.GA16852@liondog.tnic> <4DE4B432.1090203@fnarfbargle.com> <20110531103808.GA6915@eferding.osrc.amd.com> <4DE4FA2B.2050504@fnarfbargle.com> <alpine.LSU.2.00.1105311517480.21107@sister.anvils> <4DE589C5.8030600@fnarfbargle.com> <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com> <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com>
-In-Reply-To: <4DE61A2B.7000008@fnarfbargle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2011 01:53 PM, Brad Campbell wrote:
-> On 01/06/11 17:41, Avi Kivity wrote:
->> On 06/01/2011 12:40 PM, Avi Kivity wrote:
->>>
->>> bridge and netfilter, IIRC this was also the problem last time.
->>>
->>> Do you have any ebtables loaded?
->
-> Never heard of them, but making a cursory check just in case..
->
-> brad@srv:/raid10/src/linux-2.6.39$ grep EBTABLE .config
-> # CONFIG_BRIDGE_NF_EBTABLES is not set
->
->>> Can you try building a kernel without ebtables? Without netfilter at 
->>> all?
->
-> Well, without netfilter I can't get it to crash. The problem is 
-> without netfilter I can't actually use it the way I use it to get it 
-> to crash.
->
-> I rebooted into a netfilter kernel, and did all the steps I'd used on 
-> the no-netfilter kernel and it ticked along happily.
->
-> So the result of the experiment is inconclusive. Having said that, the 
-> backtraces certainly smell networky.
->
-> To get it to crash, I have to start IE in the VM and https to the 
-> public address of the machine, which is then redirected by netfilter 
-> back into another of the VM's.
->
-> I can https directly to the other VM's address, but that does not 
-> cause it to crash, however without netfilter loaded I can't bounce off 
-> the public IP. It's all rather confusing really.
->
-> What next Sherlock?
->
+Hello,
 
-Maybe the Sherlocks at netdev@ can tell.
+The series will do three major things, and they are in one series, because they
+pretty much depending on each other, so it is easier to handle them together.
+
+1. Rename the twl4030-codec MFD driver to twl4030-audio
+Since the ASoC multicomponent introduction (2.6.37) the twl4030-codec MFD dirver
+had been using twl4030-audio to register (twl4030-codec is the ASoC codec
+driver). The documentation refers to this part of twl as audio block, so it is
+better to rename the driver as well to avoid confusion.
+
+2. Introduction of MFD driver for twl6040.
+The TWL6040 audio IC has codec and vibra functionality.
+Convert the existing ASoC codec driver to use the new MFD driver's interface.
+
+3. Vibrator driver for TWL6040 (Input/ForceFeedback driver)
+The driver itself, and support for the vibrators in SDP4430 board.
+
+The series has been tested on top of merged omap-next, asoc-next, and mfd-next.
+It applies on top of linux-next as well.
+
+Regards,
+Peter
+
+---
+Misael Lopez Cruz (3):
+  mfd: twl6040: Add initial support
+  ASoC: twl6040: Convert into TWL6040 MFD child
+  input: Add initial support for TWL6040 vibrator
+
+Peter Ujfalusi (5):
+  MFD: twl4030-codec: Rename internals from codec to audio
+  MFD: twl4030-codec -> twl4030-audio: Rename the driver
+  MFD: twl4030-audio: Rename platform data
+  MFD: twl6040: Change platform data for soc codec driver
+  OMAP4: SDP4430: Add twl6040 vibrator platform support
+
+ arch/arm/mach-omap2/board-3430sdp.c          |    8 +-
+ arch/arm/mach-omap2/board-4430sdp.c          |   50 +++-
+ arch/arm/mach-omap2/board-devkit8000.c       |    8 +-
+ arch/arm/mach-omap2/board-igep0020.c         |    8 +-
+ arch/arm/mach-omap2/board-omap3beagle.c      |    8 +-
+ arch/arm/mach-omap2/board-omap3evm.c         |    8 +-
+ arch/arm/mach-omap2/board-omap3pandora.c     |    8 +-
+ arch/arm/mach-omap2/board-omap3stalker.c     |    8 +-
+ arch/arm/mach-omap2/board-omap3touchbook.c   |    8 +-
+ arch/arm/mach-omap2/board-overo.c            |    8 +-
+ arch/arm/mach-omap2/board-rx51-peripherals.c |    6 +-
+ arch/arm/mach-omap2/board-zoom-peripherals.c |   14 +-
+ arch/arm/plat-omap/include/plat/irqs.h       |   12 +-
+ drivers/input/misc/Kconfig                   |   13 +-
+ drivers/input/misc/Makefile                  |    1 +
+ drivers/input/misc/twl4030-vibra.c           |   12 +-
+ drivers/input/misc/twl6040-vibra.c           |  428 +++++++++++++++++++
+ drivers/mfd/Kconfig                          |    8 +-
+ drivers/mfd/Makefile                         |    3 +-
+ drivers/mfd/twl-core.c                       |   13 +-
+ drivers/mfd/twl4030-audio.c                  |  278 ++++++++++++
+ drivers/mfd/twl4030-codec.c                  |  277 ------------
+ drivers/mfd/twl6040-core.c                   |  588 ++++++++++++++++++++++++++
+ drivers/mfd/twl6040-irq.c                    |  205 +++++++++
+ include/linux/i2c/twl.h                      |   21 +-
+ include/linux/mfd/twl4030-audio.h            |  272 ++++++++++++
+ include/linux/mfd/twl4030-codec.h            |  272 ------------
+ include/linux/mfd/twl6040.h                  |  260 ++++++++++++
+ sound/soc/codecs/Kconfig                     |    3 +-
+ sound/soc/codecs/twl4030.c                   |   22 +-
+ sound/soc/codecs/twl6040.c                   |  426 ++++---------------
+ sound/soc/codecs/twl6040.h                   |  118 -----
+ sound/soc/omap/sdp3430.c                     |    2 +-
+ sound/soc/omap/sdp4430.c                     |    2 +
+ sound/soc/omap/zoom2.c                       |    2 +-
+ 35 files changed, 2290 insertions(+), 1090 deletions(-)
+ create mode 100644 drivers/input/misc/twl6040-vibra.c
+ create mode 100644 drivers/mfd/twl4030-audio.c
+ delete mode 100644 drivers/mfd/twl4030-codec.c
+ create mode 100644 drivers/mfd/twl6040-core.c
+ create mode 100644 drivers/mfd/twl6040-irq.c
+ create mode 100644 include/linux/mfd/twl4030-audio.h
+ delete mode 100644 include/linux/mfd/twl4030-codec.h
+ create mode 100644 include/linux/mfd/twl6040.h
 
 -- 
-error compiling committee.c: too many arguments to function
+1.7.5.3
 
