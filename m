@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162881Ab1FAIZH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:25:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44247 "EHLO mx2.suse.de"
+	id S1161814Ab1FAIkh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:40:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44258 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162864Ab1FAIYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:24:54 -0400
+	id S1162856Ab1FAIZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:25:03 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:57 2011
-Message-Id: <20110601081156.680401239@blue.kroah.org>
+Message-Id: <20110601081157.297115487@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:21 +0900
+Date: Wed, 01 Jun 2011 17:11:22 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hermann Kneissel <herkne@gmx.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [111/165] USB: gamin_gps: Fix for data transfer problems in native
+        "Marius B. Kotsbak" <marius@kotsbak.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [112/165] Bind only modem AT command endpoint to option module.
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,118 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- mode
-Content-Length: 3831
-Lines: 110
+Content-Length: 1770
+Lines: 40
 
-From: Hermann Kneissel <herkne@gmx.de>
+From: "Marius B. Kotsbak" <marius@kotsbak.com>
 
-commit b4026c4584cd70858d4d3450abfb1cd0714d4f32 upstream.
+commit 15b2f3204a5c878c32939094775fb7349f707263 upstream.
 
-This patch fixes a problem where data received from the gps is sometimes
-transferred incompletely to the serial port. If used in native mode now
-all data received via the bulk queue will be forwarded to the serial
-port.
+Network interface is handled by upcoming gt_b3730 module.
 
-Signed-off-by: Hermann Kneissel <herkne@gmx.de>
+Removed "GT-B3710" from comment, it is another modem with another USB ID.
+
+Signed-off-by: Marius B. Kotsbak <marius@kotsbak.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/garmin_gps.c |   20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ drivers/usb/serial/option.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/garmin_gps.c
-+++ b/drivers/usb/serial/garmin_gps.c
-@@ -1,7 +1,7 @@
- /*
-  * Garmin GPS driver
-  *
-- * Copyright (C) 2006-2009 Hermann Kneissel herkne@users.sourceforge.net
-+ * Copyright (C) 2006-2011 Hermann Kneissel herkne@gmx.de
-  *
-  * The latest version of the driver can be found at
-  * http://sourceforge.net/projects/garmin-gps/
-@@ -51,7 +51,7 @@ static int debug;
-  */
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -972,7 +972,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
+-	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730/GT-B3710 LTE USB modem.*/
++	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
+@@ -1109,6 +1109,12 @@ static int option_probe(struct usb_seria
+ 		serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
+ 		return -ENODEV;
  
- #define VERSION_MAJOR	0
--#define VERSION_MINOR	33
-+#define VERSION_MINOR	36
++	/* Don't bind network interface on Samsung GT-B3730, it is handled by a separate module */
++	if (serial->dev->descriptor.idVendor == SAMSUNG_VENDOR_ID &&
++		serial->dev->descriptor.idProduct == SAMSUNG_PRODUCT_GT_B3730 &&
++		serial->interface->cur_altsetting->desc.bInterfaceClass != USB_CLASS_CDC_DATA)
++		return -ENODEV;
++
+ 	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private), GFP_KERNEL);
  
- #define _STR(s) #s
- #define _DRIVER_VERSION(a, b) "v" _STR(a) "." _STR(b)
-@@ -410,6 +410,7 @@ static int gsp_send_ack(struct garmin_da
-  */
- static int gsp_rec_packet(struct garmin_data *garmin_data_p, int count)
- {
-+	unsigned long flags;
- 	const __u8 *recpkt = garmin_data_p->inbuffer+GSP_INITIAL_OFFSET;
- 	__le32 *usbdata = (__le32 *) garmin_data_p->inbuffer;
- 
-@@ -458,7 +459,9 @@ static int gsp_rec_packet(struct garmin_
- 	/* if this was an abort-transfer command, flush all
- 	   queued data. */
- 	if (isAbortTrfCmnd(garmin_data_p->inbuffer)) {
-+		spin_lock_irqsave(&garmin_data_p->lock, flags);
- 		garmin_data_p->flags |= FLAGS_DROP_DATA;
-+		spin_unlock_irqrestore(&garmin_data_p->lock, flags);
- 		pkt_clear(garmin_data_p);
- 	}
- 
-@@ -943,7 +946,7 @@ static int garmin_open(struct tty_struct
- 	spin_lock_irqsave(&garmin_data_p->lock, flags);
- 	garmin_data_p->mode  = initial_mode;
- 	garmin_data_p->count = 0;
--	garmin_data_p->flags = 0;
-+	garmin_data_p->flags &= FLAGS_SESSION_REPLY1_SEEN;
- 	spin_unlock_irqrestore(&garmin_data_p->lock, flags);
- 
- 	/* shutdown any bulk reads that might be going on */
-@@ -1178,7 +1181,8 @@ static int garmin_write_room(struct tty_
- 
- 
- static void garmin_read_process(struct garmin_data *garmin_data_p,
--				 unsigned char *data, unsigned data_length)
-+				 unsigned char *data, unsigned data_length,
-+				 int bulk_data)
- {
- 	unsigned long flags;
- 
-@@ -1193,7 +1197,8 @@ static void garmin_read_process(struct g
- 		   send it directly to the tty port */
- 		if (garmin_data_p->flags & FLAGS_QUEUING) {
- 			pkt_add(garmin_data_p, data, data_length);
--		} else if (getLayerId(data) == GARMIN_LAYERID_APPL) {
-+		} else if (bulk_data ||
-+			   getLayerId(data) == GARMIN_LAYERID_APPL) {
- 
- 			spin_lock_irqsave(&garmin_data_p->lock, flags);
- 			garmin_data_p->flags |= APP_RESP_SEEN;
-@@ -1237,7 +1242,7 @@ static void garmin_read_bulk_callback(st
- 	usb_serial_debug_data(debug, &port->dev,
- 				__func__, urb->actual_length, data);
- 
--	garmin_read_process(garmin_data_p, data, urb->actual_length);
-+	garmin_read_process(garmin_data_p, data, urb->actual_length, 1);
- 
- 	if (urb->actual_length == 0 &&
- 			0 != (garmin_data_p->flags & FLAGS_BULK_IN_RESTART)) {
-@@ -1346,7 +1351,7 @@ static void garmin_read_int_callback(str
- 			__func__, garmin_data_p->serial_num);
- 	}
- 
--	garmin_read_process(garmin_data_p, data, urb->actual_length);
-+	garmin_read_process(garmin_data_p, data, urb->actual_length, 0);
- 
- 	port->interrupt_in_urb->dev = port->serial->dev;
- 	retval = usb_submit_urb(urb, GFP_ATOMIC);
-@@ -1461,6 +1466,7 @@ static int garmin_attach(struct usb_seri
- 	garmin_data_p->timer.function = timeout_handler;
- 	garmin_data_p->port = port;
- 	garmin_data_p->state = 0;
-+	garmin_data_p->flags = 0;
- 	garmin_data_p->count = 0;
- 	usb_set_serial_port_data(port, garmin_data_p);
- 
+ 	if (!data)
 
 
