@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab1FAGZG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 02:25:06 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:35111 "EHLO mx2.mail.elte.hu"
+	id S1753796Ab1FAGZy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 02:25:54 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:55163 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752714Ab1FAGZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 02:25:02 -0400
-Date: Wed, 1 Jun 2011 08:24:48 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@amd64.org>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86 fixes
-Message-ID: <20110601062448.GA28134@elte.hu>
-References: <20110531163022.GA15435@elte.hu>
- <1306859709.20175.27.camel@Joe-Laptop>
- <20110531181650.GA1854@gere.osrc.amd.com>
- <BANLkTi=ysOYxxu1_PV3R1BNgjM996A2CKg@mail.gmail.com>
- <20110601060046.GA27375@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110601060046.GA27375@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753680Ab1FAGZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 02:25:50 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [patch 0/8] mm: memcg naturalization -rc2
+Date: Wed,  1 Jun 2011 08:25:11 +0200
+Message-Id: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+this is the second version of the memcg naturalization series.  The
+notable changes since the first submission are:
 
-> 
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
-> > On Wed, Jun 1, 2011 at 3:16 AM, Borislav Petkov <bp@amd64.org> wrote:
-> > >
-> > > Crap, there's no fixing this string :)
-> > 
-> > I tried to fix it up in the merge.  We call these "evil merges" in 
-> > git-speak, but I hope the problem was worth doing one ;)
-> 
-> You have not pushed it out yet, right? [ Or if you have then the 
-> evilness is well hidden! :-) ]
+    o the hierarchy walk is now intermittent and will abort and
+      remember the last scanned child after sc->nr_to_reclaim pages
+      have been reclaimed during the walk in one zone (Rik)
 
-Oh, you did push it out, i just forgot to merge it in :)
+    o the global lru lists are never scanned when memcg is enabled
+      after #2 'memcg-aware global reclaim', which makes this patch
+      self-sufficient and complete without requiring the per-memcg lru
+      lists to be exclusive (Michal)
 
-I don't think it's a truly evil merge if it's declared in the merge 
-commit log - but yeah, it's outside the scope given by the two trees 
-so technically it's evil :)
+    o renamed sc->memcg and sc->current_memcg to sc->target_mem_cgroup
+      and sc->mem_cgroup and fixed their documentation, I hope this is
+      better understandable now (Rik)
 
-Thanks,
+    o the reclaim statistic counters have been renamed.  there is no
+      more distinction between 'pgfree' and 'pgsteal', it is now
+      'pgreclaim' in both cases; 'kswapd' has been replaced by
+      'background'
 
-	Ingo
+    o fixed a nasty crash in the hierarchical soft limit check that
+      happened during global reclaim in memcgs that are hierarchical
+      but have no hierarchical parents themselves
+
+    o properly implemented the memcg-aware unevictable page rescue
+      scanner, there were several blatant bugs in there
+
+    o documentation on new public interfaces
+
+Thanks for your input on the first version.
+
+I ran microbenchmarks (sparse file catting, essentially) to stress
+reclaim and LRU operations.  There is no measurable overhead for
+!CONFIG_MEMCG, memcg disabled during boot, memcg enabled but no
+configured groups, and hard limit reclaim.
+
+I also ran single-threaded kernbenchs in four unlimited memcgs in
+parallel, contained in a hard-limited hierarchical parent that put
+constant pressure on the workload.  There is no measurable difference
+in runtime, the pgpgin/pgpgout counters, and fairness among memcgs in
+this test compared to an unpatched kernel.  Needs more evaluation,
+especially with a higher number of memcgs.
+
+The soft limit changes are also proven to work in so far that it is
+possible to prioritize between children in a hierarchy under pressure
+and that runtime differences corresponded directly to the soft limit
+settings in the previously described kernbench setup with staggered
+soft limits on the groups, but this needs quantification.
+
+Based on v2.6.39.
+
+ include/linux/memcontrol.h  |   91 +++--
+ include/linux/mm_inline.h   |   14 +-
+ include/linux/mmzone.h      |   10 +-
+ include/linux/page_cgroup.h |   36 --
+ include/linux/swap.h        |    4 -
+ mm/memcontrol.c             |  889 ++++++++++++++-----------------------------
+ mm/page_alloc.c             |    2 +-
+ mm/page_cgroup.c            |   38 +--
+ mm/swap.c                   |   20 +-
+ mm/vmscan.c                 |  296 ++++++++-------
+ 10 files changed, 536 insertions(+), 864 deletions(-)
+
