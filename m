@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933243Ab1FAINj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:13:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43120 "EHLO mx2.suse.de"
+	id S1161797Ab1FAJQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:16:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43127 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752908Ab1FAINb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:13:31 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:46 2011
-Message-Id: <20110601080345.135856212@blue.kroah.org>
+	id S1161640Ab1FAINg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:13:36 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:47 2011
+Message-Id: <20110601080346.248561465@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:17 +0900
+Date: Wed, 01 Jun 2011 17:00:18 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [081/146] rcu: Fix unpaired rcu_irq_enter() from locking selftests
+        Steve French <sfrench@us.ibm.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [082/146] [CIFS] When mandatory encryption on share, fail mount
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,55 +25,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Steve French <sfrench@us.ibm.com>
 
-commit ba9f207c9f82115aba4ce04b22e0081af0ae300f upstream.
+commit 6848b7334b24b47aa3d0e70342ff839ffa95d5fa upstream.
 
-HARDIRQ_ENTER() maps to irq_enter() which calls rcu_irq_enter().
-But HARDIRQ_EXIT() maps to __irq_exit() which doesn't call
-rcu_irq_exit().
+    When mandatory encryption is configured in samba server on a
+    share (smb.conf parameter "smb encrypt = mandatory") the
+    server will hang up the tcp session when we try to send
+    the first frame after the tree connect if it is not a
+    QueryFSUnixInfo, this causes cifs mount to hang (it must
+    be killed with ctl-c).  Move the QueryFSUnixInfo call
+    earlier in the mount sequence, and check whether the SetFSUnixInfo
+    fails due to mandatory encryption so we can return a sensible
+    error (EACCES) on mount.
 
-So for every locking selftest that simulates hardirq disabled,
-we create an imbalance in the rcu extended quiescent state
-internal state.
+    In a future patch (for 2.6.40) we will support mandatory
+    encryption.
 
-As a result, after the first missing rcu_irq_exit(), subsequent
-irqs won't exit dyntick-idle mode after leaving the interrupt
-handler.  This means that RCU won't see the affected CPU as being
-in an extended quiescent state, resulting in long grace-period
-delays (as in grace periods extending for hours).
-
-To fix this, just use __irq_enter() to simulate the hardirq
-context. This is sufficient for the locking selftests as we
-don't need to exit any extended quiescent state or perform
-any check that irqs normally do when they wake up from idle.
-
-As a side effect, this patch makes it possible to restore
-"rcu: Decrease memory-barrier usage based on semi-formal proof",
-which eventually helped finding this bug.
-
-Reported-and-tested-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- lib/locking-selftest.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/connect.c |   31 ++++++++++++++++++++++---------
+ 1 file changed, 22 insertions(+), 9 deletions(-)
 
---- a/lib/locking-selftest.c
-+++ b/lib/locking-selftest.c
-@@ -144,7 +144,7 @@ static void init_shared_classes(void)
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -2431,7 +2431,7 @@ void reset_cifs_unix_caps(int xid, struc
  
- #define HARDIRQ_ENTER()				\
- 	local_irq_disable();			\
--	irq_enter();				\
-+	__irq_enter();				\
- 	WARN_ON(!in_irq());
+ 	if (!CIFSSMBQFSUnixInfo(xid, tcon)) {
+ 		__u64 cap = le64_to_cpu(tcon->fsUnixInfo.Capability);
+-
++		cFYI(1, "unix caps which server supports %lld", cap);
+ 		/* check for reconnect case in which we do not
+ 		   want to change the mount behavior if we can avoid it */
+ 		if (vol_info == NULL) {
+@@ -2449,6 +2449,9 @@ void reset_cifs_unix_caps(int xid, struc
+ 			}
+ 		}
  
- #define HARDIRQ_EXIT()				\
++		if (cap & CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP)
++			cERROR(1, "per-share encryption not supported yet");
++
+ 		cap &= CIFS_UNIX_CAP_MASK;
+ 		if (vol_info && vol_info->no_psx_acl)
+ 			cap &= ~CIFS_UNIX_POSIX_ACL_CAP;
+@@ -2497,6 +2500,10 @@ void reset_cifs_unix_caps(int xid, struc
+ 			cFYI(1, "very large read cap");
+ 		if (cap & CIFS_UNIX_LARGE_WRITE_CAP)
+ 			cFYI(1, "very large write cap");
++		if (cap & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP)
++			cFYI(1, "transport encryption cap");
++		if (cap & CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP)
++			cFYI(1, "mandatory transport encryption cap");
+ #endif /* CIFS_DEBUG2 */
+ 		if (CIFSSMBSetFSUnixInfo(xid, tcon, cap)) {
+ 			if (vol_info == NULL) {
+@@ -2815,20 +2822,26 @@ try_mount_again:
+ 		goto remote_path_check;
+ 	}
+ 
+-	/* do not care if following two calls succeed - informational */
+-	if (!tcon->ipc) {
+-		CIFSSMBQFSDeviceInfo(xid, tcon);
+-		CIFSSMBQFSAttributeInfo(xid, tcon);
+-	}
+-
+ 	/* tell server which Unix caps we support */
+-	if (tcon->ses->capabilities & CAP_UNIX)
++	if (tcon->ses->capabilities & CAP_UNIX) {
+ 		/* reset of caps checks mount to see if unix extensions
+ 		   disabled for just this mount */
+ 		reset_cifs_unix_caps(xid, tcon, sb, volume_info);
+-	else
++		if ((tcon->ses->server->tcpStatus == CifsNeedReconnect) &&
++		    (le64_to_cpu(tcon->fsUnixInfo.Capability) &
++		     CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP)) {
++			rc = -EACCES;
++			goto mount_fail_check;
++		}
++	} else
+ 		tcon->unix_ext = 0; /* server does not support them */
+ 
++	/* do not care if following two calls succeed - informational */
++	if (!tcon->ipc) {
++		CIFSSMBQFSDeviceInfo(xid, tcon);
++		CIFSSMBQFSAttributeInfo(xid, tcon);
++	}
++
+ 	/* convert forward to back slashes in prepath here if needed */
+ 	if ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_POSIX_PATHS) == 0)
+ 		convert_delimiter(cifs_sb->prepath, CIFS_DIR_SEP(cifs_sb));
 
 
