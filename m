@@ -1,113 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933127Ab1FABmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 21:42:35 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:64221 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758568Ab1FABme (ORCPT
+	id S1161000Ab1FABuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 21:50:54 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6870 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758548Ab1FABuw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 21:42:34 -0400
-X-Authority-Analysis: v=1.1 cv=ou1QuR4lBR9YeJgEH9ccYmbAdaWqVVq3lOvCKJtMpGM= c=1 sm=0 a=HYZG5H_0JlQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=3CgcxbKXWgnqn1PN9W4A:9 a=wQ_yJXd3_1Ume50CMtsA:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] KERNEL: async: Fixed an include coding style issue
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Paul McQuade <tungstentide@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-In-Reply-To: <4DE596B4.7030904@gmail.com>
-References: <4DE596B4.7030904@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 31 May 2011 21:42:32 -0400
-Message-ID: <1306892552.10135.16.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 31 May 2011 21:50:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 31 May 2011 18:50:47 -0700
+From: Andrew Chew <AChew@nvidia.com>
+To: "'Guennadi Liakhovetski'" <g.liakhovetski@gmx.de>
+CC: "mchehab@redhat.com" <mchehab@redhat.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 31 May 2011 18:50:45 -0700
+Subject: RE: [PATCH 4/5 v2] [media] ov9740: Remove hardcoded resolution regs
+Thread-Topic: [PATCH 4/5 v2] [media] ov9740: Remove hardcoded resolution regs
+Thread-Index: Acwd7FivYLHV3s6GTJSYmHNCNjWRWwCEOWDw
+Message-ID: <643E69AA4436674C8F39DCC2C05F76382A75BF37C3@HQMAIL03.nvidia.com>
+References: <1306368272-28279-1-git-send-email-achew@nvidia.com>
+ <1306368272-28279-4-git-send-email-achew@nvidia.com>
+ <Pine.LNX.4.64.1105291221450.18788@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1105291221450.18788@axis700.grange>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I should have told you to Cc this change to Arjan (as I just did), as he
-owns this file.
+> > +	/* Width must be a multiple of 4 pixels. */
+> > +	*width += *width % 4;
+> 
+> No, this doesn't make it a multiple of 4, unless it was 
+> even;) Just take 5 
+> as an example. What you really want here is
 
--- Steve
-
-
-On Wed, 2011-06-01 at 02:32 +0100, Paul McQuade wrote:
-> >From 2514174efe73e654c46e669ea2df5169a41d0130 Mon Sep 17 00:00:00 2001
-> From: Paul McQuade <tungstentide@gmail.com>
-> Date: Tue, 31 May 2011 20:51:55 +0100
-> Subject: [PATCH] KERNEL: async: Fixed an include coding style issue
-> 
-> async:
-> Added <linux/atomic.h>,<linux/ktime.h> and Removed <asm/atomic.h>.
-> Added KERN_DEBUG to printk() functions.
-> 
-> Signed-off-by: Paul McQuade <tungstentide@gmail.com>
-> ---
->  kernel/async.c        |   13 +++++++------
->  2 files changed, 11 insertions(+), 14 deletions(-)
-> 
-> diff --git a/kernel/async.c b/kernel/async.c
-> index cd9dbb9..91edc17 100644
-> --- a/kernel/async.c
-> +++ b/kernel/async.c
-> @@ -49,12 +49,13 @@ asynchronous and synchronous parts of the kernel.
->  */
-> 
->  #include <linux/async.h>
-> +#include <linux/atomic.h>
-> +#include <linux/ktime.h>
->  #include <linux/module.h>
->  #include <linux/wait.h>
->  #include <linux/sched.h>
->  #include <linux/slab.h>
->  #include <linux/workqueue.h>
-> -#include <asm/atomic.h>
-> 
->  static async_cookie_t next_cookie = 1;
-> 
-> @@ -128,15 +129,15 @@ static void async_run_entry_fn(struct work_struct
-> *work)
-> 
->  	/* 2) run (and print duration) */
->  	if (initcall_debug && system_state == SYSTEM_BOOTING) {
-> -		printk("calling  %lli_%pF @ %i\n", (long long)entry->cookie,
-> -			entry->func, task_pid_nr(current));
-> +		printk(KERN_DEBUG "calling  %lli_%pF @ %i\n",
-> +			(long long)entry->cookie,
-> +			entry->func, task_pid_nr(current));
->  		calltime = ktime_get();
->  	}
->  	entry->func(entry->data, entry->cookie);
->  	if (initcall_debug && system_state == SYSTEM_BOOTING) {
->  		rettime = ktime_get();
->  		delta = ktime_sub(rettime, calltime);
-> -		printk("initcall %lli_%pF returned 0 after %lld usecs\n",
-> +		printk(KERN_DEBUG "initcall %lli_%pF returned 0 after %lld usecs\n",
->  			(long long)entry->cookie,
->  			entry->func,
->  			(long long)ktime_to_ns(delta) >> 10);
-> @@ -270,7 +271,7 @@ void async_synchronize_cookie_domain(async_cookie_t
-> cookie,
->  	ktime_t starttime, delta, endtime;
-> 
->  	if (initcall_debug && system_state == SYSTEM_BOOTING) {
-> -		printk("async_waiting @ %i\n", task_pid_nr(current));
-> +		printk(KERN_DEBUG "async_waiting @ %i\n", task_pid_nr(current));
->  		starttime = ktime_get();
->  	}
-> 
-> @@ -280,7 +281,7 @@ void async_synchronize_cookie_domain(async_cookie_t
-> cookie,
->  		endtime = ktime_get();
->  		delta = ktime_sub(endtime, starttime);
-> 
-> -		printk("async_continuing @ %i after %lli usec\n",
-> +		printk(KERN_DEBUG "async_continuing @ %i after %lli usec\n",
->  			task_pid_nr(current),
->  			(long long)ktime_to_ns(delta) >> 10);
->  	}
+Geez, you're right.  Not sure what was going on in my head when I did this.  Thanks for catching it.
 
 
+> > +	/*
+> > +	 * Try to use as much of the sensor area as possible 
+> when supporting
+> > +	 * smaller resolutions.  Depending on the aspect ratio of the
+> > +	 * chosen resolution, we can either use the full width 
+> of the sensor,
+> > +	 * or the full height of the sensor (or both if the 
+> aspect ratio is
+> > +	 * the same as 1280x720.
+> > +	 */
+> > +	if ((OV9740_MAX_WIDTH * height) > (OV9740_MAX_HEIGHT * width)) {
+> > +		scale_input_x = (OV9740_MAX_HEIGHT * width) / height;
+> > +		scale_input_y = OV9740_MAX_HEIGHT;
+> >  	} else {
+> > -		dev_err(&client->dev, "Failed to select resolution!\n");
+> > -		return -EINVAL;
+> > +		scale_input_x = OV9740_MAX_WIDTH;
+> > +		scale_input_y = (OV9740_MAX_WIDTH * height) / width;
+> >  	}
+> 
+> I don'z know how this sensor works, but the above two divisions round 
+> down. And these are input sizes. Cannot it possibly lead to 
+> the output 
+> window being smaller, than required? Maybe you have to round 
+> up (hint: 
+> use DIV_ROUND_UP())?
+
+The intention is to do some ratio math without floating point instructions, which resulted in some algebraic twiddling (which is why that math looks so weird).  I think what's there is okay.  If there's any rounding at all (and there shouldn't be any rounding, if "standard" image dimensions are called for), then there's going to be some aspect ratio weirdness no matter which way you round that division.
