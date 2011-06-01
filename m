@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120Ab1FABMd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 21:12:33 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18287 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933005Ab1FABMa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 21:12:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 31 May 2011 18:12:21 -0700
-From: Andrew Chew <AChew@nvidia.com>
-To: "'Guennadi Liakhovetski'" <g.liakhovetski@gmx.de>
-CC: "mchehab@redhat.com" <mchehab@redhat.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 31 May 2011 18:12:20 -0700
-Subject: RE: [PATCH 3/5 v2] [media] ov9740: Fixed some settings
-Thread-Topic: [PATCH 3/5 v2] [media] ov9740: Fixed some settings
-Thread-Index: Acwd6i+UWJJ8N0goQgaJjVEz+0rUvQCDp6jA
-Message-ID: <643E69AA4436674C8F39DCC2C05F76382A75BF37C2@HQMAIL03.nvidia.com>
-References: <1306368272-28279-1-git-send-email-achew@nvidia.com>
- <1306368272-28279-3-git-send-email-achew@nvidia.com>
- <Pine.LNX.4.64.1105291218250.18788@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1105291218250.18788@axis700.grange>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S933109Ab1FABNd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 21:13:33 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46338 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933005Ab1FABNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 21:13:32 -0400
+Date: Wed, 1 Jun 2011 11:13:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: linux-next: manual merge of the mmc tree with Linus' tree
+Message-Id: <20110601111320.07b07b7f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__1_Jun_2011_11_13_20_+1000_J7AGBdET1Xn5F9EW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +	{ OV9740_MIPI_CTRL00,		0x64 }, /* 0x44 for 
-> continuous clock */
-> 
-> I think, the choice between continuous and discontinuous CSI-2 clock 
-> should become configurable. You can only use discontinuous clock with 
-> hosts, that support it, right? Whereas all hosts must support 
-> continuous 
-> clock. So, I'm not sure we should unconditionally switch to 
-> discontinuous 
-> clock here... Maybe it's better to keep it continuous until 
-> we make it 
-> configurable?
+--Signature=_Wed__1_Jun_2011_11_13_20_+1000_J7AGBdET1Xn5F9EW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, that's right.  The camera host needs to support discontinuous clocks.  I'll change it back to continuous clock by default, and change the comment to "0x64 for discontinuous clock", so we remember for when this becomes configurable.
+Hi Chris,
+
+Today's linux-next merge of the mmc tree got a conflict in
+drivers/mmc/host/sdhci-of-core.c between commit b1608d69cb80
+("drivercore: revert addition of of_match to struct device") from Linus'
+tree and commit e2d0d7dc5542 ("mmc: sdhci: make sdhci-of device drivers
+self registered") from the mmc tree.
+
+The latter removes the file, so I did that (I *think* that the change
+from the former is no longer needed, but someone should check).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__1_Jun_2011_11_13_20_+1000_J7AGBdET1Xn5F9EW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN5ZIwAAoJEDMEi1NhKgbs7UIH/RmjlRj3dKaJaecVeC/9QMM9
+LVWlGwuimZ3jcoEpATkouyQBoeE/c+0IlIsomw6qwZbr+L0zyZ+IBkhcFJVGLisV
+eF5WBdMJPjO8qcTq5DIJdo5Ucsr1xWUe97CSMhkEPtoyGYzpZxnso1WD3wYnumaj
+4wCW6I+l+9xEVId4XIpRjlZE4BevQ6j/F+Hc9PSj8cufm4uXCF38xI+jpCvWbhbB
+xUv2/o98C1/GhXbT+HvEzJd68KhTnZa2nCeDlIJ13nFtvccA/sXJO8pUvqsBJBuh
+x9A9rs001/T43ViQxOWOGLw2bzLdVOYyOOG6QWc888DCAj4u2qIH+VTZeCKKDfA=
+=Z1Lv
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__1_Jun_2011_11_13_20_+1000_J7AGBdET1Xn5F9EW--
