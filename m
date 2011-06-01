@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab1FAOxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 10:53:33 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:35158 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757405Ab1FAOxb (ORCPT
+	id S1758248Ab1FAOyd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 10:54:33 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49630 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757607Ab1FAOyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 10:53:31 -0400
+	Wed, 1 Jun 2011 10:54:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=nanometrics.ca; s=google;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=BDIyRJFQbqY+E1vLZRAQjW2h1KWY70nyaSECf1ZPmEKonMB5RRBhlD8f7jcFr4sSFw
-         Qbf18CACC31v4qFPFObB77kJCw7UW4jvq768t881nlm4x2UZNHKBmwY2JgI4Apdys5vc
-         qEfxHecexAm3tHbUKjEeAFs0fqlSMG01VexVQ=
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Matthew L. Creech" <mlcreech@gmail.com>
-Subject: [PATCH] UBIFS: fixup merged 'UBIFS: fix-up free space earlier'
-Date: Wed,  1 Jun 2011 10:53:28 -0400
-Message-Id: <1306940008-28454-1-git-send-email-bengardiner@nanometrics.ca>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1306923407.4405.94.camel@localhost>
-References: <1306923407.4405.94.camel@localhost>
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=e0zSuci4u8d8aXFiPjKzcWCk1x7waLQhMPgZdhpsNWv0+4w+L0QsJSoOnY6iPnUaH2
+         QJt0LIcKh4lRfVftzfmViCm9NZuVkuhqIREvPPqn2D/CHm2Eb/zeKijttrwPCtLBidjh
+         Y5M6KD8TY90NdcXxJwpfK9j/VI5tKbcVzQHXk=
+MIME-Version: 1.0
+In-Reply-To: <1306935129.1097.3.camel@hcegtvedt.norway.atmel.com>
+References: <1306676962-22308-1-git-send-email-dbaryshkov@gmail.com>
+	<1306935129.1097.3.camel@hcegtvedt.norway.atmel.com>
+Date: Wed, 1 Jun 2011 18:54:30 +0400
+Message-ID: <BANLkTi=s4kGg5NKrzNs1nu8S00Ue_Zv8vQ@mail.gmail.com>
+Subject: Re: [PATCH] ATMEL, AVR32: inline nand partition table access
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the patch 'UBIFS: intialize LPT earlier' was massaged before being applied
-the context of the next patch 'UBIFS: fix-up free space earlier' was muddled
-sufficiently for the order of allocate-lpt then free-space-fixup was reversed --
-I think.
+On 6/1/11, Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com> wrote:
+> On Sun, 2011-05-29 at 17:49 +0400, Dmitry Eremin-Solenikov wrote:
+>> Currently atmel_nand driver used by AT91 and AVR32 calls a special
+>> callback
+>> which return nand partition table and number of partitions. However in all
+>> boards this callback returns just static data. So drop this callback and
+>> make atmel_nand use partition table provided statically via platform_data.
+>>
+>> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+>
+> Thanks for this update, always nice seeing code being optimized. I
+> really can't recall why it was made like this in the first place...
+>
+> For the AVR32 related parts:
+>
+> Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+>
+> <snipp diff>
+>
+> Will this go through the linux-mtd tree (since it spans two archs) or
+> should it go through an arch tree?
 
-Put the free-space-fixup after allocate-lpt.
+On one hand, I'd prefer for this to go through the linux-mtd, if noone objects,
+as I'd also like to submit several (a pile) patches cleaning up mtd
+partitioning, which would depend on this.
 
-Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+OTOH, I think there will be a cleanup of AT91 platform, which would bring
+lot's of conflicts with this patch, if it goes through linux-mtd.
 
----
-With this fixup applied on-top-of the ubifs-2.6 master I am able to mount a
-ubinized image containing a UBIFS volume which has the free-space-fixup flag
-set. No assertions are displayed.
-
----
- fs/ubifs/super.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-index 4722f31..70e8c92 100644
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -1284,12 +1284,6 @@ static int mount_ubifs(struct ubifs_info *c)
- 
- 	init_constants_master(c);
- 
--	if (!c->ro_mount && c->space_fixup) {
--		err = ubifs_fixup_free_space(c);
--		if (err)
--			goto out_infos;
--	}
--
- 	if ((c->mst_node->flags & cpu_to_le32(UBIFS_MST_DIRTY)) != 0) {
- 		ubifs_msg("recovery needed");
- 		c->need_recovery = 1;
-@@ -1305,6 +1299,12 @@ static int mount_ubifs(struct ubifs_info *c)
- 	if (err)
- 		goto out_master;
- 
-+	if (!c->ro_mount && c->space_fixup) {
-+		err = ubifs_fixup_free_space(c);
-+		if (err)
-+			goto out_master;
-+	}
-+
- 	if (!c->ro_mount) {
- 		/*
- 		 * Set the "dirty" flag so that if we reboot uncleanly we
 -- 
-1.7.4.1
-
+With best wishes
+Dmitry
