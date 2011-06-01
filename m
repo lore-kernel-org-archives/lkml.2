@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab1FAWOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 18:14:25 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64602 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408Ab1FAWOY (ORCPT
+	id S1756856Ab1FAWQh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 18:16:37 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:46334 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755789Ab1FAWQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 18:14:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ls58bpQy1F9N2vkh0b+BFu51PPGOvzgXDax7aopLSXeLZ8s6/+5E9wRwSmog2zZqPK
-         f1frYAc9sXZUc5Bcd1okChaxm739E73HCtLlmD4IG/QVhR6K0obqqFwZ+hlZqRbb2l8h
-         AEy9vr0pLBNWs/RdiannUntLYZpMPCD5wggjE=
-From: Chihau Chau <chihau@gmail.com>
-To: gregkh@suse.de, vinod.koul@intel.com, alan@linux.intel.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chihau Chau <chihau@gmail.com>
-Subject: [PATCH] staging: intel_sst: replacing spaces by tabs
-Date: Wed,  1 Jun 2011 18:13:19 -0400
-Message-Id: <1306966399-31567-1-git-send-email-chihau@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
+	Wed, 1 Jun 2011 18:16:35 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-209.messagelabs.com!1306966564!6739105!29
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.98]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] dma: at_hdmac.c: use resource_size
+Date: Wed, 1 Jun 2011 15:16:09 -0700
+User-Agent: KMail/1.9.9
+CC: <dan.j.williams@intel.com>, <vinod.koul@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201106011516.09302.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a code style issue patch that replaces spaces by tabs.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
 
-Signed-off-by: Chihau Chau <chihau@gmail.com>
 ---
- drivers/staging/intel_sst/intelmid.h |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/intel_sst/intelmid.h b/drivers/staging/intel_sst/intelmid.h
-index ca881b7..9607361 100644
---- a/drivers/staging/intel_sst/intelmid.h
-+++ b/drivers/staging/intel_sst/intelmid.h
-@@ -143,11 +143,11 @@ struct mad_stream_pvt {
- };
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index 36144f8..6a483ea 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -1216,7 +1216,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
+ 	atdma->dma_common.cap_mask = pdata->cap_mask;
+ 	atdma->all_chan_mask = (1 << pdata->nr_channels) - 1;
  
- enum mad_drv_status {
--    INIT = 1,
--    STARTED,
--    RUNNING,
--    PAUSED,
--    DROPPED,
-+	INIT = 1,
-+	STARTED,
-+	RUNNING,
-+	PAUSED,
-+	DROPPED,
- };
+-	size = io->end - io->start + 1;
++	size = resource_size(io);
+ 	if (!request_mem_region(io->start, size, pdev->dev.driver->name)) {
+ 		err = -EBUSY;
+ 		goto err_kfree;
+@@ -1362,7 +1362,7 @@ static int __exit at_dma_remove(struct platform_device *pdev)
+ 	atdma->regs = NULL;
  
- enum mad_pmic_status {
--- 
-1.7.5.2
-
+ 	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(io->start, io->end - io->start + 1);
++	release_mem_region(io->start, resource_size(io));
+ 
+ 	kfree(atdma);
+ 
