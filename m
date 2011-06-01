@@ -1,175 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759431Ab1FAStf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 14:49:35 -0400
-Received: from smtprelay05.ispgateway.de ([80.67.31.99]:50147 "EHLO
-	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab1FASte (ORCPT
+	id S1759437Ab1FASuA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 14:50:00 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:53623 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752532Ab1FASt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 14:49:34 -0400
-From: Michael Bauer <michael@m-bauer.org>
-To: linux-input@vger.kernel.org
-Subject: [PATCH v2] hid: Fix Logitech Driving Force Pro wheel
-Date: Wed, 1 Jun 2011 20:49:37 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39-logitech; KDE/4.6.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+	Wed, 1 Jun 2011 14:49:57 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=g9D0kVRhAKfA6jIYmq/aeHreS+XG+Yw0E/Koa1TluA6AK0rpB2mCUIAQMsk81zS2f9SVuP+MwmJ6VVk1GqKMP+jpP6znPGA4oOZBxnkRZkBjSCGwrUIiQAgrssg32HtU;
+Date: Wed, 1 Jun 2011 11:49:37 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org, Zhang Yanmin <yanmin.zhang@intel.com>
+Subject: Re: [PATCH 7/9] PCIe, AER, add aer_recover_queue
+Message-ID: <20110601114937.69d69916@jbarnes-desktop>
+In-Reply-To: <1305619719-7480-8-git-send-email-ying.huang@intel.com>
+References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>
+	<1305619719-7480-8-git-send-email-ying.huang@intel.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106012049.38041.michael@m-bauer.org>
-X-Df-Sender: michael@m-bauer.org
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes from initial patch:
-- shorten comment (removed original descriptor)
-- optimized new descriptor (simpler and shorter)
+On Tue, 17 May 2011 16:08:37 +0800
+Huang Ying <ying.huang@intel.com> wrote:
 
-This is a patch for hid-lg.c which fixes the Logitech Driving Force Pro driver. 
-It was generated against vanilla 2.6.39.
-It contains two parts:
-- Add the quirk "NOGET" to make the wheel work at all in native mode.
-- Replace the somehow broken report descriptor with a custom one to have 
-separate throttle and brake axes.
+> In addition to native PCIe AER, now APEI (ACPI Platform Error
+> Interface) GHES (Generic Hardware Error Source) can be used to report
+> PCIe AER errors too.  To add support to APEI GHES PCIe AER recovery,
+> aer_recover_queue is added to export the recovery function in native
+> PCIe AER driver.
+> 
+> Recoverable PCIe AER errors are reported via NMI in APEI GHES.  Then
+> APEI GHES uses irq_work to delay the error processing into an IRQ
+> handler.  But PCIe AER recovery can be very time-consuming, so
+> aer_recover_queue, which can be used in IRQ handler, delays the real
+> recovery action into the process context, that is, work queue.
 
-As there are significant differences in the descriptor (original descriptor 
-"hides" the separate axes in a  24 bit FF00 usagepage, new descripter replaces 
-that with two individual 8 bit desktop.y and desktop.rz usages) I provided a 
-complete replacement descriptor instead trying to patch the original one. 
-Patching the descriptor seems not feasible as the new one is much larger.
+Have the dependencies for this already landed?  Or does this one need
+to go first?
 
-Note: To actually test this you have to use the tool "ltwheelconf" to put the 
-DFP into it's native mode - See below for more info.
-
-
-Background:
-Most Logitech wheels are initially reporting themselves with a "fallback" 
-deviceID (USB_DEVICE_ID_LOGITECH_WHEEL - 0xc294), in order to make sure they 
-are working even without having the proper driver installed.
-If the Logitech driver is installed it sends a special command to the wheel 
-which sets the wheel to "native mode", enabling enhance features like:
-- Clutch pedal
-- extended wheel rotation range (up to 900 degrees)
-- H-gate shifter
-- separate axis for throttle / brake
-- all buttons
-When the wheel is set to native mode it basically disconnects and reconnects 
-with a different deviceID (USB_DEVICE_ID_LOGITECH_DFP_WHEEL - 0xc298 in this 
-case).
-
-I am working on a userspace tool [1] which does the switching from fallback to 
-native mode. During development I found out that the Driving Force Pro wheel 
-is not supported in native mode - quierk NOGET is missing and the throttle and 
-brake axes are reported in a combined way only.
-
-
-Signed-off-by: Michael Bauer <michael@m-bauer.org>
-
-[1] https://github.com/TripleSpeeder/LTWheelConf
-
----
-
---- 2.6.39_vanilla/drivers/hid/hid-lg.c	2011-05-19 06:06:34.000000000 +0200
-+++ 2.6.39/drivers/hid/hid-lg.c	2011-05-30 21:49:51.535184784 +0200
-@@ -41,6 +41,66 @@
- #define LG_FF3			0x1000
- #define LG_FF4			0x2000
- 
-+/* Size of the original descriptor of the Driving Force Pro wheel */
-+#define DFP_RDESC_ORIG_SIZE	97
-+
-+/* Fixed report descriptor for Logitech Driving Force Pro wheel controller 
-+ * 
-+ * The original descriptor hides the separate throttle and brake axes in 
-+ * a custom vendor usage page, providing only a combined value as
-+ * GenericDesktop.Y.
-+ * This descriptor removes the combined Y axis and instead reports 
-+ * separate throttle (Y) and brake (RZ).
-+ */
-+static __u8 dfp_rdesc_fixed[] = {
-+0x05, 0x01,         /*  Usage Page (Desktop),                   */
-+0x09, 0x04,         /*  Usage (Joystik),                        */
-+0xA1, 0x01,         /*  Collection (Application),               */
-+0xA1, 0x02,         /*      Collection (Logical),               */
-+0x95, 0x01,         /*          Report Count (1),               */
-+0x75, 0x0E,         /*          Report Size (14),               */
-+0x14,               /*          Logical Minimum (0),            */
-+0x26, 0xFF, 0x3F,   /*          Logical Maximum (16383),        */
-+0x34,               /*          Physical Minimum (0),           */
-+0x46, 0xFF, 0x3F,   /*          Physical Maximum (16383),       */
-+0x09, 0x30,         /*          Usage (X),                      */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x95, 0x0E,         /*          Report Count (14),              */
-+0x75, 0x01,         /*          Report Size (1),                */
-+0x25, 0x01,         /*          Logical Maximum (1),            */
-+0x45, 0x01,         /*          Physical Maximum (1),           */
-+0x05, 0x09,         /*          Usage Page (Button),            */
-+0x19, 0x01,         /*          Usage Minimum (01h),            */
-+0x29, 0x0E,         /*          Usage Maximum (0Eh),            */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x05, 0x01,         /*          Usage Page (Desktop),           */
-+0x95, 0x01,         /*          Report Count (1),               */
-+0x75, 0x04,         /*          Report Size (4),                */
-+0x25, 0x07,         /*          Logical Maximum (7),            */
-+0x46, 0x3B, 0x01,   /*          Physical Maximum (315),         */
-+0x65, 0x14,         /*          Unit (Degrees),                 */
-+0x09, 0x39,         /*          Usage (Hat Switch),             */
-+0x81, 0x42,         /*          Input (Variable, Nullstate),    */
-+0x65, 0x00,         /*          Unit,                           */
-+0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
-+0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
-+0x75, 0x08,         /*          Report Size (8),                */
-+0x81, 0x01,         /*          Input (Constant),               */
-+0x09, 0x31,         /*          Usage (Y),                      */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x09, 0x35,         /*          Usage (Rz),                     */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x81, 0x01,         /*          Input (Constant),               */
-+0xC0,               /*      End Collection,                     */
-+0xA1, 0x02,         /*      Collection (Logical),               */
-+0x09, 0x02,         /*          Usage (02h),                    */
-+0x95, 0x07,         /*          Report Count (7),               */
-+0x91, 0x02,         /*          Output (Variable),              */
-+0xC0,               /*      End Collection,                     */
-+0xC0                /*  End Collection                          */
-+};
-+
-+
- /*
-  * Certain Logitech keyboards send in report #3 keys which are far
-  * above the logical maximum described in descriptor. This extends
-@@ -74,6 +134,18 @@ static __u8 *lg_report_fixup(struct hid_
- 		rdesc[47] = 0x95;
- 		rdesc[48] = 0x0B;
- 	}
-+	
-+	switch (hdev->product) {
-+	case USB_DEVICE_ID_LOGITECH_DFP_WHEEL:
-+		if (*rsize == DFP_RDESC_ORIG_SIZE) {
-+			hid_info(hdev,
-+				"fixing up Logitech Driving Force Pro report descriptor\n");
-+			rdesc = dfp_rdesc_fixed;
-+			*rsize = sizeof(dfp_rdesc_fixed);
-+		}
-+		break;
-+	}
-+	
- 	return rdesc;
- }
- 
-@@ -378,7 +450,7 @@ static const struct hid_device_id lg_dev
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, 
-USB_DEVICE_ID_LOGITECH_G25_WHEEL),
- 		.driver_data = LG_FF },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, 
-USB_DEVICE_ID_LOGITECH_DFP_WHEEL),
--		.driver_data = LG_FF },
-+		.driver_data = LG_NOGET | LG_FF },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, 
-USB_DEVICE_ID_LOGITECH_WII_WHEEL),
- 		.driver_data = LG_FF4 },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, 
-USB_DEVICE_ID_LOGITECH_WINGMAN_FFG ),
-
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
