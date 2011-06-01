@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758545Ab1FAXCL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 19:02:11 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63764 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752352Ab1FAXCJ (ORCPT
+	id S932559Ab1FAXDG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 19:03:06 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53874 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757834Ab1FAXDD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 19:02:09 -0400
+	Wed, 1 Jun 2011 19:03:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=nq7Vz7l7HsmTzoX1Umfit8/aqPA9CPHacNtyhGrp2iGfRu04zzSMe+VHWppalepqKL
-         zx8duzFaSm+XyTBoh1CA0FG0Tacr/cPkpI/PI0Un5UubT2L+8XRp1l8fVYVFMXz268A4
-         UHTv0msDPVdK7drqff9WeKFDUacYA9DnI7FeI=
-Message-ID: <4DE6C4EE.8020807@gmail.com>
-Date: Thu, 02 Jun 2011 01:02:06 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
+        d=chromium.org; s=google;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UC3WB2w9K1yghbZGUZYsbauEYN7rYVa0M1Cs1uy4xae8EKDHSHl9MxFvGSdy4F7BlJ
+         T7fUZiGbDaEvqkWk2PpCXJAgs5mq6UayZRK6GscifrDCyYs7QglQyIhfYRRjp760cD8J
+         89+Q90JUW7DX2iynWl10H+CiJLcWtmTzemm+M=
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [stable] [PATCH 2/2] xhci: Do not issue device reset when device
- is not setup
-References: <1306963670-6344-1-git-send-email-m.b.lankhorst@gmail.com> <1306963670-6344-2-git-send-email-m.b.lankhorst@gmail.com> <20110601221722.GB17429@kroah.com> <20110601224205.GC13079@xanatos>
-In-Reply-To: <20110601224205.GC13079@xanatos>
+In-Reply-To: <20110601212330.GF19633@outflux.net>
+References: <BANLkTimNcag-ZmVTXjUoTyiuJm6jtW0DgA@mail.gmail.com>
+	<1306897845-9393-5-git-send-email-wad@chromium.org>
+	<20110601212330.GF19633@outflux.net>
+Date: Wed, 1 Jun 2011 18:03:01 -0500
+Message-ID: <BANLkTin7BA_s1tDwLzor=pZFTQUv0ObFxA@mail.gmail.com>
+Subject: Re: [PATCH v3 05/13] seccomp_filter: Document what seccomp_filter is
+ and how it works.
+From: Will Drewry <wad@chromium.org>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, mingo@elte.hu, rostedt@goodmis.org,
+        jmorris@namei.org, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sarah,
-
-Op 02-06-11 00:42, Sarah Sharp schreef:
-> Maarten, if you feel a patch needs to be added to the stable trees,
-> please just add this line below your Signed-off-by line:
+On Wed, Jun 1, 2011 at 4:23 PM, Kees Cook <kees.cook@canonical.com> wrote:
+> Hi Will,
 >
-> Cc: stable@kernel.org
+> Minor typo corrections below...
 >
-> Don't Cc stable in your initial RFC patches.  Once they're done, I'll
-> queue them to my xHCI tree and send them off to Greg.  When Greg sends
-> them off to Linus for inclusion into 3.0, the patches will automatically
-> get picked up into the stable tree.
-Sorry about that. I interpreted cc'ing stable wrongly, feel like such a
-noob on this whole submitting patches thing. :)
+> On Tue, May 31, 2011 at 10:10:37PM -0500, Will Drewry wrote:
+>>  Adds a text file covering what CONFIG_SECCOMP_FILTER is, how it is
+>>  implemented presently, and what it may be used for.  In addition,
+>>  the limitations and caveats of the proposed implementation are
+>>  included.
+>>
+>> --- /dev/null
+>> +++ b/Documentation/prctl/seccomp_filter.txt
+>> @@ -0,0 +1,145 @@
+>> ...
+>> +certain subset of userland applications benefit by having a reduce set
+>                                                               reduced
+>
+>> +of available system calls.  The reduced set reduces the total kernel
+>
+> Maybe "The resulting set reduces ... " ?
 
-I do think it needs inclusion in stable though, since it fixes the
-xhci controller that so far never worked for me, although the earliest
-kernel I tested on was v2.6.33.$x-rt$y. Didn't test the patch though,
-but iirc the failure mode wasn't any different.
+Cool - I'll clean it up in the next cut.
 
-~Maarten
+Thanks!
+will
