@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757759Ab1FAPP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 11:15:28 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58350 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666Ab1FAPP1 (ORCPT
+	id S1758252Ab1FAPQy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 11:16:54 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61454 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758096Ab1FAPQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 11:15:27 -0400
-Date: Wed, 1 Jun 2011 11:15:13 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull v3.0-rc1] What branch to base fixes for v3.0-rc1 for
- block system?
-Message-ID: <20110601151513.GB32270@dumpdata.com>
-References: <20110531191039.GA5269@dumpdata.com>
- <4DE54097.7060000@fusionio.com>
+	Wed, 1 Jun 2011 11:16:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DE54097.7060000@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4DE6578D.0062:SCFMA922111,ss=1,fgs=0
+In-Reply-To: <20110531175709.GC12709@twin.jikos.cz>
+References: <20110530113653.5c7084f0.sfr@canb.auug.org.au>
+	<20110531175709.GC12709@twin.jikos.cz>
+Date: Wed, 1 Jun 2011 10:16:48 -0500
+Message-ID: <BANLkTi=t5H8sAc_0sHyFt_xJgbeVibO3KQ@mail.gmail.com>
+Subject: Re: linux-next: build warninga in Linus' tree
+From: Mitch Harder <mitch.harder@sabayonlinux.org>
+To: dave@jikos.cz, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Chris Mason <chris.mason@oracle.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 09:25:11PM +0200, Jens Axboe wrote:
-> On 2011-05-31 21:10, Konrad Rzeszutek Wilk wrote:
-> > Hey Jens,
-> > 
-> > I've got two tiny fixes for the xen-blkback (see below):
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git for-jens/xen-blkback.fixes
-> > 
-> > and they are based on for-2.6.40/drivers branch. Is that the way you
-> > prefer to pull patches from sub-trees? Or should I rebase it on 3.0-rc1?
-> > Or should send bug-fixes just directly to Linus?
-> 
-> Once I send off the big initial merges which are in the version named
-> for-2.6.40/xx branches, anything after that should just be based on my
-> for-linus branch. That's what I use for post-rc1 merges with Linus.
-> 
-> But the only real sticking point is that your branch should not contain
-> something that I don't have in my for-linus. And you don't right now, so
-> I just pulled it :-)
+On Tue, May 31, 2011 at 12:57 PM, David Sterba <dave@jikos.cz> wrote:
+> Hi,
+>
+> On Mon, May 30, 2011 at 11:36:53AM +1000, Stephen Rothwell wrote:
+>> After merging the Linus' tree, today's linux-next build (powerpc
+>> ppc64_defconfig) produced these warnings:
+>>
+>> fs/btrfs/sysfs.c:76:26: warning: 'btrfs_root_attrs' defined but not used
+>> fs/btrfs/sysfs.c:97:26: warning: 'btrfs_super_attrs' defined but not used
+>> fs/btrfs/sysfs.c:153:13: warning: 'btrfs_super_release' defined but not used
+>> fs/btrfs/sysfs.c:160:13: warning: 'btrfs_root_release' defined but not used
+>>
+>> I have started using gcc v4.5.2 (instead of v4.4.4) if that makes a
+>> difference.
+>
+> the warning probably started to show up after one of my cleanup patches,
+> removing unused functions (f2a97a9dbd86eb1ef956bdf20e05c507b32beb96).
+> The sysfs interface is not being used right now, but there's a unmerged
+> patchset which adds the interesting bits like info about available btrfs
+> filesystems and devices. I don't know what are the intentions regarding
+> sysfs.
+>
+>
+> david
 
-Can you repull that branch please? I've rebased it on for-linus branch
-and fixed the embarrassing compilation issue it had..
+I've been playing around with resurrecting the basic sysfs
+capabilities that had been previously incorporated into btrfs.
+
+As it stands right now, it was relatively easy to re-implement sysfs
+as it was originally.  However, that implementation of sysfs wasn't
+populated with much information (only total_blocks, blocks_used, and
+blocksize).
+
+I also had to reverse a small portion of code that was in the last clean-up.
+
+If a CONFIG_BTRFS_DEBUG type configuration flag is ever introduced, it
+would be interesting to resurrect btrfs' sysfs capabilities.
