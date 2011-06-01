@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162609Ab1FAIWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:22:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44047 "EHLO mx2.suse.de"
+	id S1162645Ab1FAIqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:46:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44055 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161492Ab1FAIWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:22:06 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:37 2011
-Message-Id: <20110601081136.871679613@blue.kroah.org>
+	id S1162578Ab1FAIWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:22:11 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:38 2011
+Message-Id: <20110601081137.495599457@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:10:49 +0900
+Date: Wed, 01 Jun 2011 17:10:50 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg@redhat.com>,
+        Kees Cook <kees.cook@canonical.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>,
-        Tony Luck <tony.luck@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [079/165] x86, efi: Retain boot service code until after switching to
+        Fenghua Yu <fenghua.yu@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [080/165] x86, cpufeature: Update CPU feature RDRND to RDRAND
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,167 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- virtual mode
-Content-Length: 5890
-Lines: 159
+Content-Length: 1484
+Lines: 34
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Kees Cook <kees.cook@canonical.com>
 
-commit 916f676f8dc016103f983c7ec54c18ecdbb6e349 upstream.
+commit 7ccafc5f75c87853f3c49845d5a884f2376e03ce upstream.
 
-UEFI stands for "Unified Extensible Firmware Interface", where "Firmware"
-is an ancient African word meaning "Why do something right when you can
-do it so wrong that children will weep and brave adults will cower before
-you", and "UEI" is Celtic for "We missed DOS so we burned it into your
-ROMs". The UEFI specification provides for runtime services (ie, another
-way for the operating system to be forced to depend on the firmware) and
-we rely on these for certain trivial tasks such as setting up the
-bootloader. But some hardware fails to work if we attempt to use these
-runtime services from physical mode, and so we have to switch into virtual
-mode. So far so dreadful.
+The Intel manual changed the name of the CPUID bit to match the
+instruction name. We should follow suit for sanity's sake. (See Intel SDM
+Volume 2, Table 3-20 "Feature Information Returned in the ECX Register".)
 
-The specification makes it clear that the operating system is free to do
-whatever it wants with boot services code after ExitBootServices() has been
-called. SetVirtualAddressMap() can't be called until ExitBootServices() has
-been. So, obviously, a whole bunch of EFI implementations call into boot
-services code when we do that. Since we've been charmingly naive and
-trusted that the specification may be somehow relevant to the real world,
-we've already stuffed a picture of a penguin or something in that address
-space. And just to make things more entertaining, we've also marked it
-non-executable.
+[ hpa: we can only do this at this time because there are currently no CPUs
+  with this feature on the market, hence this is pre-hardware enabling.
+  However, Cc:'ing stable so that stable can present a consistent ABI. ]
 
-This patch allocates the boot services regions during EFI init and makes
-sure that they're executable. Then, after SetVirtualAddressMap(), it
-discards them and everyone lives happily ever after. Except for the ones
-who have to work on EFI, who live sad lives haunted by the knowledge that
-someone's eventually going to write yet another firmware specification.
-
-[ hpa: adding this to urgent with a stable tag since it fixes currently-broken
-  hardware.  However, I do not know what the dependencies are and so I do
-  not know which -stable versions this may be a candidate for. ]
-
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Link: http://lkml.kernel.org/r/1306331593-28715-1-git-send-email-mjg@redhat.com
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Link: http://lkml.kernel.org/r/20110524232926.GA27728@outflux.net
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/setup.c        |    7 ++++++
- arch/x86/platform/efi/efi.c    |   45 ++++++++++++++++++++++++++++++++++++++++-
- arch/x86/platform/efi/efi_64.c |    5 ++--
- include/linux/efi.h            |    1 
- 4 files changed, 55 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/cpufeature.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -912,6 +912,13 @@ void __init setup_arch(char **cmdline_p)
- 	memblock.current_limit = get_max_mapped();
- 	memblock_x86_fill();
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -125,7 +125,7 @@
+ #define X86_FEATURE_OSXSAVE	(4*32+27) /* "" XSAVE enabled in the OS */
+ #define X86_FEATURE_AVX		(4*32+28) /* Advanced Vector Extensions */
+ #define X86_FEATURE_F16C	(4*32+29) /* 16-bit fp conversions */
+-#define X86_FEATURE_RDRND	(4*32+30) /* The RDRAND instruction */
++#define X86_FEATURE_RDRAND	(4*32+30) /* The RDRAND instruction */
+ #define X86_FEATURE_HYPERVISOR	(4*32+31) /* Running on a hypervisor */
  
-+	/*
-+	 * The EFI specification says that boot service code won't be called
-+	 * after ExitBootServices(). This is, in fact, a lie.
-+	 */
-+	if (efi_enabled)
-+		efi_reserve_boot_services();
-+
- 	/* preallocate 4k for mptable mpc */
- 	early_reserve_e820_mpc_new();
- 
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -315,6 +315,40 @@ static void __init print_efi_memmap(void
- }
- #endif  /*  EFI_DEBUG  */
- 
-+void __init efi_reserve_boot_services(void)
-+{
-+	void *p;
-+
-+	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
-+		efi_memory_desc_t *md = p;
-+		unsigned long long start = md->phys_addr;
-+		unsigned long long size = md->num_pages << EFI_PAGE_SHIFT;
-+
-+		if (md->type != EFI_BOOT_SERVICES_CODE &&
-+		    md->type != EFI_BOOT_SERVICES_DATA)
-+			continue;
-+
-+		memblock_x86_reserve_range(start, start + size, "EFI Boot");
-+	}
-+}
-+
-+static void __init efi_free_boot_services(void)
-+{
-+	void *p;
-+
-+	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
-+		efi_memory_desc_t *md = p;
-+		unsigned long long start = md->phys_addr;
-+		unsigned long long size = md->num_pages << EFI_PAGE_SHIFT;
-+
-+		if (md->type != EFI_BOOT_SERVICES_CODE &&
-+		    md->type != EFI_BOOT_SERVICES_DATA)
-+			continue;
-+
-+		free_bootmem_late(start, size);
-+	}
-+}
-+
- void __init efi_init(void)
- {
- 	efi_config_table_t *config_tables;
-@@ -507,7 +541,9 @@ void __init efi_enter_virtual_mode(void)
- 	efi.systab = NULL;
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
- 		md = p;
--		if (!(md->attribute & EFI_MEMORY_RUNTIME))
-+		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
-+		    md->type != EFI_BOOT_SERVICES_CODE &&
-+		    md->type != EFI_BOOT_SERVICES_DATA)
- 			continue;
- 
- 		size = md->num_pages << EFI_PAGE_SHIFT;
-@@ -558,6 +594,13 @@ void __init efi_enter_virtual_mode(void)
- 	}
- 
- 	/*
-+	 * Thankfully, it does seem that no runtime services other than
-+	 * SetVirtualAddressMap() will touch boot services code, so we can
-+	 * get rid of it all at this point
-+	 */
-+	efi_free_boot_services();
-+
-+	/*
- 	 * Now that EFI is in virtual mode, update the function
- 	 * pointers in the runtime service table to the new virtual addresses.
- 	 *
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -64,10 +64,11 @@ static void __init early_runtime_code_ma
- 	if (!(__supported_pte_mask & _PAGE_NX))
- 		return;
- 
--	/* Make EFI runtime service code area executable */
-+	/* Make EFI service code area executable */
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
- 		md = p;
--		if (md->type == EFI_RUNTIME_SERVICES_CODE) {
-+		if (md->type == EFI_RUNTIME_SERVICES_CODE ||
-+		    md->type == EFI_BOOT_SERVICES_CODE) {
- 			unsigned long end;
- 			end = md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT);
- 			early_mapping_set_exec(md->phys_addr, end, executable);
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -299,6 +299,7 @@ extern void efi_initialize_iomem_resourc
- 		struct resource *data_resource, struct resource *bss_resource);
- extern unsigned long efi_get_time(void);
- extern int efi_set_rtc_mmss(unsigned long nowtime);
-+extern void efi_reserve_boot_services(void);
- extern struct efi_memory_map memmap;
- 
- /**
+ /* VIA/Cyrix/Centaur-defined CPU features, CPUID level 0xC0000001, word 5 */
 
 
