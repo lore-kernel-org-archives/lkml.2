@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162379Ab1FAIT3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:19:29 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44452 "EHLO mx1.suse.de"
+	id S1162392Ab1FAITf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:19:35 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44461 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162361Ab1FAITX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:19:23 -0400
+	id S1162374Ab1FAIT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:19:28 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:18 2011
-Message-Id: <20110601081117.659328028@blue.kroah.org>
+Message-Id: <20110601081118.288125376@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:10:18 +0900
+Date: Wed, 01 Jun 2011 17:10:19 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [048/165] jbd: Fix forever sleeping process in do_get_write_access()
+        "Theodore Tso" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [049/165] jbd: fix fsync() tid wraparound bug
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,46 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1412
-Lines: 39
+Content-Length: 2440
+Lines: 64
 
-From: Jan Kara <jack@suse.cz>
+From: Ted Ts'o <tytso@mit.edu>
 
-commit 2842bb20eed2e25cde5114298edc62c8883a1d9a upstream.
+commit d9b01934d56a96d9f4ae2d6204d4ea78a36f5f36 upstream.
 
-In do_get_write_access() we wait on BH_Unshadow bit for buffer to get
-from shadow state. The waking code in journal_commit_transaction() has
-a bug because it does not issue a memory barrier after the buffer is moved
-from the shadow state and before wake_up_bit() is called. Thus a waitqueue
-check can happen before the buffer is actually moved from the shadow state
-and waiting process may never be woken. Fix the problem by issuing proper
-barrier.
+If an application program does not make any changes to the indirect
+blocks or extent tree, i_datasync_tid will not get updated.  If there
+are enough commits (i.e., 2**31) such that tid_geq()'s calculations
+wrap, and there isn't a currently active transaction at the time of
+the fdatasync() call, this can end up triggering a BUG_ON in
+fs/jbd/commit.c:
 
-Reported-by: Tao Ma <boyu.mt@taobao.com>
+	J_ASSERT(journal->j_running_transaction != NULL);
+
+It's pretty rare that this can happen, since it requires the use of
+fdatasync() plus *very* frequent and excessive use of fsync().  But
+with the right workload, it can.
+
+We fix this by replacing the use of tid_geq() with an equality test,
+since there's only one valid transaction id that is valid for us to
+start: namely, the currently running transaction (if it exists).
+
+Reported-by: Martin_Zielinski@McAfee.com
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/jbd/commit.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ fs/jbd/journal.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
---- a/fs/jbd/commit.c
-+++ b/fs/jbd/commit.c
-@@ -722,8 +722,13 @@ wait_for_iobuf:
-                    required. */
- 		JBUFFER_TRACE(jh, "file as BJ_Forget");
- 		journal_file_buffer(jh, commit_transaction, BJ_Forget);
--		/* Wake up any transactions which were waiting for this
--		   IO to complete */
-+		/*
-+		 * Wake up any transactions which were waiting for this
-+		 * IO to complete. The barrier must be here so that changes
-+		 * by journal_file_buffer() take effect before wake_up_bit()
-+		 * does the waitqueue check.
-+		 */
-+		smp_mb();
- 		wake_up_bit(&bh->b_state, BH_Unshadow);
- 		JBUFFER_TRACE(jh, "brelse shadowed buffer");
- 		__brelse(bh);
+--- a/fs/jbd/journal.c
++++ b/fs/jbd/journal.c
+@@ -437,9 +437,12 @@ int __log_space_left(journal_t *journal)
+ int __log_start_commit(journal_t *journal, tid_t target)
+ {
+ 	/*
+-	 * Are we already doing a recent enough commit?
++	 * The only transaction we can possibly wait upon is the
++	 * currently running transaction (if it exists).  Otherwise,
++	 * the target tid must be an old one.
+ 	 */
+-	if (!tid_geq(journal->j_commit_request, target)) {
++	if (journal->j_running_transaction &&
++	    journal->j_running_transaction->t_tid == target) {
+ 		/*
+ 		 * We want a new commit: OK, mark the request and wakeup the
+ 		 * commit thread.  We do _not_ do the commit ourselves.
+@@ -451,7 +454,14 @@ int __log_start_commit(journal_t *journa
+ 			  journal->j_commit_sequence);
+ 		wake_up(&journal->j_wait_commit);
+ 		return 1;
+-	}
++	} else if (!tid_geq(journal->j_commit_request, target))
++		/* This should never happen, but if it does, preserve
++		   the evidence before kjournald goes into a loop and
++		   increments j_commit_sequence beyond all recognition. */
++		WARN_ONCE(1, "jbd: bad log_start_commit: %u %u %u %u\n",
++		    journal->j_commit_request, journal->j_commit_sequence,
++		    target, journal->j_running_transaction ?
++		    journal->j_running_transaction->t_tid : 0);
+ 	return 0;
+ }
+ 
 
 
