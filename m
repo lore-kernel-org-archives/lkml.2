@@ -1,70 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab1FAFHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 01:07:24 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:54888 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393Ab1FAFHR (ORCPT
+	id S1752043Ab1FAFOX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 01:14:23 -0400
+Received: from relay03.digicable.hu ([92.249.128.185]:55186 "EHLO
+	relay03.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424Ab1FAFOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 01:07:17 -0400
-X-Originating-IP: 217.70.178.131
-X-Originating-IP: 131.252.248.105
-Date: Tue, 31 May 2011 22:07:01 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Jamey Sharp <jamey@minilop.net>
-Subject: Hooking up SM501 on TQM5200 (MPC5200) board via device tree?
-Message-ID: <20110601050659.GA7789@leaf>
+	Wed, 1 Jun 2011 01:14:21 -0400
+Message-ID: <4DE5CA9F.6010303@freemail.hu>
+Date: Wed, 01 Jun 2011 07:14:07 +0200
+From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
+        Kulikov Vasiliy <segooon@gmail.com>, Endre Kollar <taxy443@gmail.com>,
+        Arjan Mels <arjan.mels@gmx.net>, Ilia Mirkin <imirkin@alum.mit.edu>,
+        David Chang <dchang@novell.com>,
+        Himanshu Chauhan <hschauhan@nulltrace.org>,
+        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
+        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] usbip: handle length at sysfs show() functions
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Original: 94.21.187.248
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a TQM5200 board, which has GPIO lines hooked up to an SM501.
-I've managed to come up with the following patch to the tqm5200 device
-tree, which manages to convince the sm501 driver to attach an sm501-fb:
+From: Márton Németh <nm127@freemail.hu>
 
---- a/arch/powerpc/boot/dts/tqm5200.dts  2009-11-23 03:13:27.000000000 -0800
-+++ b/arch/powerpc/boot/dts/tqm5200.dts  2011-05-31 22:00:28.000580627 -0700
-@@ -177,7 +177,8 @@
-                compatible = "fsl,mpc5200-lpb","simple-bus";
-                #address-cells = <2>;
-                #size-cells = <1>;
--               ranges = <0 0 0xfc000000 0x02000000>;
-+               ranges = <0 0 0xfc000000 0x02000000
-+                         1 0 0xe0000000 0x04000000>;
- 
-                flash@0,0 {
-                        compatible = "cfi-flash";
-@@ -187,6 +188,13 @@
-                        #size-cells = <1>;
-                        #address-cells = <1>;
-                };
-+
-+               display@1,0 {
-+                       compatible = "smi,sm501";
-+                       reg = <1 0x00000000 0x00800000
-+                              1 0x03e00000 0x00200000>;
-+                       interrupts = <1 1 3>;
-+               };
-        };
- 
-        pci@f0000d00 {
+The sysfs show() functions shall return the actual content length of
+the result buffer. According to Documentation/filesystems/sysfs.txt:215
+the scnprintf() function is preferred.
 
+See also the article titled "snprintf() confusion" at
+http://lwn.net/Articles/69419/ .
 
-However, this doesn't hook up the sm501-gpio bits.  Reading the sm501
-driver carefully, it looks like it only hooks up sm501-gpio if it has
-platform_data available which sets some flags and other information.
-So, if I understand correctly, hooking up sm501-gpio would require
-adding functionality the driver to get the GPIO information from the
-device tree in preference to the platform_data, if available, and fall
-back to the platform_data for existing users?
+Signed-off-by: Márton Németh <nm127@freemail.hu>
+---
+diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
+index 6e99ec8..af5f107 100644
+--- a/drivers/staging/usbip/stub_dev.c
++++ b/drivers/staging/usbip/stub_dev.c
+@@ -80,7 +80,7 @@ static ssize_t show_status(struct device *dev, struct device_attribute *attr,
+ 	status = sdev->ud.status;
+ 	spin_unlock(&sdev->ud.lock);
 
-What should the necessary device tree properties look like to replace
-sm501_initdata?
+-	return snprintf(buf, PAGE_SIZE, "%d\n", status);
++	return scnprintf(buf, PAGE_SIZE, "%d\n", status);
+ }
+ static DEVICE_ATTR(usbip_status, S_IRUGO, show_status, NULL);
 
-- Josh Triplett
+diff --git a/drivers/staging/usbip/stub_main.c b/drivers/staging/usbip/stub_main.c
+index e9085d6..604e6bb 100644
+--- a/drivers/staging/usbip/stub_main.c
++++ b/drivers/staging/usbip/stub_main.c
+@@ -79,18 +79,22 @@ static ssize_t show_match_busid(struct device_driver *drv, char *buf)
+ {
+ 	int i;
+ 	char *out = buf;
++	int count = 0;
+
+ 	spin_lock(&busid_table_lock);
+
+ 	for (i = 0; i < MAX_BUSID; i++)
+-		if (busid_table[i].name[0])
+-			out += sprintf(out, "%s ", busid_table[i].name);
++		if (busid_table[i].name[0]) {
++			count += scnprintf(out, PAGE_SIZE - count,
++					"%s ", busid_table[i].name);
++			out = buf + count;
++		}
+
+ 	spin_unlock(&busid_table_lock);
+
+-	out += sprintf(out, "\n");
++	count += scnprintf(out, PAGE_SIZE - count, "\n");
+
+-	return out - buf;
++	return count;
+ }
+
+ static int add_match_busid(char *busid)
+diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
+index 433a3b6..127fdbb 100644
+--- a/drivers/staging/usbip/usbip_common.c
++++ b/drivers/staging/usbip/usbip_common.c
+@@ -43,7 +43,7 @@ EXPORT_SYMBOL_GPL(dev_attr_usbip_debug);
+ static ssize_t show_flag(struct device *dev, struct device_attribute *attr,
+ 			 char *buf)
+ {
+-	return sprintf(buf, "%lx\n", usbip_debug_flag);
++	return scnprintf(buf, PAGE_SIZE, "%lx\n", usbip_debug_flag);
+ }
+
+ static ssize_t store_flag(struct device *dev, struct device_attribute *attr,
+diff --git a/drivers/staging/usbip/vhci_sysfs.c b/drivers/staging/usbip/vhci_sysfs.c
+index d9736f9..1571882 100644
+--- a/drivers/staging/usbip/vhci_sysfs.c
++++ b/drivers/staging/usbip/vhci_sysfs.c
+@@ -27,10 +27,11 @@
+
+ /* Sysfs entry to show port status */
+ static ssize_t show_status(struct device *dev, struct device_attribute *attr,
+-			   char *out)
++			   char *buf)
+ {
+-	char *s = out;
++	char *out = buf;
+ 	int i = 0;
++	int count;
+
+ 	BUG_ON(!the_controller || !out);
+
+@@ -46,32 +47,43 @@ static ssize_t show_status(struct device *dev, struct device_attribute *attr,
+ 	 * up /proc/net/{tcp,tcp6}. Also, a userland program may remember a
+ 	 * port number and its peer IP address.
+ 	 */
+-	out += sprintf(out, "prt sta spd bus dev socket           "
+-		       "local_busid\n");
++	count = scnprintf(out, PAGE_SIZE,
++		"prt sta spd bus dev socket           local_busid\n");
++	out = buf + count;
+
+ 	for (i = 0; i < VHCI_NPORTS; i++) {
+ 		struct vhci_device *vdev = port_to_vdev(i);
+
+ 		spin_lock(&vdev->ud.lock);
+-		out += sprintf(out, "%03u %03u ", i, vdev->ud.status);
++		count += scnprintf(out, PAGE_SIZE - count,
++			"%03u %03u ", i, vdev->ud.status);
++		out = buf + count;
+
+ 		if (vdev->ud.status == VDEV_ST_USED) {
+-			out += sprintf(out, "%03u %08x ",
+-				       vdev->speed, vdev->devid);
+-			out += sprintf(out, "%16p ", vdev->ud.tcp_socket);
+-			out += sprintf(out, "%s", dev_name(&vdev->udev->dev));
++			count += scnprintf(out, PAGE_SIZE - count,
++				"%03u %08x ", vdev->speed, vdev->devid);
++			out = buf + count;
++			count += scnprintf(out, PAGE_SIZE - count,
++				"%16p ", vdev->ud.tcp_socket);
++			out = buf + count;
++			count += scnprintf(out, PAGE_SIZE - count,
++				"%s", dev_name(&vdev->udev->dev));
++			out = buf + count;
+
+ 		} else {
+-			out += sprintf(out, "000 000 000 0000000000000000 0-0");
++			count += scnprintf(out, PAGE_SIZE - count,
++				"000 000 000 0000000000000000 0-0");
++			out = buf + count;
+ 		}
+
+-		out += sprintf(out, "\n");
++		count += scnprintf(out, PAGE_SIZE - count, "\n");
++		out = buf + count;
+ 		spin_unlock(&vdev->ud.lock);
+ 	}
+
+ 	spin_unlock(&the_controller->lock);
+
+-	return out - s;
++	return count;
+ }
+ static DEVICE_ATTR(status, S_IRUGO, show_status, NULL);
+
