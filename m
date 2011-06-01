@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758752Ab1FAKDw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 06:03:52 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.180]:38726 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861Ab1FAKDt (ORCPT
+	id S933284Ab1FAKEd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 06:04:33 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64398 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755861Ab1FAKEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 06:03:49 -0400
-X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h8JiYXs/HrEl2yUn8V3w==
-X-RZG-CLASS-ID: mo05
-Message-ID: <4DE60E7E.3080300@samba.org>
-Date: Wed, 01 Jun 2011 12:03:42 +0200
-From: "Stefan (metze) Metzmacher" <metze@samba.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Oliver Neukum <oneukum@suse.de>
-CC: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usbnet/cdc_ncm: add missing .reset_resume hook
-References: <1306919630-13426-1-git-send-email-metze@samba.org> <1306919630-13426-2-git-send-email-metze@samba.org> <201106011143.46667.oneukum@suse.de>
-In-Reply-To: <201106011143.46667.oneukum@suse.de>
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=0E53083F
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig9144ACF09BF9ABBADC4AFBDB"
+	Wed, 1 Jun 2011 06:04:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=KROavVBtXMt3W0LV2zu+S8JwG09+1Zz/cZIi+CCrqImoHLjNATlehd/MOPV5lBSKmD
+         mzzouFFxgBBLQ8cQtscKdYWd8D/F1eISFr7RuirWG3w/oGMnHcWhiaKIjf7xvkirqbPr
+         wtmmZEHZBxyeDfOlv8xwWWcJehItsWvbEyMS8=
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning instead of failing
+Date: Wed,  1 Jun 2011 14:04:32 +0400
+Message-Id: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig9144ACF09BF9ABBADC4AFBDB
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+Please be more polite to other people. After a197b59ae6 all allocations
+with GFP_DMA set on nodes without ZONE_DMA fail nearly silently (only
+one warning during bootup is emited, no matter how many things fail).
+This is a very crude change on behaviour. To be more civil, instead of
+failing emit noisy warnings each time smbd. tries to allocate a GFP_DMA
+memory on non-ZONE_DMA node.
 
-Am 01.06.2011 11:43, schrieb Oliver Neukum:
-> Am Mittwoch, 1. Juni 2011, 11:13:50 schrieb Stefan Metzmacher:
->> This avoids messages like this after suspend:
->>
->>    cdc_ncm 2-1.4:1.6: no reset_resume for driver cdc_ncm?
->>    cdc_ncm 2-1.4:1.7: no reset_resume for driver cdc_ncm?
->>    cdc_ncm 2-1.4:1.6: usb0: unregister 'cdc_ncm' usb-0000:00:1d.0-1.4,=
- CDC NCM
->>
->> This is important for the Ericsson F5521gw GSM/UMTS modem.
->> Otherwise modemmanager looses the fact that the cdc_ncm and cdc_acm de=
-vices
->> belong together.
->>
->> The cdc_ether module does the same.
->=20
-> Yes, it does. Have you tested this with active connections and unconnec=
-ted?
+This change should be reverted after one or two major releases, but
+we should be more accurate rather than hoping for the best.
 
-Yes, I've just tested suspend while having an active connection
-(My original tests where without an active connection).
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ mm/page_alloc.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-BTW: I'm testing this on top of linux-image-2.6.38-8-generic from ubuntu
-11.04.
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a4e1db3..e22dd4e 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2248,8 +2248,9 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ 	if (should_fail_alloc_page(gfp_mask, order))
+ 		return NULL;
+ #ifndef CONFIG_ZONE_DMA
+-	if (WARN_ON_ONCE(gfp_mask & __GFP_DMA))
+-		return NULL;
++	/* Change this back to hard failure after 3.0 or 3.1. For now give
++	 * drivers people a chance to fix their drivers w/o causing breakage. */
++	WARN_ON(gfp_mask & __GFP_DMA);
+ #endif
+ 
+ 	/*
+-- 
+1.7.4.4
 
-metze
-
-
---------------enig9144ACF09BF9ABBADC4AFBDB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk3mDn4ACgkQm70gjA5TCD+O2ACgrrfty515dHzeOgXg4qcYQpdV
-WeYAoMaBKMmob/5Bxe22z2pHW/1wJb/9
-=GeEt
------END PGP SIGNATURE-----
-
---------------enig9144ACF09BF9ABBADC4AFBDB--
