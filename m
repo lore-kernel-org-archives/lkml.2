@@ -1,30 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161448Ab1FAJ0S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:26:18 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:64667 "EHLO
+	id S1161404Ab1FAJ0L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:26:11 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.180]:64308 "EHLO
 	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161376Ab1FAJ0O (ORCPT
+	with ESMTP id S1161376Ab1FAJ0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 05:26:14 -0400
+	Wed, 1 Jun 2011 05:26:02 -0400
+X-Greylist: delayed 706 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Jun 2011 05:26:01 EDT
 X-RZG-AUTH: :IXQkeEW8Yfo/5haL0ckzWIsAYh739YBunhBBa3aCCiaR1pO3uOmbj2ao6A==
 X-RZG-CLASS-ID: mo05
 From: Stefan Metzmacher <metze@samba.org>
 To: Oliver Neukum <oliver@neukum.name>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: cdc_ncm: device gets unregistered on resume
-Date: Wed,  1 Jun 2011 11:13:49 +0200
-Message-Id: <1306919630-13426-1-git-send-email-metze@samba.org>
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stefan Metzmacher <metze@samba.org>
+Subject: [PATCH] usbnet/cdc_ncm: add missing .reset_resume hook
+Date: Wed,  1 Jun 2011 11:13:50 +0200
+Message-Id: <1306919630-13426-2-git-send-email-metze@samba.org>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1306919630-13426-1-git-send-email-metze@samba.org>
+References: <1306919630-13426-1-git-send-email-metze@samba.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This avoids messages like this after suspend:
 
-I noticed the cdc_ncm module doesn't have a .reset_resume hook,
-while the cdc_ether module has it.
+   cdc_ncm 2-1.4:1.6: no reset_resume for driver cdc_ncm?
+   cdc_ncm 2-1.4:1.7: no reset_resume for driver cdc_ncm?
+   cdc_ncm 2-1.4:1.6: usb0: unregister 'cdc_ncm' usb-0000:00:1d.0-1.4, CDC NCM
 
-metze
+This is important for the Ericsson F5521gw GSM/UMTS modem.
+Otherwise modemmanager looses the fact that the cdc_ncm and cdc_acm devices
+belong together.
+
+The cdc_ether module does the same.
+
+Signed-off-by: Stefan Metzmacher <metze@samba.org>
+---
+ drivers/net/usb/cdc_ncm.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
+index cdd3ae4..3257aaa 100644
+--- a/drivers/net/usb/cdc_ncm.c
++++ b/drivers/net/usb/cdc_ncm.c
+@@ -1234,6 +1234,7 @@ static struct usb_driver cdc_ncm_driver = {
+ 	.disconnect = cdc_ncm_disconnect,
+ 	.suspend = usbnet_suspend,
+ 	.resume = usbnet_resume,
++	.reset_resume =	usbnet_resume,
+ 	.supports_autosuspend = 1,
+ };
+ 
+-- 
+1.7.4.1
 
