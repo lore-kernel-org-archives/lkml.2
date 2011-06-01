@@ -1,141 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759544Ab1FATo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:44:56 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33821 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759533Ab1FATox (ORCPT
+	id S1759594Ab1FATqq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 15:46:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55676 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759552Ab1FATqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:44:53 -0400
-Date: Wed, 1 Jun 2011 20:46:18 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Timur Tabi <timur@freescale.com>
-Cc: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
-        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
-Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
- management driver
-Message-ID: <20110601204618.32190be9@lxorguk.ukuu.org.uk>
-In-Reply-To: <1306953337-15698-1-git-send-email-timur@freescale.com>
-References: <1306953337-15698-1-git-send-email-timur@freescale.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Jun 2011 15:46:45 -0400
+Date: Wed, 1 Jun 2011 21:46:37 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Rientjes <rientjes@google.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
+ instead of failing
+In-Reply-To: <alpine.DEB.2.00.1106011205410.17065@chino.kir.corp.google.com>
+Message-ID: <alpine.LFD.2.02.1106012134120.3078@ionos>
+References: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com> <BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com> <BANLkTikrRRzGLbMD47_xJz+xpgftCm1C2A@mail.gmail.com> <alpine.DEB.2.00.1106011017260.13089@chino.kir.corp.google.com>
+ <20110601181918.GO3660@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1106012043080.3078@ionos> <alpine.DEB.2.00.1106011205410.17065@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-O> +	/* One partition must be local, the other must be remote.  In other
-> +	   words, if source and target are both -1, or are both not -1, then
-> +	   return an error. */
-> +	if ((param.source == -1) == (param.target == -1))
-> +		return -EINVAL;
+On Wed, 1 Jun 2011, David Rientjes wrote:
+> On Wed, 1 Jun 2011, Thomas Gleixner wrote:
+> 
+> > > That is NOT an unreasonable request, but it seems that its far too much
+> > > to ask of you.
+> > 
+> > Full ack.
+> > 
+> > David,
+> > 
+> > stop that nonsense already. You changed the behaviour and broke stuff
+> > which was working fine before for whatever reason. That behaviour was
+> > in the kernel for ages and we tolerated the abuse.
+> > 
+> 
+> Did I nack this patch and not realize it?
 
-Excess brackets (I just mention that one in passing)
+No, you did not realize anything.
+ 
+> Does my patch fix the warning for pxaficp_ir that would still be emitted 
+> with this patch?  If the driver uses GFP_DMA and nobody from the arm side 
 
-> +	/* pages is an array of struct page pointers that's initialized by
-> +	   get_user_pages() */
-> +	pages = kzalloc(nr_pages * sizeof(struct page *), GFP_KERNEL);
-> +	if (!pages) {
-> +		pr_debug("fsl-hv: could not allocate page list\n");
-> +		return -ENOMEM;
-> +	}
+Your patch does not fix anything. It papers over the problem and
+that's the f@&^%%@^#ing wrong approach.
 
-pages allocated
+And just to be clear. You CANNOT fix a warning. You can fix the code
+which causes the warning, but that's not what your patch is
+doing. Your patch HIDES the problem.
 
-> +
-> +	/* sg_list is the list of fh_sg_list objects that we pass to the
-> +	   hypervisor */
-> +	sg_list_unaligned = kmalloc(nr_pages * sizeof(struct fh_sg_list) +
-> +		sizeof(struct fh_sg_list) - 1, GFP_KERNEL);
-> +	if (!sg_list_unaligned) {
-> +		pr_debug("fsl-hv: could not allocate S/G list\n");
+> is prepared to remove it yet, then I'd suggest merging my patch until that 
+> can be determined.  Otherwise, you have no guarantees about where the 
+> memory is actually coming from.
 
-but not freed on this path
+Did you actually try to understand what I wrote? 
 
-Although the other paths look fine.
+You decided that it's a BUG just because it should not be allowed. So
+you changed the behaviour, which was perfectly fine before.
 
-> +exit:
-> +	if (pages) {
-> +		for (i = 0; i < nr_pages; i++)
-> +			if (pages[i])
-> +				page_cache_release(pages[i]);
-> +	}
-> +
-> +	kfree(sg_list_unaligned);
-> +	kfree(pages);
+Now you try to paper over the problem by selecting ZONE_DMA and refuse
+to give a grace period of _ONE_ kernel release.
 
-> +static char *strdup_from_user(const char __user *ustr, size_t max)
-> +{
-> +	size_t len;
-> +	char *str;
-> +
-> +	len = strnlen_user(ustr, max);
-> +	if (len > max)
-> +		return ERR_PTR(-ENAMETOOLONG);
-> +
-> +	str = kmalloc(len, GFP_KERNEL);
-> +	if (!str)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	if (copy_from_user(str, ustr, len))
-> +		return ERR_PTR(-EFAULT);
-> +
-> +	return str;
-> +}
+IOW, you are preventing that the abusers of GFP_DMA are fixed
+properly.
 
-This belongs on lib/ if its of general use which I think it perhaps is
-and if we don't have one already.
+I can see that you neither have the bandwidth nor the knowledge to
+analyse each user of GFP_DMA. And that should tell you something.
 
+If you cannot fix it yourself, then f*(&!@$#ng not break it.
 
-> +	default:
-> +		pr_debug("fsl-hv: unknown ioctl %u\n", cmd);
-> +		ret = -ENOIOCTLCMD;
+Thanks,
 
--ENOTTY
+	tglx
 
-(-ENOIOCTLCMD is an internal indicator designed so driver layers can say
-'dunno, try the next layer up')
-
-> +/* Linked list of processes that have us open */
-> +struct list_head db_list;
-
-static ?
-
-
-> + * We use the same interrupt handler for all doorbells.  Whenever a doorbell
-> + * is rung, and we receive an interrupt, we just put the handle for that
-> + * doorbell (passed to us as *data) into all of the queues.
-
-I wonder if these should be presented as IRQs or whether that makes no
-sense ?
-
-
-> +static irqreturn_t fsl_hv_state_change_isr(int irq, void *data)
-> +{
-> +	unsigned int status;
-> +	struct doorbell_isr *dbisr = data;
-> +	int ret;
-> +
-> +	/* Determine the new state, and if it's stopped, notify the clients. */
-> +	ret = fh_partition_get_status(dbisr->partition, &status);
-> +	if (!ret && (status == FH_PARTITION_STOPPED))
-> +		schedule_work(&dbisr->work);
-> +
-> +	/* Call the normal handler */
-> +	return fsl_hv_isr(irq, (void *) (uintptr_t) dbisr->doorbell);
-> +}
-
-Would a threaded IRQ clean this up by avoiding the queue/work stuff ?
-
-
-> +static irqreturn_t fsl_hv_shutdown_isr(int irq, void *data)
-> +{
-> +	schedule_work(&power_off);
-> +
-> +	/* We should never get here */
-
-Probably worth printing something if you do (panic(...) ?)
 
