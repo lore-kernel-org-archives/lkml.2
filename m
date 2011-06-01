@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161513Ab1FALTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 07:19:10 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44955 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161274Ab1FALTB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 07:19:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:mime-version:content-type
-         :content-transfer-encoding:message-id;
-        b=JGEvCp+eKQV224kUmZFPJaaK8ZkqbzY3hbx8+MRfWlddtJHS793YEpQZNTSoUp/skx
-         0q/4Rkr2yjHNFvrGDLVeVglts+tZQlYvHqwgUMMxMe9pmQpXRXNIriDSWcD4avZ9qjqD
-         IiaU3FJzWJudZGydibdi2ep4AlYOCRIHfmw5c=
-From: GuoWen Li <guowen.li.linux@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] Fix compiler warning in ftrace.c
-Date: Wed, 1 Jun 2011 19:18:47 +0800
-User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.2; i686; ; )
-Cc: linux-kernel@vger.kernel.org
+	id S1161494Ab1FAL1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 07:27:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2090 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161174Ab1FAL1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 07:27:16 -0400
+Message-ID: <4DE62200.10007@redhat.com>
+Date: Wed, 01 Jun 2011 14:26:56 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201106011918.47939.guowen.li.linux@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
+References: <1305129333-7456-1-git-send-email-avi@redhat.com>	 <4DD24544.1000408@redhat.com>  <4DE60A34.7070603@redhat.com> <1306923992.2353.165.camel@twins>
+In-Reply-To: <1306923992.2353.165.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernel/trace/ftrace.c: In function ‘ftrace_regex_write.clone.15’:
-kernel/trace/ftrace.c:2743:6: warning: ‘ret’ may be used uninitialized in this 
-function
+On 06/01/2011 01:26 PM, Peter Zijlstra wrote:
+> >
+> >  Re-ping?
+>
+> Still struggling with merge window fallout, this is soon after that.
 
-Signed-off-by: GuoWen Li
----
- kernel/trace/ftrace.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks.
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 1ee417f..204b3eb 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2740,7 +2740,7 @@ static int ftrace_process_regex(struct ftrace_hash 
-*hash,
- {
-        char *func, *command, *next = buff;
-        struct ftrace_func_command *p;
--       int ret;
-+       int ret = -EINVAL;
- 
-        func = strsep(&next, ":");
+-- 
+error compiling committee.c: too many arguments to function
+
