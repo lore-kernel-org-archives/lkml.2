@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162397Ab1FAIxu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:53:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44425 "EHLO mx1.suse.de"
+	id S1162366Ab1FAITY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:19:24 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44441 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162333Ab1FAITM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:19:12 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:16 2011
-Message-Id: <20110601081116.434769724@blue.kroah.org>
+	id S1162352Ab1FAITS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:19:18 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:17 2011
+Message-Id: <20110601081117.059387771@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:10:16 +0900
+Date: Wed, 01 Jun 2011 17:10:17 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [046/165] usb-storage: fix up the unusual_realtek device list
+        Jan Kara <jack@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [047/165] ext3: Fix fs corruption when make_indexed_dir() fails
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +24,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1573
-Lines: 46
+Content-Length: 1270
+Lines: 43
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Jan Kara <jack@suse.cz>
 
-commit a8e62dd6d91f3bc3687abbb26227e5fc39c4829c upstream.
+commit 86c4f6d85595cd7da635dc6985d27bfa43b1ae10 upstream.
 
-This patch (as1461) fixes the unusual_devs entries for the Realtek USB
-card reader.  They should be ordered by PID, and they should not
-override the Subclass and Protocol values provided by the device.
-Otherwise a notification about unnecessary entries gets printed in the
-kernel log during probing.
+When make_indexed_dir() fails (e.g. because of ENOSPC) after it has allocated
+block for index tree root, we did not properly mark all changed buffers dirty.
+This lead to only some of these buffers being written out and thus effectively
+corrupting the directory.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-By: Tony Vroon <tony@linx.net>
+Fix the issue by marking all changed data dirty even in the error failure case.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/storage/unusual_realtek.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ fs/ext3/namei.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/storage/unusual_realtek.h
-+++ b/drivers/usb/storage/unusual_realtek.h
-@@ -23,19 +23,19 @@
- #if defined(CONFIG_USB_STORAGE_REALTEK) || \
- 		defined(CONFIG_USB_STORAGE_REALTEK_MODULE)
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -1416,10 +1416,19 @@ static int make_indexed_dir(handle_t *ha
+ 	frame->at = entries;
+ 	frame->bh = bh;
+ 	bh = bh2;
++	/*
++	 * Mark buffers dirty here so that if do_split() fails we write a
++	 * consistent set of buffers to disk.
++	 */
++	ext3_journal_dirty_metadata(handle, frame->bh);
++	ext3_journal_dirty_metadata(handle, bh);
+ 	de = do_split(handle,dir, &bh, frame, &hinfo, &retval);
+-	dx_release (frames);
+-	if (!(de))
++	if (!de) {
++		ext3_mark_inode_dirty(handle, dir);
++		dx_release(frames);
+ 		return retval;
++	}
++	dx_release(frames);
  
--UNUSUAL_DEV(0x0bda, 0x0159, 0x0000, 0x9999,
-+UNUSUAL_DEV(0x0bda, 0x0138, 0x0000, 0x9999,
- 		"Realtek",
- 		"USB Card Reader",
--		USB_SC_SCSI, USB_PR_BULK, init_realtek_cr, 0),
-+		USB_SC_DEVICE, USB_PR_DEVICE, init_realtek_cr, 0),
- 
- UNUSUAL_DEV(0x0bda, 0x0158, 0x0000, 0x9999,
- 		"Realtek",
- 		"USB Card Reader",
--		USB_SC_SCSI, USB_PR_BULK, init_realtek_cr, 0),
-+		USB_SC_DEVICE, USB_PR_DEVICE, init_realtek_cr, 0),
- 
--UNUSUAL_DEV(0x0bda, 0x0138, 0x0000, 0x9999,
-+UNUSUAL_DEV(0x0bda, 0x0159, 0x0000, 0x9999,
- 		"Realtek",
- 		"USB Card Reader",
--		USB_SC_SCSI, USB_PR_BULK, init_realtek_cr, 0),
-+		USB_SC_DEVICE, USB_PR_DEVICE, init_realtek_cr, 0),
- 
- #endif  /* defined(CONFIG_USB_STORAGE_REALTEK) || ... */
+ 	return add_dirent_to_buf(handle, dentry, inode, de, bh);
+ }
 
 
