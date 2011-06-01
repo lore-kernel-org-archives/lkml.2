@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758832Ab1FAPqv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 11:46:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51650 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754008Ab1FAPqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 11:46:47 -0400
-Message-ID: <4DE65EDF.9020001@zytor.com>
-Date: Wed, 01 Jun 2011 08:46:39 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1756915Ab1FAPuu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 11:50:50 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52078 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755411Ab1FAPus (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 11:50:48 -0400
+Date: Wed, 1 Jun 2011 16:50:16 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Rientjes <rientjes@google.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Samuel Ortiz <samuel@sortiz.org>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: IrDA driver fails on PXA255
+Message-ID: <20110601155016.GM3660@n2100.arm.linux.org.uk>
+References: <alpine.DEB.2.00.1105281628480.9934@chino.kir.corp.google.com> <BANLkTim9YdhjY75CzMsSOCVKZWi-WKZ5wA@mail.gmail.com> <alpine.DEB.2.00.1105291410450.9658@chino.kir.corp.google.com> <20110529215656.GA5576@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105302202510.18793@chino.kir.corp.google.com> <20110531072650.GC21382@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105311253510.5646@chino.kir.corp.google.com> <20110531210027.GA3660@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105311501570.16259@chino.kir.corp.google.com> <20110601075420.GB3660@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [kernel.org users] Turning off the incremental diff robot
-References: <4DE3E9E7.8020008@zytor.com> <20110531195201.GB7995@1wt.eu> <201106010943.11180.tvrtko.ursulin@onelan.co.uk>
-In-Reply-To: <201106010943.11180.tvrtko.ursulin@onelan.co.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110601075420.GB3660@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2011 01:43 AM, Tvrtko Ursulin wrote:
+On Wed, Jun 01, 2011 at 08:54:20AM +0100, Russell King - ARM Linux wrote:
+> On Tue, May 31, 2011 at 03:11:40PM -0700, David Rientjes wrote:
+> > The restriction isn't new: GFP_DMA only makes sense with CONFIG_ZONE_DMA.  
+> > The fact that the page allocator completely ignored GFP_DMA in the past 
+> > for CONFIG_ZONE_DMA=n doesn't change that.  That's obviously error prone 
+> > since it will return memory from anywhere simply because of the fact that 
+> > it is an invalid configuration.
 > 
-> I use them to go from one stable version to the next and it is quite 
-> convenient. Maybe there is another way to achieve that (that "all" in "git and 
-> all")?
-> 
+> Your approach to this is wrong.  Make it warn for one release.  Give
+> people a chance to fix things before they become a regression.  Then
+> make it a hard failure.
 
-You can pull down the stable git tree and do diffs to your heart's
-content, obviously.
+And to prove that its not just this driver, I've now received a report
+that it fails with the CF PATA driver on Zaurus.  Should we make the
+PATA subsystem select CONFIG_ZONE_DMA too, or should we give people
+some grace period to fix the drivers as _everyone_ except you is
+suggesting.
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Please do the sensible thing.  Make it warn for a release like everyone
+is telling you to.
