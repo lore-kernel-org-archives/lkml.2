@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161321Ab1FAJ2W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:28:22 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43216 "EHLO mx1.suse.de"
+	id S1161134Ab1FAIId (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:08:33 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43236 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161275Ab1FAIIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:08:23 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:51 2011
-Message-Id: <20110601080250.877042502@blue.kroah.org>
+	id S1161276Ab1FAII2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:08:28 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:53 2011
+Message-Id: <20110601080252.098622775@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:20 +0900
+Date: Wed, 01 Jun 2011 16:59:21 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
         Kay Sievers <kay.sievers@vrfy.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [024/146] gdrom,viocd: Convert to bdops->check_events()
+Subject: [025/146] ide: Convert to bdops->check_events()
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,148 +30,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tejun Heo <tj@kernel.org>
 
-commit 1c27030bd21e7e2c68ef5be9f28c63778cf4b27f upstream.
+commit 5b03a1b140e13a28ff6be1526892a9dc538ddef6 upstream.
 
-Convert gdrom and viocd from ->media_changed() to ->check_events().
+Convert ->media_changed() to the new ->check_events() method.  The
+conversion is mostly mechanical.  The only notable change is that
+cdrom now doesn't generate any event if @slot_nr isn't CDSL_CURRENT.
+It used to return -EINVAL which would be treated as media changed.  As
+media changer isn't supported anyway, this doesn't make any
+difference.
 
-It's unclear how the conditions are cleared and it's possible that it
-may generate spurious events when polled.
+This makes ide emit the standard disk events and allows kernel event
+polling.  Currently, only MEDIA_CHANGE event is implemented.  Adding
+support for EJECT_REQUEST shouldn't be difficult; however, given that
+ide driver is already deprecated, it probably is best to leave it
+alone.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>
+Acked-by: Jens Axboe <axboe@kernel.dk>
 Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: linux-ide@vger.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/cdrom/gdrom.c |   16 ++++++++++------
- drivers/cdrom/viocd.c |   17 ++++++++++-------
- 2 files changed, 20 insertions(+), 13 deletions(-)
+ drivers/ide/ide-cd.c       |   10 ++++++----
+ drivers/ide/ide-cd.h       |    3 ++-
+ drivers/ide/ide-cd_ioctl.c |    8 ++++----
+ drivers/ide/ide-gd.c       |   14 ++++++++------
+ 4 files changed, 20 insertions(+), 15 deletions(-)
 
---- a/drivers/cdrom/gdrom.c
-+++ b/drivers/cdrom/gdrom.c
-@@ -395,10 +395,12 @@ static int gdrom_drivestatus(struct cdro
- 	return CDS_NO_INFO;
+--- a/drivers/ide/ide-cd.c
++++ b/drivers/ide/ide-cd.c
+@@ -1177,7 +1177,7 @@ static struct cdrom_device_ops ide_cdrom
+ 	.open			= ide_cdrom_open_real,
+ 	.release		= ide_cdrom_release_real,
+ 	.drive_status		= ide_cdrom_drive_status,
+-	.media_changed		= ide_cdrom_check_media_change_real,
++	.check_events		= ide_cdrom_check_events_real,
+ 	.tray_move		= ide_cdrom_tray_move,
+ 	.lock_door		= ide_cdrom_lock_door,
+ 	.select_speed		= ide_cdrom_select_speed,
+@@ -1702,10 +1702,11 @@ static int idecd_ioctl(struct block_devi
  }
  
--static int gdrom_mediachanged(struct cdrom_device_info *cd_info, int ignore)
-+static unsigned int gdrom_check_events(struct cdrom_device_info *cd_info,
-+				       unsigned int clearing, int ignore)
+ 
+-static int idecd_media_changed(struct gendisk *disk)
++static unsigned int idecd_check_events(struct gendisk *disk,
++				       unsigned int clearing)
  {
- 	/* check the sense key */
--	return (__raw_readb(GDROM_ERROR_REG) & 0xF0) == 0x60;
-+	return (__raw_readb(GDROM_ERROR_REG) & 0xF0) == 0x60 ?
-+		DISK_EVENT_MEDIA_CHANGE : 0;
+ 	struct cdrom_info *info = ide_drv_g(disk, cdrom_info);
+-	return cdrom_media_changed(&info->devinfo);
++	return cdrom_check_events(&info->devinfo, clearing);
  }
  
- /* reset the G1 bus */
-@@ -483,7 +485,7 @@ static struct cdrom_device_ops gdrom_ops
- 	.open			= gdrom_open,
- 	.release		= gdrom_release,
- 	.drive_status		= gdrom_drivestatus,
--	.media_changed		= gdrom_mediachanged,
-+	.check_events		= gdrom_check_events,
- 	.get_last_session	= gdrom_get_last_session,
- 	.reset			= gdrom_hardreset,
- 	.audio_ioctl		= gdrom_audio_ioctl,
-@@ -509,9 +511,10 @@ static int gdrom_bdops_release(struct ge
+ static int idecd_revalidate_disk(struct gendisk *disk)
+@@ -1723,7 +1724,7 @@ static const struct block_device_operati
+ 	.open			= idecd_open,
+ 	.release		= idecd_release,
+ 	.ioctl			= idecd_ioctl,
+-	.media_changed		= idecd_media_changed,
++	.check_events		= idecd_check_events,
+ 	.revalidate_disk	= idecd_revalidate_disk
+ };
+ 
+@@ -1790,6 +1791,7 @@ static int ide_cd_probe(ide_drive_t *dri
+ 	ide_cd_read_toc(drive, &sense);
+ 	g->fops = &idecd_ops;
+ 	g->flags |= GENHD_FL_REMOVABLE;
++	g->events = DISK_EVENT_MEDIA_CHANGE;
+ 	add_disk(g);
+ 	return 0;
+ 
+--- a/drivers/ide/ide-cd.h
++++ b/drivers/ide/ide-cd.h
+@@ -111,7 +111,8 @@ int cdrom_check_status(ide_drive_t *, st
+ int ide_cdrom_open_real(struct cdrom_device_info *, int);
+ void ide_cdrom_release_real(struct cdrom_device_info *);
+ int ide_cdrom_drive_status(struct cdrom_device_info *, int);
+-int ide_cdrom_check_media_change_real(struct cdrom_device_info *, int);
++unsigned int ide_cdrom_check_events_real(struct cdrom_device_info *,
++					 unsigned int clearing, int slot_nr);
+ int ide_cdrom_tray_move(struct cdrom_device_info *, int);
+ int ide_cdrom_lock_door(struct cdrom_device_info *, int);
+ int ide_cdrom_select_speed(struct cdrom_device_info *, int);
+--- a/drivers/ide/ide-cd_ioctl.c
++++ b/drivers/ide/ide-cd_ioctl.c
+@@ -79,8 +79,8 @@ int ide_cdrom_drive_status(struct cdrom_
+ 	return CDS_DRIVE_NOT_READY;
+ }
+ 
+-int ide_cdrom_check_media_change_real(struct cdrom_device_info *cdi,
+-				       int slot_nr)
++unsigned int ide_cdrom_check_events_real(struct cdrom_device_info *cdi,
++					 unsigned int clearing, int slot_nr)
+ {
+ 	ide_drive_t *drive = cdi->handle;
+ 	int retval;
+@@ -89,9 +89,9 @@ int ide_cdrom_check_media_change_real(st
+ 		(void) cdrom_check_status(drive, NULL);
+ 		retval = (drive->dev_flags & IDE_DFLAG_MEDIA_CHANGED) ? 1 : 0;
+ 		drive->dev_flags &= ~IDE_DFLAG_MEDIA_CHANGED;
+-		return retval;
++		return retval ? DISK_EVENT_MEDIA_CHANGE : 0;
+ 	} else {
+-		return -EINVAL;
++		return 0;
+ 	}
+ }
+ 
+--- a/drivers/ide/ide-gd.c
++++ b/drivers/ide/ide-gd.c
+@@ -285,11 +285,12 @@ static int ide_gd_getgeo(struct block_de
  	return 0;
  }
  
--static int gdrom_bdops_mediachanged(struct gendisk *disk)
-+static unsigned int gdrom_bdops_check_events(struct gendisk *disk,
-+					     unsigned int clearing)
+-static int ide_gd_media_changed(struct gendisk *disk)
++static unsigned int ide_gd_check_events(struct gendisk *disk,
++					unsigned int clearing)
  {
--	return cdrom_media_changed(gd.cd_info);
-+	return cdrom_check_events(gd.cd_info, clearing);
- }
+ 	struct ide_disk_obj *idkp = ide_drv_g(disk, ide_disk_obj);
+ 	ide_drive_t *drive = idkp->drive;
+-	int ret;
++	bool ret;
  
- static int gdrom_bdops_ioctl(struct block_device *bdev, fmode_t mode,
-@@ -530,7 +533,7 @@ static const struct block_device_operati
- 	.owner			= THIS_MODULE,
- 	.open			= gdrom_bdops_open,
- 	.release		= gdrom_bdops_release,
--	.media_changed		= gdrom_bdops_mediachanged,
-+	.check_events		= gdrom_bdops_check_events,
- 	.ioctl			= gdrom_bdops_ioctl,
- };
- 
-@@ -800,6 +803,7 @@ static int __devinit probe_gdrom(struct
- 		goto probe_fail_cdrom_register;
- 	}
- 	gd.disk->fops = &gdrom_bdops;
-+	gd.disk->events = DISK_EVENT_MEDIA_CHANGE;
- 	/* latch on to the interrupt */
- 	err = gdrom_set_interrupt_handlers();
- 	if (err)
---- a/drivers/cdrom/viocd.c
-+++ b/drivers/cdrom/viocd.c
-@@ -186,10 +186,11 @@ static int viocd_blk_ioctl(struct block_
- 	return ret;
- }
- 
--static int viocd_blk_media_changed(struct gendisk *disk)
-+static unsigned int viocd_blk_check_events(struct gendisk *disk,
-+					   unsigned int clearing)
- {
- 	struct disk_info *di = disk->private_data;
--	return cdrom_media_changed(&di->viocd_info);
-+	return cdrom_check_events(&di->viocd_info, clearing);
- }
- 
- static const struct block_device_operations viocd_fops = {
-@@ -197,7 +198,7 @@ static const struct block_device_operati
- 	.open =			viocd_blk_open,
- 	.release =		viocd_blk_release,
- 	.ioctl =		viocd_blk_ioctl,
--	.media_changed =	viocd_blk_media_changed,
-+	.check_events =		viocd_blk_check_events,
- };
- 
- static int viocd_open(struct cdrom_device_info *cdi, int purpose)
-@@ -320,7 +321,8 @@ static void do_viocd_request(struct requ
- 	}
- }
- 
--static int viocd_media_changed(struct cdrom_device_info *cdi, int disc_nr)
-+static unsigned int viocd_check_events(struct cdrom_device_info *cdi,
-+				       unsigned int clearing, int disc_nr)
- {
- 	struct viocd_waitevent we;
- 	HvLpEvent_Rc hvrc;
-@@ -340,7 +342,7 @@ static int viocd_media_changed(struct cd
- 	if (hvrc != 0) {
- 		pr_warning("bad rc on HvCallEvent_signalLpEventFast %d\n",
- 			   (int)hvrc);
--		return -EIO;
-+		return 0;
- 	}
- 
- 	wait_for_completion(&we.com);
-@@ -354,7 +356,7 @@ static int viocd_media_changed(struct cd
+ 	/* do not scan partitions twice if this is a removable device */
+ 	if (drive->dev_flags & IDE_DFLAG_ATTACH) {
+@@ -297,10 +298,10 @@ static int ide_gd_media_changed(struct g
  		return 0;
  	}
  
--	return we.changed;
-+	return we.changed ? DISK_EVENT_MEDIA_CHANGE : 0;
+-	ret = !!(drive->dev_flags & IDE_DFLAG_MEDIA_CHANGED);
++	ret = drive->dev_flags & IDE_DFLAG_MEDIA_CHANGED;
+ 	drive->dev_flags &= ~IDE_DFLAG_MEDIA_CHANGED;
+ 
+-	return ret;
++	return ret ? DISK_EVENT_MEDIA_CHANGE : 0;
  }
  
- static int viocd_lock_door(struct cdrom_device_info *cdi, int locking)
-@@ -550,7 +552,7 @@ static int viocd_audio_ioctl(struct cdro
- static struct cdrom_device_ops viocd_dops = {
- 	.open = viocd_open,
- 	.release = viocd_release,
--	.media_changed = viocd_media_changed,
-+	.check_events = viocd_check_events,
- 	.lock_door = viocd_lock_door,
- 	.generic_packet = viocd_packet,
- 	.audio_ioctl = viocd_audio_ioctl,
-@@ -624,6 +626,7 @@ static int viocd_probe(struct vio_dev *v
- 	gendisk->queue = q;
- 	gendisk->fops = &viocd_fops;
- 	gendisk->flags = GENHD_FL_CD|GENHD_FL_REMOVABLE;
-+	gendisk->events = DISK_EVENT_MEDIA_CHANGE;
- 	set_capacity(gendisk, 0);
- 	gendisk->private_data = d;
- 	d->viocd_disk = gendisk;
+ static void ide_gd_unlock_native_capacity(struct gendisk *disk)
+@@ -318,7 +319,7 @@ static int ide_gd_revalidate_disk(struct
+ 	struct ide_disk_obj *idkp = ide_drv_g(disk, ide_disk_obj);
+ 	ide_drive_t *drive = idkp->drive;
+ 
+-	if (ide_gd_media_changed(disk))
++	if (ide_gd_check_events(disk, 0))
+ 		drive->disk_ops->get_capacity(drive);
+ 
+ 	set_capacity(disk, ide_gd_capacity(drive));
+@@ -340,7 +341,7 @@ static const struct block_device_operati
+ 	.release		= ide_gd_release,
+ 	.ioctl			= ide_gd_ioctl,
+ 	.getgeo			= ide_gd_getgeo,
+-	.media_changed		= ide_gd_media_changed,
++	.check_events		= ide_gd_check_events,
+ 	.unlock_native_capacity	= ide_gd_unlock_native_capacity,
+ 	.revalidate_disk	= ide_gd_revalidate_disk
+ };
+@@ -412,6 +413,7 @@ static int ide_gd_probe(ide_drive_t *dri
+ 	if (drive->dev_flags & IDE_DFLAG_REMOVABLE)
+ 		g->flags = GENHD_FL_REMOVABLE;
+ 	g->fops = &ide_gd_ops;
++	g->events = DISK_EVENT_MEDIA_CHANGE;
+ 	add_disk(g);
+ 	return 0;
+ 
 
 
