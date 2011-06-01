@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161688Ab1FAIMw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:12:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43021 "EHLO mx2.suse.de"
+	id S1161701Ab1FAIMs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:12:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43032 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161577Ab1FAIMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:12:42 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:35 2011
-Message-Id: <20110601080334.776776471@blue.kroah.org>
+	id S1161626Ab1FAIMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:12:45 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:36 2011
+Message-Id: <20110601080335.890268207@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:08 +0900
+Date: Wed, 01 Jun 2011 17:00:09 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Nicholas Bellinger <nab@linux-iscsi.org>,
-        Kiran Patil <kiran.patil@intel.com>,
         James Bottomley <jbottomley@parallels.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [072/146] [SCSI] target: Fix multi task->task_sg[] chaining logic bug
+Subject: [073/146] [SCSI] target: Fix interrupt context bug with stats_lock and
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,99 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ core_tmr_alloc_req
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 97868c8905a1537153d406c4a3aa39a503a5c299 upstream.
+commit 53ab6709b4d35b1924240854d794482fd7d33d4a upstream.
 
-This patch fixes a bug in transport_do_task_sg_chain() used by HW target
-mode modules with sg_chain() to provide a single sg_next() walkable memory
-layout for use with pci_map_sg() and friends.  This patch addresses an
-issue with mapping multiple small block max_sector tasks across multiple
-struct se_task->task_sg[] mappings for HW target mode operation.
+This patch fixes two bugs wrt to the interrupt context usage of target
+core with HW target mode drivers.  It first converts the usage of struct
+se_device->stats_lock in transport_get_lun_for_cmd() and core_tmr_lun_reset()
+to properly use spin_lock_irq() to address an BUG with CONFIG_LOCKDEP_SUPPORT=y
+enabled.
 
-This was causing OOPs with (cmd->t_task->t_tasks_no > 1) I/O traffic for
-HW target drivers using transport_do_task_sg_chain(), and has been tested
-so far with tcm_fc(openfcoe), tcm_qla2xxx, and ib_srpt fabrics with
-t_tasks_no > 1 IBLOCK backends using a smaller max_sectors to trigger the
-original issue.
+This patch also adds a 'in_interrupt()' check to allow GFP_ATOMIC usage from
+core_tmr_alloc_req() to fix a 'sleeping in interrupt context' BUG with HW
+target fabrics that require this logic to function.
 
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Acked-by: Kiran Patil <kiran.patil@intel.com>
 Signed-off-by: James Bottomley <jbottomley@parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/target/target_core_transport.c |   26 +++++++++++++++-----------
- 1 file changed, 15 insertions(+), 11 deletions(-)
+ drivers/target/target_core_device.c |    4 ++--
+ drivers/target/target_core_tmr.c    |    7 ++++---
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -4777,18 +4777,20 @@ void transport_do_task_sg_chain(struct s
- 				sg_end_cur->page_link &= ~0x02;
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -151,13 +151,13 @@ out:
  
- 				sg_chain(sg_head, task_sg_num, sg_head_cur);
--				sg_count += (task->task_sg_num + 1);
--			} else
- 				sg_count += task->task_sg_num;
-+				task_sg_num = (task->task_sg_num + 1);
-+			} else {
-+				sg_chain(sg_head, task_sg_num, sg_head_cur);
-+				sg_count += task->task_sg_num;
-+				task_sg_num = task->task_sg_num;
-+			}
- 
- 			sg_head = sg_head_cur;
- 			sg_link = sg_link_cur;
--			task_sg_num = task->task_sg_num;
- 			continue;
- 		}
- 		sg_head = sg_first = &task->task_sg[0];
- 		sg_link = &task->task_sg[task->task_sg_num];
--		task_sg_num = task->task_sg_num;
- 		/*
- 		 * Check for single task..
- 		 */
-@@ -4799,9 +4801,12 @@ void transport_do_task_sg_chain(struct s
- 			 */
- 			sg_end = &task->task_sg[task->task_sg_num - 1];
- 			sg_end->page_link &= ~0x02;
--			sg_count += (task->task_sg_num + 1);
--		} else
- 			sg_count += task->task_sg_num;
-+			task_sg_num = (task->task_sg_num + 1);
-+		} else {
-+			sg_count += task->task_sg_num;
-+			task_sg_num = task->task_sg_num;
-+		}
+ 	{
+ 	struct se_device *dev = se_lun->lun_se_dev;
+-	spin_lock(&dev->stats_lock);
++	spin_lock_irq(&dev->stats_lock);
+ 	dev->num_cmds++;
+ 	if (se_cmd->data_direction == DMA_TO_DEVICE)
+ 		dev->write_bytes += se_cmd->data_length;
+ 	else if (se_cmd->data_direction == DMA_FROM_DEVICE)
+ 		dev->read_bytes += se_cmd->data_length;
+-	spin_unlock(&dev->stats_lock);
++	spin_unlock_irq(&dev->stats_lock);
  	}
+ 
  	/*
- 	 * Setup the starting pointer and total t_tasks_sg_linked_no including
-@@ -4810,21 +4815,20 @@ void transport_do_task_sg_chain(struct s
- 	T_TASK(cmd)->t_tasks_sg_chained = sg_first;
- 	T_TASK(cmd)->t_tasks_sg_chained_no = sg_count;
+--- a/drivers/target/target_core_tmr.c
++++ b/drivers/target/target_core_tmr.c
+@@ -55,7 +55,8 @@ struct se_tmr_req *core_tmr_alloc_req(
+ {
+ 	struct se_tmr_req *tmr;
  
--	DEBUG_CMD_M("Setup T_TASK(cmd)->t_tasks_sg_chained: %p and"
--		" t_tasks_sg_chained_no: %u\n", T_TASK(cmd)->t_tasks_sg_chained,
-+	DEBUG_CMD_M("Setup cmd: %p T_TASK(cmd)->t_tasks_sg_chained: %p and"
-+		" t_tasks_sg_chained_no: %u\n", cmd, T_TASK(cmd)->t_tasks_sg_chained,
- 		T_TASK(cmd)->t_tasks_sg_chained_no);
- 
- 	for_each_sg(T_TASK(cmd)->t_tasks_sg_chained, sg,
- 			T_TASK(cmd)->t_tasks_sg_chained_no, i) {
- 
--		DEBUG_CMD_M("SG: %p page: %p length: %d offset: %d\n",
--			sg, sg_page(sg), sg->length, sg->offset);
-+		DEBUG_CMD_M("SG[%d]: %p page: %p length: %d offset: %d, magic: 0x%08x\n",
-+			i, sg, sg_page(sg), sg->length, sg->offset, sg->sg_magic);
- 		if (sg_is_chain(sg))
- 			DEBUG_CMD_M("SG: %p sg_is_chain=1\n", sg);
- 		if (sg_is_last(sg))
- 			DEBUG_CMD_M("SG: %p sg_is_last=1\n", sg);
+-	tmr = kmem_cache_zalloc(se_tmr_req_cache, GFP_KERNEL);
++	tmr = kmem_cache_zalloc(se_tmr_req_cache, (in_interrupt()) ?
++					GFP_ATOMIC : GFP_KERNEL);
+ 	if (!(tmr)) {
+ 		printk(KERN_ERR "Unable to allocate struct se_tmr_req\n");
+ 		return ERR_PTR(-ENOMEM);
+@@ -398,9 +399,9 @@ int core_tmr_lun_reset(
+ 		printk(KERN_INFO "LUN_RESET: SCSI-2 Released reservation\n");
  	}
--
- }
- EXPORT_SYMBOL(transport_do_task_sg_chain);
  
+-	spin_lock(&dev->stats_lock);
++	spin_lock_irq(&dev->stats_lock);
+ 	dev->num_resets++;
+-	spin_unlock(&dev->stats_lock);
++	spin_unlock_irq(&dev->stats_lock);
+ 
+ 	DEBUG_LR("LUN_RESET: %s for [%s] Complete\n",
+ 			(preempt_and_abort_list) ? "Preempt" : "TMR",
 
 
