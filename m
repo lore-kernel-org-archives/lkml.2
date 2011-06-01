@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163103Ab1FAI10 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:27:26 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45126 "EHLO mx1.suse.de"
+	id S1163042Ab1FAIet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:34:49 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45138 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1163090Ab1FAI1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:27:18 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:13 2011
-Message-Id: <20110601081212.779414879@blue.kroah.org>
+	id S1163069Ab1FAI1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:27:24 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:14 2011
+Message-Id: <20110601081213.404044588@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:47 +0900
+Date: Wed, 01 Jun 2011 17:11:48 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Tero Kristo <tero.kristo@nokia.com>, Len Brown <len.brown@intel.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [137/165] hwmon: (pmbus) Initialize sysfs attributes
+Subject: [138/165] cpuidle: menu: fixed wrapping timers at 4.294 seconds
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 931
-Lines: 28
+Content-Length: 1325
+Lines: 40
 
-From: Guenter Roeck <guenter.roeck@ericsson.com>
+From: Tero Kristo <tero.kristo@nokia.com>
 
-commit eec752b2b99c794766926a9bac59b0d7df5b09c2 upstream.
+commit 7467571f4480b273007517b26297c07154c73924 upstream.
 
-Initialize sysfs attrs before device_create_file() call to suppress
-lockdep_init_map() warning:
+Cpuidle menu governor is using u32 as a temporary datatype for storing
+nanosecond values which wrap around at 4.294 seconds. This causes errors
+in predicted sleep times resulting in higher than should be C state
+selection and increased power consumption. This also breaks cpuidle
+state residency statistics.
 
-WARNING: at kernel/lockdep.c:2701 lockdep_init_map+0x12d/0x140()
-
-Reviewed-by: Robert Coulson <robert.coulson@ericsson.com>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/pmbus_core.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/cpuidle/governors/menu.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/pmbus_core.c
-+++ b/drivers/hwmon/pmbus_core.c
-@@ -700,6 +700,7 @@ do {									\
- 	struct sensor_device_attribute *a				\
- 	    = &data->_type##s[data->num_##_type##s].attribute;		\
- 	BUG_ON(data->num_attributes >= data->max_attributes);		\
-+	sysfs_attr_init(&a->dev_attr.attr);				\
- 	a->dev_attr.attr.name = _name;					\
- 	a->dev_attr.attr.mode = _mode;					\
- 	a->dev_attr.show = _show;					\
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -237,6 +237,7 @@ static int menu_select(struct cpuidle_de
+ 	unsigned int power_usage = -1;
+ 	int i;
+ 	int multiplier;
++	struct timespec t;
+ 
+ 	if (data->needs_update) {
+ 		menu_update(dev);
+@@ -251,8 +252,9 @@ static int menu_select(struct cpuidle_de
+ 		return 0;
+ 
+ 	/* determine the expected residency time, round up */
++	t = ktime_to_timespec(tick_nohz_get_sleep_length());
+ 	data->expected_us =
+-	    DIV_ROUND_UP((u32)ktime_to_ns(tick_nohz_get_sleep_length()), 1000);
++		t.tv_sec * USEC_PER_SEC + t.tv_nsec / NSEC_PER_USEC;
+ 
+ 
+ 	data->bucket = which_bucket(data->expected_us);
 
 
