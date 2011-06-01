@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161857Ab1FAMrA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 08:47:00 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63694 "EHLO
+	id S1758927Ab1FAMqh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 08:46:37 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33990 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161731Ab1FAMq2 (ORCPT
+	with ESMTP id S1161764Ab1FAMqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 08:46:28 -0400
+	Wed, 1 Jun 2011 08:46:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=szeredi.hu; s=google;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=aqm2af0kV07DVomipmxCgl5NhsNKhpxft/jD2kAciGFBeE57Bub5+e9N6Vv7ULFSxT
-         MFI0sbG+fmKm60EcUnTkTwT9zy+9juf2NrRlXsG5urcLi2HK4h2NnNdqb20GXc6GFyT6
-         Y+w92hwpc/x2YsIAakWP3CDYL9vaQOR96pM+g=
+        b=DeLQxcJzn/iT/dw+96+oGbSMCjV0QqCRcxYF2TP6eTyacuFM/DcBsysNTyZ7yhPoqT
+         MtysqIriYulZTjXBCKPH7vBvwgHzfDUAx6MCaJD7IlcpfUxsOtIrfS25TGulCRSAqB5r
+         hE2LY/bCt30uo5XkhAjW9V4cx2lSLw8kaEu+4=
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
         neilb@suse.de, hramrach@centrum.cz, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, mszeredi@suse.cz,
-        Erez Zadok <ezk@cs.sunysb.edu>
-Subject: [PATCH 6/7] overlayfs: implement show_options
-Date: Wed,  1 Jun 2011 14:46:19 +0200
-Message-Id: <1306932380-10280-7-git-send-email-miklos@szeredi.hu>
+        ezk@fsl.cs.sunysb.edu, mszeredi@suse.cz
+Subject: [PATCH 7/7] overlay: overlay filesystem documentation
+Date: Wed,  1 Jun 2011 14:46:20 +0200
+Message-Id: <1306932380-10280-8-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
 References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
@@ -30,156 +29,208 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Erez Zadok <ezk@fsl.cs.sunysb.edu>
+From: Neil Brown <neilb@suse.de>
 
-This is useful because of the stacking nature of overlayfs.  Users like to
-find out (via /proc/mounts) which lower/upper directory were used at mount
-time.
+Document the overlay filesystem.
 
-Signed-off-by: Erez Zadok <ezk@cs.sunysb.edu>
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/overlayfs/super.c |   63 ++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 43 insertions(+), 20 deletions(-)
+ Documentation/filesystems/overlayfs.txt |  167 +++++++++++++++++++++++++++++++
+ MAINTAINERS                             |    7 ++
+ 2 files changed, 174 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/filesystems/overlayfs.txt
 
-diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
-index c9db954..7109b45 100644
---- a/fs/overlayfs/super.c
-+++ b/fs/overlayfs/super.c
-@@ -15,17 +15,27 @@
- #include <linux/slab.h>
- #include <linux/parser.h>
- #include <linux/module.h>
-+#include <linux/seq_file.h>
- #include "overlayfs.h"
- 
- MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
- MODULE_DESCRIPTION("Overlay filesystem");
- MODULE_LICENSE("GPL");
- 
-+struct ovl_config {
-+	char *lowerdir;
-+	char *upperdir;
-+};
+diff --git a/Documentation/filesystems/overlayfs.txt b/Documentation/filesystems/overlayfs.txt
+new file mode 100644
+index 0000000..4bc0b34
+--- /dev/null
++++ b/Documentation/filesystems/overlayfs.txt
+@@ -0,0 +1,167 @@
++Written by: Neil Brown <neilb@suse.de>
 +
-+/* private information held for overlayfs's superblock */
- struct ovl_fs {
- 	struct vfsmount *upper_mnt;
- 	struct vfsmount *lower_mnt;
-+	/* pathnames of lower and upper dirs, for show_options */
-+	struct ovl_config config;
- };
- 
-+/* private information held for every overlayfs dentry */
- struct ovl_entry {
- 	/*
- 	 * Keep "double reference" on upper dentries, so that
-@@ -363,6 +373,8 @@ static void ovl_put_super(struct super_block *sb)
- 	mntput(ufs->upper_mnt);
- 	mntput(ufs->lower_mnt);
- 
-+	kfree(ufs->config.lowerdir);
-+	kfree(ufs->config.upperdir);
- 	kfree(ufs);
- }
- 
-@@ -404,15 +416,27 @@ static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
- 	return path.dentry->d_sb->s_op->statfs(path.dentry, buf);
- }
- 
-+/**
-+ * ovl_show_options
-+ *
-+ * Prints the mount options for a given superblock.
-+ * Returns zero; does not fail.
-+ */
-+static int ovl_show_options(struct seq_file *m, struct vfsmount *mnt)
-+{
-+	struct super_block *sb = mnt->mnt_sb;
-+	struct ovl_fs *ufs = sb->s_fs_info;
++Overlay Filesystem
++==================
 +
-+	seq_printf(m, ",lowerdir=%s", ufs->config.lowerdir);
-+	seq_printf(m, ",upperdir=%s", ufs->config.upperdir);
-+	return 0;
-+}
++This document describes a prototype for a new approach to providing
++overlay-filesystem functionality in Linux (sometimes referred to as
++union-filesystems).  An overlay-filesystem tries to present a
++filesystem which is the result over overlaying one filesystem on top
++of the other.
 +
- static const struct super_operations ovl_super_operations = {
- 	.put_super	= ovl_put_super,
- 	.remount_fs	= ovl_remount_fs,
- 	.statfs		= ovl_statfs,
--};
--
--struct ovl_config {
--	char *lowerdir;
--	char *upperdir;
-+	.show_options	= ovl_show_options,
- };
- 
- enum {
-@@ -472,37 +496,36 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
- 	struct dentry *root_dentry;
- 	struct ovl_entry *oe;
- 	struct ovl_fs *ufs;
--	struct ovl_config config;
- 	int err;
- 
--	err = ovl_parse_opt((char *) data, &config);
--	if (err)
-+	err = -ENOMEM;
-+	ufs = kmalloc(sizeof(struct ovl_fs), GFP_KERNEL);
-+	if (!ufs)
- 		goto out;
- 
-+	err = ovl_parse_opt((char *) data, &ufs->config);
-+	if (err)
-+		goto out_free_ufs;
++The result will inevitably fail to look exactly like a normal
++filesystem for various technical reasons.  The expectation is that
++many use cases will be able to ignore these differences.
 +
- 	err = -EINVAL;
--	if (!config.upperdir || !config.lowerdir) {
-+	if (!ufs->config.upperdir || !ufs->config.lowerdir) {
- 		printk(KERN_ERR "overlayfs: missing upperdir or lowerdir\n");
- 		goto out_free_config;
- 	}
++This approach is 'hybrid' because the objects that appear in the
++filesystem do not all appear to belong to that filesystem.  In many
++cases an object accessed in the union will be indistinguishable
++from accessing the corresponding object from the original filesystem.
++This is most obvious from the 'st_dev' field returned by stat(2).
++
++While directories will report an st_dev from the overlay-filesystem,
++all non-directory objects will report an st_dev from the lower or
++upper filesystem that is providing the object.  Similarly st_ino will
++only be unique when combined with st_dev, and both of these can change
++over the lifetime of a non-directory object.  Many applications and
++tools ignore these values and will not be affected.
++
++Upper and Lower
++---------------
++
++An overlay filesystem combines two filesystems - an 'upper' filesystem
++and a 'lower' filesystem.  When a name exists in both filesystems, the
++object in the 'upper' filesystem is visible while the object in the
++'lower' filesystem is either hidden or, in the case of directories,
++merged with the 'upper' object.
++
++It would be more correct to refer to an upper and lower 'directory
++tree' rather than 'filesystem' as it is quite possible for both
++directory trees to be in the same filesystem and there is no
++requirement that the root of a filesystem be given for either upper or
++lower.
++
++The lower filesystem can be any filesystem supported by Linux and does
++not need to be writable.  The lower filesystem can even be another
++overlayfs.  The upper filesystem will normally be writable and if it
++is it must support the creation of trusted.* extended attributes, and
++must provide valid d_type in readdir responses, at least for symbolic
++links - so NFS is not suitable.
++
++A read-only overlay of two read-only filesystems may use any
++filesystem type.
++
++Directories
++-----------
++
++Overlaying mainly involved directories.  If a given name appears in both
++upper and lower filesystems and refers to a non-directory in either,
++then the lower object is hidden - the name refers only to the upper
++object.
++
++Where both upper and lower objects are directories, a merged directory
++is formed.
++
++At mount time, the two directories given as mount options are combined
++into a merged directory:
++
++  mount -t overlayfs overlayfs -olowerdir=/lower,upperdir=/upper /overlay
++
++Then whenever a lookup is requested in such a merged directory, the
++lookup is performed in each actual directory and the combined result
++is cached in the dentry belonging to the overlay filesystem.  If both
++actual lookups find directories, both are stored and a merged
++directory is created, otherwise only one is stored: the upper if it
++exists, else the lower.
++
++Only the lists of names from directories are merged.  Other content
++such as metadata and extended attributes are reported for the upper
++directory only.  These attributes of the lower directory are hidden.
++
++whiteouts and opaque directories
++--------------------------------
++
++In order to support rm and rmdir without changing the lower
++filesystem, an overlay filesystem needs to record in the upper filesystem
++that files have been removed.  This is done using whiteouts and opaque
++directories (non-directories are always opaque).
++
++The overlay filesystem uses extended attributes with a
++"trusted.overlay."  prefix to record these details.
++
++A whiteout is created as a symbolic link with target
++"(overlay-whiteout)" and with xattr "trusted.overlay.whiteout" set to "y".
++When a whiteout is found in the upper level of a merged directory, any
++matching name in the lower level is ignored, and the whiteout itself
++is also hidden.
++
++A directory is made opaque by setting the xattr "trusted.overlay.opaque"
++to "y".  Where the upper filesystem contains an opaque directory, any
++directory in the lower filesystem with the same name is ignored.
++
++readdir
++-------
++
++When a 'readdir' request is made on a merged directory, the upper and
++lower directories are each read and the name lists merged in the
++obvious way (upper is read first, then lower - entries that already
++exist are not re-added).  This merged name list is cached in the
++'struct file' and so remains as long as the file is kept open.  If the
++directory is opened and read by two processes at the same time, they
++will each have separate caches.  A seekdir to the start of the
++directory (offset 0) followed by a readdir will cause the cache to be
++discarded and rebuilt.
++
++This means that changes to the merged directory do not appear while a
++directory is being read.  This is unlikely to be noticed by many
++programs.
++
++seek offsets are assigned sequentially when the directories are read.
++Thus if
++  - read part of a directory
++  - remember an offset, and close the directory
++  - re-open the directory some time later
++  - seek to the remembered offset
++
++there may be little correlation between the old and new locations in
++the list of filenames, particularly if anything has changed in the
++directory.
++
++Readdir on directories that are not merged is simply handled by the
++underlying directory (upper or lower).
++
++
++Non-directories
++---------------
++
++Objects that are not directories (files, symlinks, device-special
++files etc.) are presented either from the upper or lower filesystem as
++appropriate.  When a file in the lower filesystem is accessed in a way
++the requires write-access, such as opening for write access, changing
++some metadata etc., the file is first copied from the lower filesystem
++to the upper filesystem (copy_up).  Note that creating a hard-link
++also requires copy_up, though of course creation of a symlink does
++not.
++
++The copy_up process first makes sure that the containing directory
++exists in the upper filesystem - creating it and any parents as
++necessary.  It then creates the object with the same metadata (owner,
++mode, mtime, symlink-target etc.) and then if the object is a file, the
++data is copied from the lower to the upper filesystem.  Finally any
++extended attributes are copied up.
++
++Once the copy_up is complete, the overlay filesystem simply
++provides direct access to the newly created file in the upper
++filesystem - future operations on the file are barely noticed by the
++overlay filesystem (though an operation on the name of the file such as
++rename or unlink will of course be noticed and handled).
++
++Changes to underlying filesystems
++---------------------------------
++
++Offline changes, when the overlay is not mounted, are allowed to either
++the upper or the lower trees.
++
++Changes to the underlying filesystems while part of a mounted overlay
++filesystem are not allowed.  This is not yet enforced, but will be in
++the future.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 29801f7..5ffbe08 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4715,6 +4715,13 @@ F:	drivers/scsi/osd/
+ F:	include/scsi/osd_*
+ F:	fs/exofs/
  
--	err = -ENOMEM;
--	ufs = kmalloc(sizeof(struct ovl_fs), GFP_KERNEL);
--	if (!ufs)
--		goto out_free_config;
--
- 	oe = ovl_alloc_entry();
- 	if (oe == NULL)
--		goto out_free_ufs;
-+		goto out_free_config;
- 
- 	root_inode = ovl_new_inode(sb, S_IFDIR, oe);
- 	if (!root_inode)
- 		goto out_free_oe;
- 
--	err = kern_path(config.upperdir, LOOKUP_FOLLOW, &upperpath);
-+	err = kern_path(ufs->config.upperdir, LOOKUP_FOLLOW, &upperpath);
- 	if (err)
- 		goto out_put_root;
- 
--	err = kern_path(config.lowerdir, LOOKUP_FOLLOW, &lowerpath);
-+	err = kern_path(ufs->config.lowerdir, LOOKUP_FOLLOW, &lowerpath);
- 	if (err)
- 		goto out_put_upperpath;
- 
-@@ -566,11 +589,11 @@ out_put_root:
- 	iput(root_inode);
- out_free_oe:
- 	kfree(oe);
-+out_free_config:
-+	kfree(ufs->config.lowerdir);
-+	kfree(ufs->config.upperdir);
- out_free_ufs:
- 	kfree(ufs);
--out_free_config:
--	kfree(config.lowerdir);
--	kfree(config.upperdir);
- out:
- 	return err;
- }
++OVERLAYFS FILESYSTEM
++M:	Miklos Szeredi <miklos@szeredi.hu>
++L:	linux-fsdevel@vger.kernel.org
++S:	Supported
++F:	fs/overlayfs/*
++F:	Documentation/filesystems/overlayfs.txt
++
+ P54 WIRELESS DRIVER
+ M:	Christian Lamparter <chunkeey@googlemail.com>
+ L:	linux-wireless@vger.kernel.org
 -- 
 1.7.3.4
 
