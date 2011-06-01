@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab1FAGll (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 02:41:41 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:49808 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab1FAGlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 02:41:40 -0400
-Subject: Re: x86: tsc: Remove unneeded DMI-based blacklisting
-From: john stultz <johnstul@us.ibm.com>
-To: Tero Roponen <tero.roponen@gmail.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <alpine.LFD.2.02.1105311020590.7332@terrop>
-References: <alpine.LFD.2.02.1105311020590.7332@terrop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 May 2011 23:41:35 -0700
-Message-ID: <1306910495.3359.52.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1754704Ab1FAGol (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 02:44:41 -0400
+Received: from webbox687.server-home.net ([195.149.74.151]:48499 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754034Ab1FAGok (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 02:44:40 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: [PATCH] pch_phub: Don't panic if dmi_get_system_info returns NULL
+Date: Wed,  1 Jun 2011 08:44:29 +0200
+Message-Id: <1306910669-19348-1-git-send-email-alexander.stein@systec-electronic.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-31 at 10:24 +0300, Tero Roponen wrote:
-> The blacklist was added in response to my bug report
-> (http://lkml.org/lkml/2006/1/19/362) and has never
-> contained more than the one entry describing my old
-> now dead ThinkPad 380XD laptop. As found out later
-> (http://lkml.org/lkml/2007/11/29/50), this special
-> treatment has been unnecessary for a long time, so
-> it can be removed.
-> 
-> Signed-off-by: Tero Roponen <tero.roponen@gmail.com>
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+---
+ drivers/misc/pch_phub.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-Wow. Those are old mails! Thanks for following up here to clarify that
-these bits aren't needed. 
-
-I'll apply and queue this for 3.1.
-
-thanks
--john
-
+diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+index 5fe79df..01eb67b 100644
+--- a/drivers/misc/pch_phub.c
++++ b/drivers/misc/pch_phub.c
+@@ -686,6 +686,8 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
+ 	}
+ 
+ 	if (id->driver_data == 1) { /* EG20T PCH */
++		const char *board_name;
++
+ 		retval = sysfs_create_file(&pdev->dev.kobj,
+ 					   &dev_attr_pch_mac.attr);
+ 		if (retval)
+@@ -701,7 +703,8 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
+ 					       CLKCFG_CANCLK_MASK);
+ 
+ 		/* quirk for CM-iTC board */
+-		if (strstr(dmi_get_system_info(DMI_BOARD_NAME), "CM-iTC"))
++		board_name = dmi_get_system_info(DMI_BOARD_NAME);
++		if (board_name && strstr(board_name, "CM-iTC"))
+ 			pch_phub_read_modify_write_reg(chip,
+ 						(unsigned int)CLKCFG_REG_OFFSET,
+ 						CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
+-- 
+1.7.3.4
 
