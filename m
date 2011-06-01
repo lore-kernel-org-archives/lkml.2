@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759018Ab1FASip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 14:38:45 -0400
-Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:39992 "EHLO
-	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756859Ab1FASim (ORCPT
+	id S1759244Ab1FASmQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 14:42:16 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:19339 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab1FASmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 14:38:42 -0400
-Date: Wed, 1 Jun 2011 14:38:41 -0400
-To: linux-serial@vger.kernel.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Len Sorensen <lsorense@csclub.uwaterloo.ca>
-Subject: ioremap warning fix for jsm driver.
-Message-ID: <20110601183841.GJ21345@caffeine.csclub.uwaterloo.ca>
+	Wed, 1 Jun 2011 14:42:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=KJlZrUJ1ZlGNCdMOI6yMcSNkUe9vpIYsNh0Yb17/Wp2144HEMefhwo4g8gvsLQOJHY
+         a+M4UbuhC+tFEqzGly0Q==
+Date: Wed, 1 Jun 2011 11:42:09 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
+ instead of failing
+In-Reply-To: <BANLkTinrviHh40fTfqyeB=SrcNS0yqZM0w@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1106011140050.16198@chino.kir.corp.google.com>
+References: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com> <BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com> <BANLkTikrRRzGLbMD47_xJz+xpgftCm1C2A@mail.gmail.com> <alpine.DEB.2.00.1106011017260.13089@chino.kir.corp.google.com>
+ <BANLkTinrviHh40fTfqyeB=SrcNS0yqZM0w@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: lsorense@csclub.uwaterloo.ca (Lennart Sorensen)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I saw a warning about ioremap from the jsm driver on a system which
-looked like this:
+On Wed, 1 Jun 2011, Dmitry Eremin-Solenikov wrote:
 
-resource map sanity check conflict: 0xe0200800 0xe02017ff 0xe0200800 0xe0200fff 0000:01:08.0
+> > So you want to continue to allow the page allocator to return pages from
+> > anywhere, even when GFP_DMA is specified, just as though it was lowmem?
+> 
+> Yes and no. I'm asking for the grace period for the drivers authors to be able
+> to fix their code. After a grace period of one or two majors this permission
+> should be removed and your original patch should be effective.
+> 
 
-Turns out the warning is valid.  The jsm driver has been asking to ioremap
-0x1000 forever, but in fact only 8 port chips have 0x1000 bytes of memory.
-4 port chips have 0x800 and 2 port chips have 0x400 according to the
-data sheet.  It makes more sense to map the size of the region rather
-than a hard coded value.  If you happen to have the regiong legitimately
-mapped to a base addres that is not 4K aligned, ioremap complains
-otherwise.
-
-Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-
-
-diff --git a/drivers/tty/serial/jsm/jsm_driver.c b/drivers/tty/serial/jsm/jsm_driver.c
-index 18f5484..96da178 100644
---- a/drivers/tty/serial/jsm/jsm_driver.c
-+++ b/drivers/tty/serial/jsm/jsm_driver.c
-@@ -125,7 +125,7 @@ static int __devinit jsm_probe_one(struct pci_dev *pdev, const struct pci_device
- 	brd->bd_uart_offset = 0x200;
- 	brd->bd_dividend = 921600;
- 
--	brd->re_map_membase = ioremap(brd->membase, 0x1000);
-+	brd->re_map_membase = ioremap(brd->membase, pci_resource_len(pdev, 0));
- 	if (!brd->re_map_membase) {
- 		dev_err(&pdev->dev,
- 			"card has no PCI Memory resources, "
-
-
--- 
-Len Sorensen
+You don't need to wait for the code to be fixed, you just need to enable 
+CONFIG_ZONE_DMA.  This is a configuration issue.  If that GFP_DMA can be 
+removed later, that's great, but right now it requires it.  Why can't you 
+enable the config option?
