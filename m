@@ -1,62 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab1FAG5A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 02:57:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22431 "EHLO mx1.redhat.com"
+	id S1754847Ab1FAHAn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 03:00:43 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58352 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751174Ab1FAG46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 02:56:58 -0400
-Message-ID: <4DE5E29E.7080009@redhat.com>
-Date: Wed, 01 Jun 2011 09:56:30 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1753235Ab1FAHAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 03:00:42 -0400
+Date: Wed, 1 Jun 2011 09:00:23 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com,
+        torvalds@linux-foundation.org, tglx@linutronix.de, rostedt@goodmis.org,
+        jmorris@namei.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v3 02/13] tracing: split out syscall_trace_enter
+ construction
+Message-ID: <20110601070023.GB27671@elte.hu>
+References: <BANLkTimNcag-ZmVTXjUoTyiuJm6jtW0DgA@mail.gmail.com>
+ <1306897845-9393-2-git-send-email-wad@chromium.org>
 MIME-Version: 1.0
-To: Brad Campbell <lists2009@fnarfbargle.com>
-CC: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, linux-mm <linux-mm@kvack.org>
-Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
-References: <4DE44333.9000903@fnarfbargle.com> <20110531054729.GA16852@liondog.tnic> <4DE4B432.1090203@fnarfbargle.com> <20110531103808.GA6915@eferding.osrc.amd.com> <4DE4FA2B.2050504@fnarfbargle.com> <alpine.LSU.2.00.1105311517480.21107@sister.anvils> <4DE589C5.8030600@fnarfbargle.com> <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com>
-In-Reply-To: <4DE5DCA8.7070704@fnarfbargle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306897845-9393-2-git-send-email-wad@chromium.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2011 09:31 AM, Brad Campbell wrote:
-> On 01/06/11 12:52, Hugh Dickins wrote:
->
->>
->> I guess Brad could try SLUB debugging, boot with slub_debug=P
->> for poisoning perhaps; though it might upset alignments and
->> drive the problem underground.  Or see if the same happens
->> with SLAB instead of SLUB.
->
-> Not much use I'm afraid.
-> This is all I get in the log
->
-> [ 3161.300073] 
-> =============================================================================
-> [ 3161.300147] BUG kmalloc-512: Freechain corrupt
->
-> The qemu process is then frozen, unkillable but reported in state "R"
->
-> 13881 ?        R      3:27 /usr/bin/qemu -S -M pc-0.13 -enable-kvm -m 
-> 1024 -smp 2,sockets=2,cores=1,threads=1 -nam
->
-> The machine then progressively dies until it's frozen solid with no 
-> further error messages.
->
-> I stupidly forgot to do an alt-sysrq-t prior to doing an alt-sysrq-b, 
-> but at least it responded to that.
->
-> On the bright side I can reproduce it at will.
 
-Please try slub_debug=FZPU; that should point the finger (hopefully at 
-somebody else).
+* Will Drewry <wad@chromium.org> wrote:
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+> perf appears to be the primary consumer of the CONFIG_FTRACE_SYSCALLS
+> infrastructure.  As such, many the helpers target at perf can be split
+> into a peerf-focused helper and a generic CONFIG_FTRACE_SYSCALLS
+> consumer interface.
+> 
+> This change splits out syscall_trace_enter construction from
+> perf_syscall_enter for current into two helpers:
+> - ftrace_syscall_enter_state
+> - ftrace_syscall_enter_state_size
+> 
+> And adds another helper for completeness:
+> - ftrace_syscall_exit_state_size
+> 
+> These helpers allow for shared code between perf ftrace events and
+> any other consumers of CONFIG_FTRACE_SYSCALLS events.  The proposed
+> seccomp_filter patches use this code.
+> 
+> Signed-off-by: Will Drewry <wad@chromium.org>
+> ---
+>  include/trace/syscall.h       |    4 ++
+>  kernel/trace/trace_syscalls.c |   96 +++++++++++++++++++++++++++++++++++------
+>  2 files changed, 86 insertions(+), 14 deletions(-)
 
+So, looking at the diffstat comparison again:
+
+       bitmask (2009):  6 files changed,  194 insertions(+), 22 deletions(-)
+ filter engine (2010): 18 files changed, 1100 insertions(+), 21 deletions(-)
+ event filters (2011):  5 files changed,   82 insertions(+), 16 deletions(-)
+
+you went back to the middle solution again which is the worst of them 
+- why?
+
+If you want this to be a stupid, limited hack then go for the v1 
+bitmask.
+
+If you agree with my observation that filters allow the clean 
+user-space implementation of LSM equivalent security solutions (of 
+which sandboxes are just a *narrow special case*) then please use the 
+main highlevel abstraction we have defined around them: event 
+filters.
+
+Now, my observation was not uncontested so let me try to sum up the
+rather large discussion that erupted around it, as i see it.
+
+I saw four main counter arguments:
+
+ - "Sandboxing is special and should stay separate from LSMs."
+
+   I think this is a technically bogus argument, see:
+
+         https://lkml.org/lkml/2011/5/26/85
+
+   That answer of mine went unchallenged.
+
+ - "Events should only be observers."
+
+   Even ignoring the question of why on earth it should be a problem 
+   for a willing call-site to use event filtering results sensibly, 
+   this argument misses the plain fact that events are *already* 
+   active participants, see:
+
+         http://www.spinics.net/lists/mips/msg41075.html
+
+   That answer of mine went unchallenged too.
+
+ - "This feature is too simplistic."
+
+   That's wrong i think, the feature is highly flexible:
+
+         http://www.mail-archive.com/linuxppc-dev@lists.ozlabs.org/msg51387.html
+
+   This reply of mine went unchallenged as well.
+
+ - "Is this feature actually useful enough for applications, does it 
+    justify the complexity?"
+
+  This is the *only* valid technical counter-argument i saw, and it's 
+  a crutial one that is not fully answered yet. Since i think the feature
+  is an LSM equivalent i think it's at least as useful as any LSM is.
+
+ - [ if i missed any important argument then someone please insert it 
+     here. ]
+
+But what you do here is to use the filter engine directly which is 
+both a limited hack *and* complex (beyond the linecount it doubles 
+our ABI exposure, amongst other things), so i find that approach 
+rather counter-productive, now that i've seen the real thing.
+
+Will this feature be just another example of the LSM status quo 
+dragging down a newcomer into the mud, until it's just as sucky and 
+limited as any existing LSMs? That would be a sad outcome!
+
+Thanks,
+
+	Ingo
+
+ps. Please start a new discussion thread for the next iteration!
+    This one is *way* too deep already.
