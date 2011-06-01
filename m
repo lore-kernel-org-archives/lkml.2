@@ -1,192 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab1FAN2y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 09:28:54 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35975 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755403Ab1FAN2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 09:28:51 -0400
-From: Keshava Munegowda <keshava_mgowda@ti.com>
-To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
-        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
-        <tony@atomide.com>, <khilman@ti.com>, <b-cousson@ti.com>,
-        <paul@pwsan.com>, Keshava Munegowda <Keshava_mgowda@ti.com>
-Subject: [PATCH 4/4] mfd: global Suspend and resume support of ehci and ohci
-Date: Wed, 1 Jun 2011 18:57:27 +0530
-Message-ID: <1306934847-6098-5-git-send-email-keshava_mgowda@ti.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1306934847-6098-4-git-send-email-keshava_mgowda@ti.com>
+	id S1758822Ab1FANbj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 09:31:39 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:59464 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753250Ab1FANbg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 09:31:36 -0400
+Date: Wed, 1 Jun 2011 16:31:30 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
+        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
+        khilman@ti.com, b-cousson@ti.com, paul@pwsan.com
+Subject: Re: [PATCH 4/4] mfd: global Suspend and resume support of ehci and
+ ohci
+Message-ID: <20110601133128.GD2409@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
 References: <1306934847-6098-1-git-send-email-keshava_mgowda@ti.com>
  <1306934847-6098-2-git-send-email-keshava_mgowda@ti.com>
  <1306934847-6098-3-git-send-email-keshava_mgowda@ti.com>
  <1306934847-6098-4-git-send-email-keshava_mgowda@ti.com>
+ <1306934847-6098-5-git-send-email-keshava_mgowda@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SO98HVl1bnMOfKZd"
+Content-Disposition: inline
+In-Reply-To: <1306934847-6098-5-git-send-email-keshava_mgowda@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keshava Munegowda <Keshava_mgowda@ti.com>
 
-The global suspend and resume functions for usbhs core driver
-are implemented.These routine are called when the global suspend
-and resume occurs. Before calling these functions, the
-bus suspend and resume of ehci and ohci drivers are called
-from runtime pm.
+--SO98HVl1bnMOfKZd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
----
- drivers/mfd/omap-usb-host.c |  103 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 103 insertions(+), 0 deletions(-)
+Hi,
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 43de12a..32d19e2 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -146,6 +146,10 @@
- #define is_ehci_hsic_mode(x)	(x == OMAP_EHCI_PORT_MODE_HSIC)
- 
- 
-+/* USBHS state bits */
-+#define OMAP_USBHS_INIT		0
-+#define OMAP_USBHS_SUSPEND	4
-+
- struct usbhs_hcd_omap {
- 	struct clk			*xclk60mhsp1_ck;
- 	struct clk			*xclk60mhsp2_ck;
-@@ -165,6 +169,7 @@ struct usbhs_hcd_omap {
- 	u32				usbhs_rev;
- 	spinlock_t			lock;
- 	int				count;
-+	unsigned long			state;
- };
- /*-------------------------------------------------------------------------*/
- 
-@@ -809,6 +814,8 @@ static int usbhs_enable(struct device *dev)
- 				(pdata->ehci_data->reset_gpio_port[1], 1);
- 	}
- 
-+	set_bit(OMAP_USBHS_INIT, &omap->state);
-+
- end_count:
- 	omap->count++;
- 	spin_unlock_irqrestore(&omap->lock, flags);
-@@ -897,6 +904,7 @@ static void usbhs_disable(struct device *dev)
- 	}
- 
- 	pm_runtime_put_sync(dev);
-+	clear_bit(OMAP_USBHS_INIT, &omap->state);
- 
- 	/* The gpio_free migh sleep; so unlock the spinlock */
- 	spin_unlock_irqrestore(&omap->lock, flags);
-@@ -926,10 +934,105 @@ void omap_usbhs_disable(struct device *dev)
- }
- EXPORT_SYMBOL_GPL(omap_usbhs_disable);
- 
-+#ifdef	CONFIG_PM
-+
-+static int usbhs_resume(struct device *dev)
-+{
-+	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
-+	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
-+	unsigned long			flags = 0;
-+
-+	dev_dbg(dev, "Resuming TI HSUSB Controller\n");
-+
-+	if (!pdata) {
-+		dev_dbg(dev, "missing platform_data\n");
-+		return  -ENODEV;
-+	}
-+
-+	spin_lock_irqsave(&omap->lock, flags);
-+
-+	if (!test_bit(OMAP_USBHS_INIT, &omap->state) ||
-+		!test_bit(OMAP_USBHS_SUSPEND, &omap->state))
-+			goto end_resume;
-+
-+	pm_runtime_get_sync(dev);
-+
-+	if (is_omap_usbhs_rev2(omap)) {
-+		if (is_ehci_tll_mode(pdata->port_mode[0])) {
-+			clk_enable(omap->usbhost_p1_fck);
-+			clk_enable(omap->usbtll_p1_fck);
-+		}
-+		if (is_ehci_tll_mode(pdata->port_mode[1])) {
-+			clk_enable(omap->usbhost_p2_fck);
-+			clk_enable(omap->usbtll_p2_fck);
-+		}
-+		clk_enable(omap->utmi_p1_fck);
-+		clk_enable(omap->utmi_p2_fck);
-+	}
-+	clear_bit(OMAP_USBHS_SUSPEND, &omap->state);
-+
-+end_resume:
-+	spin_unlock_irqrestore(&omap->lock, flags);
-+	return 0;
-+}
-+
-+
-+static int usbhs_suspend(struct device *dev)
-+{
-+	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
-+	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
-+	unsigned long			flags = 0;
-+
-+	dev_dbg(dev, "Suspending TI HSUSB Controller\n");
-+
-+	if (!pdata) {
-+		dev_dbg(dev, "missing platform_data\n");
-+		return  -ENODEV;
-+	}
-+
-+	spin_lock_irqsave(&omap->lock, flags);
-+
-+	if (!test_bit(OMAP_USBHS_INIT, &omap->state) ||
-+		test_bit(OMAP_USBHS_SUSPEND, &omap->state))
-+			goto end_suspend;
-+
-+	if (is_omap_usbhs_rev2(omap)) {
-+		if (is_ehci_tll_mode(pdata->port_mode[0])) {
-+			clk_disable(omap->usbhost_p1_fck);
-+			clk_disable(omap->usbtll_p1_fck);
-+		}
-+		if (is_ehci_tll_mode(pdata->port_mode[1])) {
-+			clk_disable(omap->usbhost_p2_fck);
-+			clk_disable(omap->usbtll_p2_fck);
-+		}
-+		clk_disable(omap->utmi_p2_fck);
-+		clk_disable(omap->utmi_p1_fck);
-+	}
-+
-+	set_bit(OMAP_USBHS_SUSPEND, &omap->state);
-+	pm_runtime_put_sync(dev);
-+
-+end_suspend:
-+	spin_unlock_irqrestore(&omap->lock, flags);
-+	return 0;
-+}
-+
-+
-+static const struct dev_pm_ops usbhsomap_dev_pm_ops = {
-+	.suspend	= usbhs_suspend,
-+	.resume		= usbhs_resume,
-+};
-+
-+#define USBHS_OMAP_DEV_PM_OPS (&usbhsomap_dev_pm_ops)
-+#else
-+#define	USBHS_OMAP_DEV_PM_OPS	NULL
-+#endif
-+
- static struct platform_driver usbhs_omap_driver = {
- 	.driver = {
- 		.name		= (char *)usbhs_driver_name,
- 		.owner		= THIS_MODULE,
-+		.pm		= USBHS_OMAP_DEV_PM_OPS,
- 	},
- 	.remove		= __exit_p(usbhs_omap_remove),
- };
--- 
-1.6.0.4
+On Wed, Jun 01, 2011 at 06:57:27PM +0530, Keshava Munegowda wrote:
+> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+> index 43de12a..32d19e2 100644
+> --- a/drivers/mfd/omap-usb-host.c
+> +++ b/drivers/mfd/omap-usb-host.c
+> @@ -146,6 +146,10 @@
+>  #define is_ehci_hsic_mode(x)	(x =3D=3D OMAP_EHCI_PORT_MODE_HSIC)
+> =20
+> =20
+> +/* USBHS state bits */
+> +#define OMAP_USBHS_INIT		0
+> +#define OMAP_USBHS_SUSPEND	4
 
+#define OMAP_USBHS_INIT		BIT(0)
+#define OMAP_USBHS_SUSPEND	BIT(1)
+
+???
+
+--=20
+balbi
+
+--SO98HVl1bnMOfKZd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN5j8wAAoJEAv8Txj19kN1mFcH/jnNs+3xUWfHhP+T6YoOuuv6
+KEhVF4C23qOGKfvIzHU3pb6+paddGOR3A/okvMaQoCvkaHYeSQhKtUiDwdA49QBt
+S+g4v2qGOZZ4S0wkdUFcEMMiLDYN+/5ZEE+AiI1PpQ3oSpMJFjPq3CEFhm4hXcDK
+AOB8gm9JPk91ki6eajBZm8pAmThq2F3kPaxtEzB29xRPlC7rcYvhs5nKlw++9OjH
+nlj9G3BRpGyHuBn73jdiNpoOlq26XMLLXJWjMy0qEakiS5vAcpHnB4SyDEkyDrKU
+vfsdM3ZhG1C5M8g2AS4Ta0RCeFN7uSGnG3V1+LPk/+8w+yT+OV8Efkk3sN0gBiY=
+=lfcu
+-----END PGP SIGNATURE-----
+
+--SO98HVl1bnMOfKZd--
