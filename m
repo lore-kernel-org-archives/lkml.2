@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932812Ab1FAALb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 20:11:31 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46407 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757090Ab1FAALa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 20:11:30 -0400
-Date: Wed, 1 Jun 2011 10:11:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mike Frysinger <vapier@gentoo.org>, Linus <torvalds@linux-foundation.org>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Kgdb-bugreport] [PATCH] kgdbts: only use new
- asm-generic/ptrace.h api when needed
-Message-Id: <20110601101117.6c9792a1.sfr@canb.auug.org.au>
-In-Reply-To: <BANLkTind_F4-5sLUO1GVxK_yY_eXz_J0Vg@mail.gmail.com>
-References: <20110527151135.cd6f758a.sfr@canb.auug.org.au>
-	<1306591465-9622-1-git-send-email-vapier@gentoo.org>
-	<4DE3688A.4040600@mvista.com>
-	<BANLkTind_F4-5sLUO1GVxK_yY_eXz_J0Vg@mail.gmail.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932954Ab1FAASS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 20:18:18 -0400
+Received: from fnarfbargle.com ([93.93.131.224]:52482 "EHLO fnarfbargle.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758192Ab1FAASR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 20:18:17 -0400
+Message-ID: <4DE5853E.8040106@fnarfbargle.com>
+Date: Wed, 01 Jun 2011 08:18:06 +0800
+From: Brad Campbell <lists2009@fnarfbargle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Izik Eidus <ieidus@redhat.com>
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+References: <4DE44333.9000903@fnarfbargle.com> <20110531054729.GA16852@liondog.tnic> <4DE4B432.1090203@fnarfbargle.com> <20110531103808.GA6915@eferding.osrc.amd.com> <4DE4FA2B.2050504@fnarfbargle.com> <alpine.LSU.2.00.1105311517480.21107@sister.anvils>
+In-Reply-To: <alpine.LSU.2.00.1105311517480.21107@sister.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 May 2011 12:28:17 -0400 Mike Frysinger <vapier@gentoo.org> wrote:
+On 01/06/11 06:31, Hugh Dickins wrote:
 >
-> i prefer to have as much outside of ifdefs as possible.  gcc optimizes
-> the result away, so it isnt a code size problem.
+> Brad, my suspicion is that in each case the top 16 bits of RDX have been
+> mysteriously corrupted from ffff to 0000, causing the general protection
+> faults.  I don't understand what that has to do with KSM.
 
-Can we just get a patch sent to Linus, please?   His tree has now been
-broken for powerpc and sparc32 for 5 days :-(
+No, nor do I. The panic I reproduced with KSM off was in a completely 
+unrelated code path. To be honest I would not be surprised if it turns 
+out I have dodgy RAM, although it has passed multiple memtests and I've 
+tried clocking it down. Just a gut feeling.
 
-It would have been nice if the original patch had been in linux-next at
-some point (especially given that I have a "kgdb" tree in linux-next).
+> But it's only a suspicion, because I can't make sense of the "Code:"
+> lines in your traces, they have more than the expected 64 bytes, and
+> only one of them has a ">" (with no"<") to mark faulting instruction.
 
-/me just slightly annoyed.
+Yeah, with hindsight I must have removed them when I re-formatted the 
+code from the oops. Each byte was one line in the syslog so there was a 
+lot of deleting to get it to a postable format.
 
-Linus, the fix patch is below (I have applied it to linux-next today):
+> I did try compiling the 2.6.39 kernel from your config, but of course
+> we have different compilers, so although I got close, it wasn't exact.
+>
+> Would you mind mailing me privately (it's about 73MB) the "objdump -trd"
+> output for your original vmlinux (with KSM on)?  (Those -trd options are
+> the ones I'm used to typing, I bet not they're not all relevant.)
+>
+> Of course, it's only a tiny fraction of that output that I need,
+> might be better to cut it down to remove_rmap_item_from_tree and
+> dup_fd and ksm_scan_thread, if you have the time to do so.
 
-From:	Mike Frysinger <vapier@gentoo.org>
-To:	kgdb-bugreport@lists.sourceforge.net,
-	Jason Wessel <jason.wessel@windriver.com>,
-	Andrew Morton <akpm@linux-foundation.org>
-Cc:	linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: [PATCH] kgdbts: only use new asm-generic/ptrace.h api when needed
-Date:	Sat, 28 May 2011 10:04:25 -0400
+Ok, so since my initial posting I've figured out how to get a clean oops 
+out of netconsole, so tonight (after 9PM GMT+8) I'll reproduce the oops 
+a couple of times. What about I upload the oops, plus the vmlinux, plus 
+.config and System.map to a server with a fat pipe and give you a link 
+to it?
 
-The new instruction_pointer_set helper is defined for people who have
-converted to asm-generic/ptrace.h, so don't use it generally unless
-the arch needs it (in which case it has been converted).  This should
-fix building of kgdb tests for arches not yet converted.
+At least I can reproduce it quickly and easily.
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- drivers/misc/kgdbts.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/misc/kgdbts.c b/drivers/misc/kgdbts.c
-index b0c5631..8cebec5 100644
---- a/drivers/misc/kgdbts.c
-+++ b/drivers/misc/kgdbts.c
-@@ -304,7 +304,10 @@ static int check_and_rewind_pc(char *put_str, char *arg)
- 		return 1;
- 	}
- 	/* Readjust the instruction pointer if needed */
--	instruction_pointer_set(&kgdbts_regs, ip + offset);
-+	ip += offset;
-+#ifdef GDB_ADJUSTS_BREAK_OFFSET
-+	instruction_pointer_set(&kgdbts_regs, ip);
-+#endif
- 	return 0;
- }
- 
--- 
-1.7.5.rc3
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
