@@ -1,81 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002Ab1EaX5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 19:57:06 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:65133 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932946Ab1EaX5E (ORCPT
+	id S1758514Ab1FAAAI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 20:00:08 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38938 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756131Ab1FAAAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 19:57:04 -0400
+	Tue, 31 May 2011 20:00:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=ZimazJpvHMQWwF9BXPADiW90wZvmfVBVg4lbsOhfxtdAetcmiQ3M1/ipceDEaUmfpi
-         cE4/fBFFH1SLsZ3EZJKeIOQEbu60CL7NyBtXAYBm58PTahBWwMB9fSBFZDLY2/PhnNDg
-         mbsIZApaF5c2rMC5xZks5vz0C56QisahuAtlU=
-Message-ID: <4DE5804C.2050609@gmail.com>
-Date: Wed, 01 Jun 2011 01:57:00 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZB9k58VSCfpM9Q72u/+eTgUvTbZyxGfqPaA1+l+pUXS3hgQZIBzI+J5Y0Hfr6X1KXo
+         RnUxk0Yxc5xypUSHAwoQgWxtBGy3VAdvMjSu6JfbyzbnEuEOLDJsP+cSD1Mu06aVtk76
+         ciELHeRx+QGQ9ISbHil5ua3b6it0Ms/cP8jkQ=
+Date: Wed, 1 Jun 2011 02:00:00 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Jiaying Zhang <jiayingz@google.com>
+Subject: Re: [PATCH v2] trace: Add x86 irq vector entry/exit tracepoints
+Message-ID: <20110531235957.GB5256@somewhere.redhat.com>
+References: <1304107962-18576-1-git-send-email-vnagarnaik@google.com>
+ <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: "Xu, Andiry" <Andiry.Xu@amd.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] usb: Do not attempt to reset the device while it
- is disabled
-References: <1306749406-21124-1-git-send-email-m.b.lankhorst@gmail.com> <2DEEA3AB13739D45A22ADDB5086AEA0B016C1261@sshaexmb1.amd.com> <4DE4F166.8020207@gmail.com> <20110531171446.GB6776@xanatos> <4DE5283A.9070202@gmail.com> <20110531181848.GA6911@xanatos> <4DE53C74.2080700@gmail.com> <20110531223502.GA8550@xanatos>
-In-Reply-To: <20110531223502.GA8550@xanatos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 01-06-11 00:35, Sarah Sharp schreef:
-> On Tue, May 31, 2011 at 09:07:32PM +0200, Maarten Lankhorst wrote:
->> Op 31-05-11 20:18, Sarah Sharp schreef:
->>> On Tue, May 31, 2011 at 07:41:14PM +0200, Maarten Lankhorst wrote:
->> My xhci controller is this one:
->> 04:00.0 USB Controller: Device 1b6f:7023 (rev 01) (prog-if 30 [XHCI])
->> Subsystem: ASRock Incorporation Device 7023
-> Ok, the PCI SIGG says that vendor ID is assigned to Etron.  Congrats,
-> that's the first xHCI host controller I've seen from that company. :)
-Hooray.
-> Ok, so the xHCI driver does successfully get a slot from the host
-> controller.
->
->> [  545.664041] xhci_hcd 0000:04:00.0: Allocating ring at ffff8801c7d7ccc0
->> [  545.664044] xhci_hcd 0000:04:00.0: Allocating priv segment structure at ffff8801e2e26c40
->> [  545.664047] xhci_hcd 0000:04:00.0: // Allocating segment at ffff8800bac3f800 (virtual) 0xbac3f800 (DMA)
->> [  545.664053] xhci_hcd 0000:04:00.0: Linking segment 0xbac3f800 to segment 0xbac3f800 (DMA)
->> [  545.664056] xhci_hcd 0000:04:00.0: Wrote link toggle flag to segment ffff8801e2e26c40 (virtual), 0xbac3f800 (DMA)
->> [  545.664059] xhci_hcd 0000:04:00.0: Set slot id 1 dcbaa entry ffff8800bac3e008 to 0xbac21000
->> [  545.664070] xhci_hcd 0000:04:00.0: `MEM_WRITE_DWORD(3'b000, 32'hffffc90001ce0420, 32'h2f1, 4'hf);
-> But I don't see an Address Device command complete here.  The command
-> submission probably caused that memory write, but there really should be
-> more debugging here.  I'll have to look through the hub initialization
-> and see if there is any error path that would make it skip setting the
-> device address.
->
-> Have you tried on Linux 3.0-rc1?
-Same problem with 3.0rc1 it seems. Just look at hub_port_init, that appears to be where it's going wrong:
+On Tue, May 31, 2011 at 02:28:18PM -0700, Vaibhav Nagarnaik wrote:
+> From: Jiaying Zhang <jiayingz@google.com>
+> 
+> The current interrupt trace of irq_handler_entry and irq_handler_exit
+> give traces of when an interrupt is handled. They provide good data
+> about when the system is running in kernel space and how it affects the
+> currently running applications.
+> 
+> Apart from this, they are IRQ vectors which trigger the system into
+> kernel space. Tracing such events gives us the trace of where the system
+> is spending its time. We want to know which cores are handling
+> interrupts and how they are affecting other processes in the system.
+> Also, the trace provides information about when the cores are idle and
+> which interrupts are changing that state.
+> 
+> The following patch adds the event definition and trace instrumentation
+> for interrupt vectors. For x86, a lookup table is provided to print out
+> readable IRQ vector names. The template can be used to provide interrupt
+> vector lookup tables on other architectures.
+> 
+> With this patch, following interrupt vectors are logged by ftrace
+> (when enabled):
+> 
+> Interrupt as in /proc/interrupts        Name as it appears in ftrace log
+> NMI: Non-maskable interrupts           : NMI_VECTOR
+> LOC: Local timer interrupts            : LOCAL_TIMER_VECTOR
+> SPU: Spurious interrupts               : SPURIOUS_APIC_VECTOR
+> PMI: Performance monitoring interrupts : <not added>
+> IWI: IRQ work interrupts               : IRQ_WORK_VECTOR
+> RES: Rescheduling interrupts           : RESCHEDULE_VECTOR
+> CAL: Function call interrupts          : CALL_FUNCTION_VECTOR or
+>                                          CALL_FUNCTION_SINGLE_VECTOR
+> TLB: TLB shootdowns                    : INVALIDATE_TLB_VECTOR_START to
+>                                          INVALIDATE_TLB_VECTOR_END
+> TRM: Thermal event interrupts          : THERMAL_APIC_VECTOR
+> THR: Threshold APIC interrupts         : THRESHOLD_APIC_VECTOR
+> MCE: Machine check exceptions          : <not added>
+> MCP: Machine check polls               : <not added>
+> ERR:                                   : ERROR_APIC_VECTOR
+> MIS:                                   : <not added>
+> PLT: Platform interrupts               : X86_PLATFORM_IPI_VECTOR
+> 
+> $ sh ~/ftrace_test.sh
+> tracing...
+>   cpu0: overrun: 0
+>   cpu1: overrun: 0
+>   cpu2: overrun: 0
+>   cpu3: overrun: 0
+> IRQ ftrace record counts (ignoring numeric  irq=(0|1|4|5|7|9|10|24) )
+>       2 irq=242 name=INVALIDATE_TLB_VECTOR_2
+>       3 irq=252 name=CALL_FUNCTION_VECTOR
+>       6 irq=241 name=INVALIDATE_TLB_VECTOR_1
+>       6 irq=2 name=NMI_VECTOR
+>      22 irq=240 name=INVALIDATE_TLB_VECTOR_0
+>      40 irq=251 name=CALL_FUNCTION_SINGLE_VECTOR
+>     587 irq=253 name=RESCHEDULE_VECTOR
+>   15013 irq=239 name=LOCAL_TIMER_VECTOR
+> /proc/interrupts stats difference
+>       6 NMI (Non-maskable interrupts)
+>   14945 LOC (Local timer interrupts)
+>       6 PMI (Performance monitoring interrupts)
+>     578 RES (Rescheduling interrupts)
+>      42 CAL (Function call interrupts)
+>      30 TLB (TLB shootdowns)
+>       4 MCP (Machine check polls)
+> 
+> In above output:
+> NMI (Non-maskable interrupts) == NMI_VECTOR (irq 2)
+> LOC (Local timer interrupts) == LOCAL_TIMER_VECTOR (irq 239)
+> RES (Rescheduling interrupts) == RESCHEDULE_VECTOR (irq=253)
+> CAL (Function call interrupts) == CALL_FUNCTION_VECTOR (irq 252) +
+>                                   CALL_FUNCTION_SINGLE_VECTOR (irq 251)
+> TLB (TLB shootdowns) == INVALIDATE_TLB_VECTOR_0 (irq=240) +
+>                         INVALIDATE_TLB_VECTOR_1 (irq=241) +
+>                         INVALIDATE_TLB_VECTOR_2 (irq=242)
+> 
+> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+> ---
+> Changelog:
+> v1-v2
+> * Move the irq_vector_{entry|exit} tracepoints under irq_vectors/ sub
+>   folder
+> * Rebased to 3.0.0
+> 
+>  arch/x86/include/asm/irq_vectors.h       |   50 ++++++++++++++++++++++++++
+>  arch/x86/kernel/apic/apic.c              |    7 ++++
+>  arch/x86/kernel/cpu/mcheck/therm_throt.c |    3 ++
+>  arch/x86/kernel/cpu/mcheck/threshold.c   |    3 ++
+>  arch/x86/kernel/irq.c                    |    7 +++-
+>  arch/x86/kernel/irq_work.c               |    3 ++
+>  arch/x86/kernel/smp.c                    |    7 ++++
+>  arch/x86/kernel/time.c                   |   16 +++++---
+>  arch/x86/kernel/traps.c                  |    3 ++
+>  arch/x86/mm/tlb.c                        |    3 ++
+>  include/trace/events/irq_vectors.h       |   56 ++++++++++++++++++++++++++++++
+>  11 files changed, 151 insertions(+), 7 deletions(-)
+>  create mode 100644 include/trace/events/irq_vectors.h
+> 
+> diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
+> index 6e976ee..af06349 100644
+> --- a/arch/x86/include/asm/irq_vectors.h
+> +++ b/arch/x86/include/asm/irq_vectors.h
+> @@ -182,4 +182,54 @@ static inline int invalid_vm86_irq(int irq)
+>  # define NR_IRQS			NR_IRQS_LEGACY
+>  #endif
+>  
+> +#define irq_vector_name(sirq) { sirq, #sirq }
+> +#define invalidate_tlb_vector_name(i) { INVALIDATE_TLB_VECTOR_END-31+i, \
+> +					"INVALIDATE_TLB_VECTOR" }
 
-First it calls:
-        retval = hub_port_reset(hub, port1, udev, delay);
+IIRC, Thomas suggested in the v1 to turn arch tracepoints into core ones when they
+stand for generic (ie: shared by all archs) event meaning.
 
-Which does the device reset..
+I don't know where the discussion went after that, but that still seems to
+me an important direction. Tracing irqs by their vector number should be reserved
+for pure arch meanings. Sharing common tracepoints for generic events amongst archs makes life
+easier for tools. Bonus when the tracepoint can be placed in the generic code.
 
-Then lower in that function:
-                if (udev->wusb == 0) {
-                        for (j = 0; j < SET_ADDRESS_TRIES; ++j) {
-                                retval = hub_set_address(udev, devnum);
-                                if (retval >= 0)
-                                        break;
-                                msleep(200);
-                        }
 
-It seems to me that is why I get the reset call failing BEFORE the address is set. However I'm unsure what
-would be a proper fix for it would be.
+> +#define irq_vector_name_table						\
+> +			irq_vector_name(NMI_VECTOR),			\
+> +			irq_vector_name(LOCAL_TIMER_VECTOR),		\
 
-~Maarten
+This should be a tracepoint in the generic timer interrupt handler(s).
+
+> +			irq_vector_name(ERROR_APIC_VECTOR),		\
+> +			irq_vector_name(RESCHEDULE_VECTOR),		\
+
+Although each archs have their own implementations of rescheduling interrupt,
+it's a common event amongst arch. Better have a common tracepoint for that
+and not a different vector number between them.
+
+> +			irq_vector_name(CALL_FUNCTION_VECTOR),		\
+> +			irq_vector_name(CALL_FUNCTION_SINGLE_VECTOR),	\
+
+Both should be tracepoints in kernel/smp.c: generic_smp_call_function_*_interrupt()
+
+> +			irq_vector_name(THERMAL_APIC_VECTOR),		\
+> +			irq_vector_name(THRESHOLD_APIC_VECTOR),		\
+> +			irq_vector_name(REBOOT_VECTOR),			\
+
+Reboot seems to be generic as well.
+
+> +			irq_vector_name(SPURIOUS_APIC_VECTOR),		\
+> +			irq_vector_name(IRQ_WORK_VECTOR),		\
+
+Should be in the irq work generic code.
