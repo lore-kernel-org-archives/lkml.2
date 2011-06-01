@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163278Ab1FAI3e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:29:34 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45327 "EHLO mx1.suse.de"
+	id S1163289Ab1FAI3j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:29:39 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45337 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1163266Ab1FAI32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:29:28 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:29 2011
-Message-Id: <20110601081229.084861472@blue.kroah.org>
+	id S1163271Ab1FAI3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:29:33 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:30 2011
+Message-Id: <20110601081229.703696800@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:12:12 +0900
+Date: Wed, 01 Jun 2011 17:12:13 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [162/165] block: dont block events on excl write for non-optical
+Subject: [163/165] ext4: fix possible use-after-free in
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,128 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- devices
-Content-Length: 4265
-Lines: 120
+ ext4_remove_li_request()
+Content-Length: 1306
+Lines: 43
 
-From: Tejun Heo <tj@kernel.org>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit d4dc210f69bcb0b4bef5a83b1c323817be89bad1 upstream.
+commit 1bb933fb1fa8e4cb337a0d5dfd2ff4c0dc2073e8 upstream.
 
-Disk event code automatically blocks events on excl write.  This is
-primarily to avoid issuing polling commands while burning is in
-progress.  This behavior doesn't fit other types of devices with
-removeable media where polling commands don't have adverse side
-effects and door locking usually doesn't exist.
+We need to take reference to the s_li_request after we take a mutex,
+because it might be freed since then, hence result in accessing old
+already freed memory. Also we should protect the whole
+ext4_remove_li_request() because ext4_li_info might be in the process of
+being freed in ext4_lazyinit_thread().
 
-This patch introduces new genhd flag which controls the auto-blocking
-behavior and uses it to enable auto-blocking only on optical devices.
-
-Note for stable: 2.6.38 and later only
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/block/paride/pcd.c |    1 +
- drivers/cdrom/viocd.c      |    3 ++-
- drivers/ide/ide-cd.c       |    3 ++-
- drivers/scsi/sr.c          |    2 +-
- fs/block_dev.c             |   17 ++++++++++-------
- include/linux/genhd.h      |    1 +
- 6 files changed, 17 insertions(+), 10 deletions(-)
+ fs/ext4/super.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/block/paride/pcd.c
-+++ b/drivers/block/paride/pcd.c
-@@ -320,6 +320,7 @@ static void pcd_init_units(void)
- 		disk->first_minor = unit;
- 		strcpy(disk->disk_name, cd->name);	/* umm... */
- 		disk->fops = &pcd_bdops;
-+		disk->flags = GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
- 	}
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2730,14 +2730,16 @@ static void ext4_remove_li_request(struc
+ 
+ static void ext4_unregister_li_request(struct super_block *sb)
+ {
+-	struct ext4_li_request *elr = EXT4_SB(sb)->s_li_request;
+-
+-	if (!ext4_li_info)
++	mutex_lock(&ext4_li_mtx);
++	if (!ext4_li_info) {
++		mutex_unlock(&ext4_li_mtx);
+ 		return;
++	}
+ 
+ 	mutex_lock(&ext4_li_info->li_list_mtx);
+-	ext4_remove_li_request(elr);
++	ext4_remove_li_request(EXT4_SB(sb)->s_li_request);
+ 	mutex_unlock(&ext4_li_info->li_list_mtx);
++	mutex_unlock(&ext4_li_mtx);
  }
  
---- a/drivers/cdrom/viocd.c
-+++ b/drivers/cdrom/viocd.c
-@@ -625,7 +625,8 @@ static int viocd_probe(struct vio_dev *v
- 	blk_queue_max_hw_sectors(q, 4096 / 512);
- 	gendisk->queue = q;
- 	gendisk->fops = &viocd_fops;
--	gendisk->flags = GENHD_FL_CD|GENHD_FL_REMOVABLE;
-+	gendisk->flags = GENHD_FL_CD | GENHD_FL_REMOVABLE |
-+			 GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
- 	set_capacity(gendisk, 0);
- 	gendisk->private_data = d;
- 	d->viocd_disk = gendisk;
---- a/drivers/ide/ide-cd.c
-+++ b/drivers/ide/ide-cd.c
-@@ -1773,7 +1773,8 @@ static int ide_cd_probe(ide_drive_t *dri
- 
- 	g->minors = 1;
- 	g->driverfs_dev = &drive->gendev;
--	g->flags = GENHD_FL_CD | GENHD_FL_REMOVABLE;
-+	g->flags = GENHD_FL_CD | GENHD_FL_REMOVABLE |
-+		   GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
- 	if (ide_cdrom_setup(drive)) {
- 		put_device(&info->dev);
- 		goto failed;
---- a/drivers/scsi/sr.c
-+++ b/drivers/scsi/sr.c
-@@ -636,7 +636,7 @@ static int sr_probe(struct device *dev)
- 	disk->first_minor = minor;
- 	sprintf(disk->disk_name, "sr%d", minor);
- 	disk->fops = &sr_bdops;
--	disk->flags = GENHD_FL_CD;
-+	disk->flags = GENHD_FL_CD | GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
- 	disk->events = DISK_EVENT_MEDIA_CHANGE | DISK_EVENT_EJECT_REQUEST;
- 
- 	blk_queue_rq_timeout(sdev->request_queue, SR_TIMEOUT);
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1238,6 +1238,8 @@ int blkdev_get(struct block_device *bdev
- 	res = __blkdev_get(bdev, mode, 0);
- 
- 	if (whole) {
-+		struct gendisk *disk = whole->bd_disk;
-+
- 		/* finish claiming */
- 		mutex_lock(&bdev->bd_mutex);
- 		spin_lock(&bdev_lock);
-@@ -1264,15 +1266,16 @@ int blkdev_get(struct block_device *bdev
- 		spin_unlock(&bdev_lock);
- 
- 		/*
--		 * Block event polling for write claims.  Any write
--		 * holder makes the write_holder state stick until all
--		 * are released.  This is good enough and tracking
--		 * individual writeable reference is too fragile given
--		 * the way @mode is used in blkdev_get/put().
-+		 * Block event polling for write claims if requested.  Any
-+		 * write holder makes the write_holder state stick until
-+		 * all are released.  This is good enough and tracking
-+		 * individual writeable reference is too fragile given the
-+		 * way @mode is used in blkdev_get/put().
- 		 */
--		if (!res && (mode & FMODE_WRITE) && !bdev->bd_write_holder) {
-+		if ((disk->flags & GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE) &&
-+		    !res && (mode & FMODE_WRITE) && !bdev->bd_write_holder) {
- 			bdev->bd_write_holder = true;
--			disk_block_events(bdev->bd_disk);
-+			disk_block_events(disk);
- 		}
- 
- 		mutex_unlock(&bdev->bd_mutex);
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -127,6 +127,7 @@ struct hd_struct {
- #define GENHD_FL_SUPPRESS_PARTITION_INFO	32
- #define GENHD_FL_EXT_DEVT			64 /* allow extended devt */
- #define GENHD_FL_NATIVE_CAPACITY		128
-+#define GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE	256
- 
- enum {
- 	DISK_EVENT_MEDIA_CHANGE			= 1 << 0, /* media changed */
+ static struct task_struct *ext4_lazyinit_task;
 
 
