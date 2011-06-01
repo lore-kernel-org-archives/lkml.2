@@ -1,218 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab1FAOVB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 10:21:01 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:39310 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753289Ab1FAOU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 10:20:58 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-kernel@vger.kernel.org
-Cc: user-mode-linux-devel@lists.sourceforge.net,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 2/2] um: Clean up delay functions
-Date: Wed,  1 Jun 2011 16:18:44 +0200
-Message-Id: <1306937924-22135-2-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.5.3
-In-Reply-To: <1306937924-22135-1-git-send-email-richard@nod.at>
-References: <1306937924-22135-1-git-send-email-richard@nod.at>
+	id S1756638Ab1FAOWX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 10:22:23 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:42925 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755568Ab1FAOWV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 10:22:21 -0400
+Message-ID: <4DE64B0E.8030008@stericsson.com>
+Date: Wed, 1 Jun 2011 16:22:06 +0200
+From: Mattias Wallin <mattias.wallin@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-GB; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 2/3] clocksource: add DB8500 PRCMU Timer support
+References: <1306830661-9546-1-git-send-email-mattias.wallin@stericsson.com>	<alpine.LFD.2.02.1105311236250.3078@ionos>	<4DE51EB7.7010606@stericsson.com> <BANLkTinPKbUu40066+wr3cdFRc2di-Uv6g@mail.gmail.com> <4DE5F0DB.2050409@stericsson.com>
+In-Reply-To: <4DE5F0DB.2050409@stericsson.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both sys-i386 and sys-x86_64 support now ndelay().
-The delay functions are based on arch/x86/lib/delay.c.
+On 06/01/2011 09:57 AM, Mattias Wallin wrote:
+> I'll experiment with it during the day and see how it goes.
+It did not work to have the clocksource init as a core_initcall.
+I got an null pointer oops in sched_clock_poll.
+The lauterbach trace showed that the sched_clock_update_fn was null 
+since the poll function was called before the init.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/um/include/asm/delay.h |    8 +----
- arch/um/sys-i386/delay.c    |   63 ++++++++++++++++++++++++++++++++-----------
- arch/um/sys-x86_64/delay.c  |   54 ++++++++++++++++++++++++++++--------
- 3 files changed, 91 insertions(+), 34 deletions(-)
+I'll go back to having it called from the platform's struct system_time 
+(like in patch 3/3) and place the include file in include/linux.
 
-diff --git a/arch/um/include/asm/delay.h b/arch/um/include/asm/delay.h
-index c71e32b..1094519 100644
---- a/arch/um/include/asm/delay.h
-+++ b/arch/um/include/asm/delay.h
-@@ -1,8 +1,6 @@
- #ifndef __UM_DELAY_H
- #define __UM_DELAY_H
- 
--#define MILLION 1000000
--
- /* Undefined on purpose */
- extern void __bad_udelay(void);
- 
-@@ -12,9 +10,7 @@ extern void __delay(unsigned long loops);
- #define udelay(n) ((__builtin_constant_p(n) && (n) > 20000) ? \
- 	__bad_udelay() : __udelay(n))
- 
--/* It appears that ndelay is not used at all for UML, and has never been
-- * implemented. */
--extern void __unimplemented_ndelay(void);
--#define ndelay(n) __unimplemented_ndelay()
-+#define ndelay(n) ((__builtin_constant_p(n) && (n) > 20000) ? \
-+	__bad_udelay() : __ndelay(n))
- 
- #endif
-diff --git a/arch/um/sys-i386/delay.c b/arch/um/sys-i386/delay.c
-index d623e07..65851ce 100644
---- a/arch/um/sys-i386/delay.c
-+++ b/arch/um/sys-i386/delay.c
-@@ -1,29 +1,60 @@
-+/*
-+ * Copyright (C) 2011 Richard Weinberger <richrd@nod.at>
-+ * Mostly copied from arch/x86/lib/delay.c
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/delay.h>
- #include <asm/param.h>
- 
--void __delay(unsigned long time)
-+void __delay(unsigned long loops)
- {
--	/* Stolen from the i386 __loop_delay */
--	int d0;
--	__asm__ __volatile__(
--		"\tjmp 1f\n"
--		".align 16\n"
--		"1:\tjmp 2f\n"
--		".align 16\n"
--		"2:\tdecl %0\n\tjns 2b"
--		:"=&a" (d0)
--		:"0" (time));
-+	asm volatile(
-+		" test %0,%0  \n"
-+		" jz 3f   \n"
-+		" jmp 1f    \n"
-+
-+		".align 16    \n"
-+		"1: jmp 2f    \n"
-+
-+		".align 16    \n"
-+		"2: dec %0    \n"
-+		" jnz 2b    \n"
-+		"3: dec %0    \n"
-+
-+		: /* we don't need output */
-+		:"a" (loops)
-+	);
- }
-+EXPORT_SYMBOL(__delay);
- 
--void __udelay(unsigned long usecs)
-+inline void __const_udelay(unsigned long xloops)
- {
--	int i, n;
-+	int d0;
- 
--	n = (loops_per_jiffy * HZ * usecs) / MILLION;
--        for(i=0;i<n;i++)
--                cpu_relax();
-+	xloops *= 4;
-+	asm("mull %%edx"
-+		:"=d" (xloops), "=&a" (d0)
-+		:"1" (xloops), "0"
-+		(loops_per_jiffy * (HZ/4)));
-+
-+	__delay(++xloops);
- }
-+EXPORT_SYMBOL(__const_udelay);
- 
-+void __udelay(unsigned long usecs)
-+{
-+	__const_udelay(usecs * 0x000010c7); /* 2**32 / 1000000 (rounded up) */
-+}
- EXPORT_SYMBOL(__udelay);
-+
-+void __ndelay(unsigned long nsecs)
-+{
-+	__const_udelay(nsecs * 0x00005); /* 2**32 / 1000000000 (rounded up) */
-+}
-+EXPORT_SYMBOL(__ndelay);
-diff --git a/arch/um/sys-x86_64/delay.c b/arch/um/sys-x86_64/delay.c
-index dee5be6..65851ce 100644
---- a/arch/um/sys-x86_64/delay.c
-+++ b/arch/um/sys-x86_64/delay.c
-@@ -1,30 +1,60 @@
- /*
-- * Copyright 2003 PathScale, Inc.
-- * Copied from arch/x86_64
-+ * Copyright (C) 2011 Richard Weinberger <richrd@nod.at>
-+ * Mostly copied from arch/x86/lib/delay.c
-  *
-- * Licensed under the GPL
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-  */
- 
- #include <linux/module.h>
-+#include <linux/kernel.h>
- #include <linux/delay.h>
--#include <asm/processor.h>
- #include <asm/param.h>
- 
- void __delay(unsigned long loops)
- {
--	unsigned long i;
-+	asm volatile(
-+		" test %0,%0  \n"
-+		" jz 3f   \n"
-+		" jmp 1f    \n"
- 
--        for(i = 0; i < loops; i++)
--                cpu_relax();
-+		".align 16    \n"
-+		"1: jmp 2f    \n"
-+
-+		".align 16    \n"
-+		"2: dec %0    \n"
-+		" jnz 2b    \n"
-+		"3: dec %0    \n"
-+
-+		: /* we don't need output */
-+		:"a" (loops)
-+	);
- }
-+EXPORT_SYMBOL(__delay);
- 
--void __udelay(unsigned long usecs)
-+inline void __const_udelay(unsigned long xloops)
- {
--	unsigned long i, n;
-+	int d0;
- 
--	n = (loops_per_jiffy * HZ * usecs) / MILLION;
--        for(i=0;i<n;i++)
--                cpu_relax();
-+	xloops *= 4;
-+	asm("mull %%edx"
-+		:"=d" (xloops), "=&a" (d0)
-+		:"1" (xloops), "0"
-+		(loops_per_jiffy * (HZ/4)));
-+
-+	__delay(++xloops);
- }
-+EXPORT_SYMBOL(__const_udelay);
- 
-+void __udelay(unsigned long usecs)
-+{
-+	__const_udelay(usecs * 0x000010c7); /* 2**32 / 1000000 (rounded up) */
-+}
- EXPORT_SYMBOL(__udelay);
-+
-+void __ndelay(unsigned long nsecs)
-+{
-+	__const_udelay(nsecs * 0x00005); /* 2**32 / 1000000000 (rounded up) */
-+}
-+EXPORT_SYMBOL(__ndelay);
--- 
-1.7.5.3
-
+Thomas, are you ok with having it directly under include/linux or do you 
+want me to create a include/linux/clocksource/ directory and place it there?
