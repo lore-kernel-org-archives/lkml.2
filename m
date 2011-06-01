@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161855Ab1FAJOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:14:09 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43731 "EHLO mx1.suse.de"
+	id S1161834Ab1FAIPK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:15:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43743 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161768Ab1FAIOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:14:54 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:04:05 2011
-Message-Id: <20110601080404.742864407@blue.kroah.org>
+	id S1161808Ab1FAIPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:15:04 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:04:06 2011
+Message-Id: <20110601080405.835081720@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:33 +0900
+Date: Wed, 01 Jun 2011 17:00:34 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [097/146] ASoC: Add some missing volume update bit sets for wm_hubs
+        Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [098/146] HID: magicmouse: ignore ivalid report id while switching
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +24,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- devices
+ modes
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit fb5af53d421d80725172427e9076f6e889603df6 upstream.
+commit 23746a66d7d9e73402c68ef00d708796b97ebd72 upstream.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
+The device reponds with 'invalid report id' when feature report switching it
+into multitouch mode is sent to it.
+
+This has been silently ignored before 0825411ade ("HID: bt: Wait for ACK
+on Sent Reports"), but since this commit, it propagates -EIO from the _raw
+callback .
+
+So let the driver ignore -EIO as response to 0xd7,0x01 report, as that's
+how the device reacts in normal mode.
+
+Sad, but following reality.
+
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=35022
+
+Tested-by: Chase Douglas <chase.douglas@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm_hubs.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/hid/hid-magicmouse.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm_hubs.c
-+++ b/sound/soc/codecs/wm_hubs.c
-@@ -835,17 +835,21 @@ int wm_hubs_add_analogue_controls(struct
- 	snd_soc_update_bits(codec, WM8993_RIGHT_LINE_INPUT_3_4_VOLUME,
- 			    WM8993_IN2_VU, WM8993_IN2_VU);
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -501,9 +501,17 @@ static int magicmouse_probe(struct hid_d
+ 	}
+ 	report->size = 6;
  
-+	snd_soc_update_bits(codec, WM8993_SPEAKER_VOLUME_LEFT,
-+			    WM8993_SPKOUT_VU, WM8993_SPKOUT_VU);
- 	snd_soc_update_bits(codec, WM8993_SPEAKER_VOLUME_RIGHT,
- 			    WM8993_SPKOUT_VU, WM8993_SPKOUT_VU);
- 
- 	snd_soc_update_bits(codec, WM8993_LEFT_OUTPUT_VOLUME,
--			    WM8993_HPOUT1L_ZC, WM8993_HPOUT1L_ZC);
-+			    WM8993_HPOUT1_VU | WM8993_HPOUT1L_ZC,
-+			    WM8993_HPOUT1_VU | WM8993_HPOUT1L_ZC);
- 	snd_soc_update_bits(codec, WM8993_RIGHT_OUTPUT_VOLUME,
- 			    WM8993_HPOUT1_VU | WM8993_HPOUT1R_ZC,
- 			    WM8993_HPOUT1_VU | WM8993_HPOUT1R_ZC);
- 
- 	snd_soc_update_bits(codec, WM8993_LEFT_OPGA_VOLUME,
--			    WM8993_MIXOUTL_ZC, WM8993_MIXOUTL_ZC);
-+			    WM8993_MIXOUTL_ZC | WM8993_MIXOUT_VU,
-+			    WM8993_MIXOUTL_ZC | WM8993_MIXOUT_VU);
- 	snd_soc_update_bits(codec, WM8993_RIGHT_OPGA_VOLUME,
- 			    WM8993_MIXOUTR_ZC | WM8993_MIXOUT_VU,
- 			    WM8993_MIXOUTR_ZC | WM8993_MIXOUT_VU);
++	/*
++	 * The device reponds with 'invalid report id' when feature
++	 * report switching it into multitouch mode is sent to it.
++	 *
++	 * This results in -EIO from the _raw low-level transport callback,
++	 * but there seems to be no other way of switching the mode.
++	 * Thus the super-ugly hacky success check below.
++	 */
+ 	ret = hdev->hid_output_raw_report(hdev, feature, sizeof(feature),
+ 			HID_FEATURE_REPORT);
+-	if (ret != sizeof(feature)) {
++	if (ret != -EIO) {
+ 		hid_err(hdev, "unable to request touch data (%d)\n", ret);
+ 		goto err_stop_hw;
+ 	}
 
 
