@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759460Ab1FATJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:09:21 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:17216 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759443Ab1FATJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:09:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=Oszl/WuYLI82CBSlaJWaVrtlvQb0wI0oqh0gam7/btnH4NeaM9TDsJn9hRkjd8VDe1
-         pyVwn1EFOjvRoeh3r6tA==
-Date: Wed, 1 Jun 2011 12:09:12 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
- instead of failing
-In-Reply-To: <alpine.LFD.2.02.1106012043080.3078@ionos>
-Message-ID: <alpine.DEB.2.00.1106011205410.17065@chino.kir.corp.google.com>
-References: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com> <BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com> <BANLkTikrRRzGLbMD47_xJz+xpgftCm1C2A@mail.gmail.com> <alpine.DEB.2.00.1106011017260.13089@chino.kir.corp.google.com>
- <20110601181918.GO3660@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1106012043080.3078@ionos>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1759426Ab1FATPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 15:15:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27828 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759107Ab1FATPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 15:15:44 -0400
+Date: Wed, 1 Jun 2011 21:15:29 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>, akpm@linux-foundation.org,
+        Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110601191529.GY19505@random.random>
+References: <20110530143109.GH19505@random.random>
+ <20110530153748.GS5044@csn.ul.ie>
+ <20110530165546.GC5118@suse.de>
+ <20110530175334.GI19505@random.random>
+ <20110531121620.GA3490@barrios-laptop>
+ <20110531122437.GJ19505@random.random>
+ <20110531133340.GB3490@barrios-laptop>
+ <20110531141402.GK19505@random.random>
+ <20110601005747.GC7019@csn.ul.ie>
+ <20110601175809.GB7306@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110601175809.GB7306@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Jun 2011, Thomas Gleixner wrote:
+On Wed, Jun 01, 2011 at 06:58:09PM +0100, Mel Gorman wrote:
+> Umm, HIGHMEM4G implies a two-level pagetable layout so where are
+> things like _PAGE_BIT_SPLITTING being set when THP is enabled?
 
-> > That is NOT an unreasonable request, but it seems that its far too much
-> > to ask of you.
-> 
-> Full ack.
-> 
-> David,
-> 
-> stop that nonsense already. You changed the behaviour and broke stuff
-> which was working fine before for whatever reason. That behaviour was
-> in the kernel for ages and we tolerated the abuse.
-> 
-
-Did I nack this patch and not realize it?
-
-Does my patch fix the warning for pxaficp_ir that would still be emitted 
-with this patch?  If the driver uses GFP_DMA and nobody from the arm side 
-is prepared to remove it yet, then I'd suggest merging my patch until that 
-can be determined.  Otherwise, you have no guarantees about where the 
-memory is actually coming from.
+They should be set on the pgd, pud_offset/pgd_offset will just bypass.
+The splitting bit shouldn't be special about it, the present bit
+should work the same.
