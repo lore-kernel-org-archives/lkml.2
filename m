@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162445Ab1FAIUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:20:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43910 "EHLO mx2.suse.de"
+	id S1162432Ab1FAIuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:50:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43920 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162425Ab1FAIUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:20:30 -0400
+	id S1161786Ab1FAIUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:20:35 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:26 2011
-Message-Id: <20110601081125.732971261@blue.kroah.org>
+Message-Id: <20110601081126.340594760@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:10:31 +0900
+Date: Wed, 01 Jun 2011 17:10:32 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wei Yongjun <yjwei@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jarek Poplawski <jarkao2@gmail.com>, Patrick McHardy <kaber@trash.net>,
+        Jesper Dangaard Brouer <hawk@diku.dk>,
         "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [061/165] sctp: fix memory leak of the ASCONF queue when free asoc
+Subject: [062/165] sch_sfq: fix peek() implementation
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,64 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1823
-Lines: 57
+Content-Length: 1496
+Lines: 53
 
 
-From: Wei Yongjun <yjwei@cn.fujitsu.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 8b4472cc13136d04727e399c6fdadf58d2218b0a ]
+[ Upstream commit 07bd8df5df4369487812bf85a237322ff3569b77 ]
 
-If an ASCONF chunk is outstanding, then the following ASCONF
-chunk will be queued for later transmission. But when we free
-the asoc, we forget to free the ASCONF queue at the same time,
-this will cause memory leak.
+Since commit eeaeb068f139 (sch_sfq: allow big packets and be fair),
+sfq_peek() can return a different skb that would be normally dequeued by
+sfq_dequeue() [ if current slot->allot is negative ]
 
-Signed-off-by: Wei Yongjun <yjwei@cn.fujitsu.com>
+Use generic qdisc_peek_dequeued() instead of custom implementation, to
+get consistent result.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Jarek Poplawski <jarkao2@gmail.com>
+CC: Patrick McHardy <kaber@trash.net>
+CC: Jesper Dangaard Brouer <hawk@diku.dk>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/sctp/associola.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ net/sched/sch_sfq.c |   14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -64,6 +64,7 @@
- /* Forward declarations for internal functions. */
- static void sctp_assoc_bh_rcv(struct work_struct *work);
- static void sctp_assoc_free_asconf_acks(struct sctp_association *asoc);
-+static void sctp_assoc_free_asconf_queue(struct sctp_association *asoc);
- 
- /* Keep track of the new idr low so that we don't re-use association id
-  * numbers too fast.  It is protected by they idr spin lock is in the
-@@ -446,6 +447,9 @@ void sctp_association_free(struct sctp_a
- 	/* Free any cached ASCONF_ACK chunk. */
- 	sctp_assoc_free_asconf_acks(asoc);
- 
-+	/* Free the ASCONF queue. */
-+	sctp_assoc_free_asconf_queue(asoc);
-+
- 	/* Free any cached ASCONF chunk. */
- 	if (asoc->addip_last_asconf)
- 		sctp_chunk_free(asoc->addip_last_asconf);
-@@ -1578,6 +1582,18 @@ retry:
- 	return error;
+--- a/net/sched/sch_sfq.c
++++ b/net/sched/sch_sfq.c
+@@ -410,18 +410,6 @@ sfq_enqueue(struct sk_buff *skb, struct
  }
  
-+/* Free the ASCONF queue */
-+static void sctp_assoc_free_asconf_queue(struct sctp_association *asoc)
-+{
-+	struct sctp_chunk *asconf;
-+	struct sctp_chunk *tmp;
-+
-+	list_for_each_entry_safe(asconf, tmp, &asoc->addip_chunk_list, list) {
-+		list_del_init(&asconf->list);
-+		sctp_chunk_free(asconf);
-+	}
-+}
-+
- /* Free asconf_ack cache */
- static void sctp_assoc_free_asconf_acks(struct sctp_association *asoc)
+ static struct sk_buff *
+-sfq_peek(struct Qdisc *sch)
+-{
+-	struct sfq_sched_data *q = qdisc_priv(sch);
+-
+-	/* No active slots */
+-	if (q->tail == NULL)
+-		return NULL;
+-
+-	return q->slots[q->tail->next].skblist_next;
+-}
+-
+-static struct sk_buff *
+ sfq_dequeue(struct Qdisc *sch)
  {
+ 	struct sfq_sched_data *q = qdisc_priv(sch);
+@@ -702,7 +690,7 @@ static struct Qdisc_ops sfq_qdisc_ops __
+ 	.priv_size	=	sizeof(struct sfq_sched_data),
+ 	.enqueue	=	sfq_enqueue,
+ 	.dequeue	=	sfq_dequeue,
+-	.peek		=	sfq_peek,
++	.peek		=	qdisc_peek_dequeued,
+ 	.drop		=	sfq_drop,
+ 	.init		=	sfq_init,
+ 	.reset		=	sfq_reset,
 
 
