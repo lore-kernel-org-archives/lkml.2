@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757103Ab1FASFp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 14:05:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39445 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab1FASFo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 14:05:44 -0400
-Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Arne Jansen <lists@die-jansens.de>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, efault@gmx.de, npiggin@kernel.dk,
-        akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-In-Reply-To: <4DE674EB.1000200@die-jansens.de>
-References: <20110405152729.232781355@chello.nl>
-	 <tip-0122ec5b02f766c355b3168df53a6c038a24fa0d@git.kernel.org>
-	 <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop>
-	 <4DE674EB.1000200@die-jansens.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Jun 2011 20:09:11 +0200
-Message-ID: <1306951751.2497.626.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1759193Ab1FASOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 14:14:21 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50780 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758976Ab1FASOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 14:14:19 -0400
+Message-ID: <820d76c11c182f41dcbc652926e27d94.squirrel@www.skyhub.de>
+In-Reply-To: <4DE59E9E.5030802@zytor.com>
+References: <1306873314-32523-1-git-send-email-bp@alien8.de>
+    <4DE59E9E.5030802@zytor.com>
+Date: Wed, 1 Jun 2011 20:14:16 +0200 (CEST)
+Subject: Re: [PATCH 0/4] Some x86, asm cleanups
+From: "Borislav Petkov" <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Borislav Petkov" <bp@alien8.de>, "Ingo Molnar" <mingo@redhat.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "LKML" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-01 at 19:20 +0200, Arne Jansen wrote:
-> On 01.06.2011 18:35, Peter Zijlstra wrote:
-> > On Wed, 2011-06-01 at 15:58 +0200, Arne Jansen wrote:
-> >> git bisect blames this commit for a problem I have with v3.0-rc1:
-> >> If I printk large amounts of data, the machine locks up.
-> >> As the commit does not revert cleanly on top of 3.0, I haven't been
-> >> able to double check.
-> >> The test I use is simple, just add something like
-> >>
-> >> for (i=0; i<  10000; ++i) printk("test %d\n", i);
-> >>
-> >> and trigger it, in most cases I can see the first 10 printks before
-> >> I have to power cycle the machine (sysrq-b does not work anymore).
-> >> Attached my .config.
-> >
-> > I've made me a module that does the above, I've also changed my .config
-> > to match yours (smp=y, sched-cgroup=y, autogroup=n, preempt=n, no_hz=y),
-> > but sadly I cannot reproduce, I get all 10k prints on my serial line.
-> >
-> > Even without serial line it works (somehow booting without visible
-> > console is scary as hell :)
-> >
-> > Which makes me ask, how are you observing your console?
-> >
-> 
-> They don't go out to the serial line, I only observe them with a
-> tail -f on messages. Default log level doesn't go the console here.
+On Wed, 1 June, 2011 4:06 am, H. Peter Anvin wrote:
+> On 05/31/2011 01:21 PM, Borislav Petkov wrote:
+>> Hi,
+>>
+>> here are a couple of asm cleanups. I hope I don't break some esoteric
+>> gas version with them. They survived booting into kvm and on a couple of
+>> different machines so I might get lucky.
+>>
+>> Suggestions welcome, as always.
+>>
+>> Thanks.
+>
+> Any way you can try them out on the gas version from hell[TM], a.k.a.
+> 2.16?
 
-Right ok, so I used your exact .config, added a few drivers needed for
-my hardware and indeed, it doesn't even finish booting and gets stuck
-someplace.
+I think by that you mean this guy:
 
-Sadly it looks like even the NMI watchdog is dead,.. /me goes try and
-make sense of this.
+ as --version
+GNU assembler 2.16.91.0.5 20051219 (SUSE Linux)
+Copyright 2005 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License.  This program has absolutely no warranty.
+This assembler was configured for a target of `x86_64-suse-linux'.
+
+at least this is one incarnation of it. I had to install SLES10 SP3
+with the unpatched binutils version in kvm to test. And yes, the kernel
+builds fine. Let me know if I should run some randconfigs, in addition.
+
+Btw, I'm keeping the kvm image for future testing with the bat from hell :).
+
+-- 
+Regards/Gruss,
+Boris.
 
