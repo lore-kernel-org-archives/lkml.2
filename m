@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab1FAGZt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 02:25:49 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:55147 "EHLO zene.cmpxchg.org"
+	id S1754142Ab1FAG1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 02:27:19 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:55154 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752583Ab1FAGZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 02:25:46 -0400
+	id S1753485Ab1FAGZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 02:25:47 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
@@ -17,9 +17,9 @@ To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
         Michel Lespinasse <walken@google.com>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch 6/8] vmscan: change zone_nr_lru_pages to take memcg instead of scan control
-Date: Wed,  1 Jun 2011 08:25:17 +0200
-Message-Id: <1306909519-7286-7-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 7/8] vmscan: memcg-aware unevictable page rescue scanner
+Date: Wed,  1 Jun 2011 08:25:18 +0200
+Message-Id: <1306909519-7286-8-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.7.5.2
 In-Reply-To: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
 References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
@@ -27,70 +27,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function only uses sc->mem_cgroup from the scan control.  Change
-it to take a memcg argument directly, so callsites without an actual
-reclaim context can use it as well.
+Once the per-memcg lru lists are exclusive, the unevictable page
+rescue scanner can no longer work on the global zone lru lists.
+
+This converts it to go through all memcgs and scan their respective
+unevictable lists instead.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/vmscan.c |   22 ++++++++++++----------
- 1 files changed, 12 insertions(+), 10 deletions(-)
+ include/linux/memcontrol.h |    2 +
+ mm/memcontrol.c            |   11 +++++++++
+ mm/vmscan.c                |   53 +++++++++++++++++++++++++++----------------
+ 3 files changed, 46 insertions(+), 20 deletions(-)
 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index cb02c00..56c1def 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -60,6 +60,8 @@ extern void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *ptr);
+ 
+ extern int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 					gfp_t gfp_mask);
++struct page *mem_cgroup_lru_to_page(struct zone *, struct mem_cgroup *,
++				    enum lru_list);
+ extern void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru);
+ extern void mem_cgroup_del_lru_list(struct page *page, enum lru_list lru);
+ extern void mem_cgroup_rotate_reclaimable_page(struct page *page);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 78ae4dd..d9d1a7e 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -656,6 +656,17 @@ static inline bool mem_cgroup_is_root(struct mem_cgroup *mem)
+  * When moving account, the page is not on LRU. It's isolated.
+  */
+ 
++struct page *mem_cgroup_lru_to_page(struct zone *zone, struct mem_cgroup *mem,
++				    enum lru_list lru)
++{
++	struct mem_cgroup_per_zone *mz;
++	struct page_cgroup *pc;
++
++	mz = mem_cgroup_zoneinfo(mem, zone_to_nid(zone), zone_idx(zone));
++	pc = list_entry(mz->lists[lru].prev, struct page_cgroup, lru);
++	return lookup_cgroup_page(pc);
++}
++
+ void mem_cgroup_del_lru_list(struct page *page, enum lru_list lru)
+ {
+ 	struct page_cgroup *pc;
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 7d74e48..9c51ec8 100644
+index 9c51ec8..23fd2b1 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -205,10 +205,11 @@ static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
+@@ -3233,6 +3233,14 @@ void scan_mapping_unevictable_pages(struct address_space *mapping)
+ 
  }
  
- static unsigned long zone_nr_lru_pages(struct zone *zone,
--				struct scan_control *sc, enum lru_list lru)
-+				       struct mem_cgroup *mem,
-+				       enum lru_list lru)
- {
--	if (!scanning_global_lru(sc))
--		return mem_cgroup_zone_nr_pages(sc->mem_cgroup, zone, lru);
++static struct page *lru_tailpage(struct zone *zone, struct mem_cgroup *mem,
++				 enum lru_list lru)
++{
 +	if (mem)
-+		return mem_cgroup_zone_nr_pages(mem, zone, lru);
++		return mem_cgroup_lru_to_page(zone, mem, lru);
++	return lru_to_page(&zone->lru[lru].list);
++}
++
+ /**
+  * scan_zone_unevictable_pages - check unevictable list for evictable pages
+  * @zone - zone of which to scan the unevictable list
+@@ -3246,32 +3254,37 @@ void scan_mapping_unevictable_pages(struct address_space *mapping)
+ #define SCAN_UNEVICTABLE_BATCH_SIZE 16UL /* arbitrary lock hold batch size */
+ static void scan_zone_unevictable_pages(struct zone *zone)
+ {
+-	struct list_head *l_unevictable = &zone->lru[LRU_UNEVICTABLE].list;
+-	unsigned long scan;
+-	unsigned long nr_to_scan = zone_page_state(zone, NR_UNEVICTABLE);
++	struct mem_cgroup *first, *mem = NULL;
  
- 	return zone_page_state(zone, NR_LRU_BASE + lru);
+-	while (nr_to_scan > 0) {
+-		unsigned long batch_size = min(nr_to_scan,
+-						SCAN_UNEVICTABLE_BATCH_SIZE);
++	first = mem = mem_cgroup_hierarchy_walk(NULL, mem);
++	do {
++		unsigned long nr_to_scan;
+ 
+-		spin_lock_irq(&zone->lru_lock);
+-		for (scan = 0;  scan < batch_size; scan++) {
+-			struct page *page = lru_to_page(l_unevictable);
++		nr_to_scan = zone_nr_lru_pages(zone, mem, LRU_UNEVICTABLE);
++		while (nr_to_scan > 0) {
++			unsigned long batch_size;
++			unsigned long scan;
+ 
+-			if (!trylock_page(page))
+-				continue;
++			batch_size = min(nr_to_scan,
++					 SCAN_UNEVICTABLE_BATCH_SIZE);
+ 
+-			prefetchw_prev_lru_page(page, l_unevictable, flags);
+-
+-			if (likely(PageLRU(page) && PageUnevictable(page)))
+-				check_move_unevictable_page(page, zone);
++			spin_lock_irq(&zone->lru_lock);
++			for (scan = 0; scan < batch_size; scan++) {
++				struct page *page;
+ 
+-			unlock_page(page);
++				page = lru_tailpage(zone, mem, LRU_UNEVICTABLE);
++				if (!trylock_page(page))
++					continue;
++				if (likely(PageLRU(page) &&
++					   PageUnevictable(page)))
++					check_move_unevictable_page(page, zone);
++				unlock_page(page);
++			}
++			spin_unlock_irq(&zone->lru_lock);
++			nr_to_scan -= batch_size;
+ 		}
+-		spin_unlock_irq(&zone->lru_lock);
+-
+-		nr_to_scan -= batch_size;
+-	}
++		mem = mem_cgroup_hierarchy_walk(NULL, mem);
++	} while (mem != first);
  }
-@@ -1780,10 +1781,10 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
- 		goto out;
- 	}
  
--	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
--		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
--	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
--		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-+	anon  = zone_nr_lru_pages(zone, sc->mem_cgroup, LRU_ACTIVE_ANON) +
-+		zone_nr_lru_pages(zone, sc->mem_cgroup, LRU_INACTIVE_ANON);
-+	file  = zone_nr_lru_pages(zone, sc->mem_cgroup, LRU_ACTIVE_FILE) +
-+		zone_nr_lru_pages(zone, sc->mem_cgroup, LRU_INACTIVE_FILE);
  
- 	if (global_reclaim(sc)) {
- 		free  = zone_page_state(zone, NR_FREE_PAGES);
-@@ -1846,7 +1847,7 @@ out:
- 		int file = is_file_lru(l);
- 		unsigned long scan;
- 
--		scan = zone_nr_lru_pages(zone, sc, l);
-+		scan = zone_nr_lru_pages(zone, sc->mem_cgroup, l);
- 		if (priority || noswap) {
- 			scan >>= priority;
- 			scan = div64_u64(scan * fraction[file], denominator);
-@@ -1903,8 +1904,9 @@ static inline bool should_continue_reclaim(struct zone *zone,
- 	 * inactive lists are large enough, continue reclaiming
- 	 */
- 	pages_for_compaction = (2UL << sc->order);
--	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON) +
--				zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-+	inactive_lru_pages =
-+		zone_nr_lru_pages(zone, sc->mem_cgroup, LRU_INACTIVE_ANON) +
-+		zone_nr_lru_pages(zone, sc->mem_cgroup, LRU_INACTIVE_FILE);
- 	if (sc->nr_reclaimed < pages_for_compaction &&
- 			inactive_lru_pages > pages_for_compaction)
- 		return true;
 -- 
 1.7.5.2
 
