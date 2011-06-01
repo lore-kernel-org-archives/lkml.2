@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933332Ab1FAKJX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 06:09:23 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:60006 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933292Ab1FAKJS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 06:09:18 -0400
-From: Alexey ORISHKO <alexey.orishko@stericsson.com>
-To: "Stefan (metze) Metzmacher" <metze@samba.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oliver Neukum <oneukum@suse.de>
-Date: Wed, 1 Jun 2011 12:08:40 +0200
-Subject: RE: [PATCH] usbnet/cdc_ncm: add missing .reset_resume hook
-Thread-Topic: [PATCH] usbnet/cdc_ncm: add missing .reset_resume hook
-Thread-Index: AcwgQ1sNyrAFU2skQkmFq5fZYF3o5QAAA4Og
-Message-ID: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E568@EXDCVYMBSTM006.EQ1STM.local>
-References: <1306919630-13426-1-git-send-email-metze@samba.org>
- <1306919630-13426-2-git-send-email-metze@samba.org>
- <201106011143.46667.oneukum@suse.de> <4DE60E7E.3080300@samba.org>
-In-Reply-To: <4DE60E7E.3080300@samba.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933378Ab1FAKYa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 06:24:30 -0400
+Received: from ix03.ka.hist.no ([158.38.48.167]:50092 "EHLO ix03.ka.hist.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758700Ab1FAKY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 06:24:29 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Jun 2011 06:24:28 EDT
+Message-ID: <4DE6103E.6010100@hist.no>
+Date: Wed, 01 Jun 2011 12:11:10 +0200
+From: Helge Hafting <helge.hafting@hist.no>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110510 Icedove/3.1.10
 MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [2.6.39] CIFS write failures where 2.6.38 works
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Jun 2011 10:11:11.0012 (UTC) FILETIME=[3B355E40:01CC2044]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-
-> owner@vger.kernel.org] On Behalf Of Stefan (metze) Metzmacher
-> Sent: Wednesday, June 01, 2011 12:04 PM
+At work I use cifs for accessing a windows server. This has worked fine 
+for a long time, up to and including Debian's 2.6.38-2.
 
-Please, change a date in DRIVER_VERSION, so it would be easier to track a version of deployed driver
+I just installed Debians's 2.6.39-1, and had to give up on it.
+Mounting CIFS works, and I can see the files. But if I
+try to make a new file (with cp), I get a long delay.
 
-Regards,
-Alexey
+In this time, anything accessing CIFS will pause, including "ls".
+CIFS eventually becomes unstuck, and I will find that my "ls" succeeded, 
+but the file copy did not. The file was created, but
+with 0 size.
+
+Trying to copy the file again results in another stall, and so on.
+
+
+When I mount CIFS, I get this message:
+CIFS VFS: Unexpected SMB signature
+
+This happens with 2.6.38 as well as 2.6.39.
+
+When writes fail in 2.6.39, I also get:
+CIFS VFS: Send error in Close = -512
+
+Followed by:
+CIFS VFS: Server servername has not responded in 300 seconds. 
+Reconnecting...
+
+I have also seen
+CIFS VFS: Send error in Close = -512
+and
+CIFS VFS: Send error in read = -13
+
+Helge Hafting
