@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab1FAOdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 10:33:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:36536 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756766Ab1FAOdN (ORCPT
+	id S1757756Ab1FAOga (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 10:36:30 -0400
+Received: from ns5.dns-guards.com ([41.203.20.164]:52606 "EHLO
+	velocity.dns-guards.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757656Ab1FAOgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 10:33:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=sycBoCIpqUrlnox4LaabWwtC6xGBYqbYU1IkQYk2VwkboqD1tpC/rAeJRTRH3ZXTZV
-         lNFKqDDWMOWcd9baqcFdzaDWbmSufMk4SNOreqT7Xl0LcMx4kjL+GpOx8ilVlMsNIez3
-         2oxL41f20jf7ptDY0xR3YRrDGj1haU4wjJdJc=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [PATCH v2] ext3: use proper little-endian bitops
-Date: Wed,  1 Jun 2011 23:34:04 +0900
-Message-Id: <1306938844-11178-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Wed, 1 Jun 2011 10:36:25 -0400
+Message-ID: <sig.21336dc9dc.4DE64E63.4050902@radicalsystems.co.za>
+Date: Wed, 01 Jun 2011 16:36:19 +0200
+From: Jan Zwiegers <jan@radicalsystems.co.za>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Xianghua Xiao <xiaoxianghua@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: PCI BAR1 Unassigned
+References: <4DD5452F.9050108@radicalsystems.co.za> <BANLkTi=g=fKaXF4uwwjLSX-R+pk0FUa6OQ@mail.gmail.com> <sig.512079e334.4DD57D44.50009@radicalsystems.co.za> <BANLkTikHQNQdWoDS2dXUC9gTPWvtmUM=yA@mail.gmail.com> <sig.51214cae32.4DD61B48.8010601@radicalsystems.co.za> <BANLkTi=jTKp9+_KDmTxYfGXe6Ln02GLmDA@mail.gmail.com> <sig.6125c0d242.4DDB86FE.5090809@radicalsystems.co.za> <BANLkTi=FTkPCVEMdKBgwg61hKDvgpJ6oRA@mail.gmail.com> <BANLkTikm0fkii_SyoJ4W1j+nZD-ErS+o-A@mail.gmail.com> <BANLkTi=SGVoEK0YxeRVGvh34FTg3=qX0SA@mail.gmail.com>
+In-Reply-To: <BANLkTi=SGVoEK0YxeRVGvh34FTg3=qX0SA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Assp-ID: velocity.dns-guards.com ()
+X-Assp-Version: 1.7.1.3(1.0.2)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - velocity.dns-guards.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - radicalsystems.co.za
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ext3_{set,clear}_bit() is defined as __test_and_{set,clear}_bit_le()
-for ext3.  But all ext3_{set,clear}_bit() calls ignore return values.
-So these can be replaced with __{set,clear}_bit_le().
-
-This changes ext3_{set,clear}_bit safely, because if someone uses
-these macros without noticing the change, new ext3_{set,clear}_bit
-don't have return value and causes compiler errors where the return
-value is used.
-
-This also removes unused ext3_find_first_zero_bit().
-
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org
----
-v2: rewritten to keep ext3_*_bit() macros
-
- include/linux/ext3_fs.h |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/ext3_fs.h b/include/linux/ext3_fs.h
-index 5e06acf..50f21ee 100644
---- a/include/linux/ext3_fs.h
-+++ b/include/linux/ext3_fs.h
-@@ -418,12 +418,11 @@ struct ext3_inode {
- #define EXT2_MOUNT_DATA_FLAGS		EXT3_MOUNT_DATA_FLAGS
- #endif
- 
--#define ext3_set_bit			__test_and_set_bit_le
-+#define ext3_set_bit			__set_bit_le
- #define ext3_set_bit_atomic		ext2_set_bit_atomic
--#define ext3_clear_bit			__test_and_clear_bit_le
-+#define ext3_clear_bit			__clear_bit_le
- #define ext3_clear_bit_atomic		ext2_clear_bit_atomic
- #define ext3_test_bit			test_bit_le
--#define ext3_find_first_zero_bit	find_first_zero_bit_le
- #define ext3_find_next_zero_bit		find_next_zero_bit_le
- 
- /*
--- 
-1.7.4.4
-
+On 2011-05-31 05:02 AM, Bjorn Helgaas wrote:
+> On Thu, May 26, 2011 at 2:38 PM, Bjorn Helgaas<bhelgaas@google.com>  wrote:
+>> Jan, would you mind testing the attached patch?  This is against
+>> current upstream, but I think it will apply without much trouble to
+>> 2.6.35; I don't think there have been many changes in that area.
+>> Thanks.
+>
+> Hi Jan,
+>
+> If you haven't tested the patch yet, can you substitute this one?  It
+> should be functionally equivalent, but I did tweak it a bit.
+>
+> Bjorn
+Yes, I'll test this one.
+Not a problem!
