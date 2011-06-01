@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162412Ab1FAIxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:53:24 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44432 "EHLO mx1.suse.de"
+	id S1162373Ab1FAIxE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:53:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43817 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162325Ab1FAITP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:19:15 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:05:10 2011
-Message-Id: <20110601080509.970969185@blue.kroah.org>
+	id S1162355Ab1FAITV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:19:21 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:05:12 2011
+Message-Id: <20110601080511.084768781@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:01:20 +0900
+Date: Wed, 01 Jun 2011 17:01:21 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kevin Tian <kevin.tian@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [144/146] xen mmu: fix a race window causing leave_mm BUG()
+Subject: [145/146] ext4: Use schedule_timeout_interruptible() for waiting in
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,102 +25,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ lazyinit thread
 
-From: "Tian, Kevin" <kevin.tian@intel.com>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit 7899891c7d161752f29abcc9bc0a9c6c3a3af26c upstream.
+commit 4ed5c033c11b33149d993734a6a8de1016e8f03f upstream.
 
-There's a race window in xen_drop_mm_ref, where remote cpu may exit
-dirty bitmap between the check on this cpu and the point where remote
-cpu handles drop request. So in drop_other_mm_ref we need check
-whether TLB state is still lazy before calling into leave_mm. This
-bug is rarely observed in earlier kernel, but exaggerated by the
-commit 831d52bc153971b70e64eccfbed2b232394f22f8
-("x86, mm: avoid possible bogus tlb entries by clearing prev mm_cpumask after switching mm")
-which clears bitmap after changing the TLB state. the call trace is as below:
+In order to make lazyinit eat approx. 10% of io bandwidth at max, we
+are sleeping between zeroing each single inode table. For that purpose
+we are using timer which wakes up thread when it expires. It is set
+via add_timer() and this may cause troubles in the case that thread
+has been woken up earlier and in next iteration we call add_timer() on
+still running timer hence hitting BUG_ON in add_timer(). We could fix
+that by using mod_timer() instead however we can use
+schedule_timeout_interruptible() for waiting and hence simplifying
+things a lot.
 
----------------------------------
-kernel BUG at arch/x86/mm/tlb.c:61!
-invalid opcode: 0000 [#1] SMP
-last sysfs file: /sys/devices/system/xen_memory/xen_memory0/info/current_kb
-CPU 1
-Modules linked in: 8021q garp xen_netback xen_blkback blktap blkback_pagemap nbd bridge stp llc autofs4 ipmi_devintf ipmi_si ipmi_msghandler lockd sunrpc bonding ipv6 xenfs dm_multipath video output sbs sbshc parport_pc lp parport ses enclosure snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device serio_raw bnx2 snd_pcm_oss snd_mixer_oss snd_pcm snd_timer iTCO_wdt snd soundcore snd_page_alloc i2c_i801 iTCO_vendor_support i2c_core pcs pkr pata_acpi ata_generic ata_piix shpchp mptsas mptscsih mptbase [last unloaded: freq_table]
-Pid: 25581, comm: khelper Not tainted 2.6.32.36fixxen #1 Tecal RH2285
-RIP: e030:[<ffffffff8103a3cb>]  [<ffffffff8103a3cb>] leave_mm+0x15/0x46
-RSP: e02b:ffff88002805be48  EFLAGS: 00010046
-RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88015f8e2da0
-RDX: ffff88002805be78 RSI: 0000000000000000 RDI: 0000000000000001
-RBP: ffff88002805be48 R08: ffff88009d662000 R09: dead000000200200
-R10: dead000000100100 R11: ffffffff814472b2 R12: ffff88009bfc1880
-R13: ffff880028063020 R14: 00000000000004f6 R15: 0000000000000000
-FS:  00007f62362d66e0(0000) GS:ffff880028058000(0000) knlGS:0000000000000000
-CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000003aabc11909 CR3: 000000009b8ca000 CR4: 0000000000002660
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 00000000000000 00
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process khelper (pid: 25581, threadinfo ffff88007691e000, task ffff88009b92db40)
-Stack:
- ffff88002805be68 ffffffff8100e4ae 0000000000000001 ffff88009d733b88
-<0> ffff88002805be98 ffffffff81087224 ffff88002805be78 ffff88002805be78
-<0> ffff88015f808360 00000000000004f6 ffff88002805bea8 ffffffff81010108
-Call Trace:
- <IRQ>
- [<ffffffff8100e4ae>] drop_other_mm_ref+0x2a/0x53
- [<ffffffff81087224>] generic_smp_call_function_single_interrupt+0xd8/0xfc
- [<ffffffff81010108>] xen_call_function_single_interrupt+0x13/0x28
- [<ffffffff810a936a>] handle_IRQ_event+0x66/0x120
- [<ffffffff810aac5b>] handle_percpu_irq+0x41/0x6e
- [<ffffffff8128c1c0>] __xen_evtchn_do_upcall+0x1ab/0x27d
- [<ffffffff8128dd11>] xen_evtchn_do_upcall+0x33/0x46
- [<ffffffff81013efe>] xen_do_hyper visor_callback+0x1e/0x30
- <EOI>
- [<ffffffff814472b2>] ? _spin_unlock_irqrestore+0x15/0x17
- [<ffffffff8100f8cf>] ? xen_restore_fl_direct_end+0x0/0x1
- [<ffffffff81113f71>] ? flush_old_exec+0x3ac/0x500
- [<ffffffff81150dc5>] ? load_elf_binary+0x0/0x17ef
- [<ffffffff81150dc5>] ? load_elf_binary+0x0/0x17ef
- [<ffffffff8115115d>] ? load_elf_binary+0x398/0x17ef
- [<ffffffff81042fcf>] ? need_resched+0x23/0x2d
- [<ffffffff811f4648>] ? process_measurement+0xc0/0xd7
- [<ffffffff81150dc5>] ? load_elf_binary+0x0/0x17ef
- [<ffffffff81113094>] ? search_binary_handler+0xc8/0x255
- [<ffffffff81114362>] ? do_execve+0x1c3/0x29e
- [<ffffffff8101155d>] ? sys_execve+0x43/0x5d
- [<ffffffff8106fc45>] ? __call_usermodehelper+0x0/0x6f
- [<ffffffff81013e28>] ? kernel_execve+0x68/0xd0
- [<ffffffff 8106fc45>] ? __call_usermodehelper+0x0/0x6f
- [<ffffffff8100f8cf>] ? xen_restore_fl_direct_end+0x0/0x1
- [<ffffffff8106fb64>] ? ____call_usermodehelper+0x113/0x11e
- [<ffffffff81013daa>] ? child_rip+0xa/0x20
- [<ffffffff8106fc45>] ? __call_usermodehelper+0x0/0x6f
- [<ffffffff81012f91>] ? int_ret_from_sys_call+0x7/0x1b
- [<ffffffff8101371d>] ? retint_restore_args+0x5/0x6
- [<ffffffff81013da0>] ? child_rip+0x0/0x20
-Code: 41 5e 41 5f c9 c3 55 48 89 e5 0f 1f 44 00 00 e8 17 ff ff ff c9 c3 55 48 89 e5 0f 1f 44 00 00 65 8b 04 25 c8 55 01 00 ff c8 75 04 <0f> 0b eb fe 65 48 8b 34 25 c0 55 01 00 48 81 c6 b8 02 00 00 e8
-RIP  [<ffffffff8103a3cb>] leave_mm+0x15/0x46
- RSP <ffff88002805be48>
----[ end trace ce9cee6832a9c503 ]---
+This commit exchange the old "waiting mechanism" with simple
+schedule_timeout_interruptible(), setting the time to sleep. Hence we
+do not longer need li_wait_daemon waiting queue and others, so get rid
+of it.
 
-Tested-by: Maoxiaoyun<tinnycloud@hotmail.com>
-Signed-off-by: Kevin Tian <kevin.tian@intel.com>
-[v1: Fleshed out the git description a bit]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Addresses-Red-Hat-Bugzilla: #699708
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/xen/mmu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/ext4.h  |    4 ----
+ fs/ext4/super.c |   31 ++++++-------------------------
+ 2 files changed, 6 insertions(+), 29 deletions(-)
 
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1138,7 +1138,7 @@ static void drop_other_mm_ref(void *info
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1590,12 +1590,8 @@ void ext4_get_group_no_and_offset(struct
+  */
+ struct ext4_lazy_init {
+ 	unsigned long		li_state;
+-
+-	wait_queue_head_t	li_wait_daemon;
+ 	wait_queue_head_t	li_wait_task;
+-	struct timer_list	li_timer;
+ 	struct task_struct	*li_task;
+-
+ 	struct list_head	li_request_list;
+ 	struct mutex		li_list_mtx;
+ };
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2645,12 +2645,6 @@ static void print_daily_error_info(unsig
+ 	mod_timer(&sbi->s_err_report, jiffies + 24*60*60*HZ);  /* Once a day */
+ }
  
- 	active_mm = percpu_read(cpu_tlbstate.active_mm);
+-static void ext4_lazyinode_timeout(unsigned long data)
+-{
+-	struct task_struct *p = (struct task_struct *)data;
+-	wake_up_process(p);
+-}
+-
+ /* Find next suitable group and run ext4_init_inode_table */
+ static int ext4_run_li_request(struct ext4_li_request *elr)
+ {
+@@ -2698,7 +2692,7 @@ static int ext4_run_li_request(struct ex
  
--	if (active_mm == mm)
-+	if (active_mm == mm && percpu_read(cpu_tlbstate.state) != TLBSTATE_OK)
- 		leave_mm(smp_processor_id());
+ /*
+  * Remove lr_request from the list_request and free the
+- * request tructure. Should be called with li_list_mtx held
++ * request structure. Should be called with li_list_mtx held
+  */
+ static void ext4_remove_li_request(struct ext4_li_request *elr)
+ {
+@@ -2744,14 +2738,10 @@ static int ext4_lazyinit_thread(void *ar
+ 	struct ext4_lazy_init *eli = (struct ext4_lazy_init *)arg;
+ 	struct list_head *pos, *n;
+ 	struct ext4_li_request *elr;
+-	unsigned long next_wakeup;
+-	DEFINE_WAIT(wait);
++	unsigned long next_wakeup, cur;
  
- 	/* If this cpu still has a stale cr3 reference, then make sure
+ 	BUG_ON(NULL == eli);
+ 
+-	eli->li_timer.data = (unsigned long)current;
+-	eli->li_timer.function = ext4_lazyinode_timeout;
+-
+ 	eli->li_task = current;
+ 	wake_up(&eli->li_wait_task);
+ 
+@@ -2785,19 +2775,15 @@ cont_thread:
+ 		if (freezing(current))
+ 			refrigerator();
+ 
+-		if ((time_after_eq(jiffies, next_wakeup)) ||
++		cur = jiffies;
++		if ((time_after_eq(cur, next_wakeup)) ||
+ 		    (MAX_JIFFY_OFFSET == next_wakeup)) {
+ 			cond_resched();
+ 			continue;
+ 		}
+ 
+-		eli->li_timer.expires = next_wakeup;
+-		add_timer(&eli->li_timer);
+-		prepare_to_wait(&eli->li_wait_daemon, &wait,
+-				TASK_INTERRUPTIBLE);
+-		if (time_before(jiffies, next_wakeup))
+-			schedule();
+-		finish_wait(&eli->li_wait_daemon, &wait);
++		schedule_timeout_interruptible(next_wakeup - cur);
++
+ 		if (kthread_should_stop()) {
+ 			ext4_clear_request_list();
+ 			goto exit_thread;
+@@ -2821,12 +2807,10 @@ exit_thread:
+ 		goto cont_thread;
+ 	}
+ 	mutex_unlock(&eli->li_list_mtx);
+-	del_timer_sync(&ext4_li_info->li_timer);
+ 	eli->li_task = NULL;
+ 	wake_up(&eli->li_wait_task);
+ 
+ 	kfree(ext4_li_info);
+-	ext4_lazyinit_task = NULL;
+ 	ext4_li_info = NULL;
+ 	mutex_unlock(&ext4_li_mtx);
+ 
+@@ -2854,7 +2838,6 @@ static int ext4_run_lazyinit_thread(void
+ 	if (IS_ERR(ext4_lazyinit_task)) {
+ 		int err = PTR_ERR(ext4_lazyinit_task);
+ 		ext4_clear_request_list();
+-		del_timer_sync(&ext4_li_info->li_timer);
+ 		kfree(ext4_li_info);
+ 		ext4_li_info = NULL;
+ 		printk(KERN_CRIT "EXT4: error %d creating inode table "
+@@ -2903,9 +2886,7 @@ static int ext4_li_info_new(void)
+ 	INIT_LIST_HEAD(&eli->li_request_list);
+ 	mutex_init(&eli->li_list_mtx);
+ 
+-	init_waitqueue_head(&eli->li_wait_daemon);
+ 	init_waitqueue_head(&eli->li_wait_task);
+-	init_timer(&eli->li_timer);
+ 	eli->li_state |= EXT4_LAZYINIT_QUIT;
+ 
+ 	ext4_li_info = eli;
 
 
