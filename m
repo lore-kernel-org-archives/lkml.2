@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161318Ab1FAIIh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:08:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42609 "EHLO mx2.suse.de"
+	id S1161330Ab1FAIIp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:08:45 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43249 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161307Ab1FAIId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:08:33 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:54 2011
-Message-Id: <20110601080253.331790414@blue.kroah.org>
+	id S1161321Ab1FAIIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:08:39 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:55 2011
+Message-Id: <20110601080254.540770482@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:22 +0900
+Date: Wed, 01 Jun 2011 16:59:23 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mike Snitzer <snitzer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [026/146] block: dont block events on excl write for non-optical
+Subject: [027/146] block: Fix discard topology stacking and reporting
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,125 +26,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- devices
 
-From: Tejun Heo <tj@kernel.org>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit d4dc210f69bcb0b4bef5a83b1c323817be89bad1 upstream.
+commit a934a00a69e940b126b9bdbf83e630ef5fe43523 upstream.
 
-Disk event code automatically blocks events on excl write.  This is
-primarily to avoid issuing polling commands while burning is in
-progress.  This behavior doesn't fit other types of devices with
-removeable media where polling commands don't have adverse side
-effects and door locking usually doesn't exist.
+In some cases we would end up stacking discard_zeroes_data incorrectly.
+Fix this by enabling the feature by default for stacking drivers and
+clearing it for low-level drivers. Incorporating a device that does not
+support dzd will then cause the feature to be disabled in the stacking
+driver.
 
-This patch introduces new genhd flag which controls the auto-blocking
-behavior and uses it to enable auto-blocking only on optical devices.
+Also ensure that the maximum discard value does not overflow when
+exported in sysfs and return 0 in the alignment and dzd fields for
+devices that don't support discard.
 
-Note for stable: 2.6.38 and later only
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Kay Sievers <kay.sievers@vrfy.org>
+Reported-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/block/paride/pcd.c |    1 +
- drivers/cdrom/viocd.c      |    3 ++-
- drivers/ide/ide-cd.c       |    2 +-
- drivers/scsi/sr.c          |    2 +-
- fs/block_dev.c             |   17 ++++++++++-------
- include/linux/genhd.h      |    1 +
- 6 files changed, 16 insertions(+), 10 deletions(-)
+ block/blk-settings.c   |    3 ++-
+ block/blk-sysfs.c      |    3 ++-
+ include/linux/blkdev.h |    7 +++++--
+ 3 files changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/block/paride/pcd.c
-+++ b/drivers/block/paride/pcd.c
-@@ -320,6 +320,7 @@ static void pcd_init_units(void)
- 		disk->first_minor = unit;
- 		strcpy(disk->disk_name, cd->name);	/* umm... */
- 		disk->fops = &pcd_bdops;
-+		disk->flags = GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
- 		disk->events = DISK_EVENT_MEDIA_CHANGE;
- 	}
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -120,7 +120,7 @@ void blk_set_default_limits(struct queue
+ 	lim->discard_granularity = 0;
+ 	lim->discard_alignment = 0;
+ 	lim->discard_misaligned = 0;
+-	lim->discard_zeroes_data = -1;
++	lim->discard_zeroes_data = 1;
+ 	lim->logical_block_size = lim->physical_block_size = lim->io_min = 512;
+ 	lim->bounce_pfn = (unsigned long)(BLK_BOUNCE_ANY >> PAGE_SHIFT);
+ 	lim->alignment_offset = 0;
+@@ -174,6 +174,7 @@ void blk_queue_make_request(struct reque
+ 
+ 	blk_set_default_limits(&q->limits);
+ 	blk_queue_max_hw_sectors(q, BLK_SAFE_MAX_SECTORS);
++	q->limits.discard_zeroes_data = 0;
+ 
+ 	/*
+ 	 * If the caller didn't supply a lock, fall back to our embedded
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -152,7 +152,8 @@ static ssize_t queue_discard_granularity
+ 
+ static ssize_t queue_discard_max_show(struct request_queue *q, char *page)
+ {
+-	return queue_var_show(q->limits.max_discard_sectors << 9, page);
++	return sprintf(page, "%llu\n",
++		       (unsigned long long)q->limits.max_discard_sectors << 9);
  }
---- a/drivers/cdrom/viocd.c
-+++ b/drivers/cdrom/viocd.c
-@@ -625,7 +625,8 @@ static int viocd_probe(struct vio_dev *v
- 	blk_queue_max_hw_sectors(q, 4096 / 512);
- 	gendisk->queue = q;
- 	gendisk->fops = &viocd_fops;
--	gendisk->flags = GENHD_FL_CD|GENHD_FL_REMOVABLE;
-+	gendisk->flags = GENHD_FL_CD | GENHD_FL_REMOVABLE |
-+			 GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
- 	gendisk->events = DISK_EVENT_MEDIA_CHANGE;
- 	set_capacity(gendisk, 0);
- 	gendisk->private_data = d;
---- a/drivers/ide/ide-cd.c
-+++ b/drivers/ide/ide-cd.c
-@@ -1790,7 +1790,7 @@ static int ide_cd_probe(ide_drive_t *dri
  
- 	ide_cd_read_toc(drive, &sense);
- 	g->fops = &idecd_ops;
--	g->flags |= GENHD_FL_REMOVABLE;
-+	g->flags |= GENHD_FL_REMOVABLE | GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
- 	g->events = DISK_EVENT_MEDIA_CHANGE;
- 	add_disk(g);
- 	return 0;
---- a/drivers/scsi/sr.c
-+++ b/drivers/scsi/sr.c
-@@ -636,7 +636,7 @@ static int sr_probe(struct device *dev)
- 	disk->first_minor = minor;
- 	sprintf(disk->disk_name, "sr%d", minor);
- 	disk->fops = &sr_bdops;
--	disk->flags = GENHD_FL_CD;
-+	disk->flags = GENHD_FL_CD | GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
- 	disk->events = DISK_EVENT_MEDIA_CHANGE | DISK_EVENT_EJECT_REQUEST;
+ static ssize_t queue_discard_zeroes_data_show(struct request_queue *q, char *page)
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -252,7 +252,7 @@ struct queue_limits {
+ 	unsigned char		misaligned;
+ 	unsigned char		discard_misaligned;
+ 	unsigned char		cluster;
+-	signed char		discard_zeroes_data;
++	unsigned char		discard_zeroes_data;
+ };
  
- 	blk_queue_rq_timeout(sdev->request_queue, SR_TIMEOUT);
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1233,6 +1233,8 @@ int blkdev_get(struct block_device *bdev
- 	res = __blkdev_get(bdev, mode, 0);
+ struct request_queue
+@@ -1032,13 +1032,16 @@ static inline int queue_limit_discard_al
+ {
+ 	unsigned int alignment = (sector << 9) & (lim->discard_granularity - 1);
  
- 	if (whole) {
-+		struct gendisk *disk = whole->bd_disk;
++	if (!lim->max_discard_sectors)
++		return 0;
 +
- 		/* finish claiming */
- 		mutex_lock(&bdev->bd_mutex);
- 		spin_lock(&bdev_lock);
-@@ -1259,15 +1261,16 @@ int blkdev_get(struct block_device *bdev
- 		spin_unlock(&bdev_lock);
+ 	return (lim->discard_granularity + lim->discard_alignment - alignment)
+ 		& (lim->discard_granularity - 1);
+ }
  
- 		/*
--		 * Block event polling for write claims.  Any write
--		 * holder makes the write_holder state stick until all
--		 * are released.  This is good enough and tracking
--		 * individual writeable reference is too fragile given
--		 * the way @mode is used in blkdev_get/put().
-+		 * Block event polling for write claims if requested.  Any
-+		 * write holder makes the write_holder state stick until
-+		 * all are released.  This is good enough and tracking
-+		 * individual writeable reference is too fragile given the
-+		 * way @mode is used in blkdev_get/put().
- 		 */
--		if (!res && (mode & FMODE_WRITE) && !bdev->bd_write_holder) {
-+		if ((disk->flags & GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE) &&
-+		    !res && (mode & FMODE_WRITE) && !bdev->bd_write_holder) {
- 			bdev->bd_write_holder = true;
--			disk_block_events(bdev->bd_disk);
-+			disk_block_events(disk);
- 		}
+ static inline unsigned int queue_discard_zeroes_data(struct request_queue *q)
+ {
+-	if (q->limits.discard_zeroes_data == 1)
++	if (q->limits.max_discard_sectors && q->limits.discard_zeroes_data == 1)
+ 		return 1;
  
- 		mutex_unlock(&bdev->bd_mutex);
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -127,6 +127,7 @@ struct hd_struct {
- #define GENHD_FL_SUPPRESS_PARTITION_INFO	32
- #define GENHD_FL_EXT_DEVT			64 /* allow extended devt */
- #define GENHD_FL_NATIVE_CAPACITY		128
-+#define GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE	256
- 
- enum {
- 	DISK_EVENT_MEDIA_CHANGE			= 1 << 0, /* media changed */
+ 	return 0;
 
 
