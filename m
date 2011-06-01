@@ -1,37 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161423Ab1FAM2B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 08:28:01 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:46775 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752876Ab1FAM17 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 08:27:59 -0400
-From: Alexey ORISHKO <alexey.orishko@stericsson.com>
-To: "Stefan (metze) Metzmacher" <metze@samba.org>
-Cc: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	id S1161521Ab1FAM2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 08:28:46 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:45051 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161198Ab1FAM2n convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 08:28:43 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Andre Bartke <andre.bartke@googlemail.com>,
+        "gregkh@suse.de" <gregkh@suse.de>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Andre Bartke <andre.bartke@gmail.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 1 Jun 2011 14:27:50 +0200
-Subject: RE: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
- mark ncm devices as "mobile broadband devices" with FLAG_WWAN
-Thread-Topic: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
- mark ncm devices as "mobile broadband devices" with FLAG_WWAN
-Thread-Index: AcwgUrdhm3GH+0PySGGAH7PUq8ejdgAA8M1Q
-Message-ID: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E6F2@EXDCVYMBSTM006.EQ1STM.local>
-References: <1306922913-17803-1-git-send-email-metze@samba.org>
- <1306922913-17803-2-git-send-email-metze@samba.org>
- <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E583@EXDCVYMBSTM006.EQ1STM.local>
- <4DE618B7.5070903@samba.org>
- <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E64B@EXDCVYMBSTM006.EQ1STM.local>
- <4DE6287D.5080807@samba.org>
-In-Reply-To: <4DE6287D.5080807@samba.org>
+Subject: RE: [PATCH] staging/hv: Fix memory leak of storvsc_dev_add()
+Thread-Topic: [PATCH] staging/hv: Fix memory leak of storvsc_dev_add()
+Thread-Index: AQHMH9xSg+d0MDS0BU6LVitfjOnOf5SniZ5w
+Date: Wed, 1 Jun 2011 12:28:40 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480813C89C@TK5EX14MBXC122.redmond.corp.microsoft.com>
+References: <1306878352-14450-1-git-send-email-andre.bartke@gmail.com>
+In-Reply-To: <1306878352-14450-1-git-send-email-andre.bartke@gmail.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+x-originating-ip: [157.54.51.37]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -39,17 +33,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+
 > -----Original Message-----
-> From: Stefan (metze) Metzmacher [mailto:metze@samba.org]
-> Sent: Wednesday, June 01, 2011 1:55 PM
-
-> > If you use udev rules and create an alias for your device, you won't
-> > be dependent on generic driver code.
+> From: devel-bounces@linuxdriverproject.org [mailto:devel-
+> bounces@linuxdriverproject.org] On Behalf Of Andre Bartke
+> Sent: Tuesday, May 31, 2011 5:46 PM
+> To: gregkh@suse.de
+> Cc: devel@driverdev.osuosl.org; Andre Bartke; Haiyang Zhang; linux-
+> kernel@vger.kernel.org
+> Subject: [PATCH] staging/hv: Fix memory leak of storvsc_dev_add()
 > 
-> Ok, do you have examples for that?
+> stor_device is not freed in storvsc_dev_add()
+> causing a memory leak in case of an allocation error.
+> 
+> Signed-off-by: Andre Bartke <andre.bartke@gmail.com>
+> ---
+>  drivers/staging/hv/storvsc.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
+> index 06cd327..92b44f4 100644
+> --- a/drivers/staging/hv/storvsc.c
+> +++ b/drivers/staging/hv/storvsc.c
+> @@ -414,6 +414,7 @@ int storvsc_dev_add(struct hv_device *device,
+>  	device_info->target_id = stor_device->target_id;
+> 
+>  cleanup:
+> +	free_stor_device(stor_device);
+>  	return ret;
 
-Please, read udev man pages. Rule might be as follows
-KERNEL=="usb*", ATTRS{idVendor}=="04cc", ATTRS{idProduct}=="xxxx", NAME="ste_bridge0"
+Was this patch tested? Even the normal path falls through the cleanup label
+and obviously you should not be freeing the stor_device in that case. I have 
+patches queued up to cleanup some of the unnecessary labels and meaningless
+return values that I will be sending soon.
 
 Regards,
-alexey
+
+K. Y
+ 
+
+
