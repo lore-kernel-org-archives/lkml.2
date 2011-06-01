@@ -1,313 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab1FAQnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 12:43:09 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:43882 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286Ab1FAQnE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 12:43:04 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, fujita.tomonori@lab.ntt.co.jp
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] swiotlb: Export io_tlb_nslabs as swiotlb_nslabs and use it.
-Date: Wed,  1 Jun 2011 12:42:44 -0400
-Message-Id: <1306946564-30481-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1306946564-30481-1-git-send-email-konrad.wilk@oracle.com>
-References: <1306946564-30481-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090203.4DE66C15.015C:SCFSTAT5015188,ss=1,fgs=0
+	id S1758775Ab1FAQnn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 12:43:43 -0400
+Received: from zfrontend1.aha.ru ([195.2.83.147]:64059 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758389Ab1FAQnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 12:43:40 -0400
+From: "werner" <w.landgraf@ru.ru>
+Subject: 3.0-rc1 problem with usb, cdrom
+To: linux-kernel@vger.kernel.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Wed, 01 Jun 2011 12:43:36 -0400
+Message-ID: <web-538043386@zbackend1.aha.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By default the io_tlb_nslabs is set to zero, and gets set to
-whatever value is passed in via swiotlb_init_with_tbl function.
-The default value passed in is 64MB. However, if the user provides
-the 'swiotlb=<nslabs>' the default value is ignored and
-the value provided by the user is used... Except when the SWIOTLB
-is used under Xen - there the default value of 64MB is used and
-the Xen-SWIOTLB has no mechanism to get the 'io_tlb_nslabs' filled
-out by setup_io_tlb_npages functions. This patch exports the
-value that is potentially set by setup_io_tlb_npages and renames
-it to swiotlb_nslabs.
+With 3.0-rc1 have the following problems, on my computer 
+and some laptops:
 
-CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+/ during booting, udev initialization, it stops several 
+times  appr. 1 minute  (but don't crash)
+
+/ At the beginning, the system behaves normal, but later 
+the usb system don't work at all; then no periferics 
+connected (like: printer, usb key , ...) is recognized 
+with lsusb, and the KDE3 device manager stops to work
+
+/ On mounting a dvd with /mount /dev/sr0 /cdrom  ,  an 
+error messages comes, it dont mount
+
+
+Below see the syslog.    At 13:30, attempt to find sdb , 
+is a sucessless attempt to find the usb key  (lsusb dont 
+find it).    At 13:33, attempt to mount a dvd.
+
+
+W.Landgraf
+
+
+
+==================
+Jun  1 13:30:13 werner kernel: sd 7:0:0:0: [sdb] No 
+Caching mode page present
+Jun  1 13:30:13 werner kernel: sd 7:0:0:0: [sdb] Assuming 
+drive cache: write through
+Jun  1 13:30:13 werner kernel: sd 7:0:0:0: [sdb] No 
+Caching mode page present
+Jun  1 13:30:13 werner kernel: sd 7:0:0:0: [sdb] Assuming 
+drive cache: write through
+Jun  1 13:30:13 werner kernel: sd 7:0:0:0: [sdb] No 
+Caching mode page present
+Jun  1 13:30:13 werner kernel: sd 7:0:0:0: [sdb] Assuming 
+drive cache: write through
+Jun  1 13:30:45 werner kernel: sd 8:0:0:0: [sdb] No 
+Caching mode page present
+Jun  1 13:30:45 werner kernel: sd 8:0:0:0: [sdb] Assuming 
+drive cache: write through
+Jun  1 13:30:45 werner kernel: sd 8:0:0:0: [sdb] No 
+Caching mode page present
+Jun  1 13:30:45 werner kernel: sd 8:0:0:0: [sdb] Assuming 
+drive cache: write through
+Jun  1 13:30:45 werner kernel: sd 8:0:0:0: [sdb] No 
+Caching mode page present
+Jun  1 13:30:45 werner kernel: sd 8:0:0:0: [sdb] Assuming 
+drive cache: write through
+Jun  1 13:33:25 werner kernel: BUG: unable to handle 
+kernel NULL pointer dereference at 000001cd
+Jun  1 13:33:25 werner kernel: IP: [<c10ffe3e>] 
+blkdev_get+0xe7/0x125
+Jun  1 13:33:25 werner kernel: *pde = 00000000
+Jun  1 13:33:25 werner kernel: Oops: 0000 [#1] SMP
+Jun  1 13:33:25 werner kernel: Modules linked in: rfcomm 
+hidp bluetooth snd_usb_audio snd_usbmidi_lib snd_rawmidi 
+snd_seq_device uvcvideo tpm_tis tpm tpm_bios rtc_cmos 
+8139too snd_hda_codec_realtek k8temp snd_hda_intel 
+snd_hda_codec snd_hwdep snd_pcm forcedeth snd_timer snd 
+i2c_nforce2 soundcore snd_page_alloc
+Jun  1 13:33:25 werner kernel:
+Jun  1 13:33:25 werner kernel: Pid: 1520, comm: mount Not 
+tainted 3.0.0-rc1-i486-1sys #1 Gigabyte Technology Co., 
+Ltd. M68M-S2P/M68M-S2P
+Jun  1 13:33:25 werner kernel: EIP: 0060:[<c10ffe3e>] 
+EFLAGS: 00010282 CPU: 0
+Jun  1 13:33:25 werner kernel: EIP is at 
+blkdev_get+0xe7/0x125
+Jun  1 13:33:25 werner kernel: EAX: 00000000 EBX: f5423600 
+ECX: 00000000 EDX: f542362c
+Jun  1 13:33:25 werner kernel: ESI: f5423600 EDI: c2402bfc 
+EBP: e1ddde54 ESP: e1ddde38
+Jun  1 13:33:25 werner kernel:  DS: 007b ES: 007b FS: 00d8 
+GS: 00e0 SS: 0068
+Jun  1 13:33:25 werner kernel: Process mount (pid: 1520, 
+ti=e1ddc000 task=f295e440 task.ti=e1ddc000)
+Jun  1 13:33:25 werner kernel: Stack:
+Jun  1 13:33:25 werner kernel:  00000083 f5423610 ffffffe2 
+00000000 f5423600 00000083 c2402bfc e1ddde68
+Jun  1 13:33:25 werner kernel:  c11000d1 f291e600 00000083 
+00000000 e1dddeb8 c10dc51f c10b753d c11e2ede
+Jun  1 13:33:25 werner kernel:  00000000 c2402bfc 00004be8 
+00000004 00000199 0000000c 00005410 00000000
+Jun  1 13:33:25 werner kernel: Call Trace:
+Jun  1 13:33:25 werner kernel:  [<c11000d1>] 
+blkdev_get_by_path+0x26/0x56
+Jun  1 13:33:25 werner kernel:  [<c10dc51f>] 
+mount_bdev+0x4b/0x187
+Jun  1 13:33:25 werner kernel:  [<c10b753d>] ? 
+pcpu_populate_chunk+0x197/0x266
+Jun  1 13:33:25 werner kernel:  [<c11e2ede>] ? 
+isofs_iget5_test+0x25/0x25
+Jun  1 13:33:25 werner kernel:  [<c11e1e93>] 
+isofs_mount+0x1f/0x24
+Jun  1 13:33:25 werner kernel:  [<c11e2ede>] ? 
+isofs_iget5_test+0x25/0x25
+Jun  1 13:33:25 werner kernel:  [<c10dc382>] 
+mount_fs+0x67/0x13d
+Jun  1 13:33:25 werner kernel:  [<c10f05db>] 
+vfs_kern_mount+0x53/0x7f
+Jun  1 13:33:25 werner kernel:  [<c10f065b>] 
+do_kern_mount+0x38/0x70
+Jun  1 13:33:25 werner kernel:  [<c10f06d3>] 
+do_new_mount+0x40/0x6c
+Jun  1 13:33:25 werner kernel:  [<c10f0872>] 
+do_mount+0x173/0x18e
+Jun  1 13:33:25 werner kernel:  [<c10f08fa>] 
+sys_mount+0x6d/0x99
+Jun  1 13:33:25 werner kernel:  [<c1f062ac>] 
+syscall_call+0x7/0xb
+Jun  1 13:33:25 werner kernel: Code: 55 ec 0f c1 89 7e 30 
+39 7b 2c 74 04 0f 0b eb fe c7 43 2c 00 00 00 00 8d 43 2c 
+31 d2 e8 5a 5e f5 ff f0 fe 05 40 1d 3f c2 8b 45 f0 <f6> 80 
+cd 01 00 00 01 74 1b 83 7d ec 00 75 15 f6 45 e4 02 74 0f
+Jun  1 13:33:25 werner kernel: EIP: [<c10ffe3e>] 
+blkdev_get+0xe7/0x125 SS:ESP 0068:e1ddde38
+Jun  1 13:33:25 werner kernel: CR2: 00000000000001cd
+Jun  1 13:33:25 werner kernel: ---[ end trace 
+9b11eeec630c71b2 ]---
 ---
- drivers/xen/swiotlb-xen.c |    7 +++-
- include/linux/swiotlb.h   |    5 +++
- lib/swiotlb.c             |   78 ++++++++++++++++++++++----------------------
- 3 files changed, 49 insertions(+), 41 deletions(-)
-
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 54469c3..20b0a54 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -148,8 +148,11 @@ void __init xen_swiotlb_init(int verbose)
- 	unsigned long bytes;
- 	int rc;
- 
--	xen_io_tlb_nslabs = (64 * 1024 * 1024 >> IO_TLB_SHIFT);
--	xen_io_tlb_nslabs = ALIGN(xen_io_tlb_nslabs, IO_TLB_SEGSIZE);
-+	if (!swiotlb_nslabs) {
-+		xen_io_tlb_nslabs = (64 * 1024 * 1024 >> IO_TLB_SHIFT);
-+		xen_io_tlb_nslabs = ALIGN(xen_io_tlb_nslabs, IO_TLB_SEGSIZE);
-+	} else
-+		xen_io_tlb_nslabs = swiotlb_nslabs;
- 
- 	bytes = xen_io_tlb_nslabs << IO_TLB_SHIFT;
- 
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index 8c0e349..c373c23 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -10,6 +10,11 @@ struct scatterlist;
- extern int swiotlb_force;
- 
- /*
-+ * The amount of slabs set by swiotlb=<pages> argument.
-+ * It is multiple of 128Kb chunks.
-+ */
-+extern unsigned long swiotlb_nslabs;
-+/*
-  * Maximum allowable number of contiguous slabs to map,
-  * must be a power of 2.  What is the appropriate value ?
-  * The complexity of {map,unmap}_single is linearly dependent on this value.
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 93ca08b..0822fec 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -63,7 +63,7 @@ static char *io_tlb_start, *io_tlb_end;
-  * The number of IO TLB blocks (in groups of 64) between io_tlb_start and
-  * io_tlb_end.  This is command line adjustable via setup_io_tlb_npages.
-  */
--static unsigned long io_tlb_nslabs;
-+unsigned long swiotlb_nslabs;
- 
- /*
-  * When the IOMMU overflows we return a fallback buffer. This sets the size.
-@@ -96,9 +96,9 @@ static int __init
- setup_io_tlb_npages(char *str)
- {
- 	if (isdigit(*str)) {
--		io_tlb_nslabs = simple_strtoul(str, &str, 0);
-+		swiotlb_nslabs = simple_strtoul(str, &str, 0);
- 		/* avoid tail segment of size < IO_TLB_SEGSIZE */
--		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-+		swiotlb_nslabs = ALIGN(swiotlb_nslabs, IO_TLB_SEGSIZE);
- 	}
- 	if (*str == ',')
- 		++str;
-@@ -119,7 +119,7 @@ static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
- 
- void swiotlb_print_info(void)
- {
--	unsigned long bytes = io_tlb_nslabs << IO_TLB_SHIFT;
-+	unsigned long bytes = swiotlb_nslabs << IO_TLB_SHIFT;
- 	phys_addr_t pstart, pend;
- 
- 	pstart = virt_to_phys(io_tlb_start);
-@@ -138,7 +138,7 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
- 
- 	bytes = nslabs << IO_TLB_SHIFT;
- 
--	io_tlb_nslabs = nslabs;
-+	swiotlb_nslabs = nslabs;
- 	io_tlb_start = tlb;
- 	io_tlb_end = io_tlb_start + bytes;
- 
-@@ -147,11 +147,11 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
- 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
- 	 * between io_tlb_start and io_tlb_end.
- 	 */
--	io_tlb_list = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
--	for (i = 0; i < io_tlb_nslabs; i++)
-+	io_tlb_list = alloc_bootmem_pages(PAGE_ALIGN(swiotlb_nslabs * sizeof(int)));
-+	for (i = 0; i < swiotlb_nslabs; i++)
-  		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
- 	io_tlb_index = 0;
--	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
-+	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(swiotlb_nslabs * sizeof(phys_addr_t)));
- 
- 	/*
- 	 * Get the overflow emergency buffer
-@@ -172,12 +172,12 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
- {
- 	unsigned long bytes;
- 
--	if (!io_tlb_nslabs) {
--		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
--		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-+	if (!swiotlb_nslabs) {
-+		swiotlb_nslabs = (default_size >> IO_TLB_SHIFT);
-+		swiotlb_nslabs = ALIGN(swiotlb_nslabs, IO_TLB_SEGSIZE);
- 	}
- 
--	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
-+	bytes = swiotlb_nslabs << IO_TLB_SHIFT;
- 
- 	/*
- 	 * Get IO TLB memory from the low pages
-@@ -186,7 +186,7 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
- 	if (!io_tlb_start)
- 		panic("Cannot allocate SWIOTLB buffer");
- 
--	swiotlb_init_with_tbl(io_tlb_start, io_tlb_nslabs, verbose);
-+	swiotlb_init_with_tbl(io_tlb_start, swiotlb_nslabs, verbose);
- }
- 
- void __init
-@@ -203,20 +203,20 @@ swiotlb_init(int verbose)
- int
- swiotlb_late_init_with_default_size(size_t default_size)
- {
--	unsigned long i, bytes, req_nslabs = io_tlb_nslabs;
-+	unsigned long i, bytes, req_nslabs = swiotlb_nslabs;
- 	unsigned int order;
- 
--	if (!io_tlb_nslabs) {
--		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
--		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-+	if (!swiotlb_nslabs) {
-+		swiotlb_nslabs = (default_size >> IO_TLB_SHIFT);
-+		swiotlb_nslabs = ALIGN(swiotlb_nslabs, IO_TLB_SEGSIZE);
- 	}
- 
- 	/*
- 	 * Get IO TLB memory from the low pages
- 	 */
--	order = get_order(io_tlb_nslabs << IO_TLB_SHIFT);
--	io_tlb_nslabs = SLABS_PER_PAGE << order;
--	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
-+	order = get_order(swiotlb_nslabs << IO_TLB_SHIFT);
-+	swiotlb_nslabs = SLABS_PER_PAGE << order;
-+	bytes = swiotlb_nslabs << IO_TLB_SHIFT;
- 
- 	while ((SLABS_PER_PAGE << order) > IO_TLB_MIN_SLABS) {
- 		io_tlb_start = (void *)__get_free_pages(GFP_DMA | __GFP_NOWARN,
-@@ -232,8 +232,8 @@ swiotlb_late_init_with_default_size(size_t default_size)
- 	if (order != get_order(bytes)) {
- 		printk(KERN_WARNING "Warning: only able to allocate %ld MB "
- 		       "for software IO TLB\n", (PAGE_SIZE << order) >> 20);
--		io_tlb_nslabs = SLABS_PER_PAGE << order;
--		bytes = io_tlb_nslabs << IO_TLB_SHIFT;
-+		swiotlb_nslabs = SLABS_PER_PAGE << order;
-+		bytes = swiotlb_nslabs << IO_TLB_SHIFT;
- 	}
- 	io_tlb_end = io_tlb_start + bytes;
- 	memset(io_tlb_start, 0, bytes);
-@@ -244,22 +244,22 @@ swiotlb_late_init_with_default_size(size_t default_size)
- 	 * between io_tlb_start and io_tlb_end.
- 	 */
- 	io_tlb_list = (unsigned int *)__get_free_pages(GFP_KERNEL,
--	                              get_order(io_tlb_nslabs * sizeof(int)));
-+	                              get_order(swiotlb_nslabs * sizeof(int)));
- 	if (!io_tlb_list)
- 		goto cleanup2;
- 
--	for (i = 0; i < io_tlb_nslabs; i++)
-+	for (i = 0; i < swiotlb_nslabs; i++)
-  		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
- 	io_tlb_index = 0;
- 
- 	io_tlb_orig_addr = (phys_addr_t *)
- 		__get_free_pages(GFP_KERNEL,
--				 get_order(io_tlb_nslabs *
-+				 get_order(swiotlb_nslabs *
- 					   sizeof(phys_addr_t)));
- 	if (!io_tlb_orig_addr)
- 		goto cleanup3;
- 
--	memset(io_tlb_orig_addr, 0, io_tlb_nslabs * sizeof(phys_addr_t));
-+	memset(io_tlb_orig_addr, 0, swiotlb_nslabs * sizeof(phys_addr_t));
- 
- 	/*
- 	 * Get the overflow emergency buffer
-@@ -277,10 +277,10 @@ swiotlb_late_init_with_default_size(size_t default_size)
- 
- cleanup4:
- 	free_pages((unsigned long)io_tlb_orig_addr,
--		   get_order(io_tlb_nslabs * sizeof(phys_addr_t)));
-+		   get_order(swiotlb_nslabs * sizeof(phys_addr_t)));
- 	io_tlb_orig_addr = NULL;
- cleanup3:
--	free_pages((unsigned long)io_tlb_list, get_order(io_tlb_nslabs *
-+	free_pages((unsigned long)io_tlb_list, get_order(swiotlb_nslabs *
- 	                                                 sizeof(int)));
- 	io_tlb_list = NULL;
- cleanup2:
-@@ -288,7 +288,7 @@ cleanup2:
- 	free_pages((unsigned long)io_tlb_start, order);
- 	io_tlb_start = NULL;
- cleanup1:
--	io_tlb_nslabs = req_nslabs;
-+	swiotlb_nslabs = req_nslabs;
- 	return -ENOMEM;
- }
- 
-@@ -301,20 +301,20 @@ void __init swiotlb_free(void)
- 		free_pages((unsigned long)io_tlb_overflow_buffer,
- 			   get_order(io_tlb_overflow));
- 		free_pages((unsigned long)io_tlb_orig_addr,
--			   get_order(io_tlb_nslabs * sizeof(phys_addr_t)));
--		free_pages((unsigned long)io_tlb_list, get_order(io_tlb_nslabs *
-+			   get_order(swiotlb_nslabs * sizeof(phys_addr_t)));
-+		free_pages((unsigned long)io_tlb_list, get_order(swiotlb_nslabs *
- 								 sizeof(int)));
- 		free_pages((unsigned long)io_tlb_start,
--			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
-+			   get_order(swiotlb_nslabs << IO_TLB_SHIFT));
- 	} else {
- 		free_bootmem_late(__pa(io_tlb_overflow_buffer),
- 				  PAGE_ALIGN(io_tlb_overflow));
- 		free_bootmem_late(__pa(io_tlb_orig_addr),
--				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
-+				  PAGE_ALIGN(swiotlb_nslabs * sizeof(phys_addr_t)));
- 		free_bootmem_late(__pa(io_tlb_list),
--				  PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
-+				  PAGE_ALIGN(swiotlb_nslabs * sizeof(int)));
- 		free_bootmem_late(__pa(io_tlb_start),
--				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
-+				  PAGE_ALIGN(swiotlb_nslabs << IO_TLB_SHIFT));
- 	}
- }
- 
-@@ -409,7 +409,7 @@ void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
- 	 */
- 	spin_lock_irqsave(&io_tlb_lock, flags);
- 	index = ALIGN(io_tlb_index, stride);
--	if (index >= io_tlb_nslabs)
-+	if (index >= swiotlb_nslabs)
- 		index = 0;
- 	wrap = index;
- 
-@@ -417,7 +417,7 @@ void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
- 		while (iommu_is_span_boundary(index, nslots, offset_slots,
- 					      max_slots)) {
- 			index += stride;
--			if (index >= io_tlb_nslabs)
-+			if (index >= swiotlb_nslabs)
- 				index = 0;
- 			if (index == wrap)
- 				goto not_found;
-@@ -441,13 +441,13 @@ void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
- 			 * Update the indices to avoid searching in the next
- 			 * round.
- 			 */
--			io_tlb_index = ((index + nslots) < io_tlb_nslabs
-+			io_tlb_index = ((index + nslots) < swiotlb_nslabs
- 					? (index + nslots) : 0);
- 
- 			goto found;
- 		}
- 		index += stride;
--		if (index >= io_tlb_nslabs)
-+		if (index >= swiotlb_nslabs)
- 			index = 0;
- 	} while (index != wrap);
- 
--- 
-1.7.4.1
-
+Professional hosting for everyone - http://www.host.ru
