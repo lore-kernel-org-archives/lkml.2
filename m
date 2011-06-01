@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab1FAQ6c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 12:58:32 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:39305 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757490Ab1FAQ6a (ORCPT
+	id S1758843Ab1FAQzJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 12:55:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60715 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab1FAQzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 12:58:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=iFJ6FR6im1WlFKjsmac+7pQtAACzndexkdthb+eBKo/RSyxCDwL1JbZzHxzAmvFR3b
-         93KuCAJsHJHLPSNdJoPQ==
-Date: Wed, 1 Jun 2011 09:58:18 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Christoph Hellwig <hch@infradead.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 3/14] tmpfs: take control of its truncate_range
-In-Reply-To: <20110601003942.GB4433@infradead.org>
-Message-ID: <alpine.LSU.2.00.1106010940590.23468@sister.anvils>
-References: <alpine.LSU.2.00.1105301726180.5482@sister.anvils> <alpine.LSU.2.00.1105301737040.5482@sister.anvils> <20110601003942.GB4433@infradead.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 1 Jun 2011 12:55:06 -0400
+Subject: Re: Very high CPU load when idle with 3.0-rc1
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Damien Wyart <damien.wyart@free.fr>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110601143743.GA2274@linux.vnet.ibm.com>
+References: <20110530055924.GA9169@brouette>
+	 <1306755291.1200.2872.camel@twins>
+	 <20110530162354.GQ2668@linux.vnet.ibm.com>
+	 <1306775989.2497.527.camel@laptop>
+	 <20110530212833.GS2668@linux.vnet.ibm.com>
+	 <1306791219.23844.12.camel@twins>
+	 <20110531014543.GU2668@linux.vnet.ibm.com>
+	 <1306926339.2353.191.camel@twins>
+	 <20110601143743.GA2274@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Jun 2011 18:58:33 +0200
+Message-ID: <1306947513.2497.624.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks a lot for looking at these.
+On Wed, 2011-06-01 at 07:37 -0700, Paul E. McKenney wrote:
 
-On Tue, 31 May 2011, Christoph Hellwig wrote:
-> > Note that drivers/gpu/drm/i915/i915_gem.c i915_gem_object_truncate()
-> > calls the tmpfs ->truncate_range directly: update that in a separate
-> > patch later, for now just let it duplicate the truncate_inode_pages().
-> > Because i915 handles unmap_mapping_range() itself at a different stage,
-> > we have chosen not to bundle that into ->truncate_range.
+> > > I considered that, but working out when it is OK to deboost them is
+> > > decidedly non-trivial. 
+> > 
+> > Where exactly is the problem there? The boost lasts for as long as it
+> > takes to finish the grace period, right? There's a distinct set of
+> > callbacks associated with each grace-period, right? In which case you
+> > can de-boost your thread the moment you're done processing that set.
+> > 
+> > Or am I simply confused about how all this is supposed to work?
 > 
-> In your next series that makes it call the readpae replacement directly
-> it might be nice to also call directly into shmem for hole punching.
+> The main complications are: (1) the fact that it is hard to tell exactly
+> which grace period to wait for, this one or the next one, and (2) the
+> fact that callbacks get shuffled when CPUs go offline.
 
-(i915 isn't really doing hole-punching there, I think it just found it
-a useful interface to remove the page-and-swapcache without touching
-i_size.  Parentheses because it makes no difference to your point.)
+I can't say I would worry too much about 2, hotplug and RT don't really
+go hand-in-hand anyway.
 
-Okay, I'd better do a v2 (probably not before the weekend), and change
-that around to go explicitly to shmem there as well: I'd rather settle
-the interfaces to other subsystems in this series, than mix it with the
-implementation in the next series.
+On 1 however, is that due to the boost condition? 
 
-When I say "shmem", I am including the !SHMEM-was-TINY_SHMEM case too,
-which goes to ramfs.  Currently i915 has been configured to disable that
-possibility, though we insisted on it originally: there may or may not be
-good reason for disabling it - may just be a side-effect of the rather
-twisted unintuitive SHMEM/TMPFS dependencies.
+I must admit that my thought there is somewhat fuzzy since I just
+realized I don't actually know the exact condition to start boosting,
+but suppose we boost because the queue is too large, then waiting for
+the current grace period might not reduce the queue length, as most
+callbacks might actually be for the next.
 
-> 
-> > I notice that ext4 is now joining ocfs2 and xfs in supporting fallocate
-> > FALLOC_FL_PUNCH_HOLE: perhaps they should support truncate_range, and
-> > tmpfs should support fallocate?  But worry about that another time...
-> 
-> No, truncate_range and the madvice interface are pretty sad hacks that
-> should never have been added in the first place.  Adding
-> FALLOC_FL_PUNCH_HOLE support for shmem on the other hand might make
-> some sense.
+If however the condition is grace period duration, then completion of
+the current grace period is sufficient, since the whole boost condition
+is defined as such. [ if the next is also exceeding the time limit,
+that's a whole next boost ]
 
-Fine, I'll add tmpfs PUNCH_HOLE later on.  And wire up madvise MADV_REMOVE
-to fallocate PUNCH_HOLE, yes?
+> That said, it might be possible if we are willing to live with some
+> approximate behavior.  For example, always waiting for the next grace
+> period (rather than the current one) to finish, and boosting through the
+> extra callbacks in case where a given CPU "adopts" callbacks that must
+> be boosted when that CPU also has some callbacks whose priority must be
+> boosted and some that need not be.
 
-Would you like me to remove the ->truncate_range method from
-inode_operations completely?  I can do that now, hack directly to tmpfs
-in the interim, in the same way as for i915.
+That might make sense, but I must admit to not fully understanding the
+whole current/next thing yet.
 
-Hugh
+> The reason I am not all that excited about taking this approach is that
+> it doesn't help worst-case latency.
+
+Well, not running at the top most prio does help those tasks running at
+a higher priority, so in that regard it does reduce the jitter for a
+number of tasks.
+
+Also, I guess there's the whole question of what prio to boost to which
+I somehow totally forgot about, which is a non-trivial thing in its own
+right, since there isn't really someone blocked on grace period
+completion (although in the special case of someone calling sync_rcu it
+is clear).
+
+> Plus the current implementation is just a less-precise approximation.
+> (Sorry, couldn't resist!)
+
+Appreciated, on a similar note I still need to actually look at all this
+(preempt) tree-rcu stuff to learn how exactly it works.
+
