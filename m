@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162199Ab1FAIST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:18:19 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44129 "EHLO mx1.suse.de"
+	id S1162220Ab1FAI7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:59:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43611 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162101Ab1FAISB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:18:01 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:08 2011
-Message-Id: <20110601081108.446306107@blue.kroah.org>
+	id S1162163Ab1FAISH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:18:07 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:09 2011
+Message-Id: <20110601081109.046637617@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:10:03 +0900
+Date: Wed, 01 Jun 2011 17:10:04 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shaohua Li <shaohua.li@intel.com>, Tejun Heo <tj@kernel.org>,
-        Jeff Garzik <jgarzik@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [033/165] SATA: enable non-queueable flush flag
+        Jiri Olsa <jolsa@redhat.com>, Brian Gerst <brgerst@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [034/165] x86, 64-bit: Fix copy_[to/from]_user() checks for the
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,73 +25,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1988
-Lines: 66
+ userspace address limit
+Content-Length: 3719
+Lines: 113
 
-From: "shaohua.li@intel.com" <shaohua.li@intel.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-commit 900e599eb0c16390ff671652a44e0ea90532220e upstream.
+commit 26afb7c661080ae3f1f13ddf7f0c58c4f931c22b upstream.
 
-Enable non-queueable flush flag for SATA.
+As reported in BZ #30352:
 
-Stable: 2.6.39 only
+  https://bugzilla.kernel.org/show_bug.cgi?id=30352
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Jeff Garzik <jgarzik@redhat.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+there's a kernel bug related to reading the last allowed page on x86_64.
+
+The _copy_to_user() and _copy_from_user() functions use the following
+check for address limit:
+
+  if (buf + size >= limit)
+	fail();
+
+while it should be more permissive:
+
+  if (buf + size > limit)
+	fail();
+
+That's because the size represents the number of bytes being
+read/write from/to buf address AND including the buf address.
+So the copy function will actually never touch the limit
+address even if "buf + size == limit".
+
+Following program fails to use the last page as buffer
+due to the wrong limit check:
+
+ #include <sys/mman.h>
+ #include <sys/socket.h>
+ #include <assert.h>
+
+ #define PAGE_SIZE       (4096)
+ #define LAST_PAGE       ((void*)(0x7fffffffe000))
+
+ int main()
+ {
+        int fds[2], err;
+        void * ptr = mmap(LAST_PAGE, PAGE_SIZE, PROT_READ | PROT_WRITE,
+                          MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+        assert(ptr == LAST_PAGE);
+        err = socketpair(AF_LOCAL, SOCK_STREAM, 0, fds);
+        assert(err == 0);
+        err = send(fds[0], ptr, PAGE_SIZE, 0);
+        perror("send");
+        assert(err == PAGE_SIZE);
+        err = recv(fds[1], ptr, PAGE_SIZE, MSG_WAITALL);
+        perror("recv");
+        assert(err == PAGE_SIZE);
+        return 0;
+ }
+
+The other place checking the addr limit is the access_ok() function,
+which is working properly. There's just a misleading comment
+for the __range_not_ok() macro - which this patch fixes as well.
+
+The last page of the user-space address range is a guard page and
+Brian Gerst observed that the guard page itself due to an erratum on K8 cpus
+(#121 Sequential Execution Across Non-Canonical Boundary Causes Processor
+Hang).
+
+However, the test code is using the last valid page before the guard page.
+The bug is that the last byte before the guard page can't be read
+because of the off-by-one error. The guard page is left in place.
+
+This bug would normally not show up because the last page is
+part of the process stack and never accessed via syscalls.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Brian Gerst <brgerst@gmail.com>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1305210630-7136-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-scsi.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/uaccess.h |    2 +-
+ arch/x86/lib/copy_user_64.S    |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -1089,21 +1089,21 @@ static int atapi_drain_needed(struct req
- static int ata_scsi_dev_config(struct scsi_device *sdev,
- 			       struct ata_device *dev)
- {
-+	struct request_queue *q = sdev->request_queue;
-+
- 	if (!ata_id_has_unload(dev->id))
- 		dev->flags |= ATA_DFLAG_NO_UNLOAD;
- 
- 	/* configure max sectors */
--	blk_queue_max_hw_sectors(sdev->request_queue, dev->max_sectors);
-+	blk_queue_max_hw_sectors(q, dev->max_sectors);
- 
- 	if (dev->class == ATA_DEV_ATAPI) {
--		struct request_queue *q = sdev->request_queue;
- 		void *buf;
- 
- 		sdev->sector_size = ATA_SECT_SIZE;
- 
- 		/* set DMA padding */
--		blk_queue_update_dma_pad(sdev->request_queue,
--					 ATA_DMA_PAD_SZ - 1);
-+		blk_queue_update_dma_pad(q, ATA_DMA_PAD_SZ - 1);
- 
- 		/* configure draining */
- 		buf = kmalloc(ATAPI_MAX_DRAIN, q->bounce_gfp | GFP_KERNEL);
-@@ -1131,8 +1131,7 @@ static int ata_scsi_dev_config(struct sc
- 			"sector_size=%u > PAGE_SIZE, PIO may malfunction\n",
- 			sdev->sector_size);
- 
--	blk_queue_update_dma_alignment(sdev->request_queue,
--				       sdev->sector_size - 1);
-+	blk_queue_update_dma_alignment(q, sdev->sector_size - 1);
- 
- 	if (dev->flags & ATA_DFLAG_AN)
- 		set_bit(SDEV_EVT_MEDIA_CHANGE, sdev->supported_events);
-@@ -1145,6 +1144,8 @@ static int ata_scsi_dev_config(struct sc
- 		scsi_adjust_queue_depth(sdev, MSG_SIMPLE_TAG, depth);
- 	}
- 
-+	blk_queue_flush_queueable(q, false);
-+
- 	dev->sdev = sdev;
- 	return 0;
- }
+--- a/arch/x86/include/asm/uaccess.h
++++ b/arch/x86/include/asm/uaccess.h
+@@ -42,7 +42,7 @@
+  * Returns 0 if the range is valid, nonzero otherwise.
+  *
+  * This is equivalent to the following test:
+- * (u33)addr + (u33)size >= (u33)current->addr_limit.seg (u65 for x86_64)
++ * (u33)addr + (u33)size > (u33)current->addr_limit.seg (u65 for x86_64)
+  *
+  * This needs 33-bit (65-bit for x86_64) arithmetic. We have a carry...
+  */
+--- a/arch/x86/lib/copy_user_64.S
++++ b/arch/x86/lib/copy_user_64.S
+@@ -72,7 +72,7 @@ ENTRY(_copy_to_user)
+ 	addq %rdx,%rcx
+ 	jc bad_to_user
+ 	cmpq TI_addr_limit(%rax),%rcx
+-	jae bad_to_user
++	ja bad_to_user
+ 	ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
+ 	CFI_ENDPROC
+ ENDPROC(_copy_to_user)
+@@ -85,7 +85,7 @@ ENTRY(_copy_from_user)
+ 	addq %rdx,%rcx
+ 	jc bad_from_user
+ 	cmpq TI_addr_limit(%rax),%rcx
+-	jae bad_from_user
++	ja bad_from_user
+ 	ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
+ 	CFI_ENDPROC
+ ENDPROC(_copy_from_user)
 
 
