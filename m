@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161536Ab1FAIKm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:10:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42725 "EHLO mx2.suse.de"
+	id S1161523Ab1FAIKj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:10:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42734 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161508Ab1FAIK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:10:29 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:09 2011
-Message-Id: <20110601080309.221593021@blue.kroah.org>
+	id S1161183Ab1FAIKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:10:34 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:10 2011
+Message-Id: <20110601080309.905055632@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:44 +0900
+Date: Wed, 01 Jun 2011 16:59:45 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stephen Hemminger <shemminger@vyatta.com>,
         "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [048/146] bridge: fix forwarding of IPv6
+Subject: [049/146] ieee802154: Remove hacked CFLAGS in net/ieee802154/Makefile
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,34 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Stephen Hemminger <shemminger@vyatta.com>
+From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit cb68552858c64db302771469b1202ea09e696329 ]
+[ Upstream commit bfac3693c426d280b026f6a1b77dc2294ea43fea ]
 
-The commit 6b1e960fdbd75dcd9bcc3ba5ff8898ff1ad30b6e
-    bridge: Reset IPCB when entering IP stack on NF_FORWARD
-broke forwarding of IPV6 packets in bridge because it would
-call bp_parse_ip_options with an IPV6 packet.
+It adds -Wall (which the kernel carefully controls already) and of all
+things -DDEBUG (which should be set by other means if desired, please
+we have dynamic-debug these days).
 
-Reported-by: Noah Meyerhans <noahm@debian.org>
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-Reviewed-by: Eric Dumazet <eric.dumazet@gmail.com>
+Kill this noise.
+
+Reported-by: Dave Jones <davej@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/bridge/br_netfilter.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ieee802154/Makefile |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -739,7 +739,7 @@ static unsigned int br_nf_forward_ip(uns
- 		nf_bridge->mask |= BRNF_PKT_TYPE;
- 	}
- 
--	if (br_parse_ip_options(skb))
-+	if (pf == PF_INET && br_parse_ip_options(skb))
- 		return NF_DROP;
- 
- 	/* The physdev module checks on this */
+--- a/net/ieee802154/Makefile
++++ b/net/ieee802154/Makefile
+@@ -1,5 +1,3 @@
+ obj-$(CONFIG_IEEE802154) +=	ieee802154.o af_802154.o
+ ieee802154-y		:= netlink.o nl-mac.o nl-phy.o nl_policy.o wpan-class.o
+ af_802154-y		:= af_ieee802154.o raw.o dgram.o
+-
+-ccflags-y += -Wall -DDEBUG
 
 
