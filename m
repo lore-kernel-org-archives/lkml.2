@@ -1,37 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759988Ab1FAVJd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 17:09:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44665 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758802Ab1FAVJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 17:09:32 -0400
+	id S1754395Ab1FAWNo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 18:13:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44584 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751355Ab1FAWNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 18:13:43 -0400
+Date: Thu, 2 Jun 2011 06:15:06 +0900
+From: Greg KH <gregkh@suse.de>
+To: Bryan Hundven <bryanhundven@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Long-term stable versions in linux-2.6-stable.git?
+Message-ID: <20110601211506.GA16121@suse.de>
+References: <BANLkTi=6-sGL9QJbyK34kCPbaPVOREE1QA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4DE6936F.7090700@die-jansens.de>
-References: <20110405152729.232781355@chello.nl> <tip-0122ec5b02f766c355b3168df53a6c038a24fa0d@git.kernel.org>
- <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop>
- <4DE674EB.1000200@die-jansens.de> <1306951751.2497.626.camel@laptop>
- <1306953870.2497.627.camel@laptop> <4DE6936F.7090700@die-jansens.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 2 Jun 2011 06:09:09 +0900
-Message-ID: <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com>
-Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
-To: Arne Jansen <lists@die-jansens.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, efault@gmx.de, npiggin@kernel.dk,
-        akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=6-sGL9QJbyK34kCPbaPVOREE1QA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boot-time hang - maybe due to the mis-merge that re-introduced the
-infinite media change signals for ide-cd?
+On Wed, Jun 01, 2011 at 10:38:35AM -0700, Bryan Hundven wrote:
+> Hello,
+> 
+> I was wondering if there are plans to include the long-term stable
+> versions in the /pub/scm/linux/kernel/git/stable/linux-2.6-stable.git
+> repository?
+> 
+> I'm not subscribed to lkml, please cc on response.
 
-I just pushed out a fix, it may not have mirrored out yet.
+It's been discussed numerous times in the past, the thing is, I don't
+control the script that does this so I have no control over it, sorry.
 
-I dunno. Worth checking out before spending a lot of time bisecting.
-
-                 Linus
+greg k-h
