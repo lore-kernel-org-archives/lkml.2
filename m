@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760024Ab1FAVnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 17:43:22 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:63355 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136Ab1FAVnU (ORCPT
+	id S1760040Ab1FAVni (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 17:43:38 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39140 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760027Ab1FAVng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 17:43:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=CXsG02hFqlFMXQ35GX0jL2EJN142mS5lstYrVDlsHjCTYw2j4HZHq/uLgDVBwkxcEB
-         cegn3yemiwe+qV8UzoWE4Raksdjgl0IwCqz9O2fxvIH7iwDZYOrAtvhVBQdz8URWH5eR
-         CbhKqc2dNuhsBNw6PaNFgS+aboZmOaqDuG3jA=
-Date: Thu, 2 Jun 2011 00:43:13 +0300
-From: Maxin B John <maxin.john@gmail.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, dima@android.com,
-        eike-kernel@sf-tec.de, willy@linux.intel.com
-Subject: [PATCH] mm: dmapool: fix possible use after free in
- dmam_pool_destroy()
-Message-ID: <20110601214313.GA3724@maxin>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 1 Jun 2011 17:43:36 -0400
+Date: Wed, 1 Jun 2011 22:45:06 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Timur Tabi <timur@freescale.com>, <kumar.gala@freescale.com>,
+        <linux-kernel@vger.kernel.org>, <akpm@kernel.org>,
+        <linux-console@vger.kernel.org>, <greg@kroah.com>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
+ management driver
+Message-ID: <20110601224506.4c593d61@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110601155430.4d5aa6de@schlenkerla.am.freescale.net>
+References: <1306953337-15698-1-git-send-email-timur@freescale.com>
+	<20110601204618.32190be9@lxorguk.ukuu.org.uk>
+	<20110601155430.4d5aa6de@schlenkerla.am.freescale.net>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"dma_pool_destroy(pool)" calls "kfree(pool)". The freed pointer "pool"
-is again passed as an argument to the function "devres_destroy()".
-This patch fixes the possible use after free.
 
-Please let me know your comments.
+> There's a check for -ENOIOCTLCMD in vfs_ioctl() -- though it generates
+> -EINVAL rather than -ENOTTY (why?).
 
-Signed-off-by: Maxin B. John <maxin.john@gmail.com>
----
-diff --git a/mm/dmapool.c b/mm/dmapool.c
-index 03bf3bb..fbb58e3 100644
---- a/mm/dmapool.c
-+++ b/mm/dmapool.c
-@@ -500,7 +500,7 @@ void dmam_pool_destroy(struct dma_pool *pool)
- {
- 	struct device *dev = pool->dev;
- 
--	dma_pool_destroy(pool);
- 	WARN_ON(devres_destroy(dev, dmam_pool_release, dmam_pool_match, pool));
-+	dma_pool_destroy(pool);
- }
- EXPORT_SYMBOL(dmam_pool_destroy);
+Good question - perhaps someone didn't read the spec 8)
