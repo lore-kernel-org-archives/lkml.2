@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab1FAWlh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 18:41:37 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:57736 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755135Ab1FAWlg (ORCPT
+	id S1758862Ab1FAWgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 18:36:07 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:36461 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754500Ab1FAWgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 18:41:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=a30oDWHHNDN/G8ZKEbYmJpatVZ7EVaKeyyOZ37imoHFGkw129Z9DFZi2Htijs/HZpG
-         PRjYHVIKGPAdffe/1Wt3i3jO7aiIyj2MtMJ+T6VxhzV6pv/QxG/VmovHGg+5qroYrmEY
-         zicSo7peky6evwzSCkPje1pzh3hsQXzTBXoWI=
-MIME-Version: 1.0
-In-Reply-To: <20110601211506.GA16121@suse.de>
-References: <BANLkTi=6-sGL9QJbyK34kCPbaPVOREE1QA@mail.gmail.com>
-	<20110601211506.GA16121@suse.de>
-Date: Wed, 1 Jun 2011 15:33:21 -0700
-Message-ID: <BANLkTi=MF2ApN4yRvFOr2sM3PbrnRGPtng@mail.gmail.com>
-Subject: Re: Long-term stable versions in linux-2.6-stable.git?
-From: Bryan Hundven <bryanhundven@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 1 Jun 2011 18:36:04 -0400
+Subject: Re: /proc/stat btime accuracy problem
+From: john stultz <johnstul@us.ibm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <BANLkTiniq6GVMJPO_-efKrWHQg9V9Dod9g@mail.gmail.com>
+References: <BANLkTiniq6GVMJPO_-efKrWHQg9V9Dod9g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Jun 2011 15:35:33 -0700
+Message-ID: <1306967733.11492.11.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 1, 2011 at 2:15 PM, Greg KH <gregkh@suse.de> wrote:
-> On Wed, Jun 01, 2011 at 10:38:35AM -0700, Bryan Hundven wrote:
->> Hello,
->>
->> I was wondering if there are plans to include the long-term stable
->> versions in the /pub/scm/linux/kernel/git/stable/linux-2.6-stable.git
->> repository?
->>
->> I'm not subscribed to lkml, please cc on response.
->
-> It's been discussed numerous times in the past, the thing is, I don't
-> control the script that does this so I have no control over it, sorry.
+On Wed, 2011-06-01 at 14:50 -0600, Bjorn Helgaas wrote:
+> timekeeping_init() basically does the following:
+> 
+>     xtime = RTC
+>     if (arch implements read_boot_clock())
+>         wall_to_monotonic = -read_boot_clock()
+>     else
+>       wall_to_monotonic = -xtime
+> 
+> So wall_to_monotonic records some approximation of the system boot
+> time, which is then used to derive the "btime" reported in /proc/stat.
+> 
+> The problem I'm seeing is that xtime is updated on timer ticks, so
+> uninterruptible code, like kernel serial printk, makes us miss ticks,
+> so xtime falls behind the RTC.
 
-Ok. The reason I ask is that it is painful to merge changes from
-2.6.35.13 back to 2.6.35.9, then forward to >2.6.36, although I guess
-I will have to live with it.
+Huh. So this sort of issue was common back when we had tick-based
+timekeeping (in combination with troubled hardware), but with the
+current clocksource based timekeeping, occasional lost ticks shouldn't
+really effect time. 
 
-If you don't mind me asking; who controls the script that does this?
+Can you explain a bit more about what kind of hardware this is happening
+on, and what clocksource is being used?
 
-Thanks for the response!
 
-> greg k-h
->
+>   Then, when userland fixes xtime, in my
+> case with "hwclock --hctosys", the delta is applied to both xtime and
+> wall_to_monotonic.  The result is that "btime" is no longer accurate.
+
+Yes. If time was actually lost (which I suspect is the actual problem),
+then adjustments to fix it do not propagate, and thus btime (which is
+approximately calculated  as CLOCK_REALTIME - CLOCK_BOOTTIME) will be
+off. This is due to the fact that the adjustment changes CLOCK_REALTIME,
+but that CLOCK_BOOTTIME (or CLOCK_MONOTONIC) isn't being increased for
+the time lost.
+
+> Here's an example where I artificially exaggerated the problem by
+> adding 30 seconds of wait time with interrupts disabled.  Assume the
+> RTC is perfectly correct at boot, and note that xtime has fallen
+> behind the RTC by 31 seconds by the time userland resets the clock:
+
+Yea, unless I'm somehow misunderstanding you, I don't think this is a
+btime accuracy issue, but instead a hardware problem. If interrupts are
+being disabled for longer then the clocksource hardware can handle,
+there will be problems.
+
+But let me know more about the clocksource being used and we'll see if
+we can solve what you're seeing.
+
+thanks
+-john
+
+
