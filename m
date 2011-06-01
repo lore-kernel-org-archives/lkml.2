@@ -1,61 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759412Ab1FARrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 13:47:17 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:47481 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759043Ab1FARrQ (ORCPT
+	id S1759365Ab1FARth (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 13:49:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50612 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754754Ab1FARtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 13:47:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=kepstin.ca; s=google;
-        h=subject:from:to:cc:date:in-reply-to:references:content-type
-         :x-mailer:content-transfer-encoding:message-id:mime-version;
-        b=Zf5/6A+vqv34ujfymrUHVYFO8S8ipIT+c3OzFKg0uORstLvSy+O6YLb5qcCSArWYSq
-         Jgb4hSTeRK0zyU9CmWeFemFiZd1RJYWZFz2qditeGnXj/9cch9fIt4oZCp0uKISiF31U
-         RfqrgLAlOYw31cQWqHnzNgOWtyT+TE+pGxq8g=
-Subject: Re: Linux 3.0 change listings - Wonderful World of Linux 3.0
-From: Calvin Walton <calvin.walton@kepstin.ca>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Joe Pranevich <jpranevich@gmail.com>,
-        Mike Frysinger <vapier.adi@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 01 Jun 2011 13:47:12 -0400
-In-Reply-To: <20110531201348.GA8723@1wt.eu>
-References: <BANLkTikvU-XUu9sWX-E87a7CUtA7j+ZRpA@mail.gmail.com>
-	 <BANLkTi=w7VhV2GxKrGGe9dirHcEkwKrDwA@mail.gmail.com>
-	 <BANLkTim7XZKLCRp=ZtRJWhi7k4BzwYpRpg@mail.gmail.com>
-	 <20110531201348.GA8723@1wt.eu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.0 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1306950434.3627.23.camel@ayu>
-Mime-Version: 1.0
+	Wed, 1 Jun 2011 13:49:35 -0400
+Date: Wed, 1 Jun 2011 19:49:15 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Julia Lawall <julia@diku.dk>
+Cc: Sascha Hauer <kernel@pengutronix.de>, kernel-janitors@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/10] drivers/video/imxfb.c: add missing clk_put
+Message-ID: <20110601174915.GL23771@pengutronix.de>
+References: <1306948213-20767-8-git-send-email-julia@diku.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306948213-20767-8-git-send-email-julia@diku.dk>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 19:48:54 up 6 days, 10:50, 13 users,  load average: 0.03, 0.33, 1.26
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-31 at 22:13 +0200, Willy Tarreau wrote:
-> On Tue, May 31, 2011 at 01:22:49AM -0400, Joe Pranevich wrote:
-> > Mike,
-> > 
-> > Thank you. I appreciate the comments and the corrections. It was a
-> > marathon weekend and yes, I missed some obvious typos. Thanks.
-> > 
-> I'd say that in general, almost all of the features you're announcing as
-> "new" will make unaware people think that older versions did not have
-> those features, which is quite misleading. Linus took great care to say
-> that 3.0-rc1 had very few changes, it can be a bit confusing to see a
-> post pretending it to be a revolutionary new kernel.
+On Wed, Jun 01, 2011 at 07:10:11PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> Probably that you should more clearly say that all those features were
-> progressively added in all 2.6 releases, otherwise I'm already expecting
-> to see a lot of idiocies posted in journals.
+> Reorder the labels at the end of the function to correspond to the order in
+> which the resources are allocated.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r exists@
+> expression e1,e2;
+> statement S;
+> @@
+> 
+> e1 = clk_get@p1(...);
+> ... when != e1 = e2
+>     when != clk_put(e1)
+>     when any
+> if (...) { ... when != clk_put(e1)
+>                when != if (...) { ... clk_put(e1) ... }
+> * return@p3 ...;
+>  } else S
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Perhaps a simple change of the title and introduction would handle
-clearing this up. Instead of presenting it as a "What's new in Linux
-3.0" article (which it is not, or it would be a lot shorter!), why not
-call it what it actually is: "A Retrospective of the Linux 2.6 era"?
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+
+> 
+> ---
+>  drivers/video/imxfb.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/video/imxfb.c b/drivers/video/imxfb.c
+> index d2ccfd6..f135dbe 100644
+> --- a/drivers/video/imxfb.c
+> +++ b/drivers/video/imxfb.c
+> @@ -856,10 +856,10 @@ failed_platform_init:
+>  		dma_free_writecombine(&pdev->dev,fbi->map_size,fbi->map_cpu,
+>  			fbi->map_dma);
+>  failed_map:
+> -	clk_put(fbi->clk);
+> -failed_getclock:
+>  	iounmap(fbi->regs);
+>  failed_ioremap:
+> +	clk_put(fbi->clk);
+> +failed_getclock:
+>  	release_mem_region(res->start, resource_size(res));
+>  failed_req:
+>  	kfree(info->pseudo_palette);
+> 
+> 
 
 -- 
-Calvin Walton <calvin.walton@kepstin.ca>
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
