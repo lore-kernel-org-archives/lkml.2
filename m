@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932351Ab1FAR1Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 13:27:24 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:38323 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759326Ab1FAR0V (ORCPT
+	id S1759208Ab1FAR1V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 13:27:21 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:30923 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932108Ab1FAR0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 13:26:21 -0400
+	Wed, 1 Jun 2011 13:26:22 -0400
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 2z9MJ3IVM1kxbxlBrvZR0FiDbWbPXKWHI_qI4W1bGKv.7.R
- ge148CasQsIU5_6820k4YmoqkXynm_RAp0bqCat5o6rpyB1mS4J1usyeJzU1
- 9eOtuFwm_5jsUGLhKnKgiKuOmT_K28UgN2087o.vkzqzKphMlhNKUE1b96zt
- S7rVXTQIjzsPGfF6pJh8Uv8xs_2qKtPnr2RGoWW44S4kDi5.W5kcpfB01DEb
- 7dOhRNfyn92wRnndQH_2fzXkaZIwHE6dicotQKvPLEGy5Kmfc2MuK4ExR63u
- t676r0TuY3iMFAW0eo9_Aj93547oBIOtpCAbz90Ba_hlQjVg2wzUqPJBnxlC
- XVncHutwp3Lv9tmbWYQIb6DkR
+X-YMail-OSG: bhGwA_0VM1kLsYLwJPyJrmpxcqaLhMYgl5Qz8a09mILQ2q_
+ ENYT0fa6JYPefOAL7qouxKMlNkmxxf9lcW2x96CmmqQB7jm65FlKQpdgpFAS
+ apfDkJMdqXSGfnVC9bulStTx0d8narj4jKrIC8uM1mbfiyEIbg1yxiiNhQLA
+ mYO1AKWpcAya4pf1dDEvBIbjkN4z88jPaPlAGKkQWuPRV8rzRUPavGyvP2gL
+ gu1v0wwmaAkXk6baf0JbeEoreSkO5Qnzc7rUDqJKrwHyGIMnU5BMUSvcuvKr
+ Ggud3Emm5FjLeONdrCjmp01W88Mk_4gLCjVlO6bwC23NLzVfm
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20110601172619.817315669@linux.com>
+Message-Id: <20110601172620.401153478@linux.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 01 Jun 2011 12:25:57 -0500
+Date: Wed, 01 Jun 2011 12:25:58 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: David Rientjes <rientjes@google.com>
@@ -26,62 +25,90 @@ Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Subject: [slubllv7 14/17] slub: Add statistics for the case that the current slab does not match the node
+Subject: [slubllv7 15/17] slub: fast release on full slab
 References: <20110601172543.437240675@linux.com>
-Content-Disposition: inline; filename=node_mismatch
+Content-Disposition: inline; filename=slab_alloc_fast_release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Slub reloads the per cpu slab if the page does not satisfy the NUMA condition. Track
-those reloads since doing so has a performance impact.
+Make deactivation occur implicitly while checking out the current freelist.
+
+This avoids one cmpxchg operation on a slab that is now fully in use.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-
 ---
  include/linux/slub_def.h |    1 +
- mm/slub.c                |    3 +++
- 2 files changed, 4 insertions(+)
+ mm/slub.c                |   21 +++++++++++++++++++--
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
-Index: linux-2.6/include/linux/slub_def.h
-===================================================================
---- linux-2.6.orig/include/linux/slub_def.h	2011-05-31 14:27:07.332880140 -0500
-+++ linux-2.6/include/linux/slub_def.h	2011-05-31 14:27:17.792880073 -0500
-@@ -24,6 +24,7 @@ enum stat_item {
- 	ALLOC_FROM_PARTIAL,	/* Cpu slab acquired from partial list */
- 	ALLOC_SLAB,		/* Cpu slab acquired from page allocator */
- 	ALLOC_REFILL,		/* Refill cpu slab from slab freelist */
-+	ALLOC_NODE_MISMATCH,	/* Switching cpu slab */
- 	FREE_SLAB,		/* Slab freed to the page allocator */
- 	CPUSLAB_FLUSH,		/* Abandoning of the cpu slab */
- 	DEACTIVATE_FULL,	/* Cpu slab was full when deactivated */
 Index: linux-2.6/mm/slub.c
 ===================================================================
---- linux-2.6.orig/mm/slub.c	2011-05-31 14:27:12.002880106 -0500
-+++ linux-2.6/mm/slub.c	2011-05-31 14:27:17.792880073 -0500
-@@ -1966,6 +1966,7 @@ static void *__slab_alloc(struct kmem_ca
- 		goto new_slab;
+--- linux-2.6.orig/mm/slub.c	2011-05-31 14:27:17.792880073 -0500
++++ linux-2.6/mm/slub.c	2011-05-31 14:27:21.372880046 -0500
+@@ -1977,9 +1977,21 @@ static void *__slab_alloc(struct kmem_ca
+ 		object = page->freelist;
+ 		counters = page->counters;
+ 		new.counters = counters;
+-		new.inuse = page->objects;
+ 		VM_BUG_ON(!new.frozen);
  
- 	if (unlikely(!node_match(c, node))) {
-+		stat(s, ALLOC_NODE_MISMATCH);
- 		deactivate_slab(s, c);
++		/*
++		 * If there is no object left then we use this loop to
++		 * deactivate the slab which is simple since no objects
++		 * are left in the slab and therefore we do not need to
++		 * put the page back onto the partial list.
++		 *
++		 * If there are objects left then we retrieve them
++		 * and use them to refill the per cpu queue.
++		*/
++
++		new.inuse = page->objects;
++		new.frozen = object != NULL;
++
+ 	} while (!cmpxchg_double_slab(s, page,
+ 			object, counters,
+ 			NULL, new.counters,
+@@ -1988,8 +2000,11 @@ static void *__slab_alloc(struct kmem_ca
+ load_freelist:
+ 	VM_BUG_ON(!page->frozen);
+ 
+-	if (unlikely(!object))
++	if (unlikely(!object)) {
++		c->page = NULL;
++		stat(s, DEACTIVATE_BYPASS);
  		goto new_slab;
- 	}
-@@ -4675,6 +4676,7 @@ STAT_ATTR(FREE_REMOVE_PARTIAL, free_remo
- STAT_ATTR(ALLOC_FROM_PARTIAL, alloc_from_partial);
- STAT_ATTR(ALLOC_SLAB, alloc_slab);
- STAT_ATTR(ALLOC_REFILL, alloc_refill);
-+STAT_ATTR(ALLOC_NODE_MISMATCH, alloc_node_mismatch);
- STAT_ATTR(FREE_SLAB, free_slab);
- STAT_ATTR(CPUSLAB_FLUSH, cpuslab_flush);
- STAT_ATTR(DEACTIVATE_FULL, deactivate_full);
-@@ -4734,6 +4736,7 @@ static struct attribute *slab_attrs[] =
- 	&alloc_from_partial_attr.attr,
- 	&alloc_slab_attr.attr,
- 	&alloc_refill_attr.attr,
-+	&alloc_node_mismatch_attr.attr,
- 	&free_slab_attr.attr,
- 	&cpuslab_flush_attr.attr,
- 	&deactivate_full_attr.attr,
++	}
+ 
+ 	stat(s, ALLOC_REFILL);
+ 
+@@ -4684,6 +4699,7 @@ STAT_ATTR(DEACTIVATE_EMPTY, deactivate_e
+ STAT_ATTR(DEACTIVATE_TO_HEAD, deactivate_to_head);
+ STAT_ATTR(DEACTIVATE_TO_TAIL, deactivate_to_tail);
+ STAT_ATTR(DEACTIVATE_REMOTE_FREES, deactivate_remote_frees);
++STAT_ATTR(DEACTIVATE_BYPASS, deactivate_bypass);
+ STAT_ATTR(ORDER_FALLBACK, order_fallback);
+ STAT_ATTR(CMPXCHG_DOUBLE_CPU_FAIL, cmpxchg_double_cpu_fail);
+ STAT_ATTR(CMPXCHG_DOUBLE_FAIL, cmpxchg_double_fail);
+@@ -4744,6 +4760,7 @@ static struct attribute *slab_attrs[] =
+ 	&deactivate_to_head_attr.attr,
+ 	&deactivate_to_tail_attr.attr,
+ 	&deactivate_remote_frees_attr.attr,
++	&deactivate_bypass_attr.attr,
+ 	&order_fallback_attr.attr,
+ 	&cmpxchg_double_fail_attr.attr,
+ 	&cmpxchg_double_cpu_fail_attr.attr,
+Index: linux-2.6/include/linux/slub_def.h
+===================================================================
+--- linux-2.6.orig/include/linux/slub_def.h	2011-05-31 14:27:17.792880073 -0500
++++ linux-2.6/include/linux/slub_def.h	2011-05-31 14:27:21.382880050 -0500
+@@ -32,6 +32,7 @@ enum stat_item {
+ 	DEACTIVATE_TO_HEAD,	/* Cpu slab was moved to the head of partials */
+ 	DEACTIVATE_TO_TAIL,	/* Cpu slab was moved to the tail of partials */
+ 	DEACTIVATE_REMOTE_FREES,/* Slab contained remotely freed objects */
++	DEACTIVATE_BYPASS,	/* Implicit deactivation */
+ 	ORDER_FALLBACK,		/* Number of times fallback was necessary */
+ 	CMPXCHG_DOUBLE_CPU_FAIL,/* Failure of this_cpu_cmpxchg_double */
+ 	CMPXCHG_DOUBLE_FAIL,	/* Number of times that cmpxchg double did not match */
 
