@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361Ab1FAR7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 13:59:24 -0400
-Received: from mail.perches.com ([173.55.12.10]:2380 "EHLO mail.perches.com"
+	id S1754677Ab1FAR70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 13:59:26 -0400
+Received: from mail.perches.com ([173.55.12.10]:2384 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753990Ab1FAR7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753993Ab1FAR7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 1 Jun 2011 13:59:21 -0400
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 4/6] MAINTAINERS: Remove unused PERFORMANCE EVENTS pattern
-Date: Wed,  1 Jun 2011 10:59:12 -0700
-Message-Id: <8d1e596980a6b6fec79432bb5a5953985cf85c2f.1306950701.git.joe@perches.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Alan Ott <alan@signal11.us>
+Subject: [PATCH 5/6] MAINTAINERS: Update USB HID/HIDBP DRIVERS pattern
+Date: Wed,  1 Jun 2011 10:59:13 -0700
+Message-Id: <7cf9cc531e6f1cfa04f9c0676ed4202b3ee7cb6d.1306950701.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.5.rc3.dirty
 In-Reply-To: <cover.1306950701.git.joe@perches.com>
 References: <cover.1306950701.git.joe@perches.com>
@@ -21,29 +19,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No arch/*/lib/perf_event* files exist so remove the pattern.
+It was moved by commit 1a978c50c6cf
+("HID: Move hiddev.txt to the new Documentation/hid directory")
+so update the MAINTAINERS pattern too.
 
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: Paul Mackerras <paulus@samba.org>
-cc: Ingo Molnar <mingo@elte.hu>
-cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+cc: Jiri Kosina <jkosina@suse.cz>
+cc: Alan Ott <alan@signal11.us>
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- MAINTAINERS |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ MAINTAINERS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index ab6340f..6f6a8ef 100644
+index 6f6a8ef..49d9fb1 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -4908,7 +4908,6 @@ F:	arch/*/kernel/perf_event*.c
- F:	arch/*/kernel/*/perf_event*.c
- F:	arch/*/kernel/*/*/perf_event*.c
- F:	arch/*/include/asm/perf_event.h
--F:	arch/*/lib/perf_event*.c
- F:	arch/*/kernel/perf_callchain.c
- F:	tools/perf/
+@@ -6458,7 +6458,7 @@ M:	Jiri Kosina <jkosina@suse.cz>
+ L:	linux-usb@vger.kernel.org
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git
+ S:	Maintained
+-F:	Documentation/usb/hiddev.txt
++F:	Documentation/hid/hiddev.txt
+ F:	drivers/hid/usbhid/
  
+ USB ISP116X DRIVER
 -- 
 1.7.5.rc3.dirty
 
