@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758955Ab1FARAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 13:00:53 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51399 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab1FARAt convert rfc822-to-8bit (ORCPT
+	id S1758968Ab1FARCh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 13:02:37 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:60987 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753426Ab1FARCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 13:00:49 -0400
+	Wed, 1 Jun 2011 13:02:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=otTydPVSSge4X4RPr279iPjuC8gex/ObSJDnJzzqIiMvQE3szWiAeTkBIL8E/0oDxN
-         WshBkkNurbbiRrDrkQBLPLiRLmLLqlL9D7sxpAESGbkyYBylRS7LawMEH5djpouT4AmP
-         ntZ5L0Fp0GJ9jVdfumAFPATnHHEKY5plOReQA=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=nUH5fUH2zUGwGZURDwJuptDN3ZuY0AMizh2ZW9CyX4r30rHyamdUwHI6nPpKMgtP+P
+         d7Qhcw0PC23sNfmVlllw==
+Date: Wed, 1 Jun 2011 10:02:32 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Christoph Hellwig <hch@infradead.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 4/14] tmpfs: add shmem_read_mapping_page_gfp
+In-Reply-To: <20110601004225.GC4433@infradead.org>
+Message-ID: <alpine.LSU.2.00.1106010958390.23468@sister.anvils>
+References: <alpine.LSU.2.00.1105301726180.5482@sister.anvils> <alpine.LSU.2.00.1105301739080.5482@sister.anvils> <20110601004225.GC4433@infradead.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1306945763-6583-1-git-send-email-wanlong.gao@gmail.com>
-References: <1306945763-6583-1-git-send-email-wanlong.gao@gmail.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Wed, 1 Jun 2011 13:00:28 -0400
-X-Google-Sender-Auth: EdDBFDhUtmES1ioY6e6-8QVrqfY
-Message-ID: <BANLkTinEc8OLHnkVCZVpHK4ZnC1DHbEsvw@mail.gmail.com>
-Subject: Re: [PATCH] Fix build warning of the defconfigs
-To: Wanlong Gao <wanlong.gao@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
-        linux@arm.linux.org.uk, hans-christian.egtvedt@atmel.com,
-        ralf@linux-mips.org, benh@kernel.crashing.org, paulus@samba.org,
-        lethal@linux-sh.org, gxt@mprc.pku.edu.cn, david.woodhouse@intel.com,
-        akpm@linux-foundation.org, u.kleine-koenig@pengutronix.de,
-        mingo@elte.hu, rientjes@google.com, w.sang@pengutronix.de,
-        sam@ravnborg.org, manuel.lauss@googlemail.com, anton@samba.org,
-        arnd@arndb.de
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 1, 2011 at 12:29, Wanlong Gao wrote:
->  arch/blackfin/configs/CM-BF548_defconfig   |    2 +-
+On Tue, 31 May 2011, Christoph Hellwig wrote:
+> > (shmem_read_mapping_page_gfp or shmem_read_cache_page_gfp?  Generally
+> > the read_mapping_page functions use the mapping's ->readpage, and the
+> > read_cache_page functions use the supplied filler, so I think
+> > read_cache_page_gfp was slightly misnamed.)
+> 
+> What about just shmem_read_page?  It's not using the pagecache, so
+> no need for the mapping or cache, and the _gfp really is just a hack
+> because the old pagecache APIs didn't allow to pass the gfp flags.
+> For a new API there's no need for that.
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+I am trying to mirror what's already there, and it's conceivable that
+we'll find others who want converting from read_mapping_page() to
+shmem_read_mapping_page(), so I'd rather keep the similar naming.
+
+The _gfp() thing I'm not very keen on, but can't avoid it for i915.
+If anyone else needs something here, it's likely to be without _gfp().
+
+> 
+> > +static inline struct page *shmem_read_mapping_page(
+> > +				struct address_space *mapping, pgoff_t index)
+> > +{
+> > +	return shmem_read_mapping_page_gfp(mapping, index,
+> > +				mapping_gfp_mask(mapping));
+> > +}
+> 
+> This really shouldn't be in pagemap.h.  For now probably in shmem_fs.h
+
+Okay, I can move it there, if I do the same for those shmem_...()
+interfaces currently in linux/mm.h too.
+
+Hugh
