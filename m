@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163289Ab1FAI3j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:29:39 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45337 "EHLO mx1.suse.de"
+	id S1163301Ab1FAI3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:29:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44713 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1163271Ab1FAI3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:29:33 -0400
+	id S1163286Ab1FAI3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:29:39 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:30 2011
-Message-Id: <20110601081229.703696800@blue.kroah.org>
+Message-Id: <20110601081230.351285227@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:12:13 +0900
+Date: Wed, 01 Jun 2011 17:12:14 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [163/165] ext4: fix possible use-after-free in
+Subject: [164/165] ext4: Use schedule_timeout_interruptible() for waiting in
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,19 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- ext4_remove_li_request()
-Content-Length: 1306
-Lines: 43
+ lazyinit thread
+Content-Length: 4444
+Lines: 142
 
 From: Lukas Czerner <lczerner@redhat.com>
 
-commit 1bb933fb1fa8e4cb337a0d5dfd2ff4c0dc2073e8 upstream.
+commit 4ed5c033c11b33149d993734a6a8de1016e8f03f upstream.
 
-We need to take reference to the s_li_request after we take a mutex,
-because it might be freed since then, hence result in accessing old
-already freed memory. Also we should protect the whole
-ext4_remove_li_request() because ext4_li_info might be in the process of
-being freed in ext4_lazyinit_thread().
+In order to make lazyinit eat approx. 10% of io bandwidth at max, we
+are sleeping between zeroing each single inode table. For that purpose
+we are using timer which wakes up thread when it expires. It is set
+via add_timer() and this may cause troubles in the case that thread
+has been woken up earlier and in next iteration we call add_timer() on
+still running timer hence hitting BUG_ON in add_timer(). We could fix
+that by using mod_timer() instead however we can use
+schedule_timeout_interruptible() for waiting and hence simplifying
+things a lot.
+
+This commit exchange the old "waiting mechanism" with simple
+schedule_timeout_interruptible(), setting the time to sleep. Hence we
+do not longer need li_wait_daemon waiting queue and others, so get rid
+of it.
+
+Addresses-Red-Hat-Bugzilla: #699708
 
 Signed-off-by: Lukas Czerner <lczerner@redhat.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
@@ -45,31 +56,119 @@ Reviewed-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/super.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ fs/ext4/ext4.h  |    4 ----
+ fs/ext4/super.c |   31 ++++++-------------------------
+ 2 files changed, 6 insertions(+), 29 deletions(-)
 
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1590,12 +1590,8 @@ void ext4_get_group_no_and_offset(struct
+  */
+ struct ext4_lazy_init {
+ 	unsigned long		li_state;
+-
+-	wait_queue_head_t	li_wait_daemon;
+ 	wait_queue_head_t	li_wait_task;
+-	struct timer_list	li_timer;
+ 	struct task_struct	*li_task;
+-
+ 	struct list_head	li_request_list;
+ 	struct mutex		li_list_mtx;
+ };
 --- a/fs/ext4/super.c
 +++ b/fs/ext4/super.c
-@@ -2730,14 +2730,16 @@ static void ext4_remove_li_request(struc
- 
- static void ext4_unregister_li_request(struct super_block *sb)
- {
--	struct ext4_li_request *elr = EXT4_SB(sb)->s_li_request;
--
--	if (!ext4_li_info)
-+	mutex_lock(&ext4_li_mtx);
-+	if (!ext4_li_info) {
-+		mutex_unlock(&ext4_li_mtx);
- 		return;
-+	}
- 
- 	mutex_lock(&ext4_li_info->li_list_mtx);
--	ext4_remove_li_request(elr);
-+	ext4_remove_li_request(EXT4_SB(sb)->s_li_request);
- 	mutex_unlock(&ext4_li_info->li_list_mtx);
-+	mutex_unlock(&ext4_li_mtx);
+@@ -2659,12 +2659,6 @@ static void print_daily_error_info(unsig
+ 	mod_timer(&sbi->s_err_report, jiffies + 24*60*60*HZ);  /* Once a day */
  }
  
- static struct task_struct *ext4_lazyinit_task;
+-static void ext4_lazyinode_timeout(unsigned long data)
+-{
+-	struct task_struct *p = (struct task_struct *)data;
+-	wake_up_process(p);
+-}
+-
+ /* Find next suitable group and run ext4_init_inode_table */
+ static int ext4_run_li_request(struct ext4_li_request *elr)
+ {
+@@ -2712,7 +2706,7 @@ static int ext4_run_li_request(struct ex
+ 
+ /*
+  * Remove lr_request from the list_request and free the
+- * request tructure. Should be called with li_list_mtx held
++ * request structure. Should be called with li_list_mtx held
+  */
+ static void ext4_remove_li_request(struct ext4_li_request *elr)
+ {
+@@ -2758,14 +2752,10 @@ static int ext4_lazyinit_thread(void *ar
+ 	struct ext4_lazy_init *eli = (struct ext4_lazy_init *)arg;
+ 	struct list_head *pos, *n;
+ 	struct ext4_li_request *elr;
+-	unsigned long next_wakeup;
+-	DEFINE_WAIT(wait);
++	unsigned long next_wakeup, cur;
+ 
+ 	BUG_ON(NULL == eli);
+ 
+-	eli->li_timer.data = (unsigned long)current;
+-	eli->li_timer.function = ext4_lazyinode_timeout;
+-
+ 	eli->li_task = current;
+ 	wake_up(&eli->li_wait_task);
+ 
+@@ -2799,19 +2789,15 @@ cont_thread:
+ 		if (freezing(current))
+ 			refrigerator();
+ 
+-		if ((time_after_eq(jiffies, next_wakeup)) ||
++		cur = jiffies;
++		if ((time_after_eq(cur, next_wakeup)) ||
+ 		    (MAX_JIFFY_OFFSET == next_wakeup)) {
+ 			cond_resched();
+ 			continue;
+ 		}
+ 
+-		eli->li_timer.expires = next_wakeup;
+-		add_timer(&eli->li_timer);
+-		prepare_to_wait(&eli->li_wait_daemon, &wait,
+-				TASK_INTERRUPTIBLE);
+-		if (time_before(jiffies, next_wakeup))
+-			schedule();
+-		finish_wait(&eli->li_wait_daemon, &wait);
++		schedule_timeout_interruptible(next_wakeup - cur);
++
+ 		if (kthread_should_stop()) {
+ 			ext4_clear_request_list();
+ 			goto exit_thread;
+@@ -2835,12 +2821,10 @@ exit_thread:
+ 		goto cont_thread;
+ 	}
+ 	mutex_unlock(&eli->li_list_mtx);
+-	del_timer_sync(&ext4_li_info->li_timer);
+ 	eli->li_task = NULL;
+ 	wake_up(&eli->li_wait_task);
+ 
+ 	kfree(ext4_li_info);
+-	ext4_lazyinit_task = NULL;
+ 	ext4_li_info = NULL;
+ 	mutex_unlock(&ext4_li_mtx);
+ 
+@@ -2868,7 +2852,6 @@ static int ext4_run_lazyinit_thread(void
+ 	if (IS_ERR(ext4_lazyinit_task)) {
+ 		int err = PTR_ERR(ext4_lazyinit_task);
+ 		ext4_clear_request_list();
+-		del_timer_sync(&ext4_li_info->li_timer);
+ 		kfree(ext4_li_info);
+ 		ext4_li_info = NULL;
+ 		printk(KERN_CRIT "EXT4: error %d creating inode table "
+@@ -2917,9 +2900,7 @@ static int ext4_li_info_new(void)
+ 	INIT_LIST_HEAD(&eli->li_request_list);
+ 	mutex_init(&eli->li_list_mtx);
+ 
+-	init_waitqueue_head(&eli->li_wait_daemon);
+ 	init_waitqueue_head(&eli->li_wait_task);
+-	init_timer(&eli->li_timer);
+ 	eli->li_state |= EXT4_LAZYINIT_QUIT;
+ 
+ 	ext4_li_info = eli;
 
 
