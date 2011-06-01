@@ -1,670 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab1FAT5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:57:31 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:43496 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759932Ab1FAT5Z (ORCPT
+	id S1759946Ab1FAUB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 16:01:59 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:36187 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752736Ab1FAUB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:57:25 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH v6] radio-sf16fmr2: convert to generic TEA575x interface
-Date: Wed, 1 Jun 2011 21:57:11 +0200
-User-Agent: KMail/1.9.10
-Cc: Takashi Iwai <tiwai@suse.de>, Hans Verkuil <hverkuil@xs4all.nl>,
-        alsa-devel@alsa-project.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        linux-media@vger.kernel.org
-References: <201105231417.17450.linux@rainbow-software.org> <s5hvcwx29co.wl%tiwai@suse.de> <4DE65E9B.7060509@redhat.com>
-In-Reply-To: <4DE65E9B.7060509@redhat.com>
+	Wed, 1 Jun 2011 16:01:56 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <gadiyar@ti.com>,
+        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
+        <b-cousson@ti.com>, <paul@pwsan.com>
+Subject: Re: [PATCH 2/4] arm: omap: usb: register hwmods of usbhs
+Organization: Texas Instruments, Inc.
+References: <1306934847-6098-1-git-send-email-keshava_mgowda@ti.com>
+	<1306934847-6098-2-git-send-email-keshava_mgowda@ti.com>
+	<1306934847-6098-3-git-send-email-keshava_mgowda@ti.com>
+Date: Wed, 01 Jun 2011 13:01:51 -0700
+In-Reply-To: <1306934847-6098-3-git-send-email-keshava_mgowda@ti.com> (Keshava
+	Munegowda's message of "Wed, 1 Jun 2011 18:57:25 +0530")
+Message-ID: <87y61lfhhs.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201106012157.18176.linux@rainbow-software.org>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert radio-sf16fmr2 to use generic TEA575x implementation. Most of the
-driver code goes away as SF16-FMR2 is basically just a TEA5757 tuner
-connected to ISA bus.
-The card can optionally be equipped with PT2254A volume control (equivalent
-of TC9154AP) - the volume setting is completely reworked (with balance control
-added) and tested.
+Hi Kesheva,
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Keshava Munegowda <keshava_mgowda@ti.com> writes:
 
---- a/sound/pci/Kconfig	2011-05-15 18:50:18.000000000 +0200
-+++ b/sound/pci/Kconfig	2011-05-17 23:35:30.000000000 +0200
-@@ -565,8 +565,8 @@ config SND_FM801_TEA575X_BOOL
- 
- config SND_TEA575X
- 	tristate
--	depends on SND_FM801_TEA575X_BOOL || SND_ES1968_RADIO
--	default SND_FM801 || SND_ES1968
-+	depends on SND_FM801_TEA575X_BOOL || SND_ES1968_RADIO || RADIO_SF16FMR2
-+	default SND_FM801 || SND_ES1968 || RADIO_SF16FMR2
- 
- source "sound/pci/hda/Kconfig"
- 
---- a/drivers/media/radio/radio-sf16fmr2.c	2011-04-06 03:30:43.000000000 +0200
-+++ b/drivers/media/radio/radio-sf16fmr2.c	2011-05-19 17:56:08.000000000 +0200
-@@ -1,441 +1,209 @@
--/* SF16FMR2 radio driver for Linux radio support
-- * heavily based on fmi driver...
-- * (c) 2000-2002 Ziglio Frediano, freddy77@angelfire.com
-+/* SF16-FMR2 radio driver for Linux
-+ * Copyright (c) 2011 Ondrej Zary
-  *
-- * Notes on the hardware
-- *
-- *  Frequency control is done digitally -- ie out(port,encodefreq(95.8));
-- *  No volume control - only mute/unmute - you have to use line volume
-- *
-- *  For read stereo/mono you must wait 0.1 sec after set frequency and
-- *  card unmuted so I set frequency on unmute
-- *  Signal handling seem to work only on autoscanning (not implemented)
-- *
-- *  Converted to V4L2 API by Mauro Carvalho Chehab <mchehab@infradead.org>
-+ * Original driver was (c) 2000-2002 Ziglio Frediano, freddy77@angelfire.com
-+ * but almost nothing remained here after conversion to generic TEA575x
-+ * implementation
-  */
- 
-+#include <linux/delay.h>
- #include <linux/module.h>	/* Modules 			*/
- #include <linux/init.h>		/* Initdata			*/
- #include <linux/ioport.h>	/* request_region		*/
--#include <linux/delay.h>	/* udelay			*/
--#include <linux/videodev2.h>	/* kernel radio structs		*/
--#include <linux/mutex.h>
--#include <linux/version.h>      /* for KERNEL_VERSION MACRO     */
- #include <linux/io.h>		/* outb, outb_p			*/
--#include <media/v4l2-device.h>
--#include <media/v4l2-ioctl.h>
-+#include <sound/tea575x-tuner.h>
- 
--MODULE_AUTHOR("Ziglio Frediano, freddy77@angelfire.com");
--MODULE_DESCRIPTION("A driver for the SF16FMR2 radio.");
-+MODULE_AUTHOR("Ondrej Zary");
-+MODULE_DESCRIPTION("MediaForte SF16-FMR2 FM radio card driver");
- MODULE_LICENSE("GPL");
- 
--static int io = 0x384;
--static int radio_nr = -1;
--
--module_param(io, int, 0);
--MODULE_PARM_DESC(io, "I/O address of the SF16FMR2 card (should be 0x384, if do not work try 0x284)");
--module_param(radio_nr, int, 0);
--
--#define RADIO_VERSION KERNEL_VERSION(0,0,2)
--
--#define AUD_VOL_INDEX 1
--
--#undef DEBUG
--//#define DEBUG 1
--
--#ifdef DEBUG
--# define  debug_print(s) printk s
--#else
--# define  debug_print(s)
--#endif
--
--/* this should be static vars for module size */
--struct fmr2
--{
--	struct v4l2_device v4l2_dev;
--	struct video_device vdev;
--	struct mutex lock;
-+struct fmr2 {
- 	int io;
--	int curvol; /* 0-15 */
--	int mute;
--	int stereo; /* card is producing stereo audio */
--	unsigned long curfreq; /* freq in kHz */
--	int card_type;
-+	struct snd_tea575x tea;
-+	struct v4l2_ctrl *volume;
-+	struct v4l2_ctrl *balance;
- };
- 
-+/* the port is hardwired so no need to support multiple cards */
-+#define FMR2_PORT	0x384
- static struct fmr2 fmr2_card;
- 
--/* hw precision is 12.5 kHz
-- * It is only useful to give freq in interval of 200 (=0.0125Mhz),
-- * other bits will be truncated
-- */
--#define RSF16_ENCODE(x)	((x) / 200 + 856)
--#define RSF16_MINFREQ (87 * 16000)
--#define RSF16_MAXFREQ (108 * 16000)
--
--static inline void wait(int n, int io)
--{
--	for (; n; --n)
--		inb(io);
--}
--
--static void outbits(int bits, unsigned int data, int nWait, int io)
--{
--	int bit;
--
--	for (; --bits >= 0;) {
--		bit = (data >> bits) & 1;
--		outb(bit, io);
--		wait(nWait, io);
--		outb(bit | 2, io);
--		wait(nWait, io);
--		outb(bit, io);
--		wait(nWait, io);
--	}
--}
--
--static inline void fmr2_mute(int io)
--{
--	outb(0x00, io);
--	wait(4, io);
--}
--
--static inline void fmr2_unmute(int io)
--{
--	outb(0x04, io);
--	wait(4, io);
--}
--
--static inline int fmr2_stereo_mode(int io)
--{
--	int n = inb(io);
--
--	outb(6, io);
--	inb(io);
--	n = ((n >> 3) & 1) ^ 1;
--	debug_print((KERN_DEBUG "stereo: %d\n", n));
--	return n;
--}
--
--static int fmr2_product_info(struct fmr2 *dev)
--{
--	int n = inb(dev->io);
--
--	n &= 0xC1;
--	if (n == 0) {
--		/* this should support volume set */
--		dev->card_type = 12;
--		return 0;
--	}
--	/* not volume (mine is 11) */
--	dev->card_type = (n == 128) ? 11 : 0;
--	return n;
--}
--
--static inline int fmr2_getsigstr(struct fmr2 *dev)
--{
--	/* !!! works only if scanning freq */
--	int res = 0xffff;
--
--	outb(5, dev->io);
--	wait(4, dev->io);
--	if (!(inb(dev->io) & 1))
--		res = 0;
--	debug_print((KERN_DEBUG "signal: %d\n", res));
--	return res;
--}
--
--/* set frequency and unmute card */
--static int fmr2_setfreq(struct fmr2 *dev)
--{
--	unsigned long freq = dev->curfreq;
--
--	fmr2_mute(dev->io);
--
--	/* 0x42 for mono output
--	 * 0x102 forward scanning
--	 * 0x182 scansione avanti
--	 */
--	outbits(9, 0x2, 3, dev->io);
--	outbits(16, RSF16_ENCODE(freq), 2, dev->io);
--
--	fmr2_unmute(dev->io);
--
--	/* wait 0.11 sec */
--	msleep(110);
--
--	/* NOTE if mute this stop radio
--	   you must set freq on unmute */
--	dev->stereo = fmr2_stereo_mode(dev->io);
--	return 0;
--}
--
--/* !!! not tested, in my card this doesn't work !!! */
--static int fmr2_setvolume(struct fmr2 *dev)
--{
--	int vol[16] = { 0x021, 0x084, 0x090, 0x104,
--			0x110, 0x204, 0x210, 0x402,
--			0x404, 0x408, 0x410, 0x801,
--			0x802, 0x804, 0x808, 0x810 };
--	int i, a;
--	int n = vol[dev->curvol & 0x0f];
--
--	if (dev->card_type != 11)
--		return 1;
--
--	for (i = 12; --i >= 0; ) {
--		a = ((n >> i) & 1) << 6; /* if (a==0) a = 0; else a = 0x40; */
--		outb(a | 4, dev->io);
--		wait(4, dev->io);
--		outb(a | 0x24, dev->io);
--		wait(4, dev->io);
--		outb(a | 4, dev->io);
--		wait(4, dev->io);
--	}
--	for (i = 6; --i >= 0; ) {
--		a = ((0x18 >> i) & 1) << 6;
--		outb(a | 4, dev->io);
--		wait(4, dev->io);
--		outb(a | 0x24, dev->io);
--		wait(4, dev->io);
--		outb(a | 4, dev->io);
--		wait(4, dev->io);
--	}
--	wait(4, dev->io);
--	outb(0x14, dev->io);
--	return 0;
--}
--
--static int vidioc_querycap(struct file *file, void  *priv,
--					struct v4l2_capability *v)
--{
--	strlcpy(v->driver, "radio-sf16fmr2", sizeof(v->driver));
--	strlcpy(v->card, "SF16-FMR2 radio", sizeof(v->card));
--	strlcpy(v->bus_info, "ISA", sizeof(v->bus_info));
--	v->version = RADIO_VERSION;
--	v->capabilities = V4L2_CAP_TUNER | V4L2_CAP_RADIO;
--	return 0;
--}
-+/* TEA575x tuner pins */
-+#define STR_DATA	(1 << 0)
-+#define STR_CLK		(1 << 1)
-+#define STR_WREN	(1 << 2)
-+#define STR_MOST	(1 << 3)
-+/* PT2254A/TC9154A volume control pins */
-+#define PT_ST		(1 << 4)
-+#define PT_CK		(1 << 5)
-+#define PT_DATA		(1 << 6)
-+/* volume control presence pin */
-+#define FMR2_HASVOL	(1 << 7)
- 
--static int vidioc_g_tuner(struct file *file, void *priv,
--					struct v4l2_tuner *v)
-+static void fmr2_tea575x_set_pins(struct snd_tea575x *tea, u8 pins)
- {
--	struct fmr2 *fmr2 = video_drvdata(file);
--
--	if (v->index > 0)
--		return -EINVAL;
-+	struct fmr2 *fmr2 = tea->private_data;
-+	u8 bits = 0;
- 
--	strlcpy(v->name, "FM", sizeof(v->name));
--	v->type = V4L2_TUNER_RADIO;
--
--	v->rangelow = RSF16_MINFREQ;
--	v->rangehigh = RSF16_MAXFREQ;
--	v->rxsubchans = fmr2->stereo ? V4L2_TUNER_SUB_STEREO :
--					V4L2_TUNER_SUB_MONO;
--	v->capability = V4L2_TUNER_CAP_STEREO | V4L2_TUNER_CAP_LOW;
--	v->audmode = V4L2_TUNER_MODE_STEREO;
--	mutex_lock(&fmr2->lock);
--	v->signal = fmr2_getsigstr(fmr2);
--	mutex_unlock(&fmr2->lock);
--	return 0;
--}
-+	bits |= (pins & TEA575X_DATA) ? STR_DATA : 0;
-+	bits |= (pins & TEA575X_CLK)  ? STR_CLK  : 0;
-+	/* WRITE_ENABLE is inverted, DATA must be high during read */
-+	bits |= (pins & TEA575X_WREN) ? 0 : STR_WREN | STR_DATA;
- 
--static int vidioc_s_tuner(struct file *file, void *priv,
--					struct v4l2_tuner *v)
--{
--	return v->index ? -EINVAL : 0;
-+	outb(bits, fmr2->io);
- }
- 
--static int vidioc_s_frequency(struct file *file, void *priv,
--					struct v4l2_frequency *f)
-+static u8 fmr2_tea575x_get_pins(struct snd_tea575x *tea)
- {
--	struct fmr2 *fmr2 = video_drvdata(file);
-+	struct fmr2 *fmr2 = tea->private_data;
-+	u8 bits = inb(fmr2->io);
- 
--	if (f->tuner != 0 || f->type != V4L2_TUNER_RADIO)
--		return -EINVAL;
--	if (f->frequency < RSF16_MINFREQ ||
--			f->frequency > RSF16_MAXFREQ)
--		return -EINVAL;
--	/* rounding in steps of 200 to match the freq
--	   that will be used */
--	fmr2->curfreq = (f->frequency / 200) * 200;
--
--	/* set card freq (if not muted) */
--	if (fmr2->curvol && !fmr2->mute) {
--		mutex_lock(&fmr2->lock);
--		fmr2_setfreq(fmr2);
--		mutex_unlock(&fmr2->lock);
--	}
--	return 0;
-+	return  (bits & STR_DATA) ? TEA575X_DATA : 0 |
-+		(bits & STR_MOST) ? TEA575X_MOST : 0;
- }
- 
--static int vidioc_g_frequency(struct file *file, void *priv,
--					struct v4l2_frequency *f)
-+static void fmr2_tea575x_set_direction(struct snd_tea575x *tea, bool output)
- {
--	struct fmr2 *fmr2 = video_drvdata(file);
--
--	if (f->tuner != 0)
--		return -EINVAL;
--	f->type = V4L2_TUNER_RADIO;
--	f->frequency = fmr2->curfreq;
--	return 0;
- }
- 
--static int vidioc_queryctrl(struct file *file, void *priv,
--					struct v4l2_queryctrl *qc)
--{
--	struct fmr2 *fmr2 = video_drvdata(file);
-+static struct snd_tea575x_ops fmr2_tea_ops = {
-+	.set_pins = fmr2_tea575x_set_pins,
-+	.get_pins = fmr2_tea575x_get_pins,
-+	.set_direction = fmr2_tea575x_set_direction,
-+};
- 
--	switch (qc->id) {
--	case V4L2_CID_AUDIO_MUTE:
--		return v4l2_ctrl_query_fill(qc, 0, 1, 1, 1);
--	case V4L2_CID_AUDIO_VOLUME:
--		/* Only card_type == 11 implements volume */
--		if (fmr2->card_type == 11)
--			return v4l2_ctrl_query_fill(qc, 0, 15, 1, 0);
--		return v4l2_ctrl_query_fill(qc, 0, 1, 1, 0);
--	}
--	return -EINVAL;
--}
-+/* TC9154A/PT2254A volume control */
- 
--static int vidioc_g_ctrl(struct file *file, void *priv,
--					struct v4l2_control *ctrl)
--{
--	struct fmr2 *fmr2 = video_drvdata(file);
-+/* 18-bit shift register bit definitions */
-+#define TC9154A_ATT_MAJ_0DB	(1 << 0)
-+#define TC9154A_ATT_MAJ_10DB	(1 << 1)
-+#define TC9154A_ATT_MAJ_20DB	(1 << 2)
-+#define TC9154A_ATT_MAJ_30DB	(1 << 3)
-+#define TC9154A_ATT_MAJ_40DB	(1 << 4)
-+#define TC9154A_ATT_MAJ_50DB	(1 << 5)
-+#define TC9154A_ATT_MAJ_60DB	(1 << 6)
-+
-+#define TC9154A_ATT_MIN_0DB	(1 << 7)
-+#define TC9154A_ATT_MIN_2DB	(1 << 8)
-+#define TC9154A_ATT_MIN_4DB	(1 << 9)
-+#define TC9154A_ATT_MIN_6DB	(1 << 10)
-+#define TC9154A_ATT_MIN_8DB	(1 << 11)
-+/* bit 12 is ignored */
-+#define TC9154A_CHANNEL_LEFT	(1 << 13)
-+#define TC9154A_CHANNEL_RIGHT	(1 << 14)
-+/* bits 15, 16, 17 must be 0 */
-+
-+#define	TC9154A_ATT_MAJ(x)	(1 << x)
-+#define TC9154A_ATT_MIN(x)	(1 << (7 + x))
-+
-+static void tc9154a_set_pins(struct fmr2 *fmr2, u8 pins)
-+{
-+	if (!fmr2->tea.mute)
-+		pins |= STR_WREN;
-+
-+	outb(pins, fmr2->io);
-+}
-+
-+static void tc9154a_set_attenuation(struct fmr2 *fmr2, int att, u32 channel)
-+{
-+	int i;
-+	u32 reg;
-+	u8 bit;
-+
-+	reg = TC9154A_ATT_MAJ(att / 10) | TC9154A_ATT_MIN((att % 10) / 2);
-+	reg |= channel;
-+	/* write 18-bit shift register, LSB first */
-+	for (i = 0; i < 18; i++) {
-+		bit = reg & (1 << i) ? PT_DATA : 0;
-+		tc9154a_set_pins(fmr2, bit);
-+		udelay(5);
-+		tc9154a_set_pins(fmr2, bit | PT_CK);
-+		udelay(5);
-+		tc9154a_set_pins(fmr2, bit);
-+	}
-+
-+	/* latch register data */
-+	udelay(5);
-+	tc9154a_set_pins(fmr2, PT_ST);
-+	udelay(5);
-+	tc9154a_set_pins(fmr2, 0);
-+}
-+
-+static int fmr2_s_ctrl(struct v4l2_ctrl *ctrl)
-+{
-+	struct snd_tea575x *tea = container_of(ctrl->handler, struct snd_tea575x, ctrl_handler);
-+	struct fmr2 *fmr2 = tea->private_data;
-+	int volume, balance, left, right;
- 
- 	switch (ctrl->id) {
--	case V4L2_CID_AUDIO_MUTE:
--		ctrl->value = fmr2->mute;
--		return 0;
- 	case V4L2_CID_AUDIO_VOLUME:
--		ctrl->value = fmr2->curvol;
--		return 0;
--	}
--	return -EINVAL;
--}
--
--static int vidioc_s_ctrl(struct file *file, void *priv,
--					struct v4l2_control *ctrl)
--{
--	struct fmr2 *fmr2 = video_drvdata(file);
--
--	switch (ctrl->id) {
--	case V4L2_CID_AUDIO_MUTE:
--		fmr2->mute = ctrl->value;
-+		volume = ctrl->val;
-+		balance = fmr2->balance->cur.val;
- 		break;
--	case V4L2_CID_AUDIO_VOLUME:
--		fmr2->curvol = ctrl->value;
-+	case V4L2_CID_AUDIO_BALANCE:
-+		balance = ctrl->val;
-+		volume = fmr2->volume->cur.val;
- 		break;
- 	default:
- 		return -EINVAL;
- 	}
- 
--#ifdef DEBUG
--	if (fmr2->curvol && !fmr2->mute)
--		printk(KERN_DEBUG "unmute\n");
--	else
--		printk(KERN_DEBUG "mute\n");
--#endif
--
--	mutex_lock(&fmr2->lock);
--	if (fmr2->curvol && !fmr2->mute) {
--		fmr2_setvolume(fmr2);
--		/* Set frequency and unmute card */
--		fmr2_setfreq(fmr2);
--	} else
--		fmr2_mute(fmr2->io);
--	mutex_unlock(&fmr2->lock);
--	return 0;
--}
-+	left = right = volume;
-+	if (balance < 0)
-+		right = max(0, right + balance);
-+	if (balance > 0)
-+		left = max(0, left - balance);
- 
--static int vidioc_g_input(struct file *filp, void *priv, unsigned int *i)
--{
--	*i = 0;
--	return 0;
--}
--
--static int vidioc_s_input(struct file *filp, void *priv, unsigned int i)
--{
--	return i ? -EINVAL : 0;
--}
-+	tc9154a_set_attenuation(fmr2, abs(left - 68), TC9154A_CHANNEL_LEFT);
-+	tc9154a_set_attenuation(fmr2, abs(right - 68), TC9154A_CHANNEL_RIGHT);
- 
--static int vidioc_g_audio(struct file *file, void *priv,
--					struct v4l2_audio *a)
--{
--	a->index = 0;
--	strlcpy(a->name, "Radio", sizeof(a->name));
--	a->capability = V4L2_AUDCAP_STEREO;
- 	return 0;
- }
- 
--static int vidioc_s_audio(struct file *file, void *priv,
--					struct v4l2_audio *a)
-+static const struct v4l2_ctrl_ops fmr2_ctrl_ops = {
-+	.s_ctrl = fmr2_s_ctrl,
-+};
-+
-+static int fmr2_tea_ext_init(struct snd_tea575x *tea)
- {
--	return a->index ? -EINVAL : 0;
--}
-+	struct fmr2 *fmr2 = tea->private_data;
- 
--static const struct v4l2_file_operations fmr2_fops = {
--	.owner          = THIS_MODULE,
--	.unlocked_ioctl = video_ioctl2,
--};
-+	if (inb(fmr2->io) & FMR2_HASVOL) {
-+		fmr2->volume = v4l2_ctrl_new_std(&tea->ctrl_handler, &fmr2_ctrl_ops, V4L2_CID_AUDIO_VOLUME, 0, 68, 2, 56);
-+		fmr2->balance = v4l2_ctrl_new_std(&tea->ctrl_handler, &fmr2_ctrl_ops, V4L2_CID_AUDIO_BALANCE, -68, 68, 2, 0);
-+		if (tea->ctrl_handler.error) {
-+			printk(KERN_ERR "radio-sf16fmr2: can't initialize contrls\n");
-+			return tea->ctrl_handler.error;
-+		}
-+	}
- 
--static const struct v4l2_ioctl_ops fmr2_ioctl_ops = {
--	.vidioc_querycap    = vidioc_querycap,
--	.vidioc_g_tuner     = vidioc_g_tuner,
--	.vidioc_s_tuner     = vidioc_s_tuner,
--	.vidioc_g_audio     = vidioc_g_audio,
--	.vidioc_s_audio     = vidioc_s_audio,
--	.vidioc_g_input     = vidioc_g_input,
--	.vidioc_s_input     = vidioc_s_input,
--	.vidioc_g_frequency = vidioc_g_frequency,
--	.vidioc_s_frequency = vidioc_s_frequency,
--	.vidioc_queryctrl   = vidioc_queryctrl,
--	.vidioc_g_ctrl      = vidioc_g_ctrl,
--	.vidioc_s_ctrl      = vidioc_s_ctrl,
--};
-+	return 0;
-+}
- 
- static int __init fmr2_init(void)
- {
- 	struct fmr2 *fmr2 = &fmr2_card;
--	struct v4l2_device *v4l2_dev = &fmr2->v4l2_dev;
--	int res;
- 
--	strlcpy(v4l2_dev->name, "sf16fmr2", sizeof(v4l2_dev->name));
--	fmr2->io = io;
--	fmr2->stereo = 1;
--	mutex_init(&fmr2->lock);
-+	fmr2->io = FMR2_PORT;
- 
--	if (!request_region(fmr2->io, 2, "sf16fmr2")) {
--		v4l2_err(v4l2_dev, "request_region failed!\n");
-+	if (!request_region(fmr2->io, 2, "SF16-FMR2")) {
-+		printk(KERN_ERR "radio-sf16fmr2: I/O port 0x%x already in use\n", fmr2->io);
- 		return -EBUSY;
- 	}
- 
--	res = v4l2_device_register(NULL, v4l2_dev);
--	if (res < 0) {
--		release_region(fmr2->io, 2);
--		v4l2_err(v4l2_dev, "Could not register v4l2_device\n");
--		return res;
--	}
--
--	strlcpy(fmr2->vdev.name, v4l2_dev->name, sizeof(fmr2->vdev.name));
--	fmr2->vdev.v4l2_dev = v4l2_dev;
--	fmr2->vdev.fops = &fmr2_fops;
--	fmr2->vdev.ioctl_ops = &fmr2_ioctl_ops;
--	fmr2->vdev.release = video_device_release_empty;
--	video_set_drvdata(&fmr2->vdev, fmr2);
--
--	/* mute card - prevents noisy bootups */
--	fmr2_mute(fmr2->io);
--	fmr2_product_info(fmr2);
-+	fmr2->tea.private_data = fmr2;
-+	fmr2->tea.ops = &fmr2_tea_ops;
-+	fmr2->tea.ext_init = fmr2_tea_ext_init;
-+	strlcpy(fmr2->tea.card, "SF16-FMR2", sizeof(fmr2->tea.card));
-+	strcpy(fmr2->tea.bus_info, "ISA");
- 
--	if (video_register_device(&fmr2->vdev, VFL_TYPE_RADIO, radio_nr) < 0) {
--		v4l2_device_unregister(v4l2_dev);
-+	if (snd_tea575x_init(&fmr2->tea)) {
-+		printk(KERN_ERR "radio-sf16fmr2: Unable to detect TEA575x tuner\n");
- 		release_region(fmr2->io, 2);
--		return -EINVAL;
-+		return -ENODEV;
- 	}
- 
--	v4l2_info(v4l2_dev, "SF16FMR2 radio card driver at 0x%x.\n", fmr2->io);
--	debug_print((KERN_DEBUG "card_type %d\n", fmr2->card_type));
-+	printk(KERN_INFO "radio-sf16fmr2: SF16-FMR2 radio card at 0x%x.\n", fmr2->io);
- 	return 0;
- }
- 
-@@ -443,22 +211,9 @@ static void __exit fmr2_exit(void)
- {
- 	struct fmr2 *fmr2 = &fmr2_card;
- 
--	video_unregister_device(&fmr2->vdev);
--	v4l2_device_unregister(&fmr2->v4l2_dev);
-+	snd_tea575x_exit(&fmr2->tea);
- 	release_region(fmr2->io, 2);
- }
- 
- module_init(fmr2_init);
- module_exit(fmr2_exit);
--
--#ifndef MODULE
--
--static int __init fmr2_setup_io(char *str)
--{
--	get_option(&str, &io);
--	return 1;
--}
--
--__setup("sf16fmr2=", fmr2_setup_io);
--
--#endif
+> The hwmod structure of uhh and tll are retrived
+> and registered with omap device
+>
+> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
 
+Minor comment below...
 
--- 
-Ondrej Zary
+> ---
+>  arch/arm/mach-omap2/usb-host.c |   99 ++++++++++++++--------------------------
+>  1 files changed, 35 insertions(+), 64 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
+> index 89ae298..9d762c4 100644
+> --- a/arch/arm/mach-omap2/usb-host.c
+> +++ b/arch/arm/mach-omap2/usb-host.c
+> @@ -28,51 +28,28 @@
+>  #include <mach/hardware.h>
+>  #include <mach/irqs.h>
+>  #include <plat/usb.h>
+> +#include <plat/omap_device.h>
+>  
+>  #include "mux.h"
+>  
+>  #ifdef CONFIG_MFD_OMAP_USB_HOST
+>  
+> -#define OMAP_USBHS_DEVICE	"usbhs-omap"
+> -
+> -static struct resource usbhs_resources[] = {
+> -	{
+> -		.name	= "uhh",
+> -		.flags	= IORESOURCE_MEM,
+> -	},
+> -	{
+> -		.name	= "tll",
+> -		.flags	= IORESOURCE_MEM,
+> -	},
+> -	{
+> -		.name	= "ehci",
+> -		.flags	= IORESOURCE_MEM,
+> -	},
+> -	{
+> -		.name	= "ehci-irq",
+> -		.flags	= IORESOURCE_IRQ,
+> -	},
+> -	{
+> -		.name	= "ohci",
+> -		.flags	= IORESOURCE_MEM,
+> -	},
+> -	{
+> -		.name	= "ohci-irq",
+> -		.flags	= IORESOURCE_IRQ,
+> -	}
+> -};
+> -
+> -static struct platform_device usbhs_device = {
+> -	.name		= OMAP_USBHS_DEVICE,
+> -	.id		= 0,
+> -	.num_resources	= ARRAY_SIZE(usbhs_resources),
+> -	.resource	= usbhs_resources,
+> -};
+> +#define OMAP_USBHS_DEVICE	"usbhs_omap"
+> +#define	USBHS_UHH_HWMODNAME	"usbhs_uhh"
+> +#define USBHS_TLL_HWMODNAME	"usbhs_tll"
+>  
+>  static struct usbhs_omap_platform_data		usbhs_data;
+>  static struct ehci_hcd_omap_platform_data	ehci_data;
+>  static struct ohci_hcd_omap_platform_data	ohci_data;
+
+While changing the platform_data registration, these platform_data
+structs should be alloc'd and then free'd after omap_device_build, since
+a copy of them is made during device registration.
+
+Kevin
+
+> +static struct omap_device_pm_latency omap_uhhtll_latency[] = {
+> +	  {
+> +		.deactivate_func = omap_device_idle_hwmods,
+> +		.activate_func	 = omap_device_enable_hwmods,
+> +		.flags = OMAP_DEVICE_LATENCY_AUTO_ADJUST,
+> +	  },
+> +};
+> +
+>  /* MUX settings for EHCI pins */
+>  /*
+>   * setup_ehci_io_mux - initialize IO pad mux for USBHOST
+> @@ -508,7 +485,10 @@ static void setup_4430ohci_io_mux(const enum usbhs_omap_port_mode *port_mode)
+>  
+>  void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
+>  {
+> -	int	i;
+> +	struct omap_hwmod	*oh[2];
+> +	struct omap_device	*od;
+> +	int			bus_id = -1;
+> +	int			i;
+>  
+>  	for (i = 0; i < OMAP3_HS_USB_PORTS; i++) {
+>  		usbhs_data.port_mode[i] = pdata->port_mode[i];
+> @@ -523,44 +503,35 @@ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
+>  	usbhs_data.ohci_data = &ohci_data;
+>  
+>  	if (cpu_is_omap34xx()) {
+> -		usbhs_resources[0].start = OMAP34XX_UHH_CONFIG_BASE;
+> -		usbhs_resources[0].end = OMAP34XX_UHH_CONFIG_BASE + SZ_1K - 1;
+> -		usbhs_resources[1].start = OMAP34XX_USBTLL_BASE;
+> -		usbhs_resources[1].end = OMAP34XX_USBTLL_BASE + SZ_4K - 1;
+> -		usbhs_resources[2].start	= OMAP34XX_EHCI_BASE;
+> -		usbhs_resources[2].end	= OMAP34XX_EHCI_BASE + SZ_1K - 1;
+> -		usbhs_resources[3].start = INT_34XX_EHCI_IRQ;
+> -		usbhs_resources[4].start	= OMAP34XX_OHCI_BASE;
+> -		usbhs_resources[4].end	= OMAP34XX_OHCI_BASE + SZ_1K - 1;
+> -		usbhs_resources[5].start = INT_34XX_OHCI_IRQ;
+>  		setup_ehci_io_mux(pdata->port_mode);
+>  		setup_ohci_io_mux(pdata->port_mode);
+>  	} else if (cpu_is_omap44xx()) {
+> -		usbhs_resources[0].start = OMAP44XX_UHH_CONFIG_BASE;
+> -		usbhs_resources[0].end = OMAP44XX_UHH_CONFIG_BASE + SZ_1K - 1;
+> -		usbhs_resources[1].start = OMAP44XX_USBTLL_BASE;
+> -		usbhs_resources[1].end = OMAP44XX_USBTLL_BASE + SZ_4K - 1;
+> -		usbhs_resources[2].start = OMAP44XX_HSUSB_EHCI_BASE;
+> -		usbhs_resources[2].end = OMAP44XX_HSUSB_EHCI_BASE + SZ_1K - 1;
+> -		usbhs_resources[3].start = OMAP44XX_IRQ_EHCI;
+> -		usbhs_resources[4].start = OMAP44XX_HSUSB_OHCI_BASE;
+> -		usbhs_resources[4].end = OMAP44XX_HSUSB_OHCI_BASE + SZ_1K - 1;
+> -		usbhs_resources[5].start = OMAP44XX_IRQ_OHCI;
+>  		setup_4430ehci_io_mux(pdata->port_mode);
+>  		setup_4430ohci_io_mux(pdata->port_mode);
+>  	}
+>  
+> -	if (platform_device_add_data(&usbhs_device,
+> -				&usbhs_data, sizeof(usbhs_data)) < 0) {
+> -		printk(KERN_ERR "USBHS platform_device_add_data failed\n");
+> -		goto init_end;
+> +	oh[0] = omap_hwmod_lookup(USBHS_UHH_HWMODNAME);
+> +	if (!oh[0]) {
+> +		pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
+> +		return;
+>  	}
+>  
+> -	if (platform_device_register(&usbhs_device) < 0)
+> -		printk(KERN_ERR "USBHS platform_device_register failed\n");
+> +	oh[1] = omap_hwmod_lookup(USBHS_TLL_HWMODNAME);
+> +	if (!oh[1]) {
+> +		pr_err("Could not look up %s\n", USBHS_TLL_HWMODNAME);
+> +		return;
+> +	}
+>  
+> -init_end:
+> -	return;
+> +	od = omap_device_build_ss(OMAP_USBHS_DEVICE, bus_id, oh, 2,
+> +				(void *)&usbhs_data, sizeof(usbhs_data),
+> +				omap_uhhtll_latency,
+> +				ARRAY_SIZE(omap_uhhtll_latency), false);
+> +
+> +	if (IS_ERR(od)) {
+> +		pr_err("Could not build hwmod devices %s, %s\n",
+> +			USBHS_UHH_HWMODNAME, USBHS_TLL_HWMODNAME);
+> +		return;
+> +	}
+>  }
+>  
+>  #else
