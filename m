@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758200Ab1FAQPK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 12:15:10 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54632 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755666Ab1FAQPG (ORCPT
+	id S1758152Ab1FAQST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 12:18:19 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:54947 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab1FAQSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 12:15:06 -0400
-Date: Wed, 1 Jun 2011 09:14:03 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        akpm <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Simon Kagstrom <simon.kagstrom@netinsight.net>
-Subject: [PATCH -next -resend] kmsg_dump.h: needs errno.h
-Message-Id: <20110601091403.1e41ef91.randy.dunlap@oracle.com>
-In-Reply-To: <20110601134322.f59f5603.sfr@canb.auug.org.au>
-References: <20110601134322.f59f5603.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 1 Jun 2011 12:18:18 -0400
+Message-ID: <4DE66645.6020406@tilera.com>
+Date: Wed, 1 Jun 2011 12:18:13 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: John Stultz <john.stultz@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 6/6] clocksource: tile: convert to use clocksource_register_hz
+References: <1306913570-9445-1-git-send-email-john.stultz@linaro.org> <1306913570-9445-7-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1306913570-9445-7-git-send-email-john.stultz@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090204.4DE66559.00EF:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On 6/1/2011 3:32 AM, John Stultz wrote:
+> From: John Stultz <johnstul@us.ibm.com>
+>
+> Convert tile to use clocksource_register_hz.
+>
+> Untested. Help from maintainers would be appreciated.
+>
+> CC: Chris Metcalf <cmetcalf@tilera.com>
 
-Fix <linux/kmsg_dump.h> when CONFIG_PRINTK is not enabled:
+This patch boots up fine on tile.  It provides a shift count of 31, with a
+mult value in the billions.  This does mean that clocksource_cyc2ns() will
+only be able to give correct timer conversions for up to about 9 seconds. 
+Is this believed to be adequate for all the uses the cycle counter is put
+to?  I can run our normal regression tests, but I'd like to get a
+high-level sanity check from the clocksource folks.
 
-include/linux/kmsg_dump.h:56: error: 'EINVAL' undeclared (first use in this function)
-include/linux/kmsg_dump.h:61: error: 'EINVAL' undeclared (first use in this function)
+The original shift of 22 was put in by commit
+749dc6f252b57d5cb9c1f4c1c4aafe4c92a28207 back in August.
 
-Looks like previous commit:
-commit 595dd3d8bf953254d8d2f30f99c54fe09c470040
-Author: Randy Dunlap <randy.dunlap@oracle.com>
-Date:   Tue Dec 1 10:52:02 2009 -0800
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: John Stultz <johnstul@us.ibm.com>
+> ---
+>  arch/tile/kernel/time.c |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/tile/kernel/time.c b/arch/tile/kernel/time.c
+> index c4be58c..f6f50f2a 100644
+> --- a/arch/tile/kernel/time.c
+> +++ b/arch/tile/kernel/time.c
+> @@ -78,7 +78,6 @@ static struct clocksource cycle_counter_cs = {
+>  	.rating = 300,
+>  	.read = clocksource_get_cycles,
+>  	.mask = CLOCKSOURCE_MASK(64),
+> -	.shift = 22,   /* typical value, e.g. x86 tsc uses this */
+>  	.flags = CLOCK_SOURCE_IS_CONTINUOUS,
+>  };
+>  
+> @@ -91,8 +90,6 @@ void __init setup_clock(void)
+>  	cycles_per_sec = hv_sysconf(HV_SYSCONF_CPU_SPEED);
+>  	sched_clock_mult =
+>  		clocksource_hz2mult(cycles_per_sec, SCHED_CLOCK_SHIFT);
+> -	cycle_counter_cs.mult =
+> -		clocksource_hz2mult(cycles_per_sec, cycle_counter_cs.shift);
+>  }
+>  
+>  void __init calibrate_delay(void)
+> @@ -107,7 +104,7 @@ void __init calibrate_delay(void)
+>  void __init time_init(void)
+>  {
+>  	/* Initialize and register the clock source. */
+> -	clocksource_register(&cycle_counter_cs);
+> +	clocksource_register_hz(&cycle_counter_cs, cycles_per_sec);
+>  
+>  	/* Start up the tile-timer interrupt source on the boot cpu. */
+>  	setup_tile_timer();
 
-    kmsg_dump: fix build for CONFIG_PRINTK=n
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-uses EINVAL without having the needed header file(s),
-but I'm sure that I build tested that patch also.  oh well.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Simon Kagstrom <simon.kagstrom@netinsight.net>
-Cc: David Woodhouse <David.Woodhouse@intel.com>
----
- include/linux/kmsg_dump.h |    1 +
- 1 file changed, 1 insertion(+)
-
---- linux-next-20110524.orig/include/linux/kmsg_dump.h
-+++ linux-next-20110524/include/linux/kmsg_dump.h
-@@ -12,6 +12,7 @@
- #ifndef _LINUX_KMSG_DUMP_H
- #define _LINUX_KMSG_DUMP_H
- 
-+#include <linux/errno.h>
- #include <linux/list.h>
- 
- enum kmsg_dump_reason {
