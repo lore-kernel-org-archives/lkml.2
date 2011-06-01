@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162759Ab1FAInw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:43:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44164 "EHLO mx2.suse.de"
+	id S1162755Ab1FAIXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:23:42 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44791 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162730Ab1FAIXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:23:30 -0400
+	id S1162741Ab1FAIXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:23:36 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:47 2011
-Message-Id: <20110601081146.847098695@blue.kroah.org>
+Message-Id: <20110601081147.427415159@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:05 +0900
+Date: Wed, 01 Jun 2011 17:11:06 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [095/165] ALSA: HDA: Add quirk for Lenovo U350
+        Adrian Wilkins <adrian.wilkins@nhs.net>, Takashi Iwai <tiwai@suse.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [096/165] ALSA: hda - Fix input-src parse in patch_analog.c
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1122
-Lines: 28
+Content-Length: 1180
+Lines: 35
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Adrian Wilkins <adrian.wilkins@nhs.net>
 
-commit d2859fd49200f1f3efd8acdb54b6d51d3ab82302 upstream.
+commit 5a2d227fdc7a02ed1b4cebba391d8fb9ad57caaf upstream.
 
-Add model=asus quirk for Lenovo Ideapad U350 to make internal mic
-work correctly.
+Compare pin type enum to the pin type and not the array index.
+Fixes bug#0005368.
 
-BugLink: http://bugs.launchpad.net/bugs/751681
-Reported-by: Kent Baxley <kent.baxley@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Adrian Wilkins <adrian.wilkins@nhs.net>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_conexant.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_analog.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -3036,6 +3036,7 @@ static struct snd_pci_quirk cxt5066_cfg_
-  	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo Thinkpad", CXT5066_THINKPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x21da, "Lenovo X220", CXT5066_THINKPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x21db, "Lenovo X220-tablet", CXT5066_THINKPAD),
-+	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo U350", CXT5066_ASUS),
- 	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo G560", CXT5066_ASUS),
- 	SND_PCI_QUIRK_VENDOR(0x17aa, "Lenovo", CXT5066_IDEAPAD), /* Fallback for Lenovos without dock mic */
- 	{}
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -3070,6 +3070,7 @@ static void ad1988_auto_init_analog_inpu
+ 
+ 	for (i = 0; i < cfg->num_inputs; i++) {
+ 		hda_nid_t nid = cfg->inputs[i].pin;
++		int type = cfg->inputs[i].type;
+ 		switch (nid) {
+ 		case 0x15: /* port-C */
+ 			snd_hda_codec_write(codec, 0x33, 0, AC_VERB_SET_CONNECT_SEL, 0x0);
+@@ -3079,7 +3080,7 @@ static void ad1988_auto_init_analog_inpu
+ 			break;
+ 		}
+ 		snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_PIN_WIDGET_CONTROL,
+-				    i == AUTO_PIN_MIC ? PIN_VREF80 : PIN_IN);
++				    type == AUTO_PIN_MIC ? PIN_VREF80 : PIN_IN);
+ 		if (nid != AD1988_PIN_CD_NID)
+ 			snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_AMP_GAIN_MUTE,
+ 					    AMP_OUT_MUTE);
 
 
