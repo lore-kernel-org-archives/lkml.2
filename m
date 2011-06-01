@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162924Ab1FAIZk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:25:40 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44922 "EHLO mx1.suse.de"
+	id S1162937Ab1FAIZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:25:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44297 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162862Ab1FAIZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:25:35 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:01 2011
-Message-Id: <20110601081200.986282036@blue.kroah.org>
+	id S1162919Ab1FAIZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:25:40 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:02 2011
+Message-Id: <20110601081201.602289352@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:28 +0900
+Date: Wed, 01 Jun 2011 17:11:29 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [118/165] xhci: Fix memory leak in ring cache deallocation.
+Subject: [119/165] xhci: Fix memory leak bug when dropping endpoints
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,67 +25,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 2333
-Lines: 60
+Content-Length: 2695
+Lines: 61
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 30f89ca021c3e584b61bc5a14eede89f74b2e826 upstream.
+commit 834cb0fc4712a3b21c6b8c5cb55bd13607191311 upstream.
 
-When an endpoint ring is freed, it is either cached in a per-device ring
-cache, or simply freed if the ring cache is full.  If the ring was added
-to the cache, then virt_dev->num_rings_cached is incremented.  The cache
-is designed to hold up to 31 endpoint rings, in array indexes 0 to 30.
-When the device is freed (when the slot was disabled),
-xhci_free_virt_device() is called, it would free the cached rings in
-array indexes 0 to virt_dev->num_rings_cached.
+When the USB core wants to change to an alternate interface setting that
+doesn't include an active endpoint, or de-configuring the device, the xHCI
+driver needs to issue a Configure Endpoint command to tell the host to
+drop some endpoints from the schedule.  After the command completes, the
+xHCI driver needs to free rings for any endpoints that were dropped.
 
-Unfortunately, the original code in xhci_free_or_cache_endpoint_ring()
-would put the first entry into the ring cache in array index 1, instead of
-array index 0.  This was caused by the second assignment to rings_cached:
+Unfortunately, the xHCI driver wasn't actually freeing the endpoint rings
+for dropped endpoints.  The rings would be freed if the endpoint's
+information was simply changed (and a new ring was installed), but dropped
+endpoints never had their rings freed.  This caused errors when the ring
+segment DMA pool was freed when the xHCI driver was unloaded:
 
-	rings_cached = virt_dev->num_rings_cached;
-	if (rings_cached < XHCI_MAX_RINGS_CACHED) {
-		virt_dev->num_rings_cached++;
-		rings_cached = virt_dev->num_rings_cached;
-		virt_dev->ring_cache[rings_cached] =
-			virt_dev->eps[ep_index].ring;
+[ 5582.883995] xhci_hcd 0000:06:00.0: dma_pool_destroy xHCI ring segments, ffff88003371d000 busy
+[ 5582.884002] xhci_hcd 0000:06:00.0: dma_pool_destroy xHCI ring segments, ffff880033716000 busy
+[ 5582.884011] xhci_hcd 0000:06:00.0: dma_pool_destroy xHCI ring segments, ffff880033455000 busy
+[ 5582.884018] xhci_hcd 0000:06:00.0: Freed segment pool
+[ 5582.884026] xhci_hcd 0000:06:00.0: Freed device context pool
+[ 5582.884033] xhci_hcd 0000:06:00.0: Freed small stream array pool
+[ 5582.884038] xhci_hcd 0000:06:00.0: Freed medium stream array pool
+[ 5582.884048] xhci_hcd 0000:06:00.0: xhci_stop completed - status = 1
+[ 5582.884061] xhci_hcd 0000:06:00.0: USB bus 3 deregistered
+[ 5582.884193] xhci_hcd 0000:06:00.0: PCI INT A disabled
 
-This meant that when the device was freed, cached rings with indexes 0 to
-N would be freed, and the last cached ring in index N+1 would not be
-freed.  When the driver was unloaded, this caused interesting messages
-like:
+Fix this issue and free endpoint rings when their endpoints are
+successfully dropped.
 
-xhci_hcd 0000:06:00.0: dma_pool_destroy xHCI ring segments, ffff880063040000 busy
-
-This should be queued to stable kernels back to 2.6.33.
+This patch should be backported to kernels as old as 2.6.31.
 
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-mem.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/usb/host/xhci.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -207,14 +207,13 @@ void xhci_free_or_cache_endpoint_ring(st
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -1692,8 +1692,17 @@ int xhci_check_bandwidth(struct usb_hcd
+ 	xhci_dbg_ctx(xhci, virt_dev->out_ctx,
+ 			LAST_CTX_TO_EP_NUM(slot_ctx->dev_info));
  
- 	rings_cached = virt_dev->num_rings_cached;
- 	if (rings_cached < XHCI_MAX_RINGS_CACHED) {
--		virt_dev->num_rings_cached++;
--		rings_cached = virt_dev->num_rings_cached;
- 		virt_dev->ring_cache[rings_cached] =
- 			virt_dev->eps[ep_index].ring;
-+		virt_dev->num_rings_cached++;
- 		xhci_dbg(xhci, "Cached old ring, "
- 				"%d ring%s cached\n",
--				rings_cached,
--				(rings_cached > 1) ? "s" : "");
-+				virt_dev->num_rings_cached,
-+				(virt_dev->num_rings_cached > 1) ? "s" : "");
- 	} else {
- 		xhci_ring_free(xhci, virt_dev->eps[ep_index].ring);
- 		xhci_dbg(xhci, "Ring cache full (%d rings), "
++	/* Free any rings that were dropped, but not changed. */
++	for (i = 1; i < 31; ++i) {
++		if ((ctrl_ctx->drop_flags & (1 << (i + 1))) &&
++				!(ctrl_ctx->add_flags & (1 << (i + 1))))
++			xhci_free_or_cache_endpoint_ring(xhci, virt_dev, i);
++	}
+ 	xhci_zero_in_ctx(xhci, virt_dev);
+-	/* Install new rings and free or cache any old rings */
++	/*
++	 * Install any rings for completely new endpoints or changed endpoints,
++	 * and free or cache any old rings from changed endpoints.
++	 */
+ 	for (i = 1; i < 31; ++i) {
+ 		if (!virt_dev->eps[i].new_ring)
+ 			continue;
 
 
