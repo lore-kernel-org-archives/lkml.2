@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab1FAGBK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 02:01:10 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37973 "EHLO mx2.mail.elte.hu"
+	id S1752851Ab1FAGH7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 02:07:59 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:44843 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751954Ab1FAGBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 02:01:06 -0400
-Date: Wed, 1 Jun 2011 08:00:46 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@amd64.org>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86 fixes
-Message-ID: <20110601060046.GA27375@elte.hu>
-References: <20110531163022.GA15435@elte.hu>
- <1306859709.20175.27.camel@Joe-Laptop>
- <20110531181650.GA1854@gere.osrc.amd.com>
- <BANLkTi=ysOYxxu1_PV3R1BNgjM996A2CKg@mail.gmail.com>
+	id S1752500Ab1FAGHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 02:07:55 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>,
+        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC][PATCH 0/2] Avoid accumulating drift in suspend/resume
+Date: Tue, 31 May 2011 23:07:47 -0700
+Message-Id: <1306908469-15275-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=ysOYxxu1_PV3R1BNgjM996A2CKg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Arve Hjønnevåg noted that in the suspend/resume path, we're likely to see
+half-second errors from each read of the RTC. If a system is frequently
+suspended, these errors will accumulate quickly.
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Arve's solution was to compare the time delta between the system time
+and the RTC, for each suspend. If the difference is small, use the same
+delta for each suspend. This consistency avoids the error from accumulating.
 
-> On Wed, Jun 1, 2011 at 3:16 AM, Borislav Petkov <bp@amd64.org> wrote:
-> >
-> > Crap, there's no fixing this string :)
-> 
-> I tried to fix it up in the merge.  We call these "evil merges" in 
-> git-speak, but I hope the problem was worth doing one ;)
+This patch set implements Arve's suggestion for both the RTC and persistent
+clock suspend paths.
 
-You have not pushed it out yet, right? [ Or if you have then the 
-evilness is well hidden! :-) ]
+Initial tests show that this improves time accuracy over many repeated
+suspends. So while testing continues, I just wanted to send this out for
+review and feedback.
 
-Thanks,
+thanks
+-john
 
-	Ingo
+CC: Arve Hjønnevåg <arve@android.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+
+John Stultz (2):
+  time: Avoid accumulating time drift in suspend/resume
+  rtc: Avoid accumulating time drift in suspend/resume
+
+ drivers/rtc/class.c       |   65 +++++++++++++++++++++++++++++++++------------
+ kernel/time/timekeeping.c |   22 +++++++++++++++
+ 2 files changed, 70 insertions(+), 17 deletions(-)
+
+-- 
+1.7.3.2.146.gca209
+
