@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757672Ab1FAWW3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 18:22:29 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39442 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753392Ab1FAWW1 (ORCPT
+	id S1758018Ab1FAWXf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 18:23:35 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:33018 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754270Ab1FAWXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 18:22:27 -0400
-Date: Thu, 2 Jun 2011 00:22:26 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Daniel Haid <d.haid@gogi.tv>
-Cc: linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andi Kleen <andi@firstfloor.org>, airlied@linux.ie,
-        alexdeucher@gmail.com
-Subject: Re: Question about iommu on x86_64 and radeon driver.
-Message-ID: <20110601222226.GH27166@one.firstfloor.org>
-References: <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv> <20110531134519.GC14641@dumpdata.com> <59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv> <20110531160221.GA31659@dumpdata.com> <0a8cb4bcad7fcf091a6bbe158323bba0@admin.gogi.tv> <20110531190412.GA21245@dumpdata.com> <d0ce6a4ba6092a1a9ef0f1e8f3cac9c9@admin.gogi.tv> <20110601132444.GA4081@dumpdata.com> <21491fcfb013e21177140326efc0ee66@admin.gogi.tv> <34fa3fe7780241e452b268fd5ecfdee9@admin.gogi.tv>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 1 Jun 2011 18:23:34 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-9.tower-160.messagelabs.com!1306967013!8858085!1
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.98]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] hw_random: timeriomem-rng: use resource_size
+Date: Wed, 1 Jun 2011 15:23:13 -0700
+User-Agent: KMail/1.9.9
+CC: <mpm@selenic.com>, <herbert@gondor.hengli.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <34fa3fe7780241e452b268fd5ecfdee9@admin.gogi.tv>
-User-Agent: Mutt/1.4.2.2i
+Message-ID: <201106011523.13707.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 01, 2011 at 10:58:08PM +0100, Daniel Haid wrote:
-> I have also found out the following. In
-> 
-> line 741 of drivers/gpu/drm/radeon/radeon_device.c
-> 
-> there is a comment "PCIE - can handle 40-bits." -
-> I have a PCIE card - and then need_dma32 is not set.
-> 
-> So if I read it correctly the ttm allocation
-> routines will allocate memory over 4GB.
-> 
-> But if PCIE can handle 40 bits, why does swiotlb
-> give out a bounce buffer to the radeon driver at all?
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
 
-swiotlb only does what the driver tells it
+---
 
-Also new drivers default to 4GB, so if a driver wants
-something else it has to set it explicitely.
-
-Also BTW the driver should work in any case, so likely
-something else is wrong.
-
-Really you need to discuss this with the radeon driver people.
-Readded cc.
-
-
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+diff --git a/drivers/char/hw_random/timeriomem-rng.c b/drivers/char/hw_random/timeriomem-rng.c
+index a94e930..a8428e6 100644
+--- a/drivers/char/hw_random/timeriomem-rng.c
++++ b/drivers/char/hw_random/timeriomem-rng.c
+@@ -100,8 +100,7 @@ static int __devinit timeriomem_rng_probe(struct platform_device *pdev)
+ 
+ 	timeriomem_rng_data = pdev->dev.platform_data;
+ 
+-	timeriomem_rng_data->address = ioremap(res->start,
+-						res->end - res->start + 1);
++	timeriomem_rng_data->address = ioremap(res->start, resource_size(res));
+ 	if (!timeriomem_rng_data->address)
+ 		return -EIO;
+ 
