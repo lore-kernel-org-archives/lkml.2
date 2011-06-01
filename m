@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162767Ab1FAIXt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:23:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44168 "EHLO mx2.suse.de"
+	id S1162780Ab1FAInW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:43:22 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44803 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162751Ab1FAIXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:23:41 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:48 2011
-Message-Id: <20110601081148.047678391@blue.kroah.org>
+	id S1162723Ab1FAIXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:23:47 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:49 2011
+Message-Id: <20110601081148.641350114@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:07 +0900
+Date: Wed, 01 Jun 2011 17:11:08 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [097/165] ALSA: hda - Use LPIB for ATI/AMD chipsets as default
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [098/165] ASoC: Ensure output PGA is enabled for line outputs in
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,44 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1188
-Lines: 37
+ wm_hubs
+Content-Length: 2570
+Lines: 61
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 50e3bbf9898840eead86f90a43b3625a2b2f4112 upstream.
+commit d0b48af6c2b887354d0893e598d92911ce52620e upstream.
 
-ATI and AMD chipsets seem not providing the proper position-buffer
-information, and it also doesn't provide FIFO register required by
-VIACOMBO fix.  It's better to use LPIB for these.
+Also fix a left/right typo while we're at it.
 
-Reported-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_intel.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm_hubs.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -2349,9 +2349,16 @@ static int __devinit check_position_fix(
- 	/* Check VIA/ATI HD Audio Controller exist */
- 	switch (chip->driver_type) {
- 	case AZX_DRIVER_VIA:
--	case AZX_DRIVER_ATI:
- 		/* Use link position directly, avoid any transfer problem. */
- 		return POS_FIX_VIACOMBO;
-+	case AZX_DRIVER_ATI:
-+		/* ATI chipsets don't work well with position-buffer */
-+		return POS_FIX_LPIB;
-+	case AZX_DRIVER_GENERIC:
-+		/* AMD chipsets also don't work with position-buffer */
-+		if (chip->pci->vendor == PCI_VENDOR_ID_AMD)
-+			return POS_FIX_LPIB;
-+		break;
- 	}
+--- a/sound/soc/codecs/wm_hubs.c
++++ b/sound/soc/codecs/wm_hubs.c
+@@ -787,17 +787,17 @@ static const struct snd_soc_dapm_route a
+ static const struct snd_soc_dapm_route lineout1_diff_routes[] = {
+ 	{ "LINEOUT1 Mixer", "IN1L Switch", "IN1L PGA" },
+ 	{ "LINEOUT1 Mixer", "IN1R Switch", "IN1R PGA" },
+-	{ "LINEOUT1 Mixer", "Output Switch", "Left Output Mixer" },
++	{ "LINEOUT1 Mixer", "Output Switch", "Left Output PGA" },
  
- 	return POS_FIX_AUTO;
+ 	{ "LINEOUT1N Driver", NULL, "LINEOUT1 Mixer" },
+ 	{ "LINEOUT1P Driver", NULL, "LINEOUT1 Mixer" },
+ };
+ 
+ static const struct snd_soc_dapm_route lineout1_se_routes[] = {
+-	{ "LINEOUT1N Mixer", "Left Output Switch", "Left Output Mixer" },
+-	{ "LINEOUT1N Mixer", "Right Output Switch", "Left Output Mixer" },
++	{ "LINEOUT1N Mixer", "Left Output Switch", "Left Output PGA" },
++	{ "LINEOUT1N Mixer", "Right Output Switch", "Right Output PGA" },
+ 
+-	{ "LINEOUT1P Mixer", "Left Output Switch", "Left Output Mixer" },
++	{ "LINEOUT1P Mixer", "Left Output Switch", "Left Output PGA" },
+ 
+ 	{ "LINEOUT1N Driver", NULL, "LINEOUT1N Mixer" },
+ 	{ "LINEOUT1P Driver", NULL, "LINEOUT1P Mixer" },
+@@ -806,17 +806,17 @@ static const struct snd_soc_dapm_route l
+ static const struct snd_soc_dapm_route lineout2_diff_routes[] = {
+ 	{ "LINEOUT2 Mixer", "IN2L Switch", "IN2L PGA" },
+ 	{ "LINEOUT2 Mixer", "IN2R Switch", "IN2R PGA" },
+-	{ "LINEOUT2 Mixer", "Output Switch", "Right Output Mixer" },
++	{ "LINEOUT2 Mixer", "Output Switch", "Right Output PGA" },
+ 
+ 	{ "LINEOUT2N Driver", NULL, "LINEOUT2 Mixer" },
+ 	{ "LINEOUT2P Driver", NULL, "LINEOUT2 Mixer" },
+ };
+ 
+ static const struct snd_soc_dapm_route lineout2_se_routes[] = {
+-	{ "LINEOUT2N Mixer", "Left Output Switch", "Left Output Mixer" },
+-	{ "LINEOUT2N Mixer", "Right Output Switch", "Left Output Mixer" },
++	{ "LINEOUT2N Mixer", "Left Output Switch", "Left Output PGA" },
++	{ "LINEOUT2N Mixer", "Right Output Switch", "Right Output PGA" },
+ 
+-	{ "LINEOUT2P Mixer", "Right Output Switch", "Right Output Mixer" },
++	{ "LINEOUT2P Mixer", "Right Output Switch", "Right Output PGA" },
+ 
+ 	{ "LINEOUT2N Driver", NULL, "LINEOUT2N Mixer" },
+ 	{ "LINEOUT2P Driver", NULL, "LINEOUT2P Mixer" },
 
 
