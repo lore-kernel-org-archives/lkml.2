@@ -1,67 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159Ab1FAOoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 10:44:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64396 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753067Ab1FAOoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 10:44:06 -0400
-Date: Wed, 1 Jun 2011 16:43:14 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: James Hogan <james@albanarts.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: scheduling while atomic 2.6.39-rc7 (iwl3945_irq_tasklet)
-Message-ID: <20110601144313.GA9695@redhat.com>
-References: <20110513203448.GA3523@gandalf>
- <20110516172513.GA2546@tuxdriver.com>
- <BANLkTi=JU2VkyArY4jrt1iE-sdwKp+JaAQ@mail.gmail.com>
+	id S1758215Ab1FAOuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 10:50:21 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33661 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756875Ab1FAOuS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 10:50:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ivo27SP3rwl2TfW96kgSujWIl7nNvwmUhh2ZASMiAt+7KgOYKmpBmMEIuc43+NKrf2
+         a/BvlZgU9LR7dlzaP1S0pQ72tjJYwltZrhlaAXPOLS89GOAikywl0ZM1QLL8aoemtVdi
+         PkaYhp8kpfuYBl5a2e1jaCLxzY1HjEbbZqfvk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=JU2VkyArY4jrt1iE-sdwKp+JaAQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <BANLkTi=5HHCVUANbqJWQe7wZKVPBqM6RrQ@mail.gmail.com>
+References: <BANLkTikwjL-3m110CcRs+-KLdZpH0rOTsQ@mail.gmail.com>
+	<20110519182753.GA23865@suse.de>
+	<BANLkTi=5HHCVUANbqJWQe7wZKVPBqM6RrQ@mail.gmail.com>
+Date: Wed, 1 Jun 2011 16:50:17 +0200
+Message-ID: <BANLkTi=bWpbRkt1tie44+MoXWfPdG_zZ+w@mail.gmail.com>
+Subject: Re: samsung-laptop backlight control not working
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 17, 2011 at 09:41:42AM +0100, James Hogan wrote:
-> On 16 May 2011 18:25, John W. Linville <linville@tuxdriver.com> wrote:
-> > On Fri, May 13, 2011 at 09:34:49PM +0100, James Hogan wrote:
-> >> On 2.6.39-rc7 I've seen a panic due to "BUG: scheduling while atomic"
-> >> with the backtrace below (not much detail as it was written in a text
-> >> message while it was displayed on the screen!). All worked fine in
-> >> 2.6.38.
-> >>
-> >> This was soon after resuming from suspend (enough time to unlock the
-> >> screen, but not much else). I think it was the same bug I saw in rc2 but
-> >> didn't have time to track down. I can probably get it to happen again if
-> >> more detail is needed. It doesn't happen every suspend (I think it had
-> >> survived a couple of suspend/resume cycles at this point).
-> >>
-> >> I could bisect if necessary, but hopefully the backtrace will be enough
-> >> to see what's going on?
-> >
-> > A bisect might be very helpful -- time is short for 2.6.39 already.
-> 
-> Hmm, it won't reproduce. I'll have to try and bisect this evening, as
-> it was in my home network that it hit the BUG before.
+Hi Greg
 
-We use mutex in atomic contex when changing channel. I'm not sure if
-this is the particular problem you have. If you found a way to
-reproduce, you may try this patch:
+On Thu, May 19, 2011 at 8:53 PM, David Herrmann
+<dh.herrmann@googlemail.com> wrote:
+> On Thu, May 19, 2011 at 8:27 PM, Greg KH <gregkh@suse.de> wrote:
+>> On Thu, May 19, 2011 at 08:18:16PM +0200, David Herrmann wrote:
+>>> Hi
+>>>
+>>> I tried the new samsung-laptop driver with samsung backlight support.
+>>
+>> What kernel are you trying?  We have some recent patches to the driver
+>> to try to resolve some of these issues on your laptop.
+>
+> I use linus' tree. 2.6.39
+>
+>>> It is detected as:
+>>> [109282.931433] samsung_laptop: found laptop model 'N150P/N210P/N220P'
+>>>
+>>> However, backlight support is kind of weird:
+>>> "echo 1 >/sys/class/backlight/samsung/brightness"
+>>> does not set brightness to 1 but instead reduces brightness for 1.
+>>> That is, if my current brightness setting is 8, I need to call "echo 1
+>>> >..." 7 times to get brightness value 1.
+>>>
+>>> "cat /sys/class/backlight...."
+>>> returns 1 after the first try, though.
+>>>
+>>> "echo 3 >..."
+>>> reduces brightness also for 1 but stops at brightness level 3 if I
+>>> repeat the command.
+>>>
+>>> dmesg shows the following for every "echo" I call:
+>>> [110690.073783] ACPI: Failed to switch the brightness
+>>>
+>>> Furthermore "echo 0 >..." doesn't disable backlight but instead
+>>> behaves like a brightness setting below 1.
+>>
+>> Yeah, don't echo 0 there, that doesn't work to well.  I have some
+>> patches here that you can try if you want, just let me know.
+>
+> That would be great! I have really no idea about acpi so I can't fix
+> it myself. If you could give me some git tree where I can find them, I
+> could test them.
+>
+>>> However, I know the following works on my machine:
+>>> setpci -s 00:02.0 F4.B=255
+>>> It accepts a setting between 0-255 and 255 is full brightness and 0 is
+>>> backlight off.
+>>
+>> Don't do that, the video driver will not like you as you are changing
+>> things without telling the bios that something is really happening.
+>>
+>> Of course you can continue to do this, it's just strongly not
+>> recommended.
+>
+> Ouh, I didn't know that. It was recommended in some distro wiki so I
+> tried it and it worked. Anyway, I thought it might give you some
+> information about the N210 model.
+>
+>> thanks,
+>>
+>> greg k-h
+>
+> Thanks
+> David
 
-diff --git a/drivers/net/wireless/iwlegacy/iwl-core.c b/drivers/net/wireless/iwlegacy/iwl-core.c
-index 42df832..01244b2 100644
---- a/drivers/net/wireless/iwlegacy/iwl-core.c
-+++ b/drivers/net/wireless/iwlegacy/iwl-core.c
-@@ -861,9 +861,7 @@ void iwl_legacy_chswitch_done(struct iwl_priv *priv, bool is_success)
- 
- 	if (priv->switch_rxon.switch_in_progress) {
- 		ieee80211_chswitch_done(ctx->vif, is_success);
--		mutex_lock(&priv->mutex);
- 		priv->switch_rxon.switch_in_progress = false;
--		mutex_unlock(&priv->mutex);
- 	}
- }
- EXPORT_SYMBOL(iwl_legacy_chswitch_done);
+Maybe you missed that mail, any update on this? Where could I get
+those patches? ;)
+
+Thanks
+David
