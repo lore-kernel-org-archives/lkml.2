@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161670Ab1FAJTp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:19:45 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43520 "EHLO mx1.suse.de"
+	id S1161673Ab1FAIM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:12:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42900 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161500Ab1FAIMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:12:20 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:31 2011
-Message-Id: <20110601080330.305518149@blue.kroah.org>
+	id S1161647Ab1FAIMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:12:24 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:32 2011
+Message-Id: <20110601080331.421910604@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:04 +0900
+Date: Wed, 01 Jun 2011 17:00:05 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kashyap Desai <kashyap.desai@lsi.com>,
+        Eddie Wai <eddie.wai@broadcom.com>,
         James Bottomley <jbottomley@parallels.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [068/146] [SCSI] mpt2sas: move even handling of
+Subject: [069/146] [SCSI] bnx2i: Fixed packet error created when the sq_size is
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,174 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- MPT2SAS_TURN_ON_FAULT_LED into process context
+ set to 16
 
-From: "Kashyap, Desai" <kashyap.desai@lsi.com>
+From: Eddie Wai <eddie.wai@broadcom.com>
 
-commit 3ace8e052be5293ebb3e00f819effccc64108a38 upstream.
+commit 7287c63e986fe1a51a89f4bb1327320274a7a741 upstream.
 
-Driver was a sending a SEP request during interrupt context which
-required to go to sleep.
+The number of chip's internal command cell, which is use to generate
+SCSI cmd packets to the target, was not initialized correctly by
+the driver when the sq_size is changed from the default 128.
+This, in turn, will create a problem where the chip's transmit pipe
+will erroneously reuse an old command cell that is no longer valid.
+The fix is to correctly initialize the chip's command cell upon setup.
 
-The fix is to rearrange the code so a fake event
-MPT2SAS_TURN_ON_FAULT_LED is fired from interrupt context, then later
-during the kernel worker threads processing, the SEP request is issued
-to firmware.
-
-Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Signed-off-by: Eddie Wai <eddie.wai@broadcom.com>
+Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
 Signed-off-by: James Bottomley <jbottomley@parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |   94 +++++++++++++++++++++++++----------
- 1 file changed, 68 insertions(+), 26 deletions(-)
+ drivers/scsi/bnx2i/bnx2i_hwi.c   |    1 +
+ drivers/scsi/bnx2i/bnx2i_iscsi.c |    3 +++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -113,6 +113,7 @@ struct sense_info {
- };
+--- a/drivers/scsi/bnx2i/bnx2i_hwi.c
++++ b/drivers/scsi/bnx2i/bnx2i_hwi.c
+@@ -1221,6 +1221,7 @@ int bnx2i_send_fw_iscsi_init_msg(struct
+ 	iscsi_init.dummy_buffer_addr_hi =
+ 		(u32) ((u64) hba->dummy_buf_dma >> 32);
  
++	hba->num_ccell = hba->max_sqes >> 1;
+ 	hba->ctx_ccell_tasks =
+ 			((hba->num_ccell & 0xFFFF) | (hba->max_sqes << 16));
+ 	iscsi_init.num_ccells_per_conn = hba->num_ccell;
+--- a/drivers/scsi/bnx2i/bnx2i_iscsi.c
++++ b/drivers/scsi/bnx2i/bnx2i_iscsi.c
+@@ -1205,6 +1205,9 @@ static int bnx2i_task_xmit(struct iscsi_
+ 	struct bnx2i_cmd *cmd = task->dd_data;
+ 	struct iscsi_cmd *hdr = (struct iscsi_cmd *) task->hdr;
  
-+#define MPT2SAS_TURN_ON_FAULT_LED (0xFFFC)
- #define MPT2SAS_RESCAN_AFTER_HOST_RESET (0xFFFF)
- 
- /**
-@@ -121,6 +122,7 @@ struct sense_info {
-  * @work: work object (ioc->fault_reset_work_q)
-  * @cancel_pending_work: flag set during reset handling
-  * @ioc: per adapter object
-+ * @device_handle: device handle
-  * @VF_ID: virtual function id
-  * @VP_ID: virtual port id
-  * @ignore: flag meaning this event has been marked to ignore
-@@ -134,6 +136,7 @@ struct fw_event_work {
- 	u8			cancel_pending_work;
- 	struct delayed_work	delayed_work;
- 	struct MPT2SAS_ADAPTER *ioc;
-+	u16			device_handle;
- 	u8			VF_ID;
- 	u8			VP_ID;
- 	u8			ignore;
-@@ -3708,17 +3711,75 @@ _scsih_scsi_ioc_info(struct MPT2SAS_ADAP
- #endif
- 
- /**
-- * _scsih_smart_predicted_fault - illuminate Fault LED
-+ * _scsih_turn_on_fault_led - illuminate Fault LED
-  * @ioc: per adapter object
-  * @handle: device handle
-+ * Context: process
-  *
-  * Return nothing.
-  */
- static void
--_scsih_smart_predicted_fault(struct MPT2SAS_ADAPTER *ioc, u16 handle)
-+_scsih_turn_on_fault_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
- {
- 	Mpi2SepReply_t mpi_reply;
- 	Mpi2SepRequest_t mpi_request;
++	if (bnx2i_conn->ep->num_active_cmds + 1 > hba->max_sqes)
++		return -ENOMEM;
 +
-+	memset(&mpi_request, 0, sizeof(Mpi2SepRequest_t));
-+	mpi_request.Function = MPI2_FUNCTION_SCSI_ENCLOSURE_PROCESSOR;
-+	mpi_request.Action = MPI2_SEP_REQ_ACTION_WRITE_STATUS;
-+	mpi_request.SlotStatus =
-+	    cpu_to_le32(MPI2_SEP_REQ_SLOTSTATUS_PREDICTED_FAULT);
-+	mpi_request.DevHandle = cpu_to_le16(handle);
-+	mpi_request.Flags = MPI2_SEP_REQ_FLAGS_DEVHANDLE_ADDRESS;
-+	if ((mpt2sas_base_scsi_enclosure_processor(ioc, &mpi_reply,
-+	    &mpi_request)) != 0) {
-+		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n", ioc->name,
-+		__FILE__, __LINE__, __func__);
-+		return;
-+	}
-+
-+	if (mpi_reply.IOCStatus || mpi_reply.IOCLogInfo) {
-+		dewtprintk(ioc, printk(MPT2SAS_INFO_FMT "enclosure_processor: "
-+		    "ioc_status (0x%04x), loginfo(0x%08x)\n", ioc->name,
-+		    le16_to_cpu(mpi_reply.IOCStatus),
-+		    le32_to_cpu(mpi_reply.IOCLogInfo)));
-+		return;
-+	}
-+}
-+
-+/**
-+ * _scsih_send_event_to_turn_on_fault_led - fire delayed event
-+ * @ioc: per adapter object
-+ * @handle: device handle
-+ * Context: interrupt.
-+ *
-+ * Return nothing.
-+ */
-+static void
-+_scsih_send_event_to_turn_on_fault_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
-+{
-+	struct fw_event_work *fw_event;
-+
-+	fw_event = kzalloc(sizeof(struct fw_event_work), GFP_ATOMIC);
-+	if (!fw_event)
-+		return;
-+	fw_event->event = MPT2SAS_TURN_ON_FAULT_LED;
-+	fw_event->device_handle = handle;
-+	fw_event->ioc = ioc;
-+	_scsih_fw_event_add(ioc, fw_event);
-+}
-+
-+/**
-+ * _scsih_smart_predicted_fault - process smart errors
-+ * @ioc: per adapter object
-+ * @handle: device handle
-+ * Context: interrupt.
-+ *
-+ * Return nothing.
-+ */
-+static void
-+_scsih_smart_predicted_fault(struct MPT2SAS_ADAPTER *ioc, u16 handle)
-+{
- 	struct scsi_target *starget;
- 	struct MPT2SAS_TARGET *sas_target_priv_data;
- 	Mpi2EventNotificationReply_t *event_reply;
-@@ -3745,30 +3806,8 @@ _scsih_smart_predicted_fault(struct MPT2
- 	starget_printk(KERN_WARNING, starget, "predicted fault\n");
- 	spin_unlock_irqrestore(&ioc->sas_device_lock, flags);
- 
--	if (ioc->pdev->subsystem_vendor == PCI_VENDOR_ID_IBM) {
--		memset(&mpi_request, 0, sizeof(Mpi2SepRequest_t));
--		mpi_request.Function = MPI2_FUNCTION_SCSI_ENCLOSURE_PROCESSOR;
--		mpi_request.Action = MPI2_SEP_REQ_ACTION_WRITE_STATUS;
--		mpi_request.SlotStatus =
--		    cpu_to_le32(MPI2_SEP_REQ_SLOTSTATUS_PREDICTED_FAULT);
--		mpi_request.DevHandle = cpu_to_le16(handle);
--		mpi_request.Flags = MPI2_SEP_REQ_FLAGS_DEVHANDLE_ADDRESS;
--		if ((mpt2sas_base_scsi_enclosure_processor(ioc, &mpi_reply,
--		    &mpi_request)) != 0) {
--			printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
--			    ioc->name, __FILE__, __LINE__, __func__);
--			return;
--		}
--
--		if (mpi_reply.IOCStatus || mpi_reply.IOCLogInfo) {
--			dewtprintk(ioc, printk(MPT2SAS_INFO_FMT
--			    "enclosure_processor: ioc_status (0x%04x), "
--			    "loginfo(0x%08x)\n", ioc->name,
--			    le16_to_cpu(mpi_reply.IOCStatus),
--			    le32_to_cpu(mpi_reply.IOCLogInfo)));
--			return;
--		}
--	}
-+	if (ioc->pdev->subsystem_vendor == PCI_VENDOR_ID_IBM)
-+		_scsih_send_event_to_turn_on_fault_led(ioc, handle);
- 
- 	/* insert into event log */
- 	sz = offsetof(Mpi2EventNotificationReply_t, EventData) +
-@@ -6330,6 +6369,9 @@ _firmware_event_work(struct work_struct
- 	}
- 
- 	switch (fw_event->event) {
-+	case MPT2SAS_TURN_ON_FAULT_LED:
-+		_scsih_turn_on_fault_led(ioc, fw_event->device_handle);
-+		break;
- 	case MPI2_EVENT_SAS_TOPOLOGY_CHANGE_LIST:
- 		_scsih_sas_topology_change_event(ioc, fw_event);
- 		break;
+ 	/*
+ 	 * If there is no scsi_cmnd this must be a mgmt task
+ 	 */
 
 
