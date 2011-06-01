@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162270Ab1FAI5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:57:54 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46537 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162202Ab1FAI5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:57:50 -0400
-Date: Wed, 1 Jun 2011 17:58:43 +0900
-From: Greg KH <gregkh@suse.de>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [Stable-review] [039/146] [PARISC] wire up the fhandle syscalls
-Message-ID: <20110601085843.GB12801@suse.de>
-References: <20110601080303.433532961@blue.kroah.org>
- <1306917921.22348.7.camel@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306917921.22348.7.camel@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758902Ab1FAMXt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 08:23:49 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37448 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758876Ab1FAMXs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 08:23:48 -0400
+Subject: Re: [RFC][PATCH] timers: Make alarmtimer depend on CONFIG_RTC_CLASS
+From: Peter Zijlstra <peterz@infradead.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
+        richard.cochran@omicron.at, tglx@linutronix.de, arnd@arndb.de,
+        toralf.foerster@gmx.de
+In-Reply-To: <1306910297.3359.49.camel@work-vm>
+References: <1306666131-6161-1-git-send-email-richard@nod.at>
+	 <1306910297.3359.49.camel@work-vm>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 01 Jun 2011 11:13:41 +0200
+Message-ID: <1306919621.2353.164.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 01, 2011 at 09:45:21AM +0100, Ben Hutchings wrote:
-> On Wed, 2011-06-01 at 16:59 +0900, Greg KH wrote:
-> > 2.6.38-stable review patch.  If anyone has any objections, please let us know.
-> > 
-> > ------------------
+On Tue, 2011-05-31 at 23:38 -0700, John Stultz wrote:
+> On Sun, 2011-05-29 at 12:48 +0200, Richard Weinberger wrote:
+> > The alarmtimer interface makes IMHO only sense when a RTC device
+> > is available.
+> > On systems with !CONFIG_RTC_CLASS (like UML) the warning
+> > "Kernel not built with RTC support, ALARM timers will not wake from suspend"
+> > is annoying.
 > 
-> These syscalls were added in 2.6.39!
+> Yea. 
+> 
+> The tradeoff with this patch is that applications that use
+> CLOCK_REALTIME_ALARM or CLOCK_BOOTTIME_ALARM will then get -EINVAL.
+> 
+> I'm mixed here, since we probably want to communicate to the application
+> that the alarm timers aren't going to wake us up, but also I suspect
+> most applications won't handle the -EINVAL properly, so I had allowed
+> for the clockids to still work as long as we didn't suspend.
+> 
+> I'm leaning more towards just returning EINVAL as you suggest, since
+> really the functionality isn't there. But I'm thinking possibly doing so
+> if no RTCs are detected at runtime (rather then using all the ifdefs you
+> do).
+> 
+> Thoughts from anyone else?
 
-Thanks for letting me know, I'll drop this, and the other parisc syscall
-patch, from the .38-stable tree.
-
-greg k-h
+Wouldn't -ENOTSUPP be a better return value than -EINVAL? But yeah, I
+think simply returning an error is fine, if apps don't check for that,
+they're broken, simple as that, we can't possibly avoid all userspace
+problems by adding more kernel code.
