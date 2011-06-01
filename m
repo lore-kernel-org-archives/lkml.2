@@ -1,28 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162611Ab1FAIXD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:23:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44111 "EHLO mx2.suse.de"
+	id S1162723Ab1FAIpE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:45:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44127 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162661Ab1FAIW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:22:56 -0400
+	id S1162675Ab1FAIW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:22:59 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:43 2011
-Message-Id: <20110601081142.418428890@blue.kroah.org>
+Message-Id: <20110601081143.059810450@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:10:58 +0900
+Date: Wed, 01 Jun 2011 17:10:59 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Milton Miller <miltonm@bga.com>, <linuxppc-dev@lists.ozlabs.org>,
-        Andi Kleen <andi@firstfloor.org>, Nick Piggin <npiggin@kernel.dk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [088/165] seqlock: Dont smp_rmb in seqlock reader spin loop
+        NeilBrown <neilb@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [089/165] md: Fix race when creating a new md device.
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,78 +24,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 2553
-Lines: 71
+Content-Length: 2950
+Lines: 85
 
-From: Milton Miller <miltonm@bga.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 5db1256a5131d3b133946fa02ac9770a784e6eb2 upstream.
+commit b0140891a8cea36469f58d23859e599b1122bd37 upstream.
 
-Move the smp_rmb after cpu_relax loop in read_seqlock and add
-ACCESS_ONCE to make sure the test and return are consistent.
+There is a race when creating an md device by opening /dev/mdXX.
 
-A multi-threaded core in the lab didn't like the update
-from 2.6.35 to 2.6.36, to the point it would hang during
-boot when multiple threads were active.  Bisection showed
-af5ab277ded04bd9bc6b048c5a2f0e7d70ef0867 (clockevents:
-Remove the per cpu tick skew) as the culprit and it is
-supported with stack traces showing xtime_lock waits including
-tick_do_update_jiffies64 and/or update_vsyscall.
+If two processes do this at much the same time they will follow the
+call path
+  __blkdev_get -> get_gendisk -> kobj_lookup
 
-Experimentation showed the combination of cpu_relax and smp_rmb
-was significantly slowing the progress of other threads sharing
-the core, and this patch is effective in avoiding the hang.
+The first will call
+  -> md_probe -> md_alloc -> add_disk -> blk_register_region
 
-A theory is the rmb is affecting the whole core while the
-cpu_relax is causing a resource rebalance flush, together they
-cause an interfernce cadance that is unbroken when the seqlock
-reader has interrupts disabled.
+and the race happens when the second gets to kobj_lookup after
+add_disk has called blk_register_region but before it returns to
+md_alloc.
 
-At first I was confused why the refactor in
-3c22cd5709e8143444a6d08682a87f4c57902df3 (kernel: optimise
-seqlock) didn't affect this patch application, but after some
-study that affected seqcount not seqlock. The new seqcount was
-not factored back into the seqlock.  I defer that the future.
+In the case the second will not call md_probe (as the probe is already
+done) but will get a handle on the gendisk, return to __blkdev_get
+which will then call md_open (via the ->open) pointer.
 
-While the removal of the timer interrupt offset created
-contention for the xtime lock while a cpu does the
-additonal work to update the system clock, the seqlock
-implementation with the tight rmb spin loop goes back much
-further, and is just waiting for the right trigger.
+As mddev->gendisk hasn't been set yet, md_open will think something is
+wrong an return with ERESTARTSYS.
 
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Cc: <linuxppc-dev@lists.ozlabs.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Anton Blanchard <anton@samba.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Link: http://lkml.kernel.org/r/%3Cseqlock-rmb%40mdm.bga.com%3E
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+This can loop endlessly while the first thread makes no progress
+through add_disk.  Nothing is blocking it, but due to scheduler
+behaviour it doesn't get a turn.
+So this is essentially a live-lock.
+
+We fix this by simply moving the assignment to mddev->gendisk before
+the call the add_disk() so md_open doesn't get confused.
+Also move blk_queue_flush earlier because add_disk should be as late
+as possible.
+
+To make sure that md_open doesn't complete until md_alloc has done all
+that is needed, we take mddev->open_mutex during the last part of
+md_alloc.  md_open will wait for this.
+
+This can cause a lock-up on boot so Cc:ing for stable.
+For 2.6.36 and earlier a different patch will be needed as the
+'blk_queue_flush' call isn't there.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Tested-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/seqlock.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/md.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -88,12 +88,12 @@ static __always_inline unsigned read_seq
- 	unsigned ret;
- 
- repeat:
--	ret = sl->sequence;
--	smp_rmb();
-+	ret = ACCESS_ONCE(sl->sequence);
- 	if (unlikely(ret & 1)) {
- 		cpu_relax();
- 		goto repeat;
- 	}
-+	smp_rmb();
- 
- 	return ret;
- }
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -4347,13 +4347,19 @@ static int md_alloc(dev_t dev, char *nam
+ 	disk->fops = &md_fops;
+ 	disk->private_data = mddev;
+ 	disk->queue = mddev->queue;
++	blk_queue_flush(mddev->queue, REQ_FLUSH | REQ_FUA);
+ 	/* Allow extended partitions.  This makes the
+ 	 * 'mdp' device redundant, but we can't really
+ 	 * remove it now.
+ 	 */
+ 	disk->flags |= GENHD_FL_EXT_DEVT;
+-	add_disk(disk);
+ 	mddev->gendisk = disk;
++	/* As soon as we call add_disk(), another thread could get
++	 * through to md_open, so make sure it doesn't get too far
++	 */
++	mutex_lock(&mddev->open_mutex);
++	add_disk(disk);
++
+ 	error = kobject_init_and_add(&mddev->kobj, &md_ktype,
+ 				     &disk_to_dev(disk)->kobj, "%s", "md");
+ 	if (error) {
+@@ -4367,8 +4373,7 @@ static int md_alloc(dev_t dev, char *nam
+ 	if (mddev->kobj.sd &&
+ 	    sysfs_create_group(&mddev->kobj, &md_bitmap_group))
+ 		printk(KERN_DEBUG "pointless warning\n");
+-
+-	blk_queue_flush(mddev->queue, REQ_FLUSH | REQ_FUA);
++	mutex_unlock(&mddev->open_mutex);
+  abort:
+ 	mutex_unlock(&disks_mutex);
+ 	if (!error && mddev->kobj.sd) {
 
 
