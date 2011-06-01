@@ -1,44 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758574Ab1FAJpw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:45:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62313 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756837Ab1FAJpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 05:45:50 -0400
-Message-ID: <4DE60A34.7070603@redhat.com>
-Date: Wed, 01 Jun 2011 12:45:24 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
-References: <1305129333-7456-1-git-send-email-avi@redhat.com> <4DD24544.1000408@redhat.com>
-In-Reply-To: <4DD24544.1000408@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758724Ab1FAJte (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:49:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40391 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753235Ab1FAJtb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 05:49:31 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, grant@secretlab.ca,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] FRV: Hook up gpiolib support
+Date: Wed,  1 Jun 2011 10:49:27 +0100
+Message-Id: <1306921767-31115-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2011 12:52 PM, Avi Kivity wrote:
-> On 05/11/2011 06:55 PM, Avi Kivity wrote:
->> perf maintainers: please consider the first three patches for merging 
->> (the
->> first two make sense even without the rest).  If you're familiar with 
->> the Intel
->> PMU, please review patch 5 as well - it effectively undoes all your work
->> of abstracting the PMU into perf_events by unabstracting perf_events 
->> into what
->> is hoped is a very similar PMU.
->
-> Perf maintainers, ping?
->
+Allow people to use gpiolib on FRV, mostly for build coverage as it
+seems more useful to standardise the API than handle making it optional.
 
-Re-ping?
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ arch/frv/Kconfig            |    4 +++
+ arch/frv/include/asm/gpio.h |   55 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 0 deletions(-)
+ create mode 100644 arch/frv/include/asm/gpio.h
 
+diff --git a/arch/frv/Kconfig b/arch/frv/Kconfig
+index cb884e4..8e828fc 100644
+--- a/arch/frv/Kconfig
++++ b/arch/frv/Kconfig
+@@ -7,6 +7,7 @@ config FRV
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_IRQ_SHOW
++	select ARCH_WANT_OPTIONAL_GPIO
+ 
+ config ZONE_DMA
+ 	bool
+@@ -27,6 +28,9 @@ config GENERIC_CALIBRATE_DELAY
+ 	bool
+ 	default n
+ 
++config GENERIC_GPIO
++	def_bool y
++
+ config TIME_LOW_RES
+ 	bool
+ 	default y
+diff --git a/arch/frv/include/asm/gpio.h b/arch/frv/include/asm/gpio.h
+new file mode 100644
+index 0000000..8c3377f
+--- /dev/null
++++ b/arch/frv/include/asm/gpio.h
+@@ -0,0 +1,55 @@
++/*
++ * Generic GPIO API implementation for FRV.
++ *
++ * A stright copy of that for PowerPC which was:
++ *
++ * Copyright (c) 2007-2008  MontaVista Software, Inc.
++ *
++ * Author: Anton Vorontsov <avorontsov@ru.mvista.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef _ASM_FRV_GPIO_H
++#define _ASM_FRV_GPIO_H
++
++#include <linux/errno.h>
++#include <asm-generic/gpio.h>
++
++#ifdef CONFIG_GPIOLIB
++
++/*
++ * We don't (yet) implement inlined/rapid versions for on-chip gpios.
++ * Just call gpiolib.
++ */
++static inline int gpio_get_value(unsigned int gpio)
++{
++	return __gpio_get_value(gpio);
++}
++
++static inline void gpio_set_value(unsigned int gpio, int value)
++{
++	__gpio_set_value(gpio, value);
++}
++
++static inline int gpio_cansleep(unsigned int gpio)
++{
++	return __gpio_cansleep(gpio);
++}
++
++static inline int gpio_to_irq(unsigned int gpio)
++{
++	return __gpio_to_irq(gpio);
++}
++
++static inline int irq_to_gpio(unsigned int irq)
++{
++	return -EINVAL;
++}
++
++#endif /* CONFIG_GPIOLIB */
++
++#endif /* _ASM_FRV_GPIO_H */
 -- 
-error compiling committee.c: too many arguments to function
+1.7.5.3
 
