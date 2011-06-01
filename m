@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758861Ab1FAU2Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 16:28:24 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:65075 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756856Ab1FAU2W (ORCPT
+	id S1759502Ab1FAU33 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 16:29:29 -0400
+Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:50373 "EHLO
+	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753845Ab1FAU31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 16:28:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=SjbYsAVNjDWRByMPakja0RknpVYsS9G7a6UMPu1oOdCUCkWSrGUNe0FlTqqzCvMX10
-         AOzj8LTRV5keg4UlnPtRpTOwgO1eTM+0Y0I6IjSlQTv5CjmmeOSZcWT6AXrGBme6tCyX
-         5EsygTTAmQKViRuAoFhUiD1l8FsEVIqmTb0lw=
-Message-ID: <4DE6A0E2.5040807@samsung.com>
-Date: Wed, 01 Jun 2011 13:28:18 -0700
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Wed, 1 Jun 2011 16:29:27 -0400
+Date: Wed, 1 Jun 2011 16:29:26 -0400
+To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+Cc: linux-serial@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: ioremap warning fix for jsm driver.
+Message-ID: <20110601202926.GK21345@caffeine.csclub.uwaterloo.ca>
+References: <20110601183841.GJ21345@caffeine.csclub.uwaterloo.ca>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, cpufreq@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH] CPUFREQ/S5PV210, EXYNOS4: Add Kconfig options for S5PV210
- and EXYNOS4 CPUfreq drivers
-References: <1306476428-24808-1-git-send-email-dg77.kim@samsung.com>	<1306483489-10432-1-git-send-email-dg77.kim@samsung.com>	<4DE6977E.5080107@samsung.com> <20110601195418.GA30806@redhat.com>
-In-Reply-To: <20110601195418.GA30806@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110601183841.GJ21345@caffeine.csclub.uwaterloo.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: lsorense@csclub.uwaterloo.ca (Lennart Sorensen)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/11 12:54, Dave Jones wrote:
-> On Wed, Jun 01, 2011 at 12:48:14PM -0700, Kukjin Kim wrote:
->
->   >  Dave, could you please see below? If you're ok, will submit remained
->   >  others for Samsung cpufreq drivers.
->
-> I'm ok with the principle of the patch, though it doesn't seem to include
-> any driver movement, so just applying this will break the compile.
-> (If it happens in another patch, they should really go together to
->   not break bisecting)
->
-Hi Dave,
+On Wed, Jun 01, 2011 at 02:38:41PM -0400, Lennart Sorensen wrote:
+> I saw a warning about ioremap from the jsm driver on a system which
+> looked like this:
+> 
+> resource map sanity check conflict: 0xe0200800 0xe02017ff 0xe0200800 0xe0200fff 0000:01:08.0
+> 
+> Turns out the warning is valid.  The jsm driver has been asking to ioremap
+> 0x1000 forever, but in fact only 8 port chips have 0x1000 bytes of memory.
+> 4 port chips have 0x800 and 2 port chips have 0x400 according to the
+> data sheet.  It makes more sense to map the size of the region rather
+> than a hard coded value.  If you happen to have the regiong legitimately
+> mapped to a base addres that is not 4K aligned, ioremap complains
+> otherwise.
 
-OK, will submit others which include moving cpufreq driver soon.
+I can't believe I didn't spell check that. :(
 
-If you don't mind I will make some branch to merge in both, my tree
-and yours.
+Should have been:
 
-Thanks.
+Turns out the warning is valid.  The jsm driver has been asking to ioremap
+0x1000 forever, but in fact only 8 port chips have 0x1000 bytes of memory.
+4 port chips have 0x800 and 2 port chips have 0x400 according to the
+data sheet.  It makes more sense to map the size of the region rather
+than a hard coded value.  If you happen to have the region legitimately
+mapped to a base address that is not 4K aligned ioremap complains, and
+otherwise memory not belonging to the device is reserved as far as I
+can tell.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+> Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+> 
+> 
+> diff --git a/drivers/tty/serial/jsm/jsm_driver.c b/drivers/tty/serial/jsm/jsm_driver.c
+> index 18f5484..96da178 100644
+> --- a/drivers/tty/serial/jsm/jsm_driver.c
+> +++ b/drivers/tty/serial/jsm/jsm_driver.c
+> @@ -125,7 +125,7 @@ static int __devinit jsm_probe_one(struct pci_dev *pdev, const struct pci_device
+>  	brd->bd_uart_offset = 0x200;
+>  	brd->bd_dividend = 921600;
+>  
+> -	brd->re_map_membase = ioremap(brd->membase, 0x1000);
+> +	brd->re_map_membase = ioremap(brd->membase, pci_resource_len(pdev, 0));
+>  	if (!brd->re_map_membase) {
+>  		dev_err(&pdev->dev,
+>  			"card has no PCI Memory resources, "
+> 
+> 
+> -- 
+> Len Sorensen
