@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759893Ab1FAT5A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:57:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23615 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755300Ab1FAT47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:56:59 -0400
-Date: Wed, 1 Jun 2011 21:55:20 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
-        pedro@codesourcery.com
-Subject: Re: [PATCH 11/17] ptrace: implement PTRACE_SEIZE
-Message-ID: <20110601195520.GA9695@redhat.com>
-References: <1306710760-16440-1-git-send-email-tj@kernel.org> <1306710760-16440-12-git-send-email-tj@kernel.org> <20110601190117.GB6504@redhat.com>
+	id S1759952Ab1FAT56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 15:57:58 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:42791 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932240Ab1FAT5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 15:57:55 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <gadiyar@ti.com>,
+        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
+        <b-cousson@ti.com>, <paul@pwsan.com>
+Subject: Re: [PATCH 1/4] arm: omap: usb: ehci and ohci hwmod structures for omap3 and omap4
+Organization: Texas Instruments, Inc.
+References: <1306934847-6098-1-git-send-email-keshava_mgowda@ti.com>
+	<1306934847-6098-2-git-send-email-keshava_mgowda@ti.com>
+Date: Wed, 01 Jun 2011 12:56:44 -0700
+In-Reply-To: <1306934847-6098-2-git-send-email-keshava_mgowda@ti.com> (Keshava
+	Munegowda's message of "Wed, 1 Jun 2011 18:57:24 +0530")
+Message-ID: <87hb89gwar.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110601190117.GB6504@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01, Oleg Nesterov wrote:
+Keshava Munegowda <keshava_mgowda@ti.com> writes:
+
+> Following 2 hwmod strcuture are added:
+> UHH hwmod of usbhs with uhh base address and
+> EHCI , OHCI irq and base addresses.
+> TLL hwmod of usbhs with the TLL base address and irq.
 >
-> On 05/30, Tejun Heo wrote:
-> >
-> > * If PTRACE_SEIZE'd, group stop uses PTRACE_EVENT_STOP trap which uses
-> >   exit_code of (SIGTRAP | PTRACE_EVENT_STOP << 8) instead of the
-> >   stopping signal number
->
-> Hmm. May be it would be better to report stopping_signal | PTRACE_EVENT_STOP
-> instead... I am not sure yet, but it seems this way we can avoid the
-> PTRACE_GETSIGINFO changes. I'll try to explain later, when I finsh the
-> reading.
+> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
 
-Tomorrow. I do not see any problems, the whole series looks fine to me.
-Except I have some minor concerns which I need to re-check and summarize.
+I believe the OMAP4 data came from Benoit, so should be in a patch with
+his authorship and signoff.  OMAP3 can be a separate patch with your
+authorship.
 
-Oleg.
-
+Kevin
