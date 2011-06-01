@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759521Ab1FATf0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:35:26 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56939 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759301Ab1FATfX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:35:23 -0400
-Date: Wed, 1 Jun 2011 21:35:17 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Andrew Chew <AChew@nvidia.com>
-cc: "mchehab@redhat.com" <mchehab@redhat.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 4/5 v2] [media] ov9740: Remove hardcoded resolution regs
-In-Reply-To: <643E69AA4436674C8F39DCC2C05F76382A75BF37C3@HQMAIL03.nvidia.com>
-Message-ID: <Pine.LNX.4.64.1106012128080.29934@axis700.grange>
-References: <1306368272-28279-1-git-send-email-achew@nvidia.com>
- <1306368272-28279-4-git-send-email-achew@nvidia.com>
- <Pine.LNX.4.64.1105291221450.18788@axis700.grange>
- <643E69AA4436674C8F39DCC2C05F76382A75BF37C3@HQMAIL03.nvidia.com>
+	id S1759558Ab1FATpR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 15:45:17 -0400
+Received: from smtp.nordnet.fr ([194.206.126.239]:63147 "EHLO smtp.nordnet.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759533Ab1FATpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 15:45:15 -0400
+X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Jun 2011 15:45:14 EDT
+Message-ID: <4DE6950C.3030500@laposte.net>
+Date: Wed, 01 Jun 2011 21:37:48 +0200
+From: Gilles Hamel <hamelg@laposte.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110503 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:0vjtlnIXRQcZt8KzozUWnoUfkHkp6fz4L0oK1lVGPm+
- +nZtsWcDPolVBC+TroNoWUihmPXkKuJi9hlL4jkGqO0SGlIYyJ
- 8J+JLoGBH5XX4Ph/kFSttqCj5M34tI+QDs4GfMTQHgWxZAMv6e
- Z6GJBx69Q+62bUhY4vWrMbUY84oYHIFTaarna0Qcazg5PN2x/6
- OeSDUqmqEePw5rHjPcFse5wX3yqHWjvPKMjViZgMlQ=
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Ulrich Keller <uhkeller@googlemail.com>, linux-kernel@vger.kernel.org,
+        Thomas Sattler <tsattler@gmx.de>, Gilles Hamel <hamelg@laposte.net>
+Subject: Re: iotop: khugepaged at 99.99% (2.6.38.3)
+References: <4DAF6C0B.3070009@gmx.de> <loom.20110511T124036-180@post.gmane.org> <20110512140352.GG11579@random.random>
+In-Reply-To: <20110512140352.GG11579@random.random>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 May 2011, Andrew Chew wrote:
+On 12/05/2011 16:03, Andrea Arcangeli wrote:
+> On Wed, May 11, 2011 at 10:53:18AM +0000, Ulrich Keller wrote:
+>> I am seeing exactly the same symptoms on my Lenovo T60 Core2 duo, 3GB RAM,
+>> running Arch Linux i686 with Kernel 2.6.38.6. When I've heavily used Firefox for
+>> a while, or used R with high memory usage (>1 GB), individual applications
+>> become unresponsive, new processes fail to start and after a while the whole
+>> system freezes. When it happens, iotop shows khugepaged and sometimes firefox at
+>> 99.99%.
+> SYSRQ+T run multiple times during the hang and /proc/zoneinfo as well
+> run multiple times during the hang is the best info we can have for
+> now, /proc/zoneinfo is the most interesting as it will show us the
+> values that the too_many_isolated loop is checking to decide if to
+> continue looping.
+Me too :(
+Since running 2.6.38, it was happening only 3 times on the same process 
+(convert from the ImageMagick toolkit). The last time I'm running 2.6.38.7.
+This process is launched every 15 minutes by crond, like this :
 
-> > > +	/* Width must be a multiple of 4 pixels. */
-> > > +	*width += *width % 4;
-> > 
-> > No, this doesn't make it a multiple of 4, unless it was 
-> > even;) Just take 5 
-> > as an example. What you really want here is
-> 
-> Geez, you're right.  Not sure what was going on in my head when I did this.  Thanks for catching it.
-> 
-> 
-> > > +	/*
-> > > +	 * Try to use as much of the sensor area as possible 
-> > when supporting
-> > > +	 * smaller resolutions.  Depending on the aspect ratio of the
-> > > +	 * chosen resolution, we can either use the full width 
-> > of the sensor,
-> > > +	 * or the full height of the sensor (or both if the 
-> > aspect ratio is
-> > > +	 * the same as 1280x720.
-> > > +	 */
-> > > +	if ((OV9740_MAX_WIDTH * height) > (OV9740_MAX_HEIGHT * width)) {
-> > > +		scale_input_x = (OV9740_MAX_HEIGHT * width) / height;
-> > > +		scale_input_y = OV9740_MAX_HEIGHT;
-> > >  	} else {
-> > > -		dev_err(&client->dev, "Failed to select resolution!\n");
-> > > -		return -EINVAL;
-> > > +		scale_input_x = OV9740_MAX_WIDTH;
-> > > +		scale_input_y = (OV9740_MAX_WIDTH * height) / width;
-> > >  	}
-> > 
-> > I don'z know how this sensor works, but the above two divisions round 
-> > down. And these are input sizes. Cannot it possibly lead to 
-> > the output 
-> > window being smaller, than required? Maybe you have to round 
-> > up (hint: 
-> > use DIV_ROUND_UP())?
-> 
-> The intention is to do some ratio math without floating point 
-> instructions,
+*/15 * * * * convert -delay 50 
+http://www.meteo60.org/radars/radar-nord-picardie-idf{-90,-90,-90,-75,-60,-45,-30,-15,,,}.png 
+-loop 0 $HOME/temp/radar-pluie.gif >/dev/null 2>&1
+*/15 * * * * convert -delay 50 
+http://www.sat24.com/image.ashx\?ok=1\&country=fr\&type=slide\&time=\&index={9,9,9,8,7,6,5,4,3,2,1,1,1}\&sat=vis 
+-loop 0 $HOME/temp/radar-nuage.gif >/dev/null 2>&1
 
-Of course, DIV_ROUND_UP is integer maths only too, as well as (almost) all 
-maths in the kernel.
+When it's happen, I'm using firefox. Here, the whole system continues 
+functioning normally a moment, then the X server hangs. Only these 3 
+tasks was stuck at 99% io busy in iotop :
 
-> which resulted in some algebraic twiddling (which is why 
-> that math looks so weird).
+$ iotop -ob
+Total DISK READ: 0.00 B/s | Total DISK WRITE: 0.00 B/s
+   TID  PRIO  USER     DISK READ  DISK WRITE  SWAPIN      IO    COMMAND
+Total DISK READ: 0.00 B/s | Total DISK WRITE: 0.00 B/s
+   TID  PRIO  USER     DISK READ  DISK WRITE  SWAPIN      IO    COMMAND
+    26 be/7 root        0.00 B/s    0.00 B/s  0.00 % 96.84 % [khugepaged]
+22839 be/4 hamelg      0.00 B/s    0.00 B/s  0.00 % 96.84 % convert 
+-delay 50 http://www.meteo60....
+22841 be/4 hamelg      0.00 B/s    0.00 B/s  0.00 % 96.84 % convert 
+-delay 50 http://www.sat24....
+Total DISK READ: 0.00 B/s | Total DISK WRITE: 0.00 B/s
+   TID  PRIO  USER     DISK READ  DISK WRITE  SWAPIN      IO    COMMAND
+22839 be/4 hamelg      0.00 B/s    0.00 B/s  0.00 % 99.99 % convert 
+-delay 50 http://www.meteo60...
+    26 be/7 root        0.00 B/s    0.00 B/s  0.00 % 99.99 % [khugepaged]
+22841 be/4 hamelg      0.00 B/s    0.00 B/s  0.00 % 99.99 % convert 
+-delay 50 http://www.sat24...
+...
 
-No, it doesn't look weird, I just wasn't sure, whether your maths would 
-work in all situations. The only difference between yours and mine, is 
-that yours rounds down, and mine rounds up. So, I'm not sure which one is 
-better in this case.
+Before rebooting, I followed your hints. You'll find the output of 
+multiple SYSRQ+T, /proc/zoneinfo and ps axu and my config.gz :
 
-> I think what's there is okay.  If there's 
-> any rounding at all (and there shouldn't be any rounding, if "standard" 
-> image dimensions are called for), then there's going to be some aspect 
-> ratio weirdness no matter which way you round that division.
+http://gilles.hamel.free.fr/config.gz
+http://gilles.hamel.free.fr/typescript
+http://gilles.hamel.free.fr/sysrq+t.txt
 
-No, you should be prepared to handle all possible crazy resolution 
-requests.
+I hope these additional clues will help you to hunt this bug.
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Regards
+
+
