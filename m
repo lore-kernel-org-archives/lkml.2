@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161327Ab1FAII6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:08:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42614 "EHLO mx2.suse.de"
+	id S1161359Ab1FAIJK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:09:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43283 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161268Ab1FAIIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:08:54 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:57 2011
-Message-Id: <20110601080257.422039041@blue.kroah.org>
+	id S1161145Ab1FAIJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:09:04 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:58 2011
+Message-Id: <20110601080258.057677903@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:26 +0900
+Date: Wed, 01 Jun 2011 16:59:27 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felix Radensky <felix@embedded-sol.com>,
         Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Parth Saxena <parth.saxena@ti.com>,
+        Brian Norris <computersforpeace@gmail.com>,
         David Woodhouse <David.Woodhouse@intel.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [030/146] mtd: mtdconcat: fix NAND OOB write
+Subject: [031/146] mtd: return badblockbits back
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,42 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Radensky <felix@embedded-sol.com>
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-commit 431e1ecabddcd7cbba237182ddf431771f98bb4c upstream.
+commit 26d9be11485ea8c1102c3e8eaa7667412eef4950 upstream.
 
-Currently mtdconcat is broken for NAND. An attemtpt to create
-JFFS2 filesystem on concatenation of several NAND devices fails
-with OOB write errors. This patch fixes that problem.
+In commit c7b28e25cb9beb943aead770ff14551b55fa8c79 the initialization of
+the backblockbits was accidentally removed. This patch returns it back,
+because otherwise some NAND drivers are broken.
 
-Signed-off-by: Felix Radensky <felix@embedded-sol.com>
+This problem was reported by "Saxena, Parth <parth.saxena@ti.com>" here:
+http://lists.infradead.org/pipermail/linux-mtd/2011-April/035221.html
+
+Reported-by: Parth Saxena <parth.saxena@ti.com>
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Tested-by: Parth Saxena <parth.saxena@ti.com>
+Acked-by: Parth Saxena <parth.saxena@ti.com>
+Acked-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/mtdconcat.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mtd/nand/nand_base.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/mtd/mtdconcat.c
-+++ b/drivers/mtd/mtdconcat.c
-@@ -319,7 +319,7 @@ concat_write_oob(struct mtd_info *mtd, l
- 	if (!(mtd->flags & MTD_WRITEABLE))
- 		return -EROFS;
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -3111,6 +3111,8 @@ ident_done:
+ 		chip->chip_shift += 32 - 1;
+ 	}
  
--	ops->retlen = 0;
-+	ops->retlen = ops->oobretlen = 0;
- 
- 	for (i = 0; i < concat->num_subdev; i++) {
- 		struct mtd_info *subdev = concat->subdev[i];
-@@ -334,7 +334,7 @@ concat_write_oob(struct mtd_info *mtd, l
- 			devops.len = subdev->size - to;
- 
- 		err = subdev->write_oob(subdev, to, &devops);
--		ops->retlen += devops.retlen;
-+		ops->retlen += devops.oobretlen;
- 		if (err)
- 			return err;
- 
++	chip->badblockbits = 8;
++
+ 	/* Set the bad block position */
+ 	if (mtd->writesize > 512 || (busw & NAND_BUSWIDTH_16))
+ 		chip->badblockpos = NAND_LARGE_BADBLOCK_POS;
 
 
