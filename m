@@ -1,74 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758120Ab1FAOjm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 10:39:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47017 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758085Ab1FAOjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 10:39:39 -0400
-Message-ID: <4DE64F0C.3050203@redhat.com>
-Date: Wed, 01 Jun 2011 16:39:08 +0200
-From: Igor Mammedov <imammedo@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        balbir@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        linux-mm@kvack.org, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
-Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node
- to world
-References: <1306925044-2828-1-git-send-email-imammedo@redhat.com> <20110601123913.GC4266@tiehlicka.suse.cz> <4DE6399C.8070802@redhat.com> <20110601134149.GD4266@tiehlicka.suse.cz>
-In-Reply-To: <20110601134149.GD4266@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758034Ab1FAOjK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 10:39:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56359 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757607Ab1FAOjH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 10:39:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=OL7rSqaoLeryHQDSFHACF9yBxeO7IeSKEhoIuCg1RIAr/lPxGe9BICZLt0NgLhNgRD
+         BXELJtDa9EerWzMxttVakKehYBpoyXilCfvQ4QNQBZ12jSK2r8bCASNURBUNbJLAnFVE
+         UQSqZVGtMiymjLFAZpUK6yqKZx6ksAiOX/kgM=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, reiserfs-devel@vger.kernel.org
+Subject: [PATCH v2 1/2] reiserfs: use proper little-endian bitops
+Date: Wed,  1 Jun 2011 23:39:57 +0900
+Message-Id: <1306939198-11356-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2011 03:41 PM, Michal Hocko wrote:
-> [Let's CC some cgroup people]
->
-> On Wed 01-06-11 15:07:40, Igor Mammedov wrote:
->> Yes I've seen it (RHBZ#700565).
-> I am not subscribed so I will not get there.
->
-Sorry, I've not realized that BZ wasn't public, just fixed it.
-It is public now.
+Using __test_and_{set,clear}_bit_le() with ignoring its return value
+can be replaced with __{set,clear}_bit_le().
 
-OOPS backtrace looks like this:
+This introduces reiserfs_{set,clear}_le_bit for __{set,clear}_bit_le
+and does the above change with them.
 
-Stopping cgconfig service: BUG: unable to handle kernel paging request at fffffffc
-IP: [<c05235b3>] mem_cgroup_force_empty+0x123/0x4a0
-*pdpt = 00000000016a0001 *pde = 000000000000a067 *pte = 0000000000000000
-Oops: 0000 [#1] SMP
-last sysfs file: /sys/module/nf_conntrack/refcnt
-Modules linked in: xt_CHECKSUM tun bridge stp llc autofs4 sunrpc ipt_REJECT ip6t_REJECT ipv6 dm_mirror dm_region_hash dm_log uinput microcode xen_netfront sg i2c_piix4 i2c_core ext4 mbcache jbd2 sr_mod cdrom xen_blkfront ata_generic pata_acpi ata_piix dm_mod [last unloaded: nf_conntrack]
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: reiserfs-devel@vger.kernel.org
+---
+v2: rewritten to keep reiserfs_*_le_bit() macros
 
-Pid: 2300, comm: cgclear Not tainted (2.6.32-131.0.10.el6.i686 #1) HVM domU
-EIP: 0060:[<c05235b3>] EFLAGS: 00010206 CPU: 0
-EIP is at mem_cgroup_force_empty+0x123/0x4a0
-EAX: 00000206 EBX: fffffff4 ECX: c0a3f1e0 EDX: 00000206
-ESI: 00000206 EDI: 00000000 EBP: f343ca00 ESP: f34e7e84
-  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process cgclear (pid: 2300, ti=f34e6000 task=f35baab0 task.ti=f34e6000)
-Stack:
-  ffffffff 00000001 00000000 f34e7eb8 00000100 00000000 c0a3f1e0 c05a5af5
-<0>  f343ca00 f343cc00 00000000 00000000 00000000 00000000 00000000 00000000
-<0>  c0a3e7c0 f35172c0 00000005 00000000 f35172d0 f35baab0 00000000 f35172c0
-Call Trace:
-  [<c05a5af5>] ? may_link+0xc5/0x130
-  [<c049b246>] ? cgroup_rmdir+0x96/0x3f0
-  [<c0473f20>] ? autoremove_wake_function+0x0/0x40
-  [<c05339ce>] ? vfs_rmdir+0x9e/0xd0
-  [<c0536806>] ? do_rmdir+0xc6/0xe0
-  [<c0506702>] ? do_munmap+0x1f2/0x2c0
-  [<c04adecc>] ? audit_syscall_entry+0x21c/0x240
-  [<c04adbe6>] ? audit_syscall_exit+0x216/0x240
-  [<c0409adf>] ? sysenter_do_call+0x12/0x28
-Code: 89 7c 24 20 8b 54 95 08 31 ff 89 44 24 14 81 c2 00 01 00 00 89 54 24 10 e9 83 00 00 00 8d 76 00 8b 44 24 18 89 f2 e8 7d 12 30 00<8b>  73 08 8b 7c 24 24 8b 07 8b 40 18 85 c0 89 44 24 08 0f 84 c5
-EIP: [<c05235b3>] mem_cgroup_force_empty+0x123/0x4a0 SS:ESP 0068:f34e7e84
-CR2: 00000000fffffffc
----[ end trace 5700dda23f74f94a ]---
+ fs/reiserfs/bitmap.c        |    2 +-
+ fs/reiserfs/resize.c        |    6 +++---
+ include/linux/reiserfs_fs.h |    2 ++
+ 3 files changed, 6 insertions(+), 4 deletions(-)
 
+diff --git a/fs/reiserfs/bitmap.c b/fs/reiserfs/bitmap.c
+index 483442e..567385a 100644
+--- a/fs/reiserfs/bitmap.c
++++ b/fs/reiserfs/bitmap.c
+@@ -214,7 +214,7 @@ static int scan_bitmap_block(struct reiserfs_transaction_handle *th,
+ 					}
+ 					/* otherwise we clear all bit were set ... */
+ 					while (--i >= *beg)
+-						reiserfs_test_and_clear_le_bit
++						reiserfs_clear_le_bit
+ 						    (i, bh->b_data);
+ 					reiserfs_restore_prepared_buffer(s, bh);
+ 					*beg = org;
+diff --git a/fs/reiserfs/resize.c b/fs/reiserfs/resize.c
+index b3a94d2..b6b9b1f 100644
+--- a/fs/reiserfs/resize.c
++++ b/fs/reiserfs/resize.c
+@@ -136,7 +136,7 @@ int reiserfs_resize(struct super_block *s, unsigned long block_count_new)
+ 				return -EIO;
+ 			}
+ 			memset(bh->b_data, 0, sb_blocksize(sb));
+-			reiserfs_test_and_set_le_bit(0, bh->b_data);
++			reiserfs_set_le_bit(0, bh->b_data);
+ 			reiserfs_cache_bitmap_metadata(s, bh, bitmap + i);
+ 
+ 			set_buffer_uptodate(bh);
+@@ -172,7 +172,7 @@ int reiserfs_resize(struct super_block *s, unsigned long block_count_new)
+ 
+ 	reiserfs_prepare_for_journal(s, bh, 1);
+ 	for (i = block_r; i < s->s_blocksize * 8; i++)
+-		reiserfs_test_and_clear_le_bit(i, bh->b_data);
++		reiserfs_clear_le_bit(i, bh->b_data);
+ 	info->free_count += s->s_blocksize * 8 - block_r;
+ 
+ 	journal_mark_dirty(&th, s, bh);
+@@ -190,7 +190,7 @@ int reiserfs_resize(struct super_block *s, unsigned long block_count_new)
+ 
+ 	reiserfs_prepare_for_journal(s, bh, 1);
+ 	for (i = block_r_new; i < s->s_blocksize * 8; i++)
+-		reiserfs_test_and_set_le_bit(i, bh->b_data);
++		reiserfs_set_le_bit(i, bh->b_data);
+ 	journal_mark_dirty(&th, s, bh);
+ 	brelse(bh);
+ 
+diff --git a/include/linux/reiserfs_fs.h b/include/linux/reiserfs_fs.h
+index eca75df..96d465f 100644
+--- a/include/linux/reiserfs_fs.h
++++ b/include/linux/reiserfs_fs.h
+@@ -2332,7 +2332,9 @@ __u32 keyed_hash(const signed char *msg, int len);
+ __u32 yura_hash(const signed char *msg, int len);
+ __u32 r5_hash(const signed char *msg, int len);
+ 
++#define reiserfs_set_le_bit		__set_bit_le
+ #define reiserfs_test_and_set_le_bit	__test_and_set_bit_le
++#define reiserfs_clear_le_bit		__clear_bit_le
+ #define reiserfs_test_and_clear_le_bit	__test_and_clear_bit_le
+ #define reiserfs_test_le_bit		test_bit_le
+ #define reiserfs_find_next_zero_le_bit	find_next_zero_bit_le
+-- 
+1.7.4.4
 
