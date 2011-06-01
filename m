@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161673Ab1FAIM2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:12:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42900 "EHLO mx2.suse.de"
+	id S1161685Ab1FAIMf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:12:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42941 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161647Ab1FAIMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:12:24 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:32 2011
-Message-Id: <20110601080331.421910604@blue.kroah.org>
+	id S1161647Ab1FAIM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:12:29 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:33 2011
+Message-Id: <20110601080332.543733149@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:05 +0900
+Date: Wed, 01 Jun 2011 17:00:06 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
@@ -17,7 +17,7 @@ Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         Eddie Wai <eddie.wai@broadcom.com>,
         James Bottomley <jbottomley@parallels.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [069/146] [SCSI] bnx2i: Fixed packet error created when the sq_size is
+Subject: [070/146] [SCSI] bnx2i: Updated the connection shutdown/cleanup
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,18 +26,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- set to 16
+ timeout
 
 From: Eddie Wai <eddie.wai@broadcom.com>
 
-commit 7287c63e986fe1a51a89f4bb1327320274a7a741 upstream.
+commit d5307a078bb0288945c900c6f4a2fd77ba6d0817 upstream.
 
-The number of chip's internal command cell, which is use to generate
-SCSI cmd packets to the target, was not initialized correctly by
-the driver when the sq_size is changed from the default 128.
-This, in turn, will create a problem where the chip's transmit pipe
-will erroneously reuse an old command cell that is no longer valid.
-The fix is to correctly initialize the chip's command cell upon setup.
+Modified the 10s wait time for inflight offload connections to
+advance to the next state to 2s based on test result.
+Modified the 20s shutdown timeout to 30s based on test result.
 
 Signed-off-by: Eddie Wai <eddie.wai@broadcom.com>
 Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
@@ -45,31 +42,31 @@ Signed-off-by: James Bottomley <jbottomley@parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/bnx2i/bnx2i_hwi.c   |    1 +
- drivers/scsi/bnx2i/bnx2i_iscsi.c |    3 +++
- 2 files changed, 4 insertions(+)
+ drivers/scsi/bnx2i/bnx2i_init.c  |    2 +-
+ drivers/scsi/bnx2i/bnx2i_iscsi.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/bnx2i/bnx2i_hwi.c
-+++ b/drivers/scsi/bnx2i/bnx2i_hwi.c
-@@ -1221,6 +1221,7 @@ int bnx2i_send_fw_iscsi_init_msg(struct
- 	iscsi_init.dummy_buffer_addr_hi =
- 		(u32) ((u64) hba->dummy_buf_dma >> 32);
- 
-+	hba->num_ccell = hba->max_sqes >> 1;
- 	hba->ctx_ccell_tasks =
- 			((hba->num_ccell & 0xFFFF) | (hba->max_sqes << 16));
- 	iscsi_init.num_ccells_per_conn = hba->num_ccell;
+--- a/drivers/scsi/bnx2i/bnx2i_init.c
++++ b/drivers/scsi/bnx2i/bnx2i_init.c
+@@ -227,7 +227,7 @@ void bnx2i_stop(void *handle)
+ 	wait_event_interruptible_timeout(hba->eh_wait,
+ 					 (list_empty(&hba->ep_ofld_list) &&
+ 					 list_empty(&hba->ep_destroy_list)),
+-					 10 * HZ);
++					 2 * HZ);
+ 	/* Wait for all endpoints to be torn down, Chip will be reset once
+ 	 *  control returns to network driver. So it is required to cleanup and
+ 	 * release all connection resources before returning from this routine.
 --- a/drivers/scsi/bnx2i/bnx2i_iscsi.c
 +++ b/drivers/scsi/bnx2i/bnx2i_iscsi.c
-@@ -1205,6 +1205,9 @@ static int bnx2i_task_xmit(struct iscsi_
- 	struct bnx2i_cmd *cmd = task->dd_data;
- 	struct iscsi_cmd *hdr = (struct iscsi_cmd *) task->hdr;
- 
-+	if (bnx2i_conn->ep->num_active_cmds + 1 > hba->max_sqes)
-+		return -ENOMEM;
-+
- 	/*
- 	 * If there is no scsi_cmnd this must be a mgmt task
- 	 */
+@@ -858,7 +858,7 @@ struct bnx2i_hba *bnx2i_alloc_hba(struct
+ 	mutex_init(&hba->net_dev_lock);
+ 	init_waitqueue_head(&hba->eh_wait);
+ 	if (test_bit(BNX2I_NX2_DEV_57710, &hba->cnic_dev_type)) {
+-		hba->hba_shutdown_tmo = 20 * HZ;
++		hba->hba_shutdown_tmo = 30 * HZ;
+ 		hba->conn_teardown_tmo = 20 * HZ;
+ 		hba->conn_ctx_destroy_tmo = 6 * HZ;
+ 	} else {	/* 5706/5708/5709 */
 
 
