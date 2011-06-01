@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162937Ab1FAIZr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:25:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44297 "EHLO mx2.suse.de"
+	id S1162980Ab1FAIjE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:39:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44304 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162919Ab1FAIZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:25:40 -0400
+	id S1162927Ab1FAIZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:25:45 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:02 2011
-Message-Id: <20110601081201.602289352@blue.kroah.org>
+Message-Id: <20110601081202.227034718@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:29 +0900
+Date: Wed, 01 Jun 2011 17:11:30 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Marcin Galczynski <marcin@galczynski.pl>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [119/165] xhci: Fix memory leak bug when dropping endpoints
+Subject: [120/165] USB: option: add support for Huawei E353 device
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,68 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 2695
-Lines: 61
+Content-Length: 1826
+Lines: 39
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: =?UTF-8?q?Marcin=20Ga=C5=82czy=C5=84ski?= <marcin@galczynski.pl>
 
-commit 834cb0fc4712a3b21c6b8c5cb55bd13607191311 upstream.
+commit 610ba42f29c3dfa46a05ff8c2cadc29f544ff76d upstream.
 
-When the USB core wants to change to an alternate interface setting that
-doesn't include an active endpoint, or de-configuring the device, the xHCI
-driver needs to issue a Configure Endpoint command to tell the host to
-drop some endpoints from the schedule.  After the command completes, the
-xHCI driver needs to free rings for any endpoints that were dropped.
+I am sharing patch to the devices/usb/serial/option.c. This allows
+operation of Huawei E353 broadband modem using the “option” driver. The
+patch simply adds new constant with proper product ID and an entry to
+usb_device_id. I worked on the 2.6.38.6 sources. Tested on Dell inspiron
+1764 (i3 core cpu) and brand new Huawei E353 modem, Fedora 15 beta.
 
-Unfortunately, the xHCI driver wasn't actually freeing the endpoint rings
-for dropped endpoints.  The rings would be freed if the endpoint's
-information was simply changed (and a new ring was installed), but dropped
-endpoints never had their rings freed.  This caused errors when the ring
-segment DMA pool was freed when the xHCI driver was unloaded:
+Looking at the type of change, i doubt it has potential to introduce
+problems in other parts of kernel or the driver itself.
 
-[ 5582.883995] xhci_hcd 0000:06:00.0: dma_pool_destroy xHCI ring segments, ffff88003371d000 busy
-[ 5582.884002] xhci_hcd 0000:06:00.0: dma_pool_destroy xHCI ring segments, ffff880033716000 busy
-[ 5582.884011] xhci_hcd 0000:06:00.0: dma_pool_destroy xHCI ring segments, ffff880033455000 busy
-[ 5582.884018] xhci_hcd 0000:06:00.0: Freed segment pool
-[ 5582.884026] xhci_hcd 0000:06:00.0: Freed device context pool
-[ 5582.884033] xhci_hcd 0000:06:00.0: Freed small stream array pool
-[ 5582.884038] xhci_hcd 0000:06:00.0: Freed medium stream array pool
-[ 5582.884048] xhci_hcd 0000:06:00.0: xhci_stop completed - status = 1
-[ 5582.884061] xhci_hcd 0000:06:00.0: USB bus 3 deregistered
-[ 5582.884193] xhci_hcd 0000:06:00.0: PCI INT A disabled
-
-Fix this issue and free endpoint rings when their endpoints are
-successfully dropped.
-
-This patch should be backported to kernels as old as 2.6.31.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Marcin Galczynski <marcin@galczynski.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -1692,8 +1692,17 @@ int xhci_check_bandwidth(struct usb_hcd
- 	xhci_dbg_ctx(xhci, virt_dev->out_ctx,
- 			LAST_CTX_TO_EP_NUM(slot_ctx->dev_info));
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -149,6 +149,7 @@ static void option_instat_callback(struc
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_E14AC			0x14AC
+ #define HUAWEI_PRODUCT_ETS1220			0x1803
++#define HUAWEI_PRODUCT_E353			0x1506
  
-+	/* Free any rings that were dropped, but not changed. */
-+	for (i = 1; i < 31; ++i) {
-+		if ((ctrl_ctx->drop_flags & (1 << (i + 1))) &&
-+				!(ctrl_ctx->add_flags & (1 << (i + 1))))
-+			xhci_free_or_cache_endpoint_ring(xhci, virt_dev, i);
-+	}
- 	xhci_zero_in_ctx(xhci, virt_dev);
--	/* Install new rings and free or cache any old rings */
-+	/*
-+	 * Install any rings for completely new endpoints or changed endpoints,
-+	 * and free or cache any old rings from changed endpoints.
-+	 */
- 	for (i = 1; i < 31; ++i) {
- 		if (!virt_dev->eps[i].new_ring)
- 			continue;
+ #define QUANTA_VENDOR_ID			0x0408
+ #define QUANTA_PRODUCT_Q101			0xEA02
+@@ -532,6 +533,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x01, 0x01) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V620) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V740) },
 
 
