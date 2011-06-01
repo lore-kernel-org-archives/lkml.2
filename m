@@ -1,73 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933284Ab1FAKEd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 06:04:33 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64398 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861Ab1FAKEc (ORCPT
+	id S933336Ab1FAKLR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 06:11:17 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:43397 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933302Ab1FAKLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 06:04:32 -0400
+	Wed, 1 Jun 2011 06:11:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=KROavVBtXMt3W0LV2zu+S8JwG09+1Zz/cZIi+CCrqImoHLjNATlehd/MOPV5lBSKmD
-         mzzouFFxgBBLQ8cQtscKdYWd8D/F1eISFr7RuirWG3w/oGMnHcWhiaKIjf7xvkirqbPr
-         wtmmZEHZBxyeDfOlv8xwWWcJehItsWvbEyMS8=
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning instead of failing
-Date: Wed,  1 Jun 2011 14:04:32 +0400
-Message-Id: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=HxoJ8EKpHKw0fyvc0nRHbdh0xkcwiX8qorjI0qT0wLnO8W/HEj0jW1Qd1/ZIA1MUvU
+         2YSgHZOxWOk5wbZNnKWxSpFnpvhUVQ+Mwl83vEYQ6EzKPOojHnpMBWlpX+Cz76z+AgbI
+         xkxbjLCZt3qwa/3cYcXwFQGsLywI5CND8Yqnc=
+Subject: Re: [PATCH 2/3] UBIFS: intialize the LPT earlier
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Ben Gardiner <bengardiner@nanometrics.ca>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Matthew L. Creech" <mlcreech@gmail.com>
+In-Reply-To: <e0fb2d40ab7314049654d85b86a4c27e9a1801ef.1306780983.git.bengardiner@nanometrics.ca>
+References: <cover.1306780983.git.bengardiner@nanometrics.ca>
+	 <e0fb2d40ab7314049654d85b86a4c27e9a1801ef.1306780983.git.bengardiner@nanometrics.ca>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Jun 2011 13:06:50 +0300
+Message-ID: <1306922810.4405.91.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please be more polite to other people. After a197b59ae6 all allocations
-with GFP_DMA set on nodes without ZONE_DMA fail nearly silently (only
-one warning during bootup is emited, no matter how many things fail).
-This is a very crude change on behaviour. To be more civil, instead of
-failing emit noisy warnings each time smbd. tries to allocate a GFP_DMA
-memory on non-ZONE_DMA node.
+Hi,
 
-This change should be reverted after one or two major releases, but
-we should be more accurate rather than hoping for the best.
+thanks for the patch, however
 
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+On Mon, 2011-05-30 at 14:56 -0400, Ben Gardiner wrote: 
+> +	err = ubifs_lpt_init(c, 1, !c->ro_mount);
+> +	if (err)
+> +		goto out_lpt;
+
+You cannot call ubifs_lpt_init()
+
+> +
+>  	if ((c->mst_node->flags & cpu_to_le32(UBIFS_MST_DIRTY)) != 0) {
+>  		ubifs_msg("recovery needed");
+>  		c->need_recovery = 1;
+>  		if (!c->ro_mount) {
+>  			err = ubifs_recover_inl_heads(c, c->sbuf);
+
+Before ubifs_recover_inl_heads() is called in case of dirty FS.
+
+I've massaged your patch and pushed the following analogous patch to the
+ubifs tree, please check/test:
+
+
+
+>From 678ef9ad3daa453723f04f84f9db6a22994e7343 Mon Sep 17 00:00:00 2001
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+Date: Mon, 30 May 2011 14:56:15 -0400
+Subject: [PATCH] UBIFS: intialize LPT earlier
+
+The current 'mount_ubifs()' implementation does not initialize the LPT until the
+the master node is marked dirty. Move the LPT initialization to before marking
+the master node dirty. This is a preparation for the next patch which will move
+the free-space-fixup check to before marking the master node dirty, because we
+have to fix-up the free space before doing any writes.
+
+Artem: massaged the patch and commit message.
+
+Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 ---
- mm/page_alloc.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ fs/ubifs/super.c |   29 ++++++++++++++++-------------
+ 1 files changed, 16 insertions(+), 13 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a4e1db3..e22dd4e 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2248,8 +2248,9 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- 	if (should_fail_alloc_page(gfp_mask, order))
- 		return NULL;
- #ifndef CONFIG_ZONE_DMA
--	if (WARN_ON_ONCE(gfp_mask & __GFP_DMA))
--		return NULL;
-+	/* Change this back to hard failure after 3.0 or 3.1. For now give
-+	 * drivers people a chance to fix their drivers w/o causing breakage. */
-+	WARN_ON(gfp_mask & __GFP_DMA);
- #endif
+diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+index 1e40db7..6d357fd 100644
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -1282,17 +1282,24 @@ static int mount_ubifs(struct ubifs_info *c)
+ 	if (err)
+ 		goto out_master;
  
- 	/*
+-	init_constants_master(c);
+-
+ 	if ((c->mst_node->flags & cpu_to_le32(UBIFS_MST_DIRTY)) != 0) {
+ 		ubifs_msg("recovery needed");
+ 		c->need_recovery = 1;
+-		if (!c->ro_mount) {
+-			err = ubifs_recover_inl_heads(c, c->sbuf);
+-			if (err)
+-				goto out_master;
+-		}
+-	} else if (!c->ro_mount) {
++	}
++
++	init_constants_master(c);
++
++	if (c->need_recovery && !c->ro_mount) {
++		err = ubifs_recover_inl_heads(c, c->sbuf);
++		if (err)
++			goto out_master;
++	}
++
++	err = ubifs_lpt_init(c, 1, !c->ro_mount);
++	if (err)
++		goto out_master;
++
++	if (!c->ro_mount) {
+ 		/*
+ 		 * Set the "dirty" flag so that if we reboot uncleanly we
+ 		 * will notice this immediately on the next mount.
+@@ -1300,13 +1307,9 @@ static int mount_ubifs(struct ubifs_info *c)
+ 		c->mst_node->flags |= cpu_to_le32(UBIFS_MST_DIRTY);
+ 		err = ubifs_write_master(c);
+ 		if (err)
+-			goto out_master;
++			goto out_lpt;
+ 	}
+ 
+-	err = ubifs_lpt_init(c, 1, !c->ro_mount);
+-	if (err)
+-		goto out_lpt;
+-
+ 	err = dbg_check_idx_size(c, c->bi.old_idx_sz);
+ 	if (err)
+ 		goto out_lpt;
 -- 
-1.7.4.4
+1.7.2.3
+
+
+
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
