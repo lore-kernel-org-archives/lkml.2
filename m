@@ -1,59 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933418Ab1FAKxp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 06:53:45 -0400
-Received: from fnarfbargle.com ([93.93.131.224]:49977 "EHLO fnarfbargle.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933373Ab1FAKxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 06:53:44 -0400
-Message-ID: <4DE61A2B.7000008@fnarfbargle.com>
-Date: Wed, 01 Jun 2011 18:53:31 +0800
-From: Brad Campbell <lists2009@fnarfbargle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, linux-mm <linux-mm@kvack.org>
-Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
-References: <4DE44333.9000903@fnarfbargle.com> <20110531054729.GA16852@liondog.tnic> <4DE4B432.1090203@fnarfbargle.com> <20110531103808.GA6915@eferding.osrc.amd.com> <4DE4FA2B.2050504@fnarfbargle.com> <alpine.LSU.2.00.1105311517480.21107@sister.anvils> <4DE589C5.8030600@fnarfbargle.com> <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com> <4DE60940.1070107@redhat.com>
-In-Reply-To: <4DE60940.1070107@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933429Ab1FAKzF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 06:55:05 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39793 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933373Ab1FAKzD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 06:55:03 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Only register wm831x RTC device if the 32.768kHz crystal is enabled
+Date: Wed,  1 Jun 2011 11:54:59 +0100
+Message-Id: <1306925699-9310-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/11 17:41, Avi Kivity wrote:
-> On 06/01/2011 12:40 PM, Avi Kivity wrote:
->>
->> bridge and netfilter, IIRC this was also the problem last time.
->>
->> Do you have any ebtables loaded?
+The RTC uses the 32.768kHz crystal so if it's not enabled (and it can only
+be enabled via OTP or InstantConfig, not runtime software) the RTC can't
+function.
 
-Never heard of them, but making a cursory check just in case..
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-core.c |   48 ++++++++++++++++++++++++++------------------
+ 1 files changed, 28 insertions(+), 20 deletions(-)
 
-brad@srv:/raid10/src/linux-2.6.39$ grep EBTABLE .config
-# CONFIG_BRIDGE_NF_EBTABLES is not set
-
->> Can you try building a kernel without ebtables? Without netfilter at all?
-
-Well, without netfilter I can't get it to crash. The problem is without 
-netfilter I can't actually use it the way I use it to get it to crash.
-
-I rebooted into a netfilter kernel, and did all the steps I'd used on 
-the no-netfilter kernel and it ticked along happily.
-
-So the result of the experiment is inconclusive. Having said that, the 
-backtraces certainly smell networky.
-
-To get it to crash, I have to start IE in the VM and https to the public 
-address of the machine, which is then redirected by netfilter back into 
-another of the VM's.
-
-I can https directly to the other VM's address, but that does not cause 
-it to crash, however without netfilter loaded I can't bounce off the 
-public IP. It's all rather confusing really.
-
-What next Sherlock?
+diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
+index ff57a16..58f033b 100644
+--- a/drivers/mfd/wm831x-core.c
++++ b/drivers/mfd/wm831x-core.c
+@@ -976,11 +976,6 @@ static struct mfd_cell wm8310_devs[] = {
+ 		.resources = wm831x_power_resources,
+ 	},
+ 	{
+-		.name = "wm831x-rtc",
+-		.num_resources = ARRAY_SIZE(wm831x_rtc_resources),
+-		.resources = wm831x_rtc_resources,
+-	},
+-	{
+ 		.name = "wm831x-status",
+ 		.id = 1,
+ 		.num_resources = ARRAY_SIZE(wm831x_status1_resources),
+@@ -1108,11 +1103,6 @@ static struct mfd_cell wm8311_devs[] = {
+ 		.resources = wm831x_power_resources,
+ 	},
+ 	{
+-		.name = "wm831x-rtc",
+-		.num_resources = ARRAY_SIZE(wm831x_rtc_resources),
+-		.resources = wm831x_rtc_resources,
+-	},
+-	{
+ 		.name = "wm831x-status",
+ 		.id = 1,
+ 		.num_resources = ARRAY_SIZE(wm831x_status1_resources),
+@@ -1264,11 +1254,6 @@ static struct mfd_cell wm8312_devs[] = {
+ 		.resources = wm831x_power_resources,
+ 	},
+ 	{
+-		.name = "wm831x-rtc",
+-		.num_resources = ARRAY_SIZE(wm831x_rtc_resources),
+-		.resources = wm831x_rtc_resources,
+-	},
+-	{
+ 		.name = "wm831x-status",
+ 		.id = 1,
+ 		.num_resources = ARRAY_SIZE(wm831x_status1_resources),
+@@ -1395,11 +1380,6 @@ static struct mfd_cell wm8320_devs[] = {
+ 		.resources = wm831x_on_resources,
+ 	},
+ 	{
+-		.name = "wm831x-rtc",
+-		.num_resources = ARRAY_SIZE(wm831x_rtc_resources),
+-		.resources = wm831x_rtc_resources,
+-	},
+-	{
+ 		.name = "wm831x-status",
+ 		.id = 1,
+ 		.num_resources = ARRAY_SIZE(wm831x_status1_resources),
+@@ -1426,6 +1406,13 @@ static struct mfd_cell touch_devs[] = {
+ 	},
+ };
+ 
++static struct mfd_cell rtc_devs[] = {
++	{
++		.name = "wm831x-rtc",
++		.num_resources = ARRAY_SIZE(wm831x_rtc_resources),
++		.resources = wm831x_rtc_resources,
++	},
++};
+ 
+ static struct mfd_cell backlight_devs[] = {
+ 	{
+@@ -1658,6 +1645,27 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 		goto err_irq;
+ 	}
+ 
++	/* The RTC can only be used if the 32.768kHz crystal is
++	 * enabled; this can't be controlled by software at runtime.
++	 */
++	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
++	if (ret < 0) {
++		dev_err(wm831x->dev, "Failed to read clock status: %d\n", ret);
++		goto err_irq;
++	}
++
++	if (ret & WM831X_XTAL_ENA) {
++		ret = mfd_add_devices(wm831x->dev, wm831x_num,
++				      rtc_devs, ARRAY_SIZE(rtc_devs),
++				      NULL, wm831x->irq_base);
++		if (ret != 0) {
++			dev_err(wm831x->dev, "Failed to add RTC: %d\n", ret);
++			goto err_irq;
++		}
++	} else {
++		dev_info(wm831x->dev, "32.768kHz clock disabled, no RTC\n");
++	}
++
+ 	if (pdata && pdata->backlight) {
+ 		/* Treat errors as non-critical */
+ 		ret = mfd_add_devices(wm831x->dev, wm831x_num, backlight_devs,
+-- 
+1.7.5.3
 
