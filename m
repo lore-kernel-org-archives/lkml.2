@@ -1,107 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759251Ab1FARSh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 13:18:37 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:49335 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758056Ab1FARSf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 13:18:35 -0400
-Date: Wed, 1 Jun 2011 13:18:16 -0400 (EDT)
-From: Dave Anderson <anderson@redhat.com>
-To: prasad@linux.vnet.ibm.com
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Message-ID: <718105787.11709.1306948696436.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20110531174043.GA2000@in.ibm.com>
-Subject: Re: [RFC Patch 4/6] PANIC_MCE: Introduce a new panic flag for fatal
- MCE, capture related information
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1759274Ab1FARUW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 13:20:22 -0400
+Received: from waste.org ([173.11.57.241]:41951 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758056Ab1FARUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 13:20:21 -0400
+Subject: Re: [PATCH 1/10] drivers/char/hw_random/omap-rng.c: add missing
+ clk_put
+From: Matt Mackall <mpm@selenic.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Deepak Saxena <dsaxena@plexity.net>, kernel-janitors@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1306948213-20767-1-git-send-email-julia@diku.dk>
+References: <1306948213-20767-1-git-send-email-julia@diku.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Jun 2011 12:20:14 -0500
+Message-ID: <1306948814.4204.572.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-06-01 at 19:10 +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Convert a return to a jump to an existing label that calls clk_put.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r exists@
+> expression e1,e2;
+> statement S;
+> @@
+> 
+> e1 = clk_get@p1(...);
+> ... when != e1 = e2
+>     when != clk_put(e1)
+>     when any
+> if (...) { ... when != clk_put(e1)
+>                when != if (...) { ... clk_put(e1) ... }
+> * return@p3 ...;
+>  } else S
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+
+That's impressive.
+
+Signed-off-by: Matt Mackall <mpm@selenic.com>
+
+> ---
+>  drivers/char/hw_random/omap-rng.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/char/hw_random/omap-rng.c b/drivers/char/hw_random/omap-rng.c
+> index 2cc755a..b757fac 100644
+> --- a/drivers/char/hw_random/omap-rng.c
+> +++ b/drivers/char/hw_random/omap-rng.c
+> @@ -113,8 +113,10 @@ static int __devinit omap_rng_probe(struct platform_device *pdev)
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  
+> -	if (!res)
+> -		return -ENOENT;
+> +	if (!res) {
+> +		ret = -ENOENT;
+> +		goto err_region;
+> +	}
+>  
+>  	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
+>  		ret = -EBUSY;
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
------ Original Message -----
-> On Fri, May 27, 2011 at 11:04:06AM -0700, Eric W. Biederman wrote:
-> > "K.Prasad" <prasad@linux.vnet.ibm.com> writes:
-> >
-> > > PANIC_MCE: Introduce a new panic flag for fatal MCE, capture
-> > > related information
-> > >
-> > > Fatal machine check exceptions (caused due to hardware memory errors) will now
-> > > result in a 'slim' coredump that captures vital information about the MCE. This
-> > > patch introduces a new panic flag, and new parameters to *panic functions
-> > > that can capture more information pertaining to the cause of
-> > > crash.
-> > >
-> > > Enable a new elf-notes section to store additional information about the crash.
-> > > For MCE, enable a new notes section that captures relevant register status
-> > > (struct mce) to be later read during coredump analysis.
-> >
-> > There may be a reason to pass everything struct mce through 5 layers of
-> > code but right now it looks like it just makes everything uglier to no
-> > real purpose.
-> 
-> We could have stopped with just a blank elf-note of type NT_MCE
-> indicating an MCE triggered panic, but dumping 'struct mce' in it will
-> help gather more useful information about the error - especially the
-> memory address that experienced unrecoverable error (stored in mce->addr).
-> 
-> The patch 6/6 for the 'crash' tool enabled decoding of 'struct
-> mce' to show this information (although the sample log in patch 0/6)
-> didn't show these benefits because 'mce-inject' tool used to soft-inject
-> these errors doesn't populate all registers with valid contents.
-> 
-> The idea was that when mce->addr contains physical address is shown
-> while decoding coredump, the corresponding memory DIMM could be identified
-> for replacement/isolation.
-> 
-> Given that 'struct mce' isn't placed in a user-space visible file its
-> duplicate copies have to be maintained in 'crash' (like it is done in
-> 'mcelog' tool), and that's one disadvantage.
+-- 
+Mathematics is the supreme nostalgia of our time.
 
-FWIW, unlike mcelog, it really doesn't have to be maintained in the crash
-utility.  It's just another kernel data structure whose contents can be
-determined dynamically during runtime:
 
-  crash> struct mce
-  struct mce {
-      __u64 status;
-      __u64 misc;
-      __u64 addr;
-      __u64 mcgstatus;
-      __u64 ip;
-      __u64 tsc;
-      __u64 time;
-      __u8 cpuvendor;
-      __u8 inject_flags;
-      __u16 pad;
-      __u32 cpuid;
-      __u8 cs;
-      __u8 bank;
-      __u8 cpu;
-      __u8 finished;
-      __u32 extcpu;
-      __u32 socketid;
-      __u32 apicid;
-      __u64 mcgcap;
-  }
-  SIZE: 88
-  crash> 
-
-Dave
- 
-> If you think that this complicates the patch, I'll start with a much
-> 'slimmer' version (!) of the slimdump and the improvements may be
-> contemplated iteratively.
-> 
-> Thanks,
-> K.Prasad
