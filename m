@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162220Ab1FAI7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:59:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43611 "EHLO mx2.suse.de"
+	id S1162240Ab1FAI7P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:59:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43618 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162163Ab1FAISH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:18:07 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:09 2011
-Message-Id: <20110601081109.046637617@blue.kroah.org>
+	id S1162175Ab1FAISM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:18:12 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:10 2011
+Message-Id: <20110601081109.663529749@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:10:04 +0900
+Date: Wed, 01 Jun 2011 17:10:05 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Olsa <jolsa@redhat.com>, Brian Gerst <brgerst@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [034/165] x86, 64-bit: Fix copy_[to/from]_user() checks for the
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Garzik <jgarzik@pobox.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [035/165] libata: Use Maximum Write Same Length to report discard size
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,121 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- userspace address limit
-Content-Length: 3719
-Lines: 113
+ limit
+Content-Length: 1118
+Lines: 33
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit 26afb7c661080ae3f1f13ddf7f0c58c4f931c22b upstream.
+commit 5f4e206666f834340b69ddb43f86de3851c8675a upstream.
 
-As reported in BZ #30352:
+Previously we used Maximum Unmap LBA Count in the Block Limits VPD to
+signal the maximum number of sectors we could handle in a single Write
+Same command.
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=30352
+Starting with SBC3r26 the Block Limits VPD has an explicit limit on the
+number of blocks in a Write Same. This means we can stop abusing a field
+related to the Unmap command and let our SAT use the proper value in the
+VPD (Maximum Write Same Length).
 
-there's a kernel bug related to reading the last allowed page on x86_64.
-
-The _copy_to_user() and _copy_from_user() functions use the following
-check for address limit:
-
-  if (buf + size >= limit)
-	fail();
-
-while it should be more permissive:
-
-  if (buf + size > limit)
-	fail();
-
-That's because the size represents the number of bytes being
-read/write from/to buf address AND including the buf address.
-So the copy function will actually never touch the limit
-address even if "buf + size == limit".
-
-Following program fails to use the last page as buffer
-due to the wrong limit check:
-
- #include <sys/mman.h>
- #include <sys/socket.h>
- #include <assert.h>
-
- #define PAGE_SIZE       (4096)
- #define LAST_PAGE       ((void*)(0x7fffffffe000))
-
- int main()
- {
-        int fds[2], err;
-        void * ptr = mmap(LAST_PAGE, PAGE_SIZE, PROT_READ | PROT_WRITE,
-                          MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-        assert(ptr == LAST_PAGE);
-        err = socketpair(AF_LOCAL, SOCK_STREAM, 0, fds);
-        assert(err == 0);
-        err = send(fds[0], ptr, PAGE_SIZE, 0);
-        perror("send");
-        assert(err == PAGE_SIZE);
-        err = recv(fds[1], ptr, PAGE_SIZE, MSG_WAITALL);
-        perror("recv");
-        assert(err == PAGE_SIZE);
-        return 0;
- }
-
-The other place checking the addr limit is the access_ok() function,
-which is working properly. There's just a misleading comment
-for the __range_not_ok() macro - which this patch fixes as well.
-
-The last page of the user-space address range is a guard page and
-Brian Gerst observed that the guard page itself due to an erratum on K8 cpus
-(#121 Sequential Execution Across Non-Canonical Boundary Causes Processor
-Hang).
-
-However, the test code is using the last valid page before the guard page.
-The bug is that the last byte before the guard page can't be read
-because of the off-by-one error. The guard page is left in place.
-
-This bug would normally not show up because the last page is
-part of the process stack and never accessed via syscalls.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Brian Gerst <brgerst@gmail.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1305210630-7136-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Jeff Garzik <jgarzik@pobox.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/uaccess.h |    2 +-
- arch/x86/lib/copy_user_64.S    |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/ata/libata-scsi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/uaccess.h
-+++ b/arch/x86/include/asm/uaccess.h
-@@ -42,7 +42,7 @@
-  * Returns 0 if the range is valid, nonzero otherwise.
-  *
-  * This is equivalent to the following test:
-- * (u33)addr + (u33)size >= (u33)current->addr_limit.seg (u65 for x86_64)
-+ * (u33)addr + (u33)size > (u33)current->addr_limit.seg (u65 for x86_64)
-  *
-  * This needs 33-bit (65-bit for x86_64) arithmetic. We have a carry...
-  */
---- a/arch/x86/lib/copy_user_64.S
-+++ b/arch/x86/lib/copy_user_64.S
-@@ -72,7 +72,7 @@ ENTRY(_copy_to_user)
- 	addq %rdx,%rcx
- 	jc bad_to_user
- 	cmpq TI_addr_limit(%rax),%rcx
--	jae bad_to_user
-+	ja bad_to_user
- 	ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
- 	CFI_ENDPROC
- ENDPROC(_copy_to_user)
-@@ -85,7 +85,7 @@ ENTRY(_copy_from_user)
- 	addq %rdx,%rcx
- 	jc bad_from_user
- 	cmpq TI_addr_limit(%rax),%rcx
--	jae bad_from_user
-+	ja bad_from_user
- 	ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
- 	CFI_ENDPROC
- ENDPROC(_copy_from_user)
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -2139,7 +2139,7 @@ static unsigned int ata_scsiop_inq_b0(st
+ 	 * with the unmap bit set.
+ 	 */
+ 	if (ata_id_has_trim(args->id)) {
+-		put_unaligned_be32(65535 * 512 / 8, &rbuf[20]);
++		put_unaligned_be64(65535 * 512 / 8, &rbuf[36]);
+ 		put_unaligned_be32(1, &rbuf[28]);
+ 	}
+ 
 
 
