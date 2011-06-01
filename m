@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161724Ab1FAIM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:12:58 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43586 "EHLO mx1.suse.de"
+	id S1161737Ab1FAINH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:13:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43609 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161710Ab1FAIMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:12:51 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:38 2011
-Message-Id: <20110601080337.029731823@blue.kroah.org>
+	id S1161718Ab1FAIM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:12:57 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:39 2011
+Message-Id: <20110601080338.271276295@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:10 +0900
+Date: Wed, 01 Jun 2011 17:00:11 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
@@ -17,7 +17,7 @@ Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         James Bottomley <jbottomley@parallels.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [074/146] [SCSI] target: Fix bug with task_sg chained
+Subject: [075/146] [SCSI] target: Fix task->task_execute_queue=1 clear bug +
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,98 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- transport_free_dev_tasks release
+ LUN_RESET OOPs
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit f436677262a5b524ac87675014c6d4e8ee153029 upstream.
+commit af57c3ac9947990da2608561b71f4799eb7795c6 upstream.
 
-This patch addresses a bug in the target core release path for HW
-operation where transport_free_dev_tasks() was incorrectly being called
-from transport_lun_remove_cmd() while releasing a se_cmd reference and
-calling struct target_core_fabric_ops->queue_data_in().
+This patch fixes a bug where task->task_execute_queue=1 was not being
+cleared once se_task had been removed from se_device->execute_task_list,
+resulting in an OOPs in core_tmr_lun_reset() for the task->task_active=0
+case where transport_remove_task_from_execute_queue() was incorrectly
+being called.
 
-This would result in a OOPs with HW target mode when the release of
-se_task->task_sg[] would happen before pci_unmap_sg() can be called in
-HW target mode fabric module code.  This patch addresses the issue by
-moving transport_free_dev_tasks() from transport_lun_remove_cmd() into
-transport_generic_free_cmd(), and adding TRANSPORT_FREE_CMD_INTR and
-transport_generic_free_cmd_intr() to allow se_cmd descriptor release
-to happen fromfrom within transport_processing_thread() process context
-when release of se_cmd is not possible from HW interrupt context.
+This patch fixes two cases in transport_get_task_from_execute_queue()
+and transport_remove_task_from_execute_queue() to properly clear
+task->task_execute_queue=0 once list_del(&task->t_execute_list) has
+been called.
+
+It also adds an explict check in transport_remove_task_from_execute_queue()
+to dump_stack + return if called with task->task_execute_queue=0.
 
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: James Bottomley <jbottomley@parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/target/target_core_transport.c |   13 ++++++++++++-
- include/target/target_core_base.h      |    1 +
- include/target/target_core_transport.h |    1 +
- 3 files changed, 14 insertions(+), 1 deletion(-)
+ drivers/target/target_core_transport.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
 --- a/drivers/target/target_core_transport.c
 +++ b/drivers/target/target_core_transport.c
-@@ -765,7 +765,6 @@ static void transport_lun_remove_cmd(str
- 	transport_all_task_dev_remove_state(cmd);
- 	spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock, flags);
+@@ -1197,6 +1197,7 @@ transport_get_task_from_execute_queue(st
+ 		break;
  
--	transport_free_dev_tasks(cmd);
+ 	list_del(&task->t_execute_list);
++	atomic_set(&task->task_execute_queue, 0);
+ 	atomic_dec(&dev->execute_tasks);
  
- check_lun:
- 	spin_lock_irqsave(&lun->lun_cmd_lock, flags);
-@@ -2062,6 +2061,13 @@ int transport_generic_handle_tmr(
- }
- EXPORT_SYMBOL(transport_generic_handle_tmr);
- 
-+void transport_generic_free_cmd_intr(
-+	struct se_cmd *cmd)
-+{
-+	transport_add_cmd_to_queue(cmd, TRANSPORT_FREE_CMD_INTR);
-+}
-+EXPORT_SYMBOL(transport_generic_free_cmd_intr);
-+
- static int transport_stop_tasks_for_cmd(struct se_cmd *cmd)
+ 	return task;
+@@ -1212,8 +1213,14 @@ void transport_remove_task_from_execute_
  {
- 	struct se_task *task, *task_tmp;
-@@ -5302,6 +5308,8 @@ void transport_generic_free_cmd(
- 		if (wait_for_tasks && cmd->transport_wait_for_tasks)
- 			cmd->transport_wait_for_tasks(cmd, 0, 0);
+ 	unsigned long flags;
  
-+		transport_free_dev_tasks(cmd);
++	if (atomic_read(&task->task_execute_queue) == 0) {
++		dump_stack();
++		return;
++	}
 +
- 		transport_generic_remove(cmd, release_to_pool,
- 				session_reinstatement);
- 	}
-@@ -6142,6 +6150,9 @@ get_cmd:
- 		case TRANSPORT_REMOVE:
- 			transport_generic_remove(cmd, 1, 0);
- 			break;
-+		case TRANSPORT_FREE_CMD_INTR:
-+			transport_generic_free_cmd(cmd, 0, 1, 0);
-+			break;
- 		case TRANSPORT_PROCESS_TMR:
- 			transport_generic_do_tmr(cmd);
- 			break;
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -98,6 +98,7 @@ enum transport_state_table {
- 	TRANSPORT_REMOVE	= 14,
- 	TRANSPORT_FREE		= 15,
- 	TRANSPORT_NEW_CMD_MAP	= 16,
-+	TRANSPORT_FREE_CMD_INTR = 17,
- };
- 
- /* Used for struct se_cmd->se_cmd_flags */
---- a/include/target/target_core_transport.h
-+++ b/include/target/target_core_transport.h
-@@ -170,6 +170,7 @@ extern int transport_generic_handle_cdb_
- extern int transport_generic_handle_data(struct se_cmd *);
- extern void transport_new_cmd_failure(struct se_cmd *);
- extern int transport_generic_handle_tmr(struct se_cmd *);
-+extern void transport_generic_free_cmd_intr(struct se_cmd *);
- extern void __transport_stop_task_timer(struct se_task *, unsigned long *);
- extern unsigned char transport_asciihex_to_binaryhex(unsigned char val[2]);
- extern int transport_generic_map_mem_to_cmd(struct se_cmd *cmd, struct scatterlist *, u32,
+ 	spin_lock_irqsave(&dev->execute_task_lock, flags);
+ 	list_del(&task->t_execute_list);
++	atomic_set(&task->task_execute_queue, 0);
+ 	atomic_dec(&dev->execute_tasks);
+ 	spin_unlock_irqrestore(&dev->execute_task_lock, flags);
+ }
 
 
