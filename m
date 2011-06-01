@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161269Ab1FAIID (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:08:03 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43171 "EHLO mx1.suse.de"
+	id S1161288Ab1FAJ2y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:28:54 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43177 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161215Ab1FAIH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:07:56 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:46 2011
-Message-Id: <20110601080245.012931779@blue.kroah.org>
+	id S1161261Ab1FAIIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:08:01 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:47 2011
+Message-Id: <20110601080246.155945078@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:15 +0900
+Date: Wed, 01 Jun 2011 16:59:16 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric B Munson <emunson@mgebm.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [019/146] powerpc/oprofile: Handle events that raise an exception without overflowing
+Subject: [020/146] iwlagn: fix iwl_is_any_associated
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,66 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric B Munson <emunson@mgebm.net>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit ad5d5292f16c6c1d7d3e257c4c7407594286b97e upstream.
+commit 054ec924944912413e4ee927b8cf02f476d08783 upstream.
 
-Commit 0837e3242c73566fc1c0196b4ec61779c25ffc93 fixes a situation on POWER7
-where events can roll back if a specualtive event doesn't actually complete.
-This can raise a performance monitor exception.  We need to catch this to ensure
-that we reset the PMC.  In all cases the PMC will be less than 256 cycles from
-overflow.
+The function iwl_is_any_associated() was intended
+to check both contexts, but due to an oversight
+it only checks the BSS context. This leads to a
+problem with scanning since the passive dwell
+time isn't restricted appropriately and a scan
+that includes passive channels will never finish
+if only the PAN context is associated since the
+default dwell time of 120ms won't fit into the
+normal 100 TU DTIM interval.
 
-This patch lifts Anton's fix for the problem in perf and applies it to oprofile
-as well.
+Fix the function by using for_each_context() and
+also reorganise the other functions a bit to take
+advantage of each other making the code easier to
+read.
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/oprofile/op_model_power4.c |   24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/iwl-dev.h |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/arch/powerpc/oprofile/op_model_power4.c
-+++ b/arch/powerpc/oprofile/op_model_power4.c
-@@ -261,6 +261,28 @@ static int get_kernel(unsigned long pc,
- 	return is_kernel;
+--- a/drivers/net/wireless/iwlwifi/iwl-dev.h
++++ b/drivers/net/wireless/iwlwifi/iwl-dev.h
+@@ -1604,21 +1604,24 @@ iwl_rxon_ctx_from_vif(struct ieee80211_v
+ 	     ctx < &priv->contexts[NUM_IWL_RXON_CTX]; ctx++)	\
+ 		if (priv->valid_contexts & BIT(ctx->ctxid))
+ 
+-static inline int iwl_is_associated(struct iwl_priv *priv,
+-				    enum iwl_rxon_context_id ctxid)
++static inline int iwl_is_associated_ctx(struct iwl_rxon_context *ctx)
+ {
+-	return (priv->contexts[ctxid].active.filter_flags &
+-			RXON_FILTER_ASSOC_MSK) ? 1 : 0;
++	return (ctx->active.filter_flags & RXON_FILTER_ASSOC_MSK) ? 1 : 0;
  }
  
-+static bool pmc_overflow(unsigned long val)
-+{
-+	if ((int)val < 0)
-+		return true;
-+
-+	/*
-+	 * Events on POWER7 can roll back if a speculative event doesn't
-+	 * eventually complete. Unfortunately in some rare cases they will
-+	 * raise a performance monitor exception. We need to catch this to
-+	 * ensure we reset the PMC. In all cases the PMC will be 256 or less
-+	 * cycles from overflow.
-+	 *
-+	 * We only do this if the first pass fails to find any overflowing
-+	 * PMCs because a user might set a period of less than 256 and we
-+	 * don't want to mistakenly reset them.
-+	 */
-+	if (__is_processor(PV_POWER7) && ((0x80000000 - val) <= 256))
-+		return true;
-+
-+	return false;
-+}
-+
- static void power4_handle_interrupt(struct pt_regs *regs,
- 				    struct op_counter_config *ctr)
+-static inline int iwl_is_any_associated(struct iwl_priv *priv)
++static inline int iwl_is_associated(struct iwl_priv *priv,
++				    enum iwl_rxon_context_id ctxid)
  {
-@@ -281,7 +303,7 @@ static void power4_handle_interrupt(stru
+-	return iwl_is_associated(priv, IWL_RXON_CTX_BSS);
++	return iwl_is_associated_ctx(&priv->contexts[ctxid]);
+ }
  
- 	for (i = 0; i < cur_cpu_spec->num_pmcs; ++i) {
- 		val = classic_ctr_read(i);
--		if (val < 0) {
-+		if (pmc_overflow(val)) {
- 			if (oprofile_running && ctr[i].enabled) {
- 				oprofile_add_ext_sample(pc, regs, i, is_kernel);
- 				classic_ctr_write(i, reset_value[i]);
+-static inline int iwl_is_associated_ctx(struct iwl_rxon_context *ctx)
++static inline int iwl_is_any_associated(struct iwl_priv *priv)
+ {
+-	return (ctx->active.filter_flags & RXON_FILTER_ASSOC_MSK) ? 1 : 0;
++	struct iwl_rxon_context *ctx;
++	for_each_context(priv, ctx)
++		if (iwl_is_associated_ctx(ctx))
++			return true;
++	return false;
+ }
+ 
+ static inline int is_channel_valid(const struct iwl_channel_info *ch_info)
 
 
