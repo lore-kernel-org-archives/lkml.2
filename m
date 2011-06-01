@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161026Ab1FADLB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 23:11:01 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53954 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933155Ab1FADK5 (ORCPT
+	id S1161043Ab1FADL5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 23:11:57 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:32782 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161010Ab1FADK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 23:10:57 -0400
+	Tue, 31 May 2011 23:10:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=chromium.org; s=google;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=mZNaOWw1EOk0erk512fk3a7xy8zOA9WKbI6FEahvylqiezLl4Ni9g2pEnAxEdf7UlH
-         2CEVnJiz80S17N1+VMKJ8ijXmCuVpsr47kAZNKk3P/j5WVVZY//cl6vSg5RXTDD8WYTo
-         qFUZc7Wjm1gN+s+SjP6KIYWqwz5wfb5ERgz/M=
+        b=KNuoOOblS+kRKhvW0eLKJfSNrTCqI9Pl5NXSftMfUrR1mVaguu6zrHHk/nqaJHOsH3
+         Fqc3cSCu6ZNiHeLXwaeRTwWa4i9bdPcZ2Eifwy63JxaLkqkDz8zYIcUh39aV6Q6I0FKV
+         tcsB7/8zQF62rOE89suGfALb2rLb9RpCAC3hA=
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: kees.cook@canonical.com, torvalds@linux-foundation.org, tglx@linutronix.de,
         mingo@elte.hu, rostedt@goodmis.org, jmorris@namei.org,
-        Will Drewry <wad@chromium.org>, Michal Simek <monstr@monstr.eu>,
-        microblaze-uclinux@itee.uq.edu.au
-Subject: [PATCH v3 08/13] microblaze: select HAVE_SECCOMP_FILTER and provide seccomp_execve
-Date: Tue, 31 May 2011 22:10:40 -0500
-Message-Id: <1306897845-9393-8-git-send-email-wad@chromium.org>
+        Will Drewry <wad@chromium.org>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org
+Subject: [PATCH v3 09/13] mips: select HAVE_SECCOMP_FILTER and provide seccomp_execve
+Date: Tue, 31 May 2011 22:10:41 -0500
+Message-Id: <1306897845-9393-9-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <BANLkTimNcag-ZmVTXjUoTyiuJm6jtW0DgA@mail.gmail.com>
 References: <BANLkTimNcag-ZmVTXjUoTyiuJm6jtW0DgA@mail.gmail.com>
@@ -34,39 +34,50 @@ system call numbering for execve and selecting HAVE_SECCOMP_FILTER.
 
 Signed-off-by: Will Drewry <wad@chromium.org>
 ---
- arch/microblaze/Kconfig               |    1 +
- arch/microblaze/include/asm/seccomp.h |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
+ arch/mips/Kconfig               |    1 +
+ arch/mips/include/asm/seccomp.h |    3 +++
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-index eccdefe..30ef677 100644
---- a/arch/microblaze/Kconfig
-+++ b/arch/microblaze/Kconfig
-@@ -1,6 +1,7 @@
- config MICROBLAZE
- 	def_bool y
- 	select HAVE_MEMBLOCK
-+	select HAVE_SECCOMP_FILTER
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 8e256cc..d376f68 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -10,6 +10,7 @@ config MIPS
+ 	select HAVE_ARCH_KGDB
  	select HAVE_FUNCTION_TRACER
  	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
- 	select HAVE_FUNCTION_GRAPH_TRACER
-diff --git a/arch/microblaze/include/asm/seccomp.h b/arch/microblaze/include/asm/seccomp.h
-index 0d91275..0e38eed 100644
---- a/arch/microblaze/include/asm/seccomp.h
-+++ b/arch/microblaze/include/asm/seccomp.h
-@@ -7,10 +7,12 @@
- #define __NR_seccomp_write		__NR_write
- #define __NR_seccomp_exit		__NR_exit
- #define __NR_seccomp_sigreturn		__NR_sigreturn
-+#define __NR_seccomp_execve		__NR_execve
++	select HAVE_SECCOMP_FILTER
+ 	select HAVE_DYNAMIC_FTRACE
+ 	select HAVE_FTRACE_MCOUNT_RECORD
+ 	select HAVE_C_RECORDMCOUNT
+diff --git a/arch/mips/include/asm/seccomp.h b/arch/mips/include/asm/seccomp.h
+index ae6306e..4014a3a 100644
+--- a/arch/mips/include/asm/seccomp.h
++++ b/arch/mips/include/asm/seccomp.h
+@@ -6,6 +6,7 @@
+ #define __NR_seccomp_write __NR_write
+ #define __NR_seccomp_exit __NR_exit
+ #define __NR_seccomp_sigreturn __NR_rt_sigreturn
++#define __NR_seccomp_execve __NR_execve
  
- #define __NR_seccomp_read_32		__NR_read
- #define __NR_seccomp_write_32		__NR_write
- #define __NR_seccomp_exit_32		__NR_exit
- #define __NR_seccomp_sigreturn_32	__NR_sigreturn
-+#define __NR_seccomp_execve_32		__NR_execve
+ /*
+  * Kludge alert:
+@@ -19,6 +20,7 @@
+ #define __NR_seccomp_write_32		4004
+ #define __NR_seccomp_exit_32		4001
+ #define __NR_seccomp_sigreturn_32	4193	/* rt_sigreturn */
++#define __NR_seccomp_execve_32		4011
  
- #endif	/* _ASM_MICROBLAZE_SECCOMP_H */
+ #elif defined(CONFIG_MIPS32_N32)
+ 
+@@ -26,6 +28,7 @@
+ #define __NR_seccomp_write_32		6001
+ #define __NR_seccomp_exit_32		6058
+ #define __NR_seccomp_sigreturn_32	6211	/* rt_sigreturn */
++#define __NR_seccomp_execve_32		6057
+ 
+ #endif /* CONFIG_MIPS32_O32 */
+ 
 -- 
 1.7.0.4
 
