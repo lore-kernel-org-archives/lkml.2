@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163231Ab1FAI3L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:29:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44664 "EHLO mx2.suse.de"
+	id S1163244Ab1FAI3P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:29:15 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45298 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1163211Ab1FAI3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:29:00 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:26 2011
-Message-Id: <20110601081225.794665632@blue.kroah.org>
+	id S1163191Ab1FAI3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:29:05 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:27 2011
+Message-Id: <20110601081226.488594027@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:12:07 +0900
+Date: Wed, 01 Jun 2011 17:12:08 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hemant Pedanekar <hemantp@ti.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [157/165] PCI: Add quirk for setting valid class for TI816X Endpoint
+Subject: [158/165] xen/p2m: Create entries in the P2M_MFN treess to track 1-1
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +25,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1561
-Lines: 45
+ mappings
+Content-Length: 2188
+Lines: 74
 
-From: Hemant Pedanekar <hemantp@ti.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 63c4408074cbcc070ac17fc10e524800eb9bd0b0 upstream.
+commit 8c5950881c3b5e6e350e4b0438a8ccc513d90df9 upstream.
 
-TI816X (common name for DM816x/C6A816x/AM389x family) devices configured
-to boot as PCIe Endpoint have class code = 0. This makes kernel PCI bus
-code to skip allocating BARs to these devices resulting into following
-type of error when trying to enable them:
+.. when applicable. We need to track in the p2m_mfn and
+p2m_mfn_p the MFNs and pointers, respectivly, for the P2M entries
+that are allocated for the identity mappings. Without this,
+a PV domain with an E820 that triggers the 1-1 mapping to kick in,
+won't be able to be restored as the P2M won't have the identity
+mappings.
 
-"Device 0000:01:00.0 not available because of resource collisions"
-
-The device cannot be operated because of the above issue.
-
-This patch adds a ID specific (TI VENDOR ID and 816X DEVICE ID based)
-'early' fixup quirk to replace class code with
-PCI_CLASS_MULTIMEDIA_VIDEO as class.
-
-Signed-off-by: Hemant Pedanekar <hemantp@ti.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/x86/xen/p2m.c |   30 ++++++++++++++++++++++++++++--
+ 1 file changed, 28 insertions(+), 2 deletions(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2784,6 +2784,16 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_IN
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x3c28, vtd_mask_spec_errors);
- #endif
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -522,11 +522,20 @@ static bool __init __early_alloc_p2m(uns
+ 	/* Boundary cross-over for the edges: */
+ 	if (idx) {
+ 		unsigned long *p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
++		unsigned long *mid_mfn_p;
  
-+static void __devinit fixup_ti816x_class(struct pci_dev* dev)
-+{
-+	/* TI 816x devices do not have class code set when in PCIe boot mode */
-+	if (dev->class == PCI_CLASS_NOT_DEFINED) {
-+		dev_info(&dev->dev, "Setting PCI class for 816x PCIe device\n");
-+		dev->class = PCI_CLASS_MULTIMEDIA_VIDEO;
-+	}
-+}
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_TI, 0xb800, fixup_ti816x_class);
+ 		p2m_init(p2m);
+ 
+ 		p2m_top[topidx][mididx] = p2m;
+ 
++		/* For save/restore we need to MFN of the P2M saved */
 +
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
- {
++		mid_mfn_p = p2m_top_mfn_p[topidx];
++		WARN(mid_mfn_p[mididx] != virt_to_mfn(p2m_missing),
++			"P2M_TOP_P[%d][%d] != MFN of p2m_missing!\n",
++			topidx, mididx);
++		mid_mfn_p[mididx] = virt_to_mfn(p2m);
++
+ 	}
+ 	return idx != 0;
+ }
+@@ -549,12 +558,29 @@ unsigned long __init set_phys_range_iden
+ 		pfn += P2M_MID_PER_PAGE * P2M_PER_PAGE)
+ 	{
+ 		unsigned topidx = p2m_top_index(pfn);
+-		if (p2m_top[topidx] == p2m_mid_missing) {
+-			unsigned long **mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
++		unsigned long *mid_mfn_p;
++		unsigned long **mid;
++
++		mid = p2m_top[topidx];
++		mid_mfn_p = p2m_top_mfn_p[topidx];
++		if (mid == p2m_mid_missing) {
++			mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
+ 
+ 			p2m_mid_init(mid);
+ 
+ 			p2m_top[topidx] = mid;
++
++			BUG_ON(mid_mfn_p != p2m_mid_missing_mfn);
++		}
++		/* And the save/restore P2M tables.. */
++		if (mid_mfn_p == p2m_mid_missing_mfn) {
++			mid_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
++			p2m_mid_mfn_init(mid_mfn_p);
++
++			p2m_top_mfn_p[topidx] = mid_mfn_p;
++			p2m_top_mfn[topidx] = virt_to_mfn(mid_mfn_p);
++			/* Note: we don't set mid_mfn_p[midix] here,
++		 	 * look in __early_alloc_p2m */
+ 		}
+ 	}
+ 
 
 
