@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162844Ab1FAIYk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:24:40 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44848 "EHLO mx1.suse.de"
+	id S1162877Ab1FAIl1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:41:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44228 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162832Ab1FAIYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:24:34 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:54 2011
-Message-Id: <20110601081154.205725305@blue.kroah.org>
+	id S1162840Ab1FAIYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:24:39 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:55 2011
+Message-Id: <20110601081154.814441119@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:17 +0900
+Date: Wed, 01 Jun 2011 17:11:18 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Craig Shelley <craig@microtron.org.uk>,
+        Elizabeth Jennifer Myers <elizabeth@sporksirc.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [107/165] USB: CP210x Add 4 Device IDs for AC-Services Devices
+Subject: [108/165] USB: moto_modem: Add USB identifier for the Motorola VE240.
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1214
-Lines: 28
+Content-Length: 841
+Lines: 25
 
-From: Craig Shelley <craig@microtron.org.uk>
+From: Elizabeth Jennifer Myers <elizabeth@sporksirc.net>
 
-commit 4eff0b40a7174896b860312910e0db51f2dcc567 upstream.
+commit 3938a0b32dc12229e76735679b37095bc2bc1578 upstream.
 
-This patch adds 4 device IDs for CP2102 based devices manufactured by
-AC-Services. See http://www.ac-services.eu for further info.
+Tested on my phone, the ttyUSB device is created and is fully
+functional.
 
-Signed-off-by: Craig Shelley <craig@microtron.org.uk>
+Signed-off-by: Elizabeth Jennifer Myers <elizabeth@sporksirc.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/cp210x.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/moto_modem.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -112,6 +112,10 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x8418) }, /* IRZ Automation Teleport SG-10 GSM/GPRS Modem */
- 	{ USB_DEVICE(0x10C4, 0x846E) }, /* BEI USB Sensor Interface (VCP) */
- 	{ USB_DEVICE(0x10C4, 0x8477) }, /* Balluff RFID */
-+	{ USB_DEVICE(0x10C4, 0x85EA) }, /* AC-Services IBUS-IF */
-+	{ USB_DEVICE(0x10C4, 0x85EB) }, /* AC-Services CIS-IBUS */
-+	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
-+	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
- 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA71) }, /* Infinity GPS-MIC-1 Radio Monophone */
+--- a/drivers/usb/serial/moto_modem.c
++++ b/drivers/usb/serial/moto_modem.c
+@@ -25,6 +25,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x05c6, 0x3197) },	/* unknown Motorola phone */
+ 	{ USB_DEVICE(0x0c44, 0x0022) },	/* unknown Mororola phone */
+ 	{ USB_DEVICE(0x22b8, 0x2a64) },	/* Motorola KRZR K1m */
++	{ USB_DEVICE(0x22b8, 0x2c84) }, /* Motorola VE240 phone */
+ 	{ USB_DEVICE(0x22b8, 0x2c64) }, /* Motorola V950 phone */
+ 	{ },
+ };
 
 
