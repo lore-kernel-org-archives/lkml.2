@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161160Ab1FAJlk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:41:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47598 "EHLO mx2.suse.de"
+	id S1758574Ab1FAJpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:45:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62313 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161114Ab1FAJlf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 05:41:35 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Stefan Metzmacher <metze@samba.org>
-Subject: Re: [PATCH] usbnet/cdc_ncm: add missing .reset_resume hook
-Date: Wed, 1 Jun 2011 11:43:46 +0200
-User-Agent: KMail/1.13.5 (Linux/3.0.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Oliver Neukum <oliver@neukum.name>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1306919630-13426-1-git-send-email-metze@samba.org> <1306919630-13426-2-git-send-email-metze@samba.org>
-In-Reply-To: <1306919630-13426-2-git-send-email-metze@samba.org>
+	id S1756837Ab1FAJpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 05:45:50 -0400
+Message-ID: <4DE60A34.7070603@redhat.com>
+Date: Wed, 01 Jun 2011 12:45:24 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201106011143.46667.oneukum@suse.de>
+To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH v1 0/5] KVM in-guest performance monitoring
+References: <1305129333-7456-1-git-send-email-avi@redhat.com> <4DD24544.1000408@redhat.com>
+In-Reply-To: <4DD24544.1000408@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 1. Juni 2011, 11:13:50 schrieb Stefan Metzmacher:
-> This avoids messages like this after suspend:
-> 
->    cdc_ncm 2-1.4:1.6: no reset_resume for driver cdc_ncm?
->    cdc_ncm 2-1.4:1.7: no reset_resume for driver cdc_ncm?
->    cdc_ncm 2-1.4:1.6: usb0: unregister 'cdc_ncm' usb-0000:00:1d.0-1.4, CDC NCM
-> 
-> This is important for the Ericsson F5521gw GSM/UMTS modem.
-> Otherwise modemmanager looses the fact that the cdc_ncm and cdc_acm devices
-> belong together.
-> 
-> The cdc_ether module does the same.
+On 05/17/2011 12:52 PM, Avi Kivity wrote:
+> On 05/11/2011 06:55 PM, Avi Kivity wrote:
+>> perf maintainers: please consider the first three patches for merging 
+>> (the
+>> first two make sense even without the rest).  If you're familiar with 
+>> the Intel
+>> PMU, please review patch 5 as well - it effectively undoes all your work
+>> of abstracting the PMU into perf_events by unabstracting perf_events 
+>> into what
+>> is hoped is a very similar PMU.
+>
+> Perf maintainers, ping?
+>
 
-Yes, it does. Have you tested this with active connections and unconnected?
+Re-ping?
 
-	Regards
-		Oliver
 -- 
-- - - 
-SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
-Maxfeldstraße 5                         
-90409 Nürnberg 
-Germany 
-- - - 
+error compiling committee.c: too many arguments to function
+
