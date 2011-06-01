@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab1FANRR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 09:17:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50061 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065Ab1FANRP convert rfc822-to-8bit (ORCPT
+	id S1754861Ab1FANZE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 09:25:04 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37137 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab1FANZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 09:17:15 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 3/8] MFD: twl4030-audio: Rename platform data
-Date: Wed, 1 Jun 2011 16:17:14 +0300
-User-Agent: KMail/1.13.7 (Linux/2.6.39-gentoo; KDE/4.6.3; x86_64; ; )
-CC: "Girdwood, Liam" <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-References: <1306927051-8937-1-git-send-email-peter.ujfalusi@ti.com> <201106011554.53090.peter.ujfalusi@ti.com> <20110601130034.GE11352@atomide.com>
-In-Reply-To: <20110601130034.GE11352@atomide.com>
+	Wed, 1 Jun 2011 09:25:02 -0400
+Date: Wed, 1 Jun 2011 09:24:44 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel Haid <d.haid@gogi.tv>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Question about iommu on x86_64 and radeon driver.
+Message-ID: <20110601132444.GA4081@dumpdata.com>
+References: <20110525125752.GB3467@dumpdata.com>
+ <dfd8bfd19ba1fb77d6448bff97123e13@admin.gogi.tv>
+ <20110527155507.GB11273@dumpdata.com>
+ <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv>
+ <20110531134519.GC14641@dumpdata.com>
+ <59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv>
+ <20110531160221.GA31659@dumpdata.com>
+ <0a8cb4bcad7fcf091a6bbe158323bba0@admin.gogi.tv>
+ <20110531190412.GA21245@dumpdata.com>
+ <d0ce6a4ba6092a1a9ef0f1e8f3cac9c9@admin.gogi.tv>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <201106011617.14854.peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <d0ce6a4ba6092a1a9ef0f1e8f3cac9c9@admin.gogi.tv>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4DE63DA6.01A5:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 June 2011 16:00:34 Tony Lindgren wrote:
-> Yeah, most of it might be possible to describe with just a flags
-> like TWL_HAS_VIBRA etc.
-
-Or TWL_BOARD_HAS_VIBRA, TWL_BOARD_HAS_CODEC...
-
-For the audio part it is a bit complicated than that:
-different base frequencies, for twl6040 we have parameters for Vibra (twl4030 
-class only have the coexistence). The soc codec has a list of misc parameters 
-for board specific configurations as well (not all board using them).
-I was thinking to switch the MFD driver(s) to use flags to specify the needed 
-child, and change the child drivers to deal with the missing platform data 
-themselves.
-In that way, board files can pass the vibra/codec platform data to the new 
-i2c_twl file for example, and provide flags to enable functionality.
-
-> > I'll take a look, but I think it is not going to be part of v2 of this
-> > series.
+On Tue, May 31, 2011 at 08:57:39PM +0100, Daniel Haid wrote:
+> Just another question, the problem seems to be an issue with
 > 
-> We should not do renaming before the clean-up though, it gets
-> classified as "unnecesary churn".
+> swiotlb=force
+> 
+> and I assume that without "force" DMA with addresses that
+> already are below 4GB should be handled without any
+> bounce-buffer, and with "force" everything goes through
+> the bounce-buffer, is this correct?
+> 
+> Now I have a VIA chipset where the IOMMU does not work, so
+> swiotlb is activated, but is it activated in force mode or
+> in normal mode? How can I find out?
 
-The changes in board files are minimal. The biggest part is the code move, and 
-that will remain the same now or later...
+Look in the source code. I somehow assumed it would activate it
+but maybe it isn't. And the problem you have is related to
+something else?
+> 
+> If it is activated in force mode, maybe the problem will
+> go away in normal mode?
 
--- 
-Péter
+<nods> Should.
