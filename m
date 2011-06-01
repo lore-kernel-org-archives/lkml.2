@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933350Ab1FAKSN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 06:18:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48707 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758700Ab1FAKSJ (ORCPT
+	id S933360Ab1FAKXw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 06:23:52 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62145 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758700Ab1FAKXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 06:18:09 -0400
+	Wed, 1 Jun 2011 06:23:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XquCccyKSoLME6mDsGIWZU5ZH62r53VrVOIKa750oi0YtmBcsZDA5TJgGBAs/1+GLa
-         zN2hHiQ9FyHcl1tGLL4g4lS7cr2lejG7xGGMwHpDK3Vt4HLM3uH71GHNINP6/7zviKWu
-         BILPYqS3bBq3NM+MmWMmuT/wBbqEV2PXqAeRo=
-Date: Wed, 1 Jun 2011 12:18:02 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Richard Cochran <richard.cochran@omicron.at>,
-        "David S. Miller" <davem@davemloft.net>,
-        John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        open list <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch 2/2] ptp: fix some locking bugs in ptp_read()
-Message-ID: <20110601101802.GB8928@riccoc20.at.omicron.at>
-References: <20110529195407.GB3099@shale.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110529195407.GB3099@shale.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=RDtByepgSCqG3MSUZN2ihMoywKTxYGzEXz9tUFf/2RrYdWMmOSODKcpwKGZr8KMbry
+         7NQXhrz6tTvxmaLeEfYbk3B5veQA52+xTKpNEYe7AxDY53wNpfhOEny3ZZT9vdsVan5T
+         s+2CnN3+hbVhL2LD0N8NPKfhoTFeraZU+7kb8=
+Subject: Re: [PATCH 0/3] fix-up free space earlier in mount_ubifs()
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Ben Gardiner <bengardiner@nanometrics.ca>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Matthew L. Creech" <mlcreech@gmail.com>
+In-Reply-To: <cover.1306780983.git.bengardiner@nanometrics.ca>
+References: <cover.1306780983.git.bengardiner@nanometrics.ca>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Jun 2011 13:19:25 +0300
+Message-ID: <1306923565.4405.96.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 29, 2011 at 10:54:07PM +0300, Dan Carpenter wrote:
-> There was an unlock missing on an error path, and a double unlock on
-> another error path.
+On Mon, 2011-05-30 at 14:56 -0400, Ben Gardiner wrote:
+> In testing Mattew Creech's free-space-fixup flag series I found that was unable
+> to boot a da850evm which had flashed to it's NAND a ubinized image containing a
+> UBIFS that has the free-space-fixup flag set.
 > 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
+> The cause of the problem was found to be the call to ubifs_write_master() from
+> mount_ubifs() as is evidenced the backtrace produced by the assertion
+> introduced in the first patch of this series; where the assertion introduced is
+> that c->space_fixup is false when ubifs_write_node() is called.
 
-Acked-by: Richard Cochran <richard.cochran@omicron.at>
+So the fixes are now in the ubifs tree. You can see them in the
+linux-next banch's tip or in the master branch under a pile of other
+changes. The point is that linux-next currently contains what I want to
+merge to linux-3.0 and master branch contains the same plus a pile of
+things for linux-3.1.
 
-> 
-> diff --git a/drivers/ptp/ptp_chardev.c b/drivers/ptp/ptp_chardev.c
-> index 93fa22d..e7f301da2 100644
-> --- a/drivers/ptp/ptp_chardev.c
-> +++ b/drivers/ptp/ptp_chardev.c
-> @@ -130,8 +130,10 @@ ssize_t ptp_read(struct posix_clock *pc,
->  		return -ERESTARTSYS;
->  	}
->  
-> -	if (ptp->defunct)
-> +	if (ptp->defunct) {
-> +		mutex_unlock(&ptp->tsevq_mux);
->  		return -ENODEV;
-> +	}
->  
->  	spin_lock_irqsave(&queue->lock, flags);
->  
-> @@ -151,10 +153,8 @@ ssize_t ptp_read(struct posix_clock *pc,
->  
->  	mutex_unlock(&ptp->tsevq_mux);
->  
-> -	if (copy_to_user(buf, event, cnt)) {
-> -		mutex_unlock(&ptp->tsevq_mux);
-> +	if (copy_to_user(buf, event, cnt))
->  		return -EFAULT;
-> -	}
->  
->  	return cnt;
->  }
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
