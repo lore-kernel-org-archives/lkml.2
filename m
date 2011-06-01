@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466Ab1FAXY4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 19:24:56 -0400
-Received: from trent.utfs.org ([194.246.123.103]:55476 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756398Ab1FAXYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 19:24:55 -0400
-Date: Wed, 1 Jun 2011 16:24:52 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Connor H <cmdkhh@gmail.com>
-cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.32: Attempted to kill the idle task?
-In-Reply-To: <BANLkTin8Jb-BWDmZbF_cLTk3rjVU9KQu9A@mail.gmail.com>
-Message-ID: <alpine.DEB.2.01.1106011623240.21697@trent.utfs.org>
-References: <4DE68DD5.4080702@nerdbynature.de> <BANLkTin8Jb-BWDmZbF_cLTk3rjVU9KQu9A@mail.gmail.com>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1758778Ab1FAXas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 19:30:48 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:42299 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758501Ab1FAXaq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 19:30:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=gxeEZ17kbn13yFHj8UAPw52K2ZeY1nRfaIefbPA9z5+ewS5KbgtMhx8NPyTBqURfYM
+         UoFezdIM/jzMcoiTO7ww==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+In-Reply-To: <BANLkTi=YYCXHi5k82Q+sE6+134i97pjjAA@mail.gmail.com>
+References: <1304107962-18576-1-git-send-email-vnagarnaik@google.com>
+ <1306877298-31713-1-git-send-email-vnagarnaik@google.com> <20110531235957.GB5256@somewhere.redhat.com>
+ <BANLkTi=YYCXHi5k82Q+sE6+134i97pjjAA@mail.gmail.com>
+From: David Sharp <dhsharp@google.com>
+Date: Wed, 1 Jun 2011 16:30:18 -0700
+Message-ID: <BANLkTinT6ULRWwHAGYFpQSw-ptQiuzrkPtZuKVZHD8b5mh9hpA@mail.gmail.com>
+Subject: Re: [PATCH v2] trace: Add x86 irq vector entry/exit tracepoints
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiaying Zhang <jiayingz@google.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Jun 2011 at 15:06, Connor H wrote:
-> > we have a Debian/lenny system (Dell R410) with its "latest"
-> > 2.6.32+27~bpo50+1 installed. From time to time the system tends to oops.
-> > Can someone have a quick look at the following, if this makes sense at
-> > all? I suspect the "real" oops message has scrolled away, but this is
-> > all we got so far:
-> >
-> > ------------------------------------
-> > [4330423.071859] RSP <ffff88012fffdcb8>
-> > [4330423.071926] ---[ end trace b471cad78827bf8a ]--—
-> > [4330423.071994] Kernel panic - not syncing: Attempted to kill the idle
-> > task? [4330423.072068] rid: 0, comm: swapper Tainted: G D 2.6.32-5-amd64
-> > 81 [4330423.072139] Call Trace:
-> > [4330423.072206] [afffffff81216ee5>] ? panic+0x86/0x141
-> > [4330423.072277] [afffffff812f6fee>1 ? printk+0x4e/0x58
-> > [4330423.072349] [afffffff81041c07>] ? do_exit+0x72/0x6b5
-> > [4330423.072419] [afffffff8104d011>] ? release_console_sem+0xl7e/0xlaf
-> > [4330423.072493] [afffffff812f9c4d>1 ? oops_end+0xaf/0xb4
-> > [4330423.072563] [afffffff81012734>] ? do_divide_error+0x85/0x81
-> Here is the division fail
-> kernel/sched_fair.c #3164
-> 
-> in find_busiest_group
+On Wed, Jun 1, 2011 at 3:38 PM, Vaibhav Nagarnaik <vnagarnaik@google.com> wrote:
+> On Tue, May 31, 2011 at 5:00 PM, Frederic Weisbecker
+> <fweisbec@gmail.com> wrote:
+>>
+>> IIRC, Thomas suggested in the v1 to turn arch tracepoints into core ones when they
+>> stand for generic (ie: shared by all archs) event meaning.
+>>
+>> I don't know where the discussion went after that, but that still seems to
+>> me an important direction. Tracing irqs by their vector number should be reserved
+>> for pure arch meanings. Sharing common tracepoints for generic events amongst archs makes life
+>> easier for tools. Bonus when the tracepoint can be placed in the generic code.
+>>
+>
+> I agree with you that the tracepoints should be as generic as possible
+> to have them traced across platforms, but I see these tracepoints as
+> specific to x86 platform. Since most of these vectors are x86 specific.
+> The only ones that you pointed out as generic were:
 
-Thanks for looking into it!
+I think what Vaibhav means is that this is "the one trace event for
+all hard IRQs on the platform". A tracepoint for the cross-platform
+irq handlers is also useful, but that is not the purpose of this
+tracepoint. There's not actually much overlap between platforms for
+IRQs, so each platform needs to do the work of covering all their
+IRQs, and won't see much benefit from the generic tracepoints.
 
-> sds.avg_load = (SCHED_POWER_SCALE * sds.total_load) / sds.total_pwr;
-> 
-> kernel/sched_fair.c #2853
-> 	sds set from this call
-> 	update_sd_lb_stats(sd, this_cpu, idle, cpus, balance, &sds);
-> 
-> 	which calculates total_pwr by looping all sched_group 's  in
-> 	sds->total_pwr += sg->cpu_power;
-> 	
-> so hopefully Ingo or Peter can shed some light,
-> 
-> Connor
+On Tue, May 31, 2011 at 5:00 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> Tracing irqs by their vector number should be reserved for pure arch meanings.
 
-Christian.
--- 
-BOFH excuse #365:
+exactly, and this tracepoint is for that "arch meaning".
 
-parallel processors running perpendicular today
+I'd also add that having these tracepoints here makes it more obvious
+that we will get all IRQ events, which is what is important to us.
+
+>
+> LOCAL_TIMER_VECTOR - The generic callbacks that I found are in:
+> kernel/time/tick-broadcast.c (tick_handle_periodic(),
+> tick_handle_periodic_broadcast(), tick_handle_oneshot_broadcast()).
+>
+> RESCHEDULE_VECTOR - The callback is in kernel/sched.c (scheduler_ipi())
+>
+> CALL_FUNCTION_VECTOR - The callback is in kernel/smp.c
+> (generic_smp_call_function_interrupt())
+> CALL_FUNCTION_SINGLE_VECTOR - The callback is in kernel/smp.c
+> (generic_smp_call_function_single_interrupt())
+>
+> IRQ_WORK_VECTOR - kernel/irq_work.c (irq_work_run())
+>
+> REBOOT_VECTOR - For x86, this does not enter any generic code. It is
+> also not traced. The definition was in there only as part of the
+> interrupt table.
+>
+> So, as I see it, there are only 5 vectors that enter the generic
+> handling code of the kernel. The other vectors have platform specific
+> handlers or are just x86 specific IRQs.
+>
+> This is the reason that I added the irq_vectors tracing class under the
+> arch-specific code. If other platforms want to use the same event class,
+> it can be initialized in their platform specific code for their use with
+> the appropriate tracepoints added.
+>
+>
+> Vaibhav Nagarnaik
+>
