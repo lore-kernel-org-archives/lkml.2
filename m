@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759426Ab1FATPp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:15:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27828 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759107Ab1FATPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:15:44 -0400
-Date: Wed, 1 Jun 2011 21:15:29 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan.kim@gmail.com>, akpm@linux-foundation.org,
-        Ury Stankevich <urykhy@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous
-Message-ID: <20110601191529.GY19505@random.random>
-References: <20110530143109.GH19505@random.random>
- <20110530153748.GS5044@csn.ul.ie>
- <20110530165546.GC5118@suse.de>
- <20110530175334.GI19505@random.random>
- <20110531121620.GA3490@barrios-laptop>
- <20110531122437.GJ19505@random.random>
- <20110531133340.GB3490@barrios-laptop>
- <20110531141402.GK19505@random.random>
- <20110601005747.GC7019@csn.ul.ie>
- <20110601175809.GB7306@suse.de>
+	id S1759469Ab1FATP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 15:15:59 -0400
+Received: from aspirin.dii.utk.edu ([160.36.0.81]:55123 "EHLO
+	aspirin.dii.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab1FATP6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 15:15:58 -0400
+Date: Wed, 1 Jun 2011 15:15:36 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        acme@redhat.com
+Subject: [patch] perf_events: fix perf buffer watermark setting
+Message-ID: <alpine.DEB.2.00.1106011506390.5384@cl320.eecs.utk.edu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110601175809.GB7306@suse.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 01, 2011 at 06:58:09PM +0100, Mel Gorman wrote:
-> Umm, HIGHMEM4G implies a two-level pagetable layout so where are
-> things like _PAGE_BIT_SPLITTING being set when THP is enabled?
 
-They should be set on the pgd, pud_offset/pgd_offset will just bypass.
-The splitting bit shouldn't be special about it, the present bit
-should work the same.
+Since 2.6.36 (specifically commit d57e34fdd60be7ffd0b1d86bfa1a553df86b7172)
+the perf_buffer_init_code() has been mis-setting the buffer watermark if
+perf_event_attr.wakeup_events has a non-zero value.
+
+This is because perf_event_attr.wakeup_events is a union with 
+perf_event_attr.wakeup_watermark.
+
+This commit re-enables the check for perf_event_attr.watermark being
+set before continuing with setting a non-default watermark.
+
+This bug is most noticable when you are trying to use PERF_IOC_REFRESH
+with a value larger than one and perf_event_attr.wakeup_events is set to 
+one.  In this case the buffer watermark will be set to 1 and you will
+get extraneous POLL_IN overflows rather than POLL_HUP as expected.
+
+Signed-off-by: Vince Weaver <vweaver1@eecs.utk.edu>
+
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d863b3c..b949661 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3787,7 +3787,8 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
+ 	if (vma->vm_flags & VM_WRITE)
+ 		flags |= PERF_BUFFER_WRITABLE;
+ 
+-	buffer = perf_buffer_alloc(nr_pages, event->attr.wakeup_watermark,
++	buffer = perf_buffer_alloc(nr_pages, 
++				   event->attr.watermark?event->attr.wakeup_watermark:0,
+ 				   event->cpu, flags);
+ 	if (!buffer) {
+ 		ret = -ENOMEM;
