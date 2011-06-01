@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162282Ab1FAI4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:56:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43678 "EHLO mx2.suse.de"
+	id S1162277Ab1FAISs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:18:48 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44192 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162241Ab1FAISf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:18:35 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:05:02 2011
-Message-Id: <20110601080501.283423932@blue.kroah.org>
+	id S1162227Ab1FAISl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:18:41 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:05:03 2011
+Message-Id: <20110601080502.456008588@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:01:13 +0900
+Date: Wed, 01 Jun 2011 17:01:14 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Boqun Feng <boqun.feng@intel.com>, Keith Packard <keithp@keithp.com>,
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [137/146] drm/i915: fix user irq miss in BSD ring on g4x
+Subject: [138/146] drm/radeon/evergreen/btc/fusion: setup hdp to invalidate and
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,80 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ flush when asked
 
-From: Boqun Feng <boqun.feng@intel.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 5bfa1063a775836a84f97e4df863fc36e1f856ad upstream.
+commit f25a5c63bfa017498c9adecb24d649ae96ba5c68 upstream.
 
-On g4x, user interrupt in BSD ring is missed.
-This is because though g4x and ironlake share the same bsd_ring,
-their interrupt control interfaces have _two_ differences.
+This needs to be explicitly set on btc.  It's set by default
+on evergreen/fusion, so it fine to just unconditionally enable it for
+all chips.
 
-1.different irq enable/disable functions:
-On g4x are i915_enable_irq and i915_disable_irq.
-On ironlake are ironlake_enable_irq and ironlake_disable_irq.
-2.different irq flag:
-On g4x user interrupt flag in BSD ring on is I915_BSD_USER_INTERRUPT.
-On ironlake is GT_BSD_USER_INTERRUPT
-
-Old bsd_ring_get/put_irq call ring_get_irq and ring_get_irq.
-ring_get_irq and ring_put_irq only call ironlake_enable/disable_irq.
-So comes the irq miss on g4x.
-
-To fix this, as other rings' code do, conditionally call different
-functions(i915_enable/disable_irq and ironlake_enable/disable_irq)
-and use different interrupt flags in bsd_ring_get/put_irq.
-
-Signed-off-by: Boqun Feng <boqun.feng@intel.com>
-Reviewed-by: Xiang, Haihao <haihao.xiang@intel.com>
-Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c |   29 +++++++++++++++++++++++++++--
- 1 file changed, 27 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c  |    6 +++++-
+ drivers/gpu/drm/radeon/evergreend.h |    2 ++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -684,12 +684,37 @@ gen6_ring_put_irq(struct intel_ring_buff
- static bool
- bsd_ring_get_irq(struct intel_ring_buffer *ring)
- {
--	return ring_get_irq(ring, GT_BSD_USER_INTERRUPT);
-+	struct drm_device *dev = ring->dev;
-+	drm_i915_private_t *dev_priv = dev->dev_private;
-+
-+	if (!dev->irq_enabled)
-+		return false;
-+
-+	spin_lock(&ring->irq_lock);
-+	if (ring->irq_refcount++ == 0) {
-+		if (IS_G4X(dev))
-+			i915_enable_irq(dev_priv, I915_BSD_USER_INTERRUPT);
-+		else
-+			ironlake_enable_irq(dev_priv, GT_BSD_USER_INTERRUPT);
-+	}
-+	spin_unlock(&ring->irq_lock);
-+
-+	return true;
- }
- static void
- bsd_ring_put_irq(struct intel_ring_buffer *ring)
- {
--	ring_put_irq(ring, GT_BSD_USER_INTERRUPT);
-+	struct drm_device *dev = ring->dev;
-+	drm_i915_private_t *dev_priv = dev->dev_private;
-+
-+	spin_lock(&ring->irq_lock);
-+	if (--ring->irq_refcount == 0) {
-+		if (IS_G4X(dev))
-+			i915_disable_irq(dev_priv, I915_BSD_USER_INTERRUPT);
-+		else
-+			ironlake_disable_irq(dev_priv, GT_BSD_USER_INTERRUPT);
-+	}
-+	spin_unlock(&ring->irq_lock);
- }
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1585,7 +1585,7 @@ static void evergreen_gpu_init(struct ra
+ 	u32 sq_stack_resource_mgmt_2;
+ 	u32 sq_stack_resource_mgmt_3;
+ 	u32 vgt_cache_invalidation;
+-	u32 hdp_host_path_cntl;
++	u32 hdp_host_path_cntl, tmp;
+ 	int i, j, num_shader_engines, ps_thread_count;
  
- static int
+ 	switch (rdev->family) {
+@@ -2145,6 +2145,10 @@ static void evergreen_gpu_init(struct ra
+ 	for (i = SQ_ALU_CONST_BUFFER_SIZE_HS_0; i < 0x29000; i += 4)
+ 		WREG32(i, 0);
+ 
++	tmp = RREG32(HDP_MISC_CNTL);
++	tmp |= HDP_FLUSH_INVALIDATE_CACHE;
++	WREG32(HDP_MISC_CNTL, tmp);
++
+ 	hdp_host_path_cntl = RREG32(HDP_HOST_PATH_CNTL);
+ 	WREG32(HDP_HOST_PATH_CNTL, hdp_host_path_cntl);
+ 
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -64,6 +64,8 @@
+ #define GB_BACKEND_MAP  				0x98FC
+ #define DMIF_ADDR_CONFIG  				0xBD4
+ #define HDP_ADDR_CONFIG  				0x2F48
++#define HDP_MISC_CNTL  					0x2F4C
++#define		HDP_FLUSH_INVALIDATE_CACHE      	(1 << 0)
+ 
+ #define	CC_SYS_RB_BACKEND_DISABLE			0x3F88
+ #define	GC_USER_RB_BACKEND_DISABLE			0x9B7C
 
 
