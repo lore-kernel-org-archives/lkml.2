@@ -1,211 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759527Ab1FATn7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:43:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50879 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756164Ab1FATn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:43:57 -0400
-Date: Wed, 1 Jun 2011 21:43:46 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com
-Cc: fweisbec@gmail.com, yanmin_zhang@linux.intel.com, avi@redhat.com,
-        mingo@elte.hu, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] perf, report: use properly build_id kernel binaries
-Message-ID: <20110601194346.GB1934@jolsa.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759544Ab1FATo4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 15:44:56 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33821 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759533Ab1FATox (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 15:44:53 -0400
+Date: Wed, 1 Jun 2011 20:46:18 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Timur Tabi <timur@freescale.com>
+Cc: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
+        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
+Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
+ management driver
+Message-ID: <20110601204618.32190be9@lxorguk.ukuu.org.uk>
+In-Reply-To: <1306953337-15698-1-git-send-email-timur@freescale.com>
+References: <1306953337-15698-1-git-send-email-timur@freescale.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-resending with correct lkml address, sry
-jirka
+O> +	/* One partition must be local, the other must be remote.  In other
+> +	   words, if source and target are both -1, or are both not -1, then
+> +	   return an error. */
+> +	if ((param.source == -1) == (param.target == -1))
+> +		return -EINVAL;
 
----
-If we bring the recorded perf data together with kernel
-binary from another machine using:
+Excess brackets (I just mention that one in passing)
 
-	on server A:
-	perf archive
+> +	/* pages is an array of struct page pointers that's initialized by
+> +	   get_user_pages() */
+> +	pages = kzalloc(nr_pages * sizeof(struct page *), GFP_KERNEL);
+> +	if (!pages) {
+> +		pr_debug("fsl-hv: could not allocate page list\n");
+> +		return -ENOMEM;
+> +	}
 
-	on server B:
-	tar xjvf perf.data.tar.bz2 -C ~/.debug
+pages allocated
 
-the build_id kernel dso is not properly recognized during
-the "perf report" command on server B.
+> +
+> +	/* sg_list is the list of fh_sg_list objects that we pass to the
+> +	   hypervisor */
+> +	sg_list_unaligned = kmalloc(nr_pages * sizeof(struct fh_sg_list) +
+> +		sizeof(struct fh_sg_list) - 1, GFP_KERNEL);
+> +	if (!sg_list_unaligned) {
+> +		pr_debug("fsl-hv: could not allocate S/G list\n");
 
-The reason is, that build_id dsos are added during the session initialization,
-while the kernel maps are created during the sample event processing.
+but not freed on this path
 
-The machine__create_kernel_maps functions ends up creating new dso object
-for kernel, but it does not check if we already have one added by build_id
-processing.
+Although the other paths look fine.
+
+> +exit:
+> +	if (pages) {
+> +		for (i = 0; i < nr_pages; i++)
+> +			if (pages[i])
+> +				page_cache_release(pages[i]);
+> +	}
+> +
+> +	kfree(sg_list_unaligned);
+> +	kfree(pages);
+
+> +static char *strdup_from_user(const char __user *ustr, size_t max)
+> +{
+> +	size_t len;
+> +	char *str;
+> +
+> +	len = strnlen_user(ustr, max);
+> +	if (len > max)
+> +		return ERR_PTR(-ENAMETOOLONG);
+> +
+> +	str = kmalloc(len, GFP_KERNEL);
+> +	if (!str)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	if (copy_from_user(str, ustr, len))
+> +		return ERR_PTR(-EFAULT);
+> +
+> +	return str;
+> +}
+
+This belongs on lib/ if its of general use which I think it perhaps is
+and if we don't have one already.
 
 
-Also the build_id reading ABI quirk added in commit:
+> +	default:
+> +		pr_debug("fsl-hv: unknown ioctl %u\n", cmd);
+> +		ret = -ENOIOCTLCMD;
 
- - commit b25114817a73bbd2b84ce9dba02ee1ef8989a947
-   perf build-id: Add quirk to deal with perf.data file format breakage
+-ENOTTY
 
-populates the "struct build_id_event::pid" with 0, which
-is later interpreted as DEFAULT_GUEST_KERNEL_ID.
+(-ENOIOCTLCMD is an internal indicator designed so driver layers can say
+'dunno, try the next layer up')
 
-This is not always correct, so it's better to guess the pid
-value based on the "struct build_id_event::header::misc" value.
+> +/* Linked list of processes that have us open */
+> +struct list_head db_list;
 
-
-- Tested with data generated on x86 kernel version v2.6.34
-  and reported back on x86_64 current kernel.
-- Not tested for guest kernel case.
+static ?
 
 
-Note the problem stays for PERF_RECORD_MMAP events recorded by perf that
-does not use proper pid (HOST_KERNEL_ID/DEFAULT_GUEST_KERNEL_ID). They are
-misinterpreted within the current perf code. Probably there's not much we
-can do about that.
+> + * We use the same interrupt handler for all doorbells.  Whenever a doorbell
+> + * is rung, and we receive an interrupt, we just put the handle for that
+> + * doorbell (passed to us as *data) into all of the queues.
+
+I wonder if these should be presented as IRQs or whether that makes no
+sense ?
 
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/header.c |   11 ++++++++-
- tools/perf/util/symbol.c |   57 +++++++++++++++++++++++++--------------------
- tools/perf/util/symbol.h |    1 -
- 3 files changed, 42 insertions(+), 27 deletions(-)
+> +static irqreturn_t fsl_hv_state_change_isr(int irq, void *data)
+> +{
+> +	unsigned int status;
+> +	struct doorbell_isr *dbisr = data;
+> +	int ret;
+> +
+> +	/* Determine the new state, and if it's stopped, notify the clients. */
+> +	ret = fh_partition_get_status(dbisr->partition, &status);
+> +	if (!ret && (status == FH_PARTITION_STOPPED))
+> +		schedule_work(&dbisr->work);
+> +
+> +	/* Call the normal handler */
+> +	return fsl_hv_isr(irq, (void *) (uintptr_t) dbisr->doorbell);
+> +}
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index afb0849..a0d90b1 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -726,7 +726,16 @@ static int perf_header__read_build_ids_abi_quirk(struct perf_header *header,
- 			return -1;
- 
- 		bev.header = old_bev.header;
--		bev.pid	   = 0;
-+
-+		/*
-+		 * As the pid is the missing value, we need to fill
-+		 * it properly. The header.misc value give us nice hint.
-+		 */
-+		bev.pid	= HOST_KERNEL_ID;
-+		if (bev.header.misc == PERF_RECORD_MISC_GUEST_USER ||
-+		    bev.header.misc == PERF_RECORD_MISC_GUEST_KERNEL)
-+			bev.pid	= DEFAULT_GUEST_KERNEL_ID;
-+
- 		memcpy(bev.build_id, old_bev.build_id, sizeof(bev.build_id));
- 		__event_process_build_id(&bev, filename, session);
- 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index eec1963..c307121 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -2170,27 +2170,22 @@ size_t machines__fprintf_dsos_buildid(struct rb_root *machines,
- 	return ret;
- }
- 
--struct dso *dso__new_kernel(const char *name)
-+static struct dso*
-+dso__kernel_findnew(struct machine *machine, const char *name,
-+		    const char *short_name, int dso_type)
- {
--	struct dso *dso = dso__new(name ?: "[kernel.kallsyms]");
--
--	if (dso != NULL) {
--		dso__set_short_name(dso, "[kernel]");
--		dso->kernel = DSO_TYPE_KERNEL;
--	}
--
--	return dso;
--}
-+	/*
-+	 * The kernel dso could be created by build_id processing.
-+	 */
-+	struct dso *dso = __dsos__findnew(&machine->kernel_dsos, name);
- 
--static struct dso *dso__new_guest_kernel(struct machine *machine,
--					const char *name)
--{
--	char bf[PATH_MAX];
--	struct dso *dso = dso__new(name ?: machine__mmap_name(machine, bf,
--							      sizeof(bf)));
-+	/*
-+	 * We need to run this in all cases, since during the build_id
-+	 * processing we had no idea this was the kernel dso.
-+	 */
- 	if (dso != NULL) {
--		dso__set_short_name(dso, "[guest.kernel]");
--		dso->kernel = DSO_TYPE_GUEST_KERNEL;
-+		dso__set_short_name(dso, short_name);
-+		dso->kernel = dso_type;
- 	}
- 
- 	return dso;
-@@ -2208,24 +2203,36 @@ void dso__read_running_kernel_build_id(struct dso *dso, struct machine *machine)
- 		dso->has_build_id = true;
- }
- 
--static struct dso *machine__create_kernel(struct machine *machine)
-+static struct dso *machine__get_kernel(struct machine *machine)
- {
- 	const char *vmlinux_name = NULL;
- 	struct dso *kernel;
- 
- 	if (machine__is_host(machine)) {
- 		vmlinux_name = symbol_conf.vmlinux_name;
--		kernel = dso__new_kernel(vmlinux_name);
-+		if (!vmlinux_name)
-+			vmlinux_name = "[kernel.kallsyms]";
-+
-+		kernel = dso__kernel_findnew(machine, vmlinux_name,
-+					     "[kernel]",
-+					     DSO_TYPE_KERNEL);
- 	} else {
-+		char bf[PATH_MAX];
-+
- 		if (machine__is_default_guest(machine))
- 			vmlinux_name = symbol_conf.default_guest_vmlinux_name;
--		kernel = dso__new_guest_kernel(machine, vmlinux_name);
-+		if (!vmlinux_name)
-+			vmlinux_name = machine__mmap_name(machine, bf,
-+							  sizeof(bf));
-+
-+		kernel = dso__kernel_findnew(machine, vmlinux_name,
-+					     "[guest.kernel]",
-+					     DSO_TYPE_GUEST_KERNEL);
- 	}
- 
--	if (kernel != NULL) {
-+	if (kernel != NULL && (!kernel->has_build_id))
- 		dso__read_running_kernel_build_id(kernel, machine);
--		dsos__add(&machine->kernel_dsos, kernel);
--	}
-+
- 	return kernel;
- }
- 
-@@ -2329,7 +2336,7 @@ void machine__destroy_kernel_maps(struct machine *machine)
- 
- int machine__create_kernel_maps(struct machine *machine)
- {
--	struct dso *kernel = machine__create_kernel(machine);
-+	struct dso *kernel = machine__get_kernel(machine);
- 
- 	if (kernel == NULL ||
- 	    __machine__create_kernel_maps(machine, kernel) < 0)
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 325ee36..4f377d9 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -155,7 +155,6 @@ struct dso {
- };
- 
- struct dso *dso__new(const char *name);
--struct dso *dso__new_kernel(const char *name);
- void dso__delete(struct dso *dso);
- 
- int dso__name_len(const struct dso *dso);
--- 
-1.7.1
+Would a threaded IRQ clean this up by avoiding the queue/work stuff ?
+
+
+> +static irqreturn_t fsl_hv_shutdown_isr(int irq, void *data)
+> +{
+> +	schedule_work(&power_off);
+> +
+> +	/* We should never get here */
+
+Probably worth printing something if you do (panic(...) ?)
+
