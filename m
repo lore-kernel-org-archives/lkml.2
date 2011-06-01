@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161101Ab1FAHds (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 03:33:48 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:34710 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933212Ab1FAHc5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 03:32:57 -0400
+	id S1161077Ab1FAHdd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 03:33:33 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:43726 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933213Ab1FAHc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 03:32:58 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>, Chris Zankel <chris@zankel.net>,
+Cc: John Stultz <johnstul@us.ibm.com>, Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 4/6] clocksource: xtensa: convert to clocksource_register_hz/khz
-Date: Wed,  1 Jun 2011 00:32:48 -0700
-Message-Id: <1306913570-9445-5-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 5/6] clocksource: cris: convert to clocksource_register_khz
+Date: Wed,  1 Jun 2011 00:32:49 -0700
+Message-Id: <1306913570-9445-6-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1306913570-9445-1-git-send-email-john.stultz@linaro.org>
 References: <1306913570-9445-1-git-send-email-john.stultz@linaro.org>
@@ -23,48 +23,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: John Stultz <johnstul@us.ibm.com>
 
-This converts the xtensa clocksource to use clocksource_register_hz/khz
+This converts the cris architecture to use clocksource_register_khz
 
-This is untested, so any assistance in testing would be appreciated!
+This is untested, so any help from maintainers would be appreciated.
 
-CC: Chris Zankel <chris@zankel.net>
+CC: Mikael Starvik <starvik@axis.com>
+CC: Jesper Nilsson <jesper.nilsson@axis.com>
 CC: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 ---
- arch/xtensa/kernel/time.c |   13 +------------
- 1 files changed, 1 insertions(+), 12 deletions(-)
+ arch/cris/arch-v32/kernel/time.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/arch/xtensa/kernel/time.c b/arch/xtensa/kernel/time.c
-index f3e5eb4..ac62f9c 100644
---- a/arch/xtensa/kernel/time.c
-+++ b/arch/xtensa/kernel/time.c
-@@ -41,14 +41,6 @@ static struct clocksource ccount_clocksource = {
- 	.rating = 200,
- 	.read = ccount_read,
- 	.mask = CLOCKSOURCE_MASK(32),
--	/*
--	 * With a shift of 22 the lower limit of the cpu clock is
--	 * 1MHz, where NSEC_PER_CCOUNT is 1000 or a bit less than
--	 * 2^10: Since we have 32 bits and the multiplicator can
--	 * already take up as much as 10 bits, this leaves us with
--	 * remaining upper 22 bits.
--	 */
--	.shift = 22,
+diff --git a/arch/cris/arch-v32/kernel/time.c b/arch/cris/arch-v32/kernel/time.c
+index bb978ed..6773fc8 100644
+--- a/arch/cris/arch-v32/kernel/time.c
++++ b/arch/cris/arch-v32/kernel/time.c
+@@ -47,14 +47,12 @@ static struct clocksource cont_rotime = {
+ 	.rating = 300,
+ 	.read   = read_cont_rotime,
+ 	.mask   = CLOCKSOURCE_MASK(32),
+-	.shift  = 10,
+ 	.flags  = CLOCK_SOURCE_IS_CONTINUOUS,
  };
  
- static irqreturn_t timer_interrupt(int irq, void *dev_id);
-@@ -66,10 +58,7 @@ void __init time_init(void)
- 	printk("%d.%02d MHz\n", (int)ccount_per_jiffy/(1000000/HZ),
- 			(int)(ccount_per_jiffy/(10000/HZ))%100);
- #endif
--	ccount_clocksource.mult =
--		clocksource_hz2mult(CCOUNT_PER_JIFFY * HZ,
--				ccount_clocksource.shift);
--	clocksource_register(&ccount_clocksource);
-+	clocksource_register_hz(&ccount_clocksource, CCOUNT_PER_JIFFY * HZ);
- 
- 	/* Initialize the linux timer interrupt. */
- 
+ static int __init etrax_init_cont_rotime(void)
+ {
+-	cont_rotime.mult = clocksource_khz2mult(100000, cont_rotime.shift);
+-	clocksource_register(&cont_rotime);
++	clocksource_register_khz(&cont_rotime, 100000);
+ 	return 0;
+ }
+ arch_initcall(etrax_init_cont_rotime);
 -- 
 1.7.3.2.146.gca209
 
