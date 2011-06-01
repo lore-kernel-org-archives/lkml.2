@@ -1,69 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163107Ab1FAIfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:35:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5445 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1163084Ab1FAI1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:27:17 -0400
-X-ExtLoop1: 1
-Subject: Re: [PATCH] dma: Initialize uninitialized variable
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1306392516-5906-1-git-send-email-linux@roeck-us.net>
-References: <1306392516-5906-1-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Jun 2011 13:22:55 +0530
-Message-ID: <1306914775.10976.6.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755899Ab1FAHyt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 03:54:49 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57580 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755623Ab1FAHys (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 03:54:48 -0400
+Date: Wed, 1 Jun 2011 08:54:20 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Eric Miao <eric.y.miao@gmail.com>, Samuel Ortiz <samuel@sortiz.org>
+Subject: Re: IrDA driver fails on PXA255
+Message-ID: <20110601075420.GB3660@n2100.arm.linux.org.uk>
+References: <20110528205701.GA1788@doriath.ww600.siemens.net> <alpine.DEB.2.00.1105281628480.9934@chino.kir.corp.google.com> <BANLkTim9YdhjY75CzMsSOCVKZWi-WKZ5wA@mail.gmail.com> <alpine.DEB.2.00.1105291410450.9658@chino.kir.corp.google.com> <20110529215656.GA5576@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105302202510.18793@chino.kir.corp.google.com> <20110531072650.GC21382@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105311253510.5646@chino.kir.corp.google.com> <20110531210027.GA3660@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1105311501570.16259@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1105311501570.16259@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-05-25 at 23:48 -0700, Guenter Roeck wrote:
-> Uninitialized variable results in random debug output.
-> Fix by initializing to 0.
-> 
-> This commit fixes the following warning:
-> 
-> drivers/dma/pch_dma.c: In function pdc_desc_get:
-> drivers/dma/pch_dma.c:406: warning: i may be used uninitialized in this function
-> 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  drivers/dma/pch_dma.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-Sorry I seem to have missed this earlier. This fix is already in place
+On Tue, May 31, 2011 at 03:11:40PM -0700, David Rientjes wrote:
+> The restriction isn't new: GFP_DMA only makes sense with CONFIG_ZONE_DMA.  
+> The fact that the page allocator completely ignored GFP_DMA in the past 
+> for CONFIG_ZONE_DMA=n doesn't change that.  That's obviously error prone 
+> since it will return memory from anywhere simply because of the fact that 
+> it is an invalid configuration.
 
-commit 364de77831213be20f7f33c39ca1c194593b5c11
-Author: Liu Yuan <tailai.ly@taobao.com>
-Date:   Sat Apr 2 14:20:47 2011 +0800
-
-    drivers, pch_dma: Fix uninitialized var before use
-    
-    In the function pdc_desc_get(), var 'i' is not
-    initialized before use. This patch fixes it.
-    
-    Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
-    Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-
-~Vinod
-
-> diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-> index 8d8fef1..6eebc62 100644
-> --- a/drivers/dma/pch_dma.c
-> +++ b/drivers/dma/pch_dma.c
-> @@ -403,7 +403,7 @@ static struct pch_dma_desc *pdc_desc_get(struct pch_dma_chan *pd_chan)
->  {
->  	struct pch_dma_desc *desc, *_d;
->  	struct pch_dma_desc *ret = NULL;
-> -	int i;
-> +	int i = 0;
->  
->  	spin_lock(&pd_chan->lock);
->  	list_for_each_entry_safe(desc, _d, &pd_chan->free_list, desc_node) {
-
+Your approach to this is wrong.  Make it warn for one release.  Give
+people a chance to fix things before they become a regression.  Then
+make it a hard failure.
