@@ -1,225 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161771Ab1FAJRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:17:12 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:39496 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932067Ab1FAINd (ORCPT
+	id S1161868Ab1FAJNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:13:00 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:40585 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161808Ab1FAIPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:13:33 -0400
-X-Sasl-enc: 0fL6DRe1BjWjk7civNXhqe/q79aXxautxMNd0gJbBIqK 1306916012
-Date: Wed, 1 Jun 2011 17:13:49 +0900
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [000/165] 2.6.39.1-stable review
-Message-ID: <20110601081349.GA10017@kroah.com>
+	Wed, 1 Jun 2011 04:15:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=sspBYsVvWBvXJJX74Co2S9AFnMgdNUObCMZKeRp7yQixmInTM1oSqkctfYeH5ysiSP
+         97RGQLPIzevYbuKcxomWDkLizAmnObY24YNg15YaQzS0ql1KlRjhgKqHGVngMOBniWYB
+         5R4rSqT2NAoz48vIQh0l+tJ8Yuzis8lwBDrgI=
+Date: Wed, 1 Jun 2011 17:15:14 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [026/146] block: dont block events on excl write for non-optical
+Message-ID: <20110601081514.GG23067@mtj.dyndns.org>
+References: <20110601080606.GA522@kroah.com>
+ <20110601080253.331790414@blue.kroah.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110601080253.331790414@blue.kroah.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 2.6.39.1 release.
-There are 165 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+Hello, Greg.
 
-Responses should be made by Friday, June 3, 2011, 15:00:00 UTC.
-Anything received after that time might be too late.
+On Wed, Jun 01, 2011 at 04:59:22PM +0900, Greg KH wrote:
+> 2.6.38-stable review patch.  If anyone has any objections, please let us know.
+> 
+> ------------------
+>  devices
+> 
+> From: Tejun Heo <tj@kernel.org>
+> 
+> commit d4dc210f69bcb0b4bef5a83b1c323817be89bad1 upstream.
+> 
+> Disk event code automatically blocks events on excl write.  This is
+> primarily to avoid issuing polling commands while burning is in
+> progress.  This behavior doesn't fit other types of devices with
+> removeable media where polling commands don't have adverse side
+> effects and door locking usually doesn't exist.
+> 
+> This patch introduces new genhd flag which controls the auto-blocking
+> behavior and uses it to enable auto-blocking only on optical devices.
+> 
+> Note for stable: 2.6.38 and later only
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.39.1-rc1.gz
-and the diffstat can be found below.
+This one should be accompanied by the following commit which is
+currently in Jens' tree and will soon be pulled into Linus' tree.
+Sorry about the fuss.  ->check_events() update turned out to be much
+more fragile than I originally expected.  :(
 
-thanks,
+commit 4c49ff3fe128ca68dabd07537415c419ad7f82f9
+Author: Tejun Heo <tj@kernel.org>
+Date:   Wed Jun 1 08:27:41 2011 +0200
 
-greg k-h
+    block: blkdev_get() should access ->bd_disk only after success
 
- Documentation/i2c/writing-clients              |    2 +-
- Documentation/usb/linux-cdc-acm.inf            |    4 +-
- Documentation/usb/linux.inf                    |    6 +-
- Makefile                                       |    4 +-
- arch/arm/mm/cache-v6.S                         |    1 +
- arch/arm/mm/cache-v7.S                         |    2 +
- arch/m68k/kernel/syscalltable.S                |    4 +-
- arch/parisc/include/asm/unistd.h               |    8 +-
- arch/parisc/kernel/sys_parisc32.c              |    8 +
- arch/parisc/kernel/syscall_table.S             |    6 +
- arch/powerpc/kernel/crash.c                    |    2 +-
- arch/powerpc/kernel/misc_64.S                  |   13 +-
- arch/powerpc/oprofile/op_model_power4.c        |   24 +++-
- arch/sh/kernel/cpu/Makefile                    |    4 +-
- arch/um/Kconfig.x86                            |    4 +-
- arch/x86/include/asm/cpufeature.h              |    2 +-
- arch/x86/include/asm/uaccess.h                 |    2 +-
- arch/x86/kernel/apic/io_apic.c                 |    4 +-
- arch/x86/kernel/cpu/amd.c                      |   16 ++-
- arch/x86/kernel/cpu/common.c                   |    3 +-
- arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c      |    4 +-
- arch/x86/kernel/setup.c                        |    7 +
- arch/x86/lib/copy_user_64.S                    |    4 +-
- arch/x86/oprofile/op_model_amd.c               |   95 ++++++++------
- arch/x86/platform/efi/efi.c                    |   45 ++++++-
- arch/x86/platform/efi/efi_64.c                 |    5 +-
- arch/x86/xen/mmu.c                             |    2 +-
- arch/x86/xen/p2m.c                             |   30 ++++-
- arch/x86/xen/setup.c                           |    6 +-
- block/blk-flush.c                              |   16 ++-
- block/blk-settings.c                           |    9 +-
- block/blk-sysfs.c                              |    3 +-
- block/blk.h                                    |   24 +++-
- block/genhd.c                                  |    2 +-
- drivers/ata/libata-scsi.c                      |   15 +-
- drivers/ata/pata_cmd64x.c                      |   42 +++++-
- drivers/block/brd.c                            |   11 +-
- drivers/block/loop.c                           |   11 +-
- drivers/block/paride/pcd.c                     |    1 +
- drivers/cdrom/viocd.c                          |    3 +-
- drivers/char/i8k.c                             |    4 +-
- drivers/cpufreq/cpufreq.c                      |   20 +++-
- drivers/cpufreq/cpufreq_stats.c                |   21 +++-
- drivers/cpuidle/governors/menu.c               |    4 +-
- drivers/gpu/drm/i915/intel_ringbuffer.c        |   29 ++++-
- drivers/gpu/drm/radeon/evergreen.c             |    6 +-
- drivers/gpu/drm/radeon/evergreend.h            |    2 +
- drivers/gpu/drm/radeon/ni.c                    |    8 +-
- drivers/gpu/drm/radeon/nid.h                   |    2 +
- drivers/gpu/drm/radeon/radeon_asic.c           |    4 +
- drivers/hid/hid-magicmouse.c                   |   10 ++-
- drivers/hwmon/pmbus_core.c                     |    1 +
- drivers/i2c/busses/i2c-tegra.c                 |    5 +
- drivers/ide/ide-cd.c                           |    3 +-
- drivers/md/bitmap.c                            |   10 +-
- drivers/md/dm-mpath.c                          |    2 +-
- drivers/md/dm-table.c                          |   17 +++
- drivers/md/md.c                                |   11 +-
- drivers/media/dvb/frontends/dib0070.c          |   40 ++++--
- drivers/media/dvb/frontends/dib0090.c          |   71 ++++++++---
- drivers/media/dvb/frontends/dib7000m.c         |   49 +++++---
- drivers/media/dvb/frontends/dib7000p.c         |   74 +++++++---
- drivers/media/dvb/frontends/dib8000.c          |  126 +++++++++++++-----
- drivers/media/dvb/frontends/dib9000.c          |  172 +++++++++++++++---------
- drivers/media/dvb/frontends/dibx000_common.c   |  109 +++++++++------
- drivers/media/dvb/frontends/dibx000_common.h   |    5 +
- drivers/media/video/cx88/cx88-blackbird.c      |    5 +-
- drivers/media/video/cx88/cx88-dvb.c            |    2 +
- drivers/media/video/cx88/cx88-mpeg.c           |   20 ++--
- drivers/media/video/cx88/cx88.h                |    7 +-
- drivers/mfd/omap-usb-host.c                    |   27 +++-
- drivers/mtd/mtdconcat.c                        |    4 +-
- drivers/mtd/nand/nand_base.c                   |    2 +
- drivers/mtd/nand/omap2.c                       |   12 +-
- drivers/net/bonding/bond_alb.c                 |    4 -
- drivers/net/bonding/bond_main.c                |   16 ++-
- drivers/net/bonding/bond_sysfs.c               |    6 -
- drivers/net/macvlan.c                          |    4 +-
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |   14 ++-
- drivers/net/wireless/ath/ath9k/calib.c         |   13 ++
- drivers/net/wireless/iwlwifi/iwl-core.c        |   10 ++
- drivers/net/wireless/iwlwifi/iwl-dev.h         |   19 ++-
- drivers/net/wireless/p54/p54usb.c              |    1 +
- drivers/pci/quirks.c                           |   10 ++
- drivers/scsi/bnx2i/bnx2i_hwi.c                 |    1 +
- drivers/scsi/bnx2i/bnx2i_init.c                |    2 +-
- drivers/scsi/bnx2i/bnx2i_iscsi.c               |    5 +-
- drivers/scsi/mpt2sas/mpt2sas_scsih.c           |   94 ++++++++++----
- drivers/scsi/qla2xxx/qla_attr.c                |    5 +-
- drivers/scsi/qla2xxx/qla_fw.h                  |    3 +-
- drivers/scsi/qla2xxx/qla_nx.c                  |    4 +-
- drivers/scsi/qla2xxx/qla_os.c                  |   32 +++--
- drivers/scsi/sr.c                              |    2 +-
- drivers/scsi/ultrastor.c                       |    2 +-
- drivers/sh/clk/cpg.c                           |    2 +-
- drivers/staging/brcm80211/brcmsmac/wlc_ampdu.c |   13 +--
- drivers/staging/rtl8712/rtl871x_ioctl_set.c    |    5 +-
- drivers/staging/usbip/usbip_common.c           |    2 +-
- drivers/target/target_core_device.c            |    4 +-
- drivers/target/target_core_tmr.c               |    7 +-
- drivers/target/target_core_transport.c         |   46 +++++--
- drivers/usb/class/cdc-acm.c                    |   13 ++-
- drivers/usb/class/cdc-acm.h                    |    1 +
- drivers/usb/core/hcd.c                         |    5 +-
- drivers/usb/gadget/at91_udc.c                  |    2 +-
- drivers/usb/gadget/f_rndis.c                   |    3 +-
- drivers/usb/host/ehci-hcd.c                    |    4 +-
- drivers/usb/host/ehci-sched.c                  |    8 +-
- drivers/usb/host/isp116x-hcd.c                 |    1 +
- drivers/usb/host/ohci-hcd.c                    |    4 +-
- drivers/usb/host/ohci-pci.c                    |   12 ++-
- drivers/usb/host/oxu210hp-hcd.c                |    6 +-
- drivers/usb/host/xhci-mem.c                    |   11 +-
- drivers/usb/host/xhci-ring.c                   |   18 ++--
- drivers/usb/host/xhci.c                        |   11 ++-
- drivers/usb/serial/cp210x.c                    |    4 +
- drivers/usb/serial/ftdi_sio.c                  |    1 +
- drivers/usb/serial/ftdi_sio_ids.h              |    5 +
- drivers/usb/serial/garmin_gps.c                |   20 ++-
- drivers/usb/serial/moto_modem.c                |    1 +
- drivers/usb/serial/option.c                    |   10 ++-
- drivers/usb/storage/unusual_realtek.h          |   10 +-
- fs/block_dev.c                                 |   34 +++--
- fs/cifs/connect.c                              |   31 +++--
- fs/ecryptfs/inode.c                            |    2 +
- fs/ecryptfs/keystore.c                         |   46 +++----
- fs/ext3/namei.c                                |   13 ++-
- fs/ext4/ext4.h                                 |    4 -
- fs/ext4/mballoc.c                              |    2 +
- fs/ext4/page-io.c                              |   39 ++----
- fs/ext4/super.c                                |   41 ++----
- fs/jbd/commit.c                                |    9 +-
- fs/jbd/journal.c                               |   16 ++-
- fs/namei.c                                     |    2 +-
- fs/nfs/nfs4proc.c                              |    9 +-
- fs/nfs/nfs4state.c                             |    6 +-
- fs/nfs/pnfs.c                                  |    2 +-
- fs/partitions/ldm.c                            |    5 +
- fs/ubifs/sb.c                                  |    3 +-
- fs/ubifs/super.c                               |    1 +
- include/linux/blkdev.h                         |   15 ++-
- include/linux/efi.h                            |    1 +
- include/linux/genhd.h                          |    1 +
- include/linux/pci_ids.h                        |    2 +
- include/linux/pm_qos_params.h                  |    4 +
- include/linux/seqlock.h                        |    4 +-
- include/net/dst.h                              |    2 +
- include/target/target_core_base.h              |    1 +
- include/target/target_core_transport.h         |    1 +
- init/main.c                                    |    2 +-
- kernel/pm_qos_params.c                         |   37 ++++--
- kernel/trace/ftrace.c                          |   12 +-
- lib/locking-selftest.c                         |    2 +-
- mm/kmemleak.c                                  |    7 +-
- mm/page_alloc.c                                |    2 +-
- mm/shmem.c                                     |    5 +-
- mm/slub.c                                      |   14 ++-
- mm/vmscan.c                                    |   11 +-
- net/atm/atm_sysfs.c                            |   10 ++
- net/bridge/br_netfilter.c                      |    6 +-
- net/core/dev.c                                 |    4 +-
- net/core/dst.c                                 |    2 +-
- net/core/ethtool.c                             |    2 +-
- net/core/skbuff.c                              |    3 +
- net/ipv4/igmp.c                                |   10 +-
- net/mac80211/cfg.c                             |   12 +-
- net/mac80211/mlme.c                            |    2 +-
- net/netfilter/nf_conntrack_sip.c               |   16 ++-
- net/sched/sch_sfq.c                            |   22 +--
- net/sctp/associola.c                           |   16 +++
- net/sctp/bind_addr.c                           |   10 +-
- net/socket.c                                   |    6 +-
- net/sunrpc/xprtsock.c                          |   16 ++-
- net/wireless/nl80211.c                         |    8 -
- security/apparmor/lsm.c                        |    3 +-
- security/keys/process_keys.c                   |    1 +
- sound/pci/hda/hda_intel.c                      |    9 +-
- sound/pci/hda/patch_analog.c                   |    3 +-
- sound/pci/hda/patch_conexant.c                 |    1 +
- sound/pci/hda/patch_sigmatel.c                 |    2 +-
- sound/soc/codecs/wm_hubs.c                     |   24 ++--
- sound/soc/pxa/raumfeld.c                       |   92 ++++++++-----
- 182 files changed, 1700 insertions(+), 782 deletions(-)
+Thank you.
+
+-- 
+tejun
