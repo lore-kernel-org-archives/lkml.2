@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162723Ab1FAIpE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:45:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44127 "EHLO mx2.suse.de"
+	id S1162695Ab1FAIXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:23:08 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44743 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162675Ab1FAIW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:22:59 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:43 2011
-Message-Id: <20110601081143.059810450@blue.kroah.org>
+	id S1162686Ab1FAIXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:23:04 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:44 2011
+Message-Id: <20110601081143.675557746@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:10:59 +0900
+Date: Wed, 01 Jun 2011 17:11:00 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         NeilBrown <neilb@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [089/165] md: Fix race when creating a new md device.
+Subject: [090/165] md/bitmap: fix saving of events_cleared and other state.
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,92 +24,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 2950
-Lines: 85
+Content-Length: 2224
+Lines: 63
 
 From: NeilBrown <neilb@suse.de>
 
-commit b0140891a8cea36469f58d23859e599b1122bd37 upstream.
+commit 8258c53208d7a9b7207e7d4dae36d2ea384cb278 upstream.
 
-There is a race when creating an md device by opening /dev/mdXX.
+If a bitmap is found to be 'stale' the events_cleared value
+is set to match 'events'.
+However if the array is degraded this does not get stored on disk.
+This can subsequently lead to incorrect behaviour.
 
-If two processes do this at much the same time they will follow the
-call path
-  __blkdev_get -> get_gendisk -> kobj_lookup
+So change bitmap_update_sb to always update events_cleared in the
+superblock from the known events_cleared.
+For neatness also set ->state from ->flags.
+This requires updating ->state whenever we update ->flags, which makes
+sense anyway.
 
-The first will call
-  -> md_probe -> md_alloc -> add_disk -> blk_register_region
-
-and the race happens when the second gets to kobj_lookup after
-add_disk has called blk_register_region but before it returns to
-md_alloc.
-
-In the case the second will not call md_probe (as the probe is already
-done) but will get a handle on the gendisk, return to __blkdev_get
-which will then call md_open (via the ->open) pointer.
-
-As mddev->gendisk hasn't been set yet, md_open will think something is
-wrong an return with ERESTARTSYS.
-
-This can loop endlessly while the first thread makes no progress
-through add_disk.  Nothing is blocking it, but due to scheduler
-behaviour it doesn't get a turn.
-So this is essentially a live-lock.
-
-We fix this by simply moving the assignment to mddev->gendisk before
-the call the add_disk() so md_open doesn't get confused.
-Also move blk_queue_flush earlier because add_disk should be as late
-as possible.
-
-To make sure that md_open doesn't complete until md_alloc has done all
-that is needed, we take mddev->open_mutex during the last part of
-md_alloc.  md_open will wait for this.
-
-This can cause a lock-up on boot so Cc:ing for stable.
-For 2.6.36 and earlier a different patch will be needed as the
-'blk_queue_flush' call isn't there.
+This is suitable for any active -stable release.
 
 Signed-off-by: NeilBrown <neilb@suse.de>
-Reported-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Tested-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/md.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/md/bitmap.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -4347,13 +4347,19 @@ static int md_alloc(dev_t dev, char *nam
- 	disk->fops = &md_fops;
- 	disk->private_data = mddev;
- 	disk->queue = mddev->queue;
-+	blk_queue_flush(mddev->queue, REQ_FLUSH | REQ_FUA);
- 	/* Allow extended partitions.  This makes the
- 	 * 'mdp' device redundant, but we can't really
- 	 * remove it now.
- 	 */
- 	disk->flags |= GENHD_FL_EXT_DEVT;
--	add_disk(disk);
- 	mddev->gendisk = disk;
-+	/* As soon as we call add_disk(), another thread could get
-+	 * through to md_open, so make sure it doesn't get too far
-+	 */
-+	mutex_lock(&mddev->open_mutex);
-+	add_disk(disk);
-+
- 	error = kobject_init_and_add(&mddev->kobj, &md_ktype,
- 				     &disk_to_dev(disk)->kobj, "%s", "md");
- 	if (error) {
-@@ -4367,8 +4373,7 @@ static int md_alloc(dev_t dev, char *nam
- 	if (mddev->kobj.sd &&
- 	    sysfs_create_group(&mddev->kobj, &md_bitmap_group))
- 		printk(KERN_DEBUG "pointless warning\n");
--
--	blk_queue_flush(mddev->queue, REQ_FLUSH | REQ_FUA);
-+	mutex_unlock(&mddev->open_mutex);
-  abort:
- 	mutex_unlock(&disks_mutex);
- 	if (!error && mddev->kobj.sd) {
+--- a/drivers/md/bitmap.c
++++ b/drivers/md/bitmap.c
+@@ -493,11 +493,11 @@ void bitmap_update_sb(struct bitmap *bit
+ 	spin_unlock_irqrestore(&bitmap->lock, flags);
+ 	sb = kmap_atomic(bitmap->sb_page, KM_USER0);
+ 	sb->events = cpu_to_le64(bitmap->mddev->events);
+-	if (bitmap->mddev->events < bitmap->events_cleared) {
++	if (bitmap->mddev->events < bitmap->events_cleared)
+ 		/* rocking back to read-only */
+ 		bitmap->events_cleared = bitmap->mddev->events;
+-		sb->events_cleared = cpu_to_le64(bitmap->events_cleared);
+-	}
++	sb->events_cleared = cpu_to_le64(bitmap->events_cleared);
++	sb->state = cpu_to_le32(bitmap->flags);
+ 	/* Just in case these have been changed via sysfs: */
+ 	sb->daemon_sleep = cpu_to_le32(bitmap->mddev->bitmap_info.daemon_sleep/HZ);
+ 	sb->write_behind = cpu_to_le32(bitmap->mddev->bitmap_info.max_write_behind);
+@@ -618,7 +618,7 @@ success:
+ 	if (le32_to_cpu(sb->version) == BITMAP_MAJOR_HOSTENDIAN)
+ 		bitmap->flags |= BITMAP_HOSTENDIAN;
+ 	bitmap->events_cleared = le64_to_cpu(sb->events_cleared);
+-	if (sb->state & cpu_to_le32(BITMAP_STALE))
++	if (bitmap->flags & BITMAP_STALE)
+ 		bitmap->events_cleared = bitmap->mddev->events;
+ 	err = 0;
+ out:
+@@ -652,9 +652,11 @@ static int bitmap_mask_state(struct bitm
+ 	switch (op) {
+ 	case MASK_SET:
+ 		sb->state |= cpu_to_le32(bits);
++		bitmap->flags |= bits;
+ 		break;
+ 	case MASK_UNSET:
+ 		sb->state &= cpu_to_le32(~bits);
++		bitmap->flags &= ~bits;
+ 		break;
+ 	default:
+ 		BUG();
 
 
