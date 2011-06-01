@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163052Ab1FAI0t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:26:49 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45024 "EHLO mx1.suse.de"
+	id S1163080Ab1FAIg2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:36:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44413 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162991Ab1FAI0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:26:44 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:09 2011
-Message-Id: <20110601081209.107816626@blue.kroah.org>
+	id S1163053Ab1FAI0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:26:50 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:10 2011
+Message-Id: <20110601081209.708992795@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:41 +0900
+Date: Wed, 01 Jun 2011 17:11:42 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [131/165] eCryptfs: Clear i_nlink in rmdir
+Subject: [132/165] eCryptfs: Allow 2 scatterlist entries for encrypted
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +25,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 932
-Lines: 29
+ filenames
+Content-Length: 5671
+Lines: 138
 
 From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 
-commit 07850552b92b3637fa56767b5e460b4238014447 upstream.
+commit 8d08dab786ad5cc2aca2bf870de370144b78c85a upstream.
 
-eCryptfs wasn't clearing the eCryptfs inode's i_nlink after a successful
-vfs_rmdir() on the lower directory. This resulted in the inode evict and
-destroy paths to be missed.
+The buffers allocated while encrypting and decrypting long filenames can
+sometimes straddle two pages. In this situation, virt_to_scatterlist()
+will return -ENOMEM, causing the operation to fail and the user will get
+scary error messages in their logs:
 
-https://bugs.launchpad.net/ecryptfs/+bug/723518
+kernel: ecryptfs_write_tag_70_packet: Internal error whilst attempting
+to convert filename memory to scatterlist; expected rc = 1; got rc =
+[-12]. block_aligned_filename_size = [272]
+kernel: ecryptfs_encrypt_filename: Error attempting to generate tag 70
+packet; rc = [-12]
+kernel: ecryptfs_encrypt_and_encode_filename: Error attempting to
+encrypt filename; rc = [-12]
+kernel: ecryptfs_lookup: Error attempting to encrypt and encode
+filename; rc = [-12]
+
+The solution is to allow up to 2 scatterlist entries to be used.
 
 Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ecryptfs/inode.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/ecryptfs/keystore.c |   46 +++++++++++++++++++++-------------------------
+ 1 file changed, 21 insertions(+), 25 deletions(-)
 
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -527,6 +527,8 @@ static int ecryptfs_rmdir(struct inode *
- 	dget(lower_dentry);
- 	rc = vfs_rmdir(lower_dir_dentry->d_inode, lower_dentry);
- 	dput(lower_dentry);
-+	if (!rc && dentry->d_inode)
-+		clear_nlink(dentry->d_inode);
- 	fsstack_copy_attr_times(dir, lower_dir_dentry->d_inode);
- 	dir->i_nlink = lower_dir_dentry->d_inode->i_nlink;
- 	unlock_dir(lower_dir_dentry);
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -599,8 +599,8 @@ struct ecryptfs_write_tag_70_packet_sill
+ 	struct mutex *tfm_mutex;
+ 	char *block_aligned_filename;
+ 	struct ecryptfs_auth_tok *auth_tok;
+-	struct scatterlist src_sg;
+-	struct scatterlist dst_sg;
++	struct scatterlist src_sg[2];
++	struct scatterlist dst_sg[2];
+ 	struct blkcipher_desc desc;
+ 	char iv[ECRYPTFS_MAX_IV_BYTES];
+ 	char hash[ECRYPTFS_TAG_70_DIGEST_SIZE];
+@@ -816,23 +816,21 @@ ecryptfs_write_tag_70_packet(char *dest,
+ 	memcpy(&s->block_aligned_filename[s->num_rand_bytes], filename,
+ 	       filename_size);
+ 	rc = virt_to_scatterlist(s->block_aligned_filename,
+-				 s->block_aligned_filename_size, &s->src_sg, 1);
+-	if (rc != 1) {
++				 s->block_aligned_filename_size, s->src_sg, 2);
++	if (rc < 1) {
+ 		printk(KERN_ERR "%s: Internal error whilst attempting to "
+-		       "convert filename memory to scatterlist; "
+-		       "expected rc = 1; got rc = [%d]. "
++		       "convert filename memory to scatterlist; rc = [%d]. "
+ 		       "block_aligned_filename_size = [%zd]\n", __func__, rc,
+ 		       s->block_aligned_filename_size);
+ 		goto out_release_free_unlock;
+ 	}
+ 	rc = virt_to_scatterlist(&dest[s->i], s->block_aligned_filename_size,
+-				 &s->dst_sg, 1);
+-	if (rc != 1) {
++				 s->dst_sg, 2);
++	if (rc < 1) {
+ 		printk(KERN_ERR "%s: Internal error whilst attempting to "
+ 		       "convert encrypted filename memory to scatterlist; "
+-		       "expected rc = 1; got rc = [%d]. "
+-		       "block_aligned_filename_size = [%zd]\n", __func__, rc,
+-		       s->block_aligned_filename_size);
++		       "rc = [%d]. block_aligned_filename_size = [%zd]\n",
++		       __func__, rc, s->block_aligned_filename_size);
+ 		goto out_release_free_unlock;
+ 	}
+ 	/* The characters in the first block effectively do the job
+@@ -855,7 +853,7 @@ ecryptfs_write_tag_70_packet(char *dest,
+ 		       mount_crypt_stat->global_default_fn_cipher_key_bytes);
+ 		goto out_release_free_unlock;
+ 	}
+-	rc = crypto_blkcipher_encrypt_iv(&s->desc, &s->dst_sg, &s->src_sg,
++	rc = crypto_blkcipher_encrypt_iv(&s->desc, s->dst_sg, s->src_sg,
+ 					 s->block_aligned_filename_size);
+ 	if (rc) {
+ 		printk(KERN_ERR "%s: Error attempting to encrypt filename; "
+@@ -891,8 +889,8 @@ struct ecryptfs_parse_tag_70_packet_sill
+ 	struct mutex *tfm_mutex;
+ 	char *decrypted_filename;
+ 	struct ecryptfs_auth_tok *auth_tok;
+-	struct scatterlist src_sg;
+-	struct scatterlist dst_sg;
++	struct scatterlist src_sg[2];
++	struct scatterlist dst_sg[2];
+ 	struct blkcipher_desc desc;
+ 	char fnek_sig_hex[ECRYPTFS_SIG_SIZE_HEX + 1];
+ 	char iv[ECRYPTFS_MAX_IV_BYTES];
+@@ -1008,13 +1006,12 @@ ecryptfs_parse_tag_70_packet(char **file
+ 	}
+ 	mutex_lock(s->tfm_mutex);
+ 	rc = virt_to_scatterlist(&data[(*packet_size)],
+-				 s->block_aligned_filename_size, &s->src_sg, 1);
+-	if (rc != 1) {
++				 s->block_aligned_filename_size, s->src_sg, 2);
++	if (rc < 1) {
+ 		printk(KERN_ERR "%s: Internal error whilst attempting to "
+ 		       "convert encrypted filename memory to scatterlist; "
+-		       "expected rc = 1; got rc = [%d]. "
+-		       "block_aligned_filename_size = [%zd]\n", __func__, rc,
+-		       s->block_aligned_filename_size);
++		       "rc = [%d]. block_aligned_filename_size = [%zd]\n",
++		       __func__, rc, s->block_aligned_filename_size);
+ 		goto out_unlock;
+ 	}
+ 	(*packet_size) += s->block_aligned_filename_size;
+@@ -1028,13 +1025,12 @@ ecryptfs_parse_tag_70_packet(char **file
+ 		goto out_unlock;
+ 	}
+ 	rc = virt_to_scatterlist(s->decrypted_filename,
+-				 s->block_aligned_filename_size, &s->dst_sg, 1);
+-	if (rc != 1) {
++				 s->block_aligned_filename_size, s->dst_sg, 2);
++	if (rc < 1) {
+ 		printk(KERN_ERR "%s: Internal error whilst attempting to "
+ 		       "convert decrypted filename memory to scatterlist; "
+-		       "expected rc = 1; got rc = [%d]. "
+-		       "block_aligned_filename_size = [%zd]\n", __func__, rc,
+-		       s->block_aligned_filename_size);
++		       "rc = [%d]. block_aligned_filename_size = [%zd]\n",
++		       __func__, rc, s->block_aligned_filename_size);
+ 		goto out_free_unlock;
+ 	}
+ 	/* The characters in the first block effectively do the job of
+@@ -1065,7 +1061,7 @@ ecryptfs_parse_tag_70_packet(char **file
+ 		       mount_crypt_stat->global_default_fn_cipher_key_bytes);
+ 		goto out_free_unlock;
+ 	}
+-	rc = crypto_blkcipher_decrypt_iv(&s->desc, &s->dst_sg, &s->src_sg,
++	rc = crypto_blkcipher_decrypt_iv(&s->desc, s->dst_sg, s->src_sg,
+ 					 s->block_aligned_filename_size);
+ 	if (rc) {
+ 		printk(KERN_ERR "%s: Error attempting to decrypt filename; "
 
 
