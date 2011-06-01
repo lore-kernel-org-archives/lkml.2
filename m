@@ -1,195 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163248Ab1FAIbk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:31:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29904 "EHLO mga09.intel.com"
+	id S933274Ab1FAIG0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:06:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42335 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161602Ab1FAIbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:31:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,302,1304319600"; 
-   d="scan'208";a="7729576"
-Subject: Re: [PATCH] pch_dma: fix DMA issue(ch8-ch11)
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
-In-Reply-To: <1306805685-7450-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-References: <1306805685-7450-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Jun 2011 13:27:17 +0530
-Message-ID: <1306915037.10976.7.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S933249Ab1FAIGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:06:20 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:27 2011
+Message-Id: <20110601080226.515383104@blue.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 01 Jun 2011 16:58:57 +0900
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [001/146] kmemleak: Do not return a pointer to an object that kmemleak did not get
+In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-31 at 10:34 +0900, Tomoya MORINAGA wrote:
-> ISSUE: In case PCH_DMA with I2S communications with ch8~ch11, sometimes I2S data
-> is not send correctly.
-> CAUSE: The following patch I submitted before was not enough modification for
-> supporting DMA ch8~ch11. The modification for status register of ch8~11 was not
-> enough.
-> 
-> pch_dma: Support I2S for ML7213 IOH
-> author	Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>	
-> 	Mon, 9 May 2011 07:09:38 +0000 (16:09 +0900)
-> committer	Vinod Koul <vinod.koul@intel.com>	
-> 	Mon, 9 May 2011 11:42:23 +0000 (16:42 +0530)
-> commit	194f5f2706c7472f9c6bb2d17fa788993606581f
-> tree	c9d4903ea02b18939a4f390956a48be1a3734517
-> parent	60092d0bde4c8741198da4a69b693d3709385bf1
-> 
-> This patch fixes the issue.
-> We can confirm PCH_DMA with I2S communications with ch8~ch11 works well.
-> 
-> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-> ---
->  drivers/dma/pch_dma.c |   69 +++++++++++++++++++++++++++++++++++++++----------
->  1 files changed, 55 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-> index ff5b38f..65c32f8 100644
-> --- a/drivers/dma/pch_dma.c
-> +++ b/drivers/dma/pch_dma.c
-> @@ -45,7 +45,8 @@
->  #define DMA_STATUS_MASK_BITS		0x3
->  #define DMA_STATUS_SHIFT_BITS		16
->  #define DMA_STATUS_IRQ(x)		(0x1 << (x))
-> -#define DMA_STATUS_ERR(x)		(0x1 << ((x) + 8))
-> +#define DMA_STATUS0_ERR(x)		(0x1 << ((x) + 8))
-> +#define DMA_STATUS2_ERR(x)		(0x1 << (x))
->  
->  #define DMA_DESC_WIDTH_SHIFT_BITS	12
->  #define DMA_DESC_WIDTH_1_BYTE		(0x3 << DMA_DESC_WIDTH_SHIFT_BITS)
-> @@ -133,6 +134,7 @@ struct pch_dma {
->  #define PCH_DMA_CTL3	0x0C
->  #define PCH_DMA_STS0	0x10
->  #define PCH_DMA_STS1	0x14
-> +#define PCH_DMA_STS2	0x18
->  
->  #define dma_readl(pd, name) \
->  	readl((pd)->membase + PCH_DMA_##name)
-> @@ -183,13 +185,19 @@ static void pdc_enable_irq(struct dma_chan *chan, int enable)
->  {
->  	struct pch_dma *pd = to_pd(chan->device);
->  	u32 val;
-> +	int pos;
-> +
-> +	if (chan->chan_id < 8)
-> +		pos = chan->chan_id;
-> +	else
-> +		pos = chan->chan_id + 8;
->  
->  	val = dma_readl(pd, CTL2);
->  
->  	if (enable)
-> -		val |= 0x1 << chan->chan_id;
-> +		val |= 0x1 << pos;
->  	else
-> -		val &= ~(0x1 << chan->chan_id);
-> +		val &= ~(0x1 << pos);
->  
->  	dma_writel(pd, CTL2, val);
->  
-> @@ -262,7 +270,7 @@ static void pdc_set_mode(struct dma_chan *chan, u32 mode)
->  		chan->chan_id, val);
->  }
->  
-> -static u32 pdc_get_status(struct pch_dma_chan *pd_chan)
-> +static u32 pdc_get_status0(struct pch_dma_chan *pd_chan)
->  {
->  	struct pch_dma *pd = to_pd(pd_chan->chan.device);
->  	u32 val;
-> @@ -272,9 +280,27 @@ static u32 pdc_get_status(struct pch_dma_chan *pd_chan)
->  			DMA_STATUS_BITS_PER_CH * pd_chan->chan.chan_id));
->  }
->  
-> +static u32 pdc_get_status2(struct pch_dma_chan *pd_chan)
-> +{
-> +	struct pch_dma *pd = to_pd(pd_chan->chan.device);
-> +	u32 val;
-> +
-> +	val = dma_readl(pd, STS2);
-> +	return DMA_STATUS_MASK_BITS & (val >> (DMA_STATUS_SHIFT_BITS +
-> +			DMA_STATUS_BITS_PER_CH * (pd_chan->chan.chan_id - 8)));
-> +}
-> +
->  static bool pdc_is_idle(struct pch_dma_chan *pd_chan)
->  {
-> -	if (pdc_get_status(pd_chan) == DMA_STATUS_IDLE)
-> +	u32 sts;
-> +
-> +	if (pd_chan->chan.chan_id < 8)
-> +		sts = pdc_get_status0(pd_chan);
-> +	else
-> +		sts = pdc_get_status2(pd_chan);
-> +
-> +
-> +	if (sts == DMA_STATUS_IDLE)
->  		return true;
->  	else
->  		return false;
-> @@ -693,30 +719,45 @@ static irqreturn_t pd_irq(int irq, void *devid)
->  	struct pch_dma *pd = (struct pch_dma *)devid;
->  	struct pch_dma_chan *pd_chan;
->  	u32 sts0;
-> +	u32 sts2;
->  	int i;
-> -	int ret = IRQ_NONE;
-> +	int ret0 = IRQ_NONE;
-> +	int ret2 = IRQ_NONE;
->  
->  	sts0 = dma_readl(pd, STS0);
-> +	sts2 = dma_readl(pd, STS2);
->  
->  	dev_dbg(pd->dma.dev, "pd_irq sts0: %x\n", sts0);
->  
->  	for (i = 0; i < pd->dma.chancnt; i++) {
->  		pd_chan = &pd->channels[i];
->  
-> -		if (sts0 & DMA_STATUS_IRQ(i)) {
-> -			if (sts0 & DMA_STATUS_ERR(i))
-> -				set_bit(0, &pd_chan->err_status);
-> +		if (i < 8) {
-> +			if (sts0 & DMA_STATUS_IRQ(i)) {
-> +				if (sts0 & DMA_STATUS0_ERR(i))
-> +					set_bit(0, &pd_chan->err_status);
->  
-> -			tasklet_schedule(&pd_chan->tasklet);
-> -			ret = IRQ_HANDLED;
-> -		}
-> +				tasklet_schedule(&pd_chan->tasklet);
-> +				ret0 = IRQ_HANDLED;
-> +			}
-> +		} else {
-> +			if (sts2 & DMA_STATUS_IRQ(i - 8)) {
-> +				if (sts2 & DMA_STATUS2_ERR(i))
-> +					set_bit(0, &pd_chan->err_status);
->  
-> +				tasklet_schedule(&pd_chan->tasklet);
-> +				ret2 = IRQ_HANDLED;
-> +			}
-> +		}
->  	}
->  
->  	/* clear interrupt bits in status register */
-> -	dma_writel(pd, STS0, sts0);
-> +	if (ret0)
-> +		dma_writel(pd, STS0, sts0);
-> +	if (ret2)
-> +		dma_writel(pd, STS2, sts2);
->  
-> -	return ret;
-> +	return ret0 | ret2;
->  }
->  
->  #ifdef	CONFIG_PM
-Applied Thanks
+2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
--- 
-~Vinod
+------------------
+
+From: Catalin Marinas <catalin.marinas@arm.com>
+
+commit 52c3ce4ec5601ee383a14f1485f6bac7b278896e upstream.
+
+The kmemleak_seq_next() function tries to get an object (and increment
+its use count) before returning it. If it could not get the last object
+during list traversal (because it may have been freed), the function
+should return NULL rather than a pointer to such object that it did not
+get.
+
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Acked-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ mm/kmemleak.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -1414,9 +1414,12 @@ static void *kmemleak_seq_next(struct se
+ 	++(*pos);
+ 
+ 	list_for_each_continue_rcu(n, &object_list) {
+-		next_obj = list_entry(n, struct kmemleak_object, object_list);
+-		if (get_object(next_obj))
++		struct kmemleak_object *obj =
++			list_entry(n, struct kmemleak_object, object_list);
++		if (get_object(obj)) {
++			next_obj = obj;
+ 			break;
++		}
+ 	}
+ 
+ 	put_object(prev_obj);
+
 
