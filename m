@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab1FASac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 14:30:32 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:50302 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab1FASab (ORCPT
+	id S1757387Ab1FASaq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 14:30:46 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:63547 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab1FASao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 14:30:31 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v3 10/10] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
-In-Reply-To: Your message of "Wed, 01 Jun 2011 13:41:56 EDT."
-             <BANLkTinKKmXYBLwc_cQBVcs-jgh_1SV6NQ@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <cover.1306847455.git.luto@mit.edu> <7e604b2dd699a30204fda3d1011f3af5a2c56572.1306847455.git.luto@mit.edu> <10442.1306949732@turing-police.cc.vt.edu>
-            <BANLkTinKKmXYBLwc_cQBVcs-jgh_1SV6NQ@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1306952865_2661P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 01 Jun 2011 14:27:45 -0400
-Message-ID: <13093.1306952865@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4DE684A4.0178,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 1 Jun 2011 14:30:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=wT4OgYhY7d7Nokw9Gl0WcIH1wHZdBxFhR1M7UhOaCGd05UI1uh9lqvdDYZVXwS1Uy1
+         ui4PD4dXEKkgMmyCpq/nVvixBmjuasJwu8/Po6EvUJ+qRY02mEA9LrwfwP5+07i0aUzg
+         lqmI/F5ho5YDr0V6y+JM58xs1tct16hg6DRQA=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1106011017260.13089@chino.kir.corp.google.com>
+References: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com>
+	<BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com>
+	<BANLkTikrRRzGLbMD47_xJz+xpgftCm1C2A@mail.gmail.com>
+	<alpine.DEB.2.00.1106011017260.13089@chino.kir.corp.google.com>
+Date: Wed, 1 Jun 2011 22:30:43 +0400
+Message-ID: <BANLkTinrviHh40fTfqyeB=SrcNS0yqZM0w@mail.gmail.com>
+Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
+ instead of failing
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1306952865_2661P
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, 01 Jun 2011 13:41:56 EDT, Andrew Lutomirski said:
-
->> + =A0 =A0 =A0 =A0 On a system with recent enough glibc (probably 2.14 =
-or
->>  + =A0 =A0 =A0 =A0 newer) and no static binaries, you can say N withou=
-t a
->>  + =A0 =A0 =A0 =A0 performance penalty to improve security
+On 6/1/11, David Rientjes <rientjes@google.com> wrote:
+> On Wed, 1 Jun 2011, Dmitry Eremin-Solenikov wrote:
+>
+>> I've hit this with IrDA driver on PXA. Also I've seen the report regarding
+>> other ARM platform (ep-something). Thus I've included Russell in the cc.
 >>
->> So I checked my laptop (Fedora 16 Rawhide), and found a bunch of stati=
-c binaries. The ones
->> that look like people may care:
+>
+> So you want to continue to allow the page allocator to return pages from
+> anywhere, even when GFP_DMA is specified, just as though it was lowmem?
 
-> The binaries will still work -- they'll just take a small performance
-> hit (=7E220ns on Sandy Bridge) every time they call time().
+Yes and no. I'm asking for the grace period for the drivers authors to be able
+to fix their code. After a grace period of one or two majors this permission
+should be removed and your original patch should be effective.
 
-Ah. I misparsed the Kconfig help - I read it as =22If you have no static =
-binaries,
-setting this to N doesn't introduce a performance hit=22 (with an implied=
- =22if you
-have static binaries, this will hose you=22).  Adding =22Static binaries =
-will continue
-to work at a very small performance penalty=22 would probably help.
+> Why don't you actually address the problem with the driver you're
+> complaining about with the patch below, which I already posted to you a
+> few days ago?
+>
+> If this arm driver is going to be using GFP_DMA unconditionally, it better
+> require CONFIG_ZONE_DMA for it to actually be meaningful until such time
+> as it can be removed if it's truly not needed or generalized to only
+> specific pieces of hardware.
 
---==_Exmh_1306952865_2661P
-Content-Type: application/pgp-signature
+No. This only workarounds the bug. And also a possible hundred of other bugs
+in the PXA/etc. ARM drivers. Instead I'm asking for the way to
+visualize all such
+bugs.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Do you want to also add such workarounds to some PATA CF driver used on PXA?
+To _any_ of the drivers allocating the GFP_DMA memory? Then CONFIG_ZONE_DMA
+would serve no purpose. We can as well to drop that symbol. Believe me.
 
-iD8DBQFN5oShcC3lWbTT17ARAukDAKDAnFF5saZAHWCj18NYMaWQIKJENgCg+x2r
-GLS1PNJRRid/M4Mg16YHa78=
-=zbmb
------END PGP SIGNATURE-----
+> ---
+>  drivers/net/irda/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/net/irda/Kconfig b/drivers/net/irda/Kconfig
+> --- a/drivers/net/irda/Kconfig
+> +++ b/drivers/net/irda/Kconfig
+> @@ -374,6 +374,7 @@ config VIA_FIR
+>  config PXA_FICP
+>  	tristate "Intel PXA2xx Internal FICP"
+>  	depends on ARCH_PXA && IRDA
+> +	select ZONE_DMA
+>  	help
+>  	  Say Y or M here if you want to build support for the PXA2xx
+>  	  built-in IRDA interface which can support both SIR and FIR.
+>
 
---==_Exmh_1306952865_2661P--
 
+-- 
+With best wishes
+Dmitry
