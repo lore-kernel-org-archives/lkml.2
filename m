@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758322Ab1FAQKr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 12:10:47 -0400
-Received: from hyde.gogi.tv ([87.106.161.174]:54166 "EHLO hyde.gogi.tv"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757076Ab1FAQKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 12:10:46 -0400
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
+	id S1758200Ab1FAQPK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 12:15:10 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54632 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755666Ab1FAQPG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 12:15:06 -0400
+Date: Wed, 1 Jun 2011 09:14:03 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        akpm <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Simon Kagstrom <simon.kagstrom@netinsight.net>
+Subject: [PATCH -next -resend] kmsg_dump.h: needs errno.h
+Message-Id: <20110601091403.1e41ef91.randy.dunlap@oracle.com>
+In-Reply-To: <20110601134322.f59f5603.sfr@canb.auug.org.au>
+References: <20110601134322.f59f5603.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Date: Wed, 01 Jun 2011 17:10:44 +0100
-From: Daniel Haid <d.haid@gogi.tv>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: Question about iommu on =?UTF-8?Q?x=38=36=5F=36=34=20and=20ra?=
- =?UTF-8?Q?deon=20driver=2E?=
-In-Reply-To: <20110601132444.GA4081@dumpdata.com>
-References: <20110525125752.GB3467@dumpdata.com>
- <dfd8bfd19ba1fb77d6448bff97123e13@admin.gogi.tv>
- <20110527155507.GB11273@dumpdata.com>
- <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv>
- <20110531134519.GC14641@dumpdata.com>
- <59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv>
- <20110531160221.GA31659@dumpdata.com>
- <0a8cb4bcad7fcf091a6bbe158323bba0@admin.gogi.tv>
- <20110531190412.GA21245@dumpdata.com>
- <d0ce6a4ba6092a1a9ef0f1e8f3cac9c9@admin.gogi.tv>
- <20110601132444.GA4081@dumpdata.com>
-Message-ID: <21491fcfb013e21177140326efc0ee66@admin.gogi.tv>
-User-Agent: Roundcube Webmail/0.4.2
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090204.4DE66559.00EF:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Look in the source code. I somehow assumed it would activate it
-> but maybe it isn't. And the problem you have is related to
-> something else?
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
- If I have read the code correctly the only way to get
- swiotlb_force=1 in lib/swiotlb.c is to add the "swiotlb=force"
- argument to the kernel parameters.
+Fix <linux/kmsg_dump.h> when CONFIG_PRINTK is not enabled:
 
- Without it on VIA chipsets swiotlb gets activated, but with
- swiotlb_force=0. In this case DMA to addresses below 4GB should be
- direct.
+include/linux/kmsg_dump.h:56: error: 'EINVAL' undeclared (first use in this function)
+include/linux/kmsg_dump.h:61: error: 'EINVAL' undeclared (first use in this function)
 
- But since I still get the error the radeon driver must (incorrectly)
- allocate memory above 4GB somewhere, but where?
+Looks like previous commit:
+commit 595dd3d8bf953254d8d2f30f99c54fe09c470040
+Author: Randy Dunlap <randy.dunlap@oracle.com>
+Date:   Tue Dec 1 10:52:02 2009 -0800
 
+    kmsg_dump: fix build for CONFIG_PRINTK=n
 
+uses EINVAL without having the needed header file(s),
+but I'm sure that I build tested that patch also.  oh well.
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Simon Kagstrom <simon.kagstrom@netinsight.net>
+Cc: David Woodhouse <David.Woodhouse@intel.com>
+---
+ include/linux/kmsg_dump.h |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20110524.orig/include/linux/kmsg_dump.h
++++ linux-next-20110524/include/linux/kmsg_dump.h
+@@ -12,6 +12,7 @@
+ #ifndef _LINUX_KMSG_DUMP_H
+ #define _LINUX_KMSG_DUMP_H
+ 
++#include <linux/errno.h>
+ #include <linux/list.h>
+ 
+ enum kmsg_dump_reason {
