@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab1FAOdM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 10:33:12 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:42519 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756766Ab1FAOdI (ORCPT
+	id S1757474Ab1FAOdS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 10:33:18 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:36536 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756766Ab1FAOdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 10:33:08 -0400
-Date: Wed, 1 Jun 2011 17:32:58 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        gadiyar@ti.com, sameo@linux.intel.com, parthab@india.ti.com,
-        tony@atomide.com, khilman@ti.com, b-cousson@ti.com, paul@pwsan.com
-Subject: Re: [PATCH 4/4] mfd: global Suspend and resume support of ehci and
- ohci
-Message-ID: <20110601143256.GG2409@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1306934847-6098-1-git-send-email-keshava_mgowda@ti.com>
- <1306934847-6098-4-git-send-email-keshava_mgowda@ti.com>
- <1306934847-6098-5-git-send-email-keshava_mgowda@ti.com>
- <201106011554.38415.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="E69HUUNAyIJqGpVn"
-Content-Disposition: inline
-In-Reply-To: <201106011554.38415.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 1 Jun 2011 10:33:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=sycBoCIpqUrlnox4LaabWwtC6xGBYqbYU1IkQYk2VwkboqD1tpC/rAeJRTRH3ZXTZV
+         lNFKqDDWMOWcd9baqcFdzaDWbmSufMk4SNOreqT7Xl0LcMx4kjL+GpOx8ilVlMsNIez3
+         2oxL41f20jf7ptDY0xR3YRrDGj1haU4wjJdJc=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: [PATCH v2] ext3: use proper little-endian bitops
+Date: Wed,  1 Jun 2011 23:34:04 +0900
+Message-Id: <1306938844-11178-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ext3_{set,clear}_bit() is defined as __test_and_{set,clear}_bit_le()
+for ext3.  But all ext3_{set,clear}_bit() calls ignore return values.
+So these can be replaced with __{set,clear}_bit_le().
 
---E69HUUNAyIJqGpVn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This changes ext3_{set,clear}_bit safely, because if someone uses
+these macros without noticing the change, new ext3_{set,clear}_bit
+don't have return value and causes compiler errors where the return
+value is used.
 
-Hi,
+This also removes unused ext3_find_first_zero_bit().
 
-On Wed, Jun 01, 2011 at 03:54:38PM +0200, Rafael J. Wysocki wrote:
-> > +static const struct dev_pm_ops usbhsomap_dev_pm_ops =3D {
-> > +	.suspend	=3D usbhs_suspend,
-> > +	.resume		=3D usbhs_resume,
-> > +};
->=20
-> Please add .freeze()/.thaw() and .poweroff()/.restore() callbacks too.
-> They may point to the same routines, but must be present.
->=20
-> You can actually use the SIMPLE_DEV_PM_OPS() convenience macro for this
-> purpose.
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org
+---
+v2: rewritten to keep ext3_*_bit() macros
 
-good point. BTW, do we need this #ifdef CONFIG_PM stuff which has been
-popping on most drivers recently ? To me it looks like driver.pm field
-is always available even if PM is disabled, so what's the point ? Saving
-a few bytes ?
+ include/linux/ext3_fs.h |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
---=20
-balbi
+diff --git a/include/linux/ext3_fs.h b/include/linux/ext3_fs.h
+index 5e06acf..50f21ee 100644
+--- a/include/linux/ext3_fs.h
++++ b/include/linux/ext3_fs.h
+@@ -418,12 +418,11 @@ struct ext3_inode {
+ #define EXT2_MOUNT_DATA_FLAGS		EXT3_MOUNT_DATA_FLAGS
+ #endif
+ 
+-#define ext3_set_bit			__test_and_set_bit_le
++#define ext3_set_bit			__set_bit_le
+ #define ext3_set_bit_atomic		ext2_set_bit_atomic
+-#define ext3_clear_bit			__test_and_clear_bit_le
++#define ext3_clear_bit			__clear_bit_le
+ #define ext3_clear_bit_atomic		ext2_clear_bit_atomic
+ #define ext3_test_bit			test_bit_le
+-#define ext3_find_first_zero_bit	find_first_zero_bit_le
+ #define ext3_find_next_zero_bit		find_next_zero_bit_le
+ 
+ /*
+-- 
+1.7.4.4
 
---E69HUUNAyIJqGpVn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN5k2YAAoJEAv8Txj19kN1bcMH/3Y21ajd9zctO7SZtuZipk8x
-yPZUb3tLZi0VCEBrM4qBx76nKVEx8Mo1Kf4bYUBfAqeS4jlgohC9Ot5G70PeRwFd
-Dxq4hPBVxR9tKughwwJFHqE5tHlqcgpaetcfr+eOfOnETCE4v6djuQGZMSQ47zMZ
-ZDPlHjj+InXs22g7Tnv2udRinHoXpFFMQbZdGK+U7rPZdo6it0CtIeHEUPYY883e
-GyUDxhtX9f+Gj4D5bpeuQ5fO9A2DOhlX/v3Xj6+slqSTtdYuKcaZ/X2x24rOhi/L
-aspvUGvjfcdC2g/Sxmgt441rELxZ94ip2k6L0G2uavAJ/3yqpWhAVrFuZrY6rtQ=
-=Rwus
------END PGP SIGNATURE-----
-
---E69HUUNAyIJqGpVn--
