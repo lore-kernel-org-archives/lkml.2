@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009Ab1FAG0V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 02:26:21 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:50554 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039Ab1FAG0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 02:26:17 -0400
-Date: Wed, 1 Jun 2011 08:26:07 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Andrew Worsley <amworsley@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Petkov, Borislav" <Borislav.Petkov@amd.com>
-Subject: Re: [PATCH] init, calibrate: Drop annoying warning
-Message-ID: <20110601062607.GC21247@aftab>
-References: <1306866541-17090-1-git-send-email-bp@amd64.org>
- <BANLkTimZ4xUEW1ZSZ7eQ9A9SdtBh6MjdDQ@mail.gmail.com>
+	id S1753562Ab1FAG0f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 02:26:35 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:34326 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754443Ab1FAG0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 02:26:31 -0400
+Message-ID: <4DE5DB95.8010106@kernel.dk>
+Date: Wed, 01 Jun 2011 08:26:29 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimZ4xUEW1ZSZ7eQ9A9SdtBh6MjdDQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <error27@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: linux-next: build failure after merge of the block tree
+References: <20110601110132.5485aba4.sfr@canb.auug.org.au>
+In-Reply-To: <20110601110132.5485aba4.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 07:04:59PM -0400, Andrew Worsley wrote:
-> I can see your point - it's useful when debugging the bogomips issue -
-> but if it's working it's not relevant.
-> Would be nice to have an extra level of verbose debug or a debug
-> branch of the file or perhaps just a relevant comment
-> that would easily allow it to be found and reverted to re-enable debug
-> if people want to debug this stuff again.
-
-Well, your patch either fixes the issue so the debug statements can go
-or it doesn't and needs more hammering :).
-
-> That said I would suggest just changing the comment (I don't know how
-> to just submit a comment change?) to something like:
+On 2011-06-01 03:01, Stephen Rothwell wrote:
+> Hi Jens,
 > 
-> "Drop calibrate_delay_direct() KERN_DEBUG printk related to bogomips
-> calculation as it appears when booting
-> every core on setups with 'ignore_loglevel' for people who want to
-> test latest kernels and scan dmesg for possible issues.
-> and this information isn't very useful to the widest audience of
-> kernel boot message gazers."
+> After merging the block tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/block/xen-blkback/blkback.c: In function 'xen_blkif_init':
+> drivers/block/xen-blkback/blkback.c:812:6: error: 'blkback' undeclared (first use in this function)
+> 
+> Caused by commit 2a46117c6050 ("xen/blkback: potential null dereference
+> in error handling").
+> 
+> I have used the block tree from next-20110530 for today.
 
-Fair enough, will change and resubmit.
-
-Thanks.
+Damn, sorry Stephen. Konrad, I'm rolling my tree back as not to
+introduce bisection breakage in the tree. JFYI, so rebase yours as well
+and lets try again.
 
 -- 
-Regards/Gruss,
-Boris.
+Jens Axboe
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
