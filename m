@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161618Ab1FAILv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:11:51 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43454 "EHLO mx1.suse.de"
+	id S1161628Ab1FAJUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:20:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42825 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161299Ab1FAILl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:11:41 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:23 2011
-Message-Id: <20110601080322.475840855@blue.kroah.org>
+	id S1161328Ab1FAILt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:11:49 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:24 2011
+Message-Id: <20110601080323.623873577@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:57 +0900
+Date: Wed, 01 Jun 2011 16:59:58 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        David L Stevens <dlstevens@us.ibm.com>,
+        Veaceslav Falico <vfalico@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [061/146] vlan: fix GVRP at dismantle time MIME-Version: 1.0
+Subject: [062/146] igmp: call ip_mc_clear_src() only when we have no users of ip_mc_list
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,95 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Veaceslav Falico <vfalico@redhat.com>
 
-[ Upstream commit 0442277740ec56109c5b5f7bcfded299cf9e72bd ]
+[ Upstream commit 24cf3af3fed5edcf90bc2a0ed181e6ce1513d2dc ]
 
-ip link add link eth2 eth2.103 type vlan id 103 gvrp on loose_binding on
-ip link set eth2.103 up
-rmmod tg3    # driver providing eth2
+In igmp_group_dropped() we call ip_mc_clear_src(), which resets the number
+of source filters per mulitcast. However, igmp_group_dropped() is also
+called on NETDEV_DOWN, NETDEV_PRE_TYPE_CHANGE and NETDEV_UNREGISTER, which
+means that the group might get added back on NETDEV_UP, NETDEV_REGISTER and
+NETDEV_POST_TYPE_CHANGE respectively, leaving us with broken source
+filters.
 
- BUG: unable to handle kernel NULL pointer dereference at           (null)
- IP: [<ffffffffa0030c9e>] garp_request_leave+0x3e/0xc0 [garp]
- PGD 11d251067 PUD 11b9e0067 PMD 0
- Oops: 0000 [#1] SMP
- last sysfs file: /sys/devices/virtual/net/eth2.104/ifindex
- CPU 0
- Modules linked in: tg3(-) 8021q garp nfsd lockd auth_rpcgss sunrpc libphy sg [last unloaded: x_tables]
+To fix that, we must clear the source filters only when there are no users
+in the ip_mc_list, i.e. in ip_mc_dec_group() and on device destroy.
 
- Pid: 11494, comm: rmmod Tainted: G        W   2.6.39-rc6-00261-gfd71257-dirty #580 HP ProLiant BL460c G6
- RIP: 0010:[<ffffffffa0030c9e>]  [<ffffffffa0030c9e>] garp_request_leave+0x3e/0xc0 [garp]
- RSP: 0018:ffff88007a19bae8  EFLAGS: 00010286
- RAX: 0000000000000000 RBX: ffff88011b5e2000 RCX: 0000000000000002
- RDX: 0000000000000000 RSI: 0000000000000175 RDI: ffffffffa0030d5b
- RBP: ffff88007a19bb18 R08: 0000000000000001 R09: ffff88011bd64a00
- R10: ffff88011d34ec00 R11: 0000000000000000 R12: 0000000000000002
- R13: ffff88007a19bc48 R14: ffff88007a19bb88 R15: 0000000000000001
- FS:  0000000000000000(0000) GS:ffff88011fc00000(0063) knlGS:00000000f77d76c0
- CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
- CR2: 0000000000000000 CR3: 000000011a675000 CR4: 00000000000006f0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process rmmod (pid: 11494, threadinfo ffff88007a19a000, task ffff8800798595c0)
- Stack:
-  ffff88007a19bb36 ffff88011c84b800 ffff88011b5e2000 ffff88007a19bc48
-  ffff88007a19bb88 0000000000000006 ffff88007a19bb38 ffffffffa003a5f6
-  ffff88007a19bb38 670088007a19bba8 ffff88007a19bb58 ffffffffa00397e7
- Call Trace:
-  [<ffffffffa003a5f6>] vlan_gvrp_request_leave+0x46/0x50 [8021q]
-  [<ffffffffa00397e7>] vlan_dev_stop+0xb7/0xc0 [8021q]
-  [<ffffffff8137e427>] __dev_close_many+0x87/0xe0
-  [<ffffffff8137e507>] dev_close_many+0x87/0x110
-  [<ffffffff8137e630>] rollback_registered_many+0xa0/0x240
-  [<ffffffff8137e7e9>] unregister_netdevice_many+0x19/0x60
-  [<ffffffffa00389eb>] vlan_device_event+0x53b/0x550 [8021q]
-  [<ffffffff8143f448>] ? ip6mr_device_event+0xa8/0xd0
-  [<ffffffff81479d03>] notifier_call_chain+0x53/0x80
-  [<ffffffff81062539>] __raw_notifier_call_chain+0x9/0x10
-  [<ffffffff81062551>] raw_notifier_call_chain+0x11/0x20
-  [<ffffffff8137df82>] call_netdevice_notifiers+0x32/0x60
-  [<ffffffff8137e69f>] rollback_registered_many+0x10f/0x240
-  [<ffffffff8137e85f>] rollback_registered+0x2f/0x40
-  [<ffffffff8137e8c8>] unregister_netdevice_queue+0x58/0x90
-  [<ffffffff8137e9eb>] unregister_netdev+0x1b/0x30
-  [<ffffffffa005d73f>] tg3_remove_one+0x6f/0x10b [tg3]
-
-We should call vlan_gvrp_request_leave() from unregister_vlan_dev(),
-not from vlan_dev_stop(), because vlan_gvrp_uninit_applicant()
-is called right after unregister_netdevice_queue(). In batch mode,
-unregister_netdevice_queue() doesn’t immediately call vlan_dev_stop().
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: David L Stevens <dlstevens@us.ibm.com>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/8021q/vlan.c     |    3 +++
- net/8021q/vlan_dev.c |    3 ---
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ net/ipv4/igmp.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/net/8021q/vlan.c
-+++ b/net/8021q/vlan.c
-@@ -124,6 +124,9 @@ void unregister_vlan_dev(struct net_devi
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -1172,20 +1172,18 @@ static void igmp_group_dropped(struct ip
  
- 	grp->nr_vlans--;
+ 	if (!in_dev->dead) {
+ 		if (IGMP_V1_SEEN(in_dev))
+-			goto done;
++			return;
+ 		if (IGMP_V2_SEEN(in_dev)) {
+ 			if (reporter)
+ 				igmp_send_report(in_dev, im, IGMP_HOST_LEAVE_MESSAGE);
+-			goto done;
++			return;
+ 		}
+ 		/* IGMPv3 */
+ 		igmpv3_add_delrec(in_dev, im);
  
-+	if (vlan->flags & VLAN_FLAG_GVRP)
-+		vlan_gvrp_request_leave(dev);
-+
- 	vlan_group_set_device(grp, vlan_id, NULL);
- 	if (!grp->killall)
- 		synchronize_net();
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -487,9 +487,6 @@ static int vlan_dev_stop(struct net_devi
- 	struct vlan_dev_info *vlan = vlan_dev_info(dev);
- 	struct net_device *real_dev = vlan->real_dev;
+ 		igmp_ifc_event(in_dev);
+ 	}
+-done:
+ #endif
+-	ip_mc_clear_src(im);
+ }
  
--	if (vlan->flags & VLAN_FLAG_GVRP)
--		vlan_gvrp_request_leave(dev);
--
- 	dev_mc_unsync(real_dev, dev);
- 	dev_uc_unsync(real_dev, dev);
- 	if (dev->flags & IFF_ALLMULTI)
+ static void igmp_group_added(struct ip_mc_list *im)
+@@ -1322,6 +1320,7 @@ void ip_mc_dec_group(struct in_device *i
+ 				*ip = i->next_rcu;
+ 				in_dev->mc_count--;
+ 				igmp_group_dropped(i);
++				ip_mc_clear_src(i);
+ 
+ 				if (!in_dev->dead)
+ 					ip_rt_multicast_event(in_dev);
+@@ -1431,7 +1430,8 @@ void ip_mc_destroy_dev(struct in_device
+ 		in_dev->mc_list = i->next_rcu;
+ 		in_dev->mc_count--;
+ 
+-		igmp_group_dropped(i);
++		/* We've dropped the groups in ip_mc_down already */
++		ip_mc_clear_src(i);
+ 		ip_ma_put(i);
+ 	}
+ }
 
 
