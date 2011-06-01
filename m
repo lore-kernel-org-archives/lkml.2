@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758109Ab1FAIft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:35:49 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45059 "EHLO mx1.suse.de"
+	id S1163056Ab1FAI1J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:27:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44440 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1163041Ab1FAI1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:27:00 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:11 2011
-Message-Id: <20110601081210.950175211@blue.kroah.org>
+	id S1161995Ab1FAI1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:27:05 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:12 2011
+Message-Id: <20110601081211.536406741@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:44 +0900
+Date: Wed, 01 Jun 2011 17:11:45 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kevin Cernekee <cernekee@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        David Howells <dhowells@redhat.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [134/165] kbuild: Fix GNU make v3.80 compatibility
+Subject: [135/165] Set cred->user_ns in key_replace_session_keyring
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1190
-Lines: 33
+Content-Length: 1072
+Lines: 31
 
-From: Kevin Cernekee <cernekee@gmail.com>
+From: "Serge E. Hallyn" <serge@hallyn.com>
 
-commit 43f67c98161c65f1b2e3af3a9ce6741850072c06 upstream.
+commit f7285b5d631fd6096b11c6af0058ed3a2b30ef4e upstream.
 
-According to Documentation/Changes, the kernel should be buildable with
-GNU make 3.80+.  Commit 88d7be031f9f975bb3f50a0b5ef3796a671e7edf (kbuild:
-Use a single clean rule for kernel and external modules) introduced the
-"$(or" construct, which requires make 3.81.  This causes "make clean" to
-malfunction when it is used with external modules.
+Since this cred was not created with copy_creds(), it needs to get
+initialized.  Otherwise use of syscall(__NR_keyctl, KEYCTL_SESSION_TO_PARENT);
+can lead to a NULL deref.  Thanks to Robert for finding this.
 
-Replace "$(or" with an equivalent "$(if" expression, to restore backward
-compatibility.
+But introduced by commit 47a150edc2a ("Cache user_ns in struct cred").
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Reported-by: Robert Święcki <robert@swiecki.net>
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/keys/process_keys.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/Makefile
-+++ b/Makefile
-@@ -1374,7 +1374,7 @@ endif # KBUILD_EXTMOD
- clean: $(clean-dirs)
- 	$(call cmd,rmdirs)
- 	$(call cmd,rmfiles)
--	@find $(or $(KBUILD_EXTMOD), .) $(RCS_FIND_IGNORE) \
-+	@find $(if $(KBUILD_EXTMOD), $(KBUILD_EXTMOD), .) $(RCS_FIND_IGNORE) \
- 		\( -name '*.[oas]' -o -name '*.ko' -o -name '.*.cmd' \
- 		-o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \
- 		-o -name '*.symtypes' -o -name 'modules.order' \
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -845,6 +845,7 @@ void key_replace_session_keyring(void)
+ 	new-> sgid	= old-> sgid;
+ 	new->fsgid	= old->fsgid;
+ 	new->user	= get_uid(old->user);
++	new->user_ns	= new->user->user_ns;
+ 	new->group_info	= get_group_info(old->group_info);
+ 
+ 	new->securebits	= old->securebits;
 
 
