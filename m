@@ -1,127 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab1FASAn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 14:00:43 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:46864 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755742Ab1FASAk (ORCPT
+	id S1753760Ab1FASCG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 14:02:06 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46124 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab1FASCD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 14:00:40 -0400
-Date: Wed, 1 Jun 2011 20:00:38 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: David C Niemi <dniemi@verisign.com>
-Cc: cpufreq@vger.kernel.org, Vincent Guittot <vincent.guittot@linaro.org>,
-        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: switching to top frequency too frequent with ondemand governor
- and no_hz
-Message-ID: <20110601180038.GA1780@x4.trippels.de>
-References: <20110601160805.GA1775@x4.trippels.de>
- <4DE6783E.70508@verisign.com>
+	Wed, 1 Jun 2011 14:02:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DE6783E.70508@verisign.com>
+X-Originating-IP: [212.159.75.221]
+In-Reply-To: <20110601144313.GA9695@redhat.com>
+References: <20110513203448.GA3523@gandalf>
+	<20110516172513.GA2546@tuxdriver.com>
+	<BANLkTi=JU2VkyArY4jrt1iE-sdwKp+JaAQ@mail.gmail.com>
+	<20110601144313.GA9695@redhat.com>
+Date: Wed, 1 Jun 2011 19:02:02 +0100
+Message-ID: <BANLkTi=pmOMFqX+h9sRQ_NDeC7EVMB665Q@mail.gmail.com>
+Subject: Re: BUG: scheduling while atomic 2.6.39-rc7 (iwl3945_irq_tasklet)
+From: James Hogan <james@albanarts.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.06.01 at 13:34 -0400, David C Niemi wrote:
-> On 06/01/2011 12:08 PM, Markus Trippelsdorf wrote:
-> > There seems to be a major difference in the behavior of the ondemand
-> > governor depending on whether CONFIG_NO_HZ is set or not in the kernel
-> > .config.
-> >
-> > In the NO_HZ case the ondemand governor spends too much time at the
-> > highest frequency and is also very trigger happy.
-> >
-> > I have compared the two cases on my system:
-> > powernow-k8: Found 1 AMD Phenom(tm) II X4 955 Processor (4 cpu cores) (version 2.20.00)
-> > powernow-k8:    0 : pstate 0 (3200 MHz)
-> > powernow-k8:    1 : pstate 1 (2500 MHz)
-> > powernow-k8:    2 : pstate 2 (2100 MHz)
-> > powernow-k8:    3 : pstate 3 (800 MHz)
-> >
-> > When I run:
-> > watch -n.1 'cat /proc/cpuinfo|grep MHz'
-> > on an otherwise idle system, I can see that the frequency always stays
-> > at 800 MHz in the "CONFIG_NO_HZ not set" case. But it will very
-> > frequently switch to 3200 MHz in the CONFIG_NO_HZ=y case under the same
-> > conditions.
-> >
-> > This also manifests itself in the cpufreq/stats/time_in_state
-> > statistics (again on a mostly idle system):
-> >
-> > First taken with:
-> > echo 200 > /sys/devices/system/cpu/cpufreq/ondemand/sampling_down_factor
-> > (BTW wouldn't it make sense to use something like this as the default
-> > value?)
-> >
-> > cat /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state
-> >
-> > CONFIG_NO_HZ not set: 
-> > 3200000 5845
-> > 2500000 0
-> > 2100000 5
-> > 800000 31552
-> >
-> > CONFIG_NO_HZ=y:
-> > 3200000 17650
-> > 2500000 0
-> > 2100000 0
-> > 800000 31129
-> >
-> >
-> > And with the default sampling_down_factor=1
-> >
-> > CONFIG_NO_HZ not set: 
-> > 3200000 140
-> > 2500000 2
-> > 2100000 29
-> > 800000 16614
-> >
-> > CONFIG_NO_HZ=y:
-> > 3200000 538
-> > 2500000 9
-> > 2100000 77
-> > 800000 16287
-> >
-> > Now my question is, is this expected? And what could be done to make the
-> > NO_HZ behavior more like the "CONFIG_NO_HZ not set" behavior.
-> 
-> A very interesting bit of information.  What do you have set for
-> up_threshold?  You may have to set it higher for CONFIG_NO_HZ than
-> without, based on your symptoms.  Another thing to look at is your
-> sampling_rate.  I'm guessing it differs between CONFIG_NO_HZ being set
-> or not.
+On 1 June 2011 15:43, Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+> On Tue, May 17, 2011 at 09:41:42AM +0100, James Hogan wrote:
+>> On 16 May 2011 18:25, John W. Linville <linville@tuxdriver.com> wrote:
+>> > On Fri, May 13, 2011 at 09:34:49PM +0100, James Hogan wrote:
+>> >> On 2.6.39-rc7 I've seen a panic due to "BUG: scheduling while atomic"
+>> >> with the backtrace below (not much detail as it was written in a text
+>> >> message while it was displayed on the screen!). All worked fine in
+>> >> 2.6.38.
+>> >>
+>> >> This was soon after resuming from suspend (enough time to unlock the
+>> >> screen, but not much else). I think it was the same bug I saw in rc2 but
+>> >> didn't have time to track down. I can probably get it to happen again if
+>> >> more detail is needed. It doesn't happen every suspend (I think it had
+>> >> survived a couple of suspend/resume cycles at this point).
+>> >>
+>> >> I could bisect if necessary, but hopefully the backtrace will be enough
+>> >> to see what's going on?
+>> >
+>> > A bisect might be very helpful -- time is short for 2.6.39 already.
+>>
+>> Hmm, it won't reproduce. I'll have to try and bisect this evening, as
+>> it was in my home network that it hit the BUG before.
+>
+> We use mutex in atomic contex when changing channel. I'm not sure if
+> this is the particular problem you have. If you found a way to
+> reproduce, you may try this patch:
 
-I've played with all those parameters, but unfortunately it didn't make
-any difference.
+Thanks, I haven't managed to reproduce the problem at all
+unfortunately so cannot bisect it (although I have had several failed
+suspends, where it just boots up again from scratch instead of
+resuming).
 
-> And perhaps you need to set sampling_down_factor a bit lower.  I
-> consider 100 a reasonable default, but a default of "1" was put in
-> initially to make the behavior of the patch that enabled the factor
-> identical with not having the patch.  If you are more concerned with
-> saving power than maximizing throughput, you might consider a much
-> lower value like 5 or 10.
+I'll try the patch when i get a chance
 
-Yes, I've tried different values and 200 turned out to be the best based
-on my preferences (throughput over power saving). It makes a big
-difference in the compile time of bigger projects, especially during the
-configuration phase.
+Cheers
+James
 
-But I have found the root cause of symptoms described above by
-bisection. It turned out that 2.6.39 is also affected, so I've bisected
-down to 2.6.38. 
-This is the result:
+>
+> diff --git a/drivers/net/wireless/iwlegacy/iwl-core.c b/drivers/net/wireless/iwlegacy/iwl-core.c
+> index 42df832..01244b2 100644
+> --- a/drivers/net/wireless/iwlegacy/iwl-core.c
+> +++ b/drivers/net/wireless/iwlegacy/iwl-core.c
+> @@ -861,9 +861,7 @@ void iwl_legacy_chswitch_done(struct iwl_priv *priv, bool is_success)
+>
+>        if (priv->switch_rxon.switch_in_progress) {
+>                ieee80211_chswitch_done(ctx->vif, is_success);
+> -               mutex_lock(&priv->mutex);
+>                priv->switch_rxon.switch_in_progress = false;
+> -               mutex_unlock(&priv->mutex);
+>        }
+>  }
+>  EXPORT_SYMBOL(iwl_legacy_chswitch_done);
+>
 
- 5cb2c3bd0c5e0f3ced63f250ec2ad59d7c5c626a is the first bad commit
- commit 5cb2c3bd0c5e0f3ced63f250ec2ad59d7c5c626a
- Author: Vincent Guittot <vincent.guittot@linaro.org>
- Date:   Mon Feb 7 17:14:25 2011 +0100
 
-     [CPUFREQ] calculate delay after dbs_check_cpu
-
-When I revert the above in 3.0-rc1 the CONFIG_NO_HZ=y symptoms vanish.
 
 -- 
-Markus
+James Hogan
