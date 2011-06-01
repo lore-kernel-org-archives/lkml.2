@@ -1,137 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab1FAHAn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 03:00:43 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58352 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753235Ab1FAHAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 03:00:42 -0400
-Date: Wed, 1 Jun 2011 09:00:23 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, rostedt@goodmis.org,
-        jmorris@namei.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v3 02/13] tracing: split out syscall_trace_enter
- construction
-Message-ID: <20110601070023.GB27671@elte.hu>
-References: <BANLkTimNcag-ZmVTXjUoTyiuJm6jtW0DgA@mail.gmail.com>
- <1306897845-9393-2-git-send-email-wad@chromium.org>
+	id S1755012Ab1FAHFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 03:05:49 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50773 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754267Ab1FAHFr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 03:05:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=IhxpqkYFMyRiJR+Yz/9RQSiA3mhxUVWeLelhsRScoYSybZhQIJIYfgNAUHmKESFt23
+         paeIFaYx5mV2+TYG8B54ahyYKBzjjuek9AIpRCoGvxdVkqVM5FTDFVAto3kVLidTVsDb
+         12EWdGDSX2r/E4wXJ5yPDcq+EdAibIchbtKD8=
+Message-ID: <4DE5E4C8.5060706@gmail.com>
+Date: Wed, 01 Jun 2011 09:05:44 +0200
+From: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.17) Gecko/20110516 Icedove/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306897845-9393-2-git-send-email-wad@chromium.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Oliver Neukum <oneukum@suse.de>
+CC: linux-usb@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Oliver Neukum <oliver@neukum.name>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [2.6.39] crash in acm_ctrl_msg+0x16/0x59
+References: <4DE25252.7050503@gmail.com> <4DE36118.4050706@gmail.com> <4DE3F0E6.6030507@gmail.com> <201105311037.46856.oneukum@suse.de>
+In-Reply-To: <201105311037.46856.oneukum@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 31/05/2011 10:37, Oliver Neukum ha scritto:
+> Am Montag, 30. Mai 2011, 21:32:54 schrieb Riccardo Magliocchetti:
+>>>> So we are trying to talk to a device that is already gone.
+>>>> Is there anything unusual about your device? Could you
+>>>> post "lsusb -v"?
+>>>
+>>> Yes, the unusual thing is that is very prone to freezing when booting,
+>>> in fact it freezed when i got the crash in the laptop. Will post lsusb
+>>> output later in the day.
+>>
+>> Here's the lsusb -v
+>
+> There is something strange going on. This is a cdc-ether device.
+> Are you using any additional patches?
 
-* Will Drewry <wad@chromium.org> wrote:
+I'm using a vanilla 2.6.39. I can get only lsusb when the phone is 
+booted and in that case it is recgnized as cdc-ether.
 
-> perf appears to be the primary consumer of the CONFIG_FTRACE_SYSCALLS
-> infrastructure.  As such, many the helpers target at perf can be split
-> into a peerf-focused helper and a generic CONFIG_FTRACE_SYSCALLS
-> consumer interface.
-> 
-> This change splits out syscall_trace_enter construction from
-> perf_syscall_enter for current into two helpers:
-> - ftrace_syscall_enter_state
-> - ftrace_syscall_enter_state_size
-> 
-> And adds another helper for completeness:
-> - ftrace_syscall_exit_state_size
-> 
-> These helpers allow for shared code between perf ftrace events and
-> any other consumers of CONFIG_FTRACE_SYSCALLS events.  The proposed
-> seccomp_filter patches use this code.
-> 
-> Signed-off-by: Will Drewry <wad@chromium.org>
-> ---
->  include/trace/syscall.h       |    4 ++
->  kernel/trace/trace_syscalls.c |   96 +++++++++++++++++++++++++++++++++++------
->  2 files changed, 86 insertions(+), 14 deletions(-)
+This is what i got when i attached the phone switched off like when i 
+got the crash:
 
-So, looking at the diffstat comparison again:
+usb 6-1: new full speed USB device number 3 using uhci_hcd
+usb 6-1: New USB device found, idVendor=1d50, idProduct=5119
+usb 6-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+usb 6-1: Product: Neo1973 Bootloader U-Boot 1.3.2-dirty-moko12
+usb 6-1: Manufacturer: OpenMoko, Inc
+usb 6-1: SerialNumber: 0000000
+cdc_acm 6-1:1.0: This device cannot do calls on its own. It is not a modem.
+cdc_acm 6-1:1.0: ttyACM0: USB ACM device
+usbcore: registered new interface driver cdc_acm
+cdc_acm: v0.26:USB Abstract Control Model driver for USB modems and ISDN 
+adapters
+hub 6-0:1.0: port 1 disabled by hub (EMI?), re-enabling...
+usb 6-1: USB disconnect, device number 3
+usb 6-1: new full speed USB device number 4 using uhci_hcd
+usb 6-1: device descriptor read/64, error -71
+usb 6-1: device descriptor read/64, error -71
+usb 6-1: new low speed USB device number 5 using uhci_hcd
+usb 6-1: device descriptor read/64, error -71
+usb 6-1: new full speed USB device number 6 using uhci_hcd
+usb 6-1: device not accepting address 6, error -71
+usb 6-1: new full speed USB device number 7 using uhci_hcd
+usb 6-1: device not accepting address 7, error -71
+hub 6-0:1.0: unable to enumerate USB device on port 1
 
-       bitmask (2009):  6 files changed,  194 insertions(+), 22 deletions(-)
- filter engine (2010): 18 files changed, 1100 insertions(+), 21 deletions(-)
- event filters (2011):  5 files changed,   82 insertions(+), 16 deletions(-)
-
-you went back to the middle solution again which is the worst of them 
-- why?
-
-If you want this to be a stupid, limited hack then go for the v1 
-bitmask.
-
-If you agree with my observation that filters allow the clean 
-user-space implementation of LSM equivalent security solutions (of 
-which sandboxes are just a *narrow special case*) then please use the 
-main highlevel abstraction we have defined around them: event 
-filters.
-
-Now, my observation was not uncontested so let me try to sum up the
-rather large discussion that erupted around it, as i see it.
-
-I saw four main counter arguments:
-
- - "Sandboxing is special and should stay separate from LSMs."
-
-   I think this is a technically bogus argument, see:
-
-         https://lkml.org/lkml/2011/5/26/85
-
-   That answer of mine went unchallenged.
-
- - "Events should only be observers."
-
-   Even ignoring the question of why on earth it should be a problem 
-   for a willing call-site to use event filtering results sensibly, 
-   this argument misses the plain fact that events are *already* 
-   active participants, see:
-
-         http://www.spinics.net/lists/mips/msg41075.html
-
-   That answer of mine went unchallenged too.
-
- - "This feature is too simplistic."
-
-   That's wrong i think, the feature is highly flexible:
-
-         http://www.mail-archive.com/linuxppc-dev@lists.ozlabs.org/msg51387.html
-
-   This reply of mine went unchallenged as well.
-
- - "Is this feature actually useful enough for applications, does it 
-    justify the complexity?"
-
-  This is the *only* valid technical counter-argument i saw, and it's 
-  a crutial one that is not fully answered yet. Since i think the feature
-  is an LSM equivalent i think it's at least as useful as any LSM is.
-
- - [ if i missed any important argument then someone please insert it 
-     here. ]
-
-But what you do here is to use the filter engine directly which is 
-both a limited hack *and* complex (beyond the linecount it doubles 
-our ABI exposure, amongst other things), so i find that approach 
-rather counter-productive, now that i've seen the real thing.
-
-Will this feature be just another example of the LSM status quo 
-dragging down a newcomer into the mud, until it's just as sucky and 
-limited as any existing LSMs? That would be a sad outcome!
-
-Thanks,
-
-	Ingo
-
-ps. Please start a new discussion thread for the next iteration!
-    This one is *way* too deep already.
+thanks,
+riccardo
