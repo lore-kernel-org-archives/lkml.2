@@ -1,117 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758724Ab1FAJte (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:49:34 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40391 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753235Ab1FAJtb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 05:49:31 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, grant@secretlab.ca,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] FRV: Hook up gpiolib support
-Date: Wed,  1 Jun 2011 10:49:27 +0100
-Message-Id: <1306921767-31115-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.3
+	id S1758743Ab1FAJuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:50:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21804 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753235Ab1FAJuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 05:50:07 -0400
+Date: Wed, 1 Jun 2011 12:49:37 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: [PATCH RFC 0/3] virtio and vhost-net capacity handling
+Message-ID: <cover.1306921434.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow people to use gpiolib on FRV, mostly for build coverage as it
-seems more useful to standardise the API than handle making it optional.
+OK, here's a new attempt to use the new capacity api.  I also added more
+comments to clarify the logic.  Hope this is more readable.  Let me know
+pls.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- arch/frv/Kconfig            |    4 +++
- arch/frv/include/asm/gpio.h |   55 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 59 insertions(+), 0 deletions(-)
- create mode 100644 arch/frv/include/asm/gpio.h
+This is on top of the patches applied by Rusty.
 
-diff --git a/arch/frv/Kconfig b/arch/frv/Kconfig
-index cb884e4..8e828fc 100644
---- a/arch/frv/Kconfig
-+++ b/arch/frv/Kconfig
-@@ -7,6 +7,7 @@ config FRV
- 	select HAVE_PERF_EVENTS
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_SHOW
-+	select ARCH_WANT_OPTIONAL_GPIO
- 
- config ZONE_DMA
- 	bool
-@@ -27,6 +28,9 @@ config GENERIC_CALIBRATE_DELAY
- 	bool
- 	default n
- 
-+config GENERIC_GPIO
-+	def_bool y
-+
- config TIME_LOW_RES
- 	bool
- 	default y
-diff --git a/arch/frv/include/asm/gpio.h b/arch/frv/include/asm/gpio.h
-new file mode 100644
-index 0000000..8c3377f
---- /dev/null
-+++ b/arch/frv/include/asm/gpio.h
-@@ -0,0 +1,55 @@
-+/*
-+ * Generic GPIO API implementation for FRV.
-+ *
-+ * A stright copy of that for PowerPC which was:
-+ *
-+ * Copyright (c) 2007-2008  MontaVista Software, Inc.
-+ *
-+ * Author: Anton Vorontsov <avorontsov@ru.mvista.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#ifndef _ASM_FRV_GPIO_H
-+#define _ASM_FRV_GPIO_H
-+
-+#include <linux/errno.h>
-+#include <asm-generic/gpio.h>
-+
-+#ifdef CONFIG_GPIOLIB
-+
-+/*
-+ * We don't (yet) implement inlined/rapid versions for on-chip gpios.
-+ * Just call gpiolib.
-+ */
-+static inline int gpio_get_value(unsigned int gpio)
-+{
-+	return __gpio_get_value(gpio);
-+}
-+
-+static inline void gpio_set_value(unsigned int gpio, int value)
-+{
-+	__gpio_set_value(gpio, value);
-+}
-+
-+static inline int gpio_cansleep(unsigned int gpio)
-+{
-+	return __gpio_cansleep(gpio);
-+}
-+
-+static inline int gpio_to_irq(unsigned int gpio)
-+{
-+	return __gpio_to_irq(gpio);
-+}
-+
-+static inline int irq_to_gpio(unsigned int irq)
-+{
-+	return -EINVAL;
-+}
-+
-+#endif /* CONFIG_GPIOLIB */
-+
-+#endif /* _ASM_FRV_GPIO_H */
+Note: there are now actually 2 calls to fee_old_xmit_skbs on
+data path so instead of passing flag '2' to the
+second one I thought we can just make each call free up
+at least 1 skb. This will work and even might be a bit faster (less
+branches), but in the end I discarded this idea as too fragile (relies
+on two calls on data path to function properly).
+
+Warning: untested. Posting now to give people chance to
+comment on the API.
+
+Michael S. Tsirkin (3):
+  virtio_ring: add capacity check API
+  virtio_net: fix tx capacity checks using new API
+  virtio_net: limit xmit polling
+
+ drivers/net/virtio_net.c     |   65 +++++++++++++++++++++++------------------
+ drivers/virtio/virtio_ring.c |    8 +++++
+ include/linux/virtio.h       |    5 +++
+ 3 files changed, 49 insertions(+), 29 deletions(-)
+
 -- 
-1.7.5.3
-
+1.7.5.53.gc233e
