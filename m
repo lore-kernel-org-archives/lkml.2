@@ -1,47 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759852Ab1FAVIi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 17:08:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31885 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758921Ab1FAVIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 17:08:36 -0400
-Message-ID: <4DE6AA49.4090907@redhat.com>
-Date: Wed, 01 Jun 2011 17:08:25 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1759988Ab1FAVJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 17:09:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44665 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758802Ab1FAVJc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 17:09:32 -0400
 MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v2 07/10] In order putback lru core
-References: <cover.1306689214.git.minchan.kim@gmail.com> <e473fa18da363dfdfbd43e1862e48563f6d4e36f.1306689214.git.minchan.kim@gmail.com>
-In-Reply-To: <e473fa18da363dfdfbd43e1862e48563f6d4e36f.1306689214.git.minchan.kim@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4DE6936F.7090700@die-jansens.de>
+References: <20110405152729.232781355@chello.nl> <tip-0122ec5b02f766c355b3168df53a6c038a24fa0d@git.kernel.org>
+ <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop>
+ <4DE674EB.1000200@die-jansens.de> <1306951751.2497.626.camel@laptop>
+ <1306953870.2497.627.camel@laptop> <4DE6936F.7090700@die-jansens.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 2 Jun 2011 06:09:09 +0900
+Message-ID: <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com>
+Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
+To: Arne Jansen <lists@die-jansens.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, efault@gmx.de, npiggin@kernel.dk,
+        akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2011 02:13 PM, Minchan Kim wrote:
-> This patch defines new APIs to put back the page into previous position of LRU.
-> The idea I suggested in LSF/MM is simple.
->
-> When we try to put back the page into lru list and if friends(prev, next) of the page
-> still is nearest neighbor, we can insert isolated page into prev's next instead of
-> head of LRU list. So it keeps LRU history without losing the LRU information.
+Boot-time hang - maybe due to the mis-merge that re-introduced the
+infinite media change signals for ide-cd?
 
-> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman<mgorman@suse.de>
-> Cc: Rik van Riel<riel@redhat.com>
-> Cc: Andrea Arcangeli<aarcange@redhat.com>
-> Signed-off-by: Minchan Kim<minchan.kim@gmail.com>
+I just pushed out a fix, it may not have mirrored out yet.
 
-Looks reasonable.
+I dunno. Worth checking out before spending a lot of time bisecting.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+                 Linus
