@@ -1,141 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759713Ab1FATrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:47:47 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:59162 "EHLO duck.linux-mips.net"
+	id S1759609Ab1FATr2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 15:47:28 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:59089 "EHLO duck.linux-mips.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759660Ab1FATro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:47:44 -0400
-Message-Id: <20110601180610.134151920@duck.linux-mips.net>
+	id S1759552Ab1FATr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 15:47:27 -0400
+Message-Id: <20110601180610.221426078@duck.linux-mips.net>
 User-Agent: quilt/0.48-1
-Date: Wed, 01 Jun 2011 19:04:58 +0100
+Date: Wed, 01 Jun 2011 19:04:59 +0100
 From: ralf@linux-mips.org
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org
-Subject: [patch 02/14] i8253: Unify all kernel declarations of i8253_lock in <linux/i8253.h>.
+Subject: [patch 03/14] i8253: Consolidate all kernel definitions of i8253_lock in lib/i8253-lock.c.
 References: <20110601180456.801265664@duck.linux-mips.net>
-Content-Disposition: inline; filename=i8253-move-common-declarations-to-new-header.patch
+Content-Disposition: inline; filename=i8253-add-shared-lock.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 To: linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-mips@linux-mips.org
 
- arch/arm/include/asm/i8253.h  |    9 ---------
- arch/mips/include/asm/i8253.h |   12 ------------
- arch/x86/include/asm/i8253.h  |   10 ----------
- include/linux/i8253.h         |   14 ++++++++++++++
- 4 files changed, 14 insertions(+), 31 deletions(-)
+ lib/Kconfig      |    6 ++++++
+ lib/Makefile     |    1 +
+ lib/i8253-lock.c |   11 +++++++++++
+ 3 files changed, 18 insertions(+)
 
-Index: linux-mips/include/linux/i8253.h
+Index: linux-i8253/lib/i8253-lock.c
 ===================================================================
---- linux-mips.orig/include/linux/i8253.h
-+++ linux-mips/include/linux/i8253.h
-@@ -2,10 +2,24 @@
-  * This file is subject to the terms and conditions of the GNU General Public
-  * License.  See the file "COPYING" in the main directory of this archive
-  * for more details.
-+ *
-+ *  Machine specific IO port address definition for generic.
-+ *  Written by Osamu Tomita <tomita@cinet.co.jp>
-  */
- #ifndef __LINUX_I8253_H
- #define __LINUX_I8253_H
- 
+--- /dev/null
++++ linux-i8253/lib/i8253-lock.c
+@@ -0,0 +1,11 @@
 +#include <linux/spinlock.h>
- #include <asm/i8253.h>
- 
-+/* i8253A PIT registers */
-+#define PIT_MODE	0x43
-+#define PIT_CH0		0x40
-+#define PIT_CH2		0x42
++#include <linux/module.h>
 +
-+#define inb_pit         inb_p
-+#define outb_pit        outb_p
++/*
++ * Protects access to I/O ports
++ *
++ * 0040-0043 : timer0, i8253 / i8254
++ * 0061-0061 : NMI Control Register which contains two speaker control bits.
++ */
++DEFINE_RAW_SPINLOCK(i8253_lock);
++EXPORT_SYMBOL(i8253_lock);
+Index: linux-i8253/lib/Makefile
+===================================================================
+--- linux-i8253.orig/lib/Makefile
++++ linux-i8253/lib/Makefile
+@@ -37,6 +37,7 @@ obj-$(CONFIG_HAS_IOMEM) += iomap_copy.o 
+ obj-$(CONFIG_CHECK_SIGNATURE) += check_signature.o
+ obj-$(CONFIG_DEBUG_LOCKING_API_SELFTESTS) += locking-selftest.o
+ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock_debug.o
++obj-$(CONFIG_I8253_LOCK) += i8253-lock.o
+ lib-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
+ lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
+ 
+Index: linux-i8253/lib/Kconfig
+===================================================================
+--- linux-i8253.orig/lib/Kconfig
++++ linux-i8253/lib/Kconfig
+@@ -237,6 +237,12 @@ config CPU_RMAP
+ 	bool
+ 	depends on SMP
+ 
++config I8253_LOCK
++	bool
++	help
++	  Enable the shared lock for the i8253 PIT.  Any system that uses
++	  the i8253 should select this.
 +
-+extern raw_spinlock_t i8253_lock;
-+
- #endif /* __LINUX_I8253_H */
-Index: linux-mips/arch/arm/include/asm/i8253.h
-===================================================================
---- linux-mips.orig/arch/arm/include/asm/i8253.h
-+++ linux-mips/arch/arm/include/asm/i8253.h
-@@ -1,15 +1,6 @@
- #ifndef __ASMARM_I8253_H
- #define __ASMARM_I8253_H
- 
--/* i8253A PIT registers */
--#define PIT_MODE	0x43
--#define PIT_CH0		0x40
--
- #define PIT_LATCH	((PIT_TICK_RATE + HZ / 2) / HZ)
- 
--extern raw_spinlock_t i8253_lock;
--
--#define outb_pit	outb_p
--#define inb_pit		inb_p
--
- #endif
-Index: linux-mips/arch/mips/include/asm/i8253.h
-===================================================================
---- linux-mips.orig/arch/mips/include/asm/i8253.h
-+++ linux-mips/arch/mips/include/asm/i8253.h
-@@ -5,20 +5,8 @@
- #ifndef __ASM_I8253_H
- #define __ASM_I8253_H
- 
--#include <linux/spinlock.h>
--
--/* i8253A PIT registers */
--#define PIT_MODE		0x43
--#define PIT_CH0			0x40
--#define PIT_CH2			0x42
--
- #define PIT_LATCH		LATCH
- 
--extern raw_spinlock_t i8253_lock;
--
- extern void setup_pit_timer(void);
- 
--#define inb_pit inb_p
--#define outb_pit outb_p
--
- #endif /* __ASM_I8253_H */
-Index: linux-mips/arch/x86/include/asm/i8253.h
-===================================================================
---- linux-mips.orig/arch/x86/include/asm/i8253.h
-+++ linux-mips/arch/x86/include/asm/i8253.h
-@@ -1,20 +1,10 @@
- #ifndef _ASM_X86_I8253_H
- #define _ASM_X86_I8253_H
- 
--/* i8253A PIT registers */
--#define PIT_MODE		0x43
--#define PIT_CH0			0x40
--#define PIT_CH2			0x42
--
- #define PIT_LATCH	LATCH
- 
--extern raw_spinlock_t i8253_lock;
--
- extern struct clock_event_device *global_clock_event;
- 
- extern void setup_pit_timer(void);
- 
--#define inb_pit		inb_p
--#define outb_pit	outb_p
--
- #endif /* _ASM_X86_I8253_H */
+ #
+ # Netlink attribute parsing support is select'ed if needed
+ #
 
 
