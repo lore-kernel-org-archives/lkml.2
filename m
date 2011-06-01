@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161407Ab1FAIJb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:09:31 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43311 "EHLO mx1.suse.de"
+	id S1161420Ab1FAIJk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:09:40 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43321 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161398Ab1FAIJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:09:28 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:01 2011
-Message-Id: <20110601080301.167791767@blue.kroah.org>
+	id S1161398Ab1FAIJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:09:33 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:02 2011
+Message-Id: <20110601080301.888730302@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:32 +0900
+Date: Wed, 01 Jun 2011 16:59:33 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [036/146] mac80211: fix a few RCU issues
+Subject: [037/146] [PARISC] wire up fanotify syscalls
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,51 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-commit a3836e02ba4c50db958d32d710b226f2408623dc upstream.
+commit 1824074b07ee66fa0f714e08579ad85075132d7b upstream.
 
-A few configuration functions correctly do
-rcu_read_lock() but don't correctly reference
-some pointers protected by RCU. Fix that.
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: James Bottomley <James.Bottomley@HansenPartnership.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/cfg.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ arch/parisc/include/asm/unistd.h   |    4 +++-
+ arch/parisc/kernel/sys_parisc32.c  |    8 ++++++++
+ arch/parisc/kernel/syscall_table.S |    2 ++
+ 3 files changed, 13 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -228,11 +228,11 @@ static int ieee80211_get_key(struct wiph
- 			goto out;
+--- a/arch/parisc/include/asm/unistd.h
++++ b/arch/parisc/include/asm/unistd.h
+@@ -814,8 +814,10 @@
+ #define __NR_recvmmsg		(__NR_Linux + 319)
+ #define __NR_accept4		(__NR_Linux + 320)
+ #define __NR_prlimit64		(__NR_Linux + 321)
++#define __NR_fanotify_init	(__NR_Linux + 322)
++#define __NR_fanotify_mark	(__NR_Linux + 323)
  
- 		if (pairwise)
--			key = sta->ptk;
-+			key = rcu_dereference(sta->ptk);
- 		else if (key_idx < NUM_DEFAULT_KEYS)
--			key = sta->gtk[key_idx];
-+			key = rcu_dereference(sta->gtk[key_idx]);
- 	} else
--		key = sdata->keys[key_idx];
-+		key = rcu_dereference(sdata->keys[key_idx]);
+-#define __NR_Linux_syscalls	(__NR_prlimit64 + 1)
++#define __NR_Linux_syscalls	(__NR_fanotify_mark + 1)
  
- 	if (!key)
- 		goto out;
-@@ -904,8 +904,10 @@ static int ieee80211_change_mpath(struct
- static void mpath_set_pinfo(struct mesh_path *mpath, u8 *next_hop,
- 			    struct mpath_info *pinfo)
- {
--	if (mpath->next_hop)
--		memcpy(next_hop, mpath->next_hop->sta.addr, ETH_ALEN);
-+	struct sta_info *next_hop_sta = rcu_dereference(mpath->next_hop);
+ 
+ #define __IGNORE_select		/* newselect */
+--- a/arch/parisc/kernel/sys_parisc32.c
++++ b/arch/parisc/kernel/sys_parisc32.c
+@@ -228,3 +228,11 @@ asmlinkage long compat_sys_fallocate(int
+         return sys_fallocate(fd, mode, ((loff_t)offhi << 32) | offlo,
+                              ((loff_t)lenhi << 32) | lenlo);
+ }
 +
-+	if (next_hop_sta)
-+		memcpy(next_hop, next_hop_sta->sta.addr, ETH_ALEN);
- 	else
- 		memset(next_hop, 0, ETH_ALEN);
++asmlinkage long compat_sys_fanotify_mark(int fan_fd, int flags, u32 mask_hi,
++					 u32 mask_lo, int fd,
++					 const char __user *pathname)
++{
++	return sys_fanotify_mark(fan_fd, flags, ((u64)mask_hi << 32) | mask_lo,
++				 fd, pathname);
++}
+--- a/arch/parisc/kernel/syscall_table.S
++++ b/arch/parisc/kernel/syscall_table.S
+@@ -420,6 +420,8 @@
+ 	ENTRY_COMP(recvmmsg)
+ 	ENTRY_SAME(accept4)		/* 320 */
+ 	ENTRY_SAME(prlimit64)
++	ENTRY_SAME(fanotify_init)
++	ENTRY_COMP(fanotify_mark)
+ 
+ 	/* Nothing yet */
  
 
 
