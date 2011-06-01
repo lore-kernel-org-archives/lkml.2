@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759328Ab1FATyl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:54:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33678 "EHLO mx1.redhat.com"
+	id S1759893Ab1FAT5A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 15:57:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23615 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005Ab1FATyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:54:38 -0400
-Date: Wed, 1 Jun 2011 15:54:18 -0400
-From: Dave Jones <davej@redhat.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Donggeun Kim <dg77.kim@samsung.com>, cpufreq@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH] CPUFREQ/S5PV210,EXYNOS4: Add Kconfig options for S5PV210
- and EXYNOS4 CPUfreq drivers
-Message-ID: <20110601195418.GA30806@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Kukjin Kim <kgene.kim@samsung.com>,
-	Donggeun Kim <dg77.kim@samsung.com>, cpufreq@vger.kernel.org,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-	kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
-	Ben Dooks <ben-linux@fluff.org>
-References: <1306476428-24808-1-git-send-email-dg77.kim@samsung.com>
- <1306483489-10432-1-git-send-email-dg77.kim@samsung.com>
- <4DE6977E.5080107@samsung.com>
+	id S1755300Ab1FAT47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 15:56:59 -0400
+Date: Wed, 1 Jun 2011 21:55:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        pedro@codesourcery.com
+Subject: Re: [PATCH 11/17] ptrace: implement PTRACE_SEIZE
+Message-ID: <20110601195520.GA9695@redhat.com>
+References: <1306710760-16440-1-git-send-email-tj@kernel.org> <1306710760-16440-12-git-send-email-tj@kernel.org> <20110601190117.GB6504@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DE6977E.5080107@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110601190117.GB6504@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 01, 2011 at 12:48:14PM -0700, Kukjin Kim wrote:
- 
- > Dave, could you please see below? If you're ok, will submit remained
- > others for Samsung cpufreq drivers.
+On 06/01, Oleg Nesterov wrote:
+>
+> On 05/30, Tejun Heo wrote:
+> >
+> > * If PTRACE_SEIZE'd, group stop uses PTRACE_EVENT_STOP trap which uses
+> >   exit_code of (SIGTRAP | PTRACE_EVENT_STOP << 8) instead of the
+> >   stopping signal number
+>
+> Hmm. May be it would be better to report stopping_signal | PTRACE_EVENT_STOP
+> instead... I am not sure yet, but it seems this way we can avoid the
+> PTRACE_GETSIGINFO changes. I'll try to explain later, when I finsh the
+> reading.
 
-I'm ok with the principle of the patch, though it doesn't seem to include
-any driver movement, so just applying this will break the compile.
-(If it happens in another patch, they should really go together to
- not break bisecting)
+Tomorrow. I do not see any problems, the whole series looks fine to me.
+Except I have some minor concerns which I need to re-check and summarize.
 
-	Dave
-
+Oleg.
 
