@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161134Ab1FAIId (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:08:33 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43236 "EHLO mx1.suse.de"
+	id S1161318Ab1FAIIh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:08:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42609 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161276Ab1FAII2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:08:28 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:53 2011
-Message-Id: <20110601080252.098622775@blue.kroah.org>
+	id S1161307Ab1FAIId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:08:33 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:54 2011
+Message-Id: <20110601080253.331790414@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:21 +0900
+Date: Wed, 01 Jun 2011 16:59:22 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [025/146] ide: Convert to bdops->check_events()
+Subject: [026/146] block: dont block events on excl write for non-optical
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,172 +25,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ devices
 
 From: Tejun Heo <tj@kernel.org>
 
-commit 5b03a1b140e13a28ff6be1526892a9dc538ddef6 upstream.
+commit d4dc210f69bcb0b4bef5a83b1c323817be89bad1 upstream.
 
-Convert ->media_changed() to the new ->check_events() method.  The
-conversion is mostly mechanical.  The only notable change is that
-cdrom now doesn't generate any event if @slot_nr isn't CDSL_CURRENT.
-It used to return -EINVAL which would be treated as media changed.  As
-media changer isn't supported anyway, this doesn't make any
-difference.
+Disk event code automatically blocks events on excl write.  This is
+primarily to avoid issuing polling commands while burning is in
+progress.  This behavior doesn't fit other types of devices with
+removeable media where polling commands don't have adverse side
+effects and door locking usually doesn't exist.
 
-This makes ide emit the standard disk events and allows kernel event
-polling.  Currently, only MEDIA_CHANGE event is implemented.  Adding
-support for EJECT_REQUEST shouldn't be difficult; however, given that
-ide driver is already deprecated, it probably is best to leave it
-alone.
+This patch introduces new genhd flag which controls the auto-blocking
+behavior and uses it to enable auto-blocking only on optical devices.
+
+Note for stable: 2.6.38 and later only
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Jens Axboe <axboe@kernel.dk>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-ide@vger.kernel.org
+Reported-by: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ide/ide-cd.c       |   10 ++++++----
- drivers/ide/ide-cd.h       |    3 ++-
- drivers/ide/ide-cd_ioctl.c |    8 ++++----
- drivers/ide/ide-gd.c       |   14 ++++++++------
- 4 files changed, 20 insertions(+), 15 deletions(-)
+ drivers/block/paride/pcd.c |    1 +
+ drivers/cdrom/viocd.c      |    3 ++-
+ drivers/ide/ide-cd.c       |    2 +-
+ drivers/scsi/sr.c          |    2 +-
+ fs/block_dev.c             |   17 ++++++++++-------
+ include/linux/genhd.h      |    1 +
+ 6 files changed, 16 insertions(+), 10 deletions(-)
 
+--- a/drivers/block/paride/pcd.c
++++ b/drivers/block/paride/pcd.c
+@@ -320,6 +320,7 @@ static void pcd_init_units(void)
+ 		disk->first_minor = unit;
+ 		strcpy(disk->disk_name, cd->name);	/* umm... */
+ 		disk->fops = &pcd_bdops;
++		disk->flags = GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
+ 		disk->events = DISK_EVENT_MEDIA_CHANGE;
+ 	}
+ }
+--- a/drivers/cdrom/viocd.c
++++ b/drivers/cdrom/viocd.c
+@@ -625,7 +625,8 @@ static int viocd_probe(struct vio_dev *v
+ 	blk_queue_max_hw_sectors(q, 4096 / 512);
+ 	gendisk->queue = q;
+ 	gendisk->fops = &viocd_fops;
+-	gendisk->flags = GENHD_FL_CD|GENHD_FL_REMOVABLE;
++	gendisk->flags = GENHD_FL_CD | GENHD_FL_REMOVABLE |
++			 GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
+ 	gendisk->events = DISK_EVENT_MEDIA_CHANGE;
+ 	set_capacity(gendisk, 0);
+ 	gendisk->private_data = d;
 --- a/drivers/ide/ide-cd.c
 +++ b/drivers/ide/ide-cd.c
-@@ -1177,7 +1177,7 @@ static struct cdrom_device_ops ide_cdrom
- 	.open			= ide_cdrom_open_real,
- 	.release		= ide_cdrom_release_real,
- 	.drive_status		= ide_cdrom_drive_status,
--	.media_changed		= ide_cdrom_check_media_change_real,
-+	.check_events		= ide_cdrom_check_events_real,
- 	.tray_move		= ide_cdrom_tray_move,
- 	.lock_door		= ide_cdrom_lock_door,
- 	.select_speed		= ide_cdrom_select_speed,
-@@ -1702,10 +1702,11 @@ static int idecd_ioctl(struct block_devi
- }
+@@ -1790,7 +1790,7 @@ static int ide_cd_probe(ide_drive_t *dri
  
- 
--static int idecd_media_changed(struct gendisk *disk)
-+static unsigned int idecd_check_events(struct gendisk *disk,
-+				       unsigned int clearing)
- {
- 	struct cdrom_info *info = ide_drv_g(disk, cdrom_info);
--	return cdrom_media_changed(&info->devinfo);
-+	return cdrom_check_events(&info->devinfo, clearing);
- }
- 
- static int idecd_revalidate_disk(struct gendisk *disk)
-@@ -1723,7 +1724,7 @@ static const struct block_device_operati
- 	.open			= idecd_open,
- 	.release		= idecd_release,
- 	.ioctl			= idecd_ioctl,
--	.media_changed		= idecd_media_changed,
-+	.check_events		= idecd_check_events,
- 	.revalidate_disk	= idecd_revalidate_disk
- };
- 
-@@ -1790,6 +1791,7 @@ static int ide_cd_probe(ide_drive_t *dri
  	ide_cd_read_toc(drive, &sense);
  	g->fops = &idecd_ops;
- 	g->flags |= GENHD_FL_REMOVABLE;
-+	g->events = DISK_EVENT_MEDIA_CHANGE;
+-	g->flags |= GENHD_FL_REMOVABLE;
++	g->flags |= GENHD_FL_REMOVABLE | GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
+ 	g->events = DISK_EVENT_MEDIA_CHANGE;
  	add_disk(g);
  	return 0;
+--- a/drivers/scsi/sr.c
++++ b/drivers/scsi/sr.c
+@@ -636,7 +636,7 @@ static int sr_probe(struct device *dev)
+ 	disk->first_minor = minor;
+ 	sprintf(disk->disk_name, "sr%d", minor);
+ 	disk->fops = &sr_bdops;
+-	disk->flags = GENHD_FL_CD;
++	disk->flags = GENHD_FL_CD | GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
+ 	disk->events = DISK_EVENT_MEDIA_CHANGE | DISK_EVENT_EJECT_REQUEST;
  
---- a/drivers/ide/ide-cd.h
-+++ b/drivers/ide/ide-cd.h
-@@ -111,7 +111,8 @@ int cdrom_check_status(ide_drive_t *, st
- int ide_cdrom_open_real(struct cdrom_device_info *, int);
- void ide_cdrom_release_real(struct cdrom_device_info *);
- int ide_cdrom_drive_status(struct cdrom_device_info *, int);
--int ide_cdrom_check_media_change_real(struct cdrom_device_info *, int);
-+unsigned int ide_cdrom_check_events_real(struct cdrom_device_info *,
-+					 unsigned int clearing, int slot_nr);
- int ide_cdrom_tray_move(struct cdrom_device_info *, int);
- int ide_cdrom_lock_door(struct cdrom_device_info *, int);
- int ide_cdrom_select_speed(struct cdrom_device_info *, int);
---- a/drivers/ide/ide-cd_ioctl.c
-+++ b/drivers/ide/ide-cd_ioctl.c
-@@ -79,8 +79,8 @@ int ide_cdrom_drive_status(struct cdrom_
- 	return CDS_DRIVE_NOT_READY;
- }
+ 	blk_queue_rq_timeout(sdev->request_queue, SR_TIMEOUT);
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1233,6 +1233,8 @@ int blkdev_get(struct block_device *bdev
+ 	res = __blkdev_get(bdev, mode, 0);
  
--int ide_cdrom_check_media_change_real(struct cdrom_device_info *cdi,
--				       int slot_nr)
-+unsigned int ide_cdrom_check_events_real(struct cdrom_device_info *cdi,
-+					 unsigned int clearing, int slot_nr)
- {
- 	ide_drive_t *drive = cdi->handle;
- 	int retval;
-@@ -89,9 +89,9 @@ int ide_cdrom_check_media_change_real(st
- 		(void) cdrom_check_status(drive, NULL);
- 		retval = (drive->dev_flags & IDE_DFLAG_MEDIA_CHANGED) ? 1 : 0;
- 		drive->dev_flags &= ~IDE_DFLAG_MEDIA_CHANGED;
--		return retval;
-+		return retval ? DISK_EVENT_MEDIA_CHANGE : 0;
- 	} else {
--		return -EINVAL;
-+		return 0;
- 	}
- }
+ 	if (whole) {
++		struct gendisk *disk = whole->bd_disk;
++
+ 		/* finish claiming */
+ 		mutex_lock(&bdev->bd_mutex);
+ 		spin_lock(&bdev_lock);
+@@ -1259,15 +1261,16 @@ int blkdev_get(struct block_device *bdev
+ 		spin_unlock(&bdev_lock);
  
---- a/drivers/ide/ide-gd.c
-+++ b/drivers/ide/ide-gd.c
-@@ -285,11 +285,12 @@ static int ide_gd_getgeo(struct block_de
- 	return 0;
- }
+ 		/*
+-		 * Block event polling for write claims.  Any write
+-		 * holder makes the write_holder state stick until all
+-		 * are released.  This is good enough and tracking
+-		 * individual writeable reference is too fragile given
+-		 * the way @mode is used in blkdev_get/put().
++		 * Block event polling for write claims if requested.  Any
++		 * write holder makes the write_holder state stick until
++		 * all are released.  This is good enough and tracking
++		 * individual writeable reference is too fragile given the
++		 * way @mode is used in blkdev_get/put().
+ 		 */
+-		if (!res && (mode & FMODE_WRITE) && !bdev->bd_write_holder) {
++		if ((disk->flags & GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE) &&
++		    !res && (mode & FMODE_WRITE) && !bdev->bd_write_holder) {
+ 			bdev->bd_write_holder = true;
+-			disk_block_events(bdev->bd_disk);
++			disk_block_events(disk);
+ 		}
  
--static int ide_gd_media_changed(struct gendisk *disk)
-+static unsigned int ide_gd_check_events(struct gendisk *disk,
-+					unsigned int clearing)
- {
- 	struct ide_disk_obj *idkp = ide_drv_g(disk, ide_disk_obj);
- 	ide_drive_t *drive = idkp->drive;
--	int ret;
-+	bool ret;
+ 		mutex_unlock(&bdev->bd_mutex);
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -127,6 +127,7 @@ struct hd_struct {
+ #define GENHD_FL_SUPPRESS_PARTITION_INFO	32
+ #define GENHD_FL_EXT_DEVT			64 /* allow extended devt */
+ #define GENHD_FL_NATIVE_CAPACITY		128
++#define GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE	256
  
- 	/* do not scan partitions twice if this is a removable device */
- 	if (drive->dev_flags & IDE_DFLAG_ATTACH) {
-@@ -297,10 +298,10 @@ static int ide_gd_media_changed(struct g
- 		return 0;
- 	}
- 
--	ret = !!(drive->dev_flags & IDE_DFLAG_MEDIA_CHANGED);
-+	ret = drive->dev_flags & IDE_DFLAG_MEDIA_CHANGED;
- 	drive->dev_flags &= ~IDE_DFLAG_MEDIA_CHANGED;
- 
--	return ret;
-+	return ret ? DISK_EVENT_MEDIA_CHANGE : 0;
- }
- 
- static void ide_gd_unlock_native_capacity(struct gendisk *disk)
-@@ -318,7 +319,7 @@ static int ide_gd_revalidate_disk(struct
- 	struct ide_disk_obj *idkp = ide_drv_g(disk, ide_disk_obj);
- 	ide_drive_t *drive = idkp->drive;
- 
--	if (ide_gd_media_changed(disk))
-+	if (ide_gd_check_events(disk, 0))
- 		drive->disk_ops->get_capacity(drive);
- 
- 	set_capacity(disk, ide_gd_capacity(drive));
-@@ -340,7 +341,7 @@ static const struct block_device_operati
- 	.release		= ide_gd_release,
- 	.ioctl			= ide_gd_ioctl,
- 	.getgeo			= ide_gd_getgeo,
--	.media_changed		= ide_gd_media_changed,
-+	.check_events		= ide_gd_check_events,
- 	.unlock_native_capacity	= ide_gd_unlock_native_capacity,
- 	.revalidate_disk	= ide_gd_revalidate_disk
- };
-@@ -412,6 +413,7 @@ static int ide_gd_probe(ide_drive_t *dri
- 	if (drive->dev_flags & IDE_DFLAG_REMOVABLE)
- 		g->flags = GENHD_FL_REMOVABLE;
- 	g->fops = &ide_gd_ops;
-+	g->events = DISK_EVENT_MEDIA_CHANGE;
- 	add_disk(g);
- 	return 0;
- 
+ enum {
+ 	DISK_EVENT_MEDIA_CHANGE			= 1 << 0, /* media changed */
 
 
