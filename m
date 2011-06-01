@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161793Ab1FAJRj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:17:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43110 "EHLO mx2.suse.de"
+	id S933243Ab1FAINj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:13:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43120 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161718Ab1FAINY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:13:24 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:45 2011
-Message-Id: <20110601080343.992675784@blue.kroah.org>
+	id S1752908Ab1FAINb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:13:31 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:46 2011
+Message-Id: <20110601080345.135856212@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:16 +0900
+Date: Wed, 01 Jun 2011 17:00:17 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robert Richter <robert.richter@amd.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [080/146] oprofile, x86: Enable preemption during pci device setup in
+Subject: [081/146] rcu: Fix unpaired rcu_irq_enter() from locking selftests
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,206 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- IBS init
 
-From: Robert Richter <robert.richter@amd.com>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 3d2606f42984613d324ad3047cf503bcddc3880a upstream.
+commit ba9f207c9f82115aba4ce04b22e0081af0ae300f upstream.
 
-IBS initialization is a mix of per-core register access and per-node
-pci device setup. Register access should be pinned to the cpu, but pci
-setup must run with preemption enabled.
+HARDIRQ_ENTER() maps to irq_enter() which calls rcu_irq_enter().
+But HARDIRQ_EXIT() maps to __irq_exit() which doesn't call
+rcu_irq_exit().
 
-This patch better separates the code into non-/preemptible sections
-and fixes sleeping with preemption disabled. See bug message below.
+So for every locking selftest that simulates hardirq disabled,
+we create an imbalance in the rcu extended quiescent state
+internal state.
 
-Fixes also freeing the eilvt entry by introducing put_eilvt().
+As a result, after the first missing rcu_irq_exit(), subsequent
+irqs won't exit dyntick-idle mode after leaving the interrupt
+handler.  This means that RCU won't see the affected CPU as being
+in an extended quiescent state, resulting in long grace-period
+delays (as in grace periods extending for hours).
 
-BUG: sleeping function called from invalid context at mm/slub.c:824
-in_atomic(): 1, irqs_disabled(): 0, pid: 32357, name: modprobe
-INFO: lockdep is turned off.
-Pid: 32357, comm: modprobe Not tainted 2.6.39-rc7+ #14
-Call Trace:
- [<ffffffff8104bdc8>] __might_sleep+0x112/0x117
- [<ffffffff81129693>] kmem_cache_alloc_trace+0x4b/0xe7
- [<ffffffff81278f14>] kzalloc.constprop.0+0x29/0x2b
- [<ffffffff81278f4c>] pci_get_subsys+0x36/0x78
- [<ffffffff81022689>] ? setup_APIC_eilvt+0xfb/0x139
- [<ffffffff81278fa4>] pci_get_device+0x16/0x18
- [<ffffffffa06c8b5d>] op_amd_init+0xd3/0x211 [oprofile]
- [<ffffffffa064d000>] ? 0xffffffffa064cfff
- [<ffffffffa064d298>] op_nmi_init+0x21e/0x26a [oprofile]
- [<ffffffffa064d062>] oprofile_arch_init+0xe/0x26 [oprofile]
- [<ffffffffa064d010>] oprofile_init+0x10/0x42 [oprofile]
- [<ffffffff81002099>] do_one_initcall+0x7f/0x13a
- [<ffffffff81096524>] sys_init_module+0x132/0x281
- [<ffffffff814cc682>] system_call_fastpath+0x16/0x1b
+To fix this, just use __irq_enter() to simulate the hardirq
+context. This is sufficient for the locking selftests as we
+don't need to exit any extended quiescent state or perform
+any check that irqs normally do when they wake up from idle.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+As a side effect, this patch makes it possible to restore
+"rcu: Decrease memory-barrier usage based on semi-formal proof",
+which eventually helped finding this bug.
+
+Reported-and-tested-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/oprofile/op_model_amd.c |   95 ++++++++++++++++++++++-----------------
- 1 file changed, 54 insertions(+), 41 deletions(-)
+ lib/locking-selftest.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/oprofile/op_model_amd.c
-+++ b/arch/x86/oprofile/op_model_amd.c
-@@ -316,16 +316,23 @@ static void op_amd_stop_ibs(void)
- 		wrmsrl(MSR_AMD64_IBSOPCTL, 0);
- }
+--- a/lib/locking-selftest.c
++++ b/lib/locking-selftest.c
+@@ -144,7 +144,7 @@ static void init_shared_classes(void)
  
--static inline int eilvt_is_available(int offset)
-+static inline int get_eilvt(int offset)
- {
--	/* check if we may assign a vector */
- 	return !setup_APIC_eilvt(offset, 0, APIC_EILVT_MSG_NMI, 1);
- }
+ #define HARDIRQ_ENTER()				\
+ 	local_irq_disable();			\
+-	irq_enter();				\
++	__irq_enter();				\
+ 	WARN_ON(!in_irq());
  
-+static inline int put_eilvt(int offset)
-+{
-+	return !setup_APIC_eilvt(offset, 0, 0, 1);
-+}
-+
- static inline int ibs_eilvt_valid(void)
- {
- 	int offset;
- 	u64 val;
-+	int valid = 0;
-+
-+	preempt_disable();
- 
- 	rdmsrl(MSR_AMD64_IBSCTL, val);
- 	offset = val & IBSCTL_LVT_OFFSET_MASK;
-@@ -333,16 +340,20 @@ static inline int ibs_eilvt_valid(void)
- 	if (!(val & IBSCTL_LVT_OFFSET_VALID)) {
- 		pr_err(FW_BUG "cpu %d, invalid IBS interrupt offset %d (MSR%08X=0x%016llx)\n",
- 		       smp_processor_id(), offset, MSR_AMD64_IBSCTL, val);
--		return 0;
-+		goto out;
- 	}
- 
--	if (!eilvt_is_available(offset)) {
-+	if (!get_eilvt(offset)) {
- 		pr_err(FW_BUG "cpu %d, IBS interrupt offset %d not available (MSR%08X=0x%016llx)\n",
- 		       smp_processor_id(), offset, MSR_AMD64_IBSCTL, val);
--		return 0;
-+		goto out;
- 	}
- 
--	return 1;
-+	valid = 1;
-+out:
-+	preempt_enable();
-+
-+	return valid;
- }
- 
- static inline int get_ibs_offset(void)
-@@ -600,67 +611,69 @@ static int setup_ibs_ctl(int ibs_eilvt_o
- 
- static int force_ibs_eilvt_setup(void)
- {
--	int i;
-+	int offset;
- 	int ret;
- 
--	/* find the next free available EILVT entry */
--	for (i = 1; i < 4; i++) {
--		if (!eilvt_is_available(i))
--			continue;
--		ret = setup_ibs_ctl(i);
--		if (ret)
--			return ret;
--		pr_err(FW_BUG "using offset %d for IBS interrupts\n", i);
--		return 0;
-+	/*
-+	 * find the next free available EILVT entry, skip offset 0,
-+	 * pin search to this cpu
-+	 */
-+	preempt_disable();
-+	for (offset = 1; offset < APIC_EILVT_NR_MAX; offset++) {
-+		if (get_eilvt(offset))
-+			break;
- 	}
-+	preempt_enable();
- 
--	printk(KERN_DEBUG "No EILVT entry available\n");
--
--	return -EBUSY;
--}
--
--static int __init_ibs_nmi(void)
--{
--	int ret;
--
--	if (ibs_eilvt_valid())
--		return 0;
-+	if (offset == APIC_EILVT_NR_MAX) {
-+		printk(KERN_DEBUG "No EILVT entry available\n");
-+		return -EBUSY;
-+	}
- 
--	ret = force_ibs_eilvt_setup();
-+	ret = setup_ibs_ctl(offset);
- 	if (ret)
--		return ret;
-+		goto out;
- 
--	if (!ibs_eilvt_valid())
--		return -EFAULT;
-+	if (!ibs_eilvt_valid()) {
-+		ret = -EFAULT;
-+		goto out;
-+	}
- 
-+	pr_err(FW_BUG "using offset %d for IBS interrupts\n", offset);
- 	pr_err(FW_BUG "workaround enabled for IBS LVT offset\n");
- 
- 	return 0;
-+out:
-+	preempt_disable();
-+	put_eilvt(offset);
-+	preempt_enable();
-+	return ret;
- }
- 
- /*
-  * check and reserve APIC extended interrupt LVT offset for IBS if
-  * available
-- *
-- * init_ibs() preforms implicitly cpu-local operations, so pin this
-- * thread to its current CPU
-  */
- 
- static void init_ibs(void)
- {
--	preempt_disable();
--
- 	ibs_caps = get_ibs_caps();
-+
- 	if (!ibs_caps)
-+		return;
-+
-+	if (ibs_eilvt_valid())
- 		goto out;
- 
--	if (__init_ibs_nmi() < 0)
--		ibs_caps = 0;
--	else
--		printk(KERN_INFO "oprofile: AMD IBS detected (0x%08x)\n", ibs_caps);
-+	if (!force_ibs_eilvt_setup())
-+		goto out;
-+
-+	/* Failed to setup ibs */
-+	ibs_caps = 0;
-+	return;
- 
- out:
--	preempt_enable();
-+	printk(KERN_INFO "oprofile: AMD IBS detected (0x%08x)\n", ibs_caps);
- }
- 
- static int (*create_arch_files)(struct super_block *sb, struct dentry *root);
+ #define HARDIRQ_EXIT()				\
 
 
