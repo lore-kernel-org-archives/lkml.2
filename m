@@ -1,131 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161065Ab1FADeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 23:34:19 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:53138
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933173Ab1FADeR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 23:34:17 -0400
-X-SpamScore: -16
-X-BigFish: VS-16(zz1432N98dK14ffOzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 1 Jun 2011 11:39:09 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Chris Ball <cjb@laptop.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: linux-next: build failure after merge of the final tree (mmc
- tree related)
-Message-ID: <20110601033909.GB1902@S2100-06.ap.freescale.net>
-References: <20110601130431.59f4f0d4.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110601130431.59f4f0d4.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	id S1161058Ab1FADnd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 23:43:33 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42569 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933211Ab1FADnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 23:43:31 -0400
+Date: Wed, 1 Jun 2011 13:43:22 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for June 1
+Message-Id: <20110601134322.f59f5603.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__1_Jun_2011_13_43_22_+1000_n00tGq5JL2M9Jz1o"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+--Signature=_Wed__1_Jun_2011_13_43_22_+1000_n00tGq5JL2M9Jz1o
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jun 01, 2011 at 01:04:31PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_pltfm_register':
-> (.opd+0xd8): multiple definition of `sdhci_pltfm_register'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0xd8): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_pltfm_init':
-> (.text+0x568): multiple definition of `.sdhci_pltfm_init'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x568): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_get_of_property':
-> (.text+0x34c): multiple definition of `.sdhci_get_of_property'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x34c): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_be32bs_writel':
-> (.text+0x13c): multiple definition of `.sdhci_be32bs_writel'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x13c): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_pltfm_resume':
-> (.opd+0x120): multiple definition of `sdhci_pltfm_resume'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x120): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_be32bs_readl':
-> (.opd+0x0): multiple definition of `sdhci_be32bs_readl'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x0): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_be32bs_readw':
-> (.text+0x64): multiple definition of `.sdhci_be32bs_readw'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x64): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_pltfm_free':
-> (.text+0x8d0): multiple definition of `.sdhci_pltfm_free'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x8d0): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_pltfm_free':
-> (.opd+0xc0): multiple definition of `sdhci_pltfm_free'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0xc0): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_be32bs_readw':
-> (.opd+0x18): multiple definition of `sdhci_be32bs_readw'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x18): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_pltfm_unregister':
-> (.text+0xa94): multiple definition of `.sdhci_pltfm_unregister'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0xa94): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_be32bs_readb':
-> (.text+0xd0): multiple definition of `.sdhci_be32bs_readb'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0xd0): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_be32bs_writew':
-> (.text+0x1a0): multiple definition of `.sdhci_be32bs_writew'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x1a0): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_be32bs_writel':
-> (.opd+0x48): multiple definition of `sdhci_be32bs_writel'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x48): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_pltfm_unregister':
-> (.opd+0xf0): multiple definition of `sdhci_pltfm_unregister'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0xf0): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_be32bs_writew':
-> (.opd+0x60): multiple definition of `sdhci_be32bs_writew'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x60): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_pltfm_resume':
-> (.text+0xc70): multiple definition of `.sdhci_pltfm_resume'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0xc70): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_be32bs_writeb':
-> (.text+0x2ac): multiple definition of `.sdhci_be32bs_writeb'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x2ac): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_pltfm_suspend':
-> (.text+0xc04): multiple definition of `.sdhci_pltfm_suspend'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0xc04): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_pltfm_register':
-> (.text+0x9c0): multiple definition of `.sdhci_pltfm_register'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x9c0): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `.sdhci_be32bs_readl':
-> (.text+0x0): multiple definition of `.sdhci_be32bs_readl'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.text+0x0): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_be32bs_writeb':
-> (.opd+0x78): multiple definition of `sdhci_be32bs_writeb'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x78): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_pltfm_suspend':
-> (.opd+0x108): multiple definition of `sdhci_pltfm_suspend'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x108): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_get_of_property':
-> (.opd+0x90): multiple definition of `sdhci_get_of_property'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x90): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_pltfm_init':
-> (.opd+0xa8): multiple definition of `sdhci_pltfm_init'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0xa8): first defined here
-> drivers/mmc/host/sdhci-of-hlwd.o: In function `sdhci_be32bs_readb':
-> (.opd+0x30): multiple definition of `sdhci_be32bs_readb'
-> drivers/mmc/host/sdhci-of-esdhc.o:(.opd+0x30): first defined here
-> 
-> Presumably caused by commit e2d0d7dc5542 ("mmc: sdhci: make sdhci-of
-> device drivers self registered").
-> 
-I did build test for powerpc in the first a few rounds posts, but
-forgot the in the last ones.  I will fix this soon.  Sorry for this.
+Hi all,
 
--- 
-Regards,
-Shawn
+Changes since 20110531:
 
+My fixes tree contains:
+	kgdbts: only use new asm-generic/ptrace.h api when needed
+
+Linus' tree still has its build failure for which I have added the above
+patch.
+
+The block tree gained a build failure so I sued the version from
+next-20110531.
+
+The mmc tree gained a conflict against Linus' tree and a build failure so
+I reverted the merge of this tree for today.
+
+The tip tree lost its conflict.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 191 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+CONFLICT (content): Merge conflict in arch/sparc/include/asm/smp_32.h
+CONFLICT (content): Merge conflict in arch/sparc/kernel/smp_32.c
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+CONFLICT (content): Merge conflict in drivers/rtc/Kconfig
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging cpufreq-move/move-drivers
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+$ git reset --hard HEAD^
+Merging refs/next/20110530/block
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
+mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
+e.c left in tree.
+$ git rm -f drivers/mmc/host/sdhci-of-core.c
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging gpio/gpio/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+CONFLICT (content): Merge conflict in kernel/rcutree.c
+Merging kvm/linux-next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+Merging slabh/slabh
+Merging bkl-config/config
+Merging cleancache/linux-next
+Merging arm-dt/devicetree/arm-next
+Merging scsi-post-merge/merge-base:master
+[master b15250a] Revert "Merge remote-tracking branch 'mmc/mmc-next'"
+
+--Signature=_Wed__1_Jun_2011_13_43_22_+1000_n00tGq5JL2M9Jz1o
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN5bVaAAoJEDMEi1NhKgbs6DcH/31+IwWXI9xLNoJfgcoKEf2J
+ym8pwEg5Fs2T3jzS5RfzbGiqnbQRKYM3v3o6h79lb0U5BO0sK0ApbtuYpWBOaUxQ
+beh2Kgcf+nAQF1S4fLl6WwIekfm+6XUxSMyGdcL1YN2F4rArqbfOpsM52G2Kor1E
+QwplfLgAy6TDBE/VDofgKdVL4mIllHo2iywUUw6U2w+QFD/bDS0YY52iApiNHdaW
+FXAupmuQzVJmDkw5JZUbwt39qp/i+YV88+NHBAO+DAIuX5Ef+ANjuD42osowXi/i
+C2lMZCjb5veRYFVnQURC5HYlF9Ey6P282tXmThQJ/E60VN0yNiuRriIFPKJ5uv8=
+=sW9d
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__1_Jun_2011_13_43_22_+1000_n00tGq5JL2M9Jz1o--
