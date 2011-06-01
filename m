@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161663Ab1FAIMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:12:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42889 "EHLO mx2.suse.de"
+	id S1161670Ab1FAJTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:19:45 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43520 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161647Ab1FAIMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:12:14 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:30 2011
-Message-Id: <20110601080329.186810037@blue.kroah.org>
+	id S1161500Ab1FAIMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:12:20 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:31 2011
+Message-Id: <20110601080330.305518149@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:03 +0900
+Date: Wed, 01 Jun 2011 17:00:04 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Neil Horman <nhorman@tuxdriver.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        Andy Gospodarek <andy@greyhouse.net>, nicolas.2p.debian@gmail.com,
-        "David S. Miller" <davem@davemloft.net>,
+        Kashyap Desai <kashyap.desai@lsi.com>,
+        James Bottomley <jbottomley@parallels.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [067/146] bonding: prevent deadlock on slave store with alb mode (v3)
+Subject: [068/146] [SCSI] mpt2sas: move even handling of
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,160 +26,174 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ MPT2SAS_TURN_ON_FAULT_LED into process context
 
+From: "Kashyap, Desai" <kashyap.desai@lsi.com>
 
-From: Neil Horman <nhorman@tuxdriver.com>
+commit 3ace8e052be5293ebb3e00f819effccc64108a38 upstream.
 
-[ Upstream commit 9fe0617d9b6d21f700ee9e658e1c9fe3be2fb402 ]
+Driver was a sending a SEP request during interrupt context which
+required to go to sleep.
 
-This soft lockup was recently reported:
+The fix is to rearrange the code so a fake event
+MPT2SAS_TURN_ON_FAULT_LED is fired from interrupt context, then later
+during the kernel worker threads processing, the SEP request is issued
+to firmware.
 
-[root@dell-per715-01 ~]# echo +bond5 > /sys/class/net/bonding_masters
-[root@dell-per715-01 ~]# echo +eth1 > /sys/class/net/bond5/bonding/slaves
-bonding: bond5: doing slave updates when interface is down.
-bonding bond5: master_dev is not up in bond_enslave
-[root@dell-per715-01 ~]# echo -eth1 > /sys/class/net/bond5/bonding/slaves
-bonding: bond5: doing slave updates when interface is down.
-
-BUG: soft lockup - CPU#12 stuck for 60s! [bash:6444]
-CPU 12:
-Modules linked in: bonding autofs4 hidp rfcomm l2cap bluetooth lockd sunrpc
-be2d
-Pid: 6444, comm: bash Not tainted 2.6.18-262.el5 #1
-RIP: 0010:[<ffffffff80064bf0>]  [<ffffffff80064bf0>]
-.text.lock.spinlock+0x26/00
-RSP: 0018:ffff810113167da8  EFLAGS: 00000286
-RAX: ffff810113167fd8 RBX: ffff810123a47800 RCX: 0000000000ff1025
-RDX: 0000000000000000 RSI: ffff810123a47800 RDI: ffff81021b57f6f8
-RBP: ffff81021b57f500 R08: 0000000000000000 R09: 000000000000000c
-R10: 00000000ffffffff R11: ffff81011d41c000 R12: ffff81021b57f000
-R13: 0000000000000000 R14: 0000000000000282 R15: 0000000000000282
-FS:  00002b3b41ef3f50(0000) GS:ffff810123b27940(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00002b3b456dd000 CR3: 000000031fc60000 CR4: 00000000000006e0
-
-Call Trace:
- [<ffffffff80064af9>] _spin_lock_bh+0x9/0x14
- [<ffffffff886937d7>] :bonding:tlb_clear_slave+0x22/0xa1
- [<ffffffff8869423c>] :bonding:bond_alb_deinit_slave+0xba/0xf0
- [<ffffffff8868dda6>] :bonding:bond_release+0x1b4/0x450
- [<ffffffff8006457b>] __down_write_nested+0x12/0x92
- [<ffffffff88696ae4>] :bonding:bonding_store_slaves+0x25c/0x2f7
- [<ffffffff801106f7>] sysfs_write_file+0xb9/0xe8
- [<ffffffff80016b87>] vfs_write+0xce/0x174
- [<ffffffff80017450>] sys_write+0x45/0x6e
- [<ffffffff8005d28d>] tracesys+0xd5/0xe0
-
-It occurs because we are able to change the slave configuarion of a bond while
-the bond interface is down.  The bonding driver initializes some data structures
-only after its ndo_open routine is called.  Among them is the initalization of
-the alb tx and rx hash locks.  So if we add or remove a slave without first
-opening the bond master device, we run the risk of trying to lock/unlock a
-spinlock that has garbage for data in it, which results in our above softlock.
-
-Note that sometimes this works, because in many cases an unlocked spinlock has
-the raw_lock parameter initialized to zero (meaning that the kzalloc of the
-net_device private data is equivalent to calling spin_lock_init), but thats not
-true in all cases, and we aren't guaranteed that condition, so we need to pass
-the relevant spinlocks through the spin_lock_init function.
-
-Fix it by moving the spin_lock_init calls for the tx and rx hashtable locks to
-the ndo_init path, so they are ready for use by the bond_store_slaves path.
-
-Change notes:
-v2) Based on conversation with Jay and Nicolas it seems that the ability to
-enslave devices while the bond master is down should be safe to do.  As such
-this is an outlier bug, and so instead we'll just initalize the errant spinlocks
-in the init path rather than the open path, solving the problem.  We'll also
-remove the warnings about the bond being down during enslave operations, since
-it should be safe
-
-v3) Fix spelling error
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: jtluka@redhat.com
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-CC: nicolas.2p.debian@gmail.com
-CC: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Signed-off-by: James Bottomley <jbottomley@parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/net/bonding/bond_alb.c   |    4 ----
- drivers/net/bonding/bond_main.c  |   16 ++++++++++------
- drivers/net/bonding/bond_sysfs.c |    6 ------
- 3 files changed, 10 insertions(+), 16 deletions(-)
 
---- a/drivers/net/bonding/bond_alb.c
-+++ b/drivers/net/bonding/bond_alb.c
-@@ -163,8 +163,6 @@ static int tlb_initialize(struct bonding
- 	struct tlb_client_info *new_hashtbl;
- 	int i;
+---
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |   94 +++++++++++++++++++++++++----------
+ 1 file changed, 68 insertions(+), 26 deletions(-)
+
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -113,6 +113,7 @@ struct sense_info {
+ };
  
--	spin_lock_init(&(bond_info->tx_hashtbl_lock));
--
- 	new_hashtbl = kzalloc(size, GFP_KERNEL);
- 	if (!new_hashtbl) {
- 		pr_err("%s: Error: Failed to allocate TLB hash table\n",
-@@ -764,8 +762,6 @@ static int rlb_initialize(struct bonding
- 	int size = RLB_HASH_TABLE_SIZE * sizeof(struct rlb_client_info);
- 	int i;
  
--	spin_lock_init(&(bond_info->rx_hashtbl_lock));
++#define MPT2SAS_TURN_ON_FAULT_LED (0xFFFC)
+ #define MPT2SAS_RESCAN_AFTER_HOST_RESET (0xFFFF)
+ 
+ /**
+@@ -121,6 +122,7 @@ struct sense_info {
+  * @work: work object (ioc->fault_reset_work_q)
+  * @cancel_pending_work: flag set during reset handling
+  * @ioc: per adapter object
++ * @device_handle: device handle
+  * @VF_ID: virtual function id
+  * @VP_ID: virtual port id
+  * @ignore: flag meaning this event has been marked to ignore
+@@ -134,6 +136,7 @@ struct fw_event_work {
+ 	u8			cancel_pending_work;
+ 	struct delayed_work	delayed_work;
+ 	struct MPT2SAS_ADAPTER *ioc;
++	u16			device_handle;
+ 	u8			VF_ID;
+ 	u8			VP_ID;
+ 	u8			ignore;
+@@ -3708,17 +3711,75 @@ _scsih_scsi_ioc_info(struct MPT2SAS_ADAP
+ #endif
+ 
+ /**
+- * _scsih_smart_predicted_fault - illuminate Fault LED
++ * _scsih_turn_on_fault_led - illuminate Fault LED
+  * @ioc: per adapter object
+  * @handle: device handle
++ * Context: process
+  *
+  * Return nothing.
+  */
+ static void
+-_scsih_smart_predicted_fault(struct MPT2SAS_ADAPTER *ioc, u16 handle)
++_scsih_turn_on_fault_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
+ {
+ 	Mpi2SepReply_t mpi_reply;
+ 	Mpi2SepRequest_t mpi_request;
++
++	memset(&mpi_request, 0, sizeof(Mpi2SepRequest_t));
++	mpi_request.Function = MPI2_FUNCTION_SCSI_ENCLOSURE_PROCESSOR;
++	mpi_request.Action = MPI2_SEP_REQ_ACTION_WRITE_STATUS;
++	mpi_request.SlotStatus =
++	    cpu_to_le32(MPI2_SEP_REQ_SLOTSTATUS_PREDICTED_FAULT);
++	mpi_request.DevHandle = cpu_to_le16(handle);
++	mpi_request.Flags = MPI2_SEP_REQ_FLAGS_DEVHANDLE_ADDRESS;
++	if ((mpt2sas_base_scsi_enclosure_processor(ioc, &mpi_reply,
++	    &mpi_request)) != 0) {
++		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n", ioc->name,
++		__FILE__, __LINE__, __func__);
++		return;
++	}
++
++	if (mpi_reply.IOCStatus || mpi_reply.IOCLogInfo) {
++		dewtprintk(ioc, printk(MPT2SAS_INFO_FMT "enclosure_processor: "
++		    "ioc_status (0x%04x), loginfo(0x%08x)\n", ioc->name,
++		    le16_to_cpu(mpi_reply.IOCStatus),
++		    le32_to_cpu(mpi_reply.IOCLogInfo)));
++		return;
++	}
++}
++
++/**
++ * _scsih_send_event_to_turn_on_fault_led - fire delayed event
++ * @ioc: per adapter object
++ * @handle: device handle
++ * Context: interrupt.
++ *
++ * Return nothing.
++ */
++static void
++_scsih_send_event_to_turn_on_fault_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
++{
++	struct fw_event_work *fw_event;
++
++	fw_event = kzalloc(sizeof(struct fw_event_work), GFP_ATOMIC);
++	if (!fw_event)
++		return;
++	fw_event->event = MPT2SAS_TURN_ON_FAULT_LED;
++	fw_event->device_handle = handle;
++	fw_event->ioc = ioc;
++	_scsih_fw_event_add(ioc, fw_event);
++}
++
++/**
++ * _scsih_smart_predicted_fault - process smart errors
++ * @ioc: per adapter object
++ * @handle: device handle
++ * Context: interrupt.
++ *
++ * Return nothing.
++ */
++static void
++_scsih_smart_predicted_fault(struct MPT2SAS_ADAPTER *ioc, u16 handle)
++{
+ 	struct scsi_target *starget;
+ 	struct MPT2SAS_TARGET *sas_target_priv_data;
+ 	Mpi2EventNotificationReply_t *event_reply;
+@@ -3745,30 +3806,8 @@ _scsih_smart_predicted_fault(struct MPT2
+ 	starget_printk(KERN_WARNING, starget, "predicted fault\n");
+ 	spin_unlock_irqrestore(&ioc->sas_device_lock, flags);
+ 
+-	if (ioc->pdev->subsystem_vendor == PCI_VENDOR_ID_IBM) {
+-		memset(&mpi_request, 0, sizeof(Mpi2SepRequest_t));
+-		mpi_request.Function = MPI2_FUNCTION_SCSI_ENCLOSURE_PROCESSOR;
+-		mpi_request.Action = MPI2_SEP_REQ_ACTION_WRITE_STATUS;
+-		mpi_request.SlotStatus =
+-		    cpu_to_le32(MPI2_SEP_REQ_SLOTSTATUS_PREDICTED_FAULT);
+-		mpi_request.DevHandle = cpu_to_le16(handle);
+-		mpi_request.Flags = MPI2_SEP_REQ_FLAGS_DEVHANDLE_ADDRESS;
+-		if ((mpt2sas_base_scsi_enclosure_processor(ioc, &mpi_reply,
+-		    &mpi_request)) != 0) {
+-			printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
+-			    ioc->name, __FILE__, __LINE__, __func__);
+-			return;
+-		}
 -
- 	new_hashtbl = kmalloc(size, GFP_KERNEL);
- 	if (!new_hashtbl) {
- 		pr_err("%s: Error: Failed to allocate RLB hash table\n",
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1441,12 +1441,6 @@ int bond_enslave(struct net_device *bond
- 			   bond_dev->name, slave_dev->name);
+-		if (mpi_reply.IOCStatus || mpi_reply.IOCLogInfo) {
+-			dewtprintk(ioc, printk(MPT2SAS_INFO_FMT
+-			    "enclosure_processor: ioc_status (0x%04x), "
+-			    "loginfo(0x%08x)\n", ioc->name,
+-			    le16_to_cpu(mpi_reply.IOCStatus),
+-			    le32_to_cpu(mpi_reply.IOCLogInfo)));
+-			return;
+-		}
+-	}
++	if (ioc->pdev->subsystem_vendor == PCI_VENDOR_ID_IBM)
++		_scsih_send_event_to_turn_on_fault_led(ioc, handle);
+ 
+ 	/* insert into event log */
+ 	sz = offsetof(Mpi2EventNotificationReply_t, EventData) +
+@@ -6330,6 +6369,9 @@ _firmware_event_work(struct work_struct
  	}
  
--	/* bond must be initialized by bond_open() before enslaving */
--	if (!(bond_dev->flags & IFF_UP)) {
--		pr_warning("%s: master_dev is not up in bond_enslave\n",
--			   bond_dev->name);
--	}
--
- 	/* already enslaved */
- 	if (slave_dev->flags & IFF_SLAVE) {
- 		pr_debug("Error, Device was already enslaved\n");
-@@ -5157,9 +5151,19 @@ static int bond_init(struct net_device *
- {
- 	struct bonding *bond = netdev_priv(bond_dev);
- 	struct bond_net *bn = net_generic(dev_net(bond_dev), bond_net_id);
-+	struct alb_bond_info *bond_info = &(BOND_ALB_INFO(bond));
- 
- 	pr_debug("Begin bond_init for %s\n", bond_dev->name);
- 
-+	/*
-+	 * Initialize locks that may be required during
-+	 * en/deslave operations.  All of the bond_open work
-+	 * (of which this is part) should really be moved to
-+	 * a phase prior to dev_open
-+	 */
-+	spin_lock_init(&(bond_info->tx_hashtbl_lock));
-+	spin_lock_init(&(bond_info->rx_hashtbl_lock));
-+
- 	bond->wq = create_singlethread_workqueue(bond_dev->name);
- 	if (!bond->wq)
- 		return -ENOMEM;
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -224,12 +224,6 @@ static ssize_t bonding_store_slaves(stru
- 	struct net_device *dev;
- 	struct bonding *bond = to_bond(d);
- 
--	/* Quick sanity check -- is the bond interface up? */
--	if (!(bond->dev->flags & IFF_UP)) {
--		pr_warning("%s: doing slave updates when interface is down.\n",
--			   bond->dev->name);
--	}
--
- 	if (!rtnl_trylock())
- 		return restart_syscall();
- 
+ 	switch (fw_event->event) {
++	case MPT2SAS_TURN_ON_FAULT_LED:
++		_scsih_turn_on_fault_led(ioc, fw_event->device_handle);
++		break;
+ 	case MPI2_EVENT_SAS_TOPOLOGY_CHANGE_LIST:
+ 		_scsih_sas_topology_change_event(ioc, fw_event);
+ 		break;
 
 
