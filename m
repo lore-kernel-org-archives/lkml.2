@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162501Ab1FAJFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:05:49 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43969 "EHLO mx1.suse.de"
+	id S1162108Ab1FAJFa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:05:30 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43976 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162014Ab1FAIQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:16:44 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:04:28 2011
-Message-Id: <20110601080426.868697520@blue.kroah.org>
+	id S1161955Ab1FAIQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:16:49 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:04:29 2011
+Message-Id: <20110601080428.169727909@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:52 +0900
+Date: Wed, 01 Jun 2011 17:00:53 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcin Galczynski <marcin@galczynski.pl>,
+        Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [116/146] USB: option: add support for Huawei E353 device
+Subject: [117/146] OHCI: fix regression caused by nVidia shutdown workaround
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Marcin=20Ga=C5=82czy=C5=84ski?= <marcin@galczynski.pl>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 610ba42f29c3dfa46a05ff8c2cadc29f544ff76d upstream.
+commit 2b7aaf503d56216b847c8265421d2a7d9b42df3e upstream.
 
-I am sharing patch to the devices/usb/serial/option.c. This allows
-operation of Huawei E353 broadband modem using the “option” driver. The
-patch simply adds new constant with proper product ID and an entry to
-usb_device_id. I worked on the 2.6.38.6 sources. Tested on Dell inspiron
-1764 (i3 core cpu) and brand new Huawei E353 modem, Fedora 15 beta.
+This patch (as1463) fixes a regression caused by commit
+3df7169e73fc1d71a39cffeacc969f6840cdf52b (OHCI: work around for nVidia
+shutdown problem).
 
-Looking at the type of change, i doubt it has potential to introduce
-problems in other parts of kernel or the driver itself.
+The original problem encountered by people using NVIDIA chipsets was
+that USB devices were not turning off when the system shut down.  For
+example, the LED on an optical mouse would remain on, draining a
+laptop's battery.  The problem was caused by a bug in the chipset; an
+OHCI controller in the Reset state would continue to drive a bus reset
+signal even after system shutdown.  The workaround was to put the
+controllers into the Suspend state instead.
 
-Signed-off-by: Marcin Galczynski <marcin@galczynski.pl>
+It turns out that later NVIDIA chipsets do not suffer from this bug.
+Instead some have the opposite bug: If a system is shut down while an
+OHCI controller is in the Suspend state, USB devices remain powered!
+On other systems, shutting down with a Suspended controller causes the
+system to reboot immediately.  Thus, working around the original bug
+on some machines exposes other bugs on other machines.
+
+The best solution seems to be to limit the workaround to OHCI
+controllers with a low-numbered PCI product ID.  I don't know exactly
+at what point NVIDIA changed their chipsets; the value used here is a
+guess.  So far it was worked out okay for all the people who have
+tested it.
+
+This fixes Bugzilla #35032.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Andre "Osku" Schmidt <andre.osku.schmidt@googlemail.com>
+Tested-by: Yury Siamashka <yurand2@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/host/ohci-pci.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -149,6 +149,7 @@ static void option_instat_callback(struc
- #define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_E14AC			0x14AC
- #define HUAWEI_PRODUCT_ETS1220			0x1803
-+#define HUAWEI_PRODUCT_E353			0x1506
+--- a/drivers/usb/host/ohci-pci.c
++++ b/drivers/usb/host/ohci-pci.c
+@@ -207,10 +207,18 @@ static int ohci_quirk_amd700(struct usb_
+  */
+ static int ohci_quirk_nvidia_shutdown(struct usb_hcd *hcd)
+ {
++	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
+ 	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
  
- #define QUANTA_VENDOR_ID			0x0408
- #define QUANTA_PRODUCT_Q101			0xEA02
-@@ -532,6 +533,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x01, 0x01) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V620) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V740) },
+-	ohci->flags |= OHCI_QUIRK_SHUTDOWN;
+-	ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
++	/* Evidently nVidia fixed their later hardware; this is a guess at
++	 * the changeover point.
++	 */
++#define PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_USB		0x026d
++
++	if (pdev->device < PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_USB) {
++		ohci->flags |= OHCI_QUIRK_SHUTDOWN;
++		ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
++	}
+ 
+ 	return 0;
+ }
 
 
