@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162830Ab1FAIYd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:24:33 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44839 "EHLO mx1.suse.de"
+	id S1162844Ab1FAIYk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:24:40 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44848 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162818Ab1FAIY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:24:29 -0400
+	id S1162832Ab1FAIYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:24:34 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:54 2011
-Message-Id: <20110601081153.601369612@blue.kroah.org>
+Message-Id: <20110601081154.205725305@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:16 +0900
+Date: Wed, 01 Jun 2011 17:11:17 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vikram Narayanan <vikram186@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [106/165] i2c/writing-clients: Fix foo_driver.id_table
+        Craig Shelley <craig@microtron.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [107/165] USB: CP210x Add 4 Device IDs for AC-Services Devices
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 748
-Lines: 27
+Content-Length: 1214
+Lines: 28
 
-From: Vikram Narayanan <vikram186@gmail.com>
+From: Craig Shelley <craig@microtron.org.uk>
 
-commit 3116c86033079a1d4d4e84c40028f96b614843b8 upstream.
+commit 4eff0b40a7174896b860312910e0db51f2dcc567 upstream.
 
-The i2c_device_id structure variable's name is not used in the
-i2c_driver structure.
+This patch adds 4 device IDs for CP2102 based devices manufactured by
+AC-Services. See http://www.ac-services.eu for further info.
 
-Signed-off-by: Vikram Narayanan <vikram186@gmail.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Craig Shelley <craig@microtron.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/i2c/writing-clients |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/cp210x.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/Documentation/i2c/writing-clients
-+++ b/Documentation/i2c/writing-clients
-@@ -38,7 +38,7 @@ static struct i2c_driver foo_driver = {
- 		.name	= "foo",
- 	},
- 
--	.id_table	= foo_ids,
-+	.id_table	= foo_idtable,
- 	.probe		= foo_probe,
- 	.remove		= foo_remove,
- 	/* if device autodetection is needed: */
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -112,6 +112,10 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x8418) }, /* IRZ Automation Teleport SG-10 GSM/GPRS Modem */
+ 	{ USB_DEVICE(0x10C4, 0x846E) }, /* BEI USB Sensor Interface (VCP) */
+ 	{ USB_DEVICE(0x10C4, 0x8477) }, /* Balluff RFID */
++	{ USB_DEVICE(0x10C4, 0x85EA) }, /* AC-Services IBUS-IF */
++	{ USB_DEVICE(0x10C4, 0x85EB) }, /* AC-Services CIS-IBUS */
++	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
++	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA71) }, /* Infinity GPS-MIC-1 Radio Monophone */
 
 
