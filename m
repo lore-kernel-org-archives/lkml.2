@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163056Ab1FAI1J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:27:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44440 "EHLO mx2.suse.de"
+	id S1163092Ab1FAI1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:27:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44449 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161995Ab1FAI1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:27:05 -0400
+	id S1162005Ab1FAI1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:27:13 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:12 2011
-Message-Id: <20110601081211.536406741@blue.kroah.org>
+Message-Id: <20110601081212.190419866@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:45 +0900
+Date: Wed, 01 Jun 2011 17:11:46 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        David Howells <dhowells@redhat.com>,
+        Luca Tettamanti <kronos.it@gmail.com>,
+        Massimo Dal Zotto <dz@debian.org>, Jean Delvare <khali@linux-fr.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [135/165] Set cred->user_ns in key_replace_session_keyring
+Subject: [136/165] i8k: Avoid lahf in 64-bit code
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1072
-Lines: 31
+Content-Length: 1060
+Lines: 35
 
-From: "Serge E. Hallyn" <serge@hallyn.com>
+From: Luca Tettamanti <kronos.it@gmail.com>
 
-commit f7285b5d631fd6096b11c6af0058ed3a2b30ef4e upstream.
+commit bc1f419c76a2d6450413ce4349f4e4a07be011d5 upstream.
 
-Since this cred was not created with copy_creds(), it needs to get
-initialized.  Otherwise use of syscall(__NR_keyctl, KEYCTL_SESSION_TO_PARENT);
-can lead to a NULL deref.  Thanks to Robert for finding this.
+i8k uses lahf to read the flag register in 64-bit code; early x86-64
+CPUs, however, lack this instruction and we get an invalid opcode
+exception at runtime.
+Use pushf to load the flag register into the stack instead.
 
-But introduced by commit 47a150edc2a ("Cache user_ns in struct cred").
-
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-Reported-by: Robert Święcki <robert@swiecki.net>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
+Reported-by: Jeff Rickman <jrickman@myamigos.us>
+Tested-by: Jeff Rickman <jrickman@myamigos.us>
+Tested-by: Harry G McGavran Jr <w5pny@arrl.net>
+Cc: Massimo Dal Zotto <dz@debian.org>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/keys/process_keys.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/char/i8k.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -845,6 +845,7 @@ void key_replace_session_keyring(void)
- 	new-> sgid	= old-> sgid;
- 	new->fsgid	= old->fsgid;
- 	new->user	= get_uid(old->user);
-+	new->user_ns	= new->user->user_ns;
- 	new->group_info	= get_group_info(old->group_info);
- 
- 	new->securebits	= old->securebits;
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -139,8 +139,8 @@ static int i8k_smm(struct smm_regs *regs
+ 		"movl %%edi,20(%%rax)\n\t"
+ 		"popq %%rdx\n\t"
+ 		"movl %%edx,0(%%rax)\n\t"
+-		"lahf\n\t"
+-		"shrl $8,%%eax\n\t"
++		"pushfq\n\t"
++		"popq %%rax\n\t"
+ 		"andl $1,%%eax\n"
+ 		:"=a"(rc)
+ 		:    "a"(regs)
 
 
