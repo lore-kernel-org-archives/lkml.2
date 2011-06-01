@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759295Ab1FAXs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 19:48:59 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55365 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754785Ab1FAXs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 19:48:57 -0400
-Date: Thu, 2 Jun 2011 09:48:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Konrad Wilk <konrad.wilk@oracle.com>
-Subject: Re: next phase of tmem into linux-next
-Message-Id: <20110602094850.92063cbe.sfr@canb.auug.org.au>
-In-Reply-To: <dedd3fa5-5dc3-4ce1-9ab4-dc77e23a6d7d@default>
-References: <80f7ab04-7ae6-48cb-b254-e99343147bf0@default
- 20110601142544.62494a52.sfr@canb.auug.org.au>
-	<dedd3fa5-5dc3-4ce1-9ab4-dc77e23a6d7d@default>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__2_Jun_2011_09_48_50_+1000_dKCgw.ySLX8rCpjs"
+	id S1759390Ab1FAXtN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 19:49:13 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62469 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759341Ab1FAXtJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 19:49:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=Yj6zHC0OihMGgvwQwCPcDJW7fWD5b8Hez3FeNToydM3zgHwJvDa2QGrQkR7jAzsn8s
+         Pcjo+M3OQB8ZLh5/V2qDjbzQIgJ097tRwHcFsbU8fL5qn9UpVMnaQVBDhMN6E4so/50+
+         +TEKBKw/SSmDWHx6dmHv+QFY8enkmRkHryETc=
+MIME-Version: 1.0
+In-Reply-To: <20110529000325.07f5633a@schatten.dmk.lab>
+References: <BANLkTi=PLuZhx1=rCfOtg=aOTuC1UbuPYg@mail.gmail.com>
+	<20110523192056.GC23629@elte.hu>
+	<BANLkTikdgM+kSvaEYuQkgCYJZELnvwfetg@mail.gmail.com>
+	<BANLkTinbrtzY66p+1NALP8BDfjXLx=Qp-A@mail.gmail.com>
+	<4DDD0E5F.5080105@panasas.com>
+	<BANLkTi=FAwzW+qR+Cbwmor90pgbgzfuw-g@mail.gmail.com>
+	<4DDE81F4.8060800@panasas.com>
+	<BANLkTinj1M_VSuvw1Sct8a6TLkUrEP_4uQ@mail.gmail.com>
+	<4265.1306506572@turing-police.cc.vt.edu>
+	<20110529000325.07f5633a@schatten.dmk.lab>
+Date: Wed, 1 Jun 2011 16:49:08 -0700
+Message-ID: <BANLkTimh4e6GvJSyT1FOrZS_eHX_PJpNkA@mail.gmail.com>
+Subject: Re: Zero bugs (was Re: (Short?) merge window reminder)
+From: Keith Curtis <keithcu@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__2_Jun_2011_09_48_50_+1000_dKCgw.ySLX8rCpjs
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello;
 
-Hi Dan,
+I wrote two responses, which eventually allowed me to boil it down to
+one sentence: You can do anything you want in addition to perfection
+(i.e. zero bugs).
 
-On Wed, 1 Jun 2011 09:22:59 -0700 (PDT) Dan Magenheimer <dan.magenheimer@or=
-acle.com> wrote:
->
-> OK, I see "Already up-to-date" in merge.log.  I'll assume
-> that the new frontswap commits will lag a day.  (Thanks,
-> Konrad, for helping me find this info and pointing out the
-> probable lag.)
->=20
-> (A thought... perhaps the merge.log generation script should
-> do a "date" at the beginning and end, so one knows if one
-> has just missed your merge window?)
+Long answer:
+I was baptized into the zero bugs religion about 20 years ago. This
+was before the web and time-based releases, but these only add
+complications, and are yet compatible with zero bugs all the time. As
+a beginner, you can cheat such as zero bugs older than 6 months / 2
+releases, or give yourself 1,000. Over time, you can pick new goals
+and improve your numbers. Reaching enlightenment may require multiple
+steps. You don't have to meet your goals, but you will become better
+for trying.
 
-Yeah, well I am out of sync (timezone-wise) with most people, so good
-thought.  Though I actually fetch all the trees before I starte merging
-them, but it will give people some idea.
+Like other religions, zero bugs requires faith and diligence, but
+provides benefits at the end. In this religion, members spend regular
+time reading their bible / bug list. They find it a useful source of
+knowledge on how they can make themselves and the world better today.
+It also allowed them to figure out when they had too much work or
+needed help, and when they were done with their duties and could rest.
+Many will tell you that the more time they spend with their bible, the
+better it becomes. It is also a source of Numbers that the wise men
+would scratch their heads over.
 
-> > The tree is still called "cleancache" in linux-next.  Should I change
-> > that to something more generic?
->=20
-> Yes please.  A good short name would be "tmem", but if you want
-> something longer and more descriptive maybe, "transcendent_memory".
-> I expect in the future that this might be the path for, for
-> example, tmem-related code that is promoted from drivers/staging.
-> E.g., the generic tmem.c code in drivers/staging/zcache could
-> probably end up in lib at some point if/when there are multiple users.
+I have been watching your bug count for years and I realize now that
+you have the benefits of the religion, but not the faith and habits.
+When zero becomes an additional goal, the codebase will get better
+faster, and eventually the people happier. You may want better tools
+or release managers. It can also involve seeking a priest who can
+answer any questions of faith. I am not even ordained, but there are
+others. When your belief is tested, it can help to think of Knuth,
+Boeing, Debian, etc. It may be efficient to perform a mass exorcism /
+conversion. Please repent you amazing heathens.
 
-OK, I have renamed it to tmem (much easier to type :-)).
+Zero bugs is like biking: I wouldn't try if weren't a goal, and I
+didn't believe it would be beneficial. I would have gone biking today
+but I had to get drunk to have the courage to send this. Mission
+accomplished & go Barcelona FC.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I apologize if my mails come off as 0bvious rants, etc. I am in awe of
+what already exists, so part of me wants to be quiet rather than risk
+pissing off people that I write about and who inspire me. However,
+I've decided to share my work also, to speed the fun along. You can
+thank me later ;-)
 
---Signature=_Thu__2_Jun_2011_09_48_50_+1000_dKCgw.ySLX8rCpjs
-Content-Type: application/pgp-signature
+So, cheers. Happy to be here for the start of Linux 3.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Kind regards,
 
-iQEcBAEBAgAGBQJN5s/iAAoJEDMEi1NhKgbsjY8H+wVY2PjhDoxfcX1CA/dOgbGm
-DPIjMfV564zKExkABWRagQomR3gUQcOz+xzrsp/nEoVrSDArjsMeb2QURJsioqNr
-D9qz+k0eHHwgVwOq5n0IYfydZSaqnWKoRfpaBAJSQluo4hRQKZFPR/22iO7gLXpA
-dzCkqJfeR0n7crQ320fny2bZYt+yPz52tbC7nhJ++su1gBMkkKuuksYg9ejVhGTK
-UCqCsLfLDqopUbOEOCcUDh8NXLQNeKmm3irU0vQc5bo7c0XH/njb5i2gmoktz0pE
-XJa1Xxzs6x+HogAvOia/FIkon7lWZju6E/YRTfk8XU69UPkliK72yKPFo/my90w=
-=IghV
------END PGP SIGNATURE-----
-
---Signature=_Thu__2_Jun_2011_09_48_50_+1000_dKCgw.ySLX8rCpjs--
+-Keith
+http://keithcu.com/
