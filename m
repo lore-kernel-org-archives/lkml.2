@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759834Ab1FATv0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:51:26 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:59128 "EHLO duck.linux-mips.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759626Ab1FATre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:47:34 -0400
-Message-Id: <20110601180611.061710714@duck.linux-mips.net>
-User-Agent: quilt/0.48-1
-Date: Wed, 01 Jun 2011 19:05:10 +0100
-From: ralf@linux-mips.org
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Subject: [patch 14/14] PCSPKR: MIPS: Make config dependencies finer grained.
-References: <20110601180456.801265664@duck.linux-mips.net>
-Content-Disposition: inline; filename=i8253-make-mips-pcspkr-config-finer-grained.patch
+	id S1757103Ab1FASFp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 14:05:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39445 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab1FASFo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 14:05:44 -0400
+Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Arne Jansen <lists@die-jansens.de>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, efault@gmx.de, npiggin@kernel.dk,
+        akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+In-Reply-To: <4DE674EB.1000200@die-jansens.de>
+References: <20110405152729.232781355@chello.nl>
+	 <tip-0122ec5b02f766c355b3168df53a6c038a24fa0d@git.kernel.org>
+	 <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop>
+	 <4DE674EB.1000200@die-jansens.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Jun 2011 20:09:11 +0200
+Message-ID: <1306951751.2497.626.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only the Siemens-Nixdorf RM series workstations and the Jazz family
-workstations have PC speakers built in; Malta can connect one via the
-infamous AMR connector with an AMR sound card or a little creativity.
-So we don't want to offer the PC speaker driver on all MIPS systems.
+On Wed, 2011-06-01 at 19:20 +0200, Arne Jansen wrote:
+> On 01.06.2011 18:35, Peter Zijlstra wrote:
+> > On Wed, 2011-06-01 at 15:58 +0200, Arne Jansen wrote:
+> >> git bisect blames this commit for a problem I have with v3.0-rc1:
+> >> If I printk large amounts of data, the machine locks up.
+> >> As the commit does not revert cleanly on top of 3.0, I haven't been
+> >> able to double check.
+> >> The test I use is simple, just add something like
+> >>
+> >> for (i=0; i<  10000; ++i) printk("test %d\n", i);
+> >>
+> >> and trigger it, in most cases I can see the first 10 printks before
+> >> I have to power cycle the machine (sysrq-b does not work anymore).
+> >> Attached my .config.
+> >
+> > I've made me a module that does the above, I've also changed my .config
+> > to match yours (smp=y, sched-cgroup=y, autogroup=n, preempt=n, no_hz=y),
+> > but sadly I cannot reproduce, I get all 10k prints on my serial line.
+> >
+> > Even without serial line it works (somehow booting without visible
+> > console is scary as hell :)
+> >
+> > Which makes me ask, how are you observing your console?
+> >
+> 
+> They don't go out to the serial line, I only observe them with a
+> tail -f on messages. Default log level doesn't go the console here.
 
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mips@linux-mips.org
+Right ok, so I used your exact .config, added a few drivers needed for
+my hardware and indeed, it doesn't even finish booting and gets stuck
+someplace.
 
- arch/mips/Kconfig |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-Index: linux-mips/arch/mips/Kconfig
-===================================================================
---- linux-mips.orig/arch/mips/Kconfig
-+++ linux-mips/arch/mips/Kconfig
-@@ -5,7 +5,6 @@ config MIPS
- 	select HAVE_IDE
- 	select HAVE_OPROFILE
- 	select HAVE_IRQ_WORK
--	select HAVE_PCSPKR_PLATFORM
- 	select HAVE_PERF_EVENTS
- 	select PERF_USE_VMALLOC
- 	select HAVE_ARCH_KGDB
-@@ -186,6 +185,7 @@ config MACH_JAZZ
- 	select CSRC_R4K
- 	select DEFAULT_SGI_PARTITION if CPU_BIG_ENDIAN
- 	select GENERIC_ISA_DMA
-+	select HAVE_PCSPKR_PLATFORM
- 	select IRQ_CPU
- 	select I8253
- 	select I8259
-@@ -267,6 +267,7 @@ config MIPS_MALTA
- 	select CSRC_R4K
- 	select DMA_NONCOHERENT
- 	select GENERIC_ISA_DMA
-+	select HAVE_PCSPKR_PLATFORM
- 	select IRQ_CPU
- 	select IRQ_GIC
- 	select HW_HAS_PCI
-@@ -641,6 +642,7 @@ config SNI_RM
- 	select DEFAULT_SGI_PARTITION if CPU_BIG_ENDIAN
- 	select DMA_NONCOHERENT
- 	select GENERIC_ISA_DMA
-+	select HAVE_PCSPKR_PLATFORM
- 	select HW_HAS_EISA
- 	select HW_HAS_PCI
- 	select IRQ_CPU
-
+Sadly it looks like even the NMI watchdog is dead,.. /me goes try and
+make sense of this.
 
