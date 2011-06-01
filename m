@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162485Ab1FAIVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:21:00 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44584 "EHLO mx1.suse.de"
+	id S1162494Ab1FAIVH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:21:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44597 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162425Ab1FAIUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:20:55 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:29 2011
-Message-Id: <20110601081128.817606116@blue.kroah.org>
+	id S1161920Ab1FAIVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:21:01 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:30 2011
+Message-Id: <20110601081129.475559896@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:10:36 +0900
+Date: Wed, 01 Jun 2011 17:10:37 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "David S. Miller" <davem@davemloft.net>,
+        Kashyap Desai <kashyap.desai@lsi.com>,
+        James Bottomley <jbottomley@parallels.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [066/165] dst: catch uninitialized metrics
+Subject: [067/165] [SCSI] mpt2sas: move even handling of
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +26,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 700
-Lines: 27
+ MPT2SAS_TURN_ON_FAULT_LED into process context
+Content-Length: 5421
+Lines: 168
 
+From: "Kashyap, Desai" <kashyap.desai@lsi.com>
 
-From: Stephen Hemminger <shemminger@vyatta.com>
+commit 3ace8e052be5293ebb3e00f819effccc64108a38 upstream.
 
-[ Upstream commit 1f37070d3ff325827c6213e51b57f21fd5ac9d05 ]
+Driver was a sending a SEP request during interrupt context which
+required to go to sleep.
 
-Catch cases where dst_metric_set() and other functions are called
-but _metrics is NULL.
+The fix is to rearrange the code so a fake event
+MPT2SAS_TURN_ON_FAULT_LED is fired from interrupt context, then later
+during the kernel worker threads processing, the SEP request is issued
+to firmware.
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Signed-off-by: James Bottomley <jbottomley@parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- include/net/dst.h |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/include/net/dst.h
-+++ b/include/net/dst.h
-@@ -120,6 +120,8 @@ static inline u32 *dst_metrics_write_ptr
- {
- 	unsigned long p = dst->_metrics;
+---
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |   94 +++++++++++++++++++++++++----------
+ 1 file changed, 68 insertions(+), 26 deletions(-)
+
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -113,6 +113,7 @@ struct sense_info {
+ };
  
-+	BUG_ON(!p);
+ 
++#define MPT2SAS_TURN_ON_FAULT_LED (0xFFFC)
+ #define MPT2SAS_RESCAN_AFTER_HOST_RESET (0xFFFF)
+ 
+ /**
+@@ -121,6 +122,7 @@ struct sense_info {
+  * @work: work object (ioc->fault_reset_work_q)
+  * @cancel_pending_work: flag set during reset handling
+  * @ioc: per adapter object
++ * @device_handle: device handle
+  * @VF_ID: virtual function id
+  * @VP_ID: virtual port id
+  * @ignore: flag meaning this event has been marked to ignore
+@@ -134,6 +136,7 @@ struct fw_event_work {
+ 	u8			cancel_pending_work;
+ 	struct delayed_work	delayed_work;
+ 	struct MPT2SAS_ADAPTER *ioc;
++	u16			device_handle;
+ 	u8			VF_ID;
+ 	u8			VP_ID;
+ 	u8			ignore;
+@@ -3708,17 +3711,75 @@ _scsih_scsi_ioc_info(struct MPT2SAS_ADAP
+ #endif
+ 
+ /**
+- * _scsih_smart_predicted_fault - illuminate Fault LED
++ * _scsih_turn_on_fault_led - illuminate Fault LED
+  * @ioc: per adapter object
+  * @handle: device handle
++ * Context: process
+  *
+  * Return nothing.
+  */
+ static void
+-_scsih_smart_predicted_fault(struct MPT2SAS_ADAPTER *ioc, u16 handle)
++_scsih_turn_on_fault_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
+ {
+ 	Mpi2SepReply_t mpi_reply;
+ 	Mpi2SepRequest_t mpi_request;
 +
- 	if (p & DST_METRICS_READ_ONLY)
- 		return dst->ops->cow_metrics(dst, p);
- 	return __DST_METRICS_PTR(p);
++	memset(&mpi_request, 0, sizeof(Mpi2SepRequest_t));
++	mpi_request.Function = MPI2_FUNCTION_SCSI_ENCLOSURE_PROCESSOR;
++	mpi_request.Action = MPI2_SEP_REQ_ACTION_WRITE_STATUS;
++	mpi_request.SlotStatus =
++	    cpu_to_le32(MPI2_SEP_REQ_SLOTSTATUS_PREDICTED_FAULT);
++	mpi_request.DevHandle = cpu_to_le16(handle);
++	mpi_request.Flags = MPI2_SEP_REQ_FLAGS_DEVHANDLE_ADDRESS;
++	if ((mpt2sas_base_scsi_enclosure_processor(ioc, &mpi_reply,
++	    &mpi_request)) != 0) {
++		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n", ioc->name,
++		__FILE__, __LINE__, __func__);
++		return;
++	}
++
++	if (mpi_reply.IOCStatus || mpi_reply.IOCLogInfo) {
++		dewtprintk(ioc, printk(MPT2SAS_INFO_FMT "enclosure_processor: "
++		    "ioc_status (0x%04x), loginfo(0x%08x)\n", ioc->name,
++		    le16_to_cpu(mpi_reply.IOCStatus),
++		    le32_to_cpu(mpi_reply.IOCLogInfo)));
++		return;
++	}
++}
++
++/**
++ * _scsih_send_event_to_turn_on_fault_led - fire delayed event
++ * @ioc: per adapter object
++ * @handle: device handle
++ * Context: interrupt.
++ *
++ * Return nothing.
++ */
++static void
++_scsih_send_event_to_turn_on_fault_led(struct MPT2SAS_ADAPTER *ioc, u16 handle)
++{
++	struct fw_event_work *fw_event;
++
++	fw_event = kzalloc(sizeof(struct fw_event_work), GFP_ATOMIC);
++	if (!fw_event)
++		return;
++	fw_event->event = MPT2SAS_TURN_ON_FAULT_LED;
++	fw_event->device_handle = handle;
++	fw_event->ioc = ioc;
++	_scsih_fw_event_add(ioc, fw_event);
++}
++
++/**
++ * _scsih_smart_predicted_fault - process smart errors
++ * @ioc: per adapter object
++ * @handle: device handle
++ * Context: interrupt.
++ *
++ * Return nothing.
++ */
++static void
++_scsih_smart_predicted_fault(struct MPT2SAS_ADAPTER *ioc, u16 handle)
++{
+ 	struct scsi_target *starget;
+ 	struct MPT2SAS_TARGET *sas_target_priv_data;
+ 	Mpi2EventNotificationReply_t *event_reply;
+@@ -3745,30 +3806,8 @@ _scsih_smart_predicted_fault(struct MPT2
+ 	starget_printk(KERN_WARNING, starget, "predicted fault\n");
+ 	spin_unlock_irqrestore(&ioc->sas_device_lock, flags);
+ 
+-	if (ioc->pdev->subsystem_vendor == PCI_VENDOR_ID_IBM) {
+-		memset(&mpi_request, 0, sizeof(Mpi2SepRequest_t));
+-		mpi_request.Function = MPI2_FUNCTION_SCSI_ENCLOSURE_PROCESSOR;
+-		mpi_request.Action = MPI2_SEP_REQ_ACTION_WRITE_STATUS;
+-		mpi_request.SlotStatus =
+-		    cpu_to_le32(MPI2_SEP_REQ_SLOTSTATUS_PREDICTED_FAULT);
+-		mpi_request.DevHandle = cpu_to_le16(handle);
+-		mpi_request.Flags = MPI2_SEP_REQ_FLAGS_DEVHANDLE_ADDRESS;
+-		if ((mpt2sas_base_scsi_enclosure_processor(ioc, &mpi_reply,
+-		    &mpi_request)) != 0) {
+-			printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
+-			    ioc->name, __FILE__, __LINE__, __func__);
+-			return;
+-		}
+-
+-		if (mpi_reply.IOCStatus || mpi_reply.IOCLogInfo) {
+-			dewtprintk(ioc, printk(MPT2SAS_INFO_FMT
+-			    "enclosure_processor: ioc_status (0x%04x), "
+-			    "loginfo(0x%08x)\n", ioc->name,
+-			    le16_to_cpu(mpi_reply.IOCStatus),
+-			    le32_to_cpu(mpi_reply.IOCLogInfo)));
+-			return;
+-		}
+-	}
++	if (ioc->pdev->subsystem_vendor == PCI_VENDOR_ID_IBM)
++		_scsih_send_event_to_turn_on_fault_led(ioc, handle);
+ 
+ 	/* insert into event log */
+ 	sz = offsetof(Mpi2EventNotificationReply_t, EventData) +
+@@ -6330,6 +6369,9 @@ _firmware_event_work(struct work_struct
+ 	}
+ 
+ 	switch (fw_event->event) {
++	case MPT2SAS_TURN_ON_FAULT_LED:
++		_scsih_turn_on_fault_led(ioc, fw_event->device_handle);
++		break;
+ 	case MPI2_EVENT_SAS_TOPOLOGY_CHANGE_LIST:
+ 		_scsih_sas_topology_change_event(ioc, fw_event);
+ 		break;
 
 
