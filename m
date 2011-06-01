@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759244Ab1FASmQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 14:42:16 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:19339 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab1FASmO (ORCPT
+	id S1758983Ab1FASlE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 14:41:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35236 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308Ab1FASlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 14:42:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=KJlZrUJ1ZlGNCdMOI6yMcSNkUe9vpIYsNh0Yb17/Wp2144HEMefhwo4g8gvsLQOJHY
-         a+M4UbuhC+tFEqzGly0Q==
-Date: Wed, 1 Jun 2011 11:42:09 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
- instead of failing
-In-Reply-To: <BANLkTinrviHh40fTfqyeB=SrcNS0yqZM0w@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1106011140050.16198@chino.kir.corp.google.com>
-References: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com> <BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com> <BANLkTikrRRzGLbMD47_xJz+xpgftCm1C2A@mail.gmail.com> <alpine.DEB.2.00.1106011017260.13089@chino.kir.corp.google.com>
- <BANLkTinrviHh40fTfqyeB=SrcNS0yqZM0w@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 1 Jun 2011 14:41:03 -0400
+Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arne Jansen <lists@die-jansens.de>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, efault@gmx.de, npiggin@kernel.dk,
+        akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+In-Reply-To: <1306951751.2497.626.camel@laptop>
+References: <20110405152729.232781355@chello.nl>
+	 <tip-0122ec5b02f766c355b3168df53a6c038a24fa0d@git.kernel.org>
+	 <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop>
+	 <4DE674EB.1000200@die-jansens.de>  <1306951751.2497.626.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Jun 2011 20:44:30 +0200
+Message-ID: <1306953870.2497.627.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Jun 2011, Dmitry Eremin-Solenikov wrote:
-
-> > So you want to continue to allow the page allocator to return pages from
-> > anywhere, even when GFP_DMA is specified, just as though it was lowmem?
+On Wed, 2011-06-01 at 20:09 +0200, Peter Zijlstra wrote:
+> On Wed, 2011-06-01 at 19:20 +0200, Arne Jansen wrote:
+> > On 01.06.2011 18:35, Peter Zijlstra wrote:
+> > > On Wed, 2011-06-01 at 15:58 +0200, Arne Jansen wrote:
+> > >> git bisect blames this commit for a problem I have with v3.0-rc1:
+> > >> If I printk large amounts of data, the machine locks up.
+> > >> As the commit does not revert cleanly on top of 3.0, I haven't been
+> > >> able to double check.
+> > >> The test I use is simple, just add something like
+> > >>
+> > >> for (i=0; i<  10000; ++i) printk("test %d\n", i);
+> > >>
+> > >> and trigger it, in most cases I can see the first 10 printks before
+> > >> I have to power cycle the machine (sysrq-b does not work anymore).
+> > >> Attached my .config.
+> > >
+> > > I've made me a module that does the above, I've also changed my .config
+> > > to match yours (smp=y, sched-cgroup=y, autogroup=n, preempt=n, no_hz=y),
+> > > but sadly I cannot reproduce, I get all 10k prints on my serial line.
+> > >
+> > > Even without serial line it works (somehow booting without visible
+> > > console is scary as hell :)
+> > >
+> > > Which makes me ask, how are you observing your console?
+> > >
+> > 
+> > They don't go out to the serial line, I only observe them with a
+> > tail -f on messages. Default log level doesn't go the console here.
 > 
-> Yes and no. I'm asking for the grace period for the drivers authors to be able
-> to fix their code. After a grace period of one or two majors this permission
-> should be removed and your original patch should be effective.
+> Right ok, so I used your exact .config, added a few drivers needed for
+> my hardware and indeed, it doesn't even finish booting and gets stuck
+> someplace.
 > 
+> Sadly it looks like even the NMI watchdog is dead,.. /me goes try and
+> make sense of this.
 
-You don't need to wait for the code to be fixed, you just need to enable 
-CONFIG_ZONE_DMA.  This is a configuration issue.  If that GFP_DMA can be 
-removed later, that's great, but right now it requires it.  Why can't you 
-enable the config option?
+Sadly both 0122ec5b02f766c355b3168df53a6c038a24fa0d^1 and
+0122ec5b02f766c355b3168df53a6c038a24fa0d itself boot just fine and run
+the test module without problems.
+
+I will have to re-bisect this.
+
