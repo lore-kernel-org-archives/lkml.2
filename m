@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759220Ab1FARMi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 13:12:38 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:38624 "EHLO mgw2.diku.dk"
+	id S1759027Ab1FARKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 13:10:22 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:38596 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759010Ab1FARKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 13:10:21 -0400
+	id S1751501Ab1FARKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 13:10:19 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Deepak Saxena <dsaxena@plexity.net>
-Cc: kernel-janitors@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
+To: Liam Girdwood <lrg@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Wan ZongShun <mcuos.com@gmail.com>, Axel Lin <axel.lin@gmail.com>,
+        Timur Tabi <timur@freescale.com>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/10] drivers/char/hw_random/omap-rng.c: add missing clk_put
-Date: Wed,  1 Jun 2011 19:10:04 +0200
-Message-Id: <1306948213-20767-1-git-send-email-julia@diku.dk>
+Subject: [PATCH 2/10] sound/soc/nuc900/nuc900-ac97.c: add missing clk_put
+Date: Wed,  1 Jun 2011 19:10:05 +0200
+Message-Id: <1306948213-20767-2-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,7 +24,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Convert a return to a jump to an existing label that calls clk_put.
+This goto is after the call to clk_get, so it should go to the label that
+includes a call to clk_put.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -45,24 +49,20 @@ if (...) { ... when != clk_put(e1)
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/char/hw_random/omap-rng.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sound/soc/nuc900/nuc900-ac97.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/char/hw_random/omap-rng.c b/drivers/char/hw_random/omap-rng.c
-index 2cc755a..b757fac 100644
---- a/drivers/char/hw_random/omap-rng.c
-+++ b/drivers/char/hw_random/omap-rng.c
-@@ -113,8 +113,10 @@ static int __devinit omap_rng_probe(struct platform_device *pdev)
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
--	if (!res)
--		return -ENOENT;
-+	if (!res) {
-+		ret = -ENOENT;
-+		goto err_region;
-+	}
- 
- 	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
+diff --git a/sound/soc/nuc900/nuc900-ac97.c b/sound/soc/nuc900/nuc900-ac97.c
+index dac6732..9c0edad 100644
+--- a/sound/soc/nuc900/nuc900-ac97.c
++++ b/sound/soc/nuc900/nuc900-ac97.c
+@@ -356,7 +356,7 @@ static int __devinit nuc900_ac97_drvprobe(struct platform_device *pdev)
+ 	nuc900_audio->irq_num = platform_get_irq(pdev, 0);
+ 	if (!nuc900_audio->irq_num) {
  		ret = -EBUSY;
+-		goto out2;
++		goto out3;
+ 	}
+ 
+ 	nuc900_ac97_data = nuc900_audio;
 
