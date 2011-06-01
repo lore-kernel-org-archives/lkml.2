@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933102Ab1FABMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 21:12:25 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:62960 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933005Ab1FABMX (ORCPT
+	id S933120Ab1FABMd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 21:12:33 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18287 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933005Ab1FABMa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 21:12:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jxL76MUlLi/rl3CArdjPRJRXPloP7tMdBAPQQmkd2F+QaGx3TqxF3PreODvAEj1xrn
-         0eX7dCg9mne21wRYGUBJ9HSLSVFCJbRmd7UxUkDLXtVLfsAAcD5lD7gQvr9KQz/sWhYN
-         9vQkfMETNcWyyLPXBthjnZKQYCby+8ULDEd9M=
-Date: Wed, 1 Jun 2011 10:12:15 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: clean up time (pass 1)
-Message-ID: <20110601011215.GA16661@mtj.dyndns.org>
-References: <20110601110616.861247de.sfr@canb.auug.org.au>
+	Tue, 31 May 2011 21:12:30 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 31 May 2011 18:12:21 -0700
+From: Andrew Chew <AChew@nvidia.com>
+To: "'Guennadi Liakhovetski'" <g.liakhovetski@gmx.de>
+CC: "mchehab@redhat.com" <mchehab@redhat.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 31 May 2011 18:12:20 -0700
+Subject: RE: [PATCH 3/5 v2] [media] ov9740: Fixed some settings
+Thread-Topic: [PATCH 3/5 v2] [media] ov9740: Fixed some settings
+Thread-Index: Acwd6i+UWJJ8N0goQgaJjVEz+0rUvQCDp6jA
+Message-ID: <643E69AA4436674C8F39DCC2C05F76382A75BF37C2@HQMAIL03.nvidia.com>
+References: <1306368272-28279-1-git-send-email-achew@nvidia.com>
+ <1306368272-28279-3-git-send-email-achew@nvidia.com>
+ <Pine.LNX.4.64.1105291218250.18788@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1105291218250.18788@axis700.grange>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110601110616.861247de.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Stephen.
+> > +	{ OV9740_MIPI_CTRL00,		0x64 }, /* 0x44 for 
+> continuous clock */
+> 
+> I think, the choice between continuous and discontinuous CSI-2 clock 
+> should become configurable. You can only use discontinuous clock with 
+> hosts, that support it, right? Whereas all hosts must support 
+> continuous 
+> clock. So, I'm not sure we should unconditionally switch to 
+> discontinuous 
+> clock here... Maybe it's better to keep it continuous until 
+> we make it 
+> configurable?
 
-On Wed, Jun 01, 2011 at 11:06:16AM +1000, Stephen Rothwell wrote:
-> slabh
-
-This definitely is a dead branch.  It was a temporary testing branch
-preparing for wide-scale update and the whole thing has been in
-mainline for a very long time now.  Sorry about not updating it
-earlier.
-
-Thank you.
-
--- 
-tejun
+Yes, that's right.  The camera host needs to support discontinuous clocks.  I'll change it back to continuous clock by default, and change the comment to "0x64 for discontinuous clock", so we remember for when this becomes configurable.
