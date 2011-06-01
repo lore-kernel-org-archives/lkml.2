@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab1FAFjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 01:39:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33932 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000Ab1FAFjJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 01:39:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=eMjOlYfjvGSsdyNTdrU4kotSaXugQgJ+HKF/Ase0LWTnnzXqcAymdimp5ebYL6udij
-         ciS/L+A+lRl6nhdyRgiIxvE7nET8FgJioQ2F6mgA92l2lZW5cEJzQo/mbCQ96SOjs/4K
-         NGRI40ORuUvkCn/HE1Us9kVz6W6e5urmezqxk=
-Date: Wed, 1 Jun 2011 14:39:03 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
-        pedro@codesourcery.com
-Subject: Re: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and
- group stop notification, take#4
-Message-ID: <20110601053903.GE23067@mtj.dyndns.org>
-References: <1306710760-16440-1-git-send-email-tj@kernel.org>
- <20110530154211.GA11325@redhat.com>
+	id S1752596Ab1FAGBK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 02:01:10 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:37973 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751954Ab1FAGBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 02:01:06 -0400
+Date: Wed, 1 Jun 2011 08:00:46 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <bp@amd64.org>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86 fixes
+Message-ID: <20110601060046.GA27375@elte.hu>
+References: <20110531163022.GA15435@elte.hu>
+ <1306859709.20175.27.camel@Joe-Laptop>
+ <20110531181650.GA1854@gere.osrc.amd.com>
+ <BANLkTi=ysOYxxu1_PV3R1BNgjM996A2CKg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110530154211.GA11325@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTi=ysOYxxu1_PV3R1BNgjM996A2CKg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
 
-On Mon, May 30, 2011 at 05:42:11PM +0200, Oleg Nesterov wrote:
-> On 05/30, Tejun Heo wrote:
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Wed, Jun 1, 2011 at 3:16 AM, Borislav Petkov <bp@amd64.org> wrote:
 > >
-> > * PTRACE_LISTEN added.  This puts tracee into quasi-active state where
-> >   wait(2) and sync ptrace requests fail and tracee is allowed to
-> >   re-trap into STOP to notify an async event.
+> > Crap, there's no fixing this string :)
 > 
-> Nice!
-> 
-> Personally, I think the whole series is fine. So far I only read it
-> inline (without applying). I'll try to read it carefully patch-by-patch,
-> it is always good to try to re-check the details, but I do not expect
-> I'll find something which should delay this series from merging into
-> ptrace tree.
+> I tried to fix it up in the merge.  We call these "evil merges" in 
+> git-speak, but I hope the problem was worth doing one ;)
 
-Yeah, yeah, PTRACE_LISTEN turned out to be pretty easy to implement.
-I didn't really have to change too much.  I'll test different corner
-cases (different thread doing waking/sleeping, race against INTERRUPT
-kind of things) and let you know how it goes.
+You have not pushed it out yet, right? [ Or if you have then the 
+evilness is well hidden! :-) ]
 
-Thanks.
+Thanks,
 
--- 
-tejun
+	Ingo
