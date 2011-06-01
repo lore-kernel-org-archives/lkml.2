@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758801Ab1FALRB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 07:17:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58279 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758731Ab1FALRA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 07:17:00 -0400
-X-Greylist: delayed 7385 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Jun 2011 07:17:00 EDT
-Subject: Re: Very high CPU load when idle with 3.0-rc1
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Damien Wyart <damien.wyart@free.fr>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110531014543.GU2668@linux.vnet.ibm.com>
-References: <20110530055924.GA9169@brouette>
-	 <1306755291.1200.2872.camel@twins>
-	 <20110530162354.GQ2668@linux.vnet.ibm.com>
-	 <1306775989.2497.527.camel@laptop>
-	 <20110530212833.GS2668@linux.vnet.ibm.com>
-	 <1306791219.23844.12.camel@twins>
-	 <20110531014543.GU2668@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 01 Jun 2011 13:05:39 +0200
-Message-ID: <1306926339.2353.191.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1758805Ab1FALJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 07:09:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47336 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758768Ab1FALJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 07:09:55 -0400
+Message-ID: <4DE61DE0.9030100@redhat.com>
+Date: Wed, 01 Jun 2011 14:09:20 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Brad Campbell <lists2009@fnarfbargle.com>
+CC: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+References: <4DE44333.9000903@fnarfbargle.com> <20110531054729.GA16852@liondog.tnic> <4DE4B432.1090203@fnarfbargle.com> <20110531103808.GA6915@eferding.osrc.amd.com> <4DE4FA2B.2050504@fnarfbargle.com> <alpine.LSU.2.00.1105311517480.21107@sister.anvils> <4DE589C5.8030600@fnarfbargle.com> <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com> <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com>
+In-Reply-To: <4DE61A2B.7000008@fnarfbargle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-30 at 18:45 -0700, Paul E. McKenney wrote:
-> > > Because priority boosting doesn't help unless the callbacks also run
-> > > RT priority.
-> > > 
-> > > I could make it so that they ran as normal tasks if !RCU_BOOST, but
-> > > they would still need to run as RT tasks for RCU_BOOST.  I figured
-> > > running them the same way in both cases would be simpler.
-> > 
-> > Ah, I thought you'd boost the threads along with the waiters, to the
-> > same prio so that they wouldn't disturb higher priority tasks for no
-> > reason.
-> 
-> I considered that, but working out when it is OK to deboost them is
-> decidedly non-trivial. 
+On 06/01/2011 01:53 PM, Brad Campbell wrote:
+> On 01/06/11 17:41, Avi Kivity wrote:
+>> On 06/01/2011 12:40 PM, Avi Kivity wrote:
+>>>
+>>> bridge and netfilter, IIRC this was also the problem last time.
+>>>
+>>> Do you have any ebtables loaded?
+>
+> Never heard of them, but making a cursory check just in case..
+>
+> brad@srv:/raid10/src/linux-2.6.39$ grep EBTABLE .config
+> # CONFIG_BRIDGE_NF_EBTABLES is not set
+>
+>>> Can you try building a kernel without ebtables? Without netfilter at 
+>>> all?
+>
+> Well, without netfilter I can't get it to crash. The problem is 
+> without netfilter I can't actually use it the way I use it to get it 
+> to crash.
+>
+> I rebooted into a netfilter kernel, and did all the steps I'd used on 
+> the no-netfilter kernel and it ticked along happily.
+>
+> So the result of the experiment is inconclusive. Having said that, the 
+> backtraces certainly smell networky.
+>
+> To get it to crash, I have to start IE in the VM and https to the 
+> public address of the machine, which is then redirected by netfilter 
+> back into another of the VM's.
+>
+> I can https directly to the other VM's address, but that does not 
+> cause it to crash, however without netfilter loaded I can't bounce off 
+> the public IP. It's all rather confusing really.
+>
+> What next Sherlock?
+>
 
-Where exactly is the problem there? The boost lasts for as long as it
-takes to finish the grace period, right? There's a distinct set of
-callbacks associated with each grace-period, right? In which case you
-can de-boost your thread the moment you're done processing that set.
+Maybe the Sherlocks at netdev@ can tell.
 
-Or am I simply confused about how all this is supposed to work?
+-- 
+error compiling committee.c: too many arguments to function
+
