@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933218Ab1FAHuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 03:50:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34393 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755488Ab1FAHuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 03:50:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=CkIFPvJJAhpfsCF0hL0wrxSy0+/dfhJD+dipYI976vvBttiI6xXrebRXE7ahNTXSzM
-         scRvdNpBUG2NCd+YXVCMw/lYk3Z4BkmwRG27yAB4fPRVjs/fawLrSZfOcC5AmRD4hqB9
-         aJwSMMWTVU13gcDpD1+qTWS8juNewZprqArFc=
-Subject: Re: [PATCH -next] mtd: fix physmap.h warnings
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-mtd@lists.infradead.org,
-        linux-next@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Russell King <rmk@arm.linux.org.uk>
-In-Reply-To: <1306222943.2785.55.camel@localhost>
-References: <20110523154518.5e27cfb0.sfr@canb.auug.org.au>
-	 <20110523113709.4357b4ba.randy.dunlap@oracle.com>
-	 <1306216431.2785.46.camel@localhost> <1306216683.2785.47.camel@localhost>
-	 <20110524074020.GA9490@flint.arm.linux.org.uk>
-	 <1306222943.2785.55.camel@localhost>
+	id S1163107Ab1FAIfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:35:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5445 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1163084Ab1FAI1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:27:17 -0400
+X-ExtLoop1: 1
+Subject: Re: [PATCH] dma: Initialize uninitialized variable
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1306392516-5906-1-git-send-email-linux@roeck-us.net>
+References: <1306392516-5906-1-git-send-email-linux@roeck-us.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Jun 2011 10:45:54 +0300
-Message-ID: <1306914354.4405.49.camel@localhost>
+Date: Wed, 01 Jun 2011 13:22:55 +0530
+Message-ID: <1306914775.10976.6.camel@vkoul-udesk3>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-24 at 10:42 +0300, Artem Bityutskiy wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> Subject: [PATCH] mtd: fix physmap.h warnings
+On Wed, 2011-05-25 at 23:48 -0700, Guenter Roeck wrote:
+> Uninitialized variable results in random debug output.
+> Fix by initializing to 0.
 > 
-> Fix build warnings in physmap.h:
+> This commit fixes the following warning:
 > 
-> include/linux/mtd/physmap.h:25: warning: 'struct platform_device' declared inside parameter list
-> include/linux/mtd/physmap.h:25: warning: its scope is only this definition or declaration, which is probably not what you want
-> include/linux/mtd/physmap.h:26: warning: 'struct platform_device' declared inside parameter list
-> include/linux/mtd/physmap.h:27: warning: 'struct platform_device' declared inside parameter list
+> drivers/dma/pch_dma.c: In function pdc_desc_get:
+> drivers/dma/pch_dma.c:406: warning: i may be used uninitialized in this function
 > 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  drivers/dma/pch_dma.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+Sorry I seem to have missed this earlier. This fix is already in place
 
-David, it looks like Russel did not merge this patch and people
-complain. Could you please merge it?
+commit 364de77831213be20f7f33c39ca1c194593b5c11
+Author: Liu Yuan <tailai.ly@taobao.com>
+Date:   Sat Apr 2 14:20:47 2011 +0800
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+    drivers, pch_dma: Fix uninitialized var before use
+    
+    In the function pdc_desc_get(), var 'i' is not
+    initialized before use. This patch fixes it.
+    
+    Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
+    Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+
+~Vinod
+
+> diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+> index 8d8fef1..6eebc62 100644
+> --- a/drivers/dma/pch_dma.c
+> +++ b/drivers/dma/pch_dma.c
+> @@ -403,7 +403,7 @@ static struct pch_dma_desc *pdc_desc_get(struct pch_dma_chan *pd_chan)
+>  {
+>  	struct pch_dma_desc *desc, *_d;
+>  	struct pch_dma_desc *ret = NULL;
+> -	int i;
+> +	int i = 0;
+>  
+>  	spin_lock(&pd_chan->lock);
+>  	list_for_each_entry_safe(desc, _d, &pd_chan->free_list, desc_node) {
 
