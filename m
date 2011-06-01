@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163157Ab1FAIdX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:33:23 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45227 "EHLO mx1.suse.de"
+	id S1163140Ab1FAI2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:28:21 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45240 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1163122Ab1FAI2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:28:09 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:19 2011
-Message-Id: <20110601081219.395297526@blue.kroah.org>
+	id S1162224Ab1FAI2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:28:14 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:20 2011
+Message-Id: <20110601081220.005434751@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:57 +0900
+Date: Wed, 01 Jun 2011 17:11:58 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Boqun Feng <boqun.feng@intel.com>, Keith Packard <keithp@keithp.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [147/165] drm/i915: fix user irq miss in BSD ring on g4x
+        Dave Airlie <airlied@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [148/165] drm/radeon/cayman: setup hdp to invalidate and flush when
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,82 +24,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 2380
-Lines: 75
+ asked
+Content-Length: 1243
+Lines: 41
 
-From: Boqun Feng <boqun.feng@intel.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 5bfa1063a775836a84f97e4df863fc36e1f856ad upstream.
+commit 0b65f83f9d2fab47b9b6040fe75fc2cfc73032d4 upstream.
 
-On g4x, user interrupt in BSD ring is missed.
-This is because though g4x and ironlake share the same bsd_ring,
-their interrupt control interfaces have _two_ differences.
+On cayman we need to set the bit to cause HDP flushes to invalidate the
+HDP cache also.
 
-1.different irq enable/disable functions:
-On g4x are i915_enable_irq and i915_disable_irq.
-On ironlake are ironlake_enable_irq and ironlake_disable_irq.
-2.different irq flag:
-On g4x user interrupt flag in BSD ring on is I915_BSD_USER_INTERRUPT.
-On ironlake is GT_BSD_USER_INTERRUPT
-
-Old bsd_ring_get/put_irq call ring_get_irq and ring_get_irq.
-ring_get_irq and ring_put_irq only call ironlake_enable/disable_irq.
-So comes the irq miss on g4x.
-
-To fix this, as other rings' code do, conditionally call different
-functions(i915_enable/disable_irq and ironlake_enable/disable_irq)
-and use different interrupt flags in bsd_ring_get/put_irq.
-
-Signed-off-by: Boqun Feng <boqun.feng@intel.com>
-Reviewed-by: Xiang, Haihao <haihao.xiang@intel.com>
-Signed-off-by: Keith Packard <keithp@keithp.com>
+Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c |   29 +++++++++++++++++++++++++++--
- 1 file changed, 27 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/ni.c  |    4 ++++
+ drivers/gpu/drm/radeon/nid.h |    2 ++
+ 2 files changed, 6 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -666,12 +666,37 @@ gen6_ring_put_irq(struct intel_ring_buff
- static bool
- bsd_ring_get_irq(struct intel_ring_buffer *ring)
- {
--	return ring_get_irq(ring, GT_BSD_USER_INTERRUPT);
-+	struct drm_device *dev = ring->dev;
-+	drm_i915_private_t *dev_priv = dev->dev_private;
-+
-+	if (!dev->irq_enabled)
-+		return false;
-+
-+	spin_lock(&ring->irq_lock);
-+	if (ring->irq_refcount++ == 0) {
-+		if (IS_G4X(dev))
-+			i915_enable_irq(dev_priv, I915_BSD_USER_INTERRUPT);
-+		else
-+			ironlake_enable_irq(dev_priv, GT_BSD_USER_INTERRUPT);
-+	}
-+	spin_unlock(&ring->irq_lock);
-+
-+	return true;
- }
- static void
- bsd_ring_put_irq(struct intel_ring_buffer *ring)
- {
--	ring_put_irq(ring, GT_BSD_USER_INTERRUPT);
-+	struct drm_device *dev = ring->dev;
-+	drm_i915_private_t *dev_priv = dev->dev_private;
-+
-+	spin_lock(&ring->irq_lock);
-+	if (--ring->irq_refcount == 0) {
-+		if (IS_G4X(dev))
-+			i915_disable_irq(dev_priv, I915_BSD_USER_INTERRUPT);
-+		else
-+			ironlake_disable_irq(dev_priv, GT_BSD_USER_INTERRUPT);
-+	}
-+	spin_unlock(&ring->irq_lock);
- }
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -931,6 +931,10 @@ static void cayman_gpu_init(struct radeo
+ 	WREG32(CB_PERF_CTR3_SEL_0, 0);
+ 	WREG32(CB_PERF_CTR3_SEL_1, 0);
  
- static int
++	tmp = RREG32(HDP_MISC_CNTL);
++	tmp |= HDP_FLUSH_INVALIDATE_CACHE;
++	WREG32(HDP_MISC_CNTL, tmp);
++
+ 	hdp_host_path_cntl = RREG32(HDP_HOST_PATH_CNTL);
+ 	WREG32(HDP_HOST_PATH_CNTL, hdp_host_path_cntl);
+ 
+--- a/drivers/gpu/drm/radeon/nid.h
++++ b/drivers/gpu/drm/radeon/nid.h
+@@ -136,6 +136,8 @@
+ #define	HDP_NONSURFACE_INFO				0x2C08
+ #define	HDP_NONSURFACE_SIZE				0x2C0C
+ #define HDP_ADDR_CONFIG  				0x2F48
++#define HDP_MISC_CNTL					0x2F4C
++#define 	HDP_FLUSH_INVALIDATE_CACHE			(1 << 0)
+ 
+ #define	CC_SYS_RB_BACKEND_DISABLE			0x3F88
+ #define	GC_USER_SYS_RB_BACKEND_DISABLE			0x3F8C
 
 
