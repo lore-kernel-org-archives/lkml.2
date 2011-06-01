@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab1FAGWh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 02:22:37 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:56349 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751506Ab1FAGWg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 02:22:36 -0400
-Date: Wed, 1 Jun 2011 06:22:25 +0000
-From: Pavel Machek <pavel@ucw.cz>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Turning off the incremental diff robot
-Message-ID: <20110601062225.GA4705@localhost.ucw.cz>
-References: <4DE3E9E7.8020008@zytor.com> <20110530194500.GE10792@home.goodmis.org> <4DE402BD.4060407@zytor.com>
+	id S1753341Ab1FAGZG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 02:25:06 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35111 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752714Ab1FAGZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 02:25:02 -0400
+Date: Wed, 1 Jun 2011 08:24:48 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <bp@amd64.org>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86 fixes
+Message-ID: <20110601062448.GA28134@elte.hu>
+References: <20110531163022.GA15435@elte.hu>
+ <1306859709.20175.27.camel@Joe-Laptop>
+ <20110531181650.GA1854@gere.osrc.amd.com>
+ <BANLkTi=ysOYxxu1_PV3R1BNgjM996A2CKg@mail.gmail.com>
+ <20110601060046.GA27375@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DE402BD.4060407@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110601060046.GA27375@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2011-05-30 13:49:01, H. Peter Anvin wrote:
-> On 05/30/2011 12:45 PM, Steven Rostedt wrote:
-> > On Mon, May 30, 2011 at 12:03:03PM -0700, H. Peter Anvin wrote:
-> >> Hi all,
-> >>
-> >> With the v3.0 name change I was looking over what might break, and I'm
-> >> seriously considering turning off the incremental diff robot on
-> >> kernel.org.  It's not clear to me that it is actually useful anymore,
-> >> with git and all.
-> > 
-> > What is the incremental diff robot?
-> > 
-> > Does it make the patches between 2.6.x to 2.6.x+1?
-> > 
+
+* Ingo Molnar <mingo@elte.hu> wrote:
+
 > 
-> No, but it generates the patches between, say, 2.6.x.y and 2.6.x.y+1 or
-> 2.6.x-rcy and 2.6.x-rcy+1.  Anything in an "incr" directory.
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> 
+> > On Wed, Jun 1, 2011 at 3:16 AM, Borislav Petkov <bp@amd64.org> wrote:
+> > >
+> > > Crap, there's no fixing this string :)
+> > 
+> > I tried to fix it up in the merge.  We call these "evil merges" in 
+> > git-speak, but I hope the problem was worth doing one ;)
+> 
+> You have not pushed it out yet, right? [ Or if you have then the 
+> evilness is well hidden! :-) ]
 
--git1 to -git2 diffs are probably not useful.
+Oh, you did push it out, i just forgot to merge it in :)
 
-2.6.39.1 to 2.6.39.2 diffs are useful IMO - people using stable
-kernels do not use git.
+I don't think it's a truly evil merge if it's declared in the merge 
+commit log - but yeah, it's outside the scope given by the two trees 
+so technically it's evil :)
 
-I'm using -rc1 to -rc2 diffs. Useful :-).			Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks,
+
+	Ingo
