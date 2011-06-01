@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759582Ab1FATpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:45:55 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:57115 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759561Ab1FATpq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:45:46 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=cUTwMia+6fMZF7bjUHU44PO5dfBASsAn9IQPzcMrg/g= c=1 sm=1
- a=D9lEqAhTD9gA:10 a=3762yOXauukA:10 a=BLceEmwcHowA:10
- a=n3DLBDIp2lSvWb96zoUu4Q==:17 a=47LbCVvxAAAA:8 a=bl19pPN5vlf71qj6r6YA:9
- a=z0qf689oU-qDLqu6IFwA:7 a=QhNQsjeWOoAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-From: Simon Wood <simon@mungewell.org>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Antonio Ospite <ospite@studenti.unina.it>,
-        Marcin Tolysz <tolysz@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Simon Wood <simon@mungewell.org>
-Subject: [PATCH 2/2] sony_ff_byteswap_accelerometer
-Date: Mon, 23 May 2011 03:23:26 -0700
-Message-Id: <1306146206-15794-2-git-send-email-simon@mungewell.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1306146206-15794-1-git-send-email-simon@mungewell.org>
-References: <80b32cfd7dc9e8afee2c4d9e21d1a7e3.squirrel@host171.canaca.com>
- <1306146206-15794-1-git-send-email-simon@mungewell.org>
+	id S1751707Ab1FAEZy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 00:25:54 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55908 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750746Ab1FAEZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 00:25:52 -0400
+Date: Wed, 1 Jun 2011 14:25:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Konrad Wilk <konrad.wilk@oracle.com>
+Subject: Re: next phase of tmem into linux-next
+Message-Id: <20110601142544.62494a52.sfr@canb.auug.org.au>
+In-Reply-To: <80f7ab04-7ae6-48cb-b254-e99343147bf0@default>
+References: <80f7ab04-7ae6-48cb-b254-e99343147bf0@default>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__1_Jun_2011_14_25_44_+1000_wkVqLCoiRw.hbKz+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The accelerometers/gyro on the sixaxis are reported in the wrong
-endianness (ie. not compatible with HID), so this patch intercepts
-the report and swaps the appropriate bytes over.
+--Signature=_Wed__1_Jun_2011_14_25_44_+1000_wkVqLCoiRw.hbKz+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Accelerometers are scaled with a nominal value of +/-4000 = 1G,
-maximum value would be around +/-32768 = 8G.
+Hi Dan,
 
-Gyro on my device always reports -32768, might need some calibration
-set within the controller.
+On Tue, 31 May 2011 17:49:21 -0700 (PDT) Dan Magenheimer <dan.magenheimer@o=
+racle.com> wrote:
+>
+> Please re-include the following tree into linux-next.  The
+> commit series is for frontswap, the complement of cleancache
+> handling swap pages, which is the next phase in tmem.  It also
+> includes the shim code to Xen tmem for frontswap.  It applies
+> cleanly on linux-3.0-rc1, but if there are any problems or
+> you have any questions, please let me know!
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/djm/tmem.git#linux-next
 
-Signed-off-by: Simon Wood <simon@mungewell.org>
----
- drivers/hid/hid-sony.c |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
+I don't remove trees from linux-next unless excplictly asked to, so this
+tree is still included.  As long as you stick to the rules (posted,
+reviewed, ready for Linus), anything you add to that tree will be
+included.
 
-diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
-index 5c930dc..f219746 100644
---- a/drivers/hid/hid-sony.c
-+++ b/drivers/hid/hid-sony.c
-@@ -57,6 +57,24 @@ static __u8 *sony_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 	return rdesc;
- }
- 
-+/* Sixaxis HID report has acclerometers/gyro with MSByte first, this has
-+ * to be BYTE_SWAPPED before passing up to joystick interface
-+ */
-+static int sony_raw_event(struct hid_device *hdev, struct hid_report *report, __u8 *rd, int size)
-+{
-+	struct sony_sc *sc = hid_get_drvdata(hdev);
-+
-+	if ((sc->quirks & SIXAXIS_CONTROLLER_USB) &&
-+			rd[0] == 0x01 && size == 49) {
-+		swap(rd[41], rd[42]);
-+		swap(rd[43], rd[44]);
-+		swap(rd[45], rd[46]);
-+		swap(rd[47], rd[48]);
-+	}
-+
-+	return 0;
-+}
-+
- /*
-  * The Sony Sixaxis does not handle HID Output Reports on the Interrupt EP
-  * like it should according to usbhid/hid-core.c::usbhid_output_raw_report()
-@@ -205,6 +223,7 @@ static struct hid_driver sony_driver = {
- 	.probe = sony_probe,
- 	.remove = sony_remove,
- 	.report_fixup = sony_report_fixup,
-+	.raw_event = sony_raw_event
- };
- 
- static int __init sony_init(void)
--- 
-1.7.4.1
+The tree is still called "cleancache" in linux-next.  Should I change
+that to something more generic?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Wed__1_Jun_2011_14_25_44_+1000_wkVqLCoiRw.hbKz+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN5b9IAAoJEDMEi1NhKgbskEQH/0soyOi6YHl+Q4r7VhgAGY/L
+4/Ry4n3ZIGRA/SsU7JZglKCki3hd5BRZyxdhjvnI7yGIFYcY/X3ODBIIGvv/k9ui
+bA/K93rXOUO+V7wmIz9P6ewbMlg8efAaXHaRyUe0O/2tcD3VGUrTMyceScFM28jf
+uSPq5Rd0v6F7mcGavkNhehAHX+sZZX/HBFHFp7vRo2j9+6q9QSzsBxvQ/PWpK0EB
+6hBIaIiS0Y52GvJSzjUgfz54pEJSXqBAAFkM2BRarTf4REQJG2l9We4a5mUPwzVl
+4VCnqDderXb/JdRjSenPfsoI2Qgtz1BgKgKnDgA0S2tY7s9cEjIZAGUzNLzTuY8=
+=c32z
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__1_Jun_2011_14_25_44_+1000_wkVqLCoiRw.hbKz+--
