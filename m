@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161698Ab1FAJU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:20:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42832 "EHLO mx2.suse.de"
+	id S1161406Ab1FAIMG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:12:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42848 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161621Ab1FAILw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:11:52 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:25 2011
-Message-Id: <20110601080324.779067404@blue.kroah.org>
+	id S1161609Ab1FAIL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:11:58 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:26 2011
+Message-Id: <20110601080325.911778067@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:59 +0900
+Date: Wed, 01 Jun 2011 17:00:00 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Eric Dumazet <eric.dumazet@gmail.com>,
+        Patrick McHardy <kaber@trash.net>, Jarek Poplawski <jarkao2@gmail.com>,
+        Jamal Hadi Salim <hadi@cyberus.ca>,
         Stephen Hemminger <shemminger@vyatta.com>,
         "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [063/146] net: add skb_dst_force() in sock_queue_err_skb()
+Subject: [064/146] sch_sfq: avoid giving spurious NET_XMIT_CN signals
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,70 +33,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit abb57ea48fd9431fa320a5c55f73e6b5a44c2efb ]
+[ Upstream commit 8efa885406359af300d46910642b50ca82c0fe47 ]
 
-Commit 7fee226ad239 (add a noref bit on skb dst) forgot to use
-skb_dst_force() on packets queued in sk_error_queue
+While chasing a possible net_sched bug, I found that IP fragments have
+litle chance to pass a congestioned SFQ qdisc :
 
-This triggers following warning, for applications using IP_CMSG_PKTINFO
-receiving one error status
+- Say SFQ qdisc is full because one flow is non responsive.
+- ip_fragment() wants to send two fragments belonging to an idle flow.
+- sfq_enqueue() queues first packet, but see queue limit reached :
+- sfq_enqueue() drops one packet from 'big consumer', and returns
+NET_XMIT_CN.
+- ip_fragment() cancel remaining fragments.
 
-------------[ cut here ]------------
-WARNING: at include/linux/skbuff.h:457 ip_cmsg_recv_pktinfo+0xa6/0xb0()
-Hardware name: 2669UYD
-Modules linked in: isofs vboxnetadp vboxnetflt nfsd ebtable_nat ebtables
-lib80211_crypt_ccmp uinput xcbc hdaps tp_smapi thinkpad_ec radeonfb fb_ddc
-radeon ttm drm_kms_helper drm ipw2200 intel_agp intel_gtt libipw i2c_algo_bit
-i2c_i801 agpgart rng_core cfbfillrect cfbcopyarea cfbimgblt video raid10 raid1
-raid0 linear md_mod vboxdrv
-Pid: 4697, comm: miredo Not tainted 2.6.39-rc6-00569-g5895198-dirty #22
-Call Trace:
- [<c17746b6>] ? printk+0x1d/0x1f
- [<c1058302>] warn_slowpath_common+0x72/0xa0
- [<c15bbca6>] ? ip_cmsg_recv_pktinfo+0xa6/0xb0
- [<c15bbca6>] ? ip_cmsg_recv_pktinfo+0xa6/0xb0
- [<c1058350>] warn_slowpath_null+0x20/0x30
- [<c15bbca6>] ip_cmsg_recv_pktinfo+0xa6/0xb0
- [<c15bbdd7>] ip_cmsg_recv+0x127/0x260
- [<c154f82d>] ? skb_dequeue+0x4d/0x70
- [<c1555523>] ? skb_copy_datagram_iovec+0x53/0x300
- [<c178e834>] ? sub_preempt_count+0x24/0x50
- [<c15bdd2d>] ip_recv_error+0x23d/0x270
- [<c15de554>] udp_recvmsg+0x264/0x2b0
- [<c15ea659>] inet_recvmsg+0xd9/0x130
- [<c1547752>] sock_recvmsg+0xf2/0x120
- [<c11179cb>] ? might_fault+0x4b/0xa0
- [<c15546bc>] ? verify_iovec+0x4c/0xc0
- [<c1547660>] ? sock_recvmsg_nosec+0x100/0x100
- [<c1548294>] __sys_recvmsg+0x114/0x1e0
- [<c1093895>] ? __lock_acquire+0x365/0x780
- [<c1148b66>] ? fget_light+0xa6/0x3e0
- [<c1148b7f>] ? fget_light+0xbf/0x3e0
- [<c1148aee>] ? fget_light+0x2e/0x3e0
- [<c1549f29>] sys_recvmsg+0x39/0x60
+This patch restores fairness, making sure we return NET_XMIT_CN only if
+we dropped a packet from the same flow.
 
-Close bug https://bugzilla.kernel.org/show_bug.cgi?id=34622
-
-Reported-by: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
 Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Patrick McHardy <kaber@trash.net>
+CC: Jarek Poplawski <jarkao2@gmail.com>
+CC: Jamal Hadi Salim <hadi@cyberus.ca>
 CC: Stephen Hemminger <shemminger@vyatta.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/core/skbuff.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/sched/sch_sfq.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2997,6 +2997,9 @@ int sock_queue_err_skb(struct sock *sk,
- 	skb->destructor = sock_rmem_free;
- 	atomic_add(skb->truesize, &sk->sk_rmem_alloc);
+--- a/net/sched/sch_sfq.c
++++ b/net/sched/sch_sfq.c
+@@ -361,7 +361,7 @@ sfq_enqueue(struct sk_buff *skb, struct
+ {
+ 	struct sfq_sched_data *q = qdisc_priv(sch);
+ 	unsigned int hash;
+-	sfq_index x;
++	sfq_index x, qlen;
+ 	struct sfq_slot *slot;
+ 	int uninitialized_var(ret);
  
-+	/* before exiting rcu section, make sure dst is refcounted */
-+	skb_dst_force(skb);
-+
- 	skb_queue_tail(&sk->sk_error_queue, skb);
- 	if (!sock_flag(sk, SOCK_DEAD))
- 		sk->sk_data_ready(sk, skb->len);
+@@ -405,8 +405,12 @@ sfq_enqueue(struct sk_buff *skb, struct
+ 	if (++sch->q.qlen <= q->limit)
+ 		return NET_XMIT_SUCCESS;
+ 
++	qlen = slot->qlen;
+ 	sfq_drop(sch);
+-	return NET_XMIT_CN;
++	/* Return Congestion Notification only if we dropped a packet
++	 * from this flow.
++	 */
++	return (qlen != slot->qlen) ? NET_XMIT_CN : NET_XMIT_SUCCESS;
+ }
+ 
+ static struct sk_buff *
 
 
