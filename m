@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162429Ab1FAI5A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:57:00 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44176 "EHLO mx1.suse.de"
+	id S1162307Ab1FAI4V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:56:21 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44185 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162235Ab1FAISd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:18:33 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:12 2011
-Message-Id: <20110601081112.127560965@blue.kroah.org>
+	id S1162155Ab1FAISi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:18:38 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:13 2011
+Message-Id: <20110601081112.745416977@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:10:09 +0900
+Date: Wed, 01 Jun 2011 17:10:10 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+        Erez Zadok <ezk@cs.sunysb.edu>, Miklos Szeredi <mszeredi@suse.cz>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [039/165] mac80211: fix a few RCU issues
+Subject: [040/165] VFS: move BUG_ON test for symlink nd->depth after
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1366
-Lines: 47
+ current->link_count test
+Content-Length: 1009
+Lines: 37
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Erez Zadok <ezk@fsl.cs.sunysb.edu>
 
-commit a3836e02ba4c50db958d32d710b226f2408623dc upstream.
+commit 1a4022f88d40e1255920b017556092ab926d7f66 upstream.
 
-A few configuration functions correctly do
-rcu_read_lock() but don't correctly reference
-some pointers protected by RCU. Fix that.
+This solves a serious VFS-level bug in nested_symlink (which was
+rewritten from do_follow_link), and follows the order of depth tests
+that existed before.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The bug triggers a BUG_ON in fs/namei.c:1381, when running racer with
+symlink and rename ops.
+
+Signed-off-by: Erez Zadok <ezk@cs.sunysb.edu>
+Acked-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/cfg.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ fs/namei.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -228,11 +228,11 @@ static int ieee80211_get_key(struct wiph
- 			goto out;
- 
- 		if (pairwise)
--			key = sta->ptk;
-+			key = rcu_dereference(sta->ptk);
- 		else if (key_idx < NUM_DEFAULT_KEYS)
--			key = sta->gtk[key_idx];
-+			key = rcu_dereference(sta->gtk[key_idx]);
- 	} else
--		key = sdata->keys[key_idx];
-+		key = rcu_dereference(sdata->keys[key_idx]);
- 
- 	if (!key)
- 		goto out;
-@@ -921,8 +921,10 @@ static int ieee80211_change_mpath(struct
- static void mpath_set_pinfo(struct mesh_path *mpath, u8 *next_hop,
- 			    struct mpath_info *pinfo)
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1378,12 +1378,12 @@ static inline int nested_symlink(struct
  {
--	if (mpath->next_hop)
--		memcpy(next_hop, mpath->next_hop->sta.addr, ETH_ALEN);
-+	struct sta_info *next_hop_sta = rcu_dereference(mpath->next_hop);
-+
-+	if (next_hop_sta)
-+		memcpy(next_hop, next_hop_sta->sta.addr, ETH_ALEN);
- 	else
- 		memset(next_hop, 0, ETH_ALEN);
+ 	int res;
  
+-	BUG_ON(nd->depth >= MAX_NESTED_LINKS);
+ 	if (unlikely(current->link_count >= MAX_NESTED_LINKS)) {
+ 		path_put_conditional(path, nd);
+ 		path_put(&nd->path);
+ 		return -ELOOP;
+ 	}
++	BUG_ON(nd->depth >= MAX_NESTED_LINKS);
+ 
+ 	nd->depth++;
+ 	current->link_count++;
 
 
