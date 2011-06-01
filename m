@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161583Ab1FAJWI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:22:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42757 "EHLO mx2.suse.de"
+	id S1161556Ab1FAILA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:11:00 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43408 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161541Ab1FAIKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:10:50 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:13 2011
-Message-Id: <20110601080312.366883285@blue.kroah.org>
+	id S1161485Ab1FAIK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:10:56 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:14 2011
+Message-Id: <20110601080313.485596007@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:48 +0900
+Date: Wed, 01 Jun 2011 16:59:49 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Egerer <thomas.egerer@secunet.com>,
+        Shan Wei <shanwei@cn.fujitsu.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [052/146] ipv6: Remove hoplimit initialization to -1
+Subject: [053/146] ipv6: udp: fix the wrong headroom check
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,33 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Thomas Egerer <thomas.egerer@secunet.com>
+From: Shan Wei <shanwei@cn.fujitsu.com>
 
-[ Upstream commit e965c05dabdabb85af0187952ccd75e43995c4b3 ]
+[ Upstream commit a9cf73ea7ff78f52662c8658d93c226effbbedde ]
 
-The changes introduced with git-commit a02e4b7d ("ipv6: Demark default
-hoplimit as zero.") missed to remove the hoplimit initialization. As a
-result, ipv6_get_mtu interprets the return value of dst_metric_raw
-(-1) as 255 and answers ping6 with this hoplimit.  This patche removes
-the line such that ping6 is answered with the hoplimit value
-configured via sysctl.
+At this point, skb->data points to skb_transport_header.
+So, headroom check is wrong.
 
-Signed-off-by: Thomas Egerer <thomas.egerer@secunet.com>
+For some case:bridge(UFO is on) + eth device(UFO is off),
+there is no enough headroom for IPv6 frag head.
+But headroom check is always false.
+
+This will bring about data be moved to there prior to skb->head,
+when adding IPv6 frag header to skb.
+
+Signed-off-by: Shan Wei <shanwei@cn.fujitsu.com>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv6/route.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/ipv6/udp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1970,7 +1970,6 @@ struct rt6_info *addrconf_dst_alloc(stru
- 	rt->dst.output = ip6_output;
- 	rt->rt6i_dev = net->loopback_dev;
- 	rt->rt6i_idev = idev;
--	dst_metric_set(&rt->dst, RTAX_HOPLIMIT, -1);
- 	rt->dst.obsolete = -1;
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -1339,7 +1339,7 @@ static struct sk_buff *udp6_ufo_fragment
+ 	skb->ip_summed = CHECKSUM_NONE;
  
- 	rt->rt6i_flags = RTF_UP | RTF_NONEXTHOP;
+ 	/* Check if there is enough headroom to insert fragment header. */
+-	if ((skb_headroom(skb) < frag_hdr_sz) &&
++	if ((skb_mac_header(skb) < skb->head + frag_hdr_sz) &&
+ 	    pskb_expand_head(skb, frag_hdr_sz, 0, GFP_ATOMIC))
+ 		goto out;
+ 
 
 
