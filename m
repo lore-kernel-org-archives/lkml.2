@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760011Ab1FAVk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 17:40:57 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:49836 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759917Ab1FAVky (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 17:40:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Timur Tabi <timur@freescale.com>
-Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor management driver
-Date: Wed, 1 Jun 2011 23:40:14 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: kumar.gala@freescale.com, benh@kernel.crashing.org, greg@kroah.com,
-        akpm@kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-References: <1306953337-15698-1-git-send-email-timur@freescale.com>
-In-Reply-To: <1306953337-15698-1-git-send-email-timur@freescale.com>
+	id S1759811Ab1FAVkZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 17:40:25 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43563 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758929Ab1FAVkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 17:40:24 -0400
+Date: Wed, 1 Jun 2011 22:40:18 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, akpm@linux-foundation.org,
+        Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110601214018.GC7306@suse.de>
+References: <20110530153748.GS5044@csn.ul.ie>
+ <20110530165546.GC5118@suse.de>
+ <20110530175334.GI19505@random.random>
+ <20110531121620.GA3490@barrios-laptop>
+ <20110531122437.GJ19505@random.random>
+ <20110531133340.GB3490@barrios-laptop>
+ <20110531141402.GK19505@random.random>
+ <20110601005747.GC7019@csn.ul.ie>
+ <20110601175809.GB7306@suse.de>
+ <20110601191529.GY19505@random.random>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106012340.14237.arnd@arndb.de>
-X-Provags-ID: V02:K0:d4JNbjEU2U3Kr1Y8EZH3dPswad7drdEY3ah3rslVPrF
- F1TG/ClxGhxb9TtbAm4+hEedF8La4TDqVZ6DNtjno8ttr6VgRD
- F4ZrDp38PlmaFLZtkvlspoHZB0nYjVmbyRi0sdMwLPDfH+UDZU
- PssRv5R+HJ73adhMYhavyUUSituXzDe7XVj4BlpazoaNgepqk/
- V6QyBeMGqipulQNmpayqA==
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110601191529.GY19505@random.random>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 June 2011, Timur Tabi wrote:
-> The Freescale hypervisor management driver provides several services to
-> drivers and applications related to the Freescale hypervisor:
+On Wed, Jun 01, 2011 at 09:15:29PM +0200, Andrea Arcangeli wrote:
+> On Wed, Jun 01, 2011 at 06:58:09PM +0100, Mel Gorman wrote:
+> > Umm, HIGHMEM4G implies a two-level pagetable layout so where are
+> > things like _PAGE_BIT_SPLITTING being set when THP is enabled?
 > 
-> 1. An ioctl interface for querying and managing partitions
-> 
-> 2. A file interface to reading incoming doorbells
-> 
-> 3. An interrupt handler for shutting down the partition upon receiving the
->    shutdown doorbell from a manager partition
-> 
-> 4. An interface for receiving callbacks when a managed partition shuts down.
-> 
-> Signed-off-by: Timur Tabi <timur@freescale.com>
-> ---
->  drivers/misc/Kconfig           |    7 +
->  drivers/misc/Makefile          |    1 +
->  drivers/misc/fsl_hypervisor.c  |  941 ++++++++++++++++++++++++++++++++++++++++
->  include/linux/Kbuild           |    1 +
->  include/linux/fsl_hypervisor.h |  203 +++++++++
->  5 files changed, 1153 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/misc/fsl_hypervisor.c
->  create mode 100644 include/linux/fsl_hypervisor.h
+> They should be set on the pgd, pud_offset/pgd_offset will just bypass.
+> The splitting bit shouldn't be special about it, the present bit
+> should work the same.
 
-I think drivers/misc is not the right place for this, but I'm not completely
-sure what is. drivers/firmware would be better at least, but virt/fsl might
-also be ok.
+This comment is misleading at best then.
 
-> +static long ioctl_dtprop(struct fsl_hv_ioctl_prop __user *p, int set)
-> +{
-> +	struct fsl_hv_ioctl_prop param;
-> +	char __user *upath, *upropname;
-> +	void __user *upropval;
-> +	char *path = NULL, *propname = NULL;
-> +	void *propval = NULL;
-> +	int ret = 0;
-> +
+#define _PAGE_BIT_SPLITTING     _PAGE_BIT_UNUSED1 /* only valid on a PSE pmd */
 
-I'm not convinced that an ioctl interface is the right way to work with
-device tree properties. A more natural way would be to export it as
-a file system, or maybe as a flattened device tree blob (the latter option
-would require changing the hypervisor interface, which might not be
-possible).
+At the PGD level, it can have PSE set obviously but it's not a
+PMD. I confess I haven't checked the manual to see if it's safe to
+use _PAGE_BIT_UNUSED1 like this so am taking your word for it. I
+found that the bug is far harder to reproduce with 3 pagetable levels
+than with 2 but that is just timing. So far it has proven impossible
+on x86-64 at least within 27 hours so that has me looking at how
+pagetable management between x86 and x86-64 differ.
 
-> +/**
-> + * fsl_hv_ioctl: ioctl main entry point
-> + */
-> +static long fsl_hv_ioctl(struct file *file, unsigned int cmd,
-> +			 unsigned long argaddr)
-> +{
-> +	union fsl_hv_ioctl_param __user *arg =
-> +		(union fsl_hv_ioctl_param __user *)argaddr;
-> +	long ret;
-> +
+Barriers are a big different between how 32-bit !SMP and X86-64 but
+don't know yet which one is relevant or if this is even the right
+direction.
 
-For an ioctl, please follow the normal pattern of defining a separate
-structure for each case, no union.
-
-You can use a void __user * in the common ioctl function, and pass that
-to the typed argument list in the specific functions.
-
-	Arnd
+-- 
+Mel Gorman
+SUSE Labs
