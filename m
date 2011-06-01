@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162335Ab1FAIz5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:55:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43692 "EHLO mx2.suse.de"
+	id S1162301Ab1FAISz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:18:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43706 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162266Ab1FAISp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:18:45 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:05:04 2011
-Message-Id: <20110601080503.707281044@blue.kroah.org>
+	id S1162264Ab1FAISv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:18:51 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:05:06 2011
+Message-Id: <20110601080504.996653806@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:01:15 +0900
+Date: Wed, 01 Jun 2011 17:01:16 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Airlie <airlied@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [139/146] drm/radeon/kms: add wait idle ioctl for eg->cayman
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [140/146] SUNRPC: Deal with the lack of a SYN_SENT sk->sk_state_change
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,49 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ callback...
 
-From: Dave Airlie <airlied@redhat.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 97bfd0acd32e9639c9136e03955d574655d5cc2b upstream.
+commit fe19a96b10032035a35779f42ad59e35d6dd8ffd upstream.
 
-None of the latest GPUs had this hooked up, this is necessary for
-correct operation in a lot of cases, however we should test this on a few
-GPUs in these families as we've had problems in this area before.
+The TCP connection state code depends on the state_change() callback
+being called when the SYN_SENT state is set. However the networking layer
+doesn't actually call us back in that case.
 
-Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_asic.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/sunrpc/xprtsock.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_asic.c
-+++ b/drivers/gpu/drm/radeon/radeon_asic.c
-@@ -782,6 +782,7 @@ static struct radeon_asic evergreen_asic
- 	.hpd_fini = &evergreen_hpd_fini,
- 	.hpd_sense = &evergreen_hpd_sense,
- 	.hpd_set_polarity = &evergreen_hpd_set_polarity,
-+	.ioctl_wait_idle = r600_ioctl_wait_idle,
- 	.gui_idle = &r600_gui_idle,
- 	.pm_misc = &evergreen_pm_misc,
- 	.pm_prepare = &evergreen_pm_prepare,
-@@ -828,6 +829,7 @@ static struct radeon_asic sumo_asic = {
- 	.hpd_fini = &evergreen_hpd_fini,
- 	.hpd_sense = &evergreen_hpd_sense,
- 	.hpd_set_polarity = &evergreen_hpd_set_polarity,
-+	.ioctl_wait_idle = r600_ioctl_wait_idle,
- 	.gui_idle = &r600_gui_idle,
- 	.pm_misc = &evergreen_pm_misc,
- 	.pm_prepare = &evergreen_pm_prepare,
-@@ -874,6 +876,8 @@ static struct radeon_asic btc_asic = {
- 	.hpd_fini = &evergreen_hpd_fini,
- 	.hpd_sense = &evergreen_hpd_sense,
- 	.hpd_set_polarity = &evergreen_hpd_set_polarity,
-+	.ioctl_wait_idle = r600_ioctl_wait_idle,
-+	.ioctl_wait_idle = r600_ioctl_wait_idle,
- 	.gui_idle = &r600_gui_idle,
- 	.pm_misc = &evergreen_pm_misc,
- 	.pm_prepare = &evergreen_pm_prepare,
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -1344,7 +1344,6 @@ static void xs_tcp_state_change(struct s
+ 	case TCP_CLOSE_WAIT:
+ 		/* The server initiated a shutdown of the socket */
+ 		xprt_force_disconnect(xprt);
+-	case TCP_SYN_SENT:
+ 		xprt->connect_cookie++;
+ 	case TCP_CLOSING:
+ 		/*
+@@ -1758,6 +1757,7 @@ static void xs_tcp_reuse_connection(stru
+ static int xs_tcp_finish_connecting(struct rpc_xprt *xprt, struct socket *sock)
+ {
+ 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
++	int ret = -ENOTCONN;
+ 
+ 	if (!transport->inet) {
+ 		struct sock *sk = sock->sk;
+@@ -1789,12 +1789,22 @@ static int xs_tcp_finish_connecting(stru
+ 	}
+ 
+ 	if (!xprt_bound(xprt))
+-		return -ENOTCONN;
++		goto out;
+ 
+ 	/* Tell the socket layer to start connecting... */
+ 	xprt->stat.connect_count++;
+ 	xprt->stat.connect_start = jiffies;
+-	return kernel_connect(sock, xs_addr(xprt), xprt->addrlen, O_NONBLOCK);
++	ret = kernel_connect(sock, xs_addr(xprt), xprt->addrlen, O_NONBLOCK);
++	switch (ret) {
++	case 0:
++	case -EINPROGRESS:
++		/* SYN_SENT! */
++		xprt->connect_cookie++;
++		if (xprt->reestablish_timeout < XS_TCP_INIT_REEST_TO)
++			xprt->reestablish_timeout = XS_TCP_INIT_REEST_TO;
++	}
++out:
++	return ret;
+ }
+ 
+ /**
 
 
