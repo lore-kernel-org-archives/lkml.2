@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161291Ab1FAIIY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:08:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42555 "EHLO mx2.suse.de"
+	id S1161321Ab1FAJ2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:28:22 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43216 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161260Ab1FAIIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:08:17 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:50 2011
-Message-Id: <20110601080249.663551039@blue.kroah.org>
+	id S1161275Ab1FAIIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:08:23 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:51 2011
+Message-Id: <20110601080250.877042502@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:19 +0900
+Date: Wed, 01 Jun 2011 16:59:20 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Waugh <tim@cyberelk.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [023/146] paride: Convert to bdops->check_events()
+Subject: [024/146] gdrom,viocd: Convert to bdops->check_events()
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,171 +29,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tejun Heo <tj@kernel.org>
 
-commit b1b56b93f331bd61492fdb99e7986f7a528ca730 upstream.
+commit 1c27030bd21e7e2c68ef5be9f28c63778cf4b27f upstream.
 
-Convert paride drivers from ->media_changed() to ->check_events().
+Convert gdrom and viocd from ->media_changed() to ->check_events().
 
-pcd and pd buffer and clear events after reporting; however, pf
-unconditionally reports MEDIA_CHANGE and will generate spurious events
-when polled.
+It's unclear how the conditions are cleared and it's possible that it
+may generate spurious events when polled.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Tim Waugh <tim@cyberelk.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/block/paride/pcd.c |   18 +++++++++++-------
- drivers/block/paride/pd.c  |    7 ++++---
- drivers/block/paride/pf.c  |   10 ++++++----
- 3 files changed, 21 insertions(+), 14 deletions(-)
+ drivers/cdrom/gdrom.c |   16 ++++++++++------
+ drivers/cdrom/viocd.c |   17 ++++++++++-------
+ 2 files changed, 20 insertions(+), 13 deletions(-)
 
---- a/drivers/block/paride/pcd.c
-+++ b/drivers/block/paride/pcd.c
-@@ -172,7 +172,8 @@ module_param_array(drive3, int, NULL, 0)
- static int pcd_open(struct cdrom_device_info *cdi, int purpose);
- static void pcd_release(struct cdrom_device_info *cdi);
- static int pcd_drive_status(struct cdrom_device_info *cdi, int slot_nr);
--static int pcd_media_changed(struct cdrom_device_info *cdi, int slot_nr);
-+static unsigned int pcd_check_events(struct cdrom_device_info *cdi,
-+				     unsigned int clearing, int slot_nr);
- static int pcd_tray_move(struct cdrom_device_info *cdi, int position);
- static int pcd_lock_door(struct cdrom_device_info *cdi, int lock);
- static int pcd_drive_reset(struct cdrom_device_info *cdi);
-@@ -257,10 +258,11 @@ static int pcd_block_ioctl(struct block_
- 	return ret;
+--- a/drivers/cdrom/gdrom.c
++++ b/drivers/cdrom/gdrom.c
+@@ -395,10 +395,12 @@ static int gdrom_drivestatus(struct cdro
+ 	return CDS_NO_INFO;
  }
  
--static int pcd_block_media_changed(struct gendisk *disk)
-+static unsigned int pcd_block_check_events(struct gendisk *disk,
-+					   unsigned int clearing)
+-static int gdrom_mediachanged(struct cdrom_device_info *cd_info, int ignore)
++static unsigned int gdrom_check_events(struct cdrom_device_info *cd_info,
++				       unsigned int clearing, int ignore)
  {
- 	struct pcd_unit *cd = disk->private_data;
--	return cdrom_media_changed(&cd->info);
-+	return cdrom_check_events(&cd->info, clearing);
+ 	/* check the sense key */
+-	return (__raw_readb(GDROM_ERROR_REG) & 0xF0) == 0x60;
++	return (__raw_readb(GDROM_ERROR_REG) & 0xF0) == 0x60 ?
++		DISK_EVENT_MEDIA_CHANGE : 0;
  }
  
- static const struct block_device_operations pcd_bdops = {
-@@ -268,14 +270,14 @@ static const struct block_device_operati
- 	.open		= pcd_block_open,
- 	.release	= pcd_block_release,
- 	.ioctl		= pcd_block_ioctl,
--	.media_changed	= pcd_block_media_changed,
-+	.check_events	= pcd_block_check_events,
- };
- 
- static struct cdrom_device_ops pcd_dops = {
- 	.open		= pcd_open,
- 	.release	= pcd_release,
- 	.drive_status	= pcd_drive_status,
--	.media_changed	= pcd_media_changed,
-+	.check_events	= pcd_check_events,
- 	.tray_move	= pcd_tray_move,
- 	.lock_door	= pcd_lock_door,
- 	.get_mcn	= pcd_get_mcn,
-@@ -318,6 +320,7 @@ static void pcd_init_units(void)
- 		disk->first_minor = unit;
- 		strcpy(disk->disk_name, cd->name);	/* umm... */
- 		disk->fops = &pcd_bdops;
-+		disk->events = DISK_EVENT_MEDIA_CHANGE;
- 	}
- }
- 
-@@ -502,13 +505,14 @@ static int pcd_packet(struct cdrom_devic
- 
- #define DBMSG(msg)	((verbose>1)?(msg):NULL)
- 
--static int pcd_media_changed(struct cdrom_device_info *cdi, int slot_nr)
-+static unsigned int pcd_check_events(struct cdrom_device_info *cdi,
-+				     unsigned int clearing, int slot_nr)
- {
- 	struct pcd_unit *cd = cdi->handle;
- 	int res = cd->changed;
- 	if (res)
- 		cd->changed = 0;
--	return res;
-+	return res ? DISK_EVENT_MEDIA_CHANGE : 0;
- }
- 
- static int pcd_lock_door(struct cdrom_device_info *cdi, int lock)
---- a/drivers/block/paride/pd.c
-+++ b/drivers/block/paride/pd.c
-@@ -794,7 +794,7 @@ static int pd_release(struct gendisk *p,
+ /* reset the G1 bus */
+@@ -483,7 +485,7 @@ static struct cdrom_device_ops gdrom_ops
+ 	.open			= gdrom_open,
+ 	.release		= gdrom_release,
+ 	.drive_status		= gdrom_drivestatus,
+-	.media_changed		= gdrom_mediachanged,
++	.check_events		= gdrom_check_events,
+ 	.get_last_session	= gdrom_get_last_session,
+ 	.reset			= gdrom_hardreset,
+ 	.audio_ioctl		= gdrom_audio_ioctl,
+@@ -509,9 +511,10 @@ static int gdrom_bdops_release(struct ge
  	return 0;
  }
  
--static int pd_check_media(struct gendisk *p)
-+static unsigned int pd_check_events(struct gendisk *p, unsigned int clearing)
+-static int gdrom_bdops_mediachanged(struct gendisk *disk)
++static unsigned int gdrom_bdops_check_events(struct gendisk *disk,
++					     unsigned int clearing)
  {
- 	struct pd_unit *disk = p->private_data;
- 	int r;
-@@ -803,7 +803,7 @@ static int pd_check_media(struct gendisk
- 	pd_special_command(disk, pd_media_check);
- 	r = disk->changed;
- 	disk->changed = 0;
--	return r;
-+	return r ? DISK_EVENT_MEDIA_CHANGE : 0;
+-	return cdrom_media_changed(gd.cd_info);
++	return cdrom_check_events(gd.cd_info, clearing);
  }
  
- static int pd_revalidate(struct gendisk *p)
-@@ -822,7 +822,7 @@ static const struct block_device_operati
- 	.release	= pd_release,
- 	.ioctl		= pd_ioctl,
- 	.getgeo		= pd_getgeo,
--	.media_changed	= pd_check_media,
-+	.check_events	= pd_check_events,
- 	.revalidate_disk= pd_revalidate
+ static int gdrom_bdops_ioctl(struct block_device *bdev, fmode_t mode,
+@@ -530,7 +533,7 @@ static const struct block_device_operati
+ 	.owner			= THIS_MODULE,
+ 	.open			= gdrom_bdops_open,
+ 	.release		= gdrom_bdops_release,
+-	.media_changed		= gdrom_bdops_mediachanged,
++	.check_events		= gdrom_bdops_check_events,
+ 	.ioctl			= gdrom_bdops_ioctl,
  };
  
-@@ -837,6 +837,7 @@ static void pd_probe_drive(struct pd_uni
- 	p->fops = &pd_fops;
- 	p->major = major;
- 	p->first_minor = (disk - pd) << PD_BITS;
-+	p->events = DISK_EVENT_MEDIA_CHANGE;
- 	disk->gd = p;
- 	p->private_data = disk;
- 	p->queue = pd_queue;
---- a/drivers/block/paride/pf.c
-+++ b/drivers/block/paride/pf.c
-@@ -243,7 +243,8 @@ static struct pf_unit units[PF_UNITS];
- static int pf_identify(struct pf_unit *pf);
- static void pf_lock(struct pf_unit *pf, int func);
- static void pf_eject(struct pf_unit *pf);
--static int pf_check_media(struct gendisk *disk);
-+static unsigned int pf_check_events(struct gendisk *disk,
-+				    unsigned int clearing);
- 
- static char pf_scratch[512];	/* scratch block buffer */
- 
-@@ -270,7 +271,7 @@ static const struct block_device_operati
- 	.release	= pf_release,
- 	.ioctl		= pf_ioctl,
- 	.getgeo		= pf_getgeo,
--	.media_changed	= pf_check_media,
-+	.check_events	= pf_check_events,
- };
- 
- static void __init pf_init_units(void)
-@@ -293,6 +294,7 @@ static void __init pf_init_units(void)
- 		disk->first_minor = unit;
- 		strcpy(disk->disk_name, pf->name);
- 		disk->fops = &pf_fops;
-+		disk->events = DISK_EVENT_MEDIA_CHANGE;
- 		if (!(*drives[unit])[D_PRT])
- 			pf_drive_count++;
+@@ -800,6 +803,7 @@ static int __devinit probe_gdrom(struct
+ 		goto probe_fail_cdrom_register;
  	}
-@@ -377,9 +379,9 @@ static int pf_release(struct gendisk *di
- 
+ 	gd.disk->fops = &gdrom_bdops;
++	gd.disk->events = DISK_EVENT_MEDIA_CHANGE;
+ 	/* latch on to the interrupt */
+ 	err = gdrom_set_interrupt_handlers();
+ 	if (err)
+--- a/drivers/cdrom/viocd.c
++++ b/drivers/cdrom/viocd.c
+@@ -186,10 +186,11 @@ static int viocd_blk_ioctl(struct block_
+ 	return ret;
  }
  
--static int pf_check_media(struct gendisk *disk)
-+static unsigned int pf_check_events(struct gendisk *disk, unsigned int clearing)
+-static int viocd_blk_media_changed(struct gendisk *disk)
++static unsigned int viocd_blk_check_events(struct gendisk *disk,
++					   unsigned int clearing)
  {
--	return 1;
-+	return DISK_EVENT_MEDIA_CHANGE;
+ 	struct disk_info *di = disk->private_data;
+-	return cdrom_media_changed(&di->viocd_info);
++	return cdrom_check_events(&di->viocd_info, clearing);
  }
  
- static inline int status_reg(struct pf_unit *pf)
+ static const struct block_device_operations viocd_fops = {
+@@ -197,7 +198,7 @@ static const struct block_device_operati
+ 	.open =			viocd_blk_open,
+ 	.release =		viocd_blk_release,
+ 	.ioctl =		viocd_blk_ioctl,
+-	.media_changed =	viocd_blk_media_changed,
++	.check_events =		viocd_blk_check_events,
+ };
+ 
+ static int viocd_open(struct cdrom_device_info *cdi, int purpose)
+@@ -320,7 +321,8 @@ static void do_viocd_request(struct requ
+ 	}
+ }
+ 
+-static int viocd_media_changed(struct cdrom_device_info *cdi, int disc_nr)
++static unsigned int viocd_check_events(struct cdrom_device_info *cdi,
++				       unsigned int clearing, int disc_nr)
+ {
+ 	struct viocd_waitevent we;
+ 	HvLpEvent_Rc hvrc;
+@@ -340,7 +342,7 @@ static int viocd_media_changed(struct cd
+ 	if (hvrc != 0) {
+ 		pr_warning("bad rc on HvCallEvent_signalLpEventFast %d\n",
+ 			   (int)hvrc);
+-		return -EIO;
++		return 0;
+ 	}
+ 
+ 	wait_for_completion(&we.com);
+@@ -354,7 +356,7 @@ static int viocd_media_changed(struct cd
+ 		return 0;
+ 	}
+ 
+-	return we.changed;
++	return we.changed ? DISK_EVENT_MEDIA_CHANGE : 0;
+ }
+ 
+ static int viocd_lock_door(struct cdrom_device_info *cdi, int locking)
+@@ -550,7 +552,7 @@ static int viocd_audio_ioctl(struct cdro
+ static struct cdrom_device_ops viocd_dops = {
+ 	.open = viocd_open,
+ 	.release = viocd_release,
+-	.media_changed = viocd_media_changed,
++	.check_events = viocd_check_events,
+ 	.lock_door = viocd_lock_door,
+ 	.generic_packet = viocd_packet,
+ 	.audio_ioctl = viocd_audio_ioctl,
+@@ -624,6 +626,7 @@ static int viocd_probe(struct vio_dev *v
+ 	gendisk->queue = q;
+ 	gendisk->fops = &viocd_fops;
+ 	gendisk->flags = GENHD_FL_CD|GENHD_FL_REMOVABLE;
++	gendisk->events = DISK_EVENT_MEDIA_CHANGE;
+ 	set_capacity(gendisk, 0);
+ 	gendisk->private_data = d;
+ 	d->viocd_disk = gendisk;
 
 
