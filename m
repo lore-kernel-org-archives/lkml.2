@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289Ab1FAPIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 11:08:16 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45568 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab1FAPIP (ORCPT
+	id S1756774Ab1FAPHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 11:07:50 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:35207 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab1FAPHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 11:08:15 -0400
+	Wed, 1 Jun 2011 11:07:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=RFp9bpzzAKjTMMlIwG8FjEciRhhsKkD2EeAOtoyiv+6VZROXxwtvFRK/32xzgMSZgE
-         2yVJ6dCDmX3KIy0dPGVhTd9WiaJP1gxuBdXJXzGJzrs7i9sDh5PTTpIroyB1UZOIuTLB
-         EEMREDdVH9gM4dYLdxdpkV3hCDVuaD0Dc6mTc=
-Subject: Re: [PATCH] UBIFS: fixup merged 'UBIFS: fix-up free space earlier'
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Ben Gardiner <bengardiner@nanometrics.ca>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Matthew L. Creech" <mlcreech@gmail.com>
-In-Reply-To: <1306940008-28454-1-git-send-email-bengardiner@nanometrics.ca>
-References: <1306923407.4405.94.camel@localhost>
-	 <1306940008-28454-1-git-send-email-bengardiner@nanometrics.ca>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Jun 2011 18:03:51 +0300
-Message-ID: <1306940631.4405.122.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ty3lyMvX88oiKTNNmWDqks9s4pawn8zMz6IChX96kHkByPatPUEoYV2K2gIXAdmc5U
+         5UpXpTi33D4UUK2N0c5Tqjex9TPa7y5cNDxbjaj8k/CuYSwKr5NhtDqfW2bMLkrvdM9M
+         0PFxhPfatGOS0mtQawcoSSJ/MX5Pat/HFEhjA=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com>
+References: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com>
+	<BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com>
+Date: Wed, 1 Jun 2011 19:07:48 +0400
+Message-ID: <BANLkTikrRRzGLbMD47_xJz+xpgftCm1C2A@mail.gmail.com>
+Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
+ instead of failing
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-01 at 10:53 -0400, Ben Gardiner wrote:
-> When the patch 'UBIFS: intialize LPT earlier' was massaged before being applied
-> the context of the next patch 'UBIFS: fix-up free space earlier' was muddled
-> sufficiently for the order of allocate-lpt then free-space-fixup was reversed --
-> I think.
-> 
-> Put the free-space-fixup after allocate-lpt.
-> 
-> Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+On 6/1/11, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> 2011/6/1 Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>:
+>> Please be more polite to other people. After a197b59ae6 all allocations
+>> with GFP_DMA set on nodes without ZONE_DMA fail nearly silently (only
+>> one warning during bootup is emited, no matter how many things fail).
+>> This is a very crude change on behaviour. To be more civil, instead of
+>> failing emit noisy warnings each time smbd. tries to allocate a GFP_DMA
+>> memory on non-ZONE_DMA node.
+>>
+>> This change should be reverted after one or two major releases, but
+>> we should be more accurate rather than hoping for the best.
+>>
+>> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+>> Cc: David Rientjes <rientjes@google.com>
+>> Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+>> Cc: Mel Gorman <mel@csn.ul.ie>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>
+> Instaed of, shouldn't we revert a197b59ae6? Some arch don't have
+> DMA_ZONE at all.
+> and a197b59ae6 only care x86 embedded case. If we accept your patch, I
+> can imagine
+> other people will claim warn foold is a bug. ;)
 
-I'll take a look at this and fold this change in a bit later, thanks.
+I think that argument from a197b59ae6 is correct. Allocating with GFP_DMA
+should fail if there is no ZONE_DMA. On the other hand linux/gfp.h clearly
+specifies: "...Ignored on some platforms, used as appropriate on others".
+
+So it's up to mm gurus to decide which way is correct. I'd be happy as long
+as we don't have such nasty change of behaviour.
+
+> However, I think, you should explain which platform and drivers hit
+> this breakage.
+> Otherwise developers can't learn which platform should care.
+
+I've hit this with IrDA driver on PXA. Also I've seen the report regarding
+other ARM platform (ep-something). Thus I've included Russell in the cc.
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+With best wishes
+Dmitry
