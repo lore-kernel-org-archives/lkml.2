@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161141Ab1FAII0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:08:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42540 "EHLO mx2.suse.de"
+	id S1161291Ab1FAIIY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:08:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42555 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161276Ab1FAIIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:08:11 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:49 2011
-Message-Id: <20110601080248.431801387@blue.kroah.org>
+	id S1161260Ab1FAIIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:08:17 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:50 2011
+Message-Id: <20110601080249.663551039@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:18 +0900
+Date: Wed, 01 Jun 2011 16:59:19 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tim Waugh <tim@cyberelk.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [022/146] block: move bd_set_size() above rescan_partitions() in
+Subject: [023/146] paride: Convert to bdops->check_events()
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,71 +26,174 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- __blkdev_get()
 
 From: Tejun Heo <tj@kernel.org>
 
-commit 7e69723fef8771a9d57bd27d36281d756130b4b5 upstream.
+commit b1b56b93f331bd61492fdb99e7986f7a528ca730 upstream.
 
-02e352287a4 (block: rescan partitions on invalidated devices on
--ENOMEDIA too) relocated partition rescan above explicit bd_set_size()
-to simplify condition check.  As rescan_partitions() does its own bdev
-size setting, this doesn't break anything; however,
-rescan_partitions() prints out the following messages when adjusting
-bdev size, which can be confusing.
+Convert paride drivers from ->media_changed() to ->check_events().
 
-  sda: detected capacity change from 0 to 146815737856
-  sdb: detected capacity change from 0 to 146815737856
-
-This patch restores the original order and remove the warning
-messages.
-
-stable: Please apply together with 02e352287a4 (block: rescan
-        partitions on invalidated devices on -ENOMEDIA too).
+pcd and pd buffer and clear events after reporting; however, pf
+unconditionally reports MEDIA_CHANGE and will generate spurious events
+when polled.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Tony Luck <tony.luck@gmail.com>
-Tested-by: Tony Luck <tony.luck@gmail.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Tim Waugh <tim@cyberelk.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- fs/block_dev.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/block/paride/pcd.c |   18 +++++++++++-------
+ drivers/block/paride/pd.c  |    7 ++++---
+ drivers/block/paride/pf.c  |   10 ++++++----
+ 3 files changed, 21 insertions(+), 14 deletions(-)
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1116,6 +1116,15 @@ static int __blkdev_get(struct block_dev
- 					goto restart;
- 				}
- 			}
-+
-+			if (!ret && !bdev->bd_openers) {
-+				bd_set_size(bdev,(loff_t)get_capacity(disk)<<9);
-+				bdi = blk_get_backing_dev_info(bdev);
-+				if (bdi == NULL)
-+					bdi = &default_backing_dev_info;
-+				bdev_inode_switch_bdi(bdev->bd_inode, bdi);
-+			}
-+
- 			/*
- 			 * If the device is invalidated, rescan partition
- 			 * if open succeeded or failed with -ENOMEDIUM.
-@@ -1126,14 +1135,6 @@ static int __blkdev_get(struct block_dev
- 				rescan_partitions(disk, bdev);
- 			if (ret)
- 				goto out_clear;
--
--			if (!bdev->bd_openers) {
--				bd_set_size(bdev,(loff_t)get_capacity(disk)<<9);
--				bdi = blk_get_backing_dev_info(bdev);
--				if (bdi == NULL)
--					bdi = &default_backing_dev_info;
--				bdev_inode_switch_bdi(bdev->bd_inode, bdi);
--			}
- 		} else {
- 			struct block_device *whole;
- 			whole = bdget_disk(disk, 0);
+--- a/drivers/block/paride/pcd.c
++++ b/drivers/block/paride/pcd.c
+@@ -172,7 +172,8 @@ module_param_array(drive3, int, NULL, 0)
+ static int pcd_open(struct cdrom_device_info *cdi, int purpose);
+ static void pcd_release(struct cdrom_device_info *cdi);
+ static int pcd_drive_status(struct cdrom_device_info *cdi, int slot_nr);
+-static int pcd_media_changed(struct cdrom_device_info *cdi, int slot_nr);
++static unsigned int pcd_check_events(struct cdrom_device_info *cdi,
++				     unsigned int clearing, int slot_nr);
+ static int pcd_tray_move(struct cdrom_device_info *cdi, int position);
+ static int pcd_lock_door(struct cdrom_device_info *cdi, int lock);
+ static int pcd_drive_reset(struct cdrom_device_info *cdi);
+@@ -257,10 +258,11 @@ static int pcd_block_ioctl(struct block_
+ 	return ret;
+ }
+ 
+-static int pcd_block_media_changed(struct gendisk *disk)
++static unsigned int pcd_block_check_events(struct gendisk *disk,
++					   unsigned int clearing)
+ {
+ 	struct pcd_unit *cd = disk->private_data;
+-	return cdrom_media_changed(&cd->info);
++	return cdrom_check_events(&cd->info, clearing);
+ }
+ 
+ static const struct block_device_operations pcd_bdops = {
+@@ -268,14 +270,14 @@ static const struct block_device_operati
+ 	.open		= pcd_block_open,
+ 	.release	= pcd_block_release,
+ 	.ioctl		= pcd_block_ioctl,
+-	.media_changed	= pcd_block_media_changed,
++	.check_events	= pcd_block_check_events,
+ };
+ 
+ static struct cdrom_device_ops pcd_dops = {
+ 	.open		= pcd_open,
+ 	.release	= pcd_release,
+ 	.drive_status	= pcd_drive_status,
+-	.media_changed	= pcd_media_changed,
++	.check_events	= pcd_check_events,
+ 	.tray_move	= pcd_tray_move,
+ 	.lock_door	= pcd_lock_door,
+ 	.get_mcn	= pcd_get_mcn,
+@@ -318,6 +320,7 @@ static void pcd_init_units(void)
+ 		disk->first_minor = unit;
+ 		strcpy(disk->disk_name, cd->name);	/* umm... */
+ 		disk->fops = &pcd_bdops;
++		disk->events = DISK_EVENT_MEDIA_CHANGE;
+ 	}
+ }
+ 
+@@ -502,13 +505,14 @@ static int pcd_packet(struct cdrom_devic
+ 
+ #define DBMSG(msg)	((verbose>1)?(msg):NULL)
+ 
+-static int pcd_media_changed(struct cdrom_device_info *cdi, int slot_nr)
++static unsigned int pcd_check_events(struct cdrom_device_info *cdi,
++				     unsigned int clearing, int slot_nr)
+ {
+ 	struct pcd_unit *cd = cdi->handle;
+ 	int res = cd->changed;
+ 	if (res)
+ 		cd->changed = 0;
+-	return res;
++	return res ? DISK_EVENT_MEDIA_CHANGE : 0;
+ }
+ 
+ static int pcd_lock_door(struct cdrom_device_info *cdi, int lock)
+--- a/drivers/block/paride/pd.c
++++ b/drivers/block/paride/pd.c
+@@ -794,7 +794,7 @@ static int pd_release(struct gendisk *p,
+ 	return 0;
+ }
+ 
+-static int pd_check_media(struct gendisk *p)
++static unsigned int pd_check_events(struct gendisk *p, unsigned int clearing)
+ {
+ 	struct pd_unit *disk = p->private_data;
+ 	int r;
+@@ -803,7 +803,7 @@ static int pd_check_media(struct gendisk
+ 	pd_special_command(disk, pd_media_check);
+ 	r = disk->changed;
+ 	disk->changed = 0;
+-	return r;
++	return r ? DISK_EVENT_MEDIA_CHANGE : 0;
+ }
+ 
+ static int pd_revalidate(struct gendisk *p)
+@@ -822,7 +822,7 @@ static const struct block_device_operati
+ 	.release	= pd_release,
+ 	.ioctl		= pd_ioctl,
+ 	.getgeo		= pd_getgeo,
+-	.media_changed	= pd_check_media,
++	.check_events	= pd_check_events,
+ 	.revalidate_disk= pd_revalidate
+ };
+ 
+@@ -837,6 +837,7 @@ static void pd_probe_drive(struct pd_uni
+ 	p->fops = &pd_fops;
+ 	p->major = major;
+ 	p->first_minor = (disk - pd) << PD_BITS;
++	p->events = DISK_EVENT_MEDIA_CHANGE;
+ 	disk->gd = p;
+ 	p->private_data = disk;
+ 	p->queue = pd_queue;
+--- a/drivers/block/paride/pf.c
++++ b/drivers/block/paride/pf.c
+@@ -243,7 +243,8 @@ static struct pf_unit units[PF_UNITS];
+ static int pf_identify(struct pf_unit *pf);
+ static void pf_lock(struct pf_unit *pf, int func);
+ static void pf_eject(struct pf_unit *pf);
+-static int pf_check_media(struct gendisk *disk);
++static unsigned int pf_check_events(struct gendisk *disk,
++				    unsigned int clearing);
+ 
+ static char pf_scratch[512];	/* scratch block buffer */
+ 
+@@ -270,7 +271,7 @@ static const struct block_device_operati
+ 	.release	= pf_release,
+ 	.ioctl		= pf_ioctl,
+ 	.getgeo		= pf_getgeo,
+-	.media_changed	= pf_check_media,
++	.check_events	= pf_check_events,
+ };
+ 
+ static void __init pf_init_units(void)
+@@ -293,6 +294,7 @@ static void __init pf_init_units(void)
+ 		disk->first_minor = unit;
+ 		strcpy(disk->disk_name, pf->name);
+ 		disk->fops = &pf_fops;
++		disk->events = DISK_EVENT_MEDIA_CHANGE;
+ 		if (!(*drives[unit])[D_PRT])
+ 			pf_drive_count++;
+ 	}
+@@ -377,9 +379,9 @@ static int pf_release(struct gendisk *di
+ 
+ }
+ 
+-static int pf_check_media(struct gendisk *disk)
++static unsigned int pf_check_events(struct gendisk *disk, unsigned int clearing)
+ {
+-	return 1;
++	return DISK_EVENT_MEDIA_CHANGE;
+ }
+ 
+ static inline int status_reg(struct pf_unit *pf)
 
 
