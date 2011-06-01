@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162564Ab1FAJIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:08:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43893 "EHLO mx1.suse.de"
+	id S1161979Ab1FAJIO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:08:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43365 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161968Ab1FAIQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:16:12 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:04:20 2011
-Message-Id: <20110601080419.339827262@blue.kroah.org>
+	id S1161945Ab1FAIQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:16:17 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:04:21 2011
+Message-Id: <20110601080420.440652305@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:46 +0900
+Date: Wed, 01 Jun 2011 17:00:47 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [110/146] xhci: Fix bug in control transfer cancellation.
+Subject: [111/146] usb/gadget: at91sam9g20 fix end point max packet size
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,84 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-commit 3abeca998a44205cfd837fa0bf1f7c24f8294acb upstream.
+commit bf1f0a05d472e33dda8e5e69525be1584cdbd03a upstream.
 
-When the xHCI driver attempts to cancel a transfer, it issues a Stop
-Endpoint command and waits for the host controller to indicate which TRB
-it was in the middle of processing.  The host will put an event TRB with
-completion code COMP_STOP on the event ring if it stops on a control
-transfer TRB (or other types of transfer TRBs).  The ring handling code
-is supposed to set ep->stopped_trb to the TRB that the host stopped on
-when this happens.
+on 9g20 they are the same as the 9260
 
-Unfortunately, there is a long-standing bug in the control transfer
-completion code.  It doesn't actually check to see if COMP_STOP is set
-before attempting to process the transfer based on which part of the
-control TD completed.  So when we get an event on the data phase of the
-control TRB with COMP_STOP set, it thinks it's a normal completion of
-the transfer and doesn't set ep->stopped_td or ep->stopped_trb.
-
-When the ring handling code goes on to process the completion of the Stop
-Endpoint command, it sees that ep->stopped_trb is not a part of the TD
-it's trying to cancel.  It thinks the hardware has its enqueue pointer
-somewhere further up in the ring, and thinks it's safe to turn the control
-TRBs into no-op TRBs.  Since the hardware was in the middle of the control
-TRBs to be cancelled, the proper software behavior is to issue a Set TR
-dequeue pointer command.
-
-It turns out that the NEC host controllers can handle active TRBs being
-set to no-op TRBs after a stop endpoint command, but other host
-controllers have issues with this out-of-spec software behavior.  Fix this
-behavior.
-
-This patch should be backported to kernels as far back as 2.6.31, but it
-may be a bit challenging, since process_ctrl_td() was introduced in some
-refactoring done in 2.6.36, and some endian-safe patches added in 2.6.40
-that touch the same lines.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-ring.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/usb/gadget/at91_udc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1532,6 +1532,9 @@ static int process_ctrl_td(struct xhci_h
- 		else
- 			*status = 0;
- 		break;
-+	case COMP_STOP_INVAL:
-+	case COMP_STOP:
-+		return finish_td(xhci, td, event_trb, event, ep, status, false);
- 	default:
- 		if (!xhci_requires_manual_halt_cleanup(xhci,
- 					ep_ctx, trb_comp_code))
-@@ -1576,15 +1579,12 @@ static int process_ctrl_td(struct xhci_h
- 			}
- 		} else {
- 		/* Maybe the event was for the data stage? */
--			if (trb_comp_code != COMP_STOP_INVAL) {
--				/* We didn't stop on a link TRB in the middle */
--				td->urb->actual_length =
--					td->urb->transfer_buffer_length -
--					TRB_LEN(event->transfer_len);
--				xhci_dbg(xhci, "Waiting for status "
--						"stage event\n");
--				return 0;
--			}
-+			td->urb->actual_length =
-+				td->urb->transfer_buffer_length -
-+				TRB_LEN(le32_to_cpu(event->transfer_len));
-+			xhci_dbg(xhci, "Waiting for status "
-+					"stage event\n");
-+			return 0;
- 		}
+--- a/drivers/usb/gadget/at91_udc.c
++++ b/drivers/usb/gadget/at91_udc.c
+@@ -1767,7 +1767,7 @@ static int __init at91udc_probe(struct p
  	}
  
+ 	/* newer chips have more FIFO memory than rm9200 */
+-	if (cpu_is_at91sam9260()) {
++	if (cpu_is_at91sam9260() || cpu_is_at91sam9g20()) {
+ 		udc->ep[0].maxpacket = 64;
+ 		udc->ep[3].maxpacket = 64;
+ 		udc->ep[4].maxpacket = 512;
 
 
