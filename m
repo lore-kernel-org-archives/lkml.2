@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab1FAINw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:13:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43139 "EHLO mx2.suse.de"
+	id S1161775Ab1FAIN7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:13:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43146 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752908Ab1FAINr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:13:47 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:50 2011
-Message-Id: <20110601080349.089622609@blue.kroah.org>
+	id S1756272Ab1FAINw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:13:52 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:03:51 2011
+Message-Id: <20110601080350.307779121@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:20 +0900
+Date: Wed, 01 Jun 2011 17:00:21 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [084/146] staging: r8712u: Fix driver to support ad-hoc mode
+        Timo Warns <warns@pre-sense.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [085/146] Fix for buffer overflow in ldm_frag_add not sufficient
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Chua <jeff.chua.linux@gmail.com>
+From: Timo Warns <Warns@pre-sense.de>
 
-commit 62819fd9481021db7f87d5f61f2e2fd2be1dfcfa upstream.
+commit cae13fe4cc3f24820ffb990c09110626837e85d4 upstream.
 
-Driver r8712u is unable to handle ad-hoc mode. The issue is that when
-the driver first starts, there will not be an SSID for association.
-The fix is to always call the "select and join from scan" routine when
-in ad-hoc mode.
+As Ben Hutchings discovered [1], the patch for CVE-2011-1017 (buffer
+overflow in ldm_frag_add) is not sufficient.  The original patch in
+commit c340b1d64000 ("fs/partitions/ldm.c: fix oops caused by corrupted
+partition table") does not consider that, for subsequent fragments,
+previously allocated memory is used.
 
-Note: Ad-hoc mode worked intermittently before. If the driver had
-previously been associated, then things were OK.
+[1] http://lkml.org/lkml/2011/5/6/407
 
-Signed-off-by: Jeff Chua <jeff.chua.linux@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/rtl8712/rtl871x_ioctl_set.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/partitions/ldm.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/staging/rtl8712/rtl871x_ioctl_set.c
-+++ b/drivers/staging/rtl8712/rtl871x_ioctl_set.c
-@@ -68,7 +68,10 @@ static u8 do_join(struct _adapter *padap
- 	pmlmepriv->fw_state |= _FW_UNDER_LINKING;
- 	pmlmepriv->pscanned = plist;
- 	pmlmepriv->to_join = true;
--	if (_queue_empty(queue) == true) {
+--- a/fs/partitions/ldm.c
++++ b/fs/partitions/ldm.c
+@@ -1335,6 +1335,11 @@ static bool ldm_frag_add (const u8 *data
+ 
+ 	list_add_tail (&f->list, frags);
+ found:
++	if (rec >= f->num) {
++		ldm_error("REC value (%d) exceeds NUM value (%d)", rec, f->num);
++		return false;
++	}
 +
-+	/* adhoc mode will start with an empty queue, but skip checking */
-+	if (!check_fwstate(pmlmepriv, WIFI_ADHOC_STATE) &&
-+	    _queue_empty(queue)) {
- 		if (pmlmepriv->fw_state & _FW_UNDER_LINKING)
- 			pmlmepriv->fw_state ^= _FW_UNDER_LINKING;
- 		/* when set_ssid/set_bssid for do_join(), but scanning queue
+ 	if (f->map & (1 << rec)) {
+ 		ldm_error ("Duplicate VBLK, part %d.", rec);
+ 		f->map &= 0x7F;			/* Mark the group as broken */
 
 
