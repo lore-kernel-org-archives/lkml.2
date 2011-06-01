@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161206Ab1FAIHb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:07:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42419 "EHLO mx2.suse.de"
+	id S1161217Ab1FAIHj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:07:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42440 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161146Ab1FAIHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:07:25 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:38 2011
-Message-Id: <20110601080237.712546025@blue.kroah.org>
+	id S1161146Ab1FAIHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:07:32 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:02:40 2011
+Message-Id: <20110601080238.920030720@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 16:59:09 +0900
+Date: Wed, 01 Jun 2011 16:59:10 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Rajkumar Manoharan <rmanoharan@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [013/146] x86, cpufeature: Fix cpuid leaf 7 feature detection
+Subject: [014/146] ath9k_hw: do noise floor calibration only on required chains
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,34 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+From: Rajkumar Manoharan <rmanoharan@atheros.com>
 
-commit 2494b030ba9334c7dd7df9b9f7abe4eacc950ec5 upstream.
+commit 28ef6450f0182f95c4f50aaa0ab2043a09c72b0a upstream.
 
-CPUID leaf 7, subleaf 0 returns the maximum subleaf in EAX, not the
-number of subleaves.  Since so far only subleaf 0 is defined (and only
-the EBX bitfield) we do not need to qualify the test.
+At present the noise floor calibration is processed in supported
+control and extension chains rather than required chains.
+Unnccesarily doing nfcal in all supported chains leads to
+invalid nf readings on extn chains and these invalid values
+got updated into history buffer. While loading those values
+from history buffer is moving the chip to deaf state.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1305660806-17519-1-git-send-email-fenghua.yu@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+This issue was observed in AR9002/AR9003 chips while doing
+associate/dissociate in HT40 mode and interface up/down
+in iterative manner. After some iterations, the chip was moved
+to deaf state. Somehow the pci devices are recovered by poll work
+after chip reset. Raading the nf values in all supported extension chains
+when the hw is not yet configured in HT40 mode results invalid values.
+
+Signed-off-by: Rajkumar Manoharan <rmanoharan@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/common.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/calib.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -565,8 +565,7 @@ void __cpuinit get_cpu_cap(struct cpuinf
+--- a/drivers/net/wireless/ath/ath9k/calib.c
++++ b/drivers/net/wireless/ath/ath9k/calib.c
+@@ -69,15 +69,21 @@ static void ath9k_hw_update_nfcal_hist_b
+ 					      int16_t *nfarray)
+ {
+ 	struct ath_common *common = ath9k_hw_common(ah);
++	struct ieee80211_conf *conf = &common->hw->conf;
+ 	struct ath_nf_limits *limit;
+ 	struct ath9k_nfcal_hist *h;
+ 	bool high_nf_mid = false;
++	u8 chainmask = (ah->rxchainmask << 3) | ah->rxchainmask;
+ 	int i;
  
- 		cpuid_count(0x00000007, 0, &eax, &ebx, &ecx, &edx);
+ 	h = cal->nfCalHist;
+ 	limit = ath9k_hw_get_nf_limits(ah, ah->curchan);
  
--		if (eax > 0)
--			c->x86_capability[9] = ebx;
-+		c->x86_capability[9] = ebx;
- 	}
+ 	for (i = 0; i < NUM_NF_READINGS; i++) {
++		if (!(chainmask & (1 << i)) ||
++		    ((i >= AR5416_MAX_CHAINS) && !conf_is_ht40(conf)))
++			continue;
++
+ 		h[i].nfCalBuffer[h[i].currIndex] = nfarray[i];
  
- 	/* AMD-defined flags: level 0x80000001 */
+ 		if (++h[i].currIndex >= ATH9K_NF_CAL_HIST_MAX)
+@@ -225,6 +231,7 @@ void ath9k_hw_loadnf(struct ath_hw *ah,
+ 	int32_t val;
+ 	u8 chainmask = (ah->rxchainmask << 3) | ah->rxchainmask;
+ 	struct ath_common *common = ath9k_hw_common(ah);
++	struct ieee80211_conf *conf = &common->hw->conf;
+ 	s16 default_nf = ath9k_hw_get_default_nf(ah, chan);
+ 
+ 	if (ah->caldata)
+@@ -234,6 +241,9 @@ void ath9k_hw_loadnf(struct ath_hw *ah,
+ 		if (chainmask & (1 << i)) {
+ 			s16 nfval;
+ 
++			if ((i >= AR5416_MAX_CHAINS) && !conf_is_ht40(conf))
++				continue;
++
+ 			if (h)
+ 				nfval = h[i].privNF;
+ 			else
+@@ -293,6 +303,9 @@ void ath9k_hw_loadnf(struct ath_hw *ah,
+ 	ENABLE_REGWRITE_BUFFER(ah);
+ 	for (i = 0; i < NUM_NF_READINGS; i++) {
+ 		if (chainmask & (1 << i)) {
++			if ((i >= AR5416_MAX_CHAINS) && !conf_is_ht40(conf))
++				continue;
++
+ 			val = REG_READ(ah, ah->nf_regs[i]);
+ 			val &= 0xFFFFFE00;
+ 			val |= (((u32) (-50) << 1) & 0x1ff);
 
 
