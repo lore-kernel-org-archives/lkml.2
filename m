@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758218Ab1FAWXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 18:23:43 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59663 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270Ab1FAWXl (ORCPT
+	id S1757672Ab1FAWW3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 18:22:29 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39442 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392Ab1FAWW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 18:23:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=N0795kIzFv1yn5FCuYVUScWJBrlkTOdVunPBJkOAYGEWxWdInr6WdJIjuAkgBKY1Lo
-         E6GVEx34+Gxp0ezPFSwsdojS5UMojAeOOIfV/nOHqEKtDTOU0Fsgb1whZdhWuvTkjLrd
-         iU+UD/zXGZYwE2z9scMHXNUP7h8RbDx4dnHJE=
-From: Andre Bartke <andre.bartke@googlemail.com>
-To: gregkh@suse.de
-Cc: jic23@cam.ac.uk, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Andre Bartke <andre.bartke@gmail.com>
-Subject: [PATCH] staging/iio: error case memory leak fix
-Date: Thu,  2 Jun 2011 00:21:45 +0200
-Message-Id: <1306966905-13799-1-git-send-email-andre.bartke@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
+	Wed, 1 Jun 2011 18:22:27 -0400
+Date: Thu, 2 Jun 2011 00:22:26 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Daniel Haid <d.haid@gogi.tv>
+Cc: linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andi Kleen <andi@firstfloor.org>, airlied@linux.ie,
+        alexdeucher@gmail.com
+Subject: Re: Question about iommu on x86_64 and radeon driver.
+Message-ID: <20110601222226.GH27166@one.firstfloor.org>
+References: <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv> <20110531134519.GC14641@dumpdata.com> <59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv> <20110531160221.GA31659@dumpdata.com> <0a8cb4bcad7fcf091a6bbe158323bba0@admin.gogi.tv> <20110531190412.GA21245@dumpdata.com> <d0ce6a4ba6092a1a9ef0f1e8f3cac9c9@admin.gogi.tv> <20110601132444.GA4081@dumpdata.com> <21491fcfb013e21177140326efc0ee66@admin.gogi.tv> <34fa3fe7780241e452b268fd5ecfdee9@admin.gogi.tv>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <34fa3fe7780241e452b268fd5ecfdee9@admin.gogi.tv>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The data pointer should be freed in the error
-cases of adis16400_trigger_handler().
+On Wed, Jun 01, 2011 at 10:58:08PM +0100, Daniel Haid wrote:
+> I have also found out the following. In
+> 
+> line 741 of drivers/gpu/drm/radeon/radeon_device.c
+> 
+> there is a comment "PCIE - can handle 40-bits." -
+> I have a PCIE card - and then need_dma32 is not set.
+> 
+> So if I read it correctly the ttm allocation
+> routines will allocate memory over 4GB.
+> 
+> But if PCIE can handle 40 bits, why does swiotlb
+> give out a bounce buffer to the radeon driver at all?
 
-Signed-off-by: Andre Bartke <andre.bartke@gmail.com>
----
- drivers/staging/iio/imu/adis16400_ring.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
+swiotlb only does what the driver tells it
 
-diff --git a/drivers/staging/iio/imu/adis16400_ring.c b/drivers/staging/iio/imu/adis16400_ring.c
-index 2589a7e..3612373 100644
---- a/drivers/staging/iio/imu/adis16400_ring.c
-+++ b/drivers/staging/iio/imu/adis16400_ring.c
-@@ -137,13 +137,13 @@ static irqreturn_t adis16400_trigger_handler(int irq, void *p)
- 		if (st->variant->flags & ADIS16400_NO_BURST) {
- 			ret = adis16350_spi_read_all(&indio_dev->dev, st->rx);
- 			if (ret < 0)
--				return ret;
-+				goto err;
- 			for (; i < ring->scan_count; i++)
- 				data[i]	= *(s16 *)(st->rx + i*2);
- 		} else {
- 			ret = adis16400_spi_read_burst(&indio_dev->dev, st->rx);
- 			if (ret < 0)
--				return ret;
-+				goto err;
- 			for (; i < indio_dev->ring->scan_count; i++) {
- 				j = __ffs(mask);
- 				mask &= ~(1 << j);
-@@ -158,9 +158,13 @@ static irqreturn_t adis16400_trigger_handler(int irq, void *p)
- 	ring->access->store_to(indio_dev->ring, (u8 *) data, pf->timestamp);
- 
- 	iio_trigger_notify_done(indio_dev->trig);
--	kfree(data);
- 
-+	kfree(data);
- 	return IRQ_HANDLED;
-+
-+err:
-+	kfree(data);
-+	return ret;
- }
- 
- void adis16400_unconfigure_ring(struct iio_dev *indio_dev)
+Also new drivers default to 4GB, so if a driver wants
+something else it has to set it explicitely.
+
+Also BTW the driver should work in any case, so likely
+something else is wrong.
+
+Really you need to discuss this with the radeon driver people.
+Readded cc.
+
+
+
+-Andi
 -- 
-1.7.5.2
-
+ak@linux.intel.com -- Speaking for myself only.
