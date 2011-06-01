@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab1FAS4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 14:56:09 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57505 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab1FAS4I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 14:56:08 -0400
-Date: Wed, 1 Jun 2011 20:55:58 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: David Rientjes <rientjes@google.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
- instead of failing
-In-Reply-To: <20110601181918.GO3660@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.02.1106012043080.3078@ionos>
-References: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com> <BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com> <BANLkTikrRRzGLbMD47_xJz+xpgftCm1C2A@mail.gmail.com> <alpine.DEB.2.00.1106011017260.13089@chino.kir.corp.google.com>
- <20110601181918.GO3660@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1759826Ab1FATus (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 15:50:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1275 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759796Ab1FATum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 15:50:42 -0400
+Date: Wed, 1 Jun 2011 21:01:17 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        pedro@codesourcery.com
+Subject: Re: [PATCH 11/17] ptrace: implement PTRACE_SEIZE
+Message-ID: <20110601190117.GB6504@redhat.com>
+References: <1306710760-16440-1-git-send-email-tj@kernel.org> <1306710760-16440-12-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306710760-16440-12-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Jun 2011, Russell King - ARM Linux wrote:
+On 05/30, Tejun Heo wrote:
+>
+> implements a new ptrace request PTRACE_SEIZE which attaches and traps
+> tracee
 
-> On Wed, Jun 01, 2011 at 10:23:15AM -0700, David Rientjes wrote:
-> > On Wed, 1 Jun 2011, Dmitry Eremin-Solenikov wrote:
-> > 
-> > > I've hit this with IrDA driver on PXA. Also I've seen the report regarding
-> > > other ARM platform (ep-something). Thus I've included Russell in the cc.
-> > > 
-> > 
-> > So you want to continue to allow the page allocator to return pages from 
-> > anywhere, even when GFP_DMA is specified, just as though it was lowmem?
-> 
-> No.  What *everyone* is asking for is to allow the situation which has
-> persisted thus far to continue for ONE MORE RELEASE but with a WARNING
-> so that these problems can be found without causing REGRESSIONS.
-> 
-> That is NOT an unreasonable request, but it seems that its far too much
-> to ask of you.
+it doesn't trap the tracee ;)
 
-Full ack.
+> * PTRACE_SEIZE, unlike ATTACH, doesn't force tracee to trap.  After
+>   attaching tracee continues to run unless a trap condition occurs.
 
-David,
+OK.
 
-stop that nonsense already. You changed the behaviour and broke stuff
-which was working fine before for whatever reason. That behaviour was
-in the kernel for ages and we tolerated the abuse.
+Just to remind, tracehook_report_clone() shouldn't send SIGSTOP if
+the auto-attached tracee is PT_SEIZED.
 
-So making it a warning for this release and then break stuff which has
-not been fixed is a sensible request and the only sensible approach.
+> * If PTRACE_SEIZE'd, group stop uses PTRACE_EVENT_STOP trap which uses
+>   exit_code of (SIGTRAP | PTRACE_EVENT_STOP << 8) instead of the
+>   stopping signal number
 
-If you think that you need to force that behaviour change now, then
-you better go and audit _ALL_ GFP_DMA users yourself for correctness
-and fix them case by case either by replacing the GFP_DMA flag or by
-selecting ZONE_DMA with a proper changelog for every instance.
+Hmm. May be it would be better to report stopping_signal | PTRACE_EVENT_STOP
+instead... I am not sure yet, but it seems this way we can avoid the
+PTRACE_GETSIGINFO changes. I'll try to explain later, when I finsh the
+reading.
 
-It's not up to your total ignorance of reality to break stuff at will
-and then paper over the problems you caused by selecting ZONE_DMA
-which will keep the abusers around forever.
+Oleg.
 
-Thanks,
-
-	tglx
