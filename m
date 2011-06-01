@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759274Ab1FARUW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 13:20:22 -0400
-Received: from waste.org ([173.11.57.241]:41951 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758056Ab1FARUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 13:20:21 -0400
-Subject: Re: [PATCH 1/10] drivers/char/hw_random/omap-rng.c: add missing
- clk_put
-From: Matt Mackall <mpm@selenic.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Deepak Saxena <dsaxena@plexity.net>, kernel-janitors@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1306948213-20767-1-git-send-email-julia@diku.dk>
-References: <1306948213-20767-1-git-send-email-julia@diku.dk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Jun 2011 12:20:14 -0500
-Message-ID: <1306948814.4204.572.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	id S1758014Ab1FARV2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 13:21:28 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:30362 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758537Ab1FARV0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 13:21:26 -0400
+X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4DE674EB.1000200@die-jansens.de>
+Date: Wed, 01 Jun 2011 19:20:43 +0200
+From: Arne Jansen <lists@die-jansens.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, efault@gmx.de, npiggin@kernel.dk,
+        akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
+References: <20110405152729.232781355@chello.nl>	 <tip-0122ec5b02f766c355b3168df53a6c038a24fa0d@git.kernel.org>	 <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop>
+In-Reply-To: <1306946120.2497.606.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-01 at 19:10 +0200, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Convert a return to a jump to an existing label that calls clk_put.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r exists@
-> expression e1,e2;
-> statement S;
-> @@
-> 
-> e1 = clk_get@p1(...);
-> ... when != e1 = e2
->     when != clk_put(e1)
->     when any
-> if (...) { ... when != clk_put(e1)
->                when != if (...) { ... clk_put(e1) ... }
-> * return@p3 ...;
->  } else S
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+On 01.06.2011 18:35, Peter Zijlstra wrote:
+> On Wed, 2011-06-01 at 15:58 +0200, Arne Jansen wrote:
+>> git bisect blames this commit for a problem I have with v3.0-rc1:
+>> If I printk large amounts of data, the machine locks up.
+>> As the commit does not revert cleanly on top of 3.0, I haven't been
+>> able to double check.
+>> The test I use is simple, just add something like
+>>
+>> for (i=0; i<  10000; ++i) printk("test %d\n", i);
+>>
+>> and trigger it, in most cases I can see the first 10 printks before
+>> I have to power cycle the machine (sysrq-b does not work anymore).
+>> Attached my .config.
+>
+> I've made me a module that does the above, I've also changed my .config
+> to match yours (smp=y, sched-cgroup=y, autogroup=n, preempt=n, no_hz=y),
+> but sadly I cannot reproduce, I get all 10k prints on my serial line.
+>
+> Even without serial line it works (somehow booting without visible
+> console is scary as hell :)
+>
+> Which makes me ask, how are you observing your console?
+>
 
-That's impressive.
+They don't go out to the serial line, I only observe them with a
+tail -f on messages. Default log level doesn't go the console here.
 
-Signed-off-by: Matt Mackall <mpm@selenic.com>
-
-> ---
->  drivers/char/hw_random/omap-rng.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/char/hw_random/omap-rng.c b/drivers/char/hw_random/omap-rng.c
-> index 2cc755a..b757fac 100644
-> --- a/drivers/char/hw_random/omap-rng.c
-> +++ b/drivers/char/hw_random/omap-rng.c
-> @@ -113,8 +113,10 @@ static int __devinit omap_rng_probe(struct platform_device *pdev)
->  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  
-> -	if (!res)
-> -		return -ENOENT;
-> +	if (!res) {
-> +		ret = -ENOENT;
-> +		goto err_region;
-> +	}
->  
->  	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
->  		ret = -EBUSY;
-> 
+> Because those 10k lines aren't even near the amount of crap a regular
+> boot spews out on this box, although I guess the tight loop might
+> generate it slightly faster than a regular boot does.
+>
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
-
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
 
