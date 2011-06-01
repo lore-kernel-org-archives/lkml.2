@@ -1,129 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759457Ab1FAU0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 16:26:45 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:51607
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753845Ab1FAU0m (ORCPT
+	id S1759602Ab1FAU2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 16:28:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34553 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758875Ab1FAU2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 16:26:42 -0400
-X-SpamScore: -14
-X-BigFish: VS-14(zz1521M1432N98dKzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4DE6A013.409@freescale.com>
-Date: Wed, 1 Jun 2011 15:24:51 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	Wed, 1 Jun 2011 16:28:37 -0400
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
-        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
-Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
- management driver
-References: <1306953337-15698-1-git-send-email-timur@freescale.com> <20110601204618.32190be9@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110601204618.32190be9@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1306956328.10135.36.camel@gandalf.stny.rr.com>
+References: <1306956328.10135.36.camel@gandalf.stny.rr.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 2 Jun 2011 05:27:45 +0900
+Message-ID: <BANLkTimgjdFQcSfOOFFjmSC+Wt_xPXr4Xg@mail.gmail.com>
+Subject: Re: [PATCH] ide: Fix bug caused by git merge
+To: Steven Rostedt <rostedt@goodmis.org>, Jens Axboe <jaxboe@fusionio.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Junio C Hamano <gitster@pobox.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
-> O> +	/* One partition must be local, the other must be remote.  In other
->> +	   words, if source and target are both -1, or are both not -1, then
->> +	   return an error. */
->> +	if ((param.source == -1) == (param.target == -1))
->> +		return -EINVAL;
-> 
-> Excess brackets (I just mention that one in passing)'
+On Thu, Jun 2, 2011 at 4:25 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> The issue here is that the commit 5b03a1b1 is a common ancestor to both
+> commits. But even though the commit 7eec77a1 removed that line, for some
+> reason, the merge put that line back. No other commit added that line to
+> the code.
 
-Do you mean excess parentheses?  If so, then I don't see how.  "(param.source ==
--1)" and "(param.target == -1)" are expressions that return a boolean.  I'm
-comparing the two boolean results to see if they're equal.  I want to make sure
-that the compiler doesn't do something like this:
+Incorrect.
 
-	if (param.source == (-1 == (param.target == -1)))
+What added that line back to the code was commit 698567f3fa79, a merge by Jens.
 
-I don't even know what that means, but it's not what I want.
+It had conflicts in drivers/ide/ide-cd.c (due to commit d4dc210f69bc,
+which added the flag GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE on the line
+just before). And Jens did a mis-merge there.
 
->> +static char *strdup_from_user(const char __user *ustr, size_t max)
->> +{
->> +	size_t len;
->> +	char *str;
->> +
->> +	len = strnlen_user(ustr, max);
->> +	if (len > max)
->> +		return ERR_PTR(-ENAMETOOLONG);
->> +
->> +	str = kmalloc(len, GFP_KERNEL);
->> +	if (!str)
->> +		return ERR_PTR(-ENOMEM);
->> +
->> +	if (copy_from_user(str, ustr, len))
->> +		return ERR_PTR(-EFAULT);
->> +
->> +	return str;
->> +}
-> 
-> This belongs on lib/ if its of general use which I think it perhaps is
-> and if we don't have one already.
+Jens - this is a prime example of why people SHOULD NOT DO CROSS-MERGES!
 
-Where exactly in lib/ should it go?  lib/strings.c seems too low-level for a
-function like this.  lib/string_helpers.c is for sprintf-like functions.  And
-it's too generic for lib/powerpc/
+You are just not as used to doing merges as I am, and when there are
+conflicts, you clearly didn't actually look at the two sides to notice
+that one side removed the line, so when you resolved it by taking all
+the conflicting stuff, you re-introduced the line that should have
+been deleted!
 
->> +	default:
->> +		pr_debug("fsl-hv: unknown ioctl %u\n", cmd);
->> +		ret = -ENOIOCTLCMD;
-> 
-> -ENOTTY
-> 
-> (-ENOIOCTLCMD is an internal indicator designed so driver layers can say
-> 'dunno, try the next layer up')
-> 
->> +/* Linked list of processes that have us open */
->> +struct list_head db_list;
-> 
-> static ?
-> 
-> 
->> + * We use the same interrupt handler for all doorbells.  Whenever a doorbell
->> + * is rung, and we receive an interrupt, we just put the handle for that
->> + * doorbell (passed to us as *data) into all of the queues.
-> 
-> I wonder if these should be presented as IRQs or whether that makes no
-> sense ?
+At the time of the conflicting merge, a
 
-Well, the "handles" are supposed to be just unique numbers.  In this case, they
-are IRQs, but we don't want to expose that.  The application is supposed to scan
-the device tree looking for the doorbell nodes that it wants, and in those nodes
-there is a 'reg' property that contains the handle for that doorbell.  So the
-numbers just need to match.  What they represent is not relevant.
+    gitk --merge drivers/ide/ide-cd.c
 
->> +static irqreturn_t fsl_hv_state_change_isr(int irq, void *data)
->> +{
->> +	unsigned int status;
->> +	struct doorbell_isr *dbisr = data;
->> +	int ret;
->> +
->> +	/* Determine the new state, and if it's stopped, notify the clients. */
->> +	ret = fh_partition_get_status(dbisr->partition, &status);
->> +	if (!ret && (status == FH_PARTITION_STOPPED))
->> +		schedule_work(&dbisr->work);
->> +
->> +	/* Call the normal handler */
->> +	return fsl_hv_isr(irq, (void *) (uintptr_t) dbisr->doorbell);
->> +}
-> 
-> Would a threaded IRQ clean this up by avoiding the queue/work stuff ?
+would have shown the two conflicting commits, and told you that the
+line needs to not exist in the merge.
 
-Yes, I think so.  V3 coming up.
+You can re-create that "gitk --merge" in the current tree with
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+    gitk 698567f3fa79^...698567f3fa79^2 drivers/ide/ide-cd.c
 
+and because you just picked the result from one parent (instead of
+picking the proper result of *combining* the changes), a
+
+    git show 698567f3fa79
+
+doesn't show anything at all.
+
+Grr. I now wondered about the OTHER conflicts that are mentioned in
+that commit, AND THEY ALL HAVE THE SAME BUG. For all three files you
+just picked one side, not the other.
+
+Jens, you really can't do that. When you see a conflict marker, you
+need to look at WHY. The conflict may well be because of removed lines
+rather than added lines, the correct resolution is NOT necessarily to
+just take everything within the conflicting region.
+
+For example, the conflict in pcd.c looks like this (I'm re-doing the
+merge properly to get the fixed diff):
+
+                    disk->fops = &pcd_bdops;
+    <<<<<<< HEAD
+                    disk->flags = GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
+                    disk->events = DISK_EVENT_MEDIA_CHANGE;
+    =======
+    >>>>>>> 698567f3fa79^2
+            }
+
+and the rsolution is simply to
+
+                    disk->fops = &pcd_bdops;
+                    disk->flags = GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
+            }
+
+not the one you did (which left the "disk->events = .." line that was
+removed in the other branch,
+
+And the merge diff should have looked like this:
+
+    diff --cc drivers/block/paride/pcd.c
+    index a0aabd904a51,8690e31d9932..000000000000
+    --- a/drivers/block/paride/pcd.c
+    +++ b/drivers/block/paride/pcd.c
+    @@@ -320,8 -320,6 +320,7 @@@ static void pcd_init_units(void
+                    disk->first_minor = unit;
+                    strcpy(disk->disk_name, cd->name);      /* umm... */
+                    disk->fops = &pcd_bdops;
+     +              disk->flags = GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
+    -               disk->events = DISK_EVENT_MEDIA_CHANGE;
+            }
+      }
+
+
+
+which shows how one line was added in one branch, and another one
+removed. But because you just mindlessly picked one side over the
+other, the merge diff ends up being empty (that's the "trivially
+resolved" thing).
+
+Pretty much exactly the same thing for the two other files.
+
+PLEASE DON'T DO MERGES IF YOU CANNOT DO THEM!
+
+Don't do them to remove conflicts. I'm *good* at handling conflicts. I
+do it every friggin day. I might get them wrong occasionally, but it
+is very very rare, exactly because I'm so used to doing merges, and I
+carefully look at what actually happened on the two sides when I
+resolve things. Git has wonderful support for helping resolve merges
+intelligently, but you need to know how to do it. See the gitk example
+above - run it and ponder.
+
+Grr.
+
+I'll fix it properly.
+
+And thanks Steven for noticing, even if your analysis ended up missing this.
+
+(Junio - what made it harder for Steven to see the reason may be due
+the default history simplification. I do wonder if we should just make
+"--simplify-merges" the default, because the aggressive and simple
+default culling makes it hard to see merge commits like this that just
+pick one side  over the other. --simplify-merges is more expensive,
+but doesn't have some of the problems the aggressive simplification
+has)
+
+                      Linus
