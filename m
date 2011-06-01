@@ -1,74 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab1FAOXB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 10:23:01 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34602 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117Ab1FAOW7 (ORCPT
+	id S1756899Ab1FAOZa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 10:25:30 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33963 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756117Ab1FAOZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 10:22:59 -0400
-X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=cWu3orRm09UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=P-zH6Fbi6VzdvBoGX5QA:9 a=Az-tnAt17RxsUB6xRE8A:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] sched: remove resetting exec_start in
- put_prev_task_rt()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <BANLkTimqWD=q6YnSDi-v9y=LMWecgEzEWg@mail.gmail.com>
-References: <BANLkTimqWD=q6YnSDi-v9y=LMWecgEzEWg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 01 Jun 2011 10:22:57 -0400
-Message-ID: <1306938177.10135.20.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Jun 2011 10:25:26 -0400
+Date: Wed, 1 Jun 2011 15:25:07 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mattias Wallin <mattias.wallin@stericsson.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/3] clocksource: add DB8500 PRCMU Timer support
+Message-ID: <20110601142507.GK3660@n2100.arm.linux.org.uk>
+References: <1306830661-9546-1-git-send-email-mattias.wallin@stericsson.com> <alpine.LFD.2.02.1105311236250.3078@ionos> <4DE51EB7.7010606@stericsson.com> <BANLkTinPKbUu40066+wr3cdFRc2di-Uv6g@mail.gmail.com> <4DE5F0DB.2050409@stericsson.com> <4DE64B0E.8030008@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DE64B0E.8030008@stericsson.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-01 at 22:03 +0800, Hillf Danton wrote:
-> Resetting exec_start, after updated in update_curr_rt(), could open window for
-> messing up the subsequent computations of delta_exec of the given task.
+On Wed, Jun 01, 2011 at 04:22:06PM +0200, Mattias Wallin wrote:
+> On 06/01/2011 09:57 AM, Mattias Wallin wrote:
+>> I'll experiment with it during the day and see how it goes.
+> It did not work to have the clocksource init as a core_initcall.
+> I got an null pointer oops in sched_clock_poll.
+> The lauterbach trace showed that the sched_clock_update_fn was null  
+> since the poll function was called before the init.
 
-The domain scheduling was mostly done by Peter, but when you make a
-change like this, you need to explain it better than this. I really have
-no idea what you mean in this change log.
-
-Please give an example of how this "open window" can mess up the
-subsequent computations of delta_exec. That is, have write a theoretical
-timeline of events that shows in detail how this can mess things up.
-
-This makes understanding your changes much easier, otherwise you will
-have to wait till we have the time to look and figure things out
-ourselves. As we are currently working on other areas of the kernel so
-you will have to wait much longer than if you showed us exactly what
-happened.
-
-Thanks!
-
--- Steve
-
-> 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
->  kernel/sched_rt.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-> index 88725c9..0f0cfce 100644
-> --- a/kernel/sched_rt.c
-> +++ b/kernel/sched_rt.c
-> @@ -1166,7 +1166,6 @@ static struct task_struct
-> *pick_next_task_rt(struct rq *rq)
->  static void put_prev_task_rt(struct rq *rq, struct task_struct *p)
->  {
->  	update_curr_rt(rq);
-> -	p->se.exec_start = 0;
-> 
->  	/*
->  	 * The previous task needs to be made eligible for pushing
-
-
+sched_clock is supposed to be setup and initialized really early.  Why
+are you doing trying to move it soo late?
