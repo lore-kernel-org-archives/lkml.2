@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759883Ab1FATv1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 15:51:27 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:59131 "EHLO duck.linux-mips.net"
+	id S1759679Ab1FATrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 15:47:43 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:59157 "EHLO duck.linux-mips.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759627Ab1FATre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 15:47:34 -0400
-Message-Id: <20110601180610.532642190@duck.linux-mips.net>
+	id S1759660Ab1FATrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 15:47:41 -0400
+Message-Id: <20110601180610.608083130@duck.linux-mips.net>
 User-Agent: quilt/0.48-1
-Date: Wed, 01 Jun 2011 19:05:03 +0100
+Date: Wed, 01 Jun 2011 19:05:04 +0100
 From: ralf@linux-mips.org
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org
-Subject: [patch 07/14] i8253: Make pcsp sound driver use the shared i8253_lock.
+Cc: Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org
+Subject: [patch 08/14] i8253: Alpha: Cleanup remaining users of i8253pit.h
 References: <20110601180456.801265664@duck.linux-mips.net>
-Content-Disposition: inline; filename=i8253-move-sound-pcsp-to-shared-lock.patch
+Content-Disposition: inline; filename=i8253-cleanup-remaining-alpha-users-of-8253pit.h.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Alpha <asm/i8253pit.h> header is empty so this inclusion can just be
+removed.
+
 Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 To: linux-kernel@vger.kernel.org
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Cc: linux-alpha@vger.kernel.org
 
- sound/drivers/pcsp/pcsp.h |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ arch/alpha/kernel/sys_ruffian.c |    1 -
+ arch/alpha/kernel/time.c        |    1 -
+ 2 files changed, 2 deletions(-)
 
-Index: linux-mips/sound/drivers/pcsp/pcsp.h
+Index: linux-mips/arch/alpha/kernel/sys_ruffian.c
 ===================================================================
---- linux-mips.orig/sound/drivers/pcsp/pcsp.h
-+++ linux-mips/sound/drivers/pcsp/pcsp.h
-@@ -10,14 +10,8 @@
- #define __PCSP_H__
- 
- #include <linux/hrtimer.h>
--#include <linux/timex.h>
--#if defined(CONFIG_MIPS) || defined(CONFIG_X86)
--/* Use the global PIT lock ! */
- #include <linux/i8253.h>
--#else
+--- linux-mips.orig/arch/alpha/kernel/sys_ruffian.c
++++ linux-mips/arch/alpha/kernel/sys_ruffian.c
+@@ -26,7 +26,6 @@
+ #include <asm/pgtable.h>
+ #include <asm/core_cia.h>
+ #include <asm/tlbflush.h>
 -#include <asm/8253pit.h>
--static DEFINE_RAW_SPINLOCK(i8253_lock);
--#endif
-+#include <linux/timex.h>
  
- #define PCSP_SOUND_VERSION 0x400	/* read 4.00 */
- #define PCSP_DEBUG 0
+ #include "proto.h"
+ #include "irq_impl.h"
+Index: linux-mips/arch/alpha/kernel/time.c
+===================================================================
+--- linux-mips.orig/arch/alpha/kernel/time.c
++++ linux-mips/arch/alpha/kernel/time.c
+@@ -46,7 +46,6 @@
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+ #include <asm/hwrpb.h>
+-#include <asm/8253pit.h>
+ #include <asm/rtc.h>
+ 
+ #include <linux/mc146818rtc.h>
 
 
