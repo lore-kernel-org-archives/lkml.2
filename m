@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161951Ab1FAIQO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:16:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43343 "EHLO mx2.suse.de"
+	id S1162564Ab1FAJIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:08:18 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43893 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161945Ab1FAIQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:16:06 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:04:19 2011
-Message-Id: <20110601080418.059590021@blue.kroah.org>
+	id S1161968Ab1FAIQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:16:12 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:04:20 2011
+Message-Id: <20110601080419.339827262@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:45 +0900
+Date: Wed, 01 Jun 2011 17:00:46 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Erik Slagter <erik@slagter.name>,
-        "Maxin B. John" <maxin.john@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [109/146] USB: cdc_acm: Fix oops when Droids MuIn LCD is connected
+Subject: [110/146] xhci: Fix bug in control transfer cancellation.
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,70 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Erik Slagter <erik@slagter.name>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit fd5054c169d29747a44b4e1419ff47f57ae82dbc upstream.
+commit 3abeca998a44205cfd837fa0bf1f7c24f8294acb upstream.
 
-The Droids MuIn LCD operates like a serial remote terminal.
-Data received are displayed directly on the LCD. This patch
-fixes the kernel null pointer oops when it is plugged in.
+When the xHCI driver attempts to cancel a transfer, it issues a Stop
+Endpoint command and waits for the host controller to indicate which TRB
+it was in the middle of processing.  The host will put an event TRB with
+completion code COMP_STOP on the event ring if it stops on a control
+transfer TRB (or other types of transfer TRBs).  The ring handling code
+is supposed to set ep->stopped_trb to the TRB that the host stopped on
+when this happens.
 
-Add NO_DATA_INTERFACE quirk to tell the driver that "control"
-and "data" interfaces are not separated for this device, which
-prevents dereferencing a null pointer in the device probe code.
+Unfortunately, there is a long-standing bug in the control transfer
+completion code.  It doesn't actually check to see if COMP_STOP is set
+before attempting to process the transfer based on which part of the
+control TD completed.  So when we get an event on the data phase of the
+control TRB with COMP_STOP set, it thinks it's a normal completion of
+the transfer and doesn't set ep->stopped_td or ep->stopped_trb.
 
-Signed-off-by: Erik Slagter <erik@slagter.name>
-Signed-off-by: Maxin B. John <maxin.john@gmail.com>
-Tested-by: Erik Slagter <erik@slagter.name>
+When the ring handling code goes on to process the completion of the Stop
+Endpoint command, it sees that ep->stopped_trb is not a part of the TD
+it's trying to cancel.  It thinks the hardware has its enqueue pointer
+somewhere further up in the ring, and thinks it's safe to turn the control
+TRBs into no-op TRBs.  Since the hardware was in the middle of the control
+TRBs to be cancelled, the proper software behavior is to issue a Set TR
+dequeue pointer command.
+
+It turns out that the NEC host controllers can handle active TRBs being
+set to no-op TRBs after a stop endpoint command, but other host
+controllers have issues with this out-of-spec software behavior.  Fix this
+behavior.
+
+This patch should be backported to kernels as far back as 2.6.31, but it
+may be a bit challenging, since process_ctrl_td() was introduced in some
+refactoring done in 2.6.36, and some endian-safe patches added in 2.6.40
+that touch the same lines.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |   13 +++++++++++--
- drivers/usb/class/cdc-acm.h |    1 +
- 2 files changed, 12 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-ring.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -946,7 +946,7 @@ static int acm_probe(struct usb_interfac
- 	u8 ac_management_function = 0;
- 	u8 call_management_function = 0;
- 	int call_interface_num = -1;
--	int data_interface_num;
-+	int data_interface_num = -1;
- 	unsigned long quirks;
- 	int num_rx_buf;
- 	int i;
-@@ -1030,7 +1030,11 @@ next_desc:
- 	if (!union_header) {
- 		if (call_interface_num > 0) {
- 			dev_dbg(&intf->dev, "No union descriptor, using call management descriptor\n");
--			data_interface = usb_ifnum_to_if(usb_dev, (data_interface_num = call_interface_num));
-+			/* quirks for Droids MuIn LCD */
-+			if (quirks & NO_DATA_INTERFACE)
-+				data_interface = usb_ifnum_to_if(usb_dev, 0);
-+			else
-+				data_interface = usb_ifnum_to_if(usb_dev, (data_interface_num = call_interface_num));
- 			control_interface = intf;
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1532,6 +1532,9 @@ static int process_ctrl_td(struct xhci_h
+ 		else
+ 			*status = 0;
+ 		break;
++	case COMP_STOP_INVAL:
++	case COMP_STOP:
++		return finish_td(xhci, td, event_trb, event, ep, status, false);
+ 	default:
+ 		if (!xhci_requires_manual_halt_cleanup(xhci,
+ 					ep_ctx, trb_comp_code))
+@@ -1576,15 +1579,12 @@ static int process_ctrl_td(struct xhci_h
+ 			}
  		} else {
- 			if (intf->cur_altsetting->desc.bNumEndpoints != 3) {
-@@ -1622,6 +1626,11 @@ static const struct usb_device_id acm_id
- 	.driver_info = NOT_A_MODEM,
- 	},
+ 		/* Maybe the event was for the data stage? */
+-			if (trb_comp_code != COMP_STOP_INVAL) {
+-				/* We didn't stop on a link TRB in the middle */
+-				td->urb->actual_length =
+-					td->urb->transfer_buffer_length -
+-					TRB_LEN(event->transfer_len);
+-				xhci_dbg(xhci, "Waiting for status "
+-						"stage event\n");
+-				return 0;
+-			}
++			td->urb->actual_length =
++				td->urb->transfer_buffer_length -
++				TRB_LEN(le32_to_cpu(event->transfer_len));
++			xhci_dbg(xhci, "Waiting for status "
++					"stage event\n");
++			return 0;
+ 		}
+ 	}
  
-+	/* Support for Droids MuIn LCD */
-+	{ USB_DEVICE(0x04d8, 0x000b),
-+	.driver_info = NO_DATA_INTERFACE,
-+	},
-+
- 	/* control interfaces without any protocol set */
- 	{ USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ACM,
- 		USB_CDC_PROTO_NONE) },
---- a/drivers/usb/class/cdc-acm.h
-+++ b/drivers/usb/class/cdc-acm.h
-@@ -137,3 +137,4 @@ struct acm {
- #define SINGLE_RX_URB			2
- #define NO_CAP_LINE			4
- #define NOT_A_MODEM			8
-+#define NO_DATA_INTERFACE		16
 
 
