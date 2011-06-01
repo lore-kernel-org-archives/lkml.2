@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab1FAGqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 02:46:15 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:13368 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752302Ab1FAGqK (ORCPT
+	id S1161075Ab1FAGqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 02:46:31 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:46954 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161016Ab1FAGq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 02:46:10 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+JFAeCIr2xMFeHdA23gvhQ
-Date: Wed, 1 Jun 2011 09:46:06 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Colin Cross <ccross@android.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        l-o <linux-omap@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: omap4: Pass core and wakeup mux tables to
- omap4_mux_init
-Message-ID: <20110601064606.GC8696@atomide.com>
-References: <1304546278-28965-1-git-send-email-ccross@android.com>
- <20110531124208.GF11352@atomide.com>
- <BANLkTikfXs1oLott64+C5wy59G24Mux0TJ52et7GTEMQrfqRFQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikfXs1oLott64+C5wy59G24Mux0TJ52et7GTEMQrfqRFQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 1 Jun 2011 02:46:28 -0400
+Subject: Re: [patch 1/2] ptp: return -EFAULT on copy_to_user() errors
+From: John Stultz <john.stultz@linaro.org>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Dan Carpenter <error27@gmail.com>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        open list <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20110530061237.GA3166@riccoc20.at.omicron.at>
+References: <20110529195312.GA3099@shale.localdomain>
+	 <20110530061237.GA3166@riccoc20.at.omicron.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 May 2011 23:46:20 -0700
+Message-ID: <1306910780.3359.53.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Colin Cross <ccross@android.com> [110531 21:46]:
-> On Tue, May 31, 2011 at 5:42 AM, Tony Lindgren <tony@atomide.com> wrote:
-> > * Colin Cross <ccross@android.com> [110504 14:54]:
-> >> OMAP4 contains two separate instances of the padconf registers,
-> >> one in the core system config and one in the wakeup system config.
-> >> Pass in two tables to apply the correct values to each instance.
-> >
-> > Hmm good catch thanks. Will queue this as a fix.
+On Mon, 2011-05-30 at 08:12 +0200, Richard Cochran wrote:
+> On Sun, May 29, 2011 at 10:53:12PM +0300, Dan Carpenter wrote:
+> > copy_to_user() returns the number of bytes remaining, but we want a
+> > negative error code here.
+> > 
+> > Signed-off-by: Dan Carpenter <error27@gmail.com>
+> > 
+> > diff --git a/drivers/ptp/ptp_chardev.c b/drivers/ptp/ptp_chardev.c
+> > index a8d03ae..93fa22d 100644
+> > --- a/drivers/ptp/ptp_chardev.c
+> > +++ b/drivers/ptp/ptp_chardev.c
+> > @@ -46,7 +46,8 @@ long ptp_ioctl(struct posix_clock *pc, unsigned int cmd, unsigned long arg)
+> >  		caps.n_ext_ts = ptp->info->n_ext_ts;
+> >  		caps.n_per_out = ptp->info->n_per_out;
+> >  		caps.pps = ptp->info->pps;
+> > -		err = copy_to_user((void __user *)arg, &caps, sizeof(caps));
+> > +		if (copy_to_user((void __user *)arg, &caps, sizeof(caps)))
+> > +			err = -EFAULT;
 > 
-> This patch doesn't work without another fix to allow NULL to be passed
-> to omap4_mux_init.  Do you prefer allowing NULL, or adding empty
-> board_wkup_mux arrays to every board file?  I have a patch for the
-> first option.
+> Yes, right, and thanks for the extra review.
+> 
+> Thomas, can you please queue these two patches for 3.0-rc2?
+> 
+> (Or should John Stultz handle this sort of thing?)
 
-OK, saw that patch and adding to fixes. Passing NULL here is fine.
+Queued in my tree.
 
-Tony
+Richard, Since you like these, do you mind formally acking them so I can
+add that?
+
+thanks
+-john
+
+
