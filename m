@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759027Ab1FARKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 13:10:22 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:38596 "EHLO mgw2.diku.dk"
+	id S1759052Ab1FARKZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 13:10:25 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:38607 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751501Ab1FARKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757767Ab1FARKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 1 Jun 2011 13:10:19 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Liam Girdwood <lrg@ti.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Wan ZongShun <mcuos.com@gmail.com>, Axel Lin <axel.lin@gmail.com>,
-        Timur Tabi <timur@freescale.com>, alsa-devel@alsa-project.org,
+To: David Brownell <dbrownell@users.sourceforge.net>
+Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Eric Miao <eric.y.miao@gmail.com>, Mike Rapoport <mike@compulab.co.il>,
+        Igor Grinberg <grinberg@compulab.co.il>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/10] sound/soc/nuc900/nuc900-ac97.c: add missing clk_put
-Date: Wed,  1 Jun 2011 19:10:05 +0200
-Message-Id: <1306948213-20767-2-git-send-email-julia@diku.dk>
+Subject: [PATCH 3/10] drivers/usb/host/ohci-pxa27x.c: add missing clk_put
+Date: Wed,  1 Jun 2011 19:10:06 +0200
+Message-Id: <1306948213-20767-3-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,8 +22,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-This goto is after the call to clk_get, so it should go to the label that
-includes a call to clk_put.
+Add a label before the call to clk_put and jump to that in the error
+handling code that occurs after the call to clk_get has succeeded.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -49,20 +47,32 @@ if (...) { ... when != clk_put(e1)
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- sound/soc/nuc900/nuc900-ac97.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/ohci-pxa27x.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/nuc900/nuc900-ac97.c b/sound/soc/nuc900/nuc900-ac97.c
-index dac6732..9c0edad 100644
---- a/sound/soc/nuc900/nuc900-ac97.c
-+++ b/sound/soc/nuc900/nuc900-ac97.c
-@@ -356,7 +356,7 @@ static int __devinit nuc900_ac97_drvprobe(struct platform_device *pdev)
- 	nuc900_audio->irq_num = platform_get_irq(pdev, 0);
- 	if (!nuc900_audio->irq_num) {
- 		ret = -EBUSY;
--		goto out2;
-+		goto out3;
- 	}
+diff --git a/drivers/usb/host/ohci-pxa27x.c b/drivers/usb/host/ohci-pxa27x.c
+index afef7b0..80be547 100644
+--- a/drivers/usb/host/ohci-pxa27x.c
++++ b/drivers/usb/host/ohci-pxa27x.c
+@@ -312,8 +312,10 @@ int usb_hcd_pxa27x_probe (const struct hc_driver *driver, struct platform_device
+ 		return PTR_ERR(usb_clk);
  
- 	nuc900_ac97_data = nuc900_audio;
+ 	hcd = usb_create_hcd (driver, &pdev->dev, "pxa27x");
+-	if (!hcd)
+-		return -ENOMEM;
++	if (!hcd) {
++		retval = -ENOMEM;
++		goto err0;
++	}
+ 
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!r) {
+@@ -368,6 +370,7 @@ int usb_hcd_pxa27x_probe (const struct hc_driver *driver, struct platform_device
+ 	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+  err1:
+ 	usb_put_hcd(hcd);
++ err0:
+ 	clk_put(usb_clk);
+ 	return retval;
+ }
 
