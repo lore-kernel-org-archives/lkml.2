@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052Ab1FAAsU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 20:48:20 -0400
-Received: from trent.utfs.org ([194.246.123.103]:39382 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932673Ab1FAAsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 20:48:19 -0400
-Date: Tue, 31 May 2011 17:48:17 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        linux ppc dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: 3.0-rc1: powerpc hangs at Kernel virtual memory layout
-In-Reply-To: <1306887942.29297.10.camel@pasglop>
-Message-ID: <alpine.DEB.2.01.1105311744000.21697@trent.utfs.org>
-References: <alpine.DEB.2.01.1105311644010.21697@trent.utfs.org> <1306887942.29297.10.camel@pasglop>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S933060Ab1FAAtr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 20:49:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32522 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932663Ab1FAAtq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 20:49:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+Message-ID: <80f7ab04-7ae6-48cb-b254-e99343147bf0@default>
+Date: Tue, 31 May 2011 17:49:21 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Konrad Wilk <konrad.wilk@oracle.com>
+Subject: next phase of tmem into linux-next
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4DE58CA4.00CC:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Jun 2011 at 10:25, Benjamin Herrenschmidt wrote:
-> Hrm, I had it working on a pair of powerbooks yesterday. Can you try
-> something like "udbg-immortal" on your kernel command line to see if
-> that makes a difference in the output ?
+Hi Stephen --
 
-I'll try in a minute.
+Please re-include the following tree into linux-next.  The
+commit series is for frontswap, the complement of cleancache
+handling swap pages, which is the next phase in tmem.  It also
+includes the shim code to Xen tmem for frontswap.  It applies
+cleanly on linux-3.0-rc1, but if there are any problems or
+you have any questions, please let me know!
 
-In the meantime, "git bisect" behaves kinda weird, I don't know what went 
-wrong here:
+git://git.kernel.org/pub/scm/linux/kernel/git/djm/tmem.git#linux-next
 
- $ git bisect start
- $ git bisect good         # Linux 2.6.39
- $ git bisect bad v3.0-rc1 # Linux 3.0-rc1
- $ git bisect bad          # c44dead70a...
- $ git bisect bad          # d93515611b..
-
-...yet the ./Makefile shows[0] that I'm already way behind: 2.6.39-rc2. 
-Maybe "git bisect" got confused with that whole 2.6.x -> 3.0 renaming?
-
-Christian.
-
-[0] http://nerdbynature.de/bits/3.0-rc1/
--- 
-BOFH excuse #383:
-
-Your processor has taken a ride to Heaven's Gate on the UFO behind Hale-Bopp's comet.
+Thanks,
+Dan
