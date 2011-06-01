@@ -1,35 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758540Ab1FAAfi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 20:35:38 -0400
-Received: from shells.gnugeneration.com ([66.240.222.126]:56470 "HELO
-	shells.gnugeneration.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758489Ab1FAAfh (ORCPT
+	id S1758544Ab1FAAgk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 20:36:40 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:36095
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758394Ab1FAAgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 20:35:37 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 May 2011 20:35:37 EDT
-Date: Tue, 31 May 2011 19:28:54 -0500
-From: lkml@pengaru.com
-To: linux-kernel@vger.kernel.org
-Subject: bdi_min_ratio never shrinks, ultimately preventing valid setting of min_ratio
-Message-ID: <20110601002854.GV5753@shells.gnugeneration.com>
+	Tue, 31 May 2011 20:36:39 -0400
+Date: Tue, 31 May 2011 20:36:34 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 2/14] mm: move vmtruncate_range to truncate.c
+Message-ID: <20110601003634.GA4433@infradead.org>
+References: <alpine.LSU.2.00.1105301726180.5482@sister.anvils>
+ <alpine.LSU.2.00.1105301735520.5482@sister.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <alpine.LSU.2.00.1105301735520.5482@sister.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mm/page-writeback.c
-There is a static global bdi_min_ratio used for policing the setting of
-per-bdi min_ratio's, to ensure the sum doesn't cross 100.
+On Mon, May 30, 2011 at 05:36:57PM -0700, Hugh Dickins wrote:
+> You would expect to find vmtruncate_range() next to vmtruncate()
+> in mm/truncate.c: move it there.
 
-There is no place in this listing where the value is decremented by the
-respective bdi's min_ratio when a bdi is torn down.  This looks like a bug
-to me, and I have a situation where I'm unable to set a min_ratio to 1
-where the sum of /sys/class/bdi/*/min_ratio does not add up to 100, which
-is what triggered this investigation.
+Sounds fine to me.
 
-Regards,
-Vito Caputo
