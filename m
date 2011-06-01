@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758989Ab1FAREI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 13:04:08 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:1074 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756314Ab1FAREE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 13:04:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=NkZ0ebNMC5hP2H2D89ZOHvEJjeJmKVVU72PBPBUdr68qAeQ94/M8+XYj9+rZApdDNM
-         07Q4unm1tNtZaWePPCMA==
-Date: Wed, 1 Jun 2011 10:04:00 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Christoph Hellwig <hch@infradead.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 7/14] drm/i915: adjust to new truncate_range
-In-Reply-To: <20110601004314.GD4433@infradead.org>
-Message-ID: <alpine.LSU.2.00.1106011002420.23468@sister.anvils>
-References: <alpine.LSU.2.00.1105301726180.5482@sister.anvils> <alpine.LSU.2.00.1105301743500.5482@sister.anvils> <20110601004314.GD4433@infradead.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1759220Ab1FARMi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 13:12:38 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:38624 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759010Ab1FARKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 13:10:21 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Deepak Saxena <dsaxena@plexity.net>
+Cc: kernel-janitors@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/10] drivers/char/hw_random/omap-rng.c: add missing clk_put
+Date: Wed,  1 Jun 2011 19:10:04 +0200
+Message-Id: <1306948213-20767-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 May 2011, Christoph Hellwig wrote:
+From: Julia Lawall <julia@diku.dk>
 
-> >  	/* Our goal here is to return as much of the memory as
-> >  	 * is possible back to the system as we are called from OOM.
-> >  	 * To do this we must instruct the shmfs to drop all of its
-> > -	 * backing pages, *now*. Here we mirror the actions taken
-> > -	 * when by shmem_delete_inode() to release the backing store.
-> > +	 * backing pages, *now*.
-> >  	 */
-> >  	inode = obj->base.filp->f_path.dentry->d_inode;
-> > -	truncate_inode_pages(inode->i_mapping, 0);
-> >  	if (inode->i_op->truncate_range)
-> >  		inode->i_op->truncate_range(inode, 0, (loff_t)-1);
-> > +	else
-> > +		truncate_inode_pages(inode->i_mapping, 0);
-> 
-> Given that it relies on beeing on shmemfs it should just call it
-> directly.
+Convert a return to a jump to an existing label that calls clk_put.
 
-As agreed in other mail, I'll do a v2 series in a few days,
-making that change - thanks.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-Hugh
+// <smpl>
+@r exists@
+expression e1,e2;
+statement S;
+@@
+
+e1 = clk_get@p1(...);
+... when != e1 = e2
+    when != clk_put(e1)
+    when any
+if (...) { ... when != clk_put(e1)
+               when != if (...) { ... clk_put(e1) ... }
+* return@p3 ...;
+ } else S
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/char/hw_random/omap-rng.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/char/hw_random/omap-rng.c b/drivers/char/hw_random/omap-rng.c
+index 2cc755a..b757fac 100644
+--- a/drivers/char/hw_random/omap-rng.c
++++ b/drivers/char/hw_random/omap-rng.c
+@@ -113,8 +113,10 @@ static int __devinit omap_rng_probe(struct platform_device *pdev)
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 
+-	if (!res)
+-		return -ENOENT;
++	if (!res) {
++		ret = -ENOENT;
++		goto err_region;
++	}
+ 
+ 	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
+ 		ret = -EBUSY;
+
