@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161868Ab1FAJNA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:13:00 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:40585 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161808Ab1FAIPT (ORCPT
+	id S1162753Ab1FAIk5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:40:57 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43319 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162843Ab1FAIYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:15:19 -0400
+	Wed, 1 Jun 2011 04:24:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sspBYsVvWBvXJJX74Co2S9AFnMgdNUObCMZKeRp7yQixmInTM1oSqkctfYeH5ysiSP
-         97RGQLPIzevYbuKcxomWDkLizAmnObY24YNg15YaQzS0ql1KlRjhgKqHGVngMOBniWYB
-         5R4rSqT2NAoz48vIQh0l+tJ8Yuzis8lwBDrgI=
-Date: Wed, 1 Jun 2011 17:15:14 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [026/146] block: dont block events on excl write for non-optical
-Message-ID: <20110601081514.GG23067@mtj.dyndns.org>
-References: <20110601080606.GA522@kroah.com>
- <20110601080253.331790414@blue.kroah.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110601080253.331790414@blue.kroah.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=l5pJVNeOwXNhz3FJPcnMjuNQyaXpugD4kH26V0y+vvLfpPJfA/043ZB6unQx9Q/6Nl
+         glH/A7c7J41PRlMnmmUgmWPERpISd7RTg3i7tvEd6LfbbsSo6YNHOzOaj9vSjGfPBUyT
+         LXrOKRWi4BkdKYGOKtG6F8igIGPKcdvQPyOdo=
+Subject: Re: [TRIVIAL PATCH next 09/15] mtd: Convert vmalloc/memset to
+ vzalloc
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joe Perches <joe@perches.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, Jiri Kosina <trivial@kernel.org>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <adc50014679048de28c7d536f1686cd945fc40f6.1306603968.git.joe@perches.com>
+References: <cover.1306603968.git.joe@perches.com>
+	 <adc50014679048de28c7d536f1686cd945fc40f6.1306603968.git.joe@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Jun 2011 11:20:24 +0300
+Message-ID: <1306916424.4405.68.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Greg.
+On Sat, 2011-05-28 at 10:36 -0700, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/mtd/mtdswap.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 
-On Wed, Jun 01, 2011 at 04:59:22PM +0900, Greg KH wrote:
-> 2.6.38-stable review patch.  If anyone has any objections, please let us know.
-> 
-> ------------------
->  devices
-> 
-> From: Tejun Heo <tj@kernel.org>
-> 
-> commit d4dc210f69bcb0b4bef5a83b1c323817be89bad1 upstream.
-> 
-> Disk event code automatically blocks events on excl write.  This is
-> primarily to avoid issuing polling commands while burning is in
-> progress.  This behavior doesn't fit other types of devices with
-> removeable media where polling commands don't have adverse side
-> effects and door locking usually doesn't exist.
-> 
-> This patch introduces new genhd flag which controls the auto-blocking
-> behavior and uses it to enable auto-blocking only on optical devices.
-> 
-> Note for stable: 2.6.38 and later only
-
-This one should be accompanied by the following commit which is
-currently in Jens' tree and will soon be pulled into Linus' tree.
-Sorry about the fuss.  ->check_events() update turned out to be much
-more fragile than I originally expected.  :(
-
-commit 4c49ff3fe128ca68dabd07537415c419ad7f82f9
-Author: Tejun Heo <tj@kernel.org>
-Date:   Wed Jun 1 08:27:41 2011 +0200
-
-    block: blkdev_get() should access ->bd_disk only after success
-
-Thank you.
+Pushed to l2-mtd-2.6.git, thanks.
 
 -- 
-tejun
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
