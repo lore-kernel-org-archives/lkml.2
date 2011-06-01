@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163130Ab1FAI2L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:28:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45219 "EHLO mx1.suse.de"
+	id S1163157Ab1FAIdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:33:23 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45227 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162224Ab1FAI2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:28:05 -0400
+	id S1163122Ab1FAI2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:28:09 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:19 2011
-Message-Id: <20110601081218.734845873@blue.kroah.org>
+Message-Id: <20110601081219.395297526@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:56 +0900
+Date: Wed, 01 Jun 2011 17:11:57 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Namhyung Kim <namhyung@gmail.com>,
-        Laurent Vivier <Laurent.Vivier@bull.net>,
-        Jens Axboe <jaxboe@fusionio.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [146/165] brd: handle on-demand devices correctly
+        Boqun Feng <boqun.feng@intel.com>, Keith Packard <keithp@keithp.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [147/165] drm/i915: fix user irq miss in BSD ring on g4x
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,86 +25,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 2718
-Lines: 79
+Content-Length: 2380
+Lines: 75
 
-From: Namhyung Kim <namhyung@gmail.com>
+From: Boqun Feng <boqun.feng@intel.com>
 
-commit af46566885a373b0a526932484cd8fef8de7b598 upstream.
+commit 5bfa1063a775836a84f97e4df863fc36e1f856ad upstream.
 
-When finding or allocating a ram disk device, brd_probe() did not take
-partition numbers into account so that it can result to a different
-device. Consider following example (I set CONFIG_BLK_DEV_RAM_COUNT=4
-for simplicity) :
+On g4x, user interrupt in BSD ring is missed.
+This is because though g4x and ironlake share the same bsd_ring,
+their interrupt control interfaces have _two_ differences.
 
-$ sudo modprobe brd max_part=15
-$ ls -l /dev/ram*
-brw-rw---- 1 root disk 1,  0 2011-05-25 15:41 /dev/ram0
-brw-rw---- 1 root disk 1, 16 2011-05-25 15:41 /dev/ram1
-brw-rw---- 1 root disk 1, 32 2011-05-25 15:41 /dev/ram2
-brw-rw---- 1 root disk 1, 48 2011-05-25 15:41 /dev/ram3
-$ sudo mknod /dev/ram4 b 1 64
-$ sudo dd if=/dev/zero of=/dev/ram4 bs=4k count=256
-256+0 records in
-256+0 records out
-1048576 bytes (1.0 MB) copied, 0.00215578 s, 486 MB/s
-namhyung@leonhard:linux$ ls -l /dev/ram*
-brw-rw---- 1 root disk 1,    0 2011-05-25 15:41 /dev/ram0
-brw-rw---- 1 root disk 1,   16 2011-05-25 15:41 /dev/ram1
-brw-rw---- 1 root disk 1,   32 2011-05-25 15:41 /dev/ram2
-brw-rw---- 1 root disk 1,   48 2011-05-25 15:41 /dev/ram3
-brw-r--r-- 1 root root 1,   64 2011-05-25 15:45 /dev/ram4
-brw-rw---- 1 root disk 1, 1024 2011-05-25 15:44 /dev/ram64
+1.different irq enable/disable functions:
+On g4x are i915_enable_irq and i915_disable_irq.
+On ironlake are ironlake_enable_irq and ironlake_disable_irq.
+2.different irq flag:
+On g4x user interrupt flag in BSD ring on is I915_BSD_USER_INTERRUPT.
+On ironlake is GT_BSD_USER_INTERRUPT
 
-After this patch, /dev/ram4 - instead of /dev/ram64 - was
-accessed correctly.
+Old bsd_ring_get/put_irq call ring_get_irq and ring_get_irq.
+ring_get_irq and ring_put_irq only call ironlake_enable/disable_irq.
+So comes the irq miss on g4x.
 
-In addition, 'range' passed to blk_register_region() should
-include all range of dev_t that RAMDISK_MAJOR can address.
-It does not need to be limited by partition numbers unless
-'rd_nr' param was specified.
+To fix this, as other rings' code do, conditionally call different
+functions(i915_enable/disable_irq and ironlake_enable/disable_irq)
+and use different interrupt flags in bsd_ring_get/put_irq.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Laurent Vivier <Laurent.Vivier@bull.net>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Boqun Feng <boqun.feng@intel.com>
+Reviewed-by: Xiang, Haihao <haihao.xiang@intel.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/block/brd.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/intel_ringbuffer.c |   29 +++++++++++++++++++++++++++--
+ 1 file changed, 27 insertions(+), 2 deletions(-)
 
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -552,7 +552,7 @@ static struct kobject *brd_probe(dev_t d
- 	struct kobject *kobj;
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -666,12 +666,37 @@ gen6_ring_put_irq(struct intel_ring_buff
+ static bool
+ bsd_ring_get_irq(struct intel_ring_buffer *ring)
+ {
+-	return ring_get_irq(ring, GT_BSD_USER_INTERRUPT);
++	struct drm_device *dev = ring->dev;
++	drm_i915_private_t *dev_priv = dev->dev_private;
++
++	if (!dev->irq_enabled)
++		return false;
++
++	spin_lock(&ring->irq_lock);
++	if (ring->irq_refcount++ == 0) {
++		if (IS_G4X(dev))
++			i915_enable_irq(dev_priv, I915_BSD_USER_INTERRUPT);
++		else
++			ironlake_enable_irq(dev_priv, GT_BSD_USER_INTERRUPT);
++	}
++	spin_unlock(&ring->irq_lock);
++
++	return true;
+ }
+ static void
+ bsd_ring_put_irq(struct intel_ring_buffer *ring)
+ {
+-	ring_put_irq(ring, GT_BSD_USER_INTERRUPT);
++	struct drm_device *dev = ring->dev;
++	drm_i915_private_t *dev_priv = dev->dev_private;
++
++	spin_lock(&ring->irq_lock);
++	if (--ring->irq_refcount == 0) {
++		if (IS_G4X(dev))
++			i915_disable_irq(dev_priv, I915_BSD_USER_INTERRUPT);
++		else
++			ironlake_disable_irq(dev_priv, GT_BSD_USER_INTERRUPT);
++	}
++	spin_unlock(&ring->irq_lock);
+ }
  
- 	mutex_lock(&brd_devices_mutex);
--	brd = brd_init_one(dev & MINORMASK);
-+	brd = brd_init_one(MINOR(dev) >> part_shift);
- 	kobj = brd ? get_disk(brd->brd_disk) : ERR_PTR(-ENOMEM);
- 	mutex_unlock(&brd_devices_mutex);
- 
-@@ -593,10 +593,10 @@ static int __init brd_init(void)
- 
- 	if (rd_nr) {
- 		nr = rd_nr;
--		range = rd_nr;
-+		range = rd_nr << part_shift;
- 	} else {
- 		nr = CONFIG_BLK_DEV_RAM_COUNT;
--		range = 1UL << (MINORBITS - part_shift);
-+		range = 1UL << MINORBITS;
- 	}
- 
- 	if (register_blkdev(RAMDISK_MAJOR, "ramdisk"))
-@@ -635,7 +635,7 @@ static void __exit brd_exit(void)
- 	unsigned long range;
- 	struct brd_device *brd, *next;
- 
--	range = rd_nr ? rd_nr :  1UL << (MINORBITS - part_shift);
-+	range = rd_nr ? rd_nr << part_shift : 1UL << MINORBITS;
- 
- 	list_for_each_entry_safe(brd, next, &brd_devices, brd_list)
- 		brd_del_one(brd);
+ static int
 
 
