@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161946Ab1FAIP5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:15:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43319 "EHLO mx2.suse.de"
+	id S1162554Ab1FAJKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:10:19 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43860 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161922Ab1FAIPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:15:47 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:04:15 2011
-Message-Id: <20110601080414.621441845@blue.kroah.org>
+	id S1161837Ab1FAIPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:15:52 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:04:16 2011
+Message-Id: <20110601080415.763812464@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:00:42 +0900
+Date: Wed, 01 Jun 2011 17:00:43 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [106/146] USB: gadget: g_multi: fixed vendor and product ID in inf
+        Hermann Kneissel <herkne@gmx.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [107/146] USB: gamin_gps: Fix for data transfer problems in native
 In-Reply-To: <20110601080606.GA522@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +24,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.38-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- files
+ mode
 
-From: Michal Nazarewicz <mina86@mina86.com>
+From: Hermann Kneissel <herkne@gmx.de>
 
-commit 7701846fd52f86dffe50715e0e63154088b7c982 upstream.
+commit b4026c4584cd70858d4d3450abfb1cd0714d4f32 upstream.
 
-Commit 1c6529e92b "USB: gadget: g_multi: fixed vendor and
-product ID" replaced g_multi's vendor and product ID with
-proper ID's from Linux Foundation.  This commit now updates
-INF files in the Documentation/usb directory which were
-omitted in the original commit.
+This patch fixes a problem where data received from the gps is sometimes
+transferred incompletely to the serial port. If used in native mode now
+all data received via the bulk queue will be forwarded to the serial
+port.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Hermann Kneissel <herkne@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/usb/linux-cdc-acm.inf |    4 ++--
- Documentation/usb/linux.inf         |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/usb/serial/garmin_gps.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
---- a/Documentation/usb/linux-cdc-acm.inf
-+++ b/Documentation/usb/linux-cdc-acm.inf
-@@ -90,10 +90,10 @@ ServiceBinary=%12%\USBSER.sys
- [SourceDisksFiles]
- [SourceDisksNames]
- [DeviceList]
--%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7, USB\VID_0525&PID_A4AB&MI_02
-+%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7, USB\VID_1D6B&PID_0104&MI_02
+--- a/drivers/usb/serial/garmin_gps.c
++++ b/drivers/usb/serial/garmin_gps.c
+@@ -1,7 +1,7 @@
+ /*
+  * Garmin GPS driver
+  *
+- * Copyright (C) 2006-2009 Hermann Kneissel herkne@users.sourceforge.net
++ * Copyright (C) 2006-2011 Hermann Kneissel herkne@gmx.de
+  *
+  * The latest version of the driver can be found at
+  * http://sourceforge.net/projects/garmin-gps/
+@@ -51,7 +51,7 @@ static int debug;
+  */
  
- [DeviceList.NTamd64]
--%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7, USB\VID_0525&PID_A4AB&MI_02
-+%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7, USB\VID_1D6B&PID_0104&MI_02
+ #define VERSION_MAJOR	0
+-#define VERSION_MINOR	33
++#define VERSION_MINOR	36
+ 
+ #define _STR(s) #s
+ #define _DRIVER_VERSION(a, b) "v" _STR(a) "." _STR(b)
+@@ -410,6 +410,7 @@ static int gsp_send_ack(struct garmin_da
+  */
+ static int gsp_rec_packet(struct garmin_data *garmin_data_p, int count)
+ {
++	unsigned long flags;
+ 	const __u8 *recpkt = garmin_data_p->inbuffer+GSP_INITIAL_OFFSET;
+ 	__le32 *usbdata = (__le32 *) garmin_data_p->inbuffer;
+ 
+@@ -458,7 +459,9 @@ static int gsp_rec_packet(struct garmin_
+ 	/* if this was an abort-transfer command, flush all
+ 	   queued data. */
+ 	if (isAbortTrfCmnd(garmin_data_p->inbuffer)) {
++		spin_lock_irqsave(&garmin_data_p->lock, flags);
+ 		garmin_data_p->flags |= FLAGS_DROP_DATA;
++		spin_unlock_irqrestore(&garmin_data_p->lock, flags);
+ 		pkt_clear(garmin_data_p);
+ 	}
+ 
+@@ -943,7 +946,7 @@ static int garmin_open(struct tty_struct
+ 	spin_lock_irqsave(&garmin_data_p->lock, flags);
+ 	garmin_data_p->mode  = initial_mode;
+ 	garmin_data_p->count = 0;
+-	garmin_data_p->flags = 0;
++	garmin_data_p->flags &= FLAGS_SESSION_REPLY1_SEEN;
+ 	spin_unlock_irqrestore(&garmin_data_p->lock, flags);
+ 
+ 	/* shutdown any bulk reads that might be going on */
+@@ -1178,7 +1181,8 @@ static int garmin_write_room(struct tty_
  
  
- ;------------------------------------------------------------------------------
---- a/Documentation/usb/linux.inf
-+++ b/Documentation/usb/linux.inf
-@@ -18,15 +18,15 @@ DriverVer           = 06/21/2006,6.0.600
+ static void garmin_read_process(struct garmin_data *garmin_data_p,
+-				 unsigned char *data, unsigned data_length)
++				 unsigned char *data, unsigned data_length,
++				 int bulk_data)
+ {
+ 	unsigned long flags;
  
- ; Decoration for x86 architecture
- [LinuxDevices.NTx86]
--%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_0525&PID_a4ab&MI_00
-+%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_1d6b&PID_0104&MI_00
+@@ -1193,7 +1197,8 @@ static void garmin_read_process(struct g
+ 		   send it directly to the tty port */
+ 		if (garmin_data_p->flags & FLAGS_QUEUING) {
+ 			pkt_add(garmin_data_p, data, data_length);
+-		} else if (getLayerId(data) == GARMIN_LAYERID_APPL) {
++		} else if (bulk_data ||
++			   getLayerId(data) == GARMIN_LAYERID_APPL) {
  
- ; Decoration for x64 architecture
- [LinuxDevices.NTamd64]
--%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_0525&PID_a4ab&MI_00
-+%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_1d6b&PID_0104&MI_00
+ 			spin_lock_irqsave(&garmin_data_p->lock, flags);
+ 			garmin_data_p->flags |= APP_RESP_SEEN;
+@@ -1237,7 +1242,7 @@ static void garmin_read_bulk_callback(st
+ 	usb_serial_debug_data(debug, &port->dev,
+ 				__func__, urb->actual_length, data);
  
- ; Decoration for ia64 architecture
- [LinuxDevices.NTia64]
--%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_0525&PID_a4ab&MI_00
-+%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_1d6b&PID_0104&MI_00
+-	garmin_read_process(garmin_data_p, data, urb->actual_length);
++	garmin_read_process(garmin_data_p, data, urb->actual_length, 1);
  
- ;@@@ This is the common setting for setup
- [ControlFlags]
+ 	if (urb->actual_length == 0 &&
+ 			0 != (garmin_data_p->flags & FLAGS_BULK_IN_RESTART)) {
+@@ -1346,7 +1351,7 @@ static void garmin_read_int_callback(str
+ 			__func__, garmin_data_p->serial_num);
+ 	}
+ 
+-	garmin_read_process(garmin_data_p, data, urb->actual_length);
++	garmin_read_process(garmin_data_p, data, urb->actual_length, 0);
+ 
+ 	port->interrupt_in_urb->dev = port->serial->dev;
+ 	retval = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -1461,6 +1466,7 @@ static int garmin_attach(struct usb_seri
+ 	garmin_data_p->timer.function = timeout_handler;
+ 	garmin_data_p->port = port;
+ 	garmin_data_p->state = 0;
++	garmin_data_p->flags = 0;
+ 	garmin_data_p->count = 0;
+ 	usb_set_serial_port_data(port, garmin_data_p);
+ 
 
 
