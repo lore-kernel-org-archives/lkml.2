@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759175Ab1FARlv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 13:41:51 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:48664 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756771Ab1FARlt (ORCPT
+	id S1759401Ab1FARmS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 13:42:18 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:41596 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759278Ab1FARmQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 13:41:49 -0400
-Date: Wed, 1 Jun 2011 13:41:34 -0400 (EDT)
-From: Dave Anderson <anderson@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: prasad@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Message-ID: <292370127.12181.1306950094350.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20110601172326.GA17449@redhat.com>
-Subject: Re: [RFC Patch 4/6] PANIC_MCE: Introduce a new panic flag for fatal
- MCE, capture related information
+	Wed, 1 Jun 2011 13:42:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=RxSvndLyUvqRInukwoliC6ZfJBPjitOnKJ8THq16JYHNJFIo1JC/be6nsUQU0OuyYx
+         h2YuL23/8l/wKdk8oiEgsnniFNsQBdi1UZhuw44+Emo3tYFEtcp3ljtzMyKIcSPrEjwb
+         ABLflDhRGnd/4evqtpjV0b1MgJIVqfNdqS3Wk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.71]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
+In-Reply-To: <10442.1306949732@turing-police.cc.vt.edu>
+References: <cover.1306847455.git.luto@mit.edu> <7e604b2dd699a30204fda3d1011f3af5a2c56572.1306847455.git.luto@mit.edu>
+ <10442.1306949732@turing-police.cc.vt.edu>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Wed, 1 Jun 2011 13:41:56 -0400
+X-Google-Sender-Auth: bG3oIiWaiN8ZZ2YDvqjVpkGqJOM
+Message-ID: <BANLkTinKKmXYBLwc_cQBVcs-jgh_1SV6NQ@mail.gmail.com>
+Subject: Re: [PATCH v3 10/10] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+To: Valdis.Kletnieks@vt.edu
+Cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 1, 2011 at 1:35 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Tue, 31 May 2011 09:16:04 EDT, Andy Lutomirski said:
+>
+>> +What:        CONFIG_UNSAFE_VSYSCALLS (x86_64)
+>
+> Wow. I went nuts trying to find where this was because I couldn't find it in
+> Linus's tree I pulled a little while ago, before I realized you added it in patch 8
+> and deprecated it in patch 10.
+>
+> Speaking of which:
+>
+> +         On a system with recent enough glibc (probably 2.14 or
+> +         newer) and no static binaries, you can say N without a
+> +         performance penalty to improve security
+>
+> So I checked my laptop (Fedora 16 Rawhide), and found a bunch of static binaries. The ones
+> that look like people may care:
+>
+> # file /sbin/* | grep statically
+> /sbin/grub:                ELF 32-bit LSB executable, Intel 80386, version 1 (GNU/Linux), statically linked, for GNU/Linux 2.6.18, stripped
+> /sbin/insmod.static:       ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), statically linked, for GNU/Linux 2.6.32, stripped
+> /sbin/ldconfig:            ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), statically linked, for GNU/Linux 2.6.32, stripped
+> /sbin/sln:                 ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), statically linked, for GNU/Linux 2.6.32, stripped
+>
 
+The binaries will still work -- they'll just take a small performance
+hit (~220ns on Sandy Bridge) every time they call time().
 
------ Original Message -----
-> On Wed, Jun 01, 2011 at 01:18:16PM -0400, Dave Anderson wrote:
-> > FWIW, unlike mcelog, it really doesn't have to be maintained in the crash
-> > utility. It's just another kernel data structure whose contents can be
-> > determined dynamically during runtime:
-> >
-> 
-> That's what I was wondering. Why can't we simple extract the contents
-> of this structure from /proc/vmcore and save it, instead of trying to
-> export it by appending additional elf notes to vmcore.
+Somehow I doubt that grub, ldconfig, and sln care much.
 
-Actually I take that back -- Prasad's patch looks at the ELF header
-contents and exits before the crash utility invokes the embedded gdb, 
-so the structure contents are unavailable at that time.  It doesn't even 
-use the vmlinux file.  
+The only things I can see being a problem are big enterprise packages
+like, say, Oracle's server, but I think that most of those things are
+dynamically linked anyway.
 
-Dave 
+Also, on systems that use a non-tsc clocksource, this hit should be
+lost in the noise, except for time().  On my systems, HPET already
+takes nearly a microsecond to read and the acpi clock takes over 3us.
 
-> 
-> Thanks
-> Vivek
-> 
-> >   crash> struct mce
-> >   struct mce {
-> >       __u64 status;
-> >       __u64 misc;
-> >       __u64 addr;
-> >       __u64 mcgstatus;
-> >       __u64 ip;
-> >       __u64 tsc;
-> >       __u64 time;
-> >       __u8 cpuvendor;
-> >       __u8 inject_flags;
-> >       __u16 pad;
-> >       __u32 cpuid;
-> >       __u8 cs;
-> >       __u8 bank;
-> >       __u8 cpu;
-> >       __u8 finished;
-> >       __u32 extcpu;
-> >       __u32 socketid;
-> >       __u32 apicid;
-> >       __u64 mcgcap;
-> >   }
-> >   SIZE: 88
-> >   crash>
-> >
-> > Dave
-> >
-> > > If you think that this complicates the patch, I'll start with a
-> > > much
-> > > 'slimmer' version (!) of the slimdump and the improvements may be
-> > > contemplated iteratively.
-> > >
-> > > Thanks,
-> > > K.Prasad
+> Might be a challenge to get rid of them though.  Unless we don't care anymore
+> about "use a statically linked ldconfig to fix a corrupted ls.so.cache" and
+> "reboot from a rescue disk" the only choice.  I think the insmod.static ends up
+> getting used in initrds to get the root filesystem mounted, we may care about
+> that as well.. ;)
+
+You'll just have to wait a few hundred extra ns to get your system fixed :)
+
+--Andy
