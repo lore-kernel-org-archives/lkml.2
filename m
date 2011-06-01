@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161201Ab1FAJlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:41:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27074 "EHLO mx1.redhat.com"
+	id S1161160Ab1FAJlk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:41:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47598 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161048Ab1FAJlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 05:41:46 -0400
-Message-ID: <4DE60940.1070107@redhat.com>
-Date: Wed, 01 Jun 2011 12:41:20 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1161114Ab1FAJlf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 05:41:35 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Stefan Metzmacher <metze@samba.org>
+Subject: Re: [PATCH] usbnet/cdc_ncm: add missing .reset_resume hook
+Date: Wed, 1 Jun 2011 11:43:46 +0200
+User-Agent: KMail/1.13.5 (Linux/3.0.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Oliver Neukum <oliver@neukum.name>, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1306919630-13426-1-git-send-email-metze@samba.org> <1306919630-13426-2-git-send-email-metze@samba.org>
+In-Reply-To: <1306919630-13426-2-git-send-email-metze@samba.org>
 MIME-Version: 1.0
-To: Brad Campbell <lists2009@fnarfbargle.com>
-CC: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, linux-mm <linux-mm@kvack.org>
-Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
-References: <4DE44333.9000903@fnarfbargle.com> <20110531054729.GA16852@liondog.tnic> <4DE4B432.1090203@fnarfbargle.com> <20110531103808.GA6915@eferding.osrc.amd.com> <4DE4FA2B.2050504@fnarfbargle.com> <alpine.LSU.2.00.1105311517480.21107@sister.anvils> <4DE589C5.8030600@fnarfbargle.com> <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com>
-In-Reply-To: <4DE60918.3010008@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201106011143.46667.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2011 12:40 PM, Avi Kivity wrote:
->
-> bridge and netfilter, IIRC this was also the problem last time.
->
-> Do you have any ebtables loaded?
->
-> Can you try building a kernel without ebtables?  Without netfilter at 
-> all?
->
-> Please run all tests with slub_debug=FZPU.
->
+Am Mittwoch, 1. Juni 2011, 11:13:50 schrieb Stefan Metzmacher:
+> This avoids messages like this after suspend:
+> 
+>    cdc_ncm 2-1.4:1.6: no reset_resume for driver cdc_ncm?
+>    cdc_ncm 2-1.4:1.7: no reset_resume for driver cdc_ncm?
+>    cdc_ncm 2-1.4:1.6: usb0: unregister 'cdc_ncm' usb-0000:00:1d.0-1.4, CDC NCM
+> 
+> This is important for the Ericsson F5521gw GSM/UMTS modem.
+> Otherwise modemmanager looses the fact that the cdc_ncm and cdc_acm devices
+> belong together.
+> 
+> The cdc_ether module does the same.
 
+Yes, it does. Have you tested this with active connections and unconnected?
+
+	Regards
+		Oliver
 -- 
-error compiling committee.c: too many arguments to function
-
+- - - 
+SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
+Maxfeldstraße 5                         
+90409 Nürnberg 
+Germany 
+- - - 
