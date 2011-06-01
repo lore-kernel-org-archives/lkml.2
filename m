@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758761Ab1FAKH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 06:07:56 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52964 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758732Ab1FAKHz (ORCPT
+	id S1758752Ab1FAKDw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 06:03:52 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.180]:38726 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755861Ab1FAKDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 06:07:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=H03yHIgap2aELNAYntQUM1EwB5jsxb497sVRJyjvtnYY89tApUzA/MjDPT5Iy6VnaQ
-         gDwaqlu6Yvl0eCIZHJv1QKWi+lDWOkXBvIttITEFXb5byh8Ur65AQX9o53246mzIWJHc
-         YoZkaxRRo2gc8mOyCBMsOhkq6becQ5TiBFA/I=
-Subject: Re: [PATCH 1/3] UBIFS: assert no fixup when writing a node
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Ben Gardiner <bengardiner@nanometrics.ca>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Matthew L. Creech" <mlcreech@gmail.com>
-In-Reply-To: <4a63933a3365daf8d1ec38d22c9029a949f3eccd.1306780983.git.bengardiner@nanometrics.ca>
-References: <cover.1306780983.git.bengardiner@nanometrics.ca>
-	 <4a63933a3365daf8d1ec38d22c9029a949f3eccd.1306780983.git.bengardiner@nanometrics.ca>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Jun 2011 13:03:29 +0300
-Message-ID: <1306922609.4405.88.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	Wed, 1 Jun 2011 06:03:49 -0400
+X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h8JiYXs/HrEl2yUn8V3w==
+X-RZG-CLASS-ID: mo05
+Message-ID: <4DE60E7E.3080300@samba.org>
+Date: Wed, 01 Jun 2011 12:03:42 +0200
+From: "Stefan (metze) Metzmacher" <metze@samba.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Oliver Neukum <oneukum@suse.de>
+CC: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usbnet/cdc_ncm: add missing .reset_resume hook
+References: <1306919630-13426-1-git-send-email-metze@samba.org> <1306919630-13426-2-git-send-email-metze@samba.org> <201106011143.46667.oneukum@suse.de>
+In-Reply-To: <201106011143.46667.oneukum@suse.de>
+X-Enigmail-Version: 1.1.2
+OpenPGP: id=0E53083F
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig9144ACF09BF9ABBADC4AFBDB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-05-30 at 14:56 -0400, Ben Gardiner wrote:
-> The current free space fixup can result in some writing to the UBI volume
-> when the space_fixup flag is set.
-> 
-> To catch instances where UBIFS is writing to the NAND while the space_fixup
-> flag is set, add an assert to ubifs_write_node().
-> 
-> Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
-> 
-> ---
->  fs/ubifs/io.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/ubifs/io.c b/fs/ubifs/io.c
-> index 166951e..db298de 100644
-> --- a/fs/ubifs/io.c
-> +++ b/fs/ubifs/io.c
-> @@ -763,6 +763,8 @@ int ubifs_write_node(struct ubifs_info *c, void *buf, int len, int lnum,
->  	if (c->ro_error)
->  		return -EROFS;
->  
-> +	ubifs_assert(!c->space_fixup);
-> +
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig9144ACF09BF9ABBADC4AFBDB
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-I've moved this assert upper to where all other assertions are placed.
+Am 01.06.2011 11:43, schrieb Oliver Neukum:
+> Am Mittwoch, 1. Juni 2011, 11:13:50 schrieb Stefan Metzmacher:
+>> This avoids messages like this after suspend:
+>>
+>>    cdc_ncm 2-1.4:1.6: no reset_resume for driver cdc_ncm?
+>>    cdc_ncm 2-1.4:1.7: no reset_resume for driver cdc_ncm?
+>>    cdc_ncm 2-1.4:1.6: usb0: unregister 'cdc_ncm' usb-0000:00:1d.0-1.4,=
+ CDC NCM
+>>
+>> This is important for the Ericsson F5521gw GSM/UMTS modem.
+>> Otherwise modemmanager looses the fact that the cdc_ncm and cdc_acm de=
+vices
+>> belong together.
+>>
+>> The cdc_ether module does the same.
+>=20
+> Yes, it does. Have you tested this with active connections and unconnec=
+ted?
 
-I've also added this assertion to 'ubifs_wbuf_write_nolock()' because it
-is the other often used write path.
+Yes, I've just tested suspend while having an active connection
+(My original tests where without an active connection).
 
-And pushed to the UBIFS tree, thanks.
+BTW: I'm testing this on top of linux-image-2.6.38-8-generic from ubuntu
+11.04.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+metze
 
+
+--------------enig9144ACF09BF9ABBADC4AFBDB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk3mDn4ACgkQm70gjA5TCD+O2ACgrrfty515dHzeOgXg4qcYQpdV
+WeYAoMaBKMmob/5Bxe22z2pHW/1wJb/9
+=GeEt
+-----END PGP SIGNATURE-----
+
+--------------enig9144ACF09BF9ABBADC4AFBDB--
