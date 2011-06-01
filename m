@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758862Ab1FAWgH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 18:36:07 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:36461 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754500Ab1FAWgE (ORCPT
+	id S932189Ab1FAWi6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 18:38:58 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:30696 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758928Ab1FAWi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 18:36:04 -0400
-Subject: Re: /proc/stat btime accuracy problem
-From: john stultz <johnstul@us.ibm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <BANLkTiniq6GVMJPO_-efKrWHQg9V9Dod9g@mail.gmail.com>
-References: <BANLkTiniq6GVMJPO_-efKrWHQg9V9Dod9g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Jun 2011 15:35:33 -0700
-Message-ID: <1306967733.11492.11.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Jun 2011 18:38:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=ULLN/88JD7kI2Mf1xHjcw4v8sXREKfxw2rdJUxv/uR6qckXKt/NVeI/msvCUYoEvJB
+         j17f5FF8ZjxsWRfE9k6A==
+MIME-Version: 1.0
+In-Reply-To: <20110531235957.GB5256@somewhere.redhat.com>
+References: <1304107962-18576-1-git-send-email-vnagarnaik@google.com>
+ <1306877298-31713-1-git-send-email-vnagarnaik@google.com> <20110531235957.GB5256@somewhere.redhat.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Wed, 1 Jun 2011 15:38:24 -0700
+Message-ID: <BANLkTi=YYCXHi5k82Q+sE6+134i97pjjAA@mail.gmail.com>
+Subject: Re: [PATCH v2] trace: Add x86 irq vector entry/exit tracepoints
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Jiaying Zhang <jiayingz@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-01 at 14:50 -0600, Bjorn Helgaas wrote:
-> timekeeping_init() basically does the following:
-> 
->     xtime = RTC
->     if (arch implements read_boot_clock())
->         wall_to_monotonic = -read_boot_clock()
->     else
->       wall_to_monotonic = -xtime
-> 
-> So wall_to_monotonic records some approximation of the system boot
-> time, which is then used to derive the "btime" reported in /proc/stat.
-> 
-> The problem I'm seeing is that xtime is updated on timer ticks, so
-> uninterruptible code, like kernel serial printk, makes us miss ticks,
-> so xtime falls behind the RTC.
+On Tue, May 31, 2011 at 5:00 PM, Frederic Weisbecker
+<fweisbec@gmail.com> wrote:
+>
+> IIRC, Thomas suggested in the v1 to turn arch tracepoints into core ones when they
+> stand for generic (ie: shared by all archs) event meaning.
+>
+> I don't know where the discussion went after that, but that still seems to
+> me an important direction. Tracing irqs by their vector number should be reserved
+> for pure arch meanings. Sharing common tracepoints for generic events amongst archs makes life
+> easier for tools. Bonus when the tracepoint can be placed in the generic code.
+>
 
-Huh. So this sort of issue was common back when we had tick-based
-timekeeping (in combination with troubled hardware), but with the
-current clocksource based timekeeping, occasional lost ticks shouldn't
-really effect time. 
+I agree with you that the tracepoints should be as generic as possible
+to have them traced across platforms, but I see these tracepoints as
+specific to x86 platform. Since most of these vectors are x86 specific.
+The only ones that you pointed out as generic were:
 
-Can you explain a bit more about what kind of hardware this is happening
-on, and what clocksource is being used?
+LOCAL_TIMER_VECTOR - The generic callbacks that I found are in:
+kernel/time/tick-broadcast.c (tick_handle_periodic(),
+tick_handle_periodic_broadcast(), tick_handle_oneshot_broadcast()).
 
+RESCHEDULE_VECTOR - The callback is in kernel/sched.c (scheduler_ipi())
 
->   Then, when userland fixes xtime, in my
-> case with "hwclock --hctosys", the delta is applied to both xtime and
-> wall_to_monotonic.  The result is that "btime" is no longer accurate.
+CALL_FUNCTION_VECTOR - The callback is in kernel/smp.c
+(generic_smp_call_function_interrupt())
+CALL_FUNCTION_SINGLE_VECTOR - The callback is in kernel/smp.c
+(generic_smp_call_function_single_interrupt())
 
-Yes. If time was actually lost (which I suspect is the actual problem),
-then adjustments to fix it do not propagate, and thus btime (which is
-approximately calculated  as CLOCK_REALTIME - CLOCK_BOOTTIME) will be
-off. This is due to the fact that the adjustment changes CLOCK_REALTIME,
-but that CLOCK_BOOTTIME (or CLOCK_MONOTONIC) isn't being increased for
-the time lost.
+IRQ_WORK_VECTOR - kernel/irq_work.c (irq_work_run())
 
-> Here's an example where I artificially exaggerated the problem by
-> adding 30 seconds of wait time with interrupts disabled.  Assume the
-> RTC is perfectly correct at boot, and note that xtime has fallen
-> behind the RTC by 31 seconds by the time userland resets the clock:
+REBOOT_VECTOR - For x86, this does not enter any generic code. It is
+also not traced. The definition was in there only as part of the
+interrupt table.
 
-Yea, unless I'm somehow misunderstanding you, I don't think this is a
-btime accuracy issue, but instead a hardware problem. If interrupts are
-being disabled for longer then the clocksource hardware can handle,
-there will be problems.
+So, as I see it, there are only 5 vectors that enter the generic
+handling code of the kernel. The other vectors have platform specific
+handlers or are just x86 specific IRQs.
 
-But let me know more about the clocksource being used and we'll see if
-we can solve what you're seeing.
-
-thanks
--john
+This is the reason that I added the irq_vectors tracing class under the
+arch-specific code. If other platforms want to use the same event class,
+it can be initialized in their platform specific code for their use with
+the appropriate tracepoints added.
 
 
+Vaibhav Nagarnaik
