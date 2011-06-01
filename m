@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162130Ab1FAJDS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 05:03:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43513 "EHLO mx2.suse.de"
+	id S1162099Ab1FAIRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:17:33 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44065 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162077Ab1FAIRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:17:20 -0400
+	id S1162069Ab1FAIRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:17:25 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:04 2011
-Message-Id: <20110601081103.462250172@blue.kroah.org>
+Message-Id: <20110601081104.079742034@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:09:55 +0900
+Date: Wed, 01 Jun 2011 17:09:56 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Shaohua Li <shaohua.li@intel.com>, Tejun Heo <tj@kernel.org>,
         Jens Axboe <jaxboe@fusionio.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [025/165] block: add a non-queueable flush flag
+Subject: [026/165] block: hold queue if flush is running for non-queueable
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,16 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 2189
-Lines: 66
+ flush drive
+Content-Length: 3920
+Lines: 106
 
 From: "shaohua.li@intel.com" <shaohua.li@intel.com>
 
-commit f3876930952390a31c3a7fd68dd621464a36eb80 upstream.
+commit 3ac0cc4508709d42ec9aa351086c7d38bfc0660c upstream.
 
-flush request isn't queueable in some drives. Add a flag to let driver
-notify block layer about this. We can optimize flush performance with the
-knowledge.
+In some drives, flush requests are non-queueable. When flush request is
+running, normal read/write requests can't run. If block layer dispatches
+such request, driver can't handle it and requeue it.  Tejun suggested we
+can hold the queue when flush is running. This can avoid unnecessary
+requeue.  Also this can improve performance. For example, we have
+request flush1, write1, flush 2. flush1 is dispatched, then queue is
+hold, write1 isn't inserted to queue. After flush1 is finished, flush2
+will be dispatched. Since disk cache is already clean, flush2 will be
+finished very soon, so looks like flush2 is folded to flush1.
+
+In my test, the queue holding completely solves a regression introduced by
+commit 53d63e6b0dfb95882ec0219ba6bbd50cde423794:
+
+    block: make the flush insertion use the tail of the dispatch list
+
+    It's not a preempt type request, in fact we have to insert it
+    behind requests that do specify INSERT_FRONT.
+
+which causes about 20% regression running a sysbench fileio
+workload.
 
 Stable: 2.6.39 only
 
@@ -44,54 +62,77 @@ Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/blk-settings.c   |    6 ++++++
- include/linux/blkdev.h |    7 +++++++
- 2 files changed, 13 insertions(+)
+ block/blk-flush.c      |   16 +++++++++++-----
+ block/blk.h            |   21 ++++++++++++++++++++-
+ include/linux/blkdev.h |    1 +
+ 3 files changed, 32 insertions(+), 6 deletions(-)
 
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -790,6 +790,12 @@ void blk_queue_flush(struct request_queu
- }
- EXPORT_SYMBOL_GPL(blk_queue_flush);
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -212,13 +212,19 @@ static void flush_end_io(struct request
+ 	}
  
-+void blk_queue_flush_queueable(struct request_queue *q, bool queueable)
-+{
-+	q->flush_not_queueable = !queueable;
-+}
-+EXPORT_SYMBOL_GPL(blk_queue_flush_queueable);
-+
- static int __init blk_settings_init(void)
- {
- 	blk_max_low_pfn = max_low_pfn - 1;
+ 	/*
+-	 * Moving a request silently to empty queue_head may stall the
+-	 * queue.  Kick the queue in those cases.  This function is called
+-	 * from request completion path and calling directly into
+-	 * request_fn may confuse the driver.  Always use kblockd.
++	 * Kick the queue to avoid stall for two cases:
++	 * 1. Moving a request silently to empty queue_head may stall the
++	 * queue.
++	 * 2. When flush request is running in non-queueable queue, the
++	 * queue is hold. Restart the queue after flush request is finished
++	 * to avoid stall.
++	 * This function is called from request completion path and calling
++	 * directly into request_fn may confuse the driver.  Always use
++	 * kblockd.
+ 	 */
+-	if (queued)
++	if (queued || q->flush_queue_delayed)
+ 		blk_run_queue_async(q);
++	q->flush_queue_delayed = 0;
+ }
+ 
+ /**
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -61,7 +61,26 @@ static inline struct request *__elv_next
+ 			rq = list_entry_rq(q->queue_head.next);
+ 			return rq;
+ 		}
+-
++		/*
++		 * Flush request is running and flush request isn't queueable
++		 * in the drive, we can hold the queue till flush request is
++		 * finished. Even we don't do this, driver can't dispatch next
++		 * requests and will requeue them. And this can improve
++		 * throughput too. For example, we have request flush1, write1,
++		 * flush 2. flush1 is dispatched, then queue is hold, write1
++		 * isn't inserted to queue. After flush1 is finished, flush2
++		 * will be dispatched. Since disk cache is already clean,
++		 * flush2 will be finished very soon, so looks like flush2 is
++		 * folded to flush1.
++		 * Since the queue is hold, a flag is set to indicate the queue
++		 * should be restarted later. Please see flush_end_io() for
++		 * details.
++		 */
++		if (q->flush_pending_idx != q->flush_running_idx &&
++				!queue_flush_queueable(q)) {
++			q->flush_queue_delayed = 1;
++			return NULL;
++		}
+ 		if (!q->elevator->ops->elevator_dispatch_fn(q, 0))
+ 			return NULL;
+ 	}
 --- a/include/linux/blkdev.h
 +++ b/include/linux/blkdev.h
-@@ -364,6 +364,7 @@ struct request_queue
- 	 * for flush operations
+@@ -365,6 +365,7 @@ struct request_queue
  	 */
  	unsigned int		flush_flags;
-+	unsigned int		flush_not_queueable:1;
+ 	unsigned int		flush_not_queueable:1;
++	unsigned int		flush_queue_delayed:1;
  	unsigned int		flush_pending_idx:1;
  	unsigned int		flush_running_idx:1;
  	unsigned long		flush_pending_since;
-@@ -843,6 +844,7 @@ extern void blk_queue_softirq_done(struc
- extern void blk_queue_rq_timed_out(struct request_queue *, rq_timed_out_fn *);
- extern void blk_queue_rq_timeout(struct request_queue *, unsigned int);
- extern void blk_queue_flush(struct request_queue *q, unsigned int flush);
-+extern void blk_queue_flush_queueable(struct request_queue *q, bool queueable);
- extern struct backing_dev_info *blk_get_backing_dev_info(struct block_device *bdev);
- 
- extern int blk_rq_map_sg(struct request_queue *, struct request *, struct scatterlist *);
-@@ -1111,6 +1113,11 @@ static inline unsigned int block_size(st
- 	return bdev->bd_block_size;
- }
- 
-+static inline bool queue_flush_queueable(struct request_queue *q)
-+{
-+	return !q->flush_not_queueable;
-+}
-+
- typedef struct {struct page *v;} Sector;
- 
- unsigned char *read_dev_sector(struct block_device *, sector_t, Sector *);
 
 
