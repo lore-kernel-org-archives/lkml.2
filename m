@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161647Ab1FAMjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 08:39:20 -0400
-Received: from cantor.suse.de ([195.135.220.2]:53714 "EHLO mx1.suse.de"
+	id S1751541Ab1FAMyB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 08:54:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2522 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755938Ab1FAMjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 08:39:19 -0400
-Date: Wed, 1 Jun 2011 14:39:13 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        balbir@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node
- to world
-Message-ID: <20110601123913.GC4266@tiehlicka.suse.cz>
-References: <1306925044-2828-1-git-send-email-imammedo@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306925044-2828-1-git-send-email-imammedo@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751128Ab1FAMx7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 08:53:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,303,1304319600"; 
+   d="scan'208";a="7826506"
+Date: Wed, 1 Jun 2011 13:41:07 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: =?ISO-8859-14?B?RnLpZOlyaWMgQnJp6HJl?= <fbriere@fbriere.net>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-serial@vger.kernel.org, linux-parport@lists.infradead.org
+Subject: Re: [PATCH 2/2] parport/serial: add support for Timedia/SUNIX cards
+ to parport_serial
+Message-ID: <20110601134107.74e4dbf7@bob.linux.org.uk>
+In-Reply-To: <1306696084-17977-2-git-send-email-fbriere@fbriere.net>
+References: <1306696084-17977-1-git-send-email-fbriere@fbriere.net>
+	<1306696084-17977-2-git-send-email-fbriere@fbriere.net>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-14
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 01-06-11 12:44:04, Igor Mammedov wrote:
-> Freshly allocated 'mem_cgroup_per_node' list entries must be
-> initialized before the rest of the kernel can see them. Otherwise
-> zero initialized list fields can lead to race condition at
-> mem_cgroup_force_empty_list:
->   pc = list_entry(list->prev, struct page_cgroup, lru);
-> where 'pc' will be something like 0xfffffffc if list->prev is 0
-> and cause page fault later when 'pc' is dereferenced.
+On Sun, 29 May 2011 15:08:04 -0400
+Frédéric Brière <fbriere@fbriere.net> wrote:
 
-Have you ever seen such a race? I do not see how this could happen.
-mem_cgroup_force_empty_list is called only from
-mem_cgroup_force_empty_write (aka echo whatever > group/force_empty)
-or mem_cgroup_pre_destroy when the group is destroyed. 
-
-The initialization code is, however, called before a group is
-given for use AFICS.
-
-I am not saying tha the change is bad, I like it, but I do not think it
-is a fix for potential race condition.
-
+> Timedia/SUNIX PCI cards with both serial and parallel ports are
+> currently supported by 8250_pci and parport_pc individually.  Moving
+> that support into parport_serial allows using both types of ports at
+> the same time.
 > 
-> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-> ---
->  mm/memcontrol.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> This was successfully tested with a SUNIX 4079T.
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index bd9052a..ee7cb4c 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -4707,7 +4707,6 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
->  	if (!pn)
->  		return 1;
->  
-> -	mem->info.nodeinfo[node] = pn;
->  	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
->  		mz = &pn->zoneinfo[zone];
->  		for_each_lru(l)
-> @@ -4716,6 +4715,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
->  		mz->on_tree = false;
->  		mz->mem = mem;
->  	}
-> +	mem->info.nodeinfo[node] = pn;
->  	return 0;
->  }
->  
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Signed-off-by: Frédéric Brière <fbriere@fbriere.net>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Alan Cox <alan@linux.intel.com>
+> Cc: linux-serial@vger.kernel.org
+> Cc: linux-parport@lists.infradead.org
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Acked-by: Alan Cox <alan@linux.intel.com>
