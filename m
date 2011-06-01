@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933109Ab1FABNd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 May 2011 21:13:33 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46338 "EHLO smtps.tip.net.au"
+	id S933118Ab1FABPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 May 2011 21:15:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57505 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933005Ab1FABNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 May 2011 21:13:32 -0400
-Date: Wed, 1 Jun 2011 11:13:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: linux-next: manual merge of the mmc tree with Linus' tree
-Message-Id: <20110601111320.07b07b7f.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__1_Jun_2011_11_13_20_+1000_J7AGBdET1Xn5F9EW"
+	id S933006Ab1FABPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 May 2011 21:15:51 -0400
+Date: Wed, 1 Jun 2011 03:15:27 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Brad Campbell <lists2009@fnarfbargle.com>
+Cc: Hugh Dickins <hughd@google.com>, Borislav Petkov <bp@alien8.de>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>, Izik Eidus <ieidus@redhat.com>
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+Message-ID: <20110601011527.GN19505@random.random>
+References: <4DE44333.9000903@fnarfbargle.com>
+ <20110531054729.GA16852@liondog.tnic>
+ <4DE4B432.1090203@fnarfbargle.com>
+ <20110531103808.GA6915@eferding.osrc.amd.com>
+ <4DE4FA2B.2050504@fnarfbargle.com>
+ <alpine.LSU.2.00.1105311517480.21107@sister.anvils>
+ <4DE589C5.8030600@fnarfbargle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DE589C5.8030600@fnarfbargle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__1_Jun_2011_11_13_20_+1000_J7AGBdET1Xn5F9EW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi Chris,
+On Wed, Jun 01, 2011 at 08:37:25AM +0800, Brad Campbell wrote:
+> On 01/06/11 06:31, Hugh Dickins wrote:
+> > Brad, my suspicion is that in each case the top 16 bits of RDX have been
+> > mysteriously corrupted from ffff to 0000, causing the general protection
+> > faults.  I don't understand what that has to do with KSM.
+> >
+> > But it's only a suspicion, because I can't make sense of the "Code:"
+> > lines in your traces, they have more than the expected 64 bytes, and
+> > only one of them has a ">" (with no"<") to mark faulting instruction.
+> >
+> > I did try compiling the 2.6.39 kernel from your config, but of course
+> > we have different compilers, so although I got close, it wasn't exact.
+> >
+> > Would you mind mailing me privately (it's about 73MB) the "objdump -trd"
+> > output for your original vmlinux (with KSM on)?  (Those -trd options are
+> > the ones I'm used to typing, I bet not they're not all relevant.)
+> >
+> > Of course, it's only a tiny fraction of that output that I need,
+> > might be better to cut it down to remove_rmap_item_from_tree and
+> > dup_fd and ksm_scan_thread, if you have the time to do so.
+> 
+> Would you believe about 20 seconds after I pressed send the kernel oopsed.
+> 
+> http://www.fnarfbargle.com/private/003_kernel_oops/
+> 
+> oops reproduced here, but an un-munged version is in that directory 
+> alongside the kernel.
+> 
+> [36542.880228] general protection fault: 0000 [#1] SMP
 
-Today's linux-next merge of the mmc tree got a conflict in
-drivers/mmc/host/sdhci-of-core.c between commit b1608d69cb80
-("drivercore: revert addition of of_match to struct device") from Linus'
-tree and commit e2d0d7dc5542 ("mmc: sdhci: make sdhci-of device drivers
-self registered") from the mmc tree.
+Reminds me of another oops that was reported on the kvm list for
+2.6.38.1 with message id 4D8C6110.6090204. There the top 16 bits of
+rsi were flipped and it was a general protection too because of
+hitting on the not mappable virtual range.
 
-The latter removes the file, so I did that (I *think* that the change
-from the former is no longer needed, but someone should check).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+http://www.virtall.com/files/temp/kvm.txt
+http://www.virtall.com/files/temp/config-2.6.38.1
+http://virtall.com/files/temp/mmu-objdump.txt
 
---Signature=_Wed__1_Jun_2011_11_13_20_+1000_J7AGBdET1Xn5F9EW
-Content-Type: application/pgp-signature
+That oops happened in kvm_unmap_rmapp though, but it looked memory
+corruption (Avi suggested use after free) but it was a production
+system so we couldn't debug it further.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I recommend next thing to reproduce again with 2.6.39 or
+3.0.0-rc1. Let's fix your scsi trouble if needed but it's better you
+test with 2.6.39.
 
-iQEcBAEBAgAGBQJN5ZIwAAoJEDMEi1NhKgbs7UIH/RmjlRj3dKaJaecVeC/9QMM9
-LVWlGwuimZ3jcoEpATkouyQBoeE/c+0IlIsomw6qwZbr+L0zyZ+IBkhcFJVGLisV
-eF5WBdMJPjO8qcTq5DIJdo5Ucsr1xWUe97CSMhkEPtoyGYzpZxnso1WD3wYnumaj
-4wCW6I+l+9xEVId4XIpRjlZE4BevQ6j/F+Hc9PSj8cufm4uXCF38xI+jpCvWbhbB
-xUv2/o98C1/GhXbT+HvEzJd68KhTnZa2nCeDlIJ13nFtvccA/sXJO8pUvqsBJBuh
-x9A9rs001/T43ViQxOWOGLw2bzLdVOYyOOG6QWc888DCAj4u2qIH+VTZeCKKDfA=
-=Z1Lv
------END PGP SIGNATURE-----
+We'd need chmod +r vmlinux on private/003_kernel_oops/
 
---Signature=_Wed__1_Jun_2011_11_13_20_+1000_J7AGBdET1Xn5F9EW--
+Thanks,
+Andrea
