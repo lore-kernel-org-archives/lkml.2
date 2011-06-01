@@ -1,162 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759689Ab1FAUh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 16:37:27 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46217 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128Ab1FAUhZ (ORCPT
+	id S1759778Ab1FAUkR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 16:40:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55814 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758951Ab1FAUkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 16:37:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=tT6y63kUpiLInvs0VarKiclnfNedIMJtNhyJ+6ku0pEKgOjEdr8lN4i76UembLQ/hw
-         YFmxrOW2M9YQcMoVPQYFEC2iOEdGhZvq0frOzEjOfYKOnmptQDju/JHDUpSArMwGIO8Q
-         4V0yqJJzyADJ3YIRvoR5pAQMyu2Cc81UiiwYc=
-From: Andre Bartke <andre.bartke@googlemail.com>
-To: gregkh@suse.de
-Cc: alan@linux.intel.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Andre Bartke <andre.bartke@gmail.com>
-Subject: [PATCH] staging/gma500: Fix uninitialized variable and style issues
-Date: Wed,  1 Jun 2011 22:34:55 +0200
-Message-Id: <1306960495-9844-1-git-send-email-andre.bartke@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
+	Wed, 1 Jun 2011 16:40:16 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Support dynamic allocation of IRQ range for wm831x
+Date: Wed,  1 Jun 2011 21:39:32 +0100
+Message-Id: <1306960772-329-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The return variable of psb_gtt_pin() may be used
-uninitialized. Also fixed some coding style issues.
+Use irq_allocate_desc() to get the IRQ range, which turns into a noop on
+non-sparse systems. Since all existing users are non-sparse there should
+be no compatibility issues.
 
-Signed-off-by: Andre Bartke <andre.bartke@gmail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/staging/gma500/psb_gtt.c |   48 +++++++++++++++++++-------------------
- 1 files changed, 24 insertions(+), 24 deletions(-)
+ drivers/mfd/wm831x-irq.c |   15 ++++++++++++---
+ 1 files changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
-index 74c5a65..bc92d1f 100644
---- a/drivers/staging/gma500/psb_gtt.c
-+++ b/drivers/staging/gma500/psb_gtt.c
-@@ -52,13 +52,13 @@ static inline uint32_t psb_gtt_mask_pte(uint32_t pfn, int type)
-  *	psb_gtt_entry		-	find the GART entries for a gtt_range
-  *	@dev: our DRM device
-  *	@r: our GTT range
-- * 
-+ *
-  *	Given a gtt_range object return the GART offset of the page table
-  *	entries for this gtt_range
-  */
- u32 *psb_gtt_entry(struct drm_device *dev, struct gtt_range *r)
- {
--        struct drm_psb_private *dev_priv = dev->dev_private;
-+	struct drm_psb_private *dev_priv = dev->dev_private;
- 	unsigned long offset;
- 
- 	offset = r->resource.start - dev_priv->gtt_mem->start;
-@@ -78,7 +78,7 @@ u32 *psb_gtt_entry(struct drm_device *dev, struct gtt_range *r)
-  */
- static int psb_gtt_insert(struct drm_device *dev, struct gtt_range *r)
- {
--        struct drm_psb_private *dev_priv = dev->dev_private;
-+	struct drm_psb_private *dev_priv = dev->dev_private;
- 	u32 *gtt_slot, pte;
- 	int numpages = (r->resource.end + 1 - r->resource.start) >> PAGE_SHIFT;
- 	struct page **pages;
-@@ -104,7 +104,7 @@ static int psb_gtt_insert(struct drm_device *dev, struct gtt_range *r)
+diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
+index b23d8d5..a25a7d5 100644
+--- a/drivers/mfd/wm831x-irq.c
++++ b/drivers/mfd/wm831x-irq.c
+@@ -527,9 +527,18 @@ int wm831x_irq_init(struct wm831x *wm831x, int irq)
+ 				 0xffff);
  	}
- 	/* Make sure all the entries are set before we return */
- 	ioread32(gtt_slot - 1);
--	
+ 
+-	if (!pdata || !pdata->irq_base) {
+-		dev_err(wm831x->dev,
+-			"No interrupt base specified, no interrupts\n");
++	/* Try to dynamically allocate IRQs if no base is specified */
++	if (!pdata || !pdata->irq_base)
++		wm831x->irq_base = -1;
++	else
++		wm831x->irq_base = pdata->irq_base;
 +
- 	return 0;
- }
- 
-@@ -127,7 +127,7 @@ static void psb_gtt_remove(struct drm_device *dev, struct gtt_range *r)
- 	WARN_ON(r->stolen);
- 
- 	gtt_slot = psb_gtt_entry(dev, r);
--	pte = psb_gtt_mask_pte(page_to_pfn(dev_priv->scratch_page), 0);;
-+	pte = psb_gtt_mask_pte(page_to_pfn(dev_priv->scratch_page), 0);
- 
- 	for (i = 0; i < numpages; i++)
- 		iowrite32(pte, gtt_slot++);
-@@ -215,7 +215,7 @@ static void psb_gtt_detach_pages(struct gtt_range *gt)
-  */
- int psb_gtt_pin(struct gtt_range *gt)
- {
--	int ret;
-+	int ret = 0;
- 	struct drm_device *dev = gt->gem.dev;
- 	struct drm_psb_private *dev_priv = dev->dev_private;
- 
-@@ -264,7 +264,7 @@ void psb_gtt_unpin(struct gtt_range *gt)
++	wm831x->irq_base = irq_alloc_descs(wm831x->irq_base, 0,
++					   WM831X_NUM_IRQS, 0);
++	if (wm831x->irq_base < 0) {
++		dev_warn(wm831x->dev, "Failed to allocate IRQs: %d\n",
++			 wm831x->irq_base);
++		wm831x->irq_base = 0;
+ 		return 0;
  	}
- 	mutex_unlock(&dev_priv->gtt_mutex);
- }
--	
-+
- /*
-  *	GTT resource allocator - allocate and manage GTT address space
-  */
-@@ -291,33 +291,33 @@ struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
- 	struct resource *r = dev_priv->gtt_mem;
- 	int ret;
- 	unsigned long start, end;
--	
-+
- 	if (backed) {
--	        /* The start of the GTT is the stolen pages */
--	        start = r->start;
--	        end = r->start + dev_priv->pg->stolen_size - 1;
--        } else {
--                /* The rest we will use for GEM backed objects */
--                start = r->start + dev_priv->pg->stolen_size;
--                end = r->end;
--        }
-+		/* The start of the GTT is the stolen pages */
-+		start = r->start;
-+		end = r->start + dev_priv->pg->stolen_size - 1;
-+	} else {
-+		/* The rest we will use for GEM backed objects */
-+		start = r->start + dev_priv->pg->stolen_size;
-+		end = r->end;
-+	}
  
- 	gt = kzalloc(sizeof(struct gtt_range), GFP_KERNEL);
- 	if (gt == NULL)
- 		return NULL;
--        gt->resource.name = name;
--        gt->stolen = backed;
--        gt->in_gart = backed;
--        /* Ensure this is set for non GEM objects */
--        gt->gem.dev = dev;
-+	gt->resource.name = name;
-+	gt->stolen = backed;
-+	gt->in_gart = backed;
-+	/* Ensure this is set for non GEM objects */
-+	gt->gem.dev = dev;
- 	kref_init(&gt->kref);
- 
- 	ret = allocate_resource(dev_priv->gtt_mem, &gt->resource,
- 				len, start, end, PAGE_SIZE, NULL, NULL);
- 	if (ret == 0) {
--	        gt->offset = gt->resource.start - r->start;
-+		gt->offset = gt->resource.start - r->start;
- 		return gt;
--        }
-+	}
- 	kfree(gt);
- 	return NULL;
- }
-@@ -421,7 +421,7 @@ int psb_gtt_init(struct drm_device *dev, int resume)
- 
- 	dev_priv->pg = pg = psb_gtt_alloc(dev);
- 	if (pg == NULL)
--	        return -ENOMEM;
-+		return -ENOMEM;
- 
- 	pci_read_config_word(dev->pdev, PSB_GMCH_CTRL, &dev_priv->gmch_ctrl);
- 	pci_write_config_word(dev->pdev, PSB_GMCH_CTRL,
 -- 
-1.7.5.2
+1.7.5.3
 
