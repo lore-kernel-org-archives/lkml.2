@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162099Ab1FAIRd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:17:33 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44065 "EHLO mx1.suse.de"
+	id S1162141Ab1FAJCe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 05:02:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43544 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162069Ab1FAIRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:17:25 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:04 2011
-Message-Id: <20110601081104.079742034@blue.kroah.org>
+	id S1162093Ab1FAIRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:17:31 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:05 2011
+Message-Id: <20110601081104.697421350@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:09:56 +0900
+Date: Wed, 01 Jun 2011 17:09:57 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shaohua Li <shaohua.li@intel.com>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [026/165] block: hold queue if flush is running for non-queueable
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mike Snitzer <snitzer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [027/165] block: Fix discard topology stacking and reporting
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,114 +26,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- flush drive
-Content-Length: 3920
-Lines: 106
+Content-Length: 2984
+Lines: 87
 
-From: "shaohua.li@intel.com" <shaohua.li@intel.com>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit 3ac0cc4508709d42ec9aa351086c7d38bfc0660c upstream.
+commit a934a00a69e940b126b9bdbf83e630ef5fe43523 upstream.
 
-In some drives, flush requests are non-queueable. When flush request is
-running, normal read/write requests can't run. If block layer dispatches
-such request, driver can't handle it and requeue it.  Tejun suggested we
-can hold the queue when flush is running. This can avoid unnecessary
-requeue.  Also this can improve performance. For example, we have
-request flush1, write1, flush 2. flush1 is dispatched, then queue is
-hold, write1 isn't inserted to queue. After flush1 is finished, flush2
-will be dispatched. Since disk cache is already clean, flush2 will be
-finished very soon, so looks like flush2 is folded to flush1.
+In some cases we would end up stacking discard_zeroes_data incorrectly.
+Fix this by enabling the feature by default for stacking drivers and
+clearing it for low-level drivers. Incorporating a device that does not
+support dzd will then cause the feature to be disabled in the stacking
+driver.
 
-In my test, the queue holding completely solves a regression introduced by
-commit 53d63e6b0dfb95882ec0219ba6bbd50cde423794:
+Also ensure that the maximum discard value does not overflow when
+exported in sysfs and return 0 in the alignment and dzd fields for
+devices that don't support discard.
 
-    block: make the flush insertion use the tail of the dispatch list
-
-    It's not a preempt type request, in fact we have to insert it
-    behind requests that do specify INSERT_FRONT.
-
-which causes about 20% regression running a sysbench fileio
-workload.
-
-Stable: 2.6.39 only
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Acked-by: Tejun Heo <tj@kernel.org>
+Reported-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/blk-flush.c      |   16 +++++++++++-----
- block/blk.h            |   21 ++++++++++++++++++++-
- include/linux/blkdev.h |    1 +
- 3 files changed, 32 insertions(+), 6 deletions(-)
+ block/blk-settings.c   |    3 ++-
+ block/blk-sysfs.c      |    3 ++-
+ include/linux/blkdev.h |    7 +++++--
+ 3 files changed, 9 insertions(+), 4 deletions(-)
 
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -212,13 +212,19 @@ static void flush_end_io(struct request
- 	}
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -120,7 +120,7 @@ void blk_set_default_limits(struct queue
+ 	lim->discard_granularity = 0;
+ 	lim->discard_alignment = 0;
+ 	lim->discard_misaligned = 0;
+-	lim->discard_zeroes_data = -1;
++	lim->discard_zeroes_data = 1;
+ 	lim->logical_block_size = lim->physical_block_size = lim->io_min = 512;
+ 	lim->bounce_pfn = (unsigned long)(BLK_BOUNCE_ANY >> PAGE_SHIFT);
+ 	lim->alignment_offset = 0;
+@@ -166,6 +166,7 @@ void blk_queue_make_request(struct reque
+ 
+ 	blk_set_default_limits(&q->limits);
+ 	blk_queue_max_hw_sectors(q, BLK_SAFE_MAX_SECTORS);
++	q->limits.discard_zeroes_data = 0;
  
  	/*
--	 * Moving a request silently to empty queue_head may stall the
--	 * queue.  Kick the queue in those cases.  This function is called
--	 * from request completion path and calling directly into
--	 * request_fn may confuse the driver.  Always use kblockd.
-+	 * Kick the queue to avoid stall for two cases:
-+	 * 1. Moving a request silently to empty queue_head may stall the
-+	 * queue.
-+	 * 2. When flush request is running in non-queueable queue, the
-+	 * queue is hold. Restart the queue after flush request is finished
-+	 * to avoid stall.
-+	 * This function is called from request completion path and calling
-+	 * directly into request_fn may confuse the driver.  Always use
-+	 * kblockd.
- 	 */
--	if (queued)
-+	if (queued || q->flush_queue_delayed)
- 		blk_run_queue_async(q);
-+	q->flush_queue_delayed = 0;
+ 	 * by default assume old behaviour and bounce for any highmem page
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -152,7 +152,8 @@ static ssize_t queue_discard_granularity
+ 
+ static ssize_t queue_discard_max_show(struct request_queue *q, char *page)
+ {
+-	return queue_var_show(q->limits.max_discard_sectors << 9, page);
++	return sprintf(page, "%llu\n",
++		       (unsigned long long)q->limits.max_discard_sectors << 9);
  }
  
- /**
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -61,7 +61,26 @@ static inline struct request *__elv_next
- 			rq = list_entry_rq(q->queue_head.next);
- 			return rq;
- 		}
--
-+		/*
-+		 * Flush request is running and flush request isn't queueable
-+		 * in the drive, we can hold the queue till flush request is
-+		 * finished. Even we don't do this, driver can't dispatch next
-+		 * requests and will requeue them. And this can improve
-+		 * throughput too. For example, we have request flush1, write1,
-+		 * flush 2. flush1 is dispatched, then queue is hold, write1
-+		 * isn't inserted to queue. After flush1 is finished, flush2
-+		 * will be dispatched. Since disk cache is already clean,
-+		 * flush2 will be finished very soon, so looks like flush2 is
-+		 * folded to flush1.
-+		 * Since the queue is hold, a flag is set to indicate the queue
-+		 * should be restarted later. Please see flush_end_io() for
-+		 * details.
-+		 */
-+		if (q->flush_pending_idx != q->flush_running_idx &&
-+				!queue_flush_queueable(q)) {
-+			q->flush_queue_delayed = 1;
-+			return NULL;
-+		}
- 		if (!q->elevator->ops->elevator_dispatch_fn(q, 0))
- 			return NULL;
- 	}
+ static ssize_t queue_discard_zeroes_data_show(struct request_queue *q, char *page)
 --- a/include/linux/blkdev.h
 +++ b/include/linux/blkdev.h
-@@ -365,6 +365,7 @@ struct request_queue
- 	 */
- 	unsigned int		flush_flags;
- 	unsigned int		flush_not_queueable:1;
-+	unsigned int		flush_queue_delayed:1;
- 	unsigned int		flush_pending_idx:1;
- 	unsigned int		flush_running_idx:1;
- 	unsigned long		flush_pending_since;
+@@ -257,7 +257,7 @@ struct queue_limits {
+ 	unsigned char		misaligned;
+ 	unsigned char		discard_misaligned;
+ 	unsigned char		cluster;
+-	signed char		discard_zeroes_data;
++	unsigned char		discard_zeroes_data;
+ };
+ 
+ struct request_queue
+@@ -1069,13 +1069,16 @@ static inline int queue_limit_discard_al
+ {
+ 	unsigned int alignment = (sector << 9) & (lim->discard_granularity - 1);
+ 
++	if (!lim->max_discard_sectors)
++		return 0;
++
+ 	return (lim->discard_granularity + lim->discard_alignment - alignment)
+ 		& (lim->discard_granularity - 1);
+ }
+ 
+ static inline unsigned int queue_discard_zeroes_data(struct request_queue *q)
+ {
+-	if (q->limits.discard_zeroes_data == 1)
++	if (q->limits.max_discard_sectors && q->limits.discard_zeroes_data == 1)
+ 		return 1;
+ 
+ 	return 0;
 
 
