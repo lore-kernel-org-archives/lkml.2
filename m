@@ -1,89 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759323Ab1FASQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 14:16:28 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56792 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab1FASQ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 14:16:26 -0400
-Date: Wed, 1 Jun 2011 20:16:03 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Wanlong Gao <wanlong.gao@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
-        linux@arm.linux.org.uk, hans-christian.egtvedt@atmel.com,
-        vapier@gentoo.org, ralf@linux-mips.org, benh@kernel.crashing.org,
-        paulus@samba.org, lethal@linux-sh.org, gxt@mprc.pku.edu.cn,
-        david.woodhouse@intel.com, akpm@linux-foundation.org,
-        u.kleine-koenig@pengutronix.de, mingo@elte.hu, rientjes@google.com,
-        sam@ravnborg.org, manuel.lauss@googlemail.com, anton@samba.org,
-        arnd@arndb.de
-Subject: Re: [PATCH] Fix build warning of the defconfigs
-Message-ID: <20110601181603.GA454@pengutronix.de>
-References: <1306945763-6583-1-git-send-email-wanlong.gao@gmail.com>
+	id S1759351Ab1FASTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 14:19:08 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:40081 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753902Ab1FASTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 14:19:05 -0400
+Date: Wed, 1 Jun 2011 11:19:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Damien Wyart <damien.wyart@free.fr>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
+Subject: Re: Very high CPU load when idle with 3.0-rc1
+Message-ID: <20110601181900.GI2274@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110530055924.GA9169@brouette>
+ <1306755291.1200.2872.camel@twins>
+ <20110530162354.GQ2668@linux.vnet.ibm.com>
+ <1306775989.2497.527.camel@laptop>
+ <20110530212833.GS2668@linux.vnet.ibm.com>
+ <1306791219.23844.12.camel@twins>
+ <20110531014543.GU2668@linux.vnet.ibm.com>
+ <1306926339.2353.191.camel@twins>
+ <20110601143743.GA2274@linux.vnet.ibm.com>
+ <1306947513.2497.624.camel@laptop>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306945763-6583-1-git-send-email-wanlong.gao@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1306947513.2497.624.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 01, 2011 at 06:58:33PM +0200, Peter Zijlstra wrote:
+> On Wed, 2011-06-01 at 07:37 -0700, Paul E. McKenney wrote:
+> 
+> > > > I considered that, but working out when it is OK to deboost them is
+> > > > decidedly non-trivial. 
+> > > 
+> > > Where exactly is the problem there? The boost lasts for as long as it
+> > > takes to finish the grace period, right? There's a distinct set of
+> > > callbacks associated with each grace-period, right? In which case you
+> > > can de-boost your thread the moment you're done processing that set.
+> > > 
+> > > Or am I simply confused about how all this is supposed to work?
+> > 
+> > The main complications are: (1) the fact that it is hard to tell exactly
+> > which grace period to wait for, this one or the next one, and (2) the
+> > fact that callbacks get shuffled when CPUs go offline.
+> 
+> I can't say I would worry too much about 2, hotplug and RT don't really
+> go hand-in-hand anyway.
 
---7AUc2qLy4jB3hD7Z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Perhaps not, but I do need to handle the combination.
 
-On Thu, Jun 02, 2011 at 12:29:23AM +0800, Wanlong Gao wrote:
-> RTC_CLASS is changed to bool.
-> So value 'm' is invalid.
->=20
-> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
-> ---
->  arch/arm/configs/davinci_all_defconfig     |    2 +-
->  arch/arm/configs/mxs_defconfig             |    2 +-
->  arch/arm/configs/netx_defconfig            |    2 +-
->  arch/arm/configs/viper_defconfig           |    2 +-
->  arch/arm/configs/xcep_defconfig            |    2 +-
->  arch/arm/configs/zeus_defconfig            |    2 +-
->  arch/avr32/configs/atngw100_mrmt_defconfig |    2 +-
->  arch/blackfin/configs/CM-BF548_defconfig   |    2 +-
->  arch/mips/configs/mtx1_defconfig           |    2 +-
->  arch/powerpc/configs/52xx/pcm030_defconfig |    2 +-
->  arch/powerpc/configs/ps3_defconfig         |    2 +-
->  arch/sh/configs/titan_defconfig            |    2 +-
->  arch/unicore32/configs/debug_defconfig     |    2 +-
->  13 files changed, 13 insertions(+), 13 deletions(-)
+> On 1 however, is that due to the boost condition? 
 
-The mxs-part has already been sent by Shawn Guo (shouldn't harm).
+The boost condition is straightforward.  By default, if a grace period
+lasts for more than 500 milliseconds, boosting starts.  So the obvious
+answer is "deboost when the grace period ends", but different CPUs become
+aware of the end at different times, so it is still a bit fuzzy.
 
-Thanks for doing tree-wide:
+> I must admit that my thought there is somewhat fuzzy since I just
+> realized I don't actually know the exact condition to start boosting,
+> but suppose we boost because the queue is too large, then waiting for
+> the current grace period might not reduce the queue length, as most
+> callbacks might actually be for the next.
+> 
+> If however the condition is grace period duration, then completion of
+> the current grace period is sufficient, since the whole boost condition
+> is defined as such. [ if the next is also exceeding the time limit,
+> that's a whole next boost ]
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Don't get me wrong -- it can be done.  Just a bit ugly due to the
+fact that different CPUs have different views of when the grace period
+ends.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> > That said, it might be possible if we are willing to live with some
+> > approximate behavior.  For example, always waiting for the next grace
+> > period (rather than the current one) to finish, and boosting through the
+> > extra callbacks in case where a given CPU "adopts" callbacks that must
+> > be boosted when that CPU also has some callbacks whose priority must be
+> > boosted and some that need not be.
+> 
+> That might make sense, but I must admit to not fully understanding the
+> whole current/next thing yet.
 
---7AUc2qLy4jB3hD7Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+And I cannot claim to have thought it through thoroughly, for that
+matter.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> > The reason I am not all that excited about taking this approach is that
+> > it doesn't help worst-case latency.
+> 
+> Well, not running at the top most prio does help those tasks running at
+> a higher priority, so in that regard it does reduce the jitter for a
+> number of tasks.
 
-iEYEARECAAYFAk3mgeMACgkQD27XaX1/VRtALACgwWNkKN3MYtyEJ3UIFNG7P/jx
-oygAoJkolxXXrviVsTRfROYzf65y/N+3
-=5o5C
------END PGP SIGNATURE-----
+By default, boosting is to RT prio 1, so shouldn't bother most RT
+processes.
 
---7AUc2qLy4jB3hD7Z--
+> Also, I guess there's the whole question of what prio to boost to which
+> I somehow totally forgot about, which is a non-trivial thing in its own
+> right, since there isn't really someone blocked on grace period
+> completion (although in the special case of someone calling sync_rcu it
+> is clear).
+
+I am not all that excited about synchronize_rcu() controlling the boost
+priority, but having synchronize_rcu_expedited() do so might make sense.
+But I would want someone to come up with a situation needing this first.
+
+Other than that, it is similar to working out what priority softirq
+should run at in PREEMPT_RT.
+
+> > Plus the current implementation is just a less-precise approximation.
+> > (Sorry, couldn't resist!)
+> 
+> Appreciated, on a similar note I still need to actually look at all this
+> (preempt) tree-rcu stuff to learn how exactly it works.
+
+And I do need to document it.  For one thing, I usually find a few bugs
+when I do that.  For another, the previous documentation is getting quite
+dated.
+
+							Thanx, Paul
