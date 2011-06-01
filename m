@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759502Ab1FAU33 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 16:29:29 -0400
-Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:50373 "EHLO
-	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753845Ab1FAU31 (ORCPT
+	id S1759564Ab1FAUc6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 16:32:58 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39815 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753492Ab1FAUc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 16:29:27 -0400
-Date: Wed, 1 Jun 2011 16:29:26 -0400
-To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-Cc: linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: ioremap warning fix for jsm driver.
-Message-ID: <20110601202926.GK21345@caffeine.csclub.uwaterloo.ca>
-References: <20110601183841.GJ21345@caffeine.csclub.uwaterloo.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110601183841.GJ21345@caffeine.csclub.uwaterloo.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: lsorense@csclub.uwaterloo.ca (Lennart Sorensen)
+	Wed, 1 Jun 2011 16:32:56 -0400
+Date: Wed, 1 Jun 2011 21:34:27 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Timur Tabi <timur@freescale.com>
+Cc: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
+        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
+Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
+ management driver
+Message-ID: <20110601213427.0021bff7@lxorguk.ukuu.org.uk>
+In-Reply-To: <4DE6A013.409@freescale.com>
+References: <1306953337-15698-1-git-send-email-timur@freescale.com>
+	<20110601204618.32190be9@lxorguk.ukuu.org.uk>
+	<4DE6A013.409@freescale.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 01, 2011 at 02:38:41PM -0400, Lennart Sorensen wrote:
-> I saw a warning about ioremap from the jsm driver on a system which
-> looked like this:
-> 
-> resource map sanity check conflict: 0xe0200800 0xe02017ff 0xe0200800 0xe0200fff 0000:01:08.0
-> 
-> Turns out the warning is valid.  The jsm driver has been asking to ioremap
-> 0x1000 forever, but in fact only 8 port chips have 0x1000 bytes of memory.
-> 4 port chips have 0x800 and 2 port chips have 0x400 according to the
-> data sheet.  It makes more sense to map the size of the region rather
-> than a hard coded value.  If you happen to have the regiong legitimately
-> mapped to a base addres that is not 4K aligned, ioremap complains
-> otherwise.
+On Wed, 1 Jun 2011 15:24:51 -0500
+Timur Tabi <timur@freescale.com> wrote:
 
-I can't believe I didn't spell check that. :(
+> Alan Cox wrote:
+> > O> +	/* One partition must be local, the other must be remote.  In other
+> >> +	   words, if source and target are both -1, or are both not -1, then
+> >> +	   return an error. */
+> >> +	if ((param.source == -1) == (param.target == -1))
+> >> +		return -EINVAL;
+> > 
+> > Excess brackets (I just mention that one in passing)'
+> 
+> Do you mean excess parentheses?  If so, then I don't see how.  "(param.source ==
+> -1)" and "(param.target == -1)" are expressions that return a boolean.  I'm
+> comparing the two boolean results to see if they're equal
 
-Should have been:
+Ok - it's a bit non obvious but yes fair enough and it is commented.
 
-Turns out the warning is valid.  The jsm driver has been asking to ioremap
-0x1000 forever, but in fact only 8 port chips have 0x1000 bytes of memory.
-4 port chips have 0x800 and 2 port chips have 0x400 according to the
-data sheet.  It makes more sense to map the size of the region rather
-than a hard coded value.  If you happen to have the region legitimately
-mapped to a base address that is not 4K aligned ioremap complains, and
-otherwise memory not belonging to the device is reserved as far as I
-can tell.
+> Where exactly in lib/ should it go?  lib/strings.c seems too low-level for a
+> function like this.  lib/string_helpers.c is for sprintf-like functions.  And
+> it's too generic for lib/powerpc/
 
-> Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-> 
-> 
-> diff --git a/drivers/tty/serial/jsm/jsm_driver.c b/drivers/tty/serial/jsm/jsm_driver.c
-> index 18f5484..96da178 100644
-> --- a/drivers/tty/serial/jsm/jsm_driver.c
-> +++ b/drivers/tty/serial/jsm/jsm_driver.c
-> @@ -125,7 +125,7 @@ static int __devinit jsm_probe_one(struct pci_dev *pdev, const struct pci_device
->  	brd->bd_uart_offset = 0x200;
->  	brd->bd_dividend = 921600;
->  
-> -	brd->re_map_membase = ioremap(brd->membase, 0x1000);
-> +	brd->re_map_membase = ioremap(brd->membase, pci_resource_len(pdev, 0));
->  	if (!brd->re_map_membase) {
->  		dev_err(&pdev->dev,
->  			"card has no PCI Memory resources, "
-> 
-> 
-> -- 
-> Len Sorensen
+I'd submit it to lib/string personally but I'm not sure where would be
+better. If someone doesn't like lib/string they can suggest a better
+place 8)
+
+> Well, the "handles" are supposed to be just unique numbers.  In this case, they
+> are IRQs, but we don't want to expose that.  The application is supposed to scan
+> the device tree looking for the doorbell nodes that it wants, and in those nodes
+> there is a 'reg' property that contains the handle for that doorbell.  So the
+> numbers just need to match.  What they represent is not relevant.
+
+Ok so they are always going to be exposed to users not to drivers, in
+which case yes it makes sense. If they are going to get used by kernel
+drivers as well an IRQ interface would probably also make sense.
+
+Alan
