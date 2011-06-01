@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162432Ab1FAIuH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:50:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43920 "EHLO mx2.suse.de"
+	id S1162450Ab1FAIUt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:20:49 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44564 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161786Ab1FAIUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:20:35 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:26 2011
-Message-Id: <20110601081126.340594760@blue.kroah.org>
+	id S1162387Ab1FAIUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:20:40 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:27 2011
+Message-Id: <20110601081126.954362823@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:10:32 +0900
+Date: Wed, 01 Jun 2011 17:10:33 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jarek Poplawski <jarkao2@gmail.com>, Patrick McHardy <kaber@trash.net>,
-        Jesper Dangaard Brouer <hawk@diku.dk>,
+        Neil Horman <nhorman@tuxdriver.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        Andy Gospodarek <andy@greyhouse.net>, nicolas.2p.debian@gmail.com,
         "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [062/165] sch_sfq: fix peek() implementation
+Subject: [063/165] bonding: prevent deadlock on slave store with alb mode (v3)
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,60 +27,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1496
-Lines: 53
+Content-Length: 6275
+Lines: 155
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit 07bd8df5df4369487812bf85a237322ff3569b77 ]
+[ Upstream commit 9fe0617d9b6d21f700ee9e658e1c9fe3be2fb402 ]
 
-Since commit eeaeb068f139 (sch_sfq: allow big packets and be fair),
-sfq_peek() can return a different skb that would be normally dequeued by
-sfq_dequeue() [ if current slot->allot is negative ]
+This soft lockup was recently reported:
 
-Use generic qdisc_peek_dequeued() instead of custom implementation, to
-get consistent result.
+[root@dell-per715-01 ~]# echo +bond5 > /sys/class/net/bonding_masters
+[root@dell-per715-01 ~]# echo +eth1 > /sys/class/net/bond5/bonding/slaves
+bonding: bond5: doing slave updates when interface is down.
+bonding bond5: master_dev is not up in bond_enslave
+[root@dell-per715-01 ~]# echo -eth1 > /sys/class/net/bond5/bonding/slaves
+bonding: bond5: doing slave updates when interface is down.
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Jarek Poplawski <jarkao2@gmail.com>
-CC: Patrick McHardy <kaber@trash.net>
-CC: Jesper Dangaard Brouer <hawk@diku.dk>
+BUG: soft lockup - CPU#12 stuck for 60s! [bash:6444]
+CPU 12:
+Modules linked in: bonding autofs4 hidp rfcomm l2cap bluetooth lockd sunrpc
+be2d
+Pid: 6444, comm: bash Not tainted 2.6.18-262.el5 #1
+RIP: 0010:[<ffffffff80064bf0>]  [<ffffffff80064bf0>]
+.text.lock.spinlock+0x26/00
+RSP: 0018:ffff810113167da8  EFLAGS: 00000286
+RAX: ffff810113167fd8 RBX: ffff810123a47800 RCX: 0000000000ff1025
+RDX: 0000000000000000 RSI: ffff810123a47800 RDI: ffff81021b57f6f8
+RBP: ffff81021b57f500 R08: 0000000000000000 R09: 000000000000000c
+R10: 00000000ffffffff R11: ffff81011d41c000 R12: ffff81021b57f000
+R13: 0000000000000000 R14: 0000000000000282 R15: 0000000000000282
+FS:  00002b3b41ef3f50(0000) GS:ffff810123b27940(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00002b3b456dd000 CR3: 000000031fc60000 CR4: 00000000000006e0
+
+Call Trace:
+ [<ffffffff80064af9>] _spin_lock_bh+0x9/0x14
+ [<ffffffff886937d7>] :bonding:tlb_clear_slave+0x22/0xa1
+ [<ffffffff8869423c>] :bonding:bond_alb_deinit_slave+0xba/0xf0
+ [<ffffffff8868dda6>] :bonding:bond_release+0x1b4/0x450
+ [<ffffffff8006457b>] __down_write_nested+0x12/0x92
+ [<ffffffff88696ae4>] :bonding:bonding_store_slaves+0x25c/0x2f7
+ [<ffffffff801106f7>] sysfs_write_file+0xb9/0xe8
+ [<ffffffff80016b87>] vfs_write+0xce/0x174
+ [<ffffffff80017450>] sys_write+0x45/0x6e
+ [<ffffffff8005d28d>] tracesys+0xd5/0xe0
+
+It occurs because we are able to change the slave configuarion of a bond while
+the bond interface is down.  The bonding driver initializes some data structures
+only after its ndo_open routine is called.  Among them is the initalization of
+the alb tx and rx hash locks.  So if we add or remove a slave without first
+opening the bond master device, we run the risk of trying to lock/unlock a
+spinlock that has garbage for data in it, which results in our above softlock.
+
+Note that sometimes this works, because in many cases an unlocked spinlock has
+the raw_lock parameter initialized to zero (meaning that the kzalloc of the
+net_device private data is equivalent to calling spin_lock_init), but thats not
+true in all cases, and we aren't guaranteed that condition, so we need to pass
+the relevant spinlocks through the spin_lock_init function.
+
+Fix it by moving the spin_lock_init calls for the tx and rx hashtable locks to
+the ndo_init path, so they are ready for use by the bond_store_slaves path.
+
+Change notes:
+v2) Based on conversation with Jay and Nicolas it seems that the ability to
+enslave devices while the bond master is down should be safe to do.  As such
+this is an outlier bug, and so instead we'll just initalize the errant spinlocks
+in the init path rather than the open path, solving the problem.  We'll also
+remove the warnings about the bond being down during enslave operations, since
+it should be safe
+
+v3) Fix spelling error
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: jtluka@redhat.com
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+CC: nicolas.2p.debian@gmail.com
+CC: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/sched/sch_sfq.c |   14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+ drivers/net/bonding/bond_alb.c   |    4 ----
+ drivers/net/bonding/bond_main.c  |   16 ++++++++++------
+ drivers/net/bonding/bond_sysfs.c |    6 ------
+ 3 files changed, 10 insertions(+), 16 deletions(-)
 
---- a/net/sched/sch_sfq.c
-+++ b/net/sched/sch_sfq.c
-@@ -410,18 +410,6 @@ sfq_enqueue(struct sk_buff *skb, struct
- }
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -163,8 +163,6 @@ static int tlb_initialize(struct bonding
+ 	struct tlb_client_info *new_hashtbl;
+ 	int i;
  
- static struct sk_buff *
--sfq_peek(struct Qdisc *sch)
--{
--	struct sfq_sched_data *q = qdisc_priv(sch);
+-	spin_lock_init(&(bond_info->tx_hashtbl_lock));
 -
--	/* No active slots */
--	if (q->tail == NULL)
--		return NULL;
+ 	new_hashtbl = kzalloc(size, GFP_KERNEL);
+ 	if (!new_hashtbl) {
+ 		pr_err("%s: Error: Failed to allocate TLB hash table\n",
+@@ -764,8 +762,6 @@ static int rlb_initialize(struct bonding
+ 	int size = RLB_HASH_TABLE_SIZE * sizeof(struct rlb_client_info);
+ 	int i;
+ 
+-	spin_lock_init(&(bond_info->rx_hashtbl_lock));
 -
--	return q->slots[q->tail->next].skblist_next;
--}
+ 	new_hashtbl = kmalloc(size, GFP_KERNEL);
+ 	if (!new_hashtbl) {
+ 		pr_err("%s: Error: Failed to allocate RLB hash table\n",
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1535,12 +1535,6 @@ int bond_enslave(struct net_device *bond
+ 			   bond_dev->name, slave_dev->name);
+ 	}
+ 
+-	/* bond must be initialized by bond_open() before enslaving */
+-	if (!(bond_dev->flags & IFF_UP)) {
+-		pr_warning("%s: master_dev is not up in bond_enslave\n",
+-			   bond_dev->name);
+-	}
 -
--static struct sk_buff *
- sfq_dequeue(struct Qdisc *sch)
+ 	/* already enslaved */
+ 	if (slave_dev->flags & IFF_SLAVE) {
+ 		pr_debug("Error, Device was already enslaved\n");
+@@ -4975,9 +4969,19 @@ static int bond_init(struct net_device *
  {
- 	struct sfq_sched_data *q = qdisc_priv(sch);
-@@ -702,7 +690,7 @@ static struct Qdisc_ops sfq_qdisc_ops __
- 	.priv_size	=	sizeof(struct sfq_sched_data),
- 	.enqueue	=	sfq_enqueue,
- 	.dequeue	=	sfq_dequeue,
--	.peek		=	sfq_peek,
-+	.peek		=	qdisc_peek_dequeued,
- 	.drop		=	sfq_drop,
- 	.init		=	sfq_init,
- 	.reset		=	sfq_reset,
+ 	struct bonding *bond = netdev_priv(bond_dev);
+ 	struct bond_net *bn = net_generic(dev_net(bond_dev), bond_net_id);
++	struct alb_bond_info *bond_info = &(BOND_ALB_INFO(bond));
+ 
+ 	pr_debug("Begin bond_init for %s\n", bond_dev->name);
+ 
++	/*
++	 * Initialize locks that may be required during
++	 * en/deslave operations.  All of the bond_open work
++	 * (of which this is part) should really be moved to
++	 * a phase prior to dev_open
++	 */
++	spin_lock_init(&(bond_info->tx_hashtbl_lock));
++	spin_lock_init(&(bond_info->rx_hashtbl_lock));
++
+ 	bond->wq = create_singlethread_workqueue(bond_dev->name);
+ 	if (!bond->wq)
+ 		return -ENOMEM;
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -227,12 +227,6 @@ static ssize_t bonding_store_slaves(stru
+ 	struct net_device *dev;
+ 	struct bonding *bond = to_bond(d);
+ 
+-	/* Quick sanity check -- is the bond interface up? */
+-	if (!(bond->dev->flags & IFF_UP)) {
+-		pr_warning("%s: doing slave updates when interface is down.\n",
+-			   bond->dev->name);
+-	}
+-
+ 	if (!rtnl_trylock())
+ 		return restart_syscall();
+ 
 
 
