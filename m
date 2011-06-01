@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161018Ab1FAHFy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 03:05:54 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42477 "EHLO mail.skyhub.de"
+	id S1755275Ab1FAHGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 03:06:25 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:43842 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754393Ab1FAHFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 03:05:51 -0400
-Date: Wed, 1 Jun 2011 09:05:47 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Borislav Petkov <bp@amd64.org>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, markus@trippelsdorf.de,
-        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/urgent] sched: Fix cross-cpu clock sync on remote
- wakeups
-Message-ID: <20110601070547.GB3368@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Borislav Petkov <bp@amd64.org>, mingo@redhat.com, hpa@zytor.com,
-	linux-kernel@vger.kernel.org, markus@trippelsdorf.de,
-	tglx@linutronix.de, mingo@elte.hu,
-	linux-tip-commits@vger.kernel.org
-References: <1306835745.2353.3.camel@twins>
- <tip-f01114cb59d670e9b4f2c335930dd57db96e9360@git.kernel.org>
- <20110531125621.GA24439@gere.osrc.amd.com>
- <1306847516.2353.80.camel@twins>
+	id S1754882Ab1FAHGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 03:06:24 -0400
+Date: Wed, 1 Jun 2011 09:06:16 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf: Split up buffer handling from core code
+Message-ID: <20110601070616.GA32308@elte.hu>
+References: <1305767185-5771-1-git-send-email-fweisbec@gmail.com>
+ <1305827704-5607-1-git-send-email-fweisbec@gmail.com>
+ <20110531182252.GA5256@somewhere.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306847516.2353.80.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110531182252.GA5256@somewhere.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 03:11:56PM +0200, Peter Zijlstra wrote:
-> Well, I don't have a modern AMD system to verify on, but the only
-> explanation is sched_clock weirdness (different code from the GTOD tsc
-> stuff). I could not reproduce on an Intel Westmere machine, but could on
-> a Core2.
+
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> On Thu, May 19, 2011 at 07:55:04PM +0200, Frederic Weisbecker wrote:
+> > And create the internal perf events header.
+> > 
+> > v2: Keep an internal inlined perf_output_copy()
+> > 
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Borislav Petkov <bp@alien8.de>
+> > Cc: Stephane Eranian <eranian@google.com>
+> > ---
 > 
-> The sched_clock_cpu stuff basically takes a GTOD timestamp every tick
-> and uses sched_clock() (tsc + cyc2ns) to provide delta increments, when
-> TSCs are synced every cpu should return the same value and the patch is
-> a nop.
-> 
-> If they aren't synced the per-cpu sched_clock_cpu() values can drift up
-> to about 2 jiffies (when the ticks drift about 1 and the slower of the
-> two has a stuck tsc while the faster of the two does progress at the
-> normal rate). In that case doing a clock update cross-cpu will ensure
-> time monotonicity between those two cpus.
+> Are you guys fine with his patch?
+> If so, should I queue it myself and send a pull request?
 
-Hmm, could it be that the sched_clock_tick() could be seeing different
-TSC values due to propagation delays of IPIs and TSCs? Or, it could be
-also that some TSCs don't start at the same moment after powerup but
-still run synchronized though?
+Yeah, please do it ASAP.
 
-How can we trace this, do you do trace_printk() in the scheduler? I'm
-asking because I remember reading somewhere that tracing the scheduler
-is not that trivial like say a driver :). I could do that on a couple of
-machines I have here and see what happens.
+> I prefer to work step by step on this split, to avoid too much 
+> review burden. And also a single detail can require to rework the 
+> whole.
 
-Thanks.
+Please lets just start it so that the interactions get smaller! 
 
--- 
-Regards/Gruss,
-    Boris.
+core.c couldnt be uglier as it is today, so after a first raw split 
+we can sort out any fine details - just make sure you don't break the 
+build.
+
+Thanks,
+
+	Ingo
