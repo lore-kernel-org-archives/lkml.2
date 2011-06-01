@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163272Ab1FAIbB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:31:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44703 "EHLO mx2.suse.de"
+	id S1163278Ab1FAI3e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:29:34 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45327 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1163202Ab1FAI3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:29:23 -0400
+	id S1163266Ab1FAI32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:29:28 -0400
 X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:12:29 2011
-Message-Id: <20110601081228.431624283@blue.kroah.org>
+Message-Id: <20110601081229.084861472@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:12:11 +0900
+Date: Wed, 01 Jun 2011 17:12:12 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kevin Tian <kevin.tian@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [161/165] xen mmu: fix a race window causing leave_mm BUG()
+Subject: [162/165] block: dont block events on excl write for non-optical
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,104 +25,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 5171
-Lines: 97
+ devices
+Content-Length: 4265
+Lines: 120
 
-From: "Tian, Kevin" <kevin.tian@intel.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 7899891c7d161752f29abcc9bc0a9c6c3a3af26c upstream.
+commit d4dc210f69bcb0b4bef5a83b1c323817be89bad1 upstream.
 
-There's a race window in xen_drop_mm_ref, where remote cpu may exit
-dirty bitmap between the check on this cpu and the point where remote
-cpu handles drop request. So in drop_other_mm_ref we need check
-whether TLB state is still lazy before calling into leave_mm. This
-bug is rarely observed in earlier kernel, but exaggerated by the
-commit 831d52bc153971b70e64eccfbed2b232394f22f8
-("x86, mm: avoid possible bogus tlb entries by clearing prev mm_cpumask after switching mm")
-which clears bitmap after changing the TLB state. the call trace is as below:
+Disk event code automatically blocks events on excl write.  This is
+primarily to avoid issuing polling commands while burning is in
+progress.  This behavior doesn't fit other types of devices with
+removeable media where polling commands don't have adverse side
+effects and door locking usually doesn't exist.
 
----------------------------------
-kernel BUG at arch/x86/mm/tlb.c:61!
-invalid opcode: 0000 [#1] SMP
-last sysfs file: /sys/devices/system/xen_memory/xen_memory0/info/current_kb
-CPU 1
-Modules linked in: 8021q garp xen_netback xen_blkback blktap blkback_pagemap nbd bridge stp llc autofs4 ipmi_devintf ipmi_si ipmi_msghandler lockd sunrpc bonding ipv6 xenfs dm_multipath video output sbs sbshc parport_pc lp parport ses enclosure snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device serio_raw bnx2 snd_pcm_oss snd_mixer_oss snd_pcm snd_timer iTCO_wdt snd soundcore snd_page_alloc i2c_i801 iTCO_vendor_support i2c_core pcs pkr pata_acpi ata_generic ata_piix shpchp mptsas mptscsih mptbase [last unloaded: freq_table]
-Pid: 25581, comm: khelper Not tainted 2.6.32.36fixxen #1 Tecal RH2285
-RIP: e030:[<ffffffff8103a3cb>]  [<ffffffff8103a3cb>] leave_mm+0x15/0x46
-RSP: e02b:ffff88002805be48  EFLAGS: 00010046
-RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88015f8e2da0
-RDX: ffff88002805be78 RSI: 0000000000000000 RDI: 0000000000000001
-RBP: ffff88002805be48 R08: ffff88009d662000 R09: dead000000200200
-R10: dead000000100100 R11: ffffffff814472b2 R12: ffff88009bfc1880
-R13: ffff880028063020 R14: 00000000000004f6 R15: 0000000000000000
-FS:  00007f62362d66e0(0000) GS:ffff880028058000(0000) knlGS:0000000000000000
-CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000003aabc11909 CR3: 000000009b8ca000 CR4: 0000000000002660
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 00000000000000 00
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process khelper (pid: 25581, threadinfo ffff88007691e000, task ffff88009b92db40)
-Stack:
- ffff88002805be68 ffffffff8100e4ae 0000000000000001 ffff88009d733b88
-<0> ffff88002805be98 ffffffff81087224 ffff88002805be78 ffff88002805be78
-<0> ffff88015f808360 00000000000004f6 ffff88002805bea8 ffffffff81010108
-Call Trace:
- <IRQ>
- [<ffffffff8100e4ae>] drop_other_mm_ref+0x2a/0x53
- [<ffffffff81087224>] generic_smp_call_function_single_interrupt+0xd8/0xfc
- [<ffffffff81010108>] xen_call_function_single_interrupt+0x13/0x28
- [<ffffffff810a936a>] handle_IRQ_event+0x66/0x120
- [<ffffffff810aac5b>] handle_percpu_irq+0x41/0x6e
- [<ffffffff8128c1c0>] __xen_evtchn_do_upcall+0x1ab/0x27d
- [<ffffffff8128dd11>] xen_evtchn_do_upcall+0x33/0x46
- [<ffffffff81013efe>] xen_do_hyper visor_callback+0x1e/0x30
- <EOI>
- [<ffffffff814472b2>] ? _spin_unlock_irqrestore+0x15/0x17
- [<ffffffff8100f8cf>] ? xen_restore_fl_direct_end+0x0/0x1
- [<ffffffff81113f71>] ? flush_old_exec+0x3ac/0x500
- [<ffffffff81150dc5>] ? load_elf_binary+0x0/0x17ef
- [<ffffffff81150dc5>] ? load_elf_binary+0x0/0x17ef
- [<ffffffff8115115d>] ? load_elf_binary+0x398/0x17ef
- [<ffffffff81042fcf>] ? need_resched+0x23/0x2d
- [<ffffffff811f4648>] ? process_measurement+0xc0/0xd7
- [<ffffffff81150dc5>] ? load_elf_binary+0x0/0x17ef
- [<ffffffff81113094>] ? search_binary_handler+0xc8/0x255
- [<ffffffff81114362>] ? do_execve+0x1c3/0x29e
- [<ffffffff8101155d>] ? sys_execve+0x43/0x5d
- [<ffffffff8106fc45>] ? __call_usermodehelper+0x0/0x6f
- [<ffffffff81013e28>] ? kernel_execve+0x68/0xd0
- [<ffffffff 8106fc45>] ? __call_usermodehelper+0x0/0x6f
- [<ffffffff8100f8cf>] ? xen_restore_fl_direct_end+0x0/0x1
- [<ffffffff8106fb64>] ? ____call_usermodehelper+0x113/0x11e
- [<ffffffff81013daa>] ? child_rip+0xa/0x20
- [<ffffffff8106fc45>] ? __call_usermodehelper+0x0/0x6f
- [<ffffffff81012f91>] ? int_ret_from_sys_call+0x7/0x1b
- [<ffffffff8101371d>] ? retint_restore_args+0x5/0x6
- [<ffffffff81013da0>] ? child_rip+0x0/0x20
-Code: 41 5e 41 5f c9 c3 55 48 89 e5 0f 1f 44 00 00 e8 17 ff ff ff c9 c3 55 48 89 e5 0f 1f 44 00 00 65 8b 04 25 c8 55 01 00 ff c8 75 04 <0f> 0b eb fe 65 48 8b 34 25 c0 55 01 00 48 81 c6 b8 02 00 00 e8
-RIP  [<ffffffff8103a3cb>] leave_mm+0x15/0x46
- RSP <ffff88002805be48>
----[ end trace ce9cee6832a9c503 ]---
+This patch introduces new genhd flag which controls the auto-blocking
+behavior and uses it to enable auto-blocking only on optical devices.
 
-Tested-by: Maoxiaoyun<tinnycloud@hotmail.com>
-Signed-off-by: Kevin Tian <kevin.tian@intel.com>
-[v1: Fleshed out the git description a bit]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Note for stable: 2.6.38 and later only
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/xen/mmu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/paride/pcd.c |    1 +
+ drivers/cdrom/viocd.c      |    3 ++-
+ drivers/ide/ide-cd.c       |    3 ++-
+ drivers/scsi/sr.c          |    2 +-
+ fs/block_dev.c             |   17 ++++++++++-------
+ include/linux/genhd.h      |    1 +
+ 6 files changed, 17 insertions(+), 10 deletions(-)
 
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1187,7 +1187,7 @@ static void drop_other_mm_ref(void *info
+--- a/drivers/block/paride/pcd.c
++++ b/drivers/block/paride/pcd.c
+@@ -320,6 +320,7 @@ static void pcd_init_units(void)
+ 		disk->first_minor = unit;
+ 		strcpy(disk->disk_name, cd->name);	/* umm... */
+ 		disk->fops = &pcd_bdops;
++		disk->flags = GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
+ 	}
+ }
  
- 	active_mm = percpu_read(cpu_tlbstate.active_mm);
+--- a/drivers/cdrom/viocd.c
++++ b/drivers/cdrom/viocd.c
+@@ -625,7 +625,8 @@ static int viocd_probe(struct vio_dev *v
+ 	blk_queue_max_hw_sectors(q, 4096 / 512);
+ 	gendisk->queue = q;
+ 	gendisk->fops = &viocd_fops;
+-	gendisk->flags = GENHD_FL_CD|GENHD_FL_REMOVABLE;
++	gendisk->flags = GENHD_FL_CD | GENHD_FL_REMOVABLE |
++			 GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
+ 	set_capacity(gendisk, 0);
+ 	gendisk->private_data = d;
+ 	d->viocd_disk = gendisk;
+--- a/drivers/ide/ide-cd.c
++++ b/drivers/ide/ide-cd.c
+@@ -1773,7 +1773,8 @@ static int ide_cd_probe(ide_drive_t *dri
  
--	if (active_mm == mm)
-+	if (active_mm == mm && percpu_read(cpu_tlbstate.state) != TLBSTATE_OK)
- 		leave_mm(smp_processor_id());
+ 	g->minors = 1;
+ 	g->driverfs_dev = &drive->gendev;
+-	g->flags = GENHD_FL_CD | GENHD_FL_REMOVABLE;
++	g->flags = GENHD_FL_CD | GENHD_FL_REMOVABLE |
++		   GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
+ 	if (ide_cdrom_setup(drive)) {
+ 		put_device(&info->dev);
+ 		goto failed;
+--- a/drivers/scsi/sr.c
++++ b/drivers/scsi/sr.c
+@@ -636,7 +636,7 @@ static int sr_probe(struct device *dev)
+ 	disk->first_minor = minor;
+ 	sprintf(disk->disk_name, "sr%d", minor);
+ 	disk->fops = &sr_bdops;
+-	disk->flags = GENHD_FL_CD;
++	disk->flags = GENHD_FL_CD | GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
+ 	disk->events = DISK_EVENT_MEDIA_CHANGE | DISK_EVENT_EJECT_REQUEST;
  
- 	/* If this cpu still has a stale cr3 reference, then make sure
+ 	blk_queue_rq_timeout(sdev->request_queue, SR_TIMEOUT);
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1238,6 +1238,8 @@ int blkdev_get(struct block_device *bdev
+ 	res = __blkdev_get(bdev, mode, 0);
+ 
+ 	if (whole) {
++		struct gendisk *disk = whole->bd_disk;
++
+ 		/* finish claiming */
+ 		mutex_lock(&bdev->bd_mutex);
+ 		spin_lock(&bdev_lock);
+@@ -1264,15 +1266,16 @@ int blkdev_get(struct block_device *bdev
+ 		spin_unlock(&bdev_lock);
+ 
+ 		/*
+-		 * Block event polling for write claims.  Any write
+-		 * holder makes the write_holder state stick until all
+-		 * are released.  This is good enough and tracking
+-		 * individual writeable reference is too fragile given
+-		 * the way @mode is used in blkdev_get/put().
++		 * Block event polling for write claims if requested.  Any
++		 * write holder makes the write_holder state stick until
++		 * all are released.  This is good enough and tracking
++		 * individual writeable reference is too fragile given the
++		 * way @mode is used in blkdev_get/put().
+ 		 */
+-		if (!res && (mode & FMODE_WRITE) && !bdev->bd_write_holder) {
++		if ((disk->flags & GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE) &&
++		    !res && (mode & FMODE_WRITE) && !bdev->bd_write_holder) {
+ 			bdev->bd_write_holder = true;
+-			disk_block_events(bdev->bd_disk);
++			disk_block_events(disk);
+ 		}
+ 
+ 		mutex_unlock(&bdev->bd_mutex);
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -127,6 +127,7 @@ struct hd_struct {
+ #define GENHD_FL_SUPPRESS_PARTITION_INFO	32
+ #define GENHD_FL_EXT_DEVT			64 /* allow extended devt */
+ #define GENHD_FL_NATIVE_CAPACITY		128
++#define GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE	256
+ 
+ enum {
+ 	DISK_EVENT_MEDIA_CHANGE			= 1 << 0, /* media changed */
 
 
