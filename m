@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161814Ab1FAIkh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 04:40:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44258 "EHLO mx2.suse.de"
+	id S1162865Ab1FAIZQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 04:25:16 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44877 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162856Ab1FAIZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 04:25:03 -0400
-X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:57 2011
-Message-Id: <20110601081157.297115487@blue.kroah.org>
+	id S1162864Ab1FAIZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 04:25:10 -0400
+X-Mailbox-Line: From linux@blue.kroah.org Wed Jun  1 17:11:58 2011
+Message-Id: <20110601081157.910364002@blue.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 01 Jun 2011 17:11:22 +0900
+Date: Wed, 01 Jun 2011 17:11:23 +0900
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Marius B. Kotsbak" <marius@kotsbak.com>,
+        Erik Slagter <erik@slagter.name>,
+        "Maxin B. John" <maxin.john@gmail.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [112/165] Bind only modem AT command endpoint to option module.
+Subject: [113/165] USB: cdc_acm: Fix oops when Droids MuIn LCD is connected
 In-Reply-To: <20110601081349.GA10017@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,47 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-Content-Length: 1770
-Lines: 40
+Content-Length: 2292
+Lines: 66
 
-From: "Marius B. Kotsbak" <marius@kotsbak.com>
+From: Erik Slagter <erik@slagter.name>
 
-commit 15b2f3204a5c878c32939094775fb7349f707263 upstream.
+commit fd5054c169d29747a44b4e1419ff47f57ae82dbc upstream.
 
-Network interface is handled by upcoming gt_b3730 module.
+The Droids MuIn LCD operates like a serial remote terminal.
+Data received are displayed directly on the LCD. This patch
+fixes the kernel null pointer oops when it is plugged in.
 
-Removed "GT-B3710" from comment, it is another modem with another USB ID.
+Add NO_DATA_INTERFACE quirk to tell the driver that "control"
+and "data" interfaces are not separated for this device, which
+prevents dereferencing a null pointer in the device probe code.
 
-Signed-off-by: Marius B. Kotsbak <marius@kotsbak.com>
+Signed-off-by: Erik Slagter <erik@slagter.name>
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+Tested-by: Erik Slagter <erik@slagter.name>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |   13 +++++++++++--
+ drivers/usb/class/cdc-acm.h |    1 +
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -972,7 +972,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
- 	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
--	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730/GT-B3710 LTE USB modem.*/
-+	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
-@@ -1109,6 +1109,12 @@ static int option_probe(struct usb_seria
- 		serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
- 		return -ENODEV;
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -946,7 +946,7 @@ static int acm_probe(struct usb_interfac
+ 	u8 ac_management_function = 0;
+ 	u8 call_management_function = 0;
+ 	int call_interface_num = -1;
+-	int data_interface_num;
++	int data_interface_num = -1;
+ 	unsigned long quirks;
+ 	int num_rx_buf;
+ 	int i;
+@@ -1030,7 +1030,11 @@ next_desc:
+ 	if (!union_header) {
+ 		if (call_interface_num > 0) {
+ 			dev_dbg(&intf->dev, "No union descriptor, using call management descriptor\n");
+-			data_interface = usb_ifnum_to_if(usb_dev, (data_interface_num = call_interface_num));
++			/* quirks for Droids MuIn LCD */
++			if (quirks & NO_DATA_INTERFACE)
++				data_interface = usb_ifnum_to_if(usb_dev, 0);
++			else
++				data_interface = usb_ifnum_to_if(usb_dev, (data_interface_num = call_interface_num));
+ 			control_interface = intf;
+ 		} else {
+ 			if (intf->cur_altsetting->desc.bNumEndpoints != 3) {
+@@ -1622,6 +1626,11 @@ static const struct usb_device_id acm_id
+ 	.driver_info = NOT_A_MODEM,
+ 	},
  
-+	/* Don't bind network interface on Samsung GT-B3730, it is handled by a separate module */
-+	if (serial->dev->descriptor.idVendor == SAMSUNG_VENDOR_ID &&
-+		serial->dev->descriptor.idProduct == SAMSUNG_PRODUCT_GT_B3730 &&
-+		serial->interface->cur_altsetting->desc.bInterfaceClass != USB_CLASS_CDC_DATA)
-+		return -ENODEV;
++	/* Support for Droids MuIn LCD */
++	{ USB_DEVICE(0x04d8, 0x000b),
++	.driver_info = NO_DATA_INTERFACE,
++	},
 +
- 	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private), GFP_KERNEL);
- 
- 	if (!data)
+ 	/* control interfaces without any protocol set */
+ 	{ USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ACM,
+ 		USB_CDC_PROTO_NONE) },
+--- a/drivers/usb/class/cdc-acm.h
++++ b/drivers/usb/class/cdc-acm.h
+@@ -137,3 +137,4 @@ struct acm {
+ #define SINGLE_RX_URB			2
+ #define NO_CAP_LINE			4
+ #define NOT_A_MODEM			8
++#define NO_DATA_INTERFACE		16
 
 
