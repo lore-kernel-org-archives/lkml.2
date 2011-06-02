@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab1FBNEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 09:04:39 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59885 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab1FBNEh (ORCPT
+	id S1754966Ab1FBNBA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 09:01:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59072 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517Ab1FBNA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 09:04:37 -0400
-Date: Thu, 2 Jun 2011 14:04:06 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Mattias Wallin <mattias.wallin@stericsson.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Lee Jones <lee.jones@linaro.org>,
+	Thu, 2 Jun 2011 09:00:58 -0400
+Subject: Re: [tip:sched/urgent] sched: Fix cross-cpu clock sync on remote
+ wakeups
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Borislav Petkov <bp@amd64.org>, Borislav Petkov <bp@alien8.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        john stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCHv2 0/3] clocksource: add db8500 PRCMU timer
-Message-ID: <20110602130406.GW3660@n2100.arm.linux.org.uk>
-References: <1307007271-1004-1-git-send-email-mattias.wallin@stericsson.com> <20110602094622.GS3660@n2100.arm.linux.org.uk> <4DE7637B.3060901@stericsson.com> <20110602110137.GU3660@n2100.arm.linux.org.uk> <4DE77D9A.6090301@stericsson.com> <4DE788B2.5060308@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DE788B2.5060308@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+In-Reply-To: <BANLkTikT6OT-HDi-DR+_ZWEhfp_CYWJ3Hg@mail.gmail.com>
+References: <1306835745.2353.3.camel@twins>
+	 <tip-f01114cb59d670e9b4f2c335930dd57db96e9360@git.kernel.org>
+	 <20110531125621.GA24439@gere.osrc.amd.com> <1306847516.2353.80.camel@twins>
+	 <20110601070547.GB3368@liondog.tnic> <1306924612.2353.176.camel@twins>
+	 <20110601155017.GD24028@aftab>
+	 <BANLkTikT6OT-HDi-DR+_ZWEhfp_CYWJ3Hg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Jun 2011 15:04:26 +0200
+Message-ID: <1307019866.2497.675.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 06:27:22PM +0530, Santosh Shilimkar wrote:
-> Earlier this year at ELC SFO, I had a discussion with
-> John and Thomas on how to have a high-resolution clock-source
-> and a low-resolution clock-source working together to cover
-> the low power scenario and still manage to get the highest
-> timer resolution.
-> The idea was to do dynamic switching of clock-source
-> which initially looked simple. Here the idea was to
-> have this working for suspend and as well as cupidle.
+On Thu, 2011-06-02 at 15:52 +0800, Yong Zhang wrote:
+> In sched_clock_local(), clock is calculated around ->tick_gtod even if
+> that ->tick_gtod is stale for long time because we stays in idle state. 
+> You know ->tick_gtod is only updated in sched_clock_tick();
 
-I don't think you can do this, because you'll lose precision whenever you
-switch from the high resolution clocksource to the low resolution
-clocksource.
+(well, no, there's idle callbacks as you said below)
 
-While you can quickly update the current time of day from the highres one,
-the lowres may or may not be a long way from its next tick rollover.  So
-you lose the precision whenever you switch.
+> IOW, when a cpu goes out of idle, sched_clock_tick() is called from
+> tick_nohz_stop_idle() which is later than interrupt.
 
-However, over a suspend/resume cycle, the precision loss is normally very
-small compared to the time which you have been suspended, so the %age
-error also becomes very small.
+Gah, that would be awefull and mean wakeups from interrupts were already
+borken. /me goes look at code.
 
-With cpuidle, it becomes a completely different matter.  Here, the %age
-error is much larger because of the smaller sleep periods, and chances
-are we can't wait for the low-res timer to change.
+irq_enter() -> tick_check_idle() -> tick_check_nohz() ->
+tick_nohz_stop_idle() -> sched_clock_idle_wakeup_event()
 
-So if you're using cpuidle, you really need a clocksource which runs
-continuously, even in whatever states cpuidle drops you into.
+should update the thing before we run any isrs, right?
+
+> So if we have any site which call sched_clock() in interrupt on an
+> idle cpu, it could get incorrect clock.
+> 
+> I'm not sure how to teach sched_clock() about this special case, Peter?
+
+isn't anything to teach afaict.
+
