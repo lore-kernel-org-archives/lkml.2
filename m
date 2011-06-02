@@ -1,119 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab1FBR35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 13:29:57 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:43889 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab1FBR3z (ORCPT
+	id S1753698Ab1FBRam (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 13:30:42 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61331 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab1FBRal convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 13:29:55 -0400
+	Thu, 2 Jun 2011 13:30:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=xSV6YoK0qYdHRnR1Kc8dmEUnBKE2MhEnURw0025YqbH6p8b85G0fGvD42Hi/GOC/sD
-         YE3vuDp8TNpaWo6ywUEg==
-Date: Thu, 2 Jun 2011 10:29:39 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Chris Wright <chrisw@sous-sol.org>
-cc: Andrea Righi <andrea@betterlinux.com>, CAI Qian <caiqian@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [BUG 3.0.0-rc1] ksm: NULL pointer dereference in ksm_do_scan()
-In-Reply-To: <20110602164841.GK23047@sequoia.sous-sol.org>
-Message-ID: <alpine.LSU.2.00.1106021011300.1277@sister.anvils>
-References: <20110601222032.GA2858@thinkpad> <2144269697.363041.1306998593180.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <20110602141927.GA2011@thinkpad> <20110602164841.GK23047@sequoia.sous-sol.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=LzKL9J6t5liYrVJNcBNiryM+KnMhrRp1t//oMFzh0vROxgJ7y9e3g2ZFIoAc4J7N8v
+         EmBvPhDVJsKtCNclTd/GqTf/jZY8jUJ0ylGF4m2lwUKSrtXnLLQEcW6jSNoUmKb03Ewv
+         0X7gjRZWQ29U+TnVka1NOM+FD03FlggSAna3c=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <201103122218.14832.rjw@sisk.pl>
+References: <201103100131.58206.rjw@sisk.pl>
+	<201103122212.40828.rjw@sisk.pl>
+	<201103122218.14832.rjw@sisk.pl>
+Date: Thu, 2 Jun 2011 10:30:40 -0700
+X-Google-Sender-Auth: t242rZESHRyS8gH5fkTdUF25Gs0
+Message-ID: <BANLkTi=xhg7_0O-aVC8s1Uyo4Wkz5OTCdg@mail.gmail.com>
+Subject: Re: [PATCH 5/8] PCI / Intel IOMMU: Use syscore_ops instead of sysdev
+ class and sysdev
+From: Tony Luck <tony.luck@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
+        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Avi Kivity <avi@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Jun 2011, Chris Wright wrote:
-> * Andrea Righi (andrea@betterlinux.com) wrote:
-> > mmh.. I can reproduce the bug also with the standard ubuntu (11.04)
-> > kernel. Could you post your .config?
-> 
-> Andrea (Righi), can you tell me if this WARN fires?  This looks
-> like a pure race between removing from list and checking list, i.e.
-> insufficient locking.
-> 
-> ksm_scan.mm_slot == the only registered mm
-> 
-> CPU 1 (bug program)		CPU 2 (ksmd)
-> 				list_empty() is false
-> lock
-> ksm_scan.mm_slot
-> list_del
-> unlock
-> 				slot == &ksm_mm_head (but list is now empty_)
-> 
-> 
-> diff --git a/mm/ksm.c b/mm/ksm.c
-> index 942dfc7..ab79a92 100644
-> --- a/mm/ksm.c
-> +++ b/mm/ksm.c
-> @@ -1301,6 +1301,7 @@ static struct rmap_item *scan_get_next_rmap_item(struct page **page)
->  		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
->  		ksm_scan.mm_slot = slot;
->  		spin_unlock(&ksm_mmlist_lock);
-> +		WARN_ON(slot == &ksm_mm_head);
->  next_mm:
->  		ksm_scan.address = 0;
->  		ksm_scan.rmap_list = &slot->rmap_list;
+On Sat, Mar 12, 2011 at 1:18 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> -static int __init init_iommu_sysfs(void)
+> -{
+> -       return 0;
+> -}
+> +static inline int init_iommu_pm_ops(void) { }
+>  #endif /* CONFIG_PM */
 
-AndreaR, good find, many thanks for discovering and reporting it.
-I couldn't look at it until last night, and even then, it was not
-obvious to me exactly where my assumptions were going wrong.
+drivers/pci/intel-iommu.c:3391: warning: no return statement in
+function returning non-void
 
-Even now it's unclear what role the SIGSEGV plays, as opposed to an
-normal exit: I guess it just happens to change the timing enough to
-make the race dangerous.
+s/static inline int/static inline void/
 
-Your patch was not wrong, but I do prefer a patch that plugs the
-exact hole; and I needed to understand what was going on - without
-understanding it, there was a danger we might leak memory instead.
+Reported-by: Tony Luck <tony.luck@intel.com>
 
-AndreaA, I didn't study the patch you posted half an hour ago,
-since by that time I'd worked it out and was preparing patch below.
-I think your patch would be for a different bug, hopefully one we
-don't have, it looks more complicated than we should need for this.
-
-ChrisW, yes, your WARN_ON is spot on, matches what I saw exactly.
-
-I'll fill in the patch description later, must dash now, probably
-offline until late tonight.  Or if you're satisfied and don't want to
-wait, you guys fill that in and send off to Linus & Andrew - thanks.
-
-[PATCH] ksm: fix easily reproduced NULL pointer dereference
-
-Reported-by: Andrea Righi <andrea@betterlinux.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: stable@kernel.org
----
-
- mm/ksm.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
---- 3.0-rc1/mm/ksm.c	2011-05-29 18:42:37.429882601 -0700
-+++ linux/mm/ksm.c	2011-06-02 09:55:31.729702490 -0700
-@@ -1302,6 +1302,13 @@ static struct rmap_item *scan_get_next_r
- 		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
- 		ksm_scan.mm_slot = slot;
- 		spin_unlock(&ksm_mmlist_lock);
-+
-+		/*
-+		 * Although we tested list_empty() above, a racing __ksm_exit
-+		 * of the last mm on the list may have removed it since then.
-+		 */
-+		if (slot == &ksm_mm_head)
-+			return NULL;
- next_mm:
- 		ksm_scan.address = 0;
- 		ksm_scan.rmap_list = &slot->rmap_list;
+-Tony
