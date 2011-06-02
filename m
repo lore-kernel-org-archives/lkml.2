@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab1FBWVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 18:21:08 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:52574 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459Ab1FBWVG (ORCPT
+	id S1754090Ab1FNGsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jun 2011 02:48:10 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:47177 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753489Ab1FNGsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 18:21:06 -0400
-X-Nat-Received: from [202.181.97.72]:59267 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1307053179.22576
-To: hmh@hmh.eng.br
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Preparation for Linux 3.0
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201106020350.p523o95o094928@www262.sakura.ne.jp>
-	<20110602191101.GC31586@khazad-dum.debian.net>
-In-Reply-To: <20110602191101.GC31586@khazad-dum.debian.net>
-Message-Id: <201106030719.EGD21835.LOJFHSFOFVOtMQ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Fri, 3 Jun 2011 07:19:39 +0900
-Mime-Version: 1.0
+	Tue, 14 Jun 2011 02:48:05 -0400
+Date: Fri, 3 Jun 2011 00:21:11 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: markgross@thegnar.org, Raffaele Recalcati <lamiaposta71@gmail.com>,
+        linux-pm@lists.linux-foundation.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] pm loss development
+Message-ID: <20110602222111.GA15414@ucw.cz>
+References: <1305220265-9020-1-git-send-email-lamiaposta71@gmail.com>
+ <201105180107.58078.rjw@sisk.pl>
+ <20110518031203.GA3640@gvim.org>
+ <201105182143.13237.rjw@sisk.pl>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 02062011 #5458400, status: clean
+Content-Disposition: inline
+In-Reply-To: <201105182143.13237.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Henrique de Moraes Holschuh wrote:
-> On Thu, 02 Jun 2011, Tetsuo Handa wrote:
-> > We need to widely announce that userland applications using branches based on
-> > /proc/sys/kernel/osrelease need to be fixed.
+Hi!
+
+> > > What do you mean by safe state?
+> > >
+> > I need to get more details on this but I assume its a state where the
+> > meta data of the file system is committed to the emmc before lights go
+> > off such that when power is reapplied that the damage isn't too big. 
 > 
-> A debug patch to disclose any userspace application that touches that file
-> would be of some help, I suppose?
+> I don't think you can guarantee that the metadata won't be damaged
+> without notifying the filesystem of the event (and making it react
+> appropriately).
 
-Testing with a 2.6.39 kernel built with a patch
+Journalling filesystem should survive power loss at random time, as
+long as block device behaves like a disk (i.e. writes whole sectors).
 
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
--VERSION = 2
--PATCHLEVEL = 6
--SUBLEVEL = 39
-+VERSION = 3
-+PATCHLEVEL = 0
-+SUBLEVEL = 0
- EXTRAVERSION =
- NAME = Flesh-Eating Bats with Fangs
+And that can be guaranteed at driver level...
 
-applied will be the best.
-
-But a writable sysctl entry (or kernel boot command line option) that changes
-the output of /proc/sys/kernel/osrelease may be of some help.
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
