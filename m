@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933326Ab1FBJqm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 05:46:42 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40451 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933050Ab1FBJqj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 05:46:39 -0400
-Date: Thu, 2 Jun 2011 10:46:22 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mattias Wallin <mattias.wallin@stericsson.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCHv2 0/3] clocksource: add db8500 PRCMU timer
-Message-ID: <20110602094622.GS3660@n2100.arm.linux.org.uk>
-References: <1307007271-1004-1-git-send-email-mattias.wallin@stericsson.com>
+	id S933526Ab1FBMO1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 08:14:27 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:35169 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932906Ab1FBMO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 08:14:26 -0400
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: Maxin B John <maxin.john@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, dima@android.com, willy@linux.intel.com
+Subject: Re: [PATCH] mm: dmapool: fix possible use after free in dmam_pool_destroy()
+Date: Thu, 02 Jun 2011 11:47:36 +0200
+Message-ID: <3647102.7SB09c9jIV@donald.sf-tec.de>
+User-Agent: KMail/4.6 beta5 (Linux/2.6.37-12-desktop; KDE/4.6.3; i686; ; )
+In-Reply-To: <20110601214313.GA3724@maxin>
+References: <20110601214313.GA3724@maxin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307007271-1004-1-git-send-email-mattias.wallin@stericsson.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: multipart/signed; boundary="nextPart4796684.krExRduWp2"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 11:34:31AM +0200, Mattias Wallin wrote:
-> The Multi Timer Unit (MTU) is currently used as clocksource and sched_clk
-> for the u8500 machine. The MTU block loose power during cpuidle sleep states
-> so an alternate clocksource is needed and these patches adds the db8500 PRCMU
-> timer.
 
-Why don't we just find a way of fixing sched_clock so that the value
-doesn't reset over a suspend/resume cycle?  IOW, lets fix the problem
-for _everyone_ rather than only fixing it for one platform at a time.
+--nextPart4796684.krExRduWp2
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-Could you try this patch to check whether sched_clock() behaves better
-across a suspend/resume cycle please?
+Maxin B John wrote:
+> "dma_pool_destroy(pool)" calls "kfree(pool)". The freed pointer "pool"
+> is again passed as an argument to the function "devres_destroy()".
+> This patch fixes the possible use after free.
+> 
+> Please let me know your comments.
 
- arch/arm/kernel/sched_clock.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+The pool itself is not used there, only the address where the pool has been. 
+This will only lead to any trouble if something else is allocated to the same 
+place and inserted into the devres list of the same device between the 
+dma_pool_destroy() and devres_destroy().
 
-diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-index 9a46370..4be4019 100644
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -10,6 +10,7 @@
- #include <linux/jiffies.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
-+#include <linux/syscore_ops.h>
- #include <linux/timer.h>
- 
- #include <asm/sched_clock.h>
-@@ -72,3 +73,20 @@ void __init sched_clock_postinit(void)
- {
- 	sched_clock_poll(sched_clock_timer.data);
- }
-+
-+static int sched_clock_suspend(void)
-+{
-+	sched_clock_poll(sched_clock_timer.data);
-+	return 0;
-+}
-+
-+static struct syscore_ops sched_clock_ops = {
-+	.suspend	= sched_clock_suspend,
-+};
-+
-+static int __init sched_clock_syscore_init(void)
-+{
-+	register_syscore_ops(&sched_clock_ops);
-+	return 0;
-+}
-+device_initcall(sched_clock_syscore_init);
+But I agree that this is bad style. But if you are going to change this please 
+also have a look at devm_iounmap() in lib/devres.c. Maybe also the devm_*irq* 
+functions need the same changes.
+
+Eike
+--nextPart4796684.krExRduWp2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+
+iEYEABECAAYFAk3nXDgACgkQXKSJPmm5/E6PkQCgnoldftmAq8/gLjBVzhSZHyAo
+t/UAoIqHRNZWNvy/tYTarR9622AJPD59
+=0ACZ
+-----END PGP SIGNATURE-----
+
+--nextPart4796684.krExRduWp2--
+
