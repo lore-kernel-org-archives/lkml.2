@@ -1,140 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758206Ab1FBAgH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 20:36:07 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60890 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab1FBAgF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 20:36:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=o7MjlcgxyIauGaSpoIg58Zl6qiUeVPQV8q4jnC8GrAc9DaUgKPGNwXLUTpmpZlPZzt
-         wInwz7lqnAekgxyBBiTg==
-MIME-Version: 1.0
-In-Reply-To: <BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org> <BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
-From: Greg Thelen <gthelen@google.com>
-Date: Wed, 1 Jun 2011 17:35:37 -0700
-Message-ID: <BANLkTi=kJ-r=bZqB8X+KAu+ueapXYLjxnLNRdxRAkDGWk4k_AA@mail.gmail.com>
-Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
-To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1758738Ab1FBArd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 20:47:33 -0400
+Received: from gate.crashing.org ([63.228.1.57]:49054 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752725Ab1FBArc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 20:47:32 -0400
+Subject: Re: 3.0-rc1: powerpc hangs at Kernel virtual memory layout
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux ppc dev <linuxppc-dev@lists.ozlabs.org>, zajec5@gmail.com,
+        linville@tuxdriver.com
+In-Reply-To: <alpine.DEB.2.01.1106011712270.21697@trent.utfs.org>
+References: <alpine.DEB.2.01.1105311644010.21697@trent.utfs.org>
+	 <alpine.DEB.2.01.1106011712270.21697@trent.utfs.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Jun 2011 10:47:06 +1000
+Message-ID: <1306975626.29297.48.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 1, 2011 at 4:52 PM, Hiroyuki Kamezawa
-<kamezawa.hiroyuki@gmail.com> wrote:
-> 2011/6/1 Johannes Weiner <hannes@cmpxchg.org>:
->> Hi,
->>
->> this is the second version of the memcg naturalization series. †The
->> notable changes since the first submission are:
->>
->> † †o the hierarchy walk is now intermittent and will abort and
->> † † †remember the last scanned child after sc->nr_to_reclaim pages
->> † † †have been reclaimed during the walk in one zone (Rik)
->>
->> † †o the global lru lists are never scanned when memcg is enabled
->> † † †after #2 'memcg-aware global reclaim', which makes this patch
->> † † †self-sufficient and complete without requiring the per-memcg lru
->> † † †lists to be exclusive (Michal)
->>
->> † †o renamed sc->memcg and sc->current_memcg to sc->target_mem_cgroup
->> † † †and sc->mem_cgroup and fixed their documentation, I hope this is
->> † † †better understandable now (Rik)
->>
->> † †o the reclaim statistic counters have been renamed. †there is no
->> † † †more distinction between 'pgfree' and 'pgsteal', it is now
->> † † †'pgreclaim' in both cases; 'kswapd' has been replaced by
->> † † †'background'
->>
->> † †o fixed a nasty crash in the hierarchical soft limit check that
->> † † †happened during global reclaim in memcgs that are hierarchical
->> † † †but have no hierarchical parents themselves
->>
->> † †o properly implemented the memcg-aware unevictable page rescue
->> † † †scanner, there were several blatant bugs in there
->>
->> † †o documentation on new public interfaces
->>
->> Thanks for your input on the first version.
->>
->> I ran microbenchmarks (sparse file catting, essentially) to stress
->> reclaim and LRU operations. †There is no measurable overhead for
->> !CONFIG_MEMCG, memcg disabled during boot, memcg enabled but no
->> configured groups, and hard limit reclaim.
->>
->> I also ran single-threaded kernbenchs in four unlimited memcgs in
->> parallel, contained in a hard-limited hierarchical parent that put
->> constant pressure on the workload. †There is no measurable difference
->> in runtime, the pgpgin/pgpgout counters, and fairness among memcgs in
->> this test compared to an unpatched kernel. †Needs more evaluation,
->> especially with a higher number of memcgs.
->>
->> The soft limit changes are also proven to work in so far that it is
->> possible to prioritize between children in a hierarchy under pressure
->> and that runtime differences corresponded directly to the soft limit
->> settings in the previously described kernbench setup with staggered
->> soft limits on the groups, but this needs quantification.
->>
->> Based on v2.6.39.
->>
->
-> Hmm, I welcome and will review this patches but.....some points I want to say.
->
-> 1. No more conflict with Ying's work ?
-> † †Could you explain what she has and what you don't in this v2 ?
-> † †If Ying's one has something good to be merged to your set, please
-> include it.
->
-> 2. it's required to see performance score in commit log.
->
-> 3. I think dirty_ratio as 1st big patch to be merged. (But...hmm..Greg ?
-> † †My patches for asynchronous reclaim is not very important. I can rework it.
+On Wed, 2011-06-01 at 17:16 -0700, Christian Kujau wrote:
+> ccc7c28af205888798b51b6cbc0b557ac1170a49 is the first bad commit
+> commit ccc7c28af205888798b51b6cbc0b557ac1170a49
+> Author: Rafa≈Ç Mi≈Çecki <zajec5@gmail.com>
+> Date:   Fri Apr 1 13:26:52 2011 +0200
+> 
+>     ssb: pci: implement serdes workaround
+>     
+>     Signed-off-by: Rafa≈Ç Mi≈Çecki <zajec5@gmail.com>
+>     Signed-off-by: John W. Linville <linville@tuxdriver.com>
+> -----------------------
+> 
+> When I reverted this one from the gi-bisected tree, the box continued to 
+> boot (until it got stuck again during IDE/CDROM init, but that may be a 
+> different story). I'l; try to revert this from a vanilla 3.0-rc1 and see 
+> if it helps 
 
-I am testing the next version (v8) of the memcg dirty ratio patches.  I expect
-to have it posted for review later this week.
+Thanks. I'll have a look later today. As for the IDE/CDROM init, have
+you tried the very latest linus snapshot ? Does that still happens ?
+What kind of error do you observe ?
 
-> 4. This work can be splitted into some small works.
-> † † a) fix for current code and clean ups
-> † † a') statistics
-> † † b) soft limit rework
-> † † c) change global reclaim
->
-> †I like (a)->(b)->(c) order. and while (b) you can merge your work
-> with Ying's one.
-> †And for a') , I'd like to add a new file memory.reclaim_stat as I've
-> already shown.
-> †and allow resetting.
->
-> †Hmm, how about splitting patch 2/8 into small patches and see what happens in
-> †3.2 or 3.3 ? While that, we can make softlimit works better.
-> †(and once we do 2/8, our direction will be fixed to the direction to
-> remove global LRU.)
->
-> 5. please write documentation to explain what new LRU do.
->
-> BTW, after this work, lists of ROOT cgroup comes again. I may need to check
-> codes which see memcg is ROOT or not. Because we removed many atomic
-> ops in memcg, I wonder ROOT cgroup can be accounted again..
->
-> Thanks,
-> -Kame
->
+There was some time during the 3.0 merge window process when interrupts
+were broken on some PowerBooks, but that should be fixed now.
+
+Cheers,
+Ben.
+
+
