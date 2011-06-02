@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab1FBFsP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 01:48:15 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52513 "EHLO mx1.suse.de"
+	id S1756347Ab1FBFs6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 01:48:58 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:47912 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755281Ab1FBFsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 01:48:13 -0400
-Date: Thu, 2 Jun 2011 15:47:54 +1000
-From: NeilBrown <neilb@suse.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] md: convert double atomic_inc() to atomic_add()
-Message-ID: <20110602154754.142920c6@notabene.brown>
-In-Reply-To: <1306990383-14133-1-git-send-email-namhyung@gmail.com>
-References: <1306990383-14133-1-git-send-email-namhyung@gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755730Ab1FBFs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 01:48:56 -0400
+Date: Thu, 2 Jun 2011 07:48:50 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: David Miller <davem@davemloft.net>
+Cc: joe@perches.com, wg@grandegger.com, kernel-janitors@vger.kernel.org,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wharms@bfs.de
+Subject: Re: [PATCH 4/10] drivers/net/can/flexcan.c: add missing clk_put
+In-Reply-To: <20110601.131136.391831410750786951.davem@davemloft.net>
+Message-ID: <Pine.LNX.4.64.1106020748020.22932@ask.diku.dk>
+References: <1306948213-20767-4-git-send-email-julia@diku.dk>
+ <1306949175.32125.20.camel@Joe-Laptop> <Pine.LNX.4.64.1106012207260.5871@ask.diku.dk>
+ <20110601.131136.391831410750786951.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  2 Jun 2011 13:53:02 +0900 Namhyung Kim <namhyung@gmail.com> wrote:
+From: Julia Lawall <julia@diku.dk>
 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  drivers/md/md.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/md/md.c b/drivers/md/md.c
-> index aa640a85bb21..f210e42a56ca 100644
-> --- a/drivers/md/md.c
-> +++ b/drivers/md/md.c
-> @@ -396,8 +396,7 @@ static void submit_flushes(struct work_struct *ws)
->  			 * we reclaim rcu_read_lock
->  			 */
->  			struct bio *bi;
-> -			atomic_inc(&rdev->nr_pending);
-> -			atomic_inc(&rdev->nr_pending);
-> +			atomic_add(2, &rdev->nr_pending);
->  			rcu_read_unlock();
->  			bi = bio_alloc_mddev(GFP_KERNEL, 0, mddev);
->  			bi->bi_end_io = md_end_flush;
+The failed_get label is used after the call to clk_get has succeeded, so it
+should be moved up above the call to clk_put.
 
-Thanks, but I don't think I want this patch.
-I'm happy having two separate 'atomic_inc' calls. I think it makes it a bit
-clearer what is happening, and it is easier to search for all atomic_inc
-calls.
+The failed_req labels doesn't do anything different than failed_get, so
+delete it.
 
-NeilBrown
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@r exists@
+expression e1,e2;
+statement S;
+@@
+
+e1 = clk_get@p1(...);
+... when != e1 = e2
+    when != clk_put(e1)
+    when any
+if (...) { ... when != clk_put(e1)
+               when != if (...) { ... clk_put(e1) ... }
+* return@p3 ...;
+ } else S
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/net/can/flexcan.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+index d499056..1767811 100644
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -923,7 +923,7 @@ static int __devinit flexcan_probe(struct platform_device *pdev)
+ 	mem_size = resource_size(mem);
+ 	if (!request_mem_region(mem->start, mem_size, pdev->name)) {
+ 		err = -EBUSY;
+-		goto failed_req;
++		goto failed_get;
+ 	}
+ 
+ 	base = ioremap(mem->start, mem_size);
+@@ -977,9 +977,8 @@ static int __devinit flexcan_probe(struct platform_device *pdev)
+ 	iounmap(base);
+  failed_map:
+ 	release_mem_region(mem->start, mem_size);
+- failed_req:
+-	clk_put(clk);
+  failed_get:
++	clk_put(clk);
+  failed_clock:
+ 	return err;
+ }
