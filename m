@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933488Ab1FBK5S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 06:57:18 -0400
-Received: from mail.codesourcery.com ([38.113.113.100]:50339 "EHLO
-	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933334Ab1FBK5Q (ORCPT
+	id S933491Ab1FBLBz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 07:01:55 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37390 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933369Ab1FBLBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 06:57:16 -0400
-From: Pedro Alves <pedro@codesourcery.com>
-Organization: CodeSourcery
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: execve-under-ptrace API bug (was Re: Ptrace documentation, draft #3)
-Date: Thu, 2 Jun 2011 11:57:12 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu
-References: <BANLkTikH4k0MfTwNzNJN-P85ER4-hKdifw@mail.gmail.com> <201105310143.12280.vda.linux@googlemail.com> <20110531135116.GA4799@redhat.com>
-In-Reply-To: <20110531135116.GA4799@redhat.com>
+	Thu, 2 Jun 2011 07:01:54 -0400
+Date: Thu, 2 Jun 2011 12:01:37 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mattias Wallin <mattias.wallin@stericsson.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCHv2 0/3] clocksource: add db8500 PRCMU timer
+Message-ID: <20110602110137.GU3660@n2100.arm.linux.org.uk>
+References: <1307007271-1004-1-git-send-email-mattias.wallin@stericsson.com> <20110602094622.GS3660@n2100.arm.linux.org.uk> <4DE7637B.3060901@stericsson.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106021157.13367.pedro@codesourcery.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DE7637B.3060901@stericsson.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 31 May 2011 14:51:16, Oleg Nesterov wrote:
+On Thu, Jun 02, 2011 at 12:18:35PM +0200, Mattias Wallin wrote:
+> On 06/02/2011 11:46 AM, Russell King - ARM Linux wrote:
+>> Why don't we just find a way of fixing sched_clock so that the value
+>> doesn't reset over a suspend/resume cycle?
+> Even if the value isn't reset during suspend/resume we want the  
+> clocksource to keep counting. Or is it ok to have the clocksource stop  
+> or freeze during suspend?
 
-> The main problem is: it is not clear do we really want EVENT_EXIT
-> in this case. I think we do, Roland thought we do not. OTOH I never
-> really the purpose of EVENT_EXIT, but this doesn't matter.
-> 
-> If we decide we do want this notification (in this case), then we
-> need fixes. EVENT_EXIT is not reliable. Say, the thread can exit
-> before it dequeues SIGKILL and in this case it doesn't stop.
-> Also. If we guarantee EVENT_EXIT in this case, then probably the
-> implicit SIGKILL should not wakeup the TASK_TRACED tracee (except
-> the new PTRACE_LISTEN case).
-> 
-> In short: currently I do not know what should be documented. I do
-> not know the original intent, I can only see what the code actually
-> does. 
+kernel/time/timekeeping.c:timekeeping_suspend():
 
-Daniel Jacobowitz said when he submitted it:
+        timekeeping_forward_now();
 
-<http://lkml.indiana.edu/hypermail/linux/kernel/0302.0/1051.html>
+which does:
+        cycle_now = clock->read(clock);
+        cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
+        clock->cycle_last = cycle_now;
 
-"PTRACE_EVENT_EXIT, which triggers in do_exit().  This is useful to quickly
- find out where a program is making an exit syscall from, etc. - it
- triggers before the mm is released, so we can still get backtraces et
- cetera."
+So that updates the time with the current offset between cycle_last and
+the current value.
 
-That said, GDB was never made to use it:
+kernel/time/timekeeping.c:timekeeping_resume():
+        /* re-base the last cycle value */
+        timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
 
-  /* Do not enable PTRACE_O_TRACEEXIT until GDB is more prepared to support
-     read-only process state.  */
+So this re-sets cycle_last to the current value of the clocksource.  This
+means that on resume, the clocksource can start counting from any value it
+likes.
 
--- 
-Pedro Alves
+So, without any additional external inputs, time resumes incrementing at
+the point where the suspend occurred without any jump backwards or forwards.
+
+The code accounts for the sleep time by using read_persistent_clock() read
+a timer which continues running during sleep to calculate the delta between
+suspend and resume, and injects the delta between them to wind the time
+forward.
+
+> Then we have cpuidle. Is it ok to stop/freeze the timer during cpuidle  
+> sleep states?
+
+During _idle_ (iow, no task running) sched_clock and the clocksource
+should both continue to run - the scheduler needs to know how long the
+system has been idle for, and the clocksource can't stop because we'll
+lose track of time.
+
+Remember that the clockevent stuff is used as a trigger to the timekeeping
+code to read the clocksource, and update the current time.  Time is moved
+forward by the delta between a previous clocksource read and the current
+clocksource read.  So stopping or resetting the clocksource in unexpected
+ways (other than over suspend/resume as mentioned above) will result in
+time going weird.
