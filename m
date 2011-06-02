@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933469Ab1FBLW6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 07:22:58 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:54195 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab1FBLW4 convert rfc822-to-8bit (ORCPT
+	id S933409Ab1FBLaa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 07:30:30 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33814 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392Ab1FBLa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 07:22:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jrJlvPmxWiolMethV+O70J+Em6napFdIWzT76NjpRKFKSlb9czZpiwfI3bQc/3Y1m1
-         hI/Gz/3Gif6qpEmN2GSpRdk2LxrjPmhmDRhS9bRJdbb/erSSwkdr8ICgau1582/r0Itd
-         IdUOh4iA58v43HMFwaPF4eB+wspr6ns0RRI5Y=
+	Thu, 2 Jun 2011 07:30:29 -0400
+Message-ID: <4DE7741B.7040507@mvista.com>
+Date: Thu, 02 Jun 2011 15:29:31 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4DE7629D.80205@canonical.com>
-References: <1307006553-12667-1-git-send-email-ike.pan@canonical.com>
-	<1307006645-12702-1-git-send-email-ike.pan@canonical.com>
-	<BANLkTik+-wMXcCgSb8cCWx6wxrT0JgAbpnbGqizCpk+3F6Wx_g@mail.gmail.com>
-	<4DE7629D.80205@canonical.com>
-Date: Thu, 2 Jun 2011 13:22:54 +0200
-Message-ID: <BANLkTinEu20oGdX+9LwM7fswzgZaVkuf3yEfip-p9gTkUTzu5g@mail.gmail.com>
-Subject: Re: [PATCH 2/3] ideapad: Add nodes in sysfs
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: ralf@linux-mips.org
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mips@linux-mips.org, Russell King <linux@arm.linux.org.uk>,
+        x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [patch 12/14] i8253: Move remaining content and delete <asm/i8253.h>
+References: <20110601180456.801265664@duck.linux-mips.net> <20110601180610.913463093@duck.linux-mips.net>
+In-Reply-To: <20110601180610.913463093@duck.linux-mips.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 2, 2011 at 12:14 PM, Ike Panhc <ike.pan@canonical.com> wrote:
-> On 06/02/2011 05:48 PM, Corentin Chary wrote:
->> Hi Ike,
->> Why do you want to add /sys/devices/platform/ideapad/brightness and
->>     /sys/devices/platform/ideapad/backlight ?
->> Both of these files should be handled by the generic backlight class
->> (using brightness and bl_power).
->
-> This is within VPC2004. In DSDT they are different device from generic
-> backlight.
->
-> and I try bl_power but can not turning off power of whole LCD. No idea
-> how screensaver do it, looks like just cut off video signal.
+Hello.
 
-What I wanted to say is that you should use the generic backlight
-class (!=driver) to expose these. You can look at asus-wmi.c to see
-how it's done.
-Then users will be able to choose the backlight implementation using
-acpi_backlight=vendor or acpi_backlight=video.
+On 01-06-2011 22:05, ralf@linux-mips.org wrote:
 
--- 
-Corentin Chary
-http://xf.iksaif.net
+> There is no really good other place but one line for two out of three
+> architectures that have a <asm/i8253.h> file doesn't justify this files
+> existence.
+
+    I couldn't parse that. :-)
+
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+> To: linux-kernel@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: linux-mips@linux-mips.org
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: x86@kernel.org
+
+WBR, Sergei
