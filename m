@@ -1,94 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758717Ab1FBHa0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 03:30:26 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:46192 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758141Ab1FBHaZ (ORCPT
+	id S1758693Ab1FBHdE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 03:33:04 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:25720 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701Ab1FBHdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 03:30:25 -0400
-Message-ID: <4DE73C04.5050208@in.ibm.com>
-Date: Thu, 02 Jun 2011 13:00:12 +0530
-From: Suzuki Poulose <suzuki@in.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        linux ppc dev <linuxppc-dev@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] Kexec support for PPC440x
-References: <4DE345B0.8020505@in.ibm.com>  <4DE50617.7090509@linutronix.de> <1306999551.29297.57.camel@pasglop>
-In-Reply-To: <1306999551.29297.57.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Jun 2011 03:33:02 -0400
+X-AuditID: cbfee61a-b7ce2ae000001a8f-fd-4de73cab8f77
+Date: Thu, 02 Jun 2011 16:32:58 +0900
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH v5] PM / Core: suspend_again callback for suspend_ops.
+To: linux-pm@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@suse.de>, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com
+Message-id: <1306999978-4663-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+Content-transfer-encoding: 7BIT
+X-OriginalArrivalTime: 02 Jun 2011 07:32:55.0811 (UTC)
+ FILETIME=[4A0A6D30:01CC20F7]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/11 12:55, Benjamin Herrenschmidt wrote:
-> On Tue, 2011-05-31 at 17:15 +0200, Sebastian Andrzej Siewior wrote:
->> Suzuki Poulose wrote:
->>> Index: powerpc/arch/powerpc/kernel/44x_kexec_mapping.S
->>> ===================================================================
->>> --- /dev/null
->>> +++ powerpc/arch/powerpc/kernel/44x_kexec_mapping.S
->> ....
->>
->>> + *
->>> + */
->>> +    bl    nxtins                /* Find our address */
->>> +nxtins:    mflr    r5                /* Make it accessible */
->>
->> Please don't mix labels and instructions.
->
-> With proper indent it's fine as long as he uses numerical relative
-> labels which should be the case here. For example, the above, it should
-> look like:
->
-> 	bl	1f
-> 1:	mflr	r5
->
->>> +    tlbsx    r23,0,r5            /* Find entry we are in */
->>
->> using tabs instead of spaces would make it look nice. Please also separate
->> the arguments of the instruction i.e.
->> 	tlbsx	r23, 0, r5
->
-> That's arguable. If you look at arch/powerpc, we tend not to separate
-> the arguments ;-)
->
-> Actually I used to, others didn't and I changed my own style.
->
->>> Index: powerpc/arch/powerpc/kernel/misc_32.S
->>> ===================================================================
->>> --- powerpc.orig/arch/powerpc/kernel/misc_32.S
->>> +++ powerpc/arch/powerpc/kernel/misc_32.S
->>> @@ -736,6 +736,28 @@ relocate_new_kernel:
->>>       mr      r5, r31
->>>
->>>       li    r0, 0
->>> +#elif defined(CONFIG_44x)&&  !defined(CONFIG_47x)
->>> +
->>> +    mr    r29, r3
->>> +    mr    r30, r4
->>> +    mr    r31, r5
->>> +
->>> +#include "44x_kexec_mapping.S"
->>
->> The way you setup the 1:1 mapping should be close to what you are doing on
->> kernel entry. Isn't it possible to include the file here and in the entry
->> code?
->
-> It should just not be #included, what about branching out instead ?
+A system or a device may need to control suspend/wakeup events. It may
+want to wakeup the system after a predefined amount of time or at a
+predefined event decided while entering suspend for polling or delayed
+work. Then, it may want to enter suspend again if its predefined wakeup
+condition is the only wakeup reason and there is no outstanding events;
+thus, it does not wakeup the userspace unnecessary or unnecessary
+devices and keeps suspended as long as possible (saving the power).
 
-This code, i.e, relocate_new_kernel is copied into the control buffer, which will
-get the first chance to execute before the purgatory. So we may not be able to
-branch to the code, since we are executing this from a different address and we
-would invalidate the mapping for the code except the control buffer.
+Enabling a system to wakeup after a specified time can be easily
+achieved by using RTC. However, to enter suspend again immediately
+without invoking userland and unrelated devices, we need additional
+features in the suspend framework.
 
-Thanks
+Such need comes from:
 
-Suzuki
-  
+1. Monitoring a critical device status without interrupts that can
+wakeup the system. (in-suspend polling)
+ An example is ambient temperature monitoring that needs to shut down
+the system or a specific device function if it is too hot or cold. The
+temperature of a specific device may be needed to be monitored as well;
+e.g., a charger monitors battery temperature in order to stop charging
+if overheated.
+
+2. Execute critical "delayed work" at suspend.
+ A driver or a system/board may have a delayed work (or any similar
+things) that it wants to execute at the requested time.
+ For example, some chargers want to check the battery voltage some
+time (e.g., 30 seconds) after the battery is fully charged and the
+charger has stopped. Then, the charger restarts charging if the voltage
+has dropped more than a threshold, which is smaller than "restart-charger"
+voltage, which is a threshold to restart charging regardless of the
+time passed.
+
+This patch allows to add "suspend_again" callback at struct
+platform_suspend_ops and let the "suspend_again" callback return true if
+the system is required to enter suspend again after the current instance
+of wakeup. Device-wise suspend_again implemented at dev_pm_ops or
+syscore is not done because: a) suspend_again feature is usually under
+platform-wise decision and controls the behavior of the whole platform
+and b) There are very limited devices related to the usage cases of
+suspend_again; chargers and temperature sensors are mentioned so far.
+
+With suspend_again callback registered at struct platform_suspend_ops
+suspend_ops in kernel/power/suspend.c with suspend_set_ops by the
+platform, the suspend framework tries to enter suspend again by
+looping suspend_enter() if suspend_again has returned true and there has
+been no errors in the suspending sequence or pending wakeups (by
+pm_wakeup_pending).
+
+Tested at Exynos4-NURI.
+
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+
+--
+Thank you for your valuable comments, Pavel, Rafael, Greg, and others.
+
+Changed from v4:
+	- rebased on Linux 3.0 rc1
+	- removed partial_suspend/resume because they are not needed, for now.
+Changed from v3:
+	- renamed local variable "pm_wkup_pending" to "wakeup_pending".
+	pm_wakeup_pending is not used because there is a function with the
+	same name.
+Changed from v2:
+	- moved (again) from dev_pm_ops to suspend_ops
+	- settled suspend_again point at around suspend_enter().
+Changes from v1:
+	- moved from syscore to dev_pm_ops
+	- added generic ops for subsystems.
+	- cleaned up suspend_again code at kernel/power/suspend.
+---
+ include/linux/suspend.h |    8 ++++++++
+ kernel/power/suspend.c  |   13 ++++++++++---
+ 2 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index 083ffea..e1e3742 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -92,6 +92,13 @@ typedef int __bitwise suspend_state_t;
+  *	@enter() and @wake(), even if any of them fails.  It is executed after
+  *	a failing @prepare.
+  *
++ * @suspend_again: Returns whether the system should suspend again (true) or
++ *	not (false). If the platform wants to poll sensors or execute some
++ *	code during suspended without invoking userspace and most of devices,
++ *	suspend_again callback is the place assuming that periodic-wakeup or
++ *	alarm-wakeup is already setup. This allows to execute some codes while
++ *	being kept suspended in the view of userland and devices.
++ *
+  * @end: Called by the PM core right after resuming devices, to indicate to
+  *	the platform that the system has returned to the working state or
+  *	the transition to the sleep state has been aborted.
+@@ -113,6 +120,7 @@ struct platform_suspend_ops {
+ 	int (*enter)(suspend_state_t state);
+ 	void (*wake)(void);
+ 	void (*finish)(void);
++	bool (*suspend_again)(void);
+ 	void (*end)(void);
+ 	void (*recover)(void);
+ };
+diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+index 1c41ba2..d8a6c51 100644
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -128,10 +128,12 @@ void __attribute__ ((weak)) arch_suspend_enable_irqs(void)
+ /**
+  *	suspend_enter - enter the desired system sleep state.
+  *	@state:		state to enter
++ *	@wakeup_pending:	indicates that the power transition in progress
++ *				should be aborted.
+  *
+  *	This function should be called after devices have been suspended.
+  */
+-static int suspend_enter(suspend_state_t state)
++static int suspend_enter(suspend_state_t state, bool *wakeup_pending)
+ {
+ 	int error;
+ 
+@@ -165,7 +167,8 @@ static int suspend_enter(suspend_state_t state)
+ 
+ 	error = syscore_suspend();
+ 	if (!error) {
+-		if (!(suspend_test(TEST_CORE) || pm_wakeup_pending())) {
++		*wakeup_pending = pm_wakeup_pending();
++		if (!(suspend_test(TEST_CORE) || *wakeup_pending)) {
+ 			error = suspend_ops->enter(state);
+ 			events_check_enabled = false;
+ 		}
+@@ -199,6 +202,7 @@ static int suspend_enter(suspend_state_t state)
+ int suspend_devices_and_enter(suspend_state_t state)
+ {
+ 	int error;
++	bool wakeup_pending = false;
+ 
+ 	if (!suspend_ops)
+ 		return -ENOSYS;
+@@ -220,7 +224,10 @@ int suspend_devices_and_enter(suspend_state_t state)
+ 	if (suspend_test(TEST_DEVICES))
+ 		goto Recover_platform;
+ 
+-	error = suspend_enter(state);
++	do {
++		error = suspend_enter(state, &wakeup_pending);
++	} while (suspend_ops->suspend_again && suspend_ops->suspend_again() &&
++		 !error && !wakeup_pending);
+ 
+  Resume_devices:
+ 	suspend_test_start();
+-- 
+1.7.4.1
 
