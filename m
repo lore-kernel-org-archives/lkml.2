@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759298Ab1FBDuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 23:50:46 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:49625 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759062Ab1FBDup (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 23:50:45 -0400
-X-Nat-Received: from [202.181.97.72]:58736 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1306986609.25837
-Message-Id: <201106020350.p523o95o094928@www262.sakura.ne.jp>
-Subject: Preparation for Linux 3.0
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
+	id S1759417Ab1FBDzl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 23:55:41 -0400
+Received: from ozlabs.org ([203.10.76.45]:49503 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755090Ab1FBDzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 23:55:36 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
+Cc: Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: Re: [PATCH RFC 3/3] virtio_net: limit xmit polling
+In-Reply-To: <1ec8eec325839ecf2eac9930a230361e7956047c.1306921434.git.mst@redhat.com>
+References: <cover.1306921434.git.mst@redhat.com> <1ec8eec325839ecf2eac9930a230361e7956047c.1306921434.git.mst@redhat.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 02 Jun 2011 13:24:57 +0930
+Message-ID: <87pqmwj3am.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Thu, 02 Jun 2011 12:50:09 +0900
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 02062011 #5456492, status: clean
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed that commit 55922c9d "Linux 3.0-rc1" caused
-dhcp-client 2.0pl5-19.1sarge3 (in Debian Sarge) to report SIOCSIFNETMASK and
-SIOCSIFBRDADDR errors (though, it seems to me that these errors are not
-affecting the functionality).
+On Wed, 1 Jun 2011 12:50:03 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> Current code might introduce a lot of latency variation
+> if there are many pending bufs at the time we
+> attempt to transmit a new one. This is bad for
+> real-time applications and can't be good for TCP either.
+> 
+> Free up just enough to both clean up all buffers
+> eventually and to be able to xmit the next packet.
 
-  Setting up IP spoofing protection: rp_filter.
-  Configuring network interfaces...Internet Software Consortium DHCP Client 2.0pl5
-  Copyright 1995, 1996, 1997, 1998, 1999 The Internet Software Consortium.
-  All rights reserved.
-  
-  Please contribute if you find this software useful.
-  For info, please visit http://www.isc.org/dhcp-contrib.html
-  
-  [   21.081635] pcnet32 0000:02:00.0: eth0: link up
-  SIOCSIFNETMASK: Cannot assign requested address
-  SIOCSIFBRDADDR: Cannot assign requested address
-  Listening on LPF/eth0/00:0c:29:9e:eb:32
-  Sending on   LPF/eth0/00:0c:29:9e:eb:32
-  Sending on   Socket/fallback/fallback-net
-  DHCPDISCOVER on eth0 to 255.255.255.255 port 67 interval 3
-  DHCPOFFER from 192.168.1.254
-  DHCPREQUEST on eth0 to 255.255.255.255 port 67
-  DHCPACK from 192.168.1.254
-  bound to 192.168.1.128 -- renewal in 43200 seconds.
-  done.
-  Starting portmap daemon: portmap.
+OK, I found this quite confusing to read.
 
+> -	while ((skb = virtqueue_get_buf(vi->svq, &len)) != NULL) {
+> +	while ((r = virtqueue_min_capacity(vi->svq) < MAX_SKB_FRAGS + 2) ||
+> +	       min_skbs-- > 0) {
+> +		skb = virtqueue_get_buf(vi->svq, &len);
+> +		if (unlikely(!skb))
+> +			break;
+>  		pr_debug("Sent skb %p\n", skb);
+>  		vi->dev->stats.tx_bytes += skb->len;
+>  		vi->dev->stats.tx_packets++;
+>  		dev_kfree_skb_any(skb);
+>  	}
+> +	return r;
+>  }
 
+Gah... what a horrible loop.
 
-I guess this program is doing something like below.
+Basically, this patch makes hard-to-read code worse, and we should try
+to make it better.
 
-  if grep -q ^2.6 /proc/sys/kernel/osrelease
-  then
-    do ioctl for 2.6 kernels
-  else
-    do ioctl for 2.4 kernels
-  fi
+Currently, xmit *can* fail when an xmit interrupt wakes the queue, but
+the packet(s) xmitted didn't free up enough space for the new packet.
+With indirect buffers this only happens if we hit OOM (and thus go to
+direct buffers).
 
-We need to widely announce that userland applications using branches based on
-/proc/sys/kernel/osrelease need to be fixed.
+We could solve this by only waking the queue in skb_xmit_done if the
+capacity is >= 2 + MAX_SKB_FRAGS.  But can we do it without a race?
 
-Regards.
+If not, then I'd really prefer to see this, because I think it's clearer:
+
+        // Try to free 2 buffers for every 1 xmit, to stay ahead.
+        free_old_buffers(2)
+
+        if (!add_buf()) {
+                // Screw latency, free them all.
+                free_old_buffers(UINT_MAX)
+                // OK, this can happen if we are using direct buffers,
+                // and the xmit interrupt woke us but the packets
+                // xmitted were smaller than this one.  Rare though.
+                if (!add_buf())
+                        Whinge and stop queue, maybe loop.
+        }
+
+        if (capacity < 2 + MAX_SKB_FRAGS) {
+                // We don't have enough for the next packet?  Try
+                // freeing more.
+                free_old_buffers(UINT_MAX);
+                if (capacity < 2 + MAX_SKB_FRAGS) {
+                        Stop queue, maybe loop.
+        }
+
+The current code makes my head hurt :(
+
+Thoughts?
+Rusty.
