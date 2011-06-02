@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933Ab1FBHB2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 03:01:28 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:27278 "EHLO
+	id S933006Ab1FBHBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 03:01:45 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:27315 "EHLO
 	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932744Ab1FBHBX (ORCPT
+	by vger.kernel.org with ESMTP id S932956Ab1FBHBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 03:01:23 -0400
+	Thu, 2 Jun 2011 03:01:41 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArYDAAky5015LCoegWdsb2JhbABTG4QuoWcVAQEWJiW2bpBigSuDbIEKBKAp
+X-IronPort-Anti-Spam-Result: ArYDAAky5015LCoegWdsb2JhbABThEmhZxUBARYmJbZukGKBK4NsgQoEmDKHdw
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: [PATCH 0/12] Per superblock cache reclaim
-Date: Thu,  2 Jun 2011 17:00:55 +1000
-Message-Id: <1306998067-27659-1-git-send-email-david@fromorbit.com>
+Subject: [PATCH 01/12] vmscan: add shrink_slab tracepoints
+Date: Thu,  2 Jun 2011 17:00:56 +1000
+Message-Id: <1306998067-27659-2-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.5.1
+In-Reply-To: <1306998067-27659-1-git-send-email-david@fromorbit.com>
+References: <1306998067-27659-1-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -23,181 +25,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series converts the VFS cache shrinkers to a per-superblock
-shrinker, and provides a callout from the superblock shrinker to
-allow the filesystem to shrink internal caches proportionally to the
-amount of reclaim done to the VFS caches.
+From: Dave Chinner <dchinner@redhat.com>
 
-The motivation for this work is that the VFS caches are dependent
-caches - dentries pin inodes, and inodes often pin other filesystem
-specific structures.  The caches can grow quite large and it is easy
-for them to get unbalanced when they are shrunk independently.
+Іt is impossible to understand what the shrinkers are actually doing
+without instrumenting the code, so add a some tracepoints to allow
+insight to be gained.
 
-Reclaim is also focussed on sharing reclaim batches across all
-superblocks rather than within a superblock, so often reclaim calls
-only remove a few objects from each superblock at a time. This means
-that we touch lots of superblocks and LRUs one every shrinker call,
-and we have to traverse the superblock list all the time.
-
-This leads to life-cycle issues - we have to ensure that the
-superblock we are trying to work on is active and won't go away, and
-also ensure that the unmount process synchronises correctly with
-active shrinkers. This is complex and the locks involved cause
-issues with lockdep refularly reporting false positive lock
-inversions.
-
-Firstly, however, there are several longstanding bugs in the
-VM shrinker infrastructure that need to be fixed. Firstly, we need
-to add tracepoints so we can observe the behaviour of the shrinker
-calculations. Secondly, the shrinker scan calculations are not SMP
-safe and that is causing shrinkers to either miss work they should
-be doing, or doing a lot more work than they should.
-
-With these fixes in place, I found the reason that I was not able to
-balance system behaviour on my first attempt at per-sb shrinkers.
-When a shrinker repeatedly returns "-1" to avoid deadlocks, like
-will happen when a filesystem is doing GFP_NOFS memory allocations
-during transactions (and that happens *a lot* during filesystem
-intensive workloads), then the work is delayed by adding it to
-shrinker->nr for the next shrinker call to do.
-
-This causes the shrinker->nr to increase until it is 2x the number
-of objects in the cache, and so when the shrinker is finally able to
-do work, it is effectively told to shrink the entire cache to zero.
-Twice over. You'll never guess how I found it - the tracepoints I
-added, perhaps? This problem is fixed by only allowing the
-shrinker->nr to wind up to half the size of the cache when there are
-lots of little additions caused by deadlock avoidance. This is
-sufficient to maintain current levels of performance whilst avoiding
-the cache trashing problem.
-
-So, back to the VFS cache shrinkers.  To avoid all the above
-problems, we can use the per-shrinker context infrastructure that
-was introduced recently for XFS. By adding a shrinker context to
-each superblock and registering the shrinker after the superblock is
-created and unregistering it early in the unmount process we avoid
-the need for specific unmount synchronisation between the shrinker
-and the unmount process.  Goodbye iprune_sem.
-
-Further, by having per-superblock shrinker callouts, we no longer
-need to walk the superblock list on every shrinker call for both the
-dentry and inode caches, nor do we need to proportion reclaim
-between superblocks. That simplifies the cache shrinking
-implementation significantly.
-
-However, to take advantage of this, the first thing we need to do is
-convert the inode cache LRU to a per-superblock LRU. This is trivial
-to do - it's just a copy of the dentry cache infrastructure. The
-inode cache LRU can also be trivially converted to a lock per
-superblock as well, so that is done at the same time.
-
-[ Note that it looks like the same change can be made to the dentry
-cache LRU, but the simple conversion from the global dcache_lru_lock
-to per-sb locks results in occasional, strange ENOENT errors during
-path lookups. So that patch is on hold. ]
-
-With a single shrinker - prune_super() - that can address both  the
-per-sb dentry and inode LRUs, it is a simple matter of proportioning
-the reclaim batch between them. This is done simply by the ratio of
-objects in the two caches, and the dentry cache is pruned first so
-that it unpins inodes before the inode cache is pruned.
-
-Now that we have prune_super(), reclaiming hundreds of
-thousands or millions of dentries and inodes in batches of 128
-objects does not make much sense. The VM shrinker infrastructure
-uses a batch size of 128 so that it can regularly reschedule if
-necessary. The dentry cache pruner already has reschedule checks,
-and it is trivial to add them to the VFS and XFS inode cache
-pruners. With that done, there is no reason why we can't use a much
-larger reclaim batch size and remove more objects from each cache on
-each visit to them.
-
-To do this, add a per-shrinker batch size configuration field, and
-configure prune_super() to use a larger batch size of 1024
-objects. This reduces the number of times we need to make
-calculations, traffic locks and structures, and means we spend more
-time in cache specific loops than we would with a smaller batch
-size. This reduces the overhead of cache shrinking.
-
-Overall, the changes result in steady state cache ratios on XFS,
-ext4 and btrfs of 1 dentry : 3 inodes. The state ratio is 1 inused
-inode : 2 free inodes (the in-use inode is pinned by the dentry).
-The following chart demonstrateѕ ext4 (left) and btrfs (right) cache
-ratios under steady state 8-way file creation conditions.
-
-http://userweb.kernel.org/~dgc/shrinker/ext4-btrfs-cache-ratio.png
-
-For XFS, however, the situation is slightly more complex. XFS
-maintains it's own inode cache (the VFS inode cache is a subset of
-the XFS cache), and so needs to be able to keep that synchronised
-with the VFS caches. Hence a filesystem specific callout is added
-to the superblock pruning method that is proportioned with the
-VFS dentry and inode caches. Implementing these methods is optional,
-and this is done for XFS in the last patch in the series.
-
-XFS behaviour at different stages of the patch series can be seen in
-the following chart:
-
-http://userweb.kernel.org/~dgc/shrinker/per-sb-shrinker-comparison.png
-
-The left-most traces are from a kernel with just the VM
-shrink_slab() fixes. The middle trace is the same 8-way create
-workload, but with the inode cache LRU changes and the per-sb
-superblock shrinker addressing just the VFS dentry and inode
-caches. The right-most (partial) workload trace is the full series
-with the XFS inode cache shrinker being called from prune_super().
-
-You can see from the top chart that the cache behaviour has much
-less variance in the middle trace with the per-sb shrinkers compared
-to the left-most trace. Also, you can see that the XFS inode cache
-size follows the VFS inode cache residency much more closely in the
-right-most trace as a result of using the prune_super() filesystem
-callout.
-
-Yes, these XFS traces are much more variable that the ext4 and btrfs
-charts, but XFS is putting significantly more pressure on the caches
-and most allocations are GFP_NOFS, hence triggering the wind-up
-problems described above. It is, however, much better behaved than
-the existing shrinker behaviour (worse than the left-most trace with
-the VM fixes) and much better than the previous (aborted) per-sb
-shrinker attempts:
-
-http://userweb.kernel.org/~dgc/shrinker-2.6.36/fs_mark-2.6.35-rc4-per-sb-basic-16x500-xfs.png
-http://userweb.kernel.org/~dgc/shrinker-2.6.36/fs_mark-2.6.35-rc4-per-sb-balance-16x500-xfs.png
-http://userweb.kernel.org/~dgc/shrinker-2.6.36/fs_mark-2.6.35-rc4-per-sb-proportional-16x500-xfs.png
-
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
+ include/trace/events/vmscan.h |   67 +++++++++++++++++++++++++++++++++++++++++
+ mm/vmscan.c                   |    6 +++-
+ 2 files changed, 72 insertions(+), 1 deletions(-)
 
-The following changes since commit c7427d23f7ed695ac226dbe3a84d7f19091d34ce:
+diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+index ea422aa..c798cd7 100644
+--- a/include/trace/events/vmscan.h
++++ b/include/trace/events/vmscan.h
+@@ -310,6 +310,73 @@ TRACE_EVENT(mm_vmscan_lru_shrink_inactive,
+ 		show_reclaim_flags(__entry->reclaim_flags))
+ );
+ 
++TRACE_EVENT(mm_shrink_slab_start,
++	TP_PROTO(struct shrinker *shr, struct shrink_control *sc,
++		unsigned long pgs_scanned, unsigned long lru_pgs,
++		unsigned long cache_items, unsigned long long delta,
++		unsigned long total_scan),
++
++	TP_ARGS(shr, sc, pgs_scanned, lru_pgs, cache_items, delta, total_scan),
++
++	TP_STRUCT__entry(
++		__field(struct shrinker *, shr)
++		__field(long, shr_nr)
++		__field(gfp_t, gfp_flags)
++		__field(unsigned long, pgs_scanned)
++		__field(unsigned long, lru_pgs)
++		__field(unsigned long, cache_items)
++		__field(unsigned long long, delta)
++		__field(unsigned long, total_scan)
++	),
++
++	TP_fast_assign(
++		__entry->shr = shr;
++		__entry->shr_nr = shr->nr;
++		__entry->gfp_flags = sc->gfp_mask;
++		__entry->pgs_scanned = pgs_scanned;
++		__entry->lru_pgs = lru_pgs;
++		__entry->cache_items = cache_items;
++		__entry->delta = delta;
++		__entry->total_scan = total_scan;
++	),
++
++	TP_printk("shrinker %p: nr %ld gfp_flags %s pgs_scanned %ld lru_pgs %ld cache items %ld delta %lld total_scan %ld",
++		__entry->shr,
++		__entry->shr_nr,
++		show_gfp_flags(__entry->gfp_flags),
++		__entry->pgs_scanned,
++		__entry->lru_pgs,
++		__entry->cache_items,
++		__entry->delta,
++		__entry->total_scan)
++);
++
++TRACE_EVENT(mm_shrink_slab_end,
++	TP_PROTO(struct shrinker *shr, int shrinker_ret,
++		unsigned long total_scan),
++
++	TP_ARGS(shr, shrinker_ret, total_scan),
++
++	TP_STRUCT__entry(
++		__field(struct shrinker *, shr)
++		__field(long, shr_nr)
++		__field(int, shrinker_ret)
++		__field(unsigned long, total_scan)
++	),
++
++	TP_fast_assign(
++		__entry->shr = shr;
++		__entry->shr_nr = shr->nr;
++		__entry->shrinker_ret = shrinker_ret;
++		__entry->total_scan = total_scan;
++	),
++
++	TP_printk("shrinker %p: nr %ld total_scan %ld return val %d",
++		__entry->shr,
++		__entry->shr_nr,
++		__entry->total_scan,
++		__entry->shrinker_ret)
++);
+ 
+ #endif /* _TRACE_VMSCAN_H */
+ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index faa0a08..48e3fbd 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -250,6 +250,7 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+ 		unsigned long long delta;
+ 		unsigned long total_scan;
+ 		unsigned long max_pass;
++		int shrink_ret = 0;
+ 
+ 		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
+ 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
+@@ -274,9 +275,11 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+ 		total_scan = shrinker->nr;
+ 		shrinker->nr = 0;
+ 
++		trace_mm_shrink_slab_start(shrinker, shrink, nr_pages_scanned,
++					lru_pages, max_pass, delta, total_scan);
++
+ 		while (total_scan >= SHRINK_BATCH) {
+ 			long this_scan = SHRINK_BATCH;
+-			int shrink_ret;
+ 			int nr_before;
+ 
+ 			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
+@@ -293,6 +296,7 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+ 		}
+ 
+ 		shrinker->nr += total_scan;
++		trace_mm_shrink_slab_end(shrinker, shrink_ret, total_scan);
+ 	}
+ 	up_read(&shrinker_rwsem);
+ out:
+-- 
+1.7.5.1
 
-  autofs4: bogus dentry_unhash() added in ->unlink() (2011-05-30 01:50:53 -0400)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/people/dgc/xfsdev.git per-sb-shrinker
-
-Dave Chinner (12):
-      vmscan: add shrink_slab tracepoints
-      vmscan: shrinker->nr updates race and go wrong
-      vmscan: reduce wind up shrinker->nr when shrinker can't do work
-      vmscan: add customisable shrinker batch size
-      inode: convert inode_stat.nr_unused to per-cpu counters
-      inode: Make unused inode LRU per superblock
-      inode: move to per-sb LRU locks
-      superblock: introduce per-sb cache shrinker infrastructure
-      inode: remove iprune_sem
-      superblock: add filesystem shrinker operations
-      vfs: increase shrinker batch size
-      xfs: make use of new shrinker callout for the inode cache
-
- Documentation/filesystems/vfs.txt |   21 ++++++
- fs/dcache.c                       |  121 ++++--------------------------------
- fs/inode.c                        |  124 ++++++++++++-------------------------
- fs/super.c                        |   79 +++++++++++++++++++++++-
- fs/xfs/linux-2.6/xfs_super.c      |   26 +++++---
- fs/xfs/linux-2.6/xfs_sync.c       |   71 ++++++++-------------
- fs/xfs/linux-2.6/xfs_sync.h       |    5 +-
- include/linux/fs.h                |   14 ++++
- include/linux/mm.h                |    1 +
- include/trace/events/vmscan.h     |   71 +++++++++++++++++++++
- mm/vmscan.c                       |   70 ++++++++++++++++-----
- 11 files changed, 337 insertions(+), 266 deletions(-)
