@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932612Ab1FBADp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 20:03:45 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:39308 "EHLO
+	id S1757866Ab1FBAGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 20:06:20 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:57439 "EHLO
 	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932416Ab1FBADn (ORCPT
+	with ESMTP id S1752315Ab1FBAGT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 20:03:43 -0400
+	Wed, 1 Jun 2011 20:06:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=XGXq+wp0pt5ahJJvJcvuNpt8NV+lNUnL3XCsT3d0Lb3Fx/vB9KU7rh3cAaz1B30aRC
-         uySm+s5qxmyns8k+hEnh4I9oG5EIzfAb4+Hx8QygXGSC08eagsuPr+8imQJVExyoH4Ub
-         mKPLHQK9hTWzaZM+dMedB5bWez8mEVwOQKykA=
+         :cc:content-type:content-transfer-encoding;
+        b=qoq2/X04vLJuxBtR7Vbg+c7m8jbE3E/zdU2vH3Hizl7+nCnfRH/KT4wokmxfvDp/yp
+         4PJMlSJr+AmISP09HRrmRjk2dUF/pJ6Q58nrwWv4aDr/WAUtq0w5R21OvSFQTSnQ2W1w
+         TjUd6ki7Tkb6lZDVRDwd8GjxFvjUE4Sag+U9s=
 MIME-Version: 1.0
-In-Reply-To: <1306950434.3627.23.camel@ayu>
-References: <BANLkTikvU-XUu9sWX-E87a7CUtA7j+ZRpA@mail.gmail.com>
-	<BANLkTi=w7VhV2GxKrGGe9dirHcEkwKrDwA@mail.gmail.com>
-	<BANLkTim7XZKLCRp=ZtRJWhi7k4BzwYpRpg@mail.gmail.com>
-	<20110531201348.GA8723@1wt.eu>
-	<1306950434.3627.23.camel@ayu>
-Date: Wed, 1 Jun 2011 20:03:41 -0400
-Message-ID: <BANLkTim7mGXzRhvnziyLBSULGYg2N+L0BA@mail.gmail.com>
-Subject: Re: Linux 3.0 change listings - Wonderful World of Linux 3.0
-From: Joe Pranevich <jpranevich@gmail.com>
-To: Calvin Walton <calvin.walton@kepstin.ca>
-Cc: Willy Tarreau <w@1wt.eu>, Mike Frysinger <vapier.adi@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110601225723.GA18471@suse.de>
+References: <BANLkTi=6-sGL9QJbyK34kCPbaPVOREE1QA@mail.gmail.com>
+	<20110601211506.GA16121@suse.de>
+	<BANLkTi=MF2ApN4yRvFOr2sM3PbrnRGPtng@mail.gmail.com>
+	<20110601225723.GA18471@suse.de>
+Date: Wed, 1 Jun 2011 17:06:18 -0700
+Message-ID: <BANLkTinxbqs1gHMSv5YPF0fCK1AOiCXTwg@mail.gmail.com>
+Subject: Re: Long-term stable versions in linux-2.6-stable.git?
+From: Bryan Hundven <bryanhundven@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-Thank you for the feedback. While I already have a section about what
-v3 means right at the top, I will be reworking the exuberance out of
-the finished text, cutting the use of the word "new", and making it
-more clear that this is a "v2.6 retrospective", to use your term. I
-will also place notices to that effect on each page of the web version
-of the doc. I think I have done a reasonable job in summarizing where
-Linux has moved to since the last "dot-zero" release, which was my
-hope and intent, and now I just want to move the text to make that
-more clear.
-
-This has been a good experience. I regularly follow kernel development
-and read change logs, but there were still numerous things that I
-learned about Linux 2.6.x that I didn't know. The wide angle lens
-helped me and I hope it can help others. (My inclination, if I do this
-again, would be to do a yearly writeup (WWOL 2012), though perhaps
-we'll have yearly point releases anyway.)
-
-I will finish these changes by Sunday. The doc may be too long for
-another kernel post, but I appreciate the corrections and feedback so
-please keep them coming.
-
-Joe
-
-
-On Wed, Jun 1, 2011 at 1:47 PM, Calvin Walton <calvin.walton@kepstin.ca> wrote:
-> On Tue, 2011-05-31 at 22:13 +0200, Willy Tarreau wrote:
->> On Tue, May 31, 2011 at 01:22:49AM -0400, Joe Pranevich wrote:
->> > Mike,
+On Wed, Jun 1, 2011 at 3:57 PM, Greg KH <gregkh@suse.de> wrote:
+> On Wed, Jun 01, 2011 at 03:33:21PM -0700, Bryan Hundven wrote:
+>> On Wed, Jun 1, 2011 at 2:15 PM, Greg KH <gregkh@suse.de> wrote:
+>> > On Wed, Jun 01, 2011 at 10:38:35AM -0700, Bryan Hundven wrote:
+>> >> Hello,
+>> >>
+>> >> I was wondering if there are plans to include the long-term stable
+>> >> versions in the /pub/scm/linux/kernel/git/stable/linux-2.6-stable.git
+>> >> repository?
+>> >>
+>> >> I'm not subscribed to lkml, please cc on response.
 >> >
->> > Thank you. I appreciate the comments and the corrections. It was a
->> > marathon weekend and yes, I missed some obvious typos. Thanks.
->> >
->> I'd say that in general, almost all of the features you're announcing as
->> "new" will make unaware people think that older versions did not have
->> those features, which is quite misleading. Linus took great care to say
->> that 3.0-rc1 had very few changes, it can be a bit confusing to see a
->> post pretending it to be a revolutionary new kernel.
+>> > It's been discussed numerous times in the past, the thing is, I don't
+>> > control the script that does this so I have no control over it, sorry.
 >>
->> Probably that you should more clearly say that all those features were
->> progressively added in all 2.6 releases, otherwise I'm already expecting
->> to see a lot of idiocies posted in journals.
+>> Ok. The reason I ask is that it is painful to merge changes from
+>> 2.6.35.13 back to 2.6.35.9, then forward to >2.6.36, although I guess
+>> I will have to live with it.
 >
-> Perhaps a simple change of the title and introduction would handle
-> clearing this up. Instead of presenting it as a "What's new in Linux
-> 3.0" article (which it is not, or it would be a lot shorter!), why not
-> call it what it actually is: "A Retrospective of the Linux 2.6 era"?
+> Why would you have to do that?  Why can't you just create the tree
+> yourself by pulling from the different longterm branches?
+
+That works too. Thank you!
+
+>> If you don't mind me asking; who controls the script that does this?
 >
-> --
-> Calvin Walton <calvin.walton@kepstin.ca>
->
+> I really don't know, sorry.
 >
