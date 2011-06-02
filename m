@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab1FBWdI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 18:33:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55500 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752401Ab1FBWdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 18:33:05 -0400
-Subject: RE: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
- mark ncm devices as "mobile broadband devices" with FLAG_WWAN
-From: Dan Williams <dcbw@redhat.com>
-To: Alexey ORISHKO <alexey.orishko@stericsson.com>
-Cc: Stefan Metzmacher <metze@samba.org>, Oliver Neukum <oliver@neukum.name>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 02 Jun 2011 17:35:31 -0500
-In-Reply-To: <1307053743.21633.22.camel@dcbw.foobar.com>
-References: <1306922913-17803-1-git-send-email-metze@samba.org>
-	 <1306922913-17803-2-git-send-email-metze@samba.org>
-	 <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E583@EXDCVYMBSTM006.EQ1STM.local>
-	 <1307053743.21633.22.camel@dcbw.foobar.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1307054132.21633.25.camel@dcbw.foobar.com>
-Mime-Version: 1.0
+	id S1754975Ab1FBWiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 18:38:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:59894 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752871Ab1FBWiH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 18:38:07 -0400
+X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=wom5GMh1gUkA:10 a=-aXJkhsTUggA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=g3F5VGk0NOMZWSIEWMgijA==:17 a=VnNF1IyMAAAA:8 a=2z1OXlWFAAAA:8 a=DfNHnWVPAAAA:8 a=LoNo02exYwrPBwHLqloA:9 a=ls6jA5zJLO357-XQHSwA:7 a=CjuIK1q_8ugA:10 a=lBRciGGoxdUA:10 a=g3F5VGk0NOMZWSIEWMgijA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.123.158.191
+Date: Thu, 2 Jun 2011 17:38:03 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH v6 03/20] evm: re-release
+Message-ID: <20110602223803.GA23700@mail.hallyn.com>
+References: <1307017423-15093-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <1307017423-15093-4-git-send-email-zohar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307017423-15093-4-git-send-email-zohar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-02 at 17:29 -0500, Dan Williams wrote:
-> On Wed, 2011-06-01 at 12:20 +0200, Alexey ORISHKO wrote:
-> > > -----Original Message-----
-> > > From: netdev-owner@vger.kernel.org [mailto:netdev-
-> > > owner@vger.kernel.org] On Behalf Of Stefan Metzmacher
-> > > Sent: Wednesday, June 01, 2011 12:09 PM
-> > 
-> > 
-> > > -	.flags = FLAG_POINTTOPOINT | FLAG_NO_SETINT | FLAG_MULTI_PACKET,
-> > > +	.flags = FLAG_WWAN | FLAG_NO_SETINT | FLAG_MULTI_PACKET,
-> > 
-> > This patch will introduce incompatibility with already existing
-> > applications, which track usbX devices. As a result, end user
-> > application will stop working.
+Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
+> EVM protects a file's security extended attributes(xattrs) against integrity
+> attacks.  This patchset provides the framework and an initial method.  The
+> initial method maintains an HMAC-sha1 value across the security extended
+> attributes, storing the HMAC value as the extended attribute 'security.evm'.
+> Other methods of validating the integrity of a file's metadata will be posted
+> separately (eg. EVM-digital-signatures).
 > 
-> Applications should *never* track devices based solely on a device name
-> prefix.  What do they do when the device gets renamed either by udev
-> rules or the user?  It's simply broken.  Device names are not stable API
-> and they can and do change at will.  Applications that expect them to
-> have a stable prefix are simply broken.
+> While this patchset does authenticate the security xattrs, and
+> cryptographically binds them to the inode, coming extensions will bind other
+> directory and inode metadata for more complete protection.  To help simplify
+> the review and upstreaming process, each extension will be posted separately
+> (eg. IMA-appraisal, IMA-appraisal-directory).  For a general overview of the
+> proposed Linux integrity subsystem, refer to Dave Safford's whitepaper:
+> http://downloads.sf.net/project/linux-ima/linux-ima/Integrity_overview.pdf.
+> 
+> EVM depends on the Kernel Key Retention System to provide it with a
+> trusted/encrypted key for the HMAC-sha1 operation. The key is loaded onto the
+> root's keyring using keyctl.  Until EVM receives notification that the key has
+> been successfully loaded onto the keyring (echo 1 > <securityfs>/evm), EVM can
+> not create or validate the 'security.evm' xattr, but returns INTEGRITY_UNKNOWN.
+> Loading the key and signaling EVM should be done as early as possible. Normally
+> this is done in the initramfs, which has already been measured as part of the
+> trusted boot.  For more information on creating and loading existing
+> trusted/encrypted keys, refer to Documentation/keys-trusted-encrypted.txt.
+> 
+> Based on the LSMs enabled, the set of EVM protected security xattrs is defined
+> at compile.  EVM adds the following three calls to the existing security hooks:
+> evm_inode_setxattr(), evm_inode_post_setxattr(), and evm_inode_removexattr.  To
+> initialize and update the 'security.evm' extended attribute, EVM defines three
+> calls: evm_inode_post_init(), evm_inode_post_setattr() and
+> evm_inode_post_removexattr() hooks.  To verify the integrity of a security
+> xattr, EVM exports evm_verifyxattr().
+> 
+> Changelog v6: (based on Serge Hallyn's review)
+> - fix URL in patch description
 
-A follow-on to this is that if you really care about specific devices,
-your application can use udev rules to "tag" specific interfaces based
-on USB VID/PID/GUID or other device attributes, and check for those tags
-in your program.  Use udev (good) or netlink (good) or SIOCGIFCONF (bad)
-to enumerate the various network interfaces on the system and pick the
-one you want using the udev tags instead of hardcoding stuff that will
-inevitably break, as you've seen here.  Yeah, it's more code.  But hey,
-it doesn't break when people do something you don't expect!
+It's still wrong in Documentation/ABI/testing/evm...
 
-Dan
+> - remove evm_hmac_size definition
+> - use SHA1_DIGEST_SIZE (removed both MAX_DIGEST_SIZE and evm_hmac_size)
+> - moved linux include before other includes
+> - test for crypto_hash_setkey failure
+> - fail earlier for invalid key
+> - clear entire encrypted key, even on failure
+> - check xattr name length before comparing xattr names
 
+The rest looks good, thanks
 
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+
+-serge
