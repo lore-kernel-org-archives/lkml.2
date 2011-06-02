@@ -1,87 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab1FBE1Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 00:27:16 -0400
-Received: from trent.utfs.org ([194.246.123.103]:57502 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751016Ab1FBE1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 00:27:15 -0400
-Date: Wed, 1 Jun 2011 21:27:10 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: linville@tuxdriver.com, LKML <linux-kernel@vger.kernel.org>,
-        linux ppc dev <linuxppc-dev@lists.ozlabs.org>, zajec5@gmail.com
-Subject: Re: 3.0-rc1: powerpc hangs at Kernel virtual memory layout
-In-Reply-To: <1306983467.29297.51.camel@pasglop>
-Message-ID: <alpine.DEB.2.01.1106012057130.21697@trent.utfs.org>
-References: <alpine.DEB.2.01.1105311644010.21697@trent.utfs.org>  <alpine.DEB.2.01.1106011712270.21697@trent.utfs.org> <1306983467.29297.51.camel@pasglop>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1752459Ab1FBEaX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 00:30:23 -0400
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:59674 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016Ab1FBEaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 00:30:21 -0400
+Message-ID: <4DE711DE.5050603@snapgear.com>
+Date: Thu, 2 Jun 2011 14:30:22 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] asm-generic: add another generic ext2 atomic bitops
+References: <1306938736-11119-1-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <1306938736-11119-1-git-send-email-akinobu.mita@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Jun 2011 at 12:57, Benjamin Herrenschmidt wrote:
-> Ok, thanks a lot, It looks rather trivial actually: That new workaround
-> is PCIe specific but is called unconditionally, and will do bad things
-> non-PCIe implementations.
 
-OK, with your patch applied to Linus' latest git tree the machine 
-continues to boot. Also, with the latest tree, the "machine is stuck after 
-ide-cd init" problem[0] went away.
+Hi Akinobu,
 
-For this particular problem and patch, feel free to add:
+On 02/06/11 00:32, Akinobu Mita wrote:
+> The majority of architectures implement ext2 atomic bitops as
+> test_and_{set,clear}_bit() without spinlock.
+>
+> This adds this type of generic implementation in ext2-atomic.h and
+> use it wherever possible.
 
-Tested-by: Christian Kujau <lists@nerdbynature.de>
+I am trying to get consensus on merging the m68k bitops_mm.h and
+bitops_no.h. Here is a proposed patch to do this:
 
-However, shortly after boot and loggin in to the box remotely, the bux did 
-not respond any more. I'm not sure if these are related to those SSB/PCIe 
-changes, but somehow I hope they are - bisecting those would take much 
-longer, as it's not an "instant" death:
+http://www.spinics.net/lists/linux-m68k/msg03803.html
 
- * http://nerdbynature.de/bits/3.0-rc1/linux-3.0-rc1_stuck1.jpg
- * http://nerdbynature.de/bits/3.0-rc1/linux-3.0-rc1_stuck2.jpg
+I expect you wouldn't need to patch m68k/bitops_mm.h if this
+goes in.
 
-This is what an OCR program made of it:
+Regards
+Greg
 
-irq euent stamp: 185804850
-hardirqs last enabled at (185904849): [<c04005b0>] _raw_spin_unlock_irqrestore+0x40/0x?e
-hardirqs last disabled at (185904850): [<c00120b8>] reenable_mmu+0x24/0x78
-Softirqs last enabled at (185892414): [<c000fe8c>] call_do_softirq+0x14/0x24
-softirqs last disabled at (18589240?): [<c000fe8c>] call_do_softirq+0x14/0x24
-NIP: e04005b4 LR: e04005b0 CTR: 00000000
-REGS: ef92be10 TRHP: 0901 Not tainted (3.0.0-rel-00049-g1fa?b6a-dirtg)
-MSB: 00009032 <EE.ME.IR.DR> CR: 42002084
-TRSK = ef8d0000[38B] ’kuorker/0:2’ THREAD:
-GPR00: c04005b0 ef92bec0 efBd0000 00000001
-GPR08: 00000000 0b14aed0 0049a306 00030600
-HIP [c01005b1] _rau_spin_unlock_irqrestore+0x44/0x?c
-LR [c04005b0] _rau_spin_unlock_irqrestore+0x40/0x?c
-Call Trace:
-[ef92bec0] [c04005b0] _raw_spin_unlock_irqrestore+0x40/0x?c (unreliable)
-[ef92bed0] [c029c504] flush_tu_ldisc+0x121/0x230
-[ef92bf10] [c001c86c] process_one_uork+0x1c1/0x4cB
-[ef92bfS0] [c004efac] worker_thread+0x1?8/0x3c1
-[ef92bf90] [c0051148] kthread+0x81/0x88
-[ef92hff0] [c0810390] kernel_thread+0x1c/0x68
 
-XER: 20000000
-ef92a000 ef8d0660 00000006 00000000 18614000 22002088
-Instruction dump:
-??? 93e1060c ?c9f23?B 38800001 90010011 4bc6e9a9 ?fc3i`3?8 4be61a69
-?3e08080 11820021 1bc6b515 ?fe00124
-B8c16008 ?c0803a6 83c1000c
 
-Well, the picture is way better :-\
+> Suggested-by: Andreas Dilger<adilger@dilger.ca>
+> Signed-off-by: Akinobu Mita<akinobu.mita@gmail.com>
+> Cc: Arnd Bergmann<arnd@arndb.de>
+> Cc: linux-arch@vger.kernel.org
+> ---
+>   arch/alpha/include/asm/bitops.h          |    4 ++--
+>   arch/arm/include/asm/bitops.h            |    6 ++----
+>   arch/cris/include/asm/bitops.h           |    4 ++--
+>   arch/frv/include/asm/bitops.h            |    4 ++--
+>   arch/ia64/include/asm/bitops.h           |    4 ++--
+>   arch/m68k/include/asm/bitops_mm.h        |    6 ++----
+>   arch/mn10300/include/asm/bitops.h        |    8 ++------
+>   arch/parisc/include/asm/bitops.h         |   10 ++--------
+>   arch/powerpc/include/asm/bitops.h        |    6 ++----
+>   arch/s390/include/asm/bitops.h           |    6 ++----
+>   arch/sparc/include/asm/bitops_64.h       |    6 ++----
+>   arch/tile/include/asm/bitops_64.h        |    6 ++----
+>   arch/x86/include/asm/bitops.h            |    6 ++----
+>   arch/xtensa/include/asm/bitops.h         |   15 ++-------------
+>   include/asm-generic/bitops/ext2-atomic.h |    9 +++++++++
+>   15 files changed, 37 insertions(+), 63 deletions(-)
+>
+> diff --git a/arch/alpha/include/asm/bitops.h b/arch/alpha/include/asm/bitops.h
+> index 85b8152..e7f02c6 100644
+> --- a/arch/alpha/include/asm/bitops.h
+> +++ b/arch/alpha/include/asm/bitops.h
+> @@ -456,8 +456,8 @@ sched_find_first_bit(const unsigned long b[2])
+>
+>   #include<asm-generic/bitops/le.h>
+>
+> -#define ext2_set_bit_atomic(l,n,a)   test_and_set_bit(n,a)
+> -#define ext2_clear_bit_atomic(l,n,a) test_and_clear_bit(n,a)
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   #endif /* __KERNEL__ */
+>
+> diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
+> index b4892a0..5720428 100644
+> --- a/arch/arm/include/asm/bitops.h
+> +++ b/arch/arm/include/asm/bitops.h
+> @@ -310,10 +310,8 @@ static inline int find_next_bit_le(const void *p, int size, int offset)
+>   /*
+>    * Ext2 is defined to use little-endian byte ordering.
+>    */
+> -#define ext2_set_bit_atomic(lock, nr, p)	\
+> -		test_and_set_bit_le(nr, p)
+> -#define ext2_clear_bit_atomic(lock, nr, p)	\
+> -		test_and_clear_bit_le(nr, p)
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   #endif /* __KERNEL__ */
+>
+> diff --git a/arch/cris/include/asm/bitops.h b/arch/cris/include/asm/bitops.h
+> index 310e0de..5388ebf 100644
+> --- a/arch/cris/include/asm/bitops.h
+> +++ b/arch/cris/include/asm/bitops.h
+> @@ -156,8 +156,8 @@ static inline int test_and_change_bit(int nr, volatile unsigned long *addr)
+>
+>   #include<asm-generic/bitops/le.h>
+>
+> -#define ext2_set_bit_atomic(l,n,a)   test_and_set_bit(n,a)
+> -#define ext2_clear_bit_atomic(l,n,a) test_and_clear_bit(n,a)
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   #include<asm-generic/bitops/sched.h>
+>
+> diff --git a/arch/frv/include/asm/bitops.h b/arch/frv/include/asm/bitops.h
+> index a1d00b0..d0bde35 100644
+> --- a/arch/frv/include/asm/bitops.h
+> +++ b/arch/frv/include/asm/bitops.h
+> @@ -403,8 +403,8 @@ int __ilog2_u64(u64 n)
+>
+>   #include<asm-generic/bitops/le.h>
+>
+> -#define ext2_set_bit_atomic(lock,nr,addr)	test_and_set_bit  ((nr) ^ 0x18, (addr))
+> -#define ext2_clear_bit_atomic(lock,nr,addr)	test_and_clear_bit((nr) ^ 0x18, (addr))
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   #endif /* __KERNEL__ */
+>
+> diff --git a/arch/ia64/include/asm/bitops.h b/arch/ia64/include/asm/bitops.h
+> index b76f7e0..6d7b4d8 100644
+> --- a/arch/ia64/include/asm/bitops.h
+> +++ b/arch/ia64/include/asm/bitops.h
+> @@ -458,8 +458,8 @@ static __inline__ unsigned long __arch_hweight64(unsigned long x)
+>
+>   #include<asm-generic/bitops/le.h>
+>
+> -#define ext2_set_bit_atomic(l,n,a)	test_and_set_bit(n,a)
+> -#define ext2_clear_bit_atomic(l,n,a)	test_and_clear_bit(n,a)
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   #include<asm-generic/bitops/sched.h>
+>
+> diff --git a/arch/m68k/include/asm/bitops_mm.h b/arch/m68k/include/asm/bitops_mm.h
+> index 89cf5b8..2514ad7 100644
+> --- a/arch/m68k/include/asm/bitops_mm.h
+> +++ b/arch/m68k/include/asm/bitops_mm.h
+> @@ -491,10 +491,8 @@ static inline unsigned long find_next_bit_le(const void *addr,
+>
+>   /* Bitmap functions for the ext2 filesystem. */
+>
+> -#define ext2_set_bit_atomic(lock, nr, addr)	\
+> -	test_and_set_bit_le(nr, addr)
+> -#define ext2_clear_bit_atomic(lock, nr, addr)	\
+> -	test_and_clear_bit_le(nr, addr)
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   #endif /* __KERNEL__ */
+>
+> diff --git a/arch/mn10300/include/asm/bitops.h b/arch/mn10300/include/asm/bitops.h
+> index 0939462..d42ba8e 100644
+> --- a/arch/mn10300/include/asm/bitops.h
+> +++ b/arch/mn10300/include/asm/bitops.h
+> @@ -227,12 +227,8 @@ int ffs(int x)
+>   #include<asm-generic/bitops/find.h>
+>   #include<asm-generic/bitops/sched.h>
+>   #include<asm-generic/bitops/hweight.h>
+> -
+> -#define ext2_set_bit_atomic(lock, nr, addr) \
+> -	test_and_set_bit((nr), (addr))
+> -#define ext2_clear_bit_atomic(lock, nr, addr) \
+> -	test_and_clear_bit((nr), (addr))
+> -
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>   #include<asm-generic/bitops/le.h>
+>
+>   #endif /* __KERNEL__ */
+> diff --git a/arch/parisc/include/asm/bitops.h b/arch/parisc/include/asm/bitops.h
+> index 43c516f..e9a5bc9 100644
+> --- a/arch/parisc/include/asm/bitops.h
+> +++ b/arch/parisc/include/asm/bitops.h
+> @@ -223,14 +223,8 @@ static __inline__ int fls(int x)
+>   #ifdef __KERNEL__
+>
+>   #include<asm-generic/bitops/le.h>
+> -
+> -/* '3' is bits per byte */
+> -#define LE_BYTE_ADDR ((sizeof(unsigned long) - 1)<<  3)
+> -
+> -#define ext2_set_bit_atomic(l,nr,addr) \
+> -		test_and_set_bit((nr)   ^ LE_BYTE_ADDR, (unsigned long *)addr)
+> -#define ext2_clear_bit_atomic(l,nr,addr) \
+> -		test_and_clear_bit( (nr) ^ LE_BYTE_ADDR, (unsigned long *)addr)
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   #endif	/* __KERNEL__ */
+>
+> diff --git a/arch/powerpc/include/asm/bitops.h b/arch/powerpc/include/asm/bitops.h
+> index f18c6d9..9fb8f9d 100644
+> --- a/arch/powerpc/include/asm/bitops.h
+> +++ b/arch/powerpc/include/asm/bitops.h
+> @@ -327,10 +327,8 @@ unsigned long find_next_bit_le(const void *addr,
+>   				    unsigned long size, unsigned long offset);
+>   /* Bitmap functions for the ext2 filesystem */
+>
+> -#define ext2_set_bit_atomic(lock, nr, addr) \
+> -	test_and_set_bit_le((nr), (unsigned long*)addr)
+> -#define ext2_clear_bit_atomic(lock, nr, addr) \
+> -	test_and_clear_bit_le((nr), (unsigned long*)addr)
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   #include<asm-generic/bitops/sched.h>
+>
+> diff --git a/arch/s390/include/asm/bitops.h b/arch/s390/include/asm/bitops.h
+> index 667c6e9..5f60712 100644
+> --- a/arch/s390/include/asm/bitops.h
+> +++ b/arch/s390/include/asm/bitops.h
+> @@ -832,10 +832,8 @@ static inline int find_next_bit_le(void *vaddr, unsigned long size,
+>
+>   #include<asm-generic/bitops/le.h>
+>
+> -#define ext2_set_bit_atomic(lock, nr, addr)	\
+> -	test_and_set_bit_le(nr, addr)
+> -#define ext2_clear_bit_atomic(lock, nr, addr)	\
+> -	test_and_clear_bit_le(nr, addr)
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>
+>   #endif /* __KERNEL__ */
+> diff --git a/arch/sparc/include/asm/bitops_64.h b/arch/sparc/include/asm/bitops_64.h
+> index 38e9aa1..e67166c 100644
+> --- a/arch/sparc/include/asm/bitops_64.h
+> +++ b/arch/sparc/include/asm/bitops_64.h
+> @@ -91,10 +91,8 @@ static inline unsigned int __arch_hweight8(unsigned int w)
+>
+>   #include<asm-generic/bitops/le.h>
+>
+> -#define ext2_set_bit_atomic(lock,nr,addr) \
+> -	test_and_set_bit((nr) ^ 0x38,(unsigned long *)(addr))
+> -#define ext2_clear_bit_atomic(lock,nr,addr) \
+> -	test_and_clear_bit((nr) ^ 0x38,(unsigned long *)(addr))
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   #endif /* __KERNEL__ */
+>
+> diff --git a/arch/tile/include/asm/bitops_64.h b/arch/tile/include/asm/bitops_64.h
+> index 99615e8..ce6ec72 100644
+> --- a/arch/tile/include/asm/bitops_64.h
+> +++ b/arch/tile/include/asm/bitops_64.h
+> @@ -97,9 +97,7 @@ static inline int test_and_change_bit(unsigned nr,
+>   	return (oldval&  mask) != 0;
+>   }
+>
+> -#define ext2_set_bit_atomic(lock, nr, addr)			\
+> -	test_and_set_bit((nr), (unsigned long *)(addr))
+> -#define ext2_clear_bit_atomic(lock, nr, addr)			\
+> -	test_and_clear_bit((nr), (unsigned long *)(addr))
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   #endif /* _ASM_TILE_BITOPS_64_H */
+> diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+> index 69d5813..abe730f 100644
+> --- a/arch/x86/include/asm/bitops.h
+> +++ b/arch/x86/include/asm/bitops.h
+> @@ -458,10 +458,8 @@ static inline int fls(int x)
+>
+>   #include<asm-generic/bitops/le.h>
+>
+> -#define ext2_set_bit_atomic(lock, nr, addr)			\
+> -	test_and_set_bit((nr), (unsigned long *)(addr))
+> -#define ext2_clear_bit_atomic(lock, nr, addr)			\
+> -	test_and_clear_bit((nr), (unsigned long *)(addr))
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   #endif /* __KERNEL__ */
+>   #endif /* _ASM_X86_BITOPS_H */
+> diff --git a/arch/xtensa/include/asm/bitops.h b/arch/xtensa/include/asm/bitops.h
+> index c8fac8d..f948187 100644
+> --- a/arch/xtensa/include/asm/bitops.h
+> +++ b/arch/xtensa/include/asm/bitops.h
+> @@ -108,19 +108,8 @@ static inline unsigned long __fls(unsigned long word)
+>   #include<asm-generic/bitops/find.h>
+>   #include<asm-generic/bitops/le.h>
+>
+> -#ifdef __XTENSA_EL__
+> -# define ext2_set_bit_atomic(lock,nr,addr)				\
+> -	test_and_set_bit((nr), (unsigned long*)(addr))
+> -# define ext2_clear_bit_atomic(lock,nr,addr)				\
+> -	test_and_clear_bit((nr), (unsigned long*)(addr))
+> -#elif defined(__XTENSA_EB__)
+> -# define ext2_set_bit_atomic(lock,nr,addr)				\
+> -	test_and_set_bit((nr) ^ 0x18, (unsigned long*)(addr))
+> -# define ext2_clear_bit_atomic(lock,nr,addr)				\
+> -	test_and_clear_bit((nr) ^ 0x18, (unsigned long*)(addr))
+> -#else
+> -# error processor byte order undefined!
+> -#endif
+> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +#include<asm-generic/bitops/ext2-atomic.h>
+>
+>   #include<asm-generic/bitops/hweight.h>
+>   #include<asm-generic/bitops/lock.h>
+> diff --git a/include/asm-generic/bitops/ext2-atomic.h b/include/asm-generic/bitops/ext2-atomic.h
+> index ecf1c9d..315760b 100644
+> --- a/include/asm-generic/bitops/ext2-atomic.h
+> +++ b/include/asm-generic/bitops/ext2-atomic.h
+> @@ -1,6 +1,13 @@
+>   #ifndef _ASM_GENERIC_BITOPS_EXT2_ATOMIC_H_
+>   #define _ASM_GENERIC_BITOPS_EXT2_ATOMIC_H_
+>
+> +#ifdef ARCH_NO_EXT2_ATOMIC_SPINLOCK
+> +
+> +#define ext2_set_bit_atomic(l, nr, addr)	test_and_set_bit_le(nr, addr)
+> +#define ext2_clear_bit_atomic(l, nr, addr)	test_and_clear_bit_le(nr, addr)
+> +
+> +#else
+> +
+>   #define ext2_set_bit_atomic(lock, nr, addr)		\
+>   	({						\
+>   		int ret;				\
+> @@ -19,4 +26,6 @@
+>   		ret;					\
+>   	})
+>
+> +#endif
+> +
+>   #endif /* _ASM_GENERIC_BITOPS_EXT2_ATOMIC_H_ */
 
-Thanks,
-Christian.
 
-[0] http://nerdbynature.de/bits/3.0-rc1/linux-3.0-rc1-cdrom.jpg
 -- 
-BOFH excuse #399:
-
-We are a 100% Microsoft Shop.
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
