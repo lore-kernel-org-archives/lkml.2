@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431Ab1FBOXw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 10:23:52 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52908 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab1FBOXv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 10:23:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=dVyyUFwaKJxCzG04ffPUiqKuvgAiGmocOLNP/XU7/7Fi5jlymTJQ355sgeC8hoEPnJ
-         M7aR/81WIcvtI7xcq7aMYBwuIOXpS22mdIojzZzHQJ2driReRLZwmD0bxMyg4WnC+GmG
-         Wf1J09m4+tLWiqkDhztzXNo/OJZFPpoVgPzbg=
-Date: Thu, 2 Jun 2011 22:23:40 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Borislav Petkov <bp@amd64.org>, Borislav Petkov <bp@alien8.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:sched/urgent] sched: Fix cross-cpu clock sync on remote
- wakeups
-Message-ID: <20110602142340.GA3356@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1306835745.2353.3.camel@twins>
- <tip-f01114cb59d670e9b4f2c335930dd57db96e9360@git.kernel.org>
- <20110531125621.GA24439@gere.osrc.amd.com>
- <1306847516.2353.80.camel@twins>
- <20110601070547.GB3368@liondog.tnic>
- <1306924612.2353.176.camel@twins>
- <20110601155017.GD24028@aftab>
- <BANLkTikT6OT-HDi-DR+_ZWEhfp_CYWJ3Hg@mail.gmail.com>
- <1307019866.2497.675.camel@laptop>
+	id S1751722Ab1FBOYb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 10:24:31 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:45331 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750970Ab1FBOYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 10:24:30 -0400
+Date: Thu, 2 Jun 2011 16:24:08 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 8/8] mm: make per-memcg lru lists exclusive
+Message-ID: <20110602142408.GB28684@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-9-git-send-email-hannes@cmpxchg.org>
+ <BANLkTinHs7OCkpRf8=dYO0ObH5sndZ4__g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1307019866.2497.675.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTinHs7OCkpRf8=dYO0ObH5sndZ4__g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 03:04:26PM +0200, Peter Zijlstra wrote:
-> On Thu, 2011-06-02 at 15:52 +0800, Yong Zhang wrote:
-> > In sched_clock_local(), clock is calculated around ->tick_gtod even if
-> > that ->tick_gtod is stale for long time because we stays in idle state. 
-> > You know ->tick_gtod is only updated in sched_clock_tick();
+On Thu, Jun 02, 2011 at 10:16:59PM +0900, Hiroyuki Kamezawa wrote:
+> 2011/6/1 Johannes Weiner <hannes@cmpxchg.org>:
+> > All lru list walkers have been converted to operate on per-memcg
+> > lists, the global per-zone lists are no longer required.
+> >
+> > This patch makes the per-memcg lists exclusive and removes the global
+> > lists from memcg-enabled kernels.
+> >
+> > The per-memcg lists now string up page descriptors directly, which
+> > unifies/simplifies the list isolation code of page reclaim as well as
+> > it saves a full double-linked list head for each page in the system.
+> >
+> > At the core of this change is the introduction of the lruvec
+> > structure, an array of all lru list heads.  It exists for each zone
+> > globally, and for each zone per memcg.  All lru list operations are
+> > now done in generic code against lruvecs, with the memcg lru list
+> > primitives only doing accounting and returning the proper lruvec for
+> > the currently scanned memcg on isolation, or for the respective page
+> > on putback.
+> >
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 > 
-> (well, no, there's idle callbacks as you said below)
 > 
-> > IOW, when a cpu goes out of idle, sched_clock_tick() is called from
-> > tick_nohz_stop_idle() which is later than interrupt.
-> 
-> Gah, that would be awefull and mean wakeups from interrupts were already
-> borken. /me goes look at code.
-> 
-> irq_enter() -> tick_check_idle() -> tick_check_nohz() ->
-> tick_nohz_stop_idle() -> sched_clock_idle_wakeup_event()
-> 
-> should update the thing before we run any isrs, right?
+> could you divide this into
+>   - introduce lruvec
+>   - don't record section? information into pc->flags because we see
+> "page" on memcg LRU
+>     and there is no requirement to get page from "pc".
+>   - remove pc->lru completely
 
-Hmmm, you are right.
-
-But smp_reschedule_interrupt() doesn't call irq_enter()/irq_exit(),
-is that correct?
-
-Thanks,
-Yong
+Yes, that makes sense.  It shall be fixed in the next version.
