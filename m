@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab1FBW0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 18:26:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7843 "EHLO mx1.redhat.com"
+	id S1755352Ab1FBWdb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 18:33:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28723 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752207Ab1FBW0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 18:26:38 -0400
-Subject: RE: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
- mark ncm devices as "mobile broadband devices" with FLAG_WWAN
-From: Dan Williams <dcbw@redhat.com>
-To: Alexey ORISHKO <alexey.orishko@stericsson.com>
-Cc: Stefan Metzmacher <metze@samba.org>, Oliver Neukum <oliver@neukum.name>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 02 Jun 2011 17:29:02 -0500
-In-Reply-To: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E583@EXDCVYMBSTM006.EQ1STM.local>
-References: <1306922913-17803-1-git-send-email-metze@samba.org>
-	 <1306922913-17803-2-git-send-email-metze@samba.org>
-	 <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E583@EXDCVYMBSTM006.EQ1STM.local>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1307053743.21633.22.camel@dcbw.foobar.com>
-Mime-Version: 1.0
+	id S1752401Ab1FBWd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 18:33:29 -0400
+Date: Fri, 3 Jun 2011 00:32:01 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Mel Gorman <mel@csn.ul.ie>,
+        akpm@linux-foundation.org, Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110602223201.GH2802@random.random>
+References: <20110531121620.GA3490@barrios-laptop>
+ <20110531122437.GJ19505@random.random>
+ <20110531133340.GB3490@barrios-laptop>
+ <20110531141402.GK19505@random.random>
+ <20110531143734.GB13418@barrios-laptop>
+ <20110531143830.GC13418@barrios-laptop>
+ <20110602182302.GA2802@random.random>
+ <20110602202156.GA23486@barrios-laptop>
+ <20110602214041.GF2802@random.random>
+ <BANLkTim1WjdHWOQp7bMg5pFFKp1SSFoLKw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTim1WjdHWOQp7bMg5pFFKp1SSFoLKw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-01 at 12:20 +0200, Alexey ORISHKO wrote:
-> > -----Original Message-----
-> > From: netdev-owner@vger.kernel.org [mailto:netdev-
-> > owner@vger.kernel.org] On Behalf Of Stefan Metzmacher
-> > Sent: Wednesday, June 01, 2011 12:09 PM
+On Fri, Jun 03, 2011 at 07:23:48AM +0900, Minchan Kim wrote:
+> I mean we have more tail pages than head pages. So I think we are likely to
+> meet tail pages. Of course, compared to all pages(page cache, anon and
+> so on), compound pages would be very small percentage.
+
+Yes that's my point, that being a small percentage it's no big deal to
+break the loop early.
+
+> > isolated the head and it's useless to insist on more tail pages (at
+> > least for large page size like on x86). Plus we've compaction so
 > 
+> I can't understand your point. Could you elaborate it?
+
+What I meant is that if we already isolated the head page of the THP,
+we don't need to try to free the tail pages and breaking the loop
+early, will still give us a chance to free a whole 2m because we
+isolated the head page (it'll involve some work and swapping but if it
+was a compoundtranspage we're ok to break the loop and we're not
+making the logic any worse). Provided the PMD_SIZE is quite large like
+2/4m...
+
+The only way this patch makes things worse is for slub order 3 in the
+process of being freed. But tail pages aren't generally free anyway so
+I doubt this really makes any difference plus the tail is getting
+cleared as soon as the page reaches the buddy so it's probably
+unnoticeable as this then makes a difference only during a race (plus
+the tail page can't be isolated, only head page can be part of lrus
+and only if they're THP).
+
+> > insisting and screwing lru ordering isn't worth it, better to be
+> > permissive and abort... in fact I wouldn't dislike to remove the
+> > entire lumpy logic when COMPACTION_BUILD is true, but that alters the
+> > trace too...
 > 
-> > -	.flags = FLAG_POINTTOPOINT | FLAG_NO_SETINT | FLAG_MULTI_PACKET,
-> > +	.flags = FLAG_WWAN | FLAG_NO_SETINT | FLAG_MULTI_PACKET,
+> AFAIK, it's final destination to go as compaction will not break lru
+> ordering if my patch(inorder-putback) is merged.
+
+Agreed. I like your patchset, sorry for not having reviewed it in
+detail yet but there were other issues popping up in the last few
+days.
+
+> >> get_page(cursor_page)
+> >> /* The page is freed already */
+> >> if (1 == page_count(cursor_page)) {
+> >>       put_page(cursor_page)
+> >>       continue;
+> >> }
+> >> put_page(cursor_page);
+> >
+> > We can't call get_page on an tail page or we break split_huge_page,
 > 
-> This patch will introduce incompatibility with already existing
-> applications, which track usbX devices. As a result, end user
-> application will stop working.
+> Why don't we call get_page on tail page if tail page isn't free?
+> Maybe I need investigating split_huge_page.
 
-Applications should *never* track devices based solely on a device name
-prefix.  What do they do when the device gets renamed either by udev
-rules or the user?  It's simply broken.  Device names are not stable API
-and they can and do change at will.  Applications that expect them to
-have a stable prefix are simply broken.
+Yes it's split_huge_page, only gup is allowed to increase the tail
+page because we're guaranteed while gup_fast does it,
+split_huge_page_refcount isn't running yet, because the pmd wasn't
+set as splitting and the irqs were disabled (or we'd be holding the
+page_table_lock for gup slow version after checking again the pmd
+wasn't splitting and so __split_huge_page_refcount will wait).
 
-Dan
-
-
+Thanks,
+Andrea
