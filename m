@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab1FBFJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 01:09:35 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61482 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886Ab1FBFJd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754198Ab1FBFJd (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 2 Jun 2011 01:09:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=SWAJgf0uPEOuRszuRMERx/ZoV0V1/u4EAoeoQYDDmn6a54tAU0mND0v06BtrNgrbvT
-         PP3AuUSmEVmzrT2SJcCViB1qcQslp5RCWYrkgj9sss1jYzhnrIj3J+AK6OTD6Q2yMHIf
-         yE2LxpyMaL3JqWxmIVMpeeEzofdfNwAoj0YY4=
-From: Eric Miao <eric.y.miao@gmail.com>
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Cc: Eric Miao <eric.miao@linaro.org>, Eric Miao <eric.miao@canonical.com>,
-        Eric Miao <eric.y.miao@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
-Subject: [PATCH] leds: fix the menuconfig being wrongly displayed
-Date: Thu,  2 Jun 2011 13:09:14 +0800
-Message-Id: <1306991354-11890-1-git-send-email-eric.y.miao@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+Received: from mga02.intel.com ([134.134.136.20]:19210 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751908Ab1FBFJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 01:09:32 -0400
+X-ExtLoop1: 1
+Message-ID: <4DE71B09.70304@intel.com>
+Date: Thu, 02 Jun 2011 13:09:29 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110510 Iceowl/1.0b2 Icedove/3.1.10
+MIME-Version: 1.0
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>
+Subject: Re: [PATCH 7/9] PCIe, AER, add aer_recover_queue
+References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>	<1305619719-7480-8-git-send-email-ying.huang@intel.com> <20110601114937.69d69916@jbarnes-desktop>
+In-Reply-To: <20110601114937.69d69916@jbarnes-desktop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Miao <eric.miao@canonical.com>
+Hi, Jesse,
 
-Seems when a config option does not have a dependency of the menuconfig,
-it messes the display of the rest configs, even if it's a hidden one.
+On 06/02/2011 02:49 AM, Jesse Barnes wrote:
+> On Tue, 17 May 2011 16:08:37 +0800
+> Huang Ying <ying.huang@intel.com> wrote:
+> 
+>> In addition to native PCIe AER, now APEI (ACPI Platform Error
+>> Interface) GHES (Generic Hardware Error Source) can be used to report
+>> PCIe AER errors too.  To add support to APEI GHES PCIe AER recovery,
+>> aer_recover_queue is added to export the recovery function in native
+>> PCIe AER driver.
+>>
+>> Recoverable PCIe AER errors are reported via NMI in APEI GHES.  Then
+>> APEI GHES uses irq_work to delay the error processing into an IRQ
+>> handler.  But PCIe AER recovery can be very time-consuming, so
+>> aer_recover_queue, which can be used in IRQ handler, delays the real
+>> recovery action into the process context, that is, work queue.
+> 
+> Have the dependencies for this already landed?  Or does this one need
+> to go first?
 
-Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
----
- drivers/leds/Kconfig |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+This patch has no external dependencies and can go first.
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 23f0d5e..7066820 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -7,6 +7,8 @@ menuconfig NEW_LEDS
- 	  This is not related to standard keyboard LEDs which are controlled
- 	  via the input system.
- 
-+if NEW_LEDS
-+
- config LEDS_CLASS
- 	bool "LED Class Support"
- 	depends on NEW_LEDS
-@@ -21,8 +23,6 @@ config LEDS_GPIO_REGISTER
- 	  As this function is used by arch code it must not be compiled as a
- 	  module.
- 
--if NEW_LEDS
--
- comment "LED drivers"
- 
- config LEDS_88PM860X
--- 
-1.7.4.1
-
+Best Regards,
+Huang Ying
