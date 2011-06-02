@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab1FBUy0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 16:54:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14024 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753308Ab1FBUyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 16:54:25 -0400
-X-ExtLoop1: 1
-Date: Thu, 2 Jun 2011 16:54:23 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: [PATCH][RESEND] Move some REQ flags to the common bio/request area
-Message-ID: <20110602205423.GE4061@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754680Ab1FBU5Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 16:57:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36248 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753554Ab1FBU4w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 16:56:52 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [GIT PULL 0/9] perf/core fixes and improvements
+Date: Thu,  2 Jun 2011 17:56:27 -0300
+Message-Id: <1307048196-16387-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Ingo,
 
-REQ_SECURE, REQ_FLUSH and REQ_FUA may all be set on a bio as well as 
-on a request, so relocate them to the shared part of the enum.
+        Please consider pulling from:
 
-Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
 
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 2a7cea5..86dabf7 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -125,7 +125,11 @@ enum rq_flag_bits {
- 	__REQ_SYNC,		/* request is sync (sync write or read) */
- 	__REQ_META,		/* metadata io request */
- 	__REQ_DISCARD,		/* request to discard sectors */
-+	__REQ_SECURE,		/* secure discard (used with __REQ_DISCARD) */
-+
- 	__REQ_NOIDLE,		/* don't anticipate more IO after this one */
-+	__REQ_FUA,		/* forced unit access */
-+	__REQ_FLUSH,		/* request for cache flush */
- 
- 	/* bio only flags */
- 	__REQ_RAHEAD,		/* read ahead, can fail anytime */
-@@ -135,7 +139,6 @@ enum rq_flag_bits {
- 	/* request only flags */
- 	__REQ_SORTED,		/* elevator knows about this request */
- 	__REQ_SOFTBARRIER,	/* may not be passed by ioscheduler */
--	__REQ_FUA,		/* forced unit access */
- 	__REQ_NOMERGE,		/* don't touch this for merging */
- 	__REQ_STARTED,		/* drive already may have started this one */
- 	__REQ_DONTPREP,		/* don't call prep for this one */
-@@ -146,11 +149,9 @@ enum rq_flag_bits {
- 	__REQ_PREEMPT,		/* set for "ide_preempt" requests */
- 	__REQ_ALLOCED,		/* request came from our alloc pool */
- 	__REQ_COPY_USER,	/* contains copies of user pages */
--	__REQ_FLUSH,		/* request for cache flush */
- 	__REQ_FLUSH_SEQ,	/* request for flush sequence */
- 	__REQ_IO_STAT,		/* account I/O stat */
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
--	__REQ_SECURE,		/* secure discard (used with __REQ_DISCARD) */
- 	__REQ_NR_BITS,		/* stops here */
- };
- 
+Regards,
+
+- Arnaldo
+
+Arnaldo Carvalho de Melo (3):
+  perf evlist: Remove dependency on debug routines
+  perf python: Use exception to propagate errors
+  perf evlist: Don't die if sample_{id_all|type} is invalid
+
+David Ahern (4):
+  perf stat: clarify unsupported events from uncounted events
+  perf script: "sym" field really means show IP data
+  perf script: Make printing of dso a separate field option
+  perf script: Add printing of sample address
+
+Frederic Weisbecker (2):
+  perf python: Fix argument name list of read_on_cpu()
+  perf python: Cleanup useless double NULL termination in method arg names
+
+ tools/perf/Documentation/perf-script.txt |   12 ++--
+ tools/perf/builtin-script.c              |  108 +++++++++++++++++++++++++++---
+ tools/perf/builtin-stat.c                |    9 ++-
+ tools/perf/builtin-test.c                |    2 +-
+ tools/perf/util/event.c                  |   16 -----
+ tools/perf/util/event.h                  |    2 -
+ tools/perf/util/evlist.c                 |   68 +++++++++++--------
+ tools/perf/util/evlist.h                 |    6 +-
+ tools/perf/util/evsel.c                  |   17 +++++
+ tools/perf/util/evsel.h                  |    8 ++
+ tools/perf/util/python.c                 |   29 ++++----
+ tools/perf/util/session.c                |   73 ++++++++++++++-------
+ tools/perf/util/session.h                |    5 +-
+ 13 files changed, 245 insertions(+), 110 deletions(-)
+
