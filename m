@@ -1,71 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759433Ab1FBHpu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 03:45:50 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54506 "EHLO mx2.mail.elte.hu"
+	id S1759445Ab1FBHus (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 03:50:48 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:55827 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758881Ab1FBHpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 03:45:49 -0400
-Date: Thu, 2 Jun 2011 09:45:30 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        paulus@samba.org, acme@redhat.com, torvalds@linux-foundation.org
-Subject: Re: perf: definition of a "regression"
-Message-ID: <20110602074530.GF2150@elte.hu>
-References: <alpine.DEB.2.00.1105231555490.17453@cl320.eecs.utk.edu>
- <1306182141.2497.5.camel@laptop>
- <alpine.DEB.2.00.1105240212590.28546@cl320.eecs.utk.edu>
- <1306233036.2497.15.camel@laptop>
- <alpine.DEB.2.00.1105272332400.9313@cl320.eecs.utk.edu>
- <1306578144.1200.1150.camel@twins>
- <alpine.DEB.2.00.1105280918510.27439@cl320.eecs.utk.edu>
+	id S1751404Ab1FBHuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 03:50:46 -0400
+Date: Thu, 2 Jun 2011 09:50:28 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ying Han <yinghan@google.com>
+Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
+Message-ID: <20110602075028.GB20630@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
+ <BANLkTi=sYtLGk2_VQLejEU2rQ0JBgg_ZmQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1105280918510.27439@cl320.eecs.utk.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=sYtLGk2_VQLejEU2rQ0JBgg_ZmQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Vince Weaver <vweaver1@eecs.utk.edu> wrote:
-
-> On Sat, 28 May 2011, Peter Zijlstra wrote:
+On Wed, Jun 01, 2011 at 09:05:18PM -0700, Ying Han wrote:
+> On Wed, Jun 1, 2011 at 4:52 PM, Hiroyuki Kamezawa
+> <kamezawa.hiroyuki@gmail.com> wrote:
+> > 2011/6/1 Johannes Weiner <hannes@cmpxchg.org>:
+> >> Hi,
+> >>
+> >> this is the second version of the memcg naturalization series.  The
+> >> notable changes since the first submission are:
+> >>
+> >>    o the hierarchy walk is now intermittent and will abort and
+> >>      remember the last scanned child after sc->nr_to_reclaim pages
+> >>      have been reclaimed during the walk in one zone (Rik)
+> >>
+> >>    o the global lru lists are never scanned when memcg is enabled
+> >>      after #2 'memcg-aware global reclaim', which makes this patch
+> >>      self-sufficient and complete without requiring the per-memcg lru
+> >>      lists to be exclusive (Michal)
+> >>
+> >>    o renamed sc->memcg and sc->current_memcg to sc->target_mem_cgroup
+> >>      and sc->mem_cgroup and fixed their documentation, I hope this is
+> >>      better understandable now (Rik)
+> >>
+> >>    o the reclaim statistic counters have been renamed.  there is no
+> >>      more distinction between 'pgfree' and 'pgsteal', it is now
+> >>      'pgreclaim' in both cases; 'kswapd' has been replaced by
+> >>      'background'
+> >>
+> >>    o fixed a nasty crash in the hierarchical soft limit check that
+> >>      happened during global reclaim in memcgs that are hierarchical
+> >>      but have no hierarchical parents themselves
+> >>
+> >>    o properly implemented the memcg-aware unevictable page rescue
+> >>      scanner, there were several blatant bugs in there
+> >>
+> >>    o documentation on new public interfaces
+> >>
+> >> Thanks for your input on the first version.
+> >>
+> >> I ran microbenchmarks (sparse file catting, essentially) to stress
+> >> reclaim and LRU operations.  There is no measurable overhead for
+> >> !CONFIG_MEMCG, memcg disabled during boot, memcg enabled but no
+> >> configured groups, and hard limit reclaim.
+> >>
+> >> I also ran single-threaded kernbenchs in four unlimited memcgs in
+> >> parallel, contained in a hard-limited hierarchical parent that put
+> >> constant pressure on the workload.  There is no measurable difference
+> >> in runtime, the pgpgin/pgpgout counters, and fairness among memcgs in
+> >> this test compared to an unpatched kernel.  Needs more evaluation,
+> >> especially with a higher number of memcgs.
+> >>
+> >> The soft limit changes are also proven to work in so far that it is
+> >> possible to prioritize between children in a hierarchy under pressure
+> >> and that runtime differences corresponded directly to the soft limit
+> >> settings in the previously described kernbench setup with staggered
+> >> soft limits on the groups, but this needs quantification.
+> >>
+> >> Based on v2.6.39.
+> >>
+> >
+> > Hmm, I welcome and will review this patches but.....some points I want to say.
+> >
+> > 1. No more conflict with Ying's work ?
+> >    Could you explain what she has and what you don't in this v2 ?
+> >    If Ying's one has something good to be merged to your set, please
+> > include it.
 > 
-> > On Fri, 2011-05-27 at 23:38 -0400, Vince Weaver wrote:
-> > > on that note (and while trying to document exactly what the ioctls do) it 
-> > > seems that a PERF_EVENT_IOC_REFRESH with an argument of anything higher 
-> > > than one does not work on kernels 2.6.36 and newer.  The behavior acts
-> > > as if 1 was passed, even if you pass in, say, 3.
-> > 
-> > Urgh, no that should definitely work. Thanks for the test-case, I'll
-> > work on that (probably not until Monday though, but who knows).
+> My patch I sent out last time was doing rework of soft_limit reclaim.
+> It convert the RB-tree based to
+> a linked list round-robin fashion of all memcgs across their soft
+> limit per-zone.
 > 
-> So wait, the two regressions I found in 2.6.37 are WONTFIX because 
-> they are too old, even though they break existing userspace code?
+> I will apply this patch and try to test it. After that i will get
+> better idea whether or not it is being covered here.
+
+Thanks!!
+
+> > 4. This work can be splitted into some small works.
+> >     a) fix for current code and clean ups
 > 
-> And this older regression in 2.6.36 is going to be fixed, even 
-> though perf, PAPI, and libpfm4 don't trigger the buggy 
-> functionality at all?
+> >     a') statistics
+> 
+> >     b) soft limit rework
+> 
+> >     c) change global reclaim
+> 
+> My last patchset starts with a patch reverting the RB-tree
+> implementation of the soft_limit
+> reclaim, and then the new round-robin implementation comes on the
+> following patches.
+> 
+> I like the ordering here, and that is consistent w/ the plan we
+> discussed earlier in LSF. Changing
+> the global reclaim would be the last step when the changes before that
+> have been well understood
+> and tested.
+> 
+> Sorry If that is how it is done here. I will read through the patchset.
 
-Btw., these considerations are flexible and we can reconsider and 
-change the WONTFIX if there's a patch available and doesn't look 
-horrible to backport. We can also mark fixes that havent been marked 
--stable originally as -stable later on, etc.
-
-So please don't feel needlessly bitter about past decisions: when 
-there's some good technical solution to a problem (or we were plain 
-out wrong about a decision) we try hard not to stand in the way.
-
-Thanks,
-
-	Ingo
+It's not.  The way I implemented soft limits depends on global reclaim
+performing hierarchical reclaim.  I don't see how I can reverse the
+order with this dependency.
