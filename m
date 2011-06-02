@@ -1,227 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab1FBVx7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 17:53:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43216 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871Ab1FBVxs (ORCPT
+	id S1754451Ab1FBU6w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 16:58:52 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48222 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252Ab1FBU6u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 17:53:48 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 9/9] perf script: Add printing of sample address
-Date: Thu,  2 Jun 2011 17:56:36 -0300
-Message-Id: <1307048196-16387-10-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1307048196-16387-1-git-send-email-acme@infradead.org>
-References: <1307048196-16387-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 2 Jun 2011 16:58:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=Ay6PE597qRwT86q4RJ92cYs1Boc/mO7OQ58cSyk3WC9seg4OdJggBNMQ3YkQpoLoov
+         Ykz99XovhnqUKQPhLd2vlinZMysfsFQ4LRdRsQmmOdnmdriP7cv5cgU4X52awStTrih9
+         IQ7BTk/oIxbL1jOM0iP9UxvOuaHvUDlfWFMjI=
+MIME-Version: 1.0
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Date: Thu, 2 Jun 2011 23:58:19 +0300
+Message-ID: <BANLkTin-8aMrRxzYTJ4U2QDPFJ11+8s0=g@mail.gmail.com>
+Subject: [v5 00/39] faster tree-based sysctl implementation
+To: "Eric W . Biederman" <ebiederm@xmission.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+        Octavian Purdila <tavi@cs.pub.ro>,
+        "David S . Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+Hi,
 
-Resolve to a function or variable if possible and if the sym option is
-enabled.
+This is version 5 of a patch series that introduces a faster/leaner
+sysctl internal implementation. Due to high number of patches and low
+general interest I'll just point you to the tree/branch:
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1306782503-22002-1-git-send-email-dsahern@gmail.com
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-script.txt |    4 +-
- tools/perf/builtin-script.c              |   84 +++++++++++++++++++++++++++---
- tools/perf/util/evsel.c                  |    1 +
- tools/perf/util/session.c                |    4 +-
- 4 files changed, 82 insertions(+), 11 deletions(-)
+ git://github.com/luciang/linux-2.6-new-sysctl.git  v5-new-sysctl-alg
 
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index 1e744c2..c6068cb 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -115,8 +115,8 @@ OPTIONS
- -f::
- --fields::
-         Comma separated list of fields to print. Options are:
--        comm, tid, pid, time, cpu, event, trace, ip, sym, dso. Field
--        list can be prepended with the type, trace, sw or hw,
-+        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr.
-+        Field list can be prepended with the type, trace, sw or hw,
-         to indicate to which event type the field list applies.
-         e.g., -f sw:comm,tid,time,ip,sym  and -f trace:time,cpu,trace
- 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index a8bd00f..3056b45 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -33,6 +33,7 @@ enum perf_output_field {
- 	PERF_OUTPUT_IP              = 1U << 7,
- 	PERF_OUTPUT_SYM             = 1U << 8,
- 	PERF_OUTPUT_DSO             = 1U << 9,
-+	PERF_OUTPUT_ADDR            = 1U << 10,
- };
- 
- struct output_option {
-@@ -49,6 +50,7 @@ struct output_option {
- 	{.str = "ip",    .field = PERF_OUTPUT_IP},
- 	{.str = "sym",   .field = PERF_OUTPUT_SYM},
- 	{.str = "dso",   .field = PERF_OUTPUT_DSO},
-+	{.str = "addr",  .field = PERF_OUTPUT_ADDR},
- };
- 
- /* default set to maintain compatibility with current format */
-@@ -173,14 +175,22 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
- 		    !(attr->sample_type & PERF_SAMPLE_CALLCHAIN))
- 			symbol_conf.use_callchain = false;
- 	}
--	if (PRINT_FIELD(SYM) && !PRINT_FIELD(IP)) {
--		pr_err("Display of symbols requested but IP is not selected.\n"
--		       "No addresses to convert to symbols.\n");
-+
-+	if (PRINT_FIELD(ADDR) &&
-+		perf_event_attr__check_stype(attr, PERF_SAMPLE_ADDR, "ADDR",
-+				       PERF_OUTPUT_ADDR))
-+		return -EINVAL;
-+
-+	if (PRINT_FIELD(SYM) && !PRINT_FIELD(IP) && !PRINT_FIELD(ADDR)) {
-+		pr_err("Display of symbols requested but neither sample IP nor "
-+			   "sample address\nis selected. Hence, no addresses to convert "
-+		       "to symbols.\n");
- 		return -EINVAL;
- 	}
--	if (PRINT_FIELD(DSO) && !PRINT_FIELD(IP)) {
--		pr_err("Display of DSO requested but IP is not selected.\n"
--		       "No addresses to convert to dso.\n");
-+	if (PRINT_FIELD(DSO) && !PRINT_FIELD(IP) && !PRINT_FIELD(ADDR)) {
-+		pr_err("Display of DSO requested but neither sample IP nor "
-+			   "sample address\nis selected. Hence, no addresses to convert "
-+		       "to DSO.\n");
- 		return -EINVAL;
- 	}
- 
-@@ -288,6 +298,63 @@ static void print_sample_start(struct perf_sample *sample,
- 	}
- }
- 
-+static bool sample_addr_correlates_sym(struct perf_event_attr *attr)
-+{
-+	if ((attr->type == PERF_TYPE_SOFTWARE) &&
-+	    ((attr->config == PERF_COUNT_SW_PAGE_FAULTS) ||
-+	     (attr->config == PERF_COUNT_SW_PAGE_FAULTS_MIN) ||
-+	     (attr->config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)))
-+		return true;
-+
-+	return false;
-+}
-+
-+static void print_sample_addr(union perf_event *event,
-+			  struct perf_sample *sample,
-+			  struct perf_session *session,
-+			  struct thread *thread,
-+			  struct perf_event_attr *attr)
-+{
-+	struct addr_location al;
-+	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-+	const char *symname, *dsoname;
-+
-+	printf("%16" PRIx64, sample->addr);
-+
-+	if (!sample_addr_correlates_sym(attr))
-+		return;
-+
-+	thread__find_addr_map(thread, session, cpumode, MAP__FUNCTION,
-+			      event->ip.pid, sample->addr, &al);
-+	if (!al.map)
-+		thread__find_addr_map(thread, session, cpumode, MAP__VARIABLE,
-+				      event->ip.pid, sample->addr, &al);
-+
-+	al.cpu = sample->cpu;
-+	al.sym = NULL;
-+
-+	if (al.map)
-+		al.sym = map__find_symbol(al.map, al.addr, NULL);
-+
-+	if (PRINT_FIELD(SYM)) {
-+		if (al.sym && al.sym->name)
-+			symname = al.sym->name;
-+		else
-+			symname = "";
-+
-+		printf(" %16s", symname);
-+	}
-+
-+	if (PRINT_FIELD(DSO)) {
-+		if (al.map && al.map->dso && al.map->dso->name)
-+			dsoname = al.map->dso->name;
-+		else
-+			dsoname = "";
-+
-+		printf(" (%s)", dsoname);
-+	}
-+}
-+
- static void process_event(union perf_event *event __unused,
- 			  struct perf_sample *sample,
- 			  struct perf_evsel *evsel,
-@@ -305,6 +372,9 @@ static void process_event(union perf_event *event __unused,
- 		print_trace_event(sample->cpu, sample->raw_data,
- 				  sample->raw_size);
- 
-+	if (PRINT_FIELD(ADDR))
-+		print_sample_addr(event, sample, session, thread, attr);
-+
- 	if (PRINT_FIELD(IP)) {
- 		if (!symbol_conf.use_callchain)
- 			printf(" ");
-@@ -1003,7 +1073,7 @@ static const struct option options[] = {
- 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
- 		    "Look for files with symbols relative to this directory"),
- 	OPT_CALLBACK('f', "fields", NULL, "str",
--		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso",
-+		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
- 		     parse_output_fields),
- 
- 	OPT_END()
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 0239eb8..a03a36b 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -377,6 +377,7 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 		array++;
- 	}
- 
-+	data->addr = 0;
- 	if (type & PERF_SAMPLE_ADDR) {
- 		data->addr = *array;
- 		array++;
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 0dd4182..b723f21 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -708,9 +708,9 @@ static void dump_sample(struct perf_session *session, union perf_event *event,
- 	if (!dump_trace)
- 		return;
- 
--	printf("(IP, %d): %d/%d: %#" PRIx64 " period: %" PRIu64 "\n",
-+	printf("(IP, %d): %d/%d: %#" PRIx64 " period: %" PRIu64 " addr: %#" PRIx64 "\n",
- 	       event->header.misc, sample->pid, sample->tid, sample->ip,
--	       sample->period);
-+	       sample->period, sample->addr);
- 
- 	if (session->sample_type & PERF_SAMPLE_CALLCHAIN)
- 		callchain__printf(sample);
+
+
+Eric: I have a separate set of patches that make changes to the rest
+      of the kernel. Those patches only change sysctl registrations:
+      they replace complex tree registrations (with explicit sysctl
+      directories), with registrations of arrays of sysctl files.
+
+      Those patches DON'T depend on anything from this series.
+
+      Examples:
+       http://thread.gmane.org/gmane.linux.kernel/1137032/focus=1137089
+       http://thread.gmane.org/gmane.linux.kernel/1137032/focus=1137087
+
+      I'd like an OK-GO from you to start sending the patches for
+      review to their respective maintainers. Also please say if you
+      want to be CCed in those patches.
+
+
+
+
+Changes since v4:
+  http://thread.gmane.org/gmane.linux.network/196495/focus=1144143
+- rebased on 3.0-rc1
+- added a new patch manually register kernel/usermodehelper which
+  was added in 3.0-rc1
+- minor changes to the "sysctl: simplify find_in_table" patch
+
+
+Changes since v3:
+  http://thread.gmane.org/gmane.linux.network/196495/
+- removed a bad patch that shrinked a counter from int to u8
+
+
+Changes since v2:
+  http://thread.gmane.org/gmane.linux.kernel/1137032/focus=3D194748
+- added a compatibility layer to support old registering complex
+  sysctl trees. This layer will be deleted once all users of the old
+  are changed.
+- subdirectories and netns correspondent dirs are now held in rbtrees
+- split of from the patches that make changes in the rest of the tree
+- rebased on top of 2.6.39
+
+
+Changes since v1:
+  http://thread.gmane.org/gmane.linux.kernel/1133667
+- rebased on top of 2.6.39-rc6
+- split the patch that adds the new algorithm and data structures.
+- fixed a few bugs lingering in the old code
+- shrinked a reference counter
+- added a new reference counter to maintain ownership information
+- added method to register an empty sysctl dir and converted some users
+- added checks enforcing the rule that a non-netns specific directory may
+  not be registered after a netns specific one has already been registered.
+- added cookie support: register a piece of data with the header to be
+  used to make simple conversions on the ctl_table. This saves memory where
+
+
+
+
+
+Part 1: introduce compatibility layer:
+
+  sysctl: introduce temporary sysctl wrappers
+  sysctl: register only tables of sysctl files
+
+
+Part 2: minimal changes to sysctl users:
+
+  sysctl: call sysctl_init before the first sysctl registration
+  sysctl: no-child: manually register kernel/random
+  sysctl: no-child: manually register kernel/usermodehelper
+  sysctl: no-child: manually register kernel/keys
+  sysctl: no-child: manually register fs/inotify
+  sysctl: no-child: manually register fs/epoll
+  sysctl: no-child: manually register root tables
+
+
+Part 3: cleanups simplifying the new algorithm (created when
+        asked to break up the new algorithm patch):
+
+  sysctl: faster reimplementation of sysctl_check_table
+  sysctl: remove useless ctl_table->parent field
+  sysctl: simplify find_in_table
+  sysctl: sysctl_head_grab defaults to root header on NULL
+  sysctl: delete useless grab_header function
+  sysctl: rename ->used to ->ctl_use_refs
+  sysctl: rename sysctl_head_grab/finish to sysctl_use_header/unuse
+  sysctl: rename sysctl_head_next to sysctl_use_next_header
+  sysctl: split ->count into ctl_procfs_refs and ctl_header_refs
+  sysctl: rename sysctl_head_get/put to sysctl_proc_inode_get/put
+  sysctl: rename (un)use_table to __sysctl_(un)use_header
+  sysctl: simplify ->permissions hook
+  sysctl: group root-specific operations
+  sysctl: introduce ctl_table_group
+  sysctl: move removal from list out of start_unregistering
+
+
+Part 4: new algorithm/data structures:
+
+  sysctl: faster tree-based sysctl implementation
+
+
+Part 5: checks/warns requested during review:
+
+  sysctl: add duplicate entry and sanity ctl_table checks
+  sysctl: alloc ctl_table_header with kmem_cache
+  sysctl: check netns-specific registration order respected
+  sysctl: warn if registration/unregistration order is not respected
+  RFC: sysctl: always perform sysctl checks
+
+
+Part 6: Eric requested rbtrees for subdirs. I also used rbtrees for
+        netns correspondent dirs. Hope that adding rbtrees after
+        using the old list-based implementation is good enough.
+        The rbtree code complicates things a bit and would uglify
+        the patch adding the new algorithm.
+
+  sysctl: reorder members of ctl_table_header (cleanup)
+  sysctl: add ctl_type member
+  RFC: sysctl: replace subdirectory list with rbtree
+  RFC: sysctl: replace netns corresp list with rbtree
+  sysctl: union-ize some ctl_table_header fields
+
+
+Part 7: Eric requested ability to register an empty dir:
+
+  sysctl: add register_sysctl_dir: register an empty sysctl directory
+
+
+Part 8: unrequested feature I'd like to piggy back :)
+
+  sysctl: add ctl_cookie and ctl_cookie_handler
+  sysctl: add cookie to __register_sysctl_paths
+  sysctl: add register_net_sysctl_table_net_cookie
+
+
+
+ drivers/char/random.c            |   27 +-
+ fs/eventpoll.c                   |   22 +-
+ fs/notify/inotify/inotify_user.c |   22 +-
+ fs/proc/inode.c                  |    2 +-
+ fs/proc/proc_sysctl.c            |  236 +++++---
+ include/linux/inotify.h          |    2 -
+ include/linux/key.h              |    3 -
+ include/linux/kmod.h             |    3 -
+ include/linux/poll.h             |    2 -
+ include/linux/sysctl.h           |  221 +++++---
+ include/net/net_namespace.h      |    4 +-
+ init/main.c                      |    1 +
+ kernel/Makefile                  |    5 +-
+ kernel/kmod.c                    |   14 +-
+ kernel/sysctl.c                  | 1165 +++++++++++++++++++++++++++-----------
+ kernel/sysctl_check.c            |  316 +++++++----
+ lib/Kconfig.debug                |    8 -
+ net/sysctl_net.c                 |   86 ++--
+ security/keys/key.c              |    7 +
+ security/keys/sysctl.c           |   18 +-
+ 20 files changed, 1492 insertions(+), 672 deletions(-)
+
+
 -- 
-1.6.2.5
-
+ .
+..: Lucian
