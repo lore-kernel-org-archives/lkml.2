@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab1FBXCh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 19:02:37 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43637 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755131Ab1FBXCg convert rfc822-to-8bit (ORCPT
+	id S1755313Ab1FBXGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 19:06:11 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:60987 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755131Ab1FBXGJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 19:02:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vPUd/qi2sttEUM+9uczK+daWZOSjWGk6bcoQJqd9T2qb9FfXkU92MaBvuOzbxZP4u6
-         FAV+76L/NRnalhcWxe82esHGBCg78CDML1ABWUOa8SR8AORRwsqM2lBDa6XwxO6Qg6vI
-         55uJuo3GMApriW0eV7ktAAiTZMpU67lATxzvA=
+	Thu, 2 Jun 2011 19:06:09 -0400
+From: Richard Weinberger <richard@nod.at>
+To: Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH] Audit: push audit success and retcode into arch ptrace.h
+Date: Fri, 3 Jun 2011 01:03:46 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.3; x86_64; ; )
+Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, monstr@monstr.eu, ralf@linux-mips.org,
+        benh@kernel.crashing.org, paulus@samba.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, linux390@de.ibm.com, lethal@linux-sh.org,
+        davem@davemloft.net, jdike@addtoit.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        viro@zeniv.linux.org.uk, oleg@redhat.com, akpm@linux-foundation.org,
+        linux-ia64@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net
+References: <20110602210458.23613.24076.stgit@paris.rdu.redhat.com> <201106030032.17398.richard@nod.at> <BANLkTik9kCs_06=7HKo44cWqpS0zB9fr+A@mail.gmail.com>
+In-Reply-To: <BANLkTik9kCs_06=7HKo44cWqpS0zB9fr+A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110602182302.GA2802@random.random>
-References: <20110530143109.GH19505@random.random>
-	<20110530153748.GS5044@csn.ul.ie>
-	<20110530165546.GC5118@suse.de>
-	<20110530175334.GI19505@random.random>
-	<20110531121620.GA3490@barrios-laptop>
-	<20110531122437.GJ19505@random.random>
-	<20110531133340.GB3490@barrios-laptop>
-	<20110531141402.GK19505@random.random>
-	<20110531143734.GB13418@barrios-laptop>
-	<20110531143830.GC13418@barrios-laptop>
-	<20110602182302.GA2802@random.random>
-Date: Fri, 3 Jun 2011 08:02:35 +0900
-Message-ID: <BANLkTi=d9q+W2LBiMYr0ND6XqSWGX3gMKg@mail.gmail.com>
-Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, Mel Gorman <mel@csn.ul.ie>,
-        akpm@linux-foundation.org, Ury Stankevich <urykhy@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="windows-1252"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201106030103.46742.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 3, 2011 at 3:23 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> On Tue, May 31, 2011 at 11:38:30PM +0900, Minchan Kim wrote:
->> > Yes. You find a new BUG.
->> > It seems to be related to this problem but it should be solved although
->>
->> Â typo : It doesn't seem to be.
->
-> This should fix it, but I doubt it matters for this problem.
->
-> ===
-> Subject: mm: no page_count without a page pin
->
-> From: Andrea Arcangeli <aarcange@redhat.com>
->
-> It's unsafe to run page_count during the physical pfn scan.
->
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Am Freitag 03 Juni 2011, 01:00:51 schrieb Tony Luck:
+> > But there seems to be another problem.
+> > Why is pt_regs of type void *?
+> > 
+> > gcc complains:
+> > In file included from include/linux/fsnotify.h:15:0,
+> >                 from include/linux/security.h:26,
+> >                 from init/main.c:32:
+> > include/linux/audit.h: In function ‘audit_syscall_exit’:
+> > include/linux/audit.h:440:17: warning: dereferencing ‘void *’ pointer
+> > include/linux/audit.h:440:3: error: invalid use of void expression
+> > include/linux/audit.h:441:21: warning: dereferencing ‘void *’ pointer
+> > include/linux/audit.h:441:21: error: void value not ignored as it ought
+> > to be
+> 
+> Perhaps same issue on ia64 - but symptoms are different:
 
-Nitpick :
-I want to remain "  /* the page is freed already. */" comment.
+The void * pointer is the problem.
+On UML it builds fine when I cast it:
+#define regs_return_value(r) UPT_SYSCALL_RET((struct uml_pt_regs *)r)
 
--- 
-Kind regards,
-Minchan Kim
+I'll test it tomorrow in detail, for now I'm too sleepy.
+
+Thanks,
+//richard
