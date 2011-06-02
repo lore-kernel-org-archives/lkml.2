@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933623Ab1FBM1c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 08:27:32 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:59025 "EHLO e9.ny.us.ibm.com"
+	id S1161391Ab1FBM0d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 08:26:33 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:59040 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161182Ab1FBMZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 08:25:40 -0400
+	id S1161229Ab1FBMZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 08:25:46 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
@@ -13,11 +13,11 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
         David Safford <safford@watson.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
         Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>,
-        Dave Kleikamp <shaggy@kernel.org>,
-        jfs-discussion@lists.sourceforge.net, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v6 14/20] evm: add evm_inode_post_init call in jfs
-Date: Thu,  2 Jun 2011 08:23:37 -0400
-Message-Id: <1307017423-15093-15-git-send-email-zohar@linux.vnet.ibm.com>
+        Alex Elder <aelder@sgi.com>, xfs@oss.sgi.com,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH v6 15/20] evm: add evm_inode_post_init call in xfs
+Date: Thu,  2 Jun 2011 08:23:38 -0400
+Message-Id: <1307017423-15093-16-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1307017423-15093-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1307017423-15093-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -31,85 +31,63 @@ extended attribute.
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 ---
- fs/jfs/xattr.c |   45 +++++++++++++++++++++++++++++++--------------
- 1 files changed, 31 insertions(+), 14 deletions(-)
+ fs/xfs/linux-2.6/xfs_iops.c |   27 +++++++++++++++++++--------
+ 1 files changed, 19 insertions(+), 8 deletions(-)
 
-diff --git a/fs/jfs/xattr.c b/fs/jfs/xattr.c
-index 24838f1..68b4ec6 100644
---- a/fs/jfs/xattr.c
-+++ b/fs/jfs/xattr.c
-@@ -24,6 +24,7 @@
- #include <linux/slab.h>
- #include <linux/quotaops.h>
+diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
+index dd21784..01b354d 100644
+--- a/fs/xfs/linux-2.6/xfs_iops.c
++++ b/fs/xfs/linux-2.6/xfs_iops.c
+@@ -46,6 +46,7 @@
+ #include <linux/namei.h>
+ #include <linux/posix_acl.h>
  #include <linux/security.h>
 +#include <linux/evm.h>
- #include "jfs_incore.h"
- #include "jfs_superblock.h"
- #include "jfs_dmap.h"
-@@ -1095,33 +1096,49 @@ int jfs_init_security(tid_t tid, struct inode *inode, struct inode *dir,
- 		      const struct qstr *qstr)
+ #include <linux/fiemap.h>
+ #include <linux/slab.h>
+ 
+@@ -106,23 +107,33 @@ xfs_init_security(
+ 	const struct qstr *qstr)
  {
- 	int rc;
--	size_t len;
--	void *value;
--	char *suffix;
+ 	struct xfs_inode *ip = XFS_I(inode);
+-	size_t		length;
+-	void		*value;
+-	unsigned char	*name;
 +	struct xattr lsm_xattr;
 +	struct xattr evm_xattr;
- 	char *name;
+ 	int		error;
  
--	rc = security_inode_init_security(inode, dir, qstr, &suffix, &value,
--					  &len);
-+	rc = security_inode_init_security(inode, dir, qstr, &lsm_xattr.name,
-+					  &lsm_xattr.value,
-+					  &lsm_xattr.value_len);
- 	if (rc) {
- 		if (rc == -EOPNOTSUPP)
+-	error = security_inode_init_security(inode, dir, qstr, (char **)&name,
+-					     &value, &length);
++	error = security_inode_init_security(inode, dir, qstr, &lsm_xattr.name,
++					     &lsm_xattr.value,
++					     &lsm_xattr.value_len);
+ 	if (error) {
+ 		if (error == -EOPNOTSUPP)
  			return 0;
- 		return rc;
+ 		return -error;
  	}
--	name = kmalloc(XATTR_SECURITY_PREFIX_LEN + 1 + strlen(suffix),
-+	name = kmalloc(XATTR_SECURITY_PREFIX_LEN + 1 + strlen(lsm_xattr.name),
- 		       GFP_NOFS);
- 	if (!name) {
- 		rc = -ENOMEM;
--		goto kmalloc_failed;
--	}
--	strcpy(name, XATTR_SECURITY_PREFIX);
--	strcpy(name + XATTR_SECURITY_PREFIX_LEN, suffix);
-+	} else {
-+		strcpy(name, XATTR_SECURITY_PREFIX);
-+		strcpy(name + XATTR_SECURITY_PREFIX_LEN, lsm_xattr.name);
  
--	rc = __jfs_setxattr(tid, inode, name, value, len, 0);
-+		rc = __jfs_setxattr(tid, inode, name, lsm_xattr.value,
-+				    lsm_xattr.value_len, 0);
-+		kfree(name);
-+	}
-+	if (rc)
-+		goto kmalloc_failed;
+-	error = xfs_attr_set(ip, name, value, length, ATTR_SECURE);
++	error = xfs_attr_set(ip, lsm_xattr.name, lsm_xattr.value,
++			     lsm_xattr.value_len, ATTR_SECURE);
++	if (error)
++		goto out;
  
 -	kfree(name);
-+	rc = evm_inode_post_init_security(inode, &lsm_xattr, &evm_xattr);
-+	if (rc)
-+		goto kmalloc_failed;
-+	name = kasprintf(GFP_NOFS, "%s%s", XATTR_SECURITY_PREFIX,
-+			 evm_xattr.name);
-+	if (!name) {
-+		rc = -ENOMEM;
-+	} else {
-+		rc = __jfs_setxattr(tid, inode, name, evm_xattr.value,
-+				    evm_xattr.value_len, 0);
-+		kfree(name);
-+	}
-+	kfree(evm_xattr.value);
- kmalloc_failed:
--	kfree(suffix);
 -	kfree(value);
++	error = evm_inode_post_init_security(inode, &lsm_xattr, &evm_xattr);
++	if (error)
++		goto out;
++	error = xfs_attr_set(ip, evm_xattr.name, evm_xattr.value,
++			     evm_xattr.value_len, ATTR_SECURE);
++	kfree(evm_xattr.value);
++out:
 +	kfree(lsm_xattr.name);
 +	kfree(lsm_xattr.value);
- 
- 	return rc;
+ 	return error;
  }
+ 
 -- 
 1.7.3.4
 
