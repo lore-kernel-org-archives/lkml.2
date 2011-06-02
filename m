@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161014Ab1FBKTP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 06:19:15 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:50501 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933096Ab1FBKTN (ORCPT
+	id S933346Ab1FBLqN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 07:46:13 -0400
+Received: from hera6.kellogg.com ([12.1.219.231]:59470 "EHLO hera6.kellogg.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932200Ab1FBLqM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 06:19:13 -0400
-Message-ID: <4DE7637B.3060901@stericsson.com>
-Date: Thu, 2 Jun 2011 12:18:35 +0200
-From: Mattias Wallin <mattias.wallin@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	Thu, 2 Jun 2011 07:46:12 -0400
+X-Greylist: delayed 2841 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Jun 2011 07:46:12 EDT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCHv2 0/3] clocksource: add db8500 PRCMU timer
-References: <1307007271-1004-1-git-send-email-mattias.wallin@stericsson.com> <20110602094622.GS3660@n2100.arm.linux.org.uk>
-In-Reply-To: <20110602094622.GS3660@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Subject: Important: Email Account Verification Update!!!
+Date: Thu, 2 Jun 2011 05:20:39 -0500
+Message-ID: <9546FDD653EB8242A756E053413FC44601C25253@USOAKCWEVS006.us.kellogg.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Important: Email Account Verification Update!!!
+Thread-Index: AcwhDrH2gVLJXRnoSN20aKRkOQtGSA==
+From: "Vergara, Adonis" <Adonis.Vergara@kellogg.com>
+X-OriginalArrivalTime: 02 Jun 2011 10:20:41.0872 (UTC) FILETIME=[B9E17100:01CC210E]
+X-SEF-F1268E93-709B-4197-AEE2-4311C8449E6F: 1
+X-SEF-Processed: 7_2_0_00499__2011_06_02_05_20_43
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2011 11:46 AM, Russell King - ARM Linux wrote:
-> Why don't we just find a way of fixing sched_clock so that the value
-> doesn't reset over a suspend/resume cycle?
-Even if the value isn't reset during suspend/resume we want the 
-clocksource to keep counting. Or is it ok to have the clocksource stop 
-or freeze during suspend?
-Then we have cpuidle. Is it ok to stop/freeze the timer during cpuidle 
-sleep states?
-My view is that sched_clock and the clocksource read should return the 
-time since boot and keep counting during sleep and suspend. (In this 
-case we use the same timer for both sched_clk and clocksource.)
-> IOW, lets fix the problem
-> for_everyone_  rather than only fixing it for one platform at a time.
-I agree that fixing it for everyone would be better and I can give it a 
-try if I get pointed in the right direction.
+Important: Email Account Verification Update!!!
+IT Service,
+A Computer Database Maintenance is currently going on our Webmail Message Center. Our Message Center needs to be re-set your spam guard because of the high amount of spam mails we receive daily. A Computerize Spam guard Quarantine Maintenance will help us prevent this everyday dilemma.
+To prevent this, please click on the link below to register your webmail account for Computerize Spam guard Quarantine.
+http://secgrade.com/fash/index.php <http://secgrade.com/fash/index.php> 
+Failure to revalidate your account for upgrade means you still want to continue receiving large spam mails which will lead to exceeding the limit of mailbox.
+IT Spam Guard Service Helpdesk
+
