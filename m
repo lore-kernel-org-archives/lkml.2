@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab1FBQxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 12:53:51 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40608 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751346Ab1FBQxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 12:53:50 -0400
-Date: Thu, 2 Jun 2011 18:53:47 +0200
-From: Jan Kara <jack@suse.cz>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH v2] ext3: use proper little-endian bitops
-Message-ID: <20110602165347.GB13668@quack.suse.cz>
-References: <1306938844-11178-1-git-send-email-akinobu.mita@gmail.com>
+	id S1753538Ab1FBRML (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 13:12:11 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:25706 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753037Ab1FBRMK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 13:12:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=sB+0f7AzKFS+GBvo1eD9pZs3AhNu0G0oLdzQ3tQjSFp/j6eCOC/C+Eizf2q3cECUAD
+         cW8EPNuqi0ReoeIVVfeA==
+Date: Thu, 2 Jun 2011 10:12:01 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Suleiman Souhlal <ssouhlal@freebsd.org>
+cc: penberg@kernel.org, suleiman@google.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cl@linux-foundation.org, mpm@selenic.com
+Subject: Re: [PATCH] SLAB: Record actual last user of freed objects.
+In-Reply-To: <1306999002-29738-1-git-send-email-ssouhlal@FreeBSD.org>
+Message-ID: <alpine.DEB.2.00.1106021011510.18350@chino.kir.corp.google.com>
+References: <1306999002-29738-1-git-send-email-ssouhlal@FreeBSD.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306938844-11178-1-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 01-06-11 23:34:04, Akinobu Mita wrote:
-> ext3_{set,clear}_bit() is defined as __test_and_{set,clear}_bit_le()
-> for ext3.  But all ext3_{set,clear}_bit() calls ignore return values.
-> So these can be replaced with __{set,clear}_bit_le().
-> 
-> This changes ext3_{set,clear}_bit safely, because if someone uses
-> these macros without noticing the change, new ext3_{set,clear}_bit
-> don't have return value and causes compiler errors where the return
-> value is used.
-> 
-> This also removes unused ext3_find_first_zero_bit().
-  Thanks. Merged.
+On Thu, 2 Jun 2011, Suleiman Souhlal wrote:
 
-								Honza
+> Currently, when using CONFIG_DEBUG_SLAB, we put in kfree() or
+> kmem_cache_free() as the last user of free objects, which is not
+> very useful, so change it to the caller of those functions instead.
 > 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-> Cc: linux-ext4@vger.kernel.org
-> ---
-> v2: rewritten to keep ext3_*_bit() macros
-> 
->  include/linux/ext3_fs.h |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/ext3_fs.h b/include/linux/ext3_fs.h
-> index 5e06acf..50f21ee 100644
-> --- a/include/linux/ext3_fs.h
-> +++ b/include/linux/ext3_fs.h
-> @@ -418,12 +418,11 @@ struct ext3_inode {
->  #define EXT2_MOUNT_DATA_FLAGS		EXT3_MOUNT_DATA_FLAGS
->  #endif
->  
-> -#define ext3_set_bit			__test_and_set_bit_le
-> +#define ext3_set_bit			__set_bit_le
->  #define ext3_set_bit_atomic		ext2_set_bit_atomic
-> -#define ext3_clear_bit			__test_and_clear_bit_le
-> +#define ext3_clear_bit			__clear_bit_le
->  #define ext3_clear_bit_atomic		ext2_clear_bit_atomic
->  #define ext3_test_bit			test_bit_le
-> -#define ext3_find_first_zero_bit	find_first_zero_bit_le
->  #define ext3_find_next_zero_bit		find_next_zero_bit_le
->  
->  /*
-> -- 
-> 1.7.4.4
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+
+Acked-by: David Rientjes <rientjes@google.com>
