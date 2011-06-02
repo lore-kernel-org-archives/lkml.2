@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab1FBNId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 09:08:33 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:35572 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751035Ab1FBNIc convert rfc822-to-8bit (ORCPT
+	id S1752655Ab1FBNLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 09:11:42 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51800 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751514Ab1FBNLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 09:08:32 -0400
-Date: Thu, 2 Jun 2011 14:08:17 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Will Deacon <Will.Deacon@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, sam@ravnborg.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Disable -fconserve-stack on ARM
-Message-ID: <20110602130816.GB8343@e102109-lin.cambridge.arm.com>
-References: <1306429854.26735.9.camel@e102144-lin.cambridge.arm.com>
- <alpine.LFD.2.00.1105261650330.3207@xanadu.home>
- <20110526215101.GL24876@n2100.arm.linux.org.uk>
- <20110527083806.GA21100@e102109-lin.cambridge.arm.com>
- <20110527085414.GP24876@n2100.arm.linux.org.uk>
- <20110527095111.GC21100@e102109-lin.cambridge.arm.com>
- <yw1xlixse2fl.fsf@unicorn.mansr.com>
- <20110528153417.GB25869@alboin.amr.corp.intel.com>
- <20110531163026.GB771@e102109-lin.cambridge.arm.com>
- <20110531180107.GA9261@alboin.amr.corp.intel.com>
-MIME-Version: 1.0
-In-Reply-To: <20110531180107.GA9261@alboin.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 02 Jun 2011 13:08:46.0619 (UTC) FILETIME=[34DBB6B0:01CC2126]
-X-MC-Unique: 111060214082703601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Thu, 2 Jun 2011 09:11:40 -0400
+Date: Thu, 2 Jun 2011 14:12:34 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Kay Sievers <kay.sievers@vrfy.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>
+Subject: Re: [PATCH] sysctl: add support for poll()
+Message-ID: <20110602141234.4f5bffef@lxorguk.ukuu.org.uk>
+In-Reply-To: <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com>
+References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
+	<BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com>
+	<m18vtkq57c.fsf@fess.ebiederm.org>
+	<BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com>
+	<20110602134338.0c56160e@lxorguk.ukuu.org.uk>
+	<BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 07:01:07PM +0100, Andi Kleen wrote:
-> Disable -fconserve-stack on ARM v2
+> > Or to manage it properly.
 > 
-> There are reports that -fconserve-stack misaligns variables on the stack.
-> Disable it for ARM to work around this gcc bug.
-> 
-> v2: Move top level flags definition up
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> What if the user decides do invoke sethostname syscall "by hand"?
+> Hostname would change beneath any other process that is trying to
+> manage it properly. What this patch does is to notify that process
+> that something happened.
 
-It seems to disable the -fconserve-stack on ARM.
+That is a stupid argument. Shall we extend it to its logical idiotic end
+and ask
 
-Tested-by: Catalin Marinas <catalin.marinas@arm.com>
+"What if the user decides to recompile their kernel without sysfs poll
+support ?"
+
+You have to be root to run sethostname, at which point you are
+realistically at the command line, a superuser and you know what you are
+doing (eg using sethostname for non IP network naming, or cluster id, or
+other stuff).
+
+> With this patch in, if anyone wants to manage a file under /proc/sys
+> there's really a small amount of code to write. He only has to define
+> the new poll struct for that file.
+
+Sure - and there is an 8 byte cost per sysctl node (of which we have
+rather a lot), and we really need to tackle sysfs not sysctl anyway.
+
+I'm not averse to pollable sysfs/sysctl nodes at all although the memory
+hit on sysfs is going to be tricky to manage and need clever code.
+
+I just think the utsname is a completely misguided example and whoever is
+trying to do it doesn't actually understand the limits of utsname.
+
+Alan
 
