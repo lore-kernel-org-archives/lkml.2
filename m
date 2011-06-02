@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933559Ab1FBLmX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 07:42:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57988 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933513Ab1FBLmV (ORCPT
+	id S933249Ab1FBLpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 07:45:10 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46079 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab1FBLpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 07:42:21 -0400
-Subject: Re: bdi_min_ratio never shrinks, ultimately preventing valid
- setting of min_ratio
-From: Peter Zijlstra <peterz@infradead.org>
-To: lkml@pengaru.com
-Cc: linux-kernel@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>,
-        miklos <miklos@szeredi.hu>
-In-Reply-To: <20110601002854.GV5753@shells.gnugeneration.com>
-References: <20110601002854.GV5753@shells.gnugeneration.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Jun 2011 13:43:31 +0200
-Message-ID: <1307015011.2497.633.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Jun 2011 07:45:08 -0400
+Date: Thu, 2 Jun 2011 13:45:02 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mfd wm8350: allocate irq descs dynamically
+Message-ID: <20110602114502.GO23771@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 13:43:32 up 7 days,  4:45, 20 users,  load average: 1.79, 2.54, 3.38
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It really helps if you CC the relevant people.
 
-On Tue, 2011-05-31 at 19:28 -0500, lkml@pengaru.com wrote:
-> mm/page-writeback.c
-> There is a static global bdi_min_ratio used for policing the setting of
-> per-bdi min_ratio's, to ensure the sum doesn't cross 100.
-> 
-> There is no place in this listing where the value is decremented by the
-> respective bdi's min_ratio when a bdi is torn down. 
+This allows boards to leave the irq_base field unitialized and
+prevents them having to reserve irqs in the platform.
+pdata can be optional for irq support now. Without pdata the
+driver allocates some free irq range. With pdata and irq_base > 0
+the driver allocates exactly the specified irq.
+Without pdata the irq defaults to IRQF_TRIGGER_LOW.
 
-There is, adding a negative number is equal to a subtraction.
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ drivers/mfd/wm8350-irq.c |   18 ++++++++++++------
+ 1 files changed, 12 insertions(+), 6 deletions(-)
 
-                min_ratio -= bdi->min_ratio;
-                if (bdi_min_ratio + min_ratio < 100) {
-                        bdi_min_ratio += min_ratio;
-                        bdi->min_ratio += min_ratio;
-                }
+diff --git a/drivers/mfd/wm8350-irq.c b/drivers/mfd/wm8350-irq.c
+index ed4b22a..8a1fafd 100644
+--- a/drivers/mfd/wm8350-irq.c
++++ b/drivers/mfd/wm8350-irq.c
+@@ -473,17 +473,13 @@ int wm8350_irq_init(struct wm8350 *wm8350, int irq,
+ {
+ 	int ret, cur_irq, i;
+ 	int flags = IRQF_ONESHOT;
++	int irq_base = -1;
+ 
+ 	if (!irq) {
+ 		dev_warn(wm8350->dev, "No interrupt support, no core IRQ\n");
+ 		return 0;
+ 	}
+ 
+-	if (!pdata || !pdata->irq_base) {
+-		dev_warn(wm8350->dev, "No interrupt support, no IRQ base\n");
+-		return 0;
+-	}
+-
+ 	/* Mask top level interrupts */
+ 	wm8350_reg_write(wm8350, WM8350_SYSTEM_INTERRUPTS_MASK, 0xFFFF);
+ 
+@@ -502,7 +498,17 @@ int wm8350_irq_init(struct wm8350 *wm8350, int irq,
+ 	wm8350->chip_irq = irq;
+ 	wm8350->irq_base = pdata->irq_base;
+ 
+-	if (pdata->irq_high) {
++	if (pdata && pdata->irq_base > 0)
++		irq_base = pdata->irq_base;
++
++	wm8350->irq_base = irq_alloc_descs(irq_base, 0, ARRAY_SIZE(wm8350_irqs), 0);
++	if (wm8350->irq_base < 0) {
++		dev_warn(wm8350->dev, "Allocating irqs failed with %d\n",
++			wm8350->irq_base);
++		return 0;
++	}
++
++	if (pdata && pdata->irq_high) {
+ 		flags |= IRQF_TRIGGER_HIGH;
+ 
+ 		wm8350_set_bits(wm8350, WM8350_SYSTEM_CONTROL_1,
+-- 
+1.7.5.3
 
-is the relevant piece, note that bdi->min_ratio is the current setting,
-this makes min_ratio the difference between the new and old setting, and
-adding this to both bdi_min_ratio (the global sum) and bdi->min_ratio
-dtrt regardless if the new value is larger or smaller than the old
-value.
-
->  This looks like a bug
-> to me, and I have a situation where I'm unable to set a min_ratio to 1
-> where the sum of /sys/class/bdi/*/min_ratio does not add up to 100, which
-> is what triggered this investigation.
-
-Which of the two -EINVAL cases is triggered?
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
