@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759015Ab1FBIFC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 04:05:02 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42283 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab1FBIEz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 04:04:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=i1AaMgNPwXDCCxKAkgQEHkZlLo3xL/kIubcxIJWGj3zavRmAtxue4xlHvQSBpkxDLi
-         Dz2s36RvMoJ3x/92sBAD8E3IJTiwEsxuE8sG+KjJ8gc74hbq5b6tBotkrTb94SGtG34O
-         tZev0UhkmpYKW+x5fU0XCeh1MlaLKaGUMaGKg=
+	id S1759302Ab1FBIKJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 04:10:09 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53167 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757458Ab1FBIKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 04:10:05 -0400
+Date: Thu, 2 Jun 2011 10:09:37 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Valdis.Kletnieks@vt.edu
+Cc: Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v3 10/10] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to
+ feature-removal-schedule
+Message-ID: <20110602080937.GA5722@elte.hu>
+References: <cover.1306847455.git.luto@mit.edu>
+ <7e604b2dd699a30204fda3d1011f3af5a2c56572.1306847455.git.luto@mit.edu>
+ <10442.1306949732@turing-police.cc.vt.edu>
+ <BANLkTinKKmXYBLwc_cQBVcs-jgh_1SV6NQ@mail.gmail.com>
+ <13093.1306952865@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimqWD=q6YnSDi-v9y=LMWecgEzEWg@mail.gmail.com>
-References: <BANLkTimqWD=q6YnSDi-v9y=LMWecgEzEWg@mail.gmail.com>
-Date: Thu, 2 Jun 2011 16:04:53 +0800
-Message-ID: <BANLkTikoO5F5H4sEUoDPKX3qiahuehp=Mg@mail.gmail.com>
-Subject: Re: [PATCH] sched: remove resetting exec_start in put_prev_task_rt()
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <13093.1306952865@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 1, 2011 at 10:03 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> Resetting exec_start, after updated in update_curr_rt(), could open window for
-> messing up the subsequent computations of delta_exec of the given task.
 
-I can't see how could this happen. what kind of 'subsequent computations'
-do you mean?
+* Valdis.Kletnieks@vt.edu <Valdis.Kletnieks@vt.edu> wrote:
 
-But because exec_start will be reset by _pick_next_task_rt()/set_curr_task_rt(),
-you patch is ok. IMHO it is not critical, it's just cleanup instead.
+> On Wed, 01 Jun 2011 13:41:56 EDT, Andrew Lutomirski said:
+> 
+> >> +         On a system with recent enough glibc (probably 2.14 or
+> >>  +         newer) and no static binaries, you can say N without a
+> >>  +         performance penalty to improve security
+> >>
+> >> So I checked my laptop (Fedora 16 Rawhide), and found a bunch of static binaries. The ones
+> >> that look like people may care:
+> 
+> > The binaries will still work -- they'll just take a small performance
+> > hit (~220ns on Sandy Bridge) every time they call time().
+> 
+> Ah. I misparsed the Kconfig help - I read it as "If you have no 
+> static binaries, setting this to N doesn't introduce a performance 
+> hit" (with an implied "if you have static binaries, this will hose 
+> you").  Adding "Static binaries will continue to work at a very 
+> small performance penalty" would probably help.
+
+Yeah, would be nice to add that clarification. (or better yet, 
+reformulate it in a way that makes it really obvious from the get 
+go.)
 
 Thanks,
-Yong
 
->
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
-> Â kernel/sched_rt.c | Â  Â 1 -
-> Â 1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-> index 88725c9..0f0cfce 100644
-> --- a/kernel/sched_rt.c
-> +++ b/kernel/sched_rt.c
-> @@ -1166,7 +1166,6 @@ static struct task_struct
-> *pick_next_task_rt(struct rq *rq)
-> Â static void put_prev_task_rt(struct rq *rq, struct task_struct *p)
-> Â {
-> Â  Â  Â  Â update_curr_rt(rq);
-> - Â  Â  Â  p->se.exec_start = 0;
->
-> Â  Â  Â  Â /*
-> Â  Â  Â  Â  * The previous task needs to be made eligible for pushing
->
-
-
-
--- 
-Only stand for myself
+	Ingo
