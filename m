@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab1FBU4w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 16:56:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36238 "EHLO
+	id S1754434Ab1FBU4u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 16:56:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36239 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554Ab1FBU4s (ORCPT
+	with ESMTP id S1754295Ab1FBU4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Jun 2011 16:56:48 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 7/9] perf script: "sym" field really means show IP data
-Date: Thu,  2 Jun 2011 17:56:34 -0300
-Message-Id: <1307048196-16387-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 8/9] perf script: Make printing of dso a separate field option
+Date: Thu,  2 Jun 2011 17:56:35 -0300
+Message-Id: <1307048196-16387-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1307048196-16387-1-git-send-email-acme@infradead.org>
 References: <1307048196-16387-1-git-send-email-acme@infradead.org>
@@ -29,265 +29,174 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
-Currently the "sym" output field is used to dump instruction pointers
-and callchain stack. Sample addresses can also be converted to symbols,
-so the meaning of "sym" needs to be fixed. This patch adds an "ip"
-option and if it is selected the user can also opt to dump symbols for
-them. If the user opts to dump IP without syms only the address is
-shown.
+The 'sym' option displays both the function name and the DSO it comes
+from. Split the display of the dso into a separate option.  This allows
+display of the ip address and symbol without the dso, thus shortening
+line lengths - and decluttering the output a bit.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1306528124-25861-2-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1306528124-25861-3-git-send-email-dsahern@gmail.com
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-script.txt |   10 +++---
- tools/perf/builtin-script.c              |   31 ++++++++++++------
- tools/perf/util/session.c                |   50 +++++++++++++++++------------
- tools/perf/util/session.h                |    5 ++-
- 4 files changed, 58 insertions(+), 38 deletions(-)
+ tools/perf/Documentation/perf-script.txt |    2 +-
+ tools/perf/builtin-script.c              |   17 ++++++++++++-----
+ tools/perf/util/session.c                |   13 ++++++++++---
+ tools/perf/util/session.h                |    2 +-
+ 4 files changed, 24 insertions(+), 10 deletions(-)
 
 diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index 86c87e2..67a4e5c 100644
+index 67a4e5c..1e744c2 100644
 --- a/tools/perf/Documentation/perf-script.txt
 +++ b/tools/perf/Documentation/perf-script.txt
-@@ -115,10 +115,10 @@ OPTIONS
+@@ -115,7 +115,7 @@ OPTIONS
  -f::
  --fields::
          Comma separated list of fields to print. Options are:
--        comm, tid, pid, time, cpu, event, trace, sym. Field
-+        comm, tid, pid, time, cpu, event, trace, ip, sym. Field
+-        comm, tid, pid, time, cpu, event, trace, ip, sym. Field
++        comm, tid, pid, time, cpu, event, trace, ip, sym, dso. Field
          list can be prepended with the type, trace, sw or hw,
          to indicate to which event type the field list applies.
--        e.g., -f sw:comm,tid,time,sym  and -f trace:time,cpu,trace
-+        e.g., -f sw:comm,tid,time,ip,sym  and -f trace:time,cpu,trace
- 
- 		perf script -f <fields>
- 
-@@ -132,17 +132,17 @@ OPTIONS
- 	The arguments are processed in the order received. A later usage can
- 	reset a prior request. e.g.:
-     
--		-f trace: -f comm,tid,time,sym
-+		-f trace: -f comm,tid,time,ip,sym
-     
- 	The first -f suppresses trace events (field list is ""), but then the
--	second invocation sets the fields to comm,tid,time,sym. In this case a
-+	second invocation sets the fields to comm,tid,time,ip,sym. In this case a
- 	warning is given to the user:
-     
- 		"Overriding previous field request for all events."
-     
- 	Alternativey, consider the order:
-     
--		-f comm,tid,time,sym -f trace:
-+		-f comm,tid,time,ip,sym -f trace:
-     
- 	The first -f sets the fields for all events and the second -f
- 	suppresses trace events. The user is given a warning message about
+         e.g., -f sw:comm,tid,time,ip,sym  and -f trace:time,cpu,trace
 diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 22747de..0852db2 100644
+index 0852db2..a8bd00f 100644
 --- a/tools/perf/builtin-script.c
 +++ b/tools/perf/builtin-script.c
-@@ -30,7 +30,8 @@ enum perf_output_field {
- 	PERF_OUTPUT_CPU             = 1U << 4,
- 	PERF_OUTPUT_EVNAME          = 1U << 5,
+@@ -32,6 +32,7 @@ enum perf_output_field {
  	PERF_OUTPUT_TRACE           = 1U << 6,
--	PERF_OUTPUT_SYM             = 1U << 7,
-+	PERF_OUTPUT_IP              = 1U << 7,
-+	PERF_OUTPUT_SYM             = 1U << 8,
+ 	PERF_OUTPUT_IP              = 1U << 7,
+ 	PERF_OUTPUT_SYM             = 1U << 8,
++	PERF_OUTPUT_DSO             = 1U << 9,
  };
  
  struct output_option {
-@@ -44,6 +45,7 @@ struct output_option {
- 	{.str = "cpu",   .field = PERF_OUTPUT_CPU},
- 	{.str = "event", .field = PERF_OUTPUT_EVNAME},
+@@ -47,6 +48,7 @@ struct output_option {
  	{.str = "trace", .field = PERF_OUTPUT_TRACE},
-+	{.str = "ip",    .field = PERF_OUTPUT_IP},
+ 	{.str = "ip",    .field = PERF_OUTPUT_IP},
  	{.str = "sym",   .field = PERF_OUTPUT_SYM},
++	{.str = "dso",   .field = PERF_OUTPUT_DSO},
  };
  
-@@ -60,7 +62,8 @@ static struct {
- 
+ /* default set to maintain compatibility with current format */
+@@ -63,7 +65,7 @@ static struct {
  		.fields = PERF_OUTPUT_COMM | PERF_OUTPUT_TID |
  			      PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
--			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_SYM,
-+			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_IP |
-+				  PERF_OUTPUT_SYM,
+ 			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_IP |
+-				  PERF_OUTPUT_SYM,
++				  PERF_OUTPUT_SYM | PERF_OUTPUT_DSO,
  
  		.invalid_fields = PERF_OUTPUT_TRACE,
  	},
-@@ -70,7 +73,8 @@ static struct {
- 
+@@ -74,7 +76,7 @@ static struct {
  		.fields = PERF_OUTPUT_COMM | PERF_OUTPUT_TID |
  			      PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
--			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_SYM,
-+			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_IP |
-+				  PERF_OUTPUT_SYM,
+ 			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_IP |
+-				  PERF_OUTPUT_SYM,
++				  PERF_OUTPUT_SYM | PERF_OUTPUT_DSO,
  
  		.invalid_fields = PERF_OUTPUT_TRACE,
  	},
-@@ -88,7 +92,8 @@ static struct {
- 
+@@ -93,7 +95,7 @@ static struct {
  		.fields = PERF_OUTPUT_COMM | PERF_OUTPUT_TID |
  			      PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
--			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_SYM,
-+			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_IP |
-+				  PERF_OUTPUT_SYM,
+ 			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_IP |
+-				  PERF_OUTPUT_SYM,
++				  PERF_OUTPUT_SYM | PERF_OUTPUT_DSO,
  
  		.invalid_fields = PERF_OUTPUT_TRACE,
  	},
-@@ -157,15 +162,20 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
- 		!perf_session__has_traces(session, "record -R"))
+@@ -176,6 +178,11 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 		       "No addresses to convert to symbols.\n");
  		return -EINVAL;
- 
--	if (PRINT_FIELD(SYM)) {
-+	if (PRINT_FIELD(IP)) {
- 		if (perf_event_attr__check_stype(attr, PERF_SAMPLE_IP, "IP",
--					   PERF_OUTPUT_SYM))
-+					   PERF_OUTPUT_IP))
- 			return -EINVAL;
- 
- 		if (!no_callchain &&
- 		    !(attr->sample_type & PERF_SAMPLE_CALLCHAIN))
- 			symbol_conf.use_callchain = false;
  	}
-+	if (PRINT_FIELD(SYM) && !PRINT_FIELD(IP)) {
-+		pr_err("Display of symbols requested but IP is not selected.\n"
-+		       "No addresses to convert to symbols.\n");
++	if (PRINT_FIELD(DSO) && !PRINT_FIELD(IP)) {
++		pr_err("Display of DSO requested but IP is not selected.\n"
++		       "No addresses to convert to dso.\n");
 +		return -EINVAL;
 +	}
  
  	if ((PRINT_FIELD(PID) || PRINT_FIELD(TID)) &&
  		perf_event_attr__check_stype(attr, PERF_SAMPLE_TID, "TID",
-@@ -230,7 +240,7 @@ static void print_sample_start(struct perf_sample *sample,
- 	if (PRINT_FIELD(COMM)) {
- 		if (latency_format)
- 			printf("%8.8s ", thread->comm);
--		else if (PRINT_FIELD(SYM) && symbol_conf.use_callchain)
-+		else if (PRINT_FIELD(IP) && symbol_conf.use_callchain)
- 			printf("%s ", thread->comm);
- 		else
- 			printf("%16s ", thread->comm);
-@@ -288,12 +298,13 @@ static void process_event(union perf_event *event __unused,
- 		print_trace_event(sample->cpu, sample->raw_data,
- 				  sample->raw_size);
- 
--	if (PRINT_FIELD(SYM)) {
-+	if (PRINT_FIELD(IP)) {
- 		if (!symbol_conf.use_callchain)
- 			printf(" ");
+@@ -304,7 +311,7 @@ static void process_event(union perf_event *event __unused,
  		else
  			printf("\n");
--		perf_session__print_symbols(event, sample, session);
-+		perf_session__print_ip(event, sample, session,
-+					      PRINT_FIELD(SYM));
+ 		perf_session__print_ip(event, sample, session,
+-					      PRINT_FIELD(SYM));
++					      PRINT_FIELD(SYM), PRINT_FIELD(DSO));
  	}
  
  	printf("\n");
-@@ -985,7 +996,7 @@ static const struct option options[] = {
+@@ -996,7 +1003,7 @@ static const struct option options[] = {
  	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
  		    "Look for files with symbols relative to this directory"),
  	OPT_CALLBACK('f', "fields", NULL, "str",
--		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,sym",
-+		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym",
+-		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym",
++		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso",
  		     parse_output_fields),
  
  	OPT_END()
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index f5a8fbd..ad33650 100644
+index ad33650..0dd4182 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -1202,9 +1202,10 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 	return NULL;
- }
- 
--void perf_session__print_symbols(union perf_event *event,
--				struct perf_sample *sample,
--				struct perf_session *session)
-+void perf_session__print_ip(union perf_event *event,
-+			    struct perf_sample *sample,
-+			    struct perf_session *session,
-+			    int print_sym)
+@@ -1205,7 +1205,7 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ void perf_session__print_ip(union perf_event *event,
+ 			    struct perf_sample *sample,
+ 			    struct perf_session *session,
+-			    int print_sym)
++			    int print_sym, int print_dso)
  {
  	struct addr_location al;
  	const char *symname, *dsoname;
-@@ -1233,32 +1234,39 @@ void perf_session__print_symbols(union perf_event *event,
- 			if (!node)
- 				break;
+@@ -1241,12 +1241,15 @@ void perf_session__print_ip(union perf_event *event,
+ 				else
+ 					symname = "";
  
--			if (node->sym && node->sym->name)
--				symname = node->sym->name;
--			else
--				symname = "";
-+			printf("\t%16" PRIx64, node->ip);
-+			if (print_sym) {
-+				if (node->sym && node->sym->name)
-+					symname = node->sym->name;
-+				else
-+					symname = "";
- 
--			if (node->map && node->map->dso && node->map->dso->name)
--				dsoname = node->map->dso->name;
--			else
--				dsoname = "";
-+				if (node->map && node->map->dso && node->map->dso->name)
-+					dsoname = node->map->dso->name;
-+				else
-+					dsoname = "";
- 
--			printf("\t%16" PRIx64 " %s (%s)\n", node->ip, symname, dsoname);
-+				printf(" %s (%s)", symname, dsoname);
++				printf(" %s", symname);
 +			}
-+			printf("\n");
++			if (print_dso) {
+ 				if (node->map && node->map->dso && node->map->dso->name)
+ 					dsoname = node->map->dso->name;
+ 				else
+ 					dsoname = "";
  
- 			callchain_cursor_advance(cursor);
- 		}
+-				printf(" %s (%s)", symname, dsoname);
++				printf(" (%s)", dsoname);
+ 			}
+ 			printf("\n");
  
- 	} else {
--		if (al.sym && al.sym->name)
--			symname = al.sym->name;
--		else
--			symname = "";
-+		printf("%16" PRIx64, al.addr);
-+		if (print_sym) {
-+			if (al.sym && al.sym->name)
-+				symname = al.sym->name;
-+			else
-+				symname = "";
+@@ -1261,12 +1264,16 @@ void perf_session__print_ip(union perf_event *event,
+ 			else
+ 				symname = "";
  
--		if (al.map && al.map->dso && al.map->dso->name)
--			dsoname = al.map->dso->name;
--		else
--			dsoname = "";
-+			if (al.map && al.map->dso && al.map->dso->name)
-+				dsoname = al.map->dso->name;
-+			else
-+				dsoname = "";
- 
--		printf("%16" PRIx64 " %s (%s)", al.addr, symname, dsoname);
-+			printf(" %s (%s)", symname, dsoname);
++			printf(" %s", symname);
 +		}
++
++		if (print_dso) {
+ 			if (al.map && al.map->dso && al.map->dso->name)
+ 				dsoname = al.map->dso->name;
+ 			else
+ 				dsoname = "";
+ 
+-			printf(" %s (%s)", symname, dsoname);
++			printf(" (%s)", dsoname);
+ 		}
  	}
  }
 diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 66d4e14..d76af0f 100644
+index d76af0f..de4178d 100644
 --- a/tools/perf/util/session.h
 +++ b/tools/perf/util/session.h
-@@ -167,8 +167,9 @@ static inline int perf_session__parse_sample(struct perf_session *session,
- struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 					    unsigned int type);
- 
--void perf_session__print_symbols(union perf_event *event,
-+void perf_session__print_ip(union perf_event *event,
+@@ -170,6 +170,6 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ void perf_session__print_ip(union perf_event *event,
  				 struct perf_sample *sample,
--				 struct perf_session *session);
-+				 struct perf_session *session,
-+				 int print_sym);
+ 				 struct perf_session *session,
+-				 int print_sym);
++				 int print_sym, int print_dso);
  
  #endif /* __PERF_SESSION_H */
 -- 
