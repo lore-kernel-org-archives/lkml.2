@@ -1,110 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab1FBWbS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 18:31:18 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51772 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755162Ab1FBWbO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 18:31:14 -0400
-From: Ohad Ben-Cohen <ohad@wizery.com>
-To: <linux-media@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: <laurent.pinchart@ideasonboard.com>, <Hiroshi.DOYU@nokia.com>,
-        <arnd@arndb.de>, <davidb@codeaurora.org>, <Joerg.Roedel@amd.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [RFC 6/6] msm: iommu: move to dedicated iommu drivers folder
-Date: Fri,  3 Jun 2011 01:27:43 +0300
-Message-Id: <1307053663-24572-7-git-send-email-ohad@wizery.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1307053663-24572-1-git-send-email-ohad@wizery.com>
-References: <1307053663-24572-1-git-send-email-ohad@wizery.com>
+	id S1752614Ab1FBW3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 18:29:01 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47812 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751815Ab1FBW3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 18:29:00 -0400
+Date: Fri, 3 Jun 2011 07:28:41 +0900
+From: Greg KH <gregkh@suse.de>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kobject: mark object as not initialized after release
+Message-ID: <20110602222841.GB13482@suse.de>
+References: <1307032187-15823-1-git-send-email-lauraa@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307032187-15823-1-git-send-email-lauraa@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This should ease finding similarities with other platforms,
-with the intention of solving problems once in a generic framework
-which everyone can use.
+On Thu, Jun 02, 2011 at 09:29:47AM -0700, Laura Abbott wrote:
+> During kobject initalization, state_initialized is set to 1. This state
+> is never set back to 0, even after release. This results in re-initialized
+> object warnings if the kobject needs to be reinitialized after release. On
+> a statically allocated platform device and driver:
+> 
+> platform_device_register(&my_device)
+> platform_driver_register(&my_matching_driver)
+> platform_device_unregister(&my_device)
+> platform_device_register(&my_device)
+> 
+> gives
+> 
+> kobject (bf000128): tried to init an initialized object, something is seriously wrong.
+> [<c0053964>] (unwind_backtrace+0x0/0x128) from [<c02bd444>] (kobject_init+0x38/0x8c)
+> [<c02bd444>] (kobject_init+0x38/0x8c) from [<c03445cc>] (device_initialize+0x20/0x68)
+> [<c03445cc>] (device_initialize+0x20/0x68) from [<c0348924>] (platform_device_register+0x10/0x1c)
+> [<c0348924>] (platform_device_register+0x10/0x1c) from [<bf00305c>] (platform_driver_test_init+0x5c/0x7c [platform_driver_test])
+> [<bf00305c>] (platform_driver_test_init+0x5c/0x7c [platform_driver_test]) from [<c00466e8>] (do_one_initcall+0xd0/0x1a4)
+> [<c00466e8>] (do_one_initcall+0xd0/0x1a4) from [<c0109ea4>] (sys_init_module+0x90/0x1ac)
+> 
+> since the kobject that is part of the platform device (mydevice.dev.kobj) never
+> had the state_initialized reset despite eventually calling kobject_release.
+> 
+> Fix this by setting state_initialized on a released kobject back to 0 as any
+> state referenced after releasing is undefined.
 
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
----
- arch/arm/mach-msm/Kconfig                          |   12 ------------
- arch/arm/mach-msm/Makefile                         |    2 +-
- drivers/iommu/Kconfig                              |   11 +++++++++++
- drivers/iommu/Makefile                             |    1 +
- .../mach-msm/iommu.c => drivers/iommu/msm-iommu.c  |    0
- 5 files changed, 13 insertions(+), 13 deletions(-)
- rename arch/arm/mach-msm/iommu.c => drivers/iommu/msm-iommu.c (100%)
+Nope.
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index efb7b7d..14ebda1 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -148,18 +148,6 @@ config MACH_MSM8960_RUMI3
- 
- endmenu
- 
--config MSM_IOMMU
--	bool "MSM IOMMU Support"
--	depends on ARCH_MSM8X60 || ARCH_MSM8960
--	select IOMMU_API
--	default n
--	help
--	  Support for the IOMMUs found on certain Qualcomm SOCs.
--	  These IOMMUs allow virtualization of the address space used by most
--	  cores within the multimedia subsystem.
--
--	  If unsure, say N here.
--
- config IOMMU_PGTABLES_L2
- 	def_bool y
- 	depends on MSM_IOMMU && MMU && SMP && CPU_DCACHE_DISABLE=n
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 9519fd2..0bf4648 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -3,7 +3,7 @@ obj-y += clock.o
- obj-$(CONFIG_DEBUG_FS) += clock-debug.o
- 
- obj-$(CONFIG_MSM_VIC) += irq-vic.o
--obj-$(CONFIG_MSM_IOMMU) += iommu.o iommu_dev.o devices-iommu.o
-+obj-$(CONFIG_MSM_IOMMU) += iommu_dev.o devices-iommu.o
- 
- obj-$(CONFIG_ARCH_MSM7X00A) += dma.o irq.o acpuclock-arm11.o
- obj-$(CONFIG_ARCH_MSM7X30) += dma.o
-diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index 57378ac..e083ff0 100644
---- a/drivers/iommu/Kconfig
-+++ b/drivers/iommu/Kconfig
-@@ -19,3 +19,14 @@ config OMAP_IOMMU_DEBUG
-          the internal state of OMAP IOMMU in debugfs.
- 
-          Say N unless you know you need this.
-+
-+config MSM_IOMMU
-+	bool "MSM IOMMU Support"
-+	depends on ARCH_MSM8X60 || ARCH_MSM8960
-+	select IOMMU_API
-+	help
-+	  Support for the IOMMUs found on certain Qualcomm SOCs.
-+	  These IOMMUs allow virtualization of the address space used by most
-+	  cores within the multimedia subsystem.
-+
-+	  If unsure, say N here.
-diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
-index c094875..bfb000a 100644
---- a/drivers/iommu/Makefile
-+++ b/drivers/iommu/Makefile
-@@ -2,3 +2,4 @@ obj-$(CONFIG_IOMMU_API) += iommu.o
- obj-$(CONFIG_OMAP_IOMMU) += omap-iommu.o
- obj-$(CONFIG_OMAP_IOVMM) += omap-iovmm.o
- obj-$(CONFIG_OMAP_IOMMU_DEBUG) += omap-iommu-debug.o
-+obj-$(CONFIG_MSM_IOMMU) += msm-iommu.o
-diff --git a/arch/arm/mach-msm/iommu.c b/drivers/iommu/msm-iommu.c
-similarity index 100%
-rename from arch/arm/mach-msm/iommu.c
-rename to drivers/iommu/msm-iommu.c
--- 
-1.7.1
+We've been through this before numerous times, please see the archives
+for why I will not accept this change (hint, don't use a static kobject.
+If you do, you had better know exactly how to use it correctly...)
 
+> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+> ---
+>  lib/kobject.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/lib/kobject.c b/lib/kobject.c
+> index 82dc34c..00390e3 100644
+> --- a/lib/kobject.c
+> +++ b/lib/kobject.c
+> @@ -577,7 +577,10 @@ static void kobject_cleanup(struct kobject *kobj)
+>  
+>  static void kobject_release(struct kref *kref)
+>  {
+> -	kobject_cleanup(container_of(kref, struct kobject, kref));
+> +	struct kobject *kobj = container_of(kref, struct kobject, kref);
+> +
+> +	kobject_cleanup(kobj);
+> +	kobj->state_initialized = 0;
+>  }
+
+You really didn't test this code, did you.  It's totally broken and will
+cause crashes all over the place (hint, run it with slab debugging...)
+
+{sigh}
+
+greg k-h
