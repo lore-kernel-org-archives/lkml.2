@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab1FBWex (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 18:34:53 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:38942 "EHLO radon.swed.at"
+	id S1755314Ab1FBWdI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 18:33:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55500 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752401Ab1FBWew convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 18:34:52 -0400
-From: Richard Weinberger <richard@nod.at>
-To: Eric Paris <eparis@redhat.com>
-Subject: Re: [PATCH] Audit: push audit success and retcode into arch ptrace.h
-Date: Fri, 3 Jun 2011 00:32:16 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, fenghua.yu@intel.com,
-        monstr@monstr.eu, ralf@linux-mips.org, benh@kernel.crashing.org,
-        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        linux390@de.ibm.com, lethal@linux-sh.org, davem@davemloft.net,
-        jdike@addtoit.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, viro@zeniv.linux.org.uk, oleg@redhat.com,
-        akpm@linux-foundation.org, linux-ia64@vger.kernel.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net
-References: <20110602210458.23613.24076.stgit@paris.rdu.redhat.com>
-In-Reply-To: <20110602210458.23613.24076.stgit@paris.rdu.redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201106030032.17398.richard@nod.at>
+	id S1752401Ab1FBWdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 18:33:05 -0400
+Subject: RE: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
+ mark ncm devices as "mobile broadband devices" with FLAG_WWAN
+From: Dan Williams <dcbw@redhat.com>
+To: Alexey ORISHKO <alexey.orishko@stericsson.com>
+Cc: Stefan Metzmacher <metze@samba.org>, Oliver Neukum <oliver@neukum.name>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 02 Jun 2011 17:35:31 -0500
+In-Reply-To: <1307053743.21633.22.camel@dcbw.foobar.com>
+References: <1306922913-17803-1-git-send-email-metze@samba.org>
+	 <1306922913-17803-2-git-send-email-metze@samba.org>
+	 <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E583@EXDCVYMBSTM006.EQ1STM.local>
+	 <1307053743.21633.22.camel@dcbw.foobar.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1307054132.21633.25.camel@dcbw.foobar.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag 02 Juni 2011, 23:04:58 schrieb Eric Paris:
-> b/arch/um/sys-i386/shared/sysdep/ptrace.h index d50e62e..ef5c310 100644
-> --- a/arch/um/sys-i386/shared/sysdep/ptrace.h
-> +++ b/arch/um/sys-i386/shared/sysdep/ptrace.h
-> @@ -162,6 +162,7 @@ struct syscall_args {
->  #define UPT_ORIG_SYSCALL(r) UPT_EAX(r)
->  #define UPT_SYSCALL_NR(r) UPT_ORIG_EAX(r)
->  #define UPT_SYSCALL_RET(r) UPT_EAX(r)
-> +#define regs_return_value UPT_SYSCALL_RET
+On Thu, 2011-06-02 at 17:29 -0500, Dan Williams wrote:
+> On Wed, 2011-06-01 at 12:20 +0200, Alexey ORISHKO wrote:
+> > > -----Original Message-----
+> > > From: netdev-owner@vger.kernel.org [mailto:netdev-
+> > > owner@vger.kernel.org] On Behalf Of Stefan Metzmacher
+> > > Sent: Wednesday, June 01, 2011 12:09 PM
+> > 
+> > 
+> > > -	.flags = FLAG_POINTTOPOINT | FLAG_NO_SETINT | FLAG_MULTI_PACKET,
+> > > +	.flags = FLAG_WWAN | FLAG_NO_SETINT | FLAG_MULTI_PACKET,
+> > 
+> > This patch will introduce incompatibility with already existing
+> > applications, which track usbX devices. As a result, end user
+> > application will stop working.
+> 
+> Applications should *never* track devices based solely on a device name
+> prefix.  What do they do when the device gets renamed either by udev
+> rules or the user?  It's simply broken.  Device names are not stable API
+> and they can and do change at will.  Applications that expect them to
+> have a stable prefix are simply broken.
 
-This does not work at all.
-UPT_SYSCALL_RET expects something of type struct uml_pt_regs.
+A follow-on to this is that if you really care about specific devices,
+your application can use udev rules to "tag" specific interfaces based
+on USB VID/PID/GUID or other device attributes, and check for those tags
+in your program.  Use udev (good) or netlink (good) or SIOCGIFCONF (bad)
+to enumerate the various network interfaces on the system and pick the
+one you want using the udev tags instead of hardcoding stuff that will
+inevitably break, as you've seen here.  Yeah, it's more code.  But hey,
+it doesn't break when people do something you don't expect!
 
-#define regs_return_value REGS_EAX
-Would be correct. (For x86_64 it needs to be REGS_RAX)
+Dan
 
-But there seems to be another problem.
-Why is pt_regs of type void *?
 
-gcc complains:
-In file included from include/linux/fsnotify.h:15:0,
-                 from include/linux/security.h:26,
-                 from init/main.c:32:
-include/linux/audit.h: In function ‘audit_syscall_exit’:
-include/linux/audit.h:440:17: warning: dereferencing ‘void *’ pointer
-include/linux/audit.h:440:3: error: invalid use of void expression
-include/linux/audit.h:441:21: warning: dereferencing ‘void *’ pointer
-include/linux/audit.h:441:21: error: void value not ignored as it ought to be
-
-Thanks,
-//richard
