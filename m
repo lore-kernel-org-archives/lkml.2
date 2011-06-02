@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab1FBSUH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 14:20:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36561 "EHLO
+	id S1754314Ab1FBSUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 14:20:08 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36562 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754074Ab1FBSUC (ORCPT
+	by vger.kernel.org with ESMTP id S1754082Ab1FBSUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Jun 2011 14:20:02 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 4/9] mfd: Only register wm831x RTC device if the 32.768kHz crystal is enabled
-Date: Thu,  2 Jun 2011 19:18:50 +0100
-Message-Id: <1307038735-18788-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 5/9] mfd: Support dynamic allocation of IRQ range for wm831x
+Date: Thu,  2 Jun 2011 19:18:51 +0100
+Message-Id: <1307038735-18788-5-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.5.3
 In-Reply-To: <1307038735-18788-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <20110602181808.GA18726@opensource.wolfsonmicro.com>
@@ -22,109 +22,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RTC uses the 32.768kHz crystal so if it's not enabled (and it can only
-be enabled via OTP or InstantConfig, not runtime software) the RTC can't
-function.
+Use irq_allocate_desc() to get the IRQ range, which turns into a noop on
+non-sparse systems. Since all existing users are non-sparse there should
+be no compatibility issues.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/wm831x-core.c |   48 ++++++++++++++++++++++++++------------------
- 1 files changed, 28 insertions(+), 20 deletions(-)
+ drivers/mfd/wm831x-irq.c        |   18 +++++++++++++-----
+ include/linux/mfd/wm831x/core.h |    2 +-
+ 2 files changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index ff57a16..58f033b 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -976,11 +976,6 @@ static struct mfd_cell wm8310_devs[] = {
- 		.resources = wm831x_power_resources,
- 	},
- 	{
--		.name = "wm831x-rtc",
--		.num_resources = ARRAY_SIZE(wm831x_rtc_resources),
--		.resources = wm831x_rtc_resources,
--	},
--	{
- 		.name = "wm831x-status",
- 		.id = 1,
- 		.num_resources = ARRAY_SIZE(wm831x_status1_resources),
-@@ -1108,11 +1103,6 @@ static struct mfd_cell wm8311_devs[] = {
- 		.resources = wm831x_power_resources,
- 	},
- 	{
--		.name = "wm831x-rtc",
--		.num_resources = ARRAY_SIZE(wm831x_rtc_resources),
--		.resources = wm831x_rtc_resources,
--	},
--	{
- 		.name = "wm831x-status",
- 		.id = 1,
- 		.num_resources = ARRAY_SIZE(wm831x_status1_resources),
-@@ -1264,11 +1254,6 @@ static struct mfd_cell wm8312_devs[] = {
- 		.resources = wm831x_power_resources,
- 	},
- 	{
--		.name = "wm831x-rtc",
--		.num_resources = ARRAY_SIZE(wm831x_rtc_resources),
--		.resources = wm831x_rtc_resources,
--	},
--	{
- 		.name = "wm831x-status",
- 		.id = 1,
- 		.num_resources = ARRAY_SIZE(wm831x_status1_resources),
-@@ -1395,11 +1380,6 @@ static struct mfd_cell wm8320_devs[] = {
- 		.resources = wm831x_on_resources,
- 	},
- 	{
--		.name = "wm831x-rtc",
--		.num_resources = ARRAY_SIZE(wm831x_rtc_resources),
--		.resources = wm831x_rtc_resources,
--	},
--	{
- 		.name = "wm831x-status",
- 		.id = 1,
- 		.num_resources = ARRAY_SIZE(wm831x_status1_resources),
-@@ -1426,6 +1406,13 @@ static struct mfd_cell touch_devs[] = {
- 	},
- };
- 
-+static struct mfd_cell rtc_devs[] = {
-+	{
-+		.name = "wm831x-rtc",
-+		.num_resources = ARRAY_SIZE(wm831x_rtc_resources),
-+		.resources = wm831x_rtc_resources,
-+	},
-+};
- 
- static struct mfd_cell backlight_devs[] = {
- 	{
-@@ -1658,6 +1645,27 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 		goto err_irq;
+diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
+index b23d8d5..1808deb 100644
+--- a/drivers/mfd/wm831x-irq.c
++++ b/drivers/mfd/wm831x-irq.c
+@@ -527,13 +527,22 @@ int wm831x_irq_init(struct wm831x *wm831x, int irq)
+ 				 0xffff);
  	}
  
-+	/* The RTC can only be used if the 32.768kHz crystal is
-+	 * enabled; this can't be controlled by software at runtime.
-+	 */
-+	ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
-+	if (ret < 0) {
-+		dev_err(wm831x->dev, "Failed to read clock status: %d\n", ret);
-+		goto err_irq;
-+	}
+-	if (!pdata || !pdata->irq_base) {
+-		dev_err(wm831x->dev,
+-			"No interrupt base specified, no interrupts\n");
++	/* Try to dynamically allocate IRQs if no base is specified */
++	if (!pdata || !pdata->irq_base)
++		wm831x->irq_base = -1;
++	else
++		wm831x->irq_base = pdata->irq_base;
 +
-+	if (ret & WM831X_XTAL_ENA) {
-+		ret = mfd_add_devices(wm831x->dev, wm831x_num,
-+				      rtc_devs, ARRAY_SIZE(rtc_devs),
-+				      NULL, wm831x->irq_base);
-+		if (ret != 0) {
-+			dev_err(wm831x->dev, "Failed to add RTC: %d\n", ret);
-+			goto err_irq;
-+		}
-+	} else {
-+		dev_info(wm831x->dev, "32.768kHz clock disabled, no RTC\n");
-+	}
-+
- 	if (pdata && pdata->backlight) {
- 		/* Treat errors as non-critical */
- 		ret = mfd_add_devices(wm831x->dev, wm831x_num, backlight_devs,
++	wm831x->irq_base = irq_alloc_descs(wm831x->irq_base, 0,
++					   WM831X_NUM_IRQS, 0);
++	if (wm831x->irq_base < 0) {
++		dev_warn(wm831x->dev, "Failed to allocate IRQs: %d\n",
++			 wm831x->irq_base);
++		wm831x->irq_base = 0;
+ 		return 0;
+ 	}
+ 
+-	if (pdata->irq_cmos)
++	if (pdata && pdata->irq_cmos)
+ 		i = 0;
+ 	else
+ 		i = WM831X_IRQ_OD;
+@@ -553,7 +562,6 @@ int wm831x_irq_init(struct wm831x *wm831x, int irq)
+ 	}
+ 
+ 	wm831x->irq = irq;
+-	wm831x->irq_base = pdata->irq_base;
+ 
+ 	/* Register them with genirq */
+ 	for (cur_irq = wm831x->irq_base;
+diff --git a/include/linux/mfd/wm831x/core.h b/include/linux/mfd/wm831x/core.h
+index ebead1c..9564cf3 100644
+--- a/include/linux/mfd/wm831x/core.h
++++ b/include/linux/mfd/wm831x/core.h
+@@ -262,7 +262,7 @@ struct wm831x {
+ 
+ 	int irq;  /* Our chip IRQ */
+ 	struct mutex irq_lock;
+-	unsigned int irq_base;
++	int irq_base;
+ 	int irq_masks_cur[WM831X_NUM_IRQ_REGS];   /* Currently active value */
+ 	int irq_masks_cache[WM831X_NUM_IRQ_REGS]; /* Cached hardware value */
+ 
 -- 
 1.7.5.3
 
