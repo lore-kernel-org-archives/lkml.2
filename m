@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab1FANWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 09:22:44 -0400
-Received: from fep22.mx.upcmail.net ([62.179.121.42]:56634 "EHLO
-	fep22.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411Ab1FANWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 09:22:42 -0400
-X-SourceIP: 14.99.80.151
-Reply-To: <chelloaccountusers@hotmail.com>
-From: "UPC MAIL" <iml.koopmans@tiscali.nl>
-Subject: ALERT
-Date: Wed, 1 Jun 2011 18:49:47 -0700
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20110601131953.WLFS24739.viefep20-int.chello.at@edge03.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=zlRBWuFCZaNL9+WHNm1pWLowY5Lx061w2zJBJiDkNAU= c=1 sm=0 p=1rmJMY1gntAA:10 a=Dyoqhi_TatcA:10 a=WHsXhg87phMA:10 a=8EU9Q7FnrCoA:10 a=_LGJG2aYTWwA:10 a=Cfj4BQAnxiAA:10 a=69EAbJreAAAA:8 a=_-Gqc5TPfCasgS-aM6sA:9 a=a5rV3h1n1fIjjfXcKCAA:7 a=Ft8UYL4EG9YA:10 a=7GE01XpDKPYA:10 a=as88SeQadYMA:10 a=EfJqPEOeqlMA:10 a=IVHsMdy9v2v7zrT0:21 a=NHnHStNC2QWRoEOo:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+	id S1757610Ab1FBBuu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 21:50:50 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33016 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755090Ab1FBBut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 21:50:49 -0400
+Date: Thu, 2 Jun 2011 11:50:45 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rickard Evertsson <rickard.evertsson@stericsson.com>,
+        Daniel Willerud <daniel.willerud@stericsson.com>,
+        Deepak Karda <deepak.karda@stericsson.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Subject: linux-next: build failure after merge of the final tree (ux500-core
+ tree related)
+Message-Id: <20110602115045.41815756.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__2_Jun_2011_11_50_45_+1000_V7xFRI/zKnpnRD9J"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear  Account User,
+--Signature=_Thu__2_Jun_2011_11_50_45_+1000_V7xFRI/zKnpnRD9J
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-There will be an upgrade in our system between June 1st-30th 2011.
-Due to the anonymous registration of your accounts and number of dormant accounts, we will be running this upgrade to determine the exact number of subscribers we have at present.
+After merging the final tree, next-20110601 build (arm u8500_defconfig)
+failed like this:
 
-You are instructed to login to your  email account to verify if your account is still valid and send immediately the folowing:
+arch/arm/mach-ux500/clock-db8500.c:21:32: error: linux/gpio/nomadik.h: No s=
+uch file or directory
+arch/arm/mach-ux500/clock-db8500.c: In function 'clkout0_enable':
+arch/arm/mach-ux500/clock-db8500.c:214: error: implicit declaration of func=
+tion 'nmk_config_pin'
+arch/arm/mach-ux500/clock-db8500.c:214: error: implicit declaration of func=
+tion 'PIN_CFG'
+arch/arm/mach-ux500/clock-db8500.c:214: error: 'ALT_A' undeclared (first us=
+e in this function)
+arch/arm/mach-ux500/clock-db8500.c: In function 'clkout0_disable':
+arch/arm/mach-ux500/clock-db8500.c:221: error: 'GPIO' undeclared (first use=
+ in this function)
+arch/arm/mach-ux500/clock-db8500.c: In function 'clkout1_enable':
+arch/arm/mach-ux500/clock-db8500.c:239: error: 'ALT_A' undeclared (first us=
+e in this function)
+arch/arm/mach-ux500/clock-db8500.c: In function 'clkout1_disable':
+arch/arm/mach-ux500/clock-db8500.c:246: error: 'GPIO' undeclared (first use=
+ in this function)
 
+Casued by commit 077f17db54fa ("mach-ux500: split per-SoC clock trees").
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Login Name: ..................................(Compulsory)
-Password: ....................................(Compulsory)
-Date of Birth.................................(Optional)
-State:  ......................................(Optional)
+--Signature=_Thu__2_Jun_2011_11_50_45_+1000_V7xFRI/zKnpnRD9J
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJN5ux1AAoJEDMEi1NhKgbsdAMH/jjNA6cptahg2mqQRuEd0nVP
+KRAdTcXUL1IPxtIXQgl06y5PgsFLBq/n1QQ5AXwy88Zhp/WKc7Hq/EXzLA18evO/
+xPfBKMZ7We2Ia68nfSsPvHCGbz94q6KHsIrGQwFLf+SxMuzJhqAGR734hpGjSlTr
+27ywtuvX7tjJUQ0XdNAQpClbRaTZJEjEngZwKXLElxd9sLZd8YmTvd+aUp4ZGoeh
+CjB83NnrQByApRD5E7rW5Yvh4jOGRWecS88r/bxh0+gMTwCoMTKe79DimTUs4TYo
+r2arMM+ZW8w25lUtoBv8qGBdHSDITofieT6+ksP95+Wnrfu96fikxgE7RmYMmCs=
+=dzhX
+-----END PGP SIGNATURE-----
 
-
-Note that if your account do Login, send us the details or otherwise
-it means it has been deleted. Sorry for the inconvinence this might
-cause you, we are only trying to make sure you dont lose informations in your accounts. Your required above Information should be sent to our Admin Manager with the follwing e-mail(chelloaccountusers@hotmail.com) and your account will not be interrupted and will continue as normal.
-
-
-Thanks for your attention to this request. Once again We 
-apologize
-for any inconveniences. Warning!!! Account users that refuse to update their account after 5 Days of receiving this warning, user will lose
-his/her account permanently.
+--Signature=_Thu__2_Jun_2011_11_50_45_+1000_V7xFRI/zKnpnRD9J--
