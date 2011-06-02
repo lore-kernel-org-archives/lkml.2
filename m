@@ -1,88 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746Ab1FBOQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 10:16:49 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:53954 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab1FBOQq (ORCPT
+	id S1751597Ab1FBOOt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 10:14:49 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56940 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab1FBOOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 10:16:46 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>
-References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
-	<BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com>
-	<m18vtkq57c.fsf@fess.ebiederm.org>
-	<BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com>
-	<20110602134338.0c56160e@lxorguk.ukuu.org.uk>
-Date: Thu, 02 Jun 2011 07:16:36 -0700
-In-Reply-To: <20110602134338.0c56160e@lxorguk.ukuu.org.uk> (Alan Cox's message
-	of "Thu, 2 Jun 2011 13:43:38 +0100")
-Message-ID: <m1ipsoco8r.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Thu, 2 Jun 2011 10:14:47 -0400
+In-Reply-To: <20110602133425.GJ7141@redhat.com>
+References: <cover.1306921434.git.mst@redhat.com> <1ec8eec325839ecf2eac9930a230361e7956047c.1306921434.git.mst@redhat.com> <87pqmwj3am.fsf@rustcorp.com.au> <20110602133425.GJ7141@redhat.com>
+Subject: Re: [PATCH RFC 3/3] virtio_net: limit xmit polling
+X-KeepSent: 990F08C5:2ECE35B1-652578A3:004DC0FA;
+ type=4; name=$KeepSent
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
+        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux390@de.ibm.com,
+        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>,
+        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
+X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
+Message-ID: <OF990F08C5.2ECE35B1-ON652578A3.004DC0FA-652578A3.004E3FE4@in.ibm.com>
+From: Krishna Kumar2 <krkumar2@in.ibm.com>
+Date: Thu, 2 Jun 2011 19:47:48 +0530
+X-MIMETrack: Serialize by Router on d23ml172/23/M/IBM(Release 8.5.1FP5|September 29, 2010) at
+ 02/06/2011 19:47:49
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX191xgjUNUTDqbfKyVutF7htpT708THjmHQ=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Alan Cox <alan@lxorguk.ukuu.org.uk>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] sysctl: add support for poll()
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-type: multipart/mixed; 
+	Boundary="0__=EABBF230DFDE466A8f9e8a93df938690918cEABBF230DFDE466A"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox <alan@lxorguk.ukuu.org.uk> writes:
+--0__=EABBF230DFDE466A8f9e8a93df938690918cEABBF230DFDE466A
+Content-type: text/plain; charset=US-ASCII
 
->> Host names are dynamic, can change during system runtime by dhcp or
->> similar setups, or just get changed by the user.
->
-> I don't actually see what this has to do with utsname. uname historically
-> defined nodename as "name within an implementation-defined communications
-> network" and actually tended to be the UUCP name. Modern SuS says "`the
-> name of the node of the communications network to which this node is
-> attached, if any"
+> OK, I have something very similar, but I still dislike the screw the
+> latency part: this path is exactly what the IBM guys seem to hit.  So I
+> created two functions: one tries to free a constant number and another
+> one up to capacity. I'll post that now.
 
->
-> The latter unfortunately makes no sense anyway and is a fine example of
-> standards body cluelessness as name mapping on IP networks is not one
-> name per host, and also because the standard doesn't require the fields
-> in the struct are long enough to hold a DNS name!
->
-> (Indeed in its usual head up backside manner its technically valid to
-> define
->
-> 	char nodename[1];
->
-> and have only \0 as a valid reply)
+Please review this patch to see if it looks reasonable (inline and
+attachment):
 
-However we have conveniently defined sethostname and gethostname to use
-the same state in the kernel, as uname.  I believe at least one of these
-interfaces that map to the same storage in linux has a usable size
-guaranteed by all of the implementations.
+1. Picked comments/code from Michael's code and Rusty's review.
+2. virtqueue_min_capacity() needs to be called only if it returned
+   empty the last time it was called.
+3. Fix return value bug in free_old_xmit_skbs (hangs guest).
+4. Stop queue only if capacity is not enough for next xmit.
+5. Fix/clean some likely/unlikely checks (hopefully).
+6. I think xmit_skb cannot return error since
+    virtqueue_enable_cb_delayed() can return false only if
+   3/4th space became available, which is what we check.
+6. The comments for free_old_xmit_skbs needs to be more
+    clear (not done).
 
-Eric
+I have done some minimal netperf tests with this.
 
+With this patch, add_buf returning capacity seems to be useful - it
+allows using fewer virtio API calls.
+
+(See attached file: patch)
+
+Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+---
+ drivers/net/virtio_net.c |  105 ++++++++++++++++++++++---------------
+ 1 file changed, 64 insertions(+), 41 deletions(-)
+
+diff -ruNp org/drivers/net/virtio_net.c new/drivers/net/virtio_net.c
+--- org/drivers/net/virtio_net.c	2011-06-02 15:49:25.000000000 +0530
++++ new/drivers/net/virtio_net.c	2011-06-02 19:13:02.000000000 +0530
+@@ -509,27 +509,43 @@ again:
+ 	return received;
+ }
+
+-/* Check capacity and try to free enough pending old buffers to enable
+queueing
+- * new ones.  If min_skbs > 0, try to free at least the specified number
+of skbs
+- * even if the ring already has sufficient capacity.  Return true if we
+can
+- * guarantee that a following virtqueue_add_buf will succeed. */
+-static bool free_old_xmit_skbs(struct virtnet_info *vi, int min_skbs)
++/* Return true if freed a skb, else false */
++static inline bool free_one_old_xmit_skb(struct virtnet_info *vi)
+ {
+ 	struct sk_buff *skb;
+ 	unsigned int len;
+-	bool r;
+
+-	while ((r = virtqueue_min_capacity(vi->svq) < MAX_SKB_FRAGS + 2) ||
+-	       min_skbs-- > 0) {
+-		skb = virtqueue_get_buf(vi->svq, &len);
+-		if (unlikely(!skb))
++	skb = virtqueue_get_buf(vi->svq, &len);
++	if (unlikely(!skb))
++		return 0;
++
++	pr_debug("Sent skb %p\n", skb);
++	vi->dev->stats.tx_bytes += skb->len;
++	vi->dev->stats.tx_packets++;
++	dev_kfree_skb_any(skb);
++	return 1;
++}
++
++static bool free_old_xmit_skbs(struct virtnet_info *vi, int to_free)
++{
++	bool empty = virtqueue_min_capacity(vi->svq) < MAX_SKB_FRAGS + 2;
++
++	do {
++		if (!free_one_old_xmit_skb(vi)) {
++			/* No more skbs to free up */
+ 			break;
+-		pr_debug("Sent skb %p\n", skb);
+-		vi->dev->stats.tx_bytes += skb->len;
+-		vi->dev->stats.tx_packets++;
+-		dev_kfree_skb_any(skb);
+-	}
+-	return r;
++		}
++
++		if (empty) {
++			/* Check again if there is enough space */
++			empty = virtqueue_min_capacity(vi->svq) <
++				MAX_SKB_FRAGS + 2;
++		} else {
++			--to_free;
++		}
++	} while (to_free > 0);
++
++	return !empty;
+ }
+
+ static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
+@@ -582,46 +598,53 @@ static int xmit_skb(struct virtnet_info
+ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+ {
+ 	struct virtnet_info *vi = netdev_priv(dev);
+-	int ret, n;
++	int capacity;
+
+-	/* Free up space in the ring in case this is the first time we get
+-	 * woken up after ring full condition.  Note: this might try to free
+-	 * more than strictly necessary if the skb has a small
+-	 * number of fragments, but keep it simple. */
+-	free_old_xmit_skbs(vi, 0);
++	/* Try to free 2 buffers for every 1 xmit, to stay ahead. */
++	free_old_xmit_skbs(vi, 2);
+
+ 	/* Try to transmit */
+-	ret = xmit_skb(vi, skb);
++	capacity = xmit_skb(vi, skb);
+
+-	/* Failure to queue is unlikely. It's not a bug though: it might happen
+-	 * if we get an interrupt while the queue is still mostly full.
+-	 * We could stop the queue and re-enable callbacks (and possibly
+return
+-	 * TX_BUSY), but as this should be rare, we don't bother. */
+-	if (unlikely(ret < 0)) {
++	if (unlikely(capacity < 0)) {
++		/*
++		 * Failure to queue should be impossible. The only way to
++		 * reach here is if we got a cb before 3/4th of space was
++		 * available. We could stop the queue and re-enable
++		 * callbacks (and possibly return TX_BUSY), but we don't
++		 * bother since this is impossible.
++		 */
+ 		if (net_ratelimit())
+-			dev_info(&dev->dev, "TX queue failure: %d\n", ret);
++			dev_info(&dev->dev, "TX queue failure: %d\n", capacity);
+ 		dev->stats.tx_dropped++;
+ 		kfree_skb(skb);
+ 		return NETDEV_TX_OK;
+ 	}
++
+ 	virtqueue_kick(vi->svq);
+
+ 	/* Don't wait up for transmitted skbs to be freed. */
+ 	skb_orphan(skb);
+ 	nf_reset(skb);
+
+-	/* Apparently nice girls don't return TX_BUSY; check capacity and stop
+-	 * the queue before it gets out of hand.
+-	 * Naturally, this wastes entries. */
+-	/* We transmit one skb, so try to free at least two pending skbs.
+-	 * This is so that we don't hog the skb memory unnecessarily. */
+-	if (!likely(free_old_xmit_skbs(vi, 2))) {
+-		netif_stop_queue(dev);
+-		if (unlikely(!virtqueue_enable_cb_delayed(vi->svq))) {
+-			/* More just got used, free them and recheck. */
+-			if (!likely(free_old_xmit_skbs(vi, 0))) {
+-				netif_start_queue(dev);
+-				virtqueue_disable_cb(vi->svq);
++	/*
++	 * Apparently nice girls don't return TX_BUSY; check capacity and
++	 * stop the queue before it gets out of hand. Naturally, this wastes
++	 * entries.
++	 */
++	if (capacity < 2+MAX_SKB_FRAGS) {
++		/*
++		 * We don't have enough space for the next packet. Try
++		 * freeing more.
++		 */
++		if (likely(!free_old_xmit_skbs(vi, UINT_MAX))) {
++			netif_stop_queue(dev);
++			if (unlikely(!virtqueue_enable_cb_delayed(vi->svq))) {
++				/* More just got used, free them and recheck. */
++				if (likely(free_old_xmit_skbs(vi, UINT_MAX))) {
++					netif_start_queue(dev);
++					virtqueue_disable_cb(vi->svq);
++				}
+ 			}
+ 		}
+ 	}
+--0__=EABBF230DFDE466A8f9e8a93df938690918cEABBF230DFDE466A
+Content-type: application/octet-stream; 
+	name="patch"
+Content-Disposition: attachment; filename="patch"
+Content-transfer-encoding: base64
+
+Ik1pY2hhZWwgUy4gVHNpcmtpbiIgPG1zdEByZWRoYXQuY29tPiB3cm90ZSBvbiAwNi8wMi8yMDEx
+IDA3OjA0OjI1IFBNOgoKPiBPSywgSSBoYXZlIHNvbWV0aGluZyB2ZXJ5IHNpbWlsYXIsIGJ1dCBJ
+IHN0aWxsIGRpc2xpa2UgdGhlIHNjcmV3IHRoZQo+IGxhdGVuY3kgcGFydDogdGhpcyBwYXRoIGlz
+IGV4YWN0bHkgd2hhdCB0aGUgSUJNIGd1eXMgc2VlbSB0byBoaXQuICBTbyBJCj4gY3JlYXRlZCB0
+d28gZnVuY3Rpb25zOiBvbmUgdHJpZXMgdG8gZnJlZSBhIGNvbnN0YW50IG51bWJlciBhbmQgYW5v
+dGhlcgo+IG9uZSB1cCB0byBjYXBhY2l0eS4gSSdsbCBwb3N0IHRoYXQgbm93LgoKUGxlYXNlIHJl
+dmlldyB0aGlzIHBhdGNoIHRvIHNlZSBpZiBpdCBsb29rcyByZWFzb25hYmxlOgoKMS4gUGlja2Vk
+IGNvbW1lbnRzL2NvZGUgZnJvbSBNU1QncyBjb2RlIGFuZCBSdXN0eSdzIHJldmlldy4KMi4gdmly
+dHF1ZXVlX21pbl9jYXBhY2l0eSgpIG5lZWRzIHRvIGJlIGNhbGxlZCBvbmx5IGlmIGl0IHJldHVy
+bmVkCiAgIGVtcHR5IHRoZSBsYXN0IHRpbWUgaXQgd2FzIGNhbGxlZC4KMy4gRml4IHJldHVybiB2
+YWx1ZSBidWcgaW4gZnJlZV9vbGRfeG1pdF9za2JzIChoYW5ncyBndWVzdCkuCjQuIFN0b3AgcXVl
+dWUgb25seSBpZiBjYXBhY2l0eSBpcyBub3QgZW5vdWdoIGZvciBuZXh0IHhtaXQuCjUuIEZpeC9j
+bGVhbiBzb21lIGxpa2VseS91bmxpa2VseSBjaGVja3MgKGhvcGVmdWxseSkuCgpJIGhhdmUgZG9u
+ZSBzb21lIG1pbmltYWwgbmV0cGVyZiB0ZXN0cyB3aXRoIHRoaXMuCgpXaXRoIHRoaXMgcGF0Y2gs
+IGFkZF9idWYgcmV0dXJuaW5nIGNhcGFjaXR5IHNlZW1zIHRvIGJlIHVzZWZ1bCAtIGl0CmFsbG93
+cyBsZXNzIHZpcnRpbyBBUEkgY2FsbHMuCgpTaWduZWQtb2ZmLWJ5OiBLcmlzaG5hIEt1bWFyIDxr
+cmt1bWFyMkBpbi5pYm0uY29tPgotLS0KIGRyaXZlcnMvbmV0L3ZpcnRpb19uZXQuYyB8ICAxMDUg
+KysrKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDY0
+IGluc2VydGlvbnMoKyksIDQxIGRlbGV0aW9ucygtKQoKZGlmZiAtcnVOcCBvcmcvZHJpdmVycy9u
+ZXQvdmlydGlvX25ldC5jIG5ldy9kcml2ZXJzL25ldC92aXJ0aW9fbmV0LmMKLS0tIG9yZy9kcml2
+ZXJzL25ldC92aXJ0aW9fbmV0LmMJMjAxMS0wNi0wMiAxNTo0OToyNS4wMDAwMDAwMDAgKzA1MzAK
+KysrIG5ldy9kcml2ZXJzL25ldC92aXJ0aW9fbmV0LmMJMjAxMS0wNi0wMiAxOToxMzowMi4wMDAw
+MDAwMDAgKzA1MzAKQEAgLTUwOSwyNyArNTA5LDQzIEBAIGFnYWluOgogCXJldHVybiByZWNlaXZl
+ZDsKIH0KIAotLyogQ2hlY2sgY2FwYWNpdHkgYW5kIHRyeSB0byBmcmVlIGVub3VnaCBwZW5kaW5n
+IG9sZCBidWZmZXJzIHRvIGVuYWJsZSBxdWV1ZWluZwotICogbmV3IG9uZXMuICBJZiBtaW5fc2ti
+cyA+IDAsIHRyeSB0byBmcmVlIGF0IGxlYXN0IHRoZSBzcGVjaWZpZWQgbnVtYmVyIG9mIHNrYnMK
+LSAqIGV2ZW4gaWYgdGhlIHJpbmcgYWxyZWFkeSBoYXMgc3VmZmljaWVudCBjYXBhY2l0eS4gIFJl
+dHVybiB0cnVlIGlmIHdlIGNhbgotICogZ3VhcmFudGVlIHRoYXQgYSBmb2xsb3dpbmcgdmlydHF1
+ZXVlX2FkZF9idWYgd2lsbCBzdWNjZWVkLiAqLwotc3RhdGljIGJvb2wgZnJlZV9vbGRfeG1pdF9z
+a2JzKHN0cnVjdCB2aXJ0bmV0X2luZm8gKnZpLCBpbnQgbWluX3NrYnMpCisvKiBSZXR1cm4gdHJ1
+ZSBpZiBmcmVlZCBhIHNrYiwgZWxzZSBmYWxzZSAqLworc3RhdGljIGlubGluZSBib29sIGZyZWVf
+b25lX29sZF94bWl0X3NrYihzdHJ1Y3QgdmlydG5ldF9pbmZvICp2aSkKIHsKIAlzdHJ1Y3Qgc2tf
+YnVmZiAqc2tiOwogCXVuc2lnbmVkIGludCBsZW47Ci0JYm9vbCByOwogCi0Jd2hpbGUgKChyID0g
+dmlydHF1ZXVlX21pbl9jYXBhY2l0eSh2aS0+c3ZxKSA8IE1BWF9TS0JfRlJBR1MgKyAyKSB8fAot
+CSAgICAgICBtaW5fc2ticy0tID4gMCkgewotCQlza2IgPSB2aXJ0cXVldWVfZ2V0X2J1Zih2aS0+
+c3ZxLCAmbGVuKTsKLQkJaWYgKHVubGlrZWx5KCFza2IpKQorCXNrYiA9IHZpcnRxdWV1ZV9nZXRf
+YnVmKHZpLT5zdnEsICZsZW4pOworCWlmICh1bmxpa2VseSghc2tiKSkKKwkJcmV0dXJuIDA7CisK
+Kwlwcl9kZWJ1ZygiU2VudCBza2IgJXBcbiIsIHNrYik7CisJdmktPmRldi0+c3RhdHMudHhfYnl0
+ZXMgKz0gc2tiLT5sZW47CisJdmktPmRldi0+c3RhdHMudHhfcGFja2V0cysrOworCWRldl9rZnJl
+ZV9za2JfYW55KHNrYik7CisJcmV0dXJuIDE7Cit9CisKK3N0YXRpYyBib29sIGZyZWVfb2xkX3ht
+aXRfc2ticyhzdHJ1Y3QgdmlydG5ldF9pbmZvICp2aSwgaW50IHRvX2ZyZWUpCit7CisJYm9vbCBl
+bXB0eSA9IHZpcnRxdWV1ZV9taW5fY2FwYWNpdHkodmktPnN2cSkgPCBNQVhfU0tCX0ZSQUdTICsg
+MjsKKworCWRvIHsKKwkJaWYgKCFmcmVlX29uZV9vbGRfeG1pdF9za2IodmkpKSB7CisJCQkvKiBO
+byBtb3JlIHNrYnMgdG8gZnJlZSB1cCAqLwogCQkJYnJlYWs7Ci0JCXByX2RlYnVnKCJTZW50IHNr
+YiAlcFxuIiwgc2tiKTsKLQkJdmktPmRldi0+c3RhdHMudHhfYnl0ZXMgKz0gc2tiLT5sZW47Ci0J
+CXZpLT5kZXYtPnN0YXRzLnR4X3BhY2tldHMrKzsKLQkJZGV2X2tmcmVlX3NrYl9hbnkoc2tiKTsK
+LQl9Ci0JcmV0dXJuIHI7CisJCX0KKworCQlpZiAoZW1wdHkpIHsKKwkJCS8qIENoZWNrIGFnYWlu
+IGlmIHRoZXJlIGlzIGVub3VnaCBzcGFjZSAqLworCQkJZW1wdHkgPSB2aXJ0cXVldWVfbWluX2Nh
+cGFjaXR5KHZpLT5zdnEpIDwKKwkJCQlNQVhfU0tCX0ZSQUdTICsgMjsKKwkJfSBlbHNlIHsKKwkJ
+CS0tdG9fZnJlZTsKKwkJfQorCX0gd2hpbGUgKHRvX2ZyZWUgPiAwKTsKKworCXJldHVybiAhZW1w
+dHk7CiB9CiAKIHN0YXRpYyBpbnQgeG1pdF9za2Ioc3RydWN0IHZpcnRuZXRfaW5mbyAqdmksIHN0
+cnVjdCBza19idWZmICpza2IpCkBAIC01ODIsNDYgKzU5OCw1MyBAQCBzdGF0aWMgaW50IHhtaXRf
+c2tiKHN0cnVjdCB2aXJ0bmV0X2luZm8gCiBzdGF0aWMgbmV0ZGV2X3R4X3Qgc3RhcnRfeG1pdChz
+dHJ1Y3Qgc2tfYnVmZiAqc2tiLCBzdHJ1Y3QgbmV0X2RldmljZSAqZGV2KQogewogCXN0cnVjdCB2
+aXJ0bmV0X2luZm8gKnZpID0gbmV0ZGV2X3ByaXYoZGV2KTsKLQlpbnQgcmV0LCBuOworCWludCBj
+YXBhY2l0eTsKIAotCS8qIEZyZWUgdXAgc3BhY2UgaW4gdGhlIHJpbmcgaW4gY2FzZSB0aGlzIGlz
+IHRoZSBmaXJzdCB0aW1lIHdlIGdldAotCSAqIHdva2VuIHVwIGFmdGVyIHJpbmcgZnVsbCBjb25k
+aXRpb24uICBOb3RlOiB0aGlzIG1pZ2h0IHRyeSB0byBmcmVlCi0JICogbW9yZSB0aGFuIHN0cmlj
+dGx5IG5lY2Vzc2FyeSBpZiB0aGUgc2tiIGhhcyBhIHNtYWxsCi0JICogbnVtYmVyIG9mIGZyYWdt
+ZW50cywgYnV0IGtlZXAgaXQgc2ltcGxlLiAqLwotCWZyZWVfb2xkX3htaXRfc2ticyh2aSwgMCk7
+CisJLyogVHJ5IHRvIGZyZWUgMiBidWZmZXJzIGZvciBldmVyeSAxIHhtaXQsIHRvIHN0YXkgYWhl
+YWQuICovCisJZnJlZV9vbGRfeG1pdF9za2JzKHZpLCAyKTsKIAogCS8qIFRyeSB0byB0cmFuc21p
+dCAqLwotCXJldCA9IHhtaXRfc2tiKHZpLCBza2IpOworCWNhcGFjaXR5ID0geG1pdF9za2Iodmks
+IHNrYik7CiAKLQkvKiBGYWlsdXJlIHRvIHF1ZXVlIGlzIHVubGlrZWx5LiBJdCdzIG5vdCBhIGJ1
+ZyB0aG91Z2g6IGl0IG1pZ2h0IGhhcHBlbgotCSAqIGlmIHdlIGdldCBhbiBpbnRlcnJ1cHQgd2hp
+bGUgdGhlIHF1ZXVlIGlzIHN0aWxsIG1vc3RseSBmdWxsLgotCSAqIFdlIGNvdWxkIHN0b3AgdGhl
+IHF1ZXVlIGFuZCByZS1lbmFibGUgY2FsbGJhY2tzIChhbmQgcG9zc2libHkgcmV0dXJuCi0JICog
+VFhfQlVTWSksIGJ1dCBhcyB0aGlzIHNob3VsZCBiZSByYXJlLCB3ZSBkb24ndCBib3RoZXIuICov
+Ci0JaWYgKHVubGlrZWx5KHJldCA8IDApKSB7CisJaWYgKHVubGlrZWx5KGNhcGFjaXR5IDwgMCkp
+IHsKKwkJLyoKKwkJICogRmFpbHVyZSB0byBxdWV1ZSBzaG91bGQgYmUgaW1wb3NzaWJsZS4gVGhl
+IG9ubHkgd2F5IHRvCisJCSAqIHJlYWNoIGhlcmUgaXMgaWYgd2UgZ290IGEgY2IgYmVmb3JlIDMv
+NHRoIG9mIHNwYWNlIHdhcworCQkgKiBhdmFpbGFibGUuIFdlIGNvdWxkIHN0b3AgdGhlIHF1ZXVl
+IGFuZCByZS1lbmFibGUKKwkJICogY2FsbGJhY2tzIChhbmQgcG9zc2libHkgcmV0dXJuIFRYX0JV
+U1kpLCBidXQgd2UgZG9uJ3QKKwkJICogYm90aGVyIHNpbmNlIHRoaXMgaXMgaW1wb3NzaWJsZS4K
+KwkJICovCiAJCWlmIChuZXRfcmF0ZWxpbWl0KCkpCi0JCQlkZXZfaW5mbygmZGV2LT5kZXYsICJU
+WCBxdWV1ZSBmYWlsdXJlOiAlZFxuIiwgcmV0KTsKKwkJCWRldl9pbmZvKCZkZXYtPmRldiwgIlRY
+IHF1ZXVlIGZhaWx1cmU6ICVkXG4iLCBjYXBhY2l0eSk7CiAJCWRldi0+c3RhdHMudHhfZHJvcHBl
+ZCsrOwogCQlrZnJlZV9za2Ioc2tiKTsKIAkJcmV0dXJuIE5FVERFVl9UWF9PSzsKIAl9CisKIAl2
+aXJ0cXVldWVfa2ljayh2aS0+c3ZxKTsKIAogCS8qIERvbid0IHdhaXQgdXAgZm9yIHRyYW5zbWl0
+dGVkIHNrYnMgdG8gYmUgZnJlZWQuICovCiAJc2tiX29ycGhhbihza2IpOwogCW5mX3Jlc2V0KHNr
+Yik7CiAKLQkvKiBBcHBhcmVudGx5IG5pY2UgZ2lybHMgZG9uJ3QgcmV0dXJuIFRYX0JVU1k7IGNo
+ZWNrIGNhcGFjaXR5IGFuZCBzdG9wCi0JICogdGhlIHF1ZXVlIGJlZm9yZSBpdCBnZXRzIG91dCBv
+ZiBoYW5kLgotCSAqIE5hdHVyYWxseSwgdGhpcyB3YXN0ZXMgZW50cmllcy4gKi8KLQkvKiBXZSB0
+cmFuc21pdCBvbmUgc2tiLCBzbyB0cnkgdG8gZnJlZSBhdCBsZWFzdCB0d28gcGVuZGluZyBza2Jz
+LgotCSAqIFRoaXMgaXMgc28gdGhhdCB3ZSBkb24ndCBob2cgdGhlIHNrYiBtZW1vcnkgdW5uZWNl
+c3NhcmlseS4gKi8KLQlpZiAoIWxpa2VseShmcmVlX29sZF94bWl0X3NrYnModmksIDIpKSkgewot
+CQluZXRpZl9zdG9wX3F1ZXVlKGRldik7Ci0JCWlmICh1bmxpa2VseSghdmlydHF1ZXVlX2VuYWJs
+ZV9jYl9kZWxheWVkKHZpLT5zdnEpKSkgewotCQkJLyogTW9yZSBqdXN0IGdvdCB1c2VkLCBmcmVl
+IHRoZW0gYW5kIHJlY2hlY2suICovCi0JCQlpZiAoIWxpa2VseShmcmVlX29sZF94bWl0X3NrYnMo
+dmksIDApKSkgewotCQkJCW5ldGlmX3N0YXJ0X3F1ZXVlKGRldik7Ci0JCQkJdmlydHF1ZXVlX2Rp
+c2FibGVfY2IodmktPnN2cSk7CisJLyoKKwkgKiBBcHBhcmVudGx5IG5pY2UgZ2lybHMgZG9uJ3Qg
+cmV0dXJuIFRYX0JVU1k7IGNoZWNrIGNhcGFjaXR5IGFuZAorCSAqIHN0b3AgdGhlIHF1ZXVlIGJl
+Zm9yZSBpdCBnZXRzIG91dCBvZiBoYW5kLiBOYXR1cmFsbHksIHRoaXMgd2FzdGVzCisJICogZW50
+cmllcy4gCisJICovCisJaWYgKGNhcGFjaXR5IDwgMitNQVhfU0tCX0ZSQUdTKSB7CisJCS8qCisJ
+CSAqIFdlIGRvbid0IGhhdmUgZW5vdWdoIHNwYWNlIGZvciB0aGUgbmV4dCBwYWNrZXQuIFRyeQor
+CQkgKiBmcmVlaW5nIG1vcmUuCisJCSAqLworCQlpZiAobGlrZWx5KCFmcmVlX29sZF94bWl0X3Nr
+YnModmksIFVJTlRfTUFYKSkpIHsKKwkJCW5ldGlmX3N0b3BfcXVldWUoZGV2KTsKKwkJCWlmICh1
+bmxpa2VseSghdmlydHF1ZXVlX2VuYWJsZV9jYl9kZWxheWVkKHZpLT5zdnEpKSkgeworCQkJCS8q
+IE1vcmUganVzdCBnb3QgdXNlZCwgZnJlZSB0aGVtIGFuZCByZWNoZWNrLiAqLworCQkJCWlmIChs
+aWtlbHkoZnJlZV9vbGRfeG1pdF9za2JzKHZpLCBVSU5UX01BWCkpKSB7CisJCQkJCW5ldGlmX3N0
+YXJ0X3F1ZXVlKGRldik7CisJCQkJCXZpcnRxdWV1ZV9kaXNhYmxlX2NiKHZpLT5zdnEpOworCQkJ
+CX0KIAkJCX0KIAkJfQogCX0K
+
+--0__=EABBF230DFDE466A8f9e8a93df938690918cEABBF230DFDE466A--
 
