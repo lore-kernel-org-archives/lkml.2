@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757610Ab1FBBuu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 21:50:50 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33016 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755090Ab1FBBut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 21:50:49 -0400
-Date: Thu, 2 Jun 2011 11:50:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rickard Evertsson <rickard.evertsson@stericsson.com>,
-        Daniel Willerud <daniel.willerud@stericsson.com>,
-        Deepak Karda <deepak.karda@stericsson.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Subject: linux-next: build failure after merge of the final tree (ux500-core
- tree related)
-Message-Id: <20110602115045.41815756.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__2_Jun_2011_11_50_45_+1000_V7xFRI/zKnpnRD9J"
+	id S1759031Ab1FBCTy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 22:19:54 -0400
+Received: from sous-sol.org ([216.99.217.87]:33798 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752492Ab1FBCTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 22:19:53 -0400
+X-Greylist: delayed 1540 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Jun 2011 22:19:52 EDT
+Date: Wed, 1 Jun 2011 18:53:27 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Chris Wright <chrisw@sous-sol.org>, Mel Gorman <mel@csn.ul.ie>,
+        Izik Eidus <ieidus@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG 3.0.0-rc1] ksm: NULL pointer dereference in ksm_do_scan()
+Message-ID: <20110602015327.GC16009@sequoia.sous-sol.org>
+References: <20110601222032.GA2858@thinkpad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110601222032.GA2858@thinkpad>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__2_Jun_2011_11_50_45_+1000_V7xFRI/zKnpnRD9J
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Andrea Righi (andrea@betterlinux.com) wrote:
+> The bug can be easily reproduced using the following testcase:
 
-Hi all,
+Thanks for the testcase.
 
-After merging the final tree, next-20110601 build (arm u8500_defconfig)
-failed like this:
+> ========================
+> #include <stdio.h>
+> #include <stdlib.h>
+> #include <unistd.h>
+> #include <sys/mman.h>
+> 
+> #define BUFSIZE getpagesize()
+> 
+> int main(int argc, char **argv)
+> {
+> 	void *ptr;
+> 
+> 	if (posix_memalign(&ptr, getpagesize(), BUFSIZE) < 0) {
+> 		perror("posix_memalign");
+> 		exit(1);
+> 	}
+> 	if (madvise(ptr, BUFSIZE, MADV_MERGEABLE) < 0) {
+> 		perror("madvise");
+> 		exit(1);
+> 	}
+> 	*(char *)NULL = 0;
+> 
+> 	return 0;
+> }
+> ========================
+> 
+> It seems that when a task segfaults mm_slot->mm becomes NULL, but it's
+> still wrongly considered by the ksm scan. Is there a race with
+> __ksm_exit()?
 
-arch/arm/mach-ux500/clock-db8500.c:21:32: error: linux/gpio/nomadik.h: No s=
-uch file or directory
-arch/arm/mach-ux500/clock-db8500.c: In function 'clkout0_enable':
-arch/arm/mach-ux500/clock-db8500.c:214: error: implicit declaration of func=
-tion 'nmk_config_pin'
-arch/arm/mach-ux500/clock-db8500.c:214: error: implicit declaration of func=
-tion 'PIN_CFG'
-arch/arm/mach-ux500/clock-db8500.c:214: error: 'ALT_A' undeclared (first us=
-e in this function)
-arch/arm/mach-ux500/clock-db8500.c: In function 'clkout0_disable':
-arch/arm/mach-ux500/clock-db8500.c:221: error: 'GPIO' undeclared (first use=
- in this function)
-arch/arm/mach-ux500/clock-db8500.c: In function 'clkout1_enable':
-arch/arm/mach-ux500/clock-db8500.c:239: error: 'ALT_A' undeclared (first us=
-e in this function)
-arch/arm/mach-ux500/clock-db8500.c: In function 'clkout1_disable':
-arch/arm/mach-ux500/clock-db8500.c:246: error: 'GPIO' undeclared (first use=
- in this function)
-
-Casued by commit 077f17db54fa ("mach-ux500: split per-SoC clock trees").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__2_Jun_2011_11_50_45_+1000_V7xFRI/zKnpnRD9J
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN5ux1AAoJEDMEi1NhKgbsdAMH/jjNA6cptahg2mqQRuEd0nVP
-KRAdTcXUL1IPxtIXQgl06y5PgsFLBq/n1QQ5AXwy88Zhp/WKc7Hq/EXzLA18evO/
-xPfBKMZ7We2Ia68nfSsPvHCGbz94q6KHsIrGQwFLf+SxMuzJhqAGR734hpGjSlTr
-27ywtuvX7tjJUQ0XdNAQpClbRaTZJEjEngZwKXLElxd9sLZd8YmTvd+aUp4ZGoeh
-CjB83NnrQByApRD5E7rW5Yvh4jOGRWecS88r/bxh0+gMTwCoMTKe79DimTUs4TYo
-r2arMM+ZW8w25lUtoBv8qGBdHSDITofieT6+ksP95+Wnrfu96fikxgE7RmYMmCs=
-=dzhX
------END PGP SIGNATURE-----
-
---Signature=_Thu__2_Jun_2011_11_50_45_+1000_V7xFRI/zKnpnRD9J--
+Hmm, wonder if khugepaged has the same issue too.  We should be holding
+a reference to ->mm, but we seem to have inconsistent serialization w/
+mmap_sem.  Hugh mentioned some of these concerns when introducing
+ksm_exit.
