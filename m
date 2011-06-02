@@ -1,103 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab1FBRdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 13:33:07 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36506 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab1FBRdG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 13:33:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=cuaYHju81ZrS8PnIIWfUV9Crff+zrqLJpZvXtwYHT5XMkfs4vAO3UF60/sY++lLZih
-         580ZwTMNcbyK/UD+z5nRTixvyqh3IGCyGjsXGT7xx9VkA30BfI5gXS5Kw6dkTLYOVB/G
-         iKGctPvRVeyUyVmdrtGj8CMaZ2jZRYTIWkJCA=
+	id S1753779Ab1FBRfV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 13:35:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59906 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752918Ab1FBRfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 13:35:20 -0400
+Date: Thu, 2 Jun 2011 19:33:30 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        pedro@codesourcery.com
+Subject: Re: [PATCH 17/17] ptrace: implement PTRACE_LISTEN
+Message-ID: <20110602173330.GA20384@redhat.com>
+References: <1306710760-16440-1-git-send-email-tj@kernel.org> <1306710760-16440-18-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <m1hb88e3qs.fsf@fess.ebiederm.org>
-References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
- <BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com> <m18vtkq57c.fsf@fess.ebiederm.org>
- <BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com> <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
- <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com> <m1hb88e3qs.fsf@fess.ebiederm.org>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 2 Jun 2011 19:32:49 +0200
-Message-ID: <BANLkTin5P8P_HR78qo0oyzeu9hpWazZqTw@mail.gmail.com>
-Subject: Re: [PATCH] sysctl: add support for poll()
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306710760-16440-18-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 2, 2011 at 15:56, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> Lucas De Marchi <lucas.demarchi@profusion.mobi> writes:
-
->> With this patch in, if anyone wants to manage a file under /proc/sys
->> there's really a small amount of code to write. He only has to define
->> the new poll struct for that file.
+On 05/30, Tejun Heo wrote:
 >
-> The support currently appears cumbersome to add, and it adds what appear
-> to be unnecessary wake ups (say when the hostname in another uts
-> namespace changes).
+> This allows ptracer to monitor group stop state without running tracee
+> - use INTERRUPT to put tracee into STOP trap, issue LISTEN and then
+> wait(2) to wait for the next group stop event.  When it happens,
+> PTRACE_GETSIGINFO provides information to determine the current state.
 
-Yeah, *possibly* waking up once a day compared to *unconditionally*
-waking up every second in every namespace and check if something has
-changed. If that *possibly* should be optimized, which I think isn't
-necessary at all, I guess the logic could be moved down to the
-namespaced data.
+Great. Just a couple of questions,
 
-> There is no explanation at all of why you care about the nis domainname.
-
-Just the same reason as the hostname, we need to know when the
-kernel's internal state changes. regardless who did it and why, system
-services need to follow it.
-
-> Since there does not appear to be a specific problem that this problem
-> is being aimed at, since the code just looks like extra maintenance and
-> since the code needed to support this appears to be unnecessarily
-> cumbersome I am going to nack the patch for now.
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -1416,7 +1416,7 @@ static int wait_task_stopped(struct wait_opts *wo,
+>  	spin_lock_irq(&p->sighand->siglock);
 >
-> Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+>  	p_code = task_stopped_code(p, ptrace);
+> -	if (unlikely(!p_code))
+> +	if (unlikely(!p_code) || p->jobctl & JOBCTL_LISTENING)
+>  		goto unlock_sig;
 
-Please provide solid technical reasons, why we can't to the same we do
-everywhere else since years, or provide working alternatives. Until
-then:
+Up to you, but perhaps this JOBCTL_LISTENING check should go into
+task_stopped_code() ? Or do you think we can't check it without
+siglock?
 
-Acked-By: Kay Sievers <kay.sievers@vrfy.org>
+> +	case PTRACE_LISTEN:
+> +		/*
+> +		 * Listen for events.  Tracee must be in STOP.  It's not
+> +		 * resumed per-se but is not considered to be in TRACED by
+> +		 * wait(2) or ptrace(2).  If an async event (e.g. group
+> +		 * stop state change) happens, tracee will enter STOP trap
+> +		 * again.  Alternatively, ptracer can issue INTERRUPT to
+> +		 * finish listening and re-trap tracee into STOP.
+> +		 */
+> +		if (unlikely(!seized || !lock_task_sighand(child, &flags)))
+> +			break;
+> +
+> +		si = child->last_siginfo;
+> +		if (unlikely(!si || si->si_code != PTRACE_STOP_SI_CODE))
+> +			break;
+> +
+> +		child->jobctl |= JOBCTL_LISTENING;
+> +
+> +		/*
+> +		 * If NOTIFY is set, it means event happened between start
+> +		 * of this trap and now.  Trigger re-trap immediately.
+> +		 */
+> +		if (child->jobctl & JOBCTL_TRAP_NOTIFY)
+> +			signal_wake_up(child, true);
 
-> If the goal here is just to fix the general case then we probably
-> want to get inotify going on proc files instead of poll.  Either
-> that or we want pollable files to appear as something besides files
-> so that it is clear to their users that poll will work.
+Again, I won't insist if you prefer signal_wake_up(), but afaics
+wake_up_state(__TASK_TRACED) should be enough.
 
-I think poll() is the natural interface if you care about the data in
-a file. It's the same an single fd you care, and not some iniotify
-watch, fd, pathname to register, and filter for whatever comes out
-there.
+> @@ -838,7 +840,7 @@ static void ptrace_trap_notify(struct task_struct *t)
+>  	assert_spin_locked(&t->sighand->siglock);
+>
+>  	task_set_jobctl_pending(t, JOBCTL_TRAP_NOTIFY);
+> -	signal_wake_up(t, 0);
+> +	signal_wake_up(t, t->jobctl & JOBCTL_LISTENING);
+>  }
 
-We already use exactly the same semantics for quite some years for
-/proc/mounts, /proc/swaps, /proc/mdstat, ... and all over /sys. The
-patch just provides the missing pieces that /proc provides, but
-/proc/sys is missing.
+OK. The only thing I can't understand is why prepare_signal(SIGCONT)
+calls ptrace_trap_notify() unconditionally. How about
 
-I don't disagree, it might be nice to have generic inotify support on
-/proc for this or other problems. But unless you want to work on it
-now, and it would solve these problems, I don't see how we can get the
-functionality we need, and that seems to solved with this patch.
-Besides the fact that I think poll() is the simple and better
-solution.
+		if (likely(!(t->ptrace & PT_SEIZED)))
+			wake_up_state(t, __TASK_STOPPED);
+	-	else
+	+	else if (why)
+			ptrace_trap_notify(t);
 
-Thanks,
-Kay
+?
+
+Oleg.
+
