@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab1FBBia (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 21:38:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49830 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755410Ab1FBBi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 21:38:29 -0400
-Date: Thu, 2 Jun 2011 11:38:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Phillip Lougher <phillip.lougher@gmail.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: clean up time (pass 1)
-Message-Id: <20110602113826.a41bbd3d.sfr@canb.auug.org.au>
-In-Reply-To: <BANLkTim6MbS1E=9LyX=rsDr+JNuojPC4GQ@mail.gmail.com>
-References: <20110601110616.861247de.sfr@canb.auug.org.au>
-	<BANLkTim6MbS1E=9LyX=rsDr+JNuojPC4GQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__2_Jun_2011_11_38_26_+1000_Vm8heZEGpS31nyoN"
+	id S1755351Ab1FANWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 09:22:44 -0400
+Received: from fep22.mx.upcmail.net ([62.179.121.42]:56634 "EHLO
+	fep22.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab1FANWm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 09:22:42 -0400
+X-SourceIP: 14.99.80.151
+Reply-To: <chelloaccountusers@hotmail.com>
+From: "UPC MAIL" <iml.koopmans@tiscali.nl>
+Subject: ALERT
+Date: Wed, 1 Jun 2011 18:49:47 -0700
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20110601131953.WLFS24739.viefep20-int.chello.at@edge03.upcmail.net>
+X-Cloudmark-Analysis: v=1.1 cv=zlRBWuFCZaNL9+WHNm1pWLowY5Lx061w2zJBJiDkNAU= c=1 sm=0 p=1rmJMY1gntAA:10 a=Dyoqhi_TatcA:10 a=WHsXhg87phMA:10 a=8EU9Q7FnrCoA:10 a=_LGJG2aYTWwA:10 a=Cfj4BQAnxiAA:10 a=69EAbJreAAAA:8 a=_-Gqc5TPfCasgS-aM6sA:9 a=a5rV3h1n1fIjjfXcKCAA:7 a=Ft8UYL4EG9YA:10 a=7GE01XpDKPYA:10 a=as88SeQadYMA:10 a=EfJqPEOeqlMA:10 a=IVHsMdy9v2v7zrT0:21 a=NHnHStNC2QWRoEOo:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__2_Jun_2011_11_38_26_+1000_Vm8heZEGpS31nyoN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Dear  Account User,
 
-Hi Phillip,
 
-On Thu, 2 Jun 2011 02:26:07 +0100 Phillip Lougher <phillip.lougher@gmail.co=
-m> wrote:
->
-> > squashfs
->=20
-> This is a surprise ... I'm sure I had commits in my squashfs
-> linux-next tree at the opening of the last but one merge window...
->=20
-> Linux 2.6.38 released 14 Mar 2011
->=20
-> $ git log --pretty=3D"%ci %s"
-> ...
-> 2011-02-28 18:43:48 +0000 Squashfs: wrap squashfs_mount() definition
-> 2011-02-28 18:35:44 +0000 Squashfs: xz_wrapper doesn't need to include sq=
-uashfs_
-> 2011-02-28 18:35:36 +0000 Squashfs: Update documentation to include compr=
-ession
-> 2011-02-28 18:35:28 +0000 Squashfs: Update Kconfig help text to include x=
-z compr
-> 2011-02-28 18:34:24 +0000 Squashfs: add compression options support to xz=
- decomp
-> 2011-02-28 18:21:59 +0000 Squashfs: extend decompressor framework to hand=
-le comp
-> 2011-02-07 16:03:55 -0800 Linux 2.6.38-rc4
+There will be an upgrade in our system between June 1st-30th 2011.
+Due to the anonymous registration of your accounts and number of dormant accounts, we will be running this upgrade to determine the exact number of subscribers we have at present.
 
-plus or minus 1 day (and timezone jitter :-)):
+You are instructed to login to your  email account to verify if your account is still valid and send immediately the folowing:
 
-$ git rev-list --no-merges next/20110314/origin..next/20110314/squashfs | w=
-c -l
-0
-$ git rev-list --no-merges next/20110315/origin..next/20110315/squashfs | w=
-c -l
-0
-$ git rev-list --no-merges next/20110316/origin..next/20110316/squashfs | w=
-c -l
-6
 
-It doesn't really matter, it was just a quick metric to choose a subset
-of trees to look at.
+Login Name: ..................................(Compulsory)
+Password: ....................................(Compulsory)
+Date of Birth.................................(Optional)
+State:  ......................................(Optional)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Thu__2_Jun_2011_11_38_26_+1000_Vm8heZEGpS31nyoN
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJN5umSAAoJEDMEi1NhKgbsSoEIAIdvf18p4+w59iB97hutZ/S9
-i5YZyOFsTvxet09vFidCxPUj0uuY25pYKBsLkn3oZZ9Zaq3ut2eSOML6aSakxhT6
-WcMNzQSsUDpjXpwU0l04LLVbFrnLEiQVTRYJdmzNnQKT8BIQsyz1vvoyA7mYjkgl
-mb/FC6QLlCkq4yoyzPI9qWxPan9j18tb9Ihsgq9IXJDrXMuRWRSb8Wwzr/I81R3A
-pLro+SHErASftdO9b1TEDJxNL6TiL0Tko5mqFt4nUEN0lh83XFzOwmzogxfYrwOM
-zpzoHLa+GuuKCkXkMSbQGc7/mDz4/Y9z7lC/GQY6ktCKgMeFVveIRfT9chdovfg=
-=Mcpy
------END PGP SIGNATURE-----
+Note that if your account do Login, send us the details or otherwise
+it means it has been deleted. Sorry for the inconvinence this might
+cause you, we are only trying to make sure you dont lose informations in your accounts. Your required above Information should be sent to our Admin Manager with the follwing e-mail(chelloaccountusers@hotmail.com) and your account will not be interrupted and will continue as normal.
 
---Signature=_Thu__2_Jun_2011_11_38_26_+1000_Vm8heZEGpS31nyoN--
+
+Thanks for your attention to this request. Once again We 
+apologize
+for any inconveniences. Warning!!! Account users that refuse to update their account after 5 Days of receiving this warning, user will lose
+his/her account permanently.
