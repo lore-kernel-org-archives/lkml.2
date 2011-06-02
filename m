@@ -1,197 +1,344 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab1FBV4M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 17:56:12 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:50814 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754833Ab1FBV4K convert rfc822-to-8bit (ORCPT
+	id S1755102Ab1FBV61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 17:58:27 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:45829 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab1FBV60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 17:56:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=stGrRNZLn8EyD1IChciQjO8+Gnmjy7gR7c7L6QTfOEE2/THX0vD7L73ETKv4jBJ0Vm
-         s+HqLoeX9y5GZ8YY5x5g==
+	Thu, 2 Jun 2011 17:58:26 -0400
+Date: Thu, 2 Jun 2011 16:58:21 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Anton Salikhmetov <alexo@tuxera.com>, linux-kernel@vger.kernel.org
+Subject: Re: hfsplus mount regression in 2.6.38
+Message-ID: <20110602215821.GA13099@thinkpad-t410>
+Mail-Followup-To: Christoph Hellwig <hch@infradead.org>,
+	Anton Salikhmetov <alexo@tuxera.com>, linux-kernel@vger.kernel.org
+References: <20110525142521.GA32511@thinkpad-t410>
+ <20110527092522.GA11600@infradead.org>
+ <20110527132356.GA13908@thinkpad-t410>
+ <20110527182406.GB13908@thinkpad-t410>
 MIME-Version: 1.0
-In-Reply-To: <1306909519-7286-5-git-send-email-hannes@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
-	<1306909519-7286-5-git-send-email-hannes@cmpxchg.org>
-Date: Thu, 2 Jun 2011 14:55:56 -0700
-Message-ID: <BANLkTim5TSWpBfeF2dugGZwQmNC-Cf+GCNctraq8FtziJxsd2g@mail.gmail.com>
-Subject: Re: [patch 4/8] memcg: rework soft limit reclaim
-From: Ying Han <yinghan@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110527182406.GB13908@thinkpad-t410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 11:25 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> Currently, soft limit reclaim is entered from kswapd, where it selects
-> the memcg with the biggest soft limit excess in absolute bytes, and
-> reclaims pages from it with maximum aggressiveness (priority 0).
->
-> This has the following disadvantages:
->
->    1. because of the aggressiveness, kswapd can be stalled on a memcg
->    that is hard to reclaim from for a long time, sending the rest of
->    the allocators into direct reclaim in the meantime.
->
->    2. it only considers the biggest offender (in absolute bytes, no
->    less, so very unhandy for setups with different-sized memcgs) and
->    does not apply any pressure at all on other memcgs in excess.
->
->    3. because it is only invoked from kswapd, the soft limit is
->    meaningful during global memory pressure, but it is not taken into
->    account during hierarchical target reclaim where it could allow
->    prioritizing memcgs as well.  So while it does hierarchical
->    reclaim once triggered, it is not a truly hierarchical mechanism.
->
-> Here is a different approach.  Instead of having a soft limit reclaim
-> cycle separate from the rest of reclaim, this patch ensures that each
-> time a group of memcgs is reclaimed - be it because of global memory
-> pressure or because of a hard limit - memcgs that exceed their soft
-> limit, or contribute to the soft limit excess of one their parents,
-> are reclaimed from at a higher priority than their siblings.
->
-> This results in the following:
->
->    1. all relevant memcgs are scanned with increasing priority during
->    memory pressure.  The primary goal is to free pages, not to punish
->    soft limit offenders.
->
->    2. increased pressure is applied to all memcgs in excess of their
->    soft limit, not only the biggest offender.
->
->    3. the soft limit becomes meaningful for target reclaim as well,
->    where it allows prioritizing children of a hierarchy when the
->    parent hits its limit.
->
->    4. direct reclaim now also applies increased soft limit pressure,
->    not just kswapd anymore.
->
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  include/linux/memcontrol.h |    7 +++++++
->  mm/memcontrol.c            |   26 ++++++++++++++++++++++++++
->  mm/vmscan.c                |    8 ++++++--
->  3 files changed, 39 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 8f402b9..7d99e87 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -104,6 +104,7 @@ extern void mem_cgroup_end_migration(struct mem_cgroup *mem,
->  struct mem_cgroup *mem_cgroup_hierarchy_walk(struct mem_cgroup *,
->                                             struct mem_cgroup *);
->  void mem_cgroup_stop_hierarchy_walk(struct mem_cgroup *, struct mem_cgroup *);
-> +bool mem_cgroup_soft_limit_exceeded(struct mem_cgroup *, struct mem_cgroup *);
->
->  /*
->  * For memory reclaim.
-> @@ -345,6 +346,12 @@ static inline void mem_cgroup_stop_hierarchy_walk(struct mem_cgroup *r,
->  {
->  }
->
-> +static inline bool mem_cgroup_soft_limit_exceeded(struct mem_cgroup *root,
-> +                                                 struct mem_cgroup *mem)
-> +{
-> +       return false;
-> +}
-> +
->  static inline void
->  mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
->  {
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 983efe4..94f77cc3 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1460,6 +1460,32 @@ void mem_cgroup_stop_hierarchy_walk(struct mem_cgroup *root,
->                css_put(&mem->css);
->  }
->
-> +/**
-> + * mem_cgroup_soft_limit_exceeded - check if a memcg (hierarchically)
-> + *                                  exceeds a soft limit
-> + * @root: highest ancestor of @mem to consider
-> + * @mem: memcg to check for excess
-> + *
-> + * The function indicates whether @mem has exceeded its own soft
-> + * limit, or contributes to the soft limit excess of one of its
-> + * parents in the hierarchy below @root.
-> + */
-> +bool mem_cgroup_soft_limit_exceeded(struct mem_cgroup *root,
-> +                                   struct mem_cgroup *mem)
-> +{
-> +       for (;;) {
-> +               if (mem == root_mem_cgroup)
-> +                       return false;
-> +               if (res_counter_soft_limit_excess(&mem->res))
-> +                       return true;
-> +               if (mem == root)
-> +                       return false;
-> +               mem = parent_mem_cgroup(mem);
-> +               if (!mem)
-> +                       return false;
-> +       }
-> +}
-> +
->  static unsigned long mem_cgroup_reclaim(struct mem_cgroup *mem,
->                                        gfp_t gfp_mask,
->                                        unsigned long flags)
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index c7d4b44..0163840 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1988,9 +1988,13 @@ static void shrink_zone(int priority, struct zone *zone,
->                unsigned long reclaimed = sc->nr_reclaimed;
->                unsigned long scanned = sc->nr_scanned;
->                unsigned long nr_reclaimed;
-> +               int epriority = priority;
-> +
-> +               if (mem_cgroup_soft_limit_exceeded(root, mem))
-> +                       epriority -= 1;
+On Fri, May 27, 2011 at 01:24:06PM -0500, Seth Forshee wrote:
+> > > Basically all hardcoded uses of HFSPLUS_SECTOR_SIZE need to be replaced
+> > > with a use of bdev_logical_block_size, or a per-sb variable derived from
+> > > it, and the addressing needs to be accomodated to fit it.  I'd need to
+> > > look into a bit more detail in what form the sectors we pass into it
+> > > are in - we might have to convert them from 512byte to large units,
+> > > or they might already be in it.  If they happen to be in 512 byte units
+> > > we might have to do read-modify write cycles.
+> > 
+> > It seems reasonable to use sb->s_blocksize for this, as it shouldn't get
+> > set to anything larger than the logical block size. That's what
+> > sb_bread() uses in fact.
+> 
+> I started looking into this, and it seems like one aspect of it is a
+> little nasty. My knowledge here is rudimentary at best though, so maybe
+> you can comment on whether or not this situation is possible.
+> 
+> It looks like some of the metadata accessed via bio can reside in blocks
+> adjacent to blocks containing file data, in which case it would be
+> possible for some of this metadata to be present in the page cache.
+> This could potentially lead to races where metadata changes are
+> committed and later overwritten by stale data in the page cache. Is this
+> a valid concern?
 
-Here we grant the ability to shrink from all the memcgs, but only
-higher the priority for those exceed the soft_limit. That is a design
-change
-for the "soft_limit" which giving a hint to which memcgs to reclaim
-from first under global memory pressure.
+I took a crack at converting the users of direct bio to use
+bdev_logical_block_size instead of HFSPLUS_SECTOR_SIZE. sb->s_blocksize
+doesn't turn out to work because it may change after reading the
+volume header. The patch is below; feedback is appreciated.
 
---Ying
+So far I've only done light testing, and no testing with large-sector
+devices since I don't have any to test with. I'm still concerned about
+duplicating data also in the page cache with this approach. Any thoughts
+on whether or not this is something to be worried about?
 
 
->
->                sc->mem_cgroup = mem;
-> -               do_shrink_zone(priority, zone, sc);
-> +               do_shrink_zone(epriority, zone, sc);
->                mem_cgroup_count_reclaim(mem, current_is_kswapd(),
->                                         mem != root, /* limit or hierarchy? */
->                                         sc->nr_scanned - scanned,
-> @@ -2480,7 +2484,7 @@ loop_again:
->                         * Call soft limit reclaim before calling shrink_zone.
->                         * For now we ignore the return value
->                         */
-> -                       mem_cgroup_soft_limit_reclaim(zone, order, sc.gfp_mask);
-> +                       //mem_cgroup_soft_limit_reclaim(zone, order, sc.gfp_mask);
->
->                        /*
->                         * We put equal pressure on every zone, unless
-> --
-> 1.7.5.2
->
->
+diff --git a/fs/hfsplus/hfsplus_fs.h b/fs/hfsplus/hfsplus_fs.h
+index d685752..4e7f64b 100644
+--- a/fs/hfsplus/hfsplus_fs.h
++++ b/fs/hfsplus/hfsplus_fs.h
+@@ -13,6 +13,7 @@
+ #include <linux/fs.h>
+ #include <linux/mutex.h>
+ #include <linux/buffer_head.h>
++#include <linux/blkdev.h>
+ #include "hfsplus_raw.h"
+ 
+ #define DBG_BNODE_REFS	0x00000001
+@@ -110,7 +111,9 @@ struct hfsplus_vh;
+ struct hfs_btree;
+ 
+ struct hfsplus_sb_info {
++	void *s_vhdr_buf;
+ 	struct hfsplus_vh *s_vhdr;
++	void *s_backup_vhdr_buf;
+ 	struct hfsplus_vh *s_backup_vhdr;
+ 	struct hfs_btree *ext_tree;
+ 	struct hfs_btree *cat_tree;
+@@ -258,6 +261,15 @@ struct hfsplus_readdir_data {
+ 	struct hfsplus_cat_key key;
+ };
+ 
++/*
++ * Find minimum acceptible I/O size for an hfsplus sb.
++ */
++static inline unsigned short hfsplus_min_io_size(struct super_block *sb)
++{
++	return max_t(unsigned short, bdev_logical_block_size(sb->s_bdev),
++		     HFSPLUS_SECTOR_SIZE);
++}
++
+ #define hfs_btree_open hfsplus_btree_open
+ #define hfs_btree_close hfsplus_btree_close
+ #define hfs_btree_write hfsplus_btree_write
+@@ -436,8 +448,8 @@ int hfsplus_compare_dentry(const struct dentry *parent,
+ /* wrapper.c */
+ int hfsplus_read_wrapper(struct super_block *);
+ int hfs_part_find(struct super_block *, sector_t *, sector_t *);
+-int hfsplus_submit_bio(struct block_device *bdev, sector_t sector,
+-		void *data, int rw);
++int hfsplus_submit_bio(struct super_block *sb, sector_t sector,
++		void *buf, void **data, int rw);
+ 
+ /* time macros */
+ #define __hfsp_mt2ut(t)		(be32_to_cpu(t) - 2082844800U)
+diff --git a/fs/hfsplus/part_tbl.c b/fs/hfsplus/part_tbl.c
+index 40ad88c..eb355d8 100644
+--- a/fs/hfsplus/part_tbl.c
++++ b/fs/hfsplus/part_tbl.c
+@@ -88,11 +88,12 @@ static int hfs_parse_old_pmap(struct super_block *sb, struct old_pmap *pm,
+ 	return -ENOENT;
+ }
+ 
+-static int hfs_parse_new_pmap(struct super_block *sb, struct new_pmap *pm,
+-		sector_t *part_start, sector_t *part_size)
++static int hfs_parse_new_pmap(struct super_block *sb, void *buf,
++		struct new_pmap *pm, sector_t *part_start, sector_t *part_size)
+ {
+ 	struct hfsplus_sb_info *sbi = HFSPLUS_SB(sb);
+ 	int size = be32_to_cpu(pm->pmMapBlkCnt);
++	int buf_size = hfsplus_min_io_size(sb);
+ 	int res;
+ 	int i = 0;
+ 
+@@ -107,11 +108,14 @@ static int hfs_parse_new_pmap(struct super_block *sb, struct new_pmap *pm,
+ 		if (++i >= size)
+ 			return -ENOENT;
+ 
+-		res = hfsplus_submit_bio(sb->s_bdev,
+-					 *part_start + HFS_PMAP_BLK + i,
+-					 pm, READ);
+-		if (res)
+-			return res;
++		pm = (struct new_pmap *)((u8 *)pm + HFSPLUS_SECTOR_SIZE);
++		if ((u8 *)pm - (u8 *)buf >= buf_size) {
++			res = hfsplus_submit_bio(sb,
++						 *part_start + HFS_PMAP_BLK + i,
++						 buf, (void **)&pm, READ);
++			if (res)
++				return res;
++		}
+ 	} while (pm->pmSig == cpu_to_be16(HFS_NEW_PMAP_MAGIC));
+ 
+ 	return -ENOENT;
+@@ -124,15 +128,15 @@ static int hfs_parse_new_pmap(struct super_block *sb, struct new_pmap *pm,
+ int hfs_part_find(struct super_block *sb,
+ 		sector_t *part_start, sector_t *part_size)
+ {
+-	void *data;
++	void *buf, *data;
+ 	int res;
+ 
+-	data = kmalloc(HFSPLUS_SECTOR_SIZE, GFP_KERNEL);
+-	if (!data)
++	buf = kmalloc(hfsplus_min_io_size(sb), GFP_KERNEL);
++	if (!buf)
+ 		return -ENOMEM;
+ 
+-	res = hfsplus_submit_bio(sb->s_bdev, *part_start + HFS_PMAP_BLK,
+-				 data, READ);
++	res = hfsplus_submit_bio(sb, *part_start + HFS_PMAP_BLK,
++				 buf, &data, READ);
+ 	if (res)
+ 		goto out;
+ 
+@@ -141,13 +145,13 @@ int hfs_part_find(struct super_block *sb,
+ 		res = hfs_parse_old_pmap(sb, data, part_start, part_size);
+ 		break;
+ 	case HFS_NEW_PMAP_MAGIC:
+-		res = hfs_parse_new_pmap(sb, data, part_start, part_size);
++		res = hfs_parse_new_pmap(sb, buf, data, part_start, part_size);
+ 		break;
+ 	default:
+ 		res = -ENOENT;
+ 		break;
+ 	}
+ out:
+-	kfree(data);
++	kfree(buf);
+ 	return res;
+ }
+diff --git a/fs/hfsplus/super.c b/fs/hfsplus/super.c
+index b49b555..3add787 100644
+--- a/fs/hfsplus/super.c
++++ b/fs/hfsplus/super.c
+@@ -197,17 +197,17 @@ int hfsplus_sync_fs(struct super_block *sb, int wait)
+ 		write_backup = 1;
+ 	}
+ 
+-	error2 = hfsplus_submit_bio(sb->s_bdev,
++	error2 = hfsplus_submit_bio(sb,
+ 				   sbi->part_start + HFSPLUS_VOLHEAD_SECTOR,
+-				   sbi->s_vhdr, WRITE_SYNC);
++				   sbi->s_vhdr_buf, NULL, WRITE_SYNC);
+ 	if (!error)
+ 		error = error2;
+ 	if (!write_backup)
+ 		goto out;
+ 
+-	error2 = hfsplus_submit_bio(sb->s_bdev,
++	error2 = hfsplus_submit_bio(sb,
+ 				  sbi->part_start + sbi->sect_count - 2,
+-				  sbi->s_backup_vhdr, WRITE_SYNC);
++				  sbi->s_backup_vhdr_buf, NULL, WRITE_SYNC);
+ 	if (!error)
+ 		error2 = error;
+ out:
+diff --git a/fs/hfsplus/wrapper.c b/fs/hfsplus/wrapper.c
+index 4ac88ff..0f6a89d 100644
+--- a/fs/hfsplus/wrapper.c
++++ b/fs/hfsplus/wrapper.c
+@@ -31,25 +31,65 @@ static void hfsplus_end_io_sync(struct bio *bio, int err)
+ 	complete(bio->bi_private);
+ }
+ 
+-int hfsplus_submit_bio(struct block_device *bdev, sector_t sector,
+-		void *data, int rw)
++/*
++ * hfsplus_submit_bio - Perfrom block I/O
++ * @sb: super block of volume for I/O
++ * @sector: block to read or write, for blocks of HFSPLUS_SECTOR_SIZE bytes
++ * @buf: buffer for I/O
++ * @data: output pointer for location of requested data
++ * @rw: direction of I/O
++ *
++ * The unit of I/O is hfsplus_min_io_size(sb), which may be bigger than
++ * HFSPLUS_SECTOR_SIZE, and @buf must be sized accordingly. On reads
++ * @data will return a pointer to the start of the requested sector,
++ * which may not be the same location as @buf.
++ *
++ * If @sector is not aligned to the bdev logical block size it will
++ * be rounded down. For writes this means that @buf should contain data
++ * that starts at the rounded-down address. As long as the data was
++ * read using hfsplus_submit_bio() and the same buffer is used things
++ * will work correctly.
++ */
++int hfsplus_submit_bio(struct super_block *sb, sector_t sector,
++		void *buf, void **data, int rw)
+ {
+ 	DECLARE_COMPLETION_ONSTACK(wait);
+ 	struct bio *bio;
+ 	int ret = 0;
++	unsigned int io_size;
++	loff_t start;
++	int offset;
++
++	/*
++	 * Align sector to hardware sector size and find offset.
++	 */
++	io_size = hfsplus_min_io_size(sb);
++	start = (loff_t)sector << HFSPLUS_SECTOR_SHIFT;
++	offset = start & (io_size - 1);
++	sector &= ~((io_size >> HFSPLUS_SECTOR_SHIFT) - 1);
+ 
+ 	bio = bio_alloc(GFP_NOIO, 1);
+ 	bio->bi_sector = sector;
+-	bio->bi_bdev = bdev;
++	bio->bi_bdev = sb->s_bdev;
+ 	bio->bi_end_io = hfsplus_end_io_sync;
+ 	bio->bi_private = &wait;
+ 
+-	/*
+-	 * We always submit one sector at a time, so bio_add_page must not fail.
+-	 */
+-	if (bio_add_page(bio, virt_to_page(data), HFSPLUS_SECTOR_SIZE,
+-			 offset_in_page(data)) != HFSPLUS_SECTOR_SIZE)
+-		BUG();
++	if (!(rw & WRITE) && data)
++		*data = (u8 *)buf + offset;
++
++	while (io_size > 0) {
++		unsigned int page_offset = offset_in_page(buf);
++		unsigned int len = min_t(unsigned int, PAGE_SIZE - page_offset,
++					 io_size);
++
++		ret = bio_add_page(bio, virt_to_page(buf), len, page_offset);
++		if (ret != len) {
++			ret = -EIO;
++			goto out;
++		}
++		io_size -= len;
++		buf = (u8 *)buf + len;
++	}
+ 
+ 	submit_bio(rw, bio);
+ 	wait_for_completion(&wait);
+@@ -57,8 +97,9 @@ int hfsplus_submit_bio(struct block_device *bdev, sector_t sector,
+ 	if (!bio_flagged(bio, BIO_UPTODATE))
+ 		ret = -EIO;
+ 
++out:
+ 	bio_put(bio);
+-	return ret;
++	return ret < 0 ? ret : 0;
+ }
+ 
+ static int hfsplus_read_mdb(void *bufptr, struct hfsplus_wd *wd)
+@@ -147,17 +188,17 @@ int hfsplus_read_wrapper(struct super_block *sb)
+ 	}
+ 
+ 	error = -ENOMEM;
+-	sbi->s_vhdr = kmalloc(HFSPLUS_SECTOR_SIZE, GFP_KERNEL);
+-	if (!sbi->s_vhdr)
++	sbi->s_vhdr_buf = kmalloc(hfsplus_min_io_size(sb), GFP_KERNEL);
++	if (!sbi->s_vhdr_buf)
+ 		goto out;
+-	sbi->s_backup_vhdr = kmalloc(HFSPLUS_SECTOR_SIZE, GFP_KERNEL);
+-	if (!sbi->s_backup_vhdr)
++	sbi->s_backup_vhdr_buf = kmalloc(hfsplus_min_io_size(sb), GFP_KERNEL);
++	if (!sbi->s_backup_vhdr_buf)
+ 		goto out_free_vhdr;
+ 
+ reread:
+-	error = hfsplus_submit_bio(sb->s_bdev,
+-				   part_start + HFSPLUS_VOLHEAD_SECTOR,
+-				   sbi->s_vhdr, READ);
++	error = hfsplus_submit_bio(sb, part_start + HFSPLUS_VOLHEAD_SECTOR,
++				   sbi->s_vhdr_buf, (void **)&sbi->s_vhdr,
++				   READ);
+ 	if (error)
+ 		goto out_free_backup_vhdr;
+ 
+@@ -186,9 +227,9 @@ reread:
+ 		goto reread;
+ 	}
+ 
+-	error = hfsplus_submit_bio(sb->s_bdev,
+-				   part_start + part_size - 2,
+-				   sbi->s_backup_vhdr, READ);
++	error = hfsplus_submit_bio(sb, part_start + part_size - 2,
++				   sbi->s_backup_vhdr_buf,
++				   (void **)&sbi->s_backup_vhdr, READ);
+ 	if (error)
+ 		goto out_free_backup_vhdr;
+ 
