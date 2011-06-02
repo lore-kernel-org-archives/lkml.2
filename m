@@ -1,55 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab1FBVrL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 17:47:11 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:47075 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754951Ab1FBVrJ (ORCPT
+	id S1755036Ab1FBV4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 17:56:12 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:50814 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754833Ab1FBV4K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 17:47:09 -0400
-Date: Thu, 2 Jun 2011 21:46:56 +0000
-From: Pavel Machek <pavel@ucw.cz>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, metan@ucw.cz
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] Make GFP_DMA allocations w/o ZONE_DMA emit a warning
-	instead of failing
-Message-ID: <20110602214655.GA2916@localhost.ucw.cz>
-References: <1306922672-9012-1-git-send-email-dbaryshkov@gmail.com> <BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com>
+	Thu, 2 Jun 2011 17:56:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=stGrRNZLn8EyD1IChciQjO8+Gnmjy7gR7c7L6QTfOEE2/THX0vD7L73ETKv4jBJ0Vm
+         s+HqLoeX9y5GZ8YY5x5g==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTinBkdVd90g3-uiQP41z1S1sXUdRmQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1306909519-7286-5-git-send-email-hannes@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+	<1306909519-7286-5-git-send-email-hannes@cmpxchg.org>
+Date: Thu, 2 Jun 2011 14:55:56 -0700
+Message-ID: <BANLkTim5TSWpBfeF2dugGZwQmNC-Cf+GCNctraq8FtziJxsd2g@mail.gmail.com>
+Subject: Re: [patch 4/8] memcg: rework soft limit reclaim
+From: Ying Han <yinghan@google.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2011-06-01 21:38:59, KOSAKI Motohiro wrote:
-> 2011/6/1 Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>:
-> > Please be more polite to other people. After a197b59ae6 all allocations
-> > with GFP_DMA set on nodes without ZONE_DMA fail nearly silently (only
-> > one warning during bootup is emited, no matter how many things fail).
-> > This is a very crude change on behaviour. To be more civil, instead of
-> > failing emit noisy warnings each time smbd. tries to allocate a GFP_DMA
-> > memory on non-ZONE_DMA node.
-> >
-> > This change should be reverted after one or two major releases, but
-> > we should be more accurate rather than hoping for the best.
-> 
-> Instaed of, shouldn't we revert a197b59ae6? Some arch don't have
-> DMA_ZONE at all.
-> and a197b59ae6 only care x86 embedded case. If we accept your patch, I
-> can imagine
-> other people will claim warn foold is a bug. ;)
+On Tue, May 31, 2011 at 11:25 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> Currently, soft limit reclaim is entered from kswapd, where it selects
+> the memcg with the biggest soft limit excess in absolute bytes, and
+> reclaims pages from it with maximum aggressiveness (priority 0).
+>
+> This has the following disadvantages:
+>
+>    1. because of the aggressiveness, kswapd can be stalled on a memcg
+>    that is hard to reclaim from for a long time, sending the rest of
+>    the allocators into direct reclaim in the meantime.
+>
+>    2. it only considers the biggest offender (in absolute bytes, no
+>    less, so very unhandy for setups with different-sized memcgs) and
+>    does not apply any pressure at all on other memcgs in excess.
+>
+>    3. because it is only invoked from kswapd, the soft limit is
+>    meaningful during global memory pressure, but it is not taken into
+>    account during hierarchical target reclaim where it could allow
+>    prioritizing memcgs as well.  So while it does hierarchical
+>    reclaim once triggered, it is not a truly hierarchical mechanism.
+>
+> Here is a different approach.  Instead of having a soft limit reclaim
+> cycle separate from the rest of reclaim, this patch ensures that each
+> time a group of memcgs is reclaimed - be it because of global memory
+> pressure or because of a hard limit - memcgs that exceed their soft
+> limit, or contribute to the soft limit excess of one their parents,
+> are reclaimed from at a higher priority than their siblings.
+>
+> This results in the following:
+>
+>    1. all relevant memcgs are scanned with increasing priority during
+>    memory pressure.  The primary goal is to free pages, not to punish
+>    soft limit offenders.
+>
+>    2. increased pressure is applied to all memcgs in excess of their
+>    soft limit, not only the biggest offender.
+>
+>    3. the soft limit becomes meaningful for target reclaim as well,
+>    where it allows prioritizing children of a hierarchy when the
+>    parent hits its limit.
+>
+>    4. direct reclaim now also applies increased soft limit pressure,
+>    not just kswapd anymore.
+>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  include/linux/memcontrol.h |    7 +++++++
+>  mm/memcontrol.c            |   26 ++++++++++++++++++++++++++
+>  mm/vmscan.c                |    8 ++++++--
+>  3 files changed, 39 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 8f402b9..7d99e87 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -104,6 +104,7 @@ extern void mem_cgroup_end_migration(struct mem_cgroup *mem,
+>  struct mem_cgroup *mem_cgroup_hierarchy_walk(struct mem_cgroup *,
+>                                             struct mem_cgroup *);
+>  void mem_cgroup_stop_hierarchy_walk(struct mem_cgroup *, struct mem_cgroup *);
+> +bool mem_cgroup_soft_limit_exceeded(struct mem_cgroup *, struct mem_cgroup *);
+>
+>  /*
+>  * For memory reclaim.
+> @@ -345,6 +346,12 @@ static inline void mem_cgroup_stop_hierarchy_walk(struct mem_cgroup *r,
+>  {
+>  }
+>
+> +static inline bool mem_cgroup_soft_limit_exceeded(struct mem_cgroup *root,
+> +                                                 struct mem_cgroup *mem)
+> +{
+> +       return false;
+> +}
+> +
+>  static inline void
+>  mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
+>  {
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 983efe4..94f77cc3 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1460,6 +1460,32 @@ void mem_cgroup_stop_hierarchy_walk(struct mem_cgroup *root,
+>                css_put(&mem->css);
+>  }
+>
+> +/**
+> + * mem_cgroup_soft_limit_exceeded - check if a memcg (hierarchically)
+> + *                                  exceeds a soft limit
+> + * @root: highest ancestor of @mem to consider
+> + * @mem: memcg to check for excess
+> + *
+> + * The function indicates whether @mem has exceeded its own soft
+> + * limit, or contributes to the soft limit excess of one of its
+> + * parents in the hierarchy below @root.
+> + */
+> +bool mem_cgroup_soft_limit_exceeded(struct mem_cgroup *root,
+> +                                   struct mem_cgroup *mem)
+> +{
+> +       for (;;) {
+> +               if (mem == root_mem_cgroup)
+> +                       return false;
+> +               if (res_counter_soft_limit_excess(&mem->res))
+> +                       return true;
+> +               if (mem == root)
+> +                       return false;
+> +               mem = parent_mem_cgroup(mem);
+> +               if (!mem)
+> +                       return false;
+> +       }
+> +}
+> +
+>  static unsigned long mem_cgroup_reclaim(struct mem_cgroup *mem,
+>                                        gfp_t gfp_mask,
+>                                        unsigned long flags)
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index c7d4b44..0163840 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1988,9 +1988,13 @@ static void shrink_zone(int priority, struct zone *zone,
+>                unsigned long reclaimed = sc->nr_reclaimed;
+>                unsigned long scanned = sc->nr_scanned;
+>                unsigned long nr_reclaimed;
+> +               int epriority = priority;
+> +
+> +               if (mem_cgroup_soft_limit_exceeded(root, mem))
+> +                       epriority -= 1;
 
-I believe we should revert. It broke zaurus boot for metan...
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Here we grant the ability to shrink from all the memcgs, but only
+higher the priority for those exceed the soft_limit. That is a design
+change
+for the "soft_limit" which giving a hint to which memcgs to reclaim
+from first under global memory pressure.
+
+--Ying
+
+
+>
+>                sc->mem_cgroup = mem;
+> -               do_shrink_zone(priority, zone, sc);
+> +               do_shrink_zone(epriority, zone, sc);
+>                mem_cgroup_count_reclaim(mem, current_is_kswapd(),
+>                                         mem != root, /* limit or hierarchy? */
+>                                         sc->nr_scanned - scanned,
+> @@ -2480,7 +2484,7 @@ loop_again:
+>                         * Call soft limit reclaim before calling shrink_zone.
+>                         * For now we ignore the return value
+>                         */
+> -                       mem_cgroup_soft_limit_reclaim(zone, order, sc.gfp_mask);
+> +                       //mem_cgroup_soft_limit_reclaim(zone, order, sc.gfp_mask);
+>
+>                        /*
+>                         * We put equal pressure on every zone, unless
+> --
+> 1.7.5.2
+>
+>
