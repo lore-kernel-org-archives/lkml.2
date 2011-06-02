@@ -1,98 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759417Ab1FBDzl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 23:55:41 -0400
-Received: from ozlabs.org ([203.10.76.45]:49503 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755090Ab1FBDzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 23:55:36 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
-Cc: Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCH RFC 3/3] virtio_net: limit xmit polling
-In-Reply-To: <1ec8eec325839ecf2eac9930a230361e7956047c.1306921434.git.mst@redhat.com>
-References: <cover.1306921434.git.mst@redhat.com> <1ec8eec325839ecf2eac9930a230361e7956047c.1306921434.git.mst@redhat.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Thu, 02 Jun 2011 13:24:57 +0930
-Message-ID: <87pqmwj3am.fsf@rustcorp.com.au>
+	id S1751278Ab1FBEFY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 00:05:24 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:8753 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016Ab1FBEFW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 00:05:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wnosGetAMxpuC0Nfv5osd6zMf2a80dmmoH27R7CKKgJCMo7jpdtxKzzxTLlQI32Yu2
+         RtDm6ZFjJI+6rpDYJJMg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+	<BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
+Date: Wed, 1 Jun 2011 21:05:18 -0700
+Message-ID: <BANLkTi=sYtLGk2_VQLejEU2rQ0JBgg_ZmQ@mail.gmail.com>
+Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
+From: Ying Han <yinghan@google.com>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Jun 2011 12:50:03 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> Current code might introduce a lot of latency variation
-> if there are many pending bufs at the time we
-> attempt to transmit a new one. This is bad for
-> real-time applications and can't be good for TCP either.
-> 
-> Free up just enough to both clean up all buffers
-> eventually and to be able to xmit the next packet.
+On Wed, Jun 1, 2011 at 4:52 PM, Hiroyuki Kamezawa
+<kamezawa.hiroyuki@gmail.com> wrote:
+> 2011/6/1 Johannes Weiner <hannes@cmpxchg.org>:
+>> Hi,
+>>
+>> this is the second version of the memcg naturalization series.  The
+>> notable changes since the first submission are:
+>>
+>>    o the hierarchy walk is now intermittent and will abort and
+>>      remember the last scanned child after sc->nr_to_reclaim pages
+>>      have been reclaimed during the walk in one zone (Rik)
+>>
+>>    o the global lru lists are never scanned when memcg is enabled
+>>      after #2 'memcg-aware global reclaim', which makes this patch
+>>      self-sufficient and complete without requiring the per-memcg lru
+>>      lists to be exclusive (Michal)
+>>
+>>    o renamed sc->memcg and sc->current_memcg to sc->target_mem_cgroup
+>>      and sc->mem_cgroup and fixed their documentation, I hope this is
+>>      better understandable now (Rik)
+>>
+>>    o the reclaim statistic counters have been renamed.  there is no
+>>      more distinction between 'pgfree' and 'pgsteal', it is now
+>>      'pgreclaim' in both cases; 'kswapd' has been replaced by
+>>      'background'
+>>
+>>    o fixed a nasty crash in the hierarchical soft limit check that
+>>      happened during global reclaim in memcgs that are hierarchical
+>>      but have no hierarchical parents themselves
+>>
+>>    o properly implemented the memcg-aware unevictable page rescue
+>>      scanner, there were several blatant bugs in there
+>>
+>>    o documentation on new public interfaces
+>>
+>> Thanks for your input on the first version.
+>>
+>> I ran microbenchmarks (sparse file catting, essentially) to stress
+>> reclaim and LRU operations.  There is no measurable overhead for
+>> !CONFIG_MEMCG, memcg disabled during boot, memcg enabled but no
+>> configured groups, and hard limit reclaim.
+>>
+>> I also ran single-threaded kernbenchs in four unlimited memcgs in
+>> parallel, contained in a hard-limited hierarchical parent that put
+>> constant pressure on the workload.  There is no measurable difference
+>> in runtime, the pgpgin/pgpgout counters, and fairness among memcgs in
+>> this test compared to an unpatched kernel.  Needs more evaluation,
+>> especially with a higher number of memcgs.
+>>
+>> The soft limit changes are also proven to work in so far that it is
+>> possible to prioritize between children in a hierarchy under pressure
+>> and that runtime differences corresponded directly to the soft limit
+>> settings in the previously described kernbench setup with staggered
+>> soft limits on the groups, but this needs quantification.
+>>
+>> Based on v2.6.39.
+>>
+>
+> Hmm, I welcome and will review this patches but.....some points I want to say.
+>
+> 1. No more conflict with Ying's work ?
+>    Could you explain what she has and what you don't in this v2 ?
+>    If Ying's one has something good to be merged to your set, please
+> include it.
 
-OK, I found this quite confusing to read.
+My patch I sent out last time was doing rework of soft_limit reclaim.
+It convert the RB-tree based to
+a linked list round-robin fashion of all memcgs across their soft
+limit per-zone.
 
-> -	while ((skb = virtqueue_get_buf(vi->svq, &len)) != NULL) {
-> +	while ((r = virtqueue_min_capacity(vi->svq) < MAX_SKB_FRAGS + 2) ||
-> +	       min_skbs-- > 0) {
-> +		skb = virtqueue_get_buf(vi->svq, &len);
-> +		if (unlikely(!skb))
-> +			break;
->  		pr_debug("Sent skb %p\n", skb);
->  		vi->dev->stats.tx_bytes += skb->len;
->  		vi->dev->stats.tx_packets++;
->  		dev_kfree_skb_any(skb);
->  	}
-> +	return r;
->  }
+I will apply this patch and try to test it. After that i will get
+better idea whether or not it is being covered here.
 
-Gah... what a horrible loop.
+> 2. it's required to see performance score in commit log.
+>
+> 3. I think dirty_ratio as 1st big patch to be merged. (But...hmm..Greg ?
+>    My patches for asynchronous reclaim is not very important. I can rework it.
+>
+> 4. This work can be splitted into some small works.
+>     a) fix for current code and clean ups
 
-Basically, this patch makes hard-to-read code worse, and we should try
-to make it better.
+>     a') statistics
 
-Currently, xmit *can* fail when an xmit interrupt wakes the queue, but
-the packet(s) xmitted didn't free up enough space for the new packet.
-With indirect buffers this only happens if we hit OOM (and thus go to
-direct buffers).
+>     b) soft limit rework
 
-We could solve this by only waking the queue in skb_xmit_done if the
-capacity is >= 2 + MAX_SKB_FRAGS.  But can we do it without a race?
+>     c) change global reclaim
 
-If not, then I'd really prefer to see this, because I think it's clearer:
+My last patchset starts with a patch reverting the RB-tree
+implementation of the soft_limit
+reclaim, and then the new round-robin implementation comes on the
+following patches.
 
-        // Try to free 2 buffers for every 1 xmit, to stay ahead.
-        free_old_buffers(2)
+I like the ordering here, and that is consistent w/ the plan we
+discussed earlier in LSF. Changing
+the global reclaim would be the last step when the changes before that
+have been well understood
+and tested.
 
-        if (!add_buf()) {
-                // Screw latency, free them all.
-                free_old_buffers(UINT_MAX)
-                // OK, this can happen if we are using direct buffers,
-                // and the xmit interrupt woke us but the packets
-                // xmitted were smaller than this one.  Rare though.
-                if (!add_buf())
-                        Whinge and stop queue, maybe loop.
-        }
+Sorry If that is how it is done here. I will read through the patchset.
 
-        if (capacity < 2 + MAX_SKB_FRAGS) {
-                // We don't have enough for the next packet?  Try
-                // freeing more.
-                free_old_buffers(UINT_MAX);
-                if (capacity < 2 + MAX_SKB_FRAGS) {
-                        Stop queue, maybe loop.
-        }
-
-The current code makes my head hurt :(
-
-Thoughts?
-Rusty.
+--Ying
+>
+>  I like (a)->(b)->(c) order. and while (b) you can merge your work
+> with Ying's one.
+>  And for a') , I'd like to add a new file memory.reclaim_stat as I've
+> already shown.
+>  and allow resetting.
+>
+>  Hmm, how about splitting patch 2/8 into small patches and see what happens in
+>  3.2 or 3.3 ? While that, we can make softlimit works better.
+>  (and once we do 2/8, our direction will be fixed to the direction to
+> remove global LRU.)
+>
+> 5. please write documentation to explain what new LRU do.
+>
+> BTW, after this work, lists of ROOT cgroup comes again. I may need to check
+> codes which see memcg is ROOT or not. Because we removed many atomic
+> ops in memcg, I wonder ROOT cgroup can be accounted again..
+>
+> Thanks,
+> -Kame
+>
