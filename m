@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705Ab1FBRRf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 13:17:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753102Ab1FBRRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 13:17:32 -0400
-Date: Thu, 2 Jun 2011 20:17:21 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCHv2 RFC 0/4] virtio and vhost-net capacity handling
-Message-ID: <20110602171721.GA13215@redhat.com>
-References: <cover.1307029008.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1307029008.git.mst@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753734Ab1FBRVX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 13:21:23 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52193 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753102Ab1FBRVW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 13:21:22 -0400
+Date: Thu, 2 Jun 2011 10:21:42 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: linux-cris-kernel@axis.com, LKML <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Subject: Re: [Patch] cris: add missing declaration of kgdb_init() and
+ breakpoint()
+Message-Id: <20110602102142.b8d76f33.akpm@linux-foundation.org>
+In-Reply-To: <20110602143141.GD4416@cr0.redhat.com>
+References: <BANLkTimdog_wi+7_Vx7Qzpc0ZYor_RHg2g@mail.gmail.com>
+	<20110601151618.15759bfb.akpm@linux-foundation.org>
+	<20110602143141.GD4416@cr0.redhat.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 06:42:35PM +0300, Michael S. Tsirkin wrote:
-> OK, here's a new attempt to use the new capacity api.  I also added more
-> comments to clarify the logic.  Hope this is more readable.  Let me know
-> pls.
-> 
-> This is on top of the patches applied by Rusty.
-> 
-> Warning: untested. Posting now to give people chance to
-> comment on the API.
-> 
-> Changes from v1:
-> - fix comment in patch 2 to correct confusion noted by Rusty
-> - rewrite patch 3 along the lines suggested by Rusty
->   note: it's not exactly the same but I hope it's close
->   enough, the main difference is that mine does limited
->   polling even in the unlikely xmit failure case.
-> - added a patch to not return capacity from add_buf
->   it always looked like a weird hack
-> 
-> Michael S. Tsirkin (4):
->   virtio_ring: add capacity check API
->   virtio_net: fix tx capacity checks using new API
->   virtio_net: limit xmit polling
->   Revert "virtio: make add_buf return capacity remaining:
-> 
->  drivers/net/virtio_net.c     |  111 ++++++++++++++++++++++++++----------------
->  drivers/virtio/virtio_ring.c |   10 +++-
->  include/linux/virtio.h       |    7 ++-
->  3 files changed, 84 insertions(+), 44 deletions(-)
-> 
-> -- 
-> 1.7.5.53.gc233e
+On Thu, 2 Jun 2011 22:31:41 +0800 Am__rico Wang <xiyou.wangcong@gmail.com> wrote:
 
+> On Wed, Jun 01, 2011 at 03:16:18PM -0700, Andrew Morton wrote:
+> >On Sun, 22 May 2011 22:42:56 +0800
+> >Am__rico Wang <xiyou.wangcong@gmail.com> wrote:
+> >
+> >> --- a/arch/cris/arch-v10/kernel/irq.c
+> >> +++ b/arch/cris/arch-v10/kernel/irq.c
+> >> @@ -20,6 +20,9 @@
+> >>  #define crisv10_mask_irq(irq_nr) (*R_VECT_MASK_CLR = 1 << (irq_nr));
+> >>  #define crisv10_unmask_irq(irq_nr) (*R_VECT_MASK_SET = 1 << (irq_nr));
+> >>  
+> >> +extern void kgdb_init(void);
+> >> +extern void breakpoint(void);
+> >
+> >They should be declared in a header file, please. 
+> >arch/cris/arch-v32/kernel/irq.c has a private declaration of
+> >kgdb_init(), too.
+> >
+> 
+> Yeah, but I don't find a proper header to declare them.
 
-And just FYI, here's a patch (on top) that I considered but
-decided against. This does a single get_buf before
-xmit. I thought it's not really needed as the capacity
-check in add_buf is relatively cheap, and we removed
-the kick in xmit_skb. But the point is that the loop
-will now be easy to move around if someone manages
-to show this benefits speed (which I doubt).
+Don't be afraid to create a new file!  If that's the appropriate thing
+to do, it's probably the correct thing to do.
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index b25db1c..75af5be 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -590,6 +590,9 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	struct virtnet_info *vi = netdev_priv(dev);
- 	int ret, i;
- 
-+	/* Try to pop an skb, to increase the chance we can add this one. */
-+	free_old_xmit_skb(v);
-+
- 	/* We normally do have space in the ring, so try to queue the skb as
- 	 * fast as possible. */
- 	ret = xmit_skb(vi, skb);
-@@ -627,8 +630,7 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	 * This is so that we don't hog the skb memory unnecessarily. *
- 	 * Doing this after kick means there's a chance we'll free
- 	 * the skb we have just sent, which is hot in cache. */
--	for (i = 0; i < 2; i++)
--		free_old_xmit_skb(v);
-+	free_old_xmit_skb(v);
- 
- 	if (likely(free_xmit_capacity(vi)))
- 		return NETDEV_TX_OK;
+z:/usr/src/25> find . -name kgdb.h
+./arch/x86/include/asm/kgdb.h
+./arch/blackfin/include/asm/kgdb.h
+./arch/mn10300/include/asm/kgdb.h
+./arch/arm/include/asm/kgdb.h
+./arch/microblaze/include/asm/kgdb.h
+./arch/sparc/include/asm/kgdb.h
+./arch/powerpc/include/asm/kgdb.h
+./arch/mips/include/asm/kgdb.h
+./arch/sh/include/asm/kgdb.h
+./include/config/have/arch/kgdb.h
+./include/config/kgdb.h
+./include/linux/kgdb.h
+
+I'd follow the herd and create arch/cris/include/asm/kgdb.h.
