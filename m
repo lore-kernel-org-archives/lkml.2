@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab1FBQtX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 12:49:23 -0400
-Received: from sous-sol.org ([216.99.217.87]:39469 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751902Ab1FBQtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 12:49:22 -0400
-Date: Thu, 2 Jun 2011 09:48:41 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: CAI Qian <caiqian@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Chris Wright <chrisw@sous-sol.org>, Mel Gorman <mel@csn.ul.ie>,
-        Izik Eidus <ieidus@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [BUG 3.0.0-rc1] ksm: NULL pointer dereference in ksm_do_scan()
-Message-ID: <20110602164841.GK23047@sequoia.sous-sol.org>
-References: <20110601222032.GA2858@thinkpad>
- <2144269697.363041.1306998593180.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
- <20110602141927.GA2011@thinkpad>
-MIME-Version: 1.0
+	id S1753441Ab1FBQvN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 12:51:13 -0400
+Received: from lo.gmane.org ([80.91.229.12]:45244 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751902Ab1FBQvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 12:51:12 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Olaf Freyer <aaron667@gmx.net>
+Subject: Re: Erroneous package power limit notification since kernel 2.6.39
+Date: Thu, 2 Jun 2011 16:50:59 +0000 (UTC)
+Message-ID: <loom.20110602T182348-862@post.gmane.org>
+References: <4DD9092A.4080507@gmx.net> <loom.20110525T172412-101@post.gmane.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110602141927.GA2011@thinkpad>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 92.231.243.7 (Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1) Gecko/20110525 Firefox/4.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andrea Righi (andrea@betterlinux.com) wrote:
-> mmh.. I can reproduce the bug also with the standard ubuntu (11.04)
-> kernel. Could you post your .config?
+Hi,
 
-Andrea (Righi), can you tell me if this WARN fires?  This looks
-like a pure race between removing from list and checking list, i.e.
-insufficient locking.
+> I'm not yet 100% sure, but I think the package power limit notification events,
+> I see in /var/log/messages might coincide with the moment of my xorg startup.
 
-ksm_scan.mm_slot == the only registered mm
+I tested it for a few evenings and I can now confirm my previous assumption.
+Running the system on console for hours doesn't trigger any such event - 
+as soon as I start up X it happens at once. 
 
-CPU 1 (bug program)		CPU 2 (ksmd)
-				list_empty() is false
-lock
-ksm_scan.mm_slot
-list_del
-unlock
-				slot == &ksm_mm_head (but list is now empty_)
+Is there any extra info I can provide to get this issue solved?
 
+Regards
+  Olaf Freyer
 
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 942dfc7..ab79a92 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1301,6 +1301,7 @@ static struct rmap_item *scan_get_next_rmap_item(struct page **page)
- 		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
- 		ksm_scan.mm_slot = slot;
- 		spin_unlock(&ksm_mmlist_lock);
-+		WARN_ON(slot == &ksm_mm_head);
- next_mm:
- 		ksm_scan.address = 0;
- 		ksm_scan.rmap_list = &slot->rmap_list;
