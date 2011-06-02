@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933509Ab1FBLJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 07:09:26 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:52921 "EHLO mx1.fusionio.com"
+	id S1754830Ab1FBLQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 07:16:58 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:41697 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751376Ab1FBLJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 07:09:25 -0400
-X-ASG-Debug-ID: 1307012964-03d6a512a83f4a0001-xx1T2L
+	id S1752782Ab1FBLQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 07:16:57 -0400
+X-ASG-Debug-ID: 1307013416-01de280c1e186e0001-xx1T2L
 X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DE76F61.7060409@fusionio.com>
-Date: Thu, 2 Jun 2011 13:09:21 +0200
+Message-ID: <4DE77125.6000800@fusionio.com>
+Date: Thu, 2 Jun 2011 13:16:53 +0200
 From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] iosched: prevent aliased requests from starving other
- I/O
-References: <x49tyc9y12s.fsf@segfault.boston.devel.redhat.com> <4DE76F02.1090306@fusionio.com>
-X-ASG-Orig-Subj: Re: [patch] iosched: prevent aliased requests from starving other
- I/O
-In-Reply-To: <4DE76F02.1090306@fusionio.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull v3.0-rc1] What branch to base fixes for v3.0-rc1 for
+  block system?
+References: <20110531191039.GA5269@dumpdata.com> <4DE54097.7060000@fusionio.com> <20110601151513.GB32270@dumpdata.com>
+X-ASG-Orig-Subj: Re: [git pull v3.0-rc1] What branch to base fixes for v3.0-rc1 for
+  block system?
+In-Reply-To: <20110601151513.GB32270@dumpdata.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1307012964
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.12
-X-Barracuda-Spam-Status: No, SCORE=0.12 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=CN_BODY_332
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.65382
+X-Barracuda-Start-Time: 1307013416
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.65383
 	Rule breakdown below
 	 pts rule name              description
 	---- ---------------------- --------------------------------------------------
-	0.12 CN_BODY_332            BODY: CN_BODY_332
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-06-02 13:07, Jens Axboe wrote:
-> On 2011-06-01 18:21, Jeff Moyer wrote:
->> Hi, Jens,
+On 2011-06-01 17:15, Konrad Rzeszutek Wilk wrote:
+> On Tue, May 31, 2011 at 09:25:11PM +0200, Jens Axboe wrote:
+>> On 2011-05-31 21:10, Konrad Rzeszutek Wilk wrote:
+>>> Hey Jens,
+>>>
+>>> I've got two tiny fixes for the xen-blkback (see below):
+>>>
+>>>   git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git for-jens/xen-blkback.fixes
+>>>
+>>> and they are based on for-2.6.40/drivers branch. Is that the way you
+>>> prefer to pull patches from sub-trees? Or should I rebase it on 3.0-rc1?
+>>> Or should send bug-fixes just directly to Linus?
 >>
->> If you recall, I posted an RFC patch for this back in July of last year:
->> http://lkml.org/lkml/2010/7/13/279
+>> Once I send off the big initial merges which are in the version named
+>> for-2.6.40/xx branches, anything after that should just be based on my
+>> for-linus branch. That's what I use for post-rc1 merges with Linus.
 >>
->> The basic problem is that a process can issue a never-ending stream of
->> async direct I/Os to the same sector on a device, thus starving out
->> other I/O in the system (due to the way the alias handling works in both
->> cfq and deadline).  The solution I proposed back then was to start
->> dispatching from the fifo after a certain number of aliases had been
->> dispatched.  Vivek asked why we had to treat aliases differently at all,
->> and I never had a good answer.  So, I put together a simple patch which
->> allows aliases to be added to the rb tree (it adds them to the right,
->> though that doesn't matter as the order isn't guaranteed anyway).  I
->> think this is the preferred solution, as it doesn't break up time slices
->> in CFQ or batches in deadline.  I've tested it, and it does solve the
->> starvation issue.  Let me know what you think.
+>> But the only real sticking point is that your branch should not contain
+>> something that I don't have in my for-linus. And you don't right now, so
+>> I just pulled it :-)
 > 
-> That'll work, there's no inherent reason why we can't have aliases
-> directly in the rbtree as long as the sort insert factors that into
-> account.
-> 
-> I will queue this one up for 3.1.
+> Can you repull that branch please? I've rebased it on for-linus branch
+> and fixed the embarrassing compilation issue it had..
 
-Jeff, care to resend a "proper" patch (signed-off and so forth)?
+Repulled, and it seems to compile as well this time :-)
 
 -- 
 Jens Axboe
