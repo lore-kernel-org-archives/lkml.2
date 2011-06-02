@@ -1,73 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab1FBNLm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 09:11:42 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51800 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751514Ab1FBNLk (ORCPT
+	id S1753211Ab1FBNMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 09:12:40 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59646 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab1FBNMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 09:11:40 -0400
-Date: Thu, 2 Jun 2011 14:12:34 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>
-Subject: Re: [PATCH] sysctl: add support for poll()
-Message-ID: <20110602141234.4f5bffef@lxorguk.ukuu.org.uk>
-In-Reply-To: <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com>
-References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
-	<BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com>
-	<m18vtkq57c.fsf@fess.ebiederm.org>
-	<BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com>
-	<20110602134338.0c56160e@lxorguk.ukuu.org.uk>
-	<BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Jun 2011 09:12:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=uAiZdpbOIJkDHLQBnjJyUJjLWSfgo+OD4BhMGtI2JCQz6FDjDxvolxuUvCfCEf0QFe
+         mw7YtNXDSK/yu7ejg4CfZvyvPHT5UD5lBispsYWEM+ZiQUkrhUkzvspMixWeZA4hlICa
+         FbsLlXRg/0ibBSqVp39PSOHZvQj14Fu8/CCKI=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTiktawYc3T=r+khiv3JZGZy3NKFiMA@mail.gmail.com>
+References: <BANLkTiktawYc3T=r+khiv3JZGZy3NKFiMA@mail.gmail.com>
+Date: Thu, 2 Jun 2011 18:42:38 +0530
+Message-ID: <BANLkTim1z5tzjCyU7JTPRWLpQnj7WxZTvw@mail.gmail.com>
+Subject: udev CPU usage
+From: Yash Jain <yash2learn@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Or to manage it properly.
-> 
-> What if the user decides do invoke sethostname syscall "by hand"?
-> Hostname would change beneath any other process that is trying to
-> manage it properly. What this patch does is to notify that process
-> that something happened.
+Hello All,
+I am integrating a udev to my platform and i would like to know what
+is the cpu consumption for udev deamon and also will it effect my
+booting time.
 
-That is a stupid argument. Shall we extend it to its logical idiotic end
-and ask
+Any guide/documents/Links will be appreciated.
 
-"What if the user decides to recompile their kernel without sysfs poll
-support ?"
-
-You have to be root to run sethostname, at which point you are
-realistically at the command line, a superuser and you know what you are
-doing (eg using sethostname for non IP network naming, or cluster id, or
-other stuff).
-
-> With this patch in, if anyone wants to manage a file under /proc/sys
-> there's really a small amount of code to write. He only has to define
-> the new poll struct for that file.
-
-Sure - and there is an 8 byte cost per sysctl node (of which we have
-rather a lot), and we really need to tackle sysfs not sysctl anyway.
-
-I'm not averse to pollable sysfs/sysctl nodes at all although the memory
-hit on sysfs is going to be tricky to manage and need clever code.
-
-I just think the utsname is a completely misguided example and whoever is
-trying to do it doesn't actually understand the limits of utsname.
-
-Alan
-
+Regards,
+Yesh
