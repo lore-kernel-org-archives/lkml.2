@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab1FBU4x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 16:56:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36236 "EHLO
+	id S1754538Ab1FBU4w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 16:56:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36238 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376Ab1FBU4s (ORCPT
+	with ESMTP id S1753554Ab1FBU4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Jun 2011 16:56:48 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 6/9] perf stat: clarify unsupported events from uncounted events
-Date: Thu,  2 Jun 2011 17:56:33 -0300
-Message-Id: <1307048196-16387-7-git-send-email-acme@infradead.org>
+Subject: [PATCH 7/9] perf script: "sym" field really means show IP data
+Date: Thu,  2 Jun 2011 17:56:34 -0300
+Message-Id: <1307048196-16387-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1307048196-16387-1-git-send-email-acme@infradead.org>
 References: <1307048196-16387-1-git-send-email-acme@infradead.org>
@@ -29,152 +29,267 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
-perf stat continues running even if the event list contains counters
-that are not supported. The resulting output then contains <not counted>
-for those events which gets confusing as to which events are supported,
-but not counted and which are not supported.
-
-Before:
-
-perf stat -ddd -- sleep 1
-
-      Performance counter stats for 'sleep 1':
-
-          0.571283 task-clock                #    0.001 CPUs utilized
-                 1 context-switches          #    0.002 M/sec
-                 0 CPU-migrations            #    0.000 M/sec
-               157 page-faults               #    0.275 M/sec
-         1,037,707 cycles                    #    1.816 GHz
-     <not counted> stalled-cycles-frontend
-     <not counted> stalled-cycles-backend
-           654,499 instructions              #    0.63  insns per cycle
-           136,129 branches                  #  238.286 M/sec
-     <not counted> branch-misses
-     <not counted> L1-dcache-loads
-     <not counted> L1-dcache-load-misses
-     <not counted> LLC-loads
-     <not counted> LLC-load-misses
-     <not counted> L1-icache-loads
-     <not counted> L1-icache-load-misses
-     <not counted> dTLB-loads
-     <not counted> dTLB-load-misses
-     <not counted> iTLB-loads
-     <not counted> iTLB-load-misses
-     <not counted> L1-dcache-prefetches
-     <not counted> L1-dcache-prefetch-misses
-
-       1.001004836 seconds time elapsed
-
-After:
-
-perf stat -ddd -- sleep 1
-
- Performance counter stats for 'sleep 1':
-
-          1.350326 task-clock                #    0.001 CPUs utilized
-                 2 context-switches          #    0.001 M/sec
-                 0 CPU-migrations            #    0.000 M/sec
-               157 page-faults               #    0.116 M/sec
-            11,986 cycles                    #    0.009 GHz
-   <not supported> stalled-cycles-frontend
-   <not supported> stalled-cycles-backend
-           496,986 instructions              #   41.46  insns per cycle
-           138,065 branches                  #  102.246 M/sec
-             7,245 branch-misses             #    5.25% of all branches
-     <not counted> L1-dcache-loads
-     <not counted> L1-dcache-load-misses
-     <not counted> LLC-loads
-     <not counted> LLC-load-misses
-     <not counted> L1-icache-loads
-     <not counted> L1-icache-load-misses
-     <not counted> dTLB-loads
-     <not counted> dTLB-load-misses
-     <not counted> iTLB-loads
-     <not counted> iTLB-load-misses
-     <not counted> L1-dcache-prefetches
-   <not supported> L1-dcache-prefetch-misses
-
-       1.002397333 seconds time elapsed
-
-v1->v2:
-changed supported type from int to bool
-
-v2->v3
-fixed vertical alignment of new struct element
+Currently the "sym" output field is used to dump instruction pointers
+and callchain stack. Sample addresses can also be converted to symbols,
+so the meaning of "sym" needs to be fixed. This patch adds an "ip"
+option and if it is selected the user can also opt to dump symbols for
+them. If the user opts to dump IP without syms only the address is
+shown.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1306767359-13221-1-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1306528124-25861-2-git-send-email-dsahern@gmail.com
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-stat.c |    9 +++++++--
- tools/perf/util/evsel.h   |    1 +
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ tools/perf/Documentation/perf-script.txt |   10 +++---
+ tools/perf/builtin-script.c              |   31 ++++++++++++------
+ tools/perf/util/session.c                |   50 +++++++++++++++++------------
+ tools/perf/util/session.h                |    5 ++-
+ 4 files changed, 58 insertions(+), 38 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index a9f0671..784ed6d 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -61,6 +61,8 @@
- #include <locale.h>
+diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
+index 86c87e2..67a4e5c 100644
+--- a/tools/perf/Documentation/perf-script.txt
++++ b/tools/perf/Documentation/perf-script.txt
+@@ -115,10 +115,10 @@ OPTIONS
+ -f::
+ --fields::
+         Comma separated list of fields to print. Options are:
+-        comm, tid, pid, time, cpu, event, trace, sym. Field
++        comm, tid, pid, time, cpu, event, trace, ip, sym. Field
+         list can be prepended with the type, trace, sw or hw,
+         to indicate to which event type the field list applies.
+-        e.g., -f sw:comm,tid,time,sym  and -f trace:time,cpu,trace
++        e.g., -f sw:comm,tid,time,ip,sym  and -f trace:time,cpu,trace
  
- #define DEFAULT_SEPARATOR	" "
-+#define CNTR_NOT_SUPPORTED	"<not supported>"
-+#define CNTR_NOT_COUNTED	"<not counted>"
+ 		perf script -f <fields>
  
- static struct perf_event_attr default_attrs[] = {
- 
-@@ -448,6 +450,7 @@ static int run_perf_stat(int argc __used, const char **argv)
- 				if (verbose)
- 					ui__warning("%s event is not supported by the kernel.\n",
- 						    event_name(counter));
-+				counter->supported = false;
- 				continue;
- 			}
- 
-@@ -466,6 +469,7 @@ static int run_perf_stat(int argc __used, const char **argv)
- 			die("Not all events could be opened.\n");
- 			return -1;
- 		}
-+		counter->supported = true;
- 	}
- 
- 	if (perf_evlist__set_filters(evsel_list)) {
-@@ -861,7 +865,7 @@ static void print_counter_aggr(struct perf_evsel *counter)
- 	if (scaled == -1) {
- 		fprintf(stderr, "%*s%s%*s",
- 			csv_output ? 0 : 18,
--			"<not counted>",
-+			counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
- 			csv_sep,
- 			csv_output ? 0 : -24,
- 			event_name(counter));
-@@ -914,7 +918,8 @@ static void print_counter(struct perf_evsel *counter)
- 				csv_output ? 0 : -4,
- 				evsel_list->cpus->map[cpu], csv_sep,
- 				csv_output ? 0 : 18,
--				"<not counted>", csv_sep,
-+				counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
-+				csv_sep,
- 				csv_output ? 0 : -24,
- 				event_name(counter));
- 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 7e9366e..e9a3155 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -61,6 +61,7 @@ struct perf_evsel {
- 		off_t		id_offset;
- 	};
- 	struct cgroup_sel	*cgrp;
-+	bool 			supported;
+@@ -132,17 +132,17 @@ OPTIONS
+ 	The arguments are processed in the order received. A later usage can
+ 	reset a prior request. e.g.:
+     
+-		-f trace: -f comm,tid,time,sym
++		-f trace: -f comm,tid,time,ip,sym
+     
+ 	The first -f suppresses trace events (field list is ""), but then the
+-	second invocation sets the fields to comm,tid,time,sym. In this case a
++	second invocation sets the fields to comm,tid,time,ip,sym. In this case a
+ 	warning is given to the user:
+     
+ 		"Overriding previous field request for all events."
+     
+ 	Alternativey, consider the order:
+     
+-		-f comm,tid,time,sym -f trace:
++		-f comm,tid,time,ip,sym -f trace:
+     
+ 	The first -f sets the fields for all events and the second -f
+ 	suppresses trace events. The user is given a warning message about
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 22747de..0852db2 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -30,7 +30,8 @@ enum perf_output_field {
+ 	PERF_OUTPUT_CPU             = 1U << 4,
+ 	PERF_OUTPUT_EVNAME          = 1U << 5,
+ 	PERF_OUTPUT_TRACE           = 1U << 6,
+-	PERF_OUTPUT_SYM             = 1U << 7,
++	PERF_OUTPUT_IP              = 1U << 7,
++	PERF_OUTPUT_SYM             = 1U << 8,
  };
  
- struct cpu_map;
+ struct output_option {
+@@ -44,6 +45,7 @@ struct output_option {
+ 	{.str = "cpu",   .field = PERF_OUTPUT_CPU},
+ 	{.str = "event", .field = PERF_OUTPUT_EVNAME},
+ 	{.str = "trace", .field = PERF_OUTPUT_TRACE},
++	{.str = "ip",    .field = PERF_OUTPUT_IP},
+ 	{.str = "sym",   .field = PERF_OUTPUT_SYM},
+ };
+ 
+@@ -60,7 +62,8 @@ static struct {
+ 
+ 		.fields = PERF_OUTPUT_COMM | PERF_OUTPUT_TID |
+ 			      PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
+-			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_SYM,
++			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_IP |
++				  PERF_OUTPUT_SYM,
+ 
+ 		.invalid_fields = PERF_OUTPUT_TRACE,
+ 	},
+@@ -70,7 +73,8 @@ static struct {
+ 
+ 		.fields = PERF_OUTPUT_COMM | PERF_OUTPUT_TID |
+ 			      PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
+-			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_SYM,
++			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_IP |
++				  PERF_OUTPUT_SYM,
+ 
+ 		.invalid_fields = PERF_OUTPUT_TRACE,
+ 	},
+@@ -88,7 +92,8 @@ static struct {
+ 
+ 		.fields = PERF_OUTPUT_COMM | PERF_OUTPUT_TID |
+ 			      PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
+-			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_SYM,
++			      PERF_OUTPUT_EVNAME | PERF_OUTPUT_IP |
++				  PERF_OUTPUT_SYM,
+ 
+ 		.invalid_fields = PERF_OUTPUT_TRACE,
+ 	},
+@@ -157,15 +162,20 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 		!perf_session__has_traces(session, "record -R"))
+ 		return -EINVAL;
+ 
+-	if (PRINT_FIELD(SYM)) {
++	if (PRINT_FIELD(IP)) {
+ 		if (perf_event_attr__check_stype(attr, PERF_SAMPLE_IP, "IP",
+-					   PERF_OUTPUT_SYM))
++					   PERF_OUTPUT_IP))
+ 			return -EINVAL;
+ 
+ 		if (!no_callchain &&
+ 		    !(attr->sample_type & PERF_SAMPLE_CALLCHAIN))
+ 			symbol_conf.use_callchain = false;
+ 	}
++	if (PRINT_FIELD(SYM) && !PRINT_FIELD(IP)) {
++		pr_err("Display of symbols requested but IP is not selected.\n"
++		       "No addresses to convert to symbols.\n");
++		return -EINVAL;
++	}
+ 
+ 	if ((PRINT_FIELD(PID) || PRINT_FIELD(TID)) &&
+ 		perf_event_attr__check_stype(attr, PERF_SAMPLE_TID, "TID",
+@@ -230,7 +240,7 @@ static void print_sample_start(struct perf_sample *sample,
+ 	if (PRINT_FIELD(COMM)) {
+ 		if (latency_format)
+ 			printf("%8.8s ", thread->comm);
+-		else if (PRINT_FIELD(SYM) && symbol_conf.use_callchain)
++		else if (PRINT_FIELD(IP) && symbol_conf.use_callchain)
+ 			printf("%s ", thread->comm);
+ 		else
+ 			printf("%16s ", thread->comm);
+@@ -288,12 +298,13 @@ static void process_event(union perf_event *event __unused,
+ 		print_trace_event(sample->cpu, sample->raw_data,
+ 				  sample->raw_size);
+ 
+-	if (PRINT_FIELD(SYM)) {
++	if (PRINT_FIELD(IP)) {
+ 		if (!symbol_conf.use_callchain)
+ 			printf(" ");
+ 		else
+ 			printf("\n");
+-		perf_session__print_symbols(event, sample, session);
++		perf_session__print_ip(event, sample, session,
++					      PRINT_FIELD(SYM));
+ 	}
+ 
+ 	printf("\n");
+@@ -985,7 +996,7 @@ static const struct option options[] = {
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
+ 	OPT_CALLBACK('f', "fields", NULL, "str",
+-		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,sym",
++		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym",
+ 		     parse_output_fields),
+ 
+ 	OPT_END()
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index f5a8fbd..ad33650 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1202,9 +1202,10 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ 	return NULL;
+ }
+ 
+-void perf_session__print_symbols(union perf_event *event,
+-				struct perf_sample *sample,
+-				struct perf_session *session)
++void perf_session__print_ip(union perf_event *event,
++			    struct perf_sample *sample,
++			    struct perf_session *session,
++			    int print_sym)
+ {
+ 	struct addr_location al;
+ 	const char *symname, *dsoname;
+@@ -1233,32 +1234,39 @@ void perf_session__print_symbols(union perf_event *event,
+ 			if (!node)
+ 				break;
+ 
+-			if (node->sym && node->sym->name)
+-				symname = node->sym->name;
+-			else
+-				symname = "";
++			printf("\t%16" PRIx64, node->ip);
++			if (print_sym) {
++				if (node->sym && node->sym->name)
++					symname = node->sym->name;
++				else
++					symname = "";
+ 
+-			if (node->map && node->map->dso && node->map->dso->name)
+-				dsoname = node->map->dso->name;
+-			else
+-				dsoname = "";
++				if (node->map && node->map->dso && node->map->dso->name)
++					dsoname = node->map->dso->name;
++				else
++					dsoname = "";
+ 
+-			printf("\t%16" PRIx64 " %s (%s)\n", node->ip, symname, dsoname);
++				printf(" %s (%s)", symname, dsoname);
++			}
++			printf("\n");
+ 
+ 			callchain_cursor_advance(cursor);
+ 		}
+ 
+ 	} else {
+-		if (al.sym && al.sym->name)
+-			symname = al.sym->name;
+-		else
+-			symname = "";
++		printf("%16" PRIx64, al.addr);
++		if (print_sym) {
++			if (al.sym && al.sym->name)
++				symname = al.sym->name;
++			else
++				symname = "";
+ 
+-		if (al.map && al.map->dso && al.map->dso->name)
+-			dsoname = al.map->dso->name;
+-		else
+-			dsoname = "";
++			if (al.map && al.map->dso && al.map->dso->name)
++				dsoname = al.map->dso->name;
++			else
++				dsoname = "";
+ 
+-		printf("%16" PRIx64 " %s (%s)", al.addr, symname, dsoname);
++			printf(" %s (%s)", symname, dsoname);
++		}
+ 	}
+ }
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 66d4e14..d76af0f 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -167,8 +167,9 @@ static inline int perf_session__parse_sample(struct perf_session *session,
+ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ 					    unsigned int type);
+ 
+-void perf_session__print_symbols(union perf_event *event,
++void perf_session__print_ip(union perf_event *event,
+ 				 struct perf_sample *sample,
+-				 struct perf_session *session);
++				 struct perf_session *session,
++				 int print_sym);
+ 
+ #endif /* __PERF_SESSION_H */
 -- 
 1.6.2.5
 
