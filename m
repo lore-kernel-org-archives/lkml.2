@@ -1,78 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759004Ab1FBHlW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 03:41:22 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59296 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758702Ab1FBHlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 03:41:21 -0400
-Date: Thu, 2 Jun 2011 09:40:57 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 4/6] MAINTAINERS: Remove unused PERFORMANCE EVENTS pattern
-Message-ID: <20110602074057.GE2150@elte.hu>
-References: <cover.1306950701.git.joe@perches.com>
- <8d1e596980a6b6fec79432bb5a5953985cf85c2f.1306950701.git.joe@perches.com>
+	id S1759353Ab1FBHmm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 03:42:42 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59638 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758709Ab1FBHml (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 03:42:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type;
+        b=xcd2GtNsjkLGMDfhfFf2n24eOmvKDSXpmF/K1pSP2OjrWi30p+OHTkjWh2iK12ldTL
+         NIbpLoH21X3zriFAgPxc6XJPT0n9ciUSL6BgT2r2oKJGw/lAjAnTOzufRPg1L7l3le9w
+         B7YIp3F7zWIzV/VxFHHaw06ryo+h+lnj/NO5c=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8d1e596980a6b6fec79432bb5a5953985cf85c2f.1306950701.git.joe@perches.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110531020300.GJ2890@dhcp-172-31-194-241.cam.corp.google.com>
+References: <AC254312-8FFF-4070-BF8B-D9B1E8FF1AE6@mit.edu> <BANLkTi=BgGagV+dN9-nFcSkNsGNKbRMLfQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105291850260.5766@asgard.lang.hm> <BANLkTik69Gb2i1467bhnEU-pJ0WB10mqNQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105301058030.5766@asgard.lang.hm> <BANLkTimtY0ggu28i-9VzWOO1=puZ0JvcAQ@mail.gmail.com>
+ <alpine.DEB.2.02.1105301142030.5766@asgard.lang.hm> <BANLkTimuToT90eRGVRfN9tAHoF9GOSRRDA@mail.gmail.com>
+ <alpine.DEB.2.02.1105301349530.5766@asgard.lang.hm> <BANLkTimSLoY3uwtGvA2x5C0HhNEHvmWqzw@mail.gmail.com>
+ <20110531020300.GJ2890@dhcp-172-31-194-241.cam.corp.google.com>
+From: "D. Jansen" <d.g.jansen@googlemail.com>
+Date: Thu, 2 Jun 2011 09:42:01 +0200
+Message-ID: <BANLkTika_yHtvYdyG0CANGT6mvADruH8KQ@mail.gmail.com>
+Subject: Re: [rfc] Ignore Fsync Calls in Laptop_Mode
+To: "Ted Ts'o" <tytso@mit.edu>, "D. Jansen" <d.g.jansen@googlemail.com>,
+        david@lang.hm, Oliver Neukum <oneukum@suse.de>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Dave Chinner <david@fromorbit.com>, njs@pobox.com, bart@samwel.tk
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 31, 2011 at 4:03 AM, Ted Ts'o <tytso@mit.edu> wrote:
+> The real fix is that applications need to be fixed to be less
+> write-happy.
 
-* Joe Perches <joe@perches.com> wrote:
-
-> No arch/*/lib/perf_event* files exist so remove the pattern.
-> 
-> cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> cc: Paul Mackerras <paulus@samba.org>
-> cc: Ingo Molnar <mingo@elte.hu>
-> cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  MAINTAINERS |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index ab6340f..6f6a8ef 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -4908,7 +4908,6 @@ F:	arch/*/kernel/perf_event*.c
->  F:	arch/*/kernel/*/perf_event*.c
->  F:	arch/*/kernel/*/*/perf_event*.c
->  F:	arch/*/include/asm/perf_event.h
-> -F:	arch/*/lib/perf_event*.c
->  F:	arch/*/kernel/perf_callchain.c
->  F:	tools/perf/
-
-The arch/*/lib/ hierarchy is a common place to put stuff into, it 
-does not hurt at all to have it mentioned.
-
-In Linux there's 10+ really important, not yet implemented features 
-to implement, there's 100+ under-maintained subsystems to maintain, 
-there's 1000+ not yet fixed bugs to fix, there's 10,000+ ugly driver 
-files to be improved and there's 1,000,000+ stylistic errors to fix.
-
-Mucking with the MAINTAINERS file on the level you did in this patch 
-comes some time after we've fixed the 1,000,000+ stylistic errors.
-
-Could you please stop mucking with these patterns and start dealing 
-with some of the more important problems we have?
-
-Thanks,
-
-	Ingo
+So do you agree to export barriers to user space? Because as you said
+yourself, that would be the only way for apps to avoid fsync without
+losing data safety. And since you want the problem fixed with the
+apps, we need to provide them with the means to do so, right?
