@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759560Ab1FBI0L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 04:26:11 -0400
-Received: from mail.perches.com ([173.55.12.10]:2433 "EHLO mail.perches.com"
+	id S1759633Ab1FBI0e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 04:26:34 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:56458 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752882Ab1FBI0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 04:26:09 -0400
-Subject: Re: [PATCH 4/6] MAINTAINERS: Remove unused PERFORMANCE EVENTS
- pattern
-From: Joe Perches <joe@perches.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-In-Reply-To: <20110602074057.GE2150@elte.hu>
-References: <cover.1306950701.git.joe@perches.com>
-	 <8d1e596980a6b6fec79432bb5a5953985cf85c2f.1306950701.git.joe@perches.com>
-	 <20110602074057.GE2150@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Jun 2011 01:26:07 -0700
-Message-ID: <1307003167.32125.59.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755410Ab1FBI0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 04:26:31 -0400
+From: Julia Lawall <julia@diku.dk>
+To: David Brownell <dbrownell@users.sourceforge.net>
+Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/usb/gadget/inode.c: add missing kfree
+Date: Thu,  2 Jun 2011 10:26:26 +0200
+Message-Id: <1307003186-23244-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-02 at 09:40 +0200, Ingo Molnar wrote:
-> * Joe Perches <joe@perches.com> wrote:
-> > No arch/*/lib/perf_event* files exist so remove the pattern.
-> The arch/*/lib/ hierarchy is a common place to put stuff into, it 
-> does not hurt at all to have it mentioned.
+From: Julia Lawall <julia@diku.dk>
 
-Every once in awhile I run a script on MAINTAINERS
-and fix up defects found by the script.
+The label fail frees dev->buf, but kbuf hasn't yet been stored there at
+this point.
 
-Dead code is dead code.
-This was unused as of commit e360adbe2924.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-> stop mucking with these patterns and start dealing 
-> with some of the more important problems we have?
+// <smpl>
+@exists@
+local idexpression x;
+statement S;
+expression E;
+expression *ptr != NULL;
+@@
 
-My time, my choice on what to do with it.
+x = memdup_user(...);
+...
+if (IS_ERR(x)) S
+... when != x
+    when != x = E
+(
+ return \(0\|<+...x...+>\|ptr\);
+|
+*return ...;
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+I wonder if it is really correct to free dev->buf at fail in this case.
+Because it is freeing the previously allocated value of dev->buf, not the
+current one as done in subsequent cases.
+
+ drivers/usb/gadget/inode.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index a01383f..316547a 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -1870,8 +1870,10 @@ dev_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+ 
+ 	spin_lock_irq (&dev->lock);
+ 	value = -EINVAL;
+-	if (dev->buf)
++	if (dev->buf) {
++		kfree(kbuf);
+ 		goto fail;
++	}
+ 	dev->buf = kbuf;
+ 
+ 	/* full or low speed config */
 
