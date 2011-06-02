@@ -1,182 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab1FCPPK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 11:15:10 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:30739 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab1FCPPI (ORCPT
+	id S1755015Ab1FBWuK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 18:50:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:62027 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040Ab1FBWuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 11:15:08 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=dyVpuHYQJROgCHwBBw1H+I+7e1rgZIKdHwrI0HSbuo4= c=1 sm=1
- a=BBx-CtPOl7IA:10 a=3762yOXauukA:10 a=BLceEmwcHowA:10
- a=n3DLBDIp2lSvWb96zoUu4Q==:17 a=s3h_cnINAAAA:8 a=47LbCVvxAAAA:8
- a=NEAV23lmAAAA:8 a=Rh_zQq1JyuMdTgv7l1QA:9 a=BJaimqmIks7t_PAunugA:7
- a=ReXhBHqOodcA:10 a=QhNQsjeWOoAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-From: Simon Wood <simon@mungewell.org>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Michael Bauer <michael@m-bauer.org>, Simon Wood <simon@mungewell.org>
-Subject: [PATCHv3] hid: Fix Logitech Driving Force Pro wheel
-Date: Thu,  2 Jun 2011 15:40:14 -0700
-Message-Id: <1307054414-19239-1-git-send-email-simon@mungewell.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <20110603112510.18482vx63j4ygmm8@webmail.df.eu>
-References: <20110603112510.18482vx63j4ygmm8@webmail.df.eu>
+	Thu, 2 Jun 2011 18:50:08 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=wom5GMh1gUkA:10 a=mCU5iJf-lGwA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=g3F5VGk0NOMZWSIEWMgijA==:17 a=VnNF1IyMAAAA:8 a=9qxNCY_qAAAA:8 a=DfNHnWVPAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=IJ022qmbo3EgqW60aAoA:9 a=fnWtXJ86fhWXA3Bs640A:7 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=1pxjJC3EenQA:10 a=lBRciGGoxdUA:10 a=g3F5VGk0NOMZWSIEWMgijA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.123.158.191
+Date: Thu, 2 Jun 2011 17:50:06 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org,
+        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH v6 04/20] evm: add support for different security.evm
+ data types
+Message-ID: <20110602225005.GB23700@mail.hallyn.com>
+References: <1307017423-15093-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <1307017423-15093-5-git-send-email-zohar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307017423-15093-5-git-send-email-zohar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes from initial patch:
-- shorten comment (removed original descriptor)
-- optimized new descriptor (simpler and shorter)
-- resent by Simon to fix patch for 3.0rc1
+Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
+> From: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+> 
+> EVM protects a file's security extended attributes(xattrs) against integrity
+> attacks. The current patchset maintains an HMAC-sha1 value across the security
+> xattrs, storing the value as the extended attribute 'security.evm'. We
+> anticipate other methods for protecting the security extended attributes.
+> This patch reserves the first byte of 'security.evm' as a place holder for
+> the type of method.
+> 
+> Changelog v6:
+> - move evm_ima_xattr_type definition to security/integrity/integrity.h
+> - defined a structure for the EVM xattr called evm_ima_xattr_data
+>   (based on Serge Hallyn's suggestion)
+> 
+> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> ---
+>  include/linux/integrity.h           |    1 +
+>  security/integrity/evm/evm_crypto.c |   11 +++++++----
+>  security/integrity/evm/evm_main.c   |   10 +++++-----
+>  security/integrity/integrity.h      |   11 +++++++++++
+>  4 files changed, 24 insertions(+), 9 deletions(-)
+> 
+> diff --git a/include/linux/integrity.h b/include/linux/integrity.h
+> index e715a2a..9684433 100644
+> --- a/include/linux/integrity.h
+> +++ b/include/linux/integrity.h
+> @@ -19,6 +19,7 @@ enum integrity_status {
+>  	INTEGRITY_UNKNOWN,
+>  };
+>  
+> +/* List of EVM protected security xattrs */
+>  #ifdef CONFIG_INTEGRITY
+>  extern int integrity_inode_alloc(struct inode *inode);
+>  extern void integrity_inode_free(struct inode *inode);
+> diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
+> index d49bb00..c631b99 100644
+> --- a/security/integrity/evm/evm_crypto.c
+> +++ b/security/integrity/evm/evm_crypto.c
+> @@ -141,14 +141,17 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
+>  			const char *xattr_value, size_t xattr_value_len)
+>  {
+>  	struct inode *inode = dentry->d_inode;
+> -	u8 hmac[SHA1_DIGEST_SIZE];
+> +	struct evm_ima_xattr_data xattr_data;
+>  	int rc = 0;
+>  
+>  	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
+> -			   xattr_value_len, hmac);
+> -	if (rc == 0)
+> +			   xattr_value_len, xattr_data.digest);
+> +	if (rc == 0) {
+> +		xattr_data.type = EVM_XATTR_HMAC;
+>  		rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_EVM,
+> -					   hmac, SHA1_DIGEST_SIZE, 0);
+> +					   &xattr_data,
+> +					   sizeof(xattr_data), 0);
+> +	}
+>  	else if (rc == -ENODATA)
+>  		rc = inode->i_op->removexattr(dentry, XATTR_NAME_EVM);
+>  	return rc;
+> diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+> index a8fa45f..c0580dd1 100644
+> --- a/security/integrity/evm/evm_main.c
+> +++ b/security/integrity/evm/evm_main.c
+> @@ -51,20 +51,20 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+>  					     size_t xattr_value_len,
+>  					     struct integrity_iint_cache *iint)
+>  {
+> -	char hmac_val[SHA1_DIGEST_SIZE];
+> +	struct evm_ima_xattr_data xattr_data;
+>  	int rc;
+>  
+>  	if (iint->hmac_status != INTEGRITY_UNKNOWN)
+>  		return iint->hmac_status;
+>  
+> -	memset(hmac_val, 0, sizeof hmac_val);
 
-This is a patch for hid-lg.c which fixes the Logitech Driving Force Pro driver.
-It was generated against vanilla 2.6.39.
-It contains two parts:
-- Add the quirk "NOGET" to make the wheel work at all in native mode.
-- Replace the somehow broken report descriptor with a custom one to have
-separate throttle and brake axes.
+Why did you drop the memset here?
 
-As there are significant differences in the descriptor (original descriptor
-"hides" the separate axes in a  24 bit FF00 usagepage, new descripter replaces
-that with two individual 8 bit desktop.y and desktop.rz usages) I provided a
-complete replacement descriptor instead trying to patch the original one.
-Patching the descriptor seems not feasible as the new one is much larger.
+(You didn't in the previous version of this patch)
 
-Note: To actually test this you have to use the tool "ltwheelconf" to put the
-DFP into it's native mode - See below for more info.
+Otherwise, looks good.
 
-Background:
-Most Logitech wheels are initially reporting themselves with a "fallback"
-deviceID (USB_DEVICE_ID_LOGITECH_WHEEL - 0xc294), in order to make sure they
-are working even without having the proper driver installed.
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-If the Logitech driver is installed it sends a special command to the wheel
-which sets the wheel to "native mode", enabling enhance features like:
-- Clutch pedal
-- extended wheel rotation range (up to 900 degrees)
-- H-gate shifter
-- separate axis for throttle / brake
-- all buttons
-
-When the wheel is set to native mode it basically disconnects and reconnects
-with a different deviceID (USB_DEVICE_ID_LOGITECH_DFP_WHEEL - 0xc298 in this
-case).
-
-I am working on a userspace tool [1] which does the switching from fallback to
-native mode. During development I found out that the Driving Force Pro wheel
-is not supported in native mode - quierk NOGET is missing and the throttle and
-brake axes are reported in a combined way only.
-
-Signed-off-by: Michael Bauer <michael@m-bauer.org>
-Signed-off-by: Simon Wood <simon@mungewell.org>
-
-[1] https://github.com/TripleSpeeder/LTWheelConf
----
- drivers/hid/hid-lg.c |   74 +++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 73 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
-index 21f205f..a7f916e 100644
---- a/drivers/hid/hid-lg.c
-+++ b/drivers/hid/hid-lg.c
-@@ -41,6 +41,66 @@
- #define LG_FF3			0x1000
- #define LG_FF4			0x2000
- 
-+/* Size of the original descriptor of the Driving Force Pro wheel */
-+#define DFP_RDESC_ORIG_SIZE	97
-+
-+/* Fixed report descriptor for Logitech Driving Force Pro wheel controller
-+ *
-+ * The original descriptor hides the separate throttle and brake axes in
-+ * a custom vendor usage page, providing only a combined value as
-+ * GenericDesktop.Y.
-+ * This descriptor removes the combined Y axis and instead reports
-+ * separate throttle (Y) and brake (RZ).
-+ */
-+static __u8 dfp_rdesc_fixed[] = {
-+0x05, 0x01,         /*  Usage Page (Desktop),                   */
-+0x09, 0x04,         /*  Usage (Joystik),                        */
-+0xA1, 0x01,         /*  Collection (Application),               */
-+0xA1, 0x02,         /*      Collection (Logical),               */
-+0x95, 0x01,         /*          Report Count (1),               */
-+0x75, 0x0E,         /*          Report Size (14),               */
-+0x14,               /*          Logical Minimum (0),            */
-+0x26, 0xFF, 0x3F,   /*          Logical Maximum (16383),        */
-+0x34,               /*          Physical Minimum (0),           */
-+0x46, 0xFF, 0x3F,   /*          Physical Maximum (16383),       */
-+0x09, 0x30,         /*          Usage (X),                      */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x95, 0x0E,         /*          Report Count (14),              */
-+0x75, 0x01,         /*          Report Size (1),                */
-+0x25, 0x01,         /*          Logical Maximum (1),            */
-+0x45, 0x01,         /*          Physical Maximum (1),           */
-+0x05, 0x09,         /*          Usage Page (Button),            */
-+0x19, 0x01,         /*          Usage Minimum (01h),            */
-+0x29, 0x0E,         /*          Usage Maximum (0Eh),            */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x05, 0x01,         /*          Usage Page (Desktop),           */
-+0x95, 0x01,         /*          Report Count (1),               */
-+0x75, 0x04,         /*          Report Size (4),                */
-+0x25, 0x07,         /*          Logical Maximum (7),            */
-+0x46, 0x3B, 0x01,   /*          Physical Maximum (315),         */
-+0x65, 0x14,         /*          Unit (Degrees),                 */
-+0x09, 0x39,         /*          Usage (Hat Switch),             */
-+0x81, 0x42,         /*          Input (Variable, Nullstate),    */
-+0x65, 0x00,         /*          Unit,                           */
-+0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
-+0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
-+0x75, 0x08,         /*          Report Size (8),                */
-+0x81, 0x01,         /*          Input (Constant),               */
-+0x09, 0x31,         /*          Usage (Y),                      */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x09, 0x35,         /*          Usage (Rz),                     */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x81, 0x01,         /*          Input (Constant),               */
-+0xC0,               /*      End Collection,                     */
-+0xA1, 0x02,         /*      Collection (Logical),               */
-+0x09, 0x02,         /*          Usage (02h),                    */
-+0x95, 0x07,         /*          Report Count (7),               */
-+0x91, 0x02,         /*          Output (Variable),              */
-+0xC0,               /*      End Collection,                     */
-+0xC0                /*  End Collection                          */
-+};
-+
-+
- /*
-  * Certain Logitech keyboards send in report #3 keys which are far
-  * above the logical maximum described in descriptor. This extends
-@@ -74,6 +134,18 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		rdesc[47] = 0x95;
- 		rdesc[48] = 0x0B;
- 	}
-+
-+	switch (hdev->product) {
-+	case USB_DEVICE_ID_LOGITECH_DFP_WHEEL:
-+		if (*rsize == DFP_RDESC_ORIG_SIZE) {
-+			hid_info(hdev,
-+				"fixing up Logitech Driving Force Pro report descriptor\n");
-+			rdesc = dfp_rdesc_fixed;
-+			*rsize = sizeof(dfp_rdesc_fixed);
-+		}
-+		break;
-+	}
-+
- 	return rdesc;
- }
- 
-@@ -380,7 +452,7 @@ static const struct hid_device_id lg_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G27_WHEEL),
- 		.driver_data = LG_FF },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFP_WHEEL),
--		.driver_data = LG_FF },
-+		.driver_data = LG_NOGET | LG_FF },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_WII_WHEEL),
- 		.driver_data = LG_FF4 },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_WINGMAN_FFG ),
--- 
-1.7.4.1
-
+>  	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
+> -			   xattr_value_len, hmac_val);
+> +			   xattr_value_len, xattr_data.digest);
+>  	if (rc < 0)
+>  		return INTEGRITY_UNKNOWN;
+>  
+> -	rc = vfs_xattr_cmp(dentry, XATTR_NAME_EVM, hmac_val, sizeof hmac_val,
+> -			   GFP_NOFS);
+> +	xattr_data.type = EVM_XATTR_HMAC;
+> +	rc = vfs_xattr_cmp(dentry, XATTR_NAME_EVM, (u8 *)&xattr_data,
+> +			   sizeof xattr_data, GFP_NOFS);
+>  	if (rc < 0)
+>  		goto err_out;
+>  	iint->hmac_status = INTEGRITY_PASS;
+> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+> index 397a46b..7efbf56 100644
+> --- a/security/integrity/integrity.h
+> +++ b/security/integrity/integrity.h
+> @@ -18,6 +18,17 @@
+>  /* iint cache flags */
+>  #define IMA_MEASURED		0x01
+>  
+> +enum evm_ima_xattr_type {
+> +	IMA_XATTR_DIGEST = 0x01,
+> +	EVM_XATTR_HMAC,
+> +	EVM_IMA_XATTR_DIGSIG,
+> +};
+> +
+> +struct evm_ima_xattr_data {
+> +	u8 type;
+> +	u8 digest[SHA1_DIGEST_SIZE];
+> +}  __attribute__((packed));
+> +
+>  /* integrity data associated with an inode */
+>  struct integrity_iint_cache {
+>  	struct rb_node rb_node; /* rooted in integrity_iint_tree */
+> -- 
+> 1.7.3.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
