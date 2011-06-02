@@ -1,181 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758693Ab1FBHdE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 03:33:04 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:25720 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701Ab1FBHdC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 03:33:02 -0400
-X-AuditID: cbfee61a-b7ce2ae000001a8f-fd-4de73cab8f77
-Date: Thu, 02 Jun 2011 16:32:58 +0900
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH v5] PM / Core: suspend_again callback for suspend_ops.
-To: linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@suse.de>, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com
-Message-id: <1306999978-4663-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-Content-transfer-encoding: 7BIT
-X-OriginalArrivalTime: 02 Jun 2011 07:32:55.0811 (UTC)
- FILETIME=[4A0A6D30:01CC20F7]
-X-Brightmail-Tracker: AAAAAA==
+	id S1758916Ab1FBHd4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 03:33:56 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43200 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758226Ab1FBHdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 03:33:55 -0400
+Subject: Re: 3.0-rc1: powerpc hangs at Kernel virtual memory layout
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: linville@tuxdriver.com, LKML <linux-kernel@vger.kernel.org>,
+        linux ppc dev <linuxppc-dev@lists.ozlabs.org>, zajec5@gmail.com
+In-Reply-To: <alpine.DEB.2.01.1106012057130.21697@trent.utfs.org>
+References: <alpine.DEB.2.01.1105311644010.21697@trent.utfs.org>
+	 <alpine.DEB.2.01.1106011712270.21697@trent.utfs.org>
+	 <1306983467.29297.51.camel@pasglop>
+	 <alpine.DEB.2.01.1106012057130.21697@trent.utfs.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Jun 2011 17:33:28 +1000
+Message-ID: <1307000008.29297.59.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A system or a device may need to control suspend/wakeup events. It may
-want to wakeup the system after a predefined amount of time or at a
-predefined event decided while entering suspend for polling or delayed
-work. Then, it may want to enter suspend again if its predefined wakeup
-condition is the only wakeup reason and there is no outstanding events;
-thus, it does not wakeup the userspace unnecessary or unnecessary
-devices and keeps suspended as long as possible (saving the power).
+On Wed, 2011-06-01 at 21:27 -0700, Christian Kujau wrote:
+> On Thu, 2 Jun 2011 at 12:57, Benjamin Herrenschmidt wrote:
+> > Ok, thanks a lot, It looks rather trivial actually: That new workaround
+> > is PCIe specific but is called unconditionally, and will do bad things
+> > non-PCIe implementations.
+> 
+> OK, with your patch applied to Linus' latest git tree the machine 
+> continues to boot. Also, with the latest tree, the "machine is stuck after 
+> ide-cd init" problem[0] went away.
+> 
+> For this particular problem and patch, feel free to add:
+> 
+> Tested-by: Christian Kujau <lists@nerdbynature.de>
+> 
+> However, shortly after boot and loggin in to the box remotely, the bux did 
+> not respond any more. I'm not sure if these are related to those SSB/PCIe 
+> changes, but somehow I hope they are - bisecting those would take much 
+> longer, as it's not an "instant" death:
+> 
+>  * http://nerdbynature.de/bits/3.0-rc1/linux-3.0-rc1_stuck1.jpg
+>  * http://nerdbynature.de/bits/3.0-rc1/linux-3.0-rc1_stuck2.jpg
+> 
+> This is what an OCR program made of it:
 
-Enabling a system to wakeup after a specified time can be easily
-achieved by using RTC. However, to enter suspend again immediately
-without invoking userland and unrelated devices, we need additional
-features in the suspend framework.
+I think this is another problem that I'm in the middle of trying to
+figure out.
 
-Such need comes from:
+It -looks- to me that something goes wrong in the tty code when a large
+file is piped through a pty, causing the kernel to hang for minutes in
+the workqueue / ldisk flush code. I've just sent an initial report to
+Alan Cox about it and am currently bisecting it.
 
-1. Monitoring a critical device status without interrupts that can
-wakeup the system. (in-suspend polling)
- An example is ambient temperature monitoring that needs to shut down
-the system or a specific device function if it is too hot or cold. The
-temperature of a specific device may be needed to be monitored as well;
-e.g., a charger monitors battery temperature in order to stop charging
-if overheated.
+Cheers,
+Ben.
 
-2. Execute critical "delayed work" at suspend.
- A driver or a system/board may have a delayed work (or any similar
-things) that it wants to execute at the requested time.
- For example, some chargers want to check the battery voltage some
-time (e.g., 30 seconds) after the battery is fully charged and the
-charger has stopped. Then, the charger restarts charging if the voltage
-has dropped more than a threshold, which is smaller than "restart-charger"
-voltage, which is a threshold to restart charging regardless of the
-time passed.
+> irq euent stamp: 185804850
+> hardirqs last enabled at (185904849): [<c04005b0>] _raw_spin_unlock_irqrestore+0x40/0x?e
+> hardirqs last disabled at (185904850): [<c00120b8>] reenable_mmu+0x24/0x78
+> Softirqs last enabled at (185892414): [<c000fe8c>] call_do_softirq+0x14/0x24
+> softirqs last disabled at (18589240?): [<c000fe8c>] call_do_softirq+0x14/0x24
+> NIP: e04005b4 LR: e04005b0 CTR: 00000000
+> REGS: ef92be10 TRHP: 0901 Not tainted (3.0.0-rel-00049-g1fa?b6a-dirtg)
+> MSB: 00009032 <EE.ME.IR.DR> CR: 42002084
+> TRSK = ef8d0000[38B] ’kuorker/0:2’ THREAD:
+> GPR00: c04005b0 ef92bec0 efBd0000 00000001
+> GPR08: 00000000 0b14aed0 0049a306 00030600
+> HIP [c01005b1] _rau_spin_unlock_irqrestore+0x44/0x?c
+> LR [c04005b0] _rau_spin_unlock_irqrestore+0x40/0x?c
+> Call Trace:
+> [ef92bec0] [c04005b0] _raw_spin_unlock_irqrestore+0x40/0x?c (unreliable)
+> [ef92bed0] [c029c504] flush_tu_ldisc+0x121/0x230
+> [ef92bf10] [c001c86c] process_one_uork+0x1c1/0x4cB
+> [ef92bfS0] [c004efac] worker_thread+0x1?8/0x3c1
+> [ef92bf90] [c0051148] kthread+0x81/0x88
+> [ef92hff0] [c0810390] kernel_thread+0x1c/0x68
+> 
+> XER: 20000000
+> ef92a000 ef8d0660 00000006 00000000 18614000 22002088
+> Instruction dump:
+> ??? 93e1060c ?c9f23?B 38800001 90010011 4bc6e9a9 ?fc3i`3?8 4be61a69
+> ?3e08080 11820021 1bc6b515 ?fe00124
+> B8c16008 ?c0803a6 83c1000c
+> 
+> Well, the picture is way better :-\
+> 
+> Thanks,
+> Christian.
+> 
+> [0] http://nerdbynature.de/bits/3.0-rc1/linux-3.0-rc1-cdrom.jpg
 
-This patch allows to add "suspend_again" callback at struct
-platform_suspend_ops and let the "suspend_again" callback return true if
-the system is required to enter suspend again after the current instance
-of wakeup. Device-wise suspend_again implemented at dev_pm_ops or
-syscore is not done because: a) suspend_again feature is usually under
-platform-wise decision and controls the behavior of the whole platform
-and b) There are very limited devices related to the usage cases of
-suspend_again; chargers and temperature sensors are mentioned so far.
-
-With suspend_again callback registered at struct platform_suspend_ops
-suspend_ops in kernel/power/suspend.c with suspend_set_ops by the
-platform, the suspend framework tries to enter suspend again by
-looping suspend_enter() if suspend_again has returned true and there has
-been no errors in the suspending sequence or pending wakeups (by
-pm_wakeup_pending).
-
-Tested at Exynos4-NURI.
-
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-
---
-Thank you for your valuable comments, Pavel, Rafael, Greg, and others.
-
-Changed from v4:
-	- rebased on Linux 3.0 rc1
-	- removed partial_suspend/resume because they are not needed, for now.
-Changed from v3:
-	- renamed local variable "pm_wkup_pending" to "wakeup_pending".
-	pm_wakeup_pending is not used because there is a function with the
-	same name.
-Changed from v2:
-	- moved (again) from dev_pm_ops to suspend_ops
-	- settled suspend_again point at around suspend_enter().
-Changes from v1:
-	- moved from syscore to dev_pm_ops
-	- added generic ops for subsystems.
-	- cleaned up suspend_again code at kernel/power/suspend.
----
- include/linux/suspend.h |    8 ++++++++
- kernel/power/suspend.c  |   13 ++++++++++---
- 2 files changed, 18 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index 083ffea..e1e3742 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -92,6 +92,13 @@ typedef int __bitwise suspend_state_t;
-  *	@enter() and @wake(), even if any of them fails.  It is executed after
-  *	a failing @prepare.
-  *
-+ * @suspend_again: Returns whether the system should suspend again (true) or
-+ *	not (false). If the platform wants to poll sensors or execute some
-+ *	code during suspended without invoking userspace and most of devices,
-+ *	suspend_again callback is the place assuming that periodic-wakeup or
-+ *	alarm-wakeup is already setup. This allows to execute some codes while
-+ *	being kept suspended in the view of userland and devices.
-+ *
-  * @end: Called by the PM core right after resuming devices, to indicate to
-  *	the platform that the system has returned to the working state or
-  *	the transition to the sleep state has been aborted.
-@@ -113,6 +120,7 @@ struct platform_suspend_ops {
- 	int (*enter)(suspend_state_t state);
- 	void (*wake)(void);
- 	void (*finish)(void);
-+	bool (*suspend_again)(void);
- 	void (*end)(void);
- 	void (*recover)(void);
- };
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index 1c41ba2..d8a6c51 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -128,10 +128,12 @@ void __attribute__ ((weak)) arch_suspend_enable_irqs(void)
- /**
-  *	suspend_enter - enter the desired system sleep state.
-  *	@state:		state to enter
-+ *	@wakeup_pending:	indicates that the power transition in progress
-+ *				should be aborted.
-  *
-  *	This function should be called after devices have been suspended.
-  */
--static int suspend_enter(suspend_state_t state)
-+static int suspend_enter(suspend_state_t state, bool *wakeup_pending)
- {
- 	int error;
- 
-@@ -165,7 +167,8 @@ static int suspend_enter(suspend_state_t state)
- 
- 	error = syscore_suspend();
- 	if (!error) {
--		if (!(suspend_test(TEST_CORE) || pm_wakeup_pending())) {
-+		*wakeup_pending = pm_wakeup_pending();
-+		if (!(suspend_test(TEST_CORE) || *wakeup_pending)) {
- 			error = suspend_ops->enter(state);
- 			events_check_enabled = false;
- 		}
-@@ -199,6 +202,7 @@ static int suspend_enter(suspend_state_t state)
- int suspend_devices_and_enter(suspend_state_t state)
- {
- 	int error;
-+	bool wakeup_pending = false;
- 
- 	if (!suspend_ops)
- 		return -ENOSYS;
-@@ -220,7 +224,10 @@ int suspend_devices_and_enter(suspend_state_t state)
- 	if (suspend_test(TEST_DEVICES))
- 		goto Recover_platform;
- 
--	error = suspend_enter(state);
-+	do {
-+		error = suspend_enter(state, &wakeup_pending);
-+	} while (suspend_ops->suspend_again && suspend_ops->suspend_again() &&
-+		 !error && !wakeup_pending);
- 
-  Resume_devices:
- 	suspend_test_start();
--- 
-1.7.4.1
 
