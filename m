@@ -1,87 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab1FBRXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 13:23:17 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:18439 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579Ab1FBRXQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 13:23:16 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6365"; a="94998760"
-Message-ID: <f2e8134b42bb8cb6be806f21ca547f7f.squirrel@www.codeaurora.org>
-In-Reply-To: <8yay61lxlnz.fsf@huya.qualcomm.com>
-References: <cover.1306950701.git.joe@perches.com>
-    <326591b5bd7f016a40a325fa0a532bfab47218d6.1306950701.git.joe@perches.com>
-    <8yay61lxlnz.fsf@huya.qualcomm.com>
-Date: Thu, 2 Jun 2011 10:23:15 -0700 (PDT)
-Subject: Re: [PATCH 1/6] MAINTAINERS: Update MSM pattern
-From: "Carl Vanderlip" <carlv@codeaurora.org>
-To: "David Brown" <davidb@codeaurora.org>
-Cc: "Joe Perches" <joe@perches.com>, carlv@codeaurora.org,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Daniel Walker" <dwalker@fifo99.com>,
-        "Bryan Huntsman" <bryanh@codeaurora.org>
-User-Agent: SquirrelMail/1.4.17
+	id S1753437Ab1FBR3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 13:29:35 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:40705 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751744Ab1FBR3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 13:29:34 -0400
+Date: Thu, 2 Jun 2011 19:29:05 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
+Message-ID: <20110602172905.GF28684@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
+ <BANLkTikKHq=NBAPOXJVDM7ZEc9CkW+HdmQ@mail.gmail.com>
+ <20110602150123.GE28684@cmpxchg.org>
+ <BANLkTinWGEJHf1MhzDS4JB0-V9iynoFoHA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTinWGEJHf1MhzDS4JB0-V9iynoFoHA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Jun 01 2011, Joe Perches wrote:
->
->> Video MSM is still in staging.
->
-> It also appears to be in drivers/video/msm
->
-> Carl, do we need the staging driver any more?
->
-> I don't have any problem removing the drivers/platform/msm line, since
-> that now appears to have been an ill-formed idea, but I'd rather just
-> get rid of the staging video driver.
->
-> David
->
+On Fri, Jun 03, 2011 at 01:14:12AM +0900, Hiroyuki Kamezawa wrote:
+> 2011/6/3 Johannes Weiner <hannes@cmpxchg.org>:
+> > On Thu, Jun 02, 2011 at 10:59:01PM +0900, Hiroyuki Kamezawa wrote:
+> >> 2011/6/1 Johannes Weiner <hannes@cmpxchg.org>:
+> 
+> >> > @@ -1927,8 +1980,7 @@ static int mem_cgroup_do_charge(struct mem_cgroup *mem, gfp_t gfp_mask,
+> >> >        if (!(gfp_mask & __GFP_WAIT))
+> >> >                return CHARGE_WOULDBLOCK;
+> >> >
+> >> > -       ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
+> >> > -                                             gfp_mask, flags);
+> >> > +       ret = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
+> >> >        if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
+> >> >                return CHARGE_RETRY;
+> >> >        /*
+> >>
+> >> It seems this clean-up around hierarchy and softlimit can be in an
+> >> independent patch, no ?
+> >
+> > Hm, why do you think it's a cleanup?  The hierarchical target reclaim
+> > code is moved to vmscan.c and as a result the entry points for hard
+> > limit and soft limit reclaim differ.  This is why the original
+> > function, mem_cgroup_hierarchical_reclaim() has to be split into two
+> > parts.
+> >
+> If functionality is unchanged, I think it's clean up.
+> I agree to move hierarchy walk to vmscan.c. but it can be done as
+> a clean up patch for current code.
+> (Make current try_to_free_mem_cgroup_pages() to use this code.)
+>  and then, you can write a patch which only includes a core
+> logic/purpose of this patch
+> "use root cgroup's LRU for global and make global reclaim as full-scan
+> of memcgroup."
+> 
+> In short, I felt this patch is long....and maybe watchers of -mm are
+> not interested in rewritie of hierarchy walk but are intetested in the
+> chages in shrink_zone() itself very much.
 
-The staging video driver can be removed. While the current driver is
-moving along the same dev path as the staging driver originally did, I
-don't believe it is a goal to converge to the staging driver in its
-current form.
+But the split up is, unfortunately, a change in functionality.  The
+current code selects one memcg and reclaims all zones on all priority
+levels on behalf of that memcg.  My code changes that such that it
+reclaims a bunch of memcgs from the hierarchy for each zone and
+priority level instead.  From memcgs -> priorities -> zones to
+priorities -> zones -> memcgs.
 
- -Carl V.
+I don't want to pass that off as a cleanup.
 
->> cc: David Brown <davidb@codeaurora.org>
->> cc: Daniel Walker <dwalker@fifo99.com>
->> cc: Bryan Huntsman <bryanh@codeaurora.org>
->> Signed-off-by: Joe Perches <joe@perches.com>
->> ---
->>  MAINTAINERS |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index 29801f7..ae06910 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -926,7 +926,7 @@ F:	drivers/mmc/host/msm_sdcc.c
->>  F:	drivers/mmc/host/msm_sdcc.h
->>  F:	drivers/tty/serial/msm_serial.h
->>  F:	drivers/tty/serial/msm_serial.c
->> -F:	drivers/platform/msm/
->> +F:	drivers/staging/msm/
->>  F:	drivers/*/pm8???-*
->>  F:	include/linux/mfd/pm8xxx/
->>  T:	git git://codeaurora.org/quic/kernel/davidb/linux-msm.git
->
-> --
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->
+But it is long, I agree with you.  I'll split up the 'move
+hierarchical target reclaim to generic code' from 'make global reclaim
+hierarchical' and see if this makes the changes more straight-forward.
 
+Because I suspect the perceived unwieldiness does not stem from the
+amount of lines changed, but from the number of different logical
+changes.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> >> > +       for (;;) {
+> >> > +               unsigned long nr_reclaimed;
+> >> > +
+> >> > +               sc->mem_cgroup = mem;
+> >> > +               do_shrink_zone(priority, zone, sc);
+> >> > +
+> >> > +               nr_reclaimed = sc->nr_reclaimed - nr_reclaimed_before;
+> >> > +               if (nr_reclaimed >= sc->nr_to_reclaim)
+> >> > +                       break;
+> >>
+> >> what this calculation means ?  Shouldn't we do this quit based on the
+> >> number of "scan"
+> >> rather than "reclaimed" ?
+> >
+> > It aborts the loop once sc->nr_to_reclaim pages have been reclaimed
+> > from that zone during that hierarchy walk, to prevent overreclaim.
+> >
+> > If you have unbalanced sizes of memcgs in the system, it is not
+> > desirable to have every reclaimer scan all memcgs, but let those quit
+> > early that have made some progress on the bigger memcgs.
+> >
+> Hmm, why not if (sc->nr_reclaimed >= sc->nr_to_reclaim) ?
+> 
+> I'm sorry if I miss something..
 
+It's a bit awkward and undocumented, I'm afraid.  The loop is like
+this:
+
+	for each zone:
+	  for each memcg:
+	    shrink
+	    if sc->nr_reclaimed >= sc->nr_to_reclaim:
+	      break
+
+sc->nr_reclaimed is never reset, so once you reclaimed enough pages
+from one zone, you will only try the first memcg in all the other
+zones, which might well be empty, so no pressure at all on subsequent
+zones.
+
+That's why I use the per-zone delta like this:
+
+       for each zone:
+         before = sc->nr_reclaimed
+	 for each memcg:
+	   shrink
+	   if sc->nr_reclaimed - before >= sc->nr_to_reclaim
+
+which still ensures on one hand that we don't keep hammering a zone if
+we reclaimed the overall reclaim target already, but on the other hand
+that we apply some pressure to the other zones as well.
+
+It's the same concept as in do_shrink_zone().  It breaks the loop when
+
+	nr_reclaimed >= sc->nr_to_reclaim
+
+where nr_reclaimed refers to the number of pages reclaimed from the
+current zone, not the accumulated total of the whole reclaim cycle.
+
+> >> > +               mem = mem_cgroup_hierarchy_walk(root, mem);
+> >> > +               if (mem == first)
+> >> > +                       break;
+> >>
+> >> Why we quit loop  ?
+> >
+> > get_scan_count() for traditional global reclaim returns the scan
+> > target for the zone.
+> >
+> > With this per-memcg reclaimer, get_scan_count() will return scan
+> > targets for the respective per-memcg zone subsizes.
+> >
+> > So once we have gone through all memcgs, we should have scanned the
+> > amount of pages that global reclaim would have deemed sensible for
+> > that zone at that priority level.
+> >
+> > As such, this is the exit condition based on scan count you referred
+> > to above.
+> >
+> That's what I want as a comment in codes.
+
+Will do, for both exit conditions ;-)
