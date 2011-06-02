@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119Ab1FBH0P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 03:26:15 -0400
-Received: from gate.crashing.org ([63.228.1.57]:40609 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754045Ab1FBH0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 03:26:14 -0400
-Subject: Re: [RFC][PATCH] Kexec support for PPC440x
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Suzuki Poulose <suzuki@in.ibm.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        linux ppc dev <linuxppc-dev@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <4DE50617.7090509@linutronix.de>
-References: <4DE345B0.8020505@in.ibm.com>  <4DE50617.7090509@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Jun 2011 17:25:51 +1000
-Message-ID: <1306999551.29297.57.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1758550Ab1FBH3s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 03:29:48 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:65516 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755374Ab1FBH3q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 03:29:46 -0400
+Date: Thu, 2 Jun 2011 09:29:35 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        MyungJoo Ham <myungjoo.ham@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 1/5] PM / Runtime: Support for generic I/O power domains
+ (v4)
+In-Reply-To: <201105280117.17883.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.64.1106020920360.4067@axis700.grange>
+References: <201104290154.12966.rjw@sisk.pl> <201105160117.46927.rjw@sisk.pl>
+ <201105280115.14556.rjw@sisk.pl> <201105280117.17883.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:nzCqnIhOocEC572NvWX0hnrc+grg9c++S9jy1kTOdE8
+ U94ppQK8r4uZNzZLk9c+KgTZfQdefE2Cm+qcXQEUscOTznp5az
+ U6cw6+oZG1/tiWd7hJSnT2dq/vScfHEyXdQjuxeDQnB8X0Zth7
+ 4K/N6TlXQS3MWe5EKOw2szS9Dk5Db59s8NsPzDUZv0pC0cxn6g
+ cGt5jxgxf+O0AXqksH6ukNep582jzyek5fy7NE0urE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-05-31 at 17:15 +0200, Sebastian Andrzej Siewior wrote:
-> Suzuki Poulose wrote:
-> > Index: powerpc/arch/powerpc/kernel/44x_kexec_mapping.S
-> > ===================================================================
-> > --- /dev/null
-> > +++ powerpc/arch/powerpc/kernel/44x_kexec_mapping.S
-> ....
+On Sat, 28 May 2011, Rafael J. Wysocki wrote:
+
+> From: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> > + *
-> > + */
-> > +    bl    nxtins                /* Find our address */
-> > +nxtins:    mflr    r5                /* Make it accessible */
+> Introduce common headers, helper functions and callbacks allowing
+> platforms to use simple generic power domains for runtime power
+> management.
 > 
-> Please don't mix labels and instructions.
+> Introduce struct generic_power_domain to be used for representing
+> power domains that each contain a number of devices and may be
+> master domains or subdomains with respect to other power domains.
+> Among other things, this structure includes callbacks to be
+> provided by platforms for performing specific tasks related to
+> power management (i.e. ->stop_device() may disable a device's
+> clocks, while ->start_device() may enable them, ->power_off() is
+> supposed to remove power from the entire power domain
+> and ->power_on() is supposed to restore it).
 
-With proper indent it's fine as long as he uses numerical relative
-labels which should be the case here. For example, the above, it should
-look like:
+I've got a generic question to this: do we have any examples of 
+power-domain specific ->start_device() and ->stop_device() callbacks? A 
+common case is, when these callbacks start and stop clocks, associated 
+with the device, but this is not power-domain specific, right? Do we have 
+any examples of different power domains in a system, having different 
+these calbacks, but all devices in one power-domain, having the same ones?
 
-	bl	1f
-1:	mflr	r5
-
-> > +    tlbsx    r23,0,r5            /* Find entry we are in */
-> 
-> using tabs instead of spaces would make it look nice. Please also separate 
-> the arguments of the instruction i.e.
-> 	tlbsx	r23, 0, r5
-
-That's arguable. If you look at arch/powerpc, we tend not to separate
-the arguments ;-)
-
-Actually I used to, others didn't and I changed my own style.
-
-> > Index: powerpc/arch/powerpc/kernel/misc_32.S
-> > ===================================================================
-> > --- powerpc.orig/arch/powerpc/kernel/misc_32.S
-> > +++ powerpc/arch/powerpc/kernel/misc_32.S
-> > @@ -736,6 +736,28 @@ relocate_new_kernel:
-> >      mr      r5, r31
-> >  
-> >      li    r0, 0
-> > +#elif defined(CONFIG_44x)  && !defined(CONFIG_47x)
-> > +
-> > +    mr    r29, r3
-> > +    mr    r30, r4
-> > +    mr    r31, r5
-> > +
-> > +#include "44x_kexec_mapping.S"
-> 
-> The way you setup the 1:1 mapping should be close to what you are doing on
-> kernel entry. Isn't it possible to include the file here and in the entry
-> code?
-
-It should just not be #included, what about branching out instead ?
-
-Cheers,
-Ben.
-
-
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
