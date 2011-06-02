@@ -1,50 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933413Ab1FBKai (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 06:30:38 -0400
-Received: from vomta4.indiatimes.com ([223.165.24.172]:46120 "HELO
-	vomta4.indiatimes.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932749Ab1FBKag (ORCPT
+	id S933407Ab1FBK2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 06:28:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54567 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932565Ab1FBK2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 06:30:36 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Jun 2011 06:30:35 EDT
-Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=private; d=indiatimes.com;
-  b=FtBFlsG5770QXDtMO2KyBol4ziHdxIsxmhX1Mdi83rc5MjU47ym8IXIWHyHyiqMW  ;
-X-Spam-Report: SA TESTS
-  0.0 FREEMAIL_FROM          Sender email is freemail
-                             (blessing_justin[at]indiatimes.com)
-  0.1 RDNS_NONE              Delivered to internal network by a host with no rDNS
-  0.0 HELO_NO_DOMAIN         Relay reports its domain incorrectly
-  2.8 FREEMAIL_REPLYTO       Reply-To/From or Reply-To/body contain different
-                             freemails
-  0.0 T_TO_NO_BRKTS_FREEMAIL T_TO_NO_BRKTS_FREEMAIL
-  0.1 TO_NO_BRKTS_DIRECT     To: misformatted and direct-to-MX
-  0.0 TO_NO_BRKTS_NOTLIST    To: misformatted and not a mailing list
-X-Indiatimes-Scanner-Mail-From: blessing_justin@indiatimes.com via vomta4.indiatimes.com
-X-Indiatimes-Scanner: 1.25st (Clear:RC:1(192.168.24.55):SA:0(3.0/4.9):. Processed in 4.498704 secs Process 31861)
-Date: Thu, 2 Jun 2011 15:53:54 +0530 (IST)
-From: blessing justin <blessing_justin@indiatimes.com>
-Reply-To: "blessing_Justin@hotmail.com" <blessing_Justin@hotmail.com>
-Message-ID: <1067799280.6398051307010234324.JavaMail.root@tilmb13.indiatimes.com>
-Subject: Hello my dearest,
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.83.6.193]
-X-Mailer: Zimbra 5.0.6_GA_2313.RHEL4_64 (zclient/5.0.6_GA_2313.RHEL4_64)
-To: undisclosed-recipients:;
+	Thu, 2 Jun 2011 06:28:39 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Read wm831x AUXADC conversion results before acknowledging interrupt
+Date: Thu,  2 Jun 2011 11:28:36 +0100
+Message-Id: <1307010516-11711-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello my dearest,
+Ensure that there's no possibility of loosing an AUXADC interrupt by reading
+the conversion result in the IRQ handler when using interrupts. Otherwise
+it's possible that under very heavy load a new conversion could be initiated
+before the acknowledgement for a previous interrupt has happened.
 
-My name is blessing i am a girl of 25 years and i am contacting you for good relationship and business with trust and Please get back to me with this (E-mail;blessing_Justin@hotmail.com)  so that I will send my photo to you and tell you more about my self. A good friendship is the foundation build on other relative things to come. May God bless you as I wait impatiently to read from you
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-core.c       |   46 +++++++++++++++++++++++++-------------
+ include/linux/mfd/wm831x/core.h |    1 +
+ 2 files changed, 31 insertions(+), 16 deletions(-)
 
-
-Regards,
-
-blessing Justin
+diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
+index 58f033b..e39fce2 100644
+--- a/drivers/mfd/wm831x-core.c
++++ b/drivers/mfd/wm831x-core.c
+@@ -376,6 +376,16 @@ int wm831x_auxadc_read(struct wm831x *wm831x, enum wm831x_auxadc input)
+ 				goto disable;
+ 			}
+ 		}
++
++		ret = wm831x_reg_read(wm831x, WM831X_AUXADC_DATA);
++		if (ret < 0) {
++			dev_err(wm831x->dev,
++				"Failed to read AUXADC data: %d\n", ret);
++			goto disable;
++		}
++
++		wm831x->auxadc_data = ret;
++
+ 	} else {
+ 		/* If we are using interrupts then wait for the
+ 		 * interrupt to complete.  Use an extremely long
+@@ -390,23 +400,18 @@ int wm831x_auxadc_read(struct wm831x *wm831x, enum wm831x_auxadc input)
+ 		}
+ 	}
+ 
+-	ret = wm831x_reg_read(wm831x, WM831X_AUXADC_DATA);
+-	if (ret < 0) {
+-		dev_err(wm831x->dev, "Failed to read AUXADC data: %d\n", ret);
++	src = ((wm831x->auxadc_data & WM831X_AUX_DATA_SRC_MASK)
++	       >> WM831X_AUX_DATA_SRC_SHIFT) - 1;
++
++	if (src == 14)
++		src = WM831X_AUX_CAL;
++
++	if (src != input) {
++		dev_err(wm831x->dev, "Data from source %d not %d\n",
++			src, input);
++		ret = -EINVAL;
+ 	} else {
+-		src = ((ret & WM831X_AUX_DATA_SRC_MASK)
+-		       >> WM831X_AUX_DATA_SRC_SHIFT) - 1;
+-
+-		if (src == 14)
+-			src = WM831X_AUX_CAL;
+-
+-		if (src != input) {
+-			dev_err(wm831x->dev, "Data from source %d not %d\n",
+-				src, input);
+-			ret = -EINVAL;
+-		} else {
+-			ret &= WM831X_AUX_DATA_MASK;
+-		}
++		wm831x->auxadc_data &= WM831X_AUX_DATA_MASK;
+ 	}
+ 
+ disable:
+@@ -421,6 +426,15 @@ static irqreturn_t wm831x_auxadc_irq(int irq, void *irq_data)
+ {
+ 	struct wm831x *wm831x = irq_data;
+ 
++	ret = wm831x_reg_read(wm831x, WM831X_AUXADC_DATA);
++	if (ret < 0) {
++		dev_err(wm831x->dev,
++			"Failed to read AUXADC data: %d\n", ret);
++		wm831x->auxadc_data = 0xffff;
++	} else {
++		wm831x->auxadc_data = ret;
++	}
++
+ 	complete(&wm831x->auxadc_done);
+ 
+ 	return IRQ_HANDLED;
+diff --git a/include/linux/mfd/wm831x/core.h b/include/linux/mfd/wm831x/core.h
+index 1d93cbe..fb6568e 100644
+--- a/include/linux/mfd/wm831x/core.h
++++ b/include/linux/mfd/wm831x/core.h
+@@ -379,6 +379,7 @@ struct wm831x {
+ 
+ 	struct mutex auxadc_lock;
+ 	struct completion auxadc_done;
++	u16 auxadc_data;
+ 
+ 	/* The WM831x has a security key blocking access to certain
+ 	 * registers.  The mutex is taken by the accessors for locking
+-- 
+1.7.5.3
 
