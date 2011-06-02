@@ -1,211 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab1FBNc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 09:32:27 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39891 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab1FBNcY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 09:32:24 -0400
+	id S1755494Ab1FBNez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 09:34:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2593 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752594Ab1FBNex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 09:34:53 -0400
+Date: Thu, 2 Jun 2011 16:34:25 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: Re: [PATCH RFC 3/3] virtio_net: limit xmit polling
+Message-ID: <20110602133425.GJ7141@redhat.com>
+References: <cover.1306921434.git.mst@redhat.com>
+ <1ec8eec325839ecf2eac9930a230361e7956047c.1306921434.git.mst@redhat.com>
+ <87pqmwj3am.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-X-Originating-IP: [226.16.121.39]
-In-Reply-To: <1303251276-18768-1-git-send-email-vpalatin@chromium.org>
-References: <1303251276-18768-1-git-send-email-vpalatin@chromium.org>
-From: Vincent Palatin <vpalatin@chromium.org>
-Date: Thu, 2 Jun 2011 09:32:03 -0400
-X-Google-Sender-Auth: cCvRusQtZARUc3Cr00N-UpMLSwc
-Message-ID: <BANLkTikeTQi6zz+yb4USWwaROFZJW2cfog@mail.gmail.com>
-Subject: Re: [PATCH] i2c: i2c-tegra: fix possible race condition after tx
-To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org
-Cc: Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org,
-        Colin Cross <ccross@android.com>, linux-tegra@vger.kernel.org,
-        Vincent Palatin <vpalatin@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87pqmwj3am.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anyone has a comment on that patch ?
-The I2C driver has been reworked but this issue seems to still exist
+On Thu, Jun 02, 2011 at 01:24:57PM +0930, Rusty Russell wrote:
+> On Wed, 1 Jun 2011 12:50:03 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > Current code might introduce a lot of latency variation
+> > if there are many pending bufs at the time we
+> > attempt to transmit a new one. This is bad for
+> > real-time applications and can't be good for TCP either.
+> > 
+> > Free up just enough to both clean up all buffers
+> > eventually and to be able to xmit the next packet.
+> 
+> OK, I found this quite confusing to read.
+> 
+> > -	while ((skb = virtqueue_get_buf(vi->svq, &len)) != NULL) {
+> > +	while ((r = virtqueue_min_capacity(vi->svq) < MAX_SKB_FRAGS + 2) ||
+> > +	       min_skbs-- > 0) {
+> > +		skb = virtqueue_get_buf(vi->svq, &len);
+> > +		if (unlikely(!skb))
+> > +			break;
+> >  		pr_debug("Sent skb %p\n", skb);
+> >  		vi->dev->stats.tx_bytes += skb->len;
+> >  		vi->dev->stats.tx_packets++;
+> >  		dev_kfree_skb_any(skb);
+> >  	}
+> > +	return r;
+> >  }
+> 
+> Gah... what a horrible loop.
+> 
+> Basically, this patch makes hard-to-read code worse, and we should try
+> to make it better.
+> 
+> Currently, xmit *can* fail when an xmit interrupt wakes the queue, but
+> the packet(s) xmitted didn't free up enough space for the new packet.
+> With indirect buffers this only happens if we hit OOM (and thus go to
+> direct buffers).
+> 
+> We could solve this by only waking the queue in skb_xmit_done if the
+> capacity is >= 2 + MAX_SKB_FRAGS.  But can we do it without a race?
+
+I don't think so.
+
+> If not, then I'd really prefer to see this, because I think it's clearer:
+> 
+>         // Try to free 2 buffers for every 1 xmit, to stay ahead.
+>         free_old_buffers(2)
+> 
+>         if (!add_buf()) {
+>                 // Screw latency, free them all.
+>                 free_old_buffers(UINT_MAX)
+>                 // OK, this can happen if we are using direct buffers,
+>                 // and the xmit interrupt woke us but the packets
+>                 // xmitted were smaller than this one.  Rare though.
+>                 if (!add_buf())
+>                         Whinge and stop queue, maybe loop.
+>         }
+> 
+>         if (capacity < 2 + MAX_SKB_FRAGS) {
+>                 // We don't have enough for the next packet?  Try
+>                 // freeing more.
+>                 free_old_buffers(UINT_MAX);
+>                 if (capacity < 2 + MAX_SKB_FRAGS) {
+>                         Stop queue, maybe loop.
+>         }
+> 
+> The current code makes my head hurt :(
+> 
+> Thoughts?
+> Rusty.
+
+OK, I have something very similar, but I still dislike the screw the
+latency part: this path is exactly what the IBM guys seem to hit.  So I
+created two functions: one tries to free a constant number and another
+one up to capacity. I'll post that now.
+
 
 -- 
-Vincent
-
-On Tue, Apr 19, 2011 at 18:14, Vincent Palatin <vpalatin@chromium.org> wrote:
-> In tegra_i2c_fill_tx_fifo, once we have finished pushing all the bytes
-> to the I2C hardware controller, the interrupt might happen before we
-> have updated i2c_dev->msg_buf_remaining at the end of the function.
-> Then, in tegra_i2c_isr, we will call again tegra_i2c_fill_tx_fifo
-> triggering weird behaviour.
-> Of course, this is unlikely since the I2C bus is slow and thus the ISR
-> is called several hundreds of microseconds after the last register
-> write.
->
-> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-> ---
->  drivers/i2c/busses/i2c-tegra.c |   54 ++++++++++++++++++++++-----------------
->  1 files changed, 30 insertions(+), 24 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> index b4ab39b..c1b119b 100644
-> --- a/drivers/i2c/busses/i2c-tegra.c
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -125,7 +125,7 @@ struct tegra_i2c_dev {
->        struct completion msg_complete;
->        int msg_err;
->        u8 *msg_buf;
-> -       size_t msg_buf_remaining;
-> +       atomic_t msg_buf_remaining;
->        int msg_read;
->        unsigned long bus_clk_rate;
->        bool is_suspended;
-> @@ -213,38 +213,41 @@ static int tegra_i2c_empty_rx_fifo(struct tegra_i2c_dev *i2c_dev)
->        u32 val;
->        int rx_fifo_avail;
->        u8 *buf = i2c_dev->msg_buf;
-> -       size_t buf_remaining = i2c_dev->msg_buf_remaining;
->        int words_to_transfer;
-> +       int bytes_to_transfer;
->
->        val = i2c_readl(i2c_dev, I2C_FIFO_STATUS);
->        rx_fifo_avail = (val & I2C_FIFO_STATUS_RX_MASK) >>
->                I2C_FIFO_STATUS_RX_SHIFT;
->
->        /* Rounds down to not include partial word at the end of buf */
-> -       words_to_transfer = buf_remaining / BYTES_PER_FIFO_WORD;
-> +       words_to_transfer = atomic_read(&i2c_dev->msg_buf_remaining) /
-> +               BYTES_PER_FIFO_WORD;
->        if (words_to_transfer > rx_fifo_avail)
->                words_to_transfer = rx_fifo_avail;
->
-> +       atomic_sub(words_to_transfer * BYTES_PER_FIFO_WORD,
-> +               &i2c_dev->msg_buf_remaining);
->        i2c_readsl(i2c_dev, buf, I2C_RX_FIFO, words_to_transfer);
->
->        buf += words_to_transfer * BYTES_PER_FIFO_WORD;
-> -       buf_remaining -= words_to_transfer * BYTES_PER_FIFO_WORD;
->        rx_fifo_avail -= words_to_transfer;
->
->        /*
->         * If there is a partial word at the end of buf, handle it manually to
->         * prevent overwriting past the end of buf
->         */
-> -       if (rx_fifo_avail > 0 && buf_remaining > 0) {
-> -               BUG_ON(buf_remaining > 3);
-> +       bytes_to_transfer = atomic_read(&i2c_dev->msg_buf_remaining);
-> +       if (rx_fifo_avail > 0 && bytes_to_transfer > 0) {
-> +               BUG_ON(bytes_to_transfer > 3);
-> +               atomic_set(&i2c_dev->msg_buf_remaining, 0);
->                val = i2c_readl(i2c_dev, I2C_RX_FIFO);
-> -               memcpy(buf, &val, buf_remaining);
-> -               buf_remaining = 0;
-> +               memcpy(buf, &val, bytes_to_transfer);
->                rx_fifo_avail--;
->        }
->
-> -       BUG_ON(rx_fifo_avail > 0 && buf_remaining > 0);
-> -       i2c_dev->msg_buf_remaining = buf_remaining;
-> +       BUG_ON(rx_fifo_avail > 0 &&
-> +               atomic_read(&i2c_dev->msg_buf_remaining) > 0);
->        i2c_dev->msg_buf = buf;
->        return 0;
->  }
-> @@ -254,22 +257,24 @@ static int tegra_i2c_fill_tx_fifo(struct tegra_i2c_dev *i2c_dev)
->        u32 val;
->        int tx_fifo_avail;
->        u8 *buf = i2c_dev->msg_buf;
-> -       size_t buf_remaining = i2c_dev->msg_buf_remaining;
->        int words_to_transfer;
-> +       int bytes_to_transfer;
->
->        val = i2c_readl(i2c_dev, I2C_FIFO_STATUS);
->        tx_fifo_avail = (val & I2C_FIFO_STATUS_TX_MASK) >>
->                I2C_FIFO_STATUS_TX_SHIFT;
->
->        /* Rounds down to not include partial word at the end of buf */
-> -       words_to_transfer = buf_remaining / BYTES_PER_FIFO_WORD;
-> +       words_to_transfer = atomic_read(&i2c_dev->msg_buf_remaining) /
-> +               BYTES_PER_FIFO_WORD;
->        if (words_to_transfer > tx_fifo_avail)
->                words_to_transfer = tx_fifo_avail;
->
-> +       atomic_sub(words_to_transfer * BYTES_PER_FIFO_WORD,
-> +               &i2c_dev->msg_buf_remaining);
->        i2c_writesl(i2c_dev, buf, I2C_TX_FIFO, words_to_transfer);
->
->        buf += words_to_transfer * BYTES_PER_FIFO_WORD;
-> -       buf_remaining -= words_to_transfer * BYTES_PER_FIFO_WORD;
->        tx_fifo_avail -= words_to_transfer;
->
->        /*
-> @@ -277,16 +282,17 @@ static int tegra_i2c_fill_tx_fifo(struct tegra_i2c_dev *i2c_dev)
->         * prevent reading past the end of buf, which could cross a page
->         * boundary and fault.
->         */
-> -       if (tx_fifo_avail > 0 && buf_remaining > 0) {
-> -               BUG_ON(buf_remaining > 3);
-> -               memcpy(&val, buf, buf_remaining);
-> +       bytes_to_transfer = atomic_read(&i2c_dev->msg_buf_remaining);
-> +       if (tx_fifo_avail > 0 && bytes_to_transfer > 0) {
-> +               BUG_ON(bytes_to_transfer > 3);
-> +               memcpy(&val, buf, bytes_to_transfer);
-> +               atomic_set(&i2c_dev->msg_buf_remaining, 0);
->                i2c_writel(i2c_dev, val, I2C_TX_FIFO);
-> -               buf_remaining = 0;
->                tx_fifo_avail--;
->        }
->
-> -       BUG_ON(tx_fifo_avail > 0 && buf_remaining > 0);
-> -       i2c_dev->msg_buf_remaining = buf_remaining;
-> +       BUG_ON(tx_fifo_avail > 0 &&
-> +               atomic_read(&i2c_dev->msg_buf_remaining) > 0);
->        i2c_dev->msg_buf = buf;
->        return 0;
->  }
-> @@ -364,21 +370,21 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
->        }
->
->        if (i2c_dev->msg_read && (status & I2C_INT_RX_FIFO_DATA_REQ)) {
-> -               if (i2c_dev->msg_buf_remaining)
-> +               if (atomic_read(&i2c_dev->msg_buf_remaining))
->                        tegra_i2c_empty_rx_fifo(i2c_dev);
->                else
->                        BUG();
->        }
->
->        if (!i2c_dev->msg_read && (status & I2C_INT_TX_FIFO_DATA_REQ)) {
-> -               if (i2c_dev->msg_buf_remaining)
-> +               if (atomic_read(&i2c_dev->msg_buf_remaining))
->                        tegra_i2c_fill_tx_fifo(i2c_dev);
->                else
->                        tegra_i2c_mask_irq(i2c_dev, I2C_INT_TX_FIFO_DATA_REQ);
->        }
->
->        if ((status & I2C_INT_PACKET_XFER_COMPLETE) &&
-> -                       !i2c_dev->msg_buf_remaining)
-> +                       !atomic_read(&i2c_dev->msg_buf_remaining))
->                complete(&i2c_dev->msg_complete);
->
->        i2c_writel(i2c_dev, status, I2C_INT_STATUS);
-> @@ -408,7 +414,7 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
->                return -EINVAL;
->
->        i2c_dev->msg_buf = msg->buf;
-> -       i2c_dev->msg_buf_remaining = msg->len;
-> +       atomic_set(&i2c_dev->msg_buf_remaining, msg->len);
->        i2c_dev->msg_err = I2C_ERR_NONE;
->        i2c_dev->msg_read = (msg->flags & I2C_M_RD);
->        INIT_COMPLETION(i2c_dev->msg_complete);
-> @@ -440,7 +446,7 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
->        int_mask = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST;
->        if (msg->flags & I2C_M_RD)
->                int_mask |= I2C_INT_RX_FIFO_DATA_REQ;
-> -       else if (i2c_dev->msg_buf_remaining)
-> +       else if (atomic_read(&i2c_dev->msg_buf_remaining))
->                int_mask |= I2C_INT_TX_FIFO_DATA_REQ;
->        tegra_i2c_unmask_irq(i2c_dev, int_mask);
->        dev_dbg(i2c_dev->dev, "unmasked irq: %02x\n",
-> --
-> 1.7.3.1
+MST
