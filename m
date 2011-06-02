@@ -1,73 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759787Ab1FBJFV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 05:05:21 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54279 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407Ab1FBJFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 05:05:19 -0400
-Date: Thu, 2 Jun 2011 11:05:09 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 4/6] MAINTAINERS: Remove unused PERFORMANCE EVENTS pattern
-Message-ID: <20110602090509.GB7800@elte.hu>
-References: <cover.1306950701.git.joe@perches.com>
- <8d1e596980a6b6fec79432bb5a5953985cf85c2f.1306950701.git.joe@perches.com>
- <20110602074057.GE2150@elte.hu>
- <1307003167.32125.59.camel@Joe-Laptop>
+	id S932548Ab1FBJGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 05:06:55 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63332 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758412Ab1FBJGx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 05:06:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nJsB3WGw1/c6jvANclWN31s++X+0qaOMi9HOby0exYuSxJVLQxZDNqgHITEE51IGwD
+         05nwIxvBXDM0I9zd7kMx2fjev8IH4FtQWAE9iFOVdEwCb4d3l6GExvnw5CQf5l2xeP1F
+         XwUyBKgUZEVejkRk1aUqK+3WHxgXUgCdAIKws=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307003167.32125.59.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110602073335.GA20630@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+	<BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
+	<20110602073335.GA20630@cmpxchg.org>
+Date: Thu, 2 Jun 2011 18:06:51 +0900
+Message-ID: <BANLkTikztP6RoyBgMqUHgrzJFLZrHMCs=Q@mail.gmail.com>
+Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
+From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Joe Perches <joe@perches.com> wrote:
-
-> On Thu, 2011-06-02 at 09:40 +0200, Ingo Molnar wrote:
-> > * Joe Perches <joe@perches.com> wrote:
-> > > No arch/*/lib/perf_event* files exist so remove the pattern.
-> > The arch/*/lib/ hierarchy is a common place to put stuff into, it 
-> > does not hurt at all to have it mentioned.
-> 
-> Every once in awhile I run a script on MAINTAINERS
-> and fix up defects found by the script.
+2011/6/2 Johannes Weiner <hannes@cmpxchg.org>:
+> On Thu, Jun 02, 2011 at 08:52:47AM +0900, Hiroyuki Kamezawa wrote:
+>> 2011/6/1 Johannes Weiner <hannes@cmpxchg.org>:
+>> Hmm, I welcome and will review this patches but.....some points I want to say.
+>>
+>> 1. No more conflict with Ying's work ?
+>>     Could you explain what she has and what you don't in this v2 ?
+>>     If Ying's one has something good to be merged to your set, please
+>> include it.
 >
-> Dead code is dead code.
-> This was unused as of commit e360adbe2924.
+> The problem is that the solution we came up with at LSF, i.e. the
+> one-dimensional linked list of soft limit-exceeding memcgs, is not
+> adequate to represent the hierarchy structure of memcgs.
+>
+> My solution is fundamentally different, so I don't really see possible
+> synergy between the patch series right now.
+>
+> This was the conclusion last time:
+> http://marc.info/?l=linux-mm&m=130564056215365&w=2
+>
 
-NAK, i've outlined my reasons:
+Hmm, will look.
 
- - It's an obvious pattern to put librarized functionality in there
-   and should an architecture grow a file there in the future it
-   will be included automatically.
+IIUC, current design of per-zone tree is for supoorting current policy
+in efficient way as "pick up the largest usage excess memcg"
 
- - What we are interested in are false positives (files included that
-   should not be matched) and false negatives (files belonging to a
-   subsystm not included) - this pattern is none of those.
+If we change policy, it's natural to make changes in implementation.
 
-> > stop mucking with these patterns and start dealing with some of 
-> > the more important problems we have?
-> 
-> My time, my choice on what to do with it.
 
-Yes, but this time you are also wasting my time with such a stupid 
-patch, so it's not just your time wasted anymore.
+>> 2. it's required to see performance score in commit log.
+>
+> The patch series is not a performance optimization.  But I can include
+> it to prove there are no regressions.
+>
+yes, it's helpful.
+
+
+>> 4. This work can be splitted into some small works.
+>>      a) fix for current code and clean ups
+>>      a') statistics
+>>      b) soft limit rework
+>>      c) change global reclaim
+>>
+>>   I like (a)->(b)->(c) order. and while (b) you can merge your work
+>> with Ying's one.
+>>   And for a') , I'd like to add a new file memory.reclaim_stat as I've
+>> already shown.
+>>   and allow resetting.
+>
+> Resetting reclaim statistics is a nice idea, let me have a look.
+> Sorry, I am a bit behind on reviewing other patches...
+>
+I think I'll cut-out the patch and merge it before my full work.
+
+
+>>   Hmm, how about splitting patch 2/8 into small patches and see what happens in
+>>   3.2 or 3.3 ? While that, we can make softlimit works better.
+>>   (and once we do 2/8, our direction will be fixed to the direction to
+>> remove global LRU.)
+>
+> Do you have specific parts in mind that could go stand-alone?
+>
+> One thing I can think of is splitting up those parts:
+>
+>  1. move /target/ reclaim to generic code
+>
+>  2. convert /global/ reclaim from global lru to hierarchy reclaim
+>     including root_mem_cgroup
+>
+
+Hmm, at brief look
+patch 2/8
+ - hierarchy walk rewrite code should be stand alone and can be merged
+1st, as clean-up
+ - root cgroup LRU handling was required for performance. I think we
+removed tons of
+  atomic ops and can remove that special handling personally. But this change of
+  root cgroup handling should be in separate patch. with performance report.
+....
+
+I'll do close look later, sorry.
+-Kame
+
+
+
+>> 5. please write documentation to explain what new LRU do.
+>
+> Ok.
+>
+>> BTW, after this work, lists of ROOT cgroup comes again. I may need to check
+>> codes which see memcg is ROOT or not. Because we removed many atomic
+>> ops in memcg, I wonder ROOT cgroup can be accounted again..
+>
+> Oh, please do if you can find the time.  The memcg lru rules are
+> scary!
+>
+
+IIRC, It was requested by Red*at ;)
 
 Thanks,
-
-	Ingo
+-Kame
