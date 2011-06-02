@@ -1,42 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab1FBRML (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 13:12:11 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:25706 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753037Ab1FBRMK (ORCPT
+	id S1753593Ab1FBRP3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 13:15:29 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:52364 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076Ab1FBRP1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 13:12:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=sB+0f7AzKFS+GBvo1eD9pZs3AhNu0G0oLdzQ3tQjSFp/j6eCOC/C+Eizf2q3cECUAD
-         cW8EPNuqi0ReoeIVVfeA==
-Date: Thu, 2 Jun 2011 10:12:01 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Suleiman Souhlal <ssouhlal@freebsd.org>
-cc: penberg@kernel.org, suleiman@google.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cl@linux-foundation.org, mpm@selenic.com
-Subject: Re: [PATCH] SLAB: Record actual last user of freed objects.
-In-Reply-To: <1306999002-29738-1-git-send-email-ssouhlal@FreeBSD.org>
-Message-ID: <alpine.DEB.2.00.1106021011510.18350@chino.kir.corp.google.com>
-References: <1306999002-29738-1-git-send-email-ssouhlal@FreeBSD.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 2 Jun 2011 13:15:27 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-132.messagelabs.com!1307034926!27644983!1
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.98]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] gpio: Samsung: make Kconfig options def_bool
+Date: Thu, 2 Jun 2011 10:14:58 -0700
+User-Agent: KMail/1.9.9
+CC: <kyungmin.park@samsung.com>, <grant.likely@secretlab.ca>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Message-ID: <201106021014.59699.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Jun 2011, Suleiman Souhlal wrote:
+The Samsung GPIO drivers are always built-in when the relevant
+platform is selected.  Change the Kconfig symbol to def_bool y
+dependant on the platform.
 
-> Currently, when using CONFIG_DEBUG_SLAB, we put in kfree() or
-> kmem_cache_free() as the last user of free objects, which is not
-> very useful, so change it to the caller of those functions instead.
-> 
-> Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
 
-Acked-by: David Rientjes <rientjes@google.com>
+---
+
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 18c0b31..2e3cd11 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -87,32 +87,20 @@ config GPIO_IT8761E
+ 	  Say yes here to support GPIO functionality of IT8761E super I/O chip.
+ 
+ config GPIO_EXYNOS4
+-	bool "Samsung Exynos4 GPIO library support"
+-	default y
+-	depends on ARM && CPU_EXYNOS4210
+-	help
+-	  Say yes here to support Samsung Exynos4 series SoCs GPIO library
++	def_bool y
++	depends on CPU_EXYNOS4210
+ 
+ config GPIO_PLAT_SAMSUNG
+-	bool "Samsung SoCs GPIO library support"
+-	default y
+-	depends on ARM && SAMSUNG_GPIOLIB_4BIT
+-	help
+-	  Say yes here to support Samsung SoCs GPIO library
++	def_bool y
++	depends on SAMSUNG_GPIOLIB_4BIT
+ 
+ config GPIO_S5PC100
+-	bool "Samsung S5PC100 GPIO library support"
+-	default y
+-	depends on ARM && CPU_S5PC100
+-	help
+-	  Say yes here to support Samsung S5PC100 SoCs GPIO library
++	def_bool y
++	depends on CPU_S5PC100
+ 
+ config GPIO_S5PV210
+-	bool "Samsung S5PV210/S5PC110 GPIO library support"
+-	default y
+-	depends on ARM && CPU_S5PV210
+-	help
+-	  Say yes here to support Samsung S5PV210/S5PC110 SoCs GPIO library
++	def_bool y
++	depends on CPU_S5PV210
+ 
+ config GPIO_PL061
+ 	bool "PrimeCell PL061 GPIO support"
