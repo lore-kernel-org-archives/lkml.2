@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574Ab1FBOYP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 10:24:15 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:54691 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab1FBOYO (ORCPT
+	id S1751327Ab1FBOW6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 10:22:58 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:45059 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab1FBOW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 10:24:14 -0400
-Message-Id: <201106021424.p52EO91O006974@lab-17.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 2 Jun 2011 10:19:41 -0400
-Subject: [PATCH] slub: always align cpu_slab to honor cmpxchg_double requirement
-To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-X-OriginalArrivalTime: 02 Jun 2011 14:24:11.0497 (UTC) FILETIME=[BDE54D90:01CC2130]
+	Thu, 2 Jun 2011 10:22:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=FzUUWcOkVbdUOCaB3ogxEh3UoOhnFVEzkXBZsGkjfQWzlo9C17/GTtFZHiDumvoYQq
+         0dKMYGjRU5ZZKZWhn2zW1lGG6tdV0uLD2MjZBVkqq1IqZfvjeRyHJXY7MEnaDO23yEHx
+         8VOelG0ETboqYCIYElXsBWjC/cv9cKiQp1LIo=
+Date: Thu, 2 Jun 2011 17:22:42 +0300
+From: Maxin B John <maxin.john@gmail.com>
+To: eike-kernel@sf-tec.de
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, dima@android.com, willy@linux.intel.com,
+        segooon@gmail.com, tj@kernel.org, jkosina@suse.cz, tglx@linutronix.de
+Subject: Re: [PATCH] mm: dmapool: fix possible use after free in
+ dmam_pool_destroy()
+Message-ID: <20110602142242.GA4115@maxin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On an architecture without CMPXCHG_LOCAL but with DEBUG_VM enabled,
-the VM_BUG_ON() in __pcpu_double_call_return_bool() will cause an early
-panic during boot unless we always align cpu_slab properly.
+On Thu, Jun 2, 2011 at 12:47 PM, Rolf Eike Beer <eike-kernel@sf-tec.de> wrote:
+> Maxin B John wrote:
+>> "dma_pool_destroy(pool)" calls "kfree(pool)". The freed pointer
+>> "pool" is again passed as an argument to the function "devres_destroy()".
+>> This patch fixes the possible use after free.
+>
+> The pool itself is not used there, only the address where the pool
+> has been.This will only lead to any trouble if something else is allocated to
+> the same place and inserted into the devres list of the same device between
+> the dma_pool_destroy() and devres_destroy().
 
-In principle we could remove the alignment-testing VM_BUG_ON() for
-architectures that don't have CMPXCHG_LOCAL, but leaving it in means
-that new code will tend not to break x86 even if it is introduced
-on another platform, and it's low cost to require alignment.
+Thank you very much for explaining it in detail. 
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> But I agree that this is bad style. But if you are going to change
+> this please also have a look at devm_iounmap() in lib/devres.c. Maybe also the
+> devm_*irq* functions need the same changes.
+
+As per your suggestion, I have made similar modifications for lib/devres.c and
+kernel/irq/devres.c
+
+CCed the maintainers of the respective files.
+ 
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
 ---
-This needs to be pushed for 3.0 to allow arch/tile to boot.
-I'm happy to push it but I assume it would be better coming
-from an mm or percpu tree.  Thanks!
-
- include/linux/percpu.h |    3 +++
- mm/slub.c              |   12 ++++--------
- 2 files changed, 7 insertions(+), 8 deletions(-)
-
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index 8b97308..9ca008f 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -259,6 +259,9 @@ extern void __bad_size_call_parameter(void);
-  * Special handling for cmpxchg_double.  cmpxchg_double is passed two
-  * percpu variables.  The first has to be aligned to a double word
-  * boundary and the second has to follow directly thereafter.
-+ * We enforce this on all architectures even if they don't support
-+ * a double cmpxchg instruction, since it's a cheap requirement, and it
-+ * avoids breaking the requirement for architectures with the instruction.
+diff --git a/kernel/irq/devres.c b/kernel/irq/devres.c
+index 1ef4ffc..bd8e788 100644
+--- a/kernel/irq/devres.c
++++ b/kernel/irq/devres.c
+@@ -87,8 +87,8 @@ void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id)
+ {
+ 	struct irq_devres match_data = { irq, dev_id };
+ 
+-	free_irq(irq, dev_id);
+ 	WARN_ON(devres_destroy(dev, devm_irq_release, devm_irq_match,
+ 			       &match_data));
++	free_irq(irq, dev_id);
+ }
+ EXPORT_SYMBOL(devm_free_irq);
+diff --git a/lib/devres.c b/lib/devres.c
+index 6efddf5..7c0e953 100644
+--- a/lib/devres.c
++++ b/lib/devres.c
+@@ -79,9 +79,9 @@ EXPORT_SYMBOL(devm_ioremap_nocache);
   */
- #define __pcpu_double_call_return_bool(stem, pcp1, pcp2, ...)		\
- ({									\
-diff --git a/mm/slub.c b/mm/slub.c
-index 7be0223..35f351f 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2320,16 +2320,12 @@ static inline int alloc_kmem_cache_cpus(struct kmem_cache *s)
- 	BUILD_BUG_ON(PERCPU_DYNAMIC_EARLY_SIZE <
- 			SLUB_PAGE_SHIFT * sizeof(struct kmem_cache_cpu));
+ void devm_iounmap(struct device *dev, void __iomem *addr)
+ {
+-	iounmap(addr);
+ 	WARN_ON(devres_destroy(dev, devm_ioremap_release, devm_ioremap_match,
+ 			       (void *)addr));
++	iounmap(addr);
+ }
+ EXPORT_SYMBOL(devm_iounmap);
  
--#ifdef CONFIG_CMPXCHG_LOCAL
- 	/*
--	 * Must align to double word boundary for the double cmpxchg instructions
--	 * to work.
-+	 * Must align to double word boundary for the double cmpxchg
-+	 * instructions to work; see __pcpu_double_call_return_bool().
- 	 */
--	s->cpu_slab = __alloc_percpu(sizeof(struct kmem_cache_cpu), 2 * sizeof(void *));
--#else
--	/* Regular alignment is sufficient */
--	s->cpu_slab = alloc_percpu(struct kmem_cache_cpu);
--#endif
-+	s->cpu_slab = __alloc_percpu(sizeof(struct kmem_cache_cpu),
-+				     2 * sizeof(void *));
- 
- 	if (!s->cpu_slab)
- 		return 0;
--- 
-1.6.5.2
-
