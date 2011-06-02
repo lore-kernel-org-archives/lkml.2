@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932905Ab1FBJbO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 05:31:14 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:35867 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932439Ab1FBJbN (ORCPT
+	id S1758566Ab1FBJad (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 05:30:33 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:35476 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021Ab1FBJab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 05:31:13 -0400
-Date: Thu, 2 Jun 2011 11:30:26 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 11/12] vfs: increase shrinker batch size
-Message-ID: <20110602113026.7291b1a7@absol.kitzblitz>
-In-Reply-To: <1306998067-27659-12-git-send-email-david@fromorbit.com>
-References: <1306998067-27659-1-git-send-email-david@fromorbit.com>
- <1306998067-27659-12-git-send-email-david@fromorbit.com>
-Organization: -
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
- AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
- T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
- ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
- BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Jun 2011 05:30:31 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: tty breakage in X (Was: tty vs workqueue oddities)
+References: <1306999045.29297.55.camel@pasglop>
+	<1307003821.29297.77.camel@pasglop>
+X-Yow: Hello.  Just walk along and try NOT to think about your
+ INTESTINES being almost FORTY YARDS LONG!!
+Date: Thu, 02 Jun 2011 11:30:27 +0200
+In-Reply-To: <1307003821.29297.77.camel@pasglop> (Benjamin Herrenschmidt's
+	message of "Thu, 02 Jun 2011 18:37:01 +1000")
+Message-ID: <m2pqmwpolo.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just noticed below two typos.
+Benjamin Herrenschmidt <benh@kernel.crashing.org> writes:
 
-* Dave Chinner <david@fromorbit.com>:
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> Now that the per-sb shrinker is responsible for shrinking 2 or more
-> caches, increase the batch size to keep econmies of scale for
+> It looks like the patch is causing some major malfunctions of the X
+> server for me, possibly related to PTYs. For example, cat'ing a large
+> file in a gnome terminal hangs the kernel for -minutes- in a loop of
+> what looks like flush_to_ldisc/workqueue code, (some ftrace data in the
+> quoted bits further down). 
 
-economies
+Btw., do you already have d72bce0 ("rcu: Cure load woes")?  Although
+that is about an independent bug, it appears to amplify this issue a
+lot.
 
-(..)
+Andreas.
 
->  Documentation/filesystems/vfs.txt |    5 +++++
->  fs/super.c                        |    1 +
->  2 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-> index dc732d2..2e26973 100644
-> --- a/Documentation/filesystems/vfs.txt
-> +++ b/Documentation/filesystems/vfs.txt
-> @@ -317,6 +317,11 @@ or bottom half).
->  	the VM is trying to reclaim under GFP_NOFS conditions, hence this
->  	method does not need to handle that situation itself.
->  
-> +	Implementations must include conditional reschedule calls inside any
-> +	scanning loop that is done. This allows the VFS to determine
-> +	appropriate scan batch sizes without having to worry about whether
-> +	implementations will cause holdoff problems due ot large batch sizes.
-
-due to
-
-Best regards,
-Nicolas Kaiser
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
