@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124Ab1FBKFq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 06:05:46 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54366 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932138Ab1FBKFp (ORCPT
+	id S933394Ab1FBKPD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 06:15:03 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:37522 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933310Ab1FBKPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 06:05:45 -0400
-Date: Thu, 2 Jun 2011 11:07:27 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: gregkh@suse.de,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: tty breakage in X (Was: tty vs workqueue oddities)
-Message-ID: <20110602110727.7343782b@lxorguk.ukuu.org.uk>
-In-Reply-To: <1307003821.29297.77.camel@pasglop>
-References: <1306999045.29297.55.camel@pasglop>
-	<1307003821.29297.77.camel@pasglop>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 2 Jun 2011 06:15:00 -0400
+Message-ID: <4DE7629D.80205@canonical.com>
+Date: Thu, 02 Jun 2011 18:14:53 +0800
+From: Ike Panhc <ike.pan@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Corentin Chary <corentin.chary@gmail.com>
+CC: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 2/3] ideapad: Add nodes in sysfs
+References: <1307006553-12667-1-git-send-email-ike.pan@canonical.com>	<1307006645-12702-1-git-send-email-ike.pan@canonical.com> <BANLkTik+-wMXcCgSb8cCWx6wxrT0JgAbpnbGqizCpk+3F6Wx_g@mail.gmail.com>
+In-Reply-To: <BANLkTik+-wMXcCgSb8cCWx6wxrT0JgAbpnbGqizCpk+3F6Wx_g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 02 Jun 2011 18:37:01 +1000
-Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+On 06/02/2011 05:48 PM, Corentin Chary wrote:
+> Hi Ike,
+> Why do you want to add /sys/devices/platform/ideapad/brightness and
+>     /sys/devices/platform/ideapad/backlight ?
+> Both of these files should be handled by the generic backlight class
+> (using brightness and bl_power).
 
-> On Thu, 2011-06-02 at 17:17 +1000, Benjamin Herrenschmidt wrote:
-> > Hi Alan !
-> 
-> Hrm... looks like Alan is innocent ... interesting tho, the culprit
-> patch looks like something he (or somebody known to understand the tty
-> code :-) should have reviewed.
+This is within VPC2004. In DSDT they are different device from generic
+backlight.
 
-I did review it, and ran it and it worked beautifully on my system 8)
-
-I do wonder if it has an interaction with Linus earlier changes to queue
-flushing as I've never tested both together.
-
+and I try bl_power but can not turning off power of whole LCD. No idea
+how screensaver do it, looks like just cut off video signal.
+  
