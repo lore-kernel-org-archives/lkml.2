@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759096Ab1FBMnQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 08:43:16 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41094 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758645Ab1FBMnP (ORCPT
+	id S933549Ab1FBMuB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 08:50:01 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59891 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab1FBMuA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 08:43:15 -0400
-Date: Thu, 2 Jun 2011 13:43:38 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
+	Thu, 2 Jun 2011 08:50:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=vrfy.org; s=google;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=YWySb09TAS/s50u2q/pUT1YXk9xs7W3HZ5la6YckQ5VhYRKdU64gvm11SebK7YmyXa
+         zHl4gDID5T/v6BIBAFiGUPOpo3d+HfiNmPBX+iMjjml4MZKzv11CSXr1HY0ovu34m+HJ
+         WuBbx230NCAzP7v5pu925tC/Wio1Z40nSOPoY=
+MIME-Version: 1.0
+In-Reply-To: <1306957788-12310-1-git-send-email-wad@chromium.org>
+References: <1306957788-12310-1-git-send-email-wad@chromium.org>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 2 Jun 2011 14:49:44 +0200
+Message-ID: <BANLkTimi2o4vnSWp5rQGrU3BTSC+YyO0qg@mail.gmail.com>
+Subject: Re: [PATCH] init: add root=PARTUUID=UUID+/-%d support
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>
-Subject: Re: [PATCH] sysctl: add support for poll()
-Message-ID: <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
-In-Reply-To: <BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com>
-References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
-	<BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com>
-	<m18vtkq57c.fsf@fess.ebiederm.org>
-	<BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Namhyung Kim <namhyung@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Host names are dynamic, can change during system runtime by dhcp or
-> similar setups, or just get changed by the user.
+On Wed, Jun 1, 2011 at 21:49, Will Drewry <wad@chromium.org> wrote:
+> Not sure if this is practical and/or interesting to others, but it's a
+> minimal change --
+>
+> Expands root=PARTUUID=UUID syntax to support selecting a root partition
+> by integer offset from a known, unique partition.  This approach
+> provides similar properties to specifying a device and partition number,
+> but using the UUID as the unique path prior to evaluating the offset.
+>
+> For example,
+>  root=PARTUUID=99DE9194-FC15-4223-9192-FC243948F88B+1
+> selects the partition with UUID 99DE.. then select the next
+> partition.
+>
+> This change is motivated by a particular usecase in Chromium OS where
+> the bootloader can easily determine what partition it is on (by UUID)
+> but doesn't perform general partition table walking.
+>
+> That said, support for this approach provides a direct mechanism for the
+> user to modify the root partition to boot without specifically needing
+> to extract each PARTUUID or update the bootloader explicitly when the
+> root partition UUID is changed (if it is recreated to be larger, for
+> instance, restored, etc).  Pinning to a /boot partition UUID with an
+> offset allows the arbitrary root partition reconfiguration/modifications
+> with slightly less ambiguity than just [dev][partition] and less
+> stringency than the specific root partition UUID.
 
-I don't actually see what this has to do with utsname. uname historically
-defined nodename as "name within an implementation-defined communications
-network" and actually tended to be the UUCP name. Modern SuS says "`the
-name of the node of the communications network to which this node is
-attached, if any"
+Kind of a creative notation to add/substract something from a uuid. :)
 
-The latter unfortunately makes no sense anyway and is a fine example of
-standards body cluelessness as name mapping on IP networks is not one
-name per host, and also because the standard doesn't require the fields
-in the struct are long enough to hold a DNS name!
+If we are not sure we'll not need another magic thing in the future,
+we might want to go for a named parameter to add?
+Maybe instead of:
+  root=PARTUUID=99DE9194-FC15-4223-9192-FC243948F88B+2
+we could do:
+  root=PARTUUID=99DE9194-FC15-4223-9192-FC243948F88B,PARTNROFF=2
 
-(Indeed in its usual head up backside manner its technically valid to
-define
+Might be it's a but over the top, but the key is named PARTUUID, and a
++- to it doesn't seem to explain what it does and can not really be
+expanded for even more creative uses. :)
 
-	char nodename[1];
-
-and have only \0 as a valid reply)
-
-Realistically all the naming policy has to be in userspace, and that
-means that all the userspace bits have to agree on what they use utsname
-for (or indeed if they are wise not use nodename in the first place) so
-they can handle name management outside of kernel.
-
-In the DHCP case for example a node which is acquiring a DHCP address on
-wireless and on ethernet at the same time (very typical) has to make sure
-all its DHCP and other address management policies agree rather than have
-the two have a kernel food fight over the name to use.
-
-So this all belongs in conman, network manager and other similar
-systems and I'd suggest they try and deal with the meaningful IP world
-questions of "what list of names do I posess for purpose X on network Y"
-and "is this one of my names on ..."
-
-> The alternative is to have a process constantly polling and reading
-> the file, which is nothing we even want to think about in 2011.
-
-Or to manage it properly.
-
-> It's just another special case to bring us out of the UNIX stone age
-> of doing things. :)
-
-Unfortunately not. It's a misguided attempt to follow stone age Unix 'one
-short name' policy. Forget utsname node names, they are a historical
-quirk of UUCP and friends and on many OS platforms will be limited to 15
-chars !
-
-As to poll in general I can see some of the other proc files being
-more relevant, eg for process monitoring tools being able to poll
-in /proc/<pid> and some of the proc/sys and sysctl data that does change
-meaningfully. Utsname however is not one of those things.
-
-
-Alan
+Kay
