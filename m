@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab1FBOxm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 10:53:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44622 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab1FBOxk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 10:53:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Mzw2sI3sCx2+/ITMFHAtLTO7HihfyU+Bqasj3SzLmd4Y7x7MyLNPflVUnBh4dvGDER
-         qvCxgeXhEID8qPeNudW8eNXbD2ln3x4dm76N2o9bPTui8RvEeH2q3V/v8yNp2DGhV6B8
-         yJqsKircHIxlVHltIvH2IJsLDiBOe8DMAUFzg=
+	id S1752707Ab1FBO4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 10:56:42 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:56535 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752544Ab1FBO4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 10:56:41 -0400
+Date: Thu, 2 Jun 2011 16:56:35 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/usb/gadget/inode.c: add missing kfree
+In-Reply-To: <Pine.LNX.4.44L0.1106021035500.1913-100000@iolanthe.rowland.org>
+Message-ID: <Pine.LNX.4.64.1106021656060.430@ask.diku.dk>
+References: <Pine.LNX.4.44L0.1106021035500.1913-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <4DE55AE9.90505@fb.com>
-References: <1306869046-20172-1-git-send-email-asharma@fb.com>
- <1306869046-20172-2-git-send-email-asharma@fb.com> <BANLkTi=Tg=t5LrnvR2Sn08K0Ktm8ZKNCCA@mail.gmail.com>
- <4DE55AE9.90505@fb.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 2 Jun 2011 10:53:18 -0400
-Message-ID: <BANLkTi=nKqwFKt8boNHQ=imgEz0fdyGCqw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] atomic: move atomic_add_unless to generic code
-To: Arun Sharma <asharma@fb.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        David Miller <davem@davemloft.net>, Andrew Morton <akpm@osdl.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 31, 2011 at 17:17, Arun Sharma wrote:
-> On 5/31/11 1:21 PM, Mike Frysinger wrote:
->> On Tue, May 31, 2011 at 15:10, Arun Sharma wrote:
->>>
->>> This is in preparation for more generic atomic
->>> primitives based on __atomic_add_unless.
->>
->> i think you might have to have those primitives in place before this
->> patch makes sense.  the only thing this does is hoist a single
->> comparison out of arch atomic.h's and into linux/atomic.h.  this
->> savings alone looks simply like over engineering to me.
->
-> Some of the context is buried in the lkml-reference. The main motivation for
-> the patch is commit 686a7e3.
->
-> The idea is to move atomic_add_unless_return() into linux/atomic.h
+On Thu, 2 Jun 2011, Alan Stern wrote:
 
-my point is that that patchset doesnt seem to exist yet, and it'd
-probably make sense to have it ready and part of this series before
-attempting to push this.
--mike
+> On Thu, 2 Jun 2011, Julia Lawall wrote:
+> 
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > The label fail frees dev->buf, but kbuf hasn't yet been stored there at
+> > this point.
+> 
+> ...
+> 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > ---
+> > I wonder if it is really correct to free dev->buf at fail in this case.
+> > Because it is freeing the previously allocated value of dev->buf, not the
+> > current one as done in subsequent cases.
+> 
+> I don't think it matters.  This check is probably there only for 
+> safety; it should not be possible for dev->buf to be non-NULL at this 
+> point.  You ought to be able to remove the entire
+> 
+> 	if (dev->buf)
+> 		goto fail;
+> 
+> statement with no ill effects.
+
+I can send such a patch if you think it is OK.  But I have no way to test 
+it.
+
+julia
