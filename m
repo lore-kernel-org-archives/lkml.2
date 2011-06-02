@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab1FBGPt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 02:15:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48379 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab1FBGPr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 02:15:47 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 3/8] MFD: twl4030-audio: Rename platform data
-Date: Thu, 2 Jun 2011 09:15:46 +0300
-User-Agent: KMail/1.13.7 (Linux/2.6.39-gentoo; KDE/4.6.3; x86_64; ; )
-CC: "Girdwood, Liam" <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-References: <1306927051-8937-1-git-send-email-peter.ujfalusi@ti.com> <201106011617.14854.peter.ujfalusi@ti.com> <20110601133823.GI11352@atomide.com>
-In-Reply-To: <20110601133823.GI11352@atomide.com>
+	id S932681Ab1FBGRD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 02:17:03 -0400
+Received: from trent.utfs.org ([194.246.123.103]:44842 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756591Ab1FBGRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 02:17:01 -0400
+Date: Wed, 1 Jun 2011 23:16:55 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux ppc dev <linuxppc-dev@lists.ozlabs.org>, linville@tuxdriver.com,
+        benh@kernel.crashing.org
+Subject: Re: 3.0-rc1: powerpc hangs at Kernel virtual memory layout
+In-Reply-To: <BANLkTi=JRDrzn=-d8jVqZLPGtV1osa1eiw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.01.1106012310580.21697@trent.utfs.org>
+References: <alpine.DEB.2.01.1105311644010.21697@trent.utfs.org> <alpine.DEB.2.01.1106011712270.21697@trent.utfs.org> <BANLkTi=JRDrzn=-d8jVqZLPGtV1osa1eiw@mail.gmail.com>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: TEXT/PLAIN; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-ID: <201106020915.46491.peter.ujfalusi@ti.com>
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 June 2011 16:38:23 Tony Lindgren wrote:
-> But you could easily remove all the board specific struct
-> twl4030_codec_data and struct twl4030_codec_audio_data entries by adding a
-> default audio init option to omap_pmic_init for the common configuration.
-
-Yeah, I can grep in the board files, and see what is the most common 
-configuration
-
-> How about something like:
+On Thu, 2 Jun 2011 at 08:07, Rafał Miłecki wrote:
+> 1) You didn't see (like Andres):
+> Machine check in kernel mode.
+>  Caused by (from SRR1=149030): Transfer error ack signal
+>  Oops: Machine check, sig: 7 [#1]
+> But, OK, maybe machine check requires something additional in kernel,
+> I don't know...
 > 
-> void omap_pmic_init(int bus, u32 clkrate, const char *pmic_type, int
-> pmic_irq, struct twl4030_platform_data *pmic_data, u32 flags);
+> 2) You didn't see SSB messages
+> This is confusing. You should see SSB messages that appear before my
+> invalid read happens. Did you somehow disable most of the important
+> logs, or sth? Having ssb messages and the end of hung boot would
+> directly point you to ssb module.
 
-common-board-devices.c has omap_pmic_init, but without the flags.
+BenH advised to boot with udbg-immortal and out came:
 
-> Where flags would be TWL_BOARD_HAS_DEFAULT_CODEC etc, and if the entry in
-> pmic_data is NULL, just use the default configuration. I think you already
-> have the clkrate there?
+ http://nerdbynature.de/bits/3.0-rc1/linux-3.0_powerpc_2.jpg
+ http://nerdbynature.de/bits/3.0-rc1/linux-3.0_powerpc_2.mp4
+ (watch it at very slow speed, as it's only 3sec long)
 
-I'll take a look, should we have new file specifically for twl, or should I 
-extend the common-board-devices.c with the twl related things? IMHO a new file 
-might be better, since the full twl config might be quite big.
+I've enabled[0] FB_NVIDIA and during normal booting the screen flickers 
+after the "... : fixmap" message and the screen clears and is filled again 
+from the top - maybe the messages would've been there if booted w/o the 
+framebuffer enabled.
 
+Right now I'm happy that Ben's fix helped to get past this message, but 
+the system remains unsuable[1] with the latest -git, but more debugging 
+has to wait until tomorrow...
+
+Thanks,
+Christian.
+
+[0] http://nerdbynature.de/bits/3.0-rc1/config-2.6.39.txt
+[1] https://lkml.org/lkml/2011/6/2/6
 -- 
-P�ter
+BOFH excuse #230:
+
+Lusers learning curve appears to be fractal
