@@ -1,114 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758980Ab1FBIyV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 04:54:21 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:55377 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab1FBIyS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 04:54:18 -0400
-Date: Thu, 2 Jun 2011 14:24:09 +0530
-From: Ankita Garg <ankita@in.ibm.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: svaidy@linux.vnet.ibm.com, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, thomas.abraham@linaro.org
-Subject: Re: [PATCH 01/10] mm: Introduce the memory regions data structure
-Message-ID: <20110602085409.GA28096@in.ibm.com>
-Reply-To: Ankita Garg <ankita@in.ibm.com>
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
- <1306499498-14263-2-git-send-email-ankita@in.ibm.com>
- <1306510203.22505.69.camel@nimitz>
- <20110527182041.GM5654@dirshya.in.ibm.com>
- <1306531912.22505.84.camel@nimitz>
- <20110529081618.GC8333@in.ibm.com>
- <1306863260.15490.35.camel@nimitz>
-MIME-Version: 1.0
+	id S1759848Ab1FBI5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 04:57:16 -0400
+Received: from linux-sh.org ([111.68.239.195]:51809 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752384Ab1FBI5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 04:57:13 -0400
+Date: Thu, 2 Jun 2011 17:57:08 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh fixes for 3.0-rc2
+Message-ID: <20110602085708.GA26101@linux-sh.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306863260.15490.35.camel@nimitz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Please pull from:
 
-On Tue, May 31, 2011 at 10:34:20AM -0700, Dave Hansen wrote:
-> On Sun, 2011-05-29 at 13:46 +0530, Ankita Garg wrote:
-> > > It's worth noting that we already do targeted reclaim on boundaries
-> > > other than zones.  The lumpy reclaim and memory compaction logically do
-> > > the same thing.  So, it's at least possible to do this without having
-> > > the global LRU designed around the way you want to reclaim.
-> > >
-> > My understanding maybe incorrect, but doesn't both lumpy reclaim and
-> > memory compaction still work under zone boundary ? While trying to free
-> > up higher order pages, lumpy reclaim checks to ensure that pages that
-> > are selected do not cross zone boundary. Further, compaction walks
-> > through the pages in a zone and tries to re-arrange them.
-> 
-> I'm asserting that we don't need memory regions in the
-> 
-> 	pgdat->regions[]->zones[]
-> 
-> layout to do what you're asking for.
-> 
-> Lumpy reclaim is limited to a zone because it's trying to satisfy and
-> allocation request that came in for *THAT* *ZONE*.  It's useless to go
-> clear out other zones.  In your case, you don't care about zone
-> boundaries: you want to reclaim things regardless.
->
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git sh-fixes-for-linus
 
-Ok true. So I guess lumpy reclaim could be extended to just free up
-pages spanning the entire region and not just a particular zone.
- 
-> There was a "cma: Contiguous Memory Allocator added" patch posted a bit
-> ago to linux-mm@.  You might want to take a look at it for some
-> inspiration.
-> 
+Which contains:
 
-We did take a look at CMA, but the use case seems to be slightly
-different. Inorder to allocate large contiguous pages, CMA creates a new
-miratetype called MIGRATE_CMA, which effectively isolates pages from the
-buddy allocator.
+Guennadi Liakhovetski (4):
+      sh: switch ap325rxa to dynamically manage the platform camera
+      sh: add MMCIF runtime PM support on ecovec
+      sh: mark DMA slave ID 0 as invalid
+      dmaengine: shdma: fix a regression: initialise DMA channels for memcpy
 
-> I think you also need to clearly establish here why any memory that
-> you're going to want to power off can't use (or shouldn't use)
-> ZONE_MOVABLE.  It seems a bit silly to have it there, and ignore it for
-> such a similar use case.  Memory hot-remove and power-down are not
-> horrifically different beasts.
-> 
+Nobuhiro Iwamatsu (1):
+      sh: asm/tlb.h needs linux/swap.h
 
-Memory hot add and remove are definite usecases for conserving memory
-power. In this first version of the RFC patch, I have not yet added the
-support for ZONE_MOVABLE. I am currently testing the patch that creates
-movable zones under regions, thus ensuring that it can be easily
-evacuated using page migration.
+Paul Mundt (8):
+      sh: arch/sh/kernel/process_32.c needs linux/prefetch.h.
+      sh: Update shmin to reflect PIO dependency.
+      sh64: asm/pgtable.h needs asm/mmu.h
+      sh64: Move from P1SEG to CAC_ADDR for consistent sync.
+      sh: Fix up asm-generic/ptrace.h fallout.
+      Revert "clocksource: sh_tmu: Runtime PM support"
+      Revert "clocksource: sh_cmt: Runtime PM support"
+      dmaengine: shdma: Fix up fallout from runtime PM changes.
 
-> BTW, that's probably something else to add to your list: make sure
-> mem_map[]s for memory in a region get allocated *in* that region. 
-> 
-
-There are a few reasons why we decided that we must have all the kernel
-non-movable data structures co-located in a single region as much as
-possible:
-
-- Having a region devoid of non-movable memory will enable the complete
-  memory region to be even hot-removed
-- If the memory is evacuated and later turned off (loss of content),
-  then the mem_map[]s will be lost. So when the memory comes back on,
-  the mem_map[]s will need to be reinitialized. While the hotplug
-  approach will work for exploiting PASR, it may not be the most
-  efficient one
-- When the memory is put into a lower power state, having the
-  mem_maps[]s in a single region would ensure that any references to
-  just the struct pages will not lead to references to the actual memory
-
-However, it might be worth taking a look at it again.
-
--- 
-Regards,
-Ankita Garg (ankita@in.ibm.com)
-Linux Technology Center
-IBM India Systems & Technology Labs,
-Bangalore, India
+ arch/sh/Kconfig                      |    2 +-
+ arch/sh/boards/mach-ap325rxa/setup.c |   32 +++++++++++++-------------------
+ arch/sh/boards/mach-ecovec24/setup.c |    3 +++
+ arch/sh/include/asm/pgtable.h        |    1 +
+ arch/sh/include/asm/ptrace.h         |    6 ++++--
+ arch/sh/include/asm/tlb.h            |    1 +
+ arch/sh/include/cpu-sh4/cpu/sh7722.h |    1 +
+ arch/sh/include/cpu-sh4/cpu/sh7724.h |    1 +
+ arch/sh/include/cpu-sh4/cpu/sh7757.h |    1 +
+ arch/sh/kernel/process_32.c          |    1 +
+ arch/sh/mm/consistent.c              |    2 +-
+ drivers/clocksource/sh_cmt.c         |   12 ++----------
+ drivers/clocksource/sh_tmu.c         |   12 ++----------
+ drivers/dma/shdma.c                  |    9 +++++++--
+ 14 files changed, 39 insertions(+), 45 deletions(-)
