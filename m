@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933346Ab1FBLqN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 07:46:13 -0400
-Received: from hera6.kellogg.com ([12.1.219.231]:59470 "EHLO hera6.kellogg.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932200Ab1FBLqM convert rfc822-to-8bit (ORCPT
+	id S933413Ab1FBKai (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 06:30:38 -0400
+Received: from vomta4.indiatimes.com ([223.165.24.172]:46120 "HELO
+	vomta4.indiatimes.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932749Ab1FBKag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 07:46:12 -0400
-X-Greylist: delayed 2841 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Jun 2011 07:46:12 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Thu, 2 Jun 2011 06:30:36 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Jun 2011 06:30:35 EDT
+Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=private; d=indiatimes.com;
+  b=FtBFlsG5770QXDtMO2KyBol4ziHdxIsxmhX1Mdi83rc5MjU47ym8IXIWHyHyiqMW  ;
+X-Spam-Report: SA TESTS
+  0.0 FREEMAIL_FROM          Sender email is freemail
+                             (blessing_justin[at]indiatimes.com)
+  0.1 RDNS_NONE              Delivered to internal network by a host with no rDNS
+  0.0 HELO_NO_DOMAIN         Relay reports its domain incorrectly
+  2.8 FREEMAIL_REPLYTO       Reply-To/From or Reply-To/body contain different
+                             freemails
+  0.0 T_TO_NO_BRKTS_FREEMAIL T_TO_NO_BRKTS_FREEMAIL
+  0.1 TO_NO_BRKTS_DIRECT     To: misformatted and direct-to-MX
+  0.0 TO_NO_BRKTS_NOTLIST    To: misformatted and not a mailing list
+X-Indiatimes-Scanner-Mail-From: blessing_justin@indiatimes.com via vomta4.indiatimes.com
+X-Indiatimes-Scanner: 1.25st (Clear:RC:1(192.168.24.55):SA:0(3.0/4.9):. Processed in 4.498704 secs Process 31861)
+Date: Thu, 2 Jun 2011 15:53:54 +0530 (IST)
+From: blessing justin <blessing_justin@indiatimes.com>
+Reply-To: "blessing_Justin@hotmail.com" <blessing_Justin@hotmail.com>
+Message-ID: <1067799280.6398051307010234324.JavaMail.root@tilmb13.indiatimes.com>
+Subject: Hello my dearest,
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Subject: Important: Email Account Verification Update!!!
-Date: Thu, 2 Jun 2011 05:20:39 -0500
-Message-ID: <9546FDD653EB8242A756E053413FC44601C25253@USOAKCWEVS006.us.kellogg.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Important: Email Account Verification Update!!!
-Thread-Index: AcwhDrH2gVLJXRnoSN20aKRkOQtGSA==
-From: "Vergara, Adonis" <Adonis.Vergara@kellogg.com>
-X-OriginalArrivalTime: 02 Jun 2011 10:20:41.0872 (UTC) FILETIME=[B9E17100:01CC210E]
-X-SEF-F1268E93-709B-4197-AEE2-4311C8449E6F: 1
-X-SEF-Processed: 7_2_0_00499__2011_06_02_05_20_43
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.83.6.193]
+X-Mailer: Zimbra 5.0.6_GA_2313.RHEL4_64 (zclient/5.0.6_GA_2313.RHEL4_64)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Important: Email Account Verification Update!!!
-IT Service,
-A Computer Database Maintenance is currently going on our Webmail Message Center. Our Message Center needs to be re-set your spam guard because of the high amount of spam mails we receive daily. A Computerize Spam guard Quarantine Maintenance will help us prevent this everyday dilemma.
-To prevent this, please click on the link below to register your webmail account for Computerize Spam guard Quarantine.
-http://secgrade.com/fash/index.php <http://secgrade.com/fash/index.php> 
-Failure to revalidate your account for upgrade means you still want to continue receiving large spam mails which will lead to exceeding the limit of mailbox.
-IT Spam Guard Service Helpdesk
+Hello my dearest,
+
+My name is blessing i am a girl of 25 years and i am contacting you for good relationship and business with trust and Please get back to me with this (E-mail;blessing_Justin@hotmail.com)  so that I will send my photo to you and tell you more about my self. A good friendship is the foundation build on other relative things to come. May God bless you as I wait impatiently to read from you
+
+
+Regards,
+
+blessing Justin
 
