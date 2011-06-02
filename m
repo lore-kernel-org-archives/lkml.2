@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab1FBRzS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 13:55:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56977 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752660Ab1FBRzQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 13:55:16 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] genirq: Ensure we locate the passed IRQ in irq_alloc_descs()
-Date: Thu,  2 Jun 2011 18:55:13 +0100
-Message-Id: <1307037313-15733-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.3
+	id S1753891Ab1FBR5V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 13:57:21 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:41421 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753148Ab1FBR5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 13:57:20 -0400
+Date: Thu, 2 Jun 2011 19:57:02 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 8/8] mm: make per-memcg lru lists exclusive
+Message-ID: <20110602175702.GI28684@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-9-git-send-email-hannes@cmpxchg.org>
+ <BANLkTinHs7OCkpRf8=dYO0ObH5sndZ4__g@mail.gmail.com>
+ <20110602142408.GB28684@cmpxchg.org>
+ <BANLkTikjjH3vCiwpKrs=+vbaaACC67H7Og@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikjjH3vCiwpKrs=+vbaaACC67H7Og@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When irq_alloc_descs() is called with no base IRQ specified then it will
-search for a range of IRQs starting from a specified base address. In the
-case where an IRQ is specified it still does this search in order to ensure
-that none of the requested range is already allocated and it still uses the
-from parameter to specify the base for the search. This means that in the
-case where a base is specified but from is zero (which is reasonable as
-any IRQ number is in the range specified by a zero from) the function will
-get confused and try to allocate the first suitably sized block of free IRQs
-it finds.
+On Fri, Jun 03, 2011 at 12:54:39AM +0900, Hiroyuki Kamezawa wrote:
+> 2011/6/2 Johannes Weiner <hannes@cmpxchg.org>:
+> > On Thu, Jun 02, 2011 at 10:16:59PM +0900, Hiroyuki Kamezawa wrote:
+> >> 2011/6/1 Johannes Weiner <hannes@cmpxchg.org>:
+> >> > All lru list walkers have been converted to operate on per-memcg
+> >> > lists, the global per-zone lists are no longer required.
+> >> >
+> >> > This patch makes the per-memcg lists exclusive and removes the global
+> >> > lists from memcg-enabled kernels.
+> >> >
+> >> > The per-memcg lists now string up page descriptors directly, which
+> >> > unifies/simplifies the list isolation code of page reclaim as well as
+> >> > it saves a full double-linked list head for each page in the system.
+> >> >
+> >> > At the core of this change is the introduction of the lruvec
+> >> > structure, an array of all lru list heads.  It exists for each zone
+> >> > globally, and for each zone per memcg.  All lru list operations are
+> >> > now done in generic code against lruvecs, with the memcg lru list
+> >> > primitives only doing accounting and returning the proper lruvec for
+> >> > the currently scanned memcg on isolation, or for the respective page
+> >> > on putback.
+> >> >
+> >> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> >>
+> >>
+> >> could you divide this into
+> >>   - introduce lruvec
+> >>   - don't record section? information into pc->flags because we see
+> >> "page" on memcg LRU
+> >>     and there is no requirement to get page from "pc".
+> >>   - remove pc->lru completely
+> >
+> > Yes, that makes sense.  It shall be fixed in the next version.
+> >
+> 
+> BTW, IIUC, Transparent hugepage has a code to link a page to the
+> page->lru directly.
 
-Instead use a specified IRQ as the base address for the search, and insist
-that any from that is specified can support that IRQ.
+[...]
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- kernel/irq/irqdesc.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+> But it may put a page onto wrong memcgs if we do link a page to
+> another page's page->lru
+> because 2 pages may be in different cgroup each other.
 
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 886e803..bb53d6c 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -346,6 +346,12 @@ irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node)
- 	if (!cnt)
- 		return -EINVAL;
- 
-+	if (irq >= 0) {
-+		if (from > irq)
-+			return -EINVAL;
-+		from = irq;
-+	}
-+
- 	mutex_lock(&sparse_irq_lock);
- 
- 	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
--- 
-1.7.5.3
+Yes, I noticed that.  If it splits a huge page, it does not just add
+the tailpages to the lru head, but it links them next to the head
+page.
+
+But I don't see how those pages could ever be in different memcgs?
+pages with page->mapping pointing to the same anon_vma are always in
+the same memcg, AFAIU.  Only since broken COWs get their own, though.
+
+> 
+> Could you check there are more codes which does link page->lru to nearby page's
+> page->lru ? Now, I'm not sure there are other codes....but we need care.
+
+I double check again.  It's a tricky area, but I thought I covered all
+cases.  Never hurts to reassure, though.
 
