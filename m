@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab1FBS0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 14:26:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:65418 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396Ab1FBS0j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 14:26:39 -0400
+	id S1754243Ab1FBS3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 14:29:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7276 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751542Ab1FBS3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 14:29:32 -0400
+Date: Thu, 2 Jun 2011 20:27:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        pedro@codesourcery.com
+Subject: Re: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and
+	group stop notification, take#4
+Message-ID: <20110602182744.GA21705@redhat.com>
+References: <1306710760-16440-1-git-send-email-tj@kernel.org> <20110530154211.GA11325@redhat.com> <20110601053903.GE23067@mtj.dyndns.org> <20110602123105.GD10410@mtj.dyndns.org>
 MIME-Version: 1.0
-Message-ID: <75f89186-d730-4b89-b88c-899cd5674cf0@default>
-Date: Thu, 2 Jun 2011 11:26:06 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: ocfs2-devel@oss.oracle.com, Joel Becker <jlbec@evilplan.org>,
-        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org
-Subject: RE: bug in cleancache ocfs2 hook, anybody want to try cleancache?
-References: <da833bdb-7f77-4ebb-ad9b-9fae656b75a1@default
- 1307004343.2823.17.camel@menhir>
-In-Reply-To: <1307004343.2823.17.camel@menhir>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4DE7D5D8.0040:SCFMA922111,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110602123105.GD10410@mtj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Having started looking at the cleancache code in a bit more detail, I
-> have another question... what is the intended mechanism for selecting a
-> cleancache backend? The registration code looks like this:
-> 
-> struct cleancache_ops cleancache_register_ops(struct cleancache_ops
-> *ops)
-> {
->         struct cleancache_ops old = cleancache_ops;
-> 
->         cleancache_ops = *ops;
->         cleancache_enabled = 1;
->         return old;
-> }
-> EXPORT_SYMBOL(cleancache_register_ops);
-> 
-> but I wonder what the intent was here. It looks racy to me, and what
-> prevents the backend module from unloading while it is in use? Neither
-> of the two in-tree callers seems to do anything with the returned
-> structure beyond printing a warning if another backend has already
-> registered itself. Also why return the structure and not a pointer to
-> it? The ops structure pointer passed in should also be const I think.
-> 
-> From the code I assume that it is only valid to load the module for a
-> single cleancache backend at a time, though nothing appears to enforce
-> that.
+Hi Tejun,
 
-Hi Steven --
+On 06/02, Tejun Heo wrote:
+>
+> I've tested threaded one and INTERRUPT immediate re-triggering and at
+> least the apparent cases work fine.  I've re-generated the git tree on
+> top of 3.0-rc1 with the updated patches.
+>
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-ptrace-seize
 
-The intent was to allow backends to be "chained", but this is
-not used yet and not really very well thought through yet either
-(e.g. possible coherency issues of chaining).
-So, yes, currently only one cleancache backend can be loaded
-at time.
+Everything looks fine to me.
 
-There's another initialization issue... if mounts are done
-before a backend registers, those mounts are not enabled
-for cleancache.   As a result, cleancache backends generally
-need to be built-in, not loaded separately as a module.
-I've had ideas on how to fix this for some time (basically
-recording calls to cleancache_init_fs that occur when no
-backend is registered, then calling the backend lazily after
-registration occurs).
+I feel we can cleanup this code a little bit, but we can do this later.
 
-> Also, as regards your earlier question wrt a kvm backend, I may be
-> tempted to have a go at writing one, but I'd like to figure out what
-> I'm
-> letting myself in for before making any commitment to that,
+Only one thing. I think it makes sense to discuss the idea from Denys,
 
-I think the hardest part is updating the tmem.c module in zcache
-to support multiple "clients".  When I ported it from Xen, I tore
-all that out.  Fortunately, I've put it back in during RAMster
-development but those changes haven't yet seen the light of day
-(though I can share them offlist).
+> * Which signo to use in exit_code on STOP traps.
 
-The next issue is the guest->host interface.  Is there the equivalent
-of a hypercall in KVM?  If so, a shim like drivers/xen/tmem.c is
-needed in the guest, and some shim that interfaces the host side
-of the hypercall to tmem.c (and presumably zcache).
+Yes. other pending issues can be solved later.
 
-That may be enough for a proof-of-concept, though Xen has
-a bunch of tools and stuff for which KVM would probably want some
-equivalent.
+So,
 
-If you are at all interested, let's take the details offlist.
-It would be great to have a proof-of-concept by KVM Forum!
+	static void ptrace_do_notify(int exit_code, int why)
+	{
+		info.si_signo = SIGTRAP;
+		info.si_code = __SI_TRAP | exit_code;
 
-Thanks,
-Dan
+		if ((current->ptrace & PT_SEIZED) &&
+		    (sig->group_stop_count || sig->flags & SIGNAL_STOP_STOPPED)) {
+			info.si_pt_flags |= PTRACE_SI_STOPPED;
+			info.si_signo = current->jobctl & JOBCTL_STOP_SIGMASK;
+			WARN_ON_ONCE(!info.si_signo);
+		}
+
+	}
+
+Can't we set si_pt_flags only if PTRACE_EVENT_STOP? Afaics, this
+should be enough to support the jobctl tracking.
+
+If yes, then can't we encode si_pt_flags in task->exit_code which
+is "visible" to wait?
+
+IOW, ptrace_do_notify(PTRACE_EVENT_STOP) path should use
+
+	exit_code = signr | PTRACE_EVENT_STOP<<8;
+
+and signr is roughly calculated as
+
+	if (group_stop_count || SIGNAL_STOP_STOPPED)
+		signr = jobctl & JOBCTL_STOP_SIGMASK;
+	else if (JOBCTL_TRAP_NOTIFY)
+		signr = SIGCONT;
+	else
+		signr =  SIGTRAP; // PTRACE_INTERRUPT
+
+In this case we can avoid all siginfo changes. The tracer does wait(status)
+anyway, it can see the state without GETSIGINFO. The only problem, the tracer
+should be careful to avoid the confusion with ptrace_signal(), it should
+check status & (PTRACE_EVENT_STOP << 16).
+
+What do you think?
+
+Oleg.
+
