@@ -1,98 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab1FBFx1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 01:53:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52544 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754912Ab1FBFx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 01:53:26 -0400
-Date: Thu, 2 Jun 2011 15:53:15 +1000
-From: NeilBrown <neilb@suse.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: Re: [PATCH 2/2] md: check ->hot_remove_disk when removing disk
-Message-ID: <20110602155315.31b01a23@notabene.brown>
-In-Reply-To: <1306990383-14133-2-git-send-email-namhyung@gmail.com>
-References: <1306990383-14133-1-git-send-email-namhyung@gmail.com>
-	<1306990383-14133-2-git-send-email-namhyung@gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755260Ab1FBFvR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 01:51:17 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:59310 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156Ab1FBFvQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 01:51:16 -0400
+X-SpamScore: -2
+X-BigFish: VS-2(zz936eK1432N98dK2d6crzz1202hzz8275dhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 2 Jun 2011 13:56:15 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+CC: Shawn Guo <shawn.guo@linaro.org>, <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <patches@linaro.org>
+Subject: Re: [PATCH 1/3] dmaengine: add new dma API for max_segment_number
+Message-ID: <20110602055614.GA18508@S2100-06.ap.freescale.net>
+References: <1306391493-29425-1-git-send-email-shawn.guo@linaro.org>
+ <1306914144.10976.4.camel@vkoul-udesk3>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1306914144.10976.4.camel@vkoul-udesk3>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  2 Jun 2011 13:53:03 +0900 Namhyung Kim <namhyung@gmail.com> wrote:
+On Wed, Jun 01, 2011 at 01:12:24PM +0530, Koul, Vinod wrote:
+> On Thu, 2011-05-26 at 14:31 +0800, Shawn Guo wrote:
+> > Like dma_set(get)_max_seg_size for max_segment_size, the patch adds
+> > max_segment_number into device_dma_parameters and creates the
+> > corresponding dmaengine API dma_set(get)_max_seg_number for it.
+> > 
+> > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> > ---
+> >  include/linux/device.h      |    1 +
+> >  include/linux/dma-mapping.h |   15 +++++++++++++++
+> >  2 files changed, 16 insertions(+), 0 deletions(-)
+> Can you explain me why this change is required, the patch description
+> isn't helping for this.
+> 
+> If you satisfy me with above then I am okay with it, but I need ACK from
+> Dan before applying...
+> 
+I recently saw you people are trying to sort out the slave dma api
+document.  This reminds me there is small piece missing, which the
+patch here is trying to add.
 
-> Check pers->hot_remove_disk instead of pers->hot_add_disk in slot_store()
-> during disk removal. The linear personality only has ->hot_add_disk and
-> no ->hot_remove_disk, so that removing disk in the array resulted to
-> following kernel bug:
-> 
-> $ sudo mdadm --create /dev/md0 --level=linear --raid-devices=4 /dev/loop[0-3]
-> $ echo none | sudo tee /sys/block/md0/md/dev-loop2/slot
->  BUG: unable to handle kernel NULL pointer dereference at           (null)
->  IP: [<          (null)>]           (null)
->  PGD c9f5d067 PUD 8575a067 PMD 0
->  Oops: 0010 [#1] SMP
->  CPU 2
->  Modules linked in: linear loop bridge stp llc kvm_intel kvm asus_atk0110 sr_mod cdrom sg
-> 
->  Pid: 10450, comm: tee Not tainted 3.0.0-rc1-leonard+ #173 System manufacturer System Product Name/P5G41TD-M PRO
->  RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
->  RSP: 0018:ffff880085757df0  EFLAGS: 00010282
->  RAX: ffffffffa00168e0 RBX: ffff8800d1431800 RCX: 000000000000006e
->  RDX: 0000000000000001 RSI: 0000000000000002 RDI: ffff88008543c000
->  RBP: ffff880085757e48 R08: 0000000000000002 R09: 000000000000000a
->  R10: 0000000000000000 R11: ffff88008543c2e0 R12: 00000000ffffffff
->  R13: ffff8800b4641000 R14: 0000000000000005 R15: 0000000000000000
->  FS:  00007fe8c9e05700(0000) GS:ffff88011fa00000(0000) knlGS:0000000000000000
->  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->  CR2: 0000000000000000 CR3: 00000000b4502000 CR4: 00000000000406e0
->  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->  Process tee (pid: 10450, threadinfo ffff880085756000, task ffff8800c9f08000)
->  Stack:
->   ffffffff8138496a ffff8800b4641000 ffff88008543c268 0000000000000000
->   ffff8800b4641000 ffff88008543c000 ffff8800d1431868 ffffffff81a78a90
->   ffff8800b4641000 ffff88008543c000 ffff8800d1431800 ffff880085757e98
->  Call Trace:
->   [<ffffffff8138496a>] ? slot_store+0xaa/0x265
->   [<ffffffff81384bae>] rdev_attr_store+0x89/0xa8
->   [<ffffffff8115a96a>] sysfs_write_file+0x108/0x144
->   [<ffffffff81106b87>] vfs_write+0xb1/0x10d
->   [<ffffffff8106e6c0>] ? trace_hardirqs_on_caller+0x111/0x135
->   [<ffffffff81106cac>] sys_write+0x4d/0x77
->   [<ffffffff814fe702>] system_call_fastpath+0x16/0x1b
->  Code:  Bad RIP value.
->  RIP  [<          (null)>]           (null)
->   RSP <ffff880085757df0>
->  CR2: 0000000000000000
->  ---[ end trace ba5fc64319a826fb ]---
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> Cc: stable@kernel.org
-> ---
->  drivers/md/md.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/md/md.c b/drivers/md/md.c
-> index f210e42a56ca..3db106b7b245 100644
-> --- a/drivers/md/md.c
-> +++ b/drivers/md/md.c
-> @@ -2461,7 +2461,7 @@ slot_store(mdk_rdev_t *rdev, const char *buf, size_t len)
->  		if (rdev->raid_disk == -1)
->  			return -EEXIST;
->  		/* personality does all needed checks */
-> -		if (rdev->mddev->pers->hot_add_disk == NULL)
-> +		if (rdev->mddev->pers->hot_remove_disk == NULL)
->  			return -EINVAL;
->  		err = rdev->mddev->pers->
->  			hot_remove_disk(rdev->mddev, rdev->raid_disk);
+Here is the user story.  The mxs-mmc is the mmc host controller for
+Freescale MXS architecture.  There are a pair of  mmc host specific
+parameters max_seg_size and max_segs that mxs-mmc host driver needs
+to tell mmc core, so that mmc core can know how big each data segment
+could be and how many segments could be handled one time in a scatter
+list by host driver.
 
-Thanks.  I've applied this to my tree and will push it to Linus in due
-course.
+The mxs-mmc driver is one user of dmaengine mxs-dma, and it will call
+mxs-dma to transfer data in scatter list.  That is to say mxs-mmc has
+not idea of what max_seg_size and max_segs should be, because they are
+all mxs-dma capability parameters, and mxs-mmc needs to query them
+from mxs-dma.
 
-NeilBrown
+Right now, there is well defined dma api (dma_get_max_seg_size) for
+mmc to query max_seg_size from dma driver, but the one for max_segs is
+missing.  That's why mxs-mmc driver has to hard-code it.
+
+The mxs-mmc is just one example to demonstrate the need of the new
+api, and I'm sure there are other mmc host drivers (mxcmmc on imx-dma
+is another example) and possibly even other dmaengine users need this
+new api to know the maximum segments that dma driver can handle per
+dma call.
+
+-- 
+Regards,
+Shawn
+
