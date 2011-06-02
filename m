@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933072Ab1FBHBv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 03:01:51 -0400
+	id S1757665Ab1FBHDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 03:03:54 -0400
 Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:27315 "EHLO
 	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932956Ab1FBHBq (ORCPT
+	by vger.kernel.org with ESMTP id S932953Ab1FBHBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 03:01:46 -0400
+	Thu, 2 Jun 2011 03:01:43 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlcFAAky5015LCoegWdsb2JhbABTmBiOGBUBARYmJcdQhiEEoCk
+X-IronPort-Anti-Spam-Result: AlcFAAky5015LCoegWdsb2JhbABTmBiOGBUBARYmJcdQhiEEmDKHdw
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: [PATCH 04/12] vmscan: add customisable shrinker batch size
-Date: Thu,  2 Jun 2011 17:00:59 +1000
-Message-Id: <1306998067-27659-5-git-send-email-david@fromorbit.com>
+Subject: [PATCH 05/12] inode: convert inode_stat.nr_unused to per-cpu counters
+Date: Thu,  2 Jun 2011 17:01:00 +1000
+Message-Id: <1306998067-27659-6-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <1306998067-27659-1-git-send-email-david@fromorbit.com>
 References: <1306998067-27659-1-git-send-email-david@fromorbit.com>
@@ -24,70 +24,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-For shrinkers that have their own cond_resched* calls, having
-shrink_slab break the work down into small batches is not
-paticularly efficient. Add a custom batchsize field to the struct
-shrinker so that shrinkers can use a larger batch size if they
-desire.
-
-A value of zero (uninitialised) means "use the default", so
-behaviour is unchanged by this patch.
+Before we split up the inode_lru_lock, the unused inode counter
+needs to be made independent of the global inode_lru_lock. Convert
+it to per-cpu counters to do this.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- include/linux/mm.h |    1 +
- mm/vmscan.c        |   11 ++++++-----
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ fs/inode.c |   16 +++++++++++-----
+ 1 files changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 9670f71..9b9777a 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1150,6 +1150,7 @@ struct shrink_control {
- struct shrinker {
- 	int (*shrink)(struct shrinker *, struct shrink_control *sc);
- 	int seeks;	/* seeks to recreate an obj */
-+	long batch;	/* reclaim batch size, 0 = default */
+diff --git a/fs/inode.c b/fs/inode.c
+index 0f7e88a..17fea5b 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -95,6 +95,7 @@ EXPORT_SYMBOL(empty_aops);
+ struct inodes_stat_t inodes_stat;
  
- 	/* These are for internal use */
- 	struct list_head list;
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 3688f47..a17909f 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -253,6 +253,8 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 		int shrink_ret = 0;
- 		long nr;
- 		long new_nr;
-+		long batch_size = shrinker->batch ? shrinker->batch
-+						  : SHRINK_BATCH;
+ static DEFINE_PER_CPU(unsigned int, nr_inodes);
++static DEFINE_PER_CPU(unsigned int, nr_unused);
  
- 		/*
- 		 * copy the current shrinker scan count into a local variable
-@@ -302,19 +304,18 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 		trace_mm_shrink_slab_start(shrinker, shrink, nr, nr_pages_scanned,
- 					lru_pages, max_pass, delta, total_scan);
+ static struct kmem_cache *inode_cachep __read_mostly;
  
--		while (total_scan >= SHRINK_BATCH) {
--			long this_scan = SHRINK_BATCH;
-+		while (total_scan >= batch_size) {
- 			int nr_before;
+@@ -109,7 +110,11 @@ static int get_nr_inodes(void)
  
- 			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
- 			shrink_ret = do_shrinker_shrink(shrinker, shrink,
--							this_scan);
-+							batch_size);
- 			if (shrink_ret == -1)
- 				break;
- 			if (shrink_ret < nr_before)
- 				ret += nr_before - shrink_ret;
--			count_vm_events(SLABS_SCANNED, this_scan);
--			total_scan -= this_scan;
-+			count_vm_events(SLABS_SCANNED, batch_size);
-+			total_scan -= batch_size;
+ static inline int get_nr_inodes_unused(void)
+ {
+-	return inodes_stat.nr_unused;
++	int i;
++	int sum = 0;
++	for_each_possible_cpu(i)
++		sum += per_cpu(nr_unused, i);
++	return sum < 0 ? 0 : sum;
+ }
  
- 			cond_resched();
+ int get_nr_dirty_inodes(void)
+@@ -127,6 +132,7 @@ int proc_nr_inodes(ctl_table *table, int write,
+ 		   void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	inodes_stat.nr_inodes = get_nr_inodes();
++	inodes_stat.nr_unused = get_nr_inodes_unused();
+ 	return proc_dointvec(table, write, buffer, lenp, ppos);
+ }
+ #endif
+@@ -340,7 +346,7 @@ static void inode_lru_list_add(struct inode *inode)
+ 	spin_lock(&inode_lru_lock);
+ 	if (list_empty(&inode->i_lru)) {
+ 		list_add(&inode->i_lru, &inode_lru);
+-		inodes_stat.nr_unused++;
++		this_cpu_inc(nr_unused);
+ 	}
+ 	spin_unlock(&inode_lru_lock);
+ }
+@@ -350,7 +356,7 @@ static void inode_lru_list_del(struct inode *inode)
+ 	spin_lock(&inode_lru_lock);
+ 	if (!list_empty(&inode->i_lru)) {
+ 		list_del_init(&inode->i_lru);
+-		inodes_stat.nr_unused--;
++		this_cpu_dec(nr_unused);
+ 	}
+ 	spin_unlock(&inode_lru_lock);
+ }
+@@ -649,7 +655,7 @@ static void prune_icache(int nr_to_scan)
+ 		    (inode->i_state & ~I_REFERENCED)) {
+ 			list_del_init(&inode->i_lru);
+ 			spin_unlock(&inode->i_lock);
+-			inodes_stat.nr_unused--;
++			this_cpu_dec(nr_unused);
+ 			continue;
  		}
+ 
+@@ -686,7 +692,7 @@ static void prune_icache(int nr_to_scan)
+ 		spin_unlock(&inode->i_lock);
+ 
+ 		list_move(&inode->i_lru, &freeable);
+-		inodes_stat.nr_unused--;
++		this_cpu_dec(nr_unused);
+ 	}
+ 	if (current_is_kswapd())
+ 		__count_vm_events(KSWAPD_INODESTEAL, reap);
 -- 
 1.7.5.1
 
