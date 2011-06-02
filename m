@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab1FBExN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 00:53:13 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39387 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab1FBExK (ORCPT
+	id S1754722Ab1FBExT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 00:53:19 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:62216 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895Ab1FBExM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 00:53:10 -0400
+	Thu, 2 Jun 2011 00:53:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=leAgk2ffEv+d7VRZ8IVqIMSj1j1SQiJwEwiIXQ3nSGYlvqb6D7mvewZfRuDP0nqHqX
-         LGMrKjwqMEhZKjhiDOKAvfy70YkwLCtiYLjUR6nJZ7ilNh1YKPFNEfGNjjvKWvoz/U2i
-         H8aSgDlnMWZNlkGpg2QDXOo48amd4FsDQFcE4=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=tLewpM4Ym0AZMbDeMQngavqv6QYSxVP7+IpVeAgrJIcsV/f0Ra0JFiQFu29cvgUYv+
+         G6oYBkLMZQvPPf9GKfjowgmLyHH8iwWuFpwJrmjM62/kDExJziN4bY3S2yrCgBHuhWmH
+         PVrCvrH3WqV0xO0ekvG4vOn23znjMmyz1L+sk=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Neil Brown <neilb@suse.de>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] md: convert double atomic_inc() to atomic_add()
-Date: Thu,  2 Jun 2011 13:53:02 +0900
-Message-Id: <1306990383-14133-1-git-send-email-namhyung@gmail.com>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH 2/2] md: check ->hot_remove_disk when removing disk
+Date: Thu,  2 Jun 2011 13:53:03 +0900
+Message-Id: <1306990383-14133-2-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.5.2
+In-Reply-To: <1306990383-14133-1-git-send-email-namhyung@gmail.com>
+References: <1306990383-14133-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Check pers->hot_remove_disk instead of pers->hot_add_disk in slot_store()
+during disk removal. The linear personality only has ->hot_add_disk and
+no ->hot_remove_disk, so that removing disk in the array resulted to
+following kernel bug:
+
+$ sudo mdadm --create /dev/md0 --level=linear --raid-devices=4 /dev/loop[0-3]
+$ echo none | sudo tee /sys/block/md0/md/dev-loop2/slot
+ BUG: unable to handle kernel NULL pointer dereference at           (null)
+ IP: [<          (null)>]           (null)
+ PGD c9f5d067 PUD 8575a067 PMD 0
+ Oops: 0010 [#1] SMP
+ CPU 2
+ Modules linked in: linear loop bridge stp llc kvm_intel kvm asus_atk0110 sr_mod cdrom sg
+
+ Pid: 10450, comm: tee Not tainted 3.0.0-rc1-leonard+ #173 System manufacturer System Product Name/P5G41TD-M PRO
+ RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
+ RSP: 0018:ffff880085757df0  EFLAGS: 00010282
+ RAX: ffffffffa00168e0 RBX: ffff8800d1431800 RCX: 000000000000006e
+ RDX: 0000000000000001 RSI: 0000000000000002 RDI: ffff88008543c000
+ RBP: ffff880085757e48 R08: 0000000000000002 R09: 000000000000000a
+ R10: 0000000000000000 R11: ffff88008543c2e0 R12: 00000000ffffffff
+ R13: ffff8800b4641000 R14: 0000000000000005 R15: 0000000000000000
+ FS:  00007fe8c9e05700(0000) GS:ffff88011fa00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000000000000000 CR3: 00000000b4502000 CR4: 00000000000406e0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Process tee (pid: 10450, threadinfo ffff880085756000, task ffff8800c9f08000)
+ Stack:
+  ffffffff8138496a ffff8800b4641000 ffff88008543c268 0000000000000000
+  ffff8800b4641000 ffff88008543c000 ffff8800d1431868 ffffffff81a78a90
+  ffff8800b4641000 ffff88008543c000 ffff8800d1431800 ffff880085757e98
+ Call Trace:
+  [<ffffffff8138496a>] ? slot_store+0xaa/0x265
+  [<ffffffff81384bae>] rdev_attr_store+0x89/0xa8
+  [<ffffffff8115a96a>] sysfs_write_file+0x108/0x144
+  [<ffffffff81106b87>] vfs_write+0xb1/0x10d
+  [<ffffffff8106e6c0>] ? trace_hardirqs_on_caller+0x111/0x135
+  [<ffffffff81106cac>] sys_write+0x4d/0x77
+  [<ffffffff814fe702>] system_call_fastpath+0x16/0x1b
+ Code:  Bad RIP value.
+ RIP  [<          (null)>]           (null)
+  RSP <ffff880085757df0>
+ CR2: 0000000000000000
+ ---[ end trace ba5fc64319a826fb ]---
+
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: stable@kernel.org
 ---
- drivers/md/md.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/md/md.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/md/md.c b/drivers/md/md.c
-index aa640a85bb21..f210e42a56ca 100644
+index f210e42a56ca..3db106b7b245 100644
 --- a/drivers/md/md.c
 +++ b/drivers/md/md.c
-@@ -396,8 +396,7 @@ static void submit_flushes(struct work_struct *ws)
- 			 * we reclaim rcu_read_lock
- 			 */
- 			struct bio *bi;
--			atomic_inc(&rdev->nr_pending);
--			atomic_inc(&rdev->nr_pending);
-+			atomic_add(2, &rdev->nr_pending);
- 			rcu_read_unlock();
- 			bi = bio_alloc_mddev(GFP_KERNEL, 0, mddev);
- 			bi->bi_end_io = md_end_flush;
+@@ -2461,7 +2461,7 @@ slot_store(mdk_rdev_t *rdev, const char *buf, size_t len)
+ 		if (rdev->raid_disk == -1)
+ 			return -EEXIST;
+ 		/* personality does all needed checks */
+-		if (rdev->mddev->pers->hot_add_disk == NULL)
++		if (rdev->mddev->pers->hot_remove_disk == NULL)
+ 			return -EINVAL;
+ 		err = rdev->mddev->pers->
+ 			hot_remove_disk(rdev->mddev, rdev->raid_disk);
 -- 
 1.7.5.2
 
