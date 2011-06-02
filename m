@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab1FBQff (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 12:35:35 -0400
-Received: from host171.canaca.com ([67.55.55.225]:36258 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704Ab1FBQfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 12:35:33 -0400
-Message-ID: <2b85316d7925dad6c55672d7d9738e18.squirrel@host171.canaca.com>
-Date: Thu, 2 Jun 2011 12:35:31 -0400
-Subject: Re: [PATCH v2] hid: Fix Logitech Driving Force Pro wheel
-From: simon@mungewell.org
-To: "Michael Bauer" <michael@m-bauer.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Jiri Kosina" <jkosina@suse.cz>
-User-Agent: SquirrelMail/1.4.21
+	id S1753413Ab1FBQjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 12:39:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52571 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752909Ab1FBQjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 12:39:11 -0400
+Date: Thu, 2 Jun 2011 18:36:54 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        indan@nul.nu, bdonlan@gmail.com, linux-kernel@vger.kernel.org,
+        jan.kratochvil@redhat.com, akpm@linux-foundation.org
+Subject: Re: thread leader death under strace (was Re: [PATCH 03/10]
+	ptrace: implement PTRACE_SEIZE)
+Message-ID: <20110602163654.GA17754@redhat.com>
+References: <BANLkTin1q-r=b3ZVbT3vdJ59OEddrRWfsQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTin1q-r=b3ZVbT3vdJ59OEddrRWfsQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Changes from initial patch:
-> - shorten comment (removed original descriptor)
-> - optimized new descriptor (simpler and shorter)
+On 06/02, Denys Vlasenko wrote:
+>
+> The problem is that right now it seems that if tracer doesn't catch
+> EVENT_EXIT and detach tracee when it sees it, really weird things
+> happen.
 
-Concept looks go to me, but I'm getting
---
-simon@ubuntu:~/linux-2.6$ patch -p 1 <
-../Downloads/v2-hid-Fix-Logitech-Driving-Force-Pro-wheel.patch
-patching file drivers/hid/hid-lg.c
-patch: **** malformed patch at line 91: USB_DEVICE_ID_LOGITECH_G25_WHEEL), --
+The test-case is wrong afaics...
 
-Looks like word wrap has been applied to the patch.
+Perhaps this should be considered as a bug in glibc, I dunno.
 
-It also fails to patch chunk 3 against 3.0rc1 as the G27 wheel has been
-added.
---
---- drivers/hid/hid-lg.c    2011-05-19 06:06:34.000000000 +0200
-+++ drivers/hid/hid-lg.c    2011-05-30 21:49:51.535184784 +0200
-@@ -450,7 +522,7 @@
-    { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
-USB_DEVICE_ID_LOGITECH_G25_WHEEL),
-        .driver_data = LG_FF },
-    { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
-USB_DEVICE_ID_LOGITECH_DFP_WHEEL),
--       .driver_data = LG_FF },
-+       .driver_data = LG_NOGET | LG_FF },
-    { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
+> thread1(void *unused)
+> {
+> //	usleep(100*1000);
+> //	VERBOSE("WINCH\n");
+> //	raise(SIGWINCH);
+>
+> 	usleep(100*1000);
+> 	VERBOSE("DYING\n");
+> 	raise(SIGUSR1);
 
---
-    { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
-USB_DEVICE_ID_LOGITECH_G25_WHEEL),
-        .driver_data = LG_FF },
-    { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
-USB_DEVICE_ID_LOGITECH_G27_WHEEL),
-        .driver_data = LG_FF },
-    { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
-USB_DEVICE_ID_LOGITECH_DFP_WHEEL),
-        .driver_data = LG_FF },
---
+This doesn't send a signal. This does tgkill(tgid, 0, SIGUSR1) which
+fails correctly with -EINVAL.
 
-All that said it appears to build (don't have this wheel to test) and have
-it in a git archive if you'd like be to spin a fixed patch for you.
+> static int
+> thread_leader(void *unused)
+> {
+> 	/* malloc gives sufficiently aligned buffer.
+> 	 * long buf[] does not! (on ia64).
+> 	 */
+> 	clone2(thread1, malloc(16 * 1024), 16 * 1024, 0
 
-Simon
+Probably because of this clone2.
 
+Could you test with pthread_create? Or s/raise/tkill/ ?
 
-
+Oleg.
 
