@@ -1,149 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab1FBPX4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 11:23:56 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:60616 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab1FBPXy (ORCPT
+	id S1752752Ab1FBPd4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 11:33:56 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54276 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab1FBPdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 11:23:54 -0400
-In-Reply-To: <20110602144346.GA7995@redhat.com>
-References: <cover.1306921434.git.mst@redhat.com> <1ec8eec325839ecf2eac9930a230361e7956047c.1306921434.git.mst@redhat.com> <87pqmwj3am.fsf@rustcorp.com.au> <20110602133425.GJ7141@redhat.com> <OF990F08C5.2ECE35B1-ON652578A3.004DC0FA-652578A3.004E3FE4@in.ibm.com> <20110602144346.GA7995@redhat.com>
-Subject: Re: [PATCH RFC 3/3] virtio_net: limit xmit polling
-X-KeepSent: FF109303:D838CAE2-652578A3:0053357D;
- type=4; name=$KeepSent
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
-        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux390@de.ibm.com,
-        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>,
-        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>
-X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
-Message-ID: <OFFF109303.D838CAE2-ON652578A3.0053357D-652578A3.00549366@in.ibm.com>
-From: Krishna Kumar2 <krkumar2@in.ibm.com>
-Date: Thu, 2 Jun 2011 20:56:42 +0530
-X-MIMETrack: Serialize by Router on d23ml172/23/M/IBM(Release 8.5.1FP5|September 29, 2010) at
- 02/06/2011 20:56:54
+	Thu, 2 Jun 2011 11:33:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=s8QRvrtmjqHXl2st9S7L9ezTD+6MUqAyMFUPnvdXhwP4nxMdI3Pg6xn3z31f+AVaZ6
+         cGzkFh2j1qh8iewYP9R2R7sLuVoGBSXVdo5SacbF8tbGFUWQ9b3hO0QNNk8GgSMxJ9oV
+         8my2ySlo0ouWYbigb4306kF6kDJCF+MO3Hyf8=
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Thu, 2 Jun 2011 17:33:33 +0200
+Message-ID: <BANLkTin1q-r=b3ZVbT3vdJ59OEddrRWfsQ@mail.gmail.com>
+Subject: thread leader death under strace (was Re: [PATCH 03/10] ptrace:
+ implement PTRACE_SEIZE)
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, indan@nul.nu,
+        bdonlan@gmail.com, linux-kernel@vger.kernel.org,
+        jan.kratochvil@redhat.com, akpm@linux-foundation.org
+Content-Type: multipart/mixed; boundary=0016e6db2a8f50be9a04a4bc5deb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> wrote on 06/02/2011 08:13:46 PM:
+--0016e6db2a8f50be9a04a4bc5deb
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> > Please review this patch to see if it looks reasonable:
->
-> Hmm, since you decided to work on top of my patch,
-> I'd appreciate split-up fixes.
+On Thu, Jun 2, 2011 at 7:01 AM, Tejun Heo <tj@kernel.org> wrote:
+> Maybe I misunderstood the problem but wasn't the problem about not
+> being able to wait for the exit of a leader thread and detach it? =A0We
+> have reliable (sans exec but that's a different story) exit
+> notification with EVENT_EXIT which even reports the exit_code, so I
+> don't see what the problem is. =A0What am I missing?
 
-OK (that also explains your next comment).
+The problem is that right now it seems that if tracer doesn't catch
+EVENT_EXIT and detach tracee when it sees it, really weird things
+happen.
 
-> > 1. Picked comments/code from MST's code and Rusty's review.
-> > 2. virtqueue_min_capacity() needs to be called only if it returned
-> >    empty the last time it was called.
-> > 3. Fix return value bug in free_old_xmit_skbs (hangs guest).
-> > 4. Stop queue only if capacity is not enough for next xmit.
->
-> That's what we always did ...
+Case 1: tracer traces thread leader. An untraced thread execs.
+tracer sees EVENT_EXIT, PTRACE_CONTs tracee, and...
+never sees WIFEXITED, waitpid just blocks forever!
 
-I had made the patch against your patch, hence this change (sorry for
-the confusion!).
+Case 2: discovered when I started experiments with current kernel
+behavior. No execve involved. I just run two tracees, make
+leader exit, then make the other tracee signal itself with fatal signal
+(SIGUSR1).
+Tracer sees leader's exit, but never sees other tracee's signal!
 
-> > 5. Fix/clean some likely/unlikely checks (hopefully).
-> >
-> > I have done some minimal netperf tests with this.
-> >
-> > With this patch, add_buf returning capacity seems to be useful - it
-> > allows less virtio API calls.
->
-> Why bother? It's cheap ...
+Please see attached program.
+The output on my F15 machine:
 
-If add_buf retains it's functionality to return the capacity (it
-is going to need a change to return 0 otherwise anyway), is it
-useful to call another function at each xmit?
+4816: thread leader
+4816: status:0003057f WIFSTOPPED sig:5 (TRAP) event:CLONE eventdata:0x12d1
+4817: status:0000137f WIFSTOPPED sig:19 (STOP) event:none eventdata:0x0
+EXITING <=3D=3D=3D leader will exit now. tracer sees it:
+4816: status:0006057f WIFSTOPPED sig:5 (TRAP) event:EXIT eventdata:0x7700
+DYING <=3D=3D=3D other thread SIGUSR1's itself. tracer *doesn't see anythin=
+g*
+alarm timed out <=3D=3D=3D tracer dies on alarm(1).
 
-> > +static bool free_old_xmit_skbs(struct virtnet_info *vi, int to_free)
-> > +{
-> > +   bool empty = virtqueue_min_capacity(vi->svq) < MAX_SKB_FRAGS + 2;
-> > +
-> > +   do {
-> > +      if (!free_one_old_xmit_skb(vi)) {
-> > +         /* No more skbs to free up */
-> >           break;
-> > -      pr_debug("Sent skb %p\n", skb);
-> > -      vi->dev->stats.tx_bytes += skb->len;
-> > -      vi->dev->stats.tx_packets++;
-> > -      dev_kfree_skb_any(skb);
-> > -   }
-> > -   return r;
-> > +      }
-> > +
-> > +      if (empty) {
-> > +         /* Check again if there is enough space */
-> > +         empty = virtqueue_min_capacity(vi->svq) <
-> > +            MAX_SKB_FRAGS + 2;
-> > +      } else {
-> > +         --to_free;
-> > +      }
-> > +   } while (to_free > 0);
-> > +
-> > +   return !empty;
-> >  }
->
-> Why bother doing the capacity check in this function?
+Now, if I send a non-fatal signal first, by uncommenting these lines:
+//      usleep(100*1000);
+//      VERBOSE("WINCH\n");
+//      raise(SIGWINCH);
 
-To return whether we have enough space for next xmit. It should call
-it only once unless space is running out. Does it sound OK?
+Output:
 
-> > -   if (unlikely(ret < 0)) {
-> > +   if (unlikely(capacity < 0)) {
-> > +      /*
-> > +       * Failure to queue should be impossible. The only way to
-> > +       * reach here is if we got a cb before 3/4th of space was
-> > +       * available. We could stop the queue and re-enable
-> > +       * callbacks (and possibly return TX_BUSY), but we don't
-> > +       * bother since this is impossible.
->
-> It's far from impossible.  The 3/4 thing is only a hint, and old devices
-> don't support it anyway.
+4834: thread leader
+4834: status:0003057f WIFSTOPPED sig:5 (TRAP) event:CLONE eventdata:0x12e3
+4835: status:0000137f WIFSTOPPED sig:19 (STOP) event:none eventdata:0x0
+EXITING <=3D=3D=3D leader will exit now. tracer sees it:
+4834: status:0006057f WIFSTOPPED sig:5 (TRAP) event:EXIT eventdata:0x7700
+WINCH <=3D=3D=3D other thread WINCH's itself. tracer *doesn't see anything*
+DYING <=3D=3D=3D other thread SIGUSR1's itself. tracer sees it:
+4835: status:00000a7f WIFSTOPPED sig:10 (USR1) event:none eventdata:0x0
+      tracer sees other thread about to die from signal 10:
+4835: status:0006057f WIFSTOPPED sig:5 (TRAP) event:EXIT eventdata:0xa
+      tracer sees other thread die from signal 10:
+4835: status:0000000a WIFSIGNALED sig:10 (USR1)
+      tracer sees leader die from signal 10:
+4834: status:0000000a WIFSIGNALED sig:10 (USR1)
+      tracer is informed "no more tracees":
+waitpid returned -1
 
-OK, I will re-put back your comment.
+This is just plain broken, right?
+(1) It should have worked in the first case too.
+(2) Where is SIGWINCH notification? Why ptrace didn't report it?
 
-> > -   if (!likely(free_old_xmit_skbs(vi, 2))) {
-> > -      netif_stop_queue(dev);
-> > -      if (unlikely(!virtqueue_enable_cb_delayed(vi->svq))) {
-> > -         /* More just got used, free them and recheck. */
-> > -         if (!likely(free_old_xmit_skbs(vi, 0))) {
-> > -            netif_start_queue(dev);
-> > -            virtqueue_disable_cb(vi->svq);
-> > +   /*
-> > +    * Apparently nice girls don't return TX_BUSY; check capacity and
-> > +    * stop the queue before it gets out of hand. Naturally, this
-wastes
-> > +    * entries.
-> > +    */
-> > +   if (capacity < 2+MAX_SKB_FRAGS) {
-> > +      /*
-> > +       * We don't have enough space for the next packet. Try
-> > +       * freeing more.
-> > +       */
-> > +      if (likely(!free_old_xmit_skbs(vi, UINT_MAX))) {
-> > +         netif_stop_queue(dev);
-> > +         if (unlikely(!virtqueue_enable_cb_delayed(vi->svq))) {
-> > +            /* More just got used, free them and recheck. */
-> > +            if (likely(free_old_xmit_skbs(vi, UINT_MAX))) {
->
-> Is this where the bug was?
+Re (2): if I disable leader exit - these lines:
+      VERBOSE("EXITING\n");
+      syscall(__NR_exit, 0x77);
 
-Return value in free_old_xmit() was wrong. I will re-do against the
-mainline kernel.
+then I do see SIGWINCH notification:
 
-Thanks,
+4891: thread leader
+4891: status:0003057f WIFSTOPPED sig:5 (TRAP) event:CLONE eventdata:0x131c
+4892: status:0000137f WIFSTOPPED sig:19 (STOP) event:none eventdata:0x0
+WINCH
+4891: status:00001c7f WIFSTOPPED sig:28 ((null)) event:none eventdata:0x131=
+c
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+DYING
+4891: status:00000a7f WIFSTOPPED sig:10 (USR1) event:none eventdata:0x131c
+4892: status:0006057f WIFSTOPPED sig:5 (TRAP) event:EXIT eventdata:0xa
+4891: status:0006057f WIFSTOPPED sig:5 (TRAP) event:EXIT eventdata:0xa
+4892: status:0000000a WIFSIGNALED sig:10 (USR1)
+4891: status:0000000a WIFSIGNALED sig:10 (USR1)
+waitpid returned -1
 
-- KK
+Looks like leader's exit throws a wrench into ptrace machinery.
 
+Now I understand why strace DETACHs on exit! :)
+
+--=20
+vda
+
+--0016e6db2a8f50be9a04a4bc5deb
+Content-Type: text/x-csrc; charset=US-ASCII; name="thread_leader_exit_with_TRACEEXIT_1.c"
+Content-Disposition: attachment; 
+	filename="thread_leader_exit_with_TRACEEXIT_1.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gofuodpu0
+
+LyogLi4uREVTQ1JJVElPTi4uLgoKICAgVGhpcyBzb2Z0d2FyZSBpcyBwcm92aWRlZCAnYXMtaXMn
+LCB3aXRob3V0IGFueSBleHByZXNzIG9yIGltcGxpZWQKICAgd2FycmFudHkuICBJbiBubyBldmVu
+dCB3aWxsIHRoZSBhdXRob3JzIGJlIGhlbGQgbGlhYmxlIGZvciBhbnkgZGFtYWdlcwogICBhcmlz
+aW5nIGZyb20gdGhlIHVzZSBvZiB0aGlzIHNvZnR3YXJlLgoKICAgUGVybWlzc2lvbiBpcyBncmFu
+dGVkIHRvIGFueW9uZSB0byB1c2UgdGhpcyBzb2Z0d2FyZSBmb3IgYW55IHB1cnBvc2UsCiAgIGlu
+Y2x1ZGluZyBjb21tZXJjaWFsIGFwcGxpY2F0aW9ucywgYW5kIHRvIGFsdGVyIGl0IGFuZCByZWRp
+c3RyaWJ1dGUgaXQKICAgZnJlZWx5LiAgKi8KCiNkZWZpbmUgX0dOVV9TT1VSQ0UgMQojaW5jbHVk
+ZSA8YXNzZXJ0Lmg+CiNpbmNsdWRlIDxsaW1pdHMuaD4KI2luY2x1ZGUgPHN0ZGRlZi5oPgojaW5j
+bHVkZSA8c3RkbGliLmg+CiNpbmNsdWRlIDxzdHJpbmcuaD4KI2luY2x1ZGUgPHVuaXN0ZC5oPgoj
+aW5jbHVkZSA8ZXJybm8uaD4KI2luY2x1ZGUgPHN0ZGlvLmg+CiNpbmNsdWRlIDxzY2hlZC5oPgoj
+aW5jbHVkZSA8c2lnbmFsLmg+CiNpbmNsdWRlIDxkaXJlbnQuaD4KI2luY2x1ZGUgPGZjbnRsLmg+
+CiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4KI2luY2x1ZGUgPHN5cy93YWl0Lmg+CiNpbmNsdWRlIDxz
+eXMvc3lzY2FsbC5oPgovKiAjaW5jbHVkZSA8cHRocmVhZC5oPiAqLwovKiBEYW5jZSBhcm91bmQg
+cHRyYWNlLmggKyB1c2VyLmggaW5jb21wYXRpYmlsaXR5ICovCiNpZmRlZiBfX2lhNjRfXwojIGRl
+ZmluZSBpYTY0X2ZwcmVnIGlhNjRfZnByZWdfRElTQUJMRQojIGRlZmluZSBwdF9hbGxfdXNlcl9y
+ZWdzIHB0X2FsbF91c2VyX3JlZ3NfRElTQUJMRQojZW5kaWYKI2luY2x1ZGUgPHN5cy9wdHJhY2Uu
+aD4KI2luY2x1ZGUgPGxpbnV4L3B0cmFjZS5oPgojaWZkZWYgX19pYTY0X18KIyB1bmRlZiBpYTY0
+X2ZwcmVnCiMgdW5kZWYgcHRfYWxsX3VzZXJfcmVncwojZW5kaWYKI2luY2x1ZGUgPHN5cy91c2Vy
+Lmg+CiNpZiBkZWZpbmVkIF9faTM4Nl9fIHx8IGRlZmluZWQgX194ODZfNjRfXwojIGluY2x1ZGUg
+PHN5cy9kZWJ1Z3JlZy5oPgojZW5kaWYKLyogRGVmaW5lIGNsb25lMiBmb3IgYWxsIGFyY2hlcyAq
+LwojaWZkZWYgX19pYTY0X18KZXh0ZXJuIGludCBfX2Nsb25lMihpbnQgKCpmbikgKHZvaWQgKiks
+IHZvaWQgKmNoaWxkX3N0YWNrX2Jhc2UsCiAgICAgICAgICAgICAgICAgICAgIHNpemVfdCBzdGFj
+a19zaXplLCBpbnQgZmxhZ3MsIHZvaWQgKmFyZywgLi4uKTsKI2RlZmluZSBjbG9uZTIgX19jbG9u
+ZTIKI2Vsc2UKI2RlZmluZSBjbG9uZTIoZnVuYywgc3RhY2tfYmFzZSwgc2l6ZSwgZmxhZ3MsIGFy
+Zy4uLikgXAogICAgICAgIGNsb25lKGZ1bmMsIChzdGFja19iYXNlKSArIChzaXplKSwgZmxhZ3Ms
+IGFyZykKI2VuZGlmCgoKc3RhdGljIGludCB2ZXJib3NlOwoKI2RlZmluZSBWRVJCT1NFKC4uLikg
+ZG8geyBcCglpZiAodmVyYm9zZSkgeyBcCgkJcHJpbnRmKF9fVkFfQVJHU19fKTsgZmZsdXNoKHN0
+ZG91dCk7IFwKCX0gXAp9IHdoaWxlICgwKQoKc3RhdGljIHBpZF90IGNoaWxkOwovKnN0YXRpYyBw
+aWRfdCBncmFuZGNoaWxkOyovCgpzdGF0aWMgdm9pZApzaWdraWxsKHBpZF90ICpwcCkKewoJcGlk
+X3QgcGlkID0gKnBwOwoJKnBwID0gMDsKCWlmIChwaWQgPiAwKQoJCWtpbGwocGlkLCBTSUdLSUxM
+KTsKfQoKc3RhdGljIHZvaWQKY2xlYW51cCh2b2lkKQp7CgkvKnNpZ2tpbGwoJmdyYW5kY2hpbGQp
+OyovCglzaWdraWxsKCZjaGlsZCk7Cgl3aGlsZSAod2FpdHBpZCgtMSwgTlVMTCwgX19XQUxMKSA+
+IDApCgkJY29udGludWU7Cn0KCnN0YXRpYyB2b2lkCmhhbmRsZXJfZmFpbChpbnQgc2lnbm8pCnsK
+CVZFUkJPU0UoImFsYXJtIHRpbWVkIG91dFxuIik7CglzaWdzZXRfdCBzZXQ7CglzaWduYWwoU0lH
+QUJSVCwgU0lHX0RGTCk7CglzaWduYWwoU0lHQUxSTSwgU0lHX0RGTCk7CgkvKiBTSUdBTFJNIG1h
+eSBiZSBibG9ja2VkIGluIHNpZ2hhbmRsZXIsIG5lZWQgdG8gdW5ibG9jayAqLwoJc2lnZmlsbHNl
+dCgmc2V0KTsKCXNpZ3Byb2NtYXNrKFNJR19VTkJMT0NLLCAmc2V0LCBOVUxMKTsKCS8qIER1ZSB0
+byBrZXJuZWwgYnVncywgd2FpdHBpZCBtYXkgYmxvY2suIE5lZWQgdG8gaGF2ZSBhIHRpbWVvdXQg
+Ki8KCWFsYXJtKDEpOwoJY2xlYW51cCgpOwoJZXhpdCgwKTsgLy9hc3NlcnQoMCk7Cn0KCnN0YXRp
+YyBjb25zdCBjaGFyKiBzaWdfbmFtZSh1bnNpZ25lZCBzaWcpCnsKCXN0YXRpYyBjb25zdCBjaGFy
+ICpjb25zdCBzaWdzW10gPSB7CgkJW1NJR1NUT1BdID0gIlNUT1AiLCBbU0lHVFJBUF0gPSAiVFJB
+UCIsIFtTSUdLSUxMXSA9ICJLSUxMIiwKCQlbU0lHVEVSTV0gPSAiVEVSTSIsIFtTSUdJTlQgXSA9
+ICJJTlQiICwgW1NJR0FMUk1dID0gIkFMUk0iLAoJCVtTSUdBQlJUXSA9ICJBQlJUIiwgW1NJR1VT
+UjFdID0gIlVTUjEiLCBbU0lHVVNSMl0gPSAiVVNSMiIsCgkJWzAgICAgICBdID0gIjAiLAoJCVtT
+SUdUUkFQfDB4ODBdID0gIlRSQVB8ODAiLAoJfTsKCXN0YXRpYyBjb25zdCB1bnNpZ25lZCBudW1f
+c2lncyA9IHNpemVvZihzaWdzKSAvIHNpemVvZihzaWdzWzBdKTsKCWlmIChzaWcgPCBudW1fc2ln
+cykKCQlyZXR1cm4gc2lnc1tzaWddOwoJcmV0dXJuIE5VTEw7Cn0KCnN0YXRpYyBjb25zdCBjaGFy
+KiBldmVudF9uYW1lKGludCBzdGF0dXMpCnsKCXN0YXRpYyBjb25zdCBjaGFyICpjb25zdCBldmVu
+dHNbXSA9IHsKCQlbMF0gICAgICAgICAgICAgICAgICAgICAgID0gIm5vbmUiLAoJCVtQVFJBQ0Vf
+RVZFTlRfRk9SSyAgICAgIF0gPSAiRk9SSyIsCgkJW1BUUkFDRV9FVkVOVF9WRk9SSyAgICAgXSA9
+ICJWRk9SSyIsCgkJW1BUUkFDRV9FVkVOVF9DTE9ORSAgICAgXSA9ICJDTE9ORSIsCgkJW1BUUkFD
+RV9FVkVOVF9FWEVDICAgICAgXSA9ICJFWEVDIiwKCQlbUFRSQUNFX0VWRU5UX1ZGT1JLX0RPTkVd
+ID0gIlZGT1JLX0RPTkUiLAoJCVtQVFJBQ0VfRVZFTlRfRVhJVCAgICAgIF0gPSAiRVhJVCIsCgl9
+OwoJc3RhdGljIGNvbnN0IHVuc2lnbmVkIG51bV9ldmVudHMgPSBzaXplb2YoZXZlbnRzKSAvIHNp
+emVvZihldmVudHNbMF0pOwoJc3RhdHVzID0gKHVuc2lnbmVkKXN0YXR1cyA+PiAxNjsKCWlmIChz
+dGF0dXMgPCBudW1fZXZlbnRzKQoJCXJldHVybiBldmVudHNbc3RhdHVzXTsKCXJldHVybiBOVUxM
+Owp9CgovKioqKioqKioqKioqKioqKioqIFN0YW5kYXJkIHNjYWZmb2xkaW5nIGVuZHMgaGVyZSAq
+KioqKioqKioqKioqKioqLwoKLyoKICogRXh0ZW5kZWQgY29tbWVudGFyeSBvZiB0aGUgZW50aXJl
+IHRlc3QuCiAqCiAqIFdoYXQga2VybmVscyAvIHBhdGNoZXMgZXhoaWJpdCBpdD8gV2hlbiBpdCB3
+YXMgZml4ZWQ/CiAqIElzIGl0IENQVSB2ZW5kb3IvbW9kZWwgZGVwZW5kZW50PyBTTVAgZGVwZW5k
+ZW50PwogKiBJcyBpdCBkZXRlcm1pbmlzdGljPwogKiBIb3cgZWFzeS9oYXJkIGlzIHRvIHJlcHJv
+ZHVjZSBpdAogKiAoYWx3YXlzPyBhIGRvemVuIGxvb3BzPyBhIHNlY29uZD8gbWludXRlPyBldGMp
+CiAqLwoKLyogSWYgdGhlIHRlc3QgaXMgbm90IGRldGVybWluaXN0aWM6CiAqIEFtb3VudCBvZiBz
+ZWNvbmRzIG5lZWRlZCB0byBhbG1vc3QgMTAwJSBjYXRjaCBpdCAqLwovLyNkZWZpbmUgREVGQVVM
+VF9URVNUVElNRSA1Ci8qIG9yIChpZiByZXByb2R1Y2libGUgaW4gYSBmZXcgbG9vcHMgb25seSkg
+Ki8KLy8jZGVmaW5lIERFRkFVTFRfTE9PUFMgMTAwCgpzdGF0aWMgaW50CnRocmVhZDEodm9pZCAq
+dW51c2VkKQp7Ci8vCXVzbGVlcCgxMDAqMTAwMCk7Ci8vCVZFUkJPU0UoIldJTkNIXG4iKTsKLy8J
+cmFpc2UoU0lHV0lOQ0gpOwoKCXVzbGVlcCgxMDAqMTAwMCk7CglWRVJCT1NFKCJEWUlOR1xuIik7
+CglyYWlzZShTSUdVU1IxKTsKCglmb3IoOzspIHBhdXNlKCk7CglyZXR1cm4gMDsKfQoKc3RhdGlj
+IGludAp0aHJlYWRfbGVhZGVyKHZvaWQgKnVudXNlZCkKewoJLyogbWFsbG9jIGdpdmVzIHN1ZmZp
+Y2llbnRseSBhbGlnbmVkIGJ1ZmZlci4KCSAqIGxvbmcgYnVmW10gZG9lcyBub3QhIChvbiBpYTY0
+KS4KCSAqLwoJY2xvbmUyKHRocmVhZDEsIG1hbGxvYygxNiAqIDEwMjQpLCAxNiAqIDEwMjQsIDAK
+CQl8IENMT05FX1ZNCgkJfCBDTE9ORV9GUwoJCXwgQ0xPTkVfRklMRVMgfCBDTE9ORV9TSUdIQU5E
+IHwgQ0xPTkVfVEhSRUFEIHwgQ0xPTkVfU1lTVlNFTQovLwkJfCBDTE9ORV9QVFJBQ0UKCQl8IDAg
+ICAgICAgIC8qIG5vIHNpZ25hbCB0byBzZW5kIG9uIGRlYXRoICovCgkJLCBOVUxMKTsKCVZFUkJP
+U0UoIkVYSVRJTkdcbiIpOwoJc3lzY2FsbChfX05SX2V4aXQsIDB4NzcpOwoJZm9yKDs7KSBwYXVz
+ZSgpOwoJcmV0dXJuIDA7Cn0KCi8qIElmIG5vdGhpbmcgc3RyYW5nZSBoYXBwZW5zLCBqdXN0IHJl
+dHVybnMuCiAqIE5vdGFibGUgZXZlbnRzICh3aGljaCBhcmUgbm90IGJ1Z3MpIHByaW50IHNvbWUg
+c29ydCBvZiBtYXJrZXIKICogaXMgdmVyYm9zZSBpcyBvbiwgYnV0IHN0aWxsIGNvbnRpbnVlIGFu
+ZCByZXR1cm4gbm9ybWFsbHkuCiAqIEtub3duIGJ1Z3MgYWxzbyBwcmludCBhIG1lc3NhZ2UgaWYg
+dmVyYm9zZSwgYnV0IHRoZXkgZXhpdCgxKS4KICogTmV3IGJ1Z3MgYXJlIGxpa2VseSB0byB0cmlw
+IGFzc2VydHMgb3IgY2F1c2UgaGFuZy9rZXJuZWwgY3Jhc2ggOikKICovCnN0YXRpYyB2b2lkCnJl
+cHJvZHVjZSh2b2lkKQp7CglpbnQgc3RhdHVzOwoJcGlkX3QgcGlkOwoKCWFsYXJtKDEpOwoKCS8q
+IFR5cGljYWwgc2NlbmFyaW8gc3RhcnRzIGxpa2UgdGhpcy4gICovCgljaGlsZCA9IGZvcmsoKTsK
+CWFzc2VydChjaGlsZCAhPSAtMSk7CglpZiAoY2hpbGQgPT0gMCkgewoJCS8qIGNoaWxkICovCgkJ
+ZXJybm8gPSAwOwoJCXB0cmFjZShQVFJBQ0VfVFJBQ0VNRSwgMCwgKHZvaWQgKikgMCwgKHZvaWQg
+KikgMCk7CgkJYXNzZXJ0X3BlcnJvcihlcnJubyk7CgkJcmFpc2UoU0lHU1RPUCk7CgkJYXNzZXJ0
+X3BlcnJvcihlcnJubyk7CgoJCXByaW50ZigiJWQ6IHRocmVhZCBsZWFkZXJcbiIsIGdldHBpZCgp
+KTsKCQl0aHJlYWRfbGVhZGVyKE5VTEwpOwoJfQoKCS8qIFdlIGFyZSBwYXJlbnQgdHJhY2VyICov
+Cglhc3NlcnQoY2hpbGQgPiAwKTsKCWVycm5vID0gMDsKCgkvKiBDaGlsZCBoYXMgc3RvcHBlZCBp
+dHNlbGYsIGNoZWNraW5nICovCglwaWQgPSB3YWl0cGlkKGNoaWxkLCAmc3RhdHVzLCAwKTsKCWFz
+c2VydChwaWQgPT0gY2hpbGQpOwoJYXNzZXJ0KFdJRlNUT1BQRUQoc3RhdHVzKSk7Cglhc3NlcnQo
+V1NUT1BTSUcoc3RhdHVzKSA9PSBTSUdTVE9QKTsKCglwdHJhY2UoUFRSQUNFX1NFVE9QVElPTlMs
+IGNoaWxkLCBOVUxMLCAwCgkJfCBQVFJBQ0VfT19UUkFDRVNZU0dPT0QKCQl8IFBUUkFDRV9PX1RS
+QUNFQ0xPTkUKCQl8IFBUUkFDRV9PX1RSQUNFRVhJVAoJCXwgUFRSQUNFX09fVFJBQ0VFWEVDCgkp
+OwoJYXNzZXJ0X3BlcnJvcihlcnJubyk7CgoJcHRyYWNlKFBUUkFDRV9DT05ULCBjaGlsZCwgTlVM
+TCwgKHZvaWQgKikgMCk7Cglhc3NlcnRfcGVycm9yKGVycm5vKTsKCgkvKiBMZXQncyBqdXN0IGxv
+b2sgb24gdGhlIHJlc3VsdGluZyBzZXF1ZW5jZSBvZiBldmVudHMgKi8KCWZvciAoOzspIHsKCQlw
+aWRfdCBwaWQgPSB3YWl0cGlkKC0xLCAmc3RhdHVzLCBfX1dBTEwpOwoJCWlmIChwaWQgPD0gMCkg
+ewoJCQlwcmludGYoIndhaXRwaWQgcmV0dXJuZWQgJWRcbiIsIHBpZCk7CgkJCXJldHVybjsKCQl9
+CgkJaWYgKFdJRlNUT1BQRUQoc3RhdHVzKSkgewoJCQlpbnQgc2lnID0gV1NUT1BTSUcoc3RhdHVz
+KTsKCgkJCWNoYXIgZXZlbnRfc3RyW3NpemVvZihsb25nKSozXSA9ICI8ZXJyPiI7CgkJCWxvbmcg
+ZXZlbnRfZGF0YSA9IDB4MTExMTExMTE7CgkJCWludCBoYXZlX2V2ZW50ID0gIXB0cmFjZShQVFJB
+Q0VfR0VURVZFTlRNU0csIHBpZCwgMEwsICZldmVudF9kYXRhKTsKCQkJaWYgKGhhdmVfZXZlbnQp
+CgkJCQlzcHJpbnRmKGV2ZW50X3N0ciwgIjB4JWx4IiwgZXZlbnRfZGF0YSk7CgoJCQlwcmludGYo
+IiVkOiBzdGF0dXM6JTA4eCBXSUZTVE9QUEVEIHNpZzolZCAoJXMpIGV2ZW50OiVzIGV2ZW50ZGF0
+YTolc1xuIiwKCQkJCXBpZCwgc3RhdHVzLAoJCQkJc2lnLCBzaWdfbmFtZShzaWcpLAoJCQkJZXZl
+bnRfbmFtZShzdGF0dXMpLAoJCQkJZXZlbnRfc3RyCgkJCSk7CgkJCWlmIChzaWcgPT0gU0lHU1RP
+UCkgc2lnID0gMDsKCQkJaWYgKHNpZyA9PSBTSUdUUkFQKSBzaWcgPSAwOwoJCQlpZiAoc2lnID09
+IChTSUdUUkFQfDB4ODApKSBzaWcgPSAwOwoJCQlwdHJhY2UoUFRSQUNFX0NPTlQsIHBpZCwgTlVM
+TCwgc2lnKTsKCQkJYXNzZXJ0X3BlcnJvcihlcnJubyk7CgkJfQoJCWVsc2UgaWYgKFdJRkVYSVRF
+RChzdGF0dXMpKQoJCQlwcmludGYoIiVkOiBzdGF0dXM6JTA4eCBXSUZFWElURUQgZXhpdGNvZGU6
+JWRcbiIsCgkJCQlwaWQsIHN0YXR1cywgV0VYSVRTVEFUVVMoc3RhdHVzKSk7CgkJZWxzZSBpZiAo
+V0lGU0lHTkFMRUQoc3RhdHVzKSkKCQkJcHJpbnRmKCIlZDogc3RhdHVzOiUwOHggV0lGU0lHTkFM
+RUQgc2lnOiVkICglcylcbiIsCgkJCQlwaWQsIHN0YXR1cywgV1RFUk1TSUcoc3RhdHVzKSwgc2ln
+X25hbWUoV1RFUk1TSUcoc3RhdHVzKSkpOwoJCWVsc2UKCQkJcHJpbnRmKCIlZDogc3RhdHVzOiUw
+OHggLSA/Pz9cbiIsCgkJCQlwaWQsIHN0YXR1cyk7Cgl9CgoJY2xlYW51cCgpOwp9CgppbnQKbWFp
+bihpbnQgYXJnYywgY2hhciAqKmFyZ3YpCnsKCXNldGJ1ZihzdGRvdXQsIE5VTEwpOwoKI2lmIGRl
+ZmluZWQgREVGQVVMVF9URVNUVElNRSB8fCBkZWZpbmVkIERFRkFVTFRfTE9PUFMKCWludCBpOwoJ
+Y2hhciAqZW52X3Rlc3R0aW1lID0gZ2V0ZW52KCJURVNUVElNRSIpOyAgLyogbWlzbm9tZXIgKi8K
+CWludCB0ZXN0dGltZSA9IChlbnZfdGVzdHRpbWUgPyBhdG9pKGVudl90ZXN0dGltZSkgOiAxKTsK
+I2VuZGlmCgoJYXRleGl0KGNsZWFudXApOwoJc2lnbmFsKFNJR0lOVCwgaGFuZGxlcl9mYWlsKTsK
+CXNpZ25hbChTSUdBQlJULCBoYW5kbGVyX2ZhaWwpOwoJc2lnbmFsKFNJR0FMUk0sIGhhbmRsZXJf
+ZmFpbCk7Cgl2ZXJib3NlID0gMSA7Ly8oYXJnYyAtIDEpOwoKI2lmIGRlZmluZWQgREVGQVVMVF9U
+RVNUVElNRQoJdGVzdHRpbWUgKj0gREVGQVVMVF9URVNUVElNRTsKCWZvcihpID0gMDsgaSA8IHRl
+c3R0aW1lOyBpKyspIHsKCQl0aW1lX3QgdCA9IHRpbWUoTlVMTCk7CgkJd2hpbGUgKHQgPT0gdGlt
+ZShOVUxMKSkgewoJCQlWRVJCT1NFKCIuIik7CgkJCXJlcHJvZHVjZSgpOwoJCX0KCX0KCVZFUkJP
+U0UoIlxuIik7CiNlbGlmIGRlZmluZWQgREVGQVVMVF9MT09QUwoJdGVzdHRpbWUgKj0gREVGQVVM
+VF9MT09QUzsKCWZvcihpID0gMDsgaSA8IHRlc3R0aW1lOyBpKyspIHsKCQlWRVJCT1NFKCIuIik7
+CgkJcmVwcm9kdWNlKCk7Cgl9CglWRVJCT1NFKCJcbiIpOwojZWxzZQoJcmVwcm9kdWNlKCk7CiNl
+bmRpZgoKCXJldHVybiAwOwp9Cg==
+--0016e6db2a8f50be9a04a4bc5deb--
