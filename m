@@ -1,112 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab1FBNez (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 09:34:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2593 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752594Ab1FBNex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 09:34:53 -0400
-Date: Thu, 2 Jun 2011 16:34:25 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCH RFC 3/3] virtio_net: limit xmit polling
-Message-ID: <20110602133425.GJ7141@redhat.com>
-References: <cover.1306921434.git.mst@redhat.com>
- <1ec8eec325839ecf2eac9930a230361e7956047c.1306921434.git.mst@redhat.com>
- <87pqmwj3am.fsf@rustcorp.com.au>
+	id S1755403Ab1FBNhu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 09:37:50 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36956 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab1FBNht (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 09:37:49 -0400
+Date: Thu, 2 Jun 2011 14:37:44 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd wm8350: allocate irq descs dynamically
+Message-ID: <20110602133743.GA4253@sirena.org.uk>
+References: <20110602114502.GO23771@pengutronix.de> <20110602115349.GF3085@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87pqmwj3am.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110602115349.GF3085@opensource.wolfsonmicro.com>
+X-Cookie: Wanna buy a duck?
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 01:24:57PM +0930, Rusty Russell wrote:
-> On Wed, 1 Jun 2011 12:50:03 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > Current code might introduce a lot of latency variation
-> > if there are many pending bufs at the time we
-> > attempt to transmit a new one. This is bad for
-> > real-time applications and can't be good for TCP either.
+On Thu, Jun 02, 2011 at 12:53:49PM +0100, Mark Brown wrote:
+> On Thu, Jun 02, 2011 at 01:45:02PM +0200, Sascha Hauer wrote:
 > > 
-> > Free up just enough to both clean up all buffers
-> > eventually and to be able to xmit the next packet.
-> 
-> OK, I found this quite confusing to read.
-> 
-> > -	while ((skb = virtqueue_get_buf(vi->svq, &len)) != NULL) {
-> > +	while ((r = virtqueue_min_capacity(vi->svq) < MAX_SKB_FRAGS + 2) ||
-> > +	       min_skbs-- > 0) {
-> > +		skb = virtqueue_get_buf(vi->svq, &len);
-> > +		if (unlikely(!skb))
-> > +			break;
-> >  		pr_debug("Sent skb %p\n", skb);
-> >  		vi->dev->stats.tx_bytes += skb->len;
-> >  		vi->dev->stats.tx_packets++;
-> >  		dev_kfree_skb_any(skb);
-> >  	}
-> > +	return r;
-> >  }
-> 
-> Gah... what a horrible loop.
-> 
-> Basically, this patch makes hard-to-read code worse, and we should try
-> to make it better.
-> 
-> Currently, xmit *can* fail when an xmit interrupt wakes the queue, but
-> the packet(s) xmitted didn't free up enough space for the new packet.
-> With indirect buffers this only happens if we hit OOM (and thus go to
-> direct buffers).
-> 
-> We could solve this by only waking the queue in skb_xmit_done if the
-> capacity is >= 2 + MAX_SKB_FRAGS.  But can we do it without a race?
+> > This allows boards to leave the irq_base field unitialized and
+> > prevents them having to reserve irqs in the platform.
+> > pdata can be optional for irq support now. Without pdata the
+> > driver allocates some free irq range. With pdata and irq_base > 0
+> > the driver allocates exactly the specified irq.
+> > Without pdata the irq defaults to IRQF_TRIGGER_LOW.
 
-I don't think so.
+> > Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-> If not, then I'd really prefer to see this, because I think it's clearer:
-> 
->         // Try to free 2 buffers for every 1 xmit, to stay ahead.
->         free_old_buffers(2)
-> 
->         if (!add_buf()) {
->                 // Screw latency, free them all.
->                 free_old_buffers(UINT_MAX)
->                 // OK, this can happen if we are using direct buffers,
->                 // and the xmit interrupt woke us but the packets
->                 // xmitted were smaller than this one.  Rare though.
->                 if (!add_buf())
->                         Whinge and stop queue, maybe loop.
->         }
-> 
->         if (capacity < 2 + MAX_SKB_FRAGS) {
->                 // We don't have enough for the next packet?  Try
->                 // freeing more.
->                 free_old_buffers(UINT_MAX);
->                 if (capacity < 2 + MAX_SKB_FRAGS) {
->                         Stop queue, maybe loop.
->         }
-> 
-> The current code makes my head hurt :(
-> 
-> Thoughts?
-> Rusty.
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-OK, I have something very similar, but I still dislike the screw the
-latency part: this path is exactly what the IBM guys seem to hit.  So I
-created two functions: one tries to free a constant number and another
-one up to capacity. I'll post that now.
-
-
--- 
-MST
+Actually I take that back, it looks like the wm831x equivalent patch is
+causing some sort of semi-intermittent issue with the IRQ infrastructure
+on non-sparse systems so I suspect this patch is also problematic.  The
+major symptom is lockups in softirq handling.
