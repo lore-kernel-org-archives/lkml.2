@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab1FBOwm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 10:52:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37037 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752237Ab1FBOwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 10:52:40 -0400
-Date: Thu, 2 Jun 2011 16:52:39 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [Patch] mm: remove the leftovers of noswapaccount
-Message-ID: <20110602145239.GC6820@tiehla.suse.cz>
-References: <BANLkTinLvqa0DiayLOwvxE9zBmqb4Y7Rww@mail.gmail.com> <20110523112558.GC11439@tiehlicka.suse.cz> <BANLkTi=2SwKFfwBxrQr3xLYSUzoGOy6oKA@mail.gmail.com> <20110530094337.GF20166@tiehlicka.suse.cz> <20110602141622.GA4416@cr0.redhat.com>
+	id S1752555Ab1FBOxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 10:53:07 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41784 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752198Ab1FBOxF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 10:53:05 -0400
+Date: Thu, 2 Jun 2011 10:53:04 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Julia Lawall <julia@diku.dk>
+cc: David Brownell <dbrownell@users.sourceforge.net>,
+        <kernel-janitors@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/usb/gadget/inode.c: add missing kfree
+In-Reply-To: <1307003186-23244-1-git-send-email-julia@diku.dk>
+Message-ID: <Pine.LNX.4.44L0.1106021035500.1913-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110602141622.GA4416@cr0.redhat.com>
-User-Agent: Mutt/1.5.18-muttng (2008-05-17-r1399)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 02-06-11 22:16:22, Américo Wang wrote:
-> 
-> In commit a2c8990aed5ab (memsw: remove noswapaccount kernel parameter),
-> Michal forgot to remove some left pieces of noswapaccount in the tree,
-> this patch removes them all.
-> 
-> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
+On Thu, 2 Jun 2011, Julia Lawall wrote:
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+> From: Julia Lawall <julia@diku.dk>
+> 
+> The label fail frees dev->buf, but kbuf hasn't yet been stored there at
+> this point.
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+...
+
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+> I wonder if it is really correct to free dev->buf at fail in this case.
+> Because it is freeing the previously allocated value of dev->buf, not the
+> current one as done in subsequent cases.
+
+I don't think it matters.  This check is probably there only for 
+safety; it should not be possible for dev->buf to be non-NULL at this 
+point.  You ought to be able to remove the entire
+
+	if (dev->buf)
+		goto fail;
+
+statement with no ill effects.
+
+Alan Stern
+
