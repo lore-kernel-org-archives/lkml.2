@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161270Ab1FBMZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 08:25:47 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:50842 "EHLO e6.ny.us.ibm.com"
+	id S1161400Ab1FBM0v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 08:26:51 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:56345 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161106Ab1FBMZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 08:25:43 -0400
+	id S1161176Ab1FBMZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 08:25:44 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
 Cc: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>, linux-kernel@vger.kernel.org,
@@ -13,10 +13,10 @@ Cc: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>, linux-kernel@vger.kernel.org,
         David Safford <safford@watson.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
         Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH v6 16/20] evm: additional parameter to pass integrity cache entry 'iint'
-Date: Thu,  2 Jun 2011 08:23:39 -0400
-Message-Id: <1307017423-15093-17-git-send-email-zohar@linux.vnet.ibm.com>
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH v6 17/20] evm: evm_verify_hmac must not return INTEGRITY_UNKNOWN
+Date: Thu,  2 Jun 2011 08:23:40 -0400
+Message-Id: <1307017423-15093-18-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1307017423-15093-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1307017423-15093-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -26,79 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
 
-Additional iint parameter allows to skip lookup in the cache.
+If EVM is not supported or enabled, evm_verify_hmac() returns
+INTEGRITY_UNKNOWN, which ima_appraise_measurement() ignores and sets
+the appraisal status based solely on the security.ima verification.
+
+evm_verify_hmac() also returns INTEGRITY_UNKNOWN for other failures, such
+as temporary failures like -ENOMEM, resulting in possible attack vectors.
+This patch changes the default return code for temporary/unexpected
+failures, like -ENOMEM, from INTEGRITY_UNKNOWN to INTEGRITY_FAIL, making
+evm_verify_hmac() fail safe.
+
+As a result, failures need to be re-evaluated in order to catch both
+temporary errors, such as the -ENOMEM, as well as errors that have been
+resolved in fix mode.
 
 Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 ---
- include/linux/evm.h               |    8 ++++++--
- security/integrity/evm/evm_main.c |   18 ++++++++----------
- 2 files changed, 14 insertions(+), 12 deletions(-)
+ security/integrity/evm/evm_main.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/evm.h b/include/linux/evm.h
-index c3bc089..8db7b74 100644
---- a/include/linux/evm.h
-+++ b/include/linux/evm.h
-@@ -11,11 +11,14 @@
- #include <linux/integrity.h>
- #include <linux/xattr.h>
- 
-+struct integrity_iint_cache;
-+
- #ifdef CONFIG_EVM
- extern enum integrity_status evm_verifyxattr(struct dentry *dentry,
- 					     const char *xattr_name,
- 					     void *xattr_value,
--					     size_t xattr_value_len);
-+					     size_t xattr_value_len,
-+					     struct integrity_iint_cache *iint);
- extern void evm_inode_post_setattr(struct dentry *dentry, int ia_valid);
- extern int evm_inode_setxattr(struct dentry *dentry, const char *name,
- 			      const void *value, size_t size);
-@@ -34,7 +37,8 @@ extern int evm_inode_post_init_security(struct inode *inode,
- static inline enum integrity_status evm_verifyxattr(struct dentry *dentry,
- 						    const char *xattr_name,
- 						    void *xattr_value,
--						    size_t xattr_value_len)
-+						    size_t xattr_value_len,
-+					struct integrity_iint_cache *iint)
- {
- 	return INTEGRITY_UNKNOWN;
- }
 diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index 0f3e8a6..14fbd38 100644
+index 14fbd38..9abe75b 100644
 --- a/security/integrity/evm/evm_main.c
 +++ b/security/integrity/evm/evm_main.c
-@@ -127,21 +127,19 @@ static int evm_protected_xattr(const char *req_xattr_name)
-  */
- enum integrity_status evm_verifyxattr(struct dentry *dentry,
- 				      const char *xattr_name,
--				      void *xattr_value, size_t xattr_value_len)
-+				      void *xattr_value, size_t xattr_value_len,
-+				      struct integrity_iint_cache *iint)
- {
--	struct inode *inode = dentry->d_inode;
--	struct integrity_iint_cache *iint;
--	enum integrity_status status;
--
- 	if (!evm_initialized || !evm_protected_xattr(xattr_name))
- 		return INTEGRITY_UNKNOWN;
+@@ -56,13 +56,15 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 	struct evm_ima_xattr_data xattr_data;
+ 	int rc;
  
--	iint = integrity_iint_find(inode);
--	if (!iint)
+-	if (iint->hmac_status != INTEGRITY_UNKNOWN)
++	if (iint->hmac_status == INTEGRITY_PASS)
+ 		return iint->hmac_status;
+ 
++	/* if status is not PASS, try to check again - against -ENOMEM */
++
+ 	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
+ 			   xattr_value_len, xattr_data.digest);
+ 	if (rc < 0)
 -		return INTEGRITY_UNKNOWN;
--	status = evm_verify_hmac(dentry, xattr_name, xattr_value,
-+	if (!iint) {
-+		iint = integrity_iint_find(dentry->d_inode);
-+		if (!iint)
-+			return INTEGRITY_UNKNOWN;
-+	}
-+	return evm_verify_hmac(dentry, xattr_name, xattr_value,
- 				 xattr_value_len, iint);
--	return status;
- }
- EXPORT_SYMBOL_GPL(evm_verifyxattr);
++		goto err_out;
  
+ 	xattr_data.type = EVM_XATTR_HMAC;
+ 	rc = vfs_xattr_cmp(dentry, XATTR_NAME_EVM, (u8 *)&xattr_data,
+@@ -77,11 +79,8 @@ err_out:
+ 	case -ENODATA:		/* file not labelled */
+ 		iint->hmac_status = INTEGRITY_NOLABEL;
+ 		break;
+-	case -EINVAL:
+-		iint->hmac_status = INTEGRITY_FAIL;
+-		break;
+ 	default:
+-		iint->hmac_status = INTEGRITY_UNKNOWN;
++		iint->hmac_status = INTEGRITY_FAIL;
+ 	}
+ 	return iint->hmac_status;
+ }
 -- 
 1.7.3.4
 
