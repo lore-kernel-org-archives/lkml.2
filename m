@@ -1,139 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759546Ab1FBIPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 04:15:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23930 "EHLO mx1.redhat.com"
+	id S1759560Ab1FBI0L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 04:26:11 -0400
+Received: from mail.perches.com ([173.55.12.10]:2433 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759140Ab1FBIPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 04:15:03 -0400
-Date: Thu, 2 Jun 2011 10:14:35 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Kyungmin Park <kmpark@infradead.org>
-cc: Chris Mason <chris.mason@oracle.com>, Lukas Czerner <lczerner@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, Mark Lord <kernel@teksavvy.com>,
-        James Bottomley <james.bottomley@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
-        tytso <tytso@mit.edu>, linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        sandeen <sandeen@redhat.com>, Dave Chinner <dchinner@redhat.com>
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
- super_operation
-In-Reply-To: <BANLkTimkn7ZVAUJw6NfWVMECfe+C+82i+g@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1106020953510.3931@dhcp-27-109.brq.redhat.com>
-References: <20101118130630.GJ6178@parisc-linux.org> <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <4CE59C9E.6050902@teksavvy.com>
- <1290177488-sup-6540@think> <4CE68F80.7000607@teksavvy.com> <20101119145748.GB27919@infradead.org> <4CE695FF.20601@teksavvy.com> <20101207092749.GA26100@infradead.org> <1291740643-sup-2494@think> <BANLkTimkn7ZVAUJw6NfWVMECfe+C+82i+g@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-672173440-1307002481=:3931"
+	id S1752882Ab1FBI0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 04:26:09 -0400
+Subject: Re: [PATCH 4/6] MAINTAINERS: Remove unused PERFORMANCE EVENTS
+ pattern
+From: Joe Perches <joe@perches.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+In-Reply-To: <20110602074057.GE2150@elte.hu>
+References: <cover.1306950701.git.joe@perches.com>
+	 <8d1e596980a6b6fec79432bb5a5953985cf85c2f.1306950701.git.joe@perches.com>
+	 <20110602074057.GE2150@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Jun 2011 01:26:07 -0700
+Message-ID: <1307003167.32125.59.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, 2011-06-02 at 09:40 +0200, Ingo Molnar wrote:
+> * Joe Perches <joe@perches.com> wrote:
+> > No arch/*/lib/perf_event* files exist so remove the pattern.
+> The arch/*/lib/ hierarchy is a common place to put stuff into, it 
+> does not hurt at all to have it mentioned.
 
---8323328-672173440-1307002481=:3931
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Every once in awhile I run a script on MAINTAINERS
+and fix up defects found by the script.
 
-On Thu, 2 Jun 2011, Kyungmin Park wrote:
+Dead code is dead code.
+This was unused as of commit e360adbe2924.
 
-> On Wed, Dec 8, 2010 at 1:52 AM, Chris Mason <chris.mason@oracle.com> wrote:
-> > Excerpts from Christoph Hellwig's message of 2010-12-07 04:27:49 -0500:
-> >> On Fri, Nov 19, 2010 at 10:21:35AM -0500, Mark Lord wrote:
-> >> > >I really hate to rely on this third party hearsay (from all sides), and
-> >> > >have implement TRIM support in qemu now.  I'll soon install win7 and
-> >> > >will check out the TRIM patters myself.
-> >> >
-> >> > Excellent!
-> >>
-> >> I did a Windows 7 installation under qemu today, and the result is:
-> >
-> > Great, thanks for testing this.
-> >
-> >>
-> >>  - it TRIMs the whole device early during the installation
-> >>  - after that I see a constant stream of small trims during the
-> >>    installation.  It's using lots of non-contiguous ranges in a single
-> >>    TRIM command, with sizes down to 8 sectors (4k) for a single range.
-> >>  - after installation there's is some background-trimming going on
-> >>    even when doing no user interaction with the VM at all.
-> 
-> Hi Lukas,
-> 
-> Now FITRIM is based on user interaction. So how about to implement the
-> AUTO batched discard at kernel level?
-> Idea is same as windows, make a single thread and iterate the
-> superblocks and call the trim.
-> 
-> here's pseudo codes.
-> 
-> 1. generate the trim thread.
-> 2. iterate the superblocks by iterate_supers() at fs/super.c
-> 3. check the queue which support the discard feature or not.
-> blk_queue_discard(q)
-> 4. wait on events
-> 5. call the sb->trim (need to re-introduce it)
-> 
-> The difficult things are how to define the events and how to trigger
-> the trim thread.
-> e.g., notified from block layer, called from filesystem and so on.
-> 
-> How do you think?
+> stop mucking with these patterns and start dealing 
+> with some of the more important problems we have?
 
-Hi Kyungmin,
+My time, my choice on what to do with it.
 
-generally I think this is a good idea and I thought about it as well.
-However I also think that we might want to wait for the FITRIM and
-discard supported devices to settle down to see how it performs and if
-frequently calling discard on big chunks of the device does not have
-some unwanted consequences (as Dave Chinner pointed out in a different
-thread, that this automations usually do).
-
-Regarding events, filesystem might watch amount of data written to it
-(and it usually do right now) and trigger the event when it exceeds,
-let's say 50% of the fs size and zero the counter. The downside of this
-is that it is not controlled behaviour hence we'll end up with
-unpredictable behaviour of the filesystem in the long term.
-
-The solution might be (and it is something I want to look into)
-infrastructure to determine size of the queue to the device from within
-the filesystem (or vfs) so we can tell when it is busy and we want to wait,
-or when it is doing nothing and we can discard.
-
-Also per filesystem, or per device, control will be needed, so we can
-selectively turn it on and off. But as I said I am not sure that this is
-the best idea to do it right now, but others might have different
-opinion.
-
-Thanks!
--Lukas
-
-> 
-> Thank you,
-> Kyungmin Park
-> 
-> >>  - removing files leads to an instant stream of TRIMs, again vectored
-> >>    and of all sizes down to 4k.  Note that the TRIMs are a lot more
-> >>    instant than even with btrfs and -o discard, which delays most
-> >>    TRIMs until doing a sync.
-> >
-> > Btrfs will do some small trims right when the block is freed, especially
-> > in fsync heavy workloads but this is a suboptimal thing I want to fix.
-> >
-> > The code tries to gather a whole transaction worth of trims and do them
-> > after the commit is done.
-> >
-> > -chris
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> 
-
--- 
---8323328-672173440-1307002481=:3931--
