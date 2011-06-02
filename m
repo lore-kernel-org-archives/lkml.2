@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab1FBPRL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 11:17:11 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:52451 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752484Ab1FBPRJ (ORCPT
+	id S1752069Ab1FBPMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 11:12:15 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53100 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab1FBPMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 11:17:09 -0400
-Date: Thu, 2 Jun 2011 11:17:08 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Julia Lawall <julia@diku.dk>
-cc: David Brownell <dbrownell@users.sourceforge.net>,
-        <kernel-janitors@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/usb/gadget/inode.c: add missing kfree
-In-Reply-To: <Pine.LNX.4.64.1106021656060.430@ask.diku.dk>
-Message-ID: <Pine.LNX.4.44L0.1106021110390.1913-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 2 Jun 2011 11:12:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=jOl63Oy+tBCd/LNCngOyfdgzoFLg3Dda0ZzuSsRAwneVcExXKBB0sMwbpP/F92K3Gk
+         HB7O4+6eLdzbAP+4wAVEqBsqh5it66XIBSbBhYS03w3kVUaOOpgWRnd2KUV06botvy/5
+         wz/MgT8QXNhyE99WXr/DbonsrIjTkLyq0nhw0=
+From: Johannes Obermaier <johannes.obermaier@gmail.com>
+To: mchehab@infradead.org
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Obermaier <johannes.obermaier@gmail.com>
+Subject: [PATCH 1/1] V4L/DVB: mt9v011: Fixed incorrect value for the first valid column
+Date: Thu,  2 Jun 2011 17:17:51 +0200
+Message-Id: <1307027871-30401-1-git-send-email-johannes.obermaier@gmail.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Jun 2011, Julia Lawall wrote:
+According to the datasheet (page 8), the first optical clear pixel-column is not at position 14. The correct/recommended value is 20. Without this patch there is a dark line on the left side of the image.
 
-> > I don't think it matters.  This check is probably there only for 
-> > safety; it should not be possible for dev->buf to be non-NULL at this 
-> > point.  You ought to be able to remove the entire
-> > 
-> > 	if (dev->buf)
-> > 		goto fail;
-> > 
-> > statement with no ill effects.
-> 
-> I can send such a patch if you think it is OK.  But I have no way to test 
-> it.
+Signed-off-by: Johannes Obermaier <johannes.obermaier@gmail.com>
+---
+ drivers/media/video/mt9v011.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I don't either, since as far as I know the "if" condition can never be 
-true.  You may be able to verify this just by reading the code.  Note 
-that dev_config is used only as a field in dev_init_operations, which 
-is used only in the gadgetfs_fill_super routine and therefore only when 
-a file in this filesystem is opened.
-
-Note also that the only time dev->buf becomes non-NULL is when
-dev_config() succeeds, at which point fd->f_op is switched from
-dev_init_operations to ep0_io_operations.  Therefore dev_config()
-cannot be called successfully more than once for the same open file.
-
-Alan Stern
+diff --git a/drivers/media/video/mt9v011.c b/drivers/media/video/mt9v011.c
+index 4904d25..a6cf05a 100644
+--- a/drivers/media/video/mt9v011.c
++++ b/drivers/media/video/mt9v011.c
+@@ -286,7 +286,7 @@ static void set_res(struct v4l2_subdev *sd)
+ 	 * be missing.
+ 	 */
+ 
+-	hstart = 14 + (640 - core->width) / 2;
++	hstart = 20 + (640 - core->width) / 2;
+ 	mt9v011_write(sd, R02_MT9V011_COLSTART, hstart);
+ 	mt9v011_write(sd, R04_MT9V011_WIDTH, core->width);
+ 	mt9v011_write(sd, R05_MT9V011_HBLANK, 771 - core->width);
+-- 
+1.6.4.2
 
