@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab1FNGl6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jun 2011 02:41:58 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:34935 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753087Ab1FNGl4 (ORCPT
+	id S1755163Ab1FBWVI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 18:21:08 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:52574 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459Ab1FBWVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jun 2011 02:41:56 -0400
-Date: Fri, 3 Jun 2011 00:19:25 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Alberto Mardegan <mardy@users.sourceforge.net>
-Cc: linux-kernel@vger.kernel.org, "Javier S. Pedro" <maemo@javispedro.com>,
-        linux-input@vger.kernel.org
-Subject: Re: Reporting screen/laptop orientation data to userspace
-Message-ID: <20110602221925.GC14328@ucw.cz>
-References: <4DE1FA7F.3050308@users.sourceforge.net>
-MIME-Version: 1.0
+	Thu, 2 Jun 2011 18:21:06 -0400
+X-Nat-Received: from [202.181.97.72]:59267 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1307053179.22576
+To: hmh@hmh.eng.br
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: Preparation for Linux 3.0
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201106020350.p523o95o094928@www262.sakura.ne.jp>
+	<20110602191101.GC31586@khazad-dum.debian.net>
+In-Reply-To: <20110602191101.GC31586@khazad-dum.debian.net>
+Message-Id: <201106030719.EGD21835.LOJFHSFOFVOtMQ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Fri, 3 Jun 2011 07:19:39 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DE1FA7F.3050308@users.sourceforge.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 02062011 #5458400, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Henrique de Moraes Holschuh wrote:
+> On Thu, 02 Jun 2011, Tetsuo Handa wrote:
+> > We need to widely announce that userland applications using branches based on
+> > /proc/sys/kernel/osrelease need to be fixed.
+> 
+> A debug patch to disclose any userspace application that touches that file
+> would be of some help, I suppose?
 
->   the WMI interfaces in some Lenovo Ideapad laptops provide notification
-> callbacks when the laptop orientation changes, reporting 4 different
-> values defining the new orientation.
+Testing with a 2.6.39 kernel built with a patch
 
-Zaurus has two microswitches, indicating one of 3 configurations:
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+-VERSION = 2
+-PATCHLEVEL = 6
+-SUBLEVEL = 39
++VERSION = 3
++PATCHLEVEL = 0
++SUBLEVEL = 0
+ EXTRAVERSION =
+ NAME = Flesh-Eating Bats with Fangs
 
-notebook, closed
+applied will be the best.
 
-notebook, open
-
-tablet
-
-They are exported as event/switch in the input. If possible, it would
-be nice to have one interface for that, too. (And it probably should
-be input,  and not fake-accelerator based; after all, there are no
-accelerometers on zaurus-like systems).
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+But a writable sysctl entry (or kernel boot command line option) that changes
+the output of /proc/sys/kernel/osrelease may be of some help.
