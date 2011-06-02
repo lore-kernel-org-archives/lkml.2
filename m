@@ -1,96 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab1FBR5V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 13:57:21 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:41421 "EHLO zene.cmpxchg.org"
+	id S1753953Ab1FBSKM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 14:10:12 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:42307 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753148Ab1FBR5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 13:57:20 -0400
-Date: Thu, 2 Jun 2011 19:57:02 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 8/8] mm: make per-memcg lru lists exclusive
-Message-ID: <20110602175702.GI28684@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <1306909519-7286-9-git-send-email-hannes@cmpxchg.org>
- <BANLkTinHs7OCkpRf8=dYO0ObH5sndZ4__g@mail.gmail.com>
- <20110602142408.GB28684@cmpxchg.org>
- <BANLkTikjjH3vCiwpKrs=+vbaaACC67H7Og@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikjjH3vCiwpKrs=+vbaaACC67H7Og@mail.gmail.com>
+	id S1753841Ab1FBSKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 14:10:10 -0400
+Subject: Re: [PATCHv2 RFC 3/4] virtio_net: limit xmit polling
+From: Sridhar Samudrala <sri@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+In-Reply-To: <a80199422de16ae355e56ee1b2abc9b2bf91a7f6.1307029009.git.mst@redhat.com>
+References: <cover.1307029008.git.mst@redhat.com>
+	 <a80199422de16ae355e56ee1b2abc9b2bf91a7f6.1307029009.git.mst@redhat.com>
+Content-Type: text/plain
+Date: Thu, 02 Jun 2011 11:09:53 -0700
+Message-Id: <1307038193.2321.38.camel@w-sridhar.beaverton.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 03, 2011 at 12:54:39AM +0900, Hiroyuki Kamezawa wrote:
-> 2011/6/2 Johannes Weiner <hannes@cmpxchg.org>:
-> > On Thu, Jun 02, 2011 at 10:16:59PM +0900, Hiroyuki Kamezawa wrote:
-> >> 2011/6/1 Johannes Weiner <hannes@cmpxchg.org>:
-> >> > All lru list walkers have been converted to operate on per-memcg
-> >> > lists, the global per-zone lists are no longer required.
-> >> >
-> >> > This patch makes the per-memcg lists exclusive and removes the global
-> >> > lists from memcg-enabled kernels.
-> >> >
-> >> > The per-memcg lists now string up page descriptors directly, which
-> >> > unifies/simplifies the list isolation code of page reclaim as well as
-> >> > it saves a full double-linked list head for each page in the system.
-> >> >
-> >> > At the core of this change is the introduction of the lruvec
-> >> > structure, an array of all lru list heads.  It exists for each zone
-> >> > globally, and for each zone per memcg.  All lru list operations are
-> >> > now done in generic code against lruvecs, with the memcg lru list
-> >> > primitives only doing accounting and returning the proper lruvec for
-> >> > the currently scanned memcg on isolation, or for the respective page
-> >> > on putback.
-> >> >
-> >> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> >>
-> >>
-> >> could you divide this into
-> >>   - introduce lruvec
-> >>   - don't record section? information into pc->flags because we see
-> >> "page" on memcg LRU
-> >>     and there is no requirement to get page from "pc".
-> >>   - remove pc->lru completely
-> >
-> > Yes, that makes sense.  It shall be fixed in the next version.
-> >
+On Thu, 2011-06-02 at 18:43 +0300, Michael S. Tsirkin wrote:
+> Current code might introduce a lot of latency variation
+> if there are many pending bufs at the time we
+> attempt to transmit a new one. This is bad for
+> real-time applications and can't be good for TCP either.
 > 
-> BTW, IIUC, Transparent hugepage has a code to link a page to the
-> page->lru directly.
-
-[...]
-
-> But it may put a page onto wrong memcgs if we do link a page to
-> another page's page->lru
-> because 2 pages may be in different cgroup each other.
-
-Yes, I noticed that.  If it splits a huge page, it does not just add
-the tailpages to the lru head, but it links them next to the head
-page.
-
-But I don't see how those pages could ever be in different memcgs?
-pages with page->mapping pointing to the same anon_vma are always in
-the same memcg, AFAIU.  Only since broken COWs get their own, though.
-
+> Free up just enough to both clean up all buffers
+> eventually and to be able to xmit the next packet.
 > 
-> Could you check there are more codes which does link page->lru to nearby page's
-> page->lru ? Now, I'm not sure there are other codes....but we need care.
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/net/virtio_net.c |  106 +++++++++++++++++++++++++++++-----------------
+>  1 files changed, 67 insertions(+), 39 deletions(-)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index a0ee78d..b25db1c 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -509,17 +509,33 @@ again:
+>  	return received;
+>  }
+> 
+> -static void free_old_xmit_skbs(struct virtnet_info *vi)
+> +static bool free_old_xmit_skb(struct virtnet_info *vi)
+>  {
+>  	struct sk_buff *skb;
+>  	unsigned int len;
+> 
+> -	while ((skb = virtqueue_get_buf(vi->svq, &len)) != NULL) {
+> -		pr_debug("Sent skb %p\n", skb);
+> -		vi->dev->stats.tx_bytes += skb->len;
+> -		vi->dev->stats.tx_packets++;
+> -		dev_kfree_skb_any(skb);
+> -	}
+> +	skb = virtqueue_get_buf(vi->svq, &len);
+> +	if (unlikely(!skb))
+> +		return false;
+> +	pr_debug("Sent skb %p\n", skb);
+> +	vi->dev->stats.tx_bytes += skb->len;
+> +	vi->dev->stats.tx_packets++;
+> +	dev_kfree_skb_any(skb);
+> +	return true;
+> +}
+> +
+> +/* Check capacity and try to free enough pending old buffers to enable queueing
+> + * new ones. Return true if we can guarantee that a following
+> + * virtqueue_add_buf will succeed. */
+> +static bool free_xmit_capacity(struct virtnet_info *vi)
+> +{
+> +	struct sk_buff *skb;
+> +	unsigned int len;
+> +
+> +	while (virtqueue_min_capacity(vi->svq) < MAX_SKB_FRAGS + 2)
+> +		if (unlikely(!free_old_xmit_skb))
+> +			return false;
+If we are using INDIRECT descriptors, 1 descriptor entry is good enough
+to guarantee that an skb can be queued unless we run out of memory.
+Is it worth checking if 'indirect' is set on the svq and then only free
+1 descriptor? Otherwise, we will be dropping the packet if there are
+less than 18 free descriptors although we ony need 1.
 
-I double check again.  It's a tricky area, but I thought I covered all
-cases.  Never hurts to reassure, though.
+
+> +	return true;
+>  }
+> 
+>  static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
+> @@ -572,30 +588,34 @@ static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
+>  static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+>  {
+>  	struct virtnet_info *vi = netdev_priv(dev);
+> -	int capacity;
+> -
+> -	/* Free up any pending old buffers before queueing new ones. */
+> -	free_old_xmit_skbs(vi);
+> -
+> -	/* Try to transmit */
+> -	capacity = xmit_skb(vi, skb);
+> -
+> -	/* This can happen with OOM and indirect buffers. */
+> -	if (unlikely(capacity < 0)) {
+> -		if (net_ratelimit()) {
+> -			if (likely(capacity == -ENOMEM)) {
+> -				dev_warn(&dev->dev,
+> -					 "TX queue failure: out of memory\n");
+> -			} else {
+> -				dev->stats.tx_fifo_errors++;
+> +	int ret, i;
+> +
+> +	/* We normally do have space in the ring, so try to queue the skb as
+> +	 * fast as possible. */
+> +	ret = xmit_skb(vi, skb);
+> +	if (unlikely(ret < 0)) {
+> +		/* This triggers on the first xmit after ring full condition.
+> +		 * We need to free up some skbs first. */
+> +		if (likely(free_xmit_capacity(vi))) {
+> +			ret = xmit_skb(vi, skb);
+> +			/* This should never fail. Check, just in case. */
+> +			if (unlikely(ret < 0)) {
+>  				dev_warn(&dev->dev,
+>  					 "Unexpected TX queue failure: %d\n",
+> -					 capacity);
+> +					 ret);
+> +				dev->stats.tx_fifo_errors++;
+> +				dev->stats.tx_dropped++;
+> +				kfree_skb(skb);
+> +				return NETDEV_TX_OK;
+>  			}
+> +		} else {
+> +			/* Ring full: it might happen if we get a callback while
+> +			 * the queue is still mostly full. This should be
+> +			 * extremely rare. */
+> +			dev->stats.tx_dropped++;
+> +			kfree_skb(skb);
+> +			goto stop;
+>  		}
+> -		dev->stats.tx_dropped++;
+> -		kfree_skb(skb);
+> -		return NETDEV_TX_OK;
+>  	}
+>  	virtqueue_kick(vi->svq);
+> 
+> @@ -603,18 +623,26 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+>  	skb_orphan(skb);
+>  	nf_reset(skb);
+> 
+> -	/* Apparently nice girls don't return TX_BUSY; stop the queue
+> -	 * before it gets out of hand.  Naturally, this wastes entries. */
+> -	if (capacity < 2+MAX_SKB_FRAGS) {
+> -		netif_stop_queue(dev);
+> -		if (unlikely(!virtqueue_enable_cb_delayed(vi->svq))) {
+> -			/* More just got used, free them then recheck. */
+> -			free_old_xmit_skbs(vi);
+> -			capacity = virtqueue_min_capacity(vi->svq);
+> -			if (capacity >= 2+MAX_SKB_FRAGS) {
+> -				netif_start_queue(dev);
+> -				virtqueue_disable_cb(vi->svq);
+> -			}
+> +	/* We transmit one skb, so try to free at least two pending skbs.
+> +	 * This is so that we don't hog the skb memory unnecessarily. *
+> +	 * Doing this after kick means there's a chance we'll free
+> +	 * the skb we have just sent, which is hot in cache. */
+> +	for (i = 0; i < 2; i++)
+> +		free_old_xmit_skb(v);
+> +
+> +	if (likely(free_xmit_capacity(vi)))
+> +		return NETDEV_TX_OK;
+> +
+> +stop:
+> +	/* Apparently nice girls don't return TX_BUSY; check capacity and stop
+> +	 * the queue before it gets out of hand.
+> +	 * Naturally, this wastes entries. */
+> +	netif_stop_queue(dev);
+> +	if (unlikely(!virtqueue_enable_cb_delayed(vi->svq))) {
+> +		/* More just got used, free them and recheck. */
+> +		if (free_xmit_capacity(vi)) {
+> +			netif_start_queue(dev);
+> +			virtqueue_disable_cb(vi->svq);
+>  		}
+>  	}
+> 
 
