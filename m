@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab1FBNDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 09:03:12 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:63647 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992Ab1FBNDL (ORCPT
+	id S1753788Ab1FBNEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 09:04:39 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59885 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab1FBNEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 09:03:11 -0400
+	Thu, 2 Jun 2011 09:04:37 -0400
+Date: Thu, 2 Jun 2011 14:04:06 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Mattias Wallin <mattias.wallin@stericsson.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        john stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCHv2 0/3] clocksource: add db8500 PRCMU timer
+Message-ID: <20110602130406.GW3660@n2100.arm.linux.org.uk>
+References: <1307007271-1004-1-git-send-email-mattias.wallin@stericsson.com> <20110602094622.GS3660@n2100.arm.linux.org.uk> <4DE7637B.3060901@stericsson.com> <20110602110137.GU3660@n2100.arm.linux.org.uk> <4DE77D9A.6090301@stericsson.com> <4DE788B2.5060308@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
-References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
- <BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com> <m18vtkq57c.fsf@fess.ebiederm.org>
- <BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com> <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Thu, 2 Jun 2011 10:02:50 -0300
-Message-ID: <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com>
-Subject: Re: [PATCH] sysctl: add support for poll()
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DE788B2.5060308@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 2, 2011 at 9:43 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> The alternative is to have a process constantly polling and reading
->> the file, which is nothing we even want to think about in 2011.
->
-> Or to manage it properly.
+On Thu, Jun 02, 2011 at 06:27:22PM +0530, Santosh Shilimkar wrote:
+> Earlier this year at ELC SFO, I had a discussion with
+> John and Thomas on how to have a high-resolution clock-source
+> and a low-resolution clock-source working together to cover
+> the low power scenario and still manage to get the highest
+> timer resolution.
+> The idea was to do dynamic switching of clock-source
+> which initially looked simple. Here the idea was to
+> have this working for suspend and as well as cupidle.
 
-What if the user decides do invoke sethostname syscall "by hand"?
-Hostname would change beneath any other process that is trying to
-manage it properly. What this patch does is to notify that process
-that something happened.
+I don't think you can do this, because you'll lose precision whenever you
+switch from the high resolution clocksource to the low resolution
+clocksource.
 
+While you can quickly update the current time of day from the highres one,
+the lowres may or may not be a long way from its next tick rollover.  So
+you lose the precision whenever you switch.
 
->> It's just another special case to bring us out of the UNIX stone age
->> of doing things. :)
->
-> Unfortunately not. It's a misguided attempt to follow stone age Unix 'one
-> short name' policy. Forget utsname node names, they are a historical
-> quirk of UUCP and friends and on many OS platforms will be limited to 15
-> chars !
->
-> As to poll in general I can see some of the other proc files being
-> more relevant, eg for process monitoring tools being able to poll
-> in /proc/<pid> and some of the proc/sys and sysctl data that does change
-> meaningfully. Utsname however is not one of those things.
->
+However, over a suspend/resume cycle, the precision loss is normally very
+small compared to the time which you have been suspended, so the %age
+error also becomes very small.
 
-With this patch in, if anyone wants to manage a file under /proc/sys
-there's really a small amount of code to write. He only has to define
-the new poll struct for that file.
+With cpuidle, it becomes a completely different matter.  Here, the %age
+error is much larger because of the smaller sleep periods, and chances
+are we can't wait for the low-res timer to change.
 
-
-Lucas De Marchi
+So if you're using cpuidle, you really need a clocksource which runs
+continuously, even in whatever states cpuidle drops you into.
