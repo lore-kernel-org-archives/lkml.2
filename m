@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab1FBN3y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 09:29:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64889 "EHLO mx1.redhat.com"
+	id S1754736Ab1FBNah (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 09:30:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1032 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752350Ab1FBN3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 09:29:53 -0400
-Date: Thu, 2 Jun 2011 16:28:52 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCH RFC 2/3] virtio_net: fix tx capacity checks using new API
-Message-ID: <20110602132852.GH7141@redhat.com>
-References: <cover.1306921434.git.mst@redhat.com>
- <110045d5bf250e6ed9c739f8cc6adbbf54e3cc9c.1306921434.git.mst@redhat.com>
- <87vcwphtkd.fsf@rustcorp.com.au>
+	id S1753396Ab1FBNaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 09:30:35 -0400
+Date: Thu, 2 Jun 2011 15:29:54 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>, akpm@linux-foundation.org,
+        Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110602132954.GC19505@random.random>
+References: <20110531121620.GA3490@barrios-laptop>
+ <20110531122437.GJ19505@random.random>
+ <20110531133340.GB3490@barrios-laptop>
+ <20110531141402.GK19505@random.random>
+ <20110601005747.GC7019@csn.ul.ie>
+ <20110601175809.GB7306@suse.de>
+ <20110601191529.GY19505@random.random>
+ <20110601214018.GC7306@suse.de>
+ <20110601233036.GZ19505@random.random>
+ <20110602010352.GD7306@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87vcwphtkd.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110602010352.GD7306@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 11:40:26AM +0930, Rusty Russell wrote:
-> On Wed, 1 Jun 2011 12:49:54 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > In the (rare) case where new descriptors are used
-> > while virtio_net enables vq callback for the TX vq,
-> > virtio_net uses the number of sg entries in the skb it frees to
-> > calculate how many descriptors in the ring have just been made
-> > available.  But this value is an overestimate: with indirect buffers
-> > each skb only uses one descriptor entry, meaning we may wake the queue
-> > only to find we still can't transmit anything.
-> 
-> This is a bit misleading.
-> 
-> The value is an overestimate, but so is the requirement for
-> 2+MAX_SKB_FRAGS, *unless* we suddenly drop into direct mode due to OOM.
-> 
-> Thanks,
-> Rusty.
+On Thu, Jun 02, 2011 at 02:03:52AM +0100, Mel Gorman wrote:
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 2d29c9a..65fa251 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -631,12 +631,14 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+>  		entry = mk_pmd(page, vma->vm_page_prot);
+>  		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+>  		entry = pmd_mkhuge(entry);
+> +
+>  		/*
+> -		 * The spinlocking to take the lru_lock inside
+> -		 * page_add_new_anon_rmap() acts as a full memory
+> -		 * barrier to be sure clear_huge_page writes become
+> -		 * visible after the set_pmd_at() write.
+> +		 * Need a write barrier to ensure the writes from
+> +		 * clear_huge_page become visible before the
+> +		 * set_pmd_at
+>  		 */
+> +		smp_wmb();
+> +
 
-I agree, it's unlikely.
+On x86 at least this is noop because of the
+spin_lock(&page_table_lock) after clear_huge_page. But I'm not against
+adding this in case other archs supports THP later.
 
-s/still can't transmit anything/are still out of space and need to stop
-the ring almost at once/
+But smp_wmb() is optimized away at build time by cpp so this can't
+possibly help if you're reproducing !SMP.
 
-Better?
+>  		page_add_new_anon_rmap(page, vma, haddr);
+>  		set_pmd_at(mm, haddr, pmd, entry);
+>  		prepare_pmd_huge_pte(pgtable, mm);
+> @@ -753,6 +755,13 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+>  
+>  	pmdp_set_wrprotect(src_mm, addr, src_pmd);
+>  	pmd = pmd_mkold(pmd_wrprotect(pmd));
+> +
+> +	/*
+> +	 * Write barrier to make sure the setup for the PMD is fully visible
+> +	 * before the set_pmd_at
+> +	 */
+> +	smp_wmb();
+> +
+>  	set_pmd_at(dst_mm, addr, dst_pmd, pmd);
+>  	prepare_pmd_huge_pte(pgtable, dst_mm);
+
+This part seems superfluous to me, it's also noop for !SMP. Only wmb()
+would stay. the pmd is perfectly fine to stay in a register, not even
+a compiler barrier is needed, even less a smp serialization.
