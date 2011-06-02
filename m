@@ -1,65 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758519Ab1FBAtP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 20:49:15 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:46060 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755135Ab1FBAtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 20:49:13 -0400
-Subject: Re: /proc/stat btime accuracy problem
-From: john stultz <johnstul@us.ibm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>
-In-Reply-To: <BANLkTimuPrqN1euyOqAGm2m4Ea1PdbrzDQ@mail.gmail.com>
-References: <BANLkTiniq6GVMJPO_-efKrWHQg9V9Dod9g@mail.gmail.com>
-	 <1306967733.11492.11.camel@work-vm>
-	 <BANLkTi=yEMDLEo99WZm2Bt4pi_pog5igww@mail.gmail.com>
-	 <1306972711.11492.23.camel@work-vm>
-	 <BANLkTimuPrqN1euyOqAGm2m4Ea1PdbrzDQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Jun 2011 17:49:05 -0700
-Message-ID: <1306975745.11492.30.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1758936Ab1FBAys (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 20:54:48 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:62368 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754737Ab1FBAyr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Jun 2011 20:54:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <1306908469-15275-3-git-send-email-john.stultz@linaro.org>
+References: <1306908469-15275-1-git-send-email-john.stultz@linaro.org>
+	<1306908469-15275-3-git-send-email-john.stultz@linaro.org>
+Date: Wed, 1 Jun 2011 17:54:46 -0700
+Message-ID: <BANLkTinARof1CUhvRoYC4jQqwAsWOX5PVw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] rtc: Avoid accumulating time drift in suspend/resume
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-01 at 18:31 -0600, Bjorn Helgaas wrote:
-> On Wed, Jun 1, 2011 at 5:58 PM, john stultz <johnstul@us.ibm.com> wrote:
-> > My first instinct is "don't do that!" to whatever driver is disabling
-> > irqs for so long. Do you know what's actually causing these long irq off
-> > periods?
-> >
-> > I assume you're noticing this offset by seeing that CLOCK_REALTIME is
-> > off from the RTC right after boot? How severe is this? The RTC read is
-> > only second granular, so there's a fair amount of error (~1 second)
-> > possible right at boot, so this then must be many seconds worth of lost
-> > ticks to be noticeable, right?
-> 
-> I'm using 2.6.34, so not really new.  I think the major offender is
-> kernel serial printk, which is done in polled mode.  A *lot* of it,
-> e.g., 30+ seconds' worth.
+On Tue, May 31, 2011 at 11:07 PM, John Stultz <john.stultz@linaro.org> wrote:
+> Because the RTC interface is only a second granular interface,
+> each time we read from the RTC for suspend/resume, we introduce a
+> half second (on average) of error.
+>
+> In order to avoid this error accumulating as the system is suspended
+> over and over, this patch measures the time delta between the RTC
+> and the system CLOCK_REALTIME.
+>
+> If the delta is less then 2 seconds from the last suspend, we compensate
+> by using the previous time delta (keeping it close). If it is larger
+> then 2 seconds, we assume the clock was set or has been changed, so we
+> do no correction and update the delta.
+>
+> Note: If NTP is running, ths could seem to "fight" with the NTP corrected
+> time, where as if the system time was off by 1 second, and NTP slewed the
+> value in, a suspend/resume cycle could undo this correction, by trying to
+> restore the previous offset from the RTC. However, without this patch,
+> since each read could cause almost a full second worth of error, its
+> possible to get almost 2 seconds of error just from the suspend/resume
+> cycle alone, so this about equal to any offset added by the compensation.
+>
+> Further on systems that suspend/resume frequently, this should keep time
+> closer then NTP could compensate for if the errors were allowed to
+> accumulate.
+>
+> Credits to Arve Hjønnevåg for suggesting this solution.
+>
+> This patch also improves some of the variable names and adds more clear
+> comments.
+>
+> CC: Arve Hjønnevåg <arve@android.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  drivers/rtc/class.c |   65 +++++++++++++++++++++++++++++++++++++-------------
+>  1 files changed, 48 insertions(+), 17 deletions(-)
+>
+> diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+> index 4194e59..a619228 100644
+> --- a/drivers/rtc/class.c
+> +++ b/drivers/rtc/class.c
+> @@ -41,20 +41,41 @@ static void rtc_device_release(struct device *dev)
+>  * system's wall clock; restore it on resume().
+>  */
+>
+> -static time_t          oldtime;
+> -static struct timespec oldts;
+> +static struct timespec old_rtc, old_system, old_delta;
+> +
+>
+>  static int rtc_suspend(struct device *dev, pm_message_t mesg)
+>  {
+>        struct rtc_device       *rtc = to_rtc_device(dev);
+>        struct rtc_time         tm;
+> -
+> +       struct timespec         delta, delta_delta;
+>        if (strcmp(dev_name(&rtc->dev), CONFIG_RTC_HCTOSYS_DEVICE) != 0)
+>                return 0;
+>
+> +       /* snapshot the current RTC and system time at suspend*/
+>        rtc_read_time(rtc, &tm);
+> -       ktime_get_ts(&oldts);
+> -       rtc_tm_to_time(&tm, &oldtime);
+> +       getnstimeofday(&old_system);
+> +       rtc_tm_to_time(&tm, &old_rtc.tv_sec);
+> +
+> +
+> +       /*
+> +        * To avoid drift caused by repeated suspend/resumes,
+> +        * which each can add ~1 second drift error,
+> +        * try to compensate so the difference in system time
+> +        * and rtc time stays close to constant.
+> +        */
+> +       delta = timespec_sub(old_system, old_rtc);
+> +       delta_delta = timespec_sub(delta, old_delta);
+> +       if (abs(delta_delta.tv_sec)  >= 2) {
+> +               /*
+> +                * if delta_delta is too large, assume time correction
+> +                * has occured and set old_delta to the current delta.
+> +                */
+> +               old_delta = delta;
+> +       } else {
+> +               /* Otherwise try to adjust old_system to compensate */
+> +               old_system = timespec_sub(old_system, delta_delta);
+> +       }
+>
+>        return 0;
+>  }
+> @@ -63,32 +84,42 @@ static int rtc_resume(struct device *dev)
+>  {
+>        struct rtc_device       *rtc = to_rtc_device(dev);
+>        struct rtc_time         tm;
+> -       time_t                  newtime;
+> -       struct timespec         time;
+> -       struct timespec         newts;
+> +       struct timespec         new_system, new_rtc;
+> +       struct timespec         sleep_time;
+>
+>        if (strcmp(dev_name(&rtc->dev), CONFIG_RTC_HCTOSYS_DEVICE) != 0)
+>                return 0;
+>
+> -       ktime_get_ts(&newts);
+> +       /* snapshot the current rtc and system time at resume */
+> +       getnstimeofday(&new_system);
+>        rtc_read_time(rtc, &tm);
+>        if (rtc_valid_tm(&tm) != 0) {
+>                pr_debug("%s:  bogus resume time\n", dev_name(&rtc->dev));
+>                return 0;
+>        }
+> -       rtc_tm_to_time(&tm, &newtime);
+> -       if (newtime <= oldtime) {
+> -               if (newtime < oldtime)
+> +       rtc_tm_to_time(&tm, &new_rtc.tv_sec);
+> +       new_rtc.tv_nsec = 0;
+> +
+> +       if (new_rtc.tv_sec <= old_rtc.tv_sec) {
+> +               if (new_rtc.tv_sec < old_rtc.tv_sec)
+>                        pr_debug("%s:  time travel!\n", dev_name(&rtc->dev));
+>                return 0;
+>        }
+> -       /* calculate the RTC time delta */
+> -       set_normalized_timespec(&time, newtime - oldtime, 0);
+>
+> -       /* subtract kernel time between rtc_suspend to rtc_resume */
+> -       time = timespec_sub(time, timespec_sub(newts, oldts));
+> +       /* calculate the RTC time delta (sleep time)*/
+> +       sleep_time = timespec_sub(new_rtc, old_rtc);
+> +
+> +       /*
+> +        * Since these RTC suspend/resume handlers are not called
+> +        * at the very end of suspend or the start of resume,
+> +        * some run-time may pass on either sides of the sleep time
+> +        * so subtract kernel run-time between rtc_suspend to rtc_resume
+> +        * to keep things accurate.
+> +        */
+> +       sleep_time = timespec_sub(sleep_time,
+> +                       timespec_sub(new_system, old_system));
 
-CC'ing the linux-serial list and Alan for their thoughts: Does the
-serial port is disabling irqs for 30+ seconds during boot seem at all
-sane?
+What happens if sleep_time is negative? I think this need to be
+clamped to 0 to avoid backwards jumps when you wake up more than once
+without the rtc advancing.
 
-I would think it would periodically enable irqs in the polling loop to
-let things be processed, but maybe not?
-
->   I wonder if there's some reasonably clean
-> way to resync with the RTC, say at the time we register a clocksource
-> better than jiffies, or in clocksource_done_booting(), or something.
-
-I definitely think we need to address the long irq disable periods
-instead of trying to hack around the issue in the timekeeping code.
-
-thanks
--john
+>
+> -       timekeeping_inject_sleeptime(&time);
+> +       timekeeping_inject_sleeptime(&sleep_time);
+>        return 0;
+>  }
+>
+> --
+> 1.7.3.2.146.gca209
+>
+>
 
 
 
+-- 
+Arve Hjønnevåg
