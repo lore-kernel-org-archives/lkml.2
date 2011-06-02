@@ -1,93 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105Ab1FBPnm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 11:43:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64356 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753031Ab1FBPni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 11:43:38 -0400
-Date: Thu, 2 Jun 2011 18:43:08 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: [PATCHv2 RFC 2/4] virtio_net: fix tx capacity checks using new API
-Message-ID: <3d952a3ecc339568cfa88bb12ba3be00b2315990.1307029009.git.mst@redhat.com>
-References: <cover.1307029008.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1307029008.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752863Ab1FBPhj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 11:37:39 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38826 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab1FBPhh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 11:37:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=WBTbFjrKR34WznOVyWVx5lHIGJXUnWdcAEakXHf4igWmUKLDsWK2w027Brf98/r5vR
+         3MGWLvTRUAey97x8mmNEwNChbBvMa2qIUmsFC7YQn34R0mOSFfc7fra0V5CfI2VPHmci
+         6ih5z2CpAf8khesihcP76ZFxuaqVaRl0CZPyU=
+From: Johannes Obermaier <johannes.obermaier@gmail.com>
+To: mchehab@infradead.org
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Obermaier <johannes.obermaier@gmail.com>
+Subject: [PATCH 2/2] V4L/DVB: mt9v011: Added exposure for mt9v011
+Date: Thu,  2 Jun 2011 17:43:14 +0200
+Message-Id: <1307029394-30525-1-git-send-email-johannes.obermaier@gmail.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the (rare) case where new descriptors are used
-while virtio_net enables vq callback for the TX vq,
-virtio_net uses the number of sg entries in the skb it frees to
-calculate how many descriptors in the ring have just been made
-available.  But this value is an overestimate: with indirect buffers
-each skb only uses one descriptor entry, meaning we may wake the queue
-only to find we are still out of space and need to stop
-the ring almost at once.
+There are problems when you use this camera/sensor in a very bright room or outside. The image is completely white, because it is overexposed. The driver uses a default value which is not suitable for all environments.
+This patch makes it possible to adjust the exposure time by youself. I found out by logging the i2c-data, that the windows driver for this sensor is doing this, too.
+I tested the camera on a sunny day and after adjusting the exposure time, I was able to see a very good image.
 
-Using the new virtqueue_min_capacity() call, we can determine
-the remaining capacity, so we should use that instead.
-This estimation is worst-case which is consistent with
-the value returned by virtqueue_add_buf.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Johannes Obermaier <johannes.obermaier@gmail.com>
 ---
- drivers/net/virtio_net.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+ drivers/media/video/mt9v011.c |   22 +++++++++++++++++++++-
+ 1 files changed, 21 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index f685324..a0ee78d 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -509,19 +509,17 @@ again:
- 	return received;
- }
+diff --git a/drivers/media/video/mt9v011.c b/drivers/media/video/mt9v011.c
+index a6cf05a..fbbd018 100644
+--- a/drivers/media/video/mt9v011.c
++++ b/drivers/media/video/mt9v011.c
+@@ -59,6 +59,15 @@ static struct v4l2_queryctrl mt9v011_qctrl[] = {
+ 		.default_value = 0x0020,
+ 		.flags = 0,
+ 	}, {
++		.id = V4L2_CID_EXPOSURE,
++		.type = V4L2_CTRL_TYPE_INTEGER,
++		.name = "Exposure",
++		.minimum = 0,
++		.maximum = 2047,
++		.step = 1,
++		.default_value = 0x01fc,
++		.flags = 0,
++	}, {
+ 		.id = V4L2_CID_RED_BALANCE,
+ 		.type = V4L2_CTRL_TYPE_INTEGER,
+ 		.name = "Red Balance",
+@@ -105,7 +114,7 @@ struct mt9v011 {
+ 	unsigned hflip:1;
+ 	unsigned vflip:1;
  
--static unsigned int free_old_xmit_skbs(struct virtnet_info *vi)
-+static void free_old_xmit_skbs(struct virtnet_info *vi)
+-	u16 global_gain, red_bal, blue_bal;
++	u16 global_gain, exposure, red_bal, blue_bal;
+ };
+ 
+ static inline struct mt9v011 *to_mt9v011(struct v4l2_subdev *sd)
+@@ -184,6 +193,9 @@ static void set_balance(struct v4l2_subdev *sd)
  {
- 	struct sk_buff *skb;
--	unsigned int len, tot_sgs = 0;
-+	unsigned int len;
+ 	struct mt9v011 *core = to_mt9v011(sd);
+ 	u16 green1_gain, green2_gain, blue_gain, red_gain;
++	u16 exposure;
++
++	exposure = core->exposure;
  
- 	while ((skb = virtqueue_get_buf(vi->svq, &len)) != NULL) {
- 		pr_debug("Sent skb %p\n", skb);
- 		vi->dev->stats.tx_bytes += skb->len;
- 		vi->dev->stats.tx_packets++;
--		tot_sgs += skb_vnet_hdr(skb)->num_sg;
- 		dev_kfree_skb_any(skb);
- 	}
--	return tot_sgs;
+ 	green1_gain = core->global_gain;
+ 	green2_gain = core->global_gain;
+@@ -198,6 +210,7 @@ static void set_balance(struct v4l2_subdev *sd)
+ 	mt9v011_write(sd, R2E_MT9V011_GREEN_2_GAIN,  green1_gain);
+ 	mt9v011_write(sd, R2C_MT9V011_BLUE_GAIN, blue_gain);
+ 	mt9v011_write(sd, R2D_MT9V011_RED_GAIN, red_gain);
++	mt9v011_write(sd, R09_MT9V011_SHUTTER_WIDTH, exposure);
  }
  
- static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
-@@ -611,7 +609,8 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
- 		netif_stop_queue(dev);
- 		if (unlikely(!virtqueue_enable_cb_delayed(vi->svq))) {
- 			/* More just got used, free them then recheck. */
--			capacity += free_old_xmit_skbs(vi);
-+			free_old_xmit_skbs(vi);
-+			capacity = virtqueue_min_capacity(vi->svq);
- 			if (capacity >= 2+MAX_SKB_FRAGS) {
- 				netif_start_queue(dev);
- 				virtqueue_disable_cb(vi->svq);
+ static void calc_fps(struct v4l2_subdev *sd, u32 *numerator, u32 *denominator)
+@@ -338,6 +351,9 @@ static int mt9v011_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
+ 	case V4L2_CID_GAIN:
+ 		ctrl->value = core->global_gain;
+ 		return 0;
++	case V4L2_CID_EXPOSURE:
++		ctrl->value = core->exposure;
++		return 0;
+ 	case V4L2_CID_RED_BALANCE:
+ 		ctrl->value = core->red_bal;
+ 		return 0;
+@@ -392,6 +408,9 @@ static int mt9v011_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
+ 	case V4L2_CID_GAIN:
+ 		core->global_gain = ctrl->value;
+ 		break;
++	case V4L2_CID_EXPOSURE:
++		core->exposure = ctrl->value;
++		break;
+ 	case V4L2_CID_RED_BALANCE:
+ 		core->red_bal = ctrl->value;
+ 		break;
+@@ -598,6 +617,7 @@ static int mt9v011_probe(struct i2c_client *c,
+ 	}
+ 
+ 	core->global_gain = 0x0024;
++	core->exposure = 0x01fc;
+ 	core->width  = 640;
+ 	core->height = 480;
+ 	core->xtal = 27000000;	/* Hz */
 -- 
-1.7.5.53.gc233e
+1.6.4.2
 
