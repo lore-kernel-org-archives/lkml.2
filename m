@@ -1,348 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab1FBEaX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 00:30:23 -0400
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:59674 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016Ab1FBEaV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 00:30:21 -0400
-Message-ID: <4DE711DE.5050603@snapgear.com>
-Date: Thu, 2 Jun 2011 14:30:22 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Akinobu Mita <akinobu.mita@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] asm-generic: add another generic ext2 atomic bitops
-References: <1306938736-11119-1-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1306938736-11119-1-git-send-email-akinobu.mita@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753152Ab1FBEof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 00:44:35 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39080 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751166Ab1FBEoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 00:44:32 -0400
+Date: Thu, 2 Jun 2011 14:44:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for June 2
+Message-Id: <20110602144429.b8972ea4.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__2_Jun_2011_14_44_29_+1000_WYJIP.vRI+pnnbDL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__2_Jun_2011_14_44_29_+1000_WYJIP.vRI+pnnbDL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Akinobu,
+Hi all,
 
-On 02/06/11 00:32, Akinobu Mita wrote:
-> The majority of architectures implement ext2 atomic bitops as
-> test_and_{set,clear}_bit() without spinlock.
->
-> This adds this type of generic implementation in ext2-atomic.h and
-> use it wherever possible.
+Changes since 20110601:
 
-I am trying to get consensus on merging the m68k bitops_mm.h and
-bitops_no.h. Here is a proposed patch to do this:
+New tree: slave-dma
 
-http://www.spinics.net/lists/linux-m68k/msg03803.html
+Removed tree: slabh (served its purpose)
 
-I expect you wouldn't need to patch m68k/bitops_mm.h if this
-goes in.
+Renamed tree: cleancache -> tmem
 
-Regards
-Greg
+My fixes tree is empty again.
 
+Linus' tree lost its build failure.
 
+The block tree lost its build failure.
 
-> Suggested-by: Andreas Dilger<adilger@dilger.ca>
-> Signed-off-by: Akinobu Mita<akinobu.mita@gmail.com>
-> Cc: Arnd Bergmann<arnd@arndb.de>
-> Cc: linux-arch@vger.kernel.org
-> ---
->   arch/alpha/include/asm/bitops.h          |    4 ++--
->   arch/arm/include/asm/bitops.h            |    6 ++----
->   arch/cris/include/asm/bitops.h           |    4 ++--
->   arch/frv/include/asm/bitops.h            |    4 ++--
->   arch/ia64/include/asm/bitops.h           |    4 ++--
->   arch/m68k/include/asm/bitops_mm.h        |    6 ++----
->   arch/mn10300/include/asm/bitops.h        |    8 ++------
->   arch/parisc/include/asm/bitops.h         |   10 ++--------
->   arch/powerpc/include/asm/bitops.h        |    6 ++----
->   arch/s390/include/asm/bitops.h           |    6 ++----
->   arch/sparc/include/asm/bitops_64.h       |    6 ++----
->   arch/tile/include/asm/bitops_64.h        |    6 ++----
->   arch/x86/include/asm/bitops.h            |    6 ++----
->   arch/xtensa/include/asm/bitops.h         |   15 ++-------------
->   include/asm-generic/bitops/ext2-atomic.h |    9 +++++++++
->   15 files changed, 37 insertions(+), 63 deletions(-)
->
-> diff --git a/arch/alpha/include/asm/bitops.h b/arch/alpha/include/asm/bitops.h
-> index 85b8152..e7f02c6 100644
-> --- a/arch/alpha/include/asm/bitops.h
-> +++ b/arch/alpha/include/asm/bitops.h
-> @@ -456,8 +456,8 @@ sched_find_first_bit(const unsigned long b[2])
->
->   #include<asm-generic/bitops/le.h>
->
-> -#define ext2_set_bit_atomic(l,n,a)   test_and_set_bit(n,a)
-> -#define ext2_clear_bit_atomic(l,n,a) test_and_clear_bit(n,a)
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->   #endif /* __KERNEL__ */
->
-> diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
-> index b4892a0..5720428 100644
-> --- a/arch/arm/include/asm/bitops.h
-> +++ b/arch/arm/include/asm/bitops.h
-> @@ -310,10 +310,8 @@ static inline int find_next_bit_le(const void *p, int size, int offset)
->   /*
->    * Ext2 is defined to use little-endian byte ordering.
->    */
-> -#define ext2_set_bit_atomic(lock, nr, p)	\
-> -		test_and_set_bit_le(nr, p)
-> -#define ext2_clear_bit_atomic(lock, nr, p)	\
-> -		test_and_clear_bit_le(nr, p)
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->   #endif /* __KERNEL__ */
->
-> diff --git a/arch/cris/include/asm/bitops.h b/arch/cris/include/asm/bitops.h
-> index 310e0de..5388ebf 100644
-> --- a/arch/cris/include/asm/bitops.h
-> +++ b/arch/cris/include/asm/bitops.h
-> @@ -156,8 +156,8 @@ static inline int test_and_change_bit(int nr, volatile unsigned long *addr)
->
->   #include<asm-generic/bitops/le.h>
->
-> -#define ext2_set_bit_atomic(l,n,a)   test_and_set_bit(n,a)
-> -#define ext2_clear_bit_atomic(l,n,a) test_and_clear_bit(n,a)
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->   #include<asm-generic/bitops/sched.h>
->
-> diff --git a/arch/frv/include/asm/bitops.h b/arch/frv/include/asm/bitops.h
-> index a1d00b0..d0bde35 100644
-> --- a/arch/frv/include/asm/bitops.h
-> +++ b/arch/frv/include/asm/bitops.h
-> @@ -403,8 +403,8 @@ int __ilog2_u64(u64 n)
->
->   #include<asm-generic/bitops/le.h>
->
-> -#define ext2_set_bit_atomic(lock,nr,addr)	test_and_set_bit  ((nr) ^ 0x18, (addr))
-> -#define ext2_clear_bit_atomic(lock,nr,addr)	test_and_clear_bit((nr) ^ 0x18, (addr))
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->   #endif /* __KERNEL__ */
->
-> diff --git a/arch/ia64/include/asm/bitops.h b/arch/ia64/include/asm/bitops.h
-> index b76f7e0..6d7b4d8 100644
-> --- a/arch/ia64/include/asm/bitops.h
-> +++ b/arch/ia64/include/asm/bitops.h
-> @@ -458,8 +458,8 @@ static __inline__ unsigned long __arch_hweight64(unsigned long x)
->
->   #include<asm-generic/bitops/le.h>
->
-> -#define ext2_set_bit_atomic(l,n,a)	test_and_set_bit(n,a)
-> -#define ext2_clear_bit_atomic(l,n,a)	test_and_clear_bit(n,a)
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->   #include<asm-generic/bitops/sched.h>
->
-> diff --git a/arch/m68k/include/asm/bitops_mm.h b/arch/m68k/include/asm/bitops_mm.h
-> index 89cf5b8..2514ad7 100644
-> --- a/arch/m68k/include/asm/bitops_mm.h
-> +++ b/arch/m68k/include/asm/bitops_mm.h
-> @@ -491,10 +491,8 @@ static inline unsigned long find_next_bit_le(const void *addr,
->
->   /* Bitmap functions for the ext2 filesystem. */
->
-> -#define ext2_set_bit_atomic(lock, nr, addr)	\
-> -	test_and_set_bit_le(nr, addr)
-> -#define ext2_clear_bit_atomic(lock, nr, addr)	\
-> -	test_and_clear_bit_le(nr, addr)
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->   #endif /* __KERNEL__ */
->
-> diff --git a/arch/mn10300/include/asm/bitops.h b/arch/mn10300/include/asm/bitops.h
-> index 0939462..d42ba8e 100644
-> --- a/arch/mn10300/include/asm/bitops.h
-> +++ b/arch/mn10300/include/asm/bitops.h
-> @@ -227,12 +227,8 @@ int ffs(int x)
->   #include<asm-generic/bitops/find.h>
->   #include<asm-generic/bitops/sched.h>
->   #include<asm-generic/bitops/hweight.h>
-> -
-> -#define ext2_set_bit_atomic(lock, nr, addr) \
-> -	test_and_set_bit((nr), (addr))
-> -#define ext2_clear_bit_atomic(lock, nr, addr) \
-> -	test_and_clear_bit((nr), (addr))
-> -
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->   #include<asm-generic/bitops/le.h>
->
->   #endif /* __KERNEL__ */
-> diff --git a/arch/parisc/include/asm/bitops.h b/arch/parisc/include/asm/bitops.h
-> index 43c516f..e9a5bc9 100644
-> --- a/arch/parisc/include/asm/bitops.h
-> +++ b/arch/parisc/include/asm/bitops.h
-> @@ -223,14 +223,8 @@ static __inline__ int fls(int x)
->   #ifdef __KERNEL__
->
->   #include<asm-generic/bitops/le.h>
-> -
-> -/* '3' is bits per byte */
-> -#define LE_BYTE_ADDR ((sizeof(unsigned long) - 1)<<  3)
-> -
-> -#define ext2_set_bit_atomic(l,nr,addr) \
-> -		test_and_set_bit((nr)   ^ LE_BYTE_ADDR, (unsigned long *)addr)
-> -#define ext2_clear_bit_atomic(l,nr,addr) \
-> -		test_and_clear_bit( (nr) ^ LE_BYTE_ADDR, (unsigned long *)addr)
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->   #endif	/* __KERNEL__ */
->
-> diff --git a/arch/powerpc/include/asm/bitops.h b/arch/powerpc/include/asm/bitops.h
-> index f18c6d9..9fb8f9d 100644
-> --- a/arch/powerpc/include/asm/bitops.h
-> +++ b/arch/powerpc/include/asm/bitops.h
-> @@ -327,10 +327,8 @@ unsigned long find_next_bit_le(const void *addr,
->   				    unsigned long size, unsigned long offset);
->   /* Bitmap functions for the ext2 filesystem */
->
-> -#define ext2_set_bit_atomic(lock, nr, addr) \
-> -	test_and_set_bit_le((nr), (unsigned long*)addr)
-> -#define ext2_clear_bit_atomic(lock, nr, addr) \
-> -	test_and_clear_bit_le((nr), (unsigned long*)addr)
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->   #include<asm-generic/bitops/sched.h>
->
-> diff --git a/arch/s390/include/asm/bitops.h b/arch/s390/include/asm/bitops.h
-> index 667c6e9..5f60712 100644
-> --- a/arch/s390/include/asm/bitops.h
-> +++ b/arch/s390/include/asm/bitops.h
-> @@ -832,10 +832,8 @@ static inline int find_next_bit_le(void *vaddr, unsigned long size,
->
->   #include<asm-generic/bitops/le.h>
->
-> -#define ext2_set_bit_atomic(lock, nr, addr)	\
-> -	test_and_set_bit_le(nr, addr)
-> -#define ext2_clear_bit_atomic(lock, nr, addr)	\
-> -	test_and_clear_bit_le(nr, addr)
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->
->   #endif /* __KERNEL__ */
-> diff --git a/arch/sparc/include/asm/bitops_64.h b/arch/sparc/include/asm/bitops_64.h
-> index 38e9aa1..e67166c 100644
-> --- a/arch/sparc/include/asm/bitops_64.h
-> +++ b/arch/sparc/include/asm/bitops_64.h
-> @@ -91,10 +91,8 @@ static inline unsigned int __arch_hweight8(unsigned int w)
->
->   #include<asm-generic/bitops/le.h>
->
-> -#define ext2_set_bit_atomic(lock,nr,addr) \
-> -	test_and_set_bit((nr) ^ 0x38,(unsigned long *)(addr))
-> -#define ext2_clear_bit_atomic(lock,nr,addr) \
-> -	test_and_clear_bit((nr) ^ 0x38,(unsigned long *)(addr))
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->   #endif /* __KERNEL__ */
->
-> diff --git a/arch/tile/include/asm/bitops_64.h b/arch/tile/include/asm/bitops_64.h
-> index 99615e8..ce6ec72 100644
-> --- a/arch/tile/include/asm/bitops_64.h
-> +++ b/arch/tile/include/asm/bitops_64.h
-> @@ -97,9 +97,7 @@ static inline int test_and_change_bit(unsigned nr,
->   	return (oldval&  mask) != 0;
->   }
->
-> -#define ext2_set_bit_atomic(lock, nr, addr)			\
-> -	test_and_set_bit((nr), (unsigned long *)(addr))
-> -#define ext2_clear_bit_atomic(lock, nr, addr)			\
-> -	test_and_clear_bit((nr), (unsigned long *)(addr))
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->   #endif /* _ASM_TILE_BITOPS_64_H */
-> diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-> index 69d5813..abe730f 100644
-> --- a/arch/x86/include/asm/bitops.h
-> +++ b/arch/x86/include/asm/bitops.h
-> @@ -458,10 +458,8 @@ static inline int fls(int x)
->
->   #include<asm-generic/bitops/le.h>
->
-> -#define ext2_set_bit_atomic(lock, nr, addr)			\
-> -	test_and_set_bit((nr), (unsigned long *)(addr))
-> -#define ext2_clear_bit_atomic(lock, nr, addr)			\
-> -	test_and_clear_bit((nr), (unsigned long *)(addr))
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->   #endif /* __KERNEL__ */
->   #endif /* _ASM_X86_BITOPS_H */
-> diff --git a/arch/xtensa/include/asm/bitops.h b/arch/xtensa/include/asm/bitops.h
-> index c8fac8d..f948187 100644
-> --- a/arch/xtensa/include/asm/bitops.h
-> +++ b/arch/xtensa/include/asm/bitops.h
-> @@ -108,19 +108,8 @@ static inline unsigned long __fls(unsigned long word)
->   #include<asm-generic/bitops/find.h>
->   #include<asm-generic/bitops/le.h>
->
-> -#ifdef __XTENSA_EL__
-> -# define ext2_set_bit_atomic(lock,nr,addr)				\
-> -	test_and_set_bit((nr), (unsigned long*)(addr))
-> -# define ext2_clear_bit_atomic(lock,nr,addr)				\
-> -	test_and_clear_bit((nr), (unsigned long*)(addr))
-> -#elif defined(__XTENSA_EB__)
-> -# define ext2_set_bit_atomic(lock,nr,addr)				\
-> -	test_and_set_bit((nr) ^ 0x18, (unsigned long*)(addr))
-> -# define ext2_clear_bit_atomic(lock,nr,addr)				\
-> -	test_and_clear_bit((nr) ^ 0x18, (unsigned long*)(addr))
-> -#else
-> -# error processor byte order undefined!
-> -#endif
-> +#define ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +#include<asm-generic/bitops/ext2-atomic.h>
->
->   #include<asm-generic/bitops/hweight.h>
->   #include<asm-generic/bitops/lock.h>
-> diff --git a/include/asm-generic/bitops/ext2-atomic.h b/include/asm-generic/bitops/ext2-atomic.h
-> index ecf1c9d..315760b 100644
-> --- a/include/asm-generic/bitops/ext2-atomic.h
-> +++ b/include/asm-generic/bitops/ext2-atomic.h
-> @@ -1,6 +1,13 @@
->   #ifndef _ASM_GENERIC_BITOPS_EXT2_ATOMIC_H_
->   #define _ASM_GENERIC_BITOPS_EXT2_ATOMIC_H_
->
-> +#ifdef ARCH_NO_EXT2_ATOMIC_SPINLOCK
-> +
-> +#define ext2_set_bit_atomic(l, nr, addr)	test_and_set_bit_le(nr, addr)
-> +#define ext2_clear_bit_atomic(l, nr, addr)	test_and_clear_bit_le(nr, addr)
-> +
-> +#else
-> +
->   #define ext2_set_bit_atomic(lock, nr, addr)		\
->   	({						\
->   		int ret;				\
-> @@ -19,4 +26,6 @@
->   		ret;					\
->   	})
->
-> +#endif
-> +
->   #endif /* _ASM_GENERIC_BITOPS_EXT2_ATOMIC_H_ */
+The mmc tree still has its build failure I used the version from
+next-20110531.
 
+The tmem tree gained a build failure so I used the version from
+next-20110601 (cleancache).
 
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 191 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+CONFLICT (content): Merge conflict in arch/sparc/include/asm/smp_32.h
+CONFLICT (content): Merge conflict in arch/sparc/kernel/smp_32.c
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+CONFLICT (content): Merge conflict in drivers/rtc/Kconfig
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging slave-dma/next
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging cpufreq-move/move-drivers
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
+mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
+e.c left in tree.
+$ git rm -f drivers/mmc/host/sdhci-of-core.c
+$ git reset --hard HEAD^
+Merging refs/next/20110531/mmc
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging gpio/gpio/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+CONFLICT (content): Merge conflict in kernel/rcutree.c
+Merging kvm/linux-next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+Merging bkl-config/config
+Merging tmem/linux-next
+$ git reset --hard HEAD^
+Merging refs/next/20110601/cleancache
+Merging arm-dt/devicetree/arm-next
+Merging scsi-post-merge/merge-base:master
+
+--Signature=_Thu__2_Jun_2011_14_44_29_+1000_WYJIP.vRI+pnnbDL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN5xUtAAoJEDMEi1NhKgbssZAH/3trkbR42DN8QW0pHE9Sa6Tm
+j56c33REOn93KZo5I6NkQ6bVA84462yYEujzoFAOIDwafbnexN+uXEfU66O6rcdJ
+S9xPRKtGCMptJztQEXtktJV3F924XDe8jq8qLMZl3InkIoU3228ex/h0Tn+cRAZ4
+UxX8zbkjavuJY9aHeGrgd0Q7Jwez7zNfyPzkrd5FmqtP30g1MUQJ7k8GKMzDw8KG
+ixzQ9Ufh4KF7tMLojrwirVLsutUsr7/vqG8p+59wykGvbs41aiZBrIAw7ZJhxbqP
+SYB8LEiun0Lb5syzZCCfxsa5Q/p7xuPTckLaJsv1rrS8BrfGCyoQQpR2ERkbDPA=
+=e6c0
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__2_Jun_2011_14_44_29_+1000_WYJIP.vRI+pnnbDL--
