@@ -1,264 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab1FBIuz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 04:50:55 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42544 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317Ab1FBIuv convert rfc822-to-8bit (ORCPT
+	id S1758980Ab1FBIyV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 04:54:21 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:55377 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab1FBIyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 04:50:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DQrQblX1SHKald3/vtQ2wLweSeE+iWzpFax2PTZlpP8Z14Di6kHXqZ7ko82qRPiHiT
-         io4m2HsMScdZUZmmIZISfQkb6X3HK9QsZ2YNjAdjvJApBuVFv/nlgeNBRkQwxNDXYyf8
-         lz/2gjGnW0Udf1fBNzJEk/qp/oT5yPisoOGO4=
+	Thu, 2 Jun 2011 04:54:18 -0400
+Date: Thu, 2 Jun 2011 14:24:09 +0530
+From: Ankita Garg <ankita@in.ibm.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: svaidy@linux.vnet.ibm.com, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, thomas.abraham@linaro.org
+Subject: Re: [PATCH 01/10] mm: Introduce the memory regions data structure
+Message-ID: <20110602085409.GA28096@in.ibm.com>
+Reply-To: Ankita Garg <ankita@in.ibm.com>
+References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+ <1306499498-14263-2-git-send-email-ankita@in.ibm.com>
+ <1306510203.22505.69.camel@nimitz>
+ <20110527182041.GM5654@dirshya.in.ibm.com>
+ <1306531912.22505.84.camel@nimitz>
+ <20110529081618.GC8333@in.ibm.com>
+ <1306863260.15490.35.camel@nimitz>
 MIME-Version: 1.0
-In-Reply-To: <46950A08-9300-4649-A38D-88829035DFC2@dilger.ca>
-References: <1306939009-11283-1-git-send-email-akinobu.mita@gmail.com>
-	<46950A08-9300-4649-A38D-88829035DFC2@dilger.ca>
-Date: Thu, 2 Jun 2011 11:50:49 +0300
-Message-ID: <BANLkTikSKyKuseG+iehh=-wfDCu46sinZw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] ext4: arrange ext4_*_bit() macros
-From: Amir Goldstein <amir73il@gmail.com>
-To: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306863260.15490.35.camel@nimitz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 1, 2011 at 11:49 PM, Andreas Dilger
-<adilger.kernel@dilger.ca> wrote:
-> On 2011-06-01, at 8:36 AM, Akinobu Mita wrote:
->> - remove unused ext4_{set,clear}_bit_atomic and ext4_find_first_zero_bit
+Hi Dave,
 
-FYI, one of the snapshot patches (snapshot_exclude_bitmap.patch)
-uses ext4_set_bit_atomic() to set bits in the exclude bitmap when
-moving blocks to snapshot file.
-Since moving blocks is not done in allocation context, there is no
-buddy/group lock held while manipulating the exclude bitmap.
-So I would appreciate if this specific macro will not be removed.
+On Tue, May 31, 2011 at 10:34:20AM -0700, Dave Hansen wrote:
+> On Sun, 2011-05-29 at 13:46 +0530, Ankita Garg wrote:
+> > > It's worth noting that we already do targeted reclaim on boundaries
+> > > other than zones.  The lumpy reclaim and memory compaction logically do
+> > > the same thing.  So, it's at least possible to do this without having
+> > > the global LRU designed around the way you want to reclaim.
+> > >
+> > My understanding maybe incorrect, but doesn't both lumpy reclaim and
+> > memory compaction still work under zone boundary ? While trying to free
+> > up higher order pages, lumpy reclaim checks to ensure that pages that
+> > are selected do not cross zone boundary. Further, compaction walks
+> > through the pages in a zone and tries to re-arrange them.
+> 
+> I'm asserting that we don't need memory regions in the
+> 
+> 	pgdat->regions[]->zones[]
+> 
+> layout to do what you're asking for.
+> 
+> Lumpy reclaim is limited to a zone because it's trying to satisfy and
+> allocation request that came in for *THAT* *ZONE*.  It's useless to go
+> clear out other zones.  In your case, you don't care about zone
+> boundaries: you want to reclaim things regardless.
+>
 
-Thanks, Yongqiang , for pointing that out.
+Ok true. So I guess lumpy reclaim could be extended to just free up
+pages spanning the entire region and not just a particular zone.
+ 
+> There was a "cma: Contiguous Memory Allocator added" patch posted a bit
+> ago to linux-mm@.  You might want to take a look at it for some
+> inspiration.
+> 
 
->> - rename ext4_{set,clear}_bit to ext4_test_and_{set,clear}_bit
->> - reintroduce ext4_{set,clear}_bit for __{set,clear}_bit_le
->>
->> This changes ext4_{set,clear}_bit safely, because if someone uses
->> these macros without noticing the change, new ext4_{set,clear}_bit
->> don't have return value and causes compiler errors where the return
->> value is used.
->
-> I don't think it makes sense to change all of the ext4_set_bit() calls that
-> don't check the return code to use ext4_test_and_set_bit(), just to return
-> them back to ext4_set_bit() in the next patch.
->
-> If you want to do this in separate steps, and maintain git bisect working,
-> then it would be more clear to have two patches:
->
-> Patch #1: Add new ext4_test_and_set_bit() macro
-> #define ext4_test_and_set_bit           __test_and_set_bit_le
-> {change ext4_set_bit() calls that check return to  ext4_test_and_set_bit()}
->
-> Patch #2: Change ext4_set_bit() to not return old bit
-> #define ext4_set_bit                    __set_bit_le
-> {nothing else changes}
->
-> Alternately, you could just leave the calls that do not check the return
-> value as ext4_set_bit() and have only a single patch.
->
->
->> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
->> Cc: "Theodore Ts'o" <tytso@mit.edu>
->> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
->> Cc: linux-ext4@vger.kernel.org
->> ---
->> v2: rewritten to keep ext4_*_bit() macros
->>
->> fs/ext4/balloc.c  |    8 ++++----
->> fs/ext4/ext4.h    |    9 ++++-----
->> fs/ext4/ialloc.c  |    9 ++++-----
->> fs/ext4/mballoc.c |    4 ++--
->> fs/ext4/resize.c  |   12 ++++++------
->> 5 files changed, 20 insertions(+), 22 deletions(-)
->>
->> diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
->> index 264f694..b6747e4 100644
->> --- a/fs/ext4/balloc.c
->> +++ b/fs/ext4/balloc.c
->> @@ -144,7 +144,7 @@ unsigned ext4_init_block_bitmap(struct super_block *sb, struct buffer_head *bh,
->>               int flex_bg = 0;
->>
->>               for (bit = 0; bit < bit_max; bit++)
->> -                     ext4_set_bit(bit, bh->b_data);
->> +                     ext4_test_and_set_bit(bit, bh->b_data);
->>
->>               start = ext4_group_first_block_no(sb, block_group);
->>
->> @@ -155,18 +155,18 @@ unsigned ext4_init_block_bitmap(struct super_block *sb, struct buffer_head *bh,
->>               /* Set bits for block and inode bitmaps, and inode table */
->>               tmp = ext4_block_bitmap(sb, gdp);
->>               if (!flex_bg || ext4_block_in_group(sb, tmp, block_group))
->> -                     ext4_set_bit(tmp - start, bh->b_data);
->> +                     ext4_test_and_set_bit(tmp - start, bh->b_data);
->>
->>               tmp = ext4_inode_bitmap(sb, gdp);
->>               if (!flex_bg || ext4_block_in_group(sb, tmp, block_group))
->> -                     ext4_set_bit(tmp - start, bh->b_data);
->> +                     ext4_test_and_set_bit(tmp - start, bh->b_data);
->>
->>               tmp = ext4_inode_table(sb, gdp);
->>               for (; tmp < ext4_inode_table(sb, gdp) +
->>                               sbi->s_itb_per_group; tmp++) {
->>                       if (!flex_bg ||
->>                               ext4_block_in_group(sb, tmp, block_group))
->> -                             ext4_set_bit(tmp - start, bh->b_data);
->> +                             ext4_test_and_set_bit(tmp - start, bh->b_data);
->>               }
->>               /*
->>                * Also if the number of blocks within the group is
->> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
->> index 1921392..04db84f 100644
->> --- a/fs/ext4/ext4.h
->> +++ b/fs/ext4/ext4.h
->> @@ -930,12 +930,11 @@ struct ext4_inode_info {
->> #define test_opt2(sb, opt)            (EXT4_SB(sb)->s_mount_opt2 & \
->>                                        EXT4_MOUNT2_##opt)
->>
->> -#define ext4_set_bit                 __test_and_set_bit_le
->> -#define ext4_set_bit_atomic          ext2_set_bit_atomic
->> -#define ext4_clear_bit                       __test_and_clear_bit_le
->> -#define ext4_clear_bit_atomic                ext2_clear_bit_atomic
->> +#define ext4_test_and_set_bit                __test_and_set_bit_le
->> +#define ext4_set_bit                 __set_bit_le
->> +#define ext4_test_and_clear_bit              __test_and_clear_bit_le
->> +#define ext4_clear_bit                       __clear_bit_le
->> #define ext4_test_bit                 test_bit_le
->> -#define ext4_find_first_zero_bit     find_first_zero_bit_le
->> #define ext4_find_next_zero_bit               find_next_zero_bit_le
->> #define ext4_find_next_bit            find_next_bit_le
->>
->> diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
->> index 21bb2f6..90bef6b 100644
->> --- a/fs/ext4/ialloc.c
->> +++ b/fs/ext4/ialloc.c
->> @@ -59,7 +59,7 @@ void ext4_mark_bitmap_end(int start_bit, int end_bit, char *bitmap)
->>
->>       ext4_debug("mark end bits +%d through +%d used\n", start_bit, end_bit);
->>       for (i = start_bit; i < ((start_bit + 7) & ~7UL); i++)
->> -             ext4_set_bit(i, bitmap);
->> +             ext4_test_and_set_bit(i, bitmap);
->>       if (i < end_bit)
->>               memset(bitmap + (i >> 3), 0xff, (end_bit - i) >> 3);
->> }
->> @@ -252,7 +252,7 @@ void ext4_free_inode(handle_t *handle, struct inode *inode)
->>               fatal = ext4_journal_get_write_access(handle, bh2);
->>       }
->>       ext4_lock_group(sb, block_group);
->> -     cleared = ext4_clear_bit(bit, bitmap_bh->b_data);
->> +     cleared = ext4_test_and_clear_bit(bit, bitmap_bh->b_data);
->>       if (fatal || !cleared) {
->>               ext4_unlock_group(sb, block_group);
->>               goto out;
->> @@ -729,7 +729,7 @@ static int ext4_claim_inode(struct super_block *sb,
->>        */
->>       down_read(&grp->alloc_sem);
->>       ext4_lock_group(sb, group);
->> -     if (ext4_set_bit(ino, inode_bitmap_bh->b_data)) {
->> +     if (ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data)) {
->>               /* not a free inode */
->>               retval = 1;
->>               goto err_ret;
->> @@ -884,8 +884,7 @@ got_group:
->>                       goto fail;
->>
->> repeat_in_this_group:
->> -             ino = ext4_find_next_zero_bit((unsigned long *)
->> -                                           inode_bitmap_bh->b_data,
->> +             ino = ext4_find_next_zero_bit(inode_bitmap_bh->b_data,
->>                                             EXT4_INODES_PER_GROUP(sb), ino);
->>
->>               if (ino < EXT4_INODES_PER_GROUP(sb)) {
->> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
->> index 859f2ae..b423adf 100644
->> --- a/fs/ext4/mballoc.c
->> +++ b/fs/ext4/mballoc.c
->> @@ -384,13 +384,13 @@ static inline int mb_test_bit(int bit, void *addr)
->> static inline void mb_set_bit(int bit, void *addr)
->> {
->>       addr = mb_correct_addr_and_bit(&bit, addr);
->> -     ext4_set_bit(bit, addr);
->> +     ext4_test_and_set_bit(bit, addr);
->> }
->>
->> static inline void mb_clear_bit(int bit, void *addr)
->> {
->>       addr = mb_correct_addr_and_bit(&bit, addr);
->> -     ext4_clear_bit(bit, addr);
->> +     ext4_test_and_clear_bit(bit, addr);
->> }
->>
->> static inline int mb_find_next_zero_bit(void *addr, int max, int start)
->> diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
->> index 80bbc9c..cc40963 100644
->> --- a/fs/ext4/resize.c
->> +++ b/fs/ext4/resize.c
->> @@ -194,7 +194,7 @@ static int setup_new_group_blocks(struct super_block *sb,
->>
->>       if (ext4_bg_has_super(sb, input->group)) {
->>               ext4_debug("mark backup superblock %#04llx (+0)\n", start);
->> -             ext4_set_bit(0, bh->b_data);
->> +             ext4_test_and_set_bit(0, bh->b_data);
->>       }
->>
->>       /* Copy all of the GDT blocks into the backup in this group */
->> @@ -225,7 +225,7 @@ static int setup_new_group_blocks(struct super_block *sb,
->>                       brelse(gdb);
->>                       goto exit_bh;
->>               }
->> -             ext4_set_bit(bit, bh->b_data);
->> +             ext4_test_and_set_bit(bit, bh->b_data);
->>               brelse(gdb);
->>       }
->>
->> @@ -237,14 +237,14 @@ static int setup_new_group_blocks(struct super_block *sb,
->>       if (err)
->>               goto exit_bh;
->>       for (i = 0, bit = gdblocks + 1; i < reserved_gdb; i++, bit++)
->> -             ext4_set_bit(bit, bh->b_data);
->> +             ext4_test_and_set_bit(bit, bh->b_data);
->>
->>       ext4_debug("mark block bitmap %#04llx (+%llu)\n", input->block_bitmap,
->>                  input->block_bitmap - start);
->> -     ext4_set_bit(input->block_bitmap - start, bh->b_data);
->> +     ext4_test_and_set_bit(input->block_bitmap - start, bh->b_data);
->>       ext4_debug("mark inode bitmap %#04llx (+%llu)\n", input->inode_bitmap,
->>                  input->inode_bitmap - start);
->> -     ext4_set_bit(input->inode_bitmap - start, bh->b_data);
->> +     ext4_test_and_set_bit(input->inode_bitmap - start, bh->b_data);
->>
->>       /* Zero out all of the inode table blocks */
->>       block = input->inode_table;
->> @@ -255,7 +255,7 @@ static int setup_new_group_blocks(struct super_block *sb,
->>               goto exit_bh;
->>       for (i = 0, bit = input->inode_table - start;
->>            i < sbi->s_itb_per_group; i++, bit++)
->> -             ext4_set_bit(bit, bh->b_data);
->> +             ext4_test_and_set_bit(bit, bh->b_data);
->>
->>       if ((err = extend_or_restart_transaction(handle, 2, bh)))
->>               goto exit_bh;
->> --
->> 1.7.4.4
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+We did take a look at CMA, but the use case seems to be slightly
+different. Inorder to allocate large contiguous pages, CMA creates a new
+miratetype called MIGRATE_CMA, which effectively isolates pages from the
+buddy allocator.
+
+> I think you also need to clearly establish here why any memory that
+> you're going to want to power off can't use (or shouldn't use)
+> ZONE_MOVABLE.  It seems a bit silly to have it there, and ignore it for
+> such a similar use case.  Memory hot-remove and power-down are not
+> horrifically different beasts.
+> 
+
+Memory hot add and remove are definite usecases for conserving memory
+power. In this first version of the RFC patch, I have not yet added the
+support for ZONE_MOVABLE. I am currently testing the patch that creates
+movable zones under regions, thus ensuring that it can be easily
+evacuated using page migration.
+
+> BTW, that's probably something else to add to your list: make sure
+> mem_map[]s for memory in a region get allocated *in* that region. 
+> 
+
+There are a few reasons why we decided that we must have all the kernel
+non-movable data structures co-located in a single region as much as
+possible:
+
+- Having a region devoid of non-movable memory will enable the complete
+  memory region to be even hot-removed
+- If the memory is evacuated and later turned off (loss of content),
+  then the mem_map[]s will be lost. So when the memory comes back on,
+  the mem_map[]s will need to be reinitialized. While the hotplug
+  approach will work for exploiting PASR, it may not be the most
+  efficient one
+- When the memory is put into a lower power state, having the
+  mem_maps[]s in a single region would ensure that any references to
+  just the struct pages will not lead to references to the actual memory
+
+However, it might be worth taking a look at it again.
+
+-- 
+Regards,
+Ankita Garg (ankita@in.ibm.com)
+Linux Technology Center
+IBM India Systems & Technology Labs,
+Bangalore, India
