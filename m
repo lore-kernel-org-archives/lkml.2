@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933063Ab1FBJe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 05:34:58 -0400
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:60212 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933010Ab1FBJe4 (ORCPT
+	id S933167Ab1FBJfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 05:35:48 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:47910 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932795Ab1FBJfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 05:34:56 -0400
+	Thu, 2 Jun 2011 05:35:46 -0400
 From: Mattias Wallin <mattias.wallin@stericsson.com>
 To: Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
 Cc: Lee Jones <lee.jones@linaro.org>,
         Mattias Wallin <mattias.wallin@stericsson.com>
-Subject: [PATCHv2 0/3] clocksource: add db8500 PRCMU timer
-Date: Thu, 2 Jun 2011 11:34:31 +0200
-Message-ID: <1307007271-1004-1-git-send-email-mattias.wallin@stericsson.com>
+Subject: [PATCHv2 1/3] plat-nomadik: MTU sched_clock as a config option
+Date: Thu, 2 Jun 2011 11:35:14 +0200
+Message-ID: <1307007314-1061-1-git-send-email-mattias.wallin@stericsson.com>
 X-Mailer: git-send-email 1.7.5.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,27 +22,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Multi Timer Unit (MTU) is currently used as clocksource and sched_clk
-for the u8500 machine. The MTU block loose power during cpuidle sleep states
-so an alternate clocksource is needed and these patches adds the db8500 PRCMU
-timer.
+To make room for another sched_clk implementation a config
+option is added around the sched_clk part of the MTU timer.
+This makes it possible to configure away the sched_clk part.
+An alternate sched_clk and clocksource is needed for the db8500
+chip because the MTU is placed in a none always on power domain and will loose
+power in some cpuidle sleep states.
 
-Mattias Wallin (3):
-  plat-nomadik: MTU sched_clock as a config option
-  clocksource: add DB8500 PRCMU Timer support
-  mach-ux500: Initialize the DB8500 PRCMU timer
+Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ arch/arm/plat-nomadik/Kconfig |    8 +++++++-
+ arch/arm/plat-nomadik/timer.c |    4 ++++
+ 2 files changed, 11 insertions(+), 1 deletions(-)
 
- arch/arm/mach-ux500/cpu.c                 |    2 +
- arch/arm/plat-nomadik/Kconfig             |    8 ++-
- arch/arm/plat-nomadik/timer.c             |    4 +
- drivers/clocksource/Kconfig               |   15 +++++
- drivers/clocksource/Makefile              |    1 +
- drivers/clocksource/clksrc-db8500-prcmu.c |   90 +++++++++++++++++++++++++++++
- include/linux/clksrc-db8500-prcmu.h       |   17 ++++++
- 7 files changed, 136 insertions(+), 1 deletions(-)
- create mode 100644 drivers/clocksource/clksrc-db8500-prcmu.c
- create mode 100644 include/linux/clksrc-db8500-prcmu.h
-
+diff --git a/arch/arm/plat-nomadik/Kconfig b/arch/arm/plat-nomadik/Kconfig
+index ce65901..bca4914 100644
+--- a/arch/arm/plat-nomadik/Kconfig
++++ b/arch/arm/plat-nomadik/Kconfig
+@@ -15,10 +15,16 @@ if PLAT_NOMADIK
+ 
+ config HAS_MTU
+ 	bool
+-	select HAVE_SCHED_CLOCK
+ 	help
+ 	  Support for Multi Timer Unit. MTU provides access
+ 	  to multiple interrupt generating programmable
+ 	  32-bit free running decrementing counters.
+ 
++config NOMADIK_MTU_SCHED_CLOCK
++	bool
++	depends on HAS_MTU
++	select HAVE_SCHED_CLOCK
++	help
++	  Use the Multi Timer Unit as the sched_clock.
++
+ endif
+diff --git a/arch/arm/plat-nomadik/timer.c b/arch/arm/plat-nomadik/timer.c
+index ef74e15..b55c4ec 100644
+--- a/arch/arm/plat-nomadik/timer.c
++++ b/arch/arm/plat-nomadik/timer.c
+@@ -25,6 +25,7 @@
+ 
+ void __iomem *mtu_base; /* Assigned by machine code */
+ 
++#ifdef CONFIG_NOMADIK_MTU_SCHED_CLOCK
+ /*
+  * Override the global weak sched_clock symbol with this
+  * local implementation which uses the clocksource to get some
+@@ -48,6 +49,7 @@ static void notrace nomadik_update_sched_clock(void)
+ 	u32 cyc = -readl(mtu_base + MTU_VAL(0));
+ 	update_sched_clock(&cd, cyc, (u32)~0);
+ }
++#endif
+ 
+ /* Clockevent device: use one-shot mode */
+ static void nmdk_clkevt_mode(enum clock_event_mode mode,
+@@ -154,7 +156,9 @@ void __init nmdk_timer_init(void)
+ 		pr_err("timer: failed to initialize clock source %s\n",
+ 		       "mtu_0");
+ 
++#ifdef CONFIG_NOMADIK_MTU_SCHED_CLOCK
+ 	init_sched_clock(&cd, nomadik_update_sched_clock, 32, rate);
++#endif
+ 
+ 	/* Timer 1 is used for events */
+ 
 -- 
 1.7.4.3
 
