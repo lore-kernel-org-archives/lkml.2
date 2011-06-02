@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab1FBSVc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 14:21:32 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36567 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754188Ab1FBSUE (ORCPT
+	id S1754363Ab1FBS03 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 14:26:29 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:56616 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753916Ab1FBS02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 14:20:04 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 9/9] mfd: Restructure wm8994-core device revision handling
-Date: Thu,  2 Jun 2011 19:18:55 +0100
-Message-Id: <1307038735-18788-9-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.3
-In-Reply-To: <1307038735-18788-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20110602181808.GA18726@opensource.wolfsonmicro.com>
- <1307038735-18788-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Thu, 2 Jun 2011 14:26:28 -0400
+Message-Id: <201106021826.p52IQQSG032352@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Thu, 2 Jun 2011 14:21:45 -0400
+Subject: [PATCH] asm-generic/unistd.h: support sendmmsg syscall
+To: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 02 Jun 2011 18:26:27.0469 (UTC) FILETIME=[96029BD0:01CC2152]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch on the device type before revision since anything we do here will
-be device as well as revision specific.
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/mfd/wm8994-core.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+I'll ask Linus to pull this for 3.0.
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index e198d40..18f19b7 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -476,13 +476,18 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
- 		goto err_enable;
- 	}
+ include/asm-generic/unistd.h |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
+index ae90e0f..4f76959 100644
+--- a/include/asm-generic/unistd.h
++++ b/include/asm-generic/unistd.h
+@@ -683,9 +683,11 @@ __SC_COMP(__NR_clock_adjtime, sys_clock_adjtime, compat_sys_clock_adjtime)
+ __SYSCALL(__NR_syncfs, sys_syncfs)
+ #define __NR_setns 268
+ __SYSCALL(__NR_setns, sys_setns)
++#define __NR_sendmmsg 269
++__SC_COMP(__NR_sendmmsg, sys_sendmmsg, compat_sys_sendmmsg)
  
--	switch (ret) {
--	case 0:
--	case 1:
--		if (wm8994->type == WM8994)
-+	switch (wm8994->type) {
-+	case WM8994:
-+		switch (ret) {
-+		case 0:
-+		case 1:
- 			dev_warn(wm8994->dev,
- 				 "revision %c not fully supported\n",
- 				 'A' + ret);
-+			break;
-+		default:
-+			break;
-+		}
- 		break;
- 	default:
- 		break;
+ #undef __NR_syscalls
+-#define __NR_syscalls 269
++#define __NR_syscalls 270
+ 
+ /*
+  * All syscalls below here should go away really,
 -- 
-1.7.5.3
+1.6.5.2
 
