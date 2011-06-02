@@ -1,59 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab1FBSSM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 14:18:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51807 "EHLO
+	id S1754221Ab1FBSUF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 14:20:05 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36557 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753864Ab1FBSSK (ORCPT
+	by vger.kernel.org with ESMTP id S1754063Ab1FBSUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 14:18:10 -0400
-Date: Thu, 2 Jun 2011 19:18:08 +0100
+	Thu, 2 Jun 2011 14:20:02 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH 0/9] Pending Wolfson patches
-Message-ID: <20110602181808.GA18726@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Cookie: Your supervisor is thinking about you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/9] mfd: Fix bus lock interaction for WM831x IRQ set_type() operation
+Date: Thu,  2 Jun 2011 19:18:47 +0100
+Message-Id: <1307038735-18788-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.5.3
+In-Reply-To: <20110602181808.GA18726@opensource.wolfsonmicro.com>
+References: <20110602181808.GA18726@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since there's quite a few Wolfson patches outstanding I thought it'd be
-easiest to collect them all together into a single thread - there's also
-a git branch in case that's helpful.  All these have been previously
-posted, though some may have been revised and had me forget to post them.
+The WM831x IRQ set_type() operation is doing a direct register write when
+called but since set_type() is called with the bus lock held this isn't
+legal and could cause deadlocks in the IRQ core.
 
-The following changes since commit 55922c9d1b84b89cb946c777fddccb3247e7df2c:
+Fix this by posting the updates into an array and syncing in the
+bus_sync_unlock() callback.
 
-  Linux 3.0-rc1 (2011-05-29 17:43:36 -0700)
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-irq.c        |   24 ++++++++++++++++++------
+ include/linux/mfd/wm831x/core.h |    4 ++++
+ 2 files changed, 22 insertions(+), 6 deletions(-)
 
-are available in the git repository at:
-  git://opensource.wolfsonmicro.com/linux-2.6-audioplus for-sameo
+diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
+index 42b928e..b23d8d5 100644
+--- a/drivers/mfd/wm831x-irq.c
++++ b/drivers/mfd/wm831x-irq.c
+@@ -348,6 +348,15 @@ static void wm831x_irq_sync_unlock(struct irq_data *data)
+ 	struct wm831x *wm831x = irq_data_get_irq_chip_data(data);
+ 	int i;
+ 
++	for (i = 0; i < ARRAY_SIZE(wm831x->gpio_update); i++) {
++		if (wm831x->gpio_update[i]) {
++			wm831x_set_bits(wm831x, WM831X_GPIO1_CONTROL + i,
++					WM831X_GPN_INT_MODE | WM831X_GPN_POL,
++					wm831x->gpio_update[i]);
++			wm831x->gpio_update[i] = 0;
++		}
++	}
++
+ 	for (i = 0; i < ARRAY_SIZE(wm831x->irq_masks_cur); i++) {
+ 		/* If there's been a change in the mask write it back
+ 		 * to the hardware. */
+@@ -387,7 +396,7 @@ static void wm831x_irq_disable(struct irq_data *data)
+ static int wm831x_irq_set_type(struct irq_data *data, unsigned int type)
+ {
+ 	struct wm831x *wm831x = irq_data_get_irq_chip_data(data);
+-	int val, irq;
++	int irq;
+ 
+ 	irq = data->irq - wm831x->irq_base;
+ 
+@@ -399,22 +408,25 @@ static int wm831x_irq_set_type(struct irq_data *data, unsigned int type)
+ 			return -EINVAL;
+ 	}
+ 
++	/* We set the high bit to flag that we need an update; don't
++	 * do the update here as we can be called with the bus lock
++	 * held.
++	 */
+ 	switch (type) {
+ 	case IRQ_TYPE_EDGE_BOTH:
+-		val = WM831X_GPN_INT_MODE;
++		wm831x->gpio_update[irq] = 0x10000 | WM831X_GPN_INT_MODE;
+ 		break;
+ 	case IRQ_TYPE_EDGE_RISING:
+-		val = WM831X_GPN_POL;
++		wm831x->gpio_update[irq] = 0x10000 | WM831X_GPN_POL;
+ 		break;
+ 	case IRQ_TYPE_EDGE_FALLING:
+-		val = 0;
++		wm831x->gpio_update[irq] = 0x10000;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+ 
+-	return wm831x_set_bits(wm831x, WM831X_GPIO1_CONTROL + irq,
+-			       WM831X_GPN_INT_MODE | WM831X_GPN_POL, val);
++	return 0;
+ }
+ 
+ static struct irq_chip wm831x_irq_chip = {
+diff --git a/include/linux/mfd/wm831x/core.h b/include/linux/mfd/wm831x/core.h
+index 0d515ee..ebead1c 100644
+--- a/include/linux/mfd/wm831x/core.h
++++ b/include/linux/mfd/wm831x/core.h
+@@ -237,6 +237,7 @@
+ struct regulator_dev;
+ 
+ #define WM831X_NUM_IRQ_REGS 5
++#define WM831X_NUM_GPIO_REGS 16
+ 
+ enum wm831x_parent {
+ 	WM8310 = 0x8310,
+@@ -272,6 +273,9 @@ struct wm831x {
+ 
+ 	int num_gpio;
+ 
++	/* Used by the interrupt controller code to post writes */
++	int gpio_update[WM831X_NUM_GPIO_REGS];
++
+ 	struct mutex auxadc_lock;
+ 	struct completion auxadc_done;
+ 
+-- 
+1.7.5.3
 
-Mark Brown (8):
-      mfd: Fix bus lock interaction for WM831x IRQ set_type() operation
-      mfd: Implement support for multiple WM831x devices
-      mfd: Allow touchscreen to be disabled on wm831x devices
-      mfd: Only register wm831x RTC device if the 32.768kHz crystal is enabled
-      mfd: Support dynamic allocation of IRQ range for wm831x
-      mfd: Read wm831x AUXADC conversion results before acknowledging interrupt
-      mfd: Refactor wm831x AUXADC handling into a separate file
-      mfd: Restructure wm8994-core device revision handling
-
-Sascha Hauer (1):
-      mfd: Allocate wm835x irq descs dynamically
-
- drivers/mfd/Makefile             |    1 +
- drivers/mfd/wm831x-auxadc.c      |  199 +++++++++++++++++++++++++++++++
- drivers/mfd/wm831x-core.c        |  245 +++++++++-----------------------------
- drivers/mfd/wm831x-irq.c         |   42 +++++--
- drivers/mfd/wm8350-irq.c         |   18 ++-
- drivers/mfd/wm8994-core.c        |   13 ++-
- include/linux/mfd/wm831x/core.h  |    7 +-
- include/linux/mfd/wm831x/pdata.h |    3 +
- 8 files changed, 319 insertions(+), 209 deletions(-)
- create mode 100644 drivers/mfd/wm831x-auxadc.c
