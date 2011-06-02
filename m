@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab1FBQZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 12:25:09 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58303 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316Ab1FBQZH (ORCPT
+	id S1753169Ab1FBQaU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 12:30:20 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:46034 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588Ab1FBQaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 12:25:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=BUPDE3uFalYKtVMEkahkyLrDLLQXcbAV7M6HLXyaxYWMVxEdZmv4VVV3tm65Rcdu7s
-         kYh9bMwoiFWaqZYxS2GtxpYxSThli9wl0Fqaq2ycfXj02NbH1g2cYv0lY61u/ysBjHQl
-         +1G6rT+N23OJbxRoOwp4Y7TayAn+ifHszP9cc=
-MIME-Version: 1.0
-In-Reply-To: <20110602115045.41815756.sfr@canb.auug.org.au>
-References: <20110602115045.41815756.sfr@canb.auug.org.au>
-Date: Thu, 2 Jun 2011 18:25:06 +0200
-X-Google-Sender-Auth: gal9mUB9xf4CYdxvt1IAAj5qLgM
-Message-ID: <BANLkTikm=bBM=E5LtCxOg29U-nwniqx0WQ@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree
- (ux500-core tree related)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rickard Evertsson <rickard.evertsson@stericsson.com>,
-        Daniel Willerud <daniel.willerud@stericsson.com>,
-        Deepak Karda <deepak.karda@stericsson.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 2 Jun 2011 12:30:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6364"; a="95153924"
+From: Laura Abbott <lauraa@codeaurora.org>
+To: linux-kernel@vger.kernel.org, gregkh@suse.de
+Cc: Laura Abbott <lauraa@codeaurora.org>
+Subject: [PATCH] kobject: mark object as not initialized after release
+Date: Thu,  2 Jun 2011 09:29:47 -0700
+Message-Id: <1307032187-15823-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/2 Stephen Rothwell <sfr@canb.auug.org.au>:
+During kobject initalization, state_initialized is set to 1. This state
+is never set back to 0, even after release. This results in re-initialized
+object warnings if the kobject needs to be reinitialized after release. On
+a statically allocated platform device and driver:
 
-> After merging the final tree, next-20110601 build (arm u8500_defconfig)
-> failed like this:
+platform_device_register(&my_device)
+platform_driver_register(&my_matching_driver)
+platform_device_unregister(&my_device)
+platform_device_register(&my_device)
 
-Oh crap, I thought that patch was independent but it wasn't. I'll
-take it out.
+gives
 
-Thanks for noticing this Stephen,
-Linus Walleij
+kobject (bf000128): tried to init an initialized object, something is seriously wrong.
+[<c0053964>] (unwind_backtrace+0x0/0x128) from [<c02bd444>] (kobject_init+0x38/0x8c)
+[<c02bd444>] (kobject_init+0x38/0x8c) from [<c03445cc>] (device_initialize+0x20/0x68)
+[<c03445cc>] (device_initialize+0x20/0x68) from [<c0348924>] (platform_device_register+0x10/0x1c)
+[<c0348924>] (platform_device_register+0x10/0x1c) from [<bf00305c>] (platform_driver_test_init+0x5c/0x7c [platform_driver_test])
+[<bf00305c>] (platform_driver_test_init+0x5c/0x7c [platform_driver_test]) from [<c00466e8>] (do_one_initcall+0xd0/0x1a4)
+[<c00466e8>] (do_one_initcall+0xd0/0x1a4) from [<c0109ea4>] (sys_init_module+0x90/0x1ac)
+
+since the kobject that is part of the platform device (mydevice.dev.kobj) never
+had the state_initialized reset despite eventually calling kobject_release.
+
+Fix this by setting state_initialized on a released kobject back to 0 as any
+state referenced after releasing is undefined.
+
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ lib/kobject.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/lib/kobject.c b/lib/kobject.c
+index 82dc34c..00390e3 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -577,7 +577,10 @@ static void kobject_cleanup(struct kobject *kobj)
+ 
+ static void kobject_release(struct kref *kref)
+ {
+-	kobject_cleanup(container_of(kref, struct kobject, kref));
++	struct kobject *kobj = container_of(kref, struct kobject, kref);
++
++	kobject_cleanup(kobj);
++	kobj->state_initialized = 0;
+ }
+ 
+ /**
+-- 
+1.7.3.3
+
