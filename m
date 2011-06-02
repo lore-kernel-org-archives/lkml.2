@@ -1,97 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933249Ab1FBLpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 07:45:10 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46079 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab1FBLpI (ORCPT
+	id S933146Ab1FBLwN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 07:52:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56711 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752861Ab1FBLwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 07:45:08 -0400
-Date: Thu, 2 Jun 2011 13:45:02 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
+	Thu, 2 Jun 2011 07:52:12 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd wm8350: allocate irq descs dynamically
-Message-ID: <20110602114502.GO23771@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 13:43:32 up 7 days,  4:45, 20 users,  load average: 1.79, 2.54, 3.38
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Support dynamic allocation of IRQ range for wm831x
+Date: Thu,  2 Jun 2011 12:52:09 +0100
+Message-Id: <1307015529-23828-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use irq_allocate_desc() to get the IRQ range, which turns into a noop on
+non-sparse systems. Since all existing users are non-sparse there should
+be no compatibility issues.
 
-This allows boards to leave the irq_base field unitialized and
-prevents them having to reserve irqs in the platform.
-pdata can be optional for irq support now. Without pdata the
-driver allocates some free irq range. With pdata and irq_base > 0
-the driver allocates exactly the specified irq.
-Without pdata the irq defaults to IRQF_TRIGGER_LOW.
-
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/wm8350-irq.c |   18 ++++++++++++------
- 1 files changed, 12 insertions(+), 6 deletions(-)
+ drivers/mfd/wm831x-irq.c |   18 +++++++++++++-----
+ 1 files changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mfd/wm8350-irq.c b/drivers/mfd/wm8350-irq.c
-index ed4b22a..8a1fafd 100644
---- a/drivers/mfd/wm8350-irq.c
-+++ b/drivers/mfd/wm8350-irq.c
-@@ -473,17 +473,13 @@ int wm8350_irq_init(struct wm8350 *wm8350, int irq,
- {
- 	int ret, cur_irq, i;
- 	int flags = IRQF_ONESHOT;
-+	int irq_base = -1;
- 
- 	if (!irq) {
- 		dev_warn(wm8350->dev, "No interrupt support, no core IRQ\n");
- 		return 0;
+diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
+index b23d8d5..1808deb 100644
+--- a/drivers/mfd/wm831x-irq.c
++++ b/drivers/mfd/wm831x-irq.c
+@@ -527,13 +527,22 @@ int wm831x_irq_init(struct wm831x *wm831x, int irq)
+ 				 0xffff);
  	}
  
 -	if (!pdata || !pdata->irq_base) {
--		dev_warn(wm8350->dev, "No interrupt support, no IRQ base\n");
--		return 0;
--	}
--
- 	/* Mask top level interrupts */
- 	wm8350_reg_write(wm8350, WM8350_SYSTEM_INTERRUPTS_MASK, 0xFFFF);
- 
-@@ -502,7 +498,17 @@ int wm8350_irq_init(struct wm8350 *wm8350, int irq,
- 	wm8350->chip_irq = irq;
- 	wm8350->irq_base = pdata->irq_base;
- 
--	if (pdata->irq_high) {
-+	if (pdata && pdata->irq_base > 0)
-+		irq_base = pdata->irq_base;
+-		dev_err(wm831x->dev,
+-			"No interrupt base specified, no interrupts\n");
++	/* Try to dynamically allocate IRQs if no base is specified */
++	if (!pdata || !pdata->irq_base)
++		wm831x->irq_base = -1;
++	else
++		wm831x->irq_base = pdata->irq_base;
 +
-+	wm8350->irq_base = irq_alloc_descs(irq_base, 0, ARRAY_SIZE(wm8350_irqs), 0);
-+	if (wm8350->irq_base < 0) {
-+		dev_warn(wm8350->dev, "Allocating irqs failed with %d\n",
-+			wm8350->irq_base);
-+		return 0;
-+	}
-+
-+	if (pdata && pdata->irq_high) {
- 		flags |= IRQF_TRIGGER_HIGH;
++	wm831x->irq_base = irq_alloc_descs(wm831x->irq_base, 0,
++					   WM831X_NUM_IRQS, 0);
++	if (wm831x->irq_base < 0) {
++		dev_warn(wm831x->dev, "Failed to allocate IRQs: %d\n",
++			 wm831x->irq_base);
++		wm831x->irq_base = 0;
+ 		return 0;
+ 	}
  
- 		wm8350_set_bits(wm8350, WM8350_SYSTEM_CONTROL_1,
+-	if (pdata->irq_cmos)
++	if (pdata && pdata->irq_cmos)
+ 		i = 0;
+ 	else
+ 		i = WM831X_IRQ_OD;
+@@ -553,7 +562,6 @@ int wm831x_irq_init(struct wm831x *wm831x, int irq)
+ 	}
+ 
+ 	wm831x->irq = irq;
+-	wm831x->irq_base = pdata->irq_base;
+ 
+ 	/* Register them with genirq */
+ 	for (cur_irq = wm831x->irq_base;
 -- 
 1.7.5.3
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
