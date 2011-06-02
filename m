@@ -1,80 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab1FBPvH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 11:51:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38493 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751781Ab1FBPvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 11:51:05 -0400
-Date: Thu, 2 Jun 2011 17:51:02 +0200
-From: Jan Kara <jack@suse.cz>
-To: Mika Bostrom <bostik+lkml@bostik.iki.fi>
-Cc: linux-kernel@vger.kernel.org, jack@suse.cz, axboe@kernel.dk
-Subject: Re: Reproducible OOPS with UDF on flash
-Message-ID: <20110602155102.GC5718@quack.suse.cz>
-References: <20110602072411.GA26739@bostik.iki.fi>
+	id S1753301Ab1FBPvp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 11:51:45 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:25193 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160Ab1FBPvo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 11:51:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=LYEAFxk6h0sxAY9JXgW7CWib6Tha6IBAV2BW3NFWdjk2/eN7oZ13uoAaKlT17/oNG3
+         BsdVkZwBTWO5DKMZ1NbA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110602072411.GA26739@bostik.iki.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110602075028.GB20630@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+	<BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
+	<BANLkTi=sYtLGk2_VQLejEU2rQ0JBgg_ZmQ@mail.gmail.com>
+	<20110602075028.GB20630@cmpxchg.org>
+Date: Thu, 2 Jun 2011 08:51:39 -0700
+Message-ID: <BANLkTi=AZG4LKUdeODB0uP=_CVBRnGs_Nw@mail.gmail.com>
+Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
+From: Ying Han <yinghan@google.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 02-06-11 10:24:11, Mika Bostrom wrote:
->   Hello hackers. I found a reliable way to oops the kernel - both
-> 2.6.38.6 and 2.6.39 are affected.
-> 
->   The setup is this:
-> - debian unstable
-> - configured udisks + usbmount to automount thumb drives
-> - attached a thumbdrive with UDF filesystem on it
-> - checked that drive was mounted
-> - removed drive
-> ==> OOPS
-  Thanks for report.
+On Thu, Jun 2, 2011 at 12:50 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Wed, Jun 01, 2011 at 09:05:18PM -0700, Ying Han wrote:
+>> On Wed, Jun 1, 2011 at 4:52 PM, Hiroyuki Kamezawa
+>> <kamezawa.hiroyuki@gmail.com> wrote:
+>> > 2011/6/1 Johannes Weiner <hannes@cmpxchg.org>:
+>> >> Hi,
+>> >>
+>> >> this is the second version of the memcg naturalization series.  The
+>> >> notable changes since the first submission are:
+>> >>
+>> >>    o the hierarchy walk is now intermittent and will abort and
+>> >>      remember the last scanned child after sc->nr_to_reclaim pages
+>> >>      have been reclaimed during the walk in one zone (Rik)
+>> >>
+>> >>    o the global lru lists are never scanned when memcg is enabled
+>> >>      after #2 'memcg-aware global reclaim', which makes this patch
+>> >>      self-sufficient and complete without requiring the per-memcg lru
+>> >>      lists to be exclusive (Michal)
+>> >>
+>> >>    o renamed sc->memcg and sc->current_memcg to sc->target_mem_cgroup
+>> >>      and sc->mem_cgroup and fixed their documentation, I hope this is
+>> >>      better understandable now (Rik)
+>> >>
+>> >>    o the reclaim statistic counters have been renamed.  there is no
+>> >>      more distinction between 'pgfree' and 'pgsteal', it is now
+>> >>      'pgreclaim' in both cases; 'kswapd' has been replaced by
+>> >>      'background'
+>> >>
+>> >>    o fixed a nasty crash in the hierarchical soft limit check that
+>> >>      happened during global reclaim in memcgs that are hierarchical
+>> >>      but have no hierarchical parents themselves
+>> >>
+>> >>    o properly implemented the memcg-aware unevictable page rescue
+>> >>      scanner, there were several blatant bugs in there
+>> >>
+>> >>    o documentation on new public interfaces
+>> >>
+>> >> Thanks for your input on the first version.
+>> >>
+>> >> I ran microbenchmarks (sparse file catting, essentially) to stress
+>> >> reclaim and LRU operations.  There is no measurable overhead for
+>> >> !CONFIG_MEMCG, memcg disabled during boot, memcg enabled but no
+>> >> configured groups, and hard limit reclaim.
+>> >>
+>> >> I also ran single-threaded kernbenchs in four unlimited memcgs in
+>> >> parallel, contained in a hard-limited hierarchical parent that put
+>> >> constant pressure on the workload.  There is no measurable difference
+>> >> in runtime, the pgpgin/pgpgout counters, and fairness among memcgs in
+>> >> this test compared to an unpatched kernel.  Needs more evaluation,
+>> >> especially with a higher number of memcgs.
+>> >>
+>> >> The soft limit changes are also proven to work in so far that it is
+>> >> possible to prioritize between children in a hierarchy under pressure
+>> >> and that runtime differences corresponded directly to the soft limit
+>> >> settings in the previously described kernbench setup with staggered
+>> >> soft limits on the groups, but this needs quantification.
+>> >>
+>> >> Based on v2.6.39.
+>> >>
+>> >
+>> > Hmm, I welcome and will review this patches but.....some points I want to say.
+>> >
+>> > 1. No more conflict with Ying's work ?
+>> >    Could you explain what she has and what you don't in this v2 ?
+>> >    If Ying's one has something good to be merged to your set, please
+>> > include it.
+>>
+>> My patch I sent out last time was doing rework of soft_limit reclaim.
+>> It convert the RB-tree based to
+>> a linked list round-robin fashion of all memcgs across their soft
+>> limit per-zone.
+>>
+>> I will apply this patch and try to test it. After that i will get
+>> better idea whether or not it is being covered here.
+>
+> Thanks!!
+>
+>> > 4. This work can be splitted into some small works.
+>> >     a) fix for current code and clean ups
+>>
+>> >     a') statistics
+>>
+>> >     b) soft limit rework
+>>
+>> >     c) change global reclaim
+>>
+>> My last patchset starts with a patch reverting the RB-tree
+>> implementation of the soft_limit
+>> reclaim, and then the new round-robin implementation comes on the
+>> following patches.
+>>
+>> I like the ordering here, and that is consistent w/ the plan we
+>> discussed earlier in LSF. Changing
+>> the global reclaim would be the last step when the changes before that
+>> have been well understood
+>> and tested.
+>>
+>> Sorry If that is how it is done here. I will read through the patchset.
+>
+> It's not.  The way I implemented soft limits depends on global reclaim
+> performing hierarchical reclaim.  I don't see how I can reverse the
+> order with this dependency.
 
-> Jun  1 20:45:18 odin usbmount[12856]: executing command: mount -tudf -onoexec,nodev,noatime,nodiratime /dev/sdf1 /media/usb0
-> Jun  1 20:45:18 odin kernel: UDF-fs: No anchor found
-> Jun  1 20:45:18 odin kernel: UDF-fs: Rescanning with blocksize 2048
-> Jun  1 20:45:18 odin kernel: UDF-fs INFO UDF: Mounting volume 'LinuxUDF', timestamp 2009/04/30 07:14 (1000)
-> Jun  1 20:45:18 odin usbmount[12856]: executing command: run-parts /etc/usbmount/mount.d
-> Jun  1 20:45:56 odin kernel: usb 2-1.1: USB disconnect, address 12
-> Jun  1 20:45:56 odin usbmount[12931]: executing command: umount -l /media/usb0
-> Jun  1 20:45:56 odin kernel: *pdpt = 00000000062d3001 *pde = 0000000000000000 
-> Jun  1 20:45:56 odin kernel: Modules linked in: udf crc_itu_t vfat fat vboxnetadp vboxnetflt fuse ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter ip_tables x_tables bridge ipv6 stp llc vboxdrv coretemp hwmon krng eseqiv rng aes_i586 aes_generic xts gf128mul cryptomgr aead dm_crypt crypto_hash crypto_blkcipher crypto_algapi dm_mod usb_storage raid1 md_mod hid_microsoft i915 fbcon font usbhid bitblit snd_hda_codec_idt snd_hda_intel snd_hda_codec softcursor snd_pcm_oss drm_kms_helper snd_mixer_oss drm fb fbdev snd_pcm snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi sr_mod cdrom i2c_algo_bit cfbcopyarea snd_seq_midi_event ata_generic video snd_seq intel_agp pata_marvell uhci_hcd ide_pci_generic snd_timer snd_seq_device e1000e backlight intel_gtt agpgart cfbimgblt cfbfillrect ehci_hcd snd evdev psmouse serio_raw i2c_i801 usbcore soundcore snd_page_alloc i2c_core processor button
-> Jun  1 20:45:56 odin kernel: 
-> Jun  1 20:45:56 odin kernel: Pid: 12936, comm: umount Not tainted 2.6.38.6 #2                  /DG965OT
-> Jun  1 20:45:56 odin kernel: EIP: 0060:[<c11daaaf>] EFLAGS: 00010002 CPU: 1
-> Jun  1 20:45:56 odin kernel: EIP is at __percpu_counter_add+0x1f/0xe0
-> Jun  1 20:45:56 odin kernel: EAX: 00000000 EBX: f526f390 ECX: 00000000 EDX: 00000001
-> Jun  1 20:45:56 odin kernel: ESI: f57785c0 EDI: e6e70758 EBP: ec94be9c ESP: ec94be84
-> Jun  1 20:45:56 odin kernel:  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-> Jun  1 20:45:56 odin kernel:  ec94be94 e6e70748 f57785c0 f41166c0 f57785c0 e6e70758 ec94beb0 c1083323
-> Jun  1 20:45:56 odin kernel:  00000010 f57785c0 e6e70748 ec94bec8 c10cd6d7 00000000 f2269000 c7dae858
-> Jun  1 20:45:56 odin kernel:  c7dae800 ec94bed4 c10cd7a5 eb9cfc80 ec94bef4 fb3f8a81 c7dae810 eb9cfce4
-> Jun  1 20:45:56 odin kernel:  [<c1083323>] account_page_dirtied+0x63/0x90
-> Jun  1 20:45:56 odin kernel:  [<c10cd6d7>] __set_page_dirty+0x37/0xb0
-> Jun  1 20:45:56 odin kernel:  [<c10cd7a5>] mark_buffer_dirty+0x55/0x80
-> Jun  1 20:45:56 odin kernel:  [<fb3f8a81>] udf_close_lvid+0xb1/0xe0 [udf]
-> Jun  1 20:45:56 odin kernel:  [<fb3f8ee5>] udf_put_super+0xa5/0xc0 [udf]
-> Jun  1 20:45:56 odin kernel:  [<c10aad39>] generic_shutdown_super+0x59/0xd0
-> Jun  1 20:45:56 odin kernel:  [<c10aadd4>] kill_block_super+0x24/0x70
-> Jun  1 20:45:56 odin kernel:  [<c10ab0a5>] deactivate_locked_super+0x35/0x60
-> Jun  1 20:45:56 odin kernel:  [<c10abcc2>] deactivate_super+0x42/0x60
-> Jun  1 20:45:56 odin kernel:  [<c10c2302>] mntput_no_expire+0x82/0xd0
-> Jun  1 20:45:56 odin kernel:  [<c10c2d30>] sys_umount+0x60/0x330
-> Jun  1 20:45:56 odin kernel:  [<c1002bd0>] sysenter_do_call+0x12/0x26
-  This looks like the same problem as bug
-https://bugzilla.kernel.org/show_bug.cgi?id=36262
+That is something I don't quite get yet, and maybe need a closer look
+into the patchset. The current design of
+soft_limit doesn't do reclaim hierarchically but instead links the
+memcgs together on per-zone basis.
 
-  And indeed in your case I'm not that surprised that BDI has been
-destroyed before the filesystem was unmounted. Jens, these BDI lifetime
-rules should really be sorted out... I remember you were looking into these
-issues already, weren't you?
+However on this patchset, we changed that design and doing
+hierarchy_walk of the memcg tree. Can we clarify more on why we made
+the design change? I can see the current design provides a efficient
+way to pick the one memcg over-their-soft-limit under shrink_zone().
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+--Ying
+
+>
