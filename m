@@ -1,109 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751415Ab1FBOQi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 10:16:38 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51200 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab1FBOQh (ORCPT
+	id S1751746Ab1FBOQt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 10:16:49 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:53954 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab1FBOQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 10:16:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=eS9wxO8B+0VUjUZZrQyLLyaZFc2hEE3Yc0KUK7zugDecjpT3BZoigPhidSQVUycnDw
-         dMlmcPa0AHcD++2wKao0SfKrpDyQDYHOk/Gd/j+i4f2wQRGbLam7PeMibDfxQjKirCec
-         BTpcjVTkhfh/sglBEt9bPjLY+2pEjwIfuqY8k=
-Date: Thu, 2 Jun 2011 22:16:22 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Am??rico Wang <xiyou.wangcong@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [Patch] mm: remove the leftovers of noswapaccount
-Message-ID: <20110602141622.GA4416@cr0.redhat.com>
-References: <BANLkTinLvqa0DiayLOwvxE9zBmqb4Y7Rww@mail.gmail.com>
- <20110523112558.GC11439@tiehlicka.suse.cz>
- <BANLkTi=2SwKFfwBxrQr3xLYSUzoGOy6oKA@mail.gmail.com>
- <20110530094337.GF20166@tiehlicka.suse.cz>
+	Thu, 2 Jun 2011 10:16:46 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Kay Sievers <kay.sievers@vrfy.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>
+References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
+	<BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com>
+	<m18vtkq57c.fsf@fess.ebiederm.org>
+	<BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com>
+	<20110602134338.0c56160e@lxorguk.ukuu.org.uk>
+Date: Thu, 02 Jun 2011 07:16:36 -0700
+In-Reply-To: <20110602134338.0c56160e@lxorguk.ukuu.org.uk> (Alan Cox's message
+	of "Thu, 2 Jun 2011 13:43:38 +0100")
+Message-ID: <m1ipsoco8r.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110530094337.GF20166@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX191xgjUNUTDqbfKyVutF7htpT708THjmHQ=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Alan Cox <alan@lxorguk.ukuu.org.uk>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] sysctl: add support for poll()
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Alan Cox <alan@lxorguk.ukuu.org.uk> writes:
 
-In commit a2c8990aed5ab (memsw: remove noswapaccount kernel parameter),
-Michal forgot to remove some left pieces of noswapaccount in the tree,
-this patch removes them all.
+>> Host names are dynamic, can change during system runtime by dhcp or
+>> similar setups, or just get changed by the user.
+>
+> I don't actually see what this has to do with utsname. uname historically
+> defined nodename as "name within an implementation-defined communications
+> network" and actually tended to be the UUCP name. Modern SuS says "`the
+> name of the node of the communications network to which this node is
+> attached, if any"
 
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>
+>
+> The latter unfortunately makes no sense anyway and is a fine example of
+> standards body cluelessness as name mapping on IP networks is not one
+> name per host, and also because the standard doesn't require the fields
+> in the struct are long enough to hold a DNS name!
+>
+> (Indeed in its usual head up backside manner its technically valid to
+> define
+>
+> 	char nodename[1];
+>
+> and have only \0 as a valid reply)
 
----
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 1a9446b..d27e1c4 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -545,22 +545,6 @@ Files:	net/netfilter/xt_connlimit.c
- 
- ----------------------------
- 
--What:	noswapaccount kernel command line parameter
--When:	2.6.40
--Why:	The original implementation of memsw feature enabled by
--	CONFIG_CGROUP_MEM_RES_CTLR_SWAP could be disabled by the noswapaccount
--	kernel parameter (introduced in 2.6.29-rc1). Later on, this decision
--	turned out to be not ideal because we cannot have the feature compiled
--	in and disabled by default and let only interested to enable it
--	(e.g. general distribution kernels might need it). Therefore we have
--	added swapaccount[=0|1] parameter (introduced in 2.6.37) which provides
--	the both possibilities. If we remove noswapaccount we will have
--	less command line parameters with the same functionality and we
--	can also cleanup the parameter handling a bit ().
--Who:	Michal Hocko <mhocko@suse.cz>
--
------------------------------
--
- What:	ipt_addrtype match include file
- When:	2012
- Why:	superseded by xt_addrtype
-diff --git a/init/Kconfig b/init/Kconfig
-index ebafac4..e657952 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -665,7 +665,7 @@ config CGROUP_MEM_RES_CTLR_SWAP
- 	  be careful about enabling this. When memory resource controller
- 	  is disabled by boot option, this will be automatically disabled and
- 	  there will be no overhead from this. Even when you set this config=y,
--	  if boot option "noswapaccount" is set, swap will not be accounted.
-+	  if boot option "swapaccount=0" is set, swap will not be accounted.
- 	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
- 	  size is 4096bytes, 512k per 1Gbytes of swap.
- config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
-@@ -680,7 +680,7 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
- 	  parameter should have this option unselected.
- 	  For those who want to have the feature enabled by default should
- 	  select this option (if, for some reason, they need to disable it
--	  then noswapaccount does the trick).
-+	  then swapaccount=0 does the trick).
- 
- config CGROUP_PERF
- 	bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index 74ccff6..2eba968 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -502,7 +502,7 @@ int swap_cgroup_swapon(int type, unsigned long max_pages)
- nomem:
- 	printk(KERN_INFO "couldn't allocate enough memory for swap_cgroup.\n");
- 	printk(KERN_INFO
--		"swap_cgroup can be disabled by noswapaccount boot option\n");
-+		"swap_cgroup can be disabled by swapaccount=0 boot option\n");
- 	return -ENOMEM;
- }
- 
+However we have conveniently defined sethostname and gethostname to use
+the same state in the kernel, as uname.  I believe at least one of these
+interfaces that map to the same storage in linux has a usable size
+guaranteed by all of the implementations.
+
+Eric
+
+
