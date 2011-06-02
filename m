@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab1FBXk4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 19:40:56 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38549 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab1FBXkz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 19:40:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :mime-version:content-type;
-        b=utGZj0ZyCIMmViV4L9slAjqMWuui3+b+7v6UCBN2LLluA05YDf2nJyb0UBlyTK21J2
-         rO1+aZgADIenNnXlbHwWp4Tt8x3+HDveSyGpPoGHsHud4OfJTdK+XnbS0RQGHeCxWM6h
-         IYEagKaTz2lW8q1/VUsrlitsn9EUPFn8Thmww=
-From: Luis Henriques <luis.henrix@gmail.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC] "mustnotsleep"
-References: <1af7a43d-84fa-47c4-a145-409e5bac585b@default>
-Date: Fri, 03 Jun 2011 00:36:19 +0100
-In-Reply-To: <1af7a43d-84fa-47c4-a145-409e5bac585b@default> (Dan Magenheimer's
-	message of "Thu, 2 Jun 2011 14:46:23 -0700 (PDT)")
-Message-ID: <87hb87lsb0.fsf@gmail.com>
+	id S1753444Ab1FBXpG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 19:45:06 -0400
+Received: from home.keithp.com ([63.227.221.253]:49278 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752511Ab1FBXpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 19:45:05 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Nicolas Kaiser <nikai@nikai.net>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: Fw: [PATCH] drm: i915: correct return status in intel_hdmi_mode_valid()
+In-Reply-To: <20110530124826.74d83b35@absol.kitzblitz>
+References: <20110530124826.74d83b35@absol.kitzblitz>
+User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Thu, 02 Jun 2011 16:44:42 -0700
+Message-ID: <yun8vtjyf11.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Magenheimer <dan.magenheimer@oracle.com> writes:
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-> In development of RAMster, I have frequently been bitten
-> by indirect use of existing kernel subsystems that
-> unexpectedly sleep.  As such, I have hacked the
-> following "debug" code fragments for use where I need to
-> ensure that doesn't happen.
->
-> DEFINE_PER_CPU(int, mustnotsleep_count);
->
-> void mustnotsleep_start(void)
-> {
-> 	int cpu = smp_processor_id();
-> 	per_cpu(mustnotsleep_count, cpu)++;
-> }
->
-> void mustnotsleep_done(void)
-> {
-> 	int cpu = smp_processor_id();
-> 	per_cpu(mustnotsleep_count, cpu)--;
-> }
->
-> and in schedule.c in schedule():
->
-> if (per_cpu(mustnotsleep_count))
-> 	panic("scheduler called in mustnotsleep code");
->
-> This has enabled me to start identifying code that
-> is causing me problems.  (I know this is a horrible
-> hack, but that's OK right now.)
+On Mon, 30 May 2011 12:48:26 +0200, Nicolas Kaiser <nikai@nikai.net> wrote:
 
-I'm pretty sure I'm missing something here but... what if you just use
-CONFIG_DEBUG_PREEMPT?  Isn't that good enough?
+>  	if (mode->clock < 20000)
+> -		return MODE_CLOCK_HIGH;
+> +		return MODE_CLOCK_LOW;
 
-Cheers,
---
-Luis Henriques
+Seems obvious to me.
+
+Reviewed-by: Keith Packard <keithp@keithp.com>
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFN6CBqQp8BWwlsTdMRAhgQAKDqeGTXykUpS8adZZKr640Dg4aAxgCdEbhc
+kJhe5wRfkU1XTS0yNBAmP5I=
+=6qYQ
+-----END PGP SIGNATURE-----
+--=-=-=--
