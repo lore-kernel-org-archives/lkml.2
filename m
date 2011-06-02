@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab1FBTJT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 15:09:19 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:22688 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab1FBTJS (ORCPT
+	id S1753647Ab1FBTLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 15:11:07 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:53801 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752361Ab1FBTLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 15:09:18 -0400
-Date: Thu, 2 Jun 2011 21:09:07 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] MAINTAINERS: Add entry for legacy eeprom driver
-Message-ID: <20110602210907.201e02b5@endymion.delvare>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Jun 2011 15:11:05 -0400
+X-Sasl-enc: 0uXG7QaSjIrpMZqeCGhT/hKsIndy5ESKPsgJcwdjyH7q 1307041864
+Date: Thu, 2 Jun 2011 16:11:01 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: Preparation for Linux 3.0
+Message-ID: <20110602191101.GC31586@khazad-dum.debian.net>
+References: <201106020350.p523o95o094928@www262.sakura.ne.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106020350.p523o95o094928@www262.sakura.ne.jp>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I shall maintain the legacy eeprom driver, until we finally get rid of
-it.
+On Thu, 02 Jun 2011, Tetsuo Handa wrote:
+> We need to widely announce that userland applications using branches based on
+> /proc/sys/kernel/osrelease need to be fixed.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
----
- MAINTAINERS |    6 ++++++
- 1 file changed, 6 insertions(+)
-
---- linux-3.0-rc1.orig/MAINTAINERS	2011-05-30 20:45:03.000000000 +0200
-+++ linux-3.0-rc1/MAINTAINERS	2011-06-02 21:01:45.000000000 +0200
-@@ -3820,6 +3820,12 @@ S:	Maintained
- F:	drivers/leds/
- F:	include/linux/leds.h
- 
-+LEGACY EEPROM DRIVER
-+M:	Jean Delvare <khali@linux-fr.org>
-+S:	Maintained
-+F:	Documentation/misc-devices/eeprom
-+F:	drivers/misc/eeprom/eeprom.c
-+
- LEGO USB Tower driver
- M:	Juergen Stuber <starblue@users.sourceforge.net>
- L:	legousb-devel@lists.sourceforge.net
-
+A debug patch to disclose any userspace application that touches that file
+would be of some help, I suppose?
 
 -- 
-Jean Delvare
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
