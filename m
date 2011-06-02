@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758566Ab1FBJad (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 05:30:33 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:35476 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab1FBJab (ORCPT
+	id S933063Ab1FBJe6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 05:34:58 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:60212 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933010Ab1FBJe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 05:30:31 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: tty breakage in X (Was: tty vs workqueue oddities)
-References: <1306999045.29297.55.camel@pasglop>
-	<1307003821.29297.77.camel@pasglop>
-X-Yow: Hello.  Just walk along and try NOT to think about your
- INTESTINES being almost FORTY YARDS LONG!!
-Date: Thu, 02 Jun 2011 11:30:27 +0200
-In-Reply-To: <1307003821.29297.77.camel@pasglop> (Benjamin Herrenschmidt's
-	message of "Thu, 02 Jun 2011 18:37:01 +1000")
-Message-ID: <m2pqmwpolo.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Thu, 2 Jun 2011 05:34:56 -0400
+From: Mattias Wallin <mattias.wallin@stericsson.com>
+To: Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Mattias Wallin <mattias.wallin@stericsson.com>
+Subject: [PATCHv2 0/3] clocksource: add db8500 PRCMU timer
+Date: Thu, 2 Jun 2011 11:34:31 +0200
+Message-ID: <1307007271-1004-1-git-send-email-mattias.wallin@stericsson.com>
+X-Mailer: git-send-email 1.7.5.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Herrenschmidt <benh@kernel.crashing.org> writes:
+The Multi Timer Unit (MTU) is currently used as clocksource and sched_clk
+for the u8500 machine. The MTU block loose power during cpuidle sleep states
+so an alternate clocksource is needed and these patches adds the db8500 PRCMU
+timer.
 
-> It looks like the patch is causing some major malfunctions of the X
-> server for me, possibly related to PTYs. For example, cat'ing a large
-> file in a gnome terminal hangs the kernel for -minutes- in a loop of
-> what looks like flush_to_ldisc/workqueue code, (some ftrace data in the
-> quoted bits further down). 
+Mattias Wallin (3):
+  plat-nomadik: MTU sched_clock as a config option
+  clocksource: add DB8500 PRCMU Timer support
+  mach-ux500: Initialize the DB8500 PRCMU timer
 
-Btw., do you already have d72bce0 ("rcu: Cure load woes")?  Although
-that is about an independent bug, it appears to amplify this issue a
-lot.
-
-Andreas.
+ arch/arm/mach-ux500/cpu.c                 |    2 +
+ arch/arm/plat-nomadik/Kconfig             |    8 ++-
+ arch/arm/plat-nomadik/timer.c             |    4 +
+ drivers/clocksource/Kconfig               |   15 +++++
+ drivers/clocksource/Makefile              |    1 +
+ drivers/clocksource/clksrc-db8500-prcmu.c |   90 +++++++++++++++++++++++++++++
+ include/linux/clksrc-db8500-prcmu.h       |   17 ++++++
+ 7 files changed, 136 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/clocksource/clksrc-db8500-prcmu.c
+ create mode 100644 include/linux/clksrc-db8500-prcmu.h
 
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+1.7.4.3
+
