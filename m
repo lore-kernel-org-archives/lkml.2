@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab1FBNBA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 09:01:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59072 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab1FBNA6 (ORCPT
+	id S1752321Ab1FBNId (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 09:08:33 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:35572 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751035Ab1FBNIc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 09:00:58 -0400
-Subject: Re: [tip:sched/urgent] sched: Fix cross-cpu clock sync on remote
- wakeups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Borislav Petkov <bp@amd64.org>, Borislav Petkov <bp@alien8.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-In-Reply-To: <BANLkTikT6OT-HDi-DR+_ZWEhfp_CYWJ3Hg@mail.gmail.com>
-References: <1306835745.2353.3.camel@twins>
-	 <tip-f01114cb59d670e9b4f2c335930dd57db96e9360@git.kernel.org>
-	 <20110531125621.GA24439@gere.osrc.amd.com> <1306847516.2353.80.camel@twins>
-	 <20110601070547.GB3368@liondog.tnic> <1306924612.2353.176.camel@twins>
-	 <20110601155017.GD24028@aftab>
-	 <BANLkTikT6OT-HDi-DR+_ZWEhfp_CYWJ3Hg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Jun 2011 15:04:26 +0200
-Message-ID: <1307019866.2497.675.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Jun 2011 09:08:32 -0400
+Date: Thu, 2 Jun 2011 14:08:17 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Will Deacon <Will.Deacon@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, sam@ravnborg.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Disable -fconserve-stack on ARM
+Message-ID: <20110602130816.GB8343@e102109-lin.cambridge.arm.com>
+References: <1306429854.26735.9.camel@e102144-lin.cambridge.arm.com>
+ <alpine.LFD.2.00.1105261650330.3207@xanadu.home>
+ <20110526215101.GL24876@n2100.arm.linux.org.uk>
+ <20110527083806.GA21100@e102109-lin.cambridge.arm.com>
+ <20110527085414.GP24876@n2100.arm.linux.org.uk>
+ <20110527095111.GC21100@e102109-lin.cambridge.arm.com>
+ <yw1xlixse2fl.fsf@unicorn.mansr.com>
+ <20110528153417.GB25869@alboin.amr.corp.intel.com>
+ <20110531163026.GB771@e102109-lin.cambridge.arm.com>
+ <20110531180107.GA9261@alboin.amr.corp.intel.com>
+MIME-Version: 1.0
+In-Reply-To: <20110531180107.GA9261@alboin.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 02 Jun 2011 13:08:46.0619 (UTC) FILETIME=[34DBB6B0:01CC2126]
+X-MC-Unique: 111060214082703601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-02 at 15:52 +0800, Yong Zhang wrote:
-> In sched_clock_local(), clock is calculated around ->tick_gtod even if
-> that ->tick_gtod is stale for long time because we stays in idle state. 
-> You know ->tick_gtod is only updated in sched_clock_tick();
-
-(well, no, there's idle callbacks as you said below)
-
-> IOW, when a cpu goes out of idle, sched_clock_tick() is called from
-> tick_nohz_stop_idle() which is later than interrupt.
-
-Gah, that would be awefull and mean wakeups from interrupts were already
-borken. /me goes look at code.
-
-irq_enter() -> tick_check_idle() -> tick_check_nohz() ->
-tick_nohz_stop_idle() -> sched_clock_idle_wakeup_event()
-
-should update the thing before we run any isrs, right?
-
-> So if we have any site which call sched_clock() in interrupt on an
-> idle cpu, it could get incorrect clock.
+On Tue, May 31, 2011 at 07:01:07PM +0100, Andi Kleen wrote:
+> Disable -fconserve-stack on ARM v2
 > 
-> I'm not sure how to teach sched_clock() about this special case, Peter?
+> There are reports that -fconserve-stack misaligns variables on the stack.
+> Disable it for ARM to work around this gcc bug.
+> 
+> v2: Move top level flags definition up
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-isn't anything to teach afaict.
+It seems to disable the -fconserve-stack on ARM.
+
+Tested-by: Catalin Marinas <catalin.marinas@arm.com>
 
