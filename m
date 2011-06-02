@@ -1,131 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab1FBPih (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 11:38:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47638 "EHLO mx1.redhat.com"
+	id S1752996Ab1FBPn3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 11:43:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8066 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923Ab1FBPig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 11:38:36 -0400
-Date: Thu, 2 Jun 2011 17:37:54 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan.kim@gmail.com>, akpm@linux-foundation.org,
-        Ury Stankevich <urykhy@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous
-Message-ID: <20110602153754.GF19505@random.random>
-References: <20110531133340.GB3490@barrios-laptop>
- <20110531141402.GK19505@random.random>
- <20110601005747.GC7019@csn.ul.ie>
- <20110601175809.GB7306@suse.de>
- <20110601191529.GY19505@random.random>
- <20110601214018.GC7306@suse.de>
- <20110601233036.GZ19505@random.random>
- <20110602010352.GD7306@suse.de>
- <20110602132954.GC19505@random.random>
- <20110602145019.GG7306@suse.de>
+	id S1752076Ab1FBPn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 11:43:27 -0400
+Date: Thu, 2 Jun 2011 18:42:35 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: [PATCHv2 RFC 0/4] virtio and vhost-net capacity handling
+Message-ID: <cover.1307029008.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110602145019.GG7306@suse.de>
+X-Mutt-Fcc: =sent
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 03:50:19PM +0100, Mel Gorman wrote:
-> I thought spin lock acquisition was one-way where loads/stores
-> preceeding the lock are allowed to leak into the protected region
-> but not the other way around?
+OK, here's a new attempt to use the new capacity api.  I also added more
+comments to clarify the logic.  Hope this is more readable.  Let me know
+pls.
 
-That's true for ia64, x86 not AFIK.
+This is on top of the patches applied by Rusty.
 
-> So we have
-> 
-> clear_huge_page()
-> __SetPageUptodate(page);
-> spin_lock(&mm->page_table_lock);
-> ...
-> set_pmd_at(mm, haddr, pmd, entry);
-> 
-> This spinlock itself does not guarantee that writes from
-> clear_huge_page are complete before that set_pmd_at().
+Warning: untested. Posting now to give people chance to
+comment on the API.
 
-It does on x86.
+Changes from v1:
+- fix comment in patch 2 to correct confusion noted by Rusty
+- rewrite patch 3 along the lines suggested by Rusty
+  note: it's not exactly the same but I hope it's close
+  enough, the main difference is that mine does limited
+  polling even in the unlikely xmit failure case.
+- added a patch to not return capacity from add_buf
+  it always looked like a weird hack
 
-> Whether this is right or wrong, why is the same not true in
-> collapse_huge_page()? There we are
-> 
->        __collapse_huge_page_copy(pte, new_page, vma, address, ptl);
-> 	....
->         smp_wmb();
->         spin_lock(&mm->page_table_lock);
-> 	...
->         set_pmd_at(mm, address, pmd, _pmd);
-> 
-> with the comment stressing that this is necessary.
+Michael S. Tsirkin (4):
+  virtio_ring: add capacity check API
+  virtio_net: fix tx capacity checks using new API
+  virtio_net: limit xmit polling
+  Revert "virtio: make add_buf return capacity remaining:
 
-So your first part of the patch is right, but it should be only a
-theoretical improvement.
+ drivers/net/virtio_net.c     |  111 ++++++++++++++++++++++++++----------------
+ drivers/virtio/virtio_ring.c |   10 +++-
+ include/linux/virtio.h       |    7 ++-
+ 3 files changed, 84 insertions(+), 44 deletions(-)
 
-> > But smp_wmb() is optimized away at build time by cpp so this can't
-> > possibly help if you're reproducing !SMP.
-> > 
-> 
-> On X86 !SMP, this is still a barrier() which on gcc is
-> 
-> #define barrier() __asm__ __volatile__("": : :"memory")
-> 
-> so it's a compiler barrier. I'm not working on this at this at the
-> moment but when I get to it, I'll compare the object files and see
-> if there are relevant differences. Could be tomorrow before I get
-> the chance again.
-
-clear_huge_page called by do_huge_pmd_anonymous_page is an external
-function (not static so gcc can't make assumption) and that is a full
-equivalent to a barrier() after the function returns, so the only
-relevancy of a smp_wmb on x86 SMP or !SMP would be zero (unless
-X86_OOSTORE is set which I think is not, and that would only apply to
-SMP).
-
-> > >  		page_add_new_anon_rmap(page, vma, haddr);
-> > >  		set_pmd_at(mm, haddr, pmd, entry);
-> > >  		prepare_pmd_huge_pte(pgtable, mm);
-> > > @@ -753,6 +755,13 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
-> > >  
-> > >  	pmdp_set_wrprotect(src_mm, addr, src_pmd);
-> > >  	pmd = pmd_mkold(pmd_wrprotect(pmd));
-> > > +
-> > > +	/*
-> > > +	 * Write barrier to make sure the setup for the PMD is fully visible
-> > > +	 * before the set_pmd_at
-> > > +	 */
-> > > +	smp_wmb();
-> > > +
-> > >  	set_pmd_at(dst_mm, addr, dst_pmd, pmd);
-> > >  	prepare_pmd_huge_pte(pgtable, dst_mm);
-> > 
-> > This part seems superfluous to me, it's also noop for !SMP.
-> 
-> Other than being a compiler barrier.
-
-Yes but my point is this is ok to be cached in registers, the pmd
-setup doesn't need to hit on main memory to be safe, it's local.
-
-pmdp_set_wrprotect is done with a clear_bit and the dependency of the
-code will require reading that after the clear_bit on !SMP. Not sure
-how can possibly a barrier() above can matter.
-
-> > Only wmb()
-> > would stay. the pmd is perfectly fine to stay in a register, not even
-> > a compiler barrier is needed, even less a smp serialization.
-> 
-> There is an explanation in here somewhere because as I write this,
-> the test machine has survived 14 hours under continual stress without
-> the isolated counters going negative with over 128 million pages
-> successfully migrated and a million pages failed to migrate due to
-> direct compaction being called 80,000 times. It's possible it's a
-> co-incidence but it's some co-incidence!
-
-No idea...
+-- 
+1.7.5.53.gc233e
