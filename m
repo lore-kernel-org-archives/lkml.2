@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab1FBU5Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 16:57:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36248 "EHLO
+	id S1754119Ab1FBU4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 16:56:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36227 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554Ab1FBU4w (ORCPT
+	with ESMTP id S1753436Ab1FBU4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 16:56:52 -0400
+	Thu, 2 Jun 2011 16:56:45 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [GIT PULL 0/9] perf/core fixes and improvements
-Date: Thu,  2 Jun 2011 17:56:27 -0300
-Message-Id: <1307048196-16387-1-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 1/9] perf evlist: Remove dependency on debug routines
+Date: Thu,  2 Jun 2011 17:56:28 -0300
+Message-Id: <1307048196-16387-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1307048196-16387-1-git-send-email-acme@infradead.org>
+References: <1307048196-16387-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-        Please consider pulling from:
+So far we avoided having to link debug.o in the python binding, keep it
+that way by not using ui__warning() in evlist.c.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-4wtew8hd3g7ejnlehtspys2t@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/evlist.c |   13 ++++---------
+ 1 files changed, 4 insertions(+), 9 deletions(-)
 
-Regards,
-
-- Arnaldo
-
-Arnaldo Carvalho de Melo (3):
-  perf evlist: Remove dependency on debug routines
-  perf python: Use exception to propagate errors
-  perf evlist: Don't die if sample_{id_all|type} is invalid
-
-David Ahern (4):
-  perf stat: clarify unsupported events from uncounted events
-  perf script: "sym" field really means show IP data
-  perf script: Make printing of dso a separate field option
-  perf script: Add printing of sample address
-
-Frederic Weisbecker (2):
-  perf python: Fix argument name list of read_on_cpu()
-  perf python: Cleanup useless double NULL termination in method arg names
-
- tools/perf/Documentation/perf-script.txt |   12 ++--
- tools/perf/builtin-script.c              |  108 +++++++++++++++++++++++++++---
- tools/perf/builtin-stat.c                |    9 ++-
- tools/perf/builtin-test.c                |    2 +-
- tools/perf/util/event.c                  |   16 -----
- tools/perf/util/event.h                  |    2 -
- tools/perf/util/evlist.c                 |   68 +++++++++++--------
- tools/perf/util/evlist.h                 |    6 +-
- tools/perf/util/evsel.c                  |   17 +++++
- tools/perf/util/evsel.h                  |    8 ++
- tools/perf/util/python.c                 |   29 ++++----
- tools/perf/util/session.c                |   73 ++++++++++++++-------
- tools/perf/util/session.h                |    5 +-
- 13 files changed, 245 insertions(+), 110 deletions(-)
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 50aa348..04c8a60 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -12,7 +12,6 @@
+ #include "evlist.h"
+ #include "evsel.h"
+ #include "util.h"
+-#include "debug.h"
+ 
+ #include <sys/mman.h>
+ 
+@@ -257,19 +256,15 @@ int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
+ 	return evlist->mmap != NULL ? 0 : -ENOMEM;
+ }
+ 
+-static int __perf_evlist__mmap(struct perf_evlist *evlist, struct perf_evsel *evsel,
++static int __perf_evlist__mmap(struct perf_evlist *evlist,
+ 			       int idx, int prot, int mask, int fd)
+ {
+ 	evlist->mmap[idx].prev = 0;
+ 	evlist->mmap[idx].mask = mask;
+ 	evlist->mmap[idx].base = mmap(NULL, evlist->mmap_len, prot,
+ 				      MAP_SHARED, fd, 0);
+-	if (evlist->mmap[idx].base == MAP_FAILED) {
+-		if (evlist->cpus->map[idx] == -1 && evsel->attr.inherit)
+-			ui__warning("Inherit is not allowed on per-task "
+-				    "events using mmap.\n");
++	if (evlist->mmap[idx].base == MAP_FAILED)
+ 		return -1;
+-	}
+ 
+ 	perf_evlist__add_pollfd(evlist, fd);
+ 	return 0;
+@@ -289,7 +284,7 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
+ 
+ 				if (output == -1) {
+ 					output = fd;
+-					if (__perf_evlist__mmap(evlist, evsel, cpu,
++					if (__perf_evlist__mmap(evlist, cpu,
+ 								prot, mask, output) < 0)
+ 						goto out_unmap;
+ 				} else {
+@@ -329,7 +324,7 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
+ 
+ 			if (output == -1) {
+ 				output = fd;
+-				if (__perf_evlist__mmap(evlist, evsel, thread,
++				if (__perf_evlist__mmap(evlist, thread,
+ 							prot, mask, output) < 0)
+ 					goto out_unmap;
+ 			} else {
+-- 
+1.6.2.5
 
