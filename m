@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248Ab1FBABG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 20:01:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:65492 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759203Ab1FBABF (ORCPT
+	id S932612Ab1FBADp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 20:03:45 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:39308 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932416Ab1FBADn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 20:01:05 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=xdMmZEh6R7UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=MEF8tz2C7hFxq5HU2Z0A:9 a=oYrivcGFLWGc6gK_5jgA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] ide: Fix bug caused by git merge
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>, LKML <linux-kernel@vger.kernel.org>,
-        axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>
-In-Reply-To: <7vmxi1fbxs.fsf@alter.siamese.dyndns.org>
-References: <1306956328.10135.36.camel@gandalf.stny.rr.com>
-	 <BANLkTimgjdFQcSfOOFFjmSC+Wt_xPXr4Xg@mail.gmail.com>
-	 <7vr57dfc8x.fsf@alter.siamese.dyndns.org>
-	 <7vmxi1fbxs.fsf@alter.siamese.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 01 Jun 2011 20:01:02 -0400
-Message-ID: <1306972862.3667.5.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Jun 2011 20:03:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=XGXq+wp0pt5ahJJvJcvuNpt8NV+lNUnL3XCsT3d0Lb3Fx/vB9KU7rh3cAaz1B30aRC
+         uySm+s5qxmyns8k+hEnh4I9oG5EIzfAb4+Hx8QygXGSC08eagsuPr+8imQJVExyoH4Ub
+         mKPLHQK9hTWzaZM+dMedB5bWez8mEVwOQKykA=
+MIME-Version: 1.0
+In-Reply-To: <1306950434.3627.23.camel@ayu>
+References: <BANLkTikvU-XUu9sWX-E87a7CUtA7j+ZRpA@mail.gmail.com>
+	<BANLkTi=w7VhV2GxKrGGe9dirHcEkwKrDwA@mail.gmail.com>
+	<BANLkTim7XZKLCRp=ZtRJWhi7k4BzwYpRpg@mail.gmail.com>
+	<20110531201348.GA8723@1wt.eu>
+	<1306950434.3627.23.camel@ayu>
+Date: Wed, 1 Jun 2011 20:03:41 -0400
+Message-ID: <BANLkTim7mGXzRhvnziyLBSULGYg2N+L0BA@mail.gmail.com>
+Subject: Re: Linux 3.0 change listings - Wonderful World of Linux 3.0
+From: Joe Pranevich <jpranevich@gmail.com>
+To: Calvin Walton <calvin.walton@kepstin.ca>
+Cc: Willy Tarreau <w@1wt.eu>, Mike Frysinger <vapier.adi@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-01 at 15:01 -0700, Junio C Hamano wrote:
+Hello,
 
-> With --conflict=diff3, it becomes crystal clear that g->events assignment
-> needs to be removed for even somebody who does not know the history of
-> this part of the kernel at all (like me).
+Thank you for the feedback. While I already have a section about what
+v3 means right at the top, I will be reworking the exuberance out of
+the finished text, cutting the use of the word "new", and making it
+more clear that this is a "v2.6 retrospective", to use your term. I
+will also place notices to that effect on each page of the web version
+of the doc. I think I have done a reasonable job in summarizing where
+Linux has moved to since the last "dot-zero" release, which was my
+hope and intent, and now I just want to move the text to make that
+more clear.
 
-OK, I like this. This has been one of my biggest complaints about
-conflicts in git over the old .rej files that patch produced. In fact, I
-find myself using a script from Peter Zijlstra that creates .rej files
-from git conflicts, and puts back the old file before the commit was
-done.
+This has been a good experience. I regularly follow kernel development
+and read change logs, but there were still numerous things that I
+learned about Linux 2.6.x that I didn't know. The wide angle lens
+helped me and I hope it can help others. (My inclination, if I do this
+again, would be to do a yearly writeup (WWOL 2012), though perhaps
+we'll have yearly point releases anyway.)
 
-The default git commit shows you change1 and change2. It does not show
-you what it was before either change. With a conflict giving a .rej
-file, you see what is there now, what it was that you were trying to
-commit, as well as what that commit expected to be there but wasn't. The
-default git conflict lacks that last part. I have to remember this
-option as it shows what I was missing from patch.
+I will finish these changes by Sunday. The doc may be too long for
+another kernel post, but I appreciate the corrections and feedback so
+please keep them coming.
 
-Thanks!
-
--- Steve
-
-> 
-> diff --cc drivers/ide/ide-cd.c
-> index 6e5123b,a5ec5a7..0000000
-> --- a/drivers/ide/ide-cd.c
-> +++ b/drivers/ide/ide-cd.c
-> @@@ -1781,8 -1781,7 +1781,15 @@@ static int ide_cd_probe(ide_drive_t *dr
->   
->         ide_cd_read_toc(drive, &sense);
->         g->fops = &idecd_ops;
-> ++<<<<<<< ours
->  +      g->flags |= GENHD_FL_REMOVABLE | GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE;
->  +      g->events = DISK_EVENT_MEDIA_CHANGE;
-> ++||||||| base
-> +       g->flags |= GENHD_FL_REMOVABLE;
-> ++      g->events = DISK_EVENT_MEDIA_CHANGE;
-> ++=======
-> ++      g->flags |= GENHD_FL_REMOVABLE;
-> ++>>>>>>> theirs
->         add_disk(g);
->         return 0;
+Joe
 
 
+On Wed, Jun 1, 2011 at 1:47 PM, Calvin Walton <calvin.walton@kepstin.ca> wrote:
+> On Tue, 2011-05-31 at 22:13 +0200, Willy Tarreau wrote:
+>> On Tue, May 31, 2011 at 01:22:49AM -0400, Joe Pranevich wrote:
+>> > Mike,
+>> >
+>> > Thank you. I appreciate the comments and the corrections. It was a
+>> > marathon weekend and yes, I missed some obvious typos. Thanks.
+>> >
+>> I'd say that in general, almost all of the features you're announcing as
+>> "new" will make unaware people think that older versions did not have
+>> those features, which is quite misleading. Linus took great care to say
+>> that 3.0-rc1 had very few changes, it can be a bit confusing to see a
+>> post pretending it to be a revolutionary new kernel.
+>>
+>> Probably that you should more clearly say that all those features were
+>> progressively added in all 2.6 releases, otherwise I'm already expecting
+>> to see a lot of idiocies posted in journals.
+>
+> Perhaps a simple change of the title and introduction would handle
+> clearing this up. Instead of presenting it as a "What's new in Linux
+> 3.0" article (which it is not, or it would be a lot shorter!), why not
+> call it what it actually is: "A Retrospective of the Linux 2.6 era"?
+>
+> --
+> Calvin Walton <calvin.walton@kepstin.ca>
+>
+>
