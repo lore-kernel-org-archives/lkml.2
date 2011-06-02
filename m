@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab1FBW3B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 18:29:01 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47812 "EHLO mx1.suse.de"
+	id S1752724Ab1FBW0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 18:26:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7843 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751815Ab1FBW3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 18:29:00 -0400
-Date: Fri, 3 Jun 2011 07:28:41 +0900
-From: Greg KH <gregkh@suse.de>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kobject: mark object as not initialized after release
-Message-ID: <20110602222841.GB13482@suse.de>
-References: <1307032187-15823-1-git-send-email-lauraa@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307032187-15823-1-git-send-email-lauraa@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752207Ab1FBW0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 18:26:38 -0400
+Subject: RE: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
+ mark ncm devices as "mobile broadband devices" with FLAG_WWAN
+From: Dan Williams <dcbw@redhat.com>
+To: Alexey ORISHKO <alexey.orishko@stericsson.com>
+Cc: Stefan Metzmacher <metze@samba.org>, Oliver Neukum <oliver@neukum.name>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 02 Jun 2011 17:29:02 -0500
+In-Reply-To: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E583@EXDCVYMBSTM006.EQ1STM.local>
+References: <1306922913-17803-1-git-send-email-metze@samba.org>
+	 <1306922913-17803-2-git-send-email-metze@samba.org>
+	 <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E583@EXDCVYMBSTM006.EQ1STM.local>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1307053743.21633.22.camel@dcbw.foobar.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 09:29:47AM -0700, Laura Abbott wrote:
-> During kobject initalization, state_initialized is set to 1. This state
-> is never set back to 0, even after release. This results in re-initialized
-> object warnings if the kobject needs to be reinitialized after release. On
-> a statically allocated platform device and driver:
+On Wed, 2011-06-01 at 12:20 +0200, Alexey ORISHKO wrote:
+> > -----Original Message-----
+> > From: netdev-owner@vger.kernel.org [mailto:netdev-
+> > owner@vger.kernel.org] On Behalf Of Stefan Metzmacher
+> > Sent: Wednesday, June 01, 2011 12:09 PM
 > 
-> platform_device_register(&my_device)
-> platform_driver_register(&my_matching_driver)
-> platform_device_unregister(&my_device)
-> platform_device_register(&my_device)
 > 
-> gives
+> > -	.flags = FLAG_POINTTOPOINT | FLAG_NO_SETINT | FLAG_MULTI_PACKET,
+> > +	.flags = FLAG_WWAN | FLAG_NO_SETINT | FLAG_MULTI_PACKET,
 > 
-> kobject (bf000128): tried to init an initialized object, something is seriously wrong.
-> [<c0053964>] (unwind_backtrace+0x0/0x128) from [<c02bd444>] (kobject_init+0x38/0x8c)
-> [<c02bd444>] (kobject_init+0x38/0x8c) from [<c03445cc>] (device_initialize+0x20/0x68)
-> [<c03445cc>] (device_initialize+0x20/0x68) from [<c0348924>] (platform_device_register+0x10/0x1c)
-> [<c0348924>] (platform_device_register+0x10/0x1c) from [<bf00305c>] (platform_driver_test_init+0x5c/0x7c [platform_driver_test])
-> [<bf00305c>] (platform_driver_test_init+0x5c/0x7c [platform_driver_test]) from [<c00466e8>] (do_one_initcall+0xd0/0x1a4)
-> [<c00466e8>] (do_one_initcall+0xd0/0x1a4) from [<c0109ea4>] (sys_init_module+0x90/0x1ac)
-> 
-> since the kobject that is part of the platform device (mydevice.dev.kobj) never
-> had the state_initialized reset despite eventually calling kobject_release.
-> 
-> Fix this by setting state_initialized on a released kobject back to 0 as any
-> state referenced after releasing is undefined.
+> This patch will introduce incompatibility with already existing
+> applications, which track usbX devices. As a result, end user
+> application will stop working.
 
-Nope.
+Applications should *never* track devices based solely on a device name
+prefix.  What do they do when the device gets renamed either by udev
+rules or the user?  It's simply broken.  Device names are not stable API
+and they can and do change at will.  Applications that expect them to
+have a stable prefix are simply broken.
 
-We've been through this before numerous times, please see the archives
-for why I will not accept this change (hint, don't use a static kobject.
-If you do, you had better know exactly how to use it correctly...)
+Dan
 
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-> ---
->  lib/kobject.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/lib/kobject.c b/lib/kobject.c
-> index 82dc34c..00390e3 100644
-> --- a/lib/kobject.c
-> +++ b/lib/kobject.c
-> @@ -577,7 +577,10 @@ static void kobject_cleanup(struct kobject *kobj)
->  
->  static void kobject_release(struct kref *kref)
->  {
-> -	kobject_cleanup(container_of(kref, struct kobject, kref));
-> +	struct kobject *kobj = container_of(kref, struct kobject, kref);
-> +
-> +	kobject_cleanup(kobj);
-> +	kobj->state_initialized = 0;
->  }
 
-You really didn't test this code, did you.  It's totally broken and will
-cause crashes all over the place (hint, run it with slab debugging...)
-
-{sigh}
-
-greg k-h
