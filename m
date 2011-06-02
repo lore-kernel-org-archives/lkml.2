@@ -1,109 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066Ab1FBM7n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 08:59:43 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35159 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab1FBM7l convert rfc822-to-8bit (ORCPT
+	id S1753400Ab1FBNCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 09:02:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:40346 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028Ab1FBNCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 08:59:41 -0400
+	Thu, 2 Jun 2011 09:02:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=X+IPS0Ipu0FUmNa9JwhM6m5dGcQTn92Nk8Mup1vnZvAv3n7L8z5x2DgaEaHMudv4q8
-         rw9jBpE1jGl0K6n/DzixdJl9RcTgldx1x9S/7vXGIYI25S5lmIVhYrwnGR4SNuqXojMk
-         vcfzRJPd183LuVw6X2zgMb5/W6wMzg4Hrulac=
+        d=vrfy.org; s=google;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=QHHkdDX02i86eK1QCxBZfrWdL2sUEpnMYhv3SegI/7C66tspp/jMHe+3CmX5i0d1fF
+         WKuhl78ZbJ0evvAW308WNnuw9qwxwuaFvfOLxYvXmKflHJO4x31jZcGVXPy/GDCCI71Y
+         dX/o9/FzWrhRNMuG4Jm0ZLECAsZapWa+zqtnU=
 MIME-Version: 1.0
-In-Reply-To: <20110602100007.GB20725@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
-	<BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
-	<20110602073335.GA20630@cmpxchg.org>
-	<BANLkTikztP6RoyBgMqUHgrzJFLZrHMCs=Q@mail.gmail.com>
-	<20110602100007.GB20725@cmpxchg.org>
-Date: Thu, 2 Jun 2011 21:59:40 +0900
-Message-ID: <BANLkTi=xvunhqpXFJ=wJFkCuu+7Czh4nZw@mail.gmail.com>
-Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+In-Reply-To: <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
+References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
+ <BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com> <m18vtkq57c.fsf@fess.ebiederm.org>
+ <BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com> <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 2 Jun 2011 15:01:55 +0200
+Message-ID: <BANLkTimnrLAPUA5Jt9Tqfdpb6fk8DDFGWw@mail.gmail.com>
+Subject: Re: [PATCH] sysctl: add support for poll()
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/2 Johannes Weiner <hannes@cmpxchg.org>:
-> On Thu, Jun 02, 2011 at 06:06:51PM +0900, Hiroyuki Kamezawa wrote:
->> 2011/6/2 Johannes Weiner <hannes@cmpxchg.org>:
->> > On Thu, Jun 02, 2011 at 08:52:47AM +0900, Hiroyuki Kamezawa wrote:
->> >>   Hmm, how about splitting patch 2/8 into small patches and see what happens in
->> >>   3.2 or 3.3 ? While that, we can make softlimit works better.
->> >>   (and once we do 2/8, our direction will be fixed to the direction to
->> >> remove global LRU.)
->> >
->> > Do you have specific parts in mind that could go stand-alone?
->> >
->> > One thing I can think of is splitting up those parts:
->> >
->> >  1. move /target/ reclaim to generic code
->> >
->> >  2. convert /global/ reclaim from global lru to hierarchy reclaim
->> >     including root_mem_cgroup
->>
->> Hmm, at brief look
->> patch 2/8
->>  - hierarchy walk rewrite code should be stand alone and can be merged
->> 1st, as clean-up
+On Thu, Jun 2, 2011 at 14:43, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> So this all belongs in conman, network manager and other similar
+> systems and I'd suggest they try and deal with the meaningful IP world
+> questions of "what list of names do I posess for purpose X on network Y"
+> and "is this one of my names on ..."
+
+Higher level interfaces already live in the system services to set and
+get the names in various ways. But we also need to support changes by
+the old and simple tools. Calling hostname(1) must work just like
+everything else. It changes state in the kernel, we need to know it
+and adapt to it.
+
+>> The alternative is to have a process constantly polling and reading
+>> the file, which is nothing we even want to think about in 2011.
 >
-> You mean introducing mem_cgroup_hierarchy_walk() and make use of it in
-> mem_cgroup_hierarchical_reclaim() as a first step?
+> Or to manage it properly.
+
+That's just a dream. We do it properly, but we have no control over
+everything. You've been yourself in that position, and have seen that
+some stuff will 'never' change, we better just support it instead of
+hoping it will not be used. Especially when it's that damn simple and
+clean.
+
+>> It's just another special case to bring us out of the UNIX stone age
+>> of doing things. :)
 >
+> Unfortunately not. It's a misguided attempt to follow stone age Unix 'one
+> short name' policy. Forget utsname node names, they are a historical
+> quirk of UUCP and friends and on many OS platforms will be limited to 15
+> chars !
 
-yes. I like to cut out a patch from a series and forward it to mainline,
-and make the series smaller. in some way...
+That's not a problem. We support pretty names in the higher stack just
+fine, but there is a tone of stuff that depends on gethostname(),
+sethostname() and we have to support that.
 
+> As to poll in general I can see some of the other proc files being
+> more relevant, eg for process monitoring tools being able to poll
+> in /proc/<pid> and some of the proc/sys and sysctl data that does change
+> meaningfully.
 
->>  - root cgroup LRU handling was required for performance. I think we
->> removed tons of
->>   atomic ops and can remove that special handling personally. But this change of
->>   root cgroup handling should be in separate patch. with performance report.
->
-> I disagree.
->
-> With view on the whole patch series, linking ungrouped process pages
-> to the root_mem_cgroup is traded against
->
->   1. linking ungrouped process pages to the global LRU
->
->   2. linking grouped process pages to both the global LRU and the
->      memcg LRU
->
-> The comparison you propose is neither fair nor relevant because it
-> would never make sense to merge that patch without the others.
+Yeah, being able to watch a pid with such a simple interface would be
+great to have.
 
-If you show there is no performance regression when
- - memory cgroup is configured.
- - it's not disabled by boot option
- - there are only ROOT cgroup.
-(Then, I'd like to see score.)
+> Utsname however is not one of those things.
 
+I think it is.
 
-It seems your current series is a mixture of 2 works as
-"re-desgin of softlimit" and "removal of global LRU".
-I don't understand why you need 2 works at once.
+As always, what are the alternatives you would propose, to watch
+sethostname() changes to the system. And 'it should not be used', or
+'it should be centrally intercepted' does not count, the reality will
+go on without such rules.
 
-Above test is for the latter. You need another justification for the former.
-So, I'd like to ask you to divide the series into 2 series.
-
-Thanks,
--Kame
+Kay
