@@ -1,97 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933515Ab1FBMKW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 08:10:22 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:45883 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755434Ab1FBMKV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 08:10:21 -0400
-Message-ID: <4DE77D9A.6090301@stericsson.com>
-Date: Thu, 2 Jun 2011 14:10:02 +0200
-From: Mattias Wallin <mattias.wallin@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCHv2 0/3] clocksource: add db8500 PRCMU timer
-References: <1307007271-1004-1-git-send-email-mattias.wallin@stericsson.com> <20110602094622.GS3660@n2100.arm.linux.org.uk> <4DE7637B.3060901@stericsson.com> <20110602110137.GU3660@n2100.arm.linux.org.uk>
-In-Reply-To: <20110602110137.GU3660@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933540Ab1FBMY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 08:24:28 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:52229 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932906Ab1FBMYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 08:24:25 -0400
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-security-module@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>
+Subject: [PATCH v6 00/20] EVM
+Date: Thu,  2 Jun 2011 08:23:23 -0400
+Message-Id: <1307017423-15093-1-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2011 01:01 PM, Russell King - ARM Linux wrote:
-> On Thu, Jun 02, 2011 at 12:18:35PM +0200, Mattias Wallin wrote:
->> On 06/02/2011 11:46 AM, Russell King - ARM Linux wrote:
->>> Why don't we just find a way of fixing sched_clock so that the value
->>> doesn't reset over a suspend/resume cycle?
->> Even if the value isn't reset during suspend/resume we want the
->> clocksource to keep counting. Or is it ok to have the clocksource stop
->> or freeze during suspend?
->
-> kernel/time/timekeeping.c:timekeeping_suspend():
->
->          timekeeping_forward_now();
->
-> which does:
->          cycle_now = clock->read(clock);
->          cycle_delta = (cycle_now - clock->cycle_last)&  clock->mask;
->          clock->cycle_last = cycle_now;
->
-> So that updates the time with the current offset between cycle_last and
-> the current value.
->
-> kernel/time/timekeeping.c:timekeeping_resume():
->          /* re-base the last cycle value */
->          timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
->
-> So this re-sets cycle_last to the current value of the clocksource.  This
-> means that on resume, the clocksource can start counting from any value it
-> likes.
->
-> So, without any additional external inputs, time resumes incrementing at
-> the point where the suspend occurred without any jump backwards or forwards.
->
-> The code accounts for the sleep time by using read_persistent_clock() read
-> a timer which continues running during sleep to calculate the delta between
-> suspend and resume, and injects the delta between them to wind the time
-> forward.
->
->> Then we have cpuidle. Is it ok to stop/freeze the timer during cpuidle
->> sleep states?
->
-> During _idle_ (iow, no task running) sched_clock and the clocksource
-> should both continue to run - the scheduler needs to know how long the
-> system has been idle for, and the clocksource can't stop because we'll
-> lose track of time.
->
-> Remember that the clockevent stuff is used as a trigger to the timekeeping
-> code to read the clocksource, and update the current time.  Time is moved
-> forward by the delta between a previous clocksource read and the current
-> clocksource read.  So stopping or resetting the clocksource in unexpected
-> ways (other than over suspend/resume as mentioned above) will result in
-> time going weird.
+Discretionary Access Control(DAC) and Mandatory Access Control(MAC) can
+protect the integrity of a running system from unauthorized changes. When
+these protections are not running, such as when booting a malicious OS,
+mounting the disk under a different operating system, or physically moving
+the disk to another system, an "offline" attack is free to read and write
+file data/metadata.
 
-Hmm, I have missed the existence of the read_persistent_clock(). It 
-sounds like I should keep the MTU as my clocksource / sched_clock and 
-have the PRCMU Timer as a persistent_clock instead.
+Extended Verification Module(EVM) detects offline tampering of the security
+extended attributes (e.g. security.selinux, security.SMACK64, security.ima),
+which is the basis for LSM permission decisions and, with the IMA-appraisal
+patchset, integrity appraisal decisions. This patchset provides the framework
+and an initial method to detect offline tampering of the security extended
+attributes.  The initial method maintains an HMAC-sha1 across a set of
+security extended attributes, storing the HMAC as the extended attribute
+'security.evm'. To verify the integrity of an extended attribute, EVM exports
+evm_verifyxattr(), which re-calculates the HMAC and compares it with the
+version stored in 'security.evm'.  Other methods of validating the integrity
+of a file's metadata will be posted separately (eg. EVM-digital-signatures).
 
-Then one problem remains. The MTU will be powered during cstates: 
-running, wfi, ApIdle (arm retenetion). The MTU will loose power during 
-cstates ApSleep and ApDeepSleep. So I need to do a similar sync as 
-suspend does against the persistent_clock but when leaving and enter the 
-deeper cstates.
+Although an offline attack can bypass DAC/MAC protection mechanisms and write
+file data/metadata, if the disk, or VM, is subsequently remounted under the
+EVM + DAC/MAC (+ IMA-appraisal) protected OS, then the TPM-calculated HMAC of
+the file's metadata won't be valid.  Therefore, IMA + MAC/DAC + EVM
+(+ IMA-appraisal) can protect system integrity online, detect offline tampering,
+and prevent tampered files from being accessed.
 
-Should I solve it in the clocksource framework with a flag telling which 
-cstates the timer will stop/freeze and then inject time from the 
-persistent_clock for those cstates? (I am thinking something like the 
-CLOCK_EVT_FEAT_C3STOP flag)
+While this patchset does authenticate the security xattrs, and
+cryptographically binds them to the inode, coming extensions will bind other
+directory and inode metadata for more complete protection.  To help simplify
+the review and upstreaming process, each extension will be posted separately
+(eg. IMA-appraisal, IMA-appraisal-directory).  For a general overview of the
+proposed Linux integrity subsystem, refer to Dave Safford's whitepaper:
+http://downloads.sf.net/project/linux-ima/linux-ima/Integrity_overview.pdf.
 
-Am I on the wrong track here or how should I solve it?
+Much appreciation to Dave Hansen, Serge Hallyn, and Matt Helsley for
+reviewing the original patches.
+
+Changes from v5:
+- defined 'struct evm_ima_xattr_data',
+  removed MAX_DIGEST_SIZE and evm_hmac_size definitions
+- check for key failures and errors earlier
+- other minor changes enumerated in individual patch descriptions
+
+Changes from v4:
+- Added evm_inode_post_init calls for: btrfs, gfs2, jffs2, jfs, and xfs.
+- Prevent an invalid security.evm xattr from being updated.
+- evm_verifyxattr() performance improvement (Dmitry Kasatkin)
+- Fixed evm_verify_hmac() to be fail safe (Dmitry Kasatkin)
+- Additional naming change generalizations in preparation for other methods
+  of integrity authentication. (Dmitry Kasatkin)
+
+Mimi Zohar
+David Safford
+
+Dmitry Kasatkin (5):
+  evm: add support for different security.evm data types
+  evm: crypto hash replaced by shash
+  evm: additional parameter to pass integrity cache entry 'iint'
+  evm: evm_verify_hmac must not return INTEGRITY_UNKNOWN
+  evm: replace hmac_status with evm_status
+
+Mimi Zohar (15):
+  integrity: move ima inode integrity data management
+  xattr: define vfs_getxattr_alloc and vfs_xattr_cmp
+  evm: re-release
+  security: imbed evm calls in security hooks
+  evm: evm_inode_post_removexattr
+  evm: imbed evm_inode_post_setattr
+  evm: evm_inode_post_init
+  fs: add evm_inode_post_init calls
+  evm: add evm_inode_post_init call in btrfs
+  evm: add evm_inode_post_init call in gfs2
+  evm: add evm_inode_post_init call in jffs2
+  evm: add evm_inode_post_init call in jfs
+  evm: add evm_inode_post_init call in xfs
+  evm: permit only valid security.evm xattrs to be updated
+  evm: add evm_inode_setattr to prevent updating an invalid
+    security.evm
+
+ Documentation/ABI/testing/evm       |   23 ++
+ Documentation/kernel-parameters.txt |    6 +
+ fs/attr.c                           |    5 +-
+ fs/btrfs/xattr.c                    |   39 +++-
+ fs/ext2/xattr_security.c            |   31 +++-
+ fs/ext3/xattr_security.c            |   30 ++-
+ fs/ext4/xattr_security.c            |   30 ++-
+ fs/gfs2/inode.c                     |   29 ++-
+ fs/jffs2/security.c                 |   26 ++-
+ fs/jfs/xattr.c                      |   45 +++--
+ fs/xattr.c                          |   63 ++++++-
+ fs/xfs/linux-2.6/xfs_iops.c         |   27 ++-
+ include/linux/evm.h                 |   92 +++++++++
+ include/linux/ima.h                 |   13 --
+ include/linux/integrity.h           |   38 ++++
+ include/linux/xattr.h               |   14 ++-
+ security/Kconfig                    |    2 +-
+ security/Makefile                   |    4 +-
+ security/integrity/Kconfig          |    7 +
+ security/integrity/Makefile         |   12 +
+ security/integrity/evm/Kconfig      |   12 +
+ security/integrity/evm/Makefile     |    6 +
+ security/integrity/evm/evm.h        |   38 ++++
+ security/integrity/evm/evm_crypto.c |  216 ++++++++++++++++++++
+ security/integrity/evm/evm_main.c   |  384 +++++++++++++++++++++++++++++++++++
+ security/integrity/evm/evm_secfs.c  |  108 ++++++++++
+ security/integrity/iint.c           |  171 ++++++++++++++++
+ security/integrity/ima/Kconfig      |    1 +
+ security/integrity/ima/Makefile     |    2 +-
+ security/integrity/ima/ima.h        |   29 +--
+ security/integrity/ima/ima_api.c    |    7 +-
+ security/integrity/ima/ima_iint.c   |  169 ---------------
+ security/integrity/ima/ima_main.c   |   12 +-
+ security/integrity/integrity.h      |   47 +++++
+ security/security.c                 |   26 ++-
+ 35 files changed, 1473 insertions(+), 291 deletions(-)
+ create mode 100644 Documentation/ABI/testing/evm
+ create mode 100644 include/linux/evm.h
+ create mode 100644 include/linux/integrity.h
+ create mode 100644 security/integrity/Kconfig
+ create mode 100644 security/integrity/Makefile
+ create mode 100644 security/integrity/evm/Kconfig
+ create mode 100644 security/integrity/evm/Makefile
+ create mode 100644 security/integrity/evm/evm.h
+ create mode 100644 security/integrity/evm/evm_crypto.c
+ create mode 100644 security/integrity/evm/evm_main.c
+ create mode 100644 security/integrity/evm/evm_secfs.c
+ create mode 100644 security/integrity/iint.c
+ delete mode 100644 security/integrity/ima/ima_iint.c
+ create mode 100644 security/integrity/integrity.h
+
+-- 
+1.7.3.4
+
