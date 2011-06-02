@@ -1,128 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759324Ab1FBC1Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Jun 2011 22:27:16 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:26988 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759221Ab1FBC1P (ORCPT
+	id S1759455Ab1FBCwA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Jun 2011 22:52:00 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:63703 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759015Ab1FBCv6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Jun 2011 22:27:15 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: Alan Cox <alan@linux.intel.com>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH v5] 8250_pci: add -ENODEV code for Intel EG20T PCH
-Date: Thu,  2 Jun 2011 11:31:29 +0900
-Message-Id: <1306981890-3281-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.3.4
+	Wed, 1 Jun 2011 22:51:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
+References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Wed, 1 Jun 2011 23:51:37 -0300
+Message-ID: <BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com>
+Subject: Re: [PATCH] sysctl: add support for poll()
+To: linux-kernel@vger.kernel.org
+Cc: kay.sievers@vrfy.org, Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel EG20T PCH has UART device which is compatible with 8250.
-Currently, with general configuration, the PCH UART driver is not loaded but
-8250 standard driver is loaded.
-Therefore, in case of using PCH UART driver, need to disable 8250 pci function.
-However, this procedure is not best solution.
-This patch, in 8250_pci, if the device is the PCH or the family IOH,
-'-ENODEV' is returned.
-As a result, disabling 8250-pci processing becomes unnecessary.
+CC'ing people as suggested by get_maintainer.pl
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
-V5: Rename own_init again.
-    return_ENODEV() to pci_eg20t_init()
-
-V4: Rename own_init to return_ENODEV
-    Add #if defined ~ #endif
-
-V3: add own init() and set the init() to quirk table.
-
-V2: Delete #ifdef CONFIG_SERIAL_PCH_UART ~ #endif
-    Use quirk table structure
----
- drivers/tty/serial/8250_pci.c |   59 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 59 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/tty/serial/8250_pci.c b/drivers/tty/serial/8250_pci.c
-index 738cec9..2b40fbf 100644
---- a/drivers/tty/serial/8250_pci.c
-+++ b/drivers/tty/serial/8250_pci.c
-@@ -988,6 +988,15 @@ static int skip_tx_en_setup(struct serial_private *priv,
- 	return pci_default_setup(priv, board, port, idx);
- }
- 
-+static int pci_eg20t_init(struct pci_dev *dev)
-+{
-+#if defined(CONFIG_SERIAL_PCH_UART) || defined(CONFIG_SERIAL_PCH_UART_MODULE)
-+	return -ENODEV;
-+#else
-+	return 0;
-+#endif
-+}
-+
- /* This should be in linux/pci_ids.h */
- #define PCI_VENDOR_ID_SBSMODULARIO	0x124B
- #define PCI_SUBVENDOR_ID_SBSMODULARIO	0x124B
-@@ -1430,6 +1439,56 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
- 		.init		= pci_oxsemi_tornado_init,
- 		.setup		= pci_default_setup,
- 	},
-+	{
-+		.vendor         = PCI_VENDOR_ID_INTEL,
-+		.device         = 0x8811,
-+		.init		= pci_eg20t_init,
-+	},
-+	{
-+		.vendor         = PCI_VENDOR_ID_INTEL,
-+		.device         = 0x8812,
-+		.init		= pci_eg20t_init,
-+	},
-+	{
-+		.vendor         = PCI_VENDOR_ID_INTEL,
-+		.device         = 0x8813,
-+		.init		= pci_eg20t_init,
-+	},
-+	{
-+		.vendor         = PCI_VENDOR_ID_INTEL,
-+		.device         = 0x8814,
-+		.init		= pci_eg20t_init,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x8027,
-+		.init		= pci_eg20t_init,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x8028,
-+		.init		= pci_eg20t_init,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x8029,
-+		.init		= pci_eg20t_init,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x800C,
-+		.init		= pci_eg20t_init,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x800D,
-+		.init		= pci_eg20t_init,
-+	},
-+	{
-+		.vendor         = 0x10DB,
-+		.device         = 0x800D,
-+		.init		= pci_eg20t_init,
-+	},
- 	/*
- 	 * Default "match everything" terminator entry
- 	 */
--- 
-1.7.4
-
+On Wed, Jun 1, 2011 at 9:14 AM, Lucas De Marchi
+<lucas.demarchi@profusion.mobi> wrote:
+> Adding support for poll() in sysctl fs allows userspace to receive
+> notifications when an entry in sysctl changes. This way it's possible to
+> know when hostname/domainname is changed due to the respective syscall
+> has been called or its file under /proc/sys has been written to.
+>
+> Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+> ---
+>  fs/proc/proc_sysctl.c   |   40 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/sysctl.h  |    8 ++++++++
+>  include/linux/utsname.h |   16 ++++++++++++++++
+>  kernel/sys.c            |    2 ++
+>  kernel/utsname_sysctl.c |   36 ++++++++++++++++++++++++++++++++++++
+>  5 files changed, 102 insertions(+), 0 deletions(-)
+>
+> diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+> index f50133c..2e5d3ec 100644
+> --- a/fs/proc/proc_sysctl.c
+> +++ b/fs/proc/proc_sysctl.c
+> @@ -3,6 +3,7 @@
+>  */
+>  #include <linux/init.h>
+>  #include <linux/sysctl.h>
+> +#include <linux/poll.h>
+>  #include <linux/proc_fs.h>
+>  #include <linux/security.h>
+>  #include <linux/namei.h>
+> @@ -176,6 +177,43 @@ static ssize_t proc_sys_write(struct file *filp, const char __user *buf,
+>        return proc_sys_call_handler(filp, (void __user *)buf, count, ppos, 1);
+>  }
+>
+> +static int proc_sys_open(struct inode *inode, struct file *filp)
+> +{
+> +       struct ctl_table *table = PROC_I(inode)->sysctl_entry;
+> +
+> +       if (table->poll) {
+> +               unsigned long event = atomic_read(&table->poll->event);
+> +
+> +               filp->private_data = (void *)event;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static unsigned int proc_sys_poll(struct file *filp, poll_table *wait)
+> +{
+> +       struct inode *inode = filp->f_path.dentry->d_inode;
+> +       struct ctl_table *table = PROC_I(inode)->sysctl_entry;
+> +       unsigned long event = (unsigned long)filp->private_data;
+> +       unsigned int ret = POLLIN | POLLRDNORM;
+> +
+> +       if (!table->proc_handler)
+> +               goto out;
+> +
+> +       if (!table->poll)
+> +               goto out;
+> +
+> +       poll_wait(filp, &table->poll->wait, wait);
+> +
+> +       if (event != atomic_read(&table->poll->event)) {
+> +               filp->private_data = (void *)(unsigned long)atomic_read(
+> +                                               &table->poll->event);
+> +               ret = POLLIN | POLLRDNORM | POLLERR | POLLPRI;
+> +       }
+> +
+> +out:
+> +       return ret;
+> +}
+>
+>  static int proc_sys_fill_cache(struct file *filp, void *dirent,
+>                                filldir_t filldir,
+> @@ -367,6 +405,8 @@ static int proc_sys_getattr(struct vfsmount *mnt, struct dentry *dentry, struct
+>  }
+>
+>  static const struct file_operations proc_sys_file_operations = {
+> +       .open           = proc_sys_open,
+> +       .poll           = proc_sys_poll,
+>        .read           = proc_sys_read,
+>        .write          = proc_sys_write,
+>        .llseek         = default_llseek,
+> diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+> index 11684d9..96c89ba 100644
+> --- a/include/linux/sysctl.h
+> +++ b/include/linux/sysctl.h
+> @@ -25,6 +25,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/types.h>
+>  #include <linux/compiler.h>
+> +#include <linux/wait.h>
+>
+>  struct completion;
+>
+> @@ -1011,6 +1012,12 @@ extern int proc_do_large_bitmap(struct ctl_table *, int,
+>  * cover common cases.
+>  */
+>
+> +/* Support for userspace poll() to watch for changes */
+> +struct ctl_table_poll {
+> +       atomic_t event;
+> +       wait_queue_head_t wait;
+> +};
+> +
+>  /* A sysctl table is an array of struct ctl_table: */
+>  struct ctl_table
+>  {
+> @@ -1021,6 +1028,7 @@ struct ctl_table
+>        struct ctl_table *child;
+>        struct ctl_table *parent;       /* Automatically set */
+>        proc_handler *proc_handler;     /* Callback for text formatting */
+> +       struct ctl_table_poll *poll;
+>        void *extra1;
+>        void *extra2;
+>  };
+> diff --git a/include/linux/utsname.h b/include/linux/utsname.h
+> index 4e5b021..c714ed7 100644
+> --- a/include/linux/utsname.h
+> +++ b/include/linux/utsname.h
+> @@ -37,6 +37,14 @@ struct new_utsname {
+>  #include <linux/nsproxy.h>
+>  #include <linux/err.h>
+>
+> +enum uts_proc {
+> +       UTS_PROC_OSTYPE,
+> +       UTS_PROC_OSRELEASE,
+> +       UTS_PROC_VERSION,
+> +       UTS_PROC_HOSTNAME,
+> +       UTS_PROC_DOMAINNAME,
+> +};
+> +
+>  struct user_namespace;
+>  extern struct user_namespace init_user_ns;
+>
+> @@ -80,6 +88,14 @@ static inline struct uts_namespace *copy_utsname(unsigned long flags,
+>  }
+>  #endif
+>
+> +#ifdef CONFIG_PROC_SYSCTL
+> +extern void uts_proc_notify(enum uts_proc proc);
+> +#else
+> +static inline void uts_proc_notify(enum uts_proc proc)
+> +{
+> +}
+> +#endif
+> +
+>  static inline struct new_utsname *utsname(void)
+>  {
+>        return &current->nsproxy->uts_ns->name;
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index e4128b2..ada9cd7 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -1211,6 +1211,7 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
+>                memset(u->nodename + len, 0, sizeof(u->nodename) - len);
+>                errno = 0;
+>        }
+> +       uts_proc_notify(UTS_PROC_HOSTNAME);
+>        up_write(&uts_sem);
+>        return errno;
+>  }
+> @@ -1261,6 +1262,7 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
+>                memset(u->domainname + len, 0, sizeof(u->domainname) - len);
+>                errno = 0;
+>        }
+> +       uts_proc_notify(UTS_PROC_DOMAINNAME);
+>        up_write(&uts_sem);
+>        return errno;
+>  }
+> diff --git a/kernel/utsname_sysctl.c b/kernel/utsname_sysctl.c
+> index a2cd77e..e96b766 100644
+> --- a/kernel/utsname_sysctl.c
+> +++ b/kernel/utsname_sysctl.c
+> @@ -13,6 +13,7 @@
+>  #include <linux/uts.h>
+>  #include <linux/utsname.h>
+>  #include <linux/sysctl.h>
+> +#include <linux/wait.h>
+>
+>  static void *get_uts(ctl_table *table, int write)
+>  {
+> @@ -51,12 +52,28 @@ static int proc_do_uts_string(ctl_table *table, int write,
+>        uts_table.data = get_uts(table, write);
+>        r = proc_dostring(&uts_table,write,buffer,lenp, ppos);
+>        put_uts(table, write, uts_table.data);
+> +
+> +       if (write) {
+> +               atomic_inc(&table->poll->event);
+> +               wake_up_interruptible(&table->poll->wait);
+> +       }
+> +
+>        return r;
+>  }
+>  #else
+>  #define proc_do_uts_string NULL
+>  #endif
+>
+> +static struct ctl_table_poll hostname_poll = {
+> +       .event          = ATOMIC_INIT(0),
+> +       .wait           = __WAIT_QUEUE_HEAD_INITIALIZER(hostname_poll.wait),
+> +};
+> +
+> +static struct ctl_table_poll domainname_poll = {
+> +       .event          = ATOMIC_INIT(0),
+> +       .wait           = __WAIT_QUEUE_HEAD_INITIALIZER(domainname_poll.wait),
+> +};
+> +
+>  static struct ctl_table uts_kern_table[] = {
+>        {
+>                .procname       = "ostype",
+> @@ -85,6 +102,7 @@ static struct ctl_table uts_kern_table[] = {
+>                .maxlen         = sizeof(init_uts_ns.name.nodename),
+>                .mode           = 0644,
+>                .proc_handler   = proc_do_uts_string,
+> +               .poll           = &hostname_poll,
+>        },
+>        {
+>                .procname       = "domainname",
+> @@ -92,6 +110,7 @@ static struct ctl_table uts_kern_table[] = {
+>                .maxlen         = sizeof(init_uts_ns.name.domainname),
+>                .mode           = 0644,
+>                .proc_handler   = proc_do_uts_string,
+> +               .poll           = &domainname_poll,
+>        },
+>        {}
+>  };
+> @@ -105,6 +124,23 @@ static struct ctl_table uts_root_table[] = {
+>        {}
+>  };
+>
+> +#ifdef CONFIG_PROC_SYSCTL
+> +/*
+> + * Notify userspace about a change in a certain entry of uts_kern_table,
+> + * identified by the parameter proc.
+> + */
+> +void uts_proc_notify(enum uts_proc proc)
+> +{
+> +       struct ctl_table *table = &uts_kern_table[proc];
+> +
+> +       if (!table->poll)
+> +               return;
+> +
+> +       atomic_inc(&table->poll->event);
+> +       wake_up_interruptible(&table->poll->wait);
+> +}
+> +#endif
+> +
+>  static int __init utsname_sysctl_init(void)
+>  {
+>        register_sysctl_table(uts_root_table);
+> --
+> 1.7.5.2
+>
+>
