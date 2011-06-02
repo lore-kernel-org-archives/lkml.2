@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab1FBFJd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 01:09:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19210 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908Ab1FBFJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 01:09:32 -0400
-X-ExtLoop1: 1
-Message-ID: <4DE71B09.70304@intel.com>
-Date: Thu, 02 Jun 2011 13:09:29 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110510 Iceowl/1.0b2 Icedove/3.1.10
+	id S1754724Ab1FBFNm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 01:13:42 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34529 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab1FBFNk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 01:13:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZhrukdXhIOdES/F2Prt8hms1mf9NgL1gPTn1UIslMtG77hVFgTD/yb1ErPH42EoOXO
+         bufq1gclFEWluOFKSvsHrh2l8kL0qqyP7iRsu3Q0CYtdNAYR3LZirsFy4+gkxGWLJ8MQ
+         wb6MzwnaqUGqOo9/ZuAJS2WjAXtqJbxwLhF7Q=
+Date: Thu, 2 Jun 2011 14:13:35 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        pedro@codesourcery.com
+Subject: Re: [PATCH 11/17] ptrace: implement PTRACE_SEIZE
+Message-ID: <20110602051335.GC17434@mtj.dyndns.org>
+References: <1306710760-16440-1-git-send-email-tj@kernel.org>
+ <1306710760-16440-12-git-send-email-tj@kernel.org>
+ <20110601190117.GB6504@redhat.com>
 MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>
-Subject: Re: [PATCH 7/9] PCIe, AER, add aer_recover_queue
-References: <1305619719-7480-1-git-send-email-ying.huang@intel.com>	<1305619719-7480-8-git-send-email-ying.huang@intel.com> <20110601114937.69d69916@jbarnes-desktop>
-In-Reply-To: <20110601114937.69d69916@jbarnes-desktop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110601190117.GB6504@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Jesse,
+Hey,
 
-On 06/02/2011 02:49 AM, Jesse Barnes wrote:
-> On Tue, 17 May 2011 16:08:37 +0800
-> Huang Ying <ying.huang@intel.com> wrote:
+On Wed, Jun 01, 2011 at 09:01:17PM +0200, Oleg Nesterov wrote:
+> On 05/30, Tejun Heo wrote:
+> > implements a new ptrace request PTRACE_SEIZE which attaches and traps
+> > tracee
 > 
->> In addition to native PCIe AER, now APEI (ACPI Platform Error
->> Interface) GHES (Generic Hardware Error Source) can be used to report
->> PCIe AER errors too.  To add support to APEI GHES PCIe AER recovery,
->> aer_recover_queue is added to export the recovery function in native
->> PCIe AER driver.
->>
->> Recoverable PCIe AER errors are reported via NMI in APEI GHES.  Then
->> APEI GHES uses irq_work to delay the error processing into an IRQ
->> handler.  But PCIe AER recovery can be very time-consuming, so
->> aer_recover_queue, which can be used in IRQ handler, delays the real
->> recovery action into the process context, that is, work queue.
+> it doesn't trap the tracee ;)
+
+Ah, missed that one.  Will update.
+
+> > * PTRACE_SEIZE, unlike ATTACH, doesn't force tracee to trap.  After
+> >   attaching tracee continues to run unless a trap condition occurs.
 > 
-> Have the dependencies for this already landed?  Or does this one need
-> to go first?
+> OK.
+> 
+> Just to remind, tracehook_report_clone() shouldn't send SIGSTOP if
+> the auto-attached tracee is PT_SEIZED.
 
-This patch has no external dependencies and can go first.
+Yeap, let's deal with it (and others) later.
 
-Best Regards,
-Huang Ying
+> > * If PTRACE_SEIZE'd, group stop uses PTRACE_EVENT_STOP trap which uses
+> >   exit_code of (SIGTRAP | PTRACE_EVENT_STOP << 8) instead of the
+> >   stopping signal number
+> 
+> Hmm. May be it would be better to report stopping_signal | PTRACE_EVENT_STOP
+> instead... I am not sure yet, but it seems this way we can avoid the
+> PTRACE_GETSIGINFO changes. I'll try to explain later, when I finsh the
+> reading.
+
+Maybe, unsure.  Currently all the existing PTRACE_EVENT_* codes use
+SIGTRAP and requiring GETSIGINFO on TRAP_STOP seems reasonable enough.
+So, (stopping signo) | EVENT_STOP on stops, SIGTRAP | EVENT_STOP on
+INTERRUPT and SIGCONT | EVENT_STOP (hmm....) on continued?
+
+Thanks.
+
+-- 
+tejun
