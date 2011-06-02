@@ -1,203 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451Ab1FBU6w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 16:58:52 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48222 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753252Ab1FBU6u convert rfc822-to-8bit (ORCPT
+	id S1754731Ab1FBU7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 16:59:23 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:40823 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754396Ab1FBU7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 16:58:50 -0400
+	Thu, 2 Jun 2011 16:59:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=Ay6PE597qRwT86q4RJ92cYs1Boc/mO7OQ58cSyk3WC9seg4OdJggBNMQ3YkQpoLoov
-         Ykz99XovhnqUKQPhLd2vlinZMysfsFQ4LRdRsQmmOdnmdriP7cv5cgU4X52awStTrih9
-         IQ7BTk/oIxbL1jOM0iP9UxvOuaHvUDlfWFMjI=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=b7E+pV2r8gsRJSBnaTXb+1iYqYh28ABNveHJ/HMS+aOf6GqSE4iTjAS1IAP1P2ttKV
+         gdsdewmTXoYMe9XJYakLncd8+viZBCxnRLuCJxAeIXH/EnfO3Klw2nfLVglmabNaKtHu
+         eI2LOQwrQL+csBKlbfvZo6kXqMVjE4m2KFEnI=
+Date: Fri, 3 Jun 2011 05:59:13 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Mel Gorman <mel@csn.ul.ie>,
+        akpm@linux-foundation.org, Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110602205912.GA24579@barrios-laptop>
+References: <20110530165546.GC5118@suse.de>
+ <20110530175334.GI19505@random.random>
+ <20110531121620.GA3490@barrios-laptop>
+ <20110531122437.GJ19505@random.random>
+ <20110531133340.GB3490@barrios-laptop>
+ <20110531141402.GK19505@random.random>
+ <20110531143734.GB13418@barrios-laptop>
+ <20110531143830.GC13418@barrios-laptop>
+ <20110602182302.GA2802@random.random>
+ <20110602202156.GA23486@barrios-laptop>
 MIME-Version: 1.0
-From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Date: Thu, 2 Jun 2011 23:58:19 +0300
-Message-ID: <BANLkTin-8aMrRxzYTJ4U2QDPFJ11+8s0=g@mail.gmail.com>
-Subject: [v5 00/39] faster tree-based sysctl implementation
-To: "Eric W . Biederman" <ebiederm@xmission.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: netdev@vger.kernel.org, Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Octavian Purdila <tavi@cs.pub.ro>,
-        "David S . Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110602202156.GA23486@barrios-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jun 03, 2011 at 05:21:56AM +0900, Minchan Kim wrote:
+> On Thu, Jun 02, 2011 at 08:23:02PM +0200, Andrea Arcangeli wrote:
+> > On Tue, May 31, 2011 at 11:38:30PM +0900, Minchan Kim wrote:
+> > > > Yes. You find a new BUG.
+> > > > It seems to be related to this problem but it should be solved although
+> > > 
+> > >  typo : It doesn't seem to be.
+> > 
+> > This should fix it, but I doubt it matters for this problem.
+> > 
+> > ===
+> > Subject: mm: no page_count without a page pin
+> > 
+> > From: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > It's unsafe to run page_count during the physical pfn scan.
+> > 
+> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> > ---
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index faa0a08..e41e78a 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1124,8 +1124,18 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+> >  					nr_lumpy_dirty++;
+> >  				scan++;
+> >  			} else {
+> > -				/* the page is freed already. */
+> > -				if (!page_count(cursor_page))
+> > +				/*
+> > +				 * We can't use page_count() as that
+> > +				 * requires compound_head and we don't
+> > +				 * have a pin on the page here. If a
+> > +				 * page is tail, we may or may not
+> > +				 * have isolated the head, so assume
+> > +				 * it's not free, it'd be tricky to
+> 
+> Isn't it rather aggressive?
+> I think cursor page is likely to be PageTail rather than PageHead.
+> Could we handle it simply with below code?
+> 
+> get_page(cursor_page)
+> /* The page is freed already */
+> if (1 == page_count(cursor_page)) {
+> 	put_page(cursor_page)
+> 	continue;
+> }
+> put_page(cursor_page);
+> 
 
-This is version 5 of a patch series that introduces a faster/leaner
-sysctl internal implementation. Due to high number of patches and low
-general interest I'll just point you to the tree/branch:
-
- git://github.com/luciang/linux-2.6-new-sysctl.git  v5-new-sysctl-alg
-
-
-
-Eric: I have a separate set of patches that make changes to the rest
-      of the kernel. Those patches only change sysctl registrations:
-      they replace complex tree registrations (with explicit sysctl
-      directories), with registrations of arrays of sysctl files.
-
-      Those patches DON'T depend on anything from this series.
-
-      Examples:
-       http://thread.gmane.org/gmane.linux.kernel/1137032/focus=1137089
-       http://thread.gmane.org/gmane.linux.kernel/1137032/focus=1137087
-
-      I'd like an OK-GO from you to start sending the patches for
-      review to their respective maintainers. Also please say if you
-      want to be CCed in those patches.
-
-
-
-
-Changes since v4:
-  http://thread.gmane.org/gmane.linux.network/196495/focus=1144143
-- rebased on 3.0-rc1
-- added a new patch manually register kernel/usermodehelper which
-  was added in 3.0-rc1
-- minor changes to the "sysctl: simplify find_in_table" patch
-
-
-Changes since v3:
-  http://thread.gmane.org/gmane.linux.network/196495/
-- removed a bad patch that shrinked a counter from int to u8
-
-
-Changes since v2:
-  http://thread.gmane.org/gmane.linux.kernel/1137032/focus=3D194748
-- added a compatibility layer to support old registering complex
-  sysctl trees. This layer will be deleted once all users of the old
-  are changed.
-- subdirectories and netns correspondent dirs are now held in rbtrees
-- split of from the patches that make changes in the rest of the tree
-- rebased on top of 2.6.39
-
-
-Changes since v1:
-  http://thread.gmane.org/gmane.linux.kernel/1133667
-- rebased on top of 2.6.39-rc6
-- split the patch that adds the new algorithm and data structures.
-- fixed a few bugs lingering in the old code
-- shrinked a reference counter
-- added a new reference counter to maintain ownership information
-- added method to register an empty sysctl dir and converted some users
-- added checks enforcing the rule that a non-netns specific directory may
-  not be registered after a netns specific one has already been registered.
-- added cookie support: register a piece of data with the header to be
-  used to make simple conversions on the ctl_table. This saves memory where
-
-
-
-
-
-Part 1: introduce compatibility layer:
-
-  sysctl: introduce temporary sysctl wrappers
-  sysctl: register only tables of sysctl files
-
-
-Part 2: minimal changes to sysctl users:
-
-  sysctl: call sysctl_init before the first sysctl registration
-  sysctl: no-child: manually register kernel/random
-  sysctl: no-child: manually register kernel/usermodehelper
-  sysctl: no-child: manually register kernel/keys
-  sysctl: no-child: manually register fs/inotify
-  sysctl: no-child: manually register fs/epoll
-  sysctl: no-child: manually register root tables
-
-
-Part 3: cleanups simplifying the new algorithm (created when
-        asked to break up the new algorithm patch):
-
-  sysctl: faster reimplementation of sysctl_check_table
-  sysctl: remove useless ctl_table->parent field
-  sysctl: simplify find_in_table
-  sysctl: sysctl_head_grab defaults to root header on NULL
-  sysctl: delete useless grab_header function
-  sysctl: rename ->used to ->ctl_use_refs
-  sysctl: rename sysctl_head_grab/finish to sysctl_use_header/unuse
-  sysctl: rename sysctl_head_next to sysctl_use_next_header
-  sysctl: split ->count into ctl_procfs_refs and ctl_header_refs
-  sysctl: rename sysctl_head_get/put to sysctl_proc_inode_get/put
-  sysctl: rename (un)use_table to __sysctl_(un)use_header
-  sysctl: simplify ->permissions hook
-  sysctl: group root-specific operations
-  sysctl: introduce ctl_table_group
-  sysctl: move removal from list out of start_unregistering
-
-
-Part 4: new algorithm/data structures:
-
-  sysctl: faster tree-based sysctl implementation
-
-
-Part 5: checks/warns requested during review:
-
-  sysctl: add duplicate entry and sanity ctl_table checks
-  sysctl: alloc ctl_table_header with kmem_cache
-  sysctl: check netns-specific registration order respected
-  sysctl: warn if registration/unregistration order is not respected
-  RFC: sysctl: always perform sysctl checks
-
-
-Part 6: Eric requested rbtrees for subdirs. I also used rbtrees for
-        netns correspondent dirs. Hope that adding rbtrees after
-        using the old list-based implementation is good enough.
-        The rbtree code complicates things a bit and would uglify
-        the patch adding the new algorithm.
-
-  sysctl: reorder members of ctl_table_header (cleanup)
-  sysctl: add ctl_type member
-  RFC: sysctl: replace subdirectory list with rbtree
-  RFC: sysctl: replace netns corresp list with rbtree
-  sysctl: union-ize some ctl_table_header fields
-
-
-Part 7: Eric requested ability to register an empty dir:
-
-  sysctl: add register_sysctl_dir: register an empty sysctl directory
-
-
-Part 8: unrequested feature I'd like to piggy back :)
-
-  sysctl: add ctl_cookie and ctl_cookie_handler
-  sysctl: add cookie to __register_sysctl_paths
-  sysctl: add register_net_sysctl_table_net_cookie
-
-
-
- drivers/char/random.c            |   27 +-
- fs/eventpoll.c                   |   22 +-
- fs/notify/inotify/inotify_user.c |   22 +-
- fs/proc/inode.c                  |    2 +-
- fs/proc/proc_sysctl.c            |  236 +++++---
- include/linux/inotify.h          |    2 -
- include/linux/key.h              |    3 -
- include/linux/kmod.h             |    3 -
- include/linux/poll.h             |    2 -
- include/linux/sysctl.h           |  221 +++++---
- include/net/net_namespace.h      |    4 +-
- init/main.c                      |    1 +
- kernel/Makefile                  |    5 +-
- kernel/kmod.c                    |   14 +-
- kernel/sysctl.c                  | 1165 +++++++++++++++++++++++++++-----------
- kernel/sysctl_check.c            |  316 +++++++----
- lib/Kconfig.debug                |    8 -
- net/sysctl_net.c                 |   86 ++--
- security/keys/key.c              |    7 +
- security/keys/sysctl.c           |   18 +-
- 20 files changed, 1492 insertions(+), 672 deletions(-)
-
+Now that I look code more, it would meet VM_BUG_ON of get_page if the page is really
+freed. I think if we hold zone->lock to prevent prep_new_page racing, it would be okay.
+But it's rather overkill so I will add my sign to your patch if we don't have better idea
+until tomorrow. :)
 
 -- 
- .
-..: Lucian
+Kind regards
+Minchan Kim
