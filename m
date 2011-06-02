@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab1FBVo3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 17:44:29 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:50586 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754830Ab1FBVoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 17:44:21 -0400
-Date: Thu, 02 Jun 2011 14:39:27 -0700 (PDT)
-Message-Id: <20110602.143927.1073346459383432955.davem@davemloft.net>
-To: pablo@netfilter.org
-Cc: joe@perches.com, kaber@trash.net, andy.grover@oracle.com,
-        trivial@kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rds-devel@oss.oracle.com
-Subject: Re: [TRIVIAL PATCH next 15/15] net: Convert vmalloc/memset to
- vzalloc
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4DE7A311.5000406@netfilter.org>
-References: <cover.1306603968.git.joe@perches.com>
-	<045996b9688bfaa2efbd8999405a67e23cd0a075.1306603968.git.joe@perches.com>
-	<4DE7A311.5000406@netfilter.org>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 02 Jun 2011 14:39:28 -0700 (PDT)
+	id S1754858Ab1FBVlo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 17:41:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52421 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752212Ab1FBVln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 17:41:43 -0400
+Date: Thu, 2 Jun 2011 23:40:41 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Mel Gorman <mel@csn.ul.ie>,
+        akpm@linux-foundation.org, Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110602214041.GF2802@random.random>
+References: <20110530165546.GC5118@suse.de>
+ <20110530175334.GI19505@random.random>
+ <20110531121620.GA3490@barrios-laptop>
+ <20110531122437.GJ19505@random.random>
+ <20110531133340.GB3490@barrios-laptop>
+ <20110531141402.GK19505@random.random>
+ <20110531143734.GB13418@barrios-laptop>
+ <20110531143830.GC13418@barrios-laptop>
+ <20110602182302.GA2802@random.random>
+ <20110602202156.GA23486@barrios-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110602202156.GA23486@barrios-laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-Date: Thu, 02 Jun 2011 16:49:53 +0200
+Hello Minchan,
 
-> Are you going to take this patch? it includes one chunck which is out of
-> netfilter scope.
+On Fri, Jun 03, 2011 at 05:21:56AM +0900, Minchan Kim wrote:
+> Isn't it rather aggressive?
+> I think cursor page is likely to be PageTail rather than PageHead.
+> Could we handle it simply with below code?
 
-I think the trivial folks submit these things via their own tree
-and are only looking for ACKs from us.
+It's not so likely, there is small percentage of compound pages that
+aren't THP compared to the rest that is either regular pagecache or
+anon regular or anon THP or regular shm. If it's THP chances are we
+isolated the head and it's useless to insist on more tail pages (at
+least for large page size like on x86). Plus we've compaction so
+insisting and screwing lru ordering isn't worth it, better to be
+permissive and abort... in fact I wouldn't dislike to remove the
+entire lumpy logic when COMPACTION_BUILD is true, but that alters the
+trace too...
 
-Acked-by: David S. Miller <davem@davemloft.net>
+> get_page(cursor_page)
+> /* The page is freed already */
+> if (1 == page_count(cursor_page)) {
+> 	put_page(cursor_page)
+> 	continue;
+> }
+> put_page(cursor_page);
+
+We can't call get_page on an tail page or we break split_huge_page,
+only an isolated lru can be boosted, if we take the lru_lock and we
+check the page is in lru, then we can isolate and pin it safely.
