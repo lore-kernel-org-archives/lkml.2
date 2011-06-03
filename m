@@ -1,159 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab1FCGtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 02:49:41 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46041 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab1FCGtj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 02:49:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FwdNEqvhMBAKk9p336CK9Z+BgjtIhe1t0SBcB03xb4vVvVmmkjjPWmwR9OqtvSRwqK
-         KgVSSW01lWn8H2IQu6qn5kCd0Is8uc0rd+HrbuxqfFe53LhiprWdONs2Q6Mhlxat/cNv
-         BbmwozU0Tn+pehSZYGIdIVTPfJZGgfX6jLnuc=
-MIME-Version: 1.0
-In-Reply-To: <1307029711.2497.717.camel@laptop>
-References: <1306835745.2353.3.camel@twins>
-	<tip-f01114cb59d670e9b4f2c335930dd57db96e9360@git.kernel.org>
-	<20110531125621.GA24439@gere.osrc.amd.com>
-	<1306847516.2353.80.camel@twins>
-	<20110601070547.GB3368@liondog.tnic>
-	<1306924612.2353.176.camel@twins>
-	<20110601155017.GD24028@aftab>
-	<BANLkTikT6OT-HDi-DR+_ZWEhfp_CYWJ3Hg@mail.gmail.com>
-	<1307019866.2497.675.camel@laptop>
-	<20110602142340.GA3356@zhy>
-	<1307029711.2497.717.camel@laptop>
-Date: Fri, 3 Jun 2011 14:49:38 +0800
-Message-ID: <BANLkTikciSq0x6-RXTx7ugrgthxXtUsoJA@mail.gmail.com>
-Subject: Re: [tip:sched/urgent] sched: Fix cross-cpu clock sync on remote wakeups
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Borislav Petkov <bp@amd64.org>, Borislav Petkov <bp@alien8.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+	id S1752130Ab1FCG4y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 02:56:54 -0400
+Received: from gate.crashing.org ([63.228.1.57]:35413 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752116Ab1FCG4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 02:56:53 -0400
+Subject: Re: tty breakage in X (Was: tty vs workqueue oddities)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: gregkh@suse.de,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Felipe Balbi <balbi@ti.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>
+In-Reply-To: <1307081874.23876.14.camel@pasglop>
+References: <1306999045.29297.55.camel@pasglop>
+	 <1307003821.29297.77.camel@pasglop>
+	 <20110602110727.7343782b@lxorguk.ukuu.org.uk>
+	 <1307062574.29297.204.camel@pasglop>  <1307081874.23876.14.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 03 Jun 2011 16:56:29 +1000
+Message-ID: <1307084189.23876.19.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 2, 2011 at 11:48 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Thu, 2011-06-02 at 22:23 +0800, Yong Zhang wrote:
->> On Thu, Jun 02, 2011 at 03:04:26PM +0200, Peter Zijlstra wrote:
->> > On Thu, 2011-06-02 at 15:52 +0800, Yong Zhang wrote:
->> > > In sched_clock_local(), clock is calculated around ->tick_gtod even if
->> > > that ->tick_gtod is stale for long time because we stays in idle state.
->> > > You know ->tick_gtod is only updated in sched_clock_tick();
->> >
->> > (well, no, there's idle callbacks as you said below)
->> >
->> > > IOW, when a cpu goes out of idle, sched_clock_tick() is called from
->> > > tick_nohz_stop_idle() which is later than interrupt.
->> >
->> > Gah, that would be awefull and mean wakeups from interrupts were already
->> > borken. /me goes look at code.
->> >
->> > irq_enter() -> tick_check_idle() -> tick_check_nohz() ->
->> > tick_nohz_stop_idle() -> sched_clock_idle_wakeup_event()
->> >
->> > should update the thing before we run any isrs, right?
->>
->> Hmmm, you are right.
->>
->> But smp_reschedule_interrupt() doesn't call irq_enter()/irq_exit(),
->> is that correct?
->
-> Crap.. you're right.
-> And I bet other archs don't do that either.
+On Fri, 2011-06-03 at 16:17 +1000, Benjamin Herrenschmidt wrote:
 
-Most of them ;)
-I only notice sparc32 do that. Maybe there have more,
-but I didn't check it very carefully.
+> Some more data: It -looks- like what happens is that the flush_to_ldisc
+> work queue entry constantly re-queues itself (because the PTY is full ?)
+> and the workqueue thread will basically loop forver calling it without
+> ever scheduling, thus starving the consumer process that could have
+> emptied the PTY.
+> 
+> At least that's a semi half-assed theory. If I add a schedule() to
+> process_one_work() after dropping the lock, the problem disappears.
+> 
+> So there's a combination of things here that are quite interesting:
+> 
+>  - A lot of work queued for the kworker will essentially go on without
+> scheduling for as long as it takes to empty all work items. That doesn't
+> sound very nice latency-wise. At least on a non-PREEMPT kernel.
+> 
+>  - flush_to_ldisc seems to be nasty and requeues itself over and over
+> again from what I can tell, when it can't push the data out, in this
+> case, I suspect because the PTY is full but I don't know for sure yet.
 
-> With
-> NO_HZ you really need irq_enter() for pretty much all interrupts so I
-> was assuming the resched IPI had it, but its been special and never
-> really needed it. If it would wake an idle cpu the idle loop exit would
-> deal with it, if it interrupted userspace the thing was running and
-> NO_HZ wasn't relevant.
->
-> Damn.
->
-> And yes, the only reason I didn't see this on my dev box was because we
-> do indeed set that sched_clock_stable thing on wsm. And I never noticed
-> on my desktop because firefox/X/etc. consuming heaps of CPU isn't weird
-> at all.
->
-> Adding it to all resched int handlers is of course a possibility but
-> would slow down the thing, although with the new code, most users are
-> now indeed wakeups (excepting weird and wonderful users like KVM).
->
-> We could of course add it in sched.c since the logic recurses just
-> fine.. its not pretty though.. :/
+Interesting results from x86. I could not initially reproduce there at
+all on my little Atom board (the one from kernel summit last year).
 
-Yeah, IMHO it's suitable here and my test looks good.
+Eventually I looked at the kernel config, switched off PREEMPT_VOLUNTARY
+and I can now reproduce on x86 too. Again, if you have both threads/core
+running, the problem isn't as visible (you do see "hickups" when cat'ing
+a large file, the atom is slow enough I suppose).
 
-Reviewed-and-Tested-by: Yong Zhang <yong.zhang0@gmail.com>
+But offline a cpu (leave only one up) and cat a large file (dmesg is
+enough for me to trigger it) and you see the hangs.
 
-BTW, sched_ipi() and sched_ttwu_pending() could share a piece of
-code now. And we place irq_enter()/irq_exit() in sched_ipi() because
-it's the only function we could call, thus account_system_vtime() could
-get the almost exact time value. IOW we should pay some attention on
-the future change of smp_reschedule_interrupt().
+So I think my theory stands that flush_to_ldisc constantly reschedule
+itself causing the worker thread to eat all CPU and starve the consumer
+of the PTY. I won't have time to dig much deeper today nor probably this
+week-end so I'm sending this email for others who want to look.
 
-Thanks,
-Yong
-
->
-> Thoughts?
->
-> ---
->  kernel/sched.c |   18 +++++++++++++++++-
->  1 files changed, 17 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 2fe98ed..365ed6b 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2554,7 +2554,23 @@ static void sched_ttwu_pending(void)
->
->  void scheduler_ipi(void)
->  {
-> -       sched_ttwu_pending();
-> +       struct rq *rq = this_rq();
-> +       struct task_struct *list = xchg(&rq->wake_list, NULL);
-> +
-> +       if (!list)
-> +               return;
-> +
-> +       irq_enter();
-> +       raw_spin_lock(&rq->lock);
-> +
-> +       while (list) {
-> +               struct task_struct *p = list;
-> +               list = list->wake_entry;
-> +               ttwu_do_activate(rq, p, 0);
-> +       }
-> +
-> +       raw_spin_unlock(&rq->lock);
-> +       irq_exit();
->  }
->
->  static void ttwu_queue_remote(struct task_struct *p, int cpu)
->
->
->
+Cheers,
+Ben.
 
 
-
--- 
-Only stand for myself
