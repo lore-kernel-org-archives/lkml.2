@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab1FCP2N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 11:28:13 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:12215
-	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752473Ab1FCP2L (ORCPT
+	id S1756083Ab1FCP25 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 11:28:57 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50015 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752473Ab1FCP2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 11:28:11 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4DE8FD85.7000703@freescale.com>
-Date: Fri, 3 Jun 2011 10:28:05 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	Fri, 3 Jun 2011 11:28:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor management driver
+Date: Fri, 3 Jun 2011 17:28:43 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Timur Tabi <timur@freescale.com>, kumar.gala@freescale.com,
+        linux-kernel@vger.kernel.org, akpm@kernel.org,
+        linux-console@vger.kernel.org, greg@kroah.com,
+        linuxppc-dev@lists.ozlabs.org
+References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106012340.14237.arnd@arndb.de> <20110601172412.761ff799@schlenkerla.am.freescale.net>
+In-Reply-To: <20110601172412.761ff799@schlenkerla.am.freescale.net>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
-        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
-Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
- management driver
-References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106012340.14237.arnd@arndb.de> <4DE8008E.9030008@freescale.com> <201106031724.44957.arnd@arndb.de>
-In-Reply-To: <201106031724.44957.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Message-Id: <201106031728.43707.arnd@arndb.de>
+X-Provags-ID: V02:K0:EAZEjrN63kAt1mjXQv3bndxVbBffyzzhKTKElJ4OylO
+ Op2U/pT6ISN85GbbL59Q1HOLZWdqmCsqJB3ardF8eW8bSMI0Kp
+ xYtGm/aaVPRaRhfGlK/jK5znwKAdW1KkL+f7xosg9H8bDp+X+x
+ IyMhGGW8P/TxvHSc38fqs+lcX0Nzx+CAbuVlEMZViWzOSHABa8
+ R/5FdKkfdiuadzT3oSVRQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
->> > I don't think it's correct to think of a hypervisor as firmware, so I don't
->> > think drivers/firmware is better.
->> > 
->> > I'm not sure that creating virt/fsl and putting the driver in there is a good
->> > idea, because it will be the only driver in that directory.  Unlike KVM, this
->> > driver is just a collection of front-ends to our hypervisor API.  The actual
->> > hypervisor is completely separate.  That's why I put it in drivers/misc, because
->> > it's just a single driver with a miscellaneous collection of interfaces.
+On Thursday 02 June 2011, Scott Wood wrote:
+> I wanted to have the hypervisor take an update dtb (we already have special
+> meta-properties for things like deletion as part of the hv config
+> mechanism).  But others on the project wanted to keep it simple, and so
+> get/set property it was. :-/
+> 
+> It's unlikely to change at this point without a real need.
+> 
+> As for a filesystem interface, it's not a good match either. 
+> You can't iterate over anything to read out the full tree from the hv.
 
-> Ok, fair enough. If nobody has a strong preference any other way, just make it
-> drivers/firmware then.
+kexec iterates over /proc/device-tree to create a dts blob.
 
-Did you mean to say drivers/misc?
+> You can't delete anything. 
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+rm, rmdir
 
+> You can't create empty nodes.
+
+mkdir
+
+> The hv interface was meant to enable some specific management actions,
+> rather than to provide general device tree access.  This driver is a thin
+> wrapper around the management hcalls.
+
+A file system would be a slightly more abstract interface to do the
+same thing, I gues.
+
+> There would still be other ioctls needed for starting/stopping the
+> partition, etc.
+
+Right, although you could model them as a file interface as well.
+KVMfs is one example doing that.
+
+	Arnd
