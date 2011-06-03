@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab1FCVhQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 17:37:16 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:59660 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756093Ab1FCVhO (ORCPT
+	id S1756438Ab1FCVoS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 17:44:18 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47279 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753622Ab1FCVoR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 17:37:14 -0400
-Date: Fri, 3 Jun 2011 23:37:13 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Dave Anderson <anderson@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, jstancek@redhat.com
-Subject: Re: [PATCH] x86-64: Prevent gcc from optimizing away venosys_1()
-Message-ID: <20110603213713.GO27166@one.firstfloor.org>
-References: <20110603204847.GM27166@one.firstfloor.org> <1972495451.7278.1307136726542.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
-Mime-Version: 1.0
+	Fri, 3 Jun 2011 17:44:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:content-type:message-id:date:to
+         :content-transfer-encoding:mime-version:x-mailer;
+        b=t14UlP8qr7Ay0fnwLGnA31OAS2AvRnYfK3gSmMEyFqS5wtRQZu/0eXKDhkbIgTXm+n
+         1I3d49WY0Oetd4Ud+BNZBRD6LFtTXshEzNmw3PeCq6TEDsL/M/8ejuJk0p0zxbKG743O
+         WIXWbK3mEP8y4bwYaYb1Cfc1wTCt58+ylecdg=
+Subject: rcu_kthread hang on 3.0.0-rc1-next-20110602
+From: =?iso-8859-1?Q?Markus_H=E4stbacka?= <mhastbacka@gmail.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1972495451.7278.1307136726542.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
-User-Agent: Mutt/1.4.2.2i
+Message-Id: <85F46CF9-5433-4623-91FC-9CD890082F69@gmail.com>
+Date: Sat, 4 Jun 2011 00:43:25 +0300
+To: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 03, 2011 at 05:32:06PM -0400, Dave Anderson wrote:
-> 
-> 
-> ----- Original Message -----
-> > >  	return 0;
-> > >  }
-> > >
-> > > -static long __vsyscall(3) venosys_1(void)
-> > > +long __vsyscall(3) venosys_1(void)
-> > 
-> > Better add a __used too. Otherwise it can be optimized out again
-> > in some builds e.g. when someone enables gc-sections for the linker.
-> 
-> Considering that all of the vsyscall prototypes have this attribute:
-> 
-> #define __vsyscall(nr) \
->                 __attribute__ ((unused, __section__(".vsyscall_" #nr))) notrace
-> 
-> How would any of them work?
+Hello!
 
-unused is just to prevent warnings I think. used stops the optimizer
-from throwing it away.
+After updating my debian squeeze box to 3.0.0-rc1-next-20110602 I'm experiencing a weird problem. If I run dmesg  the computer hangs for 15 minutes, and I cannot even login at this time, if I leave top (the top window updates very slowly, like every 5 minutes during this period) running I can see that the process rcu_kthread takes 100% CPU, the computer load average is at around 10.
 
-It would make more sense to drop the unused and add an used.  I think
-used prevents the warnings too.
+I also sometimes get these disk errors in syslog:
+Jun  4 02:01:39 midi3g kernel: ata1.01: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6
+Jun  4 02:01:39 midi3g kernel: ata1.01: BMDMA stat 0x44
+Jun  4 02:01:39 midi3g kernel: ata1.01: failed command: WRITE DMA
+Jun  4 02:01:39 midi3g kernel: ata1.01: cmd ca/00:00:1c:7b:c6/00:00:00:00:00/f0 tag 0 dma 131072 out
+Jun  4 02:01:39 midi3g kernel:         res 51/84:00:fe:7b:c6/00:00:00:00:00/f0 Emask 0x10 (ATA bus error)
+Jun  4 02:01:39 midi3g kernel: ata1.01: status: { DRDY ERR }
+Jun  4 02:01:39 midi3g kernel: ata1.01: error: { ICRC ABRT }
+Jun  4 02:01:39 midi3g kernel: ata1: soft resetting link
+Jun  4 02:01:39 midi3g kernel: ata1.01: configured for UDMA/66
+Jun  4 02:01:39 midi3g kernel: ata1: EH complete
 
--Andi
+but for example the last time I got the hang, I didn't get this error, nor any other error for that matter.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+The OS is installed on a CF-card. The computer is a eBox computer with VIA Nehemiah CPU, 256MB RAM.
+
+what more information do you need? Or what more can I test?
+
+M
+
+
