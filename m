@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab1FCXpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 19:45:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47390 "EHLO mga01.intel.com"
+	id S1756764Ab1FCXpm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 19:45:42 -0400
+Received: from mga01.intel.com ([192.55.52.88]:11551 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755294Ab1FCXoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 19:44:20 -0400
+	id S1755318Ab1FCXoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 19:44:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,317,1304319600"; 
-   d="scan'208";a="13344053"
+   d="scan'208";a="13344056"
 From: Russ Gorby <russ.gorby@intel.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>, Russ Gorby <russ.gorby@intel.com>,
         linux-kernel@vger.kernel.org
 Cc: suhail.ahmed@intel.com, russ.gorby@intel.com
-Subject: [PATCHv2 2/7] tty: n_gsm: expose gsmtty device nodes at ldisc open time
-Date: Fri,  3 Jun 2011 16:43:57 -0700
-Message-Id: <1307144642-5915-3-git-send-email-russ.gorby@intel.com>
+Subject: [PATCHv2 3/7] tty: n_gsm: Added refcount usage to gsm_mux and gsm_dlci structs
+Date: Fri,  3 Jun 2011 16:43:58 -0700
+Message-Id: <1307144642-5915-4-git-send-email-russ.gorby@intel.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <[PATCHv2 0/5] N_GSM patchset : 06/03/2011: v2>
 References: <[PATCHv2 0/5] N_GSM patchset : 06/03/2011: v2>
@@ -23,89 +23,210 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver being an ldisc, does not provide a convenient method
-e.g. udev to create the tty device nodes automatically when the ldisc
-is opened.
+The gsm_mux is created/destroyed when ldisc is
+opened/closed but clients of the MUX channel devices (gsmttyN)
+may access this structure as long as the TTYs are open.
+For the open, the ldisc open is guaranteed to preceed the TTY open,
+but the close has no such guaranteed ordering. As a result,
+the gsm_mux can be freed in the ldisc close before being accessed
+by one of the TTY clients. This can happen if the ldisc is removed
+while there are open, active MUX channels.
+A similar situation exists for DLCI-0, it is basically a resource
+shared by MUX and DLCI  , and should not be freed while they can
+be accessed
 
-The TTY device nodes are npw created via calls to tty_register_device
+To avoid this, gsm_mux and dlcis now have a reference counter
+ldisc open takes a reference on the mux and all the dlcis
+gsmtty_open takes a reference on the mux, dlci0 and its specific
+dlci. Dropping the last reference initiates the actual free.
 
 Signed-off-by: Russ Gorby <russ.gorby@intel.com>
 ---
- drivers/tty/n_gsm.c |   19 +++++++++++++++++--
- 1 files changed, 17 insertions(+), 2 deletions(-)
+ drivers/tty/n_gsm.c |   83 ++++++++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 69 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index 47897c2..0a2a5da 100644
+index 0a2a5da..c8a43de 100644
 --- a/drivers/tty/n_gsm.c
 +++ b/drivers/tty/n_gsm.c
-@@ -190,6 +190,7 @@ struct gsm_control {
- struct gsm_mux {
+@@ -133,6 +133,7 @@ struct gsm_dlci {
+ #define DLCI_OPENING		1	/* Sending SABM not seen UA */
+ #define DLCI_OPEN		2	/* SABM/UA complete */
+ #define DLCI_CLOSING		3	/* Sending DISC not seen UA/DM */
++	struct kref ref;		/* freed from port or mux close */
+ 
+ 	/* Link layer */
+ 	spinlock_t lock;	/* Protects the internal state */
+@@ -191,6 +192,7 @@ struct gsm_mux {
  	struct tty_struct *tty;		/* The tty our ldisc is bound to */
  	spinlock_t lock;
-+	unsigned int num;
+ 	unsigned int num;
++	struct kref ref;
  
  	/* Events on the GSM channel */
  	wait_queue_head_t event;
-@@ -271,6 +272,8 @@ struct gsm_mux {
- static struct gsm_mux *gsm_mux[MAX_MUX];	/* GSM muxes */
- static spinlock_t gsm_mux_lock;
+@@ -1603,6 +1605,7 @@ static struct gsm_dlci *gsm_dlci_alloc(struct gsm_mux *gsm, int addr)
+ 	if (dlci == NULL)
+ 		return NULL;
+ 	spin_lock_init(&dlci->lock);
++	kref_init(&dlci->ref);
+ 	dlci->fifo = &dlci->_fifo;
+ 	if (kfifo_alloc(&dlci->_fifo, 4096, GFP_KERNEL) < 0) {
+ 		kfree(dlci);
+@@ -1629,26 +1632,42 @@ static struct gsm_dlci *gsm_dlci_alloc(struct gsm_mux *gsm, int addr)
+ }
  
-+static struct tty_driver *gsm_tty_driver;
+ /**
+- *	gsm_dlci_free		-	release DLCI
++ *	gsm_dlci_free		-	free DLCI
++ *	@dlci: DLCI to free
++ *
++ *	Free up a DLCI.
++ *
++ *	Can sleep.
++ */
++static void gsm_dlci_free(struct kref *ref)
++{
++	struct gsm_dlci *dlci = container_of(ref, struct gsm_dlci, ref);
 +
++	del_timer_sync(&dlci->t1);
++	dlci->gsm->dlci[dlci->addr] = NULL;
++	kfifo_free(dlci->fifo);
++	while ((dlci->skb = skb_dequeue(&dlci->skb_list)))
++		kfree_skb(dlci->skb);
++	kfree(dlci);
++}
++
++/**
++ *	gsm_dlci_release		-	release DLCI
+  *	@dlci: DLCI to destroy
+  *
+- *	Free up a DLCI. Currently to keep the lifetime rules sane we only
+- *	clean up DLCI objects when the MUX closes rather than as the port
+- *	is closed down on both the tty and mux levels.
++ *	Release a DLCI. Actual free is deferred until either
++ *	mux is closed or tty is closed - whichever is last.
+  *
+  *	Can sleep.
+  */
+-static void gsm_dlci_free(struct gsm_dlci *dlci)
++static void gsm_dlci_release(struct gsm_dlci *dlci)
+ {
+ 	struct tty_struct *tty = tty_port_tty_get(&dlci->port);
+ 	if (tty) {
+ 		tty_vhangup(tty);
+ 		tty_kref_put(tty);
+ 	}
+-	del_timer_sync(&dlci->t1);
+-	dlci->gsm->dlci[dlci->addr] = NULL;
+-	kfifo_free(dlci->fifo);
+-	kfree(dlci);
++	kref_put(&dlci->ref, gsm_dlci_free);
+ }
+ 
  /*
-  *	This section of the driver logic implements the GSM encodings
-  *	both the basic and the 'advanced'. Reliable transport is not
-@@ -2023,6 +2026,7 @@ int gsm_activate_mux(struct gsm_mux *gsm)
- 	spin_lock(&gsm_mux_lock);
- 	for (i = 0; i < MAX_MUX; i++) {
- 		if (gsm_mux[i] == NULL) {
-+			gsm->num = i;
- 			gsm_mux[i] = gsm;
- 			break;
- 		}
-@@ -2128,13 +2132,20 @@ static int gsmld_output(struct gsm_mux *gsm, u8 *data, int len)
- 
- static int gsmld_attach_gsm(struct tty_struct *tty, struct gsm_mux *gsm)
+@@ -1986,7 +2005,7 @@ void gsm_cleanup_mux(struct gsm_mux *gsm)
+ 	/* Free up any link layer users */
+ 	for (i = 0; i < NUM_DLCI; i++)
+ 		if (gsm->dlci[i])
+-			gsm_dlci_free(gsm->dlci[i]);
++			gsm_dlci_release(gsm->dlci[i]);
+ 	/* Now wipe the queues */
+ 	for (txq = gsm->tx_head; txq != NULL; txq = gsm->tx_head) {
+ 		gsm->tx_head = txq->next;
+@@ -2047,8 +2066,7 @@ EXPORT_SYMBOL_GPL(gsm_activate_mux);
+  *	gsm_free_mux		-	free up a mux
+  *	@mux: mux to free
+  *
+- *	Dispose of allocated resources for a dead mux. No refcounting
+- *	at present so the mux must be truly dead.
++ *	Dispose of allocated resources for a dead mux
+  */
+ void gsm_free_mux(struct gsm_mux *gsm)
  {
--	int ret;
-+	int ret, i;
-+	int base = gsm->num << 6; /* Base for this MUX */
+@@ -2059,6 +2077,30 @@ void gsm_free_mux(struct gsm_mux *gsm)
+ EXPORT_SYMBOL_GPL(gsm_free_mux);
  
- 	gsm->tty = tty_kref_get(tty);
- 	gsm->output = gsmld_output;
- 	ret =  gsm_activate_mux(gsm);
- 	if (ret != 0)
- 		tty_kref_put(gsm->tty);
-+	else {
-+		/* Don't register device 0 - this is the control channel and not
-+		   a usable tty interface */
-+		for (i = 1; i < NUM_DLCI; i++)
-+			tty_register_device(gsm_tty_driver, base + i, NULL);
-+	}
- 	return ret;
- }
- 
-@@ -2149,7 +2160,12 @@ static int gsmld_attach_gsm(struct tty_struct *tty, struct gsm_mux *gsm)
- 
- static void gsmld_detach_gsm(struct tty_struct *tty, struct gsm_mux *gsm)
- {
-+	int i;
-+	int base = gsm->num << 6; /* Base for this MUX */
+ /**
++ *	gsm_free_muxr		-	free up a mux
++ *	@mux: mux to free
++ *
++ *	Dispose of allocated resources for a dead mux
++ */
++static void gsm_free_muxr(struct kref *ref)
++{
++	struct gsm_mux *gsm = container_of(ref, struct gsm_mux, ref);
++	gsm_free_mux(gsm);
++}
 +
- 	WARN_ON(tty != gsm->tty);
-+	for (i = 1; i < NUM_DLCI; i++)
-+		tty_unregister_device(gsm_tty_driver, base + i);
- 	gsm_cleanup_mux(gsm);
- 	tty_kref_put(gsm->tty);
- 	gsm->tty = NULL;
-@@ -2958,7 +2974,6 @@ static int gsmtty_break_ctl(struct tty_struct *tty, int state)
- 	return gsmtty_modem_update(dlci, encode);
++/**
++ *	gsm_release_mux		-	release a mux
++ *	@mux: mux to release
++ *
++ *	Dispose of allocated resources for a dead mux on release
++ *	from last client.
++ */
++static void gsm_release_mux(struct gsm_mux *gsm)
++{
++	kref_put(&gsm->ref, gsm_free_muxr);
++}
++
++/**
+  *	gsm_alloc_mux		-	allocate a mux
+  *
+  *	Creates a new mux ready for activation.
+@@ -2081,6 +2123,7 @@ struct gsm_mux *gsm_alloc_mux(void)
+ 		return NULL;
+ 	}
+ 	spin_lock_init(&gsm->lock);
++	kref_init(&gsm->ref);
+ 
+ 	gsm->t1 = T1;
+ 	gsm->t2 = T2;
+@@ -2255,7 +2298,7 @@ static void gsmld_close(struct tty_struct *tty)
+ 
+ 	gsmld_flush_buffer(tty);
+ 	/* Do other clean up here */
+-	gsm_free_mux(gsm);
++	gsm_release_mux(gsm);
  }
  
--static struct tty_driver *gsm_tty_driver;
+ /**
+@@ -2805,6 +2848,9 @@ static int gsmtty_open(struct tty_struct *tty, struct file *filp)
+ 	port = &dlci->port;
+ 	port->count++;
+ 	tty->driver_data = dlci;
++	kref_get(&dlci->ref);
++	kref_get(&dlci->gsm->dlci[0]->ref);
++	kref_get(&dlci->gsm->ref);
+ 	tty_port_tty_set(port, tty);
  
- /* Virtual ttys for the demux */
- static const struct tty_operations gsmtty_ops = {
+ 	dlci->modem_rx = 0;
+@@ -2820,14 +2866,23 @@ static int gsmtty_open(struct tty_struct *tty, struct file *filp)
+ static void gsmtty_close(struct tty_struct *tty, struct file *filp)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	struct gsm_mux *gsm;
++
+ 	if (dlci == NULL)
+ 		return;
++	gsm = dlci->gsm;
+ 	gsm_destroy_network(dlci);
+-	if (tty_port_close_start(&dlci->port, tty, filp) == 0)
++	if (tty_port_close_start(&dlci->port, tty, filp) == 0) {
++		kref_put(&dlci->ref, gsm_dlci_free);
++		gsm_release_mux(gsm);
+ 		return;
++	}
+ 	gsm_dlci_begin_close(dlci);
+ 	tty_port_close_end(&dlci->port, tty);
+ 	tty_port_tty_set(&dlci->port, NULL);
++	kref_put(&dlci->ref, gsm_dlci_free);
++	kref_put(&gsm->dlci[0]->ref, gsm_dlci_free);
++	gsm_release_mux(gsm);
+ }
+ 
+ static void gsmtty_hangup(struct tty_struct *tty)
 -- 
 1.7.0.4
 
