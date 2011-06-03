@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab1FCNxU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 09:53:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41863 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754494Ab1FCNxT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 09:53:19 -0400
-Message-ID: <4DE8E746.2080100@linutronix.de>
-Date: Fri, 03 Jun 2011 15:53:10 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	id S1755312Ab1FCNzt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 09:55:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27972 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750990Ab1FCNzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 09:55:48 -0400
+Message-ID: <4DE8E7D9.9000608@redhat.com>
+Date: Fri, 03 Jun 2011 10:55:37 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Suzuki Poulose <suzuki@in.ibm.com>
-CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        linux ppc dev <linuxppc-dev@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] Kexec support for PPC440x
-References: <4DE345B0.8020505@in.ibm.com> <4DE50617.7090509@linutronix.de> <4DE72EFE.8080502@in.ibm.com> <4DE8CA76.2060303@in.ibm.com>
-In-Reply-To: <4DE8CA76.2060303@in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Andreas Oberritter <obi@linuxtv.org>
+CC: Hans Petter Selasky <hselasky@c2i.net>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] FE_GET_PROPERTY should be _IOW, because the associated
+ structure is transferred from userspace to kernelspace. Keep the old ioctl
+ around for compatibility so that existing code is not broken.
+References: <201105231558.13084.hselasky@c2i.net> <4DDA711E.3030301@linuxtv.org> <201105231651.55945.hselasky@c2i.net> <4DDA7E07.7070907@linuxtv.org> <4DE6ABF5.6020008@redhat.com> <4DE8D72E.7010300@linuxtv.org>
+In-Reply-To: <4DE8D72E.7010300@linuxtv.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suzuki Poulose wrote:
->>> The way you setup the 1:1 mapping should be close to what you are 
->>> doing on
->>> kernel entry.Isn't it possible to include the file here and in the entry
->>> code?
+Em 03-06-2011 09:44, Andreas Oberritter escreveu:
+> On 06/01/2011 11:15 PM, Mauro Carvalho Chehab wrote:
+>> The dvb_usercopy will do the right thing, if we use _IOR or _IORW.
 > 
->> I will make this change and resend the patch.
+> It only works, because _IOC_READ triggers a copy_from_user, as a
+> workaround for wrongly marked ioctls like this, according to a code
+> comment. It does not really do the right thing, because in this special
+> case the later call to copy_to_user isn't required. But it doesn't do
+> any real harm either.
+
+Yes, that's what I meant to say ;) The workaround for it is there already,
+so maybe there are other ioctl's using the wrong _IOC_ directions.
+
+As I said before, some ioctl's don't use _IOC_ directions, like for example
+the tty ioctls like TIO* ones. This happens on several very old drivers.
+So, ioctl core don't make any assumption about them. it is up to each driver
+(or subsystem core) to handle it.
+
+>> I prefer to not apply this patch, as it won't fix anything. Adding an _OLD means
+>> that we'll need later to remove it, causing a regression. Ok, we may do like we did
+>> with V4L _OLD ioctl's that were marked as _OLD at 2.6.5 and were removed on a late
+>> 2.6.3x.
 > 
-> I took a look at the way we do it at kernel entry. It looks more cleaner 
-> to leave
-> it untouched. Especially, when we add the support for 47x in the future, 
-> the code
->  will become more unreadable.
+> Either way is fine for me.
+
+I'm not against fixing it, but, in this case, we'll need to validate all DVB
+ioctl's and remove the IOC_READ hack for all non-_OLD controls, and writing
+a notice at features-to-be-removed announcing that the _OLD controls will be
+removed.
+
+Cheers,
+Mauro.
 > 
-> What do you think ?
+> Regards,
+> Andreas
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-So the entry code has one 256MiB mapping, you need 8 of those. Entry goes 
-for TLB 63 and you need to be flexible and avoid TLB 63 :).
-So after all you don't have that much in common with the entry code. If
-you look at the FSL-book code then you will notice that I tried to share
-some code.
-
-I don't understand why you don't flip the address space bit. On fsl we
-setup the tmp mapping in the "other address" space so we don't have two
-mappings for the same address. The entry code could be doing this with STS
-bit, I'm not sure.
-
-If you want to keep your tiny mmu flip code instead of merging with the
-entry code then please don't put it into a separate file. The only reason
-why I did it, is to have the code once since I can't branch to it and I
-wanted to share code.
-
-> 
-> Thanks
-> 
-> Suzuki
-
-Sebastian
