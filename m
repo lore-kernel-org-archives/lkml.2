@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab1FCHm4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 03:42:56 -0400
-Received: from mail168c2.megamailservers.com ([69.49.111.68]:49833 "EHLO
-	mail168c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752637Ab1FCHmz (ORCPT
+	id S1753103Ab1FCHoh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 03:44:37 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44172 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab1FCHog convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 03:42:55 -0400
-X-Authenticated-User: daniel.gaisler.com
-Message-ID: <4DE8906F.5040501@gaisler.com>
-Date: Fri, 03 Jun 2011 09:42:39 +0200
-From: Daniel Hellstrom <daniel@gaisler.com>
-User-Agent: Mozilla Thunderbird 1.0.6 (X11/20050716)
-X-Accept-Language: en-us, en
+	Fri, 3 Jun 2011 03:44:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Gf3FWUCKrLn5Q67N0zh93dlvoCv+eEA0uNpZvkrPcU+vFCvgVj3GZIb3RYj91j6CK4
+         KEWH6fLDeOQdvKLUVKTqg70fkGqVUMsrmf6Rv3F/h0MtV+wuznZaKRo5zfMLHW8gZjf8
+         VVUlqaWtnA7p4dGWGFxU+s/YfmAN6uetmjxK4=
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (sparc-current
- tree related)
-References: <20110603135347.a17e0b85.sfr@canb.auug.org.au> <20110602.222051.270790327969020201.davem@davemloft.net>
-In-Reply-To: <20110602.222051.270790327969020201.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-CSC: 0
-X-CHA: v=1.1 cv=WwssvlT0cz5J1BoOJvKjEQtles6kVRNS28LycuPzbaY= c=1 sm=1
-		a=pl2ZPvC6udcA:10 a=5CtTeIlDWD8A:10 a=U62ajLuCel8A:10 a=8nJEP1OIZ-IA:10
-		a=jXKJviUpWSOlMmIvGrHOfw==:17 a=rOUgymgbAAAA:8 a=F7lMu4zxE0NYX6z6DLUA:9
-		a=wPNLvfGTeEIA:10 a=jXKJviUpWSOlMmIvGrHOfw==:117
+In-Reply-To: <1307086473.7474.1.camel@phoenix>
+References: <1307086473.7474.1.camel@phoenix>
+Date: Fri, 3 Jun 2011 09:44:36 +0200
+Message-ID: <BANLkTikt4y3ZKJD2Ld_hxAAzjOpevEqFfA@mail.gmail.com>
+Subject: Re: [PATCH] mtd: pxa3xx_nand: remove unused variable 'mtd'
+From: Daniel Mack <zonque@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Eric Miao <eric.y.miao@gmail.com>, linux-mtd@lists.infradead.org,
+        Lei Wen <adrian.wenl@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller wrote:
+Hi Alex,
 
->From: Stephen Rothwell <sfr@canb.auug.org.au>
->Date: Fri, 3 Jun 2011 13:53:47 +1000
+On Fri, Jun 3, 2011 at 9:34 AM, Axel Lin <axel.lin@gmail.com> wrote:
+> Remove unused variable 'mtd' to eliminate below warning.
 >
->  
->
->>Caused by commit cfe3af5dde34 ("sparc32: added CONFIG_PCIC_PCI Kconfig
->>setting") from the sparc-current tree.
->>
->>I have reverted that commit (and the 2 following commits that depend on
->>it) for today.
->>    
->>
->
->Oops, that needs a sparc32 depencency.  I'll fix that, thanks!
->  
->
-missed that, PCIC_PCI should depend on SPARC32_PCI instead of PCI in the 
-following lines that were added by the patch
+>  CC      drivers/mtd/nand/pxa3xx_nand.o
+> drivers/mtd/nand/pxa3xx_nand.c: In function 'pxa3xx_nand_suspend':
+> drivers/mtd/nand/pxa3xx_nand.c:1167: warning: unused variable 'mtd'
+> drivers/mtd/nand/pxa3xx_nand.c: In function 'pxa3xx_nand_resume':
+> drivers/mtd/nand/pxa3xx_nand.c:1180: warning: unused variable 'mtd'
 
-+config PCIC_PCI
-+	bool
-+	depends on PCI && !SPARC_LEON
-+	default y
-+
+Do you actually use this driver? I'm asking because there's some sort
+of nasty regression in the changes between 2.6.38 and 2.6.39 which
+makes the driver fail to work on my PXA300 based board. Lei and me
+tried to nail these issues down, but we didn't succeed yet.
 
 
-
+Daniel
