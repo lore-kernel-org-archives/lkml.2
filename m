@@ -1,306 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937Ab1FCGic (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 02:38:32 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52460 "EHLO smtps.tip.net.au"
+	id S1752231Ab1FCGjQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 02:39:16 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:48129 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751256Ab1FCGib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 02:38:31 -0400
-Date: Fri, 3 Jun 2011 16:38:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for June 3
-Message-Id: <20110603163826.55e76ddb.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__3_Jun_2011_16_38_26_+1000_gggMBim1CqN5=J+5"
+	id S1751216Ab1FCGjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 02:39:13 -0400
+X-ASG-Debug-ID: 1307083150-01de280c1e1e2f0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DE88189.1000203@fusionio.com>
+Date: Fri, 3 Jun 2011 08:39:05 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Greg KH <gregkh@suse.de>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "stable-review@kernel.org" <stable-review@kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [026/146] block: dont block events on excl write for non-optical
+References: <20110601080606.GA522@kroah.com> <20110601080253.331790414@blue.kroah.org> <20110601081514.GG23067@mtj.dyndns.org> <20110601085816.GA12801@suse.de> <4DE6034C.4020808@fusionio.com> <20110603060254.GA4419@kroah.com>
+X-ASG-Orig-Subj: Re: [026/146] block: dont block events on excl write for non-optical
+In-Reply-To: <20110603060254.GA4419@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1307083150
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 1.00
+X-Barracuda-Spam-Status: No, SCORE=1.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_RULE7568M, BSF_RULE_7582B
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.65453
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.50 BSF_RULE7568M          Custom Rule 7568M
+	0.50 BSF_RULE_7582B         Custom Rule 7582B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__3_Jun_2011_16_38_26_+1000_gggMBim1CqN5=J+5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2011-06-03 08:02, Greg KH wrote:
+> On Wed, Jun 01, 2011 at 11:15:56AM +0200, Jens Axboe wrote:
+>> On 2011-06-01 10:58, Greg KH wrote:
+>>> On Wed, Jun 01, 2011 at 05:15:14PM +0900, Tejun Heo wrote:
+>>>> Hello, Greg.
+>>>>
+>>>> On Wed, Jun 01, 2011 at 04:59:22PM +0900, Greg KH wrote:
+>>>>> 2.6.38-stable review patch.  If anyone has any objections, please let us know.
+>>>>>
+>>>>> ------------------
+>>>>>  devices
+>>>>>
+>>>>> From: Tejun Heo <tj@kernel.org>
+>>>>>
+>>>>> commit d4dc210f69bcb0b4bef5a83b1c323817be89bad1 upstream.
+>>>>>
+>>>>> Disk event code automatically blocks events on excl write.  This is
+>>>>> primarily to avoid issuing polling commands while burning is in
+>>>>> progress.  This behavior doesn't fit other types of devices with
+>>>>> removeable media where polling commands don't have adverse side
+>>>>> effects and door locking usually doesn't exist.
+>>>>>
+>>>>> This patch introduces new genhd flag which controls the auto-blocking
+>>>>> behavior and uses it to enable auto-blocking only on optical devices.
+>>>>>
+>>>>> Note for stable: 2.6.38 and later only
+>>>>
+>>>> This one should be accompanied by the following commit which is
+>>>> currently in Jens' tree and will soon be pulled into Linus' tree.
+>>>> Sorry about the fuss.  ->check_events() update turned out to be much
+>>>> more fragile than I originally expected.  :(
+>>>>
+>>>> commit 4c49ff3fe128ca68dabd07537415c419ad7f82f9
+>>>> Author: Tejun Heo <tj@kernel.org>
+>>>> Date:   Wed Jun 1 08:27:41 2011 +0200
+>>>>
+>>>>     block: blkdev_get() should access ->bd_disk only after success
+>>>
+>>> As I can't take it into -stable until it hits Linus's tree, I'll have to
+>>> wait until then.  Hopefully it hits there soon, I'll watch out for it.
+>>>
+>>> thanks for letting me know.
+>>
+>> It'll go out in the next few days. The above commit also references this
+>> patch, so you should have proper notification when it goes in.
+> 
+> Did it go in?  I see commit 0f48f2600911d5de6393829e4a9986d4075558b3
+> which looks like it might have been it, right?  Or do I need something
+> else for .39-stable?
 
-Hi all,
+No, I haven't pushed it out yet, will do today. The above commit is just
+a merge error fixup.
 
-Changes since 20110602:
+-- 
+Jens Axboe
 
-The sparc-current tree lost its conflicts, but gained a build failure for
-which I reverted 3 commits.
-
-The mmc tree lost its build failure.
-
-The tmem tree lost its build failure.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 191 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging at91/at91-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging xilinx/arm-next
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
-CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-CONFLICT (content): Merge conflict in drivers/rtc/Kconfig
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/dev
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging docs/docs-move
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
-Merging powertools/tools-test
-Merging cpupowerutils/master
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging slave-dma/next
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging cpufreq-move/move-drivers
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
-mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
-e.c left in tree.
-$ git rm -f drivers/mmc/host/sdhci-of-core.c
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging suspend/linux-next
-Merging apm/for-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging gpio/gpio/next
-Merging tip/auto-latest
-Merging rcu/rcu/next
-CONFLICT (content): Merge conflict in kernel/rcutree.c
-Merging kvm/linux-next
-Merging oprofile/for-next
-Merging ptrace/ptrace
-Merging xen/upstream/xen
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging namespace/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-Merging staging/staging-next
-Merging bkl-config/config
-Merging tmem/linux-next
-Merging arm-dt/devicetree/arm-next
-Merging scsi-post-merge/merge-base:master
-[master 4c06969] Revert "sparc32,leon: add GRPCI2 PCI Host driver"
-[master 6af367d] Revert "sparc32,leon: added LEON-common low-level PCI rout=
-ines"
-[master cb5a75d] Revert "sparc32: added CONFIG_PCIC_PCI Kconfig setting"
-
---Signature=_Fri__3_Jun_2011_16_38_26_+1000_gggMBim1CqN5=J+5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN6IFiAAoJEDMEi1NhKgbsyOMH/37GKz4+b5ytfiGfUJ7crzbl
-TDLsMWNTw1THEFEJzJyMrF26wfa01fr6fOZpuyYLyO03eEKqWfW5p+Zws9IrCQtZ
-rwH1NJIaZcEuNbiaXQGAqq2pnLPkZpWtQSLW8XecuDEbOzteQjO3rl2ZX/pN6dLT
-vSKFy9vc4Rv7pra7DJ7iBdBl008HDfcy4oOp3nktiTdE3OS+SSsmELzJIXxfGT7g
-QfNt5L81WhorPanJAt7sSMp4HEdTEAY4lFNGYcUG7+r+xrGLhFVM3e768zFw/nP1
-XdP83UcLmKcLU5iN7V/94M+cj3B8kwAJfxG2zJjr2jpx74pSdUEdoPfKzj96SKk=
-=Zs0c
------END PGP SIGNATURE-----
-
---Signature=_Fri__3_Jun_2011_16_38_26_+1000_gggMBim1CqN5=J+5--
