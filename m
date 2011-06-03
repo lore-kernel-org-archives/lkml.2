@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab1FCNGD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 09:06:03 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:54269 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992Ab1FCNGA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 09:06:00 -0400
-X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/f7yb6+x1CF1B3oIP27v4=
-X-RZG-CLASS-ID: mo00
-Message-ID: <4DE8DC28.30709@die-jansens.de>
-Date: Fri, 03 Jun 2011 15:05:44 +0200
-From: Arne Jansen <lists@die-jansens.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1755128Ab1FCNHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 09:07:05 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36364 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755100Ab1FCNHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 09:07:02 -0400
+Date: Fri, 3 Jun 2011 13:06:47 GMT
+From: tip-bot for Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Message-ID: <tip-1c3cc11602111d1318c2a5743bd2e88c82813927@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        sebastian@breakpoint.cc, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, sebastian@breakpoint.cc
+In-Reply-To: <20110521105828.GA29442@Chamillionaire.breakpoint.cc>
+References: <20110521105828.GA29442@Chamillionaire.breakpoint.cc>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] timers: Consider slack value in mod_timer()
+Git-Commit-ID: 1c3cc11602111d1318c2a5743bd2e88c82813927
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, efault@gmx.de, npiggin@kernel.dk,
-        akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
-References: <20110405152729.232781355@chello.nl> <tip-0122ec5b02f766c355b3168df53a6c038a24fa0d@git.kernel.org> <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop> <4DE674EB.1000200@die-jansens.de> <1306951751.2497.626.camel@laptop> <1306953870.2497.627.camel@laptop> <4DE6936F.7090700@die-jansens.de> <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com> <1307092535.2353.2973.camel@twins> <4DE8B13D.9020302@die-jansens.de> <BANLkTimhWnpgtcxjVA5Yj8_Dy5PA34EFJQ@mail.gmail.com>
-In-Reply-To: <BANLkTimhWnpgtcxjVA5Yj8_Dy5PA34EFJQ@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Jun 2011 13:06:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.06.2011 14:44, Linus Torvalds wrote:
-> On Fri, Jun 3, 2011 at 7:02 PM, Arne Jansen <lists@die-jansens.de> wrote:
->>
->> No, it doesn't trigger, but the hang is not as complete as I first
->> thought. A running iostat via ssh continues to give output for a while,
->> the serial console still reacts to return and prompts for login. But
->> after a while more and more locks up. The console locks as soon as I
->> sysrq-t.
-> 
-> Is it the tty rescheduling bug?
-> 
-> That would explain the printk's mattering.
-> 
-> Remove the schedule_work() call from flush_to_ldisc() in
-> drivers/tty/tty_buffer.c and see if the problem goes away. See the
-> other discussion thread on lkml ("tty breakage in X (Was: tty vs
-> workqueue oddities)")
-> 
-> Hmm?
+Commit-ID:  1c3cc11602111d1318c2a5743bd2e88c82813927
+Gitweb:     http://git.kernel.org/tip/1c3cc11602111d1318c2a5743bd2e88c82813927
+Author:     Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+AuthorDate: Sat, 21 May 2011 12:58:28 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 3 Jun 2011 15:02:32 +0200
 
-No change. Also git bisect quite clearly points to
-0122ec5b02f766c and ab2515c4b98f7bc4, both are older than
-b1c43f82c5aa2654 mentioned in the other thread.
+timers: Consider slack value in mod_timer()
 
--Arne
+There is an optimization which does not update the timer if the timer
+was pending and the expiration time was unchanged.
 
+Since commit 3bbb9ec9 ("timers: Introduce the concept of timer slack
+for legacy timers") this optimization is no longer applied for timers
+where the expiration time got extended due to the slack value. So we
+need to check again after the expiration time might have been updated.
 
->                    Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+[ tglx: Made it a single check by applying slack first and sorting
+  out the slack = 0 value (all timeouts < 256 jiffies) early ]
 
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Link: http://lkml.kernel.org/r/20110521105828.GA29442@Chamillionaire.breakpoint.cc
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/timer.c |   15 +++++++--------
+ 1 files changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/timer.c b/kernel/timer.c
+index fd61986..8cff361 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -749,16 +749,15 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+ 	unsigned long expires_limit, mask;
+ 	int bit;
+ 
+-	expires_limit = expires;
+-
+ 	if (timer->slack >= 0) {
+ 		expires_limit = expires + timer->slack;
+ 	} else {
+-		unsigned long now = jiffies;
++		long delta = expires - jiffies;
++
++		if (delta < 256)
++			return expires;
+ 
+-		/* No slack, if already expired else auto slack 0.4% */
+-		if (time_after(expires, now))
+-			expires_limit = expires + (expires - now)/256;
++		expires_limit = expires + delta / 256;
+ 	}
+ 	mask = expires ^ expires_limit;
+ 	if (mask == 0)
+@@ -795,6 +794,8 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+  */
+ int mod_timer(struct timer_list *timer, unsigned long expires)
+ {
++	expires = apply_slack(timer, expires);
++
+ 	/*
+ 	 * This is a common optimization triggered by the
+ 	 * networking code - if the timer is re-modified
+@@ -803,8 +804,6 @@ int mod_timer(struct timer_list *timer, unsigned long expires)
+ 	if (timer_pending(timer) && timer->expires == expires)
+ 		return 1;
+ 
+-	expires = apply_slack(timer, expires);
+-
+ 	return __mod_timer(timer, expires, false, TIMER_NOT_PINNED);
+ }
+ EXPORT_SYMBOL(mod_timer);
