@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487Ab1FCLsu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 07:48:50 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:47162 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752120Ab1FCLss convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 07:48:48 -0400
-From: Alexey ORISHKO <alexey.orishko@stericsson.com>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        Dan Williams <dcbw@redhat.com>, Stefan Metzmacher <metze@samba.org>,
-        Oliver Neukum <oliver@neukum.name>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 3 Jun 2011 13:47:43 +0200
-Subject: RE: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
- mark ncm devices as "mobile broadband devices" with FLAG_WWAN
-Thread-Topic: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
- mark ncm devices as "mobile broadband devices" with FLAG_WWAN
-Thread-Index: Acwh28I4PR43zZiDRmmPM6LDPwEfYwABIbEQ
-Message-ID: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C13B659@EXDCVYMBSTM006.EQ1STM.local>
-References: <1306922913-17803-1-git-send-email-metze@samba.org>
- <201106031201.21933.oneukum@suse.de>
- <2AC7D4AD8BA1C640B4C60C61C8E520153E3C13B620@EXDCVYMBSTM006.EQ1STM.local>
- <201106031250.28041.oneukum@suse.de>
-In-Reply-To: <201106031250.28041.oneukum@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754519Ab1FCLuU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 07:50:20 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:39174 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754401Ab1FCLuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 07:50:19 -0400
+Message-ID: <4DE8CA76.2060303@in.ibm.com>
+Date: Fri, 03 Jun 2011 17:20:14 +0530
+From: Suzuki Poulose <suzuki@in.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        linux ppc dev <linuxppc-dev@lists.ozlabs.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] Kexec support for PPC440x
+References: <4DE345B0.8020505@in.ibm.com> <4DE50617.7090509@linutronix.de> <4DE72EFE.8080502@in.ibm.com>
+In-Reply-To: <4DE72EFE.8080502@in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Oliver Neukum [mailto:oneukum@suse.de]
-> Sent: Friday, June 03, 2011 12:50 PM
-> 
-> Well, but cdc-ether usually means that you can start up dhcp and use
-> the
-> interface as a network card. Can the same be done with cdc-ncm or do
-> you always
-> need to establish a connection through a secondary interface?
-> 
+On 06/02/11 12:04, Suzuki Poulose wrote:
+> On 05/31/11 20:45, Sebastian Andrzej Siewior wrote:
+>>
+>> Suzuki Poulose wrote:
+>>> Index: powerpc/arch/powerpc/kernel/44x_kexec_mapping.S
+>>> ===================================================================
+>>> --- /dev/null
+>>> +++ powerpc/arch/powerpc/kernel/44x_kexec_mapping.S
+>> ....
+>>
+>>> + *
+>>> + */
+>>> + bl nxtins /* Find our address */
+>>> +nxtins: mflr r5 /* Make it accessible */
+>>
+>> Please don't mix labels and instructions.
+> OK.
+>>
+>>> + tlbsx r23,0,r5 /* Find entry we are in */
+>>
+>> using tabs instead of spaces would make it look nice. Please also separate the arguments of the instruction i.e.
+>> tlbsx r23, 0, r5
+>
+> Sure.
+>>
+>>
+>>> Index: powerpc/arch/powerpc/kernel/misc_32.S
+>>> ===================================================================
+>>> --- powerpc.orig/arch/powerpc/kernel/misc_32.S
+>>> +++ powerpc/arch/powerpc/kernel/misc_32.S
+>>> @@ -736,6 +736,28 @@ relocate_new_kernel:
+>>> mr r5, r31
+>>>
+>>> li r0, 0
+>>> +#elif defined(CONFIG_44x) && !defined(CONFIG_47x)
+>>> +
+>>> + mr r29, r3
+>>> + mr r30, r4
+>>> + mr r31, r5
+>>> +
+>>> +#include "44x_kexec_mapping.S"
+>>
+>> The way you setup the 1:1 mapping should be close to what you are doing on
+>> kernel entry.Isn't it possible to include the file here and in the entry
+>> code?
 
-Some solutions (also based on cdc_ether driver) present IP address assigned
-by 3G network. Initially device carrier is OFF. As soon as 3G network PDP
-context is established, device send notification 
-USB_CDC_NOTIFY_NETWORK_CONNECTION and host driver set carrier ON.
+> I will make this change and resend the patch.
 
-In such a case the problem is the lack of control channel definition in both
-CDC ECM and CDC NCM. In order for mobile device to setup 3G connection
-some application from PC must setup PDP context. The usual way to do it via
-modem by using AT commands. So, it might be CDC ACM or some proprietary
-solution. 
-As a result you have to have vendor specific solution to find "real" control
-channel (/dev/ttyACMx or other) and setup connection.
-The need to know interface name is needed if you want to set default
-route to that interface. Do you want to do it while you have pc broadband 
-connection at hand? Probably not. 
-I've tried to run 3g modem with cdc_ncm on Ubuntu 8 and later without any
-need to specify interface names, same for Fedora.
+I took a look at the way we do it at kernel entry. It looks more cleaner to leave
+it untouched. Especially, when we add the support for 47x in the future, the code
+  will become more unreadable.
 
-So connection manager has to know: control interface, vendor- 
-specific (or ever product specific) AT command sequence and optionally 
-network interface name.
-To sort this out, someone need either to track VID/PID or get
-information by other means, for example via AT channel by guessing the
-right tty device name.
+What do you think ?
 
-Anyway, all this discussion is user space application problems.
-Solution would be different from vendor to vendor.
+Thanks
 
-/alexey
+Suzuki
+>
+> Thanks
+>
+> Suzuki
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
 
