@@ -1,91 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1FCImM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 04:42:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54139 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752752Ab1FCImK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 04:42:10 -0400
-Subject: RE: bug in cleancache ocfs2 hook, anybody want to try cleancache?
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: ocfs2-devel@oss.oracle.com, Joel Becker <jlbec@evilplan.org>,
-        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <75f89186-d730-4b89-b88c-899cd5674cf0@default>
-References: <da833bdb-7f77-4ebb-ad9b-9fae656b75a1@default 1307004343.2823.17.camel@menhir>
-	 <75f89186-d730-4b89-b88c-899cd5674cf0@default>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Fri, 03 Jun 2011 09:43:48 +0100
-Message-ID: <1307090628.2881.15.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753169Ab1FCIxB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 04:53:01 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:62560 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752311Ab1FCIw7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 04:52:59 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v2] [media] at91: add Atmel Image Sensor Interface (ISI) support
+Date: Fri, 3 Jun 2011 16:52:38 +0800
+Message-ID: <4C79549CB6F772498162A641D92D532801DAC995@penmb01.corp.atmel.com>
+In-Reply-To: <20110527120629.GA3603@game.jcrosoft.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v2] [media] at91: add Atmel Image Sensor Interface (ISI) support
+Thread-Index: AcwcaDqpgL6pXfdnQoOBGbgKgdYBqgFYqtBg
+References: <1306496329-14535-1-git-send-email-josh.wu@atmel.com> <20110527120629.GA3603@game.jcrosoft.org>
+From: "Wu, Josh" <Josh.wu@atmel.com>
+To: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
+Cc: <mchehab@redhat.com>, <g.liakhovetski@gmx.de>,
+        <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "Haring, Lars" <Lars.Haring@atmel.com>, <ryan@bluewatersys.com>,
+        <arnd@arndb.de>
+X-OriginalArrivalTime: 03 Jun 2011 08:52:44.0121 (UTC) FILETIME=[9A824C90:01CC21CB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi, Jean-Christophe
 
-On Thu, 2011-06-02 at 11:26 -0700, Dan Magenheimer wrote:
-> > Having started looking at the cleancache code in a bit more detail, I
-> > have another question... what is the intended mechanism for selecting a
-> > cleancache backend? The registration code looks like this:
-> > 
-> > struct cleancache_ops cleancache_register_ops(struct cleancache_ops
-> > *ops)
-> > {
-> >         struct cleancache_ops old = cleancache_ops;
-> > 
-> >         cleancache_ops = *ops;
-> >         cleancache_enabled = 1;
-> >         return old;
-> > }
-> > EXPORT_SYMBOL(cleancache_register_ops);
-> > 
-> > but I wonder what the intent was here. It looks racy to me, and what
-> > prevents the backend module from unloading while it is in use? Neither
-> > of the two in-tree callers seems to do anything with the returned
-> > structure beyond printing a warning if another backend has already
-> > registered itself. Also why return the structure and not a pointer to
-> > it? The ops structure pointer passed in should also be const I think.
-> > 
-> > From the code I assume that it is only valid to load the module for a
-> > single cleancache backend at a time, though nothing appears to enforce
-> > that.
-> 
-> Hi Steven --
-> 
-> The intent was to allow backends to be "chained", but this is
-> not used yet and not really very well thought through yet either
-> (e.g. possible coherency issues of chaining).
-> So, yes, currently only one cleancache backend can be loaded
-> at time.
-> 
-> There's another initialization issue... if mounts are done
-> before a backend registers, those mounts are not enabled
-> for cleancache.   As a result, cleancache backends generally
-> need to be built-in, not loaded separately as a module.
-> I've had ideas on how to fix this for some time (basically
-> recording calls to cleancache_init_fs that occur when no
-> backend is registered, then calling the backend lazily after
-> registration occurs).
-> 
-Ok... but if cleancache_init_fs were to take (for example) an argument
-specifying the back end to use (I'm thinking here of say a
-cleancache=tmem mount argument for filesystems or something similar)
-then the backend module could be automatically loaded if required. It
-would also allow, by design, multiple backends to be used without
-interfering with each other.
+Thank you for the review.
 
-I don't understand the intent behind chaining of the backends. Did you
-mean that pages would migrate from one backend to another down the stack
-as each one discards pages and that pages would migrate back up the
-stack again when pulled back in from the filesystem? I'm not sure I can
-see any application for such a scheme, unless I'm missing something.
+Jean-Christophe PLAGNIOL-VILLARD wrote on Friday, May 27, 2011 8:06 PM:
 
-I'd like to try and understand the design of the existing code before I
-consider anything more advanced such as writing a kvm backend,
+>> +/* ISI interrupt service routine */
+>> +static irqreturn_t isi_interrupt(int irq, void *dev_id) {
+>> +	struct atmel_isi *isi = dev_id;
+>> +	u32 status, mask, pending;
+>> +	irqreturn_t ret = IRQ_NONE;
+>> +
+>> +	spin_lock(&isi->lock);
+>> +
+>> +	status = isi_readl(isi, ISI_STATUS);
+>> +	mask = isi_readl(isi, ISI_INTMASK);
+>> +	pending = status & mask;
+>> +
+>> +	if (pending & ISI_CTRL_SRST) {
+>> +		complete(&isi->isi_complete);
+>> +		isi_writel(isi, ISI_INTDIS, ISI_CTRL_SRST);
+>> +		ret = IRQ_HANDLED;
+>> +	}
+>> +	if (pending & ISI_CTRL_DIS) {
+>> +		complete(&isi->isi_complete);
+>> +		isi_writel(isi, ISI_INTDIS, ISI_CTRL_DIS);
+>> +		ret = IRQ_HANDLED;
+>> +	}
 
-Steve.
+> no else here?
 
+>> +
+>> +	if (pending & ISI_SR_VSYNC) {
+>> +		switch (isi->state) {
+>> +		case ISI_STATE_IDLE:
+>> +			isi->state = ISI_STATE_READY;
+>> +			wake_up_interruptible(&isi->capture_wq);
+>> +			break;
+>> +		}
 
+> really switch here?
+
+I will remove the switch here.
+
+I think this part of IRQ handling code need to refine a little bit. The SRST and DIS_DONE is more independent. And other interrupts can compose together.
+Following is the latest code, I think is more reasonable.
+
+if (pending & ISI_CTRL_SRST) {
+	complete(&isi->complete);
+	isi_writel(isi, ISI_INTDIS, ISI_CTRL_SRST);
+	ret = IRQ_HANDLED;
+} else if (pending & ISI_CTRL_DIS) {
+	complete(&isi->complete);
+	isi_writel(isi, ISI_INTDIS, ISI_CTRL_DIS);
+	ret = IRQ_HANDLED;
+} else {
+	if ((pending & ISI_SR_VSYNC) &&
+			(isi->state == ISI_STATE_IDLE)) {
+		isi->state = ISI_STATE_READY;
+		wake_up_interruptible(&isi->vsync_wq);
+		ret = IRQ_HANDLED;
+	}
+	if (likely(pending & ISI_SR_CXFR_DONE))
+		ret = atmel_isi_handle_streaming(isi);
+}
+
+>> +	} else if (likely(pending & ISI_SR_CXFR_DONE)) {
+>> +		ret = atmel_isi_handle_streaming(isi);
+>> +	}
+>> +
+>> +	spin_unlock(&isi->lock);
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +#define	WAIT_ISI_RESET		1
+>> +#define	WAIT_ISI_DISABLE	0
+>> +static int atmel_isi_wait_status(int wait_reset, struct atmel_isi 
+>> +*isi)
+
+>I thinkhave teh atmel_isti first parameter is better
+
+I will fix it.
+
+>> +{
+>> +	unsigned long timeout;
+>> +	/*
+>> +	 * The reset or disable will only succeed if we have a
+>> +	 * pixel clock from the camera.
+>> +	 */
+>> +	init_completion(&isi->isi_complete);
+>> +
+>> +	if (wait_reset) {
+>> +		isi_writel(isi, ISI_INTEN, ISI_CTRL_SRST);
+>> +		isi_writel(isi, ISI_CTRL, ISI_CTRL_SRST);
+>> +	} else {
+>> +		isi_writel(isi, ISI_INTEN, ISI_CTRL_DIS);
+>> +		isi_writel(isi, ISI_CTRL, ISI_CTRL_DIS);
+>> +	}
+>> +
+>> +	timeout = wait_for_completion_timeout(&isi->isi_complete,
+>> +			msecs_to_jiffies(100));
+>> +	if (timeout == 0)
+>> +		return -ETIMEDOUT;
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +/* ------------------------------------------------------------------
+>> +	Videobuf operations
+>> +   
+>> +------------------------------------------------------------------*/
+>> +static int queue_setup(struct vb2_queue *vq, unsigned int *nbuffers,
+>> +				unsigned int *nplanes, unsigned long sizes[],
+>> +				void *alloc_ctxs[])
+>> +{
+>> +	struct soc_camera_device *icd = soc_camera_from_vb2q(vq);
+>> +	struct soc_camera_host *ici = to_soc_camera_host(icd->dev.parent);
+>> +	struct atmel_isi *isi = ici->priv;
+>> +	unsigned long size;
+>> +	int ret, bytes_per_line;
+>> +
+>> +	/* Reset ISI */
+>> +	ret = atmel_isi_wait_status(WAIT_ISI_RESET, isi);
+>> +	if (ret < 0) {
+>> +		dev_err(icd->dev.parent, "Reset ISI timed out\n");
+>> +		return ret;
+>> +	}
+>> +	/* Disable all interrupts */
+>> +	isi_writel(isi, ISI_INTDIS, ~0UL);
+>> +
+>> +	bytes_per_line = soc_mbus_bytes_per_line(icd->user_width,
+>> +						icd->current_fmt->host_fmt);
+>> +
+>> +	if (bytes_per_line < 0)
+>> +		return bytes_per_line;
+>> +
+>> +	size = bytes_per_line * icd->user_height;
+>> +
+>> +	if (*nbuffers == 0)
+>> +		*nbuffers = MAX_BUFFER_NUMS;
+>> +	if (*nbuffers > MAX_BUFFER_NUMS)
+
+> else here
+
+I will add it.
+
+>> +		*nbuffers = MAX_BUFFER_NUMS;
+>> +
+>> +	if (size * *nbuffers > VID_LIMIT_BYTES)
+>> +		*nbuffers = VID_LIMIT_BYTES / size;
+>> +
+>> +	*nplanes = 1;
+>> +	sizes[0] = size;
+>> +	alloc_ctxs[0] = isi->alloc_ctx;
+>> +
+>> +	isi->sequence = 0;
+>> +	isi->active = NULL;
+>> +
+>> +	dev_dbg(icd->dev.parent, "%s, count=%d, size=%ld\n", __func__,
+>> +		*nbuffers, size);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int buffer_init(struct vb2_buffer *vb) {
+>> +	struct frame_buffer *buf = container_of(vb, struct frame_buffer, 
+>> +vb);
+>> +
+>> +	buf->p_fb_desc = NULL;
+>> +	buf->fb_desc_phys = 0;
+
+> memset 0?
+
+OK.
+
+>> +	INIT_LIST_HEAD(&buf->list);
+>> +
+>> +	return 0;
+>> +}
+>> +
+
+>otherwise the patch look good
+>if you fix the upper issue
+>Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+
+Thank you very much. I will send out version3 soon.
+
+Best Regards,
+Josh Wu
