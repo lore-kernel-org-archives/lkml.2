@@ -1,127 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab1FCX2v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 19:28:51 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50719 "EHLO hera.kernel.org"
+	id S1755232Ab1FCX3U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 19:29:20 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50730 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754761Ab1FCX2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 19:28:50 -0400
-Date: Fri, 3 Jun 2011 23:28:42 GMT
+	id S1752800Ab1FCX3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 19:29:19 -0400
+Date: Fri, 3 Jun 2011 23:29:11 GMT
 From: tip-bot for Borislav Petkov <bp@alien8.de>
-Message-ID: <tip-cac0e0a78f722abd85b7f8d614ee0820f7672f58@git.kernel.org>
+Message-ID: <tip-838feb47549a9b73534c6c1d7da4a9639a0750f4@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         tglx@linutronix.de, hpa@linux.intel.com, bp@alien8.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, bp@alien8.de, hpa@linux.intel.com
-In-Reply-To: <1306873314-32523-3-git-send-email-bp@alien8.de>
-References: <1306873314-32523-3-git-send-email-bp@alien8.de>
+In-Reply-To: <1306873314-32523-4-git-send-email-bp@alien8.de>
+References: <1306873314-32523-4-git-send-email-bp@alien8.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86, asm: Flip SAVE_ARGS arguments logic
-Git-Commit-ID: cac0e0a78f722abd85b7f8d614ee0820f7672f58
+Subject: [tip:x86/asm] x86, asm: Flip RESTORE_ARGS arguments logic
+Git-Commit-ID: 838feb47549a9b73534c6c1d7da4a9639a0750f4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Jun 2011 23:28:43 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Jun 2011 23:29:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cac0e0a78f722abd85b7f8d614ee0820f7672f58
-Gitweb:     http://git.kernel.org/tip/cac0e0a78f722abd85b7f8d614ee0820f7672f58
+Commit-ID:  838feb47549a9b73534c6c1d7da4a9639a0750f4
+Gitweb:     http://git.kernel.org/tip/838feb47549a9b73534c6c1d7da4a9639a0750f4
 Author:     Borislav Petkov <bp@alien8.de>
-AuthorDate: Tue, 31 May 2011 22:21:52 +0200
+AuthorDate: Tue, 31 May 2011 22:21:53 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 3 Jun 2011 14:38:51 -0700
+CommitDate: Fri, 3 Jun 2011 14:38:53 -0700
 
-x86, asm: Flip SAVE_ARGS arguments logic
+x86, asm: Flip RESTORE_ARGS arguments logic
 
-This saves us the else part of the conditional statement in the macro.
+... thus getting rid of the "else" part of the conditional statement in
+the macro.
 
 No functionality change.
 
 Signed-off-by: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/1306873314-32523-3-git-send-email-bp@alien8.de
+Link: http://lkml.kernel.org/r/1306873314-32523-4-git-send-email-bp@alien8.de
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/ia32/ia32entry.S      |    6 +++---
- arch/x86/include/asm/calling.h |    8 +++-----
- arch/x86/kernel/entry_64.S     |    2 +-
- 3 files changed, 7 insertions(+), 9 deletions(-)
+ arch/x86/ia32/ia32entry.S      |    4 ++--
+ arch/x86/include/asm/calling.h |   21 ++++++++-------------
+ arch/x86/kernel/entry_64.S     |    4 ++--
+ 3 files changed, 12 insertions(+), 17 deletions(-)
 
 diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index c1870dd..c5435dc 100644
+index c5435dc..a0e866d 100644
 --- a/arch/x86/ia32/ia32entry.S
 +++ b/arch/x86/ia32/ia32entry.S
-@@ -143,7 +143,7 @@ ENTRY(ia32_sysenter_target)
- 	CFI_REL_OFFSET rip,0
- 	pushq_cfi %rax
- 	cld
--	SAVE_ARGS 0,0,1
-+	SAVE_ARGS 0,1,0
-  	/* no need to do an access_ok check here because rbp has been
-  	   32bit zero extended */ 
- 1:	movl	(%rbp),%ebp
-@@ -289,7 +289,7 @@ ENTRY(ia32_cstar_target)
- 	 * disabled irqs and here we enable it straight after entry:
- 	 */
- 	ENABLE_INTERRUPTS(CLBR_NONE)
--	SAVE_ARGS 8,1,1
-+	SAVE_ARGS 8,0,0
- 	movl 	%eax,%eax	/* zero extension */
- 	movq	%rax,ORIG_RAX-ARGOFFSET(%rsp)
- 	movq	%rcx,RIP-ARGOFFSET(%rsp)
-@@ -419,7 +419,7 @@ ENTRY(ia32_syscall)
- 	cld
- 	/* note the registers are not zero extended to the sf.
- 	   this could be a problem. */
--	SAVE_ARGS 0,0,1
-+	SAVE_ARGS 0,1,0
- 	GET_THREAD_INFO(%r10)
- 	orl   $TS_COMPAT,TI_status(%r10)
- 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
+@@ -173,7 +173,7 @@ sysexit_from_sys_call:
+ 	andl  $~0x200,EFLAGS-R11(%rsp) 
+ 	movl	RIP-R11(%rsp),%edx		/* User %eip */
+ 	CFI_REGISTER rip,rdx
+-	RESTORE_ARGS 1,24,1,1,1,1
++	RESTORE_ARGS 0,24,0,0,0,0
+ 	xorq	%r8,%r8
+ 	xorq	%r9,%r9
+ 	xorq	%r10,%r10
+@@ -328,7 +328,7 @@ cstar_dispatch:
+ 	jnz sysretl_audit
+ sysretl_from_sys_call:
+ 	andl $~TS_COMPAT,TI_status(%r10)
+-	RESTORE_ARGS 1,-ARG_SKIP,1,1,1
++	RESTORE_ARGS 0,-ARG_SKIP,0,0,0
+ 	movl RIP-ARGOFFSET(%rsp),%ecx
+ 	CFI_REGISTER rip,rcx
+ 	movl EFLAGS-ARGOFFSET(%rsp),%r11d	
 diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
-index b67e06c..b0b7d90 100644
+index b0b7d90..a9e3a74 100644
 --- a/arch/x86/include/asm/calling.h
 +++ b/arch/x86/include/asm/calling.h
-@@ -85,22 +85,20 @@ For 32-bit we have the following conventions - kernel is built with
- #define ARGOFFSET	R11
- #define SWFRAME		ORIG_RAX
+@@ -109,32 +109,27 @@ For 32-bit we have the following conventions - kernel is built with
  
--	.macro SAVE_ARGS addskip=0, norcx=0, nor891011=0
-+	.macro SAVE_ARGS addskip=0, save_rcx=1, save_r891011=1
- 	subq  $9*8+\addskip, %rsp
- 	CFI_ADJUST_CFA_OFFSET	9*8+\addskip
- 	movq_cfi rdi, 8*8
- 	movq_cfi rsi, 7*8
- 	movq_cfi rdx, 6*8
+ #define ARG_SKIP	(9*8)
  
--	.if \norcx
+-	.macro RESTORE_ARGS skiprax=0, addskip=0, skiprcx=0, skipr11=0, \
+-			    skipr8910=0, skiprdx=0
+-	.if \skipr11
 -	.else
-+	.if \save_rcx
- 	movq_cfi rcx, 5*8
++	.macro RESTORE_ARGS rstor_rax=1, addskip=0, rstor_rcx=1, rstor_r11=1, \
++			    rstor_r8910=1, rstor_rdx=1
++	.if \rstor_r11
+ 	movq_cfi_restore 0*8, r11
  	.endif
  
- 	movq_cfi rax, 4*8
- 
--	.if \nor891011
+-	.if \skipr8910
 -	.else
-+	.if \save_r891011
- 	movq_cfi r8,  3*8
- 	movq_cfi r9,  2*8
- 	movq_cfi r10, 1*8
++	.if \rstor_r8910
+ 	movq_cfi_restore 1*8, r10
+ 	movq_cfi_restore 2*8, r9
+ 	movq_cfi_restore 3*8, r8
+ 	.endif
+ 
+-	.if \skiprax
+-	.else
++	.if \rstor_rax
+ 	movq_cfi_restore 4*8, rax
+ 	.endif
+ 
+-	.if \skiprcx
+-	.else
++	.if \rstor_rcx
+ 	movq_cfi_restore 5*8, rcx
+ 	.endif
+ 
+-	.if \skiprdx
+-	.else
++	.if \rstor_rdx
+ 	movq_cfi_restore 6*8, rdx
+ 	.endif
+ 
+@@ -193,7 +188,7 @@ For 32-bit we have the following conventions - kernel is built with
+ 
+ 	.macro RESTORE_ALL addskip=0
+ 	RESTORE_REST
+-	RESTORE_ARGS 0, \addskip
++	RESTORE_ARGS 1, \addskip
+ 	.endm
+ 
+ 	.macro icebp
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 8a445a0..e5ece6b 100644
+index e5ece6b..0412bcb 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -473,7 +473,7 @@ ENTRY(system_call_after_swapgs)
- 	 * and short:
+@@ -508,7 +508,7 @@ sysret_check:
+ 	TRACE_IRQS_ON
+ 	movq RIP-ARGOFFSET(%rsp),%rcx
+ 	CFI_REGISTER	rip,rcx
+-	RESTORE_ARGS 0,-ARG_SKIP,1
++	RESTORE_ARGS 1,-ARG_SKIP,0
+ 	/*CFI_REGISTER	rflags,r11*/
+ 	movq	PER_CPU_VAR(old_rsp), %rsp
+ 	USERGS_SYSRET64
+@@ -858,7 +858,7 @@ retint_restore_args:	/* return to kernel space */
  	 */
- 	ENABLE_INTERRUPTS(CLBR_NONE)
--	SAVE_ARGS 8,1
-+	SAVE_ARGS 8,0
- 	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
- 	movq  %rcx,RIP-ARGOFFSET(%rsp)
- 	CFI_REL_OFFSET rip,RIP-ARGOFFSET
+ 	TRACE_IRQS_IRETQ
+ restore_args:
+-	RESTORE_ARGS 0,8,0
++	RESTORE_ARGS 1,8,1
+ 
+ irq_return:
+ 	INTERRUPT_RETURN
