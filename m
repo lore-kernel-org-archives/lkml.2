@@ -1,205 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab1FCBO5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 21:14:57 -0400
-Received: from smtp-out-212.synserver.de ([212.40.185.212]:1443 "HELO
-	smtp-out-212.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753566Ab1FCBO4 (ORCPT
+	id S1755456Ab1FCBYw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 21:24:52 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58724 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753825Ab1FCBYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 21:14:56 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 23129
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] MFD: jz4740-adc: Use generic irq chip
-Date: Fri,  3 Jun 2011 03:14:26 +0200
-Message-Id: <1307063666-10702-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.5
+	Thu, 2 Jun 2011 21:24:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=Jlv4m0uuICupAf2g8FmS3GDCzYYlZgSWWmW0Xqt+lSnVlxrFejyhbLXbGLD4gQ+a+O
+         E+UY2XKiU9fuBrib+SJ9c1s28pIe/q0SC41QJrWs6Of69JnI94QIS/RkSpkWFAo+u/1U
+         WWohaLbsP+5D+meBkM6A7KTxozdYOIl35/OBo=
+Date: Fri, 3 Jun 2011 10:24:45 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        pedro@codesourcery.com
+Subject: Re: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and
+ group stop notification, take#4
+Message-ID: <20110603012445.GA14872@mtj.dyndns.org>
+References: <1306710760-16440-1-git-send-email-tj@kernel.org>
+ <20110530154211.GA11325@redhat.com>
+ <20110601053903.GE23067@mtj.dyndns.org>
+ <20110602123105.GD10410@mtj.dyndns.org>
+ <BANLkTik5hV8dnyspyGz8YAAdtoQNQDyOSw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTik5hV8dnyspyGz8YAAdtoQNQDyOSw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the generic irq chip framework for implementing the irq chip for
-the jz4740-adc driver.
+Hey, Denys.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/mfd/Kconfig      |    3 +-
- drivers/mfd/jz4740-adc.c |   90 ++++++++++++++-------------------------------
- 2 files changed, 30 insertions(+), 63 deletions(-)
+On Thu, Jun 02, 2011 at 04:51:48PM +0200, Denys Vlasenko wrote:
+> SIGSTOP/TSTP/TTIN/TTOU on entering group-stop,
+> SIGCONT on leaving group-stop.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 0f09c05..a204124 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -656,8 +656,9 @@ config MFD_JANZ_CMODIO
- 	  CAN and GPIO controllers.
- 
- config MFD_JZ4740_ADC
--	tristate "Support for the JZ4740 SoC ADC core"
-+	bool "Support for the JZ4740 SoC ADC core"
- 	select MFD_CORE
-+	select GENERIC_IRQ_CHIP
- 	depends on MACH_JZ4740
- 	help
- 	  Say yes here if you want support for the ADC unit in the JZ4740 SoC.
-diff --git a/drivers/mfd/jz4740-adc.c b/drivers/mfd/jz4740-adc.c
-index a0bd0cf..21131c7 100644
---- a/drivers/mfd/jz4740-adc.c
-+++ b/drivers/mfd/jz4740-adc.c
-@@ -56,7 +56,7 @@ struct jz4740_adc {
- 	void __iomem *base;
- 
- 	int irq;
--	int irq_base;
-+	struct irq_chip_generic *gc;
- 
- 	struct clk *clk;
- 	atomic_t clk_ref;
-@@ -64,63 +64,17 @@ struct jz4740_adc {
- 	spinlock_t lock;
- };
- 
--static inline void jz4740_adc_irq_set_masked(struct jz4740_adc *adc, int irq,
--	bool masked)
--{
--	unsigned long flags;
--	uint8_t val;
--
--	irq -= adc->irq_base;
--
--	spin_lock_irqsave(&adc->lock, flags);
--
--	val = readb(adc->base + JZ_REG_ADC_CTRL);
--	if (masked)
--		val |= BIT(irq);
--	else
--		val &= ~BIT(irq);
--	writeb(val, adc->base + JZ_REG_ADC_CTRL);
--
--	spin_unlock_irqrestore(&adc->lock, flags);
--}
--
--static void jz4740_adc_irq_mask(struct irq_data *data)
--{
--	struct jz4740_adc *adc = irq_data_get_irq_chip_data(data);
--	jz4740_adc_irq_set_masked(adc, data->irq, true);
--}
--
--static void jz4740_adc_irq_unmask(struct irq_data *data)
--{
--	struct jz4740_adc *adc = irq_data_get_irq_chip_data(data);
--	jz4740_adc_irq_set_masked(adc, data->irq, false);
--}
--
--static void jz4740_adc_irq_ack(struct irq_data *data)
--{
--	struct jz4740_adc *adc = irq_data_get_irq_chip_data(data);
--	unsigned int irq = data->irq - adc->irq_base;
--	writeb(BIT(irq), adc->base + JZ_REG_ADC_STATUS);
--}
--
--static struct irq_chip jz4740_adc_irq_chip = {
--	.name = "jz4740-adc",
--	.irq_mask = jz4740_adc_irq_mask,
--	.irq_unmask = jz4740_adc_irq_unmask,
--	.irq_ack = jz4740_adc_irq_ack,
--};
--
- static void jz4740_adc_irq_demux(unsigned int irq, struct irq_desc *desc)
- {
--	struct jz4740_adc *adc = irq_desc_get_handler_data(desc);
-+	struct irq_chip_generic *gc = irq_desc_get_handler_data(desc);
- 	uint8_t status;
- 	unsigned int i;
- 
--	status = readb(adc->base + JZ_REG_ADC_STATUS);
-+	status = readb(gc->reg_base + JZ_REG_ADC_STATUS);
- 
- 	for (i = 0; i < 5; ++i) {
- 		if (status & BIT(i))
--			generic_handle_irq(adc->irq_base + i);
-+			generic_handle_irq(gc->irq_base + i);
- 	}
- }
- 
-@@ -249,10 +203,12 @@ const struct mfd_cell jz4740_adc_cells[] = {
- 
- static int __devinit jz4740_adc_probe(struct platform_device *pdev)
- {
--	int ret;
-+	struct irq_chip_generic *gc;
-+	struct irq_chip_type *ct;
- 	struct jz4740_adc *adc;
- 	struct resource *mem_base;
--	int irq;
-+	int ret;
-+	int irq_base;
- 
- 	adc = kmalloc(sizeof(*adc), GFP_KERNEL);
- 	if (!adc) {
-@@ -267,9 +223,9 @@ static int __devinit jz4740_adc_probe(struct platform_device *pdev)
- 		goto err_free;
- 	}
- 
--	adc->irq_base = platform_get_irq(pdev, 1);
--	if (adc->irq_base < 0) {
--		ret = adc->irq_base;
-+	irq_base = platform_get_irq(pdev, 1);
-+	if (irq_base < 0) {
-+		ret = irq_base;
- 		dev_err(&pdev->dev, "Failed to get irq base: %d\n", ret);
- 		goto err_free;
- 	}
-@@ -309,20 +265,28 @@ static int __devinit jz4740_adc_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, adc);
- 
--	for (irq = adc->irq_base; irq < adc->irq_base + 5; ++irq) {
--		irq_set_chip_data(irq, adc);
--		irq_set_chip_and_handler(irq, &jz4740_adc_irq_chip,
--					 handle_level_irq);
--	}
-+	gc = irq_alloc_generic_chip("INTC", 1, irq_base, adc->base,
-+		handle_level_irq);
-+
-+	ct = gc->chip_types;
-+	ct->regs.mask = JZ_REG_ADC_CTRL;
-+	ct->regs.ack = JZ_REG_ADC_STATUS;
-+	ct->chip.irq_mask = irq_gc_mask_set_bit;
-+	ct->chip.irq_unmask = irq_gc_mask_clr_bit;
-+	ct->chip.irq_ack = irq_gc_ack;
-+
-+	irq_setup_generic_chip(gc, IRQ_MSK(5), 0, 0, IRQ_NOPROBE | IRQ_LEVEL);
-+
-+	adc->gc = gc;
- 
--	irq_set_handler_data(adc->irq, adc);
-+	irq_set_handler_data(adc->irq, gc);
- 	irq_set_chained_handler(adc->irq, jz4740_adc_irq_demux);
- 
- 	writeb(0x00, adc->base + JZ_REG_ADC_ENABLE);
- 	writeb(0xff, adc->base + JZ_REG_ADC_CTRL);
- 
- 	ret = mfd_add_devices(&pdev->dev, 0, jz4740_adc_cells,
--		ARRAY_SIZE(jz4740_adc_cells), mem_base, adc->irq_base);
-+		ARRAY_SIZE(jz4740_adc_cells), mem_base, irq_base);
- 	if (ret < 0)
- 		goto err_clk_put;
- 
-@@ -347,6 +311,8 @@ static int __devexit jz4740_adc_remove(struct platform_device *pdev)
- 
- 	mfd_remove_devices(&pdev->dev);
- 
-+	irq_remove_generic_chip(adc->gc, IRQ_MSK(5), IRQ_NOPROBE | IRQ_LEVEL, 0);
-+	kfree(adc->gc);
- 	irq_set_handler_data(adc->irq, NULL);
- 	irq_set_chained_handler(adc->irq, NULL);
- 
+Yeah and SIGTRAP on INTERRUPT.  It makes sense.
+
+> > * Implicit signal on clone.
+> 
+> Best if it is converted to STOP trap (the same is one caused by INTERRUPT).
+> 
+> I guess this may be optionally changed
+> (similar to how PTRACE_O_TRACEEXEC
+> changes post-execve SIGTRAP into PTRACE_EVENT_EXEC).
+> 
+> Why not turn it on *unconditionally* on SEIZE?
+> Because otherwise ptrace users will turn into
+> 
+> if (we_used_SEIZE)
+>     do_something;
+> else
+>     do_something_else;
+> 
+> maze, which is maintenance nightmare.
+> It's possible users will opt to not use new functionality at all
+> instead of going that way.
+
+Hmmm... I see.  The other side of the argument is that some level of
+"if (SEIZEd)" is inevitable anyway and in the longer run we would be
+better off defaulting to the better behavior than making things
+optional.
+
+> If everything is monolithically tied into SEIZE, users won't be able
+> to opt to use only easy parts of new functionality (such as
+> PTRACE_INTERRUPT and PTRACE_LISTEN) if this *forces* them
+> to also use harder parts of new functionality, in this case
+> forces them to double and obfuscate their existing code
+> which handles SIGSTOP-on-child-auto-attach. They don't really
+> want to, since this SIGSTOP *in practice* isn't that problematic.
+
+Anyways, let's think about that, but SIGSTOP on clone is closely
+linked to why SEIZE is used in the first place and I currently lean
+toward tying it to SEIZE.
+
+> > * What to do about events which are reported by genuine SIGTRAP
+> >  generation?
+> 
+> I don't understand what you meant here. Example(s)?
+
+The syscall, breakpoint, single step SIGTRAPs which can't be
+distinguished from userland generated SIGTRAPs and may be mixed and/or
+lost.  Maybe it's best to leave them alone or maybe we can add some
+way to distinguish them which is mostly backward compatible (which is
+enabled w/ SEIZE and hopefully doesn't require noticeable userland
+changes).
+
+> > * Group leader exit issue.
+> 
+> Ohhh this is an ugly one. It turns out it is linked to the question
+> of "how execve works under ptrace", in a non-obvious way.
+> I will respond in the second thread, with an example of current
+> kernel's breakage.
+
+I haven't followed the thread yet.  Let's talk about it in that
+thread.
+
+Thanks.
+
 -- 
-1.7.2.5
-
+tejun
