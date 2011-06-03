@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab1FCKtA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 06:49:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23153 "EHLO mx1.redhat.com"
+	id S1754188Ab1FCKsX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 06:48:23 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35327 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754110Ab1FCKs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 06:48:58 -0400
-Date: Fri, 3 Jun 2011 06:50:06 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Suresh Jayaraman <sjayaraman@suse.de>
-Cc: Helge Hafting <helge.hafting@hist.no>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>
-Subject: Re: [2.6.39] CIFS write failures where 2.6.38 works
-Message-ID: <20110603065006.61cf0e62@corrin.poochiereds.net>
-In-Reply-To: <4DE8B449.2000008@suse.de>
-References: <4DE6103E.6010100@hist.no>
-	<4DE8B449.2000008@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752664Ab1FCKsV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 06:48:21 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Alexey ORISHKO <alexey.orishko@stericsson.com>
+Subject: Re: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm: mark ncm devices as "mobile broadband devices" with FLAG_WWAN
+Date: Fri, 3 Jun 2011 12:50:27 +0200
+User-Agent: KMail/1.13.5 (Linux/3.0.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        Dan Williams <dcbw@redhat.com>, Stefan Metzmacher <metze@samba.org>,
+        Oliver Neukum <oliver@neukum.name>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1306922913-17803-1-git-send-email-metze@samba.org> <201106031201.21933.oneukum@suse.de> <2AC7D4AD8BA1C640B4C60C61C8E520153E3C13B620@EXDCVYMBSTM006.EQ1STM.local>
+In-Reply-To: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C13B620@EXDCVYMBSTM006.EQ1STM.local>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201106031250.28041.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 03 Jun 2011 15:45:37 +0530
-Suresh Jayaraman <sjayaraman@suse.de> wrote:
+Am Freitag, 3. Juni 2011, 12:23:21 schrieb Alexey ORISHKO:
 
-> [Cc linux-cifs@vger.kernel.org]
+> There is no difference between cdc_ncm and cdc_ether devices, besides
+> the fact cdc_ncm is more efficient in data transfer and cpu load.
+> The problem is that you cannot say much about device functionality based
+> just on interface name. As example existing devices with cdc_ether 
+> interface could be mobile phone which provides connectivity to 3G network,
+> or could be a phone in the mode "over PC", where phone applications
+> access internet via broadband connection on PC (to save money).
 > 
-> On 06/01/2011 03:41 PM, Helge Hafting wrote:
-> > At work I use cifs for accessing a windows server. This has worked fine
-> > for a long time, up to and including Debian's 2.6.38-2.
-> > 
-> > I just installed Debians's 2.6.39-1, and had to give up on it.
-> > Mounting CIFS works, and I can see the files. But if I
-> > try to make a new file (with cp), I get a long delay.
-> 
-> What is the security mechanism you are using? If you seeing the problem
-> with ntlm, could you try using ntlmv2 and see whether the problem is
-> reproducible?
-> 
-> 
-> > In this time, anything accessing CIFS will pause, including "ls".
-> > CIFS eventually becomes unstuck, and I will find that my "ls" succeeded,
-> > but the file copy did not. The file was created, but
-> > with 0 size.
-> > 
-> > Trying to copy the file again results in another stall, and so on.
-> > 
-> > 
-> > When I mount CIFS, I get this message:
-> > CIFS VFS: Unexpected SMB signature
-> > 
+> Network manager cannot simply make decision which devices can be used
+> for mobile broadband access based on interface name. It needs an additional
+> info, which does not exist in device descriptor. 
 
-I get this too on every mount using signing. It would be nice to fix
-that but it's probably not related to the problem.
+Well, but cdc-ether usually means that you can start up dhcp and use the
+interface as a network card. Can the same be done with cdc-ncm or do you always
+need to establish a connection through a secondary interface?
 
-> > This happens with 2.6.38 as well as 2.6.39.
-> > 
-> > When writes fail in 2.6.39, I also get:
-> > CIFS VFS: Send error in Close = -512
-> > 
-
--512 is -ERESTARTSYS which probably means that it got a signal.
-
-> > Followed by:
-> > CIFS VFS: Server servername has not responded in 300 seconds.
-> > Reconnecting...
-> > 
-
-So the server may not be responding to SMB echoes.
-
-> > I have also seen
-> > CIFS VFS: Send error in Close = -512
-> > and
-> > CIFS VFS: Send error in read = -13
-> 
-
-What sort of server is this? We'll probably need to see some wire
-captures or debug logging to understand what's happening. It might be
-good to open a bug at bugzilla.samba.org or bugzilla.kernel.org so we
-can track progress on this.
-
+	Regards
+		Oliver
 -- 
-Jeff Layton <jlayton@redhat.com>
+- - - 
+SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
+Maxfeldstraße 5                         
+90409 Nürnberg 
+Germany 
+- - - 
