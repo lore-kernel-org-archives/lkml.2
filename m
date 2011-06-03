@@ -1,82 +1,536 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab1FCTWL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 15:22:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19306 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753620Ab1FCTWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 15:22:09 -0400
-Subject: RE: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
- mark ncm devices as "mobile broadband devices" with FLAG_WWAN
-From: Dan Williams <dcbw@redhat.com>
-To: Alexey ORISHKO <alexey.orishko@stericsson.com>
-Cc: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        Stefan Metzmacher <metze@samba.org>,
-        Oliver Neukum <oliver@neukum.name>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 03 Jun 2011 14:24:34 -0500
-In-Reply-To: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C13B5F2@EXDCVYMBSTM006.EQ1STM.local>
-References: <1306922913-17803-1-git-send-email-metze@samba.org>
-	 <1306922913-17803-2-git-send-email-metze@samba.org>
-	 <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E583@EXDCVYMBSTM006.EQ1STM.local>
-	 <1307053743.21633.22.camel@dcbw.foobar.com>
-	 <1307054132.21633.25.camel@dcbw.foobar.com>
-	 <5203.1307062683@turing-police.cc.vt.edu>
-	 <2AC7D4AD8BA1C640B4C60C61C8E520153E3C13B5F2@EXDCVYMBSTM006.EQ1STM.local>
-Content-Type: text/plain; charset="UTF-8"
+	id S1756020Ab1FCTor (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 15:44:47 -0400
+Received: from mtaext1.cujae.edu.cu ([200.55.139.24]:56438 "EHLO
+	mtaext1.cujae.edu.cu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755955Ab1FCToo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 15:44:44 -0400
+X-Greylist: delayed 457 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jun 2011 15:44:42 EDT
+X-Spam-Processed: udio.cujae.edu.cu, Fri, 03 Jun 2011 15:21:06 -0400
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: acabrera@udio.cujae.edu.cu
+X-MDRemoteIP: 10.9.3.110
+X-Return-Path: acabrera@udio.cujae.edu.cu
+X-Envelope-From: acabrera@udio.cujae.edu.cu
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+From: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>
+Organization: CUJAE
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Add Xilinx watchdog timer driver
+Date: Fri, 3 Jun 2011 20:29:06 +0100
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-ID: <1307129076.23945.21.camel@dcbw.foobar.com>
-Mime-Version: 1.0
+Message-Id: <201106032029.06246.acabrera@udio.cujae.edu.cu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-03 at 11:45 +0200, Alexey ORISHKO wrote:
-> > -----Original Message-----
-> > From: Valdis.Kletnieks@vt.edu [mailto:Valdis.Kletnieks@vt.edu]
-> > Sent: Friday, June 03, 2011 2:58 AM
-> > 
-> > > A follow-on to this is that if you really care about specific
-> > devices,
-> > > your application can use udev rules to "tag" specific interfaces
-> > based
-> > > on USB VID/PID/GUID or other device attributes, and check for those
-> > > tags in your program.  Use udev (good) or netlink (good) or
-> > > SIOCGIFCONF (bad) to enumerate the various network interfaces on the
-> > > system and pick the
-> > 
-> > I think Alexey's point was that the patch will hose up programs that
-> > currently do the netlink or  SIOCGIFCONF thing and look for
-> > FLAG_POINTTOPOINT.
-> 
-> Just to clarify, I was objecting to renaming interface name mostly because
-> devices which use CDC NCM function might be something different from wwan
-> devices. I would prefer to keep a generic name of interface (usbX or ethX).
-> 
-> As an option anyone can use udev rules to set interface name they want 
-> for their device based on VID/PID or MAC address or something else.
-> I've already provided udev rule example earlier in this thread.
-> 
-> Dan, is it in line with your statement?
+Watchdog timer device driver for Xilinx xps_timebase_wdt compatible ip cores.
+It takes watchdog timer configuration from device tree and it needs that its
+parent has defined the property "clock-frecuency".
+It is compatible with watchdog timer kernel API, so user apps like watchdogd
+may talk with it.
 
-Sort of; the point of 'wwan' is to detect when we need some auxiliary
-configuration to make the net interface actually do something.  It
-allows userspace tools (like NetworkManager) to treat ethernet
-interfaces that do require aux config specially.  Matching driver name
-is not the solution here since as you said the driver can drive a wide
-variety of hardware not all of which may be WWAN.
+Signed-off-by: Alejandro Cabrera <aldaya@gmail.com>
+---
+ drivers/watchdog/Kconfig         |   14 ++
+ drivers/watchdog/Makefile        |    3 +
+ drivers/watchdog/of_xilinx_wdt.c |  433 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 450 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/watchdog/of_xilinx_wdt.c
 
-But there are a bunch of devices we *know* are 3G devices, and for those
-we should mark them as WWAN.  And the best place to do that is in the
-driver where that device's USB IDs and/or workarounds may exist, just
-like the existing cdc-wdm stuff for Ericsson MBM minicards.  This
-ensures that we keep this information in *one* place, instead of
-sprinkling pieces around between userspace udev rules, apps, and the
-driver.
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 1b0f98b..3f2b5a8 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -881,6 +881,20 @@ config M54xx_WATCHDOG
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called m54xx_wdt.
 
-Dan
++# MicroBlaze Architecture
++
++config XILINX_WATCHDOG
++	tristate "Xilinx Watchdog timer"
++	depends on MICROBLAZE
++	---help---
++	  Watchdog driver for the xps_timebase_wdt ip core.
++
++	  IMPORTANT: The xps_timebase_wdt parent must have the property
++	  "clock-frequency" at device tree.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called of_xilinx_wdt.
++
+ # MIPS Architecture
+
+ config ATH79_WDT
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index 3f8608b..62cd23d 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -109,6 +109,9 @@ obj-$(CONFIG_INTEL_SCU_WATCHDOG) += intel_scu_watchdog.o
+ # M68K Architecture
+ obj-$(CONFIG_M54xx_WATCHDOG) += m54xx_wdt.o
+
++# MicroBlaze Architecture
++obj-$(CONFIG_XILINX_WATCHDOG) += of_xilinx_wdt.o
++
+ # MIPS Architecture
+ obj-$(CONFIG_ATH79_WDT) += ath79_wdt.o
+ obj-$(CONFIG_BCM47XX_WDT) += bcm47xx_wdt.o
+diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+new file mode 100644
+index 0000000..0179977
+--- /dev/null
++++ b/drivers/watchdog/of_xilinx_wdt.c
+@@ -0,0 +1,433 @@
++/*
++*   of_xilinx_wdt.c  1.01  A Watchdog Device Driver for Xilinx xps_timebase_wdt
++*
++*   (C) Copyright 2011 (Alejandro Cabrera <aldaya@gmail.com>)
++*
++*       -----------------------
++*
++*   This program is free software; you can redistribute it and/or
++*   modify it under the terms of the GNU General Public License
++*   as published by the Free Software Foundation; either version
++*   2 of the License, or (at your option) any later version.
++*
++*       -----------------------
++*	30-May-2011 Alejandro Cabrera <aldaya@gmail.com>
++*		- If "xlnx,wdt-enable-once" wasn't found on device tree the
++*		  module will use CONFIG_WATCHDOG_NOWAYOUT
++*		- If the device tree parameters ("clock-frequency" and
++*		  "xlnx,wdt-interval") wasn't found the driver won't
++*		  know the wdt reset interval
++*/
++
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/kernel.h>
++#include <linux/fs.h>
++#include <linux/miscdevice.h>
++#include <linux/init.h>
++#include <linux/ioport.h>
++#include <linux/watchdog.h>
++#include <linux/io.h>
++#include <linux/uaccess.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_address.h>
++
++/* Register offsets for the Wdt device */
++#define XWT_TWCSR0_OFFSET   0x0 /* Control/Status Register0 */
++#define XWT_TWCSR1_OFFSET   0x4 /* Control/Status Register1 */
++#define XWT_TBR_OFFSET      0x8 /* Timebase Register Offset */
++
++/* Control/Status Register Masks  */
++#define XWT_CSR0_WRS_MASK   0x00000008 /* Reset status */
++#define XWT_CSR0_WDS_MASK   0x00000004 /* Timer state  */
++#define XWT_CSR0_EWDT1_MASK 0x00000002 /* Enable bit 1 */
++
++/* Control/Status Register 0/1 bits  */
++#define XWT_CSRX_EWDT2_MASK 0x00000001 /* Enable bit 2 */
++
++/* SelfTest constants */
++#define XWT_MAX_SELFTEST_LOOP_COUNT 0x00010000
++#define XWT_TIMER_FAILED            0xFFFFFFFF
++
++#define WATCHDOG_NAME     "Xilinx Watchdog"
++#define PFX WATCHDOG_NAME ": "
++
++struct xwdt_device {
++	struct resource  res;
++	void __iomem *base;
++	u32 nowayout;
++	u32 wdt_interval;
++	u32 boot_status;
++};
++
++static struct xwdt_device xdev;
++
++static  u32 timeout;
++static  u32 control_status_reg;
++static  u8  expect_close;
++static  u8  no_timeout;
++static unsigned long driver_open;
++
++static  DEFINE_SPINLOCK(spinlock);
++
++static void xwdt_start(void)
++{
++	spin_lock(&spinlock);
++
++	/* Clean previous status and enable the watchdog timer */
++	control_status_reg = ioread32(xdev.base + XWT_TWCSR0_OFFSET);
++	control_status_reg |= (XWT_CSR0_WRS_MASK | XWT_CSR0_WDS_MASK);
++
++	iowrite32((control_status_reg | XWT_CSR0_EWDT1_MASK),
++				xdev.base + XWT_TWCSR0_OFFSET);
++
++	iowrite32(XWT_CSRX_EWDT2_MASK, xdev.base + XWT_TWCSR1_OFFSET);
++
++	spin_unlock(&spinlock);
++}
++
++static void xwdt_stop(void)
++{
++	spin_lock(&spinlock);
++
++	control_status_reg = ioread32(xdev.base + XWT_TWCSR0_OFFSET);
++
++	iowrite32((control_status_reg & ~XWT_CSR0_EWDT1_MASK),
++				xdev.base + XWT_TWCSR0_OFFSET);
++
++	iowrite32(0, xdev.base + XWT_TWCSR1_OFFSET);
++
++	spin_unlock(&spinlock);
++	printk(KERN_INFO PFX "Stopped!\n");
++}
++
++static void xwdt_keepalive(void)
++{
++	spin_lock(&spinlock);
++
++	control_status_reg = ioread32(xdev.base + XWT_TWCSR0_OFFSET);
++	control_status_reg |= (XWT_CSR0_WRS_MASK | XWT_CSR0_WDS_MASK);
++	iowrite32(control_status_reg, xdev.base + XWT_TWCSR0_OFFSET);
++
++	spin_unlock(&spinlock);
++}
++
++static void xwdt_get_status(int *status)
++{
++	int new_status;
++
++	spin_lock(&spinlock);
++
++	control_status_reg = ioread32(xdev.base + XWT_TWCSR0_OFFSET);
++	new_status = ((control_status_reg &
++			(XWT_CSR0_WRS_MASK | XWT_CSR0_WDS_MASK)) != 0);
++	spin_unlock(&spinlock);
++
++	*status = 0;
++	if (new_status & 1)
++		*status |= WDIOF_CARDRESET;
++}
++
++static u32 xwdt_selftest(void)
++{
++	int i;
++	u32 timer_value1;
++	u32 timer_value2;
++
++	spin_lock(&spinlock);
++
++	timer_value1 = ioread32(xdev.base + XWT_TBR_OFFSET);
++	timer_value2 = ioread32(xdev.base + XWT_TBR_OFFSET);
++
++	for (i = 0;
++		((i <= XWT_MAX_SELFTEST_LOOP_COUNT) &&
++			(timer_value2 == timer_value1)); i++) {
++		timer_value2 = ioread32(xdev.base + XWT_TBR_OFFSET);
++	}
++
++	spin_unlock(&spinlock);
++
++	if (timer_value2 != timer_value1)
++		return ~XWT_TIMER_FAILED;
++	else
++		return XWT_TIMER_FAILED;
++}
++
++static int xwdt_open(struct inode *inode, struct file *file)
++{
++	/* Only one process can handle the wdt at a time */
++	if (test_and_set_bit(0, &driver_open))
++		return -EBUSY;
++
++	/* Make sure that the module are always loaded...*/
++	if (xdev.nowayout)
++		__module_get(THIS_MODULE);
++
++	xwdt_start();
++	printk(KERN_INFO PFX "Started...\n");
++
++	return nonseekable_open(inode, file);
++}
++
++static int xwdt_release(struct inode *inode, struct file *file)
++{
++	if (expect_close == 42) {
++		xwdt_stop();
++	} else {
++		printk(KERN_CRIT PFX
++			"Unexpected close, not stopping watchdog!\n");
++		xwdt_keepalive();
++	}
++
++	clear_bit(0, &driver_open);
++	expect_close = 0;
++	return 0;
++}
++
++/*
++ *      xwdt_write:
++ *      @file: file handle to the watchdog
++ *      @buf: buffer to write (unused as data does not matter here
++ *      @count: count of bytes
++ *      @ppos: pointer to the position to write. No seeks allowed
++ *
++ *      A write to a watchdog device is defined as a keepalive signal. Any
++ *      write of data will do, as we don't define content meaning.
++ */
++static ssize_t xwdt_write(struct file *file, const char __user *buf,
++						size_t len, loff_t *ppos)
++{
++	if (len) {
++		if (!xdev.nowayout) {
++			size_t i;
++
++			/* In case it was set long ago */
++			expect_close = 0;
++
++			for (i = 0; i != len; i++) {
++				char c;
++
++				if (get_user(c, buf + i))
++					return -EFAULT;
++				if (c == 'V')
++					expect_close = 42;
++			}
++		}
++		xwdt_keepalive();
++	}
++	return len;
++}
++
++static const struct watchdog_info ident = {
++	.options =  WDIOF_MAGICCLOSE |
++		    WDIOF_KEEPALIVEPING,
++	.firmware_version =	1,
++	.identity =	WATCHDOG_NAME,
++};
++
++/*
++ *      xwdt_ioctl:
++ *      @file: file handle to the device
++ *      @cmd: watchdog command
++ *      @arg: argument pointer
++ *
++ *      The watchdog API defines a common set of functions for all watchdogs
++ *      according to their available features.
++ */
++static long xwdt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	int status;
++
++	union {
++		struct watchdog_info __user *ident;
++		int __user *i;
++	} uarg;
++
++	uarg.i = (int __user *)arg;
++
++	switch (cmd) {
++	case WDIOC_GETSUPPORT:
++		return copy_to_user(uarg.ident, &ident,
++					sizeof(ident)) ? -EFAULT : 0;
++
++	case WDIOC_GETBOOTSTATUS:
++		return put_user(xdev.boot_status, uarg.i);
++
++	case WDIOC_GETSTATUS:
++		xwdt_get_status(&status);
++		return put_user(status, uarg.i);
++
++	case WDIOC_KEEPALIVE:
++		xwdt_keepalive();
++		return 0;
++
++	case WDIOC_GETTIMEOUT:
++		if (no_timeout)
++			return -ENOTTY;
++		else
++			return put_user(timeout, uarg.i);
++
++	default:
++		return -ENOTTY;
++	}
++}
++
++static const struct file_operations xwdt_fops = {
++	.owner      = THIS_MODULE,
++	.llseek     = no_llseek,
++	.write      = xwdt_write,
++	.open       = xwdt_open,
++	.release    = xwdt_release,
++	.unlocked_ioctl = xwdt_ioctl,
++};
++
++static struct miscdevice xwdt_miscdev = {
++	.minor      = WATCHDOG_MINOR,
++	.name       = "watchdog",
++	.fops       = &xwdt_fops,
++};
++
++static int __devinit xwdt_probe(struct platform_device *pdev)
++{
++	int rc;
++	u32 *tmptr;
++	u32 *pfreq;
++
++	no_timeout = 0;
++
++	pfreq = (u32 *)of_get_property(pdev->dev.of_node->parent,
++					"clock-frequency", NULL);
++
++	if (pfreq == NULL) {
++		printk(KERN_WARNING PFX
++			"The watchdog clock frequency cannot be obtained!\n");
++		no_timeout = 1;
++	}
++
++	rc = of_address_to_resource(pdev->dev.of_node, 0, &xdev.res);
++	if (rc) {
++		printk(KERN_WARNING PFX "invalid address!\n");
++		return rc;
++	}
++
++	tmptr = (u32 *)of_get_property(pdev->dev.of_node,
++					"xlnx,wdt-interval", NULL);
++	if (tmptr == NULL) {
++		printk(KERN_WARNING PFX "Parameter \"xlnx,wdt-interval\""
++					" not found in device tree!\n");
++		no_timeout = 1;
++	} else {
++		xdev.wdt_interval = *tmptr;
++	}
++
++	tmptr = (u32 *)of_get_property(pdev->dev.of_node,
++					"xlnx,wdt-enable-once", NULL);
++	if (tmptr == NULL) {
++		printk(KERN_WARNING PFX "Parameter \"xlnx,wdt-enable-once\""
++					" not found in device tree!\n");
++		xdev.nowayout = WATCHDOG_NOWAYOUT;
++	}
++
++/*
++ *  Twice of the 2^wdt_interval / freq  because the first wdt overflow is
++ *  ignored (interrupt), reset is only generated at second wdt overflow
++ */
++	if (!no_timeout)
++		timeout = 2 * ((1<<xdev.wdt_interval) / *pfreq);
++
++	if (!request_mem_region(xdev.res.start,
++			xdev.res.end - xdev.res.start + 1, WATCHDOG_NAME)) {
++		rc = -ENXIO;
++		printk(KERN_ERR PFX "memory request failure!\n");
++		goto err_out;
++	}
++
++	xdev.base = ioremap(xdev.res.start, xdev.res.end - xdev.res.start + 1);
++	if (xdev.base == NULL) {
++		rc = -ENOMEM;
++		printk(KERN_ERR PFX "ioremap failure!\n");
++		goto release_mem;
++	}
++
++	rc = xwdt_selftest();
++	if (rc == XWT_TIMER_FAILED) {
++		printk(KERN_ERR PFX "SelfTest routine error!\n");
++		goto unmap_io;
++	}
++
++	xwdt_get_status(&xdev.boot_status);
++
++	rc = misc_register(&xwdt_miscdev);
++	if (rc) {
++		printk(KERN_ERR PFX
++			"cannot register miscdev on minor=%d (err=%d)\n",
++						xwdt_miscdev.minor, rc);
++		goto unmap_io;
++	}
++
++	if (no_timeout)
++		printk(KERN_INFO PFX
++			"driver loaded (timeout=? sec, nowayout=%d)\n",
++						    xdev.nowayout);
++	else
++		printk(KERN_INFO PFX
++			"driver loaded (timeout=%d sec, nowayout=%d)\n",
++					timeout, xdev.nowayout);
++
++	expect_close = 0;
++	clear_bit(0, &driver_open);
++
++	return 0;
++
++unmap_io:
++	iounmap(xdev.base);
++release_mem:
++	release_mem_region(xdev.res.start, resource_size(&xdev.res));
++err_out:
++	return rc;
++}
++
++static int __devexit xwdt_remove(struct platform_device *dev)
++{
++	iounmap(xdev.base);
++	release_mem_region(xdev.res.start, resource_size(&xdev.res));
++	misc_deregister(&xwdt_miscdev);
++
++	return 0;
++}
++
++/* Match table for of_platform binding */
++static struct of_device_id __devinitdata xwdt_of_match[] = {
++	{ .compatible = "xlnx,xps-timebase-wdt-1.01.a", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, xwdt_of_match);
++
++static struct platform_driver xwdt_driver = {
++	.probe       = xwdt_probe,
++	.remove      = __devexit_p(xwdt_remove),
++	.driver = {
++		.owner = THIS_MODULE,
++		.name  = WATCHDOG_NAME,
++		.of_match_table = xwdt_of_match,
++	},
++};
++
++static int __init xwdt_init(void)
++{
++	return platform_driver_register(&xwdt_driver);
++}
++
++static void __exit xwdt_exit(void)
++{
++	platform_driver_unregister(&xwdt_driver);
++}
++
++module_init(xwdt_init);
++module_exit(xwdt_exit);
++
++MODULE_AUTHOR("Alejandro Cabrera <aldaya@gmail.com>");
++MODULE_DESCRIPTION("Xilinx Watchdog driver");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
+--
+1.7.0.4
 
 
+
+Participe en Universidad 2012, del 13 al 17 de febrero de 2012.
+Habana, Cuba: http://www.congresouniversidad.cu
+Consulte la enciclopedia colaborativa cubana. http://www.ecured.cu
+
+Participe en el Segundo Congreso Medio Ambiente Construido y 
+Desarrollo Sustentable (MACDES 2011) del 6 al 9 de diciembre de 2011, 
+Hotel Nacional, Habana, Cuba: http://macdes.cujae.edu.cu
