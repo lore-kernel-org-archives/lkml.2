@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab1FCNzt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 09:55:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27972 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750990Ab1FCNzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 09:55:48 -0400
-Message-ID: <4DE8E7D9.9000608@redhat.com>
-Date: Fri, 03 Jun 2011 10:55:37 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Andreas Oberritter <obi@linuxtv.org>
-CC: Hans Petter Selasky <hselasky@c2i.net>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] FE_GET_PROPERTY should be _IOW, because the associated
- structure is transferred from userspace to kernelspace. Keep the old ioctl
- around for compatibility so that existing code is not broken.
-References: <201105231558.13084.hselasky@c2i.net> <4DDA711E.3030301@linuxtv.org> <201105231651.55945.hselasky@c2i.net> <4DDA7E07.7070907@linuxtv.org> <4DE6ABF5.6020008@redhat.com> <4DE8D72E.7010300@linuxtv.org>
-In-Reply-To: <4DE8D72E.7010300@linuxtv.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755217Ab1FCOEE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 10:04:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51262 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086Ab1FCOEB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 10:04:01 -0400
+Subject: Re: [PATCH 0/7] Intel pci: Fix various problems with Intel IOMMU
+ code
+From: David Woodhouse <dwmw2@infradead.org>
+To: Mike Travis <travis@sgi.com>
+Cc: Dimitri Sivanich <sivanich@sgi.com>, Derek Fults <dfults@sgi.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, stable@kernel.org,
+        Chris Wright <chrisw@sous-sol.org>, iommu@lists.linux-foundation.org,
+        Mike Habeck <habeck@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Date: Fri, 03 Jun 2011 15:03:44 +0100
+In-Reply-To: <1306627925.2029.341.camel@i7.infradead.org>
+References: <20110528181501.896092225@gulag1.americas.sgi.com>
+	 <1306627925.2029.341.camel@i7.infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1307109833.2487.0.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 03-06-2011 09:44, Andreas Oberritter escreveu:
-> On 06/01/2011 11:15 PM, Mauro Carvalho Chehab wrote:
->> The dvb_usercopy will do the right thing, if we use _IOR or _IORW.
-> 
-> It only works, because _IOC_READ triggers a copy_from_user, as a
-> workaround for wrongly marked ioctls like this, according to a code
-> comment. It does not really do the right thing, because in this special
-> case the later call to copy_to_user isn't required. But it doesn't do
-> any real harm either.
+On Sun, 2011-05-29 at 01:12 +0100, David Woodhouse wrote:
+> Patches 1-6 applied to iommu-2.6.git. Please test. Thanks.
 
-Yes, that's what I meant to say ;) The workaround for it is there already,
-so maybe there are other ioctl's using the wrong _IOC_ directions.
+This is all now in Linus' tree for 3.0-rc2, and since you included
+'Cc: stable' in the commit comments it should magically turn up in a
+stable tree near you.
 
-As I said before, some ioctl's don't use _IOC_ directions, like for example
-the tty ioctls like TIO* ones. This happens on several very old drivers.
-So, ioctl core don't make any assumption about them. it is up to each driver
-(or subsystem core) to handle it.
+I will leave you to deal with the question of how to mark 'old' kernels
+as actually having had later bugs fixed.
 
->> I prefer to not apply this patch, as it won't fix anything. Adding an _OLD means
->> that we'll need later to remove it, causing a regression. Ok, we may do like we did
->> with V4L _OLD ioctl's that were marked as _OLD at 2.6.5 and were removed on a late
->> 2.6.3x.
-> 
-> Either way is fine for me.
+-- 
+dwmw2
 
-I'm not against fixing it, but, in this case, we'll need to validate all DVB
-ioctl's and remove the IOC_READ hack for all non-_OLD controls, and writing
-a notice at features-to-be-removed announcing that the _OLD controls will be
-removed.
 
-Cheers,
-Mauro.
-> 
-> Regards,
-> Andreas
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 
