@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab1FCRFP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 13:05:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47524 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754002Ab1FCRFN (ORCPT
+	id S1755855Ab1FCRGZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 13:06:25 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:34089 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754440Ab1FCRGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 13:05:13 -0400
+	Fri, 3 Jun 2011 13:06:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=M8rr9G/XcMikO358aiYcpIL/dHPZO0phH46sWNNXic7+gNgP1ZaMIZFi5mZxE2JEUK
+         t6DEvtk0ch5p7NbfCfaA==
+Date: Fri, 3 Jun 2011 10:06:14 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Chris Wright <chrisw@sous-sol.org>, Andrea Righi <andrea@betterlinux.com>,
+        CAI Qian <caiqian@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [BUG 3.0.0-rc1] ksm: NULL pointer dereference in ksm_do_scan()
+In-Reply-To: <20110602174305.GH19505@random.random>
+Message-ID: <alpine.LSU.2.00.1106030957090.1901@sister.anvils>
+References: <20110601222032.GA2858@thinkpad> <2144269697.363041.1306998593180.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <20110602141927.GA2011@thinkpad> <20110602164841.GK23047@sequoia.sous-sol.org> <alpine.LSU.2.00.1106021011300.1277@sister.anvils>
+ <20110602174305.GH19505@random.random>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110527201201.GA6645@ponder.secretlab.ca>
-References: <20110523134815.fb87933a.randy.dunlap@oracle.com>
- <20110523224659.GB19533@opensource.wolfsonmicro.com> <20110523155343.2e68c265.randy.dunlap@oracle.com>
- <20110524000837.GA30515@opensource.wolfsonmicro.com> <4DDB082F.3010107@oracle.com>
- <20110524014959.GA27710@opensource.wolfsonmicro.com> <4DDB3AFF.9030006@oracle.com>
- <20110524075248.GB19734@sirena.org.uk> <20110527074552.GA907@ponder.secretlab.ca>
- <4DDFE391.2030507@oracle.com> <20110527201201.GA6645@ponder.secretlab.ca>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 3 Jun 2011 11:04:52 -0600
-X-Google-Sender-Auth: yI2D5kqklPZkg1UkGZJddVBNZrM
-Message-ID: <BANLkTin-KSVcG2cQfRM3Ys0_g_uJVruDMw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: add GPIOF_ values regardless on kconfig settings
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, alsa-devel@alsa-project.org,
-        Dmitry Artamonow <mad_soft@inbox.ru>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Harald Welte <laforge@gnufiish.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 2:12 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Fri, May 27, 2011 at 10:46:57AM -0700, Randy Dunlap wrote:
->> From: Randy Dunlap <randy.dunlap@oracle.com>
->>
->> Make GPIOF_ defined values available even when GPIOLIB nor GENERIC_GPIO
->> is enabled by moving them to <linux/gpio.h>.
->>
->> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
->
-> Applied, thanks.
+On Thu, 2 Jun 2011, Andrea Arcangeli wrote:
+> On Thu, Jun 02, 2011 at 10:29:39AM -0700, Hugh Dickins wrote:
+> > AndreaA, I didn't study the patch you posted half an hour ago,
+> > since by that time I'd worked it out and was preparing patch below.
+> > I think your patch would be for a different bug, hopefully one we
+> > don't have, it looks more complicated than we should need for this.
+> 
+> I didn't expect two different bugs leading to double free.
 
-Hi Randy,
+There wasn't a double free there, just failure to cope with race
+emptying the list, so accessing head when expecting a full entry.
 
-I ended up not pushing this one to Linus.  Turns out it causes other
-breakage on other platforms that don't include include/linux/gpio.h.
-Since I don't have confidence that I'll be able to find all the
-offenders, I'm dropping it.  I recommend making any drivers that are
-breaking on these symbols depend on GPIOLIB.  Platforms not using
-gpiolib are strongly discouraged now anyways, and there only a handful
-of files in drivers/ that reference GPIOF_*.
+> 
+> If you've time please review my other patch too because mmput runs
+> with no mmap_sem hold and I think the ksm scan code runs under the
+> assumption that __ksm_exit is waiting in down_write() when
+> ksm_mmlist_lock is released (before freeing the mm_slot), and that
+> assumption is wrong. ksm_test_exit may very well be true despite
+> __ksm_exit didn't run yet, and ksm scan will proceed freeing after
+> changing the mm_slot and ksm_exit will be free to run and free again
+> immediately after the ksm scan releases the ksm_mmlist_lock and before
+> it clears the MMF_VM_MERGEABLE (because the mm_slot has been changed
+> before releasing the ksm_mmlist_lock).
+> 
+> The rmap_list being null will kind of hide it, the fact there's so
+> little time between the unlock of the ksm_mmlist_lock and the clearing
+> of MMF_VM_MERGEABLE (that will stop ksm_exit from calling __ksm_exit
+> at all) will also hide it. At least in
+> unmerge_and_remove_all_rmap_items remove_trailing_rmap_items will nuke
+> the rmap_list just before this race runs so making it more likely
+> possible.
 
-g.
+You'll see from the "beware" comment in scan_get_next_rmap_item()
+that this case is expected, that it sometimes reaches freeing the
+slots before the exiting task reaches __ksm_exit().
+
+That race should already be handled.  I believe your patch is unnecessary,
+because get_mm_slot() is a hashlist lookup, and will return NULL once
+either end has done the hlist_del(&mm_slot->link).
+
+Hugh
