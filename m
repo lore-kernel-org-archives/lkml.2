@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1FCFPg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 01:15:36 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:63622 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab1FCFPf (ORCPT
+	id S1752755Ab1FCFQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 01:16:13 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45043
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752215Ab1FCFQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 01:15:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=iEv1xdkSob+1uaZ+2zeNPqjZba5GKb/bdZED2iaGw/7yn5ZNnm2DYZd8QpCqNQ3NIB
-         5jugxn9bcMd5vmvUvKvM1BJ0gXkjgae56CcSe12gN24FIZYc7BiLx8An3ylAVFNQT4CW
-         iUIoLKh5usiCrmRzVboFlHpmGspuSRUTSquMI=
-Subject: [PATCH 2/2] mtd: fsmc_nand: fix a memory leak
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Viresh Kumar <viresh.kumar@st.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        linux-mtd@lists.infradead.org
-In-Reply-To: <1307078050.4167.1.camel@phoenix>
-References: <1307078050.4167.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Jun 2011 13:15:30 +0800
-Message-ID: <1307078130.4167.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Jun 2011 01:16:12 -0400
+Date: Fri, 3 Jun 2011 01:16:09 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3/14] tmpfs: take control of its truncate_range
+Message-ID: <20110603051609.GC16721@infradead.org>
+References: <alpine.LSU.2.00.1105301726180.5482@sister.anvils>
+ <alpine.LSU.2.00.1105301737040.5482@sister.anvils>
+ <20110601003942.GB4433@infradead.org>
+ <alpine.LSU.2.00.1106010940590.23468@sister.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1106010940590.23468@sister.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In fsmc_nand_remove, we should call nand_release instead of
-mtd_device_unregister to properly free bad block table memory
-and bad block descriptor memory.
+On Wed, Jun 01, 2011 at 09:58:18AM -0700, Hugh Dickins wrote:
+> (i915 isn't really doing hole-punching there, I think it just found it
+> a useful interface to remove the page-and-swapcache without touching
+> i_size.  Parentheses because it makes no difference to your point.)
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mtd/nand/fsmc_nand.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Keeping i_size while removing pages on tmpfs fits the defintion of hole
+punching for me.  Not that it matters anyway.
 
-diff --git a/drivers/mtd/nand/fsmc_nand.c b/drivers/mtd/nand/fsmc_nand.c
-index e9b275a..8a5f1aa 100644
---- a/drivers/mtd/nand/fsmc_nand.c
-+++ b/drivers/mtd/nand/fsmc_nand.c
-@@ -822,7 +822,7 @@ static int fsmc_nand_remove(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, NULL);
- 
- 	if (host) {
--		mtd_device_unregister(&host->mtd);
-+		nand_release(&host->mtd);
- 		clk_disable(host->clk);
- 		clk_put(host->clk);
- 
--- 
-1.7.4.1
+> When I say "shmem", I am including the !SHMEM-was-TINY_SHMEM case too,
+> which goes to ramfs.  Currently i915 has been configured to disable that
+> possibility, though we insisted on it originally: there may or may not be
+> good reason for disabling it - may just be a side-effect of the rather
+> twisted unintuitive SHMEM/TMPFS dependencies.
 
+Hmm, the two different implementations make everything harder.  Also
+because we don't even implement the hole punching in !SHMEM tmpfs.
 
+> Fine, I'll add tmpfs PUNCH_HOLE later on.  And wire up madvise MADV_REMOVE
+> to fallocate PUNCH_HOLE, yes?
+
+Yeah.  One thing I've noticed is that the hole punching doesn't seem
+to do the unmap_mapping_range.  It might be worth to audit that from the
+VM point of view.
+
+> Would you like me to remove the ->truncate_range method from
+> inode_operations completely?
+
+Doing that would be nice.  Do we always have the required file struct
+for ->fallocate in the callers?
 
