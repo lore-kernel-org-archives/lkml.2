@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab1FCO4V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 10:56:21 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35586 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab1FCO4V convert rfc822-to-8bit (ORCPT
+	id S1754404Ab1FCO46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 10:56:58 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29755 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754251Ab1FCO4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 10:56:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110603143406.GA19344@S2100-06.ap.freescale.net>
-References: <1306985632-18820-1-git-send-email-shawn.guo@linaro.org>
- <20110603075201.GE10532@n2100.arm.linux.org.uk> <20110603143406.GA19344@S2100-06.ap.freescale.net>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 3 Jun 2011 08:55:58 -0600
-X-Google-Sender-Auth: OqW-Qz7FjBfGysUPBVJIFNj18eE
-Message-ID: <BANLkTi=5kNAt51DP3-rykkT3ZONczD5Crg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] Move plat-mxc gpio driver into drivers/gpio
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, arnd@arndb.de,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, olof@lixom.net,
-        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 3 Jun 2011 10:56:55 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: dave <dave@jikos.cz>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Miao Xie <miaox@cn.fujitsu.com>, Tsutomu Itoh <t-itoh@jp.fujitsu.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>
+Subject: Re: [PATCH] btrfs: fix uninitialized variable warning
+In-reply-to: <20110603145014.GU12709@twin.jikos.cz>
+References: <20110603110011.77121203.sfr@canb.auug.org.au> <20110603145014.GU12709@twin.jikos.cz>
+Date: Fri, 03 Jun 2011 10:56:18 -0400
+Message-Id: <1307112880-sup-4802@shiny>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4DE8F620.008C:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 3, 2011 at 8:34 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
-> Hi Russell,
->
-> On Fri, Jun 03, 2011 at 08:52:01AM +0100, Russell King - ARM Linux wrote:
->> On Thu, Jun 02, 2011 at 11:33:48AM +0800, Shawn Guo wrote:
->> >  arch/arm/plat-mxc/gpio.c                        |  361 -------------------
->> >  drivers/gpio/gpio-mxc.c                         |  433 +++++++++++++++++++++++
->>
-> My bad here.  I should have used 'git diff --stat -M' to show the
-> the following.
->
-> .../arm/plat-mxc/gpio.c => drivers/gpio/gpio-mxc.c |  216 +++++++++++++-------
->
->> I'm wondering why just moving this driver into drivers/gpio has
->> resulted in it growing by 72 lines - and it's not clear from the
->> diffs why that is because of the way they're broken up.
->>
-> Yes, I agree.  But when I did something like that to ease the review,
-> people think it's not necessary :)
->
-> http://permalink.gmane.org/gmane.linux.kernel/1143257
+Excerpts from David Sterba's message of 2011-06-03 10:50:14 -0400:
+> From: David Sterba <dsterba@suse.cz>
+> 
+> With Linus' tree, today's linux-next build (powercp ppc64_defconfig)
+> produced this warning:
+> 
+> fs/btrfs/delayed-inode.c: In function 'btrfs_delayed_update_inode':
+> fs/btrfs/delayed-inode.c:1598:6: warning: 'ret' may be used
+> uninitialized in this function
+> 
+> Introduced by commit 16cdcec736cd ("btrfs: implement delayed inode items
+> operation").
+> 
+> This fixes a bug in btrfs_update_inode(): if the returned value from
+> btrfs_delayed_update_inode is a nonzero garbage, inode stat data are not
+> updated and several call paths may hit a BUG_ON or fail with strange
+> code.
 
-The issue was bisectability: it looked like the build would break
-after applying the first patch.  The first patch should move the
-driver without breaking the build, and then you can follow up with
-driver fixes.  I don't want to see functional changes mixed in with
-the file move change.
+Ugh, thanks!  It looks like the gcc uninit stuff isn't as verbose as it
+used to be, but it does catch a bunch of allocated/set but not used
+vars.
 
-> +
-> +static struct platform_driver mxc_gpio_driver = {
-> +       .driver         = {
-> +               .name   = "gpio-mxc",
+I have a nitems = 0 fix in my tree as well.
 
-.owner = THIS_MODULE,
-
-g.
+-chris
