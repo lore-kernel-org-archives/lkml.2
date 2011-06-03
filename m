@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab1FCSyp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 14:54:45 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:22513 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab1FCSyo (ORCPT
+	id S1755242Ab1FCS5g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 14:57:36 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37039 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290Ab1FCS5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 14:54:44 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h65h)
-X-Spam-TCS-SCL: 4:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4DE92DF1.4090203@freescale.com>
-Date: Fri, 3 Jun 2011 13:54:41 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
-MIME-Version: 1.0
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: <alan@lxorguk.ukuu.org.uk>, <linux-kernel@vger.kernel.org>,
-        <scottwood@freescale.com>, <akpm@linux-foundation.org>
-Subject: Re: [PATCH] lib: introduce strdup_from_user
-References: <1307119552-15573-1-git-send-email-timur@freescale.com>	<BANLkTikFjF0WF---8A9_CBybf+bUji2smw@mail.gmail.com>	<4DE92675.6080908@freescale.com>	<BANLkTimB2UanZA4wf=uBGcj=wKmDhCco=w@mail.gmail.com>	<4DE9294B.3040501@freescale.com>	<BANLkTinqQS11nXQAJBMSvCrp4tOtCg5Qww@mail.gmail.com>	<4DE92AC0.1000806@freescale.com> <BANLkTik_O2QvXqeY03NU3xP1q0=Dqco6Eg@mail.gmail.com>
-In-Reply-To: <BANLkTik_O2QvXqeY03NU3xP1q0=Dqco6Eg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+	Fri, 3 Jun 2011 14:57:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=H3qLGQmc+Vnui2ueFpbgMQBgdT+9UgCtHHjPliO8YHvaZ84mu0GC9XB8STghDB5Kcz
+         bhU/O4N750IYinF6dTOgsBPD2Svz6lLX2LBWhzbW/dEyCQRcZZ54dHxVgstErhsCFOVa
+         EjjrRDg+IEC1KT/jsrWP6CjvYKior+sNT956U=
+From: Andre Bartke <andre.bartke@googlemail.com>
+To: cezary.jackiewicz@gmail.com
+Cc: mjg@redhat.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andre Bartke <andre.bartke@gmail.com>
+Subject: [PATCH] drivers/platform/x86: Fix memory leak
+Date: Fri,  3 Jun 2011 20:55:43 +0200
+Message-Id: <1307127343-14290-1-git-send-email-andre.bartke@gmail.com>
+X-Mailer: git-send-email 1.7.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey Dobriyan wrote:
-> It leaks first allocation if second one fails.
-> 
-> Come on.
+data is not freed in the error case of
+compal_probe().
 
-Ugh, sorry.  In my defense, I am suffering from allergies at the moment.
+Signed-off-by: Andre Bartke <andre.bartke@gmail.com>
+---
+ drivers/platform/x86/compal-laptop.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-> Show you user in driver, maybe what we're discussing is moot.
-
-The driver and discussion on it can be found here:
-
-http://patchwork.ozlabs.org/patch/98233/
-
-Search for "ioctl_dtprop" to see its usage.
-
-In summary, I'm copying a user-space string into a kmalloc'd buffer so that it's
-physically contiguous and I can get the physical address for it.  I then call
-our hypervisor and give it the physical address.  This is why I want a copy of
-the string in a buffer allocated via kmalloc.
-
+diff --git a/drivers/platform/x86/compal-laptop.c b/drivers/platform/x86/compal-laptop.c
+index 3f204fd..8877b83 100644
+--- a/drivers/platform/x86/compal-laptop.c
++++ b/drivers/platform/x86/compal-laptop.c
+@@ -1030,8 +1030,10 @@ static int __devinit compal_probe(struct platform_device *pdev)
+ 	initialize_fan_control_data(data);
+ 
+ 	err = sysfs_create_group(&pdev->dev.kobj, &compal_attribute_group);
+-	if (err)
++	if (err) {
++		kfree(data);
+ 		return err;
++	}
+ 
+ 	data->hwmon_dev = hwmon_device_register(&pdev->dev);
+ 	if (IS_ERR(data->hwmon_dev)) {
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
+1.7.5.2
 
