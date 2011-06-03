@@ -1,99 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab1FCGjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 02:39:16 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:48129 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751216Ab1FCGjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 02:39:13 -0400
-X-ASG-Debug-ID: 1307083150-01de280c1e1e2f0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4DE88189.1000203@fusionio.com>
-Date: Fri, 3 Jun 2011 08:39:05 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1752511Ab1FCGtl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 02:49:41 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46041 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab1FCGtj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 02:49:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=FwdNEqvhMBAKk9p336CK9Z+BgjtIhe1t0SBcB03xb4vVvVmmkjjPWmwR9OqtvSRwqK
+         KgVSSW01lWn8H2IQu6qn5kCd0Is8uc0rd+HrbuxqfFe53LhiprWdONs2Q6Mhlxat/cNv
+         BbmwozU0Tn+pehSZYGIdIVTPfJZGgfX6jLnuc=
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Greg KH <gregkh@suse.de>, Tejun Heo <tj@kernel.org>,
+In-Reply-To: <1307029711.2497.717.camel@laptop>
+References: <1306835745.2353.3.camel@twins>
+	<tip-f01114cb59d670e9b4f2c335930dd57db96e9360@git.kernel.org>
+	<20110531125621.GA24439@gere.osrc.amd.com>
+	<1306847516.2353.80.camel@twins>
+	<20110601070547.GB3368@liondog.tnic>
+	<1306924612.2353.176.camel@twins>
+	<20110601155017.GD24028@aftab>
+	<BANLkTikT6OT-HDi-DR+_ZWEhfp_CYWJ3Hg@mail.gmail.com>
+	<1307019866.2497.675.camel@laptop>
+	<20110602142340.GA3356@zhy>
+	<1307029711.2497.717.camel@laptop>
+Date: Fri, 3 Jun 2011 14:49:38 +0800
+Message-ID: <BANLkTikciSq0x6-RXTx7ugrgthxXtUsoJA@mail.gmail.com>
+Subject: Re: [tip:sched/urgent] sched: Fix cross-cpu clock sync on remote wakeups
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Borislav Petkov <bp@amd64.org>, Borislav Petkov <bp@alien8.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "stable-review@kernel.org" <stable-review@kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [026/146] block: dont block events on excl write for non-optical
-References: <20110601080606.GA522@kroah.com> <20110601080253.331790414@blue.kroah.org> <20110601081514.GG23067@mtj.dyndns.org> <20110601085816.GA12801@suse.de> <4DE6034C.4020808@fusionio.com> <20110603060254.GA4419@kroah.com>
-X-ASG-Orig-Subj: Re: [026/146] block: dont block events on excl write for non-optical
-In-Reply-To: <20110603060254.GA4419@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1307083150
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 1.00
-X-Barracuda-Spam-Status: No, SCORE=1.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_RULE7568M, BSF_RULE_7582B
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.65453
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.50 BSF_RULE7568M          Custom Rule 7568M
-	0.50 BSF_RULE_7582B         Custom Rule 7582B
+        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-06-03 08:02, Greg KH wrote:
-> On Wed, Jun 01, 2011 at 11:15:56AM +0200, Jens Axboe wrote:
->> On 2011-06-01 10:58, Greg KH wrote:
->>> On Wed, Jun 01, 2011 at 05:15:14PM +0900, Tejun Heo wrote:
->>>> Hello, Greg.
->>>>
->>>> On Wed, Jun 01, 2011 at 04:59:22PM +0900, Greg KH wrote:
->>>>> 2.6.38-stable review patch.  If anyone has any objections, please let us know.
->>>>>
->>>>> ------------------
->>>>>  devices
->>>>>
->>>>> From: Tejun Heo <tj@kernel.org>
->>>>>
->>>>> commit d4dc210f69bcb0b4bef5a83b1c323817be89bad1 upstream.
->>>>>
->>>>> Disk event code automatically blocks events on excl write.  This is
->>>>> primarily to avoid issuing polling commands while burning is in
->>>>> progress.  This behavior doesn't fit other types of devices with
->>>>> removeable media where polling commands don't have adverse side
->>>>> effects and door locking usually doesn't exist.
->>>>>
->>>>> This patch introduces new genhd flag which controls the auto-blocking
->>>>> behavior and uses it to enable auto-blocking only on optical devices.
->>>>>
->>>>> Note for stable: 2.6.38 and later only
->>>>
->>>> This one should be accompanied by the following commit which is
->>>> currently in Jens' tree and will soon be pulled into Linus' tree.
->>>> Sorry about the fuss.  ->check_events() update turned out to be much
->>>> more fragile than I originally expected.  :(
->>>>
->>>> commit 4c49ff3fe128ca68dabd07537415c419ad7f82f9
->>>> Author: Tejun Heo <tj@kernel.org>
->>>> Date:   Wed Jun 1 08:27:41 2011 +0200
->>>>
->>>>     block: blkdev_get() should access ->bd_disk only after success
->>>
->>> As I can't take it into -stable until it hits Linus's tree, I'll have to
->>> wait until then.  Hopefully it hits there soon, I'll watch out for it.
->>>
->>> thanks for letting me know.
+On Thu, Jun 2, 2011 at 11:48 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2011-06-02 at 22:23 +0800, Yong Zhang wrote:
+>> On Thu, Jun 02, 2011 at 03:04:26PM +0200, Peter Zijlstra wrote:
+>> > On Thu, 2011-06-02 at 15:52 +0800, Yong Zhang wrote:
+>> > > In sched_clock_local(), clock is calculated around ->tick_gtod even if
+>> > > that ->tick_gtod is stale for long time because we stays in idle state.
+>> > > You know ->tick_gtod is only updated in sched_clock_tick();
+>> >
+>> > (well, no, there's idle callbacks as you said below)
+>> >
+>> > > IOW, when a cpu goes out of idle, sched_clock_tick() is called from
+>> > > tick_nohz_stop_idle() which is later than interrupt.
+>> >
+>> > Gah, that would be awefull and mean wakeups from interrupts were already
+>> > borken. /me goes look at code.
+>> >
+>> > irq_enter() -> tick_check_idle() -> tick_check_nohz() ->
+>> > tick_nohz_stop_idle() -> sched_clock_idle_wakeup_event()
+>> >
+>> > should update the thing before we run any isrs, right?
 >>
->> It'll go out in the next few days. The above commit also references this
->> patch, so you should have proper notification when it goes in.
-> 
-> Did it go in?  I see commit 0f48f2600911d5de6393829e4a9986d4075558b3
-> which looks like it might have been it, right?  Or do I need something
-> else for .39-stable?
+>> Hmmm, you are right.
+>>
+>> But smp_reschedule_interrupt() doesn't call irq_enter()/irq_exit(),
+>> is that correct?
+>
+> Crap.. you're right.
+> And I bet other archs don't do that either.
 
-No, I haven't pushed it out yet, will do today. The above commit is just
-a merge error fixup.
+Most of them ;)
+I only notice sparc32 do that. Maybe there have more,
+but I didn't check it very carefully.
+
+> With
+> NO_HZ you really need irq_enter() for pretty much all interrupts so I
+> was assuming the resched IPI had it, but its been special and never
+> really needed it. If it would wake an idle cpu the idle loop exit would
+> deal with it, if it interrupted userspace the thing was running and
+> NO_HZ wasn't relevant.
+>
+> Damn.
+>
+> And yes, the only reason I didn't see this on my dev box was because we
+> do indeed set that sched_clock_stable thing on wsm. And I never noticed
+> on my desktop because firefox/X/etc. consuming heaps of CPU isn't weird
+> at all.
+>
+> Adding it to all resched int handlers is of course a possibility but
+> would slow down the thing, although with the new code, most users are
+> now indeed wakeups (excepting weird and wonderful users like KVM).
+>
+> We could of course add it in sched.c since the logic recurses just
+> fine.. its not pretty though.. :/
+
+Yeah, IMHO it's suitable here and my test looks good.
+
+Reviewed-and-Tested-by: Yong Zhang <yong.zhang0@gmail.com>
+
+BTW, sched_ipi() and sched_ttwu_pending() could share a piece of
+code now. And we place irq_enter()/irq_exit() in sched_ipi() because
+it's the only function we could call, thus account_system_vtime() could
+get the almost exact time value. IOW we should pay some attention on
+the future change of smp_reschedule_interrupt().
+
+Thanks,
+Yong
+
+>
+> Thoughts?
+>
+> ---
+>  kernel/sched.c |   18 +++++++++++++++++-
+>  1 files changed, 17 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 2fe98ed..365ed6b 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -2554,7 +2554,23 @@ static void sched_ttwu_pending(void)
+>
+>  void scheduler_ipi(void)
+>  {
+> -       sched_ttwu_pending();
+> +       struct rq *rq = this_rq();
+> +       struct task_struct *list = xchg(&rq->wake_list, NULL);
+> +
+> +       if (!list)
+> +               return;
+> +
+> +       irq_enter();
+> +       raw_spin_lock(&rq->lock);
+> +
+> +       while (list) {
+> +               struct task_struct *p = list;
+> +               list = list->wake_entry;
+> +               ttwu_do_activate(rq, p, 0);
+> +       }
+> +
+> +       raw_spin_unlock(&rq->lock);
+> +       irq_exit();
+>  }
+>
+>  static void ttwu_queue_remote(struct task_struct *p, int cpu)
+>
+>
+>
+
+
 
 -- 
-Jens Axboe
-
+Only stand for myself
