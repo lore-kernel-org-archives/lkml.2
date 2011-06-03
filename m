@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab1FCAds (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 20:33:48 -0400
+	id S1754427Ab1FCAeC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 20:34:02 -0400
 Received: from mail-vx0-f174.google.com ([209.85.220.174]:46151 "EHLO
 	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab1FCAdr (ORCPT
+	with ESMTP id S1754296Ab1FCAeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 20:33:47 -0400
+	Thu, 2 Jun 2011 20:34:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=V+0yyxJkNHrIWhGE9CH21AgXk3ooGalTJ1bcMtdh08l9Ppv2nv8VIlIXOPp+fNJZ5d
-         KVKy3Bo95j+V1qHI9Pf3niFZ3qjaxQVKFAsE6RD/PwA6qtthHZW4qhgOVGX8ehAw4yQu
-         qYONgdz5cWaL4Yb1TKUWmHVmR+Fasb5iOIX4w=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=J3QUWYKLJuNR2PrbPAhqWnhH2GXVeMwBoiDU8MHQt+aTZ5wcRzbPet7DAYTbQ1mpzK
+         6F8x4XmHffiOK24E6klylGnxk6bWukYCvq2lQwDraNz8XIdDagj6TQMwOTSb3LxkY9Kx
+         I1mCuqoSqJQN4NhCVFav0NW+plRoeTqrdcTaM=
 From: Curtis McEnroe <programble@gmail.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Curtis McEnroe <programble@gmail.com>
-Subject: [PATCH 2/5] [media] tm6000: Cleaned up code style in tm6000-dbv.c
-Date: Thu,  2 Jun 2011 20:33:31 -0400
-Message-Id: <1307061214-14837-1-git-send-email-programble@gmail.com>
+Subject: [PATCH 3/5] [media] tm6000: Cleaned up code style in tm6000-i2c.c
+Date: Thu,  2 Jun 2011 20:33:32 -0400
+Message-Id: <1307061214-14837-2-git-send-email-programble@gmail.com>
 X-Mailer: git-send-email 1.7.5.2
+In-Reply-To: <1307061214-14837-1-git-send-email-programble@gmail.com>
+References: <1307061214-14837-1-git-send-email-programble@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced usage of __FUNCTION__ with __func__
+Replaced __FUNCTION__ with __func__
 
 Signed-off-by: Curtis McEnroe <programble@gmail.com>
 ---
- drivers/staging/tm6000/tm6000-dvb.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/staging/tm6000/tm6000-i2c.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/tm6000/tm6000-dvb.c b/drivers/staging/tm6000/tm6000-dvb.c
-index ff04c89..0e0dfce 100644
---- a/drivers/staging/tm6000/tm6000-dvb.c
-+++ b/drivers/staging/tm6000/tm6000-dvb.c
-@@ -98,7 +98,7 @@ static void tm6000_urb_received(struct urb *urb)
- 	if (dev->dvb->streams > 0) {
- 		ret = usb_submit_urb(urb, GFP_ATOMIC);
- 		if (ret < 0) {
--			printk(KERN_ERR "tm6000:  error %s\n", __FUNCTION__);
-+			printk(KERN_ERR "tm6000:  error %s\n", __func__);
- 			kfree(urb->transfer_buffer);
- 			usb_free_urb(urb);
- 		}
-@@ -111,7 +111,7 @@ int tm6000_start_stream(struct tm6000_core *dev)
- 	unsigned int pipe, size;
- 	struct tm6000_dvb *dvb = dev->dvb;
+diff --git a/drivers/staging/tm6000/tm6000-i2c.c b/drivers/staging/tm6000/tm6000-i2c.c
+index 8828c12..5a651ea 100644
+--- a/drivers/staging/tm6000/tm6000-i2c.c
++++ b/drivers/staging/tm6000/tm6000-i2c.c
+@@ -40,7 +40,7 @@ MODULE_PARM_DESC(i2c_debug, "enable debug messages [i2c]");
  
--	printk(KERN_INFO "tm6000: got start stream request %s\n", __FUNCTION__);
-+	printk(KERN_INFO "tm6000: got start stream request %s\n", __func__);
+ #define i2c_dprintk(lvl, fmt, args...) if (i2c_debug >= lvl) do { \
+ 			printk(KERN_DEBUG "%s at %s: " fmt, \
+-			dev->name, __FUNCTION__ , ##args); } while (0)
++			dev->name, __func__, ##args); } while (0)
  
- 	if (dev->mode != TM6000_MODE_DIGITAL) {
- 		tm6000_init_digital_mode(dev);
-@@ -145,7 +145,7 @@ int tm6000_start_stream(struct tm6000_core *dev)
- 	ret = usb_clear_halt(dev->udev, pipe);
- 	if (ret < 0) {
- 		printk(KERN_ERR "tm6000: error %i in %s during pipe reset\n",
--							ret, __FUNCTION__);
-+							ret, __func__);
- 		return ret;
- 	} else
- 		printk(KERN_ERR "tm6000: pipe resetted\n");
-@@ -185,7 +185,7 @@ int tm6000_start_feed(struct dvb_demux_feed *feed)
- 	struct dvb_demux *demux = feed->demux;
- 	struct tm6000_core *dev = demux->priv;
- 	struct tm6000_dvb *dvb = dev->dvb;
--	printk(KERN_INFO "tm6000: got start feed request %s\n", __FUNCTION__);
-+	printk(KERN_INFO "tm6000: got start feed request %s\n", __func__);
- 
- 	mutex_lock(&dvb->mutex);
- 	if (dvb->streams == 0) {
-@@ -205,7 +205,7 @@ int tm6000_stop_feed(struct dvb_demux_feed *feed)
- 	struct tm6000_core *dev = demux->priv;
- 	struct tm6000_dvb *dvb = dev->dvb;
- 
--	printk(KERN_INFO "tm6000: got stop feed request %s\n", __FUNCTION__);
-+	printk(KERN_INFO "tm6000: got stop feed request %s\n", __func__);
- 
- 	mutex_lock(&dvb->mutex);
- 
+ static int tm6000_i2c_send_regs(struct tm6000_core *dev, unsigned char addr,
+ 				__u8 reg, char *buf, int len)
 -- 
 1.7.5.2
 
