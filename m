@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab1FCI3V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 04:29:21 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37844 "EHLO mx3.mail.elte.hu"
+	id S1753413Ab1FCImM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 04:42:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54139 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752752Ab1FCI25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 04:28:57 -0400
-Date: Fri, 3 Jun 2011 10:28:45 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jack Steiner <steiner@sgi.com>
-Cc: tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x66, UV: Enable 64-bit ACPI MFCG support for SGI UV2
- platform
-Message-ID: <20110603082845.GC16694@elte.hu>
-References: <20110602195943.GA27079@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110602195943.GA27079@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752752Ab1FCImK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 04:42:10 -0400
+Subject: RE: bug in cleancache ocfs2 hook, anybody want to try cleancache?
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: ocfs2-devel@oss.oracle.com, Joel Becker <jlbec@evilplan.org>,
+        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <75f89186-d730-4b89-b88c-899cd5674cf0@default>
+References: <da833bdb-7f77-4ebb-ad9b-9fae656b75a1@default 1307004343.2823.17.camel@menhir>
+	 <75f89186-d730-4b89-b88c-899cd5674cf0@default>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Fri, 03 Jun 2011 09:43:48 +0100
+Message-ID: <1307090628.2881.15.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Jack Steiner <steiner@sgi.com> wrote:
-
-> Enable 64-bit ACPI MFCG support for SGI UV2 platform. The check is similar
-> to the check on UV1. UV2 has a different oem_id string.
+On Thu, 2011-06-02 at 11:26 -0700, Dan Magenheimer wrote:
+> > Having started looking at the cleancache code in a bit more detail, I
+> > have another question... what is the intended mechanism for selecting a
+> > cleancache backend? The registration code looks like this:
+> > 
+> > struct cleancache_ops cleancache_register_ops(struct cleancache_ops
+> > *ops)
+> > {
+> >         struct cleancache_ops old = cleancache_ops;
+> > 
+> >         cleancache_ops = *ops;
+> >         cleancache_enabled = 1;
+> >         return old;
+> > }
+> > EXPORT_SYMBOL(cleancache_register_ops);
+> > 
+> > but I wonder what the intent was here. It looks racy to me, and what
+> > prevents the backend module from unloading while it is in use? Neither
+> > of the two in-tree callers seems to do anything with the returned
+> > structure beyond printing a warning if another backend has already
+> > registered itself. Also why return the structure and not a pointer to
+> > it? The ops structure pointer passed in should also be const I think.
+> > 
+> > From the code I assume that it is only valid to load the module for a
+> > single cleancache backend at a time, though nothing appears to enforce
+> > that.
 > 
-> Signed-off-by: Jack Steiner <steiner@sgi.com>
+> Hi Steven --
 > 
+> The intent was to allow backends to be "chained", but this is
+> not used yet and not really very well thought through yet either
+> (e.g. possible coherency issues of chaining).
+> So, yes, currently only one cleancache backend can be loaded
+> at time.
 > 
-> ---
->  arch/x86/pci/mmconfig-shared.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+> There's another initialization issue... if mounts are done
+> before a backend registers, those mounts are not enabled
+> for cleancache.   As a result, cleancache backends generally
+> need to be built-in, not loaded separately as a module.
+> I've had ideas on how to fix this for some time (basically
+> recording calls to cleancache_init_fs that occur when no
+> backend is registered, then calling the backend lazily after
+> registration occurs).
 > 
-> Index: linux/arch/x86/pci/mmconfig-shared.c
-> ===================================================================
-> --- linux.orig/arch/x86/pci/mmconfig-shared.c	2011-05-31 12:13:19.635285219 -0500
-> +++ linux/arch/x86/pci/mmconfig-shared.c	2011-06-02 14:41:26.645034257 -0500
-> @@ -519,7 +519,8 @@ static int __init acpi_mcfg_check_entry(
->  	if (cfg->address < 0xFFFFFFFF)
->  		return 0;
->  
-> -	if (!strcmp(mcfg->header.oem_id, "SGI"))
-> +	if (!strcmp(mcfg->header.oem_id, "SGI") ||
-> +	    		!strcmp(mcfg->header.oem_id, "SGI2"))
+Ok... but if cleancache_init_fs were to take (for example) an argument
+specifying the back end to use (I'm thinking here of say a
+cleancache=tmem mount argument for filesystems or something similar)
+then the backend module could be automatically loaded if required. It
+would also allow, by design, multiple backends to be used without
+interfering with each other.
 
-Wouldnt strncmp(,,3) cover any future SGI3, SGI4 strings as well?
+I don't understand the intent behind chaining of the backends. Did you
+mean that pages would migrate from one backend to another down the stack
+as each one discards pages and that pages would migrate back up the
+stack again when pulled back in from the filesystem? I'm not sure I can
+see any application for such a scheme, unless I'm missing something.
 
-Thanks,
+I'd like to try and understand the design of the existing code before I
+consider anything more advanced such as writing a kvm backend,
 
-	Ingo
+Steve.
+
+
