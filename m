@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab1FCR5Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 13:57:25 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45459 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab1FCR5Y (ORCPT
+	id S1753011Ab1FCSAj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 14:00:39 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:34207 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab1FCSAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 13:57:24 -0400
-Date: Fri, 3 Jun 2011 11:57:23 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org
-Subject: Re: [PATCH v2 0/2] Move Freescale MXS gpio driver into drivers/gpio
-Message-ID: <20110603175723.GE15616@ponder.secretlab.ca>
-References: <1306595374-25178-1-git-send-email-shawn.guo@linaro.org>
- <20110530064502.GC23771@pengutronix.de>
+	Fri, 3 Jun 2011 14:00:37 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6366"; a="95255393"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: <balbi@ti.com>
+Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1306847914-19876-1-git-send-email-tlinder@codeaurora.org> <1306847914-19876-8-git-send-email-tlinder@codeaurora.org> <20110603080333.GS2409@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110603080333.GS2409@legolas.emea.dhcp.ti.com>
+Subject: RE: [PATCH v14 7/9] usb:gadget: Add SuperSpeed support to the Gadget Framework
+Date: Fri, 3 Jun 2011 21:00:17 +0300
+Message-ID: <003401cc2218$1ae868a0$50b939e0$@org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110530064502.GC23771@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: AcwhxMBFicOJ61CWQkej0WH5yKnEkAAUlRpA
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 08:45:02AM +0200, Sascha Hauer wrote:
-> Grant,
+Hi Felipe,
+
+> On Tue, May 31, 2011 at 04:18:27PM +0300, Tatyana Brokhman wrote:
+> > @@ -377,9 +425,10 @@ static int config_desc(struct usb_composite_dev
+> *cdev, unsigned w_value)
+> >  	u8				type = w_value >> 8;
+> >  	enum usb_device_speed		speed = USB_SPEED_UNKNOWN;
+> >
+> > -	if (gadget_is_dualspeed(gadget)) {
+> > -		int			hs = 0;
+> > -
+> > +	if (gadget->speed == USB_SPEED_SUPER)
 > 
-> I suppose we should take this through the architecture tree. Can I have
-> your Ack for this?
+> if (gadget_is_superspeed(gadget)) ??
+I thought so too at first but then I decided that checking gadget->speed is
+better here because it's possible that gadget_is_superspeed() will return
+true but the actual speed will be for example HS. In that case we want to
+enter the  else of this if (else if (gadget_is_dualspeed()) {... })
+
+
+> > @@ -413,16 +469,22 @@ static int count_configs(struct
+> usb_composite_dev *cdev, unsigned type)
+> >  	struct usb_configuration	*c;
+> >  	unsigned			count = 0;
+> >  	int				hs = 0;
+> > +	int				ss = 0;
+> >
+> >  	if (gadget_is_dualspeed(gadget)) {
+> >  		if (gadget->speed == USB_SPEED_HIGH)
+> >  			hs = 1;
+> > +		if (gadget->speed == USB_SPEED_SUPER)
+> > +			ss = 1;
 > 
+> is this really correct under gadget_is_dualspeed() ?? puzzled.
+I think so. The assumption is that it's not possible that gadget speed will
+be super if the gadget isn't dualspeed. When the COMFIG_GADGET_SUPERSPEED
+flag was changeable to the user, it was dependant on the gadget being dual
+speed. Now this flag should be turned on by the UDCs that support SS, but
+the assumption that they are also dual speed remains.
+BTW, are you ok with the handling of driver->speed in usb_composite_probe()?
+You didn't reply to the solution me and Alan came up with...
 
-Actually, as mentioned in my other email, I'd like to see this series
-respun with a separate patch for just moving the gpio driver (without
-breaking the build).  
+Thanks,
+Tanya Brokhman
+---
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Also, I've been thinking about how to merge these changes, and I'd
-rather take them through the gpio tree since there will be a lot of
-conflicts with the other gpio driver moves.  It will be easier to
-resolve merge conflicts if I push it out to my tree and allow the
-subarch trees to merge in mine if necessary.
 
-g.
+
+
