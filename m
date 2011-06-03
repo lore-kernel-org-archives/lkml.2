@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab1FCOSl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 10:18:41 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:48819 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755374Ab1FCOSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 10:18:39 -0400
-Date: Fri, 3 Jun 2011 16:17:56 +0200
-From: David Sterba <dave@jikos.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Chris Mason <chris.mason@oracle.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Miao Xie <miaox@cn.fujitsu.com>,
-        David Sterba <dave@jikos.cz>, Tsutomu Itoh <t-itoh@jp.fujitsu.com>,
-        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build warning from Linus' tree
-Message-ID: <20110603141756.GT12709@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-	Chris Mason <chris.mason@oracle.com>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org, Miao Xie <miaox@cn.fujitsu.com>,
-	David Sterba <dave@jikos.cz>, Tsutomu Itoh <t-itoh@jp.fujitsu.com>,
-	Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
-	Linus <torvalds@linux-foundation.org>
-References: <20110603111049.d5967bb3.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110603111049.d5967bb3.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755605Ab1FCOTb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 10:19:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:35212 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755319Ab1FCOT3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 10:19:29 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=IEGT9Ul9ajIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=k6fttIazc8Wu-YlDuqEA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] sched: fix conflict of schedule domain balance in RT
+ scheduling
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <BANLkTikoVj42S1iBHU_xFEpuGxY+TqmweA@mail.gmail.com>
+References: <BANLkTikoVj42S1iBHU_xFEpuGxY+TqmweA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 03 Jun 2011 10:19:27 -0400
+Message-ID: <1307110767.3667.51.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2011-06-01 at 21:58 +0800, Hillf Danton wrote:
 
-On Fri, Jun 03, 2011 at 11:10:49AM +1000, Stephen Rothwell wrote:
-> fs/btrfs/delayed-inode.c: In function 'btrfs_batch_insert_items':
-> fs/btrfs/delayed-inode.c:670:6: warning: 'nitems' may be used uninitialized in this function
-> 
-> Introduced by commit 16cdcec736cd ("btrfs: implement delayed inode items
-> operation").  I think this is a real bug.  This variable is not
-> initialised, only incremented and tested.
+> And checking for cache-hot is also added to confirm the comment there.
 
-yes, it's a bug and has been already hit (fix pending):
+Please read that comment.
 
-http://marc.info/?l=linux-btrfs&m=130678270307885&w=4
+>  	cpu = task_cpu(p);
+> @@ -1253,7 +1253,8 @@ static int find_lowest_rq(struct task_struct *task)
+>  	 * We prioritize the last cpu that the task executed on since
+>  	 * it is most likely cache-hot in that location.
+>  	 */
+> -	if (cpumask_test_cpu(cpu, lowest_mask))
+> +	if (cpumask_test_cpu(cpu, lowest_mask) &&
+> +	    task_hot(task, task_rq(task)->clock_task, NULL))
+>  		return cpu;
 
-thanks,
-david
+What task_hot() checks for and what we are assuming are two different
+things. In fact, we can disable task_hot() so it always fails. That's
+not what we want.
+
+If the task happens to have ran on a CPU that is in the lowest_mask, we
+want that CPU. Time may not matter. If we know a task ran on a
+particular CPU last, we want to run it there if possible. It may still
+have cache lines for it, even if it has been a long time since it last
+ran.
+
+-- Steve
+
+
