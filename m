@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab1FCBxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 21:53:31 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61445 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab1FCBxa (ORCPT
+	id S1751602Ab1FCCMC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 22:12:02 -0400
+Received: from mta11.charter.net ([216.33.127.80]:59503 "EHLO
+	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab1FCCMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 21:53:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=NGkypvq5l8juMh6T1F2e7xWFsiM01w9emuWdOzr4yurFIwWNcp8pTyzc+eJ4LG8/Ks
-         ulIcOW3yK8yhuCmovEuwxAHkQAwuTDVo3qUoa1EImclIcxmjoTkqdPh0G3fZLJ/TPwwS
-         6Pd2LfvGCSlLxgJD7z07qpYpEXk4vrCFws9Pk=
-Subject: [PATCH 2/2] mtd: nomadik_nand: add missing nand_release in
- nomadik_nand_remove
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sachin Verma <sachin.verma@st.com>, David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        linux-mtd@lists.infradead.org
-In-Reply-To: <1307065913.10001.2.camel@phoenix>
-References: <1307065913.10001.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Jun 2011 09:53:26 +0800
-Message-ID: <1307066006.10001.4.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Jun 2011 22:12:00 -0400
+X-Authority-Analysis: v=1.1 cv=vT9vkN3vVXssH3Ov7r/wQUs/sfIFjNPEFFf4aeKIi4A=
+ c=1 sm=1 a=9kOIy2HcnO8A:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
+ a=JMiTLOZU66LkKzfM0kMA:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
+From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+To: sgruszka@redhat.com, linville@tuxdriver.com
+Cc: kernel-janitors@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Subject: [PATCH 1/5] iwlegacy: remove unreachable code
+Date: Thu,  2 Jun 2011 21:06:06 -0500
+Message-Id: <1307066770-27309-1-git-send-email-Gregory.Dietsche@cuw.edu>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+return; at the end of the function is unecessary.
+
+Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
 ---
- drivers/mtd/nand/nomadik_nand.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/net/wireless/iwlegacy/iwl-eeprom.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mtd/nand/nomadik_nand.c b/drivers/mtd/nand/nomadik_nand.c
-index b6a5c86..b463ecf 100644
---- a/drivers/mtd/nand/nomadik_nand.c
-+++ b/drivers/mtd/nand/nomadik_nand.c
-@@ -187,6 +187,7 @@ static int nomadik_nand_remove(struct platform_device *pdev)
- 		pdata->exit();
+diff --git a/drivers/net/wireless/iwlegacy/iwl-eeprom.c b/drivers/net/wireless/iwlegacy/iwl-eeprom.c
+index cb346d1..5bf3f49 100644
+--- a/drivers/net/wireless/iwlegacy/iwl-eeprom.c
++++ b/drivers/net/wireless/iwlegacy/iwl-eeprom.c
+@@ -316,7 +316,6 @@ static void iwl_legacy_init_band_reference(const struct iwl_priv *priv,
+ 		break;
+ 	default:
+ 		BUG();
+-		return;
+ 	}
+ }
  
- 	if (host) {
-+		nand_release(&host->mtd);
- 		iounmap(host->cmd_va);
- 		iounmap(host->data_va);
- 		iounmap(host->addr_va);
 -- 
-1.7.4.1
-
-
+1.7.2.5
 
