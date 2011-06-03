@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634Ab1FCJrv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 05:47:51 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33971 "EHLO mx1.suse.de"
+	id S1752098Ab1FCJxP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 05:53:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33994 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750954Ab1FCJru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 05:47:50 -0400
-Date: Fri, 03 Jun 2011 11:47:48 +0200
-Message-ID: <s5h62onw8jf.wl%tiwai@suse.de>
+	id S1751465Ab1FCJxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 05:53:13 -0400
+Date: Fri, 03 Jun 2011 11:53:08 +0200
+Message-ID: <s5h4o47w8aj.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [Trivial PATCH 4/5] ALSA: asihpi: Use angle brackets for system includes
-In-Reply-To: <ffe619f08dd89fbeefb13bcba0a6e98f9662c8f8.1307092589.git.joe@perches.com>
-References: <cover.1307092588.git.joe@perches.com>
-	<ffe619f08dd89fbeefb13bcba0a6e98f9662c8f8.1307092589.git.joe@perches.com>
+To: ralf@linux-mips.org
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [alsa-devel] [patch 07/14] i8253: Make pcsp sound driver use the	shared i8253_lock.
+In-Reply-To: <20110601180610.532642190@duck.linux-mips.net>
+References: <20110601180456.801265664@duck.linux-mips.net>
+	<20110601180610.532642190@duck.linux-mips.net>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,36 +25,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Fri,  3 Jun 2011 02:28:49 -0700,
-Joe Perches wrote:
+At Wed, 01 Jun 2011 19:05:03 +0100,
+ralf@linux-mips.org wrote:
 > 
-> Use the normal include style.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+> To: linux-kernel@vger.kernel.org
+> Cc: Jaroslav Kysela <perex@perex.cz>
+> Cc: Takashi Iwai <tiwai@suse.de>
+> Cc: alsa-devel@alsa-project.org
 
-Applied to sound git tree now.
-Thanks.
+Acked-by: Takashi Iwai <tiwai@suse.de>
 
+
+thanks,
 
 Takashi
 
-> ---
->  sound/pci/asihpi/hpidspcd.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/sound/pci/asihpi/hpidspcd.c b/sound/pci/asihpi/hpidspcd.c
-> index fb311d8..5c6ea11 100644
-> --- a/sound/pci/asihpi/hpidspcd.c
-> +++ b/sound/pci/asihpi/hpidspcd.c
-> @@ -60,7 +60,7 @@ struct code_header {
->  	    HPI_VER_MINOR(HPI_VER) * 100 + HPI_VER_RELEASE(HPI_VER)))
+>  sound/drivers/pcsp/pcsp.h |    8 +-------
+>  1 file changed, 1 insertion(+), 7 deletions(-)
+> 
+> Index: linux-mips/sound/drivers/pcsp/pcsp.h
+> ===================================================================
+> --- linux-mips.orig/sound/drivers/pcsp/pcsp.h
+> +++ linux-mips/sound/drivers/pcsp/pcsp.h
+> @@ -10,14 +10,8 @@
+>  #define __PCSP_H__
 >  
->  /***********************************************************************/
-> -#include "linux/pci.h"
-> +#include <linux/pci.h>
->  /*-------------------------------------------------------------------*/
->  short hpi_dsp_code_open(u32 adapter, struct dsp_code *ps_dsp_code,
->  	u32 *pos_error_code)
-> -- 
-> 1.7.5.rc3.dirty
+>  #include <linux/hrtimer.h>
+> -#include <linux/timex.h>
+> -#if defined(CONFIG_MIPS) || defined(CONFIG_X86)
+> -/* Use the global PIT lock ! */
+>  #include <linux/i8253.h>
+> -#else
+> -#include <asm/8253pit.h>
+> -static DEFINE_RAW_SPINLOCK(i8253_lock);
+> -#endif
+> +#include <linux/timex.h>
+>  
+>  #define PCSP_SOUND_VERSION 0x400	/* read 4.00 */
+>  #define PCSP_DEBUG 0
+> 
+> 
+> _______________________________________________
+> Alsa-devel mailing list
+> Alsa-devel@alsa-project.org
+> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
 > 
