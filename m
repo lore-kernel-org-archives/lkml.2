@@ -1,100 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750990Ab1FCEZZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 00:25:25 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:62654 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab1FCEZX convert rfc822-to-8bit (ORCPT
+	id S1751179Ab1FCEmn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 00:42:43 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:35114 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab1FCEmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 00:25:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=KpHjioaCZqv6sKPIk/9gXaYaev8z/a45W9T+MwuGCwkN8LeYNSiVdivmtt0BMZNJPq
-         tI3r22TM5yXvadzzeH53Gd5ewILDbMbD1afjOgCRkZMgIa4c62CYhz2npi1Wm0op73d0
-         q9NkSXp1D/tF9MkKykGlqrElsmiRCAH6Jeky0=
+	Fri, 3 Jun 2011 00:42:42 -0400
+Date: Fri, 3 Jun 2011 00:42:09 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Chris Wright <chrisw@sous-sol.org>,
+        Mel Gorman <mel@csn.ul.ie>, Izik Eidus <ieidus@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Message-ID: <1096688927.378196.1307076129352.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <20110602141927.GA2011@thinkpad>
+Subject: Re: [BUG 3.0.0-rc1] ksm: NULL pointer dereference in ksm_do_scan()
 MIME-Version: 1.0
-In-Reply-To: <20110603020615.GZ561@dastard>
-References: <20101118142918.GA18510@infradead.org>
-	<1290100750.3041.72.camel@mulgrave.site>
-	<4CE59C9E.6050902@teksavvy.com>
-	<1290177488-sup-6540@think>
-	<4CE68F80.7000607@teksavvy.com>
-	<20101119145748.GB27919@infradead.org>
-	<4CE695FF.20601@teksavvy.com>
-	<20101207092749.GA26100@infradead.org>
-	<1291740643-sup-2494@think>
-	<BANLkTimkn7ZVAUJw6NfWVMECfe+C+82i+g@mail.gmail.com>
-	<20110603020615.GZ561@dastard>
-Date: Fri, 3 Jun 2011 13:25:21 +0900
-X-Google-Sender-Auth: RfZ4--OuZ8TnQcWwSz5ZbbWVtz4
-Message-ID: <BANLkTin7afjph7=GO=K+QcBSaOUf7zJqSw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-From: Kyungmin Park <kmpark@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Chris Mason <chris.mason@oracle.com>, Lukas Czerner <lczerner@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, Mark Lord <kernel@teksavvy.com>,
-        James Bottomley <james.bottomley@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
-        tytso <tytso@mit.edu>, linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        sandeen <sandeen@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.71]
+X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 3, 2011 at 11:06 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Thu, Jun 02, 2011 at 01:52:12PM +0900, Kyungmin Park wrote:
->> On Wed, Dec 8, 2010 at 1:52 AM, Chris Mason <chris.mason@oracle.com> wrote:
->> > Excerpts from Christoph Hellwig's message of 2010-12-07 04:27:49 -0500:
->> >> On Fri, Nov 19, 2010 at 10:21:35AM -0500, Mark Lord wrote:
->> >> > >I really hate to rely on this third party hearsay (from all sides), and
->> >> > >have implement TRIM support in qemu now.  I'll soon install win7 and
->> >> > >will check out the TRIM patters myself.
->> >> >
->> >> > Excellent!
->> >>
->> >> I did a Windows 7 installation under qemu today, and the result is:
->> >
->> > Great, thanks for testing this.
->> >
->> >>
->> >>  - it TRIMs the whole device early during the installation
->> >>  - after that I see a constant stream of small trims during the
->> >>    installation.  It's using lots of non-contiguous ranges in a single
->> >>    TRIM command, with sizes down to 8 sectors (4k) for a single range.
->> >>  - after installation there's is some background-trimming going on
->> >>    even when doing no user interaction with the VM at all.
->>
->> Hi Lukas,
->>
->> Now FITRIM is based on user interaction. So how about to implement the
->> AUTO batched discard at kernel level?
->> Idea is same as windows, make a single thread and iterate the
->> superblocks and call the trim.
->
-> Surely this the responsibility of a userspace daemon and a config
-> file to decide and implement the background trim policy?
 
-It seems to run as crond. BTW, what's config file? time based or behavior?
-my rough idea to run at kernel level.
 
-1. Block I/O aware notification.
-2. Explicit filesystem call
-3. user space request. (same as current)
-
-Thank you,
-Kyungmin Park
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
->
+----- Original Message -----
+> On Thu, Jun 02, 2011 at 03:09:53AM -0400, CAI Qian wrote:
+> > Hello,
+> >
+> > ----- Original Message -----
+> > > I've just experienced this bug with ksmd:
+> > >
+> > > [ 55.837551] BUG: unable to handle kernel NULL pointer dereference
+> > > at
+> > > 00000000000000e8
+> > > [ 55.837598] IP: [<ffffffff810bb9b2>] __lock_acquire+0x62/0x1d70
+> > > [ 55.837630] PGD 0
+> > > [ 55.837643] Oops: 0000 [#1] SMP
+> > > [ 55.837663] CPU 2
+> > > [ 55.837674] Modules linked in: snd_hda_codec_hdmi
+> > > snd_hda_codec_conexant rtl8192ce rtl8192c_common rtlwifi mac80211
+> > > usbhid hid cfg80211 snd_hda_intel snd_hda_codec psmouse snd_pcm
+> > > e1000e
+> > > thinkpad_acpi snd_timer snd_page_alloc snd soundcore nvram
+> > > [ 55.837816]
+> > > [ 55.837824] Pid: 33, comm: ksmd Not tainted 3.0.0-rc1+ #289
+> > > LENOVO
+> > > 4286CTO/4286CTO
+> > > [ 55.837850] RIP: 0010:[<ffffffff810bb9b2>] [<ffffffff810bb9b2>]
+> > > __lock_acquire+0x62/0x1d70
+> > > [ 55.837878] RSP: 0018:ffff88023d3abc50 EFLAGS: 00010046
+> > > [ 55.837894] RAX: 0000000000000046 RBX: 00000000000000e8 RCX:
+> > > 0000000000000001
+> > > [ 55.837915] RDX: 0000000000000000 RSI: 0000000000000000 RDI:
+> > > 00000000000000e8
+> > > [ 55.837936] RBP: ffff88023d3abd40 R08: 0000000000000002 R09:
+> > > 0000000000000000
+> > > [ 55.837957] R10: 0000000000000001 R11: 0000000000000000 R12:
+> > > ffff88023d3a3e00
+> > > [ 55.837978] R13: 0000000000000000 R14: 0000000000000002 R15:
+> > > 0000000000000000
+> > > [ 55.837999] FS: 0000000000000000(0000) GS:ffff88023e280000(0000)
+> > > knlGS:0000000000000000
+> > > [ 55.838022] CS: 0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > > [ 55.838039] CR2: 00000000000000e8 CR3: 00000000016f5000 CR4:
+> > > 00000000000406e0
+> > > [ 55.838060] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+> > > 0000000000000000
+> > > [ 55.838081] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+> > > 0000000000000400
+> > > [ 55.838102] Process ksmd (pid: 33, threadinfo ffff88023d3aa000,
+> > > task
+> > > ffff88023d3a3e00)
+> > > [ 55.838131] Stack:
+> > > [ 55.838140] ffff88023d3abce0 0000000000000000 ffffffff81d46810
+> > > 00000000000012c7
+> > > [ 55.838168] 000000000000037c ffff88023d3a3e00 0000000000000001
+> > > 0000000000000000
+> > > [ 55.838338] 0000000000000000 0000000000000000 00000000001ba37c
+> > > ffffffff81a22000
+> > > [ 55.838365] Call Trace:
+> > > [ 55.838375] [<ffffffff810be55f>] ? mark_held_locks+0x6f/0xa0
+> > > [ 55.838394] [<ffffffff814e3360>] ?
+> > > _raw_spin_unlock_irqrestore+0x40/0x70
+> > > [ 55.838416] [<ffffffff810bdc90>] lock_acquire+0x90/0x110
+> > > [ 55.838434] [<ffffffff8114c652>] ? ksm_scan_thread+0x132/0xe20
+> > > [ 55.838453] [<ffffffff8112df6c>] ? free_percpu+0x9c/0x130
+> > > [ 55.838470] [<ffffffff814e1cbc>] down_read+0x4c/0x70
+> > > [ 55.838486] [<ffffffff8114c652>] ? ksm_scan_thread+0x132/0xe20
+> > > [ 55.838505] [<ffffffff814e33bb>] ? _raw_spin_unlock+0x2b/0x40
+> > > [ 55.838523] [<ffffffff8114c652>] ksm_scan_thread+0x132/0xe20
+> > > [ 55.838541] [<ffffffff814df822>] ? schedule+0x3b2/0x960
+> > > [ 55.838559] [<ffffffff810a5690>] ? wake_up_bit+0x40/0x40
+> > > [ 55.838576] [<ffffffff8114c520>] ? run_store+0x310/0x310
+> > > [ 55.838593] [<ffffffff810a5186>] kthread+0x96/0xa0
+> > > [ 55.838609] [<ffffffff814e5014>] kernel_thread_helper+0x4/0x10
+> > > [ 55.838628] [<ffffffff814e3700>] ? retint_restore_args+0xe/0xe
+> > > [ 55.838647] [<ffffffff810a50f0>] ?
+> > > __init_kthread_worker+0x70/0x70
+> > > [ 55.838666] [<ffffffff814e5010>] ? gs_change+0xb/0xb
+> > > [ 55.838681] Code: b7 00 00 48 89 fb 85 c0 41 89 f5 45 0f 45 f0 8b
+> > > 05
+> > > 84 de 68 00 85 c0 0f 84 7b 09 00 00 8b 05 7a 49 7a 00 85 c0 0f 84
+> > > c6
+> > > 01 00 00
+> > > [ 55.838780] 8b 03 ba 01 00 00 00 48 3d e0 3c 8c 81 44 0f 44 f2 41
+> > > 83
+> > > fd
+> > > [ 55.838830] RIP [<ffffffff810bb9b2>] __lock_acquire+0x62/0x1d70
+> > > [ 55.838850] RSP <ffff88023d3abc50>
+> > > [ 55.839567] CR2: 00000000000000e8
+> > > [ 55.895721] ---[ end trace eea0fa5dfa6846f1 ]---
+> > >
+> > > The bug can be easily reproduced using the following testcase:
+> > >
+> > > ========================
+> > > #include <stdio.h>
+> > > #include <stdlib.h>
+> > > #include <unistd.h>
+> > > #include <sys/mman.h>
+> > >
+> > > #define BUFSIZE getpagesize()
+> > >
+> > > int main(int argc, char **argv)
+> > > {
+> > > void *ptr;
+> > >
+> > > if (posix_memalign(&ptr, getpagesize(), BUFSIZE) < 0) {
+> > > perror("posix_memalign");
+> > > exit(1);
+> > > }
+> > > if (madvise(ptr, BUFSIZE, MADV_MERGEABLE) < 0) {
+> > > perror("madvise");
+> > > exit(1);
+> > > }
+> > > *(char *)NULL = 0;
+> > Hmm, the reproducer gave something else here but no panic.
+> > $ strace ./test
+> > execve("./test", ["./test"], [/* 26 vars */]) = 0
+> > brk(0) = 0x220f000
+> > mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS,
+> > -1, 0) = 0x7fd18ec0a000
+> > access("/etc/ld.so.preload", R_OK) = -1 ENOENT (No such file or
+> > directory)
+> > open("/etc/ld.so.cache", O_RDONLY) = 3
+> > fstat(3, {st_mode=S_IFREG|0644, st_size=41227, ...}) = 0
+> > mmap(NULL, 41227, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7fd18ebff000
+> > close(3) = 0
+> > open("/lib64/libc.so.6", O_RDONLY) = 3
+> > read(3,
+> > "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\260\355\341n<\0\0\0"...,
+> > 832) = 832
+> > fstat(3, {st_mode=S_IFREG|0755, st_size=1912928, ...}) = 0
+> > mmap(0x3c6ee00000, 3737768, PROT_READ|PROT_EXEC,
+> > MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x3c6ee00000
+> > mprotect(0x3c6ef87000, 2097152, PROT_NONE) = 0
+> > mmap(0x3c6f187000, 20480, PROT_READ|PROT_WRITE,
+> > MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x187000) = 0x3c6f187000
+> > mmap(0x3c6f18c000, 18600, PROT_READ|PROT_WRITE,
+> > MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x3c6f18c000
+> > close(3) = 0
+> > mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS,
+> > -1, 0) = 0x7fd18ebfe000
+> > mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS,
+> > -1, 0) = 0x7fd18ebfd000
+> > mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS,
+> > -1, 0) = 0x7fd18ebfc000
+> > arch_prctl(ARCH_SET_FS, 0x7fd18ebfd700) = 0
+> > mprotect(0x3c6f187000, 16384, PROT_READ) = 0
+> > mprotect(0x3c6e81f000, 4096, PROT_READ) = 0
+> > munmap(0x7fd18ebff000, 41227) = 0
+> > brk(0) = 0x220f000
+> > brk(0x2232000) = 0x2232000
+> > madvise(0x2210000, 4096, 0xc /* MADV_??? */) = 0
+> > --- SIGSEGV (Segmentation fault) @ 0 (0) ---
+> > +++ killed by SIGSEGV (core dumped) +++
+> > Segmentation fault (core dumped)
+> >
+> > Did I miss anything?
+> 
+> mmh.. I can reproduce the bug also with the standard ubuntu (11.04)
+> kernel. Could you post your .config?
+http://people.redhat.com/qcai/config-3rc1
+> Thanks,
+> -Andrea
