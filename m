@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab1FCFlC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 01:41:02 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56810 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565Ab1FCFlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 01:41:00 -0400
-Date: Fri, 3 Jun 2011 14:41:53 +0900
-From: Greg KH <gregkh@suse.de>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.39.1
-Message-ID: <20110603054153.GA21163@suse.de>
-References: <20110603003835.GA20381@kroah.com>
- <20110603051731.GA13030@ericsson.com>
+	id S1751516Ab1FCFtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 01:49:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43933 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab1FCFtL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 01:49:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=BY0Foq1+xOSZcvMiG1ib1jwQrg/oBJLfYOlPqBY9SS6me7g2VnftplX6P4xTX1SkRK
+         alGFICDJLlMFDPaOjmW8A+4Rjfs2Rkk69Z+7UgREOpXBePRk7YuUGYqx3W3whWU3eqyt
+         KSC4siIWDdfPAhXhvJdbnjsJjQC08N6KQC/dk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110603051731.GA13030@ericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DE7D2AC.1070503@tilera.com>
+References: <201106021424.p52EO91O006974@lab-17.internal.tilera.com>
+	<alpine.DEB.2.00.1106021015220.18350@chino.kir.corp.google.com>
+	<4DE7D2AC.1070503@tilera.com>
+Date: Fri, 3 Jun 2011 08:49:10 +0300
+X-Google-Sender-Auth: Tf5jsKv-5FQYhqDPi_WWll95WBA
+Message-ID: <BANLkTinjCbhiwRfQ_aN5wtbYipQB6gv5AA@mail.gmail.com>
+Subject: Re: [PATCH] slub: always align cpu_slab to honor cmpxchg_double requirement
+From: Pekka Enberg <penberg@kernel.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 10:17:31PM -0700, Guenter Roeck wrote:
-> On Fri, Jun 03, 2011 at 09:38:35AM +0900, Greg KH wrote:
-> > I'm announcing the release of the 2.6.39.1 kernel.
-> > 
-> > All users of the 2.6.39 kernel series must upgrade.
-> > 
-> > The updated 2.6.39.y git tree can be found at:
-> >         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.39.y.git
-> > and can be browsed at the normal kernel.org git web browser:
-> >         http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.39.y.git;a=summary
-> > 
-> Something seems to be wrong ... hours went by, but I don't see 2.6.39.1
-> at that link (nor 2.6.38.8 at its link either, for that matter).
+On Thu, Jun 2, 2011 at 9:13 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> On 6/2/2011 1:16 PM, David Rientjes wrote:
+>> On Thu, 2 Jun 2011, Chris Metcalf wrote:
+>>> On an architecture without CMPXCHG_LOCAL but with DEBUG_VM enabled,
+>>> the VM_BUG_ON() in __pcpu_double_call_return_bool() will cause an early
+>>> panic during boot unless we always align cpu_slab properly.
+>>>
+>>> In principle we could remove the alignment-testing VM_BUG_ON() for
+>>> architectures that don't have CMPXCHG_LOCAL, but leaving it in means
+>>> that new code will tend not to break x86 even if it is introduced
+>>> on another platform, and it's low cost to require alignment.
+>>>
+>>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>> Acked-by: David Rientjes <rientjes@google.com>
+>>
+>>> ---
+>>> This needs to be pushed for 3.0 to allow arch/tile to boot.
+>>> I'm happy to push it but I assume it would be better coming
+>>> from an mm or percpu tree.  Thanks!
+>>>
+>> Should also be marked for stable for 2.6.39.x, right?
+>
+> No, in 2.6.39 the irqsafe_cpu_cmpxchg_double() was guarded under "#ifdef
+> CONFIG_CMPXCHG_LOCAL".  Now it's not.  I suppose we could take the comment
+> change in percpu.h for 2.6.39, but it probably doesn't merit churning the
+> stable tree.
 
-I know the kernel.org servers are having a few things worked on at the
-moment, so perhaps this is a side affect of that.  Give it a bit longer,
-and hopefully it will show up eventually.
-
-thanks,
-
-greg k-h
+Yup. Looks good. Christoph?
