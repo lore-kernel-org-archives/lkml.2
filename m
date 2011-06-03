@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab1FCPXe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 11:23:34 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:27526
-	"EHLO CH1EHSOBE013.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751588Ab1FCPXd convert rfc822-to-8bit
+	id S1756031Ab1FCP1g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 11:27:36 -0400
+Received: from nm8-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.194]:42008 "HELO
+	nm8-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753871Ab1FCP1e convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 11:23:33 -0400
-X-SpamScore: -16
-X-BigFish: VS-16(zz9371M168aJ1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 3 Jun 2011 23:26:44 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>, <arnd@arndb.de>,
-        <patches@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <kernel@pengutronix.de>, <olof@lixom.net>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 0/4] Move plat-mxc gpio driver into drivers/gpio
-Message-ID: <20110603152643.GB19344@S2100-06.ap.freescale.net>
-References: <1306985632-18820-1-git-send-email-shawn.guo@linaro.org>
- <20110603075201.GE10532@n2100.arm.linux.org.uk>
- <20110603143406.GA19344@S2100-06.ap.freescale.net>
- <BANLkTi=5kNAt51DP3-rykkT3ZONczD5Crg@mail.gmail.com>
+	Fri, 3 Jun 2011 11:27:34 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 653252.8978.bm@omp1018.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=ymail.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=PTcm8at7553kKAFeKgYF3/da94p2soP8t2NO5yzjXgyOSAVby1/QdsVDI88C/G+/TnJ0tbBJ7dnsZpBQIswNDNiFhZGoK8xEW1jzerXUazoATbD9J+6A9WYYwlfBQBRkU4bPwODqYNDY0yBNFncGCiyUY8gwt1+q1o0tGur1W6I=;
+Message-ID: <9945.23050.qm@web111015.mail.gq1.yahoo.com>
+X-YMail-OSG: C_HOLtMVM1n0WqvJKosOOov0lp9nJEZuztEAQWga4oFE1Co
+ s3KF9bj5KHOK..UQQ5_JDpA7e1ULnbsB5ubF8cLiQQQqzKZbb0GI9CqwrH24
+ mC1DXlhfvBDujsTnDwVsBVDlZXGy0BTlN0vkNvE3SyyQqPex8PVvpdx1GeRB
+ X96cHHT9jzSS9J0WGzMcevDWKEYfrX4_09jj3KuF6phZ53XAICg2w1AAHzUs
+ Cr0rgxbllkasOz_.KxRF2J08W76hHNlqO3ECBzbCOB2jIPrrpND056gZsD8n
+ I4cBsRD23VyNCFLd9YLFH.eUE9F6aEa3711LQ8nLuq9Y7EAz16S070RjT0oQ
+ IuM547crY4dcNTG3iOPfTkcN0hmDkGJm4RyrqhmNn_d4242lsPCsWax05CQl
+ .sAf8Gi3R7awycOp9Qet6dnBnWA--
+X-Mailer: YahooMailClassic/14.0.1 YahooMailWebService/0.8.111.304355
+Date: Fri, 3 Jun 2011 08:27:32 -0700 (PDT)
+From: Andrew Watts <akwatts@ymail.com>
+Subject: Re: git torvalds/linux-2.6.git gives obscure results
+To: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        =?iso-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
+Cc: =?iso-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <87lixjxfbh.fsf@nemi.mork.no>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=5kNAt51DP3-rykkT3ZONczD5Crg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-On Fri, Jun 03, 2011 at 08:55:58AM -0600, Grant Likely wrote:
-> On Fri, Jun 3, 2011 at 8:34 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
-> > Hi Russell,
-> >
-> > On Fri, Jun 03, 2011 at 08:52:01AM +0100, Russell King - ARM Linux wrote:
-> >> On Thu, Jun 02, 2011 at 11:33:48AM +0800, Shawn Guo wrote:
-> >> >  arch/arm/plat-mxc/gpio.c                        |  361 -------------------
-> >> >  drivers/gpio/gpio-mxc.c                         |  433 +++++++++++++++++++++++
-> >>
-> > My bad here.  I should have used 'git diff --stat -M' to show the
-> > the following.
-> >
-> > .../arm/plat-mxc/gpio.c => drivers/gpio/gpio-mxc.c |  216 +++++++++++++-------
-> >
-> >> I'm wondering why just moving this driver into drivers/gpio has
-> >> resulted in it growing by 72 lines - and it's not clear from the
-> >> diffs why that is because of the way they're broken up.
-> >>
-> > Yes, I agree.  But when I did something like that to ease the review,
-> > people think it's not necessary :)
-> >
-> > http://permalink.gmane.org/gmane.linux.kernel/1143257
+--- 6/3/11, Bjørn Mork <bjorn@mork.no> wrote:
+> There's a problem with the git installation on one of the
+> geo located
+> git.kernel.org servers, namely git4.kernel.org located at
+> the University
+> of Umeå:
 > 
-> The issue was bisectability: it looked like the build would break
-> after applying the first patch.  The first patch should move the
+> bjorn@canardo:~$ telnet git4.kernel.org git
+> Trying 130.239.17.8...
+> Connected to git4.kernel.org.
+> Escape character is '^]'.
+> git: 'daemon' is not a git command. See 'git --help'.
+> Connection closed by foreign host.
 
-Yes, the build would break only if you change Kconfig/Makefile to
-actually build it.  The patch does not enable the build of the driver
-in the patch.
+Unfortunately, the problem seems to be more pervasive. git1.kernel.org also errors out on clones/pulls with the error: "fatal: protocol error: bad line length character: git:". I confirm that the return packet payload on the errors is: "git: 'daemon' is not a git command. See 'git --help'".
 
-> driver without breaking the build, and then you can follow up with
-> driver fixes.  I don't want to see functional changes mixed in with
-> the file move change.
-> 
-Understood.  Do you want me to resend the gpio-mxs and gpio-mxc patch
-sets for that?  Or can I follow the practice you and Russell
-suggested in the future posts?  I have learnt the lesson.
-
-> > +
-> > +static struct platform_driver mxc_gpio_driver = {
-> > +       .driver         = {
-> > +               .name   = "gpio-mxc",
-> 
-> .owner = THIS_MODULE,
-> 
-Do I need to re-spin the patch set to fix it, or maintainer (you or
-Sascha) can help to fix it up?
-
-BTW, do you and Sascha get the agreement on which tree the gpio-mxs
-and gpio-mxc should go through?
-
--- 
-Regards,
-Shawn
+~ Andy
 
