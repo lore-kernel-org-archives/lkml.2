@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab1FCHBz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 03:01:55 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46239 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab1FCHBx (ORCPT
+	id S1752823Ab1FCHHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 03:07:05 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64214 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069Ab1FCHHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 03:01:53 -0400
+	Fri, 3 Jun 2011 03:07:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=rVF3a6aDcO/7qKjJakc+EQDAkdVeZmrpKSdOJnfc7ogkh9VSLoTuTlDTzD3dsGlwAq
-         OcA0mxUGo3s4wspRNDzrjkO/oVCgr8pRysBUertk6nkEa2+FJQIYF5ZhZGIC/liAG0z2
-         vda/dYnRKJMthNVPkT8dZDW9Ja/kopacElaWY=
-Message-ID: <4DE886DC.1040807@gmail.com>
-Date: Fri, 03 Jun 2011 09:01:48 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0a2) Gecko/20110420 Thunderbird/3.3a4pre
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=UMiLZWoPZF6dAn4CI55ep5Xx2Rbh/KkcJWDjeCiUJSVRjMDLBYoOaYHOjvZotohFet
+         CPqVsdsaHClPFy0iApHjZ9qOrIfPydOLJXZ83ir9moifxXTka2hzhlVlcbr439dp8t0a
+         sYuNz3sOGAIa2sfvY8K1j+l42cyQPtGbcXlao=
+Message-ID: <4DE88813.1040404@gmail.com>
+Date: Fri, 03 Jun 2011 09:06:59 +0200
+From: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.17) Gecko/20110516 Icedove/3.1.10
 MIME-Version: 1.0
-To: Joe Pranevich <jpranevich@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.0 change listings - Wonderful World of Linux 3.0
-References: <BANLkTikvU-XUu9sWX-E87a7CUtA7j+ZRpA@mail.gmail.com>
-In-Reply-To: <BANLkTikvU-XUu9sWX-E87a7CUtA7j+ZRpA@mail.gmail.com>
-X-Enigmail-Version: 1.2a1pre
-Content-Type: text/plain; charset=windows-1252
+To: Oliver Neukum <oliver@neukum.org>
+CC: linux-usb@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Oliver Neukum <oliver@neukum.name>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [2.6.39] crash in acm_ctrl_msg+0x16/0x59
+References: <4DE25252.7050503@gmail.com> <201106010934.45691.oneukum@suse.de> <4DE67F36.8060600@gmail.com> <201106022134.29647.oliver@neukum.org>
+In-Reply-To: <201106022134.29647.oliver@neukum.org>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2011 09:59 PM, Joe Pranevich wrote:
-> Happy Memorial Day! I'm a day later than I said that I would be, but I
-> have attached a first draft of the "Wonderful World of Linux 3.0"
-> document. Please take a look and I hope that you find this helpful,
-> but I also hope that it can be a place that individuals not associated
-> with kernel development can turn to find out what is new in the
-> release. (With "new" being relative, of course. With no dev release,
-> these features have been available already.)
-> 
-> Good thing I didn't post it yesterday anyway, since I was still
-> calling it Linux 2.8. :)
-> 
-> Please take a look at this and let me know if I should make any
-> corrections. I appreciate your help.
+Hi,
 
-Hi, what about static analysis and found bugs? There appeared a lot of
-tools which were first run on the 2.6 kernel and wiped out many kind of
-bugs. This includes imbalanced locking, NULL/dangling pointer
-dereferences, . I don't think that for example Coverity was ever run on
-linux-2.4 or 2.5. I for sure know, that linux kernel verification
-project, smatch, stanse and coccinelle didn't even exist before 2.6.
+Il 02/06/2011 21:34, Oliver Neukum ha scritto:
+> Am Mittwoch, 1. Juni 2011, 20:04:38 schrieb Riccardo Magliocchetti:
+>> Il 01/06/2011 09:34, Oliver Neukum ha scritto:
+>>> Am Mittwoch, 1. Juni 2011, 09:05:44 schrieb Riccardo Magliocchetti:
+>>>>>> Here's the lsusb -v
+>>>>>
+>>>>> There is something strange going on. This is a cdc-ether device.
+>>>>> Are you using any additional patches?
+>>>>
+>>>> I'm using a vanilla 2.6.39. I can get only lsusb when the phone is
+>>>> booted and in that case it is recgnized as cdc-ether.
+>>>>
+>>>> This is what i got when i attached the phone switched off like when i
+>>>> got the crash:
+>>>
+>>> Then please post lsusb -v of that state. This is a log of a connection
+>>> going wrong due to a bad cable or interference. Does that always happen?
+>>
+>> yes it does always happen because (i think) the device hangs, so lsusb
+>> does not show the device.
+>
+> Hm. Now I am completely disoriented. Could you please explain in which modi
+> the device can be connected and which of them work?
 
-So 3.0 in fact should be safer, at least in many paths which are barely
-tested otherwise -- fail and go-here-once-in-a-year paths.
+if the device is already booted when connected to the laptop it is shown 
+as cdc-ether and works fine.
+if the device is switched off when connected to the laptop i get a crash 
+/ the usb errors i posted in the last mail.
 
-regards,
--- 
-js
+But let me say again that it well may be that the device is at fault, 
+i'm only interested in not having it crash the laptop and not on having 
+it work properly as cdc-acm.
+
+thanks,
+riccardo
