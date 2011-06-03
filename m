@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab1FCG4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 02:56:54 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35413 "EHLO gate.crashing.org"
+	id S1752664Ab1FCHBl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 03:01:41 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:50214 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752116Ab1FCG4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 02:56:53 -0400
-Subject: Re: tty breakage in X (Was: tty vs workqueue oddities)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: gregkh@suse.de,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>
-In-Reply-To: <1307081874.23876.14.camel@pasglop>
-References: <1306999045.29297.55.camel@pasglop>
-	 <1307003821.29297.77.camel@pasglop>
-	 <20110602110727.7343782b@lxorguk.ukuu.org.uk>
-	 <1307062574.29297.204.camel@pasglop>  <1307081874.23876.14.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Jun 2011 16:56:29 +1000
-Message-ID: <1307084189.23876.19.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751271Ab1FCHBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 03:01:40 -0400
+Message-ID: <4DE886D1.8090807@msgid.tls.msk.ru>
+Date: Fri, 03 Jun 2011 11:01:37 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20110506 Icedove/3.0.11
+MIME-Version: 1.0
+To: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+CC: James.Bottomley@HansenPartnership.com, Jens Axboe <axboe@kernel.dk>,
+        greg@kroah.com, jslaby@suse.cz, stable@kernel.org,
+        jejb@parisc-linux.org, linux-kernel@vger.kernel.org
+Subject: Re: [stable] apparent regression (crash) - 2.6.38.6
+References: <20110511193451.GC26010@kroah.com>	<20110519002505.GB8697@kroah.com>	<1305776367.2576.0.camel@mulgrave.site> <20110601.213424.80025869.anemo@mba.ocn.ne.jp>
+In-Reply-To: <20110601.213424.80025869.anemo@mba.ocn.ne.jp>
+X-Enigmail-Version: 1.0.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-03 at 16:17 +1000, Benjamin Herrenschmidt wrote:
-
-> Some more data: It -looks- like what happens is that the flush_to_ldisc
-> work queue entry constantly re-queues itself (because the PTY is full ?)
-> and the workqueue thread will basically loop forver calling it without
-> ever scheduling, thus starving the consumer process that could have
-> emptied the PTY.
+01.06.2011 16:34, Atsushi Nemoto wrote:
+> On Thu, 19 May 2011 07:39:27 +0400, James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
+>>>>>>> [  106.994628] BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
+>>>>>>> [  106.994755] IP: [<ffffffff811bec1b>] elv_queue_empty+0x1b/0x30
+>>>>>
+>>>>> Hmm, it's another missing elevator guard, like this patch:
+>>>>>
+>>>>> http://marc.info/?l=linux-scsi&m=130348673628282
+>>>>>
+>>>>> I think the bug here is that q->elevator is null, so dereferencing
+>>>>> elevator->ops gives the bug.
+>>>>
+>>>> Is this patch going to Linus anytime soon?
+>>>
+>>> Ping?
+>>
+>> I pinged Jens about it yesterday; he said it should be on its way to
+>> Linus.
 > 
-> At least that's a semi half-assed theory. If I add a schedule() to
-> process_one_work() after dropping the lock, the problem disappears.
+> The patch in above URL ("block: add proper state guards to
+> __elv_next_request") is in mainline and stable-queues now, but how
+> about a similar fix for elv_queue_empty()?
 > 
-> So there's a combination of things here that are quite interesting:
-> 
->  - A lot of work queued for the kworker will essentially go on without
-> scheduling for as long as it takes to empty all work items. That doesn't
-> sound very nice latency-wise. At least on a non-PREEMPT kernel.
-> 
->  - flush_to_ldisc seems to be nasty and requeues itself over and over
-> again from what I can tell, when it can't push the data out, in this
-> case, I suspect because the PTY is full but I don't know for sure yet.
+> The elv_queue_empty() is removed in mainline, but it seems
+> stable-2.6.38.x and prior stable-branches still need the fix for
+> elv_queue_empty().
 
-Interesting results from x86. I could not initially reproduce there at
-all on my little Atom board (the one from kernel summit last year).
+Something like this?  (run-tested but I haven't seen the problem
+in this place)
 
-Eventually I looked at the kernel config, switched off PREEMPT_VOLUNTARY
-and I can now reproduce on x86 too. Again, if you have both threads/core
-running, the problem isn't as visible (you do see "hickups" when cat'ing
-a large file, the atom is slow enough I suppose).
+commit 2e8532e0a9ee1d25b279ac78ee8ce31701e2aa15
+Author: Michael Tokarev <mjt@tls.msk.ru>
+Date:   Fri Jun 3 10:50:49 2011 +0400
 
-But offline a cpu (leave only one up) and cat a large file (dmesg is
-enough for me to trigger it) and you see the hangs.
+    block: add proper state guards to elv_queue_empty()
 
-So I think my theory stands that flush_to_ldisc constantly reschedule
-itself causing the worker thread to eat all CPU and starve the consumer
-of the PTY. I won't have time to dig much deeper today nor probably this
-week-end so I'm sending this email for others who want to look.
+    Like in 0a58e077eb600d1efd7e54ad9926a75a39d7f8ae (backported to
+    stable 2.6.38 as 0a58e077eb600d1efd7e54ad9926a75a39d7f8ae) which
+    fixes this for __elv_next_request(), as reported by Atsushi Nemoto,
+    elv_queue_empty() also needs to check for dead queue condition
+    before touchin elevator.
 
-Cheers,
-Ben.
+    elv_queue_empty() has been removed upstream so this is only applicable
+    for versions prior to 2.6.39, including 2.6.32-longterm.
 
+    Signed-Off-By: Michael Tokarev <mjt@tls.msk.ru>
 
+diff --git a/block/elevator.c b/block/elevator.c
+index 236e93c..30cec25 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -727,7 +727,8 @@ int elv_queue_empty(struct request_queue *q)
+ 	if (!list_empty(&q->queue_head))
+ 		return 0;
+
+-	if (e->ops->elevator_queue_empty_fn)
++	if (!test_bit(QUEUE_FLAG_DEAD, &q->queue_flags) &&
++	    e->ops->elevator_queue_empty_fn)
+ 		return e->ops->elevator_queue_empty_fn(q);
+
+ 	return 1;
