@@ -1,84 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab1FCMH4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 08:07:56 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:58675 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab1FCMHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 08:07:55 -0400
-Date: Fri, 3 Jun 2011 07:07:52 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Rafael Aquini <aquini@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, rja@americas.sgi.com
-Subject: Re: [PATCH] mm: fix negative commitlimit when gigantic hugepages are allocated
-Message-ID: <20110603120751.GA24840@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20110518153445.GA18127@sgi.com> <BANLkTinbHnrf2isuLzUFZN8ypaT476G1zw@mail.gmail.com> <20110519045630.GA22533@sgi.com> <BANLkTinyYP-je9Nf8X-xWEdpgvn8a631Mw@mail.gmail.com> <20110519221101.GC19648@sgi.com> <20110520130411.d1e0baef.akpm@linux-foundation.org> <20110520223032.GA15192@x61.tchesoft.com> <20110526210751.GA14819@optiplex.tchesoft.com> <20110602040821.GA7934@sgi.com> <20110603025555.GA10530@optiplex.tchesoft.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110603025555.GA10530@optiplex.tchesoft.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1754363Ab1FCMLi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 08:11:38 -0400
+Received: from mail.codesourcery.com ([38.113.113.100]:60510 "EHLO
+	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab1FCMLh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 08:11:37 -0400
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Subject: Re: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and group stop notification, take#4
+Date: Fri, 3 Jun 2011 13:11:33 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
+Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, indan@nul.nu,
+        bdonlan@gmail.com
+References: <1306710760-16440-1-git-send-email-tj@kernel.org> <20110603012445.GA14872@mtj.dyndns.org> <201106031357.02859.vda.linux@googlemail.com>
+In-Reply-To: <201106031357.02859.vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106031311.33929.pedro@codesourcery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Russ Anderson <rja@sgi.com>
+On Friday 03 June 2011 12:57:02, Denys Vlasenko wrote:
+> On Friday 03 June 2011 03:24, Tejun Heo wrote:
+> > > > * Implicit signal on clone.
+> > > 
+> > > Best if it is converted to STOP trap (the same is one caused by INTERRUPT).
+> > > 
+> > > I guess this may be optionally changed
+> > > (similar to how PTRACE_O_TRACEEXEC
+> > > changes post-execve SIGTRAP into PTRACE_EVENT_EXEC).
+> > > 
+> > > Why not turn it on *unconditionally* on SEIZE?
+> > > Because otherwise ptrace users will turn into
+> > > 
+> > > if (we_used_SEIZE)
+> > >     do_something;
+> > > else
+> > >     do_something_else;
+> > > 
+> > > maze, which is maintenance nightmare.
+> > > It's possible users will opt to not use new functionality at all
+> > > instead of going that way.
+> > 
+> > Hmmm... I see.  The other side of the argument is that some level of
+> > "if (SEIZEd)" is inevitable anyway and in the longer run we would be
+> > better off defaulting to the better behavior than making things
+> > optional.
+> > 
+> > > If everything is monolithically tied into SEIZE, users won't be able
+> > > to opt to use only easy parts of new functionality (such as
+> > > PTRACE_INTERRUPT and PTRACE_LISTEN) if this *forces* them
+> > > to also use harder parts of new functionality, in this case
+> > > forces them to double and obfuscate their existing code
+> > > which handles SIGSTOP-on-child-auto-attach. They don't really
+> > > want to, since this SIGSTOP *in practice* isn't that problematic.
+> > 
+> > Anyways, let's think about that, but SIGSTOP on clone is closely
+> > linked to why SEIZE is used in the first place and I currently lean
+> > toward tying it to SEIZE.
+> 
+> Ok.
+> 
+> SIGSTOP on clone is less problematic because in practice it's
+> rather hard to send a real SIGSTOP to a thread which is _just_ created.
+> So the race window is mostly theoretical - unlike the much more realistic
+> race on initial attach to an already running process.
+> 
+> But if tracer already uses SEIZE on initial attach, it ought to be
+> willing to handle the new way of post-clone stop too.
+> Therefore I'm ok with this idea.
+> 
+> 
+> > > > * What to do about events which are reported by genuine SIGTRAP
+> > > >  generation?
+> > > 
+> > > I don't understand what you meant here. Example(s)?
+> > 
+> > The syscall, breakpoint, single step SIGTRAPs which can't be
+> > distinguished from userland generated SIGTRAPs and may be mixed and/or
+> > lost.  Maybe it's best to leave them alone or maybe we can add some
+> > way to distinguish them which is mostly backward compatible (which is
+> > enabled w/ SEIZE and hopefully doesn't require noticeable userland
+> > changes).
+> 
+> Currently, all PTRACE_EVENTs are enabled with ptrace options.
+> 
+> I propose using the same way instead of using something different.
+> It works. It's not problematic. Just add more PTRACE_O_foo bits.
+> Then user who really want it will use it, and users which
+> would rather use their existing code with less changes aren't
+> forced to change.
 
-On Thu, Jun 02, 2011 at 11:55:57PM -0300, Rafael Aquini wrote:
-> When 1GB hugepages are allocated on a system, free(1) reports
-> less available memory than what really is installed in the box.
-> Also, if the total size of hugepages allocated on a system is
-> over half of the total memory size, CommitLimit becomes
-> a negative number.
-> 
-> The problem is that gigantic hugepages (order > MAX_ORDER)
-> can only be allocated at boot with bootmem, thus its frames
-> are not accounted to 'totalram_pages'. However,  they are
-> accounted to hugetlb_total_pages()
-> 
-> What happens to turn CommitLimit into a negative number
-> is this calculation, in fs/proc/meminfo.c:
-> 
->         allowed = ((totalram_pages - hugetlb_total_pages())
->                 * sysctl_overcommit_ratio / 100) + total_swap_pages;
-> 
-> A similar calculation occurs in __vm_enough_memory() in mm/mmap.c.
-> 
-> Also, every vm statistic which depends on 'totalram_pages' will render
-> confusing values, as if system were 'missing' some part of its memory.
-> 
-> Reported-by: Russ Anderson <rja@sgi.com>
-> Signed-off-by: Rafael Aquini <aquini@linux.com>
-> ---
->  mm/hugetlb.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index f33bb31..c67dd0f 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1111,6 +1111,14 @@ static void __init gather_bootmem_prealloc(void)
->  		WARN_ON(page_count(page) != 1);
->  		prep_compound_huge_page(page, h->order);
->  		prep_new_huge_page(h, page, page_to_nid(page));
-> +
-> +		/* if we had gigantic hugepages allocated at boot time,
-> +		 * we need to reinstate the 'stolen' pages to totalram_pages,
-> +		 * in order to fix confusing memory reports from free(1)
-> +		 * and another side-effects, like CommitLimit going negative.
-> +		 */
-> +		if (h->order > (MAX_ORDER - 1))
-> +			totalram_pages += 1 << h->order;
->  	}
->  }
->  
-> -- 
-> 1.7.4.4
+I'm in principle against this.  What realistic good does it
+bring over making exception/syscall SIGTRAPs distinguisheable
+on the siginfo?  Userspace should see these SIGTRAPs if a tracer
+isn't there anyway, and, even if a tracer _is_ there, you
+may want to forward breakpoint/step SIGTRAPs to the
+tracee, just as if a ptracer wasn't there --- I do that often to
+debug an in-process self debugger.  Being able to distinguish the
+cause of the SIGTRAP is useful for self debuggers as well,
+which leads to putting the info in siginfo anyway.
+
+> I am not insisting on a separate bit per event,
+> single blanket PTRACE_O_FLAGTRAPS bit which converts all of these
+> to PTRACE_EVENTs all once is ok with me.
 
 -- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+Pedro Alves
