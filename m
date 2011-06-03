@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab1FCOyU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 10:54:20 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:46516 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499Ab1FCOyS (ORCPT
+	id S1752345Ab1FCOy0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 10:54:26 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:3234 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930Ab1FCOyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 10:54:18 -0400
-Subject: [PATCH 1/2] cciss: Use the correct size when mapping in the config
-	table
+	Fri, 3 Jun 2011 10:54:23 -0400
+Subject: [PATCH 2/2] cciss: fix potential overrun while memcpy'ing sense data
 To: axboe@kernel.dk
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: mikem@beardog.cce.hp.com, akpm@linux-foundation.org, thenzl@redhat.com,
         linux-kernel@vger.kernel.org, smcameron@yahoo.com
-Date: Fri, 03 Jun 2011 09:54:16 -0500
-Message-ID: <20110603145416.17174.60549.stgit@beardog.cce.hp.com>
+Date: Fri, 03 Jun 2011 09:54:22 -0500
+Message-ID: <20110603145422.17174.79317.stgit@beardog.cce.hp.com>
 In-Reply-To: <20110603145313.17174.78662.stgit@beardog.cce.hp.com>
 References: <20110603145313.17174.78662.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -27,22 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
+This memcpy:
+
+       memcpy(cmd->sense_buffer, ei->SenseInfo,
+               ei->SenseLen > SCSI_SENSE_BUFFERSIZE ?
+                       SCSI_SENSE_BUFFERSIZE :
+                       ei->SenseLen);
+
+The ei->SenseLen field is filled in by the Smart Array.  For requests to
+logical drives, it will not exceed 32 bytes, so should be ok, but for physical
+requests it depends on the target device, not the Smart Array.  It's conceivable
+that this could exceed the 32 byte size of ei->SenseInfo.  In that case, the memcpy
+would read past the end of ei->SenseInfo, copying data from the next command,
+as if it were sense data, or, if it happened to be the very last command in the
+block of allocated commands, could fall off the end of the allocated area and
+crash.  I'm not aware of anyone ever encountering this behavior, but it could
+conceivably happen.  This bug was found by Coverity.
+
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/block/cciss.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/block/cciss_scsi.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 8f4ef65..f7154a8 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -4185,7 +4185,7 @@ static int __devinit cciss_find_cfgtables(ctlr_info_t *h)
- 	if (rc)
- 		return rc;
- 	h->cfgtable = remap_pci_mem(pci_resource_start(h->pdev,
--		cfg_base_addr_index) + cfg_offset, sizeof(h->cfgtable));
-+		cfg_base_addr_index) + cfg_offset, sizeof(*h->cfgtable));
- 	if (!h->cfgtable)
- 		return -ENOMEM;
- 	rc = write_driver_ver_to_cfgtable(h->cfgtable);
+diff --git a/drivers/block/cciss_scsi.c b/drivers/block/cciss_scsi.c
+index 6961002..2405412 100644
+--- a/drivers/block/cciss_scsi.c
++++ b/drivers/block/cciss_scsi.c
+@@ -726,6 +726,7 @@ static void complete_scsi_command(CommandList_struct *c, int timeout,
+ 	struct scsi_cmnd *cmd;
+ 	ctlr_info_t *h;
+ 	ErrorInfo_struct *ei;
++	unsigned long sense_data_size;
+ 
+ 	ei = c->err_info;
+ 
+@@ -750,11 +751,14 @@ static void complete_scsi_command(CommandList_struct *c, int timeout,
+ 	/* printk("Scsistatus is 0x%02x\n", ei->ScsiStatus);  */
+ 
+ 	/* copy the sense data whether we need to or not. */
++	if (SCSI_SENSE_BUFFERSIZE < sizeof(ei->SenseInfo))
++		sense_data_size = SCSI_SENSE_BUFFERSIZE;
++	else
++		sense_data_size = sizeof(ei->SenseInfo);
++	if (ei->SenseLen < sense_data_size)
++		sense_data_size = ei->SenseLen;
+ 
+-	memcpy(cmd->sense_buffer, ei->SenseInfo, 
+-		ei->SenseLen > SCSI_SENSE_BUFFERSIZE ?
+-			SCSI_SENSE_BUFFERSIZE : 
+-			ei->SenseLen);
++	memcpy(cmd->sense_buffer, ei->SenseInfo, sense_data_size);
+ 	scsi_set_resid(cmd, ei->ResidualCnt);
+ 
+ 	if(ei->CommandStatus != 0) 
 
