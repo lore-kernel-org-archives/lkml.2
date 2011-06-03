@@ -1,94 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab1FCXkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 19:40:12 -0400
-Received: from home.keithp.com ([63.227.221.253]:36004 "EHLO keithp.com"
+	id S1755813Ab1FCXoW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 19:44:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47390 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753601Ab1FCXkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 19:40:10 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PULL] drm-intel-next
-In-Reply-To: <yun39k2gku4.fsf@aiko.keithp.com>
-References: <yunr57z3b58.fsf@aiko.keithp.com> <yunfwodyom6.fsf@aiko.keithp.com> <yuntycs7v7z.fsf@aiko.keithp.com> <yun39k2gku4.fsf@aiko.keithp.com>
-User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Fri, 03 Jun 2011 16:40:06 -0700
-Message-ID: <yunei3apjqh.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1753331Ab1FCXoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 19:44:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,317,1304319600"; 
+   d="scan'208";a="13344046"
+From: Russ Gorby <russ.gorby@intel.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Russ Gorby <russ.gorby@intel.com>,
+        linux-kernel@vger.kernel.org
+Cc: suhail.ahmed@intel.com, russ.gorby@intel.com
+Subject: [PATCHv2 0/5] N_GSM patchset : 06/03/2011: v2
+Date: Fri,  3 Jun 2011 16:43:55 -0700
+Message-Id: <1307144642-5915-1-git-send-email-russ.gorby@intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <[PATCHv2 0/5] N_GSM patchset : 06/03/2011: v2>
+References: <[PATCHv2 0/5] N_GSM patchset : 06/03/2011: v2>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hello N_GSM Maintainers,
 
+I'm sending this patchset
 
-Here's another handful of fixes that I had merged to
-drm-intel-next. Once these are merged, I'll move drm-intel-fixes and
-start putting stuff there for 3.0.
+[PATCHv2 0/5] N_GSM patchset : 06/03/2011: v2
 
-The following changes since commit 9e3c256d7d56a12a3242222945ce8e6347f93fa0:
+This patchset is the same as version 1 except it contains 2
+additional patches that are needed to make the network interface
+functionality usable.
+These are the pertinent changes that we have done to the driver.
+Thank you for yor comments.
 
-  drm/i915: initialize gen6 rps work queue on Sandy Bridge and Ivy Bridge (=
-2011-05-18 15:14:39 -0700)
-
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6.git drm=
--intel-next
-
-Chris Wilson (5):
-      drm/i915: s/addr & ~PAGE_MASK/offset_in_page(addr)/
-      drm/i915: Replace ironlake_compute_wm0 with g4x_compute_wm0
-      drm/i915/crt: Explicitly return false if connected to a digital monit=
-or
-      drm/i915: Remove unused enum "chip_family"
-      drm/i915: Share the common force-audio property between connectors
-
-Dan Carpenter (1):
-      drm/i915: fix if statement in ivybridge irq handler
-
-Daniel Vetter (3):
-      drm/i915: Only print out the actual number of fences for i915_error_s=
-tate
-      drm/i915: not finding a fence is a non-recoverable condition
-      drm/915: fix relaxed tiling on gen2: tile height
-
-Jason Stubbs (1):
-      drm/i915: fix regression after clock gating init split
-
-Nicolas Kaiser (1):
-      drm: i915: correct return status in intel_hdmi_mode_valid()
-
- drivers/gpu/drm/i915/i915_debugfs.c  |    2 +-
- drivers/gpu/drm/i915/i915_drv.h      |    8 +---
- drivers/gpu/drm/i915/i915_gem.c      |   28 +++++-----
- drivers/gpu/drm/i915/i915_irq.c      |    2 +-
- drivers/gpu/drm/i915/intel_crt.c     |    4 ++
- drivers/gpu/drm/i915/intel_display.c |   89 ++++++++----------------------=
-----
- drivers/gpu/drm/i915/intel_dp.c      |   15 +-----
- drivers/gpu/drm/i915/intel_drv.h     |    1 +
- drivers/gpu/drm/i915/intel_hdmi.c    |   16 +-----
- drivers/gpu/drm/i915/intel_modes.c   |   30 +++++++++++
- drivers/gpu/drm/i915/intel_sdvo.c    |   14 +-----
- 11 files changed, 80 insertions(+), 129 deletions(-)
-
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFN6XDWQp8BWwlsTdMRAoVvAKCudSYIz0pR6aRmq186V8n0KQd1CgCggEAB
-fRf8+9zYDefAGo2jcEtLwLM=
-=s3fB
------END PGP SIGNATURE-----
---=-=-=--
+[PATCHv2 1/7] tty: n_gsm: Add raw-ip support
+       - Added netif glue so a DLCI can map to a network IF
+[PATCHv2 2/7] tty: n_gsm: expose gsmtty device nodes at ldisc open time
+       - Caused gsmttyN device nodes to be exposed automatically.
+[PATCHv2 3/7] tty: n_gsm: Added refcount usage to gsm_mux and gsm_dlci structs
+       - added refcount access to struct shared between MUX and
+         channel clients
+[PATCHv2 4/7] tty: n_gsm: initiate close of all DLCIs during mux shutdown
+[PATCHv2 5/7] tty: n_gsm: Fixed NULL ptr OOPs in tty_write_room()
+[PATCHv2 6/7] tty: n_gsm: Fixed logic to decode break signal in modem status
+[PATCHv2 7/7] char: n_gsm: improper skb_pull() use was leaking framed data
