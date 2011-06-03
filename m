@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab1FCVxU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 17:53:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35115 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754648Ab1FCVxT (ORCPT
+	id S1755261Ab1FCVyz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 17:54:55 -0400
+Received: from aspirin.dii.utk.edu ([160.36.0.81]:49759 "EHLO
+	aspirin.dii.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247Ab1FCVyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 17:53:19 -0400
+	Fri, 3 Jun 2011 17:54:53 -0400
+Date: Fri, 3 Jun 2011 17:54:40 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Ingo Molnar <mingo@elte.hu>
+cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com
+Subject: [patch] perf - comment /proc/sys/kernel/perf_event_paranoid to be
+ part of user ABI 
+In-Reply-To: <20110524212925.GL27634@elte.hu>
+Message-ID: <alpine.DEB.2.00.1106031751170.29381@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1105240955050.9203@cl320.eecs.utk.edu> <1306246306.18455.36.camel@twins> <alpine.DEB.2.00.1105241341160.24062@cl320.eecs.utk.edu> <20110524194810.GB27634@elte.hu> <alpine.DEB.2.00.1105241610390.24062@cl320.eecs.utk.edu>
+ <4DDC1BB2.4090503@gmail.com> <20110524212925.GL27634@elte.hu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1307106096-6461-1-git-send-email-jslaby@suse.cz>
-References: <1307106096-6461-1-git-send-email-jslaby@suse.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 4 Jun 2011 06:52:57 +0900
-Message-ID: <BANLkTik5QP7e=+FWSa1kLVpCjZpWEtF1PQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] TTY: ldisc, do not close until there are readers
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@suse.de, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 3, 2011 at 10:01 PM, Jiri Slaby <jslaby@suse.cz> wrote:
->
-> There is a difference, we need uninterruptible sleep as there is
-> obviously HUP signal pending. So tty_ldisc_wait_idle now takes
-> interruptible parameter to decide. I'm not sure whether it's worth the
-> complexity. Instead uninterruptible waiting may fit even for the ldisc
-> change code. It wouldn't be possible to interrupted the change, but
-> there is 5s timeout anyway.
+On Tue, 24 May 2011, Ingo Molnar wrote:
 
-Ugh. I'd much rather not see these kinds of random flags.
+> I agree with Vince that as far as shell scripts are concerned, checking 
+> /proc/sys/kernel/perf_event_paranoid would work best - and it works better than 
+> having to check the perf syscall.
+> 
+> Vince: mind sending a patch that adds a comment to perf_event_paranoid that 
+> userspace relies on the existence of that file as a feature check? Having such 
+> reminders in the code works even better than frequent testing ;-)
 
-> This is nicely reproducible after constify the timing as follows:
-> --- a/drivers/tty/n_tty.c
-> +++ b/drivers/tty/n_tty.c
+Such a patch is included below.  Not sure if this is exactly what you 
+meant.
 
-And PLEASE don't do things like this: you just introduced a patch
-inside the email that shows the bug, and now any sane email
-application tool will just assume that THIS patch is the one you want
-to apply. So rather than applying the fix, it will apply the
-"descriptive" patch to intentionally introduce the timing delays to
-show the bug!
+> As far as the actual PAPI library goes i really hope it checks the syscall 
+> itself: that's much faster and more robust than an 
+> access("/proc/sys/kernel/perf_event_paranoid") call ...
 
-So don't include actual real patches like this without indenting them
-or doing something to make it really really obvious that the patch is
-not the one to be applied, but just a description of the problem!
+For PAPI itself we decide with substrate to use at compile time.
+This casme up because one of the vendors who ships PAPI on various kernel 
+revisions had a script to choose the right package to install, and as of 
+2.6.37 this broke due to /sys/devices/system/cpu/perf_events going away.
 
-                     Linus
+Thanks,
+
+Vince
+vweaver1@eecs.utk.edu
+
+Signed-off-by: Vince Weaver <vweaver1@eecs.utk.edu>
+
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 4fc9244..cbdc7bc 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -938,6 +938,8 @@ static struct ctl_table kern_table[] = {
+ 	},
+ #endif
+ #ifdef CONFIG_PERF_EVENTS
++	/* Userspace relies on this file existing as a check for */
++	/* perf_events being enabled.  Do not remove!            */
+ 	{
+ 		.procname	= "perf_event_paranoid",
+ 		.data		= &sysctl_perf_event_paranoid,
