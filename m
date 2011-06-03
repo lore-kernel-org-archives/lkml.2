@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439Ab1FCC0P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 22:26:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62841 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab1FCC0O convert rfc822-to-8bit (ORCPT
+	id S1753039Ab1FCC1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 22:27:42 -0400
+Received: from mta31.charter.net ([216.33.127.82]:43517 "EHLO
+	mta31.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab1FCC1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 22:26:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=NrlIIcFv4HIwN0v/6rP3Dt97FVfIKjV2BRAhUeBqT7mATFslGjvoafGqHm9KACXAqg
-         vzlIErj58SbQHvBSNaUmFTlwc3nsJg3whzC2myu2GWMPgjvbe8iV9/nBRmqxlRvXpCsv
-         XDe1EG9w100KojXGYaBhvJtAfJREYsyAxtZ+Y=
-MIME-Version: 1.0
-In-Reply-To: <1307065913.10001.2.camel@phoenix>
-References: <1307065913.10001.2.camel@phoenix>
-From: Wan ZongShun <mcuos.com@gmail.com>
-Date: Fri, 3 Jun 2011 10:25:52 +0800
-Message-ID: <BANLkTikeK=bPMSrWEmjk6x=KwREJyajzvg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mtd: nuc900_nand: add missing nand_release in nuc900_nand_remove
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        linux-mtd@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Jun 2011 22:27:41 -0400
+X-Greylist: delayed 940 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Jun 2011 22:27:40 EDT
+X-Authority-Analysis: v=1.1 cv=vT9vkN3vVXssH3Ov7r/wQUs/sfIFjNPEFFf4aeKIi4A=
+ c=1 sm=1 a=GGrxyAfQCZYA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
+ a=rxttENXTW1sgyJ2bJW0A:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
+From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+To: malattia@linux.it
+Cc: mjg@redhat.com, kernel-janitors@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Subject: [PATCH] sony-laptop: remove unused local variables
+Date: Thu,  2 Jun 2011 21:27:20 -0500
+Message-Id: <1307068040-2918-1-git-send-email-Gregory.Dietsche@cuw.edu>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/3 Axel Lin <axel.lin@gmail.com>:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Removed two unused instances of "handle" local variable.
 
-Acked-by: Wan ZongShun <mcuos.com@gmail.com>
+Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+---
+ drivers/platform/x86/sony-laptop.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-Thanks!
-
-> ---
->  drivers/mtd/nand/nuc900_nand.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/mtd/nand/nuc900_nand.c b/drivers/mtd/nand/nuc900_nand.c
-> index 9c30a0b..fa8faed 100644
-> --- a/drivers/mtd/nand/nuc900_nand.c
-> +++ b/drivers/mtd/nand/nuc900_nand.c
-> @@ -339,6 +339,7 @@ static int __devexit nuc900_nand_remove(struct platform_device *pdev)
->        struct nuc900_nand *nuc900_nand = platform_get_drvdata(pdev);
->        struct resource *res;
->
-> +       nand_release(&nuc900_nand->mtd);
->        iounmap(nuc900_nand->reg);
->
->        res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> --
-> 1.7.4.1
->
->
->
->
-
-
-
+diff --git a/drivers/platform/x86/sony-laptop.c b/drivers/platform/x86/sony-laptop.c
+index 6fe8cd6..9a2c319 100644
+--- a/drivers/platform/x86/sony-laptop.c
++++ b/drivers/platform/x86/sony-laptop.c
+@@ -961,7 +961,6 @@ static int sony_backlight_get_brightness(struct backlight_device *bd)
+ static int sony_nc_get_brightness_ng(struct backlight_device *bd)
+ {
+ 	int result;
+-	int *handle = (int *)bl_get_data(bd);
+ 	struct sony_backlight_props *sdev =
+ 		(struct sony_backlight_props *)bl_get_data(bd);
+ 
+@@ -973,7 +972,6 @@ static int sony_nc_get_brightness_ng(struct backlight_device *bd)
+ static int sony_nc_update_status_ng(struct backlight_device *bd)
+ {
+ 	int value, result;
+-	int *handle = (int *)bl_get_data(bd);
+ 	struct sony_backlight_props *sdev =
+ 		(struct sony_backlight_props *)bl_get_data(bd);
+ 
 -- 
-Wan ZongShun.
-www.mcuos.com
+1.7.2.5
+
