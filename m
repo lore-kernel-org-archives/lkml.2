@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab1FCHel (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 03:34:41 -0400
-Received: from mail-px0-f170.google.com ([209.85.212.170]:41571 "EHLO
-	mail-px0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098Ab1FCHek (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 03:34:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=NUEk2Dt5vyQixuevCFFYOpglcOf/ZA1Cd6RmtqC3WabbjDPjDSHEjfRQTkZwC7iZ9S
-         UMjD0lhAnE70+t7U0a+QFUE80udckpaevm0aajWKidxMCqUVSYqVTtYgddYnxVfKVu26
-         RDLKPMX/kmdpUnUcHKNhJcTB7xOoH9XpblXbc=
-Subject: [PATCH] mtd: pxa3xx_nand: remove unused variable 'mtd'
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Eric Miao <eric.y.miao@gmail.com>, linux-mtd@lists.infradead.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Jun 2011 15:34:33 +0800
-Message-ID: <1307086473.7474.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752953Ab1FCHlJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 03:41:09 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:49042 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752098Ab1FCHlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 03:41:07 -0400
+Date: Fri, 3 Jun 2011 09:41:00 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bruce Ashfield <bruce.ashfield@windriver.com>
+Subject: Re: [PATCH] perf: fix gcc4.6 build failure with unused-but-set
+ warning
+Message-ID: <20110603074100.GA16694@elte.hu>
+References: <8a0acb368eef010fd2eb2e889e2c62d91bd8a918.1307047668.git.dvhart@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8a0acb368eef010fd2eb2e889e2c62d91bd8a918.1307047668.git.dvhart@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unused variable 'mtd' to eliminate below warning.
 
-  CC      drivers/mtd/nand/pxa3xx_nand.o
-drivers/mtd/nand/pxa3xx_nand.c: In function 'pxa3xx_nand_suspend':
-drivers/mtd/nand/pxa3xx_nand.c:1167: warning: unused variable 'mtd'
-drivers/mtd/nand/pxa3xx_nand.c: In function 'pxa3xx_nand_resume':
-drivers/mtd/nand/pxa3xx_nand.c:1180: warning: unused variable 'mtd'
+* Darren Hart <dvhart@linux.intel.com> wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mtd/nand/pxa3xx_nand.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+> This patch creates a new perf/Makefile variable, LESS_WARNINGS and 
+> adds -Wno-unused-but-set-variable. The new variable helps 
+> distinguish between the added warnings in EXTRA_WARNINGS versus 
+> those we want to remove, including the existing -Wno-system-headers 
+> which I moved to LESS_WARNINGS.
 
-diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
-index 1fb3b3a..5cae8ae 100644
---- a/drivers/mtd/nand/pxa3xx_nand.c
-+++ b/drivers/mtd/nand/pxa3xx_nand.c
-@@ -1164,7 +1164,6 @@ static int pxa3xx_nand_probe(struct platform_device *pdev)
- static int pxa3xx_nand_suspend(struct platform_device *pdev, pm_message_t state)
- {
- 	struct pxa3xx_nand_info *info = platform_get_drvdata(pdev);
--	struct mtd_info *mtd = info->mtd;
- 
- 	if (info->state) {
- 		dev_err(&pdev->dev, "driver busy, state = %d\n", info->state);
-@@ -1177,7 +1176,6 @@ static int pxa3xx_nand_suspend(struct platform_device *pdev, pm_message_t state)
- static int pxa3xx_nand_resume(struct platform_device *pdev)
- {
- 	struct pxa3xx_nand_info *info = platform_get_drvdata(pdev);
--	struct mtd_info *mtd = info->mtd;
- 
- 	nand_writel(info, NDTR0CS0, info->ndtr0cs0);
- 	nand_writel(info, NDTR1CS0, info->ndtr1cs0);
--- 
-1.7.4.1
+Btw., while you resolved the issue, it would nevertheless nice to 
+introduce a 'make WERROR=0' build method that removes -Werror.
 
+Would you be interested in sending a patch for that?
 
+There would be several advantages of such a patch:
 
+ - GCC often introduces new warnings with lots of false positives - 
+   breaking -Werror builds. WERROR=0 would allow one to build perf 
+   without much fuss - while people would still send patches to avoid 
+   the fuss of having to type WERROR=0 :-)
+
+ - bisecting back to commits that produce a (mostly harmless) warning 
+   on some compiler is more difficult. With WERROR=0 one could bisect 
+   without worrying about harmless warnings.
+
+Thanks,
+
+	Ingo
