@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab1FCPSI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 11:18:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55478 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755853Ab1FCPSG (ORCPT
+	id S1755945Ab1FCPUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 11:20:40 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:59341 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab1FCPUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 11:18:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Timur Tabi <timur@freescale.com>
-Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor management driver
-Date: Fri, 3 Jun 2011 17:17:59 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: kumar.gala@freescale.com, benh@kernel.crashing.org, greg@kroah.com,
-        akpm@kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106012340.14237.arnd@arndb.de> <4DE8F347.9060104@freescale.com>
-In-Reply-To: <4DE8F347.9060104@freescale.com>
+	Fri, 3 Jun 2011 11:20:39 -0400
+Date: Fri, 3 Jun 2011 11:20:23 -0400 (EDT)
+From: Dave Anderson <anderson@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, andi@firstfloor.org, jstancek@redhat.com,
+        anderson@redhat.com
+Message-ID: <2060873692.1232.1307114423575.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <313387488.1201.1307114323524.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
+Subject: [PATCH] x86-64: Prevent gcc from optimizing away venosys_1()
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106031717.59927.arnd@arndb.de>
-X-Provags-ID: V02:K0:QwaY3NrpXnbtkfUtko1kQOpRIJSe5vYY+td1PkevYsD
- M94+TwkOZkKoWr9QQ85anW7Euig61cVGod32fWZcdOcPBoxlLQ
- QH7lbVmYnWqikPXSlLVdGQbcgiTEA6NvBlYB/63bQOQ8dYYVsP
- GB+jxxq8F8abPAZUUjRKGO2vNFnchjkxTsd48xmBsxUwKDt7RT
- ouTe/EgTqPT57spy8D4ng==
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 03 June 2011, Timur Tabi wrote:
-> Arnd Bergmann wrote:
-> > For an ioctl, please follow the normal pattern of defining a separate
-> > structure for each case, no union.
-> > 
-> > You can use a void __user * in the common ioctl function, and pass that
-> > to the typed argument list in the specific functions.
-> 
-> I have a GPL question.  This header file is currently licensed under the  GPL v2
-> only.  Does that mean that any application that includes this header file so
-> that it can talk to the driver/hypervisor also needs to be licensed under the GPL?
+One of the changes in commit a4928cffe6435caf427ae673131a633c1329dbf3 
+made the venosys_1() system call static, which causes it to be 
+optimized out of the kernel:
 
-If you have a license question, ask your lawyer.
+  Author: Ingo Molnar <mingo@elte.hu>
+  Date:   Wed Apr 23 13:20:56 2008 +0200
 
-Common answers that you would hear are:
+  "make namespacecheck" fixes
 
-* User space interfaces of the kernel are excluded from the License by the
-  "normal system call" exception in linux/COPYING.
+  Signed-off-by: Ingo Molnar <mingo@elte.hu>
 
-* If the header files only contain interfaces but no code, they are not
-  copyrighted.
+Commit 2e8ad43ec07545780ce7992cb18e2d82c7abd24c had originally
+changed all vsyscalls from being static for the same reason:
 
-* If you want to ship a copy of the file with a user space application source,
-  but have to make it available under multiple licenses to do that, e.g. dual
-  GPL/BSD.
+  Author: Andi Kleen <ak@suse.de>
+  Date:   Mon Sep 12 18:49:24 2005 +0200
 
-	Arnd
+  [PATCH] x86-64: Prevent gcc 4 from optimizing away vsyscalls
+    
+  They were previously static.
+    
+  Signed-off-by: Andi Kleen <ak@suse.de>
+  Signed-off-by: Linus Torvalds <torvalds@osdl.org>
+
+Reported-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Dave Anderson <anderson@redhat.com>
+
+---
+
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 3e68218..60a34af 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -222,7 +222,7 @@ vgetcpu(unsigned *cpu, unsigned *node, struct getcpu_cache *tcache)
+ 	return 0;
+ }
+ 
+-static long __vsyscall(3) venosys_1(void)
++long __vsyscall(3) venosys_1(void)
+ {
+ 	return -ENOSYS;
+ }
