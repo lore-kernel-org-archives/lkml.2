@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab1FCTcB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 15:32:01 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:22640 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751797Ab1FCTcA (ORCPT
+	id S1754945Ab1FCTeI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 15:34:08 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34722 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212Ab1FCTeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 15:32:00 -0400
-X-SpamScore: -17
-X-BigFish: VS-17(zz9371M1102K1432N98dKzz1202hzz8275bhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 3 Jun 2011 14:31:27 -0500
-From: Scott Wood <scottwood@freescale.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Timur Tabi <timur@freescale.com>, <alan@lxorguk.ukuu.org.uk>,
-        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>
-Subject: Re: [PATCH] lib: introduce strdup_from_user
-Message-ID: <20110603143127.3c25896e@schlenkerla.am.freescale.net>
-In-Reply-To: <BANLkTikmVncMdJhK0Hi6uWeiE_S9TtdhTQ@mail.gmail.com>
-References: <1307119552-15573-1-git-send-email-timur@freescale.com>
-	<BANLkTikFjF0WF---8A9_CBybf+bUji2smw@mail.gmail.com>
-	<4DE92675.6080908@freescale.com>
-	<BANLkTimB2UanZA4wf=uBGcj=wKmDhCco=w@mail.gmail.com>
-	<4DE9294B.3040501@freescale.com>
-	<BANLkTinqQS11nXQAJBMSvCrp4tOtCg5Qww@mail.gmail.com>
-	<20110603135303.0800e4a7@schlenkerla.am.freescale.net>
-	<BANLkTikmVncMdJhK0Hi6uWeiE_S9TtdhTQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+	Fri, 3 Jun 2011 15:34:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=TIdrSNnyvF45UQbmq+JbZY77zHDkyjOMbWVMkIGCFoRici5NTv6nhVcuoDo09zboPW
+         Qs8jr6b307HlADtfMB3F0HtmTLIc+3kSa8EF4U2f3vN/b5xre4j3BSpwejvYm0fAbCAm
+         ceFcuv49A83HW4K8gkTR6hXgLbFvc8lxOHJ6M=
+Subject: Re: bridge/netfilter: regression in 2.6.39.1
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org
+In-Reply-To: <4DE93422.3070000@ahsoftware.de>
+References: <4DE93422.3070000@ahsoftware.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 03 Jun 2011 21:34:02 +0200
+Message-ID: <1307129642.2600.2.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Jun 2011 22:12:37 +0300
-Alexey Dobriyan <adobriyan@gmail.com> wrote:
-
-> On Fri, Jun 3, 2011 at 9:53 PM, Scott Wood <scottwood@freescale.com> wrote:
-> > On Fri, 3 Jun 2011 21:39:28 +0300
-> > Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> >
-> >> On Fri, Jun 3, 2011 at 9:34 PM, Timur Tabi <timur@freescale.com> wrote:
-> >> > Would it be better if I did this:
-> >>
-> >> The point is data should cross kernelspace/userspace boundary only once.
-> >>
-> >
-> > Why does it matter, as long as it doesn't hurt the kernel if userspace
-> > plays games (i.e. take care of the NUL termination), and it's not a
-> > performance problem?
+Le vendredi 03 juin 2011 à 21:21 +0200, Alexander Holler a écrit :
+> Hello,
 > 
-> Because now you're lucky C strings are NUL-terminated.
-> If this "idiom" applies to some other case like "validate + copy",
-> we have a bug.
+> I'm getting a oops in the bridge code in br_change_mtu() with 2.6.39.1. 
+> The patch below seems to fix that.
+> 
+> I'm not sure about the usage of dst_cow_metrics_generic() in 
+> fake_dst_ops, but after having a quick look at it seems to be ok to use 
+> that here.
+> 
+> Regards,
+> 
+> Alexander
+> 
+> -----
+>  From 3c1d5951af73389798afeea672ec224e195b8e8d Mon Sep 17 00:00:00 2001
+> From: Alexander Holler <holler@ahsoftware.de>
+> Date: Fri, 3 Jun 2011 20:43:06 +0200
+> Subject: [PATCH] bridge: add dst_cow_metrics_generic to fake_dst_ops
+> 
+> Commit 42923465fb8d025a2b5153f2e7ab1e6e1058bf00 does here what it
+> should prevent, it introduces NULL a dereference.
+> 
 
-It's not an idiom.  It is a simple solution to this particular problem.
+I cant find this commit in known trees. Could you give the real commit
+id and its title ?
 
-> We copy data to kernelspace THEN validate or copy or whatever.
-> This is obviously correct and safe.
+> The above commit uses dst_init_metrics() which sets the metrics as
+> read only. As result br_change_mtu() dies in dst_metric_set()
+> which calls dst_metrics_write_ptr() which calls
+> dst->ops->cow_metrics() if the metrics are read only.
+> ---
+>   net/bridge/br_netfilter.c |    1 +
+>   1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+> index 5f9c091..de982a1 100644
+> --- a/net/bridge/br_netfilter.c
+> +++ b/net/bridge/br_netfilter.c
+> @@ -107,6 +107,7 @@ static void fake_update_pmtu(struct dst_entry *dst, 
+> u32 mtu)
+>   static struct dst_ops fake_dst_ops = {
+>          .family =               AF_INET,
+>          .protocol =             cpu_to_be16(ETH_P_IP),
+> +       .cow_metrics =          dst_cow_metrics_generic,
+>          .update_pmtu =          fake_update_pmtu,
+>   };
+> 
 
-That doesn't mean that other things are necessarily incorrect or unsafe.
-The first access is not validation in this case.
+Your patch is mangled (white spaces instead of tabulations)
 
-In any case, as it appears there's already a strndup_user() in the kernel,
-we'll just use that.  You can "fix" it to do a single userspace access, if
-you'd like. :-)
+Thanks
 
--Scott
 
