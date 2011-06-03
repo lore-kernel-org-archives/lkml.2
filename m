@@ -1,47 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544Ab1FCRAD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 13:00:03 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:59989 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077Ab1FCRAC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 13:00:02 -0400
-Message-ID: <4DE9130B.8040306@tilera.com>
-Date: Fri, 3 Jun 2011 12:59:55 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
+	id S1755720Ab1FCRF0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 13:05:26 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:49474 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755663Ab1FCRFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 13:05:21 -0400
+From: Mike Frysinger <vapier@gentoo.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [GIT PULL] fixes for arch/tile for 3.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+Subject: Pull request blackfin.git (for-linus branch)
+Date: Fri,  3 Jun 2011 13:04:34 -0400
+Message-Id: <1307120674-5504-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+The following changes since commit 1fa7b6a29c61358cc2ca6f64cef4aa0e1a7ca74c:
 
-Please pull for 3.0 from:
+  Revert "mm: fail GFP_DMA allocations when ZONE_DMA is not configured" (2011-06-02 06:11:24 +0900)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git stable
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin.git for-linus
 
-This adds support to asm-generic for the new sendmmsg syscall, and
-also enables backtrace reporting on panic for tile.  They are each
-basically one-line fixes.
+Steven Miao (1):
+      Blackfin: strncpy: fix handling of zero lengths
 
-Chris Metcalf (2):
-      tile: enable CONFIG_BUGVERBOSE
-      asm-generic/unistd.h: support sendmmsg syscall
-
- include/asm-generic/unistd.h |    4 +++-
- lib/Kconfig.debug            |    2 +-
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
-
+ arch/blackfin/lib/strncpy.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
