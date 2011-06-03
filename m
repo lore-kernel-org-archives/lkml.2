@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab1FCRXc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 13:23:32 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37980 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab1FCRXa (ORCPT
+	id S1753870Ab1FCR05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 13:26:57 -0400
+Received: from science.horizon.com ([71.41.210.146]:29060 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753546Ab1FCR04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 13:23:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=UGtslUiAzaMpzi0oC+ERMpiFDiOZaGOF3ohHIuavi+QLo5U3RlA2IrxXMg22cZ6h4j
-         lIXcAKMHLE7WJUAYMdwTW40vs+oYpYUeWTB0l1m0GRidSvrc1nmYgwJRmvBM95Rq1IR4
-         MesHGmwA9yxACIGROTtvGmt+1dsYPLZ9/I/do=
-From: Andre Bartke <andre.bartke@googlemail.com>
-To: mchehab@infradead.org
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andre Bartke <andre.bartke@gmail.com>
-Subject: [PATCH] drivers/media: fix uninitialized variable
-Date: Fri,  3 Jun 2011 19:22:01 +0200
-Message-Id: <1307121721-6658-1-git-send-email-andre.bartke@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
+	Fri, 3 Jun 2011 13:26:56 -0400
+Date: 3 Jun 2011 13:26:52 -0400
+Message-ID: <20110603172652.11807.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux-kernel@vger.kernel.org
+Subject: How to measure enable_kernel_fpu overhead?
+Cc: linux@horizon.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mx1_camera_add_device() can return an
-uninitialized value of ret.
+I'm working on some crypto primitives, and have MMX and SSE2 accelerated
+versions.  I plan on writing AltiVec (PPC) and NEON (ARM) ones, too.
 
-Signed-off-by: Andre Bartke <andre.bartke@gmail.com>
----
- drivers/media/video/mx1_camera.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+But the performance varies, so I think I need to do some run-time
+benchmarking, like the RAID6 code.
 
-diff --git a/drivers/media/video/mx1_camera.c b/drivers/media/video/mx1_camera.c
-index bc0c23a..d9fc4b2 100644
---- a/drivers/media/video/mx1_camera.c
-+++ b/drivers/media/video/mx1_camera.c
-@@ -444,7 +444,7 @@ static int mx1_camera_add_device(struct soc_camera_device *icd)
- {
- 	struct soc_camera_host *ici = to_soc_camera_host(icd->dev.parent);
- 	struct mx1_camera_dev *pcdev = ici->priv;
--	int ret;
-+	int ret = 0;
- 
- 	if (pcdev->icd) {
- 		ret = -EBUSY;
--- 
-1.7.5.2
+But what's even more annoying is that unlike the RAID6 code, I can't
+assume I'll alawys be working on large blocks.  So it's not so much about
+choosing one version as choosing a size threshold at which to switch over.
 
+Which leads us into the overhead of enable_kernel_fpu(),
+enable_kernel_altivec(), and whatever the ARM equivalent is.
+(Um, did a little searching... does it even exist?)
+
+To complicate it a little more, there are at two timing cases, depending
+on the value of current_thread_info()->status & TS_USEDFPU.  (For PowerPC,
+it's current->thread.regs->msr & MSR_VEC.)
+
+There may be additional timing variation depending on how clever XSAVE
+is with e.g. the high half of the ymm registers.
+
+
+So I think the thing to do is benchmark a few different sizes in the two
+timing cases and fit a linear function to the results.  (More simply,
+subtract the timings from the integer code and find the X-intercept of
+that function.)
+
+But I'm not sure how to create, a suitably dirty user FPU state.
+Especially as it might be early boot and there might not be any user
+processes yet to save it to.
+
+Does anyone have any suggestions?
+
+Thank you!
