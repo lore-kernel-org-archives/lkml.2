@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab1FCPsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 11:48:21 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55174 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab1FCPsU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 11:48:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=-YdaU07TrJsbJuZ9SrYi9uV0ACQ@mail.gmail.com>
-References: <1306985632-18820-1-git-send-email-shawn.guo@linaro.org>
- <20110603075201.GE10532@n2100.arm.linux.org.uk> <20110603143406.GA19344@S2100-06.ap.freescale.net>
- <BANLkTi=5kNAt51DP3-rykkT3ZONczD5Crg@mail.gmail.com> <20110603152643.GB19344@S2100-06.ap.freescale.net>
- <BANLkTi=-YdaU07TrJsbJuZ9SrYi9uV0ACQ@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 3 Jun 2011 09:48:00 -0600
-X-Google-Sender-Auth: M0zZsvvQQO0okiwQ4YyH45NDiXw
-Message-ID: <BANLkTi=odpKzvkFfhdbinH3j8-Omz9HM2g@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] Move plat-mxc gpio driver into drivers/gpio
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, arnd@arndb.de,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, olof@lixom.net,
-        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752243Ab1FCQKI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 12:10:08 -0400
+Received: from lo.gmane.org ([80.91.229.12]:45878 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751391Ab1FCQKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 12:10:06 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Bernhard Held <bheld@mgpi.de>
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+Date: Fri, 03 Jun 2011 17:50:40 +0200
+Message-ID: <isavsg$3or$1@dough.gmane.org>
+References: <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com> <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com> <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com> <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: smtp.mgpi.de
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+In-Reply-To: <4DE8E3ED.7080004@fnarfbargle.com>
+Cc: linux-mm@kvack.org, kvm@vger.kernel.org, netdev@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 3, 2011 at 9:47 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Fri, Jun 3, 2011 at 9:26 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
->> Hi Grant,
->>
->> On Fri, Jun 03, 2011 at 08:55:58AM -0600, Grant Likely wrote:
->>> On Fri, Jun 3, 2011 at 8:34 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
->>> > Hi Russell,
->>> >
->>> > On Fri, Jun 03, 2011 at 08:52:01AM +0100, Russell King - ARM Linux wrote:
->>> >> On Thu, Jun 02, 2011 at 11:33:48AM +0800, Shawn Guo wrote:
->>> >> >  arch/arm/plat-mxc/gpio.c                        |  361 -------------------
->>> >> >  drivers/gpio/gpio-mxc.c                         |  433 +++++++++++++++++++++++
->>> >>
->>> > My bad here.  I should have used 'git diff --stat -M' to show the
->>> > the following.
->>> >
->>> > .../arm/plat-mxc/gpio.c => drivers/gpio/gpio-mxc.c |  216 +++++++++++++-------
->>> >
->>> >> I'm wondering why just moving this driver into drivers/gpio has
->>> >> resulted in it growing by 72 lines - and it's not clear from the
->>> >> diffs why that is because of the way they're broken up.
->>> >>
->>> > Yes, I agree.  But when I did something like that to ease the review,
->>> > people think it's not necessary :)
->>> >
->>> > http://permalink.gmane.org/gmane.linux.kernel/1143257
+Am 03.06.2011 15:38, schrieb Brad Campbell:
+> On 02/06/11 07:03, CaT wrote:
+>> On Wed, Jun 01, 2011 at 07:52:33PM +0800, Brad Campbell wrote:
+>>> Unfortunately the only interface that is mentioned by name anywhere
+>>> in my firewall is $DMZ (which is ppp0 and not part of any bridge).
 >>>
->>> The issue was bisectability: it looked like the build would break
->>> after applying the first patch.  The first patch should move the
+>>> All of the nat/dnat and other horrible hacks are based on IP addresses.
 >>
->> Yes, the build would break only if you change Kconfig/Makefile to
->> actually build it.  The patch does not enable the build of the driver
->> in the patch.
->>
->>> driver without breaking the build, and then you can follow up with
->>> driver fixes.  I don't want to see functional changes mixed in with
->>> the file move change.
->>>
->> Understood.  Do you want me to resend the gpio-mxs and gpio-mxc patch
->> sets for that?  Or can I follow the practice you and Russell
->> suggested in the future posts?  I have learnt the lesson.
+>> Damn. Not referencing the bridge interfaces at all stopped our host from
+>> going down in flames when we passed it a few packets. These are two
+>> of the oopses we got from it. Whilst the kernel here is .35 we got the
+>> same issue from a range of kernels. Seems related.
 >
-> Please repost.
+> Well, I tried sending an explanatory message to netdev, netfilter & cc'd to kvm,
+> but it appears not to have made it to kvm or netfilter, and the cc to netdev has
+> not elicited a response. My resend to netfilter seems to have dropped into the
+> bit bucket also.
+Just another reference 3.5 months ago:
+http://www.spinics.net/lists/netfilter-devel/msg17239.html
 
-An you can add in any acked-by you've received on these patches.
+Bernhard
 
-g.
