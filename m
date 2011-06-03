@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab1FCQA6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 12:00:58 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:55564 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430Ab1FCQA5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 12:00:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: Re: [PATCH] asm-generic: add another generic ext2 atomic bitops
-Date: Fri, 3 Jun 2011 18:00:22 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-arch@vger.kernel.org
-References: <1306938736-11119-1-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1306938736-11119-1-git-send-email-akinobu.mita@gmail.com>
+	id S1753278Ab1FCQHe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 12:07:34 -0400
+Received: from fnarfbargle.com ([93.93.131.224]:59000 "EHLO fnarfbargle.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750965Ab1FCQHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 12:07:33 -0400
+Message-ID: <4DE906C0.6060901@fnarfbargle.com>
+Date: Sat, 04 Jun 2011 00:07:28 +0800
+From: Brad Campbell <brad@fnarfbargle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: kvm@vger.kernel.org
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+References: <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com> <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com> <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com> <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com> <isavsg$3or$1@dough.gmane.org>
+In-Reply-To: <isavsg$3or$1@dough.gmane.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106031800.22298.arnd@arndb.de>
-X-Provags-ID: V02:K0:tOkbta8SrnaGnghf8G4tnQvQAQkd14w4hAI5zu+LGSM
- 98t4zi4TOaTC1jCOKNQq558FF1KRczrtPmjmZPpe9iDicwhMsH
- gXjAjKjUocd6McbQYdAdYIn/d26EuebjQMFMeHUSgkkVToB9TE
- heOBi+rLHcsHtaSYC3j4MEIr62wz4QcnMhcsp0rhfZF0GS/TFL
- xFCOFzRdruqob7YQOQKXQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 June 2011, Akinobu Mita wrote:
-> The majority of architectures implement ext2 atomic bitops as
-> test_and_{set,clear}_bit() without spinlock.
-> 
-> This adds this type of generic implementation in ext2-atomic.h and
-> use it wherever possible.
+On 03/06/11 23:50, Bernhard Held wrote:
+> Am 03.06.2011 15:38, schrieb Brad Campbell:
+>> On 02/06/11 07:03, CaT wrote:
+>>> On Wed, Jun 01, 2011 at 07:52:33PM +0800, Brad Campbell wrote:
+>>>> Unfortunately the only interface that is mentioned by name anywhere
+>>>> in my firewall is $DMZ (which is ppp0 and not part of any bridge).
+>>>>
+>>>> All of the nat/dnat and other horrible hacks are based on IP addresses.
+>>>
+>>> Damn. Not referencing the bridge interfaces at all stopped our host from
+>>> going down in flames when we passed it a few packets. These are two
+>>> of the oopses we got from it. Whilst the kernel here is .35 we got the
+>>> same issue from a range of kernels. Seems related.
+>>
+>> Well, I tried sending an explanatory message to netdev, netfilter &
+>> cc'd to kvm,
+>> but it appears not to have made it to kvm or netfilter, and the cc to
+>> netdev has
+>> not elicited a response. My resend to netfilter seems to have dropped
+>> into the
+>> bit bucket also.
+> Just another reference 3.5 months ago:
+> http://www.spinics.net/lists/netfilter-devel/msg17239.html
 
-The idea sounds really good, but I'm trying to keep the number of
-ARCH_* macros low. How about instead providing a new
-asm-generic/bitops/ext2-atomic-setbit.h or similar?
+<waves hands around shouting "I have a reproducible test case for this 
+and don't mind patching and crashing the machine to get it fixed">
 
-Each architecture can then include either the spinlock or the
-atomic bitop based version.
-
-	Arnd
+Attempted to add netfilter-devel to the cc this time.
