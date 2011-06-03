@@ -1,86 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab1FCLhS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 07:37:18 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42667 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab1FCLhQ (ORCPT
+	id S1753116Ab1FCLiz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 07:38:55 -0400
+Received: from frost.carfax.org.uk ([212.13.194.111]:33716 "EHLO
+	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab1FCLix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 07:37:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=OaKSGT9pf+uQdUZY5+KD5566TofVfKdyJ7zQDll3oBYTkdiMe6x5mXEPg7SjzbNpM5
-         BmOZby+CzbQ/VVVTarinW0bGncq2ufP3kIho+UJGNp3rKOtLN2bdNG8bRt+DOH+JIZ+J
-         o8Iz8BwIIRRJOZzs+MqrsH2vqrd8wh7V2UbpU=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and group stop notification, take#4
-Date: Fri, 3 Jun 2011 13:37:11 +0200
-User-Agent: KMail/1.8.2
-Cc: Oleg Nesterov <oleg@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
-        pedro@codesourcery.com
-References: <1306710760-16440-1-git-send-email-tj@kernel.org> <201106022309.44663.vda.linux@googlemail.com> <20110603013423.GB14872@mtj.dyndns.org>
-In-Reply-To: <20110603013423.GB14872@mtj.dyndns.org>
+	Fri, 3 Jun 2011 07:38:53 -0400
+Date: Fri, 3 Jun 2011 12:38:42 +0100
+From: Hugo Mills <hugo-lkml@carfax.org.uk>
+To: Mitch Harder <mitch.harder@sabayonlinux.org>, dave@jikos.cz,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Chris Mason <chris.mason@oracle.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        kreijack@libero.it
+Subject: Re: linux-next: build warninga in Linus' tree
+Message-ID: <20110603113842.GA10842@carfax.org.uk>
+Mail-Followup-To: Hugo Mills <hugo-lkml@carfax.org.uk>,
+	Mitch Harder <mitch.harder@sabayonlinux.org>, dave@jikos.cz,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	Chris Mason <chris.mason@oracle.com>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+	kreijack@libero.it
+References: <20110530113653.5c7084f0.sfr@canb.auug.org.au>
+ <20110531175709.GC12709@twin.jikos.cz>
+ <BANLkTi=t5H8sAc_0sHyFt_xJgbeVibO3KQ@mail.gmail.com>
+ <20110603111048.GR12709@twin.jikos.cz>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
 Content-Disposition: inline
-Message-Id: <201106031337.11615.vda.linux@googlemail.com>
+In-Reply-To: <20110603111048.GR12709@twin.jikos.cz>
+X-GPG-Fingerprint: 8C59 86C7 81F3 93FE BB02  DDB1 20AC B3BE 515C 238D
+X-GPG-Key: 515C238D
+X-Parrot: It is no more. It has joined the choir invisible.
+X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-frost.carfax.org.uk-Spam-Score: -0.0 (/)
+X-frost.carfax.org.uk-Spam-Report: Spam detection software, running on the system "spamd3.lon.bitfolk.com", has
+ identified this incoming email as possible spam.  The original message
+ has been attached to this so you can view it (if it isn't spam) or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  On Fri, Jun 03, 2011 at 01:10:49PM +0200, David Sterba wrote:
+    > On Wed, Jun 01, 2011 at 10:16:48AM -0500, Mitch Harder wrote: > > I've
+   been playing around with resurrecting the basic sysfs > > capabilities that
+    had been previously incorporated into btrfs. > > > > As it stands right now,
+    it was relatively easy to re-implement sysfs > > as it was originally. However,
+    that implementation of sysfs wasn't > > populated with much information (only
+    total_blocks, blocks_used, and > > blocksize). > > Goffredo Baroncelli (CCed)
+    posted a patch to enhance sysfs interface: > > https://patchwork.kernel.org/patch/308902/
+    > (http://www.spinics.net/lists/linux-btrfs/msg06777.html) > > > I also had
+    to reverse a small portion of code that was in the last > > clean-up. > >
+    Restoring the code should not be a problem, the cleanup was too eager > and
+    I think a sysfs inteface would be good, not only for debugging > purposes
+    or tuning. [...] 
+ Content analysis details:   (-0.0 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+ -0.0 T_RP_MATCHES_RCVD      Envelope sender domain matches handover relay
+                             domain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 03 June 2011 03:34, Tejun Heo wrote:
-> > This should alleviate Linus' concerns that we are suffering from unnecessary
-> > featuritis - that we invent API which is significantly different
-> > from existing one, and as such users will not use it.
+
+--lrZ03NoBR/3+SXJZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Fri, Jun 03, 2011 at 01:10:49PM +0200, David Sterba wrote:
+> On Wed, Jun 01, 2011 at 10:16:48AM -0500, Mitch Harder wrote:
+> > I've been playing around with resurrecting the basic sysfs
+> > capabilities that had been previously incorporated into btrfs.
 > > 
-> > Existing API doesn't use GETSIGINFO data per se to distinguish group-stop from
-> > signal-delivery-stop, it uses the fact that GETSIGINFO fails on group-stop.
-> > (Well, arguably it's not a "designed" API, more like "accidentally created API",
-> > but nevertheless it exists right now). Oleg's proposal means that the new way
-> > may be makde to work very similarly.
+> > As it stands right now, it was relatively easy to re-implement sysfs
+> > as it was originally.  However, that implementation of sysfs wasn't
+> > populated with much information (only total_blocks, blocks_used, and
+> > blocksize).
 > 
-> Okay, you want to preserve %NULL SIGINFO on all STOP traps.  Dropping
-> si_pt_flags and using exit_code makes sense but I think we'll be
-> better off enabling GETSIGINFO.  The affected part of code has to be
-> changed anyway
+> Goffredo Baroncelli (CCed) posted a patch to enhance sysfs interface:
+> 
+> https://patchwork.kernel.org/patch/308902/
+> (http://www.spinics.net/lists/linux-btrfs/msg06777.html)
+> 
+> > I also had to reverse a small portion of code that was in the last
+> > clean-up.
+> 
+> Restoring the code should not be a problem, the cleanup was too eager
+> and I think a sysfs inteface would be good, not only for debugging
+> purposes or tuning.
 
-Well, not exactly. The affected part of code in strace *has been changed
-already*. Latest version of strace finally does show "SIGSTOP delivered"
-and "group-stop happened" events differently.
+   Indeed. There's a few parts of the balance API that would be
+significantly enhanced by being able to put things in sysfs. I could
+drop at least one (if not two) of the three ioctls if I had somewhere
+in sysfs to put the relevant files.
 
-Now strace, ideally, can have a minimal change
-
--	ptrace(PTRACE_LISTEN, pid, 0, sig);
-+	if (this_is_group_stop)
-+		ptrace(PTRACE_LISTEN, pid, 0, 0);
-+	else
-+		ptrace(PTRACE_SYSCALL, pid, 0, sig);
-
-and boom, group-stops are handled correctly!
-
-> and with %NULL GETSIGINFO we effectively would have 
-> driven ourselves into corner if more information needs to be added
-> later on.
-
-Oleg thinks that GETSIGINFO may be not the best way to provide additional data.
-Think about it. It's "get _signal_ info" op. By overloading it to mean something
-else, we are creating yet another ptrace quirk: "sometimes GETSIGINFO will
-return something else than signal info".
-
-Oleg says he prefers to add a separate GETfoo op, with cleaner meaning.
-
-
-> Don't current users unconditionally issue CONT(sig) anyway? 
-
-Yes.
+   Hugo.
 
 -- 
-vda
+=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
+  PGP key: 515C238D from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
+  --- The glass is neither half-full nor half-empty; it is twice as ---  
+                        large as it needs to be.                         
+
+--lrZ03NoBR/3+SXJZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iD8DBQFN6MfCIKyzvlFcI40RAnWZAJ9JEk+rsOrWQaDG2hvcERAlCnbwXwCfcscI
+VaTkW2Oo9iLEvkUwgQ13764=
+=GafF
+-----END PGP SIGNATURE-----
+
+--lrZ03NoBR/3+SXJZ--
