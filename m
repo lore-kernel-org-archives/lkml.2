@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab1FCUi4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 16:38:56 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:49574 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754830Ab1FCUiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 16:38:55 -0400
-Date: Fri, 3 Jun 2011 13:38:04 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, mingo@elte.hu, rostedt@goodmis.org,
-        jmorris@namei.org, paulmck@linux.vnet.ibm.com,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v4 05/13] seccomp_filter: Document what seccomp_filter is
- and how it works.
-Message-ID: <20110603203804.GS4376@outflux.net>
-References: <1307133252-23259-1-git-send-email-wad@chromium.org>
- <1307133252-23259-5-git-send-email-wad@chromium.org>
+	id S1755128Ab1FCUmq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 16:42:46 -0400
+Received: from mail.play-mail.info ([211.47.140.228]:51882 "EHLO
+	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752225Ab1FCUmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 16:42:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307133252-23259-5-git-send-email-wad@chromium.org>
-Organization: Canonical
-X-HELO: www.outflux.net
+Message-Id: <110604054243T1.20820@mail.play-mail.info>
+Date: Sat, 4 Jun 2011 05:42:43 +0900
+From: =?UTF-8?B?5Lq66YGV44GE44Gn44GX44Gf44GL77yf44GC44Gu5pmC44Gu44Oe44Oq44OK44Gn?= 
+	<marina3250@inter7.jp>
+To: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;charset="utf-8"
+Subject: =?UTF-8?B?5Lq66YGV44GE44Gn44GX44Gf44GL77yf44GC44Gu5pmC44Gu44Oe44Oq44OK44Gn44GZ77yB?=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p53Kgtbf028767
 
-On Fri, Jun 03, 2011 at 03:34:04PM -0500, Will Drewry wrote:
->  Adds a text file covering what CONFIG_SECCOMP_FILTER is, how it is
->  implemented presently, and what it may be used for.  In addition,
->  the limitations and caveats of the proposed implementation are
->  included.
+もしかして忘れてしまいましたか？マリナです。
+何度か連絡してるのですがお返事がないので気になってしまって…
+私は外資系関連の仕事をしており、その関係でいままで日本と中国を行ったり来たりしていました。
+でも、ようやく仕事の方も落ち着いてきたので、
+しばらくは日本でゆっくりした生活が出来るようになったんです。
 
-Acked-by: Kees Cook <kees.cook@canonical.com>
+今はマンションを購入し、一人暮らしています。
+仕事は充実してるのですが夜、家に帰ると寂しくて…
+そこで私の案なんですが、交際費をお渡しするという条件で、
+大人の割り切った関係になって欲しいんです。
 
--- 
-Kees Cook
-Ubuntu Security Team
+もちろんこれはあくまでも私の提案なので貴方の希望や条件も教えてください。
+プライベートにご迷惑はお掛けしませんので安心してください。
+
+ただ、会っているときだけは恋人のように抱いて欲しい、私の希望はそれだけなんです。
+突然だったので驚かれていると思いますが、
+必ず貴方にもメリットを生む関係を築いていければと思います。
+
+貴方の考えも聞きたいので、
+簡単でいいので一度返信いただけますか？
+私のプロフィール、写真などはその時お伝えしようと思ってます。
+
+待ってます。　　　　　　　　　　　　　　　　　　マリナ ���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
