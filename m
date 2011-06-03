@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab1FCMGD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 08:06:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2886 "EHLO mx1.redhat.com"
+	id S1753620Ab1FCMH4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 08:07:56 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:58675 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab1FCMGB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 08:06:01 -0400
-From: Andreas Schwab <schwab@redhat.com>
-To: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: git torvalds/linux-2.6.git  gives obscure results
-References: <201106031317.35112.toralf.foerster@gmx.de>
-X-Yow: Where's the Coke machine?  Tell me a joke!!
-Date: Fri, 03 Jun 2011 14:05:55 +0200
-In-Reply-To: <201106031317.35112.toralf.foerster@gmx.de> ("Toralf
- =?utf-8?Q?F=C3=B6rster=22's?=
-	message of "Fri, 3 Jun 2011 13:17:34 +0200")
-Message-ID: <m38vtjglwc.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1751515Ab1FCMHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 08:07:55 -0400
+Date: Fri, 3 Jun 2011 07:07:52 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Rafael Aquini <aquini@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, rja@americas.sgi.com
+Subject: Re: [PATCH] mm: fix negative commitlimit when gigantic hugepages are allocated
+Message-ID: <20110603120751.GA24840@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20110518153445.GA18127@sgi.com> <BANLkTinbHnrf2isuLzUFZN8ypaT476G1zw@mail.gmail.com> <20110519045630.GA22533@sgi.com> <BANLkTinyYP-je9Nf8X-xWEdpgvn8a631Mw@mail.gmail.com> <20110519221101.GC19648@sgi.com> <20110520130411.d1e0baef.akpm@linux-foundation.org> <20110520223032.GA15192@x61.tchesoft.com> <20110526210751.GA14819@optiplex.tchesoft.com> <20110602040821.GA7934@sgi.com> <20110603025555.GA10530@optiplex.tchesoft.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110603025555.GA10530@optiplex.tchesoft.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Toralf Förster <toralf.foerster@gmx.de> writes:
+Acked-by: Russ Anderson <rja@sgi.com>
 
-> at the command line. And within a sniffed network stream w/ wireshark I can 
-> see something like :
->
-> 0059git-upload-pack 
-> /pub/scm/linux/kernel/git/torvalds/linux-2.6.git.host=git.kernel.org.git: 
-> 'daemon' is not a git command. See 'git --help'.
-
-Odd thing is that it only fails like that half of the time.
-
-Andreas.
+On Thu, Jun 02, 2011 at 11:55:57PM -0300, Rafael Aquini wrote:
+> When 1GB hugepages are allocated on a system, free(1) reports
+> less available memory than what really is installed in the box.
+> Also, if the total size of hugepages allocated on a system is
+> over half of the total memory size, CommitLimit becomes
+> a negative number.
+> 
+> The problem is that gigantic hugepages (order > MAX_ORDER)
+> can only be allocated at boot with bootmem, thus its frames
+> are not accounted to 'totalram_pages'. However,  they are
+> accounted to hugetlb_total_pages()
+> 
+> What happens to turn CommitLimit into a negative number
+> is this calculation, in fs/proc/meminfo.c:
+> 
+>         allowed = ((totalram_pages - hugetlb_total_pages())
+>                 * sysctl_overcommit_ratio / 100) + total_swap_pages;
+> 
+> A similar calculation occurs in __vm_enough_memory() in mm/mmap.c.
+> 
+> Also, every vm statistic which depends on 'totalram_pages' will render
+> confusing values, as if system were 'missing' some part of its memory.
+> 
+> Reported-by: Russ Anderson <rja@sgi.com>
+> Signed-off-by: Rafael Aquini <aquini@linux.com>
+> ---
+>  mm/hugetlb.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index f33bb31..c67dd0f 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1111,6 +1111,14 @@ static void __init gather_bootmem_prealloc(void)
+>  		WARN_ON(page_count(page) != 1);
+>  		prep_compound_huge_page(page, h->order);
+>  		prep_new_huge_page(h, page, page_to_nid(page));
+> +
+> +		/* if we had gigantic hugepages allocated at boot time,
+> +		 * we need to reinstate the 'stolen' pages to totalram_pages,
+> +		 * in order to fix confusing memory reports from free(1)
+> +		 * and another side-effects, like CommitLimit going negative.
+> +		 */
+> +		if (h->order > (MAX_ORDER - 1))
+> +			totalram_pages += 1 << h->order;
+>  	}
+>  }
+>  
+> -- 
+> 1.7.4.4
 
 -- 
-Andreas Schwab, schwab@redhat.com
-GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
-"And now for something completely different."
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
