@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab1FCCqH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 22:46:07 -0400
-Received: from mta11.charter.net ([216.33.127.80]:47248 "EHLO
-	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753354Ab1FCCqG (ORCPT
+	id S1752967Ab1FCCuI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 22:50:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:44553 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab1FCCuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 22:46:06 -0400
-X-Authority-Analysis: v=1.1 cv=vT9vkN3vVXssH3Ov7r/wQUs/sfIFjNPEFFf4aeKIi4A=
- c=1 sm=1 a=p9YancsnzTcA:10 a=9h0XS2p1Eb8A:10 a=8nJEP1OIZ-IA:10
- a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=wwRoC5N5CdDnPbExL-oA:9
- a=p9l3gT9Ygil6zE7pywcA:7 a=wPNLvfGTeEIA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:117
-Message-ID: <4DE84AE8.60109@cuw.edu>
-Date: Thu, 02 Jun 2011 21:46:00 -0500
-From: Greg Dietsche <gregory.dietsche@cuw.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
-MIME-Version: 1.0
-To: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-CC: malattia@linux.it, mjg@redhat.com, kernel-janitors@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sony-laptop: remove unused local variables
-References: <1307068040-2918-1-git-send-email-Gregory.Dietsche@cuw.edu>
-In-Reply-To: <1307068040-2918-1-git-send-email-Gregory.Dietsche@cuw.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Jun 2011 22:50:07 -0400
+X-Authority-Analysis: v=1.1 cv=rr9DlE2fnT1UeYFJeFag6ks/js+bHNfqVlaSByoS2d4= c=1 sm=0 a=dZbmahTG33kA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=8-g6JaTKU-zsITgn01cA:9 a=QEXdDO2ut3YA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] Fix compiler warning in ftrace.c
+From: Steven Rostedt <rostedt@goodmis.org>
+To: GuoWen Li <guowen.li.linux@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <201106011918.47939.guowen.li.linux@gmail.com>
+References: <201106011918.47939.guowen.li.linux@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Jun 2011 22:50:04 -0400
+Message-ID: <1307069404.3667.35.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-please disregard... i neglected to rebase before sending. this patch no 
-longer applies to the mainline.
+Couple of things:
 
-Greg
+On Wed, 2011-06-01 at 19:18 +0800, GuoWen Li wrote:
+> kernel/trace/ftrace.c: In function ‘ftrace_regex_write.clone.15’:
+> kernel/trace/ftrace.c:2743:6: warning: ‘ret’ may be used uninitialized in this 
+> function
+> 
+> Signed-off-by: GuoWen Li
 
-On 06/02/2011 09:27 PM, Greg Dietsche wrote:
-> Removed two unused instances of "handle" local variable.
->
-> Signed-off-by: Greg Dietsche<Gregory.Dietsche@cuw.edu>
+Please add your mail address to your SOB. (I'll fix it)
+
 > ---
->   drivers/platform/x86/sony-laptop.c |    2 --
->   1 files changed, 0 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/platform/x86/sony-laptop.c b/drivers/platform/x86/sony-laptop.c
-> index 6fe8cd6..9a2c319 100644
-> --- a/drivers/platform/x86/sony-laptop.c
-> +++ b/drivers/platform/x86/sony-laptop.c
-> @@ -961,7 +961,6 @@ static int sony_backlight_get_brightness(struct backlight_device *bd)
->   static int sony_nc_get_brightness_ng(struct backlight_device *bd)
->   {
->   	int result;
-> -	int *handle = (int *)bl_get_data(bd);
->   	struct sony_backlight_props *sdev =
->   		(struct sony_backlight_props *)bl_get_data(bd);
->
-> @@ -973,7 +972,6 @@ static int sony_nc_get_brightness_ng(struct backlight_device *bd)
->   static int sony_nc_update_status_ng(struct backlight_device *bd)
->   {
->   	int value, result;
-> -	int *handle = (int *)bl_get_data(bd);
->   	struct sony_backlight_props *sdev =
->   		(struct sony_backlight_props *)bl_get_data(bd);
->
->    
+>  kernel/trace/ftrace.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index 1ee417f..204b3eb 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -2740,7 +2740,7 @@ static int ftrace_process_regex(struct ftrace_hash 
+> *hash,
+>  {
+>         char *func, *command, *next = buff;
+>         struct ftrace_func_command *p;
+> -       int ret;
+> +       int ret = -EINVAL;
+
+This patch has horrible white space issues. (I fixed it)
+
+-- Steve
+
+
+>  
+>         func = strsep(&next, ":");
+
+
