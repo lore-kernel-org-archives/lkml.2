@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab1FCS6H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 14:58:07 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:50623
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753931Ab1FCS6F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 14:58:05 -0400
-X-SpamScore: -6
-X-BigFish: VS-6(zz1102K98dKzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4DE92EA2.60705@freescale.com>
-Date: Fri, 3 Jun 2011 13:57:38 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	id S1755505Ab1FCS7Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 14:59:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14280 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753931Ab1FCS7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 14:59:24 -0400
+Date: Fri, 3 Jun 2011 15:59:11 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu
+Subject: Re: [PATCH] perf: make annotate more readable
+Message-ID: <20110603185911.GB23336@ghostprotocols.net>
+References: <20110517153207.GA9834@quad> <20110603185633.GA23336@ghostprotocols.net>
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: Alexey Dobriyan <adobriyan@gmail.com>, <alan@lxorguk.ukuu.org.uk>,
-        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>
-Subject: Re: [PATCH] lib: introduce strdup_from_user
-References: <1307119552-15573-1-git-send-email-timur@freescale.com>	<BANLkTikFjF0WF---8A9_CBybf+bUji2smw@mail.gmail.com>	<4DE92675.6080908@freescale.com>	<BANLkTimB2UanZA4wf=uBGcj=wKmDhCco=w@mail.gmail.com>	<4DE9294B.3040501@freescale.com>	<BANLkTinqQS11nXQAJBMSvCrp4tOtCg5Qww@mail.gmail.com> <20110603135303.0800e4a7@schlenkerla.am.freescale.net>
-In-Reply-To: <20110603135303.0800e4a7@schlenkerla.am.freescale.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110603185633.GA23336@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scott Wood wrote:
-> Why does it matter, as long as it doesn't hurt the kernel if userspace
-> plays games (i.e. take care of the NUL termination), and it's not a
-> performance problem?
+Em Fri, Jun 03, 2011 at 03:56:33PM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Tue, May 17, 2011 at 05:32:07PM +0200, Stephane Eranian escreveu:
+> > 
+> > This patch adds two new options to perf annotate:
+> > 	- -R, --no-asm-raw : do not display raw instruction encodings
+> > 	- -S, --no-source  : do not interleave source code with assembly code
+> > 
+> > We believe those options make the output of annotate more readable.
+> > Systematically displaying source can make it hard to follow code and
+> > especially optimized code.
+> > 
+> > Raw encodings are not useful in most cases.
+> 
+> Ok, applying it and then adding a followup patch to have these new
+> options in both 'perf top' and 'perf report', since you can do
+> annotation (live and static, respectively) from those tools.
 
-Ok, I don't know why I didn't notice this earlier, but this function already
-exists in the kernel.  It's called strndup_user().
+Will change it to --source and --asm-raw, since we have logic to negate
+any option by adding "no-" after '--' and before boolean options.
 
-So I'd like to rescind this patch, please.
-
-Note that strndup_user() has the double-access problem.
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+- Arnaldo
