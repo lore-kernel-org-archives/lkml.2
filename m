@@ -1,54 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab1FCVoS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 17:44:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47279 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753622Ab1FCVoR convert rfc822-to-8bit (ORCPT
+	id S1756434Ab1FCVpy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 17:45:54 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54663 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753622Ab1FCVpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 17:44:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:content-type:message-id:date:to
-         :content-transfer-encoding:mime-version:x-mailer;
-        b=t14UlP8qr7Ay0fnwLGnA31OAS2AvRnYfK3gSmMEyFqS5wtRQZu/0eXKDhkbIgTXm+n
-         1I3d49WY0Oetd4Ud+BNZBRD6LFtTXshEzNmw3PeCq6TEDsL/M/8ejuJk0p0zxbKG743O
-         WIXWbK3mEP8y4bwYaYb1Cfc1wTCt58+ylecdg=
-Subject: rcu_kthread hang on 3.0.0-rc1-next-20110602
-From: =?iso-8859-1?Q?Markus_H=E4stbacka?= <mhastbacka@gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Message-Id: <85F46CF9-5433-4623-91FC-9CD890082F69@gmail.com>
-Date: Sat, 4 Jun 2011 00:43:25 +0300
-To: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+	Fri, 3 Jun 2011 17:45:52 -0400
+Date: Fri, 3 Jun 2011 14:45:40 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Sameer Nanda <snanda@chromium.org>, ext-phil.2.carmody@nokia.com,
+        Tim.Deegan@citrix.com, jbeulich@novell.com, snanda@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] init: skip calibration delay if previously done
+Message-Id: <20110603144540.d182c231.akpm@linux-foundation.org>
+In-Reply-To: <4DE94D31.3040104@caviumnetworks.com>
+References: <1306279146-23487-1-git-send-email-snanda@chromium.org>
+	<20110603140054.a0f1859d.akpm@linux-foundation.org>
+	<4DE94D31.3040104@caviumnetworks.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Fri, 03 Jun 2011 14:08:01 -0700
+David Daney <ddaney@caviumnetworks.com> wrote:
 
-After updating my debian squeeze box to 3.0.0-rc1-next-20110602 I'm experiencing a weird problem. If I run dmesg  the computer hangs for 15 minutes, and I cannot even login at this time, if I leave top (the top window updates very slowly, like every 5 minutes during this period) running I can see that the process rcu_kthread takes 100% CPU, the computer load average is at around 10.
+> On 06/03/2011 02:00 PM, Andrew Morton wrote:
+> > On Tue, 24 May 2011 16:19:06 -0700
+> > Sameer Nanda<snanda@chromium.org>  wrote:
+> >
+> >> For each CPU, do the calibration delay only once. For subsequent calls,
+> >> use the cached per-CPU value of loops_per_jiffy.
+> >>
+> >> This saves about 200ms of resume time on dual core Intel Atom N5xx based
+> >> systems. This helps bring down the kernel resume time on such systems from
+> >> about 500ms to about 300ms.
+> >>
+> >> Signed-off-by: Sameer Nanda<snanda@chromium.org>
+> >> ---
+> >>   init/calibrate.c |   10 +++++++++-
+> >>   1 files changed, 9 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/init/calibrate.c b/init/calibrate.c
+> >> index 76ac919..47d3408 100644
+> >> --- a/init/calibrate.c
+> >> +++ b/init/calibrate.c
+> >> @@ -183,11 +183,18 @@ recalibrate:
+> >>   	return lpj;
+> >>   }
+> >>
+> >> +DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
+> >> +
+> >>   void __cpuinit calibrate_delay(void)
+> >>   {
+> >>   	static bool printed;
+> >> +	int this_cpu = smp_processor_id();
+> >>
+> >> -	if (preset_lpj) {
+> >> +	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
+> >> +		loops_per_jiffy = per_cpu(cpu_loops_per_jiffy, this_cpu);
+> >> +		pr_info("Calibrating delay loop (skipped) "
+> >> +				"already calibrated this CPU previously.. ");
+> 
+> That wording seems a little redundant, and there are two '.' at the end.
+> 
+> How about:
+> s/"already calibrated this CPU previously.. "/", this CPU previously 
+> calibrated."/
+> 
 
-I also sometimes get these disk errors in syslog:
-Jun  4 02:01:39 midi3g kernel: ata1.01: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6
-Jun  4 02:01:39 midi3g kernel: ata1.01: BMDMA stat 0x44
-Jun  4 02:01:39 midi3g kernel: ata1.01: failed command: WRITE DMA
-Jun  4 02:01:39 midi3g kernel: ata1.01: cmd ca/00:00:1c:7b:c6/00:00:00:00:00/f0 tag 0 dma 131072 out
-Jun  4 02:01:39 midi3g kernel:         res 51/84:00:fe:7b:c6/00:00:00:00:00/f0 Emask 0x10 (ATA bus error)
-Jun  4 02:01:39 midi3g kernel: ata1.01: status: { DRDY ERR }
-Jun  4 02:01:39 midi3g kernel: ata1.01: error: { ICRC ABRT }
-Jun  4 02:01:39 midi3g kernel: ata1: soft resetting link
-Jun  4 02:01:39 midi3g kernel: ata1.01: configured for UDMA/66
-Jun  4 02:01:39 midi3g kernel: ata1: EH complete
+Pedant ;)
 
-but for example the last time I got the hang, I didn't get this error, nor any other error for that matter.
+--- a/init/calibrate.c~init-skip-calibration-delay-if-previously-done-fix-fix
++++ a/init/calibrate.c
+@@ -256,7 +256,7 @@ void __cpuinit calibrate_delay(void)
+ 	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
+ 		loops_per_jiffy = per_cpu(cpu_loops_per_jiffy, this_cpu);
+ 		pr_info("Calibrating delay loop (skipped) "
+-				"already calibrated this CPU previously.. ");
++				"already calibrated this CPU");
+ 	} else if (preset_lpj) {
+ 		loops_per_jiffy = preset_lpj;
+ 		if (!printed)
+_
 
-The OS is installed on a CF-card. The computer is a eBox computer with VIA Nehemiah CPU, 256MB RAM.
+But the whole thing is a bit weird.  Does this look better?
 
-what more information do you need? Or what more can I test?
+From: Andrew Morton <akpm@linux-foundation.org>
 
-M
+Make these messages more gramatically pleasing, more consistent and remove
+strange ellipses.
 
+Cc: Andrew Worsley <amworsley@gmail.com>
+Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: Sameer Nanda <snanda@chromium.org>
+Cc: David Daney <ddaney@caviumnetworks.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ init/calibrate.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff -puN init/calibrate.c~init-calibratec-calibrate_delay-tidy-up-the-pr_info-messages init/calibrate.c
+--- a/init/calibrate.c~init-calibratec-calibrate_delay-tidy-up-the-pr_info-messages
++++ a/init/calibrate.c
+@@ -255,24 +255,24 @@ void __cpuinit calibrate_delay(void)
+ 
+ 	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
+ 		loops_per_jiffy = per_cpu(cpu_loops_per_jiffy, this_cpu);
+-		pr_info("Calibrating delay loop (skipped) "
+-				"already calibrated this CPU");
++		pr_info("Calibrating delay loop.  Skipped: already calibrated "
++				"this CPU");
+ 	} else if (preset_lpj) {
+ 		loops_per_jiffy = preset_lpj;
+ 		if (!printed)
+-			pr_info("Calibrating delay loop (skipped) "
+-				"preset value.. ");
++			pr_info("Calibrating delay loop.  Skipped: "
++				"preset value");
+ 	} else if ((!printed) && lpj_fine) {
+ 		loops_per_jiffy = lpj_fine;
+-		pr_info("Calibrating delay loop (skipped), "
+-			"value calculated using timer frequency.. ");
++		pr_info("Calibrating delay loop.  Skipped: value calculated "
++				"using timer frequency");
+ 	} else if ((loops_per_jiffy = calibrate_delay_direct()) != 0) {
+ 		if (!printed)
+-			pr_info("Calibrating delay using timer "
+-				"specific routine.. ");
++			pr_info("Calibrating delay loop using timer-specific "
++					"routine");
+ 	} else {
+ 		if (!printed)
+-			pr_info("Calibrating delay loop... ");
++			pr_info("Calibrating delay loop");
+ 		loops_per_jiffy = calibrate_delay_converge();
+ 	}
+ 	per_cpu(cpu_loops_per_jiffy, this_cpu) = loops_per_jiffy;
+_
 
