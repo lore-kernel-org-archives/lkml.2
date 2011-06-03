@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab1FCBIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 21:08:32 -0400
-Received: from smtp-out-212.synserver.de ([212.40.185.212]:1094 "EHLO
-	smtp-out-212.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753805Ab1FCBIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 21:08:31 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 8419
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 4/4] MIPS: JZ4740: GPIO: Check correct IRQ in demux handler
-Date: Fri,  3 Jun 2011 03:06:51 +0200
-Message-Id: <1307063211-10098-4-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1307063211-10098-1-git-send-email-lars@metafoo.de>
-References: <1307063211-10098-1-git-send-email-lars@metafoo.de>
+	id S1755295Ab1FCBKx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 21:10:53 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37242 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753445Ab1FCBKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 21:10:52 -0400
+Date: Fri, 3 Jun 2011 11:10:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Miao Xie <miaox@cn.fujitsu.com>, David Sterba <dave@jikos.cz>,
+        Tsutomu Itoh <t-itoh@jp.fujitsu.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: build warning from Linus' tree
+Message-Id: <20110603111049.d5967bb3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__3_Jun_2011_11_10_49_+1000_ReRWSv_.x2C/K2EC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check the trigger direction for the triggered IRQ instead of the parent IRQ.
+--Signature=_Fri__3_Jun_2011_11_10_49_+1000_ReRWSv_.x2C/K2EC
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- arch/mips/jz4740/gpio.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Hi all,
 
-diff --git a/arch/mips/jz4740/gpio.c b/arch/mips/jz4740/gpio.c
-index f3590a2..7179c78 100644
---- a/arch/mips/jz4740/gpio.c
-+++ b/arch/mips/jz4740/gpio.c
-@@ -309,7 +309,7 @@ static void jz_gpio_irq_demux_handler(unsigned int irq, struct irq_desc *desc)
- 
- 	gpio_irq = chip->irq_base + __fls(flag);
- 
--	jz_gpio_check_trigger_both(chip, irq);
-+	jz_gpio_check_trigger_both(chip, gpio_irq);
- 
- 	generic_handle_irq(gpio_irq);
- };
--- 
-1.7.2.5
+With Linus' tree, today's linux-next build (x86_64 allmodconfig) produced
+this warning:
 
+fs/btrfs/delayed-inode.c: In function 'btrfs_batch_insert_items':
+fs/btrfs/delayed-inode.c:670:6: warning: 'nitems' may be used uninitialized=
+ in this function
+
+Introduced by commit 16cdcec736cd ("btrfs: implement delayed inode items
+operation").  I think this is a real bug.  This variable is not
+initialised, only incremented and tested.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+P.S. Chris, time to get a tree into linux-next?
+
+--Signature=_Fri__3_Jun_2011_11_10_49_+1000_ReRWSv_.x2C/K2EC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN6DSZAAoJEDMEi1NhKgbsrsgH/3cW7xz/958Ml+01AuL5tJNK
+VLT03P6cw6AczMOYKdSY37BlQ66w+emE0nqk0ZW0KSbognvpUKxwb972QYEx5d3c
+Hfy0Wle334n42UDXFYKjIM0de8ooxMBSp+HT+HrD4q5ZgdMGojFRdIdZ6pH4rZpa
+jzEyTg2H8XH9OI3ygfRq4k3LeCQ6OEKaXxN1Kb5j8HpugM4vlJhAA0OMtWqD17Io
+YXfJZduXzb/iJL9QQiaLDfpq4cnybcnWKx8BSVKItkp1+LblpyaTiAyJTUk3QGt/
+9IWwlgO6tJ53eKNjePl2rmvjgpMjac4oblvWOQFdgbbMcb8Eu3ilgvI5MUTcSDo=
+=Ge9K
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__3_Jun_2011_11_10_49_+1000_ReRWSv_.x2C/K2EC--
