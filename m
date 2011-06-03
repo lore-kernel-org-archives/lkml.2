@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab1FCLFv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 07:05:51 -0400
-Received: from smtp0.epfl.ch ([128.178.224.219]:55665 "HELO smtp0.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751803Ab1FCLFu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 07:05:50 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jun 2011 07:05:49 EDT
-From: Philippe =?iso-8859-1?q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
-Organization: EPFL - STI - LSRO1
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/4] ARM: mxc: migrate mach-imx gpio driver to gpio-mxc
-Date: Fri, 3 Jun 2011 12:59:06 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.31.14-desktop-1mnb; KDE/4.3.5; x86_64; ; )
-Cc: Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, patches@linaro.org, grant.likely@secretlab.ca,
-        kernel@pengutronix.de, olof@lixom.net
-References: <1306985632-18820-1-git-send-email-shawn.guo@linaro.org> <1306985632-18820-4-git-send-email-shawn.guo@linaro.org>
-In-Reply-To: <1306985632-18820-4-git-send-email-shawn.guo@linaro.org>
+	id S1753285Ab1FCLLN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 07:11:13 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:43230 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751179Ab1FCLLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 07:11:10 -0400
+Date: Fri, 3 Jun 2011 13:10:49 +0200
+From: David Sterba <dave@jikos.cz>
+To: Mitch Harder <mitch.harder@sabayonlinux.org>
+Cc: dave@jikos.cz, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Chris Mason <chris.mason@oracle.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        kreijack@libero.it
+Subject: Re: linux-next: build warninga in Linus' tree
+Message-ID: <20110603111048.GR12709@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Mitch Harder <mitch.harder@sabayonlinux.org>,
+	dave@jikos.cz, Stephen Rothwell <sfr@canb.auug.org.au>,
+	Chris Mason <chris.mason@oracle.com>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+	kreijack@libero.it
+References: <20110530113653.5c7084f0.sfr@canb.auug.org.au>
+ <20110531175709.GC12709@twin.jikos.cz>
+ <BANLkTi=t5H8sAc_0sHyFt_xJgbeVibO3KQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201106031259.06088.philippe.retornaz@epfl.ch>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=t5H8sAc_0sHyFt_xJgbeVibO3KQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi, 2 juin 2011 05.33:51, Shawn Guo a écrit :
-
-> diff --git a/arch/arm/mach-imx/mach-mx31moboard.c
->  b/arch/arm/mach-imx/mach-mx31moboard.c index eaa51e4..a52fd36 100644
-> --- a/arch/arm/mach-imx/mach-mx31moboard.c
-> +++ b/arch/arm/mach-imx/mach-mx31moboard.c
-> @@ -507,6 +507,8 @@ core_param(mx31moboard_baseboard,
->  mx31moboard_baseboard, int, 0444); */
->  static void __init mx31moboard_init(void)
->  {
-> +	imx31_soc_init();
-> +
->  	mxc_iomux_setup_multiple_pins(moboard_pins, ARRAY_SIZE(moboard_pins),
->  		"moboard");
+On Wed, Jun 01, 2011 at 10:16:48AM -0500, Mitch Harder wrote:
+> I've been playing around with resurrecting the basic sysfs
+> capabilities that had been previously incorporated into btrfs.
 > 
+> As it stands right now, it was relatively easy to re-implement sysfs
+> as it was originally.  However, that implementation of sysfs wasn't
+> populated with much information (only total_blocks, blocks_used, and
+> blocksize).
 
-Acked-by: Philippe Retornaz <philippe.retornaz@epfl.ch>
+Goffredo Baroncelli (CCed) posted a patch to enhance sysfs interface:
 
-Thanks,
+https://patchwork.kernel.org/patch/308902/
+(http://www.spinics.net/lists/linux-btrfs/msg06777.html)
 
-Philippe
+> I also had to reverse a small portion of code that was in the last
+> clean-up.
+
+Restoring the code should not be a problem, the cleanup was too eager
+and I think a sysfs inteface would be good, not only for debugging
+purposes or tuning.
+
+> If a CONFIG_BTRFS_DEBUG type configuration flag is ever introduced, it
+> would be interesting to resurrect btrfs' sysfs capabilities.
+
+Hearing about CONFIG_BTRFS_DEBUG again, seems worth to add it.
+
+
+david
