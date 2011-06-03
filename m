@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab1FCCMM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 22:12:12 -0400
-Received: from mta11.charter.net ([216.33.127.80]:59592 "EHLO
+	id S1753400Ab1FCCMO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 22:12:14 -0400
+Received: from mta11.charter.net ([216.33.127.80]:59598 "EHLO
 	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688Ab1FCCMI (ORCPT
+	with ESMTP id S1751741Ab1FCCMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 22:12:08 -0400
+	Thu, 2 Jun 2011 22:12:09 -0400
 X-Authority-Analysis: v=1.1 cv=1b2X7W/SifksZeClH/haT1SUt4udqxFGF00pZw2/jJk=
- c=1 sm=1 a=VsugKzRVNSIA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
- a=yH5ieTsJy4pCuhNqiHcA:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
+ c=1 sm=1 a=Ihstlyeb0LIA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
+ a=KeKsPS5gM2DD1xSM1Q8A:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
 From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
 To: sgruszka@redhat.com, linville@tuxdriver.com
 Cc: kernel-janitors@vger.kernel.org, linux-wireless@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Subject: [PATCH 2/5] iwlegacy: remove unecessary if statement
-Date: Thu,  2 Jun 2011 21:06:07 -0500
-Message-Id: <1307066770-27309-2-git-send-email-Gregory.Dietsche@cuw.edu>
+Subject: [PATCH 3/5] iwlegacy: return -EINVAL instead of -1
+Date: Thu,  2 Jun 2011 21:06:08 -0500
+Message-Id: <1307066770-27309-3-git-send-email-Gregory.Dietsche@cuw.edu>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1307066770-27309-1-git-send-email-Gregory.Dietsche@cuw.edu>
 References: <1307066770-27309-1-git-send-email-Gregory.Dietsche@cuw.edu>
@@ -25,25 +25,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the code always returns ret regardless, so if(ret) check is unecessary.
+Cleanup the code to return -EINVAL instead of -1
 Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
 ---
- drivers/net/wireless/iwlegacy/iwl-4965.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/net/wireless/iwlegacy/iwl-4965.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/net/wireless/iwlegacy/iwl-4965.c b/drivers/net/wireless/iwlegacy/iwl-4965.c
-index f5433c7..ffda05c 100644
+index ffda05c..06dcee5 100644
 --- a/drivers/net/wireless/iwlegacy/iwl-4965.c
 +++ b/drivers/net/wireless/iwlegacy/iwl-4965.c
-@@ -1185,8 +1185,6 @@ static int iwl4965_send_rxon_assoc(struct iwl_priv *priv,
+@@ -496,7 +496,7 @@ static s32 iwl4965_get_tx_atten_grp(u16 channel)
+ 	    channel <= CALIB_IWL_TX_ATTEN_GR4_LCH)
+ 		return CALIB_CH_GROUP_4;
  
- 	ret = iwl_legacy_send_cmd_pdu_async(priv, REPLY_RXON_ASSOC,
- 				     sizeof(rxon_assoc), &rxon_assoc, NULL);
--	if (ret)
--		return ret;
- 
- 	return ret;
+-	return -1;
++	return -EINVAL;
  }
+ 
+ static u32 iwl4965_get_sub_band(const struct iwl_priv *priv, u32 channel)
 -- 
 1.7.2.5
 
