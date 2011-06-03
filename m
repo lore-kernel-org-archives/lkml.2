@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab1FCS7Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 14:59:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14280 "EHLO mx1.redhat.com"
+	id S1755555Ab1FCTEI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 15:04:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60936 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753931Ab1FCS7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 14:59:24 -0400
-Date: Fri, 3 Jun 2011 15:59:11 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu
-Subject: Re: [PATCH] perf: make annotate more readable
-Message-ID: <20110603185911.GB23336@ghostprotocols.net>
-References: <20110517153207.GA9834@quad> <20110603185633.GA23336@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110603185633.GA23336@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752100Ab1FCTEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 15:04:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,315,1304319600"; 
+   d="scan'208";a="13242364"
+From: Russ Gorby <russ.gorby@intel.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Russ Gorby <russ.gorby@intel.com>,
+        linux-kernel@vger.kernel.org
+Cc: suhail.ahmed@intel.com, russ.gorby@intel.com
+Subject: [PATCH 0/5] N_GSM patchset : 06/03/2011
+Date: Fri,  3 Jun 2011 12:03:36 -0700
+Message-Id: <1307127821-21665-1-git-send-email-russ.gorby@intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <[PATCH 0/5] N_GSM patchset : 06/03/2011>
+References: <[PATCH 0/5] N_GSM patchset : 06/03/2011>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jun 03, 2011 at 03:56:33PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Tue, May 17, 2011 at 05:32:07PM +0200, Stephane Eranian escreveu:
-> > 
-> > This patch adds two new options to perf annotate:
-> > 	- -R, --no-asm-raw : do not display raw instruction encodings
-> > 	- -S, --no-source  : do not interleave source code with assembly code
-> > 
-> > We believe those options make the output of annotate more readable.
-> > Systematically displaying source can make it hard to follow code and
-> > especially optimized code.
-> > 
-> > Raw encodings are not useful in most cases.
-> 
-> Ok, applying it and then adding a followup patch to have these new
-> options in both 'perf top' and 'perf report', since you can do
-> annotation (live and static, respectively) from those tools.
+Hello N_GSM Maintainers,
 
-Will change it to --source and --asm-raw, since we have logic to negate
-any option by adding "no-" after '--' and before boolean options.
+I'm sending this patchset for your consideration.
+These are the pertinent changes that we have done to the driver.
+Thank you for yor comments.
 
-- Arnaldo
+[PATCH 1/5] tty: n_gsm: Add raw-ip support
+       - Added netif glue so a DLCI can map to a network IF
+[PATCH 2/5] tty: n_gsm: expose gsmtty device nodes at ldisc open time
+       - Caused gsmttyN device nodes to be exposed automatically.
+[PATCH 3/5] tty: n_gsm: Added refcount usage to gsm_mux and gsm_dlci structs
+       - added refcount access to struct shared between MUX and
+         channel clients
+[PATCH 4/5] tty: n_gsm: initiate close of all DLCIs during mux shutdown
+[PATCH 5/5] tty: n_gsm: Fixed NULL ptr OOPs in tty_write_room()
