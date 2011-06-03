@@ -1,90 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab1FCLn2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 07:43:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64723 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752644Ab1FCLn1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 07:43:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=RGTAsghDoib90l7R14RSiX71AOxlA8S4ysL0Uhfj9rN7sXjmHGIcpK1MsAdHYpz5eC
-         +bxxnqeEzGNVHYKMFUMer4VME04FK98t5HdoJ8+B9D6Bov0uRT+L8RYRC5URS183Eg+w
-         eO6MGwkjGwAfNUfUywJL7vXortDRG54xqXGjE=
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grazvydas Ignotas <notasas@gmail.com>
-Subject: [PATCH] twl4030_charger: fix warnings
-Date: Fri,  3 Jun 2011 14:43:11 +0300
-Message-Id: <1307101391-10898-1-git-send-email-notasas@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1754487Ab1FCLsu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 07:48:50 -0400
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:47162 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752120Ab1FCLss convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 07:48:48 -0400
+From: Alexey ORISHKO <alexey.orishko@stericsson.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        Dan Williams <dcbw@redhat.com>, Stefan Metzmacher <metze@samba.org>,
+        Oliver Neukum <oliver@neukum.name>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 3 Jun 2011 13:47:43 +0200
+Subject: RE: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
+ mark ncm devices as "mobile broadband devices" with FLAG_WWAN
+Thread-Topic: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
+ mark ncm devices as "mobile broadband devices" with FLAG_WWAN
+Thread-Index: Acwh28I4PR43zZiDRmmPM6LDPwEfYwABIbEQ
+Message-ID: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C13B659@EXDCVYMBSTM006.EQ1STM.local>
+References: <1306922913-17803-1-git-send-email-metze@samba.org>
+ <201106031201.21933.oneukum@suse.de>
+ <2AC7D4AD8BA1C640B4C60C61C8E520153E3C13B620@EXDCVYMBSTM006.EQ1STM.local>
+ <201106031250.28041.oneukum@suse.de>
+In-Reply-To: <201106031250.28041.oneukum@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix warnings emitted by some versions of gcc:
-drivers/power/twl4030_charger.c:490: warning: overflow in implicit constant conversion
-drivers/power/twl4030_charger.c:498: warning: overflow in implicit constant conversion
+> -----Original Message-----
+> From: Oliver Neukum [mailto:oneukum@suse.de]
+> Sent: Friday, June 03, 2011 12:50 PM
+> 
+> Well, but cdc-ether usually means that you can start up dhcp and use
+> the
+> interface as a network card. Can the same be done with cdc-ncm or do
+> you always
+> need to establish a connection through a secondary interface?
+> 
 
-While at it, also fix module_param permissions and a typo in my name.
+Some solutions (also based on cdc_ether driver) present IP address assigned
+by 3G network. Initially device carrier is OFF. As soon as 3G network PDP
+context is established, device send notification 
+USB_CDC_NOTIFY_NETWORK_CONNECTION and host driver set carrier ON.
 
-Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
----
- drivers/power/twl4030_charger.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+In such a case the problem is the lack of control channel definition in both
+CDC ECM and CDC NCM. In order for mobile device to setup 3G connection
+some application from PC must setup PDP context. The usual way to do it via
+modem by using AT commands. So, it might be CDC ACM or some proprietary
+solution. 
+As a result you have to have vendor specific solution to find "real" control
+channel (/dev/ttyACMx or other) and setup connection.
+The need to know interface name is needed if you want to set default
+route to that interface. Do you want to do it while you have pc broadband 
+connection at hand? Probably not. 
+I've tried to run 3g modem with cdc_ncm on Ubuntu 8 and later without any
+need to specify interface names, same for Fedora.
 
-diff --git a/drivers/power/twl4030_charger.c b/drivers/power/twl4030_charger.c
-index 92c16e1..54b9198 100644
---- a/drivers/power/twl4030_charger.c
-+++ b/drivers/power/twl4030_charger.c
-@@ -62,7 +62,7 @@
- #define TWL4030_MSTATEC_COMPLETE4	0x0e
- 
- static bool allow_usb;
--module_param(allow_usb, bool, 1);
-+module_param(allow_usb, bool, 0644);
- MODULE_PARM_DESC(allow_usb, "Allow USB charge drawing default current");
- 
- struct twl4030_bci {
-@@ -425,7 +425,7 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
- {
- 	struct twl4030_bci *bci;
- 	int ret;
--	int reg;
-+	u32 reg;
- 
- 	bci = kzalloc(sizeof(*bci), GFP_KERNEL);
- 	if (bci == NULL)
-@@ -486,7 +486,7 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
- 	}
- 
- 	/* Enable interrupts now. */
--	reg = ~(TWL4030_ICHGLOW | TWL4030_ICHGEOC | TWL4030_TBATOR2 |
-+	reg = ~(u32)(TWL4030_ICHGLOW | TWL4030_ICHGEOC | TWL4030_TBATOR2 |
- 		TWL4030_TBATOR1 | TWL4030_BATSTS);
- 	ret = twl_i2c_write_u8(TWL4030_MODULE_INTERRUPTS, reg,
- 			       TWL4030_INTERRUPTS_BCIIMR1A);
-@@ -495,7 +495,7 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
- 		goto fail_unmask_interrupts;
- 	}
- 
--	reg = ~(TWL4030_VBATOV | TWL4030_VBUSOV | TWL4030_ACCHGOV);
-+	reg = ~(u32)(TWL4030_VBATOV | TWL4030_VBUSOV | TWL4030_ACCHGOV);
- 	ret = twl_i2c_write_u8(TWL4030_MODULE_INTERRUPTS, reg,
- 			       TWL4030_INTERRUPTS_BCIIMR2A);
- 	if (ret < 0)
-@@ -572,7 +572,7 @@ static void __exit twl4030_bci_exit(void)
- }
- module_exit(twl4030_bci_exit);
- 
--MODULE_AUTHOR("Gražydas Ignotas");
-+MODULE_AUTHOR("Gražvydas Ignotas");
- MODULE_DESCRIPTION("TWL4030 Battery Charger Interface driver");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:twl4030_bci");
--- 
-1.7.0.4
+So connection manager has to know: control interface, vendor- 
+specific (or ever product specific) AT command sequence and optionally 
+network interface name.
+To sort this out, someone need either to track VID/PID or get
+information by other means, for example via AT channel by guessing the
+right tty device name.
+
+Anyway, all this discussion is user space application problems.
+Solution would be different from vendor to vendor.
+
+/alexey
 
