@@ -1,177 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab1FCMcF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 08:32:05 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:45680 "EHLO e8.ny.us.ibm.com"
+	id S1754725Ab1FCMf7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 08:35:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7286 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753702Ab1FCMcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 08:32:02 -0400
-Subject: Re: [PATCH v6 04/20] evm: add support for different security.evm
- data types
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-security-module@vger.kernel.org,
-        Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-In-Reply-To: <20110602225005.GB23700@mail.hallyn.com>
-References: <1307017423-15093-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1307017423-15093-5-git-send-email-zohar@linux.vnet.ibm.com>
-	 <20110602225005.GB23700@mail.hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Jun 2011 08:31:56 -0400
-Message-ID: <1307104316.3137.4.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+	id S1754689Ab1FCMf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 08:35:57 -0400
+Message-ID: <4DE8D50F.1090406@redhat.com>
+Date: Fri, 03 Jun 2011 14:35:27 +0200
+From: Igor Mammedov <imammedo@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+CC: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, balbir@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node
+ to world
+References: <1306925044-2828-1-git-send-email-imammedo@redhat.com>	<20110601123913.GC4266@tiehlicka.suse.cz>	<4DE6399C.8070802@redhat.com>	<20110601134149.GD4266@tiehlicka.suse.cz>	<4DE64F0C.3050203@redhat.com>	<20110601152039.GG4266@tiehlicka.suse.cz>	<4DE66BEB.7040502@redhat.com> <BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
+In-Reply-To: <BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-02 at 17:50 -0500, Serge E. Hallyn wrote:
-> Quoting Mimi Zohar (zohar@linux.vnet.ibm.com):
-> > From: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-> > 
-> > EVM protects a file's security extended attributes(xattrs) against integrity
-> > attacks. The current patchset maintains an HMAC-sha1 value across the security
-> > xattrs, storing the value as the extended attribute 'security.evm'. We
-> > anticipate other methods for protecting the security extended attributes.
-> > This patch reserves the first byte of 'security.evm' as a place holder for
-> > the type of method.
-> > 
-> > Changelog v6:
-> > - move evm_ima_xattr_type definition to security/integrity/integrity.h
-> > - defined a structure for the EVM xattr called evm_ima_xattr_data
-> >   (based on Serge Hallyn's suggestion)
-> > 
-> > Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-> > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> > ---
-> >  include/linux/integrity.h           |    1 +
-> >  security/integrity/evm/evm_crypto.c |   11 +++++++----
-> >  security/integrity/evm/evm_main.c   |   10 +++++-----
-> >  security/integrity/integrity.h      |   11 +++++++++++
-> >  4 files changed, 24 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/include/linux/integrity.h b/include/linux/integrity.h
-> > index e715a2a..9684433 100644
-> > --- a/include/linux/integrity.h
-> > +++ b/include/linux/integrity.h
-> > @@ -19,6 +19,7 @@ enum integrity_status {
-> >  	INTEGRITY_UNKNOWN,
-> >  };
-> >  
-> > +/* List of EVM protected security xattrs */
-> >  #ifdef CONFIG_INTEGRITY
-> >  extern int integrity_inode_alloc(struct inode *inode);
-> >  extern void integrity_inode_free(struct inode *inode);
-> > diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
-> > index d49bb00..c631b99 100644
-> > --- a/security/integrity/evm/evm_crypto.c
-> > +++ b/security/integrity/evm/evm_crypto.c
-> > @@ -141,14 +141,17 @@ int evm_update_evmxattr(struct dentry *dentry, const char *xattr_name,
-> >  			const char *xattr_value, size_t xattr_value_len)
-> >  {
-> >  	struct inode *inode = dentry->d_inode;
-> > -	u8 hmac[SHA1_DIGEST_SIZE];
-> > +	struct evm_ima_xattr_data xattr_data;
-> >  	int rc = 0;
-> >  
-> >  	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
-> > -			   xattr_value_len, hmac);
-> > -	if (rc == 0)
-> > +			   xattr_value_len, xattr_data.digest);
-> > +	if (rc == 0) {
-> > +		xattr_data.type = EVM_XATTR_HMAC;
-> >  		rc = __vfs_setxattr_noperm(dentry, XATTR_NAME_EVM,
-> > -					   hmac, SHA1_DIGEST_SIZE, 0);
-> > +					   &xattr_data,
-> > +					   sizeof(xattr_data), 0);
-> > +	}
-> >  	else if (rc == -ENODATA)
-> >  		rc = inode->i_op->removexattr(dentry, XATTR_NAME_EVM);
-> >  	return rc;
-> > diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-> > index a8fa45f..c0580dd1 100644
-> > --- a/security/integrity/evm/evm_main.c
-> > +++ b/security/integrity/evm/evm_main.c
-> > @@ -51,20 +51,20 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
-> >  					     size_t xattr_value_len,
-> >  					     struct integrity_iint_cache *iint)
-> >  {
-> > -	char hmac_val[SHA1_DIGEST_SIZE];
-> > +	struct evm_ima_xattr_data xattr_data;
-> >  	int rc;
-> >  
-> >  	if (iint->hmac_status != INTEGRITY_UNKNOWN)
-> >  		return iint->hmac_status;
-> >  
-> > -	memset(hmac_val, 0, sizeof hmac_val);
-> 
-> Why did you drop the memset here?
-> 
-> (You didn't in the previous version of this patch)
+On 06/02/2011 01:10 AM, Hiroyuki Kamezawa wrote:
+>> pc = list_entry(list->prev, struct page_cgroup, lru);
+> Hmm, I disagree your patch is a fix for mainline. At least, a cgroup
+> before completion of
+> create() is not populated to userland and you never be able to rmdir()
+> it because you can't
+> find it.
+>
+>
+>   >26:   e8 7d 12 30 00          call   0x3012a8
+>   >2b:*  8b 73 08                mov    0x8(%ebx),%esi<-- trapping
+> instruction
+>   >2e:   8b 7c 24 24             mov    0x24(%esp),%edi
+>   >32:   8b 07                   mov    (%edi),%eax
+>
+> Hm, what is the call 0x3012a8 ?
+>
+                 pc = list_entry(list->prev, struct page_cgroup, lru);
+                 if (busy == pc) {
+                         list_move(&pc->lru, list);
+                         busy = 0;
+                         spin_unlock_irqrestore(&zone->lru_lock, flags);
+                         continue;
+                 }
+                 spin_unlock_irqrestore(&zone->lru_lock, flags); <---- 
+is  call 0x3012a8
+                 ret = mem_cgroup_move_parent(pc, mem, GFP_KERNEL);
 
-Based on a discussion with Dmitry, neither the crypto nor the logic need
-it initialized. Forgot to add it to the changelog.  :-(
+and  mov 0x8(%ebx),%esi
+is dereferencing of 'pc' in inlined mem_cgroup_move_parent
 
-> Otherwise, looks good.
-> 
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+I've looked at vmcore once more and indeed there isn't any parallel task
+that touches cgroups code path.
+Will investigate if it is xen to blame for incorrect data in place.
 
-Thanks!
-
-> >  	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
-> > -			   xattr_value_len, hmac_val);
-> > +			   xattr_value_len, xattr_data.digest);
-> >  	if (rc < 0)
-> >  		return INTEGRITY_UNKNOWN;
-> >  
-> > -	rc = vfs_xattr_cmp(dentry, XATTR_NAME_EVM, hmac_val, sizeof hmac_val,
-> > -			   GFP_NOFS);
-> > +	xattr_data.type = EVM_XATTR_HMAC;
-> > +	rc = vfs_xattr_cmp(dentry, XATTR_NAME_EVM, (u8 *)&xattr_data,
-> > +			   sizeof xattr_data, GFP_NOFS);
-> >  	if (rc < 0)
-> >  		goto err_out;
-> >  	iint->hmac_status = INTEGRITY_PASS;
-> > diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-> > index 397a46b..7efbf56 100644
-> > --- a/security/integrity/integrity.h
-> > +++ b/security/integrity/integrity.h
-> > @@ -18,6 +18,17 @@
-> >  /* iint cache flags */
-> >  #define IMA_MEASURED		0x01
-> >  
-> > +enum evm_ima_xattr_type {
-> > +	IMA_XATTR_DIGEST = 0x01,
-> > +	EVM_XATTR_HMAC,
-> > +	EVM_IMA_XATTR_DIGSIG,
-> > +};
-> > +
-> > +struct evm_ima_xattr_data {
-> > +	u8 type;
-> > +	u8 digest[SHA1_DIGEST_SIZE];
-> > +}  __attribute__((packed));
-> > +
-> >  /* integrity data associated with an inode */
-> >  struct integrity_iint_cache {
-> >  	struct rb_node rb_node; /* rooted in integrity_iint_tree */
-> > -- 
-> > 1.7.3.4
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+Thanks very much for your opinion.
+> Thanks,
+> -Kame
 
