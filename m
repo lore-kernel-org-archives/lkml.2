@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab1FCKgc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 06:36:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45175 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab1FCKgb convert rfc822-to-8bit (ORCPT
+	id S1753891Ab1FCKmV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 06:42:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56144 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752231Ab1FCKmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 06:36:31 -0400
-Subject: Re: [tip:sched/urgent] sched: Fix cross-cpu clock sync on remote
- wakeups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	Fri, 3 Jun 2011 06:42:19 -0400
+Date: Fri, 3 Jun 2011 11:42:17 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Milton Miller <miltonm@bga.com>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, Borislav Petkov <bp@amd64.org>,
-        Borislav Petkov <bp@alien8.de>, "mingo@redhat.com" <mingo@redhat.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-In-Reply-To: <schedulerIPIirqEnter@mdm.bga.com>
-References: <1307029711.2497.717.camel@laptop>
-	 <1306835745.2353.3.camel@twins>
-	 <tip-f01114cb59d670e9b4f2c335930dd57db96e9360@git.kernel.org>
-	 <20110531125621.GA24439@gere.osrc.amd.com> <1306847516.2353.80.camel@twins>
-	 <20110601070547.GB3368@liondog.tnic> <1306924612.2353.176.camel@twins>
-	 <20110601155017.GD24028@aftab>
-	 <BANLkTikT6OT-HDi-DR+_ZWEhfp_CYWJ3Hg@mail.gmail.com>
-	 <1307019866.2497.675.camel@laptop> <20110602142340.GA3356@zhy>
-	 <schedulerIPIirqEnter@mdm.bga.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 03 Jun 2011 12:36:00 +0200
-Message-ID: <1307097360.2353.3071.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: genirq: Ensure we locate the passed IRQ in irq_alloc_descs()
+Message-ID: <20110603104217.GA4777@opensource.wolfsonmicro.com>
+References: <1307037313-15733-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <nack-locate@mdm.bga.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <nack-locate@mdm.bga.com>
+X-Cookie: There is a 20% chance of tomorrow.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-03 at 04:57 -0500, Milton Miller wrote:
+On Fri, Jun 03, 2011 at 04:24:02AM -0500, Milton Miller wrote:
+> On Thu, 02 Jun 2011 17:55:13 -0000, Mark Brown wrote:
 
-> [me looks closely at patch and finds early return]
+> >  	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
 
-Yeah, in case there's nothing to do, all the old conditions hold and
-irq_enter isn't strictly required.
+> and then right after this the code continues:
 
-> > 
-> > We could of course add it in sched.c since the logic recurses just
-> > fine.. its not pretty though.. :/
-> > 
-> > Thoughts?
-> 
-> 
-> Many architectures already have an irq_enter becuase they have a single
-> interrupt to the cpu for all external causes including software; they
-> do the irq_enter before reading from the irq controller to know the
-> reason for the interrupt.  A quick glance at irq_enter and irq_exit
-> shows they will do several things twice when nested, even if that
-> is safe.
+>         ret = -EEXIST;
+>         if (irq >=0 && start != irq)
+>                 goto err;
 
-Agreed, and its a worry I had. The flip side is that doing it in the
-arch code means I have to audit all the archs again (not that I mind too
-much, but it takes a wee bit longer), also I'll have to look at all the
-code using this IPI for the old purpose.
+> This patch enables exactly the calls I want to forbid !  Why do
 
-> Are there really that many calls with the empty list that it makes
-> sense to avoid and optimize this on x86 while penalizing the several
-> architectures with a nested irq_enter and exit?
+Which you wish to forbid because...?  You've not articulated any
+motivation for doing this which makes it rather hard to engage here.
 
-I _think_ the now predominant case is this remote wakeup, so adding
-irq_enter() to all arch paths isn't too big of a problem, but I need to
-make sure.
+> you need to verify that there are no irqs between from and irq ?
 
->   When it also duplicates
-> sched_ttwu_pending (because it can't be common with the additional tests)?
+I don't care if there are IRQs between from and the specified irq, all I
+care about is that we get back the irq we requested (apart from anything
+else the function will later error out if the allocated IRQ doesn't
+match the one that was specified - it seems very clear from both the
+code and documentation that if an IRQ is specified we're supposed to get
+it back).
 
-yeah, sad that.
+ - The specified IRQ is ignored except 
 
-> We said the perf mon callback (now irq_work) had to be under irq_enter.
+> What is your use case?
 
-Correct, anything that actually does something in the handler needs
-irq_enter, the problem with the resched ipi was that it never actually
-did anything and the idle loop exit took care of the no_hz funnies.
+I've requested a base IRQ but the only attention that irq_alloc_descs()
+is paying to it is that it generates an error rather than allocating
+something 
 
-> Can we get some numbers for how often the two cases occur on some
-> various workloads?
+> Change your caller to specify the irq twice if you need a specific irq
 
-Sure, let me stick some counters in.
+This seems like a poor UI for the function, if the user specified an
+irq_base and there's a suitable range of IRQs available at that base 
+what is the benefit in refusing to allocate there?  That's just going to
+make the system fragile against init ordering and driver disabling.
+
+It's also going to be a bit more cumbersome to use:
+
+	if (pdata->irq_base > 0) {
+		irq_base = pdata->irq_base;
+		from = pdata->irq_base;
+	} else {
+		irq_base = -1;
+		from = 0;
+	}
+
+> block, or if you only need one then use the helper irq_alloc_desc_at.
+
+I need about 60 IRQs in the particular driver where I noticed this.
+
+> If you want to change irq_alloc_descs, please make it return -EINVAL
+> if irq >=0 && from != irq (like I did).
+
+> See http://lkml.indiana.edu/hypermail/linux/kernel/1105.3/00739.html
+> [PATCH RFC 4/4] irq: allow a per-allocation upper limit when allocating irqs
+
+> (and yes, I have made the changes based on the feedback but haven't
+
+I don't really see the relevance of this patch?  You're adding
+functionality for limiting the maximum IRQ number allocated which seems
+orthogonal to the issue.
