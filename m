@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab1FCPEm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 11:04:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62670 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab1FCPEk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 11:04:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tn7wfuKJm5CIz/ue2GjN35nHO1MpK8ug4/M+i3bXsBMyHGYIwHn73LnmxY7FMRxfpj
-         iHseePBkom0aPUcG18Zv4c3QZY9sFtgVenV61i1Ra9l+7MpZ6X5rUVJTw6SuAoWpiF5f
-         UBIJ3kaH9oB3a2pkjxspIBrVnSH0OFWdVvtzA=
+	id S1755469Ab1FCPF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 11:05:28 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50652 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751001Ab1FCPF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 11:05:27 -0400
+Date: Fri, 3 Jun 2011 17:05:15 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 0/9] perf/core fixes and improvements
+Message-ID: <20110603150515.GA10449@elte.hu>
+References: <1307048196-16387-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <1307106198-11965-1-git-send-email-zonque@gmail.com>
-References: <1307106198-11965-1-git-send-email-zonque@gmail.com>
-Date: Fri, 3 Jun 2011 23:04:39 +0800
-Message-ID: <BANLkTimpLKkfSJbeuM6kc7bUE+JybTmVrA@mail.gmail.com>
-Subject: Re: [PATCH] MTD: pxa3xx_nand: Fix blank page ECC mismatch
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <David.Woodhouse@intel.com>,
-        Lei Wen <leiwen@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>, stable@kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307048196-16387-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 3, 2011 at 9:03 PM, Daniel Mack <zonque@gmail.com> wrote:
-> This bug was introduced in f8155a40 ("mtd: pxa3xx_nand: rework irq
-> logic") and causes the PXA3xx NAND controller fail to operate with NAND
-> flash that has empty pages. According to the comment in this block, the
-> hardware controller will report a double-bit error for empty pages,
-> which can and must be ignored.
->
-> This patch restores the original behaviour of the driver.
->
-> Signed-off-by: Daniel Mack <zonque@gmail.com>
-> Cc: Lei Wen <leiwen@marvell.com>
-> Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-> Cc: David Woodhouse <David.Woodhouse@intel.com>
-> Cc: stable@kernel.org
-> ---
->  drivers/mtd/nand/pxa3xx_nand.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
-> index 0c6ed72..60167d1 100644
-> --- a/drivers/mtd/nand/pxa3xx_nand.c
-> +++ b/drivers/mtd/nand/pxa3xx_nand.c
-> @@ -687,6 +687,8 @@ static int pxa3xx_nand_read_page_hwecc(struct mtd_info *mtd,
->                 * OOB, ignore such double bit errors
->                 */
->                if (is_buf_blank(buf, mtd->writesize))
-> +                       info->retcode = ERR_NONE;
-> +               else
->                        mtd->ecc_stats.failed++;
->        }
->
-> --
-> 1.7.5.1
->
 
-Acked-by: Lei Wen <leiwen@marvell.com>
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Hi Ingo,
+> 
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (3):
+>   perf evlist: Remove dependency on debug routines
+>   perf python: Use exception to propagate errors
+>   perf evlist: Don't die if sample_{id_all|type} is invalid
+> 
+> David Ahern (4):
+>   perf stat: clarify unsupported events from uncounted events
+>   perf script: "sym" field really means show IP data
+>   perf script: Make printing of dso a separate field option
+>   perf script: Add printing of sample address
+> 
+> Frederic Weisbecker (2):
+>   perf python: Fix argument name list of read_on_cpu()
+>   perf python: Cleanup useless double NULL termination in method arg names
+> 
+>  tools/perf/Documentation/perf-script.txt |   12 ++--
+>  tools/perf/builtin-script.c              |  108 +++++++++++++++++++++++++++---
+>  tools/perf/builtin-stat.c                |    9 ++-
+>  tools/perf/builtin-test.c                |    2 +-
+>  tools/perf/util/event.c                  |   16 -----
+>  tools/perf/util/event.h                  |    2 -
+>  tools/perf/util/evlist.c                 |   68 +++++++++++--------
+>  tools/perf/util/evlist.h                 |    6 +-
+>  tools/perf/util/evsel.c                  |   17 +++++
+>  tools/perf/util/evsel.h                  |    8 ++
+>  tools/perf/util/python.c                 |   29 ++++----
+>  tools/perf/util/session.c                |   73 ++++++++++++++-------
+>  tools/perf/util/session.h                |    5 +-
+>  13 files changed, 245 insertions(+), 110 deletions(-)
+
+Pulled, thanks a lot Arnaldo!
+
+Mind cherry-picking the fixes into perf/urgent?
+
+Thanks,
+
+	Ingo
