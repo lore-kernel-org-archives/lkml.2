@@ -1,194 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab1FEGg4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 02:36:56 -0400
-Received: from h31-3-242-151.host.redstation.co.uk ([31.3.242.151]:33268 "EHLO
-	dns.tugs.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753365Ab1FEGgz convert rfc822-to-8bit (ORCPT
+	id S1754736Ab1FCMo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 08:44:26 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53500 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751172Ab1FCMoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 02:36:55 -0400
-Reply-To: srckenttrafik@gmail.com
-Message-ID: <2008609c73ff22f30e3301fc15c4c6e9@gmail.com>
-From: "Trafik Denetimleri!" <srckenttrafik@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: Bilgilendirme...
-Date: Fri, 3 Jun 2011 15:41:40 +0300
+	Fri, 3 Jun 2011 08:44:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-9"
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4DE8B13D.9020302@die-jansens.de>
+References: <20110405152729.232781355@chello.nl> <tip-0122ec5b02f766c355b3168df53a6c038a24fa0d@git.kernel.org>
+ <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop>
+ <4DE674EB.1000200@die-jansens.de> <1306951751.2497.626.camel@laptop>
+ <1306953870.2497.627.camel@laptop> <4DE6936F.7090700@die-jansens.de>
+ <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com> <1307092535.2353.2973.camel@twins>
+ <4DE8B13D.9020302@die-jansens.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 3 Jun 2011 21:44:01 +0900
+Message-ID: <BANLkTimhWnpgtcxjVA5Yj8_Dy5PA34EFJQ@mail.gmail.com>
+Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
+To: Arne Jansen <lists@die-jansens.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, efault@gmx.de, npiggin@kernel.dk,
+        akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TRAFÝK!
+On Fri, Jun 3, 2011 at 7:02 PM, Arne Jansen <lists@die-jansens.de> wrote:
+>
+> No, it doesn't trigger, but the hang is not as complete as I first
+> thought. A running iostat via ssh continues to give output for a while,
+> the serial console still reacts to return and prompts for login. But
+> after a while more and more locks up. The console locks as soon as I
+> sysrq-t.
 
-FÝRMAYA KAYITLI ARACI OLANLARIN DÝKKATÝNE!
+Is it the tty rescheduling bug?
 
-DÝKKAT! SON MÜRACAT TARÝHÝ 05.HAZÝRAN.2011
+That would explain the printk's mattering.
 
-HERTÜRLÜ KAMYON, KAMYONET, OTOBÜS,MÝNÜBÜS,ÇEKÝCÝ, YARI RÖMORK,TANKER V.B. ARAÇLARI KULLANAN SÜRÜCÜLER, 05.HAZÝRAN.2011 TARÝHÝNE KADAR SRC VE PSÝKOTEKNÝK BELGESÝ ALMAK ZORUNDADIRLAR. (25.ÞUBAT.2003 EHLÝYETE VE SSK GÝRÝÞÝNE SAHÝP OLANLAR, SRC BELGESÝNÝ EÐÝTÝME VE SINAVA KATILMAKSIZIN DOÐRUDAN ALMA HAKKINA SAHÝPTÝRLER.
+Remove the schedule_work() call from flush_to_ldisc() in
+drivers/tty/tty_buffer.c and see if the problem goes away. See the
+other discussion thread on lkml ("tty breakage in X (Was: tty vs
+workqueue oddities)")
 
-SRC ve PSÝKOTEKNÝK BELGELERÝ 04.HAZÝRAN.2011 TARÝHÝNE KADAR SORULMAZ
-05.HAZÝRAN.2011 TARÝHÝNDEN SONRA TRAFÝKTE YAPILACAK UYGULAMALARDA
-SRC VE PSÝKOTEKNÝK BELGESÝ BULUNDURMAYAN SÜRÜCÜLERE VE ARAÇ SAHÝPLERÝNE CEZAÝ ÝÞLEM UYGULANACAKTIR.
+Hmm?
 
-HATIRLATMA !
- 
-YAPILACAK UYGULAMALARDA SRC VE PSÝKOTEKNÝK BELGESÝ BULUNDURMAMASI DURUMUNDA (FÝRMA'YA 5000TL SÜRÜCÜ ARKADAÞLARA 250TL) CEZAÝ ÝÞLEM UYGULANACAKTIR.
-
-
-SRC EÐÝTÝM:
-
-25.ÞUBAT.2003 ÖNCESÝ EHLÝYETÝ VE SSK'SI OLMAYAN SÜRÜCÜLERÝNÝZ 28 SAAT'LÝK
-EÐÝTÝME VE BAKANLIÐIN AÇTIÐI SINAVA KATILIP %60 BAÞARI SAÐLAYIP BELGELERÝNÝ
-ALABÝLECEKLER.
-
-
-(1) - ÝÞVERENLERE; 05.HAZÝRAN.2011 TARÝHÝ ÝTÝBARÝYLE ÞOFÖRLERÝNÝZÝN
-ÝÞLERÝNE DEVAM EDEBÝLMELERÝ ÝÇÝN MUTLAK SURETTE SRC VE PSÝKOTEKNÝK
-BELGELERÝ ÜZERÝNDE DURMALIDIRLAR. AKSÝ HALDE SÜRÜCÜ ARKADAÞA CEZAÝ ÝÞLEM UYGULANDIÐI GÝBÝ ARAÇTA BAÐLANACAKTIR.
-
-(2) - SÜRÜCÜ ARKADAÞLARA; 05.HAZÝRAN.2011 TARÝHÝ ÝTÝBARÝYLE ÝÞVERENLER
-PSÝKOTEKNÝK BELGESÝ OLMAYAN SÜRÜCÜLERE ARAÇLARINI VEREMEYECEKLERÝ ÝÇÝN ÝÞÝ BIRAKMANIZ DAHÝ SÖZ KONUSU OLABÝLÝR, BU SEBEPTEN DOLAYI BÝRAN ÖNCE
-KAYDINIZI YAPTIRIP BELGENÝZÝ ALINIZ.
-
-ÖNEMLÝ NOT LÜTFEN OKUYUN ;
-TRAFÝK KAZASINA KARIÞAN SÜRÜCÜNÜN PSÝKOTEKNÝK DEÐERLENDÝRME
-BELGESÝ YOK ÝSE SÝGORTA ÞÝRKETLERÝ TARAFINDAN HASAR ÖDEMESÝ YAPILMAMAKTADIR.
-
-KISACASI SÜRÜCÜLERÝNÝZÝN BELGELERÝNÝN OLMAMASI DÝREKT OLARAK FÝRMANIZI
-ETKÝLEMEKTEDÝR.
-
-PSÝKOTEKNÝK BELGESÝ NEDÝR?
-
-Çalýþma psikolojisinin bir dalý olan psikoteknik deðerlendirme, bireyin
-belirli bir iþteki yeterliliðinin ortaya konmasý amacýyla, gerekli bedensel
-ve zihinsel özelliklerinin testler aracýlýðýyla ölçülmesidir. Baþka bir
-deyiþle psikoteknik deðerlendirme, bireyin belirli bir iþe uygun olup
-olmadýðýný anlamaya yönelik olarak tasarlanmýþ bir inceleme-deðerlendirme
-yöntemidir.
-
-
-SRC BELGESÝ NEDÝR?
-
-SRC Mesleki Yeterlilik belgesi; Ulaþtýrma Bakanlýðýnca firmalara kayýtlý
-araçlarý kullanan sürücülerin almasý Gereken zorunlu bir belgedir.
-Sürücü (Src): Karayolunda motorlu bir aracý veya taþýtý sevk ve idare eden
-kiþiyi, ifade eder.
-
-
-DENETÝM YAPACAK BÝRÝMLER;
-
-ULAÞTIRMA BAKANLIÐINA BAÐLI 30 BÝN SÝVÝL MEMUR,JANDARMA TRAFÝK,
-TRAFÝK POLÝSÝ,TRAFÝK ZABITASI
-
-UYGULAMA;
-
-SÜRÜCÜLERDE PSÝKOTEKNÝK DEÐERLENDÝRME
-
-Sürücülerin güvenli araç kullanmalarýný saðlayan zihinsel özelliklerinin
-(algý, dikkat, hafýza, muhakeme vb.); Psikomotor yetenek ve becerilerinin
-(tepki hýzý, göz, el, ayak koordinasyonu vb.); tutum-davranýþ, alýþkanlýk
-ve kiþilik özelliklerinin (risk alma, saldýrganlýk, sorumluluk, öz kontrol
-vb.) ölçülmesi ve sürücülük açýsýndan uygunluðu-yeterliliði hakkýnda bir
-sonuca varýlmasýdýr.
-
-Standart, tarafsýz, Bilimsel, Deðerlendirme
-
-Psikoteknik merkezimiz güler yüzlü personeli ve beþ ayrý þubesiyle müþteri
-odaklý Tarafsýz ,Standart ve Bilimsel kriterlere uygun olarak Psikoteknik
-deðerlendirme, Psikiyatri muayenesi ve sürücü davranýþ analiziyle sizlere
-hizmet vermektedir.
-
-(GEÇ KALMADAN BELGELERÝNÝZÝ ALIN)
-
-FÝRMANIZ ADINA KAYITLI ARAÇLARINIZ VAR ÝSE ARACINIZI KULLANAN SÜRÜCÜ
-ARKADAÞALARIN SRC VE PSÝKOTEKNÝK BELGESÝYLE TRAFÝÐE ÇIKILMASI ULAÞTIRMA
-BAKANLIÐI TARAFINDAN ZORUNLU KILINMIÞTIR.
-
-
-YÖNETMELÝKLER
-
-25.02.2004 tarih ve 25384 sayýlý resmi gazetede yayýnlanan KARAYOLU TAÞIMA
-YÖNETMELÝÐÝ 60. maddesi 'e' bendine göre profesyonel sürücülere Psikoteknik
-degerlendirme yapmaktadýr. Ayný yönetmeliðin 73 üncü maddesine göre bu
-deðerlendirmeyi yaptýrmayan sürücüleri çalýþtýran firmalar için para
-cezasý, yetki belgesinin iptali ile ceza koþullarý belirtilmiþtir.
-
-
-ÝLGÝLÝ KANUN RESMÝ GAZETE'DE YAYINLANMIÞTIR.
-
-25.02.2004 tarih ve 25384 sayýlý Resmi Gazete(KTY Aslý)
-
-08.09.2004 tarih ve 25577 sayýlý Resmi Gazete(1.Deðiþiklik)
-
-15.12.2004 tarih ve 25671 sayýlý Resmi Gazete(2.Deðiþiklik)
-
-26.02.2005 tarih ve 25739 sayýlý Resmi Gazete(3.Deðiþiklik)
-
-09.09. 2005tarih ve 25931 sayýlý Resmi Gazete(4.Deðiþiklik)
-
-18.01.2006 tarihi ve 26053 sayýlý Resmi Gazete(5.Deðiþiklik)
-
-
-SRC BELGESÝ VE PSÝKOTEKNÝK BELGELERÝ YASA GEREÐÝ ZORUNLUDUR
-
-T.C Ulaþtýrma Bakanlýðý 4925 Sayýlý Karayolu Kanunu
-
-Bu yazý T.C. ULAÞTIRMA BAKANLIÐI Resmi sitesinden alýnmýþtýr.
-
-http://www.kugm.gov.tr/
-
-
-
-Not: Hafta Sonu Açýk Olmayan Psikoteknik Merkezlerimiz Denetimler
-Baþlayacaðýdan
-
-Cumartesi ve Pazar Günleride Açýk Olup Hizmet Vermektedir.
-
-
-Not:Sürücülerin merkezlerimizde daha rahat ve hýzlý bir þekilde testten
-geçebilmesi için
-
-gelmeden önce mutlaka randevu alýnmasý gerekmektedir.
-
-
-ÖNEMLÝ NOT: RANDEVUSUZ GELENLERE ÝÞLEM YAPILMAZ GELEN TÜM SÜRÜCÜ
-ARKADAÞLARIN RANDEVU ALMASI ZORUNLU.
-
-
-GEREKLÝ EVRAKLAR;
-
-
-Src Belgesi Gerkli Evraklar: 3 Resim, Kimlik fotokopisi, Ehliyet fotokopisi
-
-Psikoteknik Belgesi Gerkli Evraklar: 3 Resim, Kimlik fotokopisi, Ehliyet
-fotokopisi
-
-Not:Evraklarýnýzý hazýrladýktan sonra lütfen bizimle irtibata geçiniz.
-
-
-Konu Hakkýnda Detaylý Bilgi'yi ve Randevunuzu
-
-Müþteri Danýþmanýmýz
-
-Lokman' Bey'den Alabilirsiniz.
-
-
-
-ÝLETÝÞÝM : 12 SAAT ULAÞABÝLECEÐÝNÝZ ÝLGÝLÝ TELEFONLAR.
-
-GSM : 0532.603.00.50
-            0545.313.76.20
-
-info@srcpsikoteknikmerkezi.com
-lokman@srcpsikoteknikmerkezi.com
-
-www.srcpsikoteknikmerkezi.com
-
-Listeden çýkmak için aþaðýdaki baðlantýya týklayýn,
-http://mailtracker.tk/stuz/
-
-
-
+                   Linus
