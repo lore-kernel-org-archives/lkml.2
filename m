@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab1FCQ0R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 12:26:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44982 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755193Ab1FCQ0O (ORCPT
+	id S1752692Ab1FCQh0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 12:37:26 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:62943 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab1FCQhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 12:26:14 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <daahern@cisco.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 4/4] perf python: Fix argument name list of read_on_cpu()
-Date: Fri,  3 Jun 2011 13:26:03 -0300
-Message-Id: <1307118363-24092-5-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1307118363-24092-1-git-send-email-acme@infradead.org>
-References: <1307118363-24092-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 3 Jun 2011 12:37:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=leD/jMTow4ogO5wy8nnsnB042W05pR/aNPERjynJkOzHiMTdcyK1U3GQcWtw1y/TSm
+         B0BdMg0/2Omod3f8S/TQ==
+Date: Fri, 3 Jun 2011 09:37:13 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Chris Wright <chrisw@sous-sol.org>
+cc: Andrea Righi <andrea@betterlinux.com>, CAI Qian <caiqian@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] ksm: fix race between ksmd and exiting task
+In-Reply-To: <20110602173549.GL23047@sequoia.sous-sol.org>
+Message-ID: <alpine.LSU.2.00.1106030934130.1810@sister.anvils>
+References: <20110601222032.GA2858@thinkpad> <2144269697.363041.1306998593180.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <20110602141927.GA2011@thinkpad> <20110602164841.GK23047@sequoia.sous-sol.org>
+ <20110602173549.GL23047@sequoia.sous-sol.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+On Thu, 2 Jun 2011, Chris Wright wrote:
 
-Mandatory arguments need to be present in the argument name list, as
-well as optional arguments, otherwise python barfs:
+> Andrea Righi reported a case where an exiting task can race against
+> ksmd.
+> 
+> ksm_scan.mm_slot == the only registered mm
+> CPU 1 (bug program)		CPU 2 (ksmd)
+>  				list_empty() is false
+> lock
+> ksm_scan.mm_slot
+> list_del
+> unlock
+>  				slot == &ksm_mm_head (but list is now empty_)
+> 
+> Close this race by revalidating that the new slot is not simply the list
+> head again.
 
-	# ./python/twatch.py
-	Traceback (most recent call last):
-	  File "./python/twatch.py", line 41, in <module>
-	    main()
-	  File "./python/twatch.py", line 32, in main
-	    event = evlist.read_on_cpu(cpu)
-	RuntimeError: more argument specifiers than keyword list entries
+Remarkably similar to my patch: it must be good!
+But yours appears to be more popular - thanks, Chris.
 
-Hence, add cpu to the name list.
+> 
+> Reported-by: Andrea Righi <andrea@betterlinux.com>
+> Cc: Hugh Dickins <hughd@google.com>
 
-Cc: David Ahern <daahern@cisco.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Link: http://lkml.kernel.org/r/1301588863-20210-1-git-send-email-fweisbec@gmail.com
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/python.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Acked-by: Hugh Dickins <hughd@google.com>
 
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index 24063b4..a9ac050 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -674,7 +674,7 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
- 	struct perf_evlist *evlist = &pevlist->evlist;
- 	union perf_event *event;
- 	int sample_id_all = 1, cpu;
--	static char *kwlist[] = {"sample_id_all", NULL, NULL};
-+	static char *kwlist[] = {"cpu", "sample_id_all", NULL, NULL};
- 	int err;
- 
- 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i|i", kwlist,
--- 
-1.6.2.5
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Chris Wright <chrisw@sous-sol.org>
 
+Cc: stable@kernel.org
+
+> ---
+>  mm/ksm.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/ksm.c b/mm/ksm.c
+> index 942dfc7..0373ce4 100644
+> --- a/mm/ksm.c
+> +++ b/mm/ksm.c
+> @@ -1301,6 +1301,9 @@ static struct rmap_item *scan_get_next_rmap_item(struct page **page)
+>  		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
+>  		ksm_scan.mm_slot = slot;
+>  		spin_unlock(&ksm_mmlist_lock);
+> +		/* We raced against exit of last slot on the list */
+> +		if (slot == &ksm_mm_head)
+> +			return NULL;
+>  next_mm:
+>  		ksm_scan.address = 0;
+>  		ksm_scan.rmap_list = &slot->rmap_list;
