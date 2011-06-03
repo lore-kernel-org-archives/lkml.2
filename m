@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab1FCO0e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 10:26:34 -0400
-Received: from smtp-vbr4.xs4all.nl ([194.109.24.24]:4967 "EHLO
-	smtp-vbr4.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755365Ab1FCO0d (ORCPT
+	id S1755936Ab1FCO06 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 10:26:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:39575 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755910Ab1FCO05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 10:26:33 -0400
-Message-ID: <4DE8EF13.9030609@xs4all.nl>
-Date: Fri, 03 Jun 2011 16:26:27 +0200
-From: Jim Bos <jim876@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110429 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com> <4CE17098.8090000@xs4all.nl> <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com> <4CE17C4B.1070305@xs4all.nl> <20101115185848.GI2583@sunsite.ms.mff.cuni.cz> <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com> <AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com> <20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com> <4CE1968D.3050706@xs4all.nl> <4DE8DC16.6030308@xs4all.nl> <20110603133351.GA25130@srcf.ucam.org>
-In-Reply-To: <20110603133351.GA25130@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 3 Jun 2011 10:26:57 -0400
+X-Authority-Analysis: v=1.1 cv=rr9DlE2fnT1UeYFJeFag6ks/js+bHNfqVlaSByoS2d4= c=1 sm=0 a=zNdHVLF5wXUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=xANjiYt0Qht4UJcB-_8A:9 a=gDFztFsx0IMiradLHWoA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/5] tracing, function, graph: Fixies for field display
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1307110803-9476-1-git-send-email-jolsa@redhat.com>
+References: <1307110803-9476-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 03 Jun 2011 10:26:55 -0400
+Message-ID: <1307111215.3667.53.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2011 03:33 PM, Matthew Garrett wrote:
-> On Fri, Jun 03, 2011 at 03:05:26PM +0200, Jim Bos wrote:
->>
->> *,
->>
->> Just applied 2.6.39.1 but my system: 64-bit SLackware, 8GB RAM, MSI mobo
->> P67A-C45 bios V1.9. previously happily booting via EFI (nice to see
->> Linux and the other OS actually NOT overwriting each others boot
->> loaders!) immediately re-booted just after loading the kernel.
->>
->> Not even a single message is making it on the console, almost immediate
->> system reset.  As I noticed there are several EFI related patches, I
->> first tried to backout the change to setup.c but that didn't help so
->> backing out all the efi changes in the 2.6.39.1 patch, i.e. the files:
->>  - arch/x86/kernel/setup.c
->>  - arch/x86/platform/efi/efi.c
->>  - arch/x86/platform/efi/efi_64.c
->> and sure enough system is booting on 2.6.39.1 with these changes removed.
+On Fri, 2011-06-03 at 16:19 +0200, Jiri Olsa wrote:
+> hi,
 > 
-> Can you try just reverting
+> this patchset contains some fixies of trace output for
+> function and function_graph tracers.
 > 
-> "x86, efi: Retain boot service code until after switching to virtual mode"
-> 
-> ? You've got 143 boot services/code regions, which is more than I'd 
-> tested against, so I'm unsure whether we're overflowing something here.
-> 
+> attached patches:
+> 1/5 tracing, function_graph: Remove dependency of abstime and duration fields on latency
+> 2/5 tracing, function_graph: Merge overhead and duration display functions
+> 3/5 tracing, function: Fix trace header to follow context-info option
+> 4/5 tracing, function_graph: Remove lock-depth from latency trace
+> 5/5 tracing, function_graph: Add context-info support for function_graph tracer
 
-That's seems to be the only EFI patch in 2.6.39.1 and I effectively
-removed by =not= applying (skipping) the parts of the 2.6.39.1 patch to
-above 3 files.
-So yes removing "x86, efi: Retain boot service code until after
-switching to virtual mode" indeed fixes the problem for me.
+Hi Jiri,
 
-Jim
+Thanks for these patches. But could you change the change logs to show
+the problems that you see. Just a description does not express what is
+really wrong. Basically add a:
+
+This is what it looked like before:
+
+....
+
+
+This is what it looks like now:
+
+....
+
+
+That way it is obvious what the patches do. I'll test these anyway to
+get a before and after, but it is helpful to see it in the change log.
+
+Thanks,
+
+-- Steve
+
+
