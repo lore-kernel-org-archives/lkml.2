@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab1FCUco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 16:32:44 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47512 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756109Ab1FCUcg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 16:32:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=chromium.org; s=google;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=DxSueGpdZpGOjlmBsbyatqnENucuVIlNJobmGn035ZeRPm83fk0nh28HbI+CU+XQLj
-         5rzl2NgWvhSpqUGrnLQYD6r958gdDdOEb7A4BGrM0V8nRWfLnteTu1yx88hzRrzT+1kL
-         xVoRxBdf+6i7XN2jmULd85O60hpjcHyYZoiFI=
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: kees.cook@canonical.com, torvalds@linux-foundation.org, tglx@linutronix.de,
-        mingo@elte.hu, rostedt@goodmis.org, jmorris@namei.org,
-        paulmck@linux.vnet.ibm.com, Will Drewry <wad@chromium.org>,
-        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org
-Subject: [PATCH v4 13/13] sh: select HAVE_SECCOMP_FILTER
-Date: Fri,  3 Jun 2011 15:34:12 -0500
-Message-Id: <1307133252-23259-13-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1307133252-23259-1-git-send-email-wad@chromium.org>
+	id S1756247Ab1FCUi4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 16:38:56 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:49574 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754830Ab1FCUiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 16:38:55 -0400
+Date: Fri, 3 Jun 2011 13:38:04 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, mingo@elte.hu, rostedt@goodmis.org,
+        jmorris@namei.org, paulmck@linux.vnet.ibm.com,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v4 05/13] seccomp_filter: Document what seccomp_filter is
+ and how it works.
+Message-ID: <20110603203804.GS4376@outflux.net>
 References: <1307133252-23259-1-git-send-email-wad@chromium.org>
+ <1307133252-23259-5-git-send-email-wad@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307133252-23259-5-git-send-email-wad@chromium.org>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for CONFIG_SECCOMP_FILTER by selecting HAVE_SECCOMP_FILTER.
----
- arch/sh/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Fri, Jun 03, 2011 at 03:34:04PM -0500, Will Drewry wrote:
+>  Adds a text file covering what CONFIG_SECCOMP_FILTER is, how it is
+>  implemented presently, and what it may be used for.  In addition,
+>  the limitations and caveats of the proposed implementation are
+>  included.
 
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index 4b89da2..41ea3a7 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -10,6 +10,7 @@ config SUPERH
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_DMA_ATTRS
- 	select HAVE_IRQ_WORK
-+	select HAVE_SECCOMP_FILTER
- 	select HAVE_PERF_EVENTS
- 	select PERF_USE_VMALLOC
- 	select HAVE_KERNEL_GZIP
+Acked-by: Kees Cook <kees.cook@canonical.com>
+
 -- 
-1.7.0.4
-
+Kees Cook
+Ubuntu Security Team
