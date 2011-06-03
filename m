@@ -1,87 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab1FCQh0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 12:37:26 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:62943 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab1FCQhY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 12:37:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=leD/jMTow4ogO5wy8nnsnB042W05pR/aNPERjynJkOzHiMTdcyK1U3GQcWtw1y/TSm
-         B0BdMg0/2Omod3f8S/TQ==
-Date: Fri, 3 Jun 2011 09:37:13 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Chris Wright <chrisw@sous-sol.org>
-cc: Andrea Righi <andrea@betterlinux.com>, CAI Qian <caiqian@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] ksm: fix race between ksmd and exiting task
-In-Reply-To: <20110602173549.GL23047@sequoia.sous-sol.org>
-Message-ID: <alpine.LSU.2.00.1106030934130.1810@sister.anvils>
-References: <20110601222032.GA2858@thinkpad> <2144269697.363041.1306998593180.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <20110602141927.GA2011@thinkpad> <20110602164841.GK23047@sequoia.sous-sol.org>
- <20110602173549.GL23047@sequoia.sous-sol.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1753019Ab1FCQmY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 12:42:24 -0400
+Received: from smtp.nokia.com ([147.243.128.26]:29230 "EHLO mgw-da02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314Ab1FCQmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 12:42:23 -0400
+Subject: Re: [GIT] kbuild core updates
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reply-To: Artem.Bityutskiy@nokia.com
+To: Michal Marek <mmarek@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, cernekee@gmail.com,
+        davej@redhat.com, jamey@minilop.net, marcin.nowakowski.000@gmail.com,
+        pefoley2@verizon.net, sam@ravnborg.org, wangxiaochen0@gmail.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110524120337.GA29839@sepie.suse.cz>
+References: <20110524120337.GA29839@sepie.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia
+Date: Fri, 03 Jun 2011 19:37:31 +0300
+Message-ID: <1307119051.3069.29.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Jun 2011, Chris Wright wrote:
+On Tue, 2011-05-24 at 14:03 +0200, Michal Marek wrote:
+> Dave Jones (1):
+>       kbuild: Disable -Wunused-but-set-variable for gcc 4.6.0
 
-> Andrea Righi reported a case where an exiting task can race against
-> ksmd.
-> 
-> ksm_scan.mm_slot == the only registered mm
-> CPU 1 (bug program)		CPU 2 (ksmd)
->  				list_empty() is false
-> lock
-> ksm_scan.mm_slot
-> list_del
-> unlock
->  				slot == &ksm_mm_head (but list is now empty_)
-> 
-> Close this race by revalidating that the new slot is not simply the list
-> head again.
+I think this is not so good idea. It does point valid dead code cases
+too, and it is useful. We should let it be enabled at least for a bit
+longer time to let people fix more of these warnings.
 
-Remarkably similar to my patch: it must be good!
-But yours appears to be more popular - thanks, Chris.
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-> 
-> Reported-by: Andrea Righi <andrea@betterlinux.com>
-> Cc: Hugh Dickins <hughd@google.com>
-
-Acked-by: Hugh Dickins <hughd@google.com>
-
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Chris Wright <chrisw@sous-sol.org>
-
-Cc: stable@kernel.org
-
-> ---
->  mm/ksm.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/ksm.c b/mm/ksm.c
-> index 942dfc7..0373ce4 100644
-> --- a/mm/ksm.c
-> +++ b/mm/ksm.c
-> @@ -1301,6 +1301,9 @@ static struct rmap_item *scan_get_next_rmap_item(struct page **page)
->  		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
->  		ksm_scan.mm_slot = slot;
->  		spin_unlock(&ksm_mmlist_lock);
-> +		/* We raced against exit of last slot on the list */
-> +		if (slot == &ksm_mm_head)
-> +			return NULL;
->  next_mm:
->  		ksm_scan.address = 0;
->  		ksm_scan.rmap_list = &slot->rmap_list;
