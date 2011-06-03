@@ -1,206 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab1FCOfU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 10:35:20 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:49446 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229Ab1FCOfT (ORCPT
+	id S1752780Ab1FCPHk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 11:07:40 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:33813 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab1FCPHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 10:35:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=wyqCUveTVgzrPasdQwuf/VOrB6qhndFIYuiHoZTlopu7NPXSDSt74LsFzRFbTxbS/B
-         cq7zJTQyp62xkijtYVs5zaNNnndbDu7nf6gS4Ipe1ZIUPLnOP19Ndb9DqKNbR8cSATTv
-         UAkypxZ/pJ0orqbWm9e218MZJEEFsBB+0r7bY=
-From: Weiping Pan <panweiping3@gmail.com>
-Cc: Weiping Pan <panweiping3@gmail.com>,
-        Jay Vosburgh <fubar@us.ibm.com> (supporter:BONDING DRIVER),
-        Andy Gospodarek <andy@greyhouse.net> (supporter:BONDING DRIVER),
-        netdev@vger.kernel.org (open list:BONDING DRIVER),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH net-next] bonding: make 802.3ad use update lacp_rate
-Date: Fri,  3 Jun 2011 22:35:33 +0800
-Message-Id: <1307111733-4746-1-git-send-email-panweiping3@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 3 Jun 2011 11:07:38 -0400
+X-Greylist: delayed 1731 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jun 2011 11:07:38 EDT
+Date: Fri, 3 Jun 2011 10:38:24 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Andreas Mohr <andi@lisas.de>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Roman Zippel <zippel@linux-m68k.org>, Michal Marek <mmarek@suse.cz>,
+        Waldo Bastian <bastian@kde.org>, Ryan Lortie <desrt@desrt.ca>,
+        Lennart Poettering <lennart@poettering.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Heads-up: Linux make menuconfig .config vs. XDG_CONFIG_HOME
+ ~/.config/ clash - perhaps resolve it while 3.0 appears?
+Message-ID: <20110603143824.GA3138@elliptictech.com>
+References: <20110602182431.GA26282@rhlx01.hs-esslingen.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110602182431.GA26282@rhlx01.hs-esslingen.de>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a bug that when you modify lacp_rate via sysfs,
-802.3ad won't use the new value of lacp_rate to transmit packets.
-That is because port->actor_oper_port_state isn't changed.
+On 2011-06-02 20:24 +0200, Andreas Mohr wrote:
+> "$XDG_CONFIG_HOME defines the base directory relative to which user
+> specific configuration files should be stored. If $XDG_CONFIG_HOME is
+> either not set or empty, a default equal to $HOME/.config should be
+> used."
+[...]
+> It may thus be strongly advisable to rename the default name of the
+> make menuconfig kernel .config file (perhaps .config_lx / .config_linux ?)
+> to completely sidestep such a (mostly user-triggered)
+> problematic clash in future.
 
-And I want to use AD_STATE_LACP_TIMEOUT,
-so I move related macros from bond_3ad.c into bond_3ad.h.
+If a program can't create its config directory or file(s), presumably it
+will display an error message to that effect and the user can correct the
+problem: after all, this scenario only occurs when the user puts a
+kernel .config file in their home directory.  I imagine that a user
+which is capable of doing such a thing is also capable of deleting
+files.
 
-Signed-off-by: Weiping Pan <panweiping3@gmail.com>
----
- drivers/net/bonding/bond_3ad.c   |   48 --------------------------------------
- drivers/net/bonding/bond_3ad.h   |   48 ++++++++++++++++++++++++++++++++++++++
- drivers/net/bonding/bond_sysfs.c |   15 +++++++++++-
- 3 files changed, 62 insertions(+), 49 deletions(-)
+Furthermore, Once the ~/.config directory has been created (by running
+any program that does so), this problem cannot occur.
 
-diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
-index c7537abc..9083258 100644
---- a/drivers/net/bonding/bond_3ad.c
-+++ b/drivers/net/bonding/bond_3ad.c
-@@ -34,54 +34,6 @@
- #include "bonding.h"
- #include "bond_3ad.h"
- 
--// General definitions
--#define AD_SHORT_TIMEOUT           1
--#define AD_LONG_TIMEOUT            0
--#define AD_STANDBY                 0x2
--#define AD_MAX_TX_IN_SECOND        3
--#define AD_COLLECTOR_MAX_DELAY     0
--
--// Timer definitions(43.4.4 in the 802.3ad standard)
--#define AD_FAST_PERIODIC_TIME      1
--#define AD_SLOW_PERIODIC_TIME      30
--#define AD_SHORT_TIMEOUT_TIME      (3*AD_FAST_PERIODIC_TIME)
--#define AD_LONG_TIMEOUT_TIME       (3*AD_SLOW_PERIODIC_TIME)
--#define AD_CHURN_DETECTION_TIME    60
--#define AD_AGGREGATE_WAIT_TIME     2
--
--// Port state definitions(43.4.2.2 in the 802.3ad standard)
--#define AD_STATE_LACP_ACTIVITY   0x1
--#define AD_STATE_LACP_TIMEOUT    0x2
--#define AD_STATE_AGGREGATION     0x4
--#define AD_STATE_SYNCHRONIZATION 0x8
--#define AD_STATE_COLLECTING      0x10
--#define AD_STATE_DISTRIBUTING    0x20
--#define AD_STATE_DEFAULTED       0x40
--#define AD_STATE_EXPIRED         0x80
--
--// Port Variables definitions used by the State Machines(43.4.7 in the 802.3ad standard)
--#define AD_PORT_BEGIN           0x1
--#define AD_PORT_LACP_ENABLED    0x2
--#define AD_PORT_ACTOR_CHURN     0x4
--#define AD_PORT_PARTNER_CHURN   0x8
--#define AD_PORT_READY           0x10
--#define AD_PORT_READY_N         0x20
--#define AD_PORT_MATCHED         0x40
--#define AD_PORT_STANDBY         0x80
--#define AD_PORT_SELECTED        0x100
--#define AD_PORT_MOVED           0x200
--
--// Port Key definitions
--// key is determined according to the link speed, duplex and
--// user key(which is yet not supported)
--//              ------------------------------------------------------------
--// Port key :   | User key                       |      Speed       |Duplex|
--//              ------------------------------------------------------------
--//              16                               6               1 0
--#define  AD_DUPLEX_KEY_BITS    0x1
--#define  AD_SPEED_KEY_BITS     0x3E
--#define  AD_USER_KEY_BITS      0xFFC0
--
- //dalloun
- #define     AD_LINK_SPEED_BITMASK_1MBPS       0x1
- #define     AD_LINK_SPEED_BITMASK_10MBPS      0x2
-diff --git a/drivers/net/bonding/bond_3ad.h b/drivers/net/bonding/bond_3ad.h
-index 0ee3f16..6ce1f6b 100644
---- a/drivers/net/bonding/bond_3ad.h
-+++ b/drivers/net/bonding/bond_3ad.h
-@@ -37,6 +37,54 @@
- #define AD_LACP_SLOW 0
- #define AD_LACP_FAST 1
- 
-+#define AD_SHORT_TIMEOUT           1
-+#define AD_LONG_TIMEOUT            0
-+#define AD_STANDBY                 0x2
-+#define AD_MAX_TX_IN_SECOND        3
-+#define AD_COLLECTOR_MAX_DELAY     0
-+
-+// Timer definitions(43.4.4 in the 802.3ad standard)
-+#define AD_FAST_PERIODIC_TIME      1
-+#define AD_SLOW_PERIODIC_TIME      30
-+#define AD_SHORT_TIMEOUT_TIME      (3*AD_FAST_PERIODIC_TIME)
-+#define AD_LONG_TIMEOUT_TIME       (3*AD_SLOW_PERIODIC_TIME)
-+#define AD_CHURN_DETECTION_TIME    60
-+#define AD_AGGREGATE_WAIT_TIME     2
-+
-+// Port state definitions(43.4.2.2 in the 802.3ad standard)
-+#define AD_STATE_LACP_ACTIVITY   0x1
-+#define AD_STATE_LACP_TIMEOUT    0x2
-+#define AD_STATE_AGGREGATION     0x4
-+#define AD_STATE_SYNCHRONIZATION 0x8
-+#define AD_STATE_COLLECTING      0x10
-+#define AD_STATE_DISTRIBUTING    0x20
-+#define AD_STATE_DEFAULTED       0x40
-+#define AD_STATE_EXPIRED         0x80
-+
-+// Port Variables definitions used by the State Machines(43.4.7 in the 802.3ad standard)
-+#define AD_PORT_BEGIN           0x1
-+#define AD_PORT_LACP_ENABLED    0x2
-+#define AD_PORT_ACTOR_CHURN     0x4
-+#define AD_PORT_PARTNER_CHURN   0x8
-+#define AD_PORT_READY           0x10
-+#define AD_PORT_READY_N         0x20
-+#define AD_PORT_MATCHED         0x40
-+#define AD_PORT_STANDBY         0x80
-+#define AD_PORT_SELECTED        0x100
-+#define AD_PORT_MOVED           0x200
-+
-+// Port Key definitions
-+// key is determined according to the link speed, duplex and
-+// user key(which is yet not supported)
-+//              ------------------------------------------------------------
-+// Port key :   | User key                       |      Speed       |Duplex|
-+//              ------------------------------------------------------------
-+//              16                               6               1 0
-+#define  AD_DUPLEX_KEY_BITS    0x1
-+#define  AD_SPEED_KEY_BITS     0x3E
-+#define  AD_USER_KEY_BITS      0xFFC0
-+
-+
- typedef struct mac_addr {
- 	u8 mac_addr_value[ETH_ALEN];
- } __packed mac_addr_t;
-diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
-index 88fcb25..2cad514 100644
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -783,8 +783,13 @@ static ssize_t bonding_store_lacp(struct device *d,
- 				  struct device_attribute *attr,
- 				  const char *buf, size_t count)
- {
--	int new_value, ret = count;
-+	int new_value, i, ret = count;
- 	struct bonding *bond = to_bond(d);
-+	struct slave *slave;
-+	struct port *port = NULL;
-+		
-+	if (!rtnl_trylock())
-+		return restart_syscall();
- 
- 	if (bond->dev->flags & IFF_UP) {
- 		pr_err("%s: Unable to update LACP rate because interface is up.\n",
-@@ -804,6 +809,13 @@ static ssize_t bonding_store_lacp(struct device *d,
- 
- 	if ((new_value == 1) || (new_value == 0)) {
- 		bond->params.lacp_fast = new_value;
-+		bond_for_each_slave(bond, slave, i) {
-+			port = &(slave->ad_info.port);
-+			if (new_value)
-+				port->actor_oper_port_state |= AD_STATE_LACP_TIMEOUT;
-+			else
-+				port->actor_oper_port_state &= ~AD_STATE_LACP_TIMEOUT;
-+		}
- 		pr_info("%s: Setting LACP rate to %s (%d).\n",
- 			bond->dev->name, bond_lacp_tbl[new_value].modename,
- 			new_value);
-@@ -813,6 +825,7 @@ static ssize_t bonding_store_lacp(struct device *d,
- 		ret = -EINVAL;
- 	}
- out:
-+	rtnl_unlock();
- 	return ret;
- }
- static DEVICE_ATTR(lacp_rate, S_IRUGO | S_IWUSR,
+There are many other reasons that a program might fail to access its
+configuration data.  I suspect that "no space remaining" or "read-only
+filesystem" are more likely than "oops, I managed to put a .config file
+in my home directory before running a single program that created
+~/.config/".
+
+Administrators can prevent hapless users from accidentally putting a
+.config file in their home directory by creating a .config directory by
+default.  Distros could help here by putting an empty .config directory
+in /etc/skel.
+
+Renaming the .config file is obviously going to cause a lot of pain, and
+there seems to be very little gain.
+
+Cheers,
 -- 
-1.7.4.4
-
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
