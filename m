@@ -1,197 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab1FCXSq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 19:18:46 -0400
-Received: from trinity.develer.com ([83.149.158.210]:44385 "EHLO
-	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350Ab1FCXSn (ORCPT
+	id S1756649Ab1FCXMA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 19:12:00 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39209 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756611Ab1FCXL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 19:18:43 -0400
-X-Greylist: delayed 539 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jun 2011 19:18:43 EDT
-Date: Sat, 4 Jun 2011 01:09:39 +0200
-From: Andrea Righi <arighi@develer.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v8 03/12] memcg: add mem_cgroup_mark_inode_dirty()
-Message-ID: <20110603230939.GA2073@thinkpad>
-References: <1307117538-14317-1-git-send-email-gthelen@google.com>
- <1307117538-14317-4-git-send-email-gthelen@google.com>
+	Fri, 3 Jun 2011 19:11:59 -0400
+Date: Sat, 4 Jun 2011 00:11:58 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dmitry Dmitriev <dimondmm@yandex.ru>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: Corrupting d_count of target dentry, when rename
+ directory to the directory which is mount point, or when rename directory
+ which is mount point to the existing directory.
+Message-ID: <20110603231158.GR11521@ZenIV.linux.org.uk>
+References: <254871306829495@web62.yandex.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307117538-14317-4-git-send-email-gthelen@google.com>
+In-Reply-To: <254871306829495@web62.yandex.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 03, 2011 at 09:12:09AM -0700, Greg Thelen wrote:
-...
-> diff --git a/fs/inode.c b/fs/inode.c
-> index ce61a1b..9ecb0bb 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -228,6 +228,9 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
->  	mapping->assoc_mapping = NULL;
->  	mapping->backing_dev_info = &default_backing_dev_info;
->  	mapping->writeback_index = 0;
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> +	mapping->i_memcg = 0;
-> +#endif
+> When new_dentry exist, i.e. 'target' is not NULL, and a mount point( or old dentry is a mount point ), then function set 'error' variable to -EBUSY( line 2581 ). After that function will call dput function for new_dentry( line 2595 ) without corresponding dget. In this case d_count of dentry become corrupted. In case when old dentry and new dentry are not mount points, dget for new dentry is called in dentry_unhash function.
 
-It won't change too much, since it's always 0, but shouldn't we use
-I_MEMCG_SHARED by default?
+What do you mean, without corresponding dget()?  It's done in dentry_unhash().
 
->  
->  	/*
->  	 * If the block_device provides a backing_dev_info for client
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 29c02f6..deabca3 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -645,6 +645,9 @@ struct address_space {
->  	spinlock_t		private_lock;	/* for use by the address_space */
->  	struct list_head	private_list;	/* ditto */
->  	struct address_space	*assoc_mapping;	/* ditto */
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> +	unsigned short		i_memcg;	/* css_id of memcg dirtier */
-> +#endif
->  } __attribute__((aligned(sizeof(long))));
->  	/*
->  	 * On most architectures that alignment is already the case; but
-> @@ -652,6 +655,12 @@ struct address_space {
->  	 * of struct page's "mapping" pointer be used for PAGE_MAPPING_ANON.
->  	 */
->  
-> +/*
-> + * When an address_space is shared by multiple memcg dirtieres, then i_memcg is
-> + * set to this special, wildcard, css_id value (zero).
-> + */
-> +#define I_MEMCG_SHARED 0
-> +
->  struct block_device {
->  	dev_t			bd_dev;  /* not a kdev_t - it's a search key */
->  	int			bd_openers;
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 77e47f5..14b6d67 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -103,6 +103,8 @@ mem_cgroup_prepare_migration(struct page *page,
->  extern void mem_cgroup_end_migration(struct mem_cgroup *mem,
->  	struct page *oldpage, struct page *newpage, bool migration_ok);
->  
-> +void mem_cgroup_mark_inode_dirty(struct inode *inode);
-> +
->  /*
->   * For memory reclaim.
->   */
-> @@ -273,6 +275,10 @@ static inline void mem_cgroup_end_migration(struct mem_cgroup *mem,
->  {
->  }
->  
-> +static inline void mem_cgroup_mark_inode_dirty(struct inode *inode)
-> +{
-> +}
-> +
->  static inline int mem_cgroup_get_reclaim_priority(struct mem_cgroup *mem)
->  {
->  	return 0;
-> diff --git a/include/trace/events/memcontrol.h b/include/trace/events/memcontrol.h
-> new file mode 100644
-> index 0000000..781ef9fc
-> --- /dev/null
-> +++ b/include/trace/events/memcontrol.h
-> @@ -0,0 +1,32 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM memcontrol
-> +
-> +#if !defined(_TRACE_MEMCONTROL_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_MEMCONTROL_H
-> +
-> +#include <linux/types.h>
-> +#include <linux/tracepoint.h>
-> +
-> +TRACE_EVENT(mem_cgroup_mark_inode_dirty,
-> +	TP_PROTO(struct inode *inode),
-> +
-> +	TP_ARGS(inode),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(unsigned long, ino)
-> +		__field(unsigned short, css_id)
-> +		),
-> +
-> +	TP_fast_assign(
-> +		__entry->ino = inode->i_ino;
-> +		__entry->css_id =
-> +			inode->i_mapping ? inode->i_mapping->i_memcg : 0;
-> +		),
-> +
-> +	TP_printk("ino=%ld css_id=%d", __entry->ino, __entry->css_id)
-> +)
-> +
-> +#endif /* _TRACE_MEMCONTROL_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index bf642b5..e83ef74 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -54,6 +54,9 @@
->  
->  #include <trace/events/vmscan.h>
->  
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/memcontrol.h>
-> +
->  struct cgroup_subsys mem_cgroup_subsys __read_mostly;
->  #define MEM_CGROUP_RECLAIM_RETRIES	5
->  struct mem_cgroup *root_mem_cgroup __read_mostly;
-> @@ -1122,6 +1125,27 @@ static int calc_inactive_ratio(struct mem_cgroup *memcg, unsigned long *present_
->  	return inactive_ratio;
->  }
->  
-> +/*
-> + * Mark the current task's memcg as the memcg associated with inode.  Note: the
-> + * recorded cgroup css_id is not guaranteed to remain correct.  The current task
-> + * may be moved to another cgroup.  The memcg may also be deleted before the
-> + * caller has time to use the i_memcg.
-> + */
-> +void mem_cgroup_mark_inode_dirty(struct inode *inode)
-> +{
-> +	struct mem_cgroup *mem;
-> +	unsigned short id;
-> +
-> +	rcu_read_lock();
-> +	mem = mem_cgroup_from_task(current);
-> +	id = mem ? css_id(&mem->css) : 0;
+Oh, hell...  We don't call it in that case.  Right.  vfs_rmdir() used to
+do dentry_unhash() before the checks for mountpoints, vfs_rename_other() -
+only after.
 
-Ditto.
-
-> +	rcu_read_unlock();
-> +
-> +	inode->i_mapping->i_memcg = id;
-> +
-> +	trace_mem_cgroup_mark_inode_dirty(inode);
-> +}
-> +
->  int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg)
->  {
->  	unsigned long active;
-> -- 
-> 1.7.3.1
-
-Thanks,
--Andrea
+The funny part is, it got accidentally fixed in this merge window.  -stable
+still needs fixing - by moving dentry_unhash() down past the checks for
+d_mountpoint().  Mainline should be OK now...
