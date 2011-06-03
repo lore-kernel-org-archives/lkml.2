@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122Ab1FCCVH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 22:21:07 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:36300 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751327Ab1FCCVF (ORCPT
+	id S1752439Ab1FCC0P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 22:26:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62841 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab1FCC0O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 22:21:05 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuIDAFlC6E15LCoegWdsb2JhbABTpjkVAQEWJiXJVw6GEwSYOId4
-Date: Fri, 3 Jun 2011 12:21:00 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH v6 08/20] evm: evm_inode_post_init
-Message-ID: <20110603022100.GA561@dastard>
-References: <1307017423-15093-1-git-send-email-zohar@linux.vnet.ibm.com>
- <1307017423-15093-9-git-send-email-zohar@linux.vnet.ibm.com>
+	Thu, 2 Jun 2011 22:26:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=NrlIIcFv4HIwN0v/6rP3Dt97FVfIKjV2BRAhUeBqT7mATFslGjvoafGqHm9KACXAqg
+         vzlIErj58SbQHvBSNaUmFTlwc3nsJg3whzC2myu2GWMPgjvbe8iV9/nBRmqxlRvXpCsv
+         XDe1EG9w100KojXGYaBhvJtAfJREYsyAxtZ+Y=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307017423-15093-9-git-send-email-zohar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1307065913.10001.2.camel@phoenix>
+References: <1307065913.10001.2.camel@phoenix>
+From: Wan ZongShun <mcuos.com@gmail.com>
+Date: Fri, 3 Jun 2011 10:25:52 +0800
+Message-ID: <BANLkTikeK=bPMSrWEmjk6x=KwREJyajzvg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mtd: nuc900_nand: add missing nand_release in nuc900_nand_remove
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        linux-mtd@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 08:23:31AM -0400, Mimi Zohar wrote:
-> Initialize 'security.evm' for new files. Reduce number of arguments
-> by defining 'struct xattr'.
+2011/6/3 Axel Lin <axel.lin@gmail.com>:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-why does this need a new security callout from every filesystem?
-Once the security xattr is initialised, the name, len and value is
-not going to change so surely the evm xattr can be initialised at
-the same time the lsm xattr is initialised.
+Acked-by: Wan ZongShun <mcuos.com@gmail.com>
 
-Then all you need to do in each filesystem is add the evm_xattr
-structure to the existing security init call and a:
+Thanks!
 
-#ifdef CONFIG_EVM
-	/* set evm.xattr */
-#endif
+> ---
+>  drivers/mtd/nand/nuc900_nand.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mtd/nand/nuc900_nand.c b/drivers/mtd/nand/nuc900_nand.c
+> index 9c30a0b..fa8faed 100644
+> --- a/drivers/mtd/nand/nuc900_nand.c
+> +++ b/drivers/mtd/nand/nuc900_nand.c
+> @@ -339,6 +339,7 @@ static int __devexit nuc900_nand_remove(struct platform_device *pdev)
+>        struct nuc900_nand *nuc900_nand = platform_get_drvdata(pdev);
+>        struct resource *res;
+>
+> +       nand_release(&nuc900_nand->mtd);
+>        iounmap(nuc900_nand->reg);
+>
+>        res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> --
+> 1.7.4.1
+>
+>
+>
+>
 
-to avoid adding code that is never executed when EVM is not
-configured into the kernel.
 
-That way you don't create the lsm_xattr at all if the evm_xattr is
-not created, and then the file creation should fail in an atomic
-manner, right?  i.e. you don't leave files with unverified security
-attributes around when interesting failure corner cases occur (e.g.
-ENOSPC).
 
-And while you are there, it's probably also be a good idea to add
-support for all filesystems that support xattrs, not just a random
-subset of them...
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Wan ZongShun.
+www.mcuos.com
