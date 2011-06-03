@@ -1,61 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab1FCMrR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 08:47:17 -0400
-Received: from canardo.mork.no ([148.122.252.1]:35673 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752555Ab1FCMrQ convert rfc822-to-8bit (ORCPT
+	id S1754814Ab1FCM4D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 08:56:03 -0400
+Received: from fep21.mx.upcmail.net ([62.179.121.41]:40450 "EHLO
+	fep21.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754701Ab1FCM4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 08:47:16 -0400
-X-Greylist: delayed 908 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jun 2011 08:47:15 EDT
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: git torvalds/linux-2.6.git gives obscure results
-Organization: m
-References: <201106031317.35112.toralf.foerster@gmx.de>
-	<BANLkTikzwD_EeOwX4wSzQ3e3JoWKZb=xgg@mail.gmail.com>
-Date: Fri, 03 Jun 2011 14:36:02 +0200
-In-Reply-To: <BANLkTikzwD_EeOwX4wSzQ3e3JoWKZb=xgg@mail.gmail.com> (richard's
-	message of "Fri, 3 Jun 2011 13:29:28 +0200")
-Message-ID: <87lixjxfbh.fsf@nemi.mork.no>
-User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
+	Fri, 3 Jun 2011 08:56:01 -0400
+X-Greylist: delayed 1068 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jun 2011 08:56:00 EDT
+X-SourceIP: 178.105.230.26
+Reply-To: <adamridley11@qatar.io>
+From: "Adam Ridley" <info@microsoft.co.uk>
+Subject: Treat As Immediate !!  
+Date: Fri, 3 Jun 2011 13:38:03 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20110603123804.VXXM29314.viefep16-int.chello.at@edge02.upcmail.net>
+X-Cloudmark-Analysis: v=1.1 cv=vUpxTctd+kpWCBtSXXIkt5ll4Z8E5Qu9nLREXC/hfIo= c=1 sm=0 a=Dyoqhi_TatcA:10 a=28uo5LSxzEsA:10 a=8EU9Q7FnrCoA:10 a=a4_qpwWt5tYA:10 a=Cfj4BQAnxiAA:10 a=jmUvxGrZpnA-XwjoXBkA:9 a=Ft8UYL4EG9YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-richard -rw- weinberger <richard.weinberger@gmail.com> writes:
-> 2011/6/3 Toralf Förster <toralf.foerster@gmx.de>:
->> SyncingLinus' tree today gives this error :
->>
->> fatal: protocol error: bad line length character: git:
->>
->
-> Same problem here. :-(
-
-Mee too.
-
-There's a problem with the git installation on one of the geo located
-git.kernel.org servers, namely git4.kernel.org located at the University
-of Umeå:
-
-bjorn@canardo:~$ telnet git4.kernel.org git
-Trying 130.239.17.8...
-Connected to git4.kernel.org.
-Escape character is '^]'.
-git: 'daemon' is not a git command. See 'git --help'.
-Connection closed by foreign host.
+I seek your Partnership in re-profiling $50millon USD.Get Back for details
 
 
-I looked around at www.kernel.org trying to find an address to report
-problems with that specific host, but couldn't find one.  So I sent a
-report to webmaster.  If anyone sees this, please fix.  Or take git4 out
-of the geo service until it is fixed.
-
-
-
-Bjørn
