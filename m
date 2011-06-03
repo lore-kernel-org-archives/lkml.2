@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab1FCKPR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 06:15:17 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34573 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751602Ab1FCKPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 06:15:15 -0400
-Message-ID: <4DE8B449.2000008@suse.de>
-Date: Fri, 03 Jun 2011 15:45:37 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Helge Hafting <helge.hafting@hist.no>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>
-Subject: Re: [2.6.39] CIFS write failures where 2.6.38 works
-References: <4DE6103E.6010100@hist.no>
-In-Reply-To: <4DE6103E.6010100@hist.no>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751645Ab1FCKXh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 06:23:37 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:60118 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab1FCKXf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 06:23:35 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+From: Milton Miller <miltonm@bga.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: <linux-kernel@vger.kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Stefan Bigler <stefan.bigler@keymile.com>,
+        Toby Gray <toby.gray@realvnc.com>, Felipe Balbi <balbi@ti.com>
+Subject: Re: tty breakage in X (Was: tty vs workqueue oddities)
+Date: Fri, 03 Jun 2011 05:23:12 -0500
+X-Originating-IP: 71.22.127.106
+Message-ID: <1307096592_10534@mail4.comsite.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Cc linux-cifs@vger.kernel.org]
+[not on list so made up cc list]
 
-On 06/01/2011 03:41 PM, Helge Hafting wrote:
-> At work I use cifs for accessing a windows server. This has worked fine
-> for a long time, up to and including Debian's 2.6.38-2.
+On Fri Jun 03 2011 about 05:37:52 EST, Linus wrote:
+> On Fri, Jun 3, 2011 at 3:56 PM, Benjamin Herrenschmidt wrote:
+> > So I think my theory stands that flush_to_ldisc constantly reschedule
+> > itself causing the worker thread to eat all CPU and starve the consumer
+> > of the PTY. I won't have time to dig much deeper today nor probably this
+> > week-end so I'm sending this email for others who want to look.
 > 
-> I just installed Debians's 2.6.39-1, and had to give up on it.
-> Mounting CIFS works, and I can see the files. But if I
-> try to make a new file (with cp), I get a long delay.
+> Gaah - that commit is total and utter crap.
+> 
+> I *removed* the whole "reschedule the work queue again" crap. It was
+> totally wrong. See commit a5660b41af6a.
+> 
+> But then commit b1c43f82c5aa added the crap right back in.
+> 
+> So does it all work if you just remove the broken schedule_work() line
+> from flush_to_ldisc?
+> 
+> Otherwise we'll need to just revert it. The commit is clearly totally broken.
 
-What is the security mechanism you are using? If you seeing the problem
-with ntlm, could you try using ntlmv2 and see whether the problem is
-reproducible?
+Its further broken in that the recieve_buf functions return -ERRORS
+but the callers don't check for negative values.
 
-
-> In this time, anything accessing CIFS will pause, including "ls".
-> CIFS eventually becomes unstuck, and I will find that my "ls" succeeded,
-> but the file copy did not. The file was created, but
-> with 0 size.
-> 
-> Trying to copy the file again results in another stall, and so on.
-> 
-> 
-> When I mount CIFS, I get this message:
-> CIFS VFS: Unexpected SMB signature
-> 
-> This happens with 2.6.38 as well as 2.6.39.
-> 
-> When writes fail in 2.6.39, I also get:
-> CIFS VFS: Send error in Close = -512
-> 
-> Followed by:
-> CIFS VFS: Server servername has not responded in 300 seconds.
-> Reconnecting...
-> 
-> I have also seen
-> CIFS VFS: Send error in Close = -512
-> and
-> CIFS VFS: Send error in read = -13
-
--- 
-Suresh Jayaraman
+milton
