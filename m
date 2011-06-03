@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab1FCSHB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 14:07:01 -0400
+	id S1753715Ab1FCSHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 14:07:22 -0400
 Received: from mail-vw0-f46.google.com ([209.85.212.46]:47899 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab1FCSHA convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753375Ab1FCSHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 14:07:00 -0400
+	Fri, 3 Jun 2011 14:07:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Fuz99399mg4QEWSOvEHRUZfIPLHFd0Lr0C+Sd74qrf2eNTPR2IgWskkQVMHqm2D1pV
-         Np7qvpdeZKag3fvkkRcZeqAPKpdJYm56iXxwSzDe1buwJbsf5MGKsqNQtVWm6dA48hYd
-         VJlym4JGnpMgAxF2rVLYM3sTlMSQWWQaAX/AQ=
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=jXI8y7kEfvgBLvevgDLcEn6IedMmlLRLTa7atUiaBuAeTCeA7dhvYkQJu78NoOdTZm
+         KpRuaYBSmNgtqRo9rUtfzEzmIbyV96B7ZvhieNxKTI/fwvXvtOGhaBWRCPqQ3dbLDllv
+         Bbi/ZcvutRbH16bsJ5fD4ULWdiQDocUx0Lrig=
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1106030941100.27151@router.home>
-References: <201106021424.p52EO91O006974@lab-17.internal.tilera.com>
-	<alpine.DEB.2.00.1106021015220.18350@chino.kir.corp.google.com>
-	<4DE7D2AC.1070503@tilera.com>
-	<BANLkTinjCbhiwRfQ_aN5wtbYipQB6gv5AA@mail.gmail.com>
-	<alpine.DEB.2.00.1106030905590.27151@router.home>
-	<4DE8F0D4.2090008@tilera.com>
-	<alpine.DEB.2.00.1106030941100.27151@router.home>
-Date: Fri, 3 Jun 2011 21:06:59 +0300
-X-Google-Sender-Auth: _zc0AqhVGdJAg2a6hLpBrN2TDbU
-Message-ID: <BANLkTi=10tZjXW7WNxJiPmQit+wW1AZEuQ@mail.gmail.com>
-Subject: Re: [PATCH] slub: always align cpu_slab to honor cmpxchg_double requirement
+In-Reply-To: <alpine.DEB.2.00.1106030904320.27151@router.home>
+References: <1306999002-29738-1-git-send-email-ssouhlal@FreeBSD.org>
+	<alpine.DEB.2.00.1106021011510.18350@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1106030904320.27151@router.home>
+Date: Fri, 3 Jun 2011 21:07:18 +0300
+X-Google-Sender-Auth: ik4ijMwjoODdS9GKinRqBi0GRpg
+Message-ID: <BANLkTimy2gLR-fuAgakwi91L=uuV9_4-rw@mail.gmail.com>
+Subject: Re: [PATCH] SLAB: Record actual last user of freed objects.
 From: Pekka Enberg <penberg@kernel.org>
 To: Christoph Lameter <cl@linux.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, David Rientjes <rientjes@google.com>,
-        Tejun Heo <tj@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: David Rientjes <rientjes@google.com>,
+        Suleiman Souhlal <ssouhlal@freebsd.org>, suleiman@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, mpm@selenic.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 3, 2011 at 5:41 PM, Christoph Lameter <cl@linux.com> wrote:
-> On Fri, 3 Jun 2011, Chris Metcalf wrote:
+On Fri, Jun 3, 2011 at 5:05 PM, Christoph Lameter <cl@linux.com> wrote:
+> On Thu, 2 Jun 2011, David Rientjes wrote:
 >
->> On 6/3/2011 10:06 AM, Christoph Lameter wrote:
->> > On Fri, 3 Jun 2011, Pekka Enberg wrote:
->> >
->> >> On Thu, Jun 2, 2011 at 9:13 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
->> >> > On 6/2/2011 1:16 PM, David Rientjes wrote:
->> >> >> Acked-by: David Rientjes <rientjes@google.com>
->> >> Yup. Looks good. Christoph?
->> > Ok if we do not mind the packing density to be not that tight anymore.
->> >
->> > Acked-by: Christoph Lameter <cl@linux.com>
+>> On Thu, 2 Jun 2011, Suleiman Souhlal wrote:
 >>
->> I'm assuming from the acks that I should ask Linus to pull this for 3.0
->> along with a couple of other minor tile-specific changes.  However, please
->> let me know if someone else would rather take it into their tree instead --
->> I don't want to step on any toes.  Thanks!
+>> > Currently, when using CONFIG_DEBUG_SLAB, we put in kfree() or
+>> > kmem_cache_free() as the last user of free objects, which is not
+>> > very useful, so change it to the caller of those functions instead.
+>> >
+>> > Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+>>
+>> Acked-by: David Rientjes <rientjes@google.com>
 >
-> I would expect the patch to go through Pekka's tree to Linus.
+> Well note that this increases the overhead of a hot code path. But slub
+> does the same
+>
+> Acked-by: Christoph Lameter <cl@linux.com>
 
 Applied, thanks!
