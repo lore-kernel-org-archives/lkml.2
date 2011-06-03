@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab1FCPbR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 11:31:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2357 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754028Ab1FCPbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 11:31:13 -0400
-Date: Fri, 3 Jun 2011 17:29:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        indan@nul.nu, bdonlan@gmail.com, linux-kernel@vger.kernel.org,
-        jan.kratochvil@redhat.com, akpm@linux-foundation.org
-Subject: Re: thread leader death under strace (was Re: [PATCH 03/10]
-	ptrace: implement PTRACE_SEIZE)
-Message-ID: <20110603152937.GB23757@redhat.com>
-References: <BANLkTin1q-r=b3ZVbT3vdJ59OEddrRWfsQ@mail.gmail.com> <20110602163654.GA17754@redhat.com> <20110602163909.GA18025@redhat.com> <201106030026.18523.vda.linux@googlemail.com>
+	id S1753656Ab1FCPbK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 11:31:10 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39620 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab1FCPbI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 11:31:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qVxF02z7FFoEoOxIxX4d+Bf5CJfIIBTqhdrpS2Hr7NcmsQ18q/Mm+Y/+w2cKru5imI
+         AbuOKeN49hydXacPekJwLwTI147XkykKbH95AYETfUwgFaiF0x1DEk6+G9OYJ2mCKJ0Z
+         eqJ48DWyRYytOd3kVLpK7IJJ76DLQVJBWtFIk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106030026.18523.vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <BANLkTimpLKkfSJbeuM6kc7bUE+JybTmVrA@mail.gmail.com>
+References: <1307106198-11965-1-git-send-email-zonque@gmail.com>
+	<BANLkTimpLKkfSJbeuM6kc7bUE+JybTmVrA@mail.gmail.com>
+Date: Fri, 3 Jun 2011 23:31:06 +0800
+Message-ID: <BANLkTik1_cuo5UH995agoNYa2FdQ8Qasiw@mail.gmail.com>
+Subject: Re: [PATCH] MTD: pxa3xx_nand: Fix blank page ECC mismatch
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <David.Woodhouse@intel.com>,
+        Lei Wen <leiwen@marvell.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>, stable@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03, Denys Vlasenko wrote:
+Also cc to MTD mailist
+Cc: linux-mtd@lists.infradead.org
+
+On Fri, Jun 3, 2011 at 11:04 PM, Lei Wen <adrian.wenl@gmail.com> wrote:
+> On Fri, Jun 3, 2011 at 9:03 PM, Daniel Mack <zonque@gmail.com> wrote:
+>> This bug was introduced in f8155a40 ("mtd: pxa3xx_nand: rework irq
+>> logic") and causes the PXA3xx NAND controller fail to operate with NAND
+>> flash that has empty pages. According to the comment in this block, the
+>> hardware controller will report a double-bit error for empty pages,
+>> which can and must be ignored.
+>>
+>> This patch restores the original behaviour of the driver.
+>>
+>> Signed-off-by: Daniel Mack <zonque@gmail.com>
+>> Cc: Lei Wen <leiwen@marvell.com>
+>> Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
+>> Cc: David Woodhouse <David.Woodhouse@intel.com>
+>> Cc: stable@kernel.org
+>> ---
+>>  drivers/mtd/nand/pxa3xx_nand.c |    2 ++
+>>  1 files changed, 2 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
+>> index 0c6ed72..60167d1 100644
+>> --- a/drivers/mtd/nand/pxa3xx_nand.c
+>> +++ b/drivers/mtd/nand/pxa3xx_nand.c
+>> @@ -687,6 +687,8 @@ static int pxa3xx_nand_read_page_hwecc(struct mtd_info *mtd,
+>>                 * OOB, ignore such double bit errors
+>>                 */
+>>                if (is_buf_blank(buf, mtd->writesize))
+>> +                       info->retcode = ERR_NONE;
+>> +               else
+>>                        mtd->ecc_stats.failed++;
+>>        }
+>>
+>> --
+>> 1.7.5.1
+>>
 >
-> On Thursday 02 June 2011 18:39, Oleg Nesterov wrote:
-> > > > 	raise(SIGUSR1);
-> > >
-> > > This doesn't send a signal. This does tgkill(tgid, 0, SIGUSR1) which
-> > > fails correctly with -EINVAL.
+> Acked-by: Lei Wen <leiwen@marvell.com>
 >
-> Yes. After I fixed this, it works as expected. See attached.
-> The output is:
-
-Great.
-
-> > > > thread_leader(void *unused)
-> > > > {
-> > > > 	/* malloc gives sufficiently aligned buffer.
-> > > > 	 * long buf[] does not! (on ia64).
-> > > > 	 */
-> > > > 	clone2(thread1, malloc(16 * 1024), 16 * 1024, 0
-> > >
-> > > Probably because of this clone2.
->
-> This seems to be not a problem (it is defined to clone()).
-
-Doesn't matter.
-
-Unlike pthread_create() which uses CLONE_SETTLS, this doesn't setup
-the tls area, and I assume you used -lpthread. In this case it is clear
-why raise() doesn't work, pt-raise.c thinks that THREAD_GETMEM(tid)
-should always work.
-
-Oleg.
-
