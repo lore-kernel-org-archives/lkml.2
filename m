@@ -1,446 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab1FCObE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 10:31:04 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:54977
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754797Ab1FCObB (ORCPT
+	id S1752155Ab1FCOfU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 10:35:20 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49446 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229Ab1FCOfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 10:31:01 -0400
-X-SpamScore: -12
-X-BigFish: VS-12(zz936eK1432N98dKzz1202hzz8275dhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 3 Jun 2011 22:34:07 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Shawn Guo <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>, <patches@linaro.org>, <grant.likely@secretlab.ca>,
-        <kernel@pengutronix.de>, <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 0/4] Move plat-mxc gpio driver into drivers/gpio
-Message-ID: <20110603143406.GA19344@S2100-06.ap.freescale.net>
-References: <1306985632-18820-1-git-send-email-shawn.guo@linaro.org>
- <20110603075201.GE10532@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110603075201.GE10532@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Fri, 3 Jun 2011 10:35:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=wyqCUveTVgzrPasdQwuf/VOrB6qhndFIYuiHoZTlopu7NPXSDSt74LsFzRFbTxbS/B
+         cq7zJTQyp62xkijtYVs5zaNNnndbDu7nf6gS4Ipe1ZIUPLnOP19Ndb9DqKNbR8cSATTv
+         UAkypxZ/pJ0orqbWm9e218MZJEEFsBB+0r7bY=
+From: Weiping Pan <panweiping3@gmail.com>
+Cc: Weiping Pan <panweiping3@gmail.com>,
+        Jay Vosburgh <fubar@us.ibm.com> (supporter:BONDING DRIVER),
+        Andy Gospodarek <andy@greyhouse.net> (supporter:BONDING DRIVER),
+        netdev@vger.kernel.org (open list:BONDING DRIVER),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH net-next] bonding: make 802.3ad use update lacp_rate
+Date: Fri,  3 Jun 2011 22:35:33 +0800
+Message-Id: <1307111733-4746-1-git-send-email-panweiping3@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+There is a bug that when you modify lacp_rate via sysfs,
+802.3ad won't use the new value of lacp_rate to transmit packets.
+That is because port->actor_oper_port_state isn't changed.
 
-On Fri, Jun 03, 2011 at 08:52:01AM +0100, Russell King - ARM Linux wrote:
-> On Thu, Jun 02, 2011 at 11:33:48AM +0800, Shawn Guo wrote:
-> >  arch/arm/plat-mxc/gpio.c                        |  361 -------------------
-> >  drivers/gpio/gpio-mxc.c                         |  433 +++++++++++++++++++++++
->
-My bad here.  I should have used 'git diff --stat -M' to show the
-the following.
- 
-.../arm/plat-mxc/gpio.c => drivers/gpio/gpio-mxc.c |  216 +++++++++++++-------
+And I want to use AD_STATE_LACP_TIMEOUT,
+so I move related macros from bond_3ad.c into bond_3ad.h.
 
-> I'm wondering why just moving this driver into drivers/gpio has
-> resulted in it growing by 72 lines - and it's not clear from the
-> diffs why that is because of the way they're broken up.
-> 
-Yes, I agree.  But when I did something like that to ease the review,
-people think it's not necessary :)
+Signed-off-by: Weiping Pan <panweiping3@gmail.com>
+---
+ drivers/net/bonding/bond_3ad.c   |   48 --------------------------------------
+ drivers/net/bonding/bond_3ad.h   |   48 ++++++++++++++++++++++++++++++++++++++
+ drivers/net/bonding/bond_sysfs.c |   15 +++++++++++-
+ 3 files changed, 62 insertions(+), 49 deletions(-)
 
-http://permalink.gmane.org/gmane.linux.kernel/1143257
-
-> Would it not be better to have the first patch to merely move
-> arch/arm/plat-mxc/gpio.c to drivers/gpio/gpio-mxc.c, making whatever
-> config changes are necessary.  Then subsequent patches should change
-> drivers/gpio/gpio-mxc.c as required - which means we can see what
-> changes are being made.
-> 
-Yes, I agree this is the best practice.  Will do it in the future
-posts.
-
-To answer your question about 72 lines growing, here is what copied
-from patch #1 commit message.
-
---- quote begins ---
-Add gpio-mxc driver by copying arch/arm/plat-mxc/gpio.c into
-drivers/gpio with the following changes.
-
- * Use readl/writel to replace mach-specific accessors
-   __raw_readl/__raw_writel
-
- * Migrate to platform driver by adding .probe function
-
- * Add a list to save all mx2 ports references, so that
-   mx2_gpio_irq_handler can walk through all interrupt status
-   registers
---- quote ends ---
-
-And the following is what the changes are exactly.
-
---- arch/arm/plat-mxc/gpio.c	2011-06-03 22:25:56.358274709 +0800
-+++ drivers/gpio/gpio-mxc.c	2011-06-01 18:38:21.410182809 +0800
-@@ -24,11 +24,28 @@
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/gpio.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
- #include <mach/hardware.h>
- #include <asm-generic/bug.h>
+diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
+index c7537abc..9083258 100644
+--- a/drivers/net/bonding/bond_3ad.c
++++ b/drivers/net/bonding/bond_3ad.c
+@@ -34,54 +34,6 @@
+ #include "bonding.h"
+ #include "bond_3ad.h"
  
--static struct mxc_gpio_port *mxc_gpio_ports;
--static int gpio_table_size;
-+struct mxc_gpio_port {
-+	struct list_head node;
-+	void __iomem *base;
-+	int irq;
-+	int irq_high;
-+	int virtual_irq_start;
-+	struct gpio_chip chip;
-+	u32 both_edges;
-+	spinlock_t lock;
-+};
-+
-+/*
-+ * MX2 has one interrupt *for all* gpio ports. The list is used
-+ * to save the references to all ports, so that mx2_gpio_irq_handler
-+ * can walk through all interrupt status registers.
-+ */
-+static LIST_HEAD(mxc_gpio_ports);
- 
- #define cpu_is_mx1_mx2()	(cpu_is_mx1() || cpu_is_mx2())
- 
-@@ -50,7 +67,7 @@ static int gpio_table_size;
- 
- static void _clear_gpio_irqstatus(struct mxc_gpio_port *port, u32 index)
- {
--	__raw_writel(1 << index, port->base + GPIO_ISR);
-+	writel(1 << index, port->base + GPIO_ISR);
- }
- 
- static void _set_gpio_irqenable(struct mxc_gpio_port *port, u32 index,
-@@ -58,27 +75,30 @@ static void _set_gpio_irqenable(struct m
- {
- 	u32 l;
- 
--	l = __raw_readl(port->base + GPIO_IMR);
-+	l = readl(port->base + GPIO_IMR);
- 	l = (l & (~(1 << index))) | (!!enable << index);
--	__raw_writel(l, port->base + GPIO_IMR);
-+	writel(l, port->base + GPIO_IMR);
- }
- 
- static void gpio_ack_irq(struct irq_data *d)
- {
-+	struct mxc_gpio_port *port = irq_data_get_irq_chip_data(d);
- 	u32 gpio = irq_to_gpio(d->irq);
--	_clear_gpio_irqstatus(&mxc_gpio_ports[gpio / 32], gpio & 0x1f);
-+	_clear_gpio_irqstatus(port, gpio & 0x1f);
- }
- 
- static void gpio_mask_irq(struct irq_data *d)
- {
-+	struct mxc_gpio_port *port = irq_data_get_irq_chip_data(d);
- 	u32 gpio = irq_to_gpio(d->irq);
--	_set_gpio_irqenable(&mxc_gpio_ports[gpio / 32], gpio & 0x1f, 0);
-+	_set_gpio_irqenable(port, gpio & 0x1f, 0);
- }
- 
- static void gpio_unmask_irq(struct irq_data *d)
- {
-+	struct mxc_gpio_port *port = irq_data_get_irq_chip_data(d);
- 	u32 gpio = irq_to_gpio(d->irq);
--	_set_gpio_irqenable(&mxc_gpio_ports[gpio / 32], gpio & 0x1f, 1);
-+	_set_gpio_irqenable(port, gpio & 0x1f, 1);
- }
- 
- static int mxc_gpio_get(struct gpio_chip *chip, unsigned offset);
-@@ -86,7 +106,7 @@ static int mxc_gpio_get(struct gpio_chip
- static int gpio_set_irq_type(struct irq_data *d, u32 type)
- {
- 	u32 gpio = irq_to_gpio(d->irq);
--	struct mxc_gpio_port *port = &mxc_gpio_ports[gpio / 32];
-+	struct mxc_gpio_port *port = irq_data_get_irq_chip_data(d);
- 	u32 bit, val;
- 	int edge;
- 	void __iomem *reg = port->base;
-@@ -122,8 +142,8 @@ static int gpio_set_irq_type(struct irq_
- 
- 	reg += GPIO_ICR1 + ((gpio & 0x10) >> 2); /* lower or upper register */
- 	bit = gpio & 0xf;
--	val = __raw_readl(reg) & ~(0x3 << (bit << 1));
--	__raw_writel(val | (edge << (bit << 1)), reg);
-+	val = readl(reg) & ~(0x3 << (bit << 1));
-+	writel(val | (edge << (bit << 1)), reg);
- 	_clear_gpio_irqstatus(port, gpio & 0x1f);
- 
- 	return 0;
-@@ -137,7 +157,7 @@ static void mxc_flip_edge(struct mxc_gpi
- 
- 	reg += GPIO_ICR1 + ((gpio & 0x10) >> 2); /* lower or upper register */
- 	bit = gpio & 0xf;
--	val = __raw_readl(reg);
-+	val = readl(reg);
- 	edge = (val >> (bit << 1)) & 3;
- 	val &= ~(0x3 << (bit << 1));
- 	if (edge == GPIO_INT_HIGH_LEV) {
-@@ -151,7 +171,7 @@ static void mxc_flip_edge(struct mxc_gpi
- 		       gpio, edge);
- 		return;
- 	}
--	__raw_writel(val | (edge << (bit << 1)), reg);
-+	writel(val | (edge << (bit << 1)), reg);
- }
- 
- /* handle 32 interrupts in one status register */
-@@ -177,8 +197,7 @@ static void mx3_gpio_irq_handler(u32 irq
- 	u32 irq_stat;
- 	struct mxc_gpio_port *port = irq_get_handler_data(irq);
- 
--	irq_stat = __raw_readl(port->base + GPIO_ISR) &
--			__raw_readl(port->base + GPIO_IMR);
-+	irq_stat = readl(port->base + GPIO_ISR) & readl(port->base + GPIO_IMR);
- 
- 	mxc_gpio_irq_handler(port, irq_stat);
- }
-@@ -186,19 +205,18 @@ static void mx3_gpio_irq_handler(u32 irq
- /* MX2 has one interrupt *for all* gpio ports */
- static void mx2_gpio_irq_handler(u32 irq, struct irq_desc *desc)
- {
--	int i;
- 	u32 irq_msk, irq_stat;
--	struct mxc_gpio_port *port = irq_get_handler_data(irq);
-+	struct mxc_gpio_port *port;
- 
- 	/* walk through all interrupt status registers */
--	for (i = 0; i < gpio_table_size; i++) {
--		irq_msk = __raw_readl(port[i].base + GPIO_IMR);
-+	list_for_each_entry(port, &mxc_gpio_ports, node) {
-+		irq_msk = readl(port->base + GPIO_IMR);
- 		if (!irq_msk)
- 			continue;
- 
--		irq_stat = __raw_readl(port[i].base + GPIO_ISR) & irq_msk;
-+		irq_stat = readl(port->base + GPIO_ISR) & irq_msk;
- 		if (irq_stat)
--			mxc_gpio_irq_handler(&port[i], irq_stat);
-+			mxc_gpio_irq_handler(port, irq_stat);
- 	}
- }
- 
-@@ -215,7 +233,7 @@ static int gpio_set_wake_irq(struct irq_
- {
- 	u32 gpio = irq_to_gpio(d->irq);
- 	u32 gpio_idx = gpio & 0x1F;
--	struct mxc_gpio_port *port = &mxc_gpio_ports[gpio / 32];
-+	struct mxc_gpio_port *port = irq_data_get_irq_chip_data(d);
- 
- 	if (enable) {
- 		if (port->irq_high && (gpio_idx >= 16))
-@@ -250,12 +268,12 @@ static void _set_gpio_direction(struct g
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&port->lock, flags);
--	l = __raw_readl(port->base + GPIO_GDIR);
-+	l = readl(port->base + GPIO_GDIR);
- 	if (dir)
- 		l |= 1 << offset;
- 	else
- 		l &= ~(1 << offset);
--	__raw_writel(l, port->base + GPIO_GDIR);
-+	writel(l, port->base + GPIO_GDIR);
- 	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
-@@ -268,8 +286,8 @@ static void mxc_gpio_set(struct gpio_chi
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&port->lock, flags);
--	l = (__raw_readl(reg) & (~(1 << offset))) | (!!value << offset);
--	__raw_writel(l, reg);
-+	l = (readl(reg) & (~(1 << offset))) | (!!value << offset);
-+	writel(l, reg);
- 	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
-@@ -278,7 +296,7 @@ static int mxc_gpio_get(struct gpio_chip
- 	struct mxc_gpio_port *port =
- 		container_of(chip, struct mxc_gpio_port, chip);
- 
--	return (__raw_readl(port->base + GPIO_PSR) >> offset) & 1;
-+	return (readl(port->base + GPIO_PSR) >> offset) & 1;
- }
- 
- static int mxc_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
-@@ -301,61 +319,115 @@ static int mxc_gpio_direction_output(str
-  */
- static struct lock_class_key gpio_lock_class;
- 
--int __init mxc_gpio_init(struct mxc_gpio_port *port, int cnt)
-+static int __devinit mxc_gpio_probe(struct platform_device *pdev)
- {
--	int i, j;
-+	struct mxc_gpio_port *port;
-+	struct resource *iores;
-+	int err, i;
-+
-+	port = kzalloc(sizeof(struct mxc_gpio_port), GFP_KERNEL);
-+	if (!port)
-+		return -ENOMEM;
-+
-+	port->virtual_irq_start = MXC_GPIO_IRQ_START + pdev->id * 32;
-+
-+	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!iores) {
-+		err = -ENODEV;
-+		goto out_kfree;
-+	}
- 
--	/* save for local usage */
--	mxc_gpio_ports = port;
--	gpio_table_size = cnt;
+-// General definitions
+-#define AD_SHORT_TIMEOUT           1
+-#define AD_LONG_TIMEOUT            0
+-#define AD_STANDBY                 0x2
+-#define AD_MAX_TX_IN_SECOND        3
+-#define AD_COLLECTOR_MAX_DELAY     0
 -
--	printk(KERN_INFO "MXC GPIO hardware\n");
+-// Timer definitions(43.4.4 in the 802.3ad standard)
+-#define AD_FAST_PERIODIC_TIME      1
+-#define AD_SLOW_PERIODIC_TIME      30
+-#define AD_SHORT_TIMEOUT_TIME      (3*AD_FAST_PERIODIC_TIME)
+-#define AD_LONG_TIMEOUT_TIME       (3*AD_SLOW_PERIODIC_TIME)
+-#define AD_CHURN_DETECTION_TIME    60
+-#define AD_AGGREGATE_WAIT_TIME     2
 -
--	for (i = 0; i < cnt; i++) {
--		/* disable the interrupt and clear the status */
--		__raw_writel(0, port[i].base + GPIO_IMR);
--		__raw_writel(~0, port[i].base + GPIO_ISR);
--		for (j = port[i].virtual_irq_start;
--			j < port[i].virtual_irq_start + 32; j++) {
--			irq_set_lockdep_class(j, &gpio_lock_class);
--			irq_set_chip_and_handler(j, &gpio_irq_chip,
--						 handle_level_irq);
--			set_irq_flags(j, IRQF_VALID);
--		}
-+	if (!request_mem_region(iores->start, resource_size(iores),
-+				pdev->name)) {
-+		err = -EBUSY;
-+		goto out_kfree;
-+	}
+-// Port state definitions(43.4.2.2 in the 802.3ad standard)
+-#define AD_STATE_LACP_ACTIVITY   0x1
+-#define AD_STATE_LACP_TIMEOUT    0x2
+-#define AD_STATE_AGGREGATION     0x4
+-#define AD_STATE_SYNCHRONIZATION 0x8
+-#define AD_STATE_COLLECTING      0x10
+-#define AD_STATE_DISTRIBUTING    0x20
+-#define AD_STATE_DEFAULTED       0x40
+-#define AD_STATE_EXPIRED         0x80
+-
+-// Port Variables definitions used by the State Machines(43.4.7 in the 802.3ad standard)
+-#define AD_PORT_BEGIN           0x1
+-#define AD_PORT_LACP_ENABLED    0x2
+-#define AD_PORT_ACTOR_CHURN     0x4
+-#define AD_PORT_PARTNER_CHURN   0x8
+-#define AD_PORT_READY           0x10
+-#define AD_PORT_READY_N         0x20
+-#define AD_PORT_MATCHED         0x40
+-#define AD_PORT_STANDBY         0x80
+-#define AD_PORT_SELECTED        0x100
+-#define AD_PORT_MOVED           0x200
+-
+-// Port Key definitions
+-// key is determined according to the link speed, duplex and
+-// user key(which is yet not supported)
+-//              ------------------------------------------------------------
+-// Port key :   | User key                       |      Speed       |Duplex|
+-//              ------------------------------------------------------------
+-//              16                               6               1 0
+-#define  AD_DUPLEX_KEY_BITS    0x1
+-#define  AD_SPEED_KEY_BITS     0x3E
+-#define  AD_USER_KEY_BITS      0xFFC0
+-
+ //dalloun
+ #define     AD_LINK_SPEED_BITMASK_1MBPS       0x1
+ #define     AD_LINK_SPEED_BITMASK_10MBPS      0x2
+diff --git a/drivers/net/bonding/bond_3ad.h b/drivers/net/bonding/bond_3ad.h
+index 0ee3f16..6ce1f6b 100644
+--- a/drivers/net/bonding/bond_3ad.h
++++ b/drivers/net/bonding/bond_3ad.h
+@@ -37,6 +37,54 @@
+ #define AD_LACP_SLOW 0
+ #define AD_LACP_FAST 1
  
--		/* register gpio chip */
--		port[i].chip.direction_input = mxc_gpio_direction_input;
--		port[i].chip.direction_output = mxc_gpio_direction_output;
--		port[i].chip.get = mxc_gpio_get;
--		port[i].chip.set = mxc_gpio_set;
--		port[i].chip.base = i * 32;
--		port[i].chip.ngpio = 32;
--
--		spin_lock_init(&port[i].lock);
--
--		/* its a serious configuration bug when it fails */
--		BUG_ON( gpiochip_add(&port[i].chip) < 0 );
--
--		if (cpu_is_mx1() || cpu_is_mx3() || cpu_is_mx25() || cpu_is_mx51()) {
--			/* setup one handler for each entry */
--			irq_set_chained_handler(port[i].irq,
--						mx3_gpio_irq_handler);
--			irq_set_handler_data(port[i].irq, &port[i]);
--			if (port[i].irq_high) {
--				/* setup handler for GPIO 16 to 31 */
--				irq_set_chained_handler(port[i].irq_high,
--							mx3_gpio_irq_handler);
--				irq_set_handler_data(port[i].irq_high,
--						     &port[i]);
--			}
--		}
-+	port->base = ioremap(iores->start, resource_size(iores));
-+	if (!port->base) {
-+		err = -ENOMEM;
-+		goto out_release_mem;
-+	}
++#define AD_SHORT_TIMEOUT           1
++#define AD_LONG_TIMEOUT            0
++#define AD_STANDBY                 0x2
++#define AD_MAX_TX_IN_SECOND        3
++#define AD_COLLECTOR_MAX_DELAY     0
 +
-+	port->irq_high = platform_get_irq(pdev, 1);
-+	port->irq = platform_get_irq(pdev, 0);
-+	if (port->irq < 0) {
-+		err = -EINVAL;
-+		goto out_iounmap;
-+	}
++// Timer definitions(43.4.4 in the 802.3ad standard)
++#define AD_FAST_PERIODIC_TIME      1
++#define AD_SLOW_PERIODIC_TIME      30
++#define AD_SHORT_TIMEOUT_TIME      (3*AD_FAST_PERIODIC_TIME)
++#define AD_LONG_TIMEOUT_TIME       (3*AD_SLOW_PERIODIC_TIME)
++#define AD_CHURN_DETECTION_TIME    60
++#define AD_AGGREGATE_WAIT_TIME     2
 +
-+	/* disable the interrupt and clear the status */
-+	writel(0, port->base + GPIO_IMR);
-+	writel(~0, port->base + GPIO_ISR);
++// Port state definitions(43.4.2.2 in the 802.3ad standard)
++#define AD_STATE_LACP_ACTIVITY   0x1
++#define AD_STATE_LACP_TIMEOUT    0x2
++#define AD_STATE_AGGREGATION     0x4
++#define AD_STATE_SYNCHRONIZATION 0x8
++#define AD_STATE_COLLECTING      0x10
++#define AD_STATE_DISTRIBUTING    0x20
++#define AD_STATE_DEFAULTED       0x40
++#define AD_STATE_EXPIRED         0x80
 +
-+	for (i = port->virtual_irq_start;
-+		i < port->virtual_irq_start + 32; i++) {
-+		irq_set_lockdep_class(i, &gpio_lock_class);
-+		irq_set_chip_and_handler(i, &gpio_irq_chip, handle_level_irq);
-+		set_irq_flags(i, IRQF_VALID);
-+		irq_set_chip_data(i, port);
- 	}
++// Port Variables definitions used by the State Machines(43.4.7 in the 802.3ad standard)
++#define AD_PORT_BEGIN           0x1
++#define AD_PORT_LACP_ENABLED    0x2
++#define AD_PORT_ACTOR_CHURN     0x4
++#define AD_PORT_PARTNER_CHURN   0x8
++#define AD_PORT_READY           0x10
++#define AD_PORT_READY_N         0x20
++#define AD_PORT_MATCHED         0x40
++#define AD_PORT_STANDBY         0x80
++#define AD_PORT_SELECTED        0x100
++#define AD_PORT_MOVED           0x200
++
++// Port Key definitions
++// key is determined according to the link speed, duplex and
++// user key(which is yet not supported)
++//              ------------------------------------------------------------
++// Port key :   | User key                       |      Speed       |Duplex|
++//              ------------------------------------------------------------
++//              16                               6               1 0
++#define  AD_DUPLEX_KEY_BITS    0x1
++#define  AD_SPEED_KEY_BITS     0x3E
++#define  AD_USER_KEY_BITS      0xFFC0
++
++
+ typedef struct mac_addr {
+ 	u8 mac_addr_value[ETH_ALEN];
+ } __packed mac_addr_t;
+diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
+index 88fcb25..2cad514 100644
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -783,8 +783,13 @@ static ssize_t bonding_store_lacp(struct device *d,
+ 				  struct device_attribute *attr,
+ 				  const char *buf, size_t count)
+ {
+-	int new_value, ret = count;
++	int new_value, i, ret = count;
+ 	struct bonding *bond = to_bond(d);
++	struct slave *slave;
++	struct port *port = NULL;
++		
++	if (!rtnl_trylock())
++		return restart_syscall();
  
- 	if (cpu_is_mx2()) {
- 		/* setup one handler for all GPIO interrupts */
--		irq_set_chained_handler(port[0].irq, mx2_gpio_irq_handler);
--		irq_set_handler_data(port[0].irq, port);
-+		if (pdev->id == 0)
-+			irq_set_chained_handler(port->irq,
-+						mx2_gpio_irq_handler);
-+	} else {
-+		/* setup one handler for each entry */
-+		irq_set_chained_handler(port->irq, mx3_gpio_irq_handler);
-+		irq_set_handler_data(port->irq, port);
-+		if (port->irq_high > 0) {
-+			/* setup handler for GPIO 16 to 31 */
-+			irq_set_chained_handler(port->irq_high,
-+						mx3_gpio_irq_handler);
-+			irq_set_handler_data(port->irq_high, port);
+ 	if (bond->dev->flags & IFF_UP) {
+ 		pr_err("%s: Unable to update LACP rate because interface is up.\n",
+@@ -804,6 +809,13 @@ static ssize_t bonding_store_lacp(struct device *d,
+ 
+ 	if ((new_value == 1) || (new_value == 0)) {
+ 		bond->params.lacp_fast = new_value;
++		bond_for_each_slave(bond, slave, i) {
++			port = &(slave->ad_info.port);
++			if (new_value)
++				port->actor_oper_port_state |= AD_STATE_LACP_TIMEOUT;
++			else
++				port->actor_oper_port_state &= ~AD_STATE_LACP_TIMEOUT;
 +		}
+ 		pr_info("%s: Setting LACP rate to %s (%d).\n",
+ 			bond->dev->name, bond_lacp_tbl[new_value].modename,
+ 			new_value);
+@@ -813,6 +825,7 @@ static ssize_t bonding_store_lacp(struct device *d,
+ 		ret = -EINVAL;
  	}
- 
-+	/* register gpio chip */
-+	port->chip.direction_input = mxc_gpio_direction_input;
-+	port->chip.direction_output = mxc_gpio_direction_output;
-+	port->chip.get = mxc_gpio_get;
-+	port->chip.set = mxc_gpio_set;
-+	port->chip.base = pdev->id * 32;
-+	port->chip.ngpio = 32;
-+
-+	spin_lock_init(&port->lock);
-+
-+	err = gpiochip_add(&port->chip);
-+	if (err)
-+		goto out_iounmap;
-+
-+	list_add_tail(&port->node, &mxc_gpio_ports);
-+
- 	return 0;
-+
-+out_iounmap:
-+	iounmap(port->base);
-+out_release_mem:
-+	release_mem_region(iores->start, resource_size(iores));
-+out_kfree:
-+	kfree(port);
-+	dev_info(&pdev->dev, "%s failed with errno %d\n", __func__, err);
-+	return err;
+ out:
++	rtnl_unlock();
+ 	return ret;
  }
-+
-+static struct platform_driver mxc_gpio_driver = {
-+	.driver		= {
-+		.name	= "gpio-mxc",
-+	},
-+	.probe		= mxc_gpio_probe,
-+};
-+
-+static int __init gpio_mxc_init(void)
-+{
-+	return platform_driver_register(&mxc_gpio_driver);
-+}
-+postcore_initcall(gpio_mxc_init);
-+
-+MODULE_AUTHOR("Freescale Semiconductor, "
-+	      "Daniel Mack <danielncaiaq.de>, "
-+	      "Juergen Beisert <kernel@pengutronix.de>");
-+MODULE_DESCRIPTION("Freescale MXC GPIO");
-+MODULE_LICENSE("GPL");
-
+ static DEVICE_ATTR(lacp_rate, S_IRUGO | S_IWUSR,
 -- 
-Regards,
-Shawn
+1.7.4.4
 
