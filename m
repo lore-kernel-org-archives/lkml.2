@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab1FCNKt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 09:10:49 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:43439 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755210Ab1FCNKs (ORCPT
+	id S1754878Ab1FCNnQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 09:43:16 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:46562 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750990Ab1FCNnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 09:10:48 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 2/2] IPC: mqueue, fix mq_open return value
-Date: Fri,  3 Jun 2011 15:10:40 +0200
-Message-Id: <1307106641-7215-2-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.5.3
-In-Reply-To: <1307106641-7215-1-git-send-email-jslaby@suse.cz>
-References: <1307106641-7215-1-git-send-email-jslaby@suse.cz>
+	Fri, 3 Jun 2011 09:43:14 -0400
+X-Sasl-enc: HKj9Iv74mO4MnsTd4mq4Np/K6a2XTTv5zRUCriOadcdk 1307108592
+Date: Fri, 3 Jun 2011 22:16:28 +0900
+From: Greg KH <greg@kroah.com>
+To: Mitch Harder <mitch.harder@sabayonlinux.org>, dave@jikos.cz,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Chris Mason <chris.mason@oracle.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        kreijack@libero.it
+Subject: Re: linux-next: build warninga in Linus' tree
+Message-ID: <20110603131628.GB7355@kroah.com>
+References: <20110530113653.5c7084f0.sfr@canb.auug.org.au>
+ <20110531175709.GC12709@twin.jikos.cz>
+ <BANLkTi=t5H8sAc_0sHyFt_xJgbeVibO3KQ@mail.gmail.com>
+ <20110603111048.GR12709@twin.jikos.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110603111048.GR12709@twin.jikos.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We return ENOMEM from mqueue_get_inode even when we have enough
-memory. Namely in case the system rlimit of mqueue was reached. This
-error propagates to mq_queue and user sees the error unexpectedly. So
-fix this up to properly return EMFILE as described in the manpage:
-	EMFILE The process already has the maximum number of files and
-	       message queues open.
-instead of:
-	ENOMEM Insufficient memory.
+On Fri, Jun 03, 2011 at 01:10:49PM +0200, David Sterba wrote:
+> On Wed, Jun 01, 2011 at 10:16:48AM -0500, Mitch Harder wrote:
+> > I've been playing around with resurrecting the basic sysfs
+> > capabilities that had been previously incorporated into btrfs.
+> > 
+> > As it stands right now, it was relatively easy to re-implement sysfs
+> > as it was originally.  However, that implementation of sysfs wasn't
+> > populated with much information (only total_blocks, blocks_used, and
+> > blocksize).
+> 
+> Goffredo Baroncelli (CCed) posted a patch to enhance sysfs interface:
+> 
+> https://patchwork.kernel.org/patch/308902/
+> (http://www.spinics.net/lists/linux-btrfs/msg06777.html)
+> 
+> > I also had to reverse a small portion of code that was in the last
+> > clean-up.
+> 
+> Restoring the code should not be a problem, the cleanup was too eager
+> and I think a sysfs inteface would be good, not only for debugging
+> purposes or tuning.
+> 
+> > If a CONFIG_BTRFS_DEBUG type configuration flag is ever introduced, it
+> > would be interesting to resurrect btrfs' sysfs capabilities.
+> 
+> Hearing about CONFIG_BTRFS_DEBUG again, seems worth to add it.
 
-With the previous patch we just switch to ERR_PTR/PTR_ERR/IS_ERR
-error handling here.
+For debugging stuff, please use debugfs instead of sysfs, as that is
+what it is there for.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- ipc/mqueue.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+thanks,
 
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index d43c30f..ed049ea 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -113,6 +113,7 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
- {
- 	struct user_struct *u = current_user();
- 	struct inode *inode;
-+	int ret = -ENOMEM;
- 
- 	inode = new_inode(sb);
- 	if (!inode)
-@@ -160,6 +161,7 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
- 		    u->mq_bytes + mq_bytes > task_rlimit(p, RLIMIT_MSGQUEUE)) {
- 			spin_unlock(&mq_lock);
- 			/* mqueue_evict_inode() releases info->messages */
-+			ret = -EMFILE;
- 			goto out_inode;
- 		}
- 		u->mq_bytes += mq_bytes;
-@@ -179,7 +181,7 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
- out_inode:
- 	iput(inode);
- err:
--	return NULL;
-+	return ERR_PTR(ret);
- }
- 
- static int mqueue_fill_super(struct super_block *sb, void *data, int silent)
-@@ -195,8 +197,8 @@ static int mqueue_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	inode = mqueue_get_inode(sb, ns, S_IFDIR | S_ISVTX | S_IRWXUGO,
- 				NULL);
--	if (!inode) {
--		error = -ENOMEM;
-+	if (IS_ERR(inode)) {
-+		error = PTR_ERR(inode);
- 		goto out;
- 	}
- 
-@@ -316,8 +318,8 @@ static int mqueue_create(struct inode *dir, struct dentry *dentry,
- 	spin_unlock(&mq_lock);
- 
- 	inode = mqueue_get_inode(dir->i_sb, ipc_ns, mode, attr);
--	if (!inode) {
--		error = -ENOMEM;
-+	if (IS_ERR(inode)) {
-+		error = PTR_ERR(inode);
- 		spin_lock(&mq_lock);
- 		ipc_ns->mq_queues_count--;
- 		goto out_unlock;
--- 
-1.7.4.2
-
-
+greg k-h
