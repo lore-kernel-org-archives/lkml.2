@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1FCTnI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 15:43:08 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:42850 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247Ab1FCTnG convert rfc822-to-8bit (ORCPT
+	id S1755711Ab1FCTsO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 15:48:14 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:46210 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab1FCTsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 15:43:06 -0400
-Message-ID: <4DE93937.7070305@ahsoftware.de>
-Date: Fri, 03 Jun 2011 21:42:47 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
+	Fri, 3 Jun 2011 15:48:12 -0400
+Message-ID: <4DE93A77.1070404@canonical.com>
+Date: Fri, 03 Jun 2011 15:48:07 -0400
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org
-Subject: Re: bridge/netfilter: regression in 2.6.39.1
-References: <4DE93422.3070000@ahsoftware.de> <1307129642.2600.2.camel@edumazet-laptop>
-In-Reply-To: <1307129642.2600.2.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: Ed Tomlinson <edt@aei.ca>
+CC: linux-kernel@vger.kernel.org, rydberg@euromail.se, jkosina@suse.cz,
+        linux-input@vger.kernel.org
+Subject: Re: [regression] Apple Magic Mouse stalls
+References: <201105281006.33763.edt@aei.ca>
+In-Reply-To: <201105281006.33763.edt@aei.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 03.06.2011 21:34, schrieb Eric Dumazet:
-> Le vendredi 03 juin 2011 à 21:21 +0200, Alexander Holler a écrit :
->> Hello,
->>
->> I'm getting a oops in the bridge code in br_change_mtu() with 2.6.39.1.
->> The patch below seems to fix that.
->>
->> I'm not sure about the usage of dst_cow_metrics_generic() in
->> fake_dst_ops, but after having a quick look at it seems to be ok to use
->> that here.
->>
->> Regards,
->>
->> Alexander
->>
->> -----
->>   From 3c1d5951af73389798afeea672ec224e195b8e8d Mon Sep 17 00:00:00 2001
->> From: Alexander Holler<holler@ahsoftware.de>
->> Date: Fri, 3 Jun 2011 20:43:06 +0200
->> Subject: [PATCH] bridge: add dst_cow_metrics_generic to fake_dst_ops
->>
->> Commit 42923465fb8d025a2b5153f2e7ab1e6e1058bf00 does here what it
->> should prevent, it introduces NULL a dereference.
->>
->
-> I cant find this commit in known trees. Could you give the real commit
-> id and its title ?
->
->> The above commit uses dst_init_metrics() which sets the metrics as
->> read only. As result br_change_mtu() dies in dst_metric_set()
->> which calls dst_metrics_write_ptr() which calls
->> dst->ops->cow_metrics() if the metrics are read only.
->> ---
->>    net/bridge/br_netfilter.c |    1 +
->>    1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
->> index 5f9c091..de982a1 100644
->> --- a/net/bridge/br_netfilter.c
->> +++ b/net/bridge/br_netfilter.c
->> @@ -107,6 +107,7 @@ static void fake_update_pmtu(struct dst_entry *dst,
->> u32 mtu)
->>    static struct dst_ops fake_dst_ops = {
->>           .family =               AF_INET,
->>           .protocol =             cpu_to_be16(ETH_P_IP),
->> +       .cow_metrics =          dst_cow_metrics_generic,
->>           .update_pmtu =          fake_update_pmtu,
->>    };
->>
->
-> Your patch is mangled (white spaces instead of tabulations)
+On 05/28/2011 10:06 AM, Ed Tomlinson wrote:
+> Hi
+> 
+> I've been having fun with bluetooth in .38-rc.  My adapter was old (bt 1.1) and the bluetooth stack was having 'fun' with it.
+> Got tired of that a got asus doggle that supports 2.1+EDR.  Then I tried to use my magic mouse.  It works for a few
+> minutes and then stalls.  The stalls seem to be related to touches.  If I am careful only to touch with one finger it
+> seems to work.  It usually works with two fingers, with three it stalls.   Running hcidump sometimes lists a last 
+> packet with a dlen of 35 when it stalls.  Powering it on an off reset things 
+> 
+>> ACL data: handle 21 flags 0x02 dlen 27
+>     L2CAP(d): cid 0x0041 len 23 [psm 0]
+>> ACL data: handle 21 flags 0x02 dlen 27
+>     L2CAP(d): cid 0x0041 len 23 [psm 0]
+>> ACL data: handle 21 flags 0x02 dlen 27
+>     L2CAP(d): cid 0x0041 len 23 [psm 0]
+>> ACL data: handle 21 flags 0x02 dlen 35
+>     L2CAP(d): cid 0x0041 len 31 [psm 0]
+> 
+> This was not a problem pre .38.  It started happening in .38-rc along with other bluetooth problems.  I figured the bt
+> problem was the root cause - I was wrong.
+> 
+> This ring any bells?
 
-The patch had a tab, so either c&p failed or something else removed the 
-tab. Maybe Thunderbird, don't know. Normally I'm using git send-email.
+Not for me... Nothing has changed in the driver that could cause such a
+change, so if there is a regression it exists somewhere else in the stack.
 
-If someone gives a feedback about the content and not the style, I'm 
-willing to send a nice patch which too includes the forgotten Signed-off-by.
+Jiri, any thoughts?
 
-Regards,
-
-Alexander
-
+-- Chase
