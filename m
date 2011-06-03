@@ -1,114 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab1FCVsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 17:48:16 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38573 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247Ab1FCVsO (ORCPT
+	id S1754931Ab1FCVxU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 17:53:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35115 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754648Ab1FCVxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 17:48:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=chromium.org; s=google;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Gx9/Y/p0ELfTFTKZz3Q0VqPYwSTBwQEZ/ALf9JARLFETPJ43W+K1E2VIY3/wrrFXD+
-         jeC8DlzMc/r5eSFk2MgYdWkdY2C1K0/Y/SvtpZy20I+TUY9GhGRxd6Nf2DM9mXXPT32p
-         4CgOm5Y+bm9BG/JiOWsHLQLeyli2omyUh0J+E=
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: kees.cook@canonical.com, torvalds@linux-foundation.org, tglx@linutronix.de,
-        mingo@elte.hu, rostedt@goodmis.org, jmorris@namei.org,
-        paulmck@linux.vnet.ibm.com, Will Drewry <wad@chromium.org>
-Subject: [PATCH v5 04/13] seccomp_filter: add process state reporting
-Date: Fri,  3 Jun 2011 16:50:17 -0500
-Message-Id: <1307137817-26731-1-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1307133252-23259-4-git-send-email-wad@chromium.org>
-References: <1307133252-23259-4-git-send-email-wad@chromium.org>
+	Fri, 3 Jun 2011 17:53:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <1307106096-6461-1-git-send-email-jslaby@suse.cz>
+References: <1307106096-6461-1-git-send-email-jslaby@suse.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 4 Jun 2011 06:52:57 +0900
+Message-ID: <BANLkTik5QP7e=+FWSa1kLVpCjZpWEtF1PQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] TTY: ldisc, do not close until there are readers
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@suse.de, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds seccomp and seccomp_filter status reporting to proc.
-/proc/<pid>/seccomp_filter provides the current seccomp mode
-and the list of allowed or dynamically filtered system calls.
+On Fri, Jun 3, 2011 at 10:01 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+>
+> There is a difference, we need uninterruptible sleep as there is
+> obviously HUP signal pending. So tty_ldisc_wait_idle now takes
+> interruptible parameter to decide. I'm not sure whether it's worth the
+> complexity. Instead uninterruptible waiting may fit even for the ldisc
+> change code. It wouldn't be possible to interrupted the change, but
+> there is 5s timeout anyway.
 
-v5: fix typos when mailing the wrong patch series
-v4: move from rcu guard to mutex guard
-v3: changed to using filters directly.
-v2: removed status entry, added seccomp file.
-    (requested by kosaki.motohiro@jp.fujitsu.com)
-    allowed S_IRUGO reading of entries
-    (requested by viro@zeniv.linux.org.uk)
-    added flags
-    got rid of the seccomp_t type
-    dropped seccomp file
+Ugh. I'd much rather not see these kinds of random flags.
 
-Signed-off-by: Will Drewry <wad@chromium.org>
----
- fs/proc/base.c |   29 +++++++++++++++++++++++++++++
- 1 files changed, 29 insertions(+), 0 deletions(-)
+> This is nicely reproducible after constify the timing as follows:
+> --- a/drivers/tty/n_tty.c
+> +++ b/drivers/tty/n_tty.c
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index dfa5327..8673064 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -73,6 +73,7 @@
- #include <linux/security.h>
- #include <linux/ptrace.h>
- #include <linux/tracehook.h>
-+#include <linux/seccomp.h>
- #include <linux/cgroup.h>
- #include <linux/cpuset.h>
- #include <linux/audit.h>
-@@ -579,6 +580,28 @@ static int proc_pid_syscall(struct task_struct *task, char *buffer)
- }
- #endif /* CONFIG_HAVE_ARCH_TRACEHOOK */
- 
-+/*
-+ * Print out the current seccomp filter set for the task.
-+ */
-+#ifdef CONFIG_SECCOMP_FILTER
-+int proc_pid_seccomp_filter_show(struct seq_file *m, struct pid_namespace *ns,
-+				 struct pid *pid, struct task_struct *task)
-+{
-+	struct seccomp_filters *filters;
-+	/* Avoid allowing other processes to incur too much added contention by
-+	 * only acquiring a reference under the task-wide mutex.
-+	 */
-+	if (mutex_lock_killable(&task->seccomp.filters_guard))
-+		return -1;
-+	filters = get_seccomp_filters(task->seccomp.filters);
-+	mutex_unlock(&task->seccomp.filters_guard);
-+
-+	seccomp_show_filters(filters, m);
-+	put_seccomp_filters(filters);
-+	return 0;
-+}
-+#endif /* CONFIG_SECCOMP_FILTER */
-+
- /************************************************************************/
- /*                       Here the fs part begins                        */
- /************************************************************************/
-@@ -2838,6 +2861,9 @@ static const struct pid_entry tgid_base_stuff[] = {
- #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
- 	INF("syscall",    S_IRUGO, proc_pid_syscall),
- #endif
-+#ifdef CONFIG_SECCOMP_FILTER
-+	ONE("seccomp_filter",     S_IRUGO, proc_pid_seccomp_filter_show),
-+#endif
- 	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
- 	ONE("stat",       S_IRUGO, proc_tgid_stat),
- 	ONE("statm",      S_IRUGO, proc_pid_statm),
-@@ -3180,6 +3206,9 @@ static const struct pid_entry tid_base_stuff[] = {
- #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
- 	INF("syscall",   S_IRUGO, proc_pid_syscall),
- #endif
-+#ifdef CONFIG_SECCOMP_FILTER
-+	ONE("seccomp_filter",     S_IRUGO, proc_pid_seccomp_filter_show),
-+#endif
- 	INF("cmdline",   S_IRUGO, proc_pid_cmdline),
- 	ONE("stat",      S_IRUGO, proc_tid_stat),
- 	ONE("statm",     S_IRUGO, proc_pid_statm),
--- 
-1.7.0.4
+And PLEASE don't do things like this: you just introduced a patch
+inside the email that shows the bug, and now any sane email
+application tool will just assume that THIS patch is the one you want
+to apply. So rather than applying the fix, it will apply the
+"descriptive" patch to intentionally introduce the timing delays to
+show the bug!
 
+So don't include actual real patches like this without indenting them
+or doing something to make it really really obvious that the patch is
+not the one to be applied, but just a description of the problem!
+
+                     Linus
