@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab1FCAeI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 20:34:08 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44791 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754296Ab1FCAeG (ORCPT
+	id S1755351Ab1FCAss (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 20:48:48 -0400
+Received: from fallbackmx07.syd.optusnet.com.au ([211.29.132.9]:59317 "EHLO
+	fallbackmx07.syd.optusnet.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754411Ab1FCAsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 20:34:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=hviRnrnKKshbz/2tcpn6/PdwxYs7tG2AB2+fsQgUU0aLsm5w5zzUTCDGqGSoaNz2cM
-         cDdka4GkfRDhDXViR1qTU15BKmYHYx+tAWDlQL8GC2O2s/5Ktci2+X/nIOC+GSMFiqac
-         hVY1iXc6z7tGqisFEyVZGmCSZy3biwwPi27QQ=
-From: Curtis McEnroe <programble@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Curtis McEnroe <programble@gmail.com>
-Subject: [PATCH 5/5] [media] tm6000: Cleaned up code style in tm6000-alsa.c
-Date: Thu,  2 Jun 2011 20:33:34 -0400
-Message-Id: <1307061214-14837-4-git-send-email-programble@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
-In-Reply-To: <1307061214-14837-1-git-send-email-programble@gmail.com>
-References: <1307061214-14837-1-git-send-email-programble@gmail.com>
+	Thu, 2 Jun 2011 20:48:46 -0400
+Message-Id: <201106030036.p530aUjA021577@mail05.syd.optusnet.com.au>
+Content-Type: text/plain
+Content-Disposition: inline
+Content-Transfer-Encoding: binary
+Mime-Version: 1.0
+X-Mailer: MIME-tools 5.420 (Entity 5.420)
+From: Guarantee Loan Firm <info@loan.org>
+Date: Fri, 03 Jun 2011 10:36:30 +1000
+Subject: Important Notice!!
+Reply-To: loan.nancymorgan02@hotmail.com
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed all errors but one (possibly a mistake by the checker) reported by
-the checker.
+We offer loan to local and international clients. Do you need loan?
+We give out loan ranging from $5,000.00 and upfront to local and 
+international client in 2%. 
+If you are interested, kindly fill the below
 
-Signed-off-by: Curtis McEnroe <programble@gmail.com>
----
- drivers/staging/tm6000/tm6000-alsa.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Upon Response, below is Loan application form.
+EMAIL: loan.nancymorgan02@hotmail.com
+1.Full Name:...2. Country:...3.Telephone:....4.Loan 
+Amount:....5.Duration:...6.Monthly Income:...7.Purpose Of Loan:...
 
-diff --git a/drivers/staging/tm6000/tm6000-alsa.c b/drivers/staging/tm6000/tm6000-alsa.c
-index 2b96047..ddfd7c3 100644
---- a/drivers/staging/tm6000/tm6000-alsa.c
-+++ b/drivers/staging/tm6000/tm6000-alsa.c
-@@ -18,7 +18,7 @@
- #include <linux/slab.h>
- #include <linux/vmalloc.h>
- 
--#include <asm/delay.h>
-+#include <linux/delay.h>
- #include <sound/core.h>
- #include <sound/pcm.h>
- #include <sound/pcm_params.h>
-@@ -255,7 +255,7 @@ static int tm6000_fillbuf(struct tm6000_core *core, char *buf, int size)
- 			length * stride);
- 
- #ifndef NO_PCM_LOCK
--       snd_pcm_stream_lock(substream);
-+	snd_pcm_stream_lock(substream);
- #endif
- 
- 	chip->buf_pos += length;
-@@ -269,7 +269,7 @@ static int tm6000_fillbuf(struct tm6000_core *core, char *buf, int size)
- 	}
- 
- #ifndef NO_PCM_LOCK
--       snd_pcm_stream_unlock(substream);
-+	snd_pcm_stream_unlock(substream);
- #endif
- 
- 	if (period_elapsed)
-@@ -461,7 +461,7 @@ int tm6000_audio_init(struct tm6000_core *dev)
- 	if (rc < 0)
- 		goto error_chip;
- 
--	dprintk(1,"Registered audio driver for %s\n", card->longname);
-+	dprintk(1, "Registered audio driver for %s\n", card->longname);
- 
- 	return 0;
- 
--- 
-1.7.5.2
+In acknowledgment to these details, I will send you a well 
+calculated terms and Condition for the amount you require.
+
+contact Mrs.Nancy Morgan for more info. 
+Contact email:loan.nancymorgan02@hotmail.com (Feel free to call 
+me on: (+44)704-574-8661 for more info).
+
 
