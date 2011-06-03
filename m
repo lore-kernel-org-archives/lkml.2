@@ -1,129 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab1FCJ3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 05:29:38 -0400
-Received: from mail.perches.com ([173.55.12.10]:2476 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753922Ab1FCJ3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 05:29:36 -0400
-From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [Trivial PATCH 5/5] staging: msm: Use angle brackets for system includes
-Date: Fri,  3 Jun 2011 02:28:50 -0700
-Message-Id: <1220799998956e0a84ae55199a8b2210fccecbb3.1307092589.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.5.rc3.dirty
-In-Reply-To: <cover.1307092588.git.joe@perches.com>
-References: <cover.1307092588.git.joe@perches.com>
+	id S1754197Ab1FCJ3v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 05:29:51 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47066 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753869Ab1FCJ3e convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 05:29:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fqKzXpTEiqEQ8Updw+ugc9Ni4AM1pg8SSf0MvROLiZOmqHLdF7qk0ZYH8Ngxsxn48N
+         a4k6eL4Po7Q5ncGshnWHyB771sBBY/uE24vXtyLVm6LB+hlM65+u5xDxeJm4lRQEAktN
+         cYQxiysXfzFI3yO98zJQ/lGF2XnRhfC+lY+FI=
+MIME-Version: 1.0
+In-Reply-To: <20110519182702.GA3337@maxin>
+References: <20110519182702.GA3337@maxin>
+Date: Fri, 3 Jun 2011 10:29:33 +0100
+Message-ID: <BANLkTimYNB8CgK=Q8TT0qCZvbEV5JVHuhw@mail.gmail.com>
+Subject: Re: [PATCH] drivers: video: Remove useless checks
+From: Maxin B John <maxin.john@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, tim.gardner@canonical.com, airlied@redhat.com,
+        lethal@linux-sh.org, james@albanarts.com, error27@gmail.com,
+        randy.dunlap@oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the normal include style.
+ping ...
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/staging/msm/ebi2_l2f.c    |    2 +-
- drivers/staging/msm/ebi2_tmd20.c  |    2 +-
- drivers/staging/msm/mddihost.h    |    2 +-
- drivers/staging/msm/mdp_ppp.c     |    2 +-
- drivers/staging/msm/mdp_ppp_v20.c |    2 +-
- drivers/staging/msm/mdp_ppp_v31.c |    2 +-
- drivers/staging/msm/msm_fb.h      |    2 +-
- 7 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/staging/msm/ebi2_l2f.c b/drivers/staging/msm/ebi2_l2f.c
-index eea891d..5bfea28 100644
---- a/drivers/staging/msm/ebi2_l2f.c
-+++ b/drivers/staging/msm/ebi2_l2f.c
-@@ -23,7 +23,7 @@
- #include <linux/time.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
--#include "linux/proc_fs.h"
-+#include <linux/proc_fs.h>
- 
- #include <linux/delay.h>
- 
-diff --git a/drivers/staging/msm/ebi2_tmd20.c b/drivers/staging/msm/ebi2_tmd20.c
-index d66d039..d7d667a 100644
---- a/drivers/staging/msm/ebi2_tmd20.c
-+++ b/drivers/staging/msm/ebi2_tmd20.c
-@@ -23,7 +23,7 @@
- #include <linux/time.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
--#include "linux/proc_fs.h"
-+#include <linux/proc_fs.h>
- 
- #include <linux/delay.h>
- 
-diff --git a/drivers/staging/msm/mddihost.h b/drivers/staging/msm/mddihost.h
-index 8f532d0..d7b785c 100644
---- a/drivers/staging/msm/mddihost.h
-+++ b/drivers/staging/msm/mddihost.h
-@@ -18,7 +18,7 @@
- #include <linux/time.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
--#include "linux/proc_fs.h"
-+#include <linux/proc_fs.h>
- #include <linux/types.h>
- #include <linux/dma-mapping.h>
- #include <linux/clk.h>
-diff --git a/drivers/staging/msm/mdp_ppp.c b/drivers/staging/msm/mdp_ppp.c
-index c35a6ae..01b372f 100644
---- a/drivers/staging/msm/mdp_ppp.c
-+++ b/drivers/staging/msm/mdp_ppp.c
-@@ -24,7 +24,7 @@
- #include <linux/file.h>
- #include <linux/major.h>
- 
--#include "linux/proc_fs.h"
-+#include <linux/proc_fs.h>
- 
- #include <mach/hardware.h>
- #include <linux/io.h>
-diff --git a/drivers/staging/msm/mdp_ppp_v20.c b/drivers/staging/msm/mdp_ppp_v20.c
-index b5b7271..3bc02a1 100644
---- a/drivers/staging/msm/mdp_ppp_v20.c
-+++ b/drivers/staging/msm/mdp_ppp_v20.c
-@@ -22,7 +22,7 @@
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/fb.h>
--#include "linux/proc_fs.h"
-+#include <linux/proc_fs.h>
- 
- #include <mach/hardware.h>
- #include <linux/io.h>
-diff --git a/drivers/staging/msm/mdp_ppp_v31.c b/drivers/staging/msm/mdp_ppp_v31.c
-index 76495db..d8b7953 100644
---- a/drivers/staging/msm/mdp_ppp_v31.c
-+++ b/drivers/staging/msm/mdp_ppp_v31.c
-@@ -22,7 +22,7 @@
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/fb.h>
--#include "linux/proc_fs.h"
-+#include <linux/proc_fs.h>
- 
- #include <mach/hardware.h>
- #include <linux/io.h>
-diff --git a/drivers/staging/msm/msm_fb.h b/drivers/staging/msm/msm_fb.h
-index 4bca6d2..0441aa9 100644
---- a/drivers/staging/msm/msm_fb.h
-+++ b/drivers/staging/msm/msm_fb.h
-@@ -19,7 +19,7 @@
- #include <linux/time.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
--#include "linux/proc_fs.h"
-+#include <linux/proc_fs.h>
- 
- #include <mach/hardware.h>
- #include <linux/io.h>
--- 
-1.7.5.rc3.dirty
-
+On Thu, May 19, 2011 at 7:27 PM, Maxin B John <maxin.john@gmail.com> wrote:
+> Comparing unsigned less than zero will never be true.
+> Removing similar checks from 'fbmem.c' and 'fbcmap.c'.
+>
+> Please let me know your comments.
+>
+> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+> ---
+> diff --git a/drivers/video/fbcmap.c b/drivers/video/fbcmap.c
+> index 5c3960d..15cf8fc 100644
+> --- a/drivers/video/fbcmap.c
+> +++ b/drivers/video/fbcmap.c
+> @@ -285,8 +285,7 @@ int fb_set_user_cmap(struct fb_cmap_user *cmap, struct fb_info *info)
+>                rc = -ENODEV;
+>                goto out;
+>        }
+> -       if (cmap->start < 0 || (!info->fbops->fb_setcolreg &&
+> -                               !info->fbops->fb_setcmap)) {
+> +       if (!info->fbops->fb_setcolreg && !info->fbops->fb_setcmap) {
+>                rc = -EINVAL;
+>                goto out1;
+>        }
+> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+> index 5aac00e..9edca4d 100644
+> --- a/drivers/video/fbmem.c
+> +++ b/drivers/video/fbmem.c
+> @@ -1143,7 +1143,7 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
+>                        return -EFAULT;
+>                if (con2fb.console < 1 || con2fb.console > MAX_NR_CONSOLES)
+>                        return -EINVAL;
+> -               if (con2fb.framebuffer < 0 || con2fb.framebuffer >= FB_MAX)
+> +               if (con2fb.framebuffer >= FB_MAX)
+>                        return -EINVAL;
+>                if (!registered_fb[con2fb.framebuffer])
+>                        request_module("fb%d", con2fb.framebuffer);
+>
