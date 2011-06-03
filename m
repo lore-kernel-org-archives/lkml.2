@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab1FCNXV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 09:23:21 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59711 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755143Ab1FCNXU (ORCPT
+	id S1755225Ab1FCNeA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 09:34:00 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:44837 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab1FCNd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 09:23:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/4] ARM: mxc: migrate mach-imx gpio driver to gpio-mxc
-Date: Fri, 3 Jun 2011 13:23:00 +0000
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1+; KDE/4.6.3; x86_64; ; )
-Cc: Fabio Estevam <festevam@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, kernel@pengutronix.de, olof@lixom.net
-References: <1306985632-18820-1-git-send-email-shawn.guo@linaro.org> <1306985632-18820-4-git-send-email-shawn.guo@linaro.org> <BANLkTikUnDN81f3cv-buqsKUgdqXsRcYhQ@mail.gmail.com>
-In-Reply-To: <BANLkTikUnDN81f3cv-buqsKUgdqXsRcYhQ@mail.gmail.com>
+	Fri, 3 Jun 2011 09:33:59 -0400
+Date: Fri, 3 Jun 2011 14:33:51 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jim Bos <jim876@xs4all.nl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+Message-ID: <20110603133351.GA25130@srcf.ucam.org>
+References: <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com>
+ <4CE17098.8090000@xs4all.nl>
+ <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com>
+ <4CE17C4B.1070305@xs4all.nl>
+ <20101115185848.GI2583@sunsite.ms.mff.cuni.cz>
+ <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>
+ <AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com>
+ <20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>
+ <4CE1968D.3050706@xs4all.nl>
+ <4DE8DC16.6030308@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201106031323.01024.arnd@arndb.de>
-X-Provags-ID: V02:K0:w19ShM5OasI6W1bytTKJUeEz1rNk0O49kuoNAy6ujfw
- LnADoOsxUoG+tMwz3OXfyMh3hf10zhazNnOBYbEEidj5Wv2Y0Y
- f5fMkesbCcWbRUCE00Rajde2Tew52zCzPicF7qSPr4kUFA3V8g
- MO6Vxt3ATApSKaL1GTXOLFNHN/xU20svmOxT3+/WBzhrnTWMwU
- fsiW6kKBb5FCB/EeO2ClQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DE8DC16.6030308@xs4all.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 03 June 2011 11:54:14 Fabio Estevam wrote:
-> On Thu, Jun 2, 2011 at 12:33 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
-> ...
+On Fri, Jun 03, 2011 at 03:05:26PM +0200, Jim Bos wrote:
 > 
-> > +void __init imx1_soc_init(void)
-> > +{
-> > +       mxc_register_gpio(0, MX1_GPIO1_BASE_ADDR, SZ_4K, MX1_GPIO_INT_PORTA, 0);
-> > +       mxc_register_gpio(1, MX1_GPIO2_BASE_ADDR, SZ_4K, MX1_GPIO_INT_PORTB, 0);
-> > +       mxc_register_gpio(2, MX1_GPIO3_BASE_ADDR, SZ_4K, MX1_GPIO_INT_PORTC, 0);
-> > +       mxc_register_gpio(3, MX1_GPIO4_BASE_ADDR, SZ_4K, MX1_GPIO_INT_PORTD, 0);
+> *,
 > 
-> By just reading the function names like "imx1_soc_init" we have really
-> no clue of what it actually does.
+> Just applied 2.6.39.1 but my system: 64-bit SLackware, 8GB RAM, MSI mobo
+> P67A-C45 bios V1.9. previously happily booting via EFI (nice to see
+> Linux and the other OS actually NOT overwriting each others boot
+> loaders!) immediately re-booted just after loading the kernel.
 > 
-> "soc_init" is too vague IMHO. Could´t you change the names to
-> something like "imx1_gpio_init" or "imx1_gpio_register".
-> 
-> It would be nice at least are dealing with gpio.
+> Not even a single message is making it on the console, almost immediate
+> system reset.  As I noticed there are several EFI related patches, I
+> first tried to backout the change to setup.c but that didn't help so
+> backing out all the efi changes in the 2.6.39.1 patch, i.e. the files:
+>  - arch/x86/kernel/setup.c
+>  - arch/x86/platform/efi/efi.c
+>  - arch/x86/platform/efi/efi_64.c
+> and sure enough system is booting on 2.6.39.1 with these changes removed.
 
-Olof and I asked Shawn to do it specifically this way, so we have a place
-where more SOC specific initialization can be added without having to
-change every single board file.
+Can you try just reverting
 
-	Arnd
+"x86, efi: Retain boot service code until after switching to virtual mode"
+
+? You've got 143 boot services/code regions, which is more than I'd 
+tested against, so I'm unsure whether we're overflowing something here.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
