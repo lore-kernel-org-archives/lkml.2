@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab1FCRSl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 13:18:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40590 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750990Ab1FCRSk (ORCPT
+	id S1753372Ab1FCRXc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 13:23:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37980 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab1FCRXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 13:18:40 -0400
-Date: Fri, 3 Jun 2011 18:18:37 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, alsa-devel@alsa-project.org,
-        Dmitry Artamonow <mad_soft@inbox.ru>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Harald Welte <laforge@gnufiish.org>
-Subject: Re: [PATCH] gpio: add GPIOF_ values regardless on kconfig settings
-Message-ID: <20110603171837.GA9918@opensource.wolfsonmicro.com>
-References: <20110523155343.2e68c265.randy.dunlap@oracle.com>
- <20110524000837.GA30515@opensource.wolfsonmicro.com>
- <4DDB082F.3010107@oracle.com>
- <20110524014959.GA27710@opensource.wolfsonmicro.com>
- <4DDB3AFF.9030006@oracle.com>
- <20110524075248.GB19734@sirena.org.uk>
- <20110527074552.GA907@ponder.secretlab.ca>
- <4DDFE391.2030507@oracle.com>
- <20110527201201.GA6645@ponder.secretlab.ca>
- <BANLkTin-KSVcG2cQfRM3Ys0_g_uJVruDMw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTin-KSVcG2cQfRM3Ys0_g_uJVruDMw@mail.gmail.com>
-X-Cookie: Your ignorance cramps my conversation.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 3 Jun 2011 13:23:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=UGtslUiAzaMpzi0oC+ERMpiFDiOZaGOF3ohHIuavi+QLo5U3RlA2IrxXMg22cZ6h4j
+         lIXcAKMHLE7WJUAYMdwTW40vs+oYpYUeWTB0l1m0GRidSvrc1nmYgwJRmvBM95Rq1IR4
+         MesHGmwA9yxACIGROTtvGmt+1dsYPLZ9/I/do=
+From: Andre Bartke <andre.bartke@googlemail.com>
+To: mchehab@infradead.org
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andre Bartke <andre.bartke@gmail.com>
+Subject: [PATCH] drivers/media: fix uninitialized variable
+Date: Fri,  3 Jun 2011 19:22:01 +0200
+Message-Id: <1307121721-6658-1-git-send-email-andre.bartke@gmail.com>
+X-Mailer: git-send-email 1.7.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 03, 2011 at 11:04:52AM -0600, Grant Likely wrote:
+mx1_camera_add_device() can return an
+uninitialized value of ret.
 
-> I ended up not pushing this one to Linus.  Turns out it causes other
-> breakage on other platforms that don't include include/linux/gpio.h.
-> Since I don't have confidence that I'll be able to find all the
-> offenders, I'm dropping it.  I recommend making any drivers that are
+Signed-off-by: Andre Bartke <andre.bartke@gmail.com>
+---
+ drivers/media/video/mx1_camera.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-So, this originally came about because I pushed back on adding random
-dependencies like this for features which are pretty much optional in
-drivers - their use of GPIOs is totally optional and the dependencies
-are just too fragile, leading to noise with all the randconfigs.  It
-seems better to get the architectures to keep up with enhancements to
-gpiolib (or convert to it) than to have to worry about this in drivers.
+diff --git a/drivers/media/video/mx1_camera.c b/drivers/media/video/mx1_camera.c
+index bc0c23a..d9fc4b2 100644
+--- a/drivers/media/video/mx1_camera.c
++++ b/drivers/media/video/mx1_camera.c
+@@ -444,7 +444,7 @@ static int mx1_camera_add_device(struct soc_camera_device *icd)
+ {
+ 	struct soc_camera_host *ici = to_soc_camera_host(icd->dev.parent);
+ 	struct mx1_camera_dev *pcdev = ici->priv;
+-	int ret;
++	int ret = 0;
+ 
+ 	if (pcdev->icd) {
+ 		ret = -EBUSY;
+-- 
+1.7.5.2
 
-> breaking on these symbols depend on GPIOLIB.  Platforms not using
-> gpiolib are strongly discouraged now anyways, and there only a handful
-> of files in drivers/ that reference GPIOF_*.
-
-That's more a result of it being a pretty new feature than anything else
-I think.
