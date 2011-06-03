@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab1FCPqi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 11:46:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20545 "EHLO mx1.redhat.com"
+	id S1753181Ab1FCPsq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 11:48:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53363 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752861Ab1FCPqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 11:46:37 -0400
-Date: Fri, 3 Jun 2011 17:45:54 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan.kim@gmail.com>, akpm@linux-foundation.org,
-        Ury Stankevich <urykhy@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous
-Message-ID: <20110603154554.GK2802@random.random>
-References: <20110601175809.GB7306@suse.de>
- <20110601191529.GY19505@random.random>
- <20110601214018.GC7306@suse.de>
- <20110601233036.GZ19505@random.random>
- <20110602010352.GD7306@suse.de>
- <20110602132954.GC19505@random.random>
- <20110602145019.GG7306@suse.de>
- <20110602153754.GF19505@random.random>
- <20110603020920.GA26753@suse.de>
- <20110603144941.GI7306@suse.de>
+	id S1751645Ab1FCPso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 11:48:44 -0400
+Date: Fri, 3 Jun 2011 17:46:32 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, indan@nul.nu, bdonlan@gmail.com,
+        pedro@codesourcery.com
+Subject: Re: [PATCHSET ptrace] ptrace: implement PTRACE_SEIZE/INTERRUPT and
+	group stop notification, take#4
+Message-ID: <20110603154632.GD23757@redhat.com>
+References: <1306710760-16440-1-git-send-email-tj@kernel.org> <BANLkTik5hV8dnyspyGz8YAAdtoQNQDyOSw@mail.gmail.com> <20110603012445.GA14872@mtj.dyndns.org> <201106031357.02859.vda.linux@googlemail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110603144941.GI7306@suse.de>
+In-Reply-To: <201106031357.02859.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 03, 2011 at 03:49:41PM +0100, Mel Gorman wrote:
-> Right idea of the wrong zone being accounted for but wrong place. I
-> think the following patch should fix the problem;
+On 06/03, Denys Vlasenko wrote:
+>
+> On Friday 03 June 2011 03:24, Tejun Heo wrote:
+> >
+> > Anyways, let's think about that, but SIGSTOP on clone is closely
+> > linked to why SEIZE is used in the first place and I currently lean
+> > toward tying it to SEIZE.
+>
+> Ok.
+>
+> SIGSTOP on clone is less problematic because in practice it's
+> rather hard to send a real SIGSTOP to a thread which is _just_ created.
+> So the race window is mostly theoretical
 
-Looks good thanks.
+It is not. The new child can dequeue a signal which was sent to the
+process (thread group). How the tracer can distinguish? Also, SIGSTOP
+can be sent to pgrp and the new tracee can be forked.
 
-I also found this bug during my debugging that made NR_SHMEM underflow.
+I think that SEIZE should never send SIGSTOP on auto-attach, without
+any options.
 
-===
-Subject: migrate: don't account swapcache as shmem
-
-From: Andrea Arcangeli <aarcange@redhat.com>
-
-swapcache will reach the below code path in migrate_page_move_mapping,
-and swapcache is accounted as NR_FILE_PAGES but it's not accounted as
-NR_SHMEM.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
-
-diff --git a/mm/migrate.c b/mm/migrate.c
-index e4a5c91..2597a27 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -288,7 +288,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
- 	 */
- 	__dec_zone_page_state(page, NR_FILE_PAGES);
- 	__inc_zone_page_state(newpage, NR_FILE_PAGES);
--	if (PageSwapBacked(page)) {
-+	if (mapping != &swapper_space && PageSwapBacked(page)) {
- 		__dec_zone_page_state(page, NR_SHMEM);
- 		__inc_zone_page_state(newpage, NR_SHMEM);
- 	}
-
+Oleg.
 
