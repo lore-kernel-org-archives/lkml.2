@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab1FCLLN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 07:11:13 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:43230 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751179Ab1FCLLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 07:11:10 -0400
-Date: Fri, 3 Jun 2011 13:10:49 +0200
-From: David Sterba <dave@jikos.cz>
-To: Mitch Harder <mitch.harder@sabayonlinux.org>
-Cc: dave@jikos.cz, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Chris Mason <chris.mason@oracle.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        kreijack@libero.it
-Subject: Re: linux-next: build warninga in Linus' tree
-Message-ID: <20110603111048.GR12709@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Mitch Harder <mitch.harder@sabayonlinux.org>,
-	dave@jikos.cz, Stephen Rothwell <sfr@canb.auug.org.au>,
-	Chris Mason <chris.mason@oracle.com>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-	kreijack@libero.it
-References: <20110530113653.5c7084f0.sfr@canb.auug.org.au>
- <20110531175709.GC12709@twin.jikos.cz>
- <BANLkTi=t5H8sAc_0sHyFt_xJgbeVibO3KQ@mail.gmail.com>
+	id S1753019Ab1FCLRk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 07:17:40 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:46758 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751937Ab1FCLRj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 07:17:39 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX182l2RF76Q2y3+4dw2Jhy0roRyTrgcDyvxa6ai1eX
+	ZEmS0ricVU6xu6
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: git torvalds/linux-2.6.git  gives obscure results
+Date: Fri, 3 Jun 2011 13:17:34 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38.8; KDE/4.6.3; i686; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=t5H8sAc_0sHyFt_xJgbeVibO3KQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201106031317.35112.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 01, 2011 at 10:16:48AM -0500, Mitch Harder wrote:
-> I've been playing around with resurrecting the basic sysfs
-> capabilities that had been previously incorporated into btrfs.
-> 
-> As it stands right now, it was relatively easy to re-implement sysfs
-> as it was originally.  However, that implementation of sysfs wasn't
-> populated with much information (only total_blocks, blocks_used, and
-> blocksize).
+SyncingLinus' tree today gives this error :
 
-Goffredo Baroncelli (CCed) posted a patch to enhance sysfs interface:
+fatal: protocol error: bad line length character: git:
 
-https://patchwork.kernel.org/patch/308902/
-(http://www.spinics.net/lists/linux-btrfs/msg06777.html)
+at the command line. And within a sniffed network stream w/ wireshark I can 
+see something like :
 
-> I also had to reverse a small portion of code that was in the last
-> clean-up.
+0059git-upload-pack 
+/pub/scm/linux/kernel/git/torvalds/linux-2.6.git.host=git.kernel.org.git: 
+'daemon' is not a git command. See 'git --help'.
 
-Restoring the code should not be a problem, the cleanup was too eager
-and I think a sysfs inteface would be good, not only for debugging
-purposes or tuning.
-
-> If a CONFIG_BTRFS_DEBUG type configuration flag is ever introduced, it
-> would be interesting to resurrect btrfs' sysfs capabilities.
-
-Hearing about CONFIG_BTRFS_DEBUG again, seems worth to add it.
-
-
-david
+?
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
