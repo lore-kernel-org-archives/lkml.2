@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab1FCK66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 06:58:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41963 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab1FCK64 convert rfc822-to-8bit (ORCPT
+	id S1754382Ab1FCLFv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 07:05:51 -0400
+Received: from smtp0.epfl.ch ([128.178.224.219]:55665 "HELO smtp0.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751803Ab1FCLFu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 06:58:56 -0400
-Subject: Re: [tip:sched/urgent] sched: Fix cross-cpu clock sync on remote
- wakeups
-From: Peter Zijlstra <peterz@infradead.org>
-To: Milton Miller <miltonm@bga.com>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, Borislav Petkov <bp@amd64.org>,
-        Borislav Petkov <bp@alien8.de>, "mingo@redhat.com" <mingo@redhat.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-In-Reply-To: <1307098506.2353.3094.camel@twins>
-References: <1307029711.2497.717.camel@laptop>
-	 <1306835745.2353.3.camel@twins>
-	 <tip-f01114cb59d670e9b4f2c335930dd57db96e9360@git.kernel.org>
-	 <20110531125621.GA24439@gere.osrc.amd.com> <1306847516.2353.80.camel@twins>
-	 <20110601070547.GB3368@liondog.tnic> <1306924612.2353.176.camel@twins>
-	 <20110601155017.GD24028@aftab>
-	 <BANLkTikT6OT-HDi-DR+_ZWEhfp_CYWJ3Hg@mail.gmail.com>
-	 <1307019866.2497.675.camel@laptop> <20110602142340.GA3356@zhy>
-	 <schedulerIPIirqEnter@mdm.bga.com>  <1307097360.2353.3071.camel@twins>
-	 <1307098506.2353.3094.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 3 Jun 2011 07:05:50 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jun 2011 07:05:49 EDT
+From: Philippe =?iso-8859-1?q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
+Organization: EPFL - STI - LSRO1
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/4] ARM: mxc: migrate mach-imx gpio driver to gpio-mxc
+Date: Fri, 3 Jun 2011 12:59:06 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.31.14-desktop-1mnb; KDE/4.3.5; x86_64; ; )
+Cc: Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, patches@linaro.org, grant.likely@secretlab.ca,
+        kernel@pengutronix.de, olof@lixom.net
+References: <1306985632-18820-1-git-send-email-shawn.guo@linaro.org> <1306985632-18820-4-git-send-email-shawn.guo@linaro.org>
+In-Reply-To: <1306985632-18820-4-git-send-email-shawn.guo@linaro.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 03 Jun 2011 12:58:33 +0200
-Message-ID: <1307098713.2353.3099.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Message-Id: <201106031259.06088.philippe.retornaz@epfl.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-03 at 12:55 +0200, Peter Zijlstra wrote:
-> On Fri, 2011-06-03 at 12:36 +0200, Peter Zijlstra wrote:
-> > > Can we get some numbers for how often the two cases occur on some
-> > > various workloads?
-> > 
-> > Sure, let me stick some counters in. 
+Le jeudi, 2 juin 2011 05.33:51, Shawn Guo a écrit :
+
+> diff --git a/arch/arm/mach-imx/mach-mx31moboard.c
+>  b/arch/arm/mach-imx/mach-mx31moboard.c index eaa51e4..a52fd36 100644
+> --- a/arch/arm/mach-imx/mach-mx31moboard.c
+> +++ b/arch/arm/mach-imx/mach-mx31moboard.c
+> @@ -507,6 +507,8 @@ core_param(mx31moboard_baseboard,
+>  mx31moboard_baseboard, int, 0444); */
+>  static void __init mx31moboard_init(void)
+>  {
+> +	imx31_soc_init();
+> +
+>  	mxc_iomux_setup_multiple_pins(moboard_pins, ARRAY_SIZE(moboard_pins),
+>  		"moboard");
 > 
-> Of 128765 IPIs, 17483 were with an empty list (boot + make -j64).
-> 
-> I didn't yet look at where those empty ones originated from.
 
-After two more make clean; make -j64 cycles thats:
+Acked-by: Philippe Retornaz <philippe.retornaz@epfl.ch>
 
- 250082:24793
+Thanks,
 
-So on this load its 10+:1.
+Philippe
