@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab1FCSH3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 14:07:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64843 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab1FCSH1 (ORCPT
+	id S1752513Ab1FCSHB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 14:07:01 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47899 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103Ab1FCSHA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 14:07:27 -0400
+	Fri, 3 Jun 2011 14:07:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=GtLmWqXDcDGhTjo0hlEgNxVkKV43PcVjqNQp5n9pRYKmPkzVqeiw2KIoUYjRERfOmk
-         pd3qFc5iY7wwmHmz+uxn8BFcbEw9TNxIWObcfeoBO4kVPQs5iEhsLMuYOrzs4BgxOoiL
-         +9hXyXrl1OFbGRUrAPIq0xZvAueATdXLL/rD4=
-From: Andre Bartke <andre.bartke@googlemail.com>
-To: awalls@md.metrocast.net
-Cc: mchehab@infradead.org, ivtv-devel@ivtvdriver.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andre Bartke <andre.bartke@gmail.com>
-Subject: [PATCH] drivers/media/video: fix memory leak of snd_cx18_init()
-Date: Fri,  3 Jun 2011 20:06:58 +0200
-Message-Id: <1307124418-12073-1-git-send-email-andre.bartke@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Fuz99399mg4QEWSOvEHRUZfIPLHFd0Lr0C+Sd74qrf2eNTPR2IgWskkQVMHqm2D1pV
+         Np7qvpdeZKag3fvkkRcZeqAPKpdJYm56iXxwSzDe1buwJbsf5MGKsqNQtVWm6dA48hYd
+         VJlym4JGnpMgAxF2rVLYM3sTlMSQWWQaAX/AQ=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1106030941100.27151@router.home>
+References: <201106021424.p52EO91O006974@lab-17.internal.tilera.com>
+	<alpine.DEB.2.00.1106021015220.18350@chino.kir.corp.google.com>
+	<4DE7D2AC.1070503@tilera.com>
+	<BANLkTinjCbhiwRfQ_aN5wtbYipQB6gv5AA@mail.gmail.com>
+	<alpine.DEB.2.00.1106030905590.27151@router.home>
+	<4DE8F0D4.2090008@tilera.com>
+	<alpine.DEB.2.00.1106030941100.27151@router.home>
+Date: Fri, 3 Jun 2011 21:06:59 +0300
+X-Google-Sender-Auth: _zc0AqhVGdJAg2a6hLpBrN2TDbU
+Message-ID: <BANLkTi=10tZjXW7WNxJiPmQit+wW1AZEuQ@mail.gmail.com>
+Subject: Re: [PATCH] slub: always align cpu_slab to honor cmpxchg_double requirement
+From: Pekka Enberg <penberg@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, David Rientjes <rientjes@google.com>,
+        Tejun Heo <tj@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cxsc is not freed in the error case.
+On Fri, Jun 3, 2011 at 5:41 PM, Christoph Lameter <cl@linux.com> wrote:
+> On Fri, 3 Jun 2011, Chris Metcalf wrote:
+>
+>> On 6/3/2011 10:06 AM, Christoph Lameter wrote:
+>> > On Fri, 3 Jun 2011, Pekka Enberg wrote:
+>> >
+>> >> On Thu, Jun 2, 2011 at 9:13 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>> >> > On 6/2/2011 1:16 PM, David Rientjes wrote:
+>> >> >> Acked-by: David Rientjes <rientjes@google.com>
+>> >> Yup. Looks good. Christoph?
+>> > Ok if we do not mind the packing density to be not that tight anymore.
+>> >
+>> > Acked-by: Christoph Lameter <cl@linux.com>
+>>
+>> I'm assuming from the acks that I should ask Linus to pull this for 3.0
+>> along with a couple of other minor tile-specific changes.  However, please
+>> let me know if someone else would rather take it into their tree instead --
+>> I don't want to step on any toes.  Thanks!
+>
+> I would expect the patch to go through Pekka's tree to Linus.
 
-Signed-off-by: Andre Bartke <andre.bartke@gmail.com>
----
- drivers/media/video/cx18/cx18-alsa-main.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/media/video/cx18/cx18-alsa-main.c b/drivers/media/video/cx18/cx18-alsa-main.c
-index d50d69d..a1e6c2a 100644
---- a/drivers/media/video/cx18/cx18-alsa-main.c
-+++ b/drivers/media/video/cx18/cx18-alsa-main.c
-@@ -192,6 +192,7 @@ static int snd_cx18_init(struct v4l2_device *v4l2_dev)
- err_exit_free:
- 	if (sc != NULL)
- 		snd_card_free(sc);
-+	kfree(cxsc);
- err_exit:
- 	return ret;
- }
--- 
-1.7.5.2
-
+Applied, thanks!
