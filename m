@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab1FCJfL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 05:35:11 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.180]:55174 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545Ab1FCJfJ (ORCPT
+	id S1753899Ab1FCJhs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 05:37:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53812 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753687Ab1FCJhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 05:35:09 -0400
-X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h8JiYXs/HrEl2yUn8V3w==
-X-RZG-CLASS-ID: mo05
-Message-ID: <4DE8AAC6.6020507@samba.org>
-Date: Fri, 03 Jun 2011 11:35:02 +0200
-From: "Stefan (metze) Metzmacher" <metze@samba.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Fri, 3 Jun 2011 05:37:47 -0400
 MIME-Version: 1.0
-To: Alexey ORISHKO <alexey.orishko@stericsson.com>
-CC: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm:
- mark ncm devices as "mobile broadband devices" with FLAG_WWAN
-References: <1306922913-17803-1-git-send-email-metze@samba.org> <1306922913-17803-2-git-send-email-metze@samba.org> <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E583@EXDCVYMBSTM006.EQ1STM.local> <4DE618B7.5070903@samba.org> <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E64B@EXDCVYMBSTM006.EQ1STM.local> <4DE6287D.5080807@samba.org> <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E6F2@EXDCVYMBSTM006.EQ1STM.local>
-In-Reply-To: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E6F2@EXDCVYMBSTM006.EQ1STM.local>
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=0E53083F
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig60248AFEEDF0374A253200F2"
+In-Reply-To: <1307084189.23876.19.camel@pasglop>
+References: <1306999045.29297.55.camel@pasglop> <1307003821.29297.77.camel@pasglop>
+ <20110602110727.7343782b@lxorguk.ukuu.org.uk> <1307062574.29297.204.camel@pasglop>
+ <1307081874.23876.14.camel@pasglop> <1307084189.23876.19.camel@pasglop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 3 Jun 2011 18:36:54 +0900
+Message-ID: <BANLkTim6VsynZHLagcu9Xo3EjsUz=54dYA@mail.gmail.com>
+Subject: Re: tty breakage in X (Was: tty vs workqueue oddities)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, gregkh@suse.de,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig60248AFEEDF0374A253200F2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jun 3, 2011 at 3:56 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+>
+> So I think my theory stands that flush_to_ldisc constantly reschedule
+> itself causing the worker thread to eat all CPU and starve the consumer
+> of the PTY. I won't have time to dig much deeper today nor probably this
+> week-end so I'm sending this email for others who want to look.
 
-Am 01.06.2011 14:27, schrieb Alexey ORISHKO:
->> -----Original Message-----
->> From: Stefan (metze) Metzmacher [mailto:metze@samba.org]
->> Sent: Wednesday, June 01, 2011 1:55 PM
->=20
->>> If you use udev rules and create an alias for your device, you won't
->>> be dependent on generic driver code.
->>
->> Ok, do you have examples for that?
->=20
-> Please, read udev man pages. Rule might be as follows
-> KERNEL=3D=3D"usb*", ATTRS{idVendor}=3D=3D"04cc", ATTRS{idProduct}=3D=3D=
-"xxxx", NAME=3D"ste_bridge0"
+Gaah - that commit is total and utter crap.
 
-Thanks! I got something that works.
+I *removed* the whole "reschedule the work queue again" crap. It was
+totally wrong. See commit a5660b41af6a.
 
-metze
+But then commit b1c43f82c5aa added the crap right back in.
 
+So does it all work if you just remove the broken schedule_work() line
+from flush_to_ldisc?
 
---------------enig60248AFEEDF0374A253200F2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Otherwise we'll need to just revert it. The commit is clearly totally broken.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk3oqsYACgkQm70gjA5TCD87CwCgzXWJmSZVm4/tJ6xiDfYrRJ3z
-osoAn1x39yrneUMWepRISZLggnv8jQ2i
-=WwP2
------END PGP SIGNATURE-----
-
---------------enig60248AFEEDF0374A253200F2--
+                    Linus
