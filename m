@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845Ab1FCPRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 11:17:32 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54482 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868Ab1FCPRb convert rfc822-to-8bit (ORCPT
+	id S1755893Ab1FCPSI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 11:18:08 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55478 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755853Ab1FCPSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 11:17:31 -0400
+	Fri, 3 Jun 2011 11:18:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Timur Tabi <timur@freescale.com>
+Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor management driver
+Date: Fri, 3 Jun 2011 17:17:59 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: kumar.gala@freescale.com, benh@kernel.crashing.org, greg@kroah.com,
+        akpm@kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
+References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106012340.14237.arnd@arndb.de> <4DE8F347.9060104@freescale.com>
+In-Reply-To: <4DE8F347.9060104@freescale.com>
 MIME-Version: 1.0
-Message-ID: <30a1e906-eb9c-45db-8afe-6c4acc51399a@default>
-Date: Fri, 3 Jun 2011 08:17:01 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: ocfs2-devel@oss.oracle.com, Joel Becker <jlbec@evilplan.org>,
-        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org
-Subject: RE: bug in cleancache ocfs2 hook, anybody want to try cleancache?
-References: <da833bdb-7f77-4ebb-ad9b-9fae656b75a1@default>
- <1307004343.2823.17.camel@menhir>
- <75f89186-d730-4b89-b88c-899cd5674cf0@default 1307090628.2881.15.camel@menhir
- f1ce7f0e-91a3-479b-aaea-de92929c77e7@default>
-In-Reply-To: <f1ce7f0e-91a3-479b-aaea-de92929c77e7@default>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4DE8FB04.0089:SCFMA922111,ss=1,fgs=0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106031717.59927.arnd@arndb.de>
+X-Provags-ID: V02:K0:QwaY3NrpXnbtkfUtko1kQOpRIJSe5vYY+td1PkevYsD
+ M94+TwkOZkKoWr9QQ85anW7Euig61cVGod32fWZcdOcPBoxlLQ
+ QH7lbVmYnWqikPXSlLVdGQbcgiTEA6NvBlYB/63bQOQ8dYYVsP
+ GB+jxxq8F8abPAZUUjRKGO2vNFnchjkxTsd48xmBsxUwKDt7RT
+ ouTe/EgTqPT57spy8D4ng==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> > I'd like to try and understand the design of the existing code before
-> I
-> > consider anything more advanced such as writing a kvm backend,
+On Friday 03 June 2011, Timur Tabi wrote:
+> Arnd Bergmann wrote:
+> > For an ioctl, please follow the normal pattern of defining a separate
+> > structure for each case, no union.
+> > 
+> > You can use a void __user * in the common ioctl function, and pass that
+> > to the typed argument list in the specific functions.
 > 
-> OK.  I'd be happy to answer any questions on the design
-> at any time.
+> I have a GPL question.  This header file is currently licensed under the  GPL v2
+> only.  Does that mean that any application that includes this header file so
+> that it can talk to the driver/hypervisor also needs to be licensed under the GPL?
 
-Oops, forgot to add:  If you do any experimentation (e.g.
-benchmarking), I strongly recommend that you also try
-frontswap** at the same time.  As of today, frontswap is
-now in linux-next.
+If you have a license question, ask your lawyer.
 
-Dan
+Common answers that you would hear are:
 
-** Frontswap is complementary to cleancache.  When memory is
-   plentiful, cleancache essentially stores more clean page
-   cache pages to avoid disk reads.  When memory is scarce and
-   swapping is imminent or happening, frontswap stores swap
-   pages in memory to avoid disk writes and reads.  Both
-   zcache and Xen tmem support both, and in both zcache and
-   Xen tmem, cleancache pages are prioritized lower than
-   frontswap pages, i.e. the number of cleancache pages is
-   reduced as frontswap pages increase.  Both cleancache
-   and frontswap share the underlying Transcendent Memory
-   "ABI".
+* User space interfaces of the kernel are excluded from the License by the
+  "normal system call" exception in linux/COPYING.
+
+* If the header files only contain interfaces but no code, they are not
+  copyrighted.
+
+* If you want to ship a copy of the file with a user space application source,
+  but have to make it available under multiple licenses to do that, e.g. dual
+  GPL/BSD.
+
+	Arnd
