@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab1FCM1D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 08:27:03 -0400
-Received: from mail202c2.megamailservers.com ([69.49.111.103]:43481 "EHLO
-	mail202c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754191Ab1FCM1B (ORCPT
+	id S1754830Ab1FCMrX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 08:47:23 -0400
+Received: from canardo.mork.no ([148.122.252.1]:35673 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752555Ab1FCMrU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 08:27:01 -0400
-X-Authenticated-User: daniel.gaisler.com
-Message-ID: <4DE8D303.1080706@gaisler.com>
-Date: Fri, 03 Jun 2011 14:26:43 +0200
-From: Daniel Hellstrom <daniel@gaisler.com>
-User-Agent: Mozilla Thunderbird 1.0.6 (X11/20050716)
-X-Accept-Language: en-us, en
+	Fri, 3 Jun 2011 08:47:20 -0400
+X-Greylist: delayed 912 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jun 2011 08:47:20 EDT
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Alexey ORISHKO <alexey.orishko@stericsson.com>,
+        "Valdis.Kletnieks\@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        Dan Williams <dcbw@redhat.com>, Stefan Metzmacher <metze@samba.org>,
+        Oliver Neukum <oliver@neukum.name>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "linux-usb\@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm: mark ncm devices as "mobile broadband devices" with FLAG_WWAN
+Organization: m
+References: <1306922913-17803-1-git-send-email-metze@samba.org>
+	<201106031201.21933.oneukum@suse.de>
+	<2AC7D4AD8BA1C640B4C60C61C8E520153E3C13B620@EXDCVYMBSTM006.EQ1STM.local>
+	<201106031250.28041.oneukum@suse.de>
+Date: Fri, 03 Jun 2011 14:31:18 +0200
+In-Reply-To: <201106031250.28041.oneukum@suse.de> (Oliver Neukum's message of
+	"Fri, 3 Jun 2011 12:50:27 +0200")
+Message-ID: <87sjrrxfjd.fsf@nemi.mork.no>
+User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (sparc-current
- tree related)
-References: <20110603135347.a17e0b85.sfr@canb.auug.org.au>	<20110602.222051.270790327969020201.davem@davemloft.net>	<4DE8906F.5040501@gaisler.com> <20110603.011455.414200582548238157.davem@davemloft.net>
-In-Reply-To: <20110603.011455.414200582548238157.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-CSC: 0
-X-CHA: v=1.1 cv=xbudj22Aknmj7PWPRHa2OUfQBaxQEGnZbHIINz1otWI= c=1 sm=1
-		a=pl2ZPvC6udcA:10 a=5CtTeIlDWD8A:10 a=U62ajLuCel8A:10 a=8nJEP1OIZ-IA:10
-		a=jXKJviUpWSOlMmIvGrHOfw==:17 a=ebG-ZW-8AAAA:8 a=TfZMrI_yVTnUjnJtDRkA:9
-		a=wPNLvfGTeEIA:10 a=cCYF7-FHeg4A:10 a=jXKJviUpWSOlMmIvGrHOfw==:117
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller wrote:
+Oliver Neukum <oneukum@suse.de> writes:
 
->From: Daniel Hellstrom <daniel@gaisler.com>
->Date: Fri, 03 Jun 2011 09:42:39 +0200
->
->  
->
->>missed that, PCIC_PCI should depend on SPARC32_PCI instead of PCI in
->>the following lines that were added by the patch
->>
->>+config PCIC_PCI
->>+	bool
->>+	depends on PCI && !SPARC_LEON
->>+	default y
->>+
->>    
->>
->
->The fixed I pushed out used PCI && SPARC32 && !SPARC_LEON
->  
->
-Ok, the same thing, thanks.
+> Well, but cdc-ether usually means that you can start up dhcp and use the
+> interface as a network card. Can the same be done with cdc-ncm or do you always
+> need to establish a connection through a secondary interface?
 
+Is there anything in the class definition that prevents either option,
+for either protocol? No?
+
+So, could we please kill the device guessing game?  Making decisions
+based on absolute measures like "do we have a global mac address?" do
+make some sense.  But guessing based on USB class does not.  That will
+only tell you the protocol for the USB link. If you want more specific
+device information, then you will have to look at the vid/pid. And I
+assume you don't want to put all of those into the kernel when a class
+driver will do, and whatever additional device specific information just
+as well can be added by udev rules. Preferably created by whatever
+application wishing to support the device.
+
+But I do also assume you know all this already...
+
+
+
+Bjørn
