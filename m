@@ -1,82 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab1FCSAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 14:00:39 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:34207 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab1FCSAh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 14:00:37 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6366"; a="95255393"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: <balbi@ti.com>
-Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <1306847914-19876-1-git-send-email-tlinder@codeaurora.org> <1306847914-19876-8-git-send-email-tlinder@codeaurora.org> <20110603080333.GS2409@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20110603080333.GS2409@legolas.emea.dhcp.ti.com>
-Subject: RE: [PATCH v14 7/9] usb:gadget: Add SuperSpeed support to the Gadget Framework
-Date: Fri, 3 Jun 2011 21:00:17 +0300
-Message-ID: <003401cc2218$1ae868a0$50b939e0$@org>
+	id S1753526Ab1FCSBD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 14:01:03 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:46900 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752929Ab1FCSA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 14:00:59 -0400
+Date: Fri, 3 Jun 2011 19:00:38 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Gerhard Pircher <gerhard_pircher@gmx.net>
+Cc: linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-alpha@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [patch 00/14] Sort out i8253 and PC speaker locking and headers
+Message-ID: <20110603180038.GA13239@linux-mips.org>
+References: <20110601180456.801265664@duck.linux-mips.net>
+ <20110602191119.302850@gmx.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-thread-index: AcwhxMBFicOJ61CWQkej0WH5yKnEkAAUlRpA
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110602191119.302850@gmx.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+On Thu, Jun 02, 2011 at 09:11:19PM +0200, Gerhard Pircher wrote:
 
-> On Tue, May 31, 2011 at 04:18:27PM +0300, Tatyana Brokhman wrote:
-> > @@ -377,9 +425,10 @@ static int config_desc(struct usb_composite_dev
-> *cdev, unsigned w_value)
-> >  	u8				type = w_value >> 8;
-> >  	enum usb_device_speed		speed = USB_SPEED_UNKNOWN;
-> >
-> > -	if (gadget_is_dualspeed(gadget)) {
-> > -		int			hs = 0;
-> > -
-> > +	if (gadget->speed == USB_SPEED_SUPER)
-> 
-> if (gadget_is_superspeed(gadget)) ??
-I thought so too at first but then I decided that checking gadget->speed is
-better here because it's possible that gadget_is_superspeed() will return
-true but the actual speed will be for example HS. In that case we want to
-enter the  else of this if (else if (gadget_is_dualspeed()) {... })
+> > #if defined(CONFIG_MIPS) || defined(CONFIG_X86)
+> > /* Use the global PIT lock ! */
+> > #include <asm/i8253.h>
+> > #else
+> > #include <asm/8253pit.h>
+> > static DEFINE_RAW_SPINLOCK(i8253_lock);
+> > #endif
+> > 
+> > sound/drivers/pcsp/pcsp.h:
+> > 
+> > #if defined(CONFIG_MIPS) || defined(CONFIG_X86)
+> > /* Use the global PIT lock ! */
+> > #include <asm/i8253.h>
+> > #else
+> > #include <asm/8253pit.h>
+> > static DEFINE_RAW_SPINLOCK(i8253_lock);
+> > 
+> > $ git grep -F pcsp.h sound/drivers/pcsp
+> > sound/drivers/pcsp/pcsp.c:#include "pcsp.h"
+> > sound/drivers/pcsp/pcsp_input.c:#include "pcsp.h"
+> > sound/drivers/pcsp/pcsp_lib.c:#include "pcsp.h"
+> > sound/drivers/pcsp/pcsp_mixer.c:#include "pcsp.h"
+> > $ git grep -w i8253_lock sound/drivers/pcsp/
+> > sound/drivers/pcsp/pcsp.h:static DEFINE_RAW_SPINLOCK(i8253_lock);
+> > sound/drivers/pcsp/pcsp_input.c:        raw_spin_lock_irqsave(&i8253_lock,
+> > flags
+> > sound/drivers/pcsp/pcsp_input.c:       
+> > raw_spin_unlock_irqrestore(&i8253_lock, 
+> > sound/drivers/pcsp/pcsp_lib.c:          raw_spin_lock_irqsave(&i8253_lock,
+> > flags
+> > sound/drivers/pcsp/pcsp_lib.c:         
+> > raw_spin_unlock_irqrestore(&i8253_lock, 
+> > sound/drivers/pcsp/pcsp_lib.c:  raw_spin_lock(&i8253_lock);
+> > sound/drivers/pcsp/pcsp_lib.c:  raw_spin_unlock(&i8253_lock);
+> > sound/drivers/pcsp/pcsp_lib.c:  raw_spin_lock(&i8253_lock);
+> > sound/drivers/pcsp/pcsp_lib.c:  raw_spin_unlock(&i8253_lock);
+> > 
+> > Locks are great, everybody should have their own lock!
+> > 
+> > $ find . -name 8253pit.h
+> > ./arch/powerpc/include/asm/8253pit.h
+> > ./arch/alpha/include/asm/8253pit.h
+> > $ cat arch/*/include/asm/8253pit.h
+> > /*
+> >  * 8253/8254 Programmable Interval Timer
+> >  */
+> > /*
+> >  * 8253/8254 Programmable Interval Timer
+> >  */
+> > $
+> > 
+> > Eh...
+> > 
+> > $ git grep -w PCSPKR_PLATFORM 
+> > arch/mips/Kconfig:      select PCSPKR_PLATFORM
+> > arch/mips/Kconfig:      select PCSPKR_PLATFORM
+> > arch/mips/Kconfig:      select PCSPKR_PLATFORM
+> > arch/powerpc/platforms/amigaone/Kconfig:        select PCSPKR_PLATFORM
+> > drivers/input/misc/Kconfig:     depends on PCSPKR_PLATFORM
+> > init/Kconfig:config PCSPKR_PLATFORM
+> > sound/drivers/Kconfig:  depends on PCSPKR_PLATFORM && X86 &&
+> > HIGH_RES_TIMERS
+> > 
+> > So the status is:
+> > 
+> >  Alpha:	There is no PCSPKR_PLATFORM so while a platform device is
+> > 		being installed no drivers will be built.  I don't know
+> > 		which Alpha platforms or even if all of Alpha should be
+> > 		doing a PCSPKR_PLATFORM so I haven't even tried to sort
+> > 		this.
+> >  ARM:		No PC speaker supported, yeah :)
+> >  PowerPC:	Should compile but the locking is wrong but only the 
+> >    		AmigaOne platforms should be affected.
+> The Kconfig dependencies cleanup patch for CHRP, PSERIES, etc. should
+> also apply to the AmigaOne. Can you resend it with a fix for the
+> AmigaOne, or should I send a patch?
 
+I can sort that; it's easy enough.
 
-> > @@ -413,16 +469,22 @@ static int count_configs(struct
-> usb_composite_dev *cdev, unsigned type)
-> >  	struct usb_configuration	*c;
-> >  	unsigned			count = 0;
-> >  	int				hs = 0;
-> > +	int				ss = 0;
-> >
-> >  	if (gadget_is_dualspeed(gadget)) {
-> >  		if (gadget->speed == USB_SPEED_HIGH)
-> >  			hs = 1;
-> > +		if (gadget->speed == USB_SPEED_SUPER)
-> > +			ss = 1;
-> 
-> is this really correct under gadget_is_dualspeed() ?? puzzled.
-I think so. The assumption is that it's not possible that gadget speed will
-be super if the gadget isn't dualspeed. When the COMFIG_GADGET_SUPERSPEED
-flag was changeable to the user, it was dependant on the gadget being dual
-speed. Now this flag should be turned on by the UDCs that support SS, but
-the assumption that they are also dual speed remains.
-BTW, are you ok with the handling of driver->speed in usb_composite_probe()?
-You didn't reply to the solution me and Alan came up with...
+> I'll check next week, if the PC speaker is still working on my AmigaOne.
 
-Thanks,
-Tanya Brokhman
----
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+I can't imagine that it's going to break - the code is sorta simple ;-)
 
+One obscurity I noticed is this bit in the amigaone.dts:
 
+        timer@40 {
+                // Also adds pcspkr to platform devices.
+                compatible = "pnpPNP,100";
+                reg = <1 0x00000040 0x00000020>;
+        };
 
+Shouldn't that rather be something like the following?
 
+        pcspeaker@61 {
+                device_type = "sound";
+                compatible = "pnpPNP,800";
+                reg = <1 0x61 1>;
+        };
+
+pnpPNP,100 is the i8253 timer as I understand and pnpPNP,800 the PC speaker.
+If you interpret pnpPNP,100 to imply the presence of a PC speaker you can't
+express a system that has a i8253 but no PCspeaker in a DT so maybe
+amigaone.dts and arch/powerpc/kernel/setup-common.c should be changed to
+use pnpPNP,800 instead?
+
+  Ralf
