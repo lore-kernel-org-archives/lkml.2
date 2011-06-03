@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab1FCDJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 23:09:57 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:42950 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753744Ab1FCDJ4 (ORCPT
+	id S1753368Ab1FCDYP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 23:24:15 -0400
+Received: from mta21.charter.net ([216.33.127.81]:64404 "EHLO
+	mta21.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab1FCDYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 23:09:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:reply-to:references
-         :mime-version:content-type:content-disposition:in-reply-to:x-pgp-key
-         :user-agent;
-        b=tyyMEVQEJ21PA7WeNOGcIW4gPXszE6ji9TIUtn/oRaMC5JhBxZXeUfwVufQIN4CiIa
-         BpYVtDBR0pklrybotQm2MPMN3xMpRhW65bukoAKPiNjIZXY14pJF2x++btVxMFLXhg0N
-         GGKd2k7JkCVcv2BSehkDoAQ62AiR8kuRRoHNU=
-Date: Fri, 3 Jun 2011 00:08:43 -0300
-From: Rafael Aquini <aquini@linux.com>
-To: Russ Anderson <rja@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, rja@americas.sgi.com
-Subject: Re: [PATCH] [BUGFIX] mm: hugepages can cause negative commitlimit
-Message-ID: <20110603030841.GB10530@optiplex.tchesoft.com>
-Reply-To: aquini@linux.com
-References: <20110518153445.GA18127@sgi.com>
- <BANLkTinbHnrf2isuLzUFZN8ypaT476G1zw@mail.gmail.com>
- <20110519045630.GA22533@sgi.com>
- <BANLkTinyYP-je9Nf8X-xWEdpgvn8a631Mw@mail.gmail.com>
- <20110519221101.GC19648@sgi.com>
- <20110520130411.d1e0baef.akpm@linux-foundation.org>
- <20110520223032.GA15192@x61.tchesoft.com>
- <20110526210751.GA14819@optiplex.tchesoft.com>
- <20110602040821.GA7934@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110602040821.GA7934@sgi.com>
-X-PGP-Key: http://aquini.fedorapeople.org/AQUINI-GPG-KEY
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 2 Jun 2011 23:24:13 -0400
+X-Greylist: delayed 4333 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Jun 2011 23:24:13 EDT
+X-Authority-Analysis: v=1.1 cv=G6Q69DB3AUoJKS2BpLRaz8MQ2NORN7h5HRzrJMPOhRw=
+ c=1 sm=1 a=GctcgdcX2JkA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
+ a=ktzgDYZ5B3lAIbh_B8IA:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
+From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+To: sgruszka@redhat.com, linville@tuxdriver.com
+Cc: kernel-janitors@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Subject: [PATCH 5/5 v2] iwlegacy: add missing null check
+Date: Thu,  2 Jun 2011 22:24:06 -0500
+Message-Id: <1307071446-28730-1-git-send-email-Gregory.Dietsche@cuw.edu>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <20110603030746.GA4834@joana>
+References: <20110603030746.GA4834@joana>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howdy Russ,
+lq_sta has other null checks in this function.
+assuming they are correct, this additional null check
+should be added too.
 
-On Wed, Jun 01, 2011 at 11:08:31PM -0500, Russ Anderson wrote:
-> 
-> Yes, it fixes the inconsistency in reporting totalram_pages.
-Thanks alot for the feedback.
+Incorporating suggestion from Gustavo Padovan.
 
-> There seems to be another issue.  1G hugepages can be allocated at boot time, but
-> cannot be allocated at run time.  "default_hugepagesz=1G hugepagesz=1G hugepages=1" on 
-> the boot line works.  With "default_hugepagesz=1G hugepagesz=1G" the command
-> "echo 1 > /proc/sys/vm/nr_hugepages" fails.
-> 
-> uv4-sys:~ # echo 1 > /proc/sys/vm/nr_hugepages
-> -bash: echo: write error: Invalid argument
+Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+---
+ drivers/net/wireless/iwlegacy/iwl-4965-rs.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-That's not an issue, actually. It seems to be , unfortunately, 
-an implementation characteristic, due to an imposed arch constraint.
-Further reference: http://lwn.net/Articles/273661/
-
-Cheers!
+diff --git a/drivers/net/wireless/iwlegacy/iwl-4965-rs.c b/drivers/net/wireless/iwlegacy/iwl-4965-rs.c
+index 24d1499..9b65153 100644
+--- a/drivers/net/wireless/iwlegacy/iwl-4965-rs.c
++++ b/drivers/net/wireless/iwlegacy/iwl-4965-rs.c
+@@ -2275,6 +2275,9 @@ iwl4965_rs_get_rate(void *priv_r, struct ieee80211_sta *sta, void *priv_sta,
+ 	if (rate_control_send_low(sta, priv_sta, txrc))
+ 		return;
+ 
++	if (!lq_sta)
++		return;
++
+ 	rate_idx  = lq_sta->last_txrate_idx;
+ 
+ 	if (lq_sta->last_rate_n_flags & RATE_MCS_HT_MSK) {
 -- 
-Rafael Aquini <aquini@linux.com>
+1.7.2.5
+
