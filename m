@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab1FCHHF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 03:07:05 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64214 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab1FCHHD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 03:07:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=UMiLZWoPZF6dAn4CI55ep5Xx2Rbh/KkcJWDjeCiUJSVRjMDLBYoOaYHOjvZotohFet
-         CPqVsdsaHClPFy0iApHjZ9qOrIfPydOLJXZ83ir9moifxXTka2hzhlVlcbr439dp8t0a
-         sYuNz3sOGAIa2sfvY8K1j+l42cyQPtGbcXlao=
-Message-ID: <4DE88813.1040404@gmail.com>
-Date: Fri, 03 Jun 2011 09:06:59 +0200
-From: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.17) Gecko/20110516 Icedove/3.1.10
+	id S1752924Ab1FCHJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 03:09:51 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:54214 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752135Ab1FCHJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 03:09:50 -0400
+Message-ID: <4DE888BB.8000008@msgid.corpit.ru>
+Date: Fri, 03 Jun 2011 11:09:47 +0400
+From: lists+linux-kernel@corpit.ru
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20110506 Icedove/3.0.11
 MIME-Version: 1.0
-To: Oliver Neukum <oliver@neukum.org>
-CC: linux-usb@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oliver Neukum <oliver@neukum.name>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [2.6.39] crash in acm_ctrl_msg+0x16/0x59
-References: <4DE25252.7050503@gmail.com> <201106010934.45691.oneukum@suse.de> <4DE67F36.8060600@gmail.com> <201106022134.29647.oliver@neukum.org>
-In-Reply-To: <201106022134.29647.oliver@neukum.org>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+CC: James.Bottomley@HansenPartnership.com, Jens Axboe <axboe@kernel.dk>,
+        greg@kroah.com, jslaby@suse.cz, stable@kernel.org,
+        jejb@parisc-linux.org, linux-kernel@vger.kernel.org
+Subject: Re: [stable] apparent regression (crash) - 2.6.38.6
+References: <20110511193451.GC26010@kroah.com>	<20110519002505.GB8697@kroah.com>	<1305776367.2576.0.camel@mulgrave.site> <20110601.213424.80025869.anemo@mba.ocn.ne.jp> <4DE886D1.8090807@msgid.tls.msk.ru>
+In-Reply-To: <4DE886D1.8090807@msgid.tls.msk.ru>
+X-Enigmail-Version: 1.0.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+03.06.2011 11:01, Michael Tokarev wrote:
+> commit 2e8532e0a9ee1d25b279ac78ee8ce31701e2aa15
+> Author: Michael Tokarev <mjt@tls.msk.ru>
+> Date:   Fri Jun 3 10:50:49 2011 +0400
+> 
+>     block: add proper state guards to elv_queue_empty()
+> 
+>     Like in 0a58e077eb600d1efd7e54ad9926a75a39d7f8ae (backported to
+>     stable 2.6.38 as 0a58e077eb600d1efd7e54ad9926a75a39d7f8ae) which
+>     fixes this for __elv_next_request(), as reported by Atsushi Nemoto,
+>     elv_queue_empty() also needs to check for dead queue condition
+>     before touchin elevator.
+> 
+>     elv_queue_empty() has been removed upstream so this is only applicable
+>     for versions prior to 2.6.39, including 2.6.32-longterm.
 
-Il 02/06/2011 21:34, Oliver Neukum ha scritto:
-> Am Mittwoch, 1. Juni 2011, 20:04:38 schrieb Riccardo Magliocchetti:
->> Il 01/06/2011 09:34, Oliver Neukum ha scritto:
->>> Am Mittwoch, 1. Juni 2011, 09:05:44 schrieb Riccardo Magliocchetti:
->>>>>> Here's the lsusb -v
->>>>>
->>>>> There is something strange going on. This is a cdc-ether device.
->>>>> Are you using any additional patches?
->>>>
->>>> I'm using a vanilla 2.6.39. I can get only lsusb when the phone is
->>>> booted and in that case it is recgnized as cdc-ether.
->>>>
->>>> This is what i got when i attached the phone switched off like when i
->>>> got the crash:
->>>
->>> Then please post lsusb -v of that state. This is a log of a connection
->>> going wrong due to a bad cable or interference. Does that always happen?
->>
->> yes it does always happen because (i think) the device hangs, so lsusb
->> does not show the device.
->
-> Hm. Now I am completely disoriented. Could you please explain in which modi
-> the device can be connected and which of them work?
+Um, i'm not sure about this one -- 2.6.32 does not have
+other pieces of this puzzle (and 2.6.38.8 was the last
+in the 2.6.38.y series).
 
-if the device is already booted when connected to the laptop it is shown 
-as cdc-ether and works fine.
-if the device is switched off when connected to the laptop i get a crash 
-/ the usb errors i posted in the last mail.
+/mjt
 
-But let me say again that it well may be that the device is at fault, 
-i'm only interested in not having it crash the laptop and not on having 
-it work properly as cdc-acm.
-
-thanks,
-riccardo
+>     Signed-Off-By: Michael Tokarev <mjt@tls.msk.ru>
+> 
+> diff --git a/block/elevator.c b/block/elevator.c
+> index 236e93c..30cec25 100644
+> --- a/block/elevator.c
+> +++ b/block/elevator.c
+> @@ -727,7 +727,8 @@ int elv_queue_empty(struct request_queue *q)
+>  	if (!list_empty(&q->queue_head))
+>  		return 0;
+> 
+> -	if (e->ops->elevator_queue_empty_fn)
+> +	if (!test_bit(QUEUE_FLAG_DEAD, &q->queue_flags) &&
+> +	    e->ops->elevator_queue_empty_fn)
+>  		return e->ops->elevator_queue_empty_fn(q);
+> 
+>  	return 1;
