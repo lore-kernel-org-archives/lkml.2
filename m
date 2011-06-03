@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab1FCA6m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 20:58:42 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:45300 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab1FCA6i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 20:58:38 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Dan Williams <dcbw@redhat.com>
-Cc: Alexey ORISHKO <alexey.orishko@stericsson.com>,
-        Stefan Metzmacher <metze@samba.org>,
-        Oliver Neukum <oliver@neukum.name>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] TODO FLAG_POINTTOPOINT => FLAG_WWAN? usbnet/cdc_ncm: mark ncm devices as "mobile broadband devices" with FLAG_WWAN
-In-Reply-To: Your message of "Thu, 02 Jun 2011 17:35:31 CDT."
-             <1307054132.21633.25.camel@dcbw.foobar.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1306922913-17803-1-git-send-email-metze@samba.org> <1306922913-17803-2-git-send-email-metze@samba.org> <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E583@EXDCVYMBSTM006.EQ1STM.local> <1307053743.21633.22.camel@dcbw.foobar.com>
-            <1307054132.21633.25.camel@dcbw.foobar.com>
+	id S1754093Ab1FCBAV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 21:00:21 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56875 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753515Ab1FCBAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Jun 2011 21:00:19 -0400
+Date: Fri, 3 Jun 2011 11:00:11 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Miao Xie <miaox@cn.fujitsu.com>, David Sterba <dave@jikos.cz>,
+        Tsutomu Itoh <t-itoh@jp.fujitsu.com>,
+        Itaru Kitayama <kitayama@cl.bb4u.ne.jp>
+Subject: linux-next: build warning from Linus' tree
+Message-Id: <20110603110011.77121203.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1307062683_2826P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 02 Jun 2011 20:58:03 -0400
-Message-ID: <5203.1307062683@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020A.4DE8319F.00A1,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__3_Jun_2011_11_00_11_+1000_BtTQmfWZpU_HAv6x"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1307062683_2826P
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Fri__3_Jun_2011_11_00_11_+1000_BtTQmfWZpU_HAv6x
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 02 Jun 2011 17:35:31 CDT, Dan Williams said:
-> On Thu, 2011-06-02 at 17:29 -0500, Dan Williams wrote:
-> > On Wed, 2011-06-01 at 12:20 +0200, Alexey ORISHKO wrote:
-> > > > -----Original Message-----
-> > > > From: netdev-owner@vger.kernel.org [mailto:netdev-
-> > > > owner@vger.kernel.org] On Behalf Of Stefan Metzmacher
-> > > > Sent: Wednesday, June 01, 2011 12:09 PM
-> > > 
-> > > 
-> > > > -	.flags = FLAG_POINTTOPOINT | FLAG_NO_SETINT | FLAG_MULTI_PACKET,
-> > > > +	.flags = FLAG_WWAN | FLAG_NO_SETINT | FLAG_MULTI_PACKET,
-> > > 
-> > > This patch will introduce incompatibility with already existing
-> > > applications, which track usbX devices. As a result, end user
-> > > application will stop working.
+Hi all,
 
-I'm interpreting this as "devices which currently often get named usbX by udev,
-and currently have FLAG_POINTTOPOINT set".  People are getting hung up
-on the usbX part, not what the *real* problem is.
+With Linus' tree, today's linux-next build (powercp ppc64_defconfig)
+produced this warning:
 
-> A follow-on to this is that if you really care about specific devices,
-> your application can use udev rules to "tag" specific interfaces based
-> on USB VID/PID/GUID or other device attributes, and check for those tags
-> in your program.  Use udev (good) or netlink (good) or SIOCGIFCONF (bad)
-> to enumerate the various network interfaces on the system and pick the
+fs/btrfs/delayed-inode.c: In function 'btrfs_delayed_update_inode':
+fs/btrfs/delayed-inode.c:1598:6: warning: 'ret' may be used uninitialized i=
+n this function
 
-I think Alexey's point was that the patch will hose up programs that
-currently do the netlink or  SIOCGIFCONF thing and look for FLAG_POINTTOPOINT.
+Introduced by commit 16cdcec736cd ("btrfs: implement delayed inode items
+operation").
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
---==_Exmh_1307062683_2826P
+--Signature=_Fri__3_Jun_2011_11_00_11_+1000_BtTQmfWZpU_HAv6x
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFN6DGbcC3lWbTT17ARAkF8AJ0V4sNPAGtfzochn9YOiESfVr2pyQCg7T3G
-ad/XKV6nkoGyoOp07qe5xFI=
-=Qr1U
+iQEcBAEBAgAGBQJN6DIbAAoJEDMEi1NhKgbsraEH/jvR27nO5ZyKBN/JOE+er9Yk
+pia8ss+gu+alisTt9+Z0+X50czwRrfrsuAZtyB0h4OLVfJk+/+vMGJPVDYyDl/F2
+Ppd9mvYpeocAfyk2nJh1EyYL6GNKI7D5TOcaBd/ta09CI3CC/y1VxDQpvCbPSd0G
+vYpihGkNpGbfVPkR7zCJS7I4Ck6aXj/3gosSWQEGCwNRmZvIJ4+FoHIfB5vOnTnD
+Fn8mIyLenMLx4n+10oSntXLEMzDaxaXH1B8DZgY9FoRzwldFsh44yslh/MbExGiU
+4wGbwUCwQkEa2M/EwNZYS8+XDQGqfgdqZZAU6dJEiU+0lKChUXjYvTHDVYz4hBc=
+=fR8R
 -----END PGP SIGNATURE-----
 
---==_Exmh_1307062683_2826P--
-
+--Signature=_Fri__3_Jun_2011_11_00_11_+1000_BtTQmfWZpU_HAv6x--
