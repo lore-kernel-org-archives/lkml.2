@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab1FCPHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 11:07:40 -0400
-Received: from mail.elliptictech.com ([209.217.122.41]:33813 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926Ab1FCPHi (ORCPT
+	id S1752754Ab1FCOit (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 10:38:49 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:46165 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306Ab1FCOiq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 11:07:38 -0400
-X-Greylist: delayed 1731 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Jun 2011 11:07:38 EDT
-Date: Fri, 3 Jun 2011 10:38:24 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Roman Zippel <zippel@linux-m68k.org>, Michal Marek <mmarek@suse.cz>,
-        Waldo Bastian <bastian@kde.org>, Ryan Lortie <desrt@desrt.ca>,
-        Lennart Poettering <lennart@poettering.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Heads-up: Linux make menuconfig .config vs. XDG_CONFIG_HOME
- ~/.config/ clash - perhaps resolve it while 3.0 appears?
-Message-ID: <20110603143824.GA3138@elliptictech.com>
-References: <20110602182431.GA26282@rhlx01.hs-esslingen.de>
+	Fri, 3 Jun 2011 10:38:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=G2jXnX6ZwJ4j3dkeEtyI9ZZT0nHrOFl1xi2iuECKQ8NQ1TBIJDBDFNF35StXHGIeNX
+         CzZiLld/AIKTwc0OAZmD4RK6Y6sPqXTlu1lpgSzfmXK1lVWsbLJ9sbGiVc1vX55GCLxO
+         /s2yRLdr+997d0n4WfmaOwueWZA066ajNiAwc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110602182431.GA26282@rhlx01.hs-esslingen.de>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1307077367-6277-1-git-send-email-eric.miao@linaro.org>
+References: <1307077367-6277-1-git-send-email-eric.miao@linaro.org>
+From: Eric Miao <eric.miao@linaro.org>
+Date: Fri, 3 Jun 2011 22:38:26 +0800
+X-Google-Sender-Auth: n4BdMQF9u8bO6lB0qMLDfa0epz4
+Message-ID: <BANLkTintqdOe3NBekhdjXT1Y126nk23wbw@mail.gmail.com>
+Subject: Re: [PATCH] brd: make brd_make_request() return error code
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Nick Piggin <npiggin@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-06-02 20:24 +0200, Andreas Mohr wrote:
-> "$XDG_CONFIG_HOME defines the base directory relative to which user
-> specific configuration files should be stored. If $XDG_CONFIG_HOME is
-> either not set or empty, a default equal to $HOME/.config should be
-> used."
-[...]
-> It may thus be strongly advisable to rename the default name of the
-> make menuconfig kernel .config file (perhaps .config_lx / .config_linux ?)
-> to completely sidestep such a (mostly user-triggered)
-> problematic clash in future.
-
-If a program can't create its config directory or file(s), presumably it
-will display an error message to that effect and the user can correct the
-problem: after all, this scenario only occurs when the user puts a
-kernel .config file in their home directory.  I imagine that a user
-which is capable of doing such a thing is also capable of deleting
-files.
-
-Furthermore, Once the ~/.config directory has been created (by running
-any program that does so), this problem cannot occur.
-
-There are many other reasons that a program might fail to access its
-configuration data.  I suspect that "no space remaining" or "read-only
-filesystem" are more likely than "oops, I managed to put a .config file
-in my home directory before running a single program that created
-~/.config/".
-
-Administrators can prevent hapless users from accidentally putting a
-.config file in their home directory by creating a .config directory by
-default.  Distros could help here by putting an empty .config directory
-in /etc/skel.
-
-Renaming the .config file is obviously going to cause a lot of pain, and
-there seems to be very little gain.
-
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+On Fri, Jun 3, 2011 at 1:02 PM, Eric Miao <eric.miao@linaro.org> wrote:
+> brd_make_request() always returns 0, which doesn't make much sense.
+>
+> Signed-off-by: Eric Miao <eric.miao@linaro.org>
+> ---
+>  drivers/block/brd.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+> index dba1c32..a9587ee 100644
+> --- a/drivers/block/brd.c
+> +++ b/drivers/block/brd.c
+> @@ -360,7 +360,7 @@ static int brd_make_request(struct request_queue *q, struct bio *bio)
+>  out:
+>        bio_endio(bio, err);
+>
+> -       return 0;
+> +       return err;
+>  }
+>
+>  #ifdef CONFIG_BLK_DEV_XIP
+> --
+> 1.7.4.1
+>
+>
