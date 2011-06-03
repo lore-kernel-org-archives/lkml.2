@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278Ab1FCQHe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 12:07:34 -0400
-Received: from fnarfbargle.com ([93.93.131.224]:59000 "EHLO fnarfbargle.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750965Ab1FCQHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 12:07:33 -0400
-Message-ID: <4DE906C0.6060901@fnarfbargle.com>
-Date: Sat, 04 Jun 2011 00:07:28 +0800
-From: Brad Campbell <brad@fnarfbargle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: kvm@vger.kernel.org
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
-References: <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com> <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com> <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com> <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com> <isavsg$3or$1@dough.gmane.org>
-In-Reply-To: <isavsg$3or$1@dough.gmane.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752735Ab1FCQLI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 12:11:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:40944 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751631Ab1FCQLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 12:11:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,315,1304319600"; 
+   d="scan'208";a="11437587"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH] perf: add support for disabling -Werror via WERROR=0
+Date: Fri,  3 Jun 2011 09:10:42 -0700
+Message-Id: <c751b9c5897b61cb99b167f0463e4ce663547b34.1307117442.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/11 23:50, Bernhard Held wrote:
-> Am 03.06.2011 15:38, schrieb Brad Campbell:
->> On 02/06/11 07:03, CaT wrote:
->>> On Wed, Jun 01, 2011 at 07:52:33PM +0800, Brad Campbell wrote:
->>>> Unfortunately the only interface that is mentioned by name anywhere
->>>> in my firewall is $DMZ (which is ppp0 and not part of any bridge).
->>>>
->>>> All of the nat/dnat and other horrible hacks are based on IP addresses.
->>>
->>> Damn. Not referencing the bridge interfaces at all stopped our host from
->>> going down in flames when we passed it a few packets. These are two
->>> of the oopses we got from it. Whilst the kernel here is .35 we got the
->>> same issue from a range of kernels. Seems related.
->>
->> Well, I tried sending an explanatory message to netdev, netfilter &
->> cc'd to kvm,
->> but it appears not to have made it to kvm or netfilter, and the cc to
->> netdev has
->> not elicited a response. My resend to netfilter seems to have dropped
->> into the
->> bit bucket also.
-> Just another reference 3.5 months ago:
-> http://www.spinics.net/lists/netfilter-devel/msg17239.html
+GCC often introduces new warnings with lots of false positives - breaking
+-Werror builds. WERROR=0 allows one to build perf without much fuss - while
+still encouraging people to send patches to avoid the fuss of having to type
+WERROR=0.
 
-<waves hands around shouting "I have a reproducible test case for this 
-and don't mind patching and crashing the machine to get it fixed">
+Bisecting back to commits that produce a (mostly harmless) warning on some
+compilers is more difficult. With WERROR=0 one could bisect without worrying
+about harmless warnings.
 
-Attempted to add netfilter-devel to the cc this time.
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 032ba63..e76dfbb 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -30,6 +30,8 @@ endif
+ # Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for cross-builds.
+ #
+ # Define NO_DWARF if you do not want debug-info analysis feature at all.
++#
++# Define WERROR=0 to disable treating any warnings as errors.
+ 
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+@@ -60,6 +62,11 @@ ifeq ($(ARCH),x86_64)
+ 	endif
+ endif
+ 
++# Treat warnings as errors unless directed not to
++ifneq ($(WERROR),0)
++	CFLAGS_WERROR := -Werror
++endif
++
+ #
+ # Include saner warnings here, which can catch bugs:
+ #
+@@ -92,7 +99,7 @@ ifndef PERF_DEBUG
+   CFLAGS_OPTIMIZE = -O6
+ endif
+ 
+-CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
++CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
+ EXTLIBS = -lpthread -lrt -lelf -lm
+ ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
+ ALL_LDFLAGS = $(LDFLAGS)
+-- 
+1.7.1
+
