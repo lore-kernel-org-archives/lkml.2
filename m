@@ -1,95 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab1FCVBp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 17:01:45 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46721 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753670Ab1FCVBo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 17:01:44 -0400
-Date: Fri, 3 Jun 2011 14:00:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sameer Nanda <snanda@chromium.org>
-Cc: ext-phil.2.carmody@nokia.com, Tim.Deegan@citrix.com, jbeulich@novell.com,
-        snanda@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] init: skip calibration delay if previously done
-Message-Id: <20110603140054.a0f1859d.akpm@linux-foundation.org>
-In-Reply-To: <1306279146-23487-1-git-send-email-snanda@chromium.org>
-References: <1306279146-23487-1-git-send-email-snanda@chromium.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932179Ab1FCVJS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 17:09:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18102 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756140Ab1FCVHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 17:07:33 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        axboe@kernel.dk
+Cc: vgoyal@redhat.com, arighi@develer.com, fengguang.wu@intel.com,
+        jack@suse.cz, akpm@linux-foundation.org
+Subject: [RFC PATCH 0/8] blk-throttle: Throttle buffered WRITE in balance_dirty_pages()
+Date: Fri,  3 Jun 2011 17:06:41 -0400
+Message-Id: <1307135209-30539-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 24 May 2011 16:19:06 -0700
-Sameer Nanda <snanda@chromium.org> wrote:
+Hi,
 
-> For each CPU, do the calibration delay only once. For subsequent calls,
-> use the cached per-CPU value of loops_per_jiffy.
-> 
-> This saves about 200ms of resume time on dual core Intel Atom N5xx based
-> systems. This helps bring down the kernel resume time on such systems from
-> about 500ms to about 300ms.
-> 
-> Signed-off-by: Sameer Nanda <snanda@chromium.org>
-> ---
->  init/calibrate.c |   10 +++++++++-
->  1 files changed, 9 insertions(+), 1 deletions(-)
-> 
-> diff --git a/init/calibrate.c b/init/calibrate.c
-> index 76ac919..47d3408 100644
-> --- a/init/calibrate.c
-> +++ b/init/calibrate.c
-> @@ -183,11 +183,18 @@ recalibrate:
->  	return lpj;
->  }
->  
-> +DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
-> +
->  void __cpuinit calibrate_delay(void)
->  {
->  	static bool printed;
-> +	int this_cpu = smp_processor_id();
->  
-> -	if (preset_lpj) {
-> +	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
-> +		loops_per_jiffy = per_cpu(cpu_loops_per_jiffy, this_cpu);
-> +		pr_info("Calibrating delay loop (skipped) "
-> +				"already calibrated this CPU previously.. ");
-> +	} else if (preset_lpj) {
->  		loops_per_jiffy = preset_lpj;
->  		if (!printed)
->  			pr_info("Calibrating delay loop (skipped) "
-> @@ -205,6 +212,7 @@ void __cpuinit calibrate_delay(void)
->  			pr_info("Calibrating delay loop... ");
->  		loops_per_jiffy = calibrate_delay_converge();
->  	}
-> +	per_cpu(cpu_loops_per_jiffy, this_cpu) = loops_per_jiffy;
->  	if (!printed)
->  		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
->  			loops_per_jiffy/(500000/HZ),
+I have been trying to find ways to solve two problems with block IO controller
+cgroups.
 
-Seems reasonable.
+- Current throttling logic in IO controller does not throttle buffered WRITES.
+  Well it does throttle all the WRITEs at device and by that time buffered
+  WRITE have lost the submitter's context and most of the IO comes in 
+  flusher thread's context at device. Hence currently buffered write
+  throttling is not supported.
 
-On resume, the kernel will print "already calibrated this CPU
-previously.." in all situations, such as when preset_lpj was set.  I
-don't see a problem with that.
+- All WRITEs are throttled at device level and this can easily lead to
+  filesystem serialization.
 
-Let's be nice to the namespace:
+  One simple example is that if a process writes some pages to cache and
+  then does fsync(), and process gets throttled then it locks up the
+  filesystem. With ext4, I noticed that even a simple "ls" does not make
+  progress. The reason boils down to the fact that filesystems are not
+  aware of cgroups and one of the things which get serialized is journalling
+  in ordered mode.
 
---- a/init/calibrate.c~init-skip-calibration-delay-if-previously-done-fix
-+++ a/init/calibrate.c
-@@ -246,7 +246,7 @@ recalibrate:
- 	return lpj;
- }
- 
--DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
-+static DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
- 
- void __cpuinit calibrate_delay(void)
- {
-_
+  So even if we do something to carry submitter's cgroup information
+  to device and do throttling there, it will lead to serialization of
+  filesystems and is not a good idea.
+
+So how to go about fixing it. There seem to be two options.
+
+- Throttling should still be done at device level. Make filesystems aware
+  of cgroups so that multiple transactions can make progress in parallel
+  (per cgroup) and there are no shared resources across cgroups in
+  filesystems which can lead to serialization.
+
+- Throttle WRITEs while they are entering the cache and not after that.
+  Something like balance_dirty_pages(). Direct IO is still throttled
+  at device level. That way, we can avoid these journalling related
+  serialization issues w.r.t trottling.
+
+  But the big issue with this approach is that we control the IO rate
+  entering into the cache and not IO rate at the device. That way it
+  can happen that flusher later submits lots of WRITEs to device and
+  we will see a periodic IO spike on end node.
+
+  So this mechanism helps a bit but is not the complete solution. It
+  can primarily help those folks which have the system resources and
+  plenty of IO bandwidth available but they don't want to give it to
+  customer because it is not a premium customer etc.
+
+Option 1 seem to be really hard to fix. Filesystems have not been written
+keeping cgroups in mind. So I am really skeptical that I can convince file
+system designers to make fundamental changes in filesystems and journalling
+code to make them cgroup aware.
+
+Hence with this patch series I have implemented option 2. Option 2 is not
+the best solution but atleast it gives us some control then not having any
+control on buffered writes. Andrea Righi did similar patches in the past
+here.
+
+https://lkml.org/lkml/2011/2/28/115
+
+This patch series had issues w.r.t to interaction between bio and task
+throttling, so I redid it.
+
+Design
+------
+
+IO controller already has the capability to keep track of IO rates of
+a group and enqueue the bio in internal queues if group exceeds the
+rate and dispatch these bios later.
+
+This patch series also introduce the capability to throttle a dirtying
+task in balance_dirty_pages_ratelimited_nr(). Now no WRITES except
+direct WRITES will be throttled at device level. If a dirtying task
+exceeds its configured IO rate, it is put on a group wait queue and
+woken up when it can dirty more pages.
+
+No new interface has been introduced and both direct IO as well as buffered
+IO make use of common IO rate limit.
+
+How To
+=====
+- Create a cgroup and limit it to 1MB/s for writes.
+  echo "8:16 1024000" > /cgroup/blk/test1/blkio.throttle.write_bps_device
+
+- Launch dd thread in the cgroup
+  dd if=/dev/zero of=zerofile bs=4K count=1K
+
+ 1024+0 records in
+ 1024+0 records out
+ 4194304 bytes (4.2 MB) copied, 4.00428 s, 1.0 MB/s
+
+Any feedback is welcome.
+
+Thanks
+Vivek
+
+Vivek Goyal (8):
+  blk-throttle: convert wait routines to return jiffies to wait
+  blk-throttle: do not enforce first queued bio check in
+    tg_wait_dispatch
+  blk-throttle: use IO size and direction as parameters to wait
+    routines
+  blk-throttle: Specify number of IOs during dispatch update
+  blk-throttle: Get rid of extend slice trace message
+  blk-throttle: core logic to throttle task while dirtying pages
+  blk-throttle: Do not throttle WRITEs at device level except direct IO
+  blk-throttle: enable throttling of task while dirtying pages
+
+ block/blk-cgroup.c        |    6 +-
+ block/blk-cgroup.h        |    2 +-
+ block/blk-throttle.c      |  506 +++++++++++++++++++++++++++++++++++---------
+ block/cfq-iosched.c       |    2 +-
+ block/cfq.h               |    6 +-
+ fs/direct-io.c            |    1 +
+ include/linux/blk_types.h |    2 +
+ include/linux/blkdev.h    |    5 +
+ mm/page-writeback.c       |    3 +
+ 9 files changed, 421 insertions(+), 112 deletions(-)
+
+-- 
+1.7.4.4
 
