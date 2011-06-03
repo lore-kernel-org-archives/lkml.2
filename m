@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab1FCJ3O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 05:29:14 -0400
-Received: from mail.perches.com ([173.55.12.10]:2454 "EHLO mail.perches.com"
+	id S1753795Ab1FCJ3R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 05:29:17 -0400
+Received: from mail.perches.com ([173.55.12.10]:2457 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194Ab1FCJ3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 05:29:13 -0400
+	id S1753194Ab1FCJ3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 05:29:15 -0400
 From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>, drbd-dev@lists.linbit.com,
-        dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        devel@driverdev.osuosl.org, alsa-devel@alsa-project.org
-Subject: [Trivial PATCH 0/5] treewide: Use angle brackets for system includes
-Date: Fri,  3 Jun 2011 02:28:45 -0700
-Message-Id: <cover.1307092588.git.joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
+Subject: [Trivial PATCH 1/5] drbd: Use angle brackets for system includes
+Date: Fri,  3 Jun 2011 02:28:46 -0700
+Message-Id: <6d11c5760da28eacfa6acfad79037e8080a488bd.1307092588.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.5.rc3.dirty
+In-Reply-To: <cover.1307092588.git.joe@perches.com>
+References: <cover.1307092588.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just neatening.
+Use the normal include style.
 
-Joe Perches (5):
-  drbd: Use angle brackets for system includes
-  drm: Use angle brackets for system includes
-  aix94xx: Use angle brackets for system includes
-  ALSA: asihpi: Use angle brackets for system includes
-  staging: msm: Use angle brackets for system includes
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/block/drbd/drbd_int.h  |    2 +-
+ drivers/block/drbd/drbd_nl.c   |    4 ++--
+ include/linux/drbd_tag_magic.h |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
- drivers/block/drbd/drbd_int.h                 |    2 +-
- drivers/block/drbd/drbd_nl.c                  |    4 ++--
- drivers/gpu/drm/drm_ioctl.c                   |    2 +-
- drivers/gpu/drm/i915/i915_gem_tiling.c        |    4 ++--
- drivers/gpu/drm/nouveau/nouveau_drv.h         |   10 +++++-----
- drivers/gpu/drm/ttm/ttm_agp_backend.c         |    6 +++---
- drivers/gpu/drm/ttm/ttm_bo.c                  |    6 +++---
- drivers/gpu/drm/ttm/ttm_bo_manager.c          |    6 +++---
- drivers/gpu/drm/ttm/ttm_bo_util.c             |    4 ++--
- drivers/gpu/drm/ttm/ttm_execbuf_util.c        |    6 +++---
- drivers/gpu/drm/ttm/ttm_lock.c                |    4 ++--
- drivers/gpu/drm/ttm/ttm_memory.c              |    6 +++---
- drivers/gpu/drm/ttm/ttm_module.c              |    2 +-
- drivers/gpu/drm/ttm/ttm_object.c              |    4 ++--
- drivers/gpu/drm/ttm/ttm_page_alloc.c          |    4 ++--
- drivers/gpu/drm/ttm/ttm_tt.c                  |    8 ++++----
- drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c        |    4 ++--
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c           |    8 ++++----
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.h           |   12 ++++++------
- drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c       |    4 ++--
- drivers/gpu/drm/vmwgfx/vmwgfx_fb.c            |    2 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c          |    2 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c           |    2 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_gmrid_manager.c |    6 +++---
- drivers/gpu/drm/vmwgfx/vmwgfx_overlay.c       |    2 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_resource.c      |    4 ++--
- drivers/scsi/aic94xx/aic94xx_dump.c           |    2 +-
- drivers/staging/msm/ebi2_l2f.c                |    2 +-
- drivers/staging/msm/ebi2_tmd20.c              |    2 +-
- drivers/staging/msm/mddihost.h                |    2 +-
- drivers/staging/msm/mdp_ppp.c                 |    2 +-
- drivers/staging/msm/mdp_ppp_v20.c             |    2 +-
- drivers/staging/msm/mdp_ppp_v31.c             |    2 +-
- drivers/staging/msm/msm_fb.h                  |    2 +-
- include/drm/ttm/ttm_bo_driver.h               |   12 ++++++------
- include/drm/ttm/ttm_execbuf_util.h            |    2 +-
- include/drm/ttm/ttm_lock.h                    |    2 +-
- include/linux/drbd_tag_magic.h                |    2 +-
- sound/pci/asihpi/hpidspcd.c                   |    2 +-
- 39 files changed, 80 insertions(+), 80 deletions(-)
-
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index ef2ceed..a6ab1b2 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -928,7 +928,7 @@ struct drbd_md {
+ #define NL_INT64(pn,pr,member) __u64 member;
+ #define NL_BIT(pn,pr,member)   unsigned member:1;
+ #define NL_STRING(pn,pr,member,len) unsigned char member[len]; int member ## _len;
+-#include "linux/drbd_nl.h"
++#include <linux/drbd_nl.h>
+ 
+ struct drbd_backing_dev {
+ 	struct block_device *backing_bdev;
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 515bcd9..20de58d 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -94,7 +94,7 @@ static int name ## _from_tags(struct drbd_conf *mdev, \
+ 		 arg->member ## _len = dlen; \
+ 		 memcpy(arg->member, tags, min_t(size_t, dlen, len)); \
+ 		 break;
+-#include "linux/drbd_nl.h"
++#include <linux/drbd_nl.h>
+ 
+ /* Generate the struct to tag_list functions */
+ #define NL_PACKET(name, number, fields) \
+@@ -129,7 +129,7 @@ name ## _to_tags(struct drbd_conf *mdev, \
+ 	put_unaligned(arg->member ## _len, tags++);	\
+ 	memcpy(tags, arg->member, arg->member ## _len); \
+ 	tags = (unsigned short *)((char *)tags + arg->member ## _len);
+-#include "linux/drbd_nl.h"
++#include <linux/drbd_nl.h>
+ 
+ void drbd_bcast_ev_helper(struct drbd_conf *mdev, char *helper_name);
+ void drbd_nl_send_reply(struct cn_msg *, int);
+diff --git a/include/linux/drbd_tag_magic.h b/include/linux/drbd_tag_magic.h
+index 0695431..81f52f2 100644
+--- a/include/linux/drbd_tag_magic.h
++++ b/include/linux/drbd_tag_magic.h
+@@ -28,7 +28,7 @@ enum packet_types {
+ #define NL_STRING(pn, pr, member, len)	\
+ 	unsigned char member[len]; int member ## _len; \
+ 	int tag_and_len ## member;
+-#include "linux/drbd_nl.h"
++#include <linux/drbd_nl.h>
+ 
+ /* declare tag-list-sizes */
+ static const int tag_list_sizes[] = {
 -- 
 1.7.5.rc3.dirty
 
