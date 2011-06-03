@@ -1,54 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab1FCPLK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 11:11:10 -0400
-Received: from ix03.ka.hist.no ([158.38.48.167]:63993 "EHLO ix03.ka.hist.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753782Ab1FCPLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 11:11:08 -0400
-Message-ID: <4DE8F989.50208@hist.no>
-Date: Fri, 03 Jun 2011 17:11:05 +0200
-From: Helge Hafting <helge.hafting@hist.no>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110510 Icedove/3.1.10
+	id S1755741Ab1FCPLf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 11:11:35 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50122 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755702Ab1FCPLd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 11:11:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ad0UrKq9uzCs+dgno1W7eJ36uQIc58wEZhkBHQ91+8Vji2xHV/xZfF691gEe7lJ0hv
+         5Gpfhe47OLYx52+It5jMk1ga+/sWhflINpPKNKbnmJ153ptYR9jtWuRHYlpqRjZubMX/
+         OTZm7rPIeNq4fLNg2ZJDnsTremo3uyWnIjKa8=
 MIME-Version: 1.0
-To: Suresh Jayaraman <sjayaraman@suse.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>
-Subject: Re: [2.6.39] CIFS write failures where 2.6.38 works
-References: <4DE6103E.6010100@hist.no> <4DE8B449.2000008@suse.de>
-In-Reply-To: <4DE8B449.2000008@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Jun 2011 15:11:05.0848 (UTC) FILETIME=[75CAEF80:01CC2200]
+In-Reply-To: <1306854022.11899.27.camel@gandalf.stny.rr.com>
+References: <BANLkTi=+bcTDTOWEOGcmgNHYrvpnEFqEjA@mail.gmail.com>
+	<1306854022.11899.27.camel@gandalf.stny.rr.com>
+Date: Fri, 3 Jun 2011 23:11:32 +0800
+Message-ID: <BANLkTimpQasMVijw=OWov88jr6Cmfo6rkw@mail.gmail.com>
+Subject: Re: [PATCH] sched: change pulling RT task to be pulling the
+ highest-prio run-queue first
+From: Hillf Danton <dhillf@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Yong Zhang <yong.zhang0@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03. juni 2011 12:15, Suresh Jayaraman wrote:
-> [Cc linux-cifs@vger.kernel.org]
+On Tue, May 31, 2011 at 11:00 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Sat, 2011-05-28 at 22:34 +0800, Hillf Danton wrote:
+>> When pulling, RT tasks are pulled from one overloaded run-queue after another,
+>> which is changed to be pulling tasks from the highest-prio run-queue first.
 >
-> On 06/01/2011 03:41 PM, Helge Hafting wrote:
->> At work I use cifs for accessing a windows server. This has worked fine
->> for a long time, up to and including Debian's 2.6.38-2.
+> First off, a change like this requires rational. Preferably, in the
+> showing of benchmarks, and test cases that demonstrate the problems of
+> the current scheduler and explains to us that these changes improve the
+> situation.
+>
+> There is no rational nor any benchmarks that explain why this is better
+> than the current method.
+>
+
+Hi Steven
+
+Thanks for your review, which shows the shortage of the patch, test case.
+
+
 >>
->> I just installed Debians's 2.6.39-1, and had to give up on it.
->> Mounting CIFS works, and I can see the files. But if I
->> try to make a new file (with cp), I get a long delay.
+>> A new function, cpupri_find_prio(), is added to easy pulling in prio sequence.
+>>
+>> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>> ---
+>>
+>> --- tip-git/kernel/sched_rt.c Sun May 22 20:12:01 2011
+>> +++ sched_rt.c        Sat May 28 21:24:13 2011
+>> @@ -1434,18 +1434,33 @@ static void push_rt_tasks(struct rq *rq)
+>>               ;
+>>  }
+>>
+>> +static DEFINE_PER_CPU(cpumask_var_t, high_cpu_mask);
+>> +
+>>  static int pull_rt_task(struct rq *this_rq)
+>>  {
+>>       int this_cpu = this_rq->cpu, ret = 0, cpu;
+>>       struct task_struct *p;
+>>       struct rq *src_rq;
+>> +     struct cpumask *high_mask = __get_cpu_var(high_cpu_mask);
+>> +     int prio = 0;
+>>
+>>       if (likely(!rt_overloaded(this_rq)))
+>>               return 0;
+>> +loop:
+>> +     if (! (prio < this_rq->rt.highest_prio.curr))
+>> +             return ret;
+>> +
+>> +     if (! cpupri_find_prio(&this_rq->rd->cpupri, prio,
+>> +                             this_rq->rd->rto_mask, high_mask)) {
+>> +             prio++;
+>> +             goto loop;
+>> +     }
 >
-> What is the security mechanism you are using? If you seeing the problem
-> with ntlm, could you try using ntlmv2 and see whether the problem is
-> reproducible?
+> This loop looks to be expensive in the hot path.
+>
 
-In the beginning, I did not specify the mechanism. So, whatever the 
-default is.
+You are right, the introduced overhead in worse cases is
+this_rq->rt.highest_prio.curr times bit-test like
 
-The fstab entry was like this:
-\\servername\resource /mountpoint cifs 
-domain=MYDOMAIN,credentials=/etc/fstabcred,rw,noauto,iocharset=utf8,uid=username,gid=group,sockopt=TCP_NODELAY,users,file_mode=0640,dir_mode=0750,relatime 
-0 0
+        if (cp->pri_active[task_prio / BITS_PER_LONG] &
+             (1UL << ((BITS_PER_LONG - 1) - (task_prio % BITS_PER_LONG)))) {
 
-I looked at cifs options, and tried to add "sign" and "sec=ntlmv2i". It 
-made no difference. Still failure with 2.6.39, and mounting with these 
-new options works fine with 2.6.38
+which I think slowdowns the hot patch a lot:/
 
-Helge Hafting
+> Note, in practice, not many RT tasks are running at the same time. If
+> this is not the case, then please explain what situation has multiple RT
+> tasks contending for more than one CPU where RT tasks are forced to
+> migrate continuously, and this patch fixes the situation.
+>
+
+The situation is hard to be constructed, I guess it is only captured by
+rt_overloaded()
+
+
+> I understand that the current code looks a bit expensive, as it loops
+> through the CPUs that are overloaded, and pulls over the RT tasks
+> waiting to run that are of higher priority than the one currently on
+> this task. If it picks wrong, it could potentially pull over more than
+> one task.
+>
+> But in practice (and I've traced this a while back), it seldom ever
+> happens.
+>
+> But if you see that this code is hitting the slow path constantly, and
+> your code shows better performance, and you can demonstrate this via a
+> benchmark that I could use to reproduce, then I will consider taking
+> these changes.
+>
+
+Since you already traced, the hitting could not happen, I believe.
+
+thanks
+           Hillf
