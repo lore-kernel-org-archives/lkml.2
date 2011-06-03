@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab1FCBwA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Jun 2011 21:52:00 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51995 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab1FCBv6 (ORCPT
+	id S1755653Ab1FCBxb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Jun 2011 21:53:31 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61445 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab1FCBxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Jun 2011 21:51:58 -0400
+	Thu, 2 Jun 2011 21:53:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=judnHMA28pr0jtlJIRCK57matrN5Rd5+5f6/B5xn1k3ySLhXfB3wsYnAYavL4lHO6F
-         qd+Yz5eOi+1nYT+oco96XrpUAaT3U8vxh8qzBn6lSthYrIW9sahL1+kHnWEWMV5aoljs
-         DUCuSSiNiBWhZNMaqgV6UIqImtwJ1n95kxPcU=
-Subject: [PATCH 1/2] mtd: nuc900_nand: add missing nand_release in
- nuc900_nand_remove
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=NGkypvq5l8juMh6T1F2e7xWFsiM01w9emuWdOzr4yurFIwWNcp8pTyzc+eJ4LG8/Ks
+         ulIcOW3yK8yhuCmovEuwxAHkQAwuTDVo3qUoa1EImclIcxmjoTkqdPh0G3fZLJ/TPwwS
+         6Pd2LfvGCSlLxgJD7z07qpYpEXk4vrCFws9Pk=
+Subject: [PATCH 2/2] mtd: nomadik_nand: add missing nand_release in
+ nomadik_nand_remove
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Wan ZongShun <mcuos.com@gmail.com>, David Woodhouse <dwmw2@infradead.org>,
+Cc: Sachin Verma <sachin.verma@st.com>, David Woodhouse <dwmw2@infradead.org>,
         Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
         linux-mtd@lists.infradead.org
+In-Reply-To: <1307065913.10001.2.camel@phoenix>
+References: <1307065913.10001.2.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Jun 2011 09:51:53 +0800
-Message-ID: <1307065913.10001.2.camel@phoenix>
+Date: Fri, 03 Jun 2011 09:53:26 +0800
+Message-ID: <1307066006.10001.4.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -33,21 +35,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/mtd/nand/nuc900_nand.c |    1 +
+ drivers/mtd/nand/nomadik_nand.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mtd/nand/nuc900_nand.c b/drivers/mtd/nand/nuc900_nand.c
-index 9c30a0b..fa8faed 100644
---- a/drivers/mtd/nand/nuc900_nand.c
-+++ b/drivers/mtd/nand/nuc900_nand.c
-@@ -339,6 +339,7 @@ static int __devexit nuc900_nand_remove(struct platform_device *pdev)
- 	struct nuc900_nand *nuc900_nand = platform_get_drvdata(pdev);
- 	struct resource *res;
+diff --git a/drivers/mtd/nand/nomadik_nand.c b/drivers/mtd/nand/nomadik_nand.c
+index b6a5c86..b463ecf 100644
+--- a/drivers/mtd/nand/nomadik_nand.c
++++ b/drivers/mtd/nand/nomadik_nand.c
+@@ -187,6 +187,7 @@ static int nomadik_nand_remove(struct platform_device *pdev)
+ 		pdata->exit();
  
-+	nand_release(&nuc900_nand->mtd);
- 	iounmap(nuc900_nand->reg);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (host) {
++		nand_release(&host->mtd);
+ 		iounmap(host->cmd_va);
+ 		iounmap(host->data_va);
+ 		iounmap(host->addr_va);
 -- 
 1.7.4.1
 
