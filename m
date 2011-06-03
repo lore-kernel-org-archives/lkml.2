@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751242Ab1FCEv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 00:51:57 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:43792 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab1FCEv4 (ORCPT
+	id S1751378Ab1FCExT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 00:53:19 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:64752 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab1FCExS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 00:51:56 -0400
-Date: Fri, 3 Jun 2011 00:50:58 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrea Righi <andrea@betterlinux.com>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Izik Eidus <ieidus@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>
-Message-ID: <953608207.378209.1307076658294.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20110602143622.GE19505@random.random>
-Subject: Re: [BUG 3.0.0-rc1] ksm: NULL pointer dereference in ksm_do_scan()
+	Fri, 3 Jun 2011 00:53:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:from:to:cc:references:subject:date:mime-version
+         :content-type:content-transfer-encoding:x-priority:x-msmail-priority
+         :x-mailer:x-mimeole;
+        b=j5BVOXkQTm2QHnS80qBlkw14XzhVkkDJ/zdpONg2/SrvPOC9RmnSsVDLgMIRY7zviO
+         jVhBDdthS/XD8H4ded/lqdbfedgCNZ+J1uww0iKQj6OV5TdM5m9KvZVgrGOfo3QODoEc
+         EKdUWGf7qFHpjfe1E9WvQvX3HbXan5Poewa00=
+Message-ID: <B4B144EDA1BA4138AFAC732D06C60F8B@WWW67E861F6858>
+From: "Guowen Li" <guowen.li.linux@gmail.com>
+To: "Steven Rostedt" <rostedt@goodmis.org>
+Cc: <linux-kernel@vger.kernel.org>
+References: <201106011918.47939.guowen.li.linux@gmail.com> <1307069404.3667.35.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] Fix compiler warning in ftrace.c
+Date: Fri, 3 Jun 2011 12:52:59 +0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
+Content-Type: text/plain;
+	charset="UTF-8"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5512
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5512
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p534rUvI025217
+
+Thank you for pointing them out, i will be careful next time. :)
+
+Signed-off-by: Guowen Li <guowen.li.linux@gmail.com>
+----- Original Message ----- 
+From: "Steven Rostedt" <rostedt@goodmis.org>
+To: "GuoWen Li" <guowen.li.linux@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>
+Sent: Friday, June 03, 2011 10:50 AM
+Subject: Re: [PATCH] Fix compiler warning in ftrace.c
 
 
-
------ Original Message -----
-> On Thu, Jun 02, 2011 at 07:31:43AM -0700, Chris Wright wrote:
-> > * CAI Qian (caiqian@redhat.com) wrote:
-> > > madvise(0x2210000, 4096, 0xc /* MADV_??? */) = 0
-> > > --- SIGSEGV (Segmentation fault) @ 0 (0) ---
-> >
-> > Right, that's just what the program is trying to do, segfault.
-> >
-> > > +++ killed by SIGSEGV (core dumped) +++
-> > > Segmentation fault (core dumped)
-> > >
-> > > Did I miss anything?
-> >
-> > I found it works but not 100% of the time.
-> >
-> > So I just run the bug in a loop.
+> Couple of things:
 > 
-> echo 0 >scan_millisecs helps.
-Thanks. Indeed.
-
-NULL pointer dereference at 0000000000000060
-IP: [<ffffffff814d2659>] down_read+0x19/0x30
-PGD 0 
-Oops: 0002 [#1] SMP 
-CPU 0 
-Modules linked in: autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipv6 dm_mirror dm_region_hash dm_log cdc_ether usbnet mii microcode serio_raw pcspkr i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support sg shpchp ioatdma dca i7core_edac edac_core bnx2 ext4 mbcache jbd2 sd_mod crc_t10dif pata_acpi ata_generic ata_piix mptsas mptscsih mptbase scsi_transport_sas dm_mod [last unloaded: scsi_wait_scan]
-
-Pid: 103, comm: ksmd Not tainted 3.0.0-rc1+ #6 IBM System x3550 M3 -[7944I21]-/69Y4438     
-RIP: 0010:[<ffffffff814d2659>]  [<ffffffff814d2659>] down_read+0x19/0x30
-RSP: 0018:ffff880271307e00  EFLAGS: 00010246
-RAX: 0000000000000060 RBX: 0000000000000060 RCX: 00000000000000db
-RDX: 0000000000000000 RSI: 0000000000000282 RDI: 0000000000000060
-RBP: ffff880271307e10 R08: 00000000000000df R09: ffff88026fcff400
-R10: 0001b690ffffff90 R11: 0001b690ffffff90 R12: ffff880271307ea8
-R13: 0000000000000050 R14: 0000000000000000 R15: ffffffff81a54960
-FS:  0000000000000000(0000) GS:ffff88027fc00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000060 CR3: 0000000001a03000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process ksmd (pid: 103, threadinfo ffff880271306000, task ffff8802712fc0c0)
-Stack:
- ffff880271307e10 ffff8802712fc0c0 ffff880271307e60 ffffffff81146e09
- ffff8802712fc0c0 0000000000000060 ffff880271307e80 ffff8802712fc0c0
- ffff880271307e80 ffff8802712fc0c0 ffff8802712fc0c0 0000000000000063
-Call Trace:
- [<ffffffff81146e09>] scan_get_next_rmap_item+0x59/0x400
- [<ffffffff811476ce>] ksm_scan_thread+0xfe/0x2c0
- [<ffffffff81084d50>] ? wake_up_bit+0x40/0x40
- [<ffffffff811475d0>] ? cmp_and_merge_page+0x420/0x420
- [<ffffffff810846d6>] kthread+0x96/0xa0
- [<ffffffff814dc544>] kernel_thread_helper+0x4/0x10
- [<ffffffff81084640>] ? kthread_worker_fn+0x1a0/0x1a0
- [<ffffffff814dc540>] ? gs_change+0x13/0x13
-Code: 9e cd d6 ff 48 83 c4 08 5b c9 c3 0f 1f 80 00 00 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 48 89 fb e8 0a ee ff ff 48 89 d8 <f0> 48 ff 00 79 05 e8 3c cd d6 ff 48 83 c4 08 5b c9 c3 00 00 00 
-RIP  [<ffffffff814d2659>] down_read+0x19/0x30
- RSP <ffff880271307e00>
-CR2: 0000000000000060
----[ end trace a6feafc139ba5f85 ]---
+> On Wed, 2011-06-01 at 19:18 +0800, GuoWen Li wrote:
+>> kernel/trace/ftrace.c: In function ‚Äòftrace_regex_write.clone.15‚Äô:
+>> kernel/trace/ftrace.c:2743:6: warning: ‚Äòret‚Äô may be used uninitialized in this 
+>> function
+>> 
+>> Signed-off-by: GuoWen Li
+> 
+> Please add your mail address to your SOB. (I'll fix it)
+> 
+>> ---
+>>  kernel/trace/ftrace.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+>> index 1ee417f..204b3eb 100644
+>> --- a/kernel/trace/ftrace.c
+>> +++ b/kernel/trace/ftrace.c
+>> @@ -2740,7 +2740,7 @@ static int ftrace_process_regex(struct ftrace_hash 
+>> *hash,
+>>  {
+>>         char *func, *command, *next = buff;
+>>         struct ftrace_func_command *p;
+>> -       int ret;
+>> +       int ret = -EINVAL;
+> 
+> This patch has horrible white space issues. (I fixed it)
+> 
+> -- Steve
+> 
+> 
+>>  
+>>         func = strsep(&next, ":");
+> 
+> 
+>ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
