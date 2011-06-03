@@ -1,174 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab1FCQoL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 12:44:11 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:62090 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367Ab1FCQoJ convert rfc822-to-8bit (ORCPT
+	id S1753755Ab1FCQoT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 12:44:19 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:58392 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab1FCQoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 12:44:09 -0400
+	Fri, 3 Jun 2011 12:44:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=wKJFp6Ad0pj0B1x4nWrXSyyHXRSIrDa2fv7K6Bq3zmiho06aJ4W77RqYU28n754/oU
+         Ac7uApm+RQSQlNLsYQxgNuPjSWrSG1aufx3SjPj0G+b9HjnQXA796wJLqtXOvmdfsXrR
+         usS+0Ch0M1jLp2RyU73ADptf6tsaHvtgygYIg=
 MIME-Version: 1.0
-In-Reply-To: <1306776478.2882.47.camel@ptyser-laptop>
-References: <1299022100-14564-4-git-send-email-ptyser@xes-inc.com>
- <1303317354-18188-1-git-send-email-ptyser@xes-inc.com> <20110527064238.GA31271@ponder.secretlab.ca>
- <20110527110130.4b3448f2@endymion.delvare> <1306506402.22090.14872.camel@petert>
- <20110527205526.GJ6645@ponder.secretlab.ca> <1306531794.10752.19.camel@ptyser-laptop>
- <BANLkTin9Cy_emoFDs5hgw52ohbbPDKcN9w@mail.gmail.com> <1306776478.2882.47.camel@ptyser-laptop>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 3 Jun 2011 10:43:49 -0600
-X-Google-Sender-Auth: hOgTDsf56NYQ6PFDEiica0mc1zY
-Message-ID: <BANLkTimybUFo5ymhWUJ27Hk=H_Xz5w+e1w@mail.gmail.com>
-Subject: Re: [PATCH v6] gpio: Add support for Intel ICHx/3100/Series[56] GPIO
-To: Peter Tyser <ptyser@xes-inc.com>, Jean Delvare <khali@linux-fr.org>
-Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Syed S Azam <Syed.Azam@hp.com>,
-        Vincent Palatin <vpalatin@chromium.org>
+In-Reply-To: <20110603143824.GA3138@elliptictech.com>
+References: <20110602182431.GA26282@rhlx01.hs-esslingen.de>
+	<20110603143824.GA3138@elliptictech.com>
+Date: Fri, 3 Jun 2011 12:44:16 -0400
+Message-ID: <BANLkTikOPn-MF08QVyeY3F7mexDyp47pog@mail.gmail.com>
+Subject: Re: Heads-up: Linux make menuconfig .config vs. XDG_CONFIG_HOME
+ ~/.config/ clash - perhaps resolve it while 3.0 appears?
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: Andreas Mohr <andi@lisas.de>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
+        Michal Marek <mmarek@suse.cz>, Waldo Bastian <bastian@kde.org>,
+        Ryan Lortie <desrt@desrt.ca>,
+        Lennart Poettering <lennart@poettering.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 30, 2011 at 11:27 AM, Peter Tyser <ptyser@xes-inc.com> wrote:
-> On Fri, 2011-05-27 at 17:54 -0600, Grant Likely wrote:
->> On Fri, May 27, 2011 at 3:29 PM, Peter Tyser <ptyser@xes-inc.com> wrote:
->> >> > My own (completely biased) preference would be to use my driver as a
->> >> > starting point, primarily because it supports newer chips that require
->> >> > different access methods, as well as the older-style chips Jean's
->> >> > supports.  Its also been hanging out for about 6 months without many
->> >> > complaints, a tested-by, etc.
->> >>
->> >> I like the /structure/ of Jean's driver better, particularly that it doesn't
->> >> play games with the device model by registering devices at module load
->> >> time.
->> >
->> > But the driver shouldn't be a PCI driver - that's worse in my opinion
->> > than a platform driver.  Multiple drivers currently use the same PCI
->> > device ID as Jean's - they can't all claim the PCI device, so why should
->> > Jean's GPIO driver?  It seems incorrect, and likely to break things in
->> > the future.  Mine has its warts too, but it doesn't have the possibility
->> > of negatively affect other drivers at least, as well as supports more
->> > hardware.
->>
->> Does it conflict with other drivers in the kernel right now?  If so,
->> then I'll drop it.
->
-> It'd take some searching of where all the PCI vendor IDs in the new
-> patch are used.  I did a quick search of ICH7 and ESB2 IDs, and it
-> looked like:
-> Conflict:
-> - drivers/leds/leds-ss4200.c (also uses a PCI driver, also uses the GPIO
-> functionality of the chip)
->
-> Uses the same device, but no conflict:
-> - drivers/char/sonypi.c (uses platform driver)
-> - drivers/watchdog/iTCO_wdt.c (uses platform driver)
-> - drivers/mtd/maps/esb2rom.c (has PCI driver support commented out)
->
-> The same search would have to be performed for the other IDs to
-> determine if there are conflicts.  So there is one conflict, but its
-> probably not a huge deal because someone using leds-ss4200.c likely
-> wouldn't be using the ich GPIO driver as well.  leds-ss4200.c should
-> probably be converted to use the standard GPIO driver in the future.
->
-> However, if the above non-conflicting drivers did use the same PCI
-> driver model as the accepted GPIO patch, there would be conflicts -
-> that's what I don't care for.  The drivers above are considerate of the
-> fact that the device being used is a MFD while the Jean's driver is not.
->
-> I followed the iTCO_wdt.c and sonypi.c models for my driver in an
-> attempt to play nice with other drivers that might require the same PCI
-> device.
->
->> Also, you're directly describing the use case for an MFD type device.
->> I certainly expect either this driver or Jean's driver to be reworked
->> into an MFD style device in the next cycle.
->
-> I was following the very "popular" iTCO_wdt.c driver model.  I'd hope
-> the current driver could be merged as it follows the current ICHx usage
-> pattern, and then they (and possibly other drivers) could all be
-> reworked at the same time into an MFD style driver.
->
->> >> If one device performs more than one function, then it should
->> >> register all the interfaces from a single probe, or go in the
->> >> direction of MFD devices and register a bunch of child
->> >> platform_devices.
->> >
->> > In this case its not really "one device performing more than one
->> > function", its one device specifying the location of other devices.  The
->> > device being claimed is used for FWH and IRQ configuration and happens
->> > to have a pointer to a GPIO device (among other things).  Claiming it
->> > for a GPIO device seems very wrong - it has very little to do with GPIO
->> > at all.
->>
->> Are you sure?  My reading of the ICH10 manual is that the GPIO
->> controller is very much behind the LPC bridge, and that it is entirely
->> appropriate for the GPIO controller device to be registered by the PCI
->> driver as a child of the PCI device, or to be registered directly by
->> the PCI driver.
->
-> I was a bit overzealous in my comment - you are correct that the GPIO
-> controller is behind the LPC bridge.  However, there is a lot of other
-> stuff in the same device, from the Intel series 5 datasheet : "The LPC
-> bridge function of the PCH resides in PCI Device 31:Function 0. This
-> function contains many other functional units, such as DMA and Interrupt
-> controllers, Timers, Power Management, System Management, GPIO, RTC, and
-> LPC Configuration Registers."
->
-> Thus I still don't think its correct to claim the device as only a GPIO
-> device - its much more, as can be seen by the current drivers which use
-> the same device.  I'm having a tough time seeing how an monopolistic PCI
-> driver is considered better than a platform driver that follows the
-> structure of other drivers in use.
->
->> >
->> >> I'm going to merge Jean's driver and leave this one out for now
->> >> (sorry), but I reserve the right to replace Jean's with your driver in
->> >> the next merge window.  This is pretty much an arbitrary decision, but
->> >> I may as well merge at least one of them now instead of kicking both
->> >> out for another cycle.  It really seams to me like there is still
->> >> a few architectural issues to sort out in both drivers and to make
->> >> sure that one driver will be useful for both of you.
->> >
->> > I disagree with the logic, and its a bit frustrating to have a patch
->> > hanging out for 6 months to be superseded by a more recent change that
->> > seems to be more likely to cause conflicts.
->>
->> Think about it this way; your patch wasn't going to go in this cycle
->> anyway due to the current concerns I have about structure,
->
-> I attempted to follow the driver model of the existing iTCO_wdt.c file,
-> which at a minimum will not negatively affect other drivers unlike the
-> potential of the accepted driver.  Any comments about the platform
-> driver GPIO approach can also be made to the iTCO_wdt.c driver, as well
-> as the sonypi.c driver.
+Hi,
 
-Correct, those drivers are using a bad model and should also be fixed.
+On Fri, Jun 3, 2011 at 10:38 AM, Nick Bowler <nbowler@elliptictech.com> wrote:
+> Renaming the .config file is obviously going to cause a lot of pain, and
+> there seems to be very little gain.
+>
+For the record, it is already possible to rename the config file
+through the KCONFIG_CONFIG environment variable:
 
->  Since cleanup needs to be done anyway on those
-> drivers, my hope would be that the platform GPIO driver would be
-> accepted since it follows the status quo, and then cleanup on them all
-> would occur.
+Documentation/kbuild/kconfig.txt:
 
-Ah, but those drivers are already merged, whereas this new driver is
-not.  It is perfectly reasonable for me to require that new drivers
-follow good practices before getting merged.  I'm not even asking you
-to do something hard.  Instead of registering both the device and the
-driver in the same code, I'm asking you to create a new pci_driver in
-drivers/mfd that registers the a child platform_device for each
-embedded device, including the GPIO controller.  Take a look at
-drivers/mfd/timberdate.c as an example (although much more complicated
-than you need, your version will probably be somewhere around 50-100
-lines of code top to bottom including comments).
+KCONFIG_CONFIG
+--------------------------------------------------
+This environment variable can be used to specify a default kernel config
+file name to override the default name of ".config".
 
-BTW, I also held off on asking Linus to merge Jean's version because
-of the possibility of conflict (Sorry Jean).  After the concern was
-raised, I just didn't feel confident enough to push it on to Linus.
-
-g.
+ - Arnaud
