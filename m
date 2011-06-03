@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab1FCRm0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 13:42:26 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:41607 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab1FCRmY convert rfc822-to-8bit (ORCPT
+	id S1753695Ab1FCRnq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 13:43:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59690 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab1FCRnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 13:42:24 -0400
+	Fri, 3 Jun 2011 13:43:45 -0400
+Date: Fri, 3 Jun 2011 19:43:42 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] OHCI crash when handover fails
+Message-ID: <20110603174342.GC5424@linutronix.de>
+References: <1306454011.7481.529.camel@pasglop>
+ <1306458168.7481.531.camel@pasglop>
+ <20110530162528.GB2386@linutronix.de>
+ <1307001506.29297.61.camel@pasglop>
 MIME-Version: 1.0
-In-Reply-To: <20110603171837.GA9918@opensource.wolfsonmicro.com>
-References: <20110523155343.2e68c265.randy.dunlap@oracle.com>
- <20110524000837.GA30515@opensource.wolfsonmicro.com> <4DDB082F.3010107@oracle.com>
- <20110524014959.GA27710@opensource.wolfsonmicro.com> <4DDB3AFF.9030006@oracle.com>
- <20110524075248.GB19734@sirena.org.uk> <20110527074552.GA907@ponder.secretlab.ca>
- <4DDFE391.2030507@oracle.com> <20110527201201.GA6645@ponder.secretlab.ca>
- <BANLkTin-KSVcG2cQfRM3Ys0_g_uJVruDMw@mail.gmail.com> <20110603171837.GA9918@opensource.wolfsonmicro.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 3 Jun 2011 11:42:04 -0600
-X-Google-Sender-Auth: 4kGGIWKVtvUhwIp-7pwlqsF6FnE
-Message-ID: <BANLkTi=oko_C8_46Y8p5O1Qvw1KEn-1PjA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: add GPIOF_ values regardless on kconfig settings
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, alsa-devel@alsa-project.org,
-        Dmitry Artamonow <mad_soft@inbox.ru>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Harald Welte <laforge@gnufiish.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1307001506.29297.61.camel@pasglop>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 3, 2011 at 11:18 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Fri, Jun 03, 2011 at 11:04:52AM -0600, Grant Likely wrote:
->
->> I ended up not pushing this one to Linus.  Turns out it causes other
->> breakage on other platforms that don't include include/linux/gpio.h.
->> Since I don't have confidence that I'll be able to find all the
->> offenders, I'm dropping it.  I recommend making any drivers that are
->
-> So, this originally came about because I pushed back on adding random
-> dependencies like this for features which are pretty much optional in
-> drivers - their use of GPIOs is totally optional and the dependencies
-> are just too fragile, leading to noise with all the randconfigs.  It
-> seems better to get the architectures to keep up with enhancements to
-> gpiolib (or convert to it) than to have to worry about this in drivers.
+* Benjamin Herrenschmidt | 2011-06-02 17:58:26 [+1000]:
 
-Fair enough.  Randy, if you or someone else can check that all GPIOF_
-users have the required #include <linux/gpio.h>, then I'm okay with
-this patch.
+>The patch does indeed fix the problem for me. I noticed that it's still
+>not upstream tho :-) 
 
-g.
+There is another version of the patch pending. I hope Greg picks it but
+he is in .jp as far as I can see on lwn so it may take a while.
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+>Can you send it to Linus asap ?
+
+The problem should go away for you if you disable CONFIG_USB_DEVICEFS :)
+Nobody in userland should actually use this. udev and friends migrated
+to the /sys interface.
+
+>Cheers,
+>Ben.
+
+Sebastian
