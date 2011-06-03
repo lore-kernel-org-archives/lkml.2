@@ -1,52 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab1FCWQq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 18:16:46 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34618 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab1FCWQo (ORCPT
+	id S1756546Ab1FCWTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 18:19:12 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:55218 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756527Ab1FCWTJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 18:16:44 -0400
+	Fri, 3 Jun 2011 18:19:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=IMPlaV412hypkz5pz7Gol9uPTZoxKLCKWSoZ3PjxJpJE5qAWn4Hu89feKPM0BOCDWk
-         Gd5AE6dtjN6O70h2n8ztCo6ndZN+COzMgleLDqX+Br2N8ken3yLEUSsql+JJvx4gCJ93
-         ohHeVJwRcefIP39kC8c4PcBc61Uio2FuBz420=
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=D7SL5L1+squ4lUFA4BjgjaAkR6pdvOORNJXDTvMgvcOwfefWiXKytUL+blM0d8X6Ul
+         dOxZCm4iafkDxPqEI8JA==
 MIME-Version: 1.0
-In-Reply-To: <1307133252-23259-3-git-send-email-wad@chromium.org>
-References: <1307133252-23259-1-git-send-email-wad@chromium.org>
-	<1307133252-23259-3-git-send-email-wad@chromium.org>
-Date: Fri, 3 Jun 2011 18:16:42 -0400
-X-Google-Sender-Auth: uVtpJkMJfDgbbCBZHIdCO9tAWrs
-Message-ID: <BANLkTink868yzHYHd-FyK9BH6nybdSUCuA@mail.gmail.com>
-Subject: Re: [PATCH v4 03/13] seccomp_filters: new mode with configurable
- syscall filters
-From: Colin Walters <walters@verbum.org>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
-        rostedt@goodmis.org, jmorris@namei.org, paulmck@linux.vnet.ibm.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF0498E1C887@HQMAIL01.nvidia.com>
+References: <1303251276-18768-1-git-send-email-vpalatin@chromium.org>
+ <BANLkTikeTQi6zz+yb4USWwaROFZJW2cfog@mail.gmail.com> <74CDBE0F657A3D45AFBB94109FB122FF0498E1C887@HQMAIL01.nvidia.com>
+From: Vincent Palatin <vpalatin@chromium.org>
+Date: Fri, 3 Jun 2011 18:18:45 -0400
+X-Google-Sender-Auth: IkycFXyIomevBRMIKDe-0s1Fq0M
+Message-ID: <BANLkTin_ypRamBbdmE1unWyovVc-h_nSa5jDkNkfc2S+n4fwdg@mail.gmail.com>
+Subject: Re: [PATCH] i2c: i2c-tegra: fix possible race condition after tx
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Olof Johansson <olofj@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Colin Cross <ccross@android.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 3, 2011 at 4:34 PM, Will Drewry <wad@chromium.org> wrote:
-> (Any thoughts specifically on the mutex use would be greatly appreciated!)
+On Fri, Jun 3, 2011 at 18:01, Stephen Warren <swarren@nvidia.com> wrote:
+>Tested-by: Stephen Warren <swarren@nvidia.com>
 >
-> This change adds a new seccomp mode which specifies the allowed system
-> calls dynamically.
+> (using code based on 3.0-rc1, on Harmony, ran "speaker-test -c 2", and
+> then adjusted the volume a lot using alsamixer, thus causing quite a few
+> I2C transactions)
 
-One thing to consider (not sure if it's been discussed, but I think
-not) is whether some of the LSMs should hook this.
+Thanks for the testing and the review !
 
-Notably, it looks like SELinux doesn't have an access vector for prctl
-at all now; it doesn't hook task_prctl from what I see, and so we fall
-back to cap_task_prctl.  While I know the idea of restricting a
-process' ability to enter seccomp is a bit perverse, we should
-probably at least allow mandatory controls.  James?
+>> > @@ -213,38 +213,41 @@ static int tegra_i2c_empty_rx_fifo(struct tegra_i2c_dev *i2c_dev)
+>> >        u32 val;
+>> >        int rx_fifo_avail;
+>> >        u8 *buf = i2c_dev->msg_buf;
+>> > -       size_t buf_remaining = i2c_dev->msg_buf_remaining;
+>
+> The old code read msg_buf_remaining once up front and did everything
+> based on that.
+>
+>> >        int words_to_transfer;
+>> > +       int bytes_to_transfer;
+>> >
+>> >        val = i2c_readl(i2c_dev, I2C_FIFO_STATUS);
+>> >        rx_fifo_avail = (val & I2C_FIFO_STATUS_RX_MASK) >>
+>> >                I2C_FIFO_STATUS_RX_SHIFT;
+>> >
+>> >        /* Rounds down to not include partial word at the end of buf */
+>> > -       words_to_transfer = buf_remaining / BYTES_PER_FIFO_WORD;
+>> > +       words_to_transfer = atomic_read(&i2c_dev->msg_buf_remaining) /
+>> > +               BYTES_PER_FIFO_WORD;
+>
+> Whereas the new code reads msg_buf_remaining once here...
+>
+>> >        if (words_to_transfer > rx_fifo_avail)
+>> >                words_to_transfer = rx_fifo_avail;
+>> >
+>> > +       atomic_sub(words_to_transfer * BYTES_PER_FIFO_WORD,
+>> > +               &i2c_dev->msg_buf_remaining);
+>> >        i2c_readsl(i2c_dev, buf, I2C_RX_FIFO, words_to_transfer);
+>> >
+>> >        buf += words_to_transfer * BYTES_PER_FIFO_WORD;
+>> > -       buf_remaining -= words_to_transfer * BYTES_PER_FIFO_WORD;
+>> >        rx_fifo_avail -= words_to_transfer;
+>> >
+>> >        /*
+>> >         * If there is a partial word at the end of buf, handle it manually to
+>> >         * prevent overwriting past the end of buf
+>> >         */
+>> > -       if (rx_fifo_avail > 0 && buf_remaining > 0) {
+>> > -               BUG_ON(buf_remaining > 3);
+>> > +       bytes_to_transfer = atomic_read(&i2c_dev->msg_buf_remaining);
+>
+> And again here...
+>
+>> > +       if (rx_fifo_avail > 0 && bytes_to_transfer > 0) {
+>> > +               BUG_ON(bytes_to_transfer > 3);
+>
+> That means that if msg_buf_remaining increases between those two reads,
+> this BUG_ON could trigger.
+>
+> I assume this isn't possible, because the I2C core only sends one
+> transaction to the I2C driver and doesn't send any more requests down
+> until the previous is complete. If so, then the new code seems fine, but
+> I did want to double-check this.
+
+The transfers are serialized in the i2c_transfer function of the core
+(which calls the tegra_i2c_xfer callback) and msg_buf_remaining can
+only increase when it is set at the beginning of tegra_i2c_xfer_msg.
+So yes we have at most one transaction and I don't think we can
+trigger this BUG_ON.
+
+
+-- 
+Vincent
