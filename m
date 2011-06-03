@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab1FCIDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 04:03:45 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:50659 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751770Ab1FCIDm (ORCPT
+	id S1753313Ab1FCIIe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 04:08:34 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24732 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752891Ab1FCIIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 04:03:42 -0400
-Date: Fri, 3 Jun 2011 11:03:35 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        balbi@ti.com, ablay@codeaurora.org,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v14 7/9] usb:gadget: Add SuperSpeed support to the Gadget
- Framework
-Message-ID: <20110603080333.GS2409@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1306847914-19876-1-git-send-email-tlinder@codeaurora.org>
- <1306847914-19876-8-git-send-email-tlinder@codeaurora.org>
+	Fri, 3 Jun 2011 04:08:30 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/7QwJ/zkFiQxRgsv7mubij
+Date: Fri, 3 Jun 2011 11:08:22 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: "Girdwood, Liam" <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH 3/8] MFD: twl4030-audio: Rename platform data
+Message-ID: <20110603080819.GK8696@atomide.com>
+References: <1306927051-8937-1-git-send-email-peter.ujfalusi@ti.com>
+ <201106011617.14854.peter.ujfalusi@ti.com>
+ <20110601133823.GI11352@atomide.com>
+ <201106020915.46491.peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WVXkb2QE2eH0aWe4"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1306847914-19876-8-git-send-email-tlinder@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201106020915.46491.peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Peter Ujfalusi <peter.ujfalusi@ti.com> [110602 09:11]:
+> On Wednesday 01 June 2011 16:38:23 Tony Lindgren wrote:
+> > But you could easily remove all the board specific struct
+> > twl4030_codec_data and struct twl4030_codec_audio_data entries by adding a
+> > default audio init option to omap_pmic_init for the common configuration.
+> 
+> Yeah, I can grep in the board files, and see what is the most common 
+> configuration
+> 
+> > How about something like:
+> > 
+> > void omap_pmic_init(int bus, u32 clkrate, const char *pmic_type, int
+> > pmic_irq, struct twl4030_platform_data *pmic_data, u32 flags);
+> 
+> common-board-devices.c has omap_pmic_init, but without the flags.
+> 
+> > Where flags would be TWL_BOARD_HAS_DEFAULT_CODEC etc, and if the entry in
+> > pmic_data is NULL, just use the default configuration. I think you already
+> > have the clkrate there?
+> 
+> I'll take a look, should we have new file specifically for twl, or should I 
+> extend the common-board-devices.c with the twl related things? IMHO a new file 
+> might be better, since the full twl config might be quite big.
 
---WVXkb2QE2eH0aWe4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yeah if it gets big then a separate file is better. Also, if we have
+a common init function for twl, then it's easy to add the board specific
+device tree initialization to that too and just leave out the calls to
+omap_pmic_init from board-*.c files.
 
-Hi,
+Regards,
 
-On Tue, May 31, 2011 at 04:18:27PM +0300, Tatyana Brokhman wrote:
-> @@ -377,9 +425,10 @@ static int config_desc(struct usb_composite_dev *cde=
-v, unsigned w_value)
->  	u8				type =3D w_value >> 8;
->  	enum usb_device_speed		speed =3D USB_SPEED_UNKNOWN;
-> =20
-> -	if (gadget_is_dualspeed(gadget)) {
-> -		int			hs =3D 0;
-> -
-> +	if (gadget->speed =3D=3D USB_SPEED_SUPER)
-
-if (gadget_is_superspeed(gadget)) ??
-
-> @@ -413,16 +469,22 @@ static int count_configs(struct usb_composite_dev *=
-cdev, unsigned type)
->  	struct usb_configuration	*c;
->  	unsigned			count =3D 0;
->  	int				hs =3D 0;
-> +	int				ss =3D 0;
-> =20
->  	if (gadget_is_dualspeed(gadget)) {
->  		if (gadget->speed =3D=3D USB_SPEED_HIGH)
->  			hs =3D 1;
-> +		if (gadget->speed =3D=3D USB_SPEED_SUPER)
-> +			ss =3D 1;
-
-is this really correct under gadget_is_dualspeed() ?? puzzled.
-
---=20
-balbi
-
---WVXkb2QE2eH0aWe4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN6JVVAAoJEAv8Txj19kN17psH/RrqYP1QMfdAO9wkWMHtTjAH
-aGd+v4zOy8ujP2CxdK6kvZ+Ui9/yYmSYGZNQi3VlFLNthwui9N3MlRq9Uh+G1bv4
-pBDI83uQ97RSRSOUJ/8FrR4RS371GYXATSvsPoRC+iN/3oI5snmS48WIatVwxoHO
-Xt35/KHJo6LsheIyq9uFY9fzLz3OKgm42ja6xrryY486QZ8blGdQraTR8PhuChZK
-yczT33LKNSZqtNlhzqlWCSL3594tUKEg8QuAXeZHfo2TsdRalzE1thTNHudguopN
-Sa+ENG3mfQ5GXx7RUR0zl9LA7JC3aZDWJIr+nf5M4T7+fAsJ8UoLZ9qjEE7bMcs=
-=gCaH
------END PGP SIGNATURE-----
-
---WVXkb2QE2eH0aWe4--
+Tony
