@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294Ab1FDFLz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 01:11:55 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39466 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab1FDFLx convert rfc822-to-8bit (ORCPT
+	id S1752338Ab1FDFyX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 01:54:23 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54141 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604Ab1FDFyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 01:11:53 -0400
+	Sat, 4 Jun 2011 01:54:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nxlSv0S0MovdL9rV3yPZkNWXCjOcxdXqMWYLfdwUCjx3rJ3C+Jn2MUwBrq6GIegalx
-         wzevi9U1hrcyjoQkvvhFx4kFqOWn7OzY8icWTfxf3uhgUMjS7DSONV4GE2P/DIbxstp5
-         rTMRotxsX3RKrPxoqc+9lBFg370K6IDjQPrjs=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-message-flag
+         :x-operating-system:x-editor:x-disclaimer:user-agent;
+        b=q44t1WU66KHiMLavGzi01UKkh2/mV0H1p0U555mxmx1X+23kBGtVSDcuaXImoFH+If
+         4mRsoi+9xarQhYHUdTpBXX+fY+TWsHGWRHAmF+VCVKJK9iiGbPVqmMVbz6W7rRVn6vJy
+         Pj+8tGKdPLMKispd+wuUm0FrXAwIR4OmCbMC8=
+Date: Sat, 4 Jun 2011 14:54:28 +0900
+From: Mattia Dongili <malattia@linux.it>
+To: Greg Dietsche <gregory.dietsche@cuw.edu>
+Cc: mjg@redhat.com, kernel-janitors@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sony-laptop: remove unused local variables
+Message-ID: <20110604055427.GA2901@kamineko.org>
+References: <1307068040-2918-1-git-send-email-Gregory.Dietsche@cuw.edu>
+ <4DE84AE8.60109@cuw.edu>
 MIME-Version: 1.0
-In-Reply-To: <1307163988.31814.11.camel@gandalf.stny.rr.com>
-References: <BANLkTimQ67180HxCx5vgMqumqw1EkFh3qg@mail.gmail.com>
-	<1306852804.11899.19.camel@gandalf.stny.rr.com>
-	<BANLkTikzjVd69XRb6psBm1aYSem126YynA@mail.gmail.com>
-	<1307163988.31814.11.camel@gandalf.stny.rr.com>
-Date: Sat, 4 Jun 2011 13:11:52 +0800
-Message-ID: <BANLkTim+3ZzqBfWNzks96sm89O4o2c2_Yw@mail.gmail.com>
-Subject: Re: [PATCH] sched: remove the next highest_prio in RT scheduling
-From: Hillf Danton <dhillf@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Yong Zhang <yong.zhang0@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DE84AE8.60109@cuw.edu>
+X-Message-Flag: Cranky? Try Free Software instead!
+X-Operating-System: Linux 2.6.39+ x86_64
+X-Editor: Vim http://www.vim.org/
+X-Disclaimer: Buh!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 4, 2011 at 1:06 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Sat, 2011-06-04 at 12:44 +0800, Hillf Danton wrote:
->
->> Both the next and curr reach same result, or incorrect result, before locking
->
-> Not quite. curr could be of higher priority than this rq, but next be of
-> lower priority. In that case, we still want to skip the rq.
->
-> But this patch does simplify things, and I give you credit for that.
-> I'll have to run some tests to see how much in practice this occurs, and
-> see if it is worth removing and using your method instead.
->
-Hi Steve
+On Thu, Jun 02, 2011 at 09:46:00PM -0500, Greg Dietsche wrote:
+> please disregard... i neglected to rebase before sending. this patch
+> no longer applies to the mainline.
 
-Big surprise, you work on Saturday!
+the same patch was also already sent by Guenter Roeck a few days ago:
+http://www.spinics.net/lists/platform-driver-x86/msg02018.html
 
-good weekend
-
-Hillf
->
->> RQ, as the comment says, it is racy. After locking RQ, priority is checked again
->> to pull the correct tasks with no running task included. The difference between
->> the next and curr before locking RQ is the core of the patch that incorrect
->> result could be achieved with no updating the next field.
->>
->> thanks
->>            Hillf
->
->
->
+thanks
+-- 
+mattia
+:wq!
