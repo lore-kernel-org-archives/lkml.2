@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab1FDPm1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 11:42:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46798 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754563Ab1FDPm0 (ORCPT
+	id S1757187Ab1FDP5n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 11:57:43 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:43474 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756995Ab1FDP5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 11:42:26 -0400
+	Sat, 4 Jun 2011 11:57:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=GsPOUsDcAaKl5IuopTsNn4NZydYPm5Mbh+CYDg+YHr3Q0ZnC0YzXS2vgUmbmhhAR9i
-         WTpb9+kgUVepTTv3x0rWDhWIEN8Jd890L92+5HXGXZlAPnW+eh4Pir6Gz4Qt6Y6DcdGP
-         A2ZI17hlFx4Iz1OhBGcJKEzpVistSMMmHtK1Q=
-Date: Sun, 5 Jun 2011 00:42:17 +0900
+        b=b1Gkc9nUg5gak5lBvtn+t1p7oXgZbIh4QqpVjut380UQ1hmV8wuidReSwlP/N7zuCx
+         lHCBoihLwnw32E8wiT5FK/PPeAlIRvPUGWd1tp3R3SQQ6mp9Lt1NZMmH83LcWUoV0yjl
+         PP0M2TD67sHA7aEHbnXBkPg3J1EAjp7ZKLyz8=
+Date: Sun, 5 Jun 2011 00:57:31 +0900
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Greg Thelen <gthelen@google.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
@@ -28,31 +28,27 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
         David Rientjes <rientjes@google.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
         Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v8 05/12] memcg: add kernel calls for memcg dirty page
- stats
-Message-ID: <20110604154217.GA1445@barrios-laptop>
+Subject: Re: [PATCH v8 06/12] memcg: add dirty limits to mem_cgroup
+Message-ID: <20110604155731.GB1445@barrios-laptop>
 References: <1307117538-14317-1-git-send-email-gthelen@google.com>
- <1307117538-14317-6-git-send-email-gthelen@google.com>
+ <1307117538-14317-7-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307117538-14317-6-git-send-email-gthelen@google.com>
+In-Reply-To: <1307117538-14317-7-git-send-email-gthelen@google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 03, 2011 at 09:12:11AM -0700, Greg Thelen wrote:
-> Add calls into memcg dirty page accounting.  Notify memcg when pages
-> transition between clean, file dirty, writeback, and unstable nfs.  This
-> allows the memory controller to maintain an accurate view of the amount
-> of its memory that is dirty.
+On Fri, Jun 03, 2011 at 09:12:12AM -0700, Greg Thelen wrote:
+> Extend mem_cgroup to contain dirty page limits.
 > 
 > Signed-off-by: Greg Thelen <gthelen@google.com>
 > Signed-off-by: Andrea Righi <arighi@develer.com>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Reviewed-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com> 
 
 -- 
 Kind regards
