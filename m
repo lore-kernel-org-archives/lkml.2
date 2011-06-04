@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757071Ab1FDPqI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 11:46:08 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:48505 "EHLO
+	id S1756902Ab1FDPpt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 11:45:49 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:48478 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756527Ab1FDPps (ORCPT
+	by vger.kernel.org with ESMTP id S1754563Ab1FDPpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 11:45:48 -0400
-Date: Sat, 4 Jun 2011 17:36:33 +0200
+	Sat, 4 Jun 2011 11:45:47 -0400
+Date: Sat, 4 Jun 2011 17:36:43 +0200
 From: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
-To: "David S. Miller" <davem@davemloft.net>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Subject: [PATCH 5/8] drivers/char/rtc: use printk_ratelimited instead of
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: [PATCH 6/8] drivers/gpu/drm: use printk_ratelimited instead of
  printk_ratelimit
-Message-ID: <24591311b0f8cad2cc12013274ff8c0c70014beb.1307199715.git.christian.dietrich@informatik.uni-erlangen.de>
+Message-ID: <1a0239725c12da764545a3bd1118a386a0216645.1307199715.git.christian.dietrich@informatik.uni-erlangen.de>
 References: <cover.1307199715.git.christian.dietrich@informatik.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,34 +29,36 @@ include/linux/printk.h), replace it with printk_ratelimited.
 
 Signed-off-by: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
 ---
- drivers/char/rtc.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/drm_ioc32.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/char/rtc.c b/drivers/char/rtc.c
-index dfa8b30..ccd124a 100644
---- a/drivers/char/rtc.c
-+++ b/drivers/char/rtc.c
-@@ -80,6 +80,7 @@
- #include <linux/bcd.h>
- #include <linux/delay.h>
- #include <linux/uaccess.h>
+diff --git a/drivers/gpu/drm/drm_ioc32.c b/drivers/gpu/drm/drm_ioc32.c
+index d61d185..4a058c7 100644
+--- a/drivers/gpu/drm/drm_ioc32.c
++++ b/drivers/gpu/drm/drm_ioc32.c
+@@ -28,6 +28,7 @@
+  * IN THE SOFTWARE.
+  */
+ #include <linux/compat.h>
 +#include <linux/ratelimit.h>
  
- #include <asm/current.h>
- #include <asm/system.h>
-@@ -1195,10 +1196,8 @@ static void rtc_dropped_irq(unsigned long data)
+ #include "drmP.h"
+ #include "drm_core.h"
+@@ -253,10 +254,10 @@ static int compat_drm_addmap(struct file *file, unsigned int cmd,
+ 		return -EFAULT;
  
- 	spin_unlock_irq(&rtc_lock);
+ 	m32.handle = (unsigned long)handle;
+-	if (m32.handle != (unsigned long)handle && printk_ratelimit())
+-		printk(KERN_ERR "compat_drm_addmap truncated handle"
+-		       " %p for type %d offset %x\n",
+-		       handle, m32.type, m32.offset);
++	if (m32.handle != (unsigned long)handle)
++		printk_ratelimited(KERN_ERR "compat_drm_addmap truncated handle"
++				   " %p for type %d offset %x\n",
++				   handle, m32.type, m32.offset);
  
--	if (printk_ratelimit()) {
--		printk(KERN_WARNING "rtc: lost some interrupts at %ldHz.\n",
--			freq);
--	}
-+	printk_ratelimited(KERN_WARNING "rtc: lost some interrupts at %ldHz.\n",
-+			   freq);
- 
- 	/* Now we have new data */
- 	wake_up_interruptible(&rtc_wait);
+ 	if (copy_to_user(argp, &m32, sizeof(m32)))
+ 		return -EFAULT;
 -- 
 1.7.1
 
