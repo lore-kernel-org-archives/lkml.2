@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab1FDCWu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 22:22:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65440 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763Ab1FDCWs (ORCPT
+	id S1756042Ab1FDCll (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 22:41:41 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:51245 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828Ab1FDClk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 22:22:48 -0400
+	Fri, 3 Jun 2011 22:41:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:content-transfer-encoding
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
          :user-agent;
-        b=K8kBaw1WpHlhfblq6dCsohNgRxirflxh9A2A8BfOYoCxjfCE44VoVK8ncscV3K1pet
-         ww7m0MdZyYuEFXUw4r2cioax7ZIsV2FrsHOaaN+jDJg3Vs1CMmjqgMupfhgJKxzkCg/C
-         BNwTBeKVhRNFStwxOCzs0HUe+LIH2NgPYuBi8=
-Date: Sat, 4 Jun 2011 10:22:21 +0800
+        b=uAoVCr8jshSwcbNpUUvBhrkw4LxApYF+8mzvmbGN8qG96dA2e8lALYPu6xWmlS7UP2
+         F/lQk8RqLzUkMQYEshxX1vrxOsHlduP5P+sVltPHcX2B8THuzsjZF9GIohzrFWsCUS6M
+         1omBcxEe+ZeHWfW0pUYCCMOP1BijU3rSDOIto=
+Date: Sat, 4 Jun 2011 10:41:19 +0800
 From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: ravi@jetztechnologies.com, arvino55@gmail.com,
-        bluesmoke-devel@lists.sourceforge.net, greg@kroah.com,
-        akpm@linux-foundation.org
-Subject: [PATCH]Remove a warning for drivers/edac/i82975x_edac.c
-Message-ID: <20110604022151.GA2475@gmail.com>
-Mail-Followup-To: linux-kernel@vger.kernel.org, ravi@jetztechnologies.com,
-	arvino55@gmail.com, bluesmoke-devel@lists.sourceforge.net,
-	greg@kroah.com, akpm@linux-foundation.org
+To: Keith Packard <keithp@keithp.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]remove warning for
+ drivers/gpu/drm/i915/intel_ringbuffer.c
+Message-ID: <20110604024117.GA2589@gmail.com>
+Mail-Followup-To: Keith Packard <keithp@keithp.com>,
+	linux-kernel@vger.kernel.org
+References: <20110603130502.GA5740@gmail.com>
+ <yunei3arf48.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=unknown-8bit
+Content-Type: text/plain; charset=gb2312
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <yunei3arf48.fsf@aiko.keithp.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Harry Wei <harryxiyou@gmail.com>
+On Fri, Jun 03, 2011 at 10:36:55AM -0700, Keith Packard wrote:
+> On Fri, 3 Jun 2011 21:09:39 +0800, Harry Wei <jiaweiwei.xiyou@gmail.com> wrote:
+> 
+> > From: Harry Wei <harryxiyou@gmail.com>
+> > When i compile kernel, it shows me two warnings
+> > like below, so this patch can fix them.
+> 
+> This fix is already upstream; it wasn't included in the stable patch
+> as it wasn't 'necessary' to fix the bug which is causing the warning
+> (which ended up removing the last use of this function).
+Hmmm..., i see.
 
-When i compile 2.6.39.1, a warning shows like below.
-This patch can fix the warning. And i works well with
-my PC.
-
-[...]
-CC [M]  drivers/edac/e752x_edac.o
-CC [M]  drivers/edac/i82875p_edac.o
-CC [M]  drivers/edac/i82975x_edac.o
-drivers/edac/i82975x_edac.c: In function ���i82975x_process_error_info���:
-drivers/edac/i82975x_edac.c:298: warning: integer constant is too large for ���unsigned long��� type
-CC [M]  drivers/edac/i3000_edac.o
-CC [M]  drivers/edac/i3200_edac.o
-CC [M]  drivers/edac/x38_edac.o
-CC [M]  drivers/edac/i82860_edac.o
-[...]
-
-Signed-off-by: Harry Wei <harryxiyou@gmail.com>
-
-Index: prj/drivers/edac/i82975x_edac.c
-===================================================================
---- prj.orig/drivers/edac/i82975x_edac.c	2011-06-04 10:09:55.351174516 +0800
-+++ prj/drivers/edac/i82975x_edac.c	2011-06-04 10:10:30.875168437 +0800
-@@ -293,9 +293,9 @@
- 		info->errsts = info->errsts2;
- 	}
- 
--	page = (unsigned long) info->eap;
-+	page = (unsigned long long) info->eap;
- 	if (info->xeap & 1)
--		page |= 0x100000000ul;
-+		page |= 0x100000000ull;
- 	chan = page & 1;
- 	page >>= 1;
- 	offst = page & ((1 << PAGE_SHIFT) - 1);
+Thanks
+Harry Wei
