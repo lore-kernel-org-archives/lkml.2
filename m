@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab1FDBk2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 21:40:28 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:36841 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751876Ab1FDBk1 (ORCPT
+	id S1754587Ab1FDBld (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 21:41:33 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39029 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754012Ab1FDBlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 21:40:27 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlAEAAKM6U15LCoegWdsb2JhbABTpkYVAQEWJiXLAQ6GEwSgPw
-Date: Sat, 4 Jun 2011 11:40:13 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 06/12] inode: Make unused inode LRU per superblock
-Message-ID: <20110604014013.GC561@dastard>
-References: <1306998067-27659-1-git-send-email-david@fromorbit.com>
- <1306998067-27659-7-git-send-email-david@fromorbit.com>
- <20110604002552.GU11521@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110604002552.GU11521@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 3 Jun 2011 21:41:31 -0400
+Subject: [GIT PULL] SCSI fixes for 3.0-rc1
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 04 Jun 2011 10:41:28 +0900
+Message-ID: <1307151688.2771.26.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 04, 2011 at 01:25:52AM +0100, Al Viro wrote:
-> On Thu, Jun 02, 2011 at 05:01:01PM +1000, Dave Chinner wrote:
-> > From: Dave Chinner <dchinner@redhat.com>
-> > 
-> > The inode unused list is currently a global LRU. This does not match
-> > the other global filesystem cache - the dentry cache - which uses
-> > per-superblock LRU lists. Hence we have related filesystem object
-> > types using different LRU reclaimation schemes.
-> > 
-> > To enable a per-superblock filesystem cache shrinker, both of these
-> > caches need to have per-sb unused object LRU lists. Hence this patch
-> > converts the global inode LRU to per-sb LRUs.
-> > 
-> > The patch only does rudimentary per-sb propotioning in the shrinker
-> > infrastructure, as this gets removed when the per-sb shrinker
-> > callouts are introduced later on.
-> 
-> What protects s_nr_inodes_unused?
+This is a single fix for the queue refcounting oops we were debugging
+just before 3.0-rc1 was released.  Jens is still working on the DEAD
+queue guard bit.
 
-For this patch, the modifications are protected by the
-inode_lru_lock, but the reads are unprotected. That's the same
-protection as the inode_stat.nr_unused field, and the same as the
-existing dentry cache per-sb LRU accounting.  In the next patch
-modifcations are moved under the sb->s_inode_lru_lock, but reads
-still remain unprotected.
+The patch is available here:
 
-I can see how the multiple reads in shrink_icache_sb() could each
-return a different value during the proportioning, but I don't think
-that is a big problem. That proportioning code goes away in the next
-patch and is replaced by different code in prune_super(), so if you
-want the reads protected by locks or a single snapshot used for the
-proportioning calculations I'll do it in the new code in
-prune_super().
+master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6.git
 
-Cheers,
+The short changelog is:
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+James Bottomley (1):
+      Fix oops caused by queue refcounting failure
+
+The diffstat is:
+
+ drivers/scsi/scsi_scan.c  |    2 +-
+ drivers/scsi/scsi_sysfs.c |    1 +
+ 2 files changed, 2 insertions(+), 1 deletions(-)
+
+And the full patch is below.
+
+James
+
+---
+
+diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+index 58584dc..44e8ca3 100644
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -297,7 +297,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
+ 		kfree(sdev);
+ 		goto out;
+ 	}
+-
++	blk_get_queue(sdev->request_queue);
+ 	sdev->request_queue->queuedata = sdev;
+ 	scsi_adjust_queue_depth(sdev, 0, sdev->host->cmd_per_lun);
+ 
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index e639125..e0bd3f7 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -322,6 +322,7 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
+ 		kfree(evt);
+ 	}
+ 
++	blk_put_queue(sdev->request_queue);
+ 	/* NULL queue means the device can't be used */
+ 	sdev->request_queue = NULL;
+ 
+
+
