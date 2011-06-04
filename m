@@ -1,137 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab1FDGpj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 02:45:39 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51384 "EHLO
+	id S1753846Ab1FDG7F (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 02:59:05 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64470 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752185Ab1FDGpi (ORCPT
+	with ESMTP id S1753694Ab1FDG7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 02:45:38 -0400
-Date: Sat, 4 Jun 2011 00:45:35 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: David Brown <davidb@codeaurora.org>
-Cc: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v2 7/7] gpio_msm: Move Qualcomm MSM v2 gpio driver into
- drivers
-Message-ID: <20110604064535.GB15846@ponder.secretlab.ca>
-References: <1305755453-31112-1-git-send-email-davidb@codeaurora.org>
- <1307141059-22431-1-git-send-email-davidb@codeaurora.org>
- <1307141059-22431-8-git-send-email-davidb@codeaurora.org>
+	Sat, 4 Jun 2011 02:59:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hcGwYls444ME2kVr6azPURfFSaXlU3AH1MdtOKxYIIOC67KX8aW55C5bV4fQZbdmVs
+         PPnr7taw30z2kDsJQSCQCWa8cmFayCDmpFah6CnUlUHOFh0pjYzgcDaqTu6ScDC4WW+g
+         Ja0huo2Zu+ifoctmAnkfg5yPCvPfGutv2O+Lk=
+Date: Sat, 4 Jun 2011 15:58:53 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, akpm@linux-foundation.org,
+        Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110604065853.GA4114@barrios-laptop>
+References: <20110601175809.GB7306@suse.de>
+ <20110601191529.GY19505@random.random>
+ <20110601214018.GC7306@suse.de>
+ <20110601233036.GZ19505@random.random>
+ <20110602010352.GD7306@suse.de>
+ <20110602132954.GC19505@random.random>
+ <20110602145019.GG7306@suse.de>
+ <20110602153754.GF19505@random.random>
+ <20110603020920.GA26753@suse.de>
+ <20110603144941.GI7306@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307141059-22431-8-git-send-email-davidb@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110603144941.GI7306@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 03, 2011 at 03:44:19PM -0700, David Brown wrote:
-> Migrate the driver for the v7-based MSM chips into drivers/gpio.  The
-> driver is unchanged, only moved.
+On Fri, Jun 03, 2011 at 03:49:41PM +0100, Mel Gorman wrote:
+> On Fri, Jun 03, 2011 at 03:09:20AM +0100, Mel Gorman wrote:
+> > On Thu, Jun 02, 2011 at 05:37:54PM +0200, Andrea Arcangeli wrote:
+> > > > There is an explanation in here somewhere because as I write this,
+> > > > the test machine has survived 14 hours under continual stress without
+> > > > the isolated counters going negative with over 128 million pages
+> > > > successfully migrated and a million pages failed to migrate due to
+> > > > direct compaction being called 80,000 times. It's possible it's a
+> > > > co-incidence but it's some co-incidence!
+> > > 
+> > > No idea...
+> > 
+> > I wasn't able to work on this most of the day but was looking at this
+> > closer this evening again and I think I might have thought of another
+> > theory that could cause this problem.
+> > 
+> > When THP is isolating pages, it accounts for the pages isolated against
+> > the zone of course. If it backs out, it finds the pages from the PTEs.
+> > On !SMP but PREEMPT, we may not have adequate protection against a new
+> > page from a different zone being inserted into the PTE causing us to
+> > decrement against the wrong zone. While the global counter is fine,
+> > the per-zone counters look corrupted. You'd still think it was the
+> > anon counter tht got screwed rather than the file one if it really was
+> > THP unfortunately so it's not the full picture. I'm going to start
+> > a test monitoring both zoneinfo and vmstat to see if vmstat looks
+> > fine while the per-zone counters that are negative are offset by a
+> > positive count on the other zones that when added together become 0.
+> > Hopefully it'll actually trigger overnight :/
+> > 
 > 
-> Signed-off-by: David Brown <davidb@codeaurora.org>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-
-Similar to patch 6, some comments below.
-
-> ---
->  arch/arm/mach-msm/Kconfig                          |    1 +
->  arch/arm/mach-msm/Makefile                         |    6 ------
->  drivers/gpio/Kconfig                               |    8 ++++++++
->  drivers/gpio/Makefile                              |    1 +
->  .../mach-msm/gpio-v2.c => drivers/gpio/msm_v2.c    |    2 +-
-
-drivers/gpio/gpio-msm-v2.c
-
->  5 files changed, 11 insertions(+), 7 deletions(-)
->  rename arch/arm/mach-msm/gpio-v2.c => drivers/gpio/msm_v2.c (99%)
+> Right idea of the wrong zone being accounted for but wrong place. I
+> think the following patch should fix the problem;
 > 
-> diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-> index cc7c0b2..f5cce3f 100644
-> --- a/arch/arm/mach-msm/Kconfig
-> +++ b/arch/arm/mach-msm/Kconfig
-> @@ -47,6 +47,7 @@ config ARCH_MSM8X60
->  	select ARM_GIC
->  	select CPU_V7
->  	select MSM_V2_TLMM
-> +	select GPIO_MSM_V2
->  	select MSM_GPIOMUX
->  	select MSM_SCM if SMP
->  
-> diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-> index c0709af..7a227d1 100644
-> --- a/arch/arm/mach-msm/Makefile
-> +++ b/arch/arm/mach-msm/Makefile
-> @@ -29,9 +29,3 @@ obj-$(CONFIG_ARCH_MSM8960) += board-msm8960.o devices-msm8960.o
->  obj-$(CONFIG_ARCH_MSM7X30) += gpiomux-v1.o gpiomux.o
->  obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o gpiomux-v1.o gpiomux.o
->  obj-$(CONFIG_ARCH_MSM8X60) += gpiomux-8x60.o gpiomux-v2.o gpiomux.o
-> -ifdef CONFIG_MSM_V2_TLMM
-> -ifndef CONFIG_ARCH_MSM8960
-> -# TODO: TLMM Mapping issues need to be resolved
-> -obj-y	+= gpio-v2.o
-> -endif
-> -endif
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index c19ecd6a..e415661 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -172,6 +172,14 @@ config GPIO_MSM_V1
->  	  Qualcomm MSM chips.  Most of the pins on the MSM can be
->  	  selected for GPIO, and are controlled by this driver.
->  
-> +config GPIO_MSM_V2
-> +	tristate "Qualcomm MSM GPIO v2"
-> +	depends on GPIOLIB && ARCH_MSM
-> +	help
-> +	  Say yes here to support the GPIO interface on ARM v7 based
-> +	  Qualcomm MSM chips.  Most of the pins on the MSM can be
-> +	  selected for GPIO, and are controlled by this driver.
-> +
-
-Keep list sorted.
-
->  comment "I2C GPIO expanders:"
->  
->  config GPIO_MAX7300
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index 2a7c24c..d85cb9e 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -46,6 +46,7 @@ obj-$(CONFIG_GPIO_JANZ_TTL)	+= janz-ttl.o
->  obj-$(CONFIG_GPIO_SX150X)	+= sx150x.o
->  obj-$(CONFIG_GPIO_VX855)	+= vx855_gpio.o
->  obj-$(CONFIG_GPIO_MSM_V1)	+= msm_v1.o
-> +obj-$(CONFIG_GPIO_MSM_V2)	+= msm_v2.o
-
-ditto
-
->  obj-$(CONFIG_GPIO_ML_IOH)	+= ml_ioh_gpio.o
->  obj-$(CONFIG_AB8500_GPIO)       += ab8500-gpio.o
->  obj-$(CONFIG_GPIO_TPS65910)	+= tps65910-gpio.o
-> diff --git a/arch/arm/mach-msm/gpio-v2.c b/drivers/gpio/msm_v2.c
-> similarity index 99%
-> rename from arch/arm/mach-msm/gpio-v2.c
-> rename to drivers/gpio/msm_v2.c
-> index cc9c4fd..822a449 100644
-> --- a/arch/arm/mach-msm/gpio-v2.c
-> +++ b/drivers/gpio/msm_v2.c
-> @@ -30,8 +30,8 @@
->  
->  #include <asm/mach/irq.h>
->  
-> +#include <mach/msm_gpiomux.h>
->  #include <mach/msm_iomap.h>
-> -#include "gpiomux.h"
->  
->  /* Bits of interest in the GPIO_IN_OUT register.
->   */
-> -- 
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> ==== CUT HERE ===
+> mm: compaction: Ensure that the compaction free scanner does not move to the next zone
 > 
+> Compaction works with two scanners, a migration and a free
+> scanner. When the scanners crossover, migration within the zone is
+> complete. The location of the scanner is recorded on each cycle to
+> avoid excesive scanning.
+> 
+> When a zone is small and mostly reserved, it's very easy for the
+> migration scanner to be close to the end of the zone. Then the following
+> situation can occurs
+> 
+>   o migration scanner isolates some pages near the end of the zone
+>   o free scanner starts at the end of the zone but finds that the
+>     migration scanner is already there
+>   o free scanner gets reinitialised for the next cycle as
+>     cc->migrate_pfn + pageblock_nr_pages
+>     moving the free scanner into the next zone
+>   o migration scanner moves into the next zone but continues accounting
+>     against the old zone
+> 
+> When this happens, NR_ISOLATED accounting goes haywire because some
+> of the accounting happens against the wrong zone. One zones counter
+> remains positive while the other goes negative even though the overall
+> global count is accurate. This was reported on X86-32 with !SMP because
+> !SMP allows the negative counters to be visible. The fact that it is
+> difficult to reproduce on X86-64 is probably just a co-incidence as
+
+I guess it's related to zone sizes.
+X86-64 has small DMA and large DMA32 zones for fallback of NORMAL while
+x86 has just a small DMA(16M) zone.
+
+I think DMA zone in x86 is easily full of non-LRU or non-movable pages.
+So isolate_migratepagse continues to scan for finding pages which are migratable
+and then it reaches near end of zone.
+
+
+> the bug should theoritically be possible there.
+> Finally, you found it. Congratulations on!
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+
+When we are debugging this problem, we found a few of bugs and enhance points
+and submitted patches. It was a very good chance to fix Linux VM.
+
+Thanks, Mel.
+
+-- 
+Kind regards
+Minchan Kim
