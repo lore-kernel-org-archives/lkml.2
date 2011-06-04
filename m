@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab1FDNEX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 09:04:23 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:54313 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770Ab1FDNEW (ORCPT
+	id S1756777Ab1FDNcq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 09:32:46 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54316 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756317Ab1FDNcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 09:04:22 -0400
-Date: Sat, 4 Jun 2011 09:04:14 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2011-06-03
-Message-ID: <20110604130413.GA3929@tuxdriver.com>
-References: <20110603195254.GF2509@tuxdriver.com>
- <BANLkTimoeVDQK+zu=U+nSM_kj0a3-hh_Jg@mail.gmail.com>
+	Sat, 4 Jun 2011 09:32:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=CMCtojqaoFrHJYOpDmDqwQMhJTfHlKzaZhjzZvErG9Fh/lvrLLDnwwfloqprTq2bKW
+         x9wMf2HY2iNsVwysZ3vu1t6Rb1ClNEGbQ2o1nrAsIqeEWTMtnsqoiCFi4TGbnpayMyD3
+         E60oCPOWteGpduLCN67eKlquQuBDWF0YUszBc=
+Message-ID: <4DEA33FA.3070603@lwfinger.net>
+Date: Sat, 04 Jun 2011 08:32:42 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimoeVDQK+zu=U+nSM_kj0a3-hh_Jg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Amit Shah <amit.shah@redhat.com>, Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: Regression for 3.0-rc1 - bisected to commit ea6949b66d084a197dd7f243b72e216a71d9f2ca
+References: <4DE97E12.1030900@lwfinger.net> <BANLkTincFSm7N7K2uf9npxKFzTfLp_FttQ@mail.gmail.com>
+In-Reply-To: <BANLkTincFSm7N7K2uf9npxKFzTfLp_FttQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 03, 2011 at 11:24:49PM +0200, Rafał Miłecki wrote:
-> On Jun 3, 2011 10:03 PM, "John W. Linville" <linville@tuxdriver.com> wrote:
-> >
-> > Dave,
-> >
-> > Here is a batch of fixes intended for 3.0 -- I guess I'll need to
-> > rename my tree eventually... :-)
-> >
-> > Included are a libertas fix to ensure proper sequence number assignment
-> > on transmitted frames, an ath9k fix that propogates an earlier fix to a
-> > few more places,  a fix for a cfg80211 regression caused by some mesh
-> > code changes, a locking fix for the bluetooth l2cap code, a zd1211rw
-> > regression fix, a collection of small fixes for wl12xx, an iwl4965
-> > fix for a bad temperature check, an a device ID-related fix for iwlagn.
-> >
-> > Please let me know if there are problems!
-> 
-> John, you didn't.take my fix for regression in ssb. I really want this for
-> 3.0.quickly, as few ppl already had problems with machine locking on boot.
+On 06/04/2011 05:11 AM, Linus Torvalds wrote:
+> On Sat, Jun 4, 2011 at 9:36 AM, Larry Finger<Larry.Finger@lwfinger.net>  wrote:
+>> With kernel 3.0-rc1 and an openSUSE 11.4 distro, my HP dv2815nr notebook
+>> fails to boot. Bisection leads to the following:
+>>
+>> finger@larrylap:~/linux-2.6>  git bisect bad
+>> ea6949b66d084a197dd7f243b72e216a71d9f2ca is the first bad commit
+>> commit ea6949b66d084a197dd7f243b72e216a71d9f2ca
+>> Author: Tejun Heo<tj@kernel.org>
+>> Date:   Thu Apr 21 20:54:44 2011 +0200
+>>
+>>     cdrom: always check_disk_change() on open
+>
+> This sounds like the infinite disk change bug that was mistakenly
+> re-introduced in -rc1 by a bad merge.
+>
+> It should be fixed by commit 0f48f2600911 ("block: fix mismerge of the
+> DISK_EVENT_MEDIA_CHANGE removal"), so current -git should hopefully be
+> good.
+>
+> Pls verify,
 
-Yours isn't the only fix, and I had quite a few queued already.  Patience.
+Linus,
 
--- 
-John W. Linville                Someday the world will need a hero, and you
-linville@tuxdriver.com                  might be all we have.  Be ready.
+Thanks for the quick reply. The current -git (v3.0-rc1-134-ga652b99) does indeed 
+boot.
+
+Larry
