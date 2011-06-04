@@ -1,65 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab1FDLVn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 07:21:43 -0400
-Received: from fep33.mx.upcmail.net ([62.179.121.51]:41525 "EHLO
-	fep33.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724Ab1FDLVm (ORCPT
+	id S1754931Ab1FDXvK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 19:51:10 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:41326 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752946Ab1FDXvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 07:21:42 -0400
-X-Greylist: delayed 1055 seconds by postgrey-1.27 at vger.kernel.org; Sat, 04 Jun 2011 07:21:42 EDT
-X-SourceIP: 14.99.53.74
-Reply-To: <claimsdepartment1055@live.com>
-From: "Award Team" <iml.koopmans@tiscali.nl>
-Subject: Dear: e-Mail Winner
-Date: Sat, 4 Jun 2011 16:33:58 -0700
+	Sat, 4 Jun 2011 19:51:05 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvQDAO3C6k15LCoegWdsb2JhbABTpkUVAQEWJiWIage9OA6GEwSYSId9
+Date: Sun, 5 Jun 2011 09:50:58 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>,
+        Mimi Zohar <zohar@us.ibm.com>,
+        Sunil Mushran <sunil.mushran@oracle.com>,
+        Tiger Yang <tiger.yang@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: Re: [PATCH v6 08/20] evm: evm_inode_post_init
+Message-ID: <20110604235058.GN32466@dastard>
+References: <1307017423-15093-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <1307017423-15093-9-git-send-email-zohar@linux.vnet.ibm.com>
+ <20110603022100.GA561@dastard>
+ <1307077592.3124.65.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_00B8_01C2A9A6.3F13B0A2"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20110604110405.XVYR1513.viefep18-int.chello.at@edge02.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=tMVj8KYobzzX0EiRnC7vY2isLrCxFvdg4RrHWPZXwJ0= c=1 sm=0 a=tovJcQRvjacA:10 a=SIapg4jNq7wA:10 a=8EU9Q7FnrCoA:10 a=-quOTl_l0wQA:10 a=Zk3OmFfbAAAA:8 a=lSmQRChqyr3wkU2KSCkA:9 a=mBcwhUG7iqEA:10 a=x46t9oslO7cA:10 a=e3FQH6xdWJl4dfwG:21 a=HFSLGII3e1La6vhr:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307077592.3124.65.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On Fri, Jun 03, 2011 at 01:06:32AM -0400, Mimi Zohar wrote:
+> On Fri, 2011-06-03 at 12:21 +1000, Dave Chinner wrote:
+> > On Thu, Jun 02, 2011 at 08:23:31AM -0400, Mimi Zohar wrote:
+> > > Initialize 'security.evm' for new files. Reduce number of arguments
+> > > by defining 'struct xattr'.
+> > 
+> > why does this need a new security callout from every filesystem?
+> > Once the security xattr is initialised, the name, len and value is
+> > not going to change so surely the evm xattr can be initialised at
+> > the same time the lsm xattr is initialised.
+> 
+> Steve Whitehouse asked a similar question, suggesting that
+> security_inode_init_security() return a vector of xattrs to minimize the
+> number of xattr writes.  Casey pointed out the "stacking" of LSMs will
+> result in multiple calls to security_inode_init_security(), once for
+> each LSM. The conclusion (http://lkml.org/lkml/2011/5/19/125) was:
+> 
+> Moving evm_inode_init_security() into security_inode_init_security()
+> only works for the single LSM and EVM case, but not for the multiple
+> LSMs and EVM case, as the 'stacker' would call each LSM's
+> security_inode_iint_security().  Having the 'stacker' return an array of
+> xattrs would make sense and, at the same time, resolve the EVM issue. In
+> evm_inode_post_init_security(), EVM could then walk the list of xattrs.
 
-------=_NextPart_000_00B8_01C2A9A6.3F13B0A2
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+But that does not change the fact that ther eis a _single external
+call_ from the filesystem to security_inode_init_security(), and the
+attribute (array) that it returns is only read by
+evm_inode_post_init_security() to calculate a new attribute.
+
+If evm_inode_post_init_security() only needs to read the security
+attributes, then why does it need to be calculated _after_ the
+security attributes are written to the filesystem inode?
+
+i.e, your current code is:
+
+	security_inode_init_security(&lsm_xattr)
+	set_xattr(&lsm_xattr)
+	evm_inode_post_init_security(&lsm_xattr, &evm_xattr)
+	set_xattr(&evm_xattr)
+
+and I'm asking why you can't do it like this:
 
 
-------=_NextPart_000_00B8_01C2A9A6.3F13B0A2
-Content-Type: application/octet-stream;
-	name="New Text Document.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="New Text Document.txt"
+	security_inode_init_security(&lsm_xattr, &evm_xattr)
+	set_xattr(&lsm_xattr)
+	set_xattr(&evm_xattr)
 
-RGVhcjogZS1NYWlsIFdpbm5lciwNCg0KWW91IGhhdmUgYmVlbiBzZWxlY3Rl
-ZCBpbiB0aGUgb24tZ29pbmcgTWljcm9zb2Z0IGF3YXJkIGhlbGQgdGhpcyBK
-dW5lDQoyMDExLldlIHRoZSBQcm9tbyBCb2FyZCBhcmUgcGxlYXNlZCB0byBp
-bmZvcm0geW91IHRoYXQgeW91IGFsb25nc2lkZSBmb3VyKDQpIA0Kb3RoZXJs
-dWNreSB3aW5uZXJzIGhhdmUgYmVlbiBhcHByb3ZlZCBmb3IgYSBwYXltZW50
-IG9mIDEsMDAwIDAwMEdCUCAoT25lIE1pbGxpb24gUG91bmRzIFN0ZXJsaW5n
-KS5JZiB5b3UgZGlkIHJlY2VpdmUgdGhpcyBlbWFpbCwgaXQgbWVhbnMgeW91
-IGFyZSBvbmUgb2YgDQp0aGUgZml2ZSg1KWx1Y2t5IHdpbm5lcnMuIFlvdXIg
-dmVyaWZpY2F0aW9uIG51bWJlciBpczogODg3LTEzLTg2NS0zNy0xMC04Mygy
-MCkuDQoNCipDTEFJTVMgUFJPQ0VTU0lORyBPRkZJQ0VSOg0KKk5hbWU6TXIg
-Q2FybCBSb2JiaW5zb24NCipFbWFpbDpjbGFpbXNkZXBhcnRtZW50MTA1NUBs
-aXZlLmNvbQ0KDQpZb3UgYXJlIGFsc28gYWR2aXNlZCB0byBwcm92aWRlIGhp
-bSB3aXRoIHRoZSB1bmRlciBsaXN0ZWQgaW5mb3JtYXRpb24NCmFzIHNvb24g
-YXMgcG9zc2libGU6DQoNCipOQU1FIElOIEZVTEw6DQoqREVMSVZFUlkgQURE
-UkVTUzoNCipTRVg6DQoqQUdFOg0KKkNPVU5UUlk6DQoqTkFUSU9OQUxJVFk6
-DQoqT0NDVVBBVElPTjoNCipQSE9ORToNCg0KV2UgYXJlIGdsYWQgdG8gaGF2
-ZSB5b3UgYXMgb25lIG9mIG91ciBsdWNrbHkgd2lubmVycy4NCllvdXJzIFNp
-bmNlcmVseSwNCk1ycy4gUm9zZSBXb29kLg0KT25saW5lIENvLW9yZGluYXRv
-ci4=
+where security_inode_init_security() calls:
 
-------=_NextPart_000_00B8_01C2A9A6.3F13B0A2--
+	evm_inode_post_init_security(&lsm_xattr, &evm_xattr)
+
+before returning to calculate the evm xattr?
+
+Indeed, if we are stacking LSMs, the iteration must occur internally
+to security_inode_init_security(), and so that would mean the entire
+stacking/multiple attr thing could be handled simply by passing an
+array and having the EVM xattr always be the last in the array.
+i.e.:
+
+XXXfs_init_security()
+{
+	xattr_count = security_inode_init_security(&xattr_array)
+
+	for (i = 0; i < xattr_count; i++)
+		set_xattr(&xattr_array[i])
+
+	security_free_xattr(&xattr_array);
+}
+
+And then the filesystems need to know _nothing at all_ about the
+internals of the security subsystem or how it uses xattrs or even
+whether EVM is enabled or active or neither. This is far cleaner
+than spewing security-flavour-of-the-month junk widely across the
+tree...
+
+This also makes it possible for the filesystems to atomically set or
+fail to set all the security attributes in one
+operation/transaction, which will help guarantee the integrity of
+the system in the face of externally induced failures.
+
+> > Then all you need to do in each filesystem is add the evm_xattr
+> > structure to the existing security init call and a:
+> > 
+> > #ifdef CONFIG_EVM
+> > 	/* set evm.xattr */
+> > #endif
+> > 
+> > to avoid adding code that is never executed when EVM is not
+> > configured into the kernel.
+> > 
+> > That way you don't create the lsm_xattr at all if the evm_xattr is
+> > not created, and then the file creation should fail in an atomic
+> > manner, right?  i.e. you don't leave files with unverified security
+> > attributes around when interesting failure corner cases occur (e.g.
+> > ENOSPC).
+> 
+> That would imply EVM must be enabled for all LSMs that define a security
+> xattr.  That's definitely a good goal, but probably not a good idea for
+> right now.
+> 
+> > And while you are there, it's probably also be a good idea to add
+> > support for all filesystems that support xattrs, not just a random
+> > subset of them...
+> > 
+> > Cheers,
+> > 
+> > Dave.
+> 
+> The EVM xattr is initialized based on the LSM xattr.  At this point, as
+> far as I'm aware, the only remaining filesystems that call
+> security_inode_init_security() to initialize the LSM xattr, are ocfs2
+> and reiserfs.  Both of which might have memory leaks.  Tiger Yang is
+> addressing the memory leak for ocfs2.
+
+I don't follow you - I didn't see any patches that remove
+security_inode_init_security() from any of the filesystems, so they
+all still call that function....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
