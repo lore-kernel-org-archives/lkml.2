@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab1FDM3x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 08:29:53 -0400
-Received: from ccserver2.unican.es ([130.206.5.101]:41947 "EHLO
-	ccserver2.unican.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756351Ab1FDM3w (ORCPT
+	id S1756661Ab1FDMfa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 08:35:30 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60588 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754449Ab1FDMf2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 08:29:52 -0400
-Message-ID: <4DEA255B.2050503@unican.es>
-Date: Sat, 4 Jun 2011 14:30:19 +0200
-From: Monica Puig-Pey <puigpeym@unican.es>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) 
-	Gecko/20110424 Thunderbird/3.1.10
+	Sat, 4 Jun 2011 08:35:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=uVXKr0C1GcWxxG2UxebEf6O5i/bfPPt+4XUNo02FDwhoQ8nmuKLNitn5Hfm1mMR2ED
+         Ol4adp9vXc8R5YXQ7P6KDg/Iz1gl2ZHHhzcX6rz+uh40x9iP0f3TYwT8/sQnNnWSNC3A
+         gvA28TmtTEolC0Vwrr3RWDv8IMrt+2S9YPIxc=
 MIME-Version: 1.0
-To: <linux-rt-users@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: kernel threads in drivers using the RT patch
-References: <4DEA1BA9.7020303@unican.es> <4DEA1F22.6000603@unican.es>
-In-Reply-To: <4DEA1F22.6000603@unican.es>
-Content-Type: text/plain;
-	charset=windows-1252;
-	format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [193.144.198.131]
-X-imss-version: 2.054
-X-imss-result: Passed
-X-imss-scanInfo: M:P L:E SM:0
-X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18178.007)
-X-imss-scores: Clean:21.10485 C:2 M:3 S:5 R:5
-X-imss-settings: Baseline:1 C:1 M:2 S:2 R:2 (0.0000 0.0000)
+In-Reply-To: <4DE8F989.50208@hist.no>
+References: <4DE6103E.6010100@hist.no>
+	<4DE8B449.2000008@suse.de>
+	<4DE8F989.50208@hist.no>
+Date: Sat, 4 Jun 2011 07:35:25 -0500
+Message-ID: <BANLkTik15fEwzS5m6xWvMxKesYkQGArfPw@mail.gmail.com>
+Subject: Re: [2.6.39] CIFS write failures where 2.6.38 works
+From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+To: Helge Hafting <helge.hafting@hist.no>
+Cc: Suresh Jayaraman <sjayaraman@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-cifs <linux-cifs@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jun 3, 2011 at 10:11 AM, Helge Hafting <helge.hafting@hist.no> wrote:
+> On 03. juni 2011 12:15, Suresh Jayaraman wrote:
+>>
+>> [Cc linux-cifs@vger.kernel.org]
+>>
+>> On 06/01/2011 03:41 PM, Helge Hafting wrote:
+>>>
+>>> At work I use cifs for accessing a windows server. This has worked fine
+>>> for a long time, up to and including Debian's 2.6.38-2.
+>>>
+>>> I just installed Debians's 2.6.39-1, and had to give up on it.
+>>> Mounting CIFS works, and I can see the files. But if I
+>>> try to make a new file (with cp), I get a long delay.
+>>
+>> What is the security mechanism you are using? If you seeing the problem
+>> with ntlm, could you try using ntlmv2 and see whether the problem is
+>> reproducible?
+>
+> In the beginning, I did not specify the mechanism. So, whatever the default
+> is.
+>
+> The fstab entry was like this:
+> \\servername\resource /mountpoint cifs
+> domain=MYDOMAIN,credentials=/etc/fstabcred,rw,noauto,iocharset=utf8,uid=username,gid=group,sockopt=TCP_NODELAY,users,file_mode=0640,dir_mode=0750,relatime
+> 0 0
+>
+> I looked at cifs options, and tried to add "sign" and "sec=ntlmv2i". It made
+> no difference. Still failure with 2.6.39, and mounting with these new
+> options works fine with 2.6.38
+>
+> Helge Hafting
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-I'm studying how to develop drivers in a real time OS and how do they 
-work. I'm using  Ubuntu 10.04 with the 2.6.31-11-rt patch installed.
-I'm trying to run a kernel thread from my driver (kernel context). I 
-create the kthread in the module_init, I change its real time priority 
-and then make it run .
-Code shown below:
+Yes, I think wireshark trace would be really useful.
 
-thread_handler=*(struct task_struct *)kthread_create(my_tasklet_handler, 
-(void*)&datos,"thread_handler");
-   if (IS_ERR(&thread_handler)){
-      return PTR_ERR(&thread_handler);
-      printk(KERN_WARNING "<pci> (init_module)  Error creating Thread 
-handler\n");
-   }
-params->sched_priority=20;
-result = sched_setscheduler(&thread_handler, SCHED_FIFO, params);
-result=wake_up_process(&thread_handler);
+Regards,
 
-Params is global struct sched_param * and struct thread_handler  a 
-global task_struct.
-
-I stop the Kthread in the module_exit using 
-res=kthread_stop(&thread_handler);
-
-The kthread "thread_handler" has a while (1) loop and it is stopped in a 
-semaphore, waiting for the interrupt handler. When it wakes up each time 
-it calls kthread_should_stop() and depending on that break out of the 
-loop or run.
-
-My problem is, when trying to establish the rtprio kthread, the whole 
-computer get blocked and I only can restart it. If I delete this part, 
-then kthread runs, and works well. With the ps command I can see it has 
-a 24 NON real time priority. Then the problem come when uninstalling my 
-module with rmmod. In the  kthread_stop function, everything gets blocked.
-
-Could someone tell what am I doing wrong? Or just give me some help 
-about kernel threads in the RT Patch?
-
-Thanks a lot
-
-Mónica
+Shirish
