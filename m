@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab1FDTsr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 15:48:47 -0400
-Received: from mail.condornet.sk ([92.245.1.11]:56505 "EHLO mail.condornet.sk"
+	id S1754214Ab1FDJaA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 05:30:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33187 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752294Ab1FDTsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 15:48:46 -0400
-To: undisclosed-recipients:;
-Subject: (no subject)
-MIME-Version: 1.0
-Date: Sat, 04 Jun 2011 11:21:48 +0200
-From: =?UTF-8?Q? "=C2=A92011.Coca-Cola_Great_Britain" ?= 
-	<info@coca-cola.co.uk>
-Organization: Coca-Cola GB
-Reply-To: jim-gardner.c@live.com
-Message-ID: <0846ab06782625cfc4dd235c44835c83@localhost>
-User-Agent: Condornet Webmail
-Content-Transfer-Encoding: 8bit
+	id S1751742Ab1FDJ37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jun 2011 05:29:59 -0400
+Subject: [patch] sched, cgroups: fix MIN_SHARES on 64 bit boxen
+From: Mike Galbraith <mgalbraith@suse.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Nikhil Rao <ncrao@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>
 Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 04 Jun 2011 11:29:56 +0200
+Message-ID: <1307179796.25172.3.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+c8b28116 claimed to have no user-visible effect, but allows setting cpu.shares
+to < MIN_SHARES, which the user then indeed sees.
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+---
+ kernel/sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -292,7 +292,7 @@ static DEFINE_SPINLOCK(task_group_lock);
+  * (The default weight is 1024 - so there's no practical
+  *  limitation from this.)
+  */
+-#define MIN_SHARES	2
++#define MIN_SHARES	(scale_load(2))
+ #define MAX_SHARES	(1UL << (18 + SCHED_LOAD_RESOLUTION))
+ 
+ static int root_task_group_load = ROOT_TASK_GROUP_LOAD;
 
 
--- 
-04-06-20011
-Your Mail-ID has been awarded 750,000.00 GBP From The Coca-Cola Online
-Bonanza 2011. For claims send
-Name:
-Address:
-Phone No:
-Age: Sex:
-Occupation:
-Country:
-Contact: Mr. Jim Gardner
-Claims department : jim-gardner.c@live.com
-TEL: +44 755 284 8328
