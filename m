@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab1FDBwQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 21:52:16 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:22501 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751876Ab1FDBwP (ORCPT
+	id S1755520Ab1FDCWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 22:22:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65440 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752763Ab1FDCWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 21:52:15 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlAEAAKM6U15LCoegWdsb2JhbABTpkYVAQEWJiWIccIQDoYTBKA/
-Date: Sat, 4 Jun 2011 11:52:12 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 08/12] superblock: introduce per-sb cache shrinker
- infrastructure
-Message-ID: <20110604015212.GD561@dastard>
-References: <1306998067-27659-1-git-send-email-david@fromorbit.com>
- <1306998067-27659-9-git-send-email-david@fromorbit.com>
- <20110604004231.GV11521@ZenIV.linux.org.uk>
+	Fri, 3 Jun 2011 22:22:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :user-agent;
+        b=K8kBaw1WpHlhfblq6dCsohNgRxirflxh9A2A8BfOYoCxjfCE44VoVK8ncscV3K1pet
+         ww7m0MdZyYuEFXUw4r2cioax7ZIsV2FrsHOaaN+jDJg3Vs1CMmjqgMupfhgJKxzkCg/C
+         BNwTBeKVhRNFStwxOCzs0HUe+LIH2NgPYuBi8=
+Date: Sat, 4 Jun 2011 10:22:21 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: ravi@jetztechnologies.com, arvino55@gmail.com,
+        bluesmoke-devel@lists.sourceforge.net, greg@kroah.com,
+        akpm@linux-foundation.org
+Subject: [PATCH]Remove a warning for drivers/edac/i82975x_edac.c
+Message-ID: <20110604022151.GA2475@gmail.com>
+Mail-Followup-To: linux-kernel@vger.kernel.org, ravi@jetztechnologies.com,
+	arvino55@gmail.com, bluesmoke-devel@lists.sourceforge.net,
+	greg@kroah.com, akpm@linux-foundation.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=unknown-8bit
 Content-Disposition: inline
-In-Reply-To: <20110604004231.GV11521@ZenIV.linux.org.uk>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 04, 2011 at 01:42:31AM +0100, Al Viro wrote:
-> > @@ -278,7 +325,12 @@ void generic_shutdown_super(struct super_block *sb)
-> >  {
-> >  	const struct super_operations *sop = sb->s_op;
-> >  
-> > -
-> > +	/*
-> > +	 * shut down the shrinker first so we know that there are no possible
-> > +	 * races when shrinking the dcache or icache. Removes the need for
-> > +	 * external locking to prevent such races.
-> > +	 */
-> > +	unregister_shrinker(&sb->s_shrink);
-> >  	if (sb->s_root) {
-> >  		shrink_dcache_for_umount(sb);
-> >  		sync_filesystem(sb);
-> 
-> What it means is that shrinker_rwsem now nests inside ->s_umount...  IOW,
-> if any ->shrink() gets stuck, so does every generic_shutdown_super().
-> I'm still not convinced it's a good idea - especially since _this_
-> superblock will be skipped anyway.
+From: Harry Wei <harryxiyou@gmail.com>
 
-True, that's not nice.
+When i compile 2.6.39.1, a warning shows like below.
+This patch can fix the warning. And i works well with
+my PC.
 
-> Is there any good reason to evict
-> shrinker that early?
+[...]
+CC [M]  drivers/edac/e752x_edac.o
+CC [M]  drivers/edac/i82875p_edac.o
+CC [M]  drivers/edac/i82975x_edac.o
+drivers/edac/i82975x_edac.c: In function ���i82975x_process_error_info���:
+drivers/edac/i82975x_edac.c:298: warning: integer constant is too large for ���unsigned long��� type
+CC [M]  drivers/edac/i3000_edac.o
+CC [M]  drivers/edac/i3200_edac.o
+CC [M]  drivers/edac/x38_edac.o
+CC [M]  drivers/edac/i82860_edac.o
+[...]
 
-I wanted to put it early on in the unmount path so that the shrinker
-was guaranteed to be gone before evict_inodes() was called. That
-would mean that it is obviously safe to remove the iprune_sem
-serialisation in that function.
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
 
-The code in the umount path is quite different between 2.6.35 (the
-original version of the patchset) and 3.0-rc1, so I'm not surprised
-that I haven't put the unregister call in the right place.
-
-> Note that doing that after ->s_umount is dropped
-> should be reasonably safe - your shrinker will see that superblock is
-> doomed if it's called anywhere in that window...
-
-Agreed. In trying to find the best "early" place to unregister the
-shrinker, I've completely missed the obvious "late is safe"
-solution. I'll respin it with these changes.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Index: prj/drivers/edac/i82975x_edac.c
+===================================================================
+--- prj.orig/drivers/edac/i82975x_edac.c	2011-06-04 10:09:55.351174516 +0800
++++ prj/drivers/edac/i82975x_edac.c	2011-06-04 10:10:30.875168437 +0800
+@@ -293,9 +293,9 @@
+ 		info->errsts = info->errsts2;
+ 	}
+ 
+-	page = (unsigned long) info->eap;
++	page = (unsigned long long) info->eap;
+ 	if (info->xeap & 1)
+-		page |= 0x100000000ul;
++		page |= 0x100000000ull;
+ 	chan = page & 1;
+ 	page >>= 1;
+ 	offst = page & ((1 << PAGE_SHIFT) - 1);
