@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab1FDMKE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 08:10:04 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:50663 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756235Ab1FDMKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 08:10:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=myWyDSuH+27TmVH+hLxoBvZ+hESI/gVI25E2uOvCLT2HyJYBYD5tPksPcfr4L9J6Df
-         zYyhGkts/jRrUjLgTZLC2UAfQe0DJHL3xsk1+m/IeatGmjONauFmKn21Q1kBj/y6eOC2
-         +bnSLYuYObdftLy5M0dxXLk91yHFE0bHDHfZs=
-From: Aviv Ben-Yosef <aviv.by@gmail.com>
-To: Eng.Linux@digi.com, gregkh@suse.de, lucas.demarchi@profusion.mobi
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Aviv Ben-Yosef <aviv.by@gmail.com>
-Subject: [PATCH 1/1] Staging: tty: epca: fixing return code-style issue
-Date: Sat,  4 Jun 2011 05:09:33 -0700
-Message-Id: <1307189373-28487-1-git-send-email-aviv.by@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1754433Ab1FDWcf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 18:32:35 -0400
+Received: from host130.200-45-168.telecom.net.ar ([200.45.168.130]:1219 "EHLO
+	supportmail.viguay.com.ar" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752311Ab1FDWcd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jun 2011 18:32:33 -0400
+X-Greylist: delayed 35191 seconds by postgrey-1.27 at vger.kernel.org; Sat, 04 Jun 2011 18:32:33 EDT
+From: mail@server.de
+Organization: WEBMAIL SERVER ADMINISTRATOR
+Subject: Postfachquote WARNUNG!
+X-Mailer: Kerio Connect 7.1.3 WebMail Mini
+To: undisclosed-recipients:;
+Message-ID: <20110604092056.b577c1fa@supportmail.viguay.com.ar>
+Date: Sat, 04 Jun 2011 09:20:56 -0300
+X-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.3) Gecko/20100401
+	YFF35 Firefox/3.6.3
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a coding-style issue, ``return'' with parens.
+Achtung! Unsere Liebe Webmail User! 
 
-Signed-off-by: Aviv Ben-Yosef <aviv.by@gmail.com>
----
- drivers/staging/tty/epca.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Dies ist eine automatisch generierte Nachricht von diesem Webmail-Server Robot 
+Administator, die ständig überwacht den Betrieb und die Funktionalität aller Webmail-Clients. 
 
-diff --git a/drivers/staging/tty/epca.c b/drivers/staging/tty/epca.c
-index 7f1369e..2a4ba10 100644
---- a/drivers/staging/tty/epca.c
-+++ b/drivers/staging/tty/epca.c
-@@ -792,7 +792,7 @@ static int pc_open(struct tty_struct *tty, struct file *filp)
- 	}
- 	if (boardnum >= num_cards || boards[boardnum].status == DISABLED)  {
- 		tty->driver_data = NULL;   /* Mark this device as 'down' */
--		return(-ENODEV);
-+		return -ENODEV;
- 	}
- 
- 	bc = ch->brdchan;
--- 
-1.7.1
+Ihr Webmail-Konto ausgesetzt zu sein stillgelegt. 
 
+Sie haben gerade die maximalen Postfachgröße ursprünglich von unserem Server gesetzt. 
+
+Wir sind so leid, Sie müssen dieses Problem jetzt beheben sonst werden Sie nicht 
+anmelden können Sie sich in Ihrem Webmail-Konto beim nächsten Mal, was den Verlust der bedeutet, dass Ihr 
+verändern. Warnung Code ausgegeben BZ6473NL 
+
+Klicken Sie auf diesen Link, um die Größe Ihrer Mailbox sofort zu erhöhen. 
+http://myhotel.ae/opera/use/opera1/form1.html 
+
+Letzte Warnung: Nichtbeachtung dieser Anweisungen führt definitiv in Folge 
+die Unfähigkeit, Zugang zu Ihrem Posteingang und anschließende Verlust Ihres Kontos. 
+Bitte beachten Sie! 
+
+
+CopyRight © WEBMAIL Server Administrator
