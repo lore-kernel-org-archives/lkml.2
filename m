@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab1FDWvH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 18:51:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53492 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753916Ab1FDWvE (ORCPT
+	id S1754824Ab1FDXAA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 19:00:00 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:26470 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753916Ab1FDW77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 18:51:04 -0400
+	Sat, 4 Jun 2011 18:59:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=rfuY+RgSDhJ14rmlj3pZY4Z1goNUZQdddAXiredskPLFxsHtsPMKk93FPeVdbdvmEt
+         bBwG8aTCyd5RGjyXQ5tA==
 MIME-Version: 1.0
-In-Reply-To: <1307225323.2497.730.camel@laptop>
-References: <20110405152729.232781355@chello.nl> <tip-0122ec5b02f766c355b3168df53a6c038a24fa0d@git.kernel.org>
- <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop>
- <4DE674EB.1000200@die-jansens.de> <1306951751.2497.626.camel@laptop>
- <1306953870.2497.627.camel@laptop> <4DE6936F.7090700@die-jansens.de>
- <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com> <1307092535.2353.2973.camel@twins>
- <4DE8B13D.9020302@die-jansens.de> <BANLkTimhWnpgtcxjVA5Yj8_Dy5PA34EFJQ@mail.gmail.com>
- <4DE8DC28.30709@die-jansens.de> <BANLkTikXU5FFgY4=8MEdRjvt4gbpxm7J5g@mail.gmail.com>
- <1307225323.2497.730.camel@laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 5 Jun 2011 07:50:40 +0900
-Message-ID: <BANLkTi=unLFAYsm7k_4PBxJb4W7iowZMyQ@mail.gmail.com>
-Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arne Jansen <lists@die-jansens.de>, Ingo Molnar <mingo@elte.hu>,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        linux-tip-commits@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
+Date: Sat, 4 Jun 2011 15:59:56 -0700
+Message-ID: <BANLkTikqRkiRKVBsAfEmrO+O9m19KEMzBg@mail.gmail.com>
+Subject: ARM Tegra fixes for 3.0-rc2
+From: Colin Cross <ccross@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        lakml <linux-arm-kernel@lists-infradead.org>,
+        linux-tegra <linux-tegra@vger.kernel.org>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>
+Cc: Stephen Warren <swarren@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 5, 2011 at 7:08 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> Yeah, that wants a whole lot of reverting, from the offending commit up
-> to and including 317f394160e9beb97d19a84c39b7e5eb3d7815a8.
+Hi Linus,
+Please pull one fix for Tegra from:
 
-Mind sending one single tested patch? I still get conflicts, even just
-trying to revert the last of those (ie 317f394160e9) due to all the
-other scheduler changes..
+ git://android.git.kernel.org/kernel/tegra.git for-linus
 
-                   Linus
+Thanks,
+Colin
+
+The following changes since commit 55922c9d1b84b89cb946c777fddccb3247e7df2c:
+
+  Linux 3.0-rc1 (2011-05-29 17:43:36 -0700)
+
+are available in the git repository at:
+  git://android.git.kernel.org/kernel/tegra.git for-linus
+
+Stephen Warren (1):
+      ARM: Tegra: Harmony: Fix conflicting GPIO numbering
+
+ arch/arm/mach-tegra/board-harmony-power.c |    4 +++-
+ arch/arm/mach-tegra/board-harmony.h       |    3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
