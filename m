@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab1FDBld (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 21:41:33 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39029 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754012Ab1FDBlb (ORCPT
+	id S1754892Ab1FDBwQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 21:52:16 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:22501 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751876Ab1FDBwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 21:41:31 -0400
-Subject: [GIT PULL] SCSI fixes for 3.0-rc1
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 04 Jun 2011 10:41:28 +0900
-Message-ID: <1307151688.2771.26.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Jun 2011 21:52:15 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlAEAAKM6U15LCoegWdsb2JhbABTpkYVAQEWJiWIccIQDoYTBKA/
+Date: Sat, 4 Jun 2011 11:52:12 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 08/12] superblock: introduce per-sb cache shrinker
+ infrastructure
+Message-ID: <20110604015212.GD561@dastard>
+References: <1306998067-27659-1-git-send-email-david@fromorbit.com>
+ <1306998067-27659-9-git-send-email-david@fromorbit.com>
+ <20110604004231.GV11521@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110604004231.GV11521@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a single fix for the queue refcounting oops we were debugging
-just before 3.0-rc1 was released.  Jens is still working on the DEAD
-queue guard bit.
+On Sat, Jun 04, 2011 at 01:42:31AM +0100, Al Viro wrote:
+> > @@ -278,7 +325,12 @@ void generic_shutdown_super(struct super_block *sb)
+> >  {
+> >  	const struct super_operations *sop = sb->s_op;
+> >  
+> > -
+> > +	/*
+> > +	 * shut down the shrinker first so we know that there are no possible
+> > +	 * races when shrinking the dcache or icache. Removes the need for
+> > +	 * external locking to prevent such races.
+> > +	 */
+> > +	unregister_shrinker(&sb->s_shrink);
+> >  	if (sb->s_root) {
+> >  		shrink_dcache_for_umount(sb);
+> >  		sync_filesystem(sb);
+> 
+> What it means is that shrinker_rwsem now nests inside ->s_umount...  IOW,
+> if any ->shrink() gets stuck, so does every generic_shutdown_super().
+> I'm still not convinced it's a good idea - especially since _this_
+> superblock will be skipped anyway.
 
-The patch is available here:
+True, that's not nice.
 
-master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6.git
+> Is there any good reason to evict
+> shrinker that early?
 
-The short changelog is:
+I wanted to put it early on in the unmount path so that the shrinker
+was guaranteed to be gone before evict_inodes() was called. That
+would mean that it is obviously safe to remove the iprune_sem
+serialisation in that function.
 
-James Bottomley (1):
-      Fix oops caused by queue refcounting failure
+The code in the umount path is quite different between 2.6.35 (the
+original version of the patchset) and 3.0-rc1, so I'm not surprised
+that I haven't put the unregister call in the right place.
 
-The diffstat is:
+> Note that doing that after ->s_umount is dropped
+> should be reasonably safe - your shrinker will see that superblock is
+> doomed if it's called anywhere in that window...
 
- drivers/scsi/scsi_scan.c  |    2 +-
- drivers/scsi/scsi_sysfs.c |    1 +
- 2 files changed, 2 insertions(+), 1 deletions(-)
+Agreed. In trying to find the best "early" place to unregister the
+shrinker, I've completely missed the obvious "late is safe"
+solution. I'll respin it with these changes.
 
-And the full patch is below.
+Cheers,
 
-James
-
----
-
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 58584dc..44e8ca3 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -297,7 +297,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
- 		kfree(sdev);
- 		goto out;
- 	}
--
-+	blk_get_queue(sdev->request_queue);
- 	sdev->request_queue->queuedata = sdev;
- 	scsi_adjust_queue_depth(sdev, 0, sdev->host->cmd_per_lun);
- 
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index e639125..e0bd3f7 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -322,6 +322,7 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
- 		kfree(evt);
- 	}
- 
-+	blk_put_queue(sdev->request_queue);
- 	/* NULL queue means the device can't be used */
- 	sdev->request_queue = NULL;
- 
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
