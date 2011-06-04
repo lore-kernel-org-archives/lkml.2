@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab1FDVa2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 17:30:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36174 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753755Ab1FDVa0 (ORCPT
+	id S1754149Ab1FDVf0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 17:35:26 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:46658 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493Ab1FDVfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 17:30:26 -0400
+	Sat, 4 Jun 2011 17:35:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:content-type:to:cc:subject:references:date:mime-version
+         :content-transfer-encoding:from:message-id:in-reply-to:user-agent;
+        b=j2rBEk85MNbUjNdGeVB555fdFVaojdSDAa56+4VV0pAtSnEwcccUgH1Gqv6JAgunKi
+         kOYiQSt6lvRg6qebSCQwktRbLnHu+whJFQPx5HBtAZ2q76IsA9Cdj4a4AmjC5JEaoPUw
+         x6o2Ilj/ZzVyS/2Dm6tOfoloSDwBdcSsC96cs=
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: dbrownell@users.sourceforge.net,
+        "Andre Bartke" <andre.bartke@googlemail.com>
+Cc: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Andre Bartke" <andre.bartke@gmail.com>
+Subject: Re: [PATCH] drivers/usb/gadget: add missing kfree calls
+References: <1307216094-13570-1-git-send-email-andre.bartke@gmail.com>
+Date: Sat, 04 Jun 2011 23:35:16 +0200
 MIME-Version: 1.0
-In-Reply-To: <4DE8DC28.30709@die-jansens.de>
-References: <20110405152729.232781355@chello.nl> <tip-0122ec5b02f766c355b3168df53a6c038a24fa0d@git.kernel.org>
- <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop>
- <4DE674EB.1000200@die-jansens.de> <1306951751.2497.626.camel@laptop>
- <1306953870.2497.627.camel@laptop> <4DE6936F.7090700@die-jansens.de>
- <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com> <1307092535.2353.2973.camel@twins>
- <4DE8B13D.9020302@die-jansens.de> <BANLkTimhWnpgtcxjVA5Yj8_Dy5PA34EFJQ@mail.gmail.com>
- <4DE8DC28.30709@die-jansens.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 5 Jun 2011 06:29:33 +0900
-Message-ID: <BANLkTikXU5FFgY4=8MEdRjvt4gbpxm7J5g@mail.gmail.com>
-Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
-To: Arne Jansen <lists@die-jansens.de>, Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, efault@gmx.de, npiggin@kernel.dk,
-        akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        linux-tip-commits@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vwkl82ut3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1307216094-13570-1-git-send-email-andre.bartke@gmail.com>
+User-Agent: Opera Mail/11.10 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 3, 2011 at 10:05 PM, Arne Jansen <lists@die-jansens.de> wrote:
->
-> No change. Also git bisect quite clearly points to
-> 0122ec5b02f766c and ab2515c4b98f7bc4, both are older than
-> b1c43f82c5aa2654 mentioned in the other thread.
+On Sat, 04 Jun 2011 21:34:54 +0200, Andre Bartke  
+<andre.bartke@googlemail.com> wrote:
+> diff --git a/drivers/usb/gadget/rndis.c b/drivers/usb/gadget/rndis.c
+> @@ -700,6 +701,7 @@ static int rndis_reset_response(int configNr,  
+> rndis_reset_msg_type *buf)
+>  	resp->AddressingReset = cpu_to_le32(1);
+> 	params->resp_avail(params->v);
+> +	kfree(r);
+>  	return 0;
+>  }
 
-Ok, I haven't heard anything further on this. Ingo? Peter?
+Have you tested this?  It does not look right to me.  rndis_add_response()
+allocates memory and puts the request on a list.  It is later freed in
+rndis_free_response().
 
-We're getting to the point where we just need to revert the thing,
-since I'm not getting the feeling that there are any fixes
-forthcoming, and I'd like -rc2 to not have this kind of bisected bug.
-
-Ingo? Those two commits no longer revert cleanly, presumably due to
-other changes in the area (but I didn't check). Can you do a patch to
-do the reverts, and then you can try to re-do the thing later once you
-figure out what's wrong.
-
-                       Linus
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
