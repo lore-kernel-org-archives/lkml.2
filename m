@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab1FDWsN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 18:48:13 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:57290 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab1FDWsK (ORCPT
+	id S1754732Ab1FDWvH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 18:51:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53492 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753916Ab1FDWvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 18:48:10 -0400
-Subject: Re: Mysterious CFQ crash and RCU
-From: Paul Bolle <pebolle@tiscali.nl>
-To: paulmck@linux.vnet.ibm.com, Jens Axboe <jaxboe@fusionio.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Sun, 05 Jun 2011 00:48:05 +0200
-In-Reply-To: <20110604160326.GA6093@linux.vnet.ibm.com>
-References: <20110519222404.GG12600@redhat.com>
-	 <20110521210013.GJ2271@linux.vnet.ibm.com>
-	 <20110523152141.GB4019@redhat.com>
-	 <20110523153848.GC2310@linux.vnet.ibm.com>
-	 <1306401337.27271.3.camel@t41.thuisdomein>
-	 <20110603050724.GB2304@linux.vnet.ibm.com>
-	 <1307191830.23387.24.camel@t41.thuisdomein>
-	 <20110604160326.GA6093@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.1 (3.1.1-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1307227686.28359.23.camel@t41.thuisdomein>
-Mime-Version: 1.0
+	Sat, 4 Jun 2011 18:51:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <1307225323.2497.730.camel@laptop>
+References: <20110405152729.232781355@chello.nl> <tip-0122ec5b02f766c355b3168df53a6c038a24fa0d@git.kernel.org>
+ <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop>
+ <4DE674EB.1000200@die-jansens.de> <1306951751.2497.626.camel@laptop>
+ <1306953870.2497.627.camel@laptop> <4DE6936F.7090700@die-jansens.de>
+ <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com> <1307092535.2353.2973.camel@twins>
+ <4DE8B13D.9020302@die-jansens.de> <BANLkTimhWnpgtcxjVA5Yj8_Dy5PA34EFJQ@mail.gmail.com>
+ <4DE8DC28.30709@die-jansens.de> <BANLkTikXU5FFgY4=8MEdRjvt4gbpxm7J5g@mail.gmail.com>
+ <1307225323.2497.730.camel@laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 5 Jun 2011 07:50:40 +0900
+Message-ID: <BANLkTi=unLFAYsm7k_4PBxJb4W7iowZMyQ@mail.gmail.com>
+Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arne Jansen <lists@die-jansens.de>, Ingo Molnar <mingo@elte.hu>,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        linux-tip-commits@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-06-04 at 09:03 -0700, Paul E. McKenney wrote:
-> More like "based on these diagnostics, I see no evidence of the RCU
-> implementation misbehaving."  Which is of course different than "I can
-> prove that the RCU implementation is not misbehaving".  That said, the
-> fact that you are running on a single CPU makes it hard for me to see
-> any latitude for RCU-implementation misbehavior.
-> 
-> Clearly something is wrong somewhere.
+On Sun, Jun 5, 2011 at 7:08 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> Yeah, that wants a whole lot of reverting, from the offending commit up
+> to and including 317f394160e9beb97d19a84c39b7e5eb3d7815a8.
 
-Yes.
+Mind sending one single tested patch? I still get conflicts, even just
+trying to revert the last of those (ie 317f394160e9) due to all the
+other scheduler changes..
 
-> Given the fact that on a single-CPU
-> system, synchronize_rcu() is a no-op, and given that you weren't able
-> to reproduce with CONFIG_TREE_PREEMPT_RCU=y, my guess is that there is
-> a synchronize_rcu() that occasionally (illegally) gets executed within
-> an RCU read-side critical section.
-
-I think I finally found it!
-
-The culprit seems to be io_context.ioc_data (not the most clear of
-names!). It seems to be a single entry "last-hit cache" of an hlist
-called cic_list. (There are three, subtly different, cic_lists in the
-CFQ code!) It is not entirely clear, but that last-hit cache can get out
-of sync with the hlist it is supposed to cache. My guess it that every
-now and then a member of the hlist gets deleted while it's still in that
-(single entry) cache. If it then gets retrieved from that cache it
-already points to poisoned memory. For some strange reason this only
-results in an Oops if one or more debugging options are set (as are set
-in the Fedora Rawhide non-stable kernels that I ran into this). I have
-no clue whatsoever, why that is ...
-
-Anyhow, after ripping out ioc_data this bug seems to have disappeared!
-Jens, Vivek, could you please have a look at this? In the mean time I
-hope to pinpoint this issue and draft a small patch to really solve it
-(ie, not by simply ripping out ioc_data).
-
-
-Paul Bolle
-
+                   Linus
