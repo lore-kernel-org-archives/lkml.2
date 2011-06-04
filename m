@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab1FDJpd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 05:45:33 -0400
-Received: from home.kolivas.org ([59.167.196.135]:40749 "EHLO home.kolivas.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753905Ab1FDJpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 05:45:32 -0400
-From: Con Kolivas <kernel@kolivas.org>
-To: linux-kernel@vger.kernel.org
-Subject: lrzip compressed tarball of all 40 linux-2.6 kernels
-Date: Sat, 4 Jun 2011 19:45:25 +1000
-User-Agent: KMail/1.13.6 (Linux/2.6.39-ck1; KDE/4.6.2; x86_64; ; )
+	id S1755020Ab1FDJvm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 05:51:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57998 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754725Ab1FDJvl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jun 2011 05:51:41 -0400
+Date: Sat, 4 Jun 2011 10:51:39 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: genirq: Ensure we locate the passed IRQ in irq_alloc_descs()
+Message-ID: <20110604095138.GA708@opensource.wolfsonmicro.com>
+References: <1307037313-15733-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <nack-locate@mdm.bga.com>
+ <20110603104217.GA4777@opensource.wolfsonmicro.com>
+ <locate-from-more@mdm.bga.com>
+ <20110603150636.GA9492@opensource.wolfsonmicro.com>
+ <alpine.LFD.2.02.1106031823310.3078@ionos>
+ <irq-locate-ack@mdm.bga.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106041945.25922.kernel@kolivas.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <irq-locate-ack@mdm.bga.com>
+X-Cookie: You will never know hunger.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the 2.6 linux kernel now officially finished, I'm providing an lrzip 
-tarball of all 40 of the 3 point kernel releases as an lrzip tarball. This is 
-a convenient way of getting all the releases in a relatively low bandwidth 
-form, and previous archives of this nature have had a few downloads so I 
-figured I'd complete the archive for those who want to download it and use it 
-as an ad for lrzip:
+On Fri, Jun 03, 2011 at 07:23:24PM -0500, Milton Miller wrote:
+> On Fri, 3 Jun 2011 about 16:06:36 +0100, Mark Brown wrote:
 
-163.9MB:
-http://ck.kolivas.org/linux-2.6.0-2.6.39.tar.lrz
+> > I need either a specific IRQ or an allocated one.  This is just a very
+> > standard driver with an interrupt controller 
 
-10.3GB:
-linux-2.6.0-2.6.39.tar
+> I don't know that I'd call an interrupt controller a standard driver
+> today, but agree we are heading towards that.
 
-Original file is a tarball of all 3 point linux kernel release tarballs 2.6.0 
-to 2.6.39 coming to a grand total of 10.3GB
+Pretty much any modern ARM system will have a PMIC with an interrupt
+controller in it.
 
-Of course this is a plug for lrzip on something it is particularly good at 
-compressing.
+> > The driver assumes it's going to get a contiguous range, it'd be a lot
+> > of bookkeeping for no gain to have to cope with them being splattered
+> > all over the place.
 
-lrzip can be obtained here:
-http:://lrzip.kolivas.org
+> The irq domain concept addresses mapping, but a simple fully allocated
+> block will be one of the options.  Having 60 irqdesc might be 
+> pushing the limit for some platforms but that can be addressed later
+> when irq domains are upstream.
 
-About this archive: It was compressed with lrzip version 0.606 on a quad core 
-3GHz core 2 on a relatively slow external USB2 hard drive with the following 
-options:
+I'm not really sure what an IRQ domain is (the patch series you pointed
+at before does rather appear to assume one knows already) but given that
+we're allocating from within a 32 bit type it seems like we should be
+using a few orders of magnitude more interrupts in a system than we do
+presently before this becomes much of an issue.
 
-lrzip -UL 9 linux-2.6.0-2.6.39.tar
-Total time: 00:56:19.88
+> > If the user cares they can just pick a number for the base; if they're
+> > going to pick a number they may as well pick the actual number.
 
-It would have compressed a lot faster without the -L 9 option, but given this 
-is the "final" archive of 2.6, I figured I'd push it a bit further. Lrzip can 
-compress it even further with zpaq as an option, but it makes decompression 
-much slower so I'd personally find the archive less useful.
+> I'd argue the user is the wrong level to make this decision.  However,
+> saying the platform decides is valid, and the excerpt you had earlier
+> implied you were getting the irq argument from platform data, not the
+> user (eg via a module parameter)..
 
-Of course someone will ask how it compares to xz, so for completion:
+It's platform data.  Having interrupt numbers specified as module
+parameters strikes me as insane - the particular integers we map
+individual interrupts onto are very much an implementation decision of
+the kernel.
 
-xz -9 linux-2.6.0-2.6.39.tar
-Total time: 2:05:32.218
+> I should point out that several archtectures currently allocate irqs
+> in a architecture layer before calling the irq allocator asking for
+> the exact irq they choose on what they thought was free.  Among these
+> are x86 and powerpc.   Not calling the architecture layer will causein
+> all future allocations by other drivers using the architecture layer
+> to fail..
 
-11067473920 linux-2.6.0-2.6.39.tar
-1535618848 linux-2.6.0-2.6.39.tar.xz 13.8%
-171879382 linux-2.6.0-2.6.39.tar.lrz 1.6%
-
--- 
--ck
+That sounds like we should join the two IRQ allocators up with each
+other.
