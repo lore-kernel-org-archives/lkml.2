@@ -1,37 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab1FDBIc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Jun 2011 21:08:32 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:55026 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751495Ab1FDBIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Jun 2011 21:08:31 -0400
-Subject: [GIT pull] PTP fixes for 3.0
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, Dan Carpenter <error27@gmail.com>,
-        Richard Cochran <richard.cochran@omicron.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Jun 2011 18:08:27 -0700
-Message-ID: <1307149707.11492.66.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753717Ab1FDBk2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Jun 2011 21:40:28 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:36841 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751876Ab1FDBk1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Jun 2011 21:40:27 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlAEAAKM6U15LCoegWdsb2JhbABTpkYVAQEWJiXLAQ6GEwSgPw
+Date: Sat, 4 Jun 2011 11:40:13 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 06/12] inode: Make unused inode LRU per superblock
+Message-ID: <20110604014013.GC561@dastard>
+References: <1306998067-27659-1-git-send-email-david@fromorbit.com>
+ <1306998067-27659-7-git-send-email-david@fromorbit.com>
+ <20110604002552.GU11521@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110604002552.GU11521@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas, 
-	Here are some PTP fixes needed for 3.0. Please take a look at them and
-queue them for Linus.
+On Sat, Jun 04, 2011 at 01:25:52AM +0100, Al Viro wrote:
+> On Thu, Jun 02, 2011 at 05:01:01PM +1000, Dave Chinner wrote:
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > The inode unused list is currently a global LRU. This does not match
+> > the other global filesystem cache - the dentry cache - which uses
+> > per-superblock LRU lists. Hence we have related filesystem object
+> > types using different LRU reclaimation schemes.
+> > 
+> > To enable a per-superblock filesystem cache shrinker, both of these
+> > caches need to have per-sb unused object LRU lists. Hence this patch
+> > converts the global inode LRU to per-sb LRUs.
+> > 
+> > The patch only does rudimentary per-sb propotioning in the shrinker
+> > infrastructure, as this gets removed when the per-sb shrinker
+> > callouts are introduced later on.
+> 
+> What protects s_nr_inodes_unused?
 
-  git://git.linaro.org/people/jstultz/linux.git fortglx/3.0/tip/timers/ptp
+For this patch, the modifications are protected by the
+inode_lru_lock, but the reads are unprotected. That's the same
+protection as the inode_stat.nr_unused field, and the same as the
+existing dentry cache per-sb LRU accounting.  In the next patch
+modifcations are moved under the sb->s_inode_lru_lock, but reads
+still remain unprotected.
 
-Dan Carpenter (2):
-      ptp: Return -EFAULT on copy_to_user() errors
-      ptp: Fix some locking bugs in ptp_read()
+I can see how the multiple reads in shrink_icache_sb() could each
+return a different value during the proportioning, but I don't think
+that is a big problem. That proportioning code goes away in the next
+patch and is replaced by different code in prune_super(), so if you
+want the reads protected by locks or a single snapshot used for the
+proportioning calculations I'll do it in the new code in
+prune_super().
 
- drivers/ptp/ptp_chardev.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+Cheers,
 
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
