@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab1FDOgU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 10:36:20 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:32904 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473Ab1FDOgS convert rfc822-to-8bit (ORCPT
+	id S1756892Ab1FDOiF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 10:38:05 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63601 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756629Ab1FDOiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 10:36:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=A9OP6kOjXgMv4NuVihmdRr3VF4ufcnZutcSIGosQhEQ0ieYdxXrUtTELdRv8iFxC5x
-         YLcS6AVbfnoRf1XdJCGg4ZxtBA/tcpYKLXIEiWSLOxqlsIsHCvkKlg4FEn2j2ov1/j0J
-         00meTxqnSsmEIsqqwIKTxVZQE3Th/6mOa+5Mw=
-MIME-Version: 1.0
-In-Reply-To: <20110604130413.GA3929@tuxdriver.com>
-References: <20110603195254.GF2509@tuxdriver.com>
-	<BANLkTimoeVDQK+zu=U+nSM_kj0a3-hh_Jg@mail.gmail.com>
-	<20110604130413.GA3929@tuxdriver.com>
-Date: Sat, 4 Jun 2011 16:36:17 +0200
-Message-ID: <BANLkTimF3Jr4Kp7rDo1dvdBxVPepr__OZw@mail.gmail.com>
-Subject: Re: pull request: wireless-2.6 2011-06-03
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
+	Sat, 4 Jun 2011 10:38:03 -0400
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+From: Chris Mason <chris.mason@oracle.com>
+To: "Linus" <torvalds@linux-foundation.org>,
+        "linux-btrfs" <linux-btrfs@vger.kernel.org>,
+        "Linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs updates
+Date: Sat, 04 Jun 2011 10:37:18 -0400
+Message-Id: <1307197108-sup-8188@shiny>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4DEA432B.0082:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 4 czerwca 2011 15:04 użytkownik John W. Linville
-<linville@tuxdriver.com> napisał:
-> On Fri, Jun 03, 2011 at 11:24:49PM +0200, Rafał Miłecki wrote:
->> On Jun 3, 2011 10:03 PM, "John W. Linville" <linville@tuxdriver.com> wrote:
->> >
->> > Dave,
->> >
->> > Here is a batch of fixes intended for 3.0 -- I guess I'll need to
->> > rename my tree eventually... :-)
->> >
->> > Included are a libertas fix to ensure proper sequence number assignment
->> > on transmitted frames, an ath9k fix that propogates an earlier fix to a
->> > few more places,  a fix for a cfg80211 regression caused by some mesh
->> > code changes, a locking fix for the bluetooth l2cap code, a zd1211rw
->> > regression fix, a collection of small fixes for wl12xx, an iwl4965
->> > fix for a bad temperature check, an a device ID-related fix for iwlagn.
->> >
->> > Please let me know if there are problems!
->>
->> John, you didn't.take my fix for regression in ssb. I really want this for
->> 3.0.quickly, as few ppl already had problems with machine locking on boot.
->
-> Yours isn't the only fix, and I had quite a few queued already.  Patience.
+Hi everyone,
 
-OK, I was just afraid you missed this one :) Sorry if I meant rude.
+The for-linus branch of the btrfs unstable repo:
 
--- 
-Rafał
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git for-linus
+
+Has our collection of fixes.  It's a little bigger than usual for rc2
+because it includes Josef's queue of Btrfs changes.  It seemed best to
+split them so we could concentrate on looking for any issues in the new
+btrfs rc1 code from Fujitsu.  His tree is bug fixes and journal lock
+reduction.
+
+Some people have reported the initial caching of the free inode number
+map (which happens only once when it is first enabled) is sucking down
+too much CPU and IO time on their systems.  We don't have that one fixed
+yet, but this pull does clean up a few other problems in the new inode
+number allocatgor.  It also turns it off by default (mount -o
+inode_cache to enable).
+
+I was on the fence for turning this on by default, but we've already
+kicked out three bugs so it seems best to keep it optional until 3.1.
+
+Josef Bacik (15) commits (+478/-386):
+    Btrfs: don't try to allocate from a block group that doesn't have enough space (+8/-0)
+    Btrfs: take away the num_items argument from btrfs_join_transaction (+42/-48)
+    Btrfs: make sure to use the delalloc reserve when filling delalloc (+2/-0)
+    Btrfs: don't save the inode cache if we are deleting this root (+5/-0)
+    Btrfs: don't look at the extent buffer level 3 times in a row (+0/-3)
+    Btrfs: map the node block when looking for readahead targets (+21/-2)
+    Btrfs: set range_start to the right start in count_range_bits (+1/-1)
+    Btrfs: if we've already started a trans handle, use that one (+19/-0)
+    Btrfs: check for duplicate entries in the free space cache (+24/-3)
+    Btrfs: try not to sleep as much when doing slow caching (+11/-8)
+    Btrfs: fix how we do space reservation for truncate (+123/-37)
+    Btrfs: leave spinning on lookup and map the leaf (+12/-0)
+    Btrfs: kill BTRFS_I(inode)->block_group (+13/-110)
+    Btrfs: don't always do readahead (+20/-5)
+    Btrfs: kill trans_mutex (+177/-169)
+
+Chris Mason (3) commits (+54/-9):
+    Btrfs: make sure we don't overflow the free space cache crc page (+19/-8)
+    Btrfs: fix uninit variable in the delayed inode code (+1/-0)
+    Btrfs: add mount -o inode_cache (+34/-1)
+
+David Sterba (3) commits (+26/-21):
+    btrfs: use btrfs_ino to access inode number (+5/-4)
+    btrfs: fix uninitialized variable warning (+1/-1)
+    btrfs: add helper for fs_info->closing (+20/-16)
+
+Arne Jansen (3) commits (+70/-53):
+    btrfs: scrub: don't reuse bios and pages (+65/-49)
+    btrfs: scrub: add explicit plugging (+4/-3)
+    btrfs: false BUG_ON when degraded (+1/-1)
+
+liubo (1) commits (+6/-0):
+    Btrfs: don't save the inode cache in non-FS roots
+
+Total: (25) commits
+
+ fs/btrfs/btrfs_inode.h      |    3 -
+ fs/btrfs/ctree.c            |   28 +++-
+ fs/btrfs/ctree.h            |   22 +++-
+ fs/btrfs/delayed-inode.c    |    8 +-
+ fs/btrfs/disk-io.c          |   36 +++---
+ fs/btrfs/extent-tree.c      |  103 ++++++++++-----
+ fs/btrfs/extent_io.c        |    2 +-
+ fs/btrfs/file.c             |   10 +-
+ fs/btrfs/free-space-cache.c |   70 ++++++++---
+ fs/btrfs/inode-map.c        |   34 +++++-
+ fs/btrfs/inode.c            |  261 +++++++++++++++++++------------------
+ fs/btrfs/ioctl.c            |   26 ++---
+ fs/btrfs/relocation.c       |   34 +++--
+ fs/btrfs/scrub.c            |  123 ++++++++++--------
+ fs/btrfs/super.c            |    8 +-
+ fs/btrfs/transaction.c      |  302 +++++++++++++++++++++++--------------------
+ fs/btrfs/transaction.h      |   29 +---
+ fs/btrfs/volumes.c          |    2 +-
+ fs/btrfs/xattr.c            |    2 -
+ 19 files changed, 635 insertions(+), 468 deletions(-)
