@@ -1,163 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757154Ab1FDPrM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 11:47:12 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:48485 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754582Ab1FDPpr (ORCPT
+	id S1756878Ab1FDPmk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 11:42:40 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58898 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756479Ab1FDPmh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 11:45:47 -0400
-Date: Sat, 4 Jun 2011 17:37:04 +0200
-From: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
-To: "Venkatesh Pallipadi (Venki)" <venki@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Kevin Tian <kevin.tian@intel.com>,
-        Fengzhe Zhang <fengzhe.zhang@intel.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        lguest@lists.ozlabs.org, trivial@kernel.org
-Subject: [PATCH 8/8] arch/x86: use printk_ratelimited instead of
- printk_ratelimit
-Message-ID: <fce87f1efab55e15e91b21f1b73f0e86016a27d9.1307199715.git.christian.dietrich@informatik.uni-erlangen.de>
-References: <cover.1307199715.git.christian.dietrich@informatik.uni-erlangen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1307199715.git.christian.dietrich@informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 4 Jun 2011 11:42:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=references:in-reply-to:mime-version:content-type:message-id
+         :content-transfer-encoding:cc:from:subject:date:to:x-mailer;
+        b=UqaTI9mQpjwkn1tJzLPwGHIrNVeuw76WJzQvFBrmt5URVsG4inKVV+6CXIUDAGEyTc
+         dGfrpw/Y6wX45zJ841knXxe1Q8UokvOc3wGhCmp+79Q/+GZBKos2i0ViHlLl6oc9Cghm
+         eHtds2yyqlHyj91M7gdvqJ0U9z4DGupJSbPGM=
+References: <85F46CF9-5433-4623-91FC-9CD890082F69@gmail.com> <loom.20110604T081231-613@post.gmane.org>
+In-Reply-To: <loom.20110604T081231-613@post.gmane.org>
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=iso-8859-1
+Message-Id: <A0A243A9-9097-4EEA-B3EF-1D09C925AC81@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Cc: linux-kernel@vger.kernel.org
+From: =?iso-8859-1?Q?Markus_H=E4stbacka?= <mhastbacka@gmail.com>
+Subject: Re: rcu_kthread hang on 3.0.0-rc1-next-20110602
+Date: Sat, 4 Jun 2011 18:41:43 +0300
+To: Manuel Lauss <manuel.lauss@googlemail.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since printk_ratelimit() shouldn't be used anymore (see comment in
-include/linux/printk.h), replace it with printk_ratelimited.
+Hi!
 
-Signed-off-by: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
----
- arch/x86/kernel/hpet.c |    6 +++---
- arch/x86/kernel/irq.c  |    9 ++++-----
- arch/x86/kvm/i8259.c   |    7 +++----
- arch/x86/lguest/boot.c |    6 +++---
- 4 files changed, 13 insertions(+), 15 deletions(-)
+I compiled the kernel with preempt and the problem is indeed gone, the hd errors are still present from time to time, but thats probably a hardware problem.
 
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index 6781765..800d01b 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -10,6 +10,7 @@
- #include <linux/cpu.h>
- #include <linux/pm.h>
- #include <linux/io.h>
-+#include <linux/ratelimit.h>
- 
- #include <asm/fixmap.h>
- #include <asm/i8253.h>
-@@ -1158,9 +1159,8 @@ static void hpet_rtc_timer_reinit(void)
- 	if (lost_ints) {
- 		if (hpet_rtc_flags & RTC_PIE)
- 			hpet_pie_count += lost_ints;
--		if (printk_ratelimit())
--			printk(KERN_WARNING "hpet1: lost %d rtc interrupts\n",
--				lost_ints);
-+		printk_ratelimited("hpet1: lost %d rtc interrupts\n",
-+				   lost_ints);
- 	}
- }
- 
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 6c0802e..435bf12 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -9,6 +9,7 @@
- #include <linux/smp.h>
- #include <linux/ftrace.h>
- #include <linux/delay.h>
-+#include <linux/ratelimit.h>
- 
- #include <asm/apic.h>
- #include <asm/io_apic.h>
-@@ -28,8 +29,7 @@ void (*x86_platform_ipi_callback)(void) = NULL;
-  */
- void ack_bad_irq(unsigned int irq)
- {
--	if (printk_ratelimit())
--		pr_err("unexpected IRQ trap at vector %02x\n", irq);
-+	pr_err_ratelimited("unexpected IRQ trap at vector %02x\n", irq);
- 
- 	/*
- 	 * Currently unexpected vectors happen only on SMP and APIC.
-@@ -188,9 +188,8 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
- 	if (!handle_irq(irq, regs)) {
- 		ack_APIC_irq();
- 
--		if (printk_ratelimit())
--			pr_emerg("%s: %d.%d No irq handler for vector (irq %d)\n",
--				__func__, smp_processor_id(), vector, irq);
-+		pr_emerg_ratelimited("%s: %d.%d No irq handler for vector (irq %d)\n",
-+				     __func__, smp_processor_id(), vector, irq);
- 	}
- 
- 	irq_exit();
-diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
-index 19fe855..8e26193 100644
---- a/arch/x86/kvm/i8259.c
-+++ b/arch/x86/kvm/i8259.c
-@@ -29,6 +29,7 @@
- #include <linux/mm.h>
- #include <linux/slab.h>
- #include <linux/bitops.h>
-+#include <linux/ratelimit.h>
- #include "irq.h"
- 
- #include <linux/kvm_host.h>
-@@ -473,8 +474,7 @@ static int picdev_write(struct kvm_io_device *this,
- 		return -EOPNOTSUPP;
- 
- 	if (len != 1) {
--		if (printk_ratelimit())
--			printk(KERN_ERR "PIC: non byte write\n");
-+		printk_ratelimited(KERN_ERR "PIC: non byte write\n");
- 		return 0;
- 	}
- 	pic_lock(s);
-@@ -503,8 +503,7 @@ static int picdev_read(struct kvm_io_device *this,
- 		return -EOPNOTSUPP;
- 
- 	if (len != 1) {
--		if (printk_ratelimit())
--			printk(KERN_ERR "PIC: non byte read\n");
-+		printk_ratelimited(KERN_ERR "PIC: non byte read\n");
- 		return 0;
- 	}
- 	pic_lock(s);
-diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
-index db832fd..23a6eff 100644
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -56,6 +56,7 @@
- #include <linux/lguest_launcher.h>
- #include <linux/virtio_console.h>
- #include <linux/pm.h>
-+#include <linux/ratelimit.h>
- #include <asm/apic.h>
- #include <asm/lguest.h>
- #include <asm/paravirt.h>
-@@ -927,9 +928,8 @@ static int lguest_clockevent_set_next_event(unsigned long delta,
- 	/* FIXME: I don't think this can ever happen, but James tells me he had
- 	 * to put this code in.  Maybe we should remove it now.  Anyone? */
- 	if (delta < LG_CLOCK_MIN_DELTA) {
--		if (printk_ratelimit())
--			printk(KERN_DEBUG "%s: small delta %lu ns\n",
--			       __func__, delta);
-+		printk_ratelimited(KERN_DEBUG "%s: small delta %lu ns\n",
-+				   __func__, delta);
- 		return -ETIME;
- 	}
- 
--- 
-1.7.1
+M
+
+On Jun 4, 2011, at 9:17 AM, Manuel Lauss wrote:
+
+> Hello,
+> 
+> Markus Hästbacka <mhastbacka <at> gmail.com> writes:
+>> If I
+>> run dmesg  the computer hangs for 15 minutes, and I cannot even login at this
+> time, if I leave top (the top
+>> window updates very slowly, like every 5 minutes during this period) running I
+> can see that the process
+>> rcu_kthread takes 100% CPU, the computer load average is at around 10.
+> 
+>> but for example the last time I got the hang, I didn't get this error, nor any
+> other error for that matter.
+>> 
+>> The OS is installed on a CF-card. The computer is a eBox computer with VIA
+> Nehemiah CPU, 256MB RAM.
+>> 
+>> what more information do you need? Or what more can I test?
+> 
+> I too experience this weird 15 to 20-minute hang, but only on non-preempt
+> uniprocessor kernels; it still responds to pings, though.
+> With either preempt or SMP enabled it's not as visible or simply gone.
+> 
+> Manuel
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
