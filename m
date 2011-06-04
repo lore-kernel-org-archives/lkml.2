@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab1FDFyX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 01:54:23 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54141 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604Ab1FDFyW (ORCPT
+	id S1752765Ab1FDF4v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 01:56:51 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:48711 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752418Ab1FDF4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 01:54:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-message-flag
-         :x-operating-system:x-editor:x-disclaimer:user-agent;
-        b=q44t1WU66KHiMLavGzi01UKkh2/mV0H1p0U555mxmx1X+23kBGtVSDcuaXImoFH+If
-         4mRsoi+9xarQhYHUdTpBXX+fY+TWsHGWRHAmF+VCVKJK9iiGbPVqmMVbz6W7rRVn6vJy
-         Pj+8tGKdPLMKispd+wuUm0FrXAwIR4OmCbMC8=
-Date: Sat, 4 Jun 2011 14:54:28 +0900
-From: Mattia Dongili <malattia@linux.it>
-To: Greg Dietsche <gregory.dietsche@cuw.edu>
-Cc: mjg@redhat.com, kernel-janitors@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sony-laptop: remove unused local variables
-Message-ID: <20110604055427.GA2901@kamineko.org>
-References: <1307068040-2918-1-git-send-email-Gregory.Dietsche@cuw.edu>
- <4DE84AE8.60109@cuw.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DE84AE8.60109@cuw.edu>
-X-Message-Flag: Cranky? Try Free Software instead!
-X-Operating-System: Linux 2.6.39+ x86_64
-X-Editor: Vim http://www.vim.org/
-X-Disclaimer: Buh!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 4 Jun 2011 01:56:50 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18lac1Myh4lIVNqG04/zvtRKn2l26PM7s2rwz6ecX
+	oKlMpUfNQktJBs
+Subject: Re: [RFC]Questions about quilt & git quilt
+From: Mike Galbraith <efault@gmx.de>
+To: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Cc: linux-kernel@vger.kernel.org, greg@kroah.com, joe@perches.com,
+        akpm@linux-foundation.org
+In-Reply-To: <20110604025811.GB2589@gmail.com>
+References: <20110604025811.GB2589@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 04 Jun 2011 07:56:45 +0200
+Message-ID: <1307167005.5426.4.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 09:46:00PM -0500, Greg Dietsche wrote:
-> please disregard... i neglected to rebase before sending. this patch
-> no longer applies to the mainline.
+On Sat, 2011-06-04 at 10:58 +0800, Harry Wei wrote:
+> Hi all,
+> I wanna read the git quilt's codes, but i can not find
+> them anywhere. Josef Sipek maintain the git quilt, so 
+> i fetch from 
+> git://git.kernel.org/pub/scm/linux/kernel/git/jsipek/guilt.git
+> When i entered guilt directory, i just find only executable files but
+> their codes. Can anyone know how i can get their codes? 
+> Thanks in advance.
 
-the same patch was also already sent by Guenter Roeck a few days ago:
-http://www.spinics.net/lists/platform-driver-x86/msg02018.html
+Guilt is a set of executable scripts.
 
-thanks
--- 
-mattia
-:wq!
+	-Mike
+
