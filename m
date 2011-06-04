@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab1FDLF7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 07:05:59 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47928 "EHLO hera.kernel.org"
+	id S1756504Ab1FDLG2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 07:06:28 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47949 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755402Ab1FDLF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 07:05:58 -0400
-Date: Sat, 4 Jun 2011 11:05:36 GMT
-From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
-Message-ID: <tip-b273fa9716aa1564bee88ceee62f9042981cdc81@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        a.p.zijlstra@chello.nl, fweisbec@gmail.com, tglx@linutronix.de,
-        daahern@cisco.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        tzanussi@gmail.com, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        tglx@linutronix.de, daahern@cisco.com, mingo@elte.hu
-In-Reply-To: <1301588863-20210-1-git-send-email-fweisbec@gmail.com>
-References: <1301588863-20210-1-git-send-email-fweisbec@gmail.com>
+	id S1756447Ab1FDLG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jun 2011 07:06:27 -0400
+Date: Sat, 4 Jun 2011 11:06:06 GMT
+From: tip-bot for Vince Weaver <vweaver1@eecs.utk.edu>
+Message-ID: <tip-aa4a221875873d2a1f9656cb7fd7e545e952b4fa@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        akpm@linux-foundation.org, dsahern@gmail.com, tglx@linutronix.de,
+        vweaver1@eecs.utk.edu, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, dsahern@gmail.com, tglx@linutronix.de,
+        vweaver1@eecs.utk.edu, mingo@elte.hu
+In-Reply-To: <alpine.DEB.2.00.1106031751170.29381@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1106031751170.29381@cl320.eecs.utk.edu>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf python: Fix argument name list of read_on_cpu()
-Git-Commit-ID: b273fa9716aa1564bee88ceee62f9042981cdc81
+Subject: [tip:perf/core] perf: Comment /proc/sys/kernel/perf_event_paranoid to be part of user ABI
+Git-Commit-ID: aa4a221875873d2a1f9656cb7fd7e545e952b4fa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 04 Jun 2011 11:05:38 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 04 Jun 2011 11:06:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b273fa9716aa1564bee88ceee62f9042981cdc81
-Gitweb:     http://git.kernel.org/tip/b273fa9716aa1564bee88ceee62f9042981cdc81
-Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Thu, 31 Mar 2011 18:27:42 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 3 Jun 2011 10:09:22 -0300
+Commit-ID:  aa4a221875873d2a1f9656cb7fd7e545e952b4fa
+Gitweb:     http://git.kernel.org/tip/aa4a221875873d2a1f9656cb7fd7e545e952b4fa
+Author:     Vince Weaver <vweaver1@eecs.utk.edu>
+AuthorDate: Fri, 3 Jun 2011 17:54:40 -0400
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 4 Jun 2011 12:22:04 +0200
 
-perf python: Fix argument name list of read_on_cpu()
+perf: Comment /proc/sys/kernel/perf_event_paranoid to be part of user ABI
 
-Mandatory arguments need to be present in the argument name list, as
-well as optional arguments, otherwise python barfs:
+Turns out that distro packages use this file as an indicator of
+the perf event subsystem - this is easier to check for from scripts
+than the existence of the system call.
 
-	# ./python/twatch.py
-	Traceback (most recent call last):
-	  File "./python/twatch.py", line 41, in <module>
-	    main()
-	  File "./python/twatch.py", line 32, in main
-	    event = evlist.read_on_cpu(cpu)
-	RuntimeError: more argument specifiers than keyword list entries
+This is easy enough to keep around for the kernel, so add a
+comment to make sure it stays so.
 
-Hence, add cpu to the name list.
-
-Cc: David Ahern <daahern@cisco.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Link: http://lkml.kernel.org/r/1301588863-20210-1-git-send-email-fweisbec@gmail.com
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: paulus@samba.org
+Cc: acme@redhat.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.00.1106031751170.29381@cl320.eecs.utk.edu
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/util/python.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/sysctl.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index 24063b4..a9ac050 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -674,7 +674,7 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
- 	struct perf_evlist *evlist = &pevlist->evlist;
- 	union perf_event *event;
- 	int sample_id_all = 1, cpu;
--	static char *kwlist[] = {"sample_id_all", NULL, NULL};
-+	static char *kwlist[] = {"cpu", "sample_id_all", NULL, NULL};
- 	int err;
- 
- 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i|i", kwlist,
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 4fc9244..f175d98 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -938,6 +938,12 @@ static struct ctl_table kern_table[] = {
+ 	},
+ #endif
+ #ifdef CONFIG_PERF_EVENTS
++	/*
++	 * User-space scripts rely on the existence of this file
++	 * as a feature check for perf_events being enabled.
++	 *
++	 * So it's an ABI, do not remove!
++	 */
+ 	{
+ 		.procname	= "perf_event_paranoid",
+ 		.data		= &sysctl_perf_event_paranoid,
