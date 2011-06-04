@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab1FDKYH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 06:24:07 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:32881 "EHLO mx2.mail.elte.hu"
+	id S1755926Ab1FDKaR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 06:30:17 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34741 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755508Ab1FDKYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 06:24:05 -0400
-Date: Sat, 4 Jun 2011 12:23:50 +0200
+	id S1753908Ab1FDKaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jun 2011 06:30:15 -0400
+Date: Sat, 4 Jun 2011 12:29:59 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com
-Subject: Re: [patch] perf - comment /proc/sys/kernel/perf_event_paranoid to
- be part of user ABI
-Message-ID: <20110604102350.GC16292@elte.hu>
-References: <alpine.DEB.2.00.1105240955050.9203@cl320.eecs.utk.edu>
- <1306246306.18455.36.camel@twins>
- <alpine.DEB.2.00.1105241341160.24062@cl320.eecs.utk.edu>
- <20110524194810.GB27634@elte.hu>
- <alpine.DEB.2.00.1105241610390.24062@cl320.eecs.utk.edu>
- <4DDC1BB2.4090503@gmail.com>
- <20110524212925.GL27634@elte.hu>
- <alpine.DEB.2.00.1106031751170.29381@cl320.eecs.utk.edu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <daahern@cisco.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 0/4] perf/urgent fixes
+Message-ID: <20110604102959.GA20329@elte.hu>
+References: <1307118363-24092-1-git-send-email-acme@infradead.org>
+ <20110604101334.GA16292@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1106031751170.29381@cl320.eecs.utk.edu>
+In-Reply-To: <20110604101334.GA16292@elte.hu>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -39,27 +37,12 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Vince Weaver <vweaver1@eecs.utk.edu> wrote:
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-> On Tue, 24 May 2011, Ingo Molnar wrote:
-> 
-> > I agree with Vince that as far as shell scripts are concerned, checking 
-> > /proc/sys/kernel/perf_event_paranoid would work best - and it works better than 
-> > having to check the perf syscall.
-> > 
-> > Vince: mind sending a patch that adds a comment to perf_event_paranoid that 
-> > userspace relies on the existence of that file as a feature check? Having such 
-> > reminders in the code works even better than frequent testing ;-)
-> 
-> Such a patch is included below.  Not sure if this is exactly what you 
-> meant.
+> One suggestion: please merge perf/urgent into perf/core before 
+> queueing up more changes which would conflict.
 
-Yeah, that's exactly what i meant - we don't need more really.
-
-Most sysctls are not ABIs (there's no userspace that relies on them) 
-so the general attitude is to change them freely and backtrack if 
-something breaks unexpectedly. We can avoid that by commenting the 
-dependency.
+i've done this as i've run into a conflict straight away.
 
 Thanks,
 
