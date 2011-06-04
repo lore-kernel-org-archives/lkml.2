@@ -1,40 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab1FDROJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 13:14:09 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41029 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757Ab1FDROI (ORCPT
+	id S1754545Ab1FDReg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 13:34:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:44135 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754230Ab1FDRef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 13:14:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=d95aPBbDUhz9Nnob79TxEIlzBHTbCUthU0ACy74P7KxCr4jTFgtuZKnKD0La+XRhA5
-         Z5ypO6ENj4hO5/7X7XUEXco1xtkK2ABNfYe/weMpeDq8lB02VBrc/Q0CIywXm9LeIGE7
-         3UvhDZqJYmt6NNnHMHJj226YFlBxOYJDQAbeU=
-MIME-Version: 1.0
-In-Reply-To: <1307116529.2669.130.camel@novo.hadess.net>
-References: <4DE1FA7F.3050308@users.sourceforge.net> <1307116529.2669.130.camel@novo.hadess.net>
-From: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
-Date: Sat, 4 Jun 2011 19:13:47 +0200
-Message-ID: <BANLkTinz12uYphhORTwGf202j-ofZi2sKJ+KoL7Auuga3NbrEA@mail.gmail.com>
-Subject: Re: Reporting screen/laptop orientation data to userspace
-To: Bastien Nocera <hadess@hadess.net>
-Cc: Alberto Mardegan <mardy@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, "Javier S. Pedro" <maemo@javispedro.com>,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 4 Jun 2011 13:34:35 -0400
+X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=8qa4WLNxHRAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=pKRKc05RFs-kQmU2iS0A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] sched: remove the next highest_prio in RT scheduling
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Yong Zhang <yong.zhang0@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <BANLkTim+3ZzqBfWNzks96sm89O4o2c2_Yw@mail.gmail.com>
+References: <BANLkTimQ67180HxCx5vgMqumqw1EkFh3qg@mail.gmail.com>
+	 <1306852804.11899.19.camel@gandalf.stny.rr.com>
+	 <BANLkTikzjVd69XRb6psBm1aYSem126YynA@mail.gmail.com>
+	 <1307163988.31814.11.camel@gandalf.stny.rr.com>
+	 <BANLkTim+3ZzqBfWNzks96sm89O4o2c2_Yw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sat, 04 Jun 2011 13:34:32 -0400
+Message-ID: <1307208872.31814.12.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 3, 2011 at 5:55 PM, Bastien Nocera <hadess@hadess.net> wrote:
->
-> As soon as it's seen some testing, I'll be showing the work I did for
-> GNOME support for automatic rotation based on orientation.
+On Sat, 2011-06-04 at 13:11 +0800, Hillf Danton wrote:
+> On Sat, Jun 4, 2011 at 1:06 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> Hi Steve
+> 
+> Big surprise, you work on Saturday!
 
-And how you handle these events through X ?
+Technically Saturday, but I was working late Friday night.
 
-i
+> 
+> good weekend
+
+You too.
+
+-- Steve
+
+
