@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab1FDXGj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 19:06:39 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:60102 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754838Ab1FDXGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 19:06:37 -0400
-Date: Sat, 4 Jun 2011 16:06:33 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Vivek Goyal <vgoyal@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: Mysterious CFQ crash and RCU
-Message-ID: <20110604230633.GD6093@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110519222404.GG12600@redhat.com>
- <20110521210013.GJ2271@linux.vnet.ibm.com>
- <20110523152141.GB4019@redhat.com>
- <20110523153848.GC2310@linux.vnet.ibm.com>
- <1306401337.27271.3.camel@t41.thuisdomein>
- <20110603050724.GB2304@linux.vnet.ibm.com>
- <1307191830.23387.24.camel@t41.thuisdomein>
- <20110604160326.GA6093@linux.vnet.ibm.com>
- <1307227686.28359.23.camel@t41.thuisdomein>
+	id S1756578Ab1FDLVn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 07:21:43 -0400
+Received: from fep33.mx.upcmail.net ([62.179.121.51]:41525 "EHLO
+	fep33.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754724Ab1FDLVm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jun 2011 07:21:42 -0400
+X-Greylist: delayed 1055 seconds by postgrey-1.27 at vger.kernel.org; Sat, 04 Jun 2011 07:21:42 EDT
+X-SourceIP: 14.99.53.74
+Reply-To: <claimsdepartment1055@live.com>
+From: "Award Team" <iml.koopmans@tiscali.nl>
+Subject: Dear: e-Mail Winner
+Date: Sat, 4 Jun 2011 16:33:58 -0700
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307227686.28359.23.camel@t41.thuisdomein>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_00B8_01C2A9A6.3F13B0A2"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20110604110405.XVYR1513.viefep18-int.chello.at@edge02.upcmail.net>
+X-Cloudmark-Analysis: v=1.1 cv=tMVj8KYobzzX0EiRnC7vY2isLrCxFvdg4RrHWPZXwJ0= c=1 sm=0 a=tovJcQRvjacA:10 a=SIapg4jNq7wA:10 a=8EU9Q7FnrCoA:10 a=-quOTl_l0wQA:10 a=Zk3OmFfbAAAA:8 a=lSmQRChqyr3wkU2KSCkA:9 a=mBcwhUG7iqEA:10 a=x46t9oslO7cA:10 a=e3FQH6xdWJl4dfwG:21 a=HFSLGII3e1La6vhr:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 05, 2011 at 12:48:05AM +0200, Paul Bolle wrote:
-> On Sat, 2011-06-04 at 09:03 -0700, Paul E. McKenney wrote:
-> > More like "based on these diagnostics, I see no evidence of the RCU
-> > implementation misbehaving."  Which is of course different than "I can
-> > prove that the RCU implementation is not misbehaving".  That said, the
-> > fact that you are running on a single CPU makes it hard for me to see
-> > any latitude for RCU-implementation misbehavior.
-> > 
-> > Clearly something is wrong somewhere.
-> 
-> Yes.
-> 
-> > Given the fact that on a single-CPU
-> > system, synchronize_rcu() is a no-op, and given that you weren't able
-> > to reproduce with CONFIG_TREE_PREEMPT_RCU=y, my guess is that there is
-> > a synchronize_rcu() that occasionally (illegally) gets executed within
-> > an RCU read-side critical section.
-> 
-> I think I finally found it!
+This is a multi-part message in MIME format.
 
-Very cool!!!
+------=_NextPart_000_00B8_01C2A9A6.3F13B0A2
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-> The culprit seems to be io_context.ioc_data (not the most clear of
-> names!). It seems to be a single entry "last-hit cache" of an hlist
-> called cic_list. (There are three, subtly different, cic_lists in the
-> CFQ code!) It is not entirely clear, but that last-hit cache can get out
-> of sync with the hlist it is supposed to cache. My guess it that every
-> now and then a member of the hlist gets deleted while it's still in that
-> (single entry) cache. If it then gets retrieved from that cache it
-> already points to poisoned memory. For some strange reason this only
-> results in an Oops if one or more debugging options are set (as are set
-> in the Fedora Rawhide non-stable kernels that I ran into this). I have
-> no clue whatsoever, why that is ...
 
-Oooh...  If I understand you correctly, this is exactly analogous to my
-first-ever RCU bug way back in the early 90s.  This was a hashed version
-of a BSD-style routing table, where each hash bucket maintained a pointer
-to the last routing entry used.  When I deleted a routing entry, I forgot
-to check the last-entry pointer.
+------=_NextPart_000_00B8_01C2A9A6.3F13B0A2
+Content-Type: application/octet-stream;
+	name="New Text Document.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="New Text Document.txt"
 
-The amazing thing is that the guy who found and fixed this bug generated
-a correct fix despite having absolutely no idea what RCU was or how it
-worked.  All he knew was that if he waited for the sun to reach Oregon,
-his users were going to be way beyond upset.  ;-)
+RGVhcjogZS1NYWlsIFdpbm5lciwNCg0KWW91IGhhdmUgYmVlbiBzZWxlY3Rl
+ZCBpbiB0aGUgb24tZ29pbmcgTWljcm9zb2Z0IGF3YXJkIGhlbGQgdGhpcyBK
+dW5lDQoyMDExLldlIHRoZSBQcm9tbyBCb2FyZCBhcmUgcGxlYXNlZCB0byBp
+bmZvcm0geW91IHRoYXQgeW91IGFsb25nc2lkZSBmb3VyKDQpIA0Kb3RoZXJs
+dWNreSB3aW5uZXJzIGhhdmUgYmVlbiBhcHByb3ZlZCBmb3IgYSBwYXltZW50
+IG9mIDEsMDAwIDAwMEdCUCAoT25lIE1pbGxpb24gUG91bmRzIFN0ZXJsaW5n
+KS5JZiB5b3UgZGlkIHJlY2VpdmUgdGhpcyBlbWFpbCwgaXQgbWVhbnMgeW91
+IGFyZSBvbmUgb2YgDQp0aGUgZml2ZSg1KWx1Y2t5IHdpbm5lcnMuIFlvdXIg
+dmVyaWZpY2F0aW9uIG51bWJlciBpczogODg3LTEzLTg2NS0zNy0xMC04Mygy
+MCkuDQoNCipDTEFJTVMgUFJPQ0VTU0lORyBPRkZJQ0VSOg0KKk5hbWU6TXIg
+Q2FybCBSb2JiaW5zb24NCipFbWFpbDpjbGFpbXNkZXBhcnRtZW50MTA1NUBs
+aXZlLmNvbQ0KDQpZb3UgYXJlIGFsc28gYWR2aXNlZCB0byBwcm92aWRlIGhp
+bSB3aXRoIHRoZSB1bmRlciBsaXN0ZWQgaW5mb3JtYXRpb24NCmFzIHNvb24g
+YXMgcG9zc2libGU6DQoNCipOQU1FIElOIEZVTEw6DQoqREVMSVZFUlkgQURE
+UkVTUzoNCipTRVg6DQoqQUdFOg0KKkNPVU5UUlk6DQoqTkFUSU9OQUxJVFk6
+DQoqT0NDVVBBVElPTjoNCipQSE9ORToNCg0KV2UgYXJlIGdsYWQgdG8gaGF2
+ZSB5b3UgYXMgb25lIG9mIG91ciBsdWNrbHkgd2lubmVycy4NCllvdXJzIFNp
+bmNlcmVseSwNCk1ycy4gUm9zZSBXb29kLg0KT25saW5lIENvLW9yZGluYXRv
+ci4=
 
-> Anyhow, after ripping out ioc_data this bug seems to have disappeared!
-> Jens, Vivek, could you please have a look at this? In the mean time I
-> hope to pinpoint this issue and draft a small patch to really solve it
-> (ie, not by simply ripping out ioc_data).
-
-Again, very cool!!!
-
-							Thanx, Paul
+------=_NextPart_000_00B8_01C2A9A6.3F13B0A2--
