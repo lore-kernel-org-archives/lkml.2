@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab1FDOMH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 10:12:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34797 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756368Ab1FDOMF (ORCPT
+	id S1756872Ab1FDOTs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 10:19:48 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35571 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756271Ab1FDOTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 10:12:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=GnqnHN6TRTgzQuc0L7EWcKIEnSnJ1jdaYglcpum9eMbg7Ly3IOOBMObC6g/rBKVn/O
-         WlYiOPEX4ZJldGE1NfIg9KNgR4BoEUyDgjCBSTxk+Pp8b2TRtiHwLU1RhJ61cj1EdUiP
-         YozqGyt8zzZJ2EjQbCp9g1XbOy+dauSEpjvBA=
+	Sat, 4 Jun 2011 10:19:47 -0400
+Date: Sat, 4 Jun 2011 15:19:40 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 08/12] superblock: introduce per-sb cache shrinker
+ infrastructure
+Message-ID: <20110604141940.GW11521@ZenIV.linux.org.uk>
+References: <1306998067-27659-1-git-send-email-david@fromorbit.com>
+ <1306998067-27659-9-git-send-email-david@fromorbit.com>
+ <20110604004231.GV11521@ZenIV.linux.org.uk>
+ <20110604015212.GD561@dastard>
+ <20110604140848.GA20404@infradead.org>
 MIME-Version: 1.0
-From: Hui Zhu <teawater@gmail.com>
-Date: Sat, 4 Jun 2011 22:11:22 +0800
-Message-ID: <BANLkTinNKg1KMB13DChOc7E9uQ+f6mZXAg@mail.gmail.com>
-Subject: Get new GDB for UBUNTU from launchpad PPA
-To: gdb@sourceware.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110604140848.GA20404@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello every GDB and UBUNTU user,
+On Sat, Jun 04, 2011 at 10:08:48AM -0400, Christoph Hellwig wrote:
+> On Sat, Jun 04, 2011 at 11:52:12AM +1000, Dave Chinner wrote:
+> > I wanted to put it early on in the unmount path so that the shrinker
+> > was guaranteed to be gone before evict_inodes() was called. That
+> > would mean that it is obviously safe to remove the iprune_sem
+> > serialisation in that function.
+> 
+> The iprune_sem removal is fine as soon as you have a per-sb shrinker
+> for the inodes which keeps an active reference on the superblock until
+> all the inodes are evicted.
 
-Maybe you still use old version GDB like 7.2 or early version, but it
-have a lot of bugs and maybe miss some feature that you really want
-but just included in new version.
-Or maybe you are working on some different arch like ARM or MIPS, you
-will need rebuild a GDB for this arch.
-
-I begin to publish new version GDB (7.3 and 7.3.5) for UBUNTU 10.04,
-10.10, 11.04, 11.10 (Still working on 8.04) in launchpad PPA.
-These GDB is:
-1.  GDB maintainer are working on them everyday.  You can get the new
-feature and bug fix early.
-2.  All of them are built by "--enable-targets=all
---enable-64-bit-bfd".  So all of them support all arch that GDB
-support.  You can debug the local program or debug the remote program
-of other arch inside it.
-3.  The package is named "gdb-7.3" and "gdb-trunk", and the GDB that
-installed to the system is named "gdb-7.3" and "gdb-7.3.5".  So it
-will not affect the GDB that you install in before.  You can use the
-old one directly if you got some trouble with the new one.
-
-Please goto following URL to get them:
-https://launchpad.net/~teawater/+archive/gdb-10.04
-https://launchpad.net/~teawater/+archive/gdb-10.10
-https://launchpad.net/~teawater/+archive/gdb-11.04
-https://launchpad.net/~teawater/+archive/gdb-11.10
-
-Thanks,
-Hui
+I really don't like that.  Stuff keeping active refs, worse yet doing that
+asynchronously...  Shrinkers should *not* do that.  Just grab a passive
+ref (i.e. bump s_count), try grab s_umount (shared) and if that thing still
+has ->s_root while we hold s_umount, go ahead.  Unregister either at the
+end of generic_shutdown_super() or from deactivate_locked_super(), between
+the calls of ->kill_sb() and put_filesystem().
