@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606Ab1FDLZF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 07:25:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36391 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756100Ab1FDLZE convert rfc822-to-8bit (ORCPT
+	id S1756763Ab1FDLkN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 07:40:13 -0400
+Received: from defer-dn04.ocn.ad.jp ([125.170.100.158]:49874 "EHLO
+	defer-dn04.ocn.ad.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756674Ab1FDLkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 07:25:04 -0400
-Subject: Re: [patch] sched, cgroups: fix MIN_SHARES on 64 bit boxen
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mike Galbraith <mgalbraith@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Nikhil Rao <ncrao@google.com>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1307179796.25172.3.camel@marge.simson.net>
-References: <1307179796.25172.3.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 04 Jun 2011 13:24:49 +0200
-Message-ID: <1307186689.2353.4648.camel@twins>
+	Sat, 4 Jun 2011 07:40:07 -0400
+Date: Sat, 04 Jun 2011 20:38:28 +0900 (JST)
+Message-Id: <20110604.203828.193685667.anemo@mba.ocn.ne.jp>
+To: mjt@tls.msk.ru
+Cc: James.Bottomley@HansenPartnership.com, axboe@kernel.dk, greg@kroah.com,
+        jslaby@suse.cz, stable@kernel.org, jejb@parisc-linux.org,
+        linux-kernel@vger.kernel.org, wolfgang.walter@stwm.de
+Subject: Re: [stable] apparent regression (crash) - 2.6.38.6
+From: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+In-Reply-To: <4DE886D1.8090807@msgid.tls.msk.ru>
+References: <1305776367.2576.0.camel@mulgrave.site>
+	<20110601.213424.80025869.anemo@mba.ocn.ne.jp>
+	<4DE886D1.8090807@msgid.tls.msk.ru>
+X-Fingerprint: 6ACA 1623 39BD 9A94 9B1A  B746 CA77 FE94 2874 D52F
+X-Pgp-Public-Key: http://wwwkeys.pgp.net/pks/lookup?op=get&search=0x2874D52F
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-06-04 at 11:29 +0200, Mike Galbraith wrote:
-> c8b28116 claimed to have no user-visible effect, but allows setting cpu.shares
-> to < MIN_SHARES, which the user then indeed sees.
+On Fri, 03 Jun 2011 11:01:37 +0400, Michael Tokarev <mjt@tls.msk.ru> wrote:
+> Something like this?  (run-tested but I haven't seen the problem
+> in this place)
 > 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> ---
->  kernel/sched.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> commit 2e8532e0a9ee1d25b279ac78ee8ce31701e2aa15
+> Author: Michael Tokarev <mjt@tls.msk.ru>
+> Date:   Fri Jun 3 10:50:49 2011 +0400
 > 
-> Index: linux-2.6/kernel/sched.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched.c
-> +++ linux-2.6/kernel/sched.c
-> @@ -292,7 +292,7 @@ static DEFINE_SPINLOCK(task_group_lock);
->   * (The default weight is 1024 - so there's no practical
->   *  limitation from this.)
->   */
-> -#define MIN_SHARES	2
-> +#define MIN_SHARES	(scale_load(2))
->  #define MAX_SHARES	(1UL << (18 + SCHED_LOAD_RESOLUTION))
->  
->  static int root_task_group_load = ROOT_TASK_GROUP_LOAD;
+>     block: add proper state guards to elv_queue_empty()
 
-Hurm, but that destroys most of the gains from that patch, the whole
-point was being able to have finer graunlarities, but now
-calc_cfs_shares() and effective_load() are clipped the coarse
-granularity.
+Yes, that's exactly what I mean.
 
-So maybe explicitly change the MIN_SHARES usage in
-sched_group_set_shares(). That wants to become a clamp user anyway,
-something like:
+>     Like in 0a58e077eb600d1efd7e54ad9926a75a39d7f8ae (backported to
+>     stable 2.6.38 as 0a58e077eb600d1efd7e54ad9926a75a39d7f8ae) which
+>     fixes this for __elv_next_request(), as reported by Atsushi Nemoto,
+>     elv_queue_empty() also needs to check for dead queue condition
+>     before touchin elevator.
+> 
+>     elv_queue_empty() has been removed upstream so this is only applicable
+>     for versions prior to 2.6.39, including 2.6.32-longterm.
 
-shares = clamp(shares, scale_load(MIN_SHARES), scale_load(MAX_SHARES));
+Yes, Wolfgang Walter reported same crash on 2.6.32.40 so
+2.6.32-longterm would need this fix.
 
-That way MAX_SHARES can also loose its SCHED_LOAD_RESOLUTION factor and
-bring is back in line with MIN_SHARES.
+I suppose all stable branches which have backport of 86cbfb56 ("put
+stricter guards on queue dead checks") need this fix.
+
+---
+Atsushi Nemoto
