@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab1FHDYc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 23:24:32 -0400
-Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:6494 "EHLO
-	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645Ab1FHDYa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 23:24:30 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=I0jFHxriRJwyplOnjK2nOSNCO7GacXBAI5CCNqI8fuI= c=1 sm=1
- a=3762yOXauukA:10 a=BLceEmwcHowA:10 a=oaxjXb+On79cRBAvziGSJw==:17
- a=47LbCVvxAAAA:8 a=toXUOTWnoOkK3WuCcE8A:9 a=QhNQsjeWOoAA:10
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-From: Simon Wood <simon@mungewell.org>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Michael Bauer <michael@m-bauer.org>, Marcin Tolysz <tolysz@gmail.com>,
-        Simon Wood <simon@mungewell.org>,
-        Antonio Ospite <ospite@studenti.unina.it>
-Subject: [PATCHv4 3/3] sony_ff_bluetooth
-Date: Sat,  4 Jun 2011 02:32:37 -0700
-Message-Id: <1307179957-24458-3-git-send-email-simon@mungewell.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1307179957-24458-1-git-send-email-simon@mungewell.org>
-References: <1307179957-24458-1-git-send-email-simon@mungewell.org>
+	id S1754842Ab1FDJpd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 05:45:33 -0400
+Received: from home.kolivas.org ([59.167.196.135]:40749 "EHLO home.kolivas.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753905Ab1FDJpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jun 2011 05:45:32 -0400
+From: Con Kolivas <kernel@kolivas.org>
+To: linux-kernel@vger.kernel.org
+Subject: lrzip compressed tarball of all 40 linux-2.6 kernels
+Date: Sat, 4 Jun 2011 19:45:25 +1000
+User-Agent: KMail/1.13.6 (Linux/2.6.39-ck1; KDE/4.6.2; x86_64; ; )
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106041945.25922.kernel@kolivas.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for patching the HID descriptor when Sixaxis is connect
-via Bluetooth. In this mode the desciptor contains a trailing '0x00'.
+With the 2.6 linux kernel now officially finished, I'm providing an lrzip 
+tarball of all 40 of the 3 point kernel releases as an lrzip tarball. This is 
+a convenient way of getting all the releases in a relatively low bandwidth 
+form, and previous archives of this nature have had a few downloads so I 
+figured I'd complete the archive for those who want to download it and use it 
+as an ad for lrzip:
 
-Patch suggested by Antonio
+163.9MB:
+http://ck.kolivas.org/linux-2.6.0-2.6.39.tar.lrz
 
-Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
-Signed-off-by: Simon Wood <simon@mungewell.org>
----
- drivers/hid/hid-sony.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+10.3GB:
+linux-2.6.0-2.6.39.tar
 
-diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
-index f219746..5d37f97 100644
---- a/drivers/hid/hid-sony.c
-+++ b/drivers/hid/hid-sony.c
-@@ -49,8 +49,11 @@ static __u8 *sony_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		hid_info(hdev, "Fixing up Sony Vaio VGX report descriptor\n");
- 		rdesc[55] = 0x06;
- 	}
--	if ((sc->quirks & SIXAXIS_CONTROLLER_USB) &&
--			*rsize == 148 && rdesc[83] == 0x75) {
-+
-+	/* The HID descriptor exposed over BT has a trailing zero byte */
-+	if ((((sc->quirks & SIXAXIS_CONTROLLER_USB) && *rsize == 148) ||
-+			((sc->quirks & SIXAXIS_CONTROLLER_BT)  && *rsize == 149 )) &&
-+			rdesc[83] == 0x75) {
- 		hid_info(hdev, "Fixing up Sony Sixaxis report descriptor\n");
- 		memcpy((void *)&rdesc[83], (void *) &sixaxis_rdesc_fixup, sizeof(sixaxis_rdesc_fixup));
- 	}
-@@ -64,7 +67,7 @@ static int sony_raw_event(struct hid_device *hdev, struct hid_report *report, __
- {
- 	struct sony_sc *sc = hid_get_drvdata(hdev);
- 
--	if ((sc->quirks & SIXAXIS_CONTROLLER_USB) &&
-+	if ((sc->quirks & (SIXAXIS_CONTROLLER_USB | SIXAXIS_CONTROLLER_BT)) &&
- 			rd[0] == 0x01 && size == 49) {
- 		swap(rd[41], rd[42]);
- 		swap(rd[43], rd[44]);
+Original file is a tarball of all 3 point linux kernel release tarballs 2.6.0 
+to 2.6.39 coming to a grand total of 10.3GB
+
+Of course this is a plug for lrzip on something it is particularly good at 
+compressing.
+
+lrzip can be obtained here:
+http:://lrzip.kolivas.org
+
+About this archive: It was compressed with lrzip version 0.606 on a quad core 
+3GHz core 2 on a relatively slow external USB2 hard drive with the following 
+options:
+
+lrzip -UL 9 linux-2.6.0-2.6.39.tar
+Total time: 00:56:19.88
+
+It would have compressed a lot faster without the -L 9 option, but given this 
+is the "final" archive of 2.6, I figured I'd push it a bit further. Lrzip can 
+compress it even further with zpaq as an option, but it makes decompression 
+much slower so I'd personally find the archive less useful.
+
+Of course someone will ask how it compares to xz, so for completion:
+
+xz -9 linux-2.6.0-2.6.39.tar
+Total time: 2:05:32.218
+
+11067473920 linux-2.6.0-2.6.39.tar
+1535618848 linux-2.6.0-2.6.39.tar.xz 13.8%
+171879382 linux-2.6.0-2.6.39.tar.lrz 1.6%
+
 -- 
-1.7.4.1
-
+-ck
