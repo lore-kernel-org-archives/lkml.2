@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab1FEDmO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 23:42:14 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:64048 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab1FEDmM (ORCPT
+	id S1751133Ab1FEEJr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 00:09:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51357 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927Ab1FEEJq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 23:42:12 -0400
+	Sun, 5 Jun 2011 00:09:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :user-agent;
-        b=LsRS6/mcJa8WBRaMB9xcHp+Fx9ZNpcqX/0PQcJpOSgjbRAeHCfPw8u+jyklmc+LET4
-         Moj/JK8EP/BnNZM1PCU4xF40/tcCQCh4nhp5ES0EvyC3XqODs9CIqxnbJ+AZr9JLeG/b
-         vQ0D6APcqVHp+1G4GYiP3Ztc5kHd9HU248sP4=
-Date: Sun, 5 Jun 2011 11:41:14 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: greg@kroah.com, akpm@linux-foundation.org
-Subject: [Oops]RFC:include/trace/events/btrfs.h
-Message-ID: <20110605034111.GA7215@gmail.com>
-Mail-Followup-To: linux-kernel@vger.kernel.org, greg@kroah.com,
-	akpm@linux-foundation.org
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=x3QNhEcYN9IZF0Xwh+TN92UwJ0lmo6SnmJNiKLJEpMZf2qu792GWK9YTCO26yEIHsW
+         1GKtMeEl0ImXlbXLbK4T8t3vEfFdG2l/fhOI8AaTW1hxThVoeNNhFU6F02IjFunAiYKu
+         paFJCf6ubAgWQU8FZLGwPXVXeVqGvNlxZ74pA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=unknown-8bit
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1306889876-5327-1-git-send-email-asharma@fb.com>
+References: <1306889876-5327-1-git-send-email-asharma@fb.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Sun, 5 Jun 2011 00:09:25 -0400
+Message-ID: <BANLkTinEkfRH-xJRyrtajSLEkEwrau7yRA@mail.gmail.com>
+Subject: Re: [PATCH] atomic: generalize atomic_add_unless_return
+To: Arun Sharma <asharma@fb.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        David Miller <davem@davemloft.net>, Andrew Morton <akpm@osdl.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Harry Wei <harryxiyou@gmail.com>
+On Tue, May 31, 2011 at 20:57, Arun Sharma wrote:
+> commit 686a7e3 added this primitive to get something going
+> for the stable branch.
+>
+> Move the primitive to <linux/atomic.h>
 
-When i compile 2.6.39.1, it shows something wrong
-like below. When i open the file include/trace/events/btrfs.h
-i don't know how to fix these oops. They just give the entry
-of the function. So i can't get the exact line of the warnings.
-Can anyone give me some suggestions?
+this changelog is confusing.  please replace the pronouns with proper nouns.
 
-Thanks in advance.
-Harry Wei
+> --- a/include/linux/atomic.h
+> +++ b/include/linux/atomic.h
+>  /**
+> + * atomic_add_unless - add unless the number is already a given value
+> + * @v: pointer of type atomic_t
+> + * @a: the amount to add to v...
+> + * @u: ...unless v is equal to u.
+> + *
+> + * Atomically adds @a to @v, so long as @v was not already @u.
+> + * Returns the old value of @v + @a.
+> + */
+> +static inline int atomic_add_unless_return(atomic_t *v, int a, int u)
 
-In file included from include/trace/ftrace.h:283,
-                    from include/trace/define_trace.h:96,
-		                     from include/trace/events/btrfs.h:667,
-				                      from fs/btrfs/super.c:56:
-include/trace/events/btrfs.h: In function ���ftrace_raw_output_btrfs_transaction_commit���:
-include/trace/events/btrfs.h:47: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:47: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:47: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h: In function ���ftrace_raw_output_btrfs__inode���:
-include/trace/events/btrfs.h:68: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:68: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:68: warning: large integer implicitly truncated to unsigned type
-   include/trace/events/btrfs.h: In function ���ftrace_raw_output_btrfs_get_extent���:
-   include/trace/events/btrfs.h:144: warning: large integer implicitly truncated to unsigned type
- include/trace/events/btrfs.h:144: warning: large integer implicitly truncated to unsigned type
- include/trace/events/btrfs.h:144: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:144: warning: large integer implicitly truncated to unsigned type
- include/trace/events/btrfs.h:144: warning: large integer implicitly truncated to unsigned type
- include/trace/events/btrfs.h:144: warning: large integer implicitly truncated to unsigned type
-  include/trace/events/btrfs.h:144: warning: large integer implicitly truncated to unsigned type
-  include/trace/events/btrfs.h: In function ���ftrace_raw_output_btrfs__ordered_extent���:
-  include/trace/events/btrfs.h:197: warning: large integer implicitly truncated to unsigned type
-  include/trace/events/btrfs.h:197: warning: large integer implicitly truncated to unsigned type
- include/trace/events/btrfs.h:197: warning: large integer implicitly truncated to unsigned type
-  include/trace/events/btrfs.h: In function ���ftrace_raw_output_btrfs__writepage���:
- include/trace/events/btrfs.h:273: warning: large integer implicitly truncated to unsigned type
-nclude/trace/events/btrfs.h:273: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:273: warning: large integer implicitly truncated to unsigned type
- include/trace/events/btrfs.h: In function ���ftrace_raw_output_btrfs_writepage_end_io_hook���:
-clude/trace/events/btrfs.h:332: warning: large integer implicitly truncated to unsigned type
- include/trace/events/btrfs.h:332: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:332: warning: large integer implicitly truncated to unsigned type
- include/trace/events/btrfs.h: In function ���ftrace_raw_output_btrfs_sync_file���:
-nclude/trace/events/btrfs.h:365: warning: large integer implicitly truncated to unsigned type
-nclude/trace/events/btrfs.h:365: warning: large integer implicitly truncated to unsigned type
- include/trace/events/btrfs.h:365: warning: large integer implicitly truncated to unsigned type
- include/trace/events/btrfs.h: In function ���ftrace_raw_output_btrfs_delayed_tree_ref���:
-nclude/trace/events/btrfs.h:420: warning: large integer implicitly truncated to unsigned type
-nclude/trace/events/btrfs.h:420: warning: large integer implicitly truncated to unsigned type
-clude/trace/events/btrfs.h:420: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:420: warning: large integer implicitly truncated to unsigned type
- include/trace/events/btrfs.h:420: warning: large integer implicitly truncated to unsigned type
- include/trace/events/btrfs.h:420: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h: In function ���ftrace_raw_output_btrfs_delayed_data_ref���:
-include/trace/events/btrfs.h:459: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:459: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:459: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:459: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:459: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:459: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h: In function ���ftrace_raw_output_btrfs__chunk���:
-include/trace/events/btrfs.h:541: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:541: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:541: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h: In function ���ftrace_raw_output_btrfs_cow_block���:
-include/trace/events/btrfs.h:591: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:591: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:591: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h: In function ���ftrace_raw_output_btrfs__reserved_extent���:
-include/trace/events/btrfs.h:626: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:626: warning: large integer implicitly truncated to unsigned type
-include/trace/events/btrfs.h:626: warning: large integer implicitly truncated to unsigned type
+the name of the func in the comment does not match the actual name of the func
 
+also, the semantics here appear to deviate from the other atomic
+funcs.  the existing xxx_return funcs return the new result, not the
+old.
+-mike
