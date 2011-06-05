@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab1FEL6A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 07:58:00 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:49819 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab1FEL57 (ORCPT
+	id S1756048Ab1FEMQK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 08:16:10 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42969 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755919Ab1FEMQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 07:57:59 -0400
-X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
-X-RZG-CLASS-ID: mo00
-Message-ID: <4DEB6F3A.3000109@die-jansens.de>
-Date: Sun, 05 Jun 2011 13:57:46 +0200
-From: Arne Jansen <lists@die-jansens.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Sun, 5 Jun 2011 08:16:09 -0400
+Date: Sun, 5 Jun 2011 14:15:56 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Brian Gerst <brgerst@gmail.com>
+Cc: "greg@kroah.com" <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] sysdev: Do not register with sysdev when erroring
+ on add
+Message-ID: <20110605121556.GA3294@aftab>
+References: <1296577197-9766-1-git-send-email-bp@amd64.org>
+ <BANLkTikJ8jUVeEk=GuV6iaw2ASuOLPA4yw@mail.gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-References: <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com> <1307092535.2353.2973.camel@twins> <4DE8B13D.9020302@die-jansens.de> <1307097052.2353.3061.camel@twins> <20110605081747.GA17920@elte.hu> <4DEB4FA7.3050400@die-jansens.de> <20110605095555.GA22058@elte.hu> <4DEB58D8.4000805@die-jansens.de> <20110605110132.GB23463@elte.hu> <20110605111933.GA24592@elte.hu> <20110605113627.GA25724@elte.hu>
-In-Reply-To: <20110605113627.GA25724@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikJ8jUVeEk=GuV6iaw2ASuOLPA4yw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.06.2011 13:36, Ingo Molnar wrote:
->
-> * Ingo Molnar<mingo@elte.hu>  wrote:
->
->>> If the ticks stop this suggests a lockup within the printk code.
->>> [...]
->>
->> In which case the printk-killswitch patch below (to be applied
->> *instead* of the previous debugging patch i sent) should provide
->> the desired NMI watchdog output on the serial console.
->>
->> Warning: it's entirely untested.
+On Sun, Jun 05, 2011 at 07:07:34AM -0400, Brian Gerst wrote:
+> On Tue, Feb 1, 2011 at 11:19 AM, Borislav Petkov <bp@amd64.org> wrote:
+> > From: Borislav Petkov <borislav.petkov@amd.com>
+> >
+> > When encountering an error while executing the driver's ->add method, we
+> > should cancel registration and unwind what we've regged so far. The low
+> > level ->add methods do return proper error codes but those aren't looked
+> > at in sysdev_driver_register(). Fix that by sharing the unregistering
+> > code.
+> 
+> This patch is causing boot failures on a virtual machine running
+> Fedora 15 32-bit.  With this patch, the microcode driver repeatedly
+> spews:
+> microcode: CPU0: AMD CPU family 0x6 not supported
+> modprobe: FATAL: Error inserting microcode: Invalid argument.
+> until eventually causing an oops.  Reverting this patch allows the
+> boot to proceed.
 
-How is the output supposed to come through? shouldn't printk revert
-to early_printk instead of just returning?
+Yeah, we had a similar issue with a K8 machine on Fedora:
+https://bugzilla.kernel.org/show_bug.cgi?id=35522
 
+Another fix would be if you remove the *microcode.rules in
+/etc/udev/rules.d/ which tries to load the microcode driver
+continuously. The funny thing is, this happens only on Fedora - all the
+other distros simply get the -EINVAL from the driver failing to load
+and that's it. I guess Fedora's udev doesn't accept the error value and
+continues to try to load the module.
 
->
-> Note, since this is an SMP box, if the lockup messages show up with
-> this patch but are mixed up with each other then adding a spinlock
-> around the WARN() would probably help keeping the output serialized.
->
-> A simple:
->
->   static DEFINE_SPINLOCK(watchdog_output_lock);
->
->   ...
-> 	spin_lock(&watchdog_output_lock);
->   ...
-> 	[ the WARN_ON() logic. ]
->   ...
-> 	spin_unlock(&watchdog_output_lock);
->   ...
->
-> would suffice.
->
-> Thanks,
->
-> 	Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
