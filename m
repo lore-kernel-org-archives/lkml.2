@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab1FEExJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 00:53:09 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:54270 "EHLO
+	id S1752998Ab1FEFIt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 01:08:49 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:54444 "EHLO
 	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab1FEExH (ORCPT
+	with ESMTP id S1750983Ab1FEFIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 00:53:07 -0400
+	Sun, 5 Jun 2011 01:08:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=oPouRP2SvWeYSAy/tIjNYOdS76wF/bwZVZzDrl6CXVJwi6TRrPJxwpv99z+NoTmVO0
-         ews3HQCPkKkD5S1NA7krVx5XI4qUe/q+w9xkuWpIbhcUzd6ZcNkAnFdCcmNPCH6ECHP/
-         HAxviHECsv2Oy/AXp9QvxhCDxsXlVIg1H8TsU=
-Date: Sun, 5 Jun 2011 13:52:55 +0900
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=XR4tRwauFkSzKz6TDZ08O4tWP0R/mIG5msQgsOeHAlOQm5sBaZKeTG+FhI2AkmX3lV
+         ZCnUwg9gFbOINXTRWwsPZjfLsrdjfUUTC6UkqL7B7x5v/PXDlYQPU2oK+yEoXRt3vjT9
+         Md1xK+wxvpgTvxR3ZAct2yWlP0GLrwLRinuqg=
 From: Minchan Kim <minchan.kim@gmail.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v8 12/12] memcg: check memcg dirty limits in page
- writeback
-Message-ID: <20110605045255.GD5914@barrios-laptop>
-References: <1307117797-747-1-git-send-email-gthelen@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307117797-747-1-git-send-email-gthelen@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH] Fix page isolated count mismatch
+Date: Sun,  5 Jun 2011 14:08:36 +0900
+Message-Id: <1307250516-10756-1-git-send-email-minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 03, 2011 at 09:16:37AM -0700, Greg Thelen wrote:
-> If the current process is in a non-root memcg, then
-> balance_dirty_pages() will consider the memcg dirty limits as well as
-> the system-wide limits.  This allows different cgroups to have distinct
-> dirty limits which trigger direct and background writeback at different
-> levels.
-> 
-> If called with a mem_cgroup, then throttle_vm_writeout() queries the
-> given cgroup for its dirty memory usage limits.
-> 
-> Signed-off-by: Andrea Righi <arighi@develer.com>
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+If migration is failed, normally we call putback_lru_pages which
+decreases NR_ISOLATE_[ANON|FILE].
+It means we should increase NR_ISOLATE_[ANON|FILE] before calling
+putback_lru_pages. But soft_offline_page dosn't it.
 
+It can make NR_ISOLATE_[ANON|FILE] with negative value and in UP build
+, zone_page_state will say huge isolated pages so too_many_isolated
+functions be deceived completely. At last, some process stuck in D state
+as it expect while loop ending with congestion_wait.
+But it's never ending story.
+
+If it is right, it would be -stable stuff.
+
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ mm/memory-failure.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 5c8f7e0..eac0ba5 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -52,6 +52,7 @@
+ #include <linux/swapops.h>
+ #include <linux/hugetlb.h>
+ #include <linux/memory_hotplug.h>
++#include <linux/mm_inline.h>
+ #include "internal.h"
+ 
+ int sysctl_memory_failure_early_kill __read_mostly = 0;
+@@ -1468,7 +1469,8 @@ int soft_offline_page(struct page *page, int flags)
+ 	put_page(page);
+ 	if (!ret) {
+ 		LIST_HEAD(pagelist);
+-
++		inc_zone_page_state(page, NR_ISOLATED_ANON +
++					    page_is_file_cache(page));
+ 		list_add(&page->lru, &pagelist);
+ 		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
+ 								0, true);
 -- 
-Kind regards
-Minchan Kim
+1.7.0.4
+
