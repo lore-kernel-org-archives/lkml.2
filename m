@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab1FEMQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 08:16:28 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:34393 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755925Ab1FEMQ0 (ORCPT
+	id S1756081Ab1FEMQR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 08:16:17 -0400
+Received: from core.xandmail.com ([91.121.90.39]:38902 "EHLO mail.xandmail.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755919Ab1FEMQP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 08:16:26 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@suse.de
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH v2 2/2] TTY: ntty, add one more sanity check
-Date: Sun,  5 Jun 2011 14:16:17 +0200
-Message-Id: <1307276177-20957-2-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.5.3
-In-Reply-To: <1307276177-20957-1-git-send-email-jslaby@suse.cz>
-References: <BANLkTik5QP7e=+FWSa1kLVpCjZpWEtF1PQ@mail.gmail.com>
- <1307276177-20957-1-git-send-email-jslaby@suse.cz>
+	Sun, 5 Jun 2011 08:16:15 -0400
+Date: Sun,  5 Jun 2011 13:17:41 +0100
+Message-Id: <LMBGTH$A812B00861F4E19958E7B94B8E8F8165@xandmail.com>
+Subject: Humanitarian Project
+MIME-Version: 1.0
+X-Sensitivity: 3
+X-Priority: 1 (Highest)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+From: "eidehansehans" <eidehansehans@hotmail.com>
+X-XaM3-API-Version: V3(R2)
+X-SenderIP: 41.202.87.58
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the previous patch, we fixed another bug where read_buf was freed
-while we still was in n_tty_read. We currently check whether read_buf
-is NULL at the start of the function. Add one more check after we wake
-up from waiting for input.
+Humanitarian Project
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
----
- drivers/tty/n_tty.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Hello dear, my names are Eide Hans Terje Kristian suffering from
+Leukemia/Lung Cancer which my doctor has confirmed that days are no
+longer at my favor due to condition of my health. Knowing my
+situation, I decided to set a humanitarian project through you which I
+know that you will not betray the love of God directing me to your
+hand. Bear in mind that I took this difficult decision as a human
+being because I have no family that could have inherited this funds
+(8.4 million Euros). Urgently get back to me with your personal
+details including your ID so that I will take it to my bank in other
+to introduce you officially to their office to enable my bank
+establish a direct comunication with you for the transfer of these
+funds to your account. Your delays answering sankoh ilimane: to this
+message will create an avenue looking for another hand that will give
+urgent attention to this transaction as an assistance to meet my
+objectives.
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 95d0a9c..c62c856 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1785,6 +1785,7 @@ do_it_again:
- 				break;
- 			}
- 			timeout = schedule_timeout(timeout);
-+			BUG_ON(!tty->read_buf);
- 			continue;
- 		}
- 		__set_current_state(TASK_RUNNING);
--- 
-1.7.5.3
+Best regards
 
+Eide Hans Terje Kristian
 
