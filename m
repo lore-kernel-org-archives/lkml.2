@@ -1,84 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058Ab1FEQfx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 12:35:53 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:47766 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab1FEQfw (ORCPT
+	id S1754041Ab1FEQja (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 12:39:30 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:37446 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061Ab1FEQj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 12:35:52 -0400
-X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
-X-RZG-CLASS-ID: mo00
-Message-ID: <4DEBB05C.8090506@die-jansens.de>
-Date: Sun, 05 Jun 2011 18:35:40 +0200
-From: Arne Jansen <lists@die-jansens.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-References: <20110605110132.GB23463@elte.hu> <20110605111933.GA24592@elte.hu> <20110605113627.GA25724@elte.hu> <4DEB6F3A.3000109@die-jansens.de> <20110605133958.GA27812@elte.hu> <4DEB8A93.30601@die-jansens.de> <20110605141003.GB29338@elte.hu> <4DEB933C.1070900@die-jansens.de> <20110605151323.GA30590@elte.hu> <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu> <4DEBA9CC.4090503@die-jansens.de>
-In-Reply-To: <4DEBA9CC.4090503@die-jansens.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 5 Jun 2011 12:39:29 -0400
+Date: Sun, 5 Jun 2011 18:38:06 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
+        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH V4] mm: Extend memory hotplug API to allow memory hotplug in virtual machines
+Message-ID: <20110605163806.GA12527@router-fw-old.local.net-space.pl>
+References: <20110524222733.GA29133@router-fw-old.local.net-space.pl> <20110602122607.3122e23b.akpm@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110602122607.3122e23b.akpm@linux-foundation.org>
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.06.2011 18:07, Arne Jansen wrote:
-> On 05.06.2011 17:32, Ingo Molnar wrote:
->>
->> one more thing, could you please add this call:
->>
->> debug_show_all_locks();
->>
->> to after the WARN(), in watchdog.c?
->>
->> Please surround the whole printout portion by the
->> spin_lock()/unlock() protection code i suggested, full-lock-state
->> printouts are slow and other CPUs might start printing their NMI
->> ticks ...
->>
->> With the all-locks-printed output we can double check what locks are
->> held.
+On Thu, Jun 02, 2011 at 12:26:07PM -0700, Andrew Morton wrote:
+> On Wed, 25 May 2011 00:27:33 +0200
+> Daniel Kiper <dkiper@net-space.pl> wrote:
 >
-> Hm, on first try:
+> > This patch applies to Linus' git tree, git commit 98b98d316349e9a028e632629fe813d07fa5afdd
+> > (Merge branch 'drm-core-next' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6)
+> > with a few prerequisite patches available at https://lkml.org/lkml/2011/5/2/296
+> > and https://lkml.org/lkml/2011/5/17/408 (all prerequisite patches were included in -mm tree).
+> >
+> > This patch contains online_page_callback and apropriate functions for
+> > registering/unregistering online page callbacks. It allows to do some
+> > machine specific tasks during online page stage which is required
+> > to implement memory hotplug in virtual machines. Currently this patch
+> > is required by latest memory hotplug support for Xen balloon driver
+> > patch which will be posted soon.
+> >
+> > Additionally, originial online_page() function was splited into
+> > following functions doing "atomic" operations:
+> >   - __online_page_set_limits() - set new limits for memory management code,
+> >   - __online_page_increment_counters() - increment totalram_pages and totalhigh_pages,
+> >   - __online_page_free() - free page to allocator.
+> >
+> > It was done to:
+> >   - not duplicate existing code,
+> >   - ease hotplug code devolpment by usage of well defined interface,
+> >   - avoid stupid bugs which are unavoidable when the same code
+> >     (by design) is developed in many places.
 >
-> INFO: lockdep is turned off.
+> I grabbed this and the xen patch.  I assume that all prerequisites
+> are now in mainline?
+
+Thank you. Yes, they are.
+
+> Please give some thought to making this extra code Kconfigurable, and
+> selected by Xen?  See if we can avoid a bit of bloat for other kernel
+> users.
+
+If you think about Xen part it is Kconfigurable.
+
+> What is missing from the patchset is an explanation of why we should
+> merge it ;) Why is this feature desirable?  What value does it provide
+> to our users?  Why should we bother?  Answering these questions in a
+> form which can be pasted into the changelog would be convenient,
+> thanks.
+
+Balloon driver for virtualized guest systems allows easy memory
+allocation/deallocation from a hypervisor. It is utilized to improve
+memory usage by memory deallocation from guests which have a lot of it
+unused and allocation to systems under memory pressure. However, it is
+not possible by design to allocate more memory for given guest machine
+than it was allocated for it at startup. To obey that limitation memory
+hotplug shuld be used. This patch contains memory hotplug implementation
+for Xen balloon driver. It utilizes current memory hotplug infrastructure
+with small modifications. This solution allows increasing guest machine
+memory size without restart regardless of memory size set at startup.
+It is very useful on critical systems which require long run
+without rebooting.
+
+Additionally, could you add
+
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+to both patches. Here https://lkml.org/lkml/2011/5/31/416
+is original e-mail asking for it.
+
+> Is there any propsect that the other virtualisation schemes will use
+> this facility?  If not, why not?
+
+I think about that. Even I put a project proposal for GSoC 2011 (you
+could find more details here
+http://www.google-melange.com/gsoc/proposal/review/google/gsoc2011/dkiper/1),
+however, it was not accepted. Currently, I am working on kexec/kdump for
+Xen (it was my second project proposal for GSoC 2011) and my PhD thesis.
+That is why I could not devote my time to that project. However, I am going
+to return to work on generic balloon implementation and memory hotplug
+for other virtualisation schemes ASAP.
+
+> > @@ -388,7 +450,7 @@ static int online_pages_range(unsigned long start_pfn, unsigned long nr_pages,
+> >  	if (PageReserved(pfn_to_page(start_pfn)))
+> >  		for (i = 0; i < nr_pages; i++) {
+> >  			page = pfn_to_page(start_pfn + i);
+> > -			online_page(page);
+> > +			online_page_callback(page);
 >
-> Recompiling...
+> nit.  I'll change this to
 >
-
-same after a full recompile.
-
-# grep LOCKDEP .config
-
-CONFIG_LOCKDEP_SUPPORT=y
-CONFIG_LOCKDEP=y
-# CONFIG_DEBUG_LOCKDEP is not set
-
-
--Arne
-
->>
->> Thanks,
->>
->> Ingo
->> --
->> To unsubscribe from this list: send the line "unsubscribe
->> linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at http://www.tux.org/lkml/
+> 			(*online_page_callback)(page);
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at http://www.tux.org/lkml/
+> because that syntax communicates some useful information to the reader.
 
+OK.
+
+Daniel
