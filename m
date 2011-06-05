@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab1FEHna (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 03:43:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36167 "EHLO
+	id S1754889Ab1FEHpR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 03:45:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48310 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093Ab1FEHn3 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754089Ab1FEHpP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 03:43:29 -0400
+	Sun, 5 Jun 2011 03:45:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xse54RUsIueTcmSK3aTJ+hkQW/li7JFTB1pD3H6V9CMqf7+hJ41uQT6Uj0dRXP5T3F
-         wNOkBKLGe2+BbWWP26gR2Hx9JXlfCmm6rGU0aXqLRECy1zd9AqIuMFdxPWmk28tJs71e
-         a6ph0SDNglxXP+725Dr2JhaK28KotYtbXxMwE=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=pDTrgodViIp+pHFWcNiCeXwipci/zLx6sLEvUZEZ7fxJmgYf25NG0GtqpHRkMLHBDq
+         c4t99XYhqbvPjqQ0bJDAwTfx+BsAWXNMT1T2TChNPTHsusmN9Fffny+7QdxnY9W9iLQs
+         c6C8yXj9kyn/Q+caRWibUgRhbup1PlTy0cBog=
 MIME-Version: 1.0
-In-Reply-To: <20110605071725.26517.11573.stgit@ponder>
-References: <20110605071725.26517.11573.stgit@ponder>
-Date: Sun, 5 Jun 2011 13:13:28 +0530
-Message-ID: <BANLkTinoEQf2a65KwQZOVK_4H9DSfqybjA@mail.gmail.com>
-Subject: Re: [PATCH] spi: reorganize drivers
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <20110605062702.GA2034@cynthia.pants.nu>
+References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
+	<alpine.OSX.2.00.1106011300550.199@ibook.intranet>
+	<20110605062702.GA2034@cynthia.pants.nu>
+Date: Sun, 5 Jun 2011 09:45:14 +0200
+X-Google-Sender-Auth: Q0JI3jftJ9AOA3i2bTKhI8al8Pw
+Message-ID: <BANLkTim+Rkz4i1Z8iGD8nDHtTJ1b82uAYQ@mail.gmail.com>
+Subject: Re: m68k: Convert to genirq (WIP)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Brad Boyer <flar@allandria.com>
+Cc: Finn Thain <fthain@telegraphics.com.au>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 5, 2011 at 12:48 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> [repost: I had a typo on the spi-devel-general mailing list address]
+On Sun, Jun 5, 2011 at 08:27, Brad Boyer <flar@allandria.com> wrote:
+> On Fri, Jun 03, 2011 at 09:20:23PM +1000, Finn Thain wrote:
+>> On Sat, 28 May 2011, Geert Uytterhoeven wrote:
+>> > Of course any help is welcome, especially for Mac
+>>
+>> What kind of help are you looking for? I read through your patch series
+>> but I'm not sure how much work is left. Probably I need to look at a
+>> genirq reference implementation to get an idea of the goal...
 >
-> Sort the SPI makefile and enforce the naming convention spi_*.c for
-> spi drivers.
->
-> This change also rolls the contents of atmel_spi.h into the .c file
-> since there is only one user of that particular include file.
->
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  drivers/spi/Makefile            |   80 ++++++++-----------
->  drivers/spi/atmel_spi.h         |  167 ---------------------------------------
->  drivers/spi/spi_ath79.c         |    0
->  drivers/spi/spi_atmel.c         |  155 ++++++++++++++++++++++++++++++++++++
->  drivers/spi/spi_au1550.c        |    0
->  drivers/spi/spi_coldfire_qspi.c |    0
->  drivers/spi/spi_davinci.c       |    0
->  drivers/spi/spi_dw.c            |    2
->  drivers/spi/spi_dw.h            |    0
->  drivers/spi/spi_dw_mid.c        |    2
->  drivers/spi/spi_dw_mmio.c       |    2
->  drivers/spi/spi_dw_pci.c        |    2
->  drivers/spi/spi_ep93xx.c        |    0
->  drivers/spi/spi_mpc512x_psc.c   |    0
->  drivers/spi/spi_mpc52xx.c       |    0
->  drivers/spi/spi_mpc52xx_psc.c   |    0
->  drivers/spi/spi_omap2_mcspi.c   |    0
->  drivers/spi/spi_omap_100k.c     |    0
->  drivers/spi/spi_omap_uwire.c    |    0
->  drivers/spi/spi_orion.c         |    0
->  drivers/spi/spi_pl022.c         |    0
->  drivers/spi/spi_pxa2xx.c        |    0
->  drivers/spi/spi_pxa2xx_pci.c    |    0
->  drivers/spi/spi_ti_ssp.c        |    0
->  drivers/spi/spi_tle62x0.c       |    0
->  drivers/spi/spi_xilinx.c        |    0
+> If there are any good documents on genirq, I would like to look at it
+> as well. I didn't see anything obvious in Documentation/ in the tree.
 
-Though the spi_ prefix seems redundant considering the files are in
-'spi' directory.
-Just a thought, no objection.
+Documentation/DocBook/genericirq.tmpl
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
