@@ -1,166 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab1FERgI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 13:36:08 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51675 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753698Ab1FERgD (ORCPT
+	id S1755431Ab1FERm1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 13:42:27 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:21651 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016Ab1FERmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 13:36:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=nEBU7e37buwb2cFsLbCcwTha/FXVX5x4U9rMYZOo/cG6LFZgvc2HOJcagiMa+jPapf
-         Mux6RCKTC6CW89LCBNORCBJYr3zuUG0N8us6aC65HDvjHASYHrHAAd4RKUJgfYqDnuXL
-         I8JiZzMA3jBCuyc5yHOLyJ728QkJ81b+CZOuY=
-From: Mark Einon <mark.einon@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        o.hartmann@telovital.com, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 5/5] staging: et131x: et131x_netdev.c checkpatch fixes
-Date: Sun,  5 Jun 2011 18:35:20 +0100
-Message-Id: <1307295320-31716-6-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1307295320-31716-1-git-send-email-mark.einon@gmail.com>
-References: <1307295320-31716-1-git-send-email-mark.einon@gmail.com>
+	Sun, 5 Jun 2011 13:42:25 -0400
+X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4DEBBFF9.2030101@die-jansens.de>
+Date: Sun, 05 Jun 2011 19:42:17 +0200
+From: Arne Jansen <lists@die-jansens.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+References: <20110605133958.GA27812@elte.hu> <4DEB8A93.30601@die-jansens.de> <20110605141003.GB29338@elte.hu> <4DEB933C.1070900@die-jansens.de> <20110605151323.GA30590@elte.hu> <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu> <4DEBA9CC.4090503@die-jansens.de> <4DEBB05C.8090506@die-jansens.de> <4DEBB3DA.8060001@die-jansens.de> <20110605172052.GA1036@elte.hu>
+In-Reply-To: <20110605172052.GA1036@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes multiple 'WARNING: externs should be avoided in .c files'.
+On 05.06.2011 19:20, Ingo Molnar wrote:
+>
+> * Arne Jansen<lists@die-jansens.de>  wrote:
+>
+>>>>> With the all-locks-printed output we can double check what locks are
+>>>>> held.
+>>
+>> btw, the output posted earlier also contains some BUG: spinlock
+>> lockup.
+>
+> hm, it's hard to interpret that without the spin_lock()/unlock()
+> logic keeping the dumps apart.
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/et131x_netdev.c |  112 ++++++++++++++-----------------
- 1 files changed, 51 insertions(+), 61 deletions(-)
+The locking was in place from the beginning. As the output is still
+scrambled, there are other sources for BUG/WARN outside the watchdog
+that trigger in parallel. Maybe we should protect the whole BUG/WARN
+mechanism with a lock and send it to early_printk from the beginning,
+so we don't have to wait for the watchdog to kill printk off and the
+first BUG can come through.
+Or just let WARN/BUG kill off printk instead of the watchdog (though
+I have to get rid of that syslog-WARN on startup).
 
-diff --git a/drivers/staging/et131x/et131x_netdev.c b/drivers/staging/et131x/et131x_netdev.c
-index 5f6522c..7cc4b48 100644
---- a/drivers/staging/et131x/et131x_netdev.c
-+++ b/drivers/staging/et131x/et131x_netdev.c
-@@ -89,67 +89,6 @@
- #include "et131x.h"
- 
- struct net_device_stats *et131x_stats(struct net_device *netdev);
--int et131x_open(struct net_device *netdev);
--int et131x_close(struct net_device *netdev);
--int et131x_ioctl(struct net_device *netdev, struct ifreq *reqbuf, int cmd);
--void et131x_multicast(struct net_device *netdev);
--int et131x_tx(struct sk_buff *skb, struct net_device *netdev);
--void et131x_tx_timeout(struct net_device *netdev);
--int et131x_change_mtu(struct net_device *netdev, int new_mtu);
--int et131x_set_mac_addr(struct net_device *netdev, void *new_mac);
--void et131x_vlan_rx_register(struct net_device *netdev, struct vlan_group *grp);
--void et131x_vlan_rx_add_vid(struct net_device *netdev, uint16_t vid);
--void et131x_vlan_rx_kill_vid(struct net_device *netdev, uint16_t vid);
--
--static const struct net_device_ops et131x_netdev_ops = {
--	.ndo_open		= et131x_open,
--	.ndo_stop		= et131x_close,
--	.ndo_start_xmit		= et131x_tx,
--	.ndo_set_multicast_list	= et131x_multicast,
--	.ndo_tx_timeout		= et131x_tx_timeout,
--	.ndo_change_mtu		= et131x_change_mtu,
--	.ndo_set_mac_address	= et131x_set_mac_addr,
--	.ndo_validate_addr	= eth_validate_addr,
--	.ndo_get_stats		= et131x_stats,
--	.ndo_do_ioctl		= et131x_ioctl,
--};
--
--/**
-- * et131x_device_alloc
-- *
-- * Returns pointer to the allocated and initialized net_device struct for
-- * this device.
-- *
-- * Create instances of net_device and wl_private for the new adapter and
-- * register the device's entry points in the net_device structure.
-- */
--struct net_device *et131x_device_alloc(void)
--{
--	struct net_device *netdev;
--
--	/* Alloc net_device and adapter structs */
--	netdev = alloc_etherdev(sizeof(struct et131x_adapter));
--
--	if (netdev == NULL) {
--		printk(KERN_ERR "et131x: Alloc of net_device struct failed\n");
--		return NULL;
--	}
--
--	/* Setup the function registration table (and other data) for a
--	 * net_device
--	 */
--	/* netdev->init               = &et131x_init; */
--	/* netdev->set_config = &et131x_config; */
--	netdev->watchdog_timeo = ET131X_TX_TIMEOUT;
--	netdev->netdev_ops = &et131x_netdev_ops;
--
--	/* netdev->ethtool_ops        = &et131x_ethtool_ops; */
--
--	/* Poll? */
--	/* netdev->poll               = &et131x_poll; */
--	/* netdev->poll_controller    = &et131x_poll_controller; */
--	return netdev;
--}
- 
- /**
-  * et131x_stats - Return the current device statistics.
-@@ -702,3 +641,54 @@ int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
- 	netif_wake_queue(netdev);
- 	return result;
- }
-+
-+static const struct net_device_ops et131x_netdev_ops = {
-+	.ndo_open		= et131x_open,
-+	.ndo_stop		= et131x_close,
-+	.ndo_start_xmit		= et131x_tx,
-+	.ndo_set_multicast_list	= et131x_multicast,
-+	.ndo_tx_timeout		= et131x_tx_timeout,
-+	.ndo_change_mtu		= et131x_change_mtu,
-+	.ndo_set_mac_address	= et131x_set_mac_addr,
-+	.ndo_validate_addr	= eth_validate_addr,
-+	.ndo_get_stats		= et131x_stats,
-+	.ndo_do_ioctl		= et131x_ioctl,
-+};
-+
-+/**
-+ * et131x_device_alloc
-+ *
-+ * Returns pointer to the allocated and initialized net_device struct for
-+ * this device.
-+ *
-+ * Create instances of net_device and wl_private for the new adapter and
-+ * register the device's entry points in the net_device structure.
-+ */
-+struct net_device *et131x_device_alloc(void)
-+{
-+	struct net_device *netdev;
-+
-+	/* Alloc net_device and adapter structs */
-+	netdev = alloc_etherdev(sizeof(struct et131x_adapter));
-+
-+	if (netdev == NULL) {
-+		printk(KERN_ERR "et131x: Alloc of net_device struct failed\n");
-+		return NULL;
-+	}
-+
-+	/* Setup the function registration table (and other data) for a
-+	 * net_device
-+	 */
-+	/* netdev->init               = &et131x_init; */
-+	/* netdev->set_config = &et131x_config; */
-+	netdev->watchdog_timeo = ET131X_TX_TIMEOUT;
-+	netdev->netdev_ops = &et131x_netdev_ops;
-+
-+	/* netdev->ethtool_ops        = &et131x_ethtool_ops; */
-+
-+	/* Poll? */
-+	/* netdev->poll               = &et131x_poll; */
-+	/* netdev->poll_controller    = &et131x_poll_controller; */
-+	return netdev;
-+}
-+
--- 
-1.7.4.4
+>
+> Was lockdep enabled as you started the test?
 
+At least it was in the config, but haven't double checked. ATM, it is.
+
+>
+> but ... if the lock is reasonably sorted then it's this one:
+>
+> <0>BUG: spinlock lockup on CPU#3, modprobe/22211, ffffffff81e1c0c0
+> Pid: 22211, comm: modprobe Tainted: G        W   2.6.39-rc3+ #19
+> Call Trace:
+>   [<ffffffff813af306>] do_raw_spin_lock+0x156/0x170
+>   [<ffffffff8185ce71>] _raw_spin_lock+0x51/0x70
+>   [<ffffffff81092df6>] ? vprintk+0x76/0x4a0
+>   [<ffffffff81092df6>] vprintk+0x76/0x4a0
+>   [<ffffffff810c5f8d>] ? trace_hardirqs_off+0xd/0x10
+>   [<ffffffff81859e19>] printk+0x63/0x65
+>   [<ffffffff813af301>] do_raw_spin_lock+0x151/0x170
+>   [<ffffffff8108a4bd>] ? try_to_wake_up+0x29d/0x350
+>   [<ffffffff8185ce71>] _raw_spin_lock+0x51/0x70
+>   [<ffffffff81092df6>] ? vprintk+0x76/0x4a0
+>   [<ffffffff81092df6>] vprintk+0x76/0x4a0
+>   [<ffffffff8108758b>] ? cpuacct_charge+0x9b/0xb0
+>   [<ffffffff8108750f>] ? cpuacct_charge+0x1f/0xb0
+>   [<ffffffff8108a4bd>] ? try_to_wake_up+0x29d/0x350
+>   [<ffffffff81859e19>] printk+0x63/0x65
+>   [<ffffffff813af090>] spin_bug+0x70/0xf0
+>   [<ffffffff813af2d9>] do_raw_spin_lock+0x129/0x170
+>   [<ffffffff8108a4bd>] ? try_to_wake_up+0x29d/0x350
+>   [<ffffffff8185ce71>] _raw_spin_lock+0x51/0x70
+>   [<ffffffff81092df6>] ? vprintk+0x76/0x4a0
+>
+> and it occured before the lockup in the scheduler.
+>
+> Which could be due to a race between disabling lockdep on one CPU and
+> the scheduler doing the lock-held check on another CPU.
+>
+> Do you get any messages after the assert is removed, during the test?
+
+No.
