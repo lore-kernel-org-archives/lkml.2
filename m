@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab1FERGy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 13:06:54 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:47916 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab1FERGx (ORCPT
+	id S1754416Ab1FERIA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 13:08:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58778 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742Ab1FERH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 13:06:53 -0400
-X-Originating-IP: 217.70.178.134
-X-Originating-IP: 50.43.15.19
-Date: Sun, 5 Jun 2011 10:06:39 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Unhide DEBUG_BUGVERBOSE when EXPERT=y, even if
- DEBUG_KERNEL=n
-Message-ID: <20110605170639.GA739@leaf>
-References: <20110605083230.GA18260@leaf>
- <20110605093445.GA19927@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110605093445.GA19927@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 5 Jun 2011 13:07:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:x-mailer:mime-version
+         :content-type;
+        b=OKmSRF+zb50pPI28nntel2TGR4CLiVTfItd6VGfWmSAwAtc4LMwjDSCQURGHOkFN7Q
+         Vx2RVbxsghgs+XH0gu4d3O846JFYf7lNi/slqGTgy5B54b54XH9hb+M1NCzSSKceiM1J
+         WFTEMKR1T/NvyzEzS+JA+D/a5EC4kWMHGPra0=
+Date: Sun, 5 Jun 2011 20:10:42 +0300
+From: Sergei Trofimovich <slyich@gmail.com>
+To: linux-wireless@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: 3.0.0-rc1: dmesg shows 'wlan%d' instead of 'wlan0'
+Message-ID: <20110605201042.21c86763@sf>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/+lgUSj/K3nJ0QJNuiAPvc9o"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 05, 2011 at 11:34:45AM +0200, Ingo Molnar wrote:
-> 
-> * Josh Triplett <josh@joshtriplett.org> wrote:
-> 
-> >  config DEBUG_BUGVERBOSE
-> > -	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
-> > +	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL || EXPERT
-> 
-> Well, DEBUG_KERNEL really means two things:
-> 
->   - make more debugging options available
->   - allow the *disabling* of existing (default-enabled) debug options
+--Sig_/+lgUSj/K3nJ0QJNuiAPvc9o
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-As well as one more: a quick "git grep DEBUG_KERNEL" turns up a few uses
-in actual kernel source code, to control debugging features.  Those
-should likely use separately selectable debug options, but they
-currently don't.
+Recently I've noticed small discrepancy in dmesg:
 
-~/src/linux-2.6$ find * -not -name 'Kconfig*' -not -name '*defconfig' | xargs grep -n DEBUG_KERNEL
-arch/parisc/mm/init.c:653:#ifdef CONFIG_DEBUG_KERNEL /* double-sanity-check paranoia */
-arch/powerpc/kernel/sysfs.c:229:#ifdef CONFIG_DEBUG_KERNEL
-arch/powerpc/kernel/sysfs.c:258:#endif /* CONFIG_DEBUG_KERNEL */
-arch/powerpc/kernel/sysfs.c:299:#ifdef CONFIG_DEBUG_KERNEL
-arch/powerpc/kernel/sysfs.c:328:#endif /* CONFIG_DEBUG_KERNEL */
-arch/blackfin/include/asm/entry.h:53:/* As a debugging aid - we save IPEND when DEBUG_KERNEL is on,
-arch/blackfin/include/asm/entry.h:56:# ifndef CONFIG_DEBUG_KERNEL
-arch/blackfin/include/asm/entry.h:65:# else /* CONFIG_DEBUG_KERNEL */
-arch/blackfin/include/asm/entry.h:77:# endif /* CONFIG_DEBUG_KERNEL */
-arch/blackfin/include/asm/context.S:208:#ifdef CONFIG_DEBUG_KERNEL
-drivers/usb/musb/musb_core.c:557:                * REVISIT:  do delays from lots of DEBUG_KERNEL checks
+$ { zcat messages.2.gz messages.1.gz; cat messages; } | egrep "(deauthen|Li=
+nux version)"
+...
+May 21 22:01:31 sf kernel: [    0.000000] Linux version 2.6.39-00004-g29c77=
+fa (slyfox@sf) (gcc version 4.4.5 (Gentoo 4.4.5 p1.2, pie-0.4.5) ) #116 SMP=
+ PREEMPT Thu May 19 22:46:16 EEST 2011
+May 24 05:37:54 sf kernel: [81845.885094] wlan0: deauthenticated from ...
 
-> So i think the right solution would be to select DEBUG_KERNEL if 
-> EXPERT is enabled - this would simplify things and would allow the 
-> removal of a lot of EXPERT conditions from the debug options.
-> 
-> Ok?
+Jun  1 22:38:38 sf kernel: [    0.000000] Linux version 3.0.0-rc1-00035-g79=
+f3f61 (slyfox@sf) (gcc version 4.4.5 (Gentoo 4.4.5 p1.2, pie-0.4.5) ) #118 =
+SMP PREEMPT Wed Jun 1 22:14:46 EEST 2011
+Jun  1 23:41:23 sf kernel: [ 3877.773727] wlan%d: deauthenticating from ...
 
-I could live with that, as long as CONFIG_DEBUG_KERNEL never directly
-enables any debugging code like it does above, and just acts like
-CONFIG_EXPERT in hiding a pile of unnecessary options.  DEBUG_KERNEL
-should probably also have some text saying it doesn't actually enable
-any kernel debugging on its own, once that becomes true.
+Jun  1 23:42:16 sf kernel: [    0.000000] Linux version 3.0.0-rc1-00035-g79=
+f3f61-dirty (slyfox@sf) (gcc version 4.4.5 (Gentoo 4.4.5 p1.2, pie-0.4.5) )=
+ #119 SMP PREEMPT Wed Jun 1 23:35:43 EEST 2011
+Jun  2 07:35:10 sf kernel: [ 5972.879970] wlan%d: deauthenticated from ...
 
-- Josh Triplett
+Here we see 'wlan0' -> 'wlan%d' switch. I presume those lines go from firmw=
+are
+(and not from userspace).
+
+The card is an iwl4965
+
+10:00.0 Network controller: Intel Corporation PRO/Wireless 4965 AG or AGN [=
+Kedron] Network Connection (rev 61)
+
+--=20
+
+  Sergei
+
+--Sig_/+lgUSj/K3nJ0QJNuiAPvc9o
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iEYEARECAAYFAk3ruJgACgkQcaHudmEf86q3PQCfadOI+AYwBmOs5785ITPcR+g+
+9+oAn39cmDrXl5GE395hcGzovnF9FMH2
+=1EiS
+-----END PGP SIGNATURE-----
+
+--Sig_/+lgUSj/K3nJ0QJNuiAPvc9o--
