@@ -1,217 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab1FEIP0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 04:15:26 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34981 "EHLO mga11.intel.com"
+	id S1755439Ab1FEISI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 04:18:08 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36625 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754228Ab1FEIPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 04:15:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,322,1304319600"; 
-   d="p7s'?scan'208";a="13803624"
-From: "Weil, Oren jer" <oren.jer.weil@intel.com>
-To: Dave Airlie <airlied@gmail.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "david@woodhou.se" <david@woodhou.se>,
-        "Winkler, Tomas" <tomas.winkler@intel.com>
-Date: Sun, 5 Jun 2011 11:15:11 +0300
-Subject: RE: [PATCH 00/10] staging/mei: Intel MEI Driver
-Thread-Topic: [PATCH 00/10] staging/mei: Intel MEI Driver
-Thread-Index: AcwjVog5XRES0G3WRGOxuN9J2eRgdQAAflyA
-Message-ID: <F28B59AD52D84B479DCA469824475335065FEA9EBD@hasmsx503.ger.corp.intel.com>
-References: <1305456228-15265-1-git-send-email-oren.jer.weil@intel.com>
- <BANLkTin4tWcJ-6Yjh_Yg18dNXNpiXjRA3A@mail.gmail.com>
-In-Reply-To: <BANLkTin4tWcJ-6Yjh_Yg18dNXNpiXjRA3A@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature";
-	micalg=SHA1; boundary="----=_NextPart_000_0047_01CC2371.D6163D00"
+	id S1754691Ab1FEISF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 04:18:05 -0400
+Date: Sun, 5 Jun 2011 10:17:47 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arne Jansen <lists@die-jansens.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
+Message-ID: <20110605081747.GA17920@elte.hu>
+References: <4DE64596.5010006@die-jansens.de>
+ <1306946120.2497.606.camel@laptop>
+ <4DE674EB.1000200@die-jansens.de>
+ <1306951751.2497.626.camel@laptop>
+ <1306953870.2497.627.camel@laptop>
+ <4DE6936F.7090700@die-jansens.de>
+ <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com>
+ <1307092535.2353.2973.camel@twins>
+ <4DE8B13D.9020302@die-jansens.de>
+ <1307097052.2353.3061.camel@twins>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307097052.2353.3061.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_NextPart_000_0047_01CC2371.D6163D00
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
 
->From: Dave Airlie [mailto:airlied@gmail.com]
->this device takes over the PCI driver for the host bridge, which stops the
-AGP
->driver from loading which stops i915 from loading, which makes things sad.
->Hopefully that is another
->TODO on the list if it isn't already on it.
->
->I enabled it by mistake and then wondered what was going on.
->
->I think EDAC used to suffer from this issue as well.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-You can describe your system and send the dump of the PCI space (lspci --vv)
-and demsg?
+> On Fri, 2011-06-03 at 12:02 +0200, Arne Jansen wrote:
+> > On 03.06.2011 11:15, Peter Zijlstra wrote:
+> 
+> > > Anyway, Arne, how long did you wait before power cycling the box? The
+> > > NMI watchdog should trigger in about a minute or so if it will trigger
+> > > at all (its enabled in your config).
+> > 
+> > No, it doesn't trigger,
+> 
+> Bummer.
 
+Is there no output even when the console is configured to do an 
+earlyprintk? That will allow the NMI watchdog to punch through even a 
+printk or scheduler lockup.
 
-------=_NextPart_000_0047_01CC2371.D6163D00
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
+Arne, you can turn this on via one of these:
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIduzCCAyAw
-ggKJoAMCAQICBDXe9M8wDQYJKoZIhvcNAQEFBQAwTjELMAkGA1UEBhMCVVMxEDAOBgNVBAoTB0Vx
-dWlmYXgxLTArBgNVBAsTJEVxdWlmYXggU2VjdXJlIENlcnRpZmljYXRlIEF1dGhvcml0eTAeFw05
-ODA4MjIxNjQxNTFaFw0xODA4MjIxNjQxNTFaME4xCzAJBgNVBAYTAlVTMRAwDgYDVQQKEwdFcXVp
-ZmF4MS0wKwYDVQQLEyRFcXVpZmF4IFNlY3VyZSBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkwgZ8wDQYJ
-KoZIhvcNAQEBBQADgY0AMIGJAoGBAMFdsVhnCGLuoJotHwhtkRRomAoe/toEbxOEYiHD0XzOnwXg
-uAHwTjTs4oqVBGSs8WtTXwWzy2eAv0ICjv7dAQns4QAUT/z78AzdQ7pbK+EfgHCZFVeTFvEPl2q3
-wmgjHMxNWTCsUR47ryvW7mNFe8XZX1DS41APOojnvxT94Me5AgMBAAGjggEJMIIBBTBwBgNVHR8E
-aTBnMGWgY6BhpF8wXTELMAkGA1UEBhMCVVMxEDAOBgNVBAoTB0VxdWlmYXgxLTArBgNVBAsTJEVx
-dWlmYXggU2VjdXJlIENlcnRpZmljYXRlIEF1dGhvcml0eTENMAsGA1UEAxMEQ1JMMTAaBgNVHRAE
-EzARgQ8yMDE4MDgyMjE2NDE1MVowCwYDVR0PBAQDAgEGMB8GA1UdIwQYMBaAFEjmaPkr0rKV10fY
-IyAQTzOYkJ/UMB0GA1UdDgQWBBRI5mj5K9KylddH2CMgEE8zmJCf1DAMBgNVHRMEBTADAQH/MBoG
-CSqGSIb2fQdBAAQNMAsbBVYzLjBjAwIGwDANBgkqhkiG9w0BAQUFAAOBgQBYzinq/Pfetc4CuRe1
-hdG54+CVzCUxDQCmkm5/tpJjnlCV0Zpv5BHeY4VumO6o/1rI01WyZnFX3sAh6z0qpyNJAQSGQnv8
-7n+iFlK1Z2fTQNs7JliyKHc9rhR3Ydb6KmYnoA36p3Nc6nDxlCFlRF/6/O8paKmih3nvee9PrAd3
-ODCCAz0wggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UE
-ChMHRXF1aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9yaXR5
-MB4XDTA2MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAYBgNVBAoT
-EUludGVsIENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNpYyBQb2xpY3kg
-Q0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ8mQ1042TdOIq3ATD
-IsV2xDyt30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLGIKeNNG97dqyc30FElEUj
-ZzTZFq2N4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+CifozexHLb/hEZj+yISCU61kRZv
-uSQ0E11yYL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1Ppk965XQAKsHfnyT7C4S50T4lVn4
-lz36wOdNZn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6KbgJCKLovnujGuohquBNfdXKpZkvz6pGv+
-iC1HawJdAgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0
-Vgaj7TdUDDA6BgNVHR8EMzAxMC+gLaArhilodHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3Nl
-Y3VyZWNhLmNybDAfBgNVHSMEGDAWgBRI5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTAD
-AQH/MA0GCSqGSIb3DQEBBQUAA4GBABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69
-tOkIP4SgDJOfsxyobIrPLe75kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3j
-Mfr900fXZKj5XeqCJ+JP0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFYzCCBEugAwIBAgIKYSyl/gAA
-AAAABjANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9y
-YXRpb24xJzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wNjAzMjIy
-MjIyNDdaFw0xMjAzMjIyMjMyNDdaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jw
-b3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQjCCASIw
-DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMDoHJYUGvcdR4k0Qv8/RrwNX4+vEe5PN2LnGn4x
-fIWwdUbk5+zvrRy1HjoKdG/AShZfxAuFoVyNIah5GJLpiS/vGbsDYKK+EZcIcmtPfvbB9Yg09EnQ
-0OpsZ2ORRd5lYUfMUU+zkpgL96vKFdkiG+eeHEwnSS3VikGVrF7UDdKfvxZwRwQCx6rEHAFPCjBD
-VfGYZuYT1EDhSDvzEiU7KzBsxrdBCFU4RYL7kh+do+vyMDlBzpw3WKvMVbf3s5lxYiY7AjEhU8OS
-yZEQlgtK8PNyifHjmyrSaeJrPshM3PuLFG4d3gm1UJEiGNzxcHGb6YLP29IQAwY5mAk8j+UOVcsC
-AwEAAaOCAjUwggIxMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFG/DcREooZ0ZV/VnV8/ZKSaI
-1aWiMAsGA1UdDwQEAwIBhjAQBgkrBgEEAYI3FQEEAwIBADAZBgkrBgEEAYI3FAIEDB4KAFMAdQBi
-AEMAQTAfBgNVHSMEGDAWgBQaxgxKxEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGs
-oIGphk5odHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFs
-JTIwQmFzaWMlMjBQb2xpY3klMjBDQS5jcmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29t
-L3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNy
-bDCB4wYIKwYBBQUHAQEEgdYwgdMwYwYIKwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3Jl
-cG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUy
-MENBLmNydDBsBggrBgEFBQcwAoZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3Np
-dG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0Eu
-Y3J0MA0GCSqGSIb3DQEBBQUAA4IBAQBAiWWHL6T21QXFZDyaUIye0jh7f40GXqi75Ro5JbpROtlZ
-BqyRq6oPMAG6Igxd5Bd9TMtNkOvguknFnK1y17UdMhLOl+FuInE+FAWk803aRW27OsX+ot0KmPio
-KnZ3L1K5qcQS3tp6or7AaZzd0w0qFitm4UfP9nnTXQtY9XM5QJ07IKFDE3tlOlamKhjbiJV3FKig
-CVesPZSx9h2G7Ve4irEfz915Vks26AJHGZagEHNxM9exkgem4ENsG+t0vYqn9x7YsqJ6fmbOSyrz
-jzb3CYeEfyE5SL+f3Vx9uMsQDyb8LVCDBXQtxLEHnFEBPrRSSF9kPmyjavx4UqFdPEyCMIIFijCC
-BHKgAwIBAgIKYSCKYgAAAAAACDANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UE
-ChMRSW50ZWwgQ29ycG9yYXRpb24xJzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGlj
-eSBDQTAeFw0wOTA1MTUxOTI3MjZaFw0xNTA1MTUxOTM3MjZaMFYxCzAJBgNVBAYTAlVTMRowGAYD
-VQQKExFJbnRlbCBDb3Jwb3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNz
-dWluZyBDQSAzQjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKQEM1Wn9TU9vc9C+/Tc
-7KB+eiYElmrcEWE32WUdHvWG+IcQHVQsikTmMyKKojNLw2B5s6Iekc8ivDo/wCfjZzX9JyftMnc+
-AArc0la87Olybzm8K9jXEfTBvTnUSFSiI9ZYefITdiUgqlAFuljFZEHYKYtLuhrRacpmQfP4mV63
-NKdc2bT804HRf6YptZFa4k6YN94zlrGNrBuQQ74WFzz/jLBusbUpEkro6Mu/ZYFOFWQrV9lBhF9R
-uk8yN+3N6n9fUo/qBigiF2kEn9xVh1ykl7SCGL2jBUkXx4qgV27a6Si8lRRdgrHGtN/HWnSWlLXT
-H5l575H4Lq++77OFv38CAwEAAaOCAlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFA7G
-KvdZsggQkCVvw939imYxMCvFMAsGA1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsG
-AQQBgjcVAgQWBBQ5oFY2ekKQ/5Ktim+VdMeSWb4QWTAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMA
-QTAfBgNVHSMEGDAWgBQaxgxKxEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGp
-hk5odHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIw
-QmFzaWMlMjBQb2xpY3klMjBDQS5jcmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3Jl
-cG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB
-4wYIKwYBBQUHAQEEgdYwgdMwYwYIKwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9z
-aXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENB
-LmNydDBsBggrBgEFBQcwAoZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9y
-eS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0
-MA0GCSqGSIb3DQEBBQUAA4IBAQCxtQEHchVQhXyjEqtMVUMe6gkmPsIczHxSeqNbo9dsD+6xbT65
-JT+oYgpIAtfEsYXeUJu1cChqpb22U5bMAz7eaQcW5bzefufWvA6lg2048B8oczBj/q+5P5NpYrUO
-8jOmN4jTjfJq3ElZ7yFWpy7rB3Vm/aN6ATYqWfMbS/xfh+JCxmH3droUmMJI0/aZJHsLtjbjFnNs
-HDNrJZX1vxlM78Lb1hjskTENPmhbVbfTj5i/ZGnhv4tmI8QZPCNtcegXJrfhRl2D9bWpdTOPrWiL
-DUqzy1Z6KL7TcOS/PCl8RHCJXkPau/thTQCpIoDa2+c+3XA++gRTfAQ4svTO260NMIIGDzCCBPeg
-AwIBAgIKMs1vuQABAABZejANBgkqhkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMR
-SW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3Vpbmcg
-Q0EgM0IwHhcNMTAwODI0MDYzMDUxWhcNMTMwODA4MDYzMDUxWjBBMRcwFQYDVQQDEw5XZWlsLCBP
-cmVuIGplcjEmMCQGCSqGSIb3DQEJARYXb3Jlbi5qZXIud2VpbEBpbnRlbC5jb20wggEiMA0GCSqG
-SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDxlb9m9/wf9QwTgd/XeUNG0D67Q+l59M9/V5cOdU47brPj
-alIOAyXrhfkc+15RlpMpqFYc6Ho5XpTtovaeTCgsB9LOUNvgGlNzR3G3EG+tCbIXXRjOFf+2/PIB
-IdJoeTzf9sqZGT9h2TO5QzeQyIh2euHF8s5WiHT4skTHqw4b9QiNPOcWAAVFcrdNLiEq/aiTkhuZ
-A/6eUVxslcFQvPDZbePWDVYAzNIBhXKsGATzpYXlJ+dYtEgK54cggxbEqR56c1PJEwyUzXrqYVll
-/XeCHhonA+wFThBUUB0L2UtN+AhIvBto9CeIePVIH/MfTIIr78qcdZe3aHyORWwq5SNLAgMBAAGj
-ggLyMIIC7jALBgNVHQ8EBAMCB4AwPAYJKwYBBAGCNxUHBC8wLQYlKwYBBAGCNxUIhsOMdYSZ5VGD
-/YEohY6fU4KRwAlngd69OZXwQwIBZAIBCDAdBgNVHQ4EFgQUp2yd+HenU0oNT2u96HK1ahdvblMw
-HwYDVR0jBBgwFoAUDsYq91myCBCQJW/D3f2KZjEwK8Uwgc8GA1UdHwSBxzCBxDCBwaCBvqCBu4ZX
-aHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJh
-c2ljJTIwSXNzdWluZyUyMENBJTIwM0IoMSkuY3JshmBodHRwOi8vY2VydGlmaWNhdGVzLmludGVs
-LmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIw
-Q0ElMjAzQigxKS5jcmwwgfUGCCsGAQUFBwEBBIHoMIHlMGwGCCsGAQUFBzAChmBodHRwOi8vd3d3
-LmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFz
-aWMlMjBJc3N1aW5nJTIwQ0ElMjAzQigxKS5jcnQwdQYIKwYBBQUHMAKGaWh0dHA6Ly9jZXJ0aWZp
-Y2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwl
-MjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDNCKDEpLmNydDAfBgNVHSUEGDAWBggrBgEFBQcDBAYK
-KwYBBAGCNwoDDDApBgkrBgEEAYI3FQoEHDAaMAoGCCsGAQUFBwMEMAwGCisGAQQBgjcKAwwwSwYD
-VR0RBEQwQqAnBgorBgEEAYI3FAIDoBkMF29yZW4uamVyLndlaWxAaW50ZWwuY29tgRdvcmVuLmpl
-ci53ZWlsQGludGVsLmNvbTANBgkqhkiG9w0BAQUFAAOCAQEAjIH2RdlavZjoCNfS+3S5qGkBifxo
-K3FPbv1/bqfR+5KkBpwF+T3rMGTou5tBYBMyK1mZq5QkezC69ADLVGsvqd0VjuQPu9QGtbtVQaFz
-atCe3SWeiiPUDNE0KApdhdEUTtQZPEWEMcCmKVc5a9dPx54pJVzggWeZndPKkalFLvmmV/JVyCDg
-sGxMcasa+Vyo1KVEeuS/x0TrZKZYznABl75T1YB6yX3+XbqjqPOMN6iXzUtKz8EqPzM71DCRETHm
-fz29bE/nTHNsyC4DBOAsSzWKc6jX/jMtPEcyoShDXmdvx3uyBfMeDmOjMeJruhA61J5D7klJLhNK
-hnbNTm1LQDCCBkowggUyoAMCAQICChTFJ3cAAAAAPJwwDQYJKoZIhvcNAQEFBQAwVjELMAkGA1UE
-BhMCVVMxGjAYBgNVBAoTEUludGVsIENvcnBvcmF0aW9uMSswKQYDVQQDEyJJbnRlbCBFeHRlcm5h
-bCBCYXNpYyBJc3N1aW5nIENBIDNCMB4XDTA5MDcyMjEwMjgwOVoXDTEyMDEwODEwMjgwOVowQTEX
-MBUGA1UEAxMOV2VpbCwgT3JlbiBqZXIxJjAkBgkqhkiG9w0BCQEWF29yZW4uamVyLndlaWxAaW50
-ZWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmnvUzxK68joxNOKb80igSM/X
-tJrq3/B/9nCud/OQwxe9RzO90y0fimeg+7DxbjvdmMVxfpYXVc6xa9pcJPm5Ecd1NZLxGgSbZaAZ
-bXIWrGqqovEmBJrNHcEoQFwqvonsT1aniIXQ/MoTyWwsh+MDY8ZPYSME5JuBZqoFA2cP4yDxpdLn
-Hfz/lCQyYdhSVmierzRxopONFRq59EVI2PvYrtyNthu4TaAey7HU2hCn28YwSm58+PYdrf8L8SY9
-fNYSm5yq9R/NsUgvgM6OPG0dGH0/jvRc9C0GTGlrLefNB7hUH2l+bksl8S2Lxbco/jvLFCtnvm54
-XY4MrXiNHQHL8QIDAQABo4IDLTCCAykwCwYDVR0PBAQDAgQwMEQGCSqGSIb3DQEJDwQ3MDUwDgYI
-KoZIhvcNAwICAgCAMA4GCCqGSIb3DQMEAgIAgDAHBgUrDgMCBzAKBggqhkiG9w0DBzAdBgNVHQ4E
-FgQU79YjzVs1KXgP8glZgp+ptq2yMw4wHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwQw
-HwYDVR0jBBgwFoAUb8NxESihnRlX9WdXz9kpJojVpaIwgckGA1UdHwSBwTCBvjCBu6CBuKCBtYZU
-aHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJh
-c2ljJTIwSXNzdWluZyUyMENBJTIwM0IuY3Jshl1odHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNv
-bS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0El
-MjAzQi5jcmwwge8GCCsGAQUFBwEBBIHiMIHfMGkGCCsGAQUFBzAChl1odHRwOi8vd3d3LmludGVs
-LmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJ
-c3N1aW5nJTIwQ0ElMjAzQi5jcnQwcgYIKwYBBQUHMAKGZmh0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50
-ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUy
-MElzc3VpbmclMjBDQSUyMDNCLmNydDA9BgkrBgEEAYI3FQcEMDAuBiYrBgEEAYI3FQiGw4x1hJnl
-UYP9gSiFjp9TgpHACWeEudlBh4T/TgIBZAIBCzApBgkrBgEEAYI3FQoEHDAaMAoGCCsGAQUFBwME
-MAwGCisGAQQBgjcKAwQwSwYDVR0RBEQwQqAnBgorBgEEAYI3FAIDoBkMF29yZW4uamVyLndlaWxA
-aW50ZWwuY29tgRdvcmVuLmplci53ZWlsQGludGVsLmNvbTANBgkqhkiG9w0BAQUFAAOCAQEAOUK4
-cUiRAFsaa7/Q/4EOb636TNk/0c7CY7wRyhFWlOT9GnvqglDRYzIzsc0W7PBQoXRLuQWcpTTj04Yk
-TrMBSixS2qv4evZVgXbb9eF+hvlpMSkk7NJO9WHAKktTa+fdStnZmRPLyodRch/AyxqIRLY6iK1u
-Rqzm1XzFPRfYZZPHZhGCKWNOXpETwa0E+Nwi2Daydru+VmqLNGEeDE7Qh7PUYBkvh3xxTJTQ9jNV
-sV42lGKEMYI/EX8ZGvB32s+e61Ml1Vy2/UXFlk1ot228Zdy4PelHKFwdTL47YBhU+L6ex6Z/fwq6
-ArRZ5VjkohfuIpQof/3pizp7Ob2vGpXIADGCA5IwggOOAgEBMGQwVjELMAkGA1UEBhMCVVMxGjAY
-BgNVBAoTEUludGVsIENvcnBvcmF0aW9uMSswKQYDVQQDEyJJbnRlbCBFeHRlcm5hbCBCYXNpYyBJ
-c3N1aW5nIENBIDNCAgoyzW+5AAEAAFl6MAkGBSsOAwIaBQCgggIDMBgGCSqGSIb3DQEJAzELBgkq
-hkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTExMDYwNTA4MTUxMVowIwYJKoZIhvcNAQkEMRYEFD7G
-qluoAHmEvfRxjsB+6IweIHC8MHMGCSsGAQQBgjcQBDFmMGQwVjELMAkGA1UEBhMCVVMxGjAYBgNV
-BAoTEUludGVsIENvcnBvcmF0aW9uMSswKQYDVQQDEyJJbnRlbCBFeHRlcm5hbCBCYXNpYyBJc3N1
-aW5nIENBIDNCAgoUxSd3AAAAADycMHUGCyqGSIb3DQEJEAILMWagZDBWMQswCQYDVQQGEwJVUzEa
-MBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2lj
-IElzc3VpbmcgQ0EgM0ICChTFJ3cAAAAAPJwwgbcGCSqGSIb3DQEJDzGBqTCBpjALBglghkgBZQME
-ASowCwYJYIZIAWUDBAEWMAoGCCqGSIb3DQMHMAsGCWCGSAFlAwQBAjAOBggqhkiG9w0DAgICAIAw
-BwYFKw4DAgcwDQYIKoZIhvcNAwICAUAwDQYIKoZIhvcNAwICASgwBwYFKw4DAhowCwYJYIZIAWUD
-BAIDMAsGCWCGSAFlAwQCAjALBglghkgBZQMEAgEwCgYIKoZIhvcNAgUwDQYJKoZIhvcNAQEBBQAE
-ggEAP/ahq5EdJEPBT82sF8y6h/5m8QPW/ShOgPdhko8JHhfMf4cEnbFRq6KlDHoCVzUY5tzzaP4q
-qOuVnhD+xb7hZlgthbQqr+RxX/CyNtDQXT2FY4W5UxzzSybqCGWeg15QgQxN2rY6kYwYy1LG6zUm
-4oAJGXPyhI5cJUrYXUxVBzmnqJ/xvszectsARS8bZD8Ur75/BcVN/35NRmbkRCXq9wRK2JtGR1R+
-NtUNh/+b+525Gwj8m/XhEGMG5rzaNuQlLXUgly+RRcyJpOVfdTQVdzQc1MP9vE7aj6CMH19HPY7u
-Lxou1UA8vYnyAYdA1rrXTP4N3Z/uywVmcO/d0CvusgAAAAAAAA==
+  earlyprintk=vga,keep
+  earlyprintk=serial,ttyS0,115200,keep
 
-------=_NextPart_000_0047_01CC2371.D6163D00--
+(the ',keep' portion is important to have it active even after the 
+regular console has been switched on.)
+
+Could you also please check with the (untested) patch below applied? 
+This will turn off *all* printk done by the NMI watchdog and switches 
+it to do pure early_printk() - which does not use any locking so it 
+should never lock up.
+
+[ If you keep seeing 'NMI watchdog tick' messages periodically 
+  occuring after the lockup then i'll send a more complete patch that 
+  shuts off the regular printk path and makes sure that all output is 
+  early_printk() based only. ]
+
+earlyprintk=,keep with such a patch has let me down only on the 
+rarest of occasions.
+
+( Arne, please also double check on a working bootup that the NMI 
+  watchdog is actually ticking, by checking the NMI counts in 
+  /proc/interrupts go up slowly but surely on all CPUs. )
+
+Thanks,
+
+	Ingo
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 3d0c56a..7c7e33f 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -234,15 +234,12 @@ static void watchdog_overflow_callback(struct perf_event *event, int nmi,
+ 		if (__this_cpu_read(hard_watchdog_warn) == true)
+ 			return;
+ 
+-		if (hardlockup_panic)
+-			panic("Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+-		else
+-			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+-
+ 		__this_cpu_write(hard_watchdog_warn, true);
+ 		return;
+ 	}
+ 
++	early_printk("NMI watchog tick %ld\n", jiffies);
++
+ 	__this_cpu_write(hard_watchdog_warn, false);
+ 	return;
+ }
