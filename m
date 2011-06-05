@@ -1,219 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab1FETyZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 15:54:25 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:54900 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752863Ab1FETyX (ORCPT
+	id S1755035Ab1FEUBh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 16:01:37 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:53835 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752863Ab1FEUBg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 15:54:23 -0400
-Date: Sun, 5 Jun 2011 22:54:15 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gadiyar@ti.com, sameo@linux.intel.com, parthab@india.ti.com,
-        tony@atomide.com, khilman@ti.com, b-cousson@ti.com, paul@pwsan.com
-Subject: Re: [PATCH 4/4] mfd: global Suspend and resume support of ehci and
- ohci
-Message-ID: <20110605195413.GC18731@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20110605185047.GB18731@legolas.emea.dhcp.ti.com>
- <Pine.LNX.4.44L0.1106051519560.5916-100000@netrider.rowland.org>
+	Sun, 5 Jun 2011 16:01:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=WHdb4NG1wPSoMkS8zSTU7cyyXyjZHl7UIb15bK8AMXRauCnjng1mk45y4FnWppRe8J
+         i8Wq5Q6JIe56Y9RRGpwD4C6sWoPIAKZXYddRRKNjEwuGF19kRCoKcyvqv6rYSOV7nPLL
+         Pt6MTQCVCGalL1v2fc2F1F0FIb/MZjxpiWq8o=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="m51xatjYGsM+13rf"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1106051519560.5916-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110605193001.GB3971@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu> <e64e1b3c64858820d12c48fa739efbd1485e79d5.1307292171.git.luto@mit.edu>
+ <20110605193001.GB3971@elte.hu>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sun, 5 Jun 2011 16:01:16 -0400
+X-Google-Sender-Auth: Vb0DWS-nDCJtYTYAiOfweZsYR24
+Message-ID: <BANLkTikQB6=Te6=E7DRmeD5+G4TESuy--w@mail.gmail.com>
+Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
+To: Ingo Molnar <mingo@elte.hu>
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jun 5, 2011 at 3:30 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Andy Lutomirski <luto@MIT.EDU> wrote:
+>
+>> This patch is not perfect: the vread_tsc and vread_hpet functions
+>> are still at a fixed address.  Fixing that might involve making
+>> alternative patching work in the vDSO.
+>
+> Can you see any problem with them? Here is how they are looking like
+> currently:
+>
+> ffffffffff600100 <vread_tsc>:
+> ffffffffff600100:       55                      push   %rbp
+> ffffffffff600101:       48 89 e5                mov    %rsp,%rbp
+> ffffffffff600104:       66 66 90                data32 xchg %ax,%ax
+> ffffffffff600107:       66 66 90                data32 xchg %ax,%ax
+> ffffffffff60010a:       0f 31                   rdtsc
+> ffffffffff60010c:       89 c1                   mov    %eax,%ecx
+> ffffffffff60010e:       48 89 d0                mov    %rdx,%rax
+> ffffffffff600111:       48 8b 14 25 28 0d 60    mov    0xffffffffff600d28,%rdx
+> ffffffffff600118:       ff
+> ffffffffff600119:       48 c1 e0 20             shl    $0x20,%rax
+> ffffffffff60011d:       48 09 c8                or     %rcx,%rax
+> ffffffffff600120:       48 39 d0                cmp    %rdx,%rax
+> ffffffffff600123:       73 03                   jae    ffffffffff600128 <vread_tsc+0x28>
+> ffffffffff600125:       48 89 d0                mov    %rdx,%rax
+> ffffffffff600128:       5d                      pop    %rbp
+> ffffffffff600129:       c3                      retq
+>
+> ffffffffff60012a <vread_hpet>:
+> ffffffffff60012a:       55                      push   %rbp
+> ffffffffff60012b:       48 89 e5                mov    %rsp,%rbp
+> ffffffffff60012e:       8b 04 25 f0 f0 5f ff    mov    0xffffffffff5ff0f0,%eax
+> ffffffffff600135:       89 c0                   mov    %eax,%eax
+> ffffffffff600137:       5d                      pop    %rbp
+> ffffffffff600138:       c3                      retq
+>
+> There's no obvious syscall instruction in them that i can see. No
+> 0x0f 0x05 pattern (even misaligned), no 0xcd-anything.
 
---m51xatjYGsM+13rf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I can't see any problem, but exploit writers are exceedingly clever,
+and maybe someone has a use for a piece of the code that isn't a
+syscall.  Just as a completely artificial example, here's some buggy
+code:
 
-Hi,
-
-On Sun, Jun 05, 2011 at 03:30:55PM -0400, Alan Stern wrote:
-> > > > good point. BTW, do we need this #ifdef CONFIG_PM stuff which has b=
-een
-> > > > popping on most drivers recently ? To me it looks like driver.pm fi=
-eld
-> > > > is always available even if PM is disabled, so what's the point ? S=
-aving
-> > > > a few bytes ?
-> > >=20
-> > > Basically, yes (you may want to avoid defining the object this points=
- to if
-> > > CONFIG_PM is unset).
-> >=20
-> > wouldn't it look nicer to have a specific section for dev_pm_ops which
-> > gets automatically freed if CONFIG_PM isn't set ? I mean, there are a
-> > few drivers which don't have the ifdeferry around dev_pm_ops anyway.
-> >=20
-> > So, something like:
-> >=20
-> > #define __pm_ops	__section(.pm.ops)
-> >=20
-> > static const struct dev_pm_ops my_driver_pm_ops __pm_ops =3D {
-> > 	.suspend	=3D my_driver_suspend,
-> > 	.resume		=3D my_driver_resume,
-> > 	[ blablabla ]
-> > };
-> >=20
-> > to simplify things, you could:
-> >=20
-> > #define DEFINE_DEV_PM_OPS(_ops)		\
-> > 	const struct dev_pm_ops _ops __pm_ops
-> >=20
-> > that would mean changes to all linker scripts, though and a utility call
-> > that only does anything ifndef CONFIG_PM to free the .pm.ops section.
->=20
-> In my opinion this would make programming harder, not easier.  It's
-
-I tend to disagree with this statement, see below.
-
-> very easy to understand "#ifdef" followed by "#endif"; people see them
-
-very true... Still everybody has to put them in place.
-
-> all the time.  The new tags you propose would force people to go
-> searching through tons of source files to see what they mean, and then
-
-only those who want to see "how things work" would be forced to do that,
-other people would be allowed to "assume it's doing the right thing".
-
-> readers would still have to figure out when these tags should be used
-> or what advantage they might bring.
-
-not really, if you add a macro which adds that correctly and during
-review we only accept drivers using that particular macro, things
-wouldn't go bad at all.
-
-> It's a little like "typedef struct foo foo_t;" -- doing this forces
-
-hey c'mon. Then you're saying that all __initdata, __devinitdata,
-__initconst and all of those are "typedef struct foo foo_t" ;-)
-
-> people to remember one extra piece of information that serves no real
-> purpose except perhaps a minimal reduction in the amount of typing. =20
-
-and a guarantee that the unused data will be freed when it's really not
-needed ;-)
-
-> Since the limiting factor in kernel programming is human brainpower,
-> not source file length, this is a bad tradeoff.  (Not to mention that
-
-OTOH we are going through a big re-factor of the ARM port to reduce the
-amount of code. Not that these few characters would change much but my
-point is that amount of code also matters. So does uniformity, coding
-style, etc...
-
-> it also obscures an important fact: A foo_t is an extended structure
-> rather than a single value.)
-
-then it would make sense to have dev_pm_ops only defined when CONFIG_PM
-is set to force all drivers stick to a common way of handling this.
-
-Besides, currently, everybody who wants to keep the ifdeferry, needs to
-define a macro for &my_dev_pm_ops or have two #ifdef..#endif blocks.
-
-Either you do:
-
-#ifdef CONFIG_PM
-static int my_driver_suspend(struct device *dev)
+void buggy_function()
 {
-	...
-
-	return 0;
+  attacker_controlled_pointer();
 }
-=2E...
 
-static const struct dev_pm_ops my_driver_pm_ops =3D {
-	.suspend	=3D my_driver_suspend,
-	...
-};
-
-#define DEV_PM_OPS	(&my_driver_pm_ops)
-#else
-#define DEV_PM_OPS	NULL
-#endif
-
-static struct platform_driver my_driver =3D {
-	...
-	.driver	=3D {
-		.pm =3D DEV_PM_OPS
-	},
-};
-
-or you do:
-
-#ifdef CONFIG_PM
-static int my_driver_suspend(struct device *dev)
+long should_be_insecure()
 {
-	...
-
-	return 0;
+  buggy_function();
+  return 0;  // We don't want to be exploitable.
 }
-=2E...
 
-static const struct dev_pm_ops my_driver_pm_ops =3D {
-	.suspend	=3D my_driver_suspend,
-	...
-};
+int main()
+{
+  if (should_be_insecure())
+    chmod("/etc/passwd", 0666);  // Live on the edge!
+}
 
-#endif
+Assume that this code has frame pointers omitted but no other
+optimizations.  An exploit could set attacher_controlled_pointer to
+0xffffffffff60012e.  Then buggy_function will call the last bit of
+vread_hpet, which will set eax to something nonzero, pop the return
+address (i.e. the pointer to should_be_insecure) off the stack, then
+return to main.  main checks the return value, decides it's nonzero,
+and roots the system.
 
-static struct platform_driver my_driver =3D {
-	...
-	.driver	=3D {
-#ifdef CONFIG_PM
-		.pm =3D &my_driver_pm_ops,
-#endif
-	},
-};
+Of course, this is totally artificial and I haven't double-checked my
+math, but it's kind of fun to be paranoid.
 
-So, while this is a small thing which is easy to understand, it's still
-yet another thing that all drivers have to remember to add. And when
-everybody needs to remember that, I'd rather have it done
-"automatically" by other means.
+>
+> We could even 'tie down' the actual assembly by moving this all to a
+> .S - this way we protect against GCC accidentally generating
+> something dangerous in there. I suggested that before.
 
-I mean, we already free .init.* sections after __init anyway, so what's
-the problem in freeing another section ? I don't see it as obfuscation
-at all. I see it as if the kernel is smart enough to free all unused
-data by itself, without myself having to add ifdefs or freeing it by my
-own.
+I have no problem with that suggestion, except that once the current
+series makes it into -tip I intend to move vread_tsc and vread_hpet to
+the vDSO.  So leaving them alone for now saves work, and they'll be
+more maintainable later if they're written in C.
 
-On top of all that, today, we have driver with both ways of ifdefs plus
-drivers with no ifdeferry at all, leaving dev_pm_ops floating around for
-nothing.
-
-IMHO, if things aren't uniform, we will have small problems, such as
-this, proliferate because new drivers are based on other drivers,
-generally.
-
---=20
-balbi
-
---m51xatjYGsM+13rf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN697lAAoJEAv8Txj19kN1utoH/RK6aDhbmzwirpPbTsr2XrPf
-9RvAW8aHDorbS5AhcIaVovX6LHr/a6g6jiZxNqz7BvXCBgfnV4SLnnBiHanePk01
-Ar+rzr2pP6+x+z7Ok2P1vfIkRc8mgDgh5n1+RAQj4I5DwBD2kzbpmt1+vDxT2YDO
-1E/qaTvY/FDiIT3hH+JvhFRLbMjQWTbrJr4aYFQymqu2NIIZk93iihdBUwVvKGmE
-TA9/hi7hC0ijjrCpGw5Uzktscv3MUojnzWiolBhk7SnQ4OTkOFgSAzKFQwzzlZVz
-i0hn3Tob9WfIwhJTgEKviAT+J9CdUyuIqyUXShsrJxULB5OUmXtEnYYSLO26yNY=
-=kuEZ
------END PGP SIGNATURE-----
-
---m51xatjYGsM+13rf--
+--Andy
