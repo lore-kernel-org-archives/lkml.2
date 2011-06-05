@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab1FEH7j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 03:59:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64762 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093Ab1FEH7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 03:59:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=AvOWaB4bQBd5fGQIe9Vs+ANtJdUCq/AT9DMxpFLbro6tzseNxbn6/ZvIc4jMj1Ksev
-         ZlGuz/iGVKiLT0L5Yz8xth3Cr9zYBGSFiinLdpNVoooEijG/3DZLaaBMQfIXM7Zsu33Q
-         M8PIQYQQwOzkcgj4AM7KalrgndthqUgCm4U08=
+	id S1755232Ab1FEIIL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 04:08:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754458Ab1FEIIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 04:08:06 -0400
+Message-ID: <4DEB3952.2070605@redhat.com>
+Date: Sun, 05 Jun 2011 11:07:46 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1305456228-15265-1-git-send-email-oren.jer.weil@intel.com>
-References: <1305456228-15265-1-git-send-email-oren.jer.weil@intel.com>
-Date: Sun, 5 Jun 2011 17:59:37 +1000
-Message-ID: <BANLkTin4tWcJ-6Yjh_Yg18dNXNpiXjRA3A@mail.gmail.com>
-Subject: Re: [PATCH 00/10] staging/mei: Intel MEI Driver
-From: Dave Airlie <airlied@gmail.com>
-To: Oren Weil <oren.jer.weil@intel.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        alan@linux.intel.com, david@woodhou.se, tomas.winkler@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH v1 1/5] perf: add context parameter to perf_event overflow
+ handler
+References: <1305129333-7456-1-git-send-email-avi@redhat.com>	 <1305129333-7456-2-git-send-email-avi@redhat.com> <1307112115.2353.3392.camel@twins>
+In-Reply-To: <1307112115.2353.3392.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 15, 2011 at 8:43 PM, Oren Weil <oren.jer.weil@intel.com> wrote:
-> Intel MEI Driver
-> ===============
+On 06/03/2011 05:41 PM, Peter Zijlstra wrote:
+> On Wed, 2011-05-11 at 11:55 -0400, Avi Kivity wrote:
+> >  +++ b/include/linux/perf_event.h
+> >  @@ -709,7 +709,9 @@ struct perf_buffer {
+> >
+> >   struct perf_sample_data;
+> >
+> >  -typedef void (*perf_overflow_handler_t)(struct perf_event *, int,
+> >  +typedef void (*perf_overflow_handler_t)(void *context,
+> >  +                                       struct perf_event *event,
+> >  +                                       int,
+> >                                          struct perf_sample_data *,
+> >                                          struct pt_regs *regs);
+> >
+> >  @@ -855,6 +857,7 @@ struct perf_event {
+> >          u64                             id;
+> >
+> >          perf_overflow_handler_t         overflow_handler;
+> >  +       void                            *overflow_handler_context;
+> >
+> >   #ifdef CONFIG_EVENT_TRACING
+> >          struct ftrace_event_call        *tp_event;
 >
-> This second try to submit the Intel MEI Driver to the staging.
-> Most of the work was done in mei.txt file to describe the driver
-> functionality and flows.
-> TODO file was updated with steps we believe need to be done.
-> We also hope that patches have better descriptions to help with review.
-> Some reorganization of header files was also preformed.
+> If you're adding a pointer here, then why pass it along in the callback
+> thing if it already has the perf_event *?
+>
+> It seems to me the callback can easily do
+> event->overflow_handler_context if it needs the thing.
 
-Hi guys,
+Makes sense.  Will update.
 
-this device takes over the PCI driver for the host bridge, which stops
-the AGP driver from
-loading which stops i915 from loading, which makes things sad.
-Hopefully that is another
-TODO on the list if it isn't already on it.
+(I would have preferred a caller-allocated perf_event with 
+container_of(), but that's a huge change).
 
-I enabled it by mistake and then wondered what was going on.
+-- 
+error compiling committee.c: too many arguments to function
 
-I think EDAC used to suffer from this issue as well.
-
-Dave.
