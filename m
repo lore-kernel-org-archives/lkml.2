@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab1FEOhm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 10:37:42 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64190 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab1FEOhk (ORCPT
+	id S1756246Ab1FEOjw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 10:39:52 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54086 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754107Ab1FEOjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 10:37:40 -0400
+	Sun, 5 Jun 2011 10:39:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=lqtDJTrYvO6yJkG2ixlzejLFXPo9UfroKylgEB1B7FrcoAXn25eFhwCESr1H/elIZX
-         aY5O4hS66g5grpi63cLb0d+T4aqeialS12q9ilIDJHkdiELzqjftf/T3fHHhwA0dr20P
-         G+qQwS/Ew+uQ6Bz6BZu4LT9xzaJWu9DyXyvSc=
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=v/RIHyWB15HF0A6Wps7SsFyEsTeKp0hWpuePMdGVDxbZ2Cu68yNa2MgZKH5nxDxxqu
+         rSGZ0oWaJ3Hf5VR195UTOkY4SSwIrUjKL2DMe9F1NT6CF2mpSKWxmT8TssIydPLRl7PD
+         J33OUHFtvg+aH7EVfn453B5KfqWrOGaVe1Jwo=
+Date: Sun, 5 Jun 2011 22:38:42 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] MAINTAINERS: Saying goodbye to David Brownell
+Message-ID: <20110605143727.GA11961@gmail.com>
+Mail-Followup-To: Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org
+References: <20110605071058.25982.76948.stgit@ponder>
+ <20110605003013.9e04ebd0.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTim6VsynZHLagcu9Xo3EjsUz=54dYA@mail.gmail.com>
-References: <1306999045.29297.55.camel@pasglop>
-	<1307003821.29297.77.camel@pasglop>
-	<20110602110727.7343782b@lxorguk.ukuu.org.uk>
-	<1307062574.29297.204.camel@pasglop>
-	<1307081874.23876.14.camel@pasglop>
-	<1307084189.23876.19.camel@pasglop>
-	<BANLkTim6VsynZHLagcu9Xo3EjsUz=54dYA@mail.gmail.com>
-Date: Sun, 5 Jun 2011 16:37:40 +0200
-Message-ID: <BANLkTikJJfyo-eExZYN4iZUO+RrkgPmX4A@mail.gmail.com>
-Subject: Re: tty breakage in X (Was: tty vs workqueue oddities)
-From: Guillaume Chazarain <guichaz@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, gregkh@suse.de,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=gb2312
+Content-Disposition: inline
+In-Reply-To: <20110605003013.9e04ebd0.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 3, 2011 at 11:36 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Otherwise we'll need to just revert it. The commit is clearly totally broken.
+On Sun, Jun 05, 2011 at 12:30:13AM -0700, Andrew Morton wrote:
+> On Sun, 05 Jun 2011 01:12:03 -0600 Grant Likely <grant.likely@secretlab.ca> wrote:
+> 
+> > He also leaves behind a number of much loved subsystems now orphaned.
+> > This patch updates the MAINTAINERS file for the areas that David was
+> > responsible for.  While it removes Davids name from the MAINTAINERS
+> > file, it by no mean should be seen as forgetting David's involvement
+> > or the work he's accomplished.  Indeed, his name remains prominent
+> > in the changelog and copyright notices of many files in the kernel.
+> 
+> Adding a record to ./CREDITS would be appropriate.  It will be a
+> lengthy one.
+From: Harry Wei <harryxiyou@gmail.com>
 
-Even after the revert in http://git.kernel.org/linus/55db4c6 I can
-reproduce some pty oddities using the test program in
-http://lkml.org/lkml/2005/2/14/212.
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+---
+ CREDITS |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Instead of having the output being different from the input, the child
-process hangs reading while the parent is done writing.
-
-The hangs should be easily seen with:
-
-$ while :; do date; yes | head -n 5000 | ./a.out > /dev/null; done
-
+diff --git a/CREDITS b/CREDITS
+index dca6abc..0a248e2 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -16,6 +16,10 @@ D: One of assisting postmasters for vger.kernel.org's lists
+ S: (ask for current address)
+ S: Finland
+ 
++N: David Brownell
++E: dbrownell@users.sourceforge.net
++D: Maintain drivers/usb/gadget/, include/linux/usb/gadget*
++
+ N: Dragos Acostachioaie
+ E: dragos@iname.com
+ W: http://www.arbornet.org/~dragos
 -- 
-Guillaume
+1.7.0.4
+
