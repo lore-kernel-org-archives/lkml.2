@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab1FESEc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 14:04:32 -0400
-Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:53570 "EHLO
-	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752931Ab1FESCz (ORCPT
+	id S1755973Ab1FESDE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 14:03:04 -0400
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:51694 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755714Ab1FESC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 14:02:55 -0400
-X-AuditID: 12074424-b7bc6ae000005a77-42-4debc4cf65ef
+	Sun, 5 Jun 2011 14:02:59 -0400
+X-AuditID: 12074423-b7ce8ae000000a29-c0-4debc4cdfb47
 From: Andy Lutomirski <luto@MIT.EDU>
 To: Ingo Molnar <mingo@elte.hu>, x86@kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
@@ -21,80 +21,72 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         Brian Gerst <brgerst@gmail.com>,
         Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
         pageexec@freemail.hu, Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v5 5/9] x86-64: Map the HPET NX
-Date: Sun,  5 Jun 2011 13:50:21 -0400
-Message-Id: <ab41b525a4ca346b1ca1145d16fb8d181861a8aa.1307292171.git.luto@mit.edu>
+Subject: [PATCH v5 6/9] x86-64: Remove vsyscall number 3 (venosys)
+Date: Sun,  5 Jun 2011 13:50:22 -0400
+Message-Id: <4a4abcf47ecadc269f2391a313576fe6d06acef7.1307292171.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.5.2
 In-Reply-To: <cover.1307292171.git.luto@mit.edu>
 References: <cover.1307292171.git.luto@mit.edu>
 In-Reply-To: <cover.1307292171.git.luto@mit.edu>
 References: <cover.1307292171.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA3WSWUwTURSGve10Om0YGYciFxSXBoPRlEVR7oMhRn2YGDEqLy4PMtCBNrRT
-	MlOI8GAwBIOQEDFK0BCpK0gqS5GwPJBaEFDZgkKNoChICAgiQQVcwJkg+uTbuf//3f/k5BxC
-	Sb9VBRFm3s4JPGvR41qM1vjvNPS0foyNGMtbi0qqnDgqePlEjVoH5tXoxgCJ5qqXcNTlgcj9
-	fQxHM/31OHrRVIKjhqGXOPqQ7QXoUV+2Co06x5Xoc2E1jmpd15RopGBajfpmPmNooXpUtZ9m
-	5nMKMKatswUwry/+VDKljbOAuZu7oGYab7xRM7XlO5jliVacKZx6BRhXxSWc+dTdrWY6in9g
-	THvnQWbOtYnx1E/hx3xPa/cZOYs5nRPCY+K1potDA6rUHPpcV/MSyALvfPOAhoBUFPSWDClW
-	6vWw920Vnge0BE01A7hU5MZWHlUAettzVDJFU2MKeLV0l1zjVAjMvfdO+k0QOioc9s8BmVdS
-	pSroep6PybqfpE8sHpVxjNoGhx0OpVyT1AmY31EDZARSW2BPhU2WNVQE7PV2/ekUDj3TT/H/
-	6ZcB5QBrKkCw0ZppsLJmi8glGsREluc5wRAdZjXbwzhjmgvIq1MfCmkA2R69B1AE0PuQdc6P
-	sbSKTRczrB4QSCj0/qSjRZLWJtiMGSZWNJ0V0iyc6AGQUOp15HndZCxNGtmMTE6wrVobCEwf
-	QN4MDI2lqWTWzqVwXConrLobCUIPyWE5dJ3AJXPnkswW+z9bQWjkcB8p/JfMkGIqaxXNySv+
-	M2Ag6jqmHwMa4208FxRATsoQJUOmNP5vzupZToIAaSw/UiNdJ+0jHe3fpEmpiUJq0n5AnkC0
-	s/+soCzgTokKG3TcfHz/5Na4hoTNB7z87bKSs98clYV7rhx3H647M+8kEmYvfe2s9HU22WoP
-	hW4fpscT4nX2juidqszBsmA8q39ktj+krOipxWL0jznVtb7wqjsyONo/Lj43Zu91yxHdiDZw
-	kS+/sHtouS3rXsSdW77vvxTP5CfVPBQaH8zoMdHERu5QCiL7G7Y5GT1xAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA3WSW0gUYRTH+3ZmZ2YXp8bR9MsuxGQUxnZPv6AktIfvoY2IXioxx3Z0t/Zi
+	O6uoDyFYUoa3KCyzC1EUm+W2Vmao5XottaTsgmSJFywvWRolJdmMZj31ds75/77/OYfvMAT/
+	XhvCWOwuyWkXrQKlJ3k6MtTQWjdoXD2aEYGKS0solNteT6O6V99pVPSKRWOeXxRq9UH06Ecf
+	hUZellPoxYNiCt1/206h3szXAN15nqlFPSX9BPpc4KFQmfc0gbpzh2n0fOQzicY9PdotPP5+
+	NJfEDS21AHdkTRD4YsUXgK8cG6dxRVEnjcuuh+HJj3UULhh6A7DXfZzCn54+pXHTmZ8kbmyJ
+	xmPeRdhXPkTtmLNHv8kkWS0pknNVZJze3OPupZIqdamjt0qJDDBIZwOGgdx6eDLrUDbQKWEQ
+	bHtXSmUDPcNz1QDmNY7/SUoBrGrL1EwnfRp47lM9rT6huFB47GqXRnUK5FbBl2NAZQjuohZ6
+	m0+QKhPARcEL545M8SS3FFblV2rVmOV2woGvHzTTUyyGz9wOtazjVsO2161TCK9Y+oYfU/+r
+	5wPuEpjlBgtNtnSDTbRYZWm/Qd4v2u2S0xC+0mZxrZRMyV4w9Xdbl9wHEzWCD3AMEPxYT8mg
+	kdeKKXKazQfmMRphLnupVinNjneY0syibN7nTLZKsg9AhhAC2cOBA0aeNYlp6ZLTMSPNZ0gh
+	mD0/b5mR5xJFl3RQkpIk54y6gGEEyC5X7oX3d0qJUmqCxer6J2sYnWrup5hHqAwrJ4k22ZI4
+	rT8BBuZu03AN4Em7wy6FBLNrVIhTIXOy/a/PzF0OgGBlrQBWp1J+ytX+dRpQmmiUJo1R6gay
+	S/wnhWSA9K/9YnjgPdG3rqlkg2bSFdnNhI5d9+8YvLexJiuiM7R9W85ed/P4w1un2LbLmcUT
+	hSnvyvJ8ReXVZ7k3Q9Gxk/nRXQ36tSOFC89U5tw2jsb79d24EO5J2J3hsMVcO5sSLbRiLQ5a
+	8WjXgajNvxoXWxJavhDb42L6qhfd9Ge/xSYJpGwW14QRTln8DdjlfztyAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the HPET mapping is a user-accessible syscall instruction
-at a fixed address some of the time.  A sufficiently determined
-hacker might be able to guess when.
+It just segfaults since April 2008 (a4928cff), so I'm pretty sure
+that nothing uses it.  And having an empty section makes the linker
+script a bit fragile.
 
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/include/asm/pgtable_types.h |    4 ++--
- arch/x86/kernel/hpet.c               |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/vmlinux.lds.S |    4 ----
+ arch/x86/kernel/vsyscall_64.c |    3 ---
+ 2 files changed, 0 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 6a29aed6..013286a 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -107,8 +107,8 @@
- #define __PAGE_KERNEL_NOCACHE		(__PAGE_KERNEL | _PAGE_PCD | _PAGE_PWT)
- #define __PAGE_KERNEL_UC_MINUS		(__PAGE_KERNEL | _PAGE_PCD)
- #define __PAGE_KERNEL_VSYSCALL		(__PAGE_KERNEL_RX | _PAGE_USER)
--#define __PAGE_KERNEL_VSYSCALL_NOCACHE	(__PAGE_KERNEL_VSYSCALL | _PAGE_PCD | _PAGE_PWT)
- #define __PAGE_KERNEL_VVAR		(__PAGE_KERNEL_RO | _PAGE_USER)
-+#define __PAGE_KERNEL_VVAR_NOCACHE	(__PAGE_KERNEL_VVAR | _PAGE_PCD | _PAGE_PWT)
- #define __PAGE_KERNEL_LARGE		(__PAGE_KERNEL | _PAGE_PSE)
- #define __PAGE_KERNEL_LARGE_NOCACHE	(__PAGE_KERNEL | _PAGE_CACHE_UC | _PAGE_PSE)
- #define __PAGE_KERNEL_LARGE_EXEC	(__PAGE_KERNEL_EXEC | _PAGE_PSE)
-@@ -130,8 +130,8 @@
- #define PAGE_KERNEL_LARGE_NOCACHE	__pgprot(__PAGE_KERNEL_LARGE_NOCACHE)
- #define PAGE_KERNEL_LARGE_EXEC		__pgprot(__PAGE_KERNEL_LARGE_EXEC)
- #define PAGE_KERNEL_VSYSCALL		__pgprot(__PAGE_KERNEL_VSYSCALL)
--#define PAGE_KERNEL_VSYSCALL_NOCACHE	__pgprot(__PAGE_KERNEL_VSYSCALL_NOCACHE)
- #define PAGE_KERNEL_VVAR		__pgprot(__PAGE_KERNEL_VVAR)
-+#define PAGE_KERNEL_VVAR_NOCACHE	__pgprot(__PAGE_KERNEL_VVAR_NOCACHE)
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index 98b378d..4f90082 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -182,10 +182,6 @@ SECTIONS
+ 		*(.vsyscall_2)
+ 	}
  
- #define PAGE_KERNEL_IO			__pgprot(__PAGE_KERNEL_IO)
- #define PAGE_KERNEL_IO_NOCACHE		__pgprot(__PAGE_KERNEL_IO_NOCACHE)
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index 6781765..e9f5605 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -71,7 +71,7 @@ static inline void hpet_set_mapping(void)
- {
- 	hpet_virt_address = ioremap_nocache(hpet_address, HPET_MMAP_SIZE);
- #ifdef CONFIG_X86_64
--	__set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VSYSCALL_NOCACHE);
-+	__set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VVAR_NOCACHE);
- #endif
+-	.vsyscall_3 ADDR(.vsyscall_0) + 3072: AT(VLOAD(.vsyscall_3)) {
+-		*(.vsyscall_3)
+-	}
+-
+ 	. = ALIGN(__vsyscall_0 + PAGE_SIZE, PAGE_SIZE);
+ 
+ #undef VSYSCALL_ADDR
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 9b2f3f5..c7fe325 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -209,9 +209,6 @@ vgetcpu(unsigned *cpu, unsigned *node, struct getcpu_cache *tcache)
+ 	return 0;
  }
  
+-static long __vsyscall(3) venosys_1(void)
+-{
+-	return -ENOSYS;
+ }
+ 
+ /* Assume __initcall executes before all user space. Hopefully kmod
 -- 
 1.7.5.2
 
