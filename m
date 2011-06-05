@@ -1,97 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab1FEJkS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 05:40:18 -0400
-Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:46271 "EHLO
-	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755749Ab1FEJkQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 05:40:16 -0400
-X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
-Message-ID: <4DEB4EF2.5050102@elektron.elka.pw.edu.pl>
-Date: Sun, 05 Jun 2011 11:40:02 +0200
-From: "wzabolot@elektron.elka.pw.edu.pl" <W.Zabolotny@elka.pw.edu.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Icedove/3.1.10
+	id S1755830Ab1FEJmE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 05:42:04 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38328 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755083Ab1FEJmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 05:42:01 -0400
+Date: Sun, 5 Jun 2011 11:41:51 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arne Jansen <lists@die-jansens.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
+Message-ID: <20110605094151.GD19927@elte.hu>
+References: <4DE674EB.1000200@die-jansens.de>
+ <1306951751.2497.626.camel@laptop>
+ <1306953870.2497.627.camel@laptop>
+ <4DE6936F.7090700@die-jansens.de>
+ <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com>
+ <1307092535.2353.2973.camel@twins>
+ <4DE8B13D.9020302@die-jansens.de>
+ <1307097052.2353.3061.camel@twins>
+ <20110605081747.GA17920@elte.hu>
+ <4DEB4417.9070003@die-jansens.de>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Kernel panic with 2.6.39.1 - switching off HT in BIOS helps
-References: <4DEA8FDD.1060905@elektron.elka.pw.edu.pl> <4DEAA677.2010404@elektron.elka.pw.edu.pl> <4DEAAB42.8070704@elektron.elka.pw.edu.pl>
-In-Reply-To: <4DEAAB42.8070704@elektron.elka.pw.edu.pl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DEB4417.9070003@die-jansens.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I've just stated, that the machine, in which I've experienced the 
-problem boots correctly also without "acpi=off", when I switch off
-HyperThreading (HT) in BIOS. As kernel works correctly on machine
-with "true SMP" (Intel Core2 Duo), it seems that the problem must be 
-related to HT specific part of kernel:
 
-first report and thread:  http://thread.gmane.org/gmane.linux.kernel/1150275
-gzipped .config: 
-http://cache.gmane.org//gmane/linux/kernel/1150276-001.bin )
+* Arne Jansen <lists@die-jansens.de> wrote:
 
-Full output of the /proc/cpuinfo (under 2.6.37.3 kernel):
-processor	: 0
-vendor_id	: GenuineIntel
-cpu family	: 15
-model		: 2
-model name	: Intel(R) Pentium(R) 4 CPU 2.80GHz
-stepping	: 9
-cpu MHz		: 2793.414
-cache size	: 512 KB
-physical id	: 0
-siblings	: 2
-core id		: 0
-cpu cores	: 1
-apicid		: 0
-initial apicid	: 0
-fdiv_bug	: no
-hlt_bug		: no
-f00f_bug	: no
-coma_bug	: no
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 2
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov 
-pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe pebs bts cid xtpr
-bogomips	: 5589.61
-clflush size	: 64
-cache_alignment	: 128
-address sizes	: 36 bits physical, 32 bits virtual
-power management:
+> On 05.06.2011 10:17, Ingo Molnar wrote:
+> >
+> >* Peter Zijlstra<peterz@infradead.org>  wrote:
+> >
+> >>On Fri, 2011-06-03 at 12:02 +0200, Arne Jansen wrote:
+> >>>On 03.06.2011 11:15, Peter Zijlstra wrote:
+> >>
+> >>>>Anyway, Arne, how long did you wait before power cycling the box? The
+> >>>>NMI watchdog should trigger in about a minute or so if it will trigger
+> >>>>at all (its enabled in your config).
+> >>>
+> >>>No, it doesn't trigger,
+> >>
+> >>Bummer.
+> >
+> >Is there no output even when the console is configured to do an
+> >earlyprintk? That will allow the NMI watchdog to punch through even a
+> >printk or scheduler lockup.
+> >
+> 
+> Just to be clear, I have no boot problems whatsoever. And I have no
+> problems with the serial console. It's just the regular printk locking
+> up when e.g. I load the test module.
 
-processor	: 1
-vendor_id	: GenuineIntel
-cpu family	: 15
-model		: 2
-model name	: Intel(R) Pentium(R) 4 CPU 2.80GHz
-stepping	: 9
-cpu MHz		: 2793.414
-cache size	: 512 KB
-physical id	: 0
-siblings	: 2
-core id		: 0
-cpu cores	: 1
-apicid		: 1
-initial apicid	: 1
-fdiv_bug	: no
-hlt_bug		: no
-f00f_bug	: no
-coma_bug	: no
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 2
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov 
-pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe pebs bts cid xtpr
-bogomips	: 5588.73
-clflush size	: 64
-cache_alignment	: 128
-address sizes	: 36 bits physical, 32 bits virtual
-power management:
+Yes.
 
+> > Arne, you can turn this on via one of these:
+> >
+> >   earlyprintk=vga,keep
+> 
+> I don't have access to vga as it is a remote machine.
+> 
+> >   earlyprintk=serial,ttyS0,115200,keep
+> 
+> I'll try that.
+
+Please don't forget:
+
+> > Could you also please check with the (untested) patch below applied?
+> > This will turn off *all* printk done by the NMI watchdog and switches
+> > it to do pure early_printk() - which does not use any locking so it
+
+if you get a lockup somewhere within printk then the NMI watchdog 
+will lock up.
+
+Also please first check that the NMI watchdog is ticking. (the patch 
+will ensure that, there will be periodic prints to the serial log)
+
+Thanks,
+
+	Ingo
