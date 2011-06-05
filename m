@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab1FEBau (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 21:30:50 -0400
-Received: from sh.osrg.net ([192.16.179.4]:51155 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753858Ab1FEBas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 21:30:48 -0400
-Date: Sun, 5 Jun 2011 10:30:20 +0900
-To: shawn.guo@freescale.com
-Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dan.j.williams@intel.com,
-        patches@linaro.org
-Subject: Re: [PATCH 1/3] dmaengine: add new dma API for max_segment_number
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20110601023356.GA1501@S2100-06.ap.freescale.net>
-References: <1306391493-29425-1-git-send-email-shawn.guo@linaro.org>
-	<20110601023356.GA1501@S2100-06.ap.freescale.net>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20110605102855L.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 05 Jun 2011 10:30:22 +0900 (JST)
+	id S1755108Ab1FEBfk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 21:35:40 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45306 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab1FEBfg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jun 2011 21:35:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vaIK+4IOLKmUP+sW2pa6HdvTLLZxPO6OT2cvtN/J9woDapqaEqytksBFu4KEfMOPnA
+         8UcAecgvIbBNUTJqxD+cGS7kKwKjA0UGJgvRykSlsw9o60ph+LKgp30VNlDI1i3fHqWt
+         i4kVqf0j4l7YO6AM/pQ5g0wdx+7ab3kMz+A5c=
+MIME-Version: 1.0
+In-Reply-To: <20110604235449.6a00218c@kvasir>
+References: <1307216094-13570-1-git-send-email-andre.bartke@gmail.com>
+	<op.vwkl82ut3l0zgt@mnazarewicz-glaptop>
+	<20110604235449.6a00218c@kvasir>
+Date: Sat, 4 Jun 2011 18:35:35 -0700
+Message-ID: <BANLkTi=G3gxT0WHham9Yi6SecysGoov68A@mail.gmail.com>
+Subject: Re: [PATCH] drivers/usb/gadget: add missing kfree calls
+From: Connor H <cmdkhh@gmail.com>
+To: Andre Bartke <andre.bartke@googlemail.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>, gregkh@suse.de,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Jun 2011 10:33:57 +0800
-Shawn Guo <shawn.guo@freescale.com> wrote:
+On Sat, Jun 4, 2011 at 2:54 PM, Andre Bartke
+<andre.bartke@googlemail.com> wrote:
+> On Sat, 04 Jun 2011 23:35:16 +0200
+> "Michal Nazarewicz" <mina86@mina86.com> wrote:
+>
+>> On Sat, 04 Jun 2011 21:34:54 +0200, Andre Bartke
+>> <andre.bartke@googlemail.com> wrote:
+>> > diff --git a/drivers/usb/gadget/rndis.c b/drivers/usb/gadget/rndis.c
+>> > @@ -700,6 +701,7 @@ static int rndis_reset_response(int configNr,
+>> > rndis_reset_msg_type *buf)
+>> >     resp->AddressingReset = cpu_to_le32(1);
+>> >     params->resp_avail(params->v);
+>> > +   kfree(r);
+>> >     return 0;
+>> >  }
+>>
+>> Have you tested this?  It does not look right to me.
+>> rndis_add_response() allocates memory and puts the request on a
+>> list.  It is later freed in rndis_free_response().
+>>
+>
+> Nope, the only way I can test this is a build - which it does.
+> You might be right though.
 
-> On Thu, May 26, 2011 at 02:31:31PM +0800, Shawn Guo wrote:
-> > Like dma_set(get)_max_seg_size for max_segment_size, the patch adds
-> > max_segment_number into device_dma_parameters and creates the
-> > corresponding dmaengine API dma_set(get)_max_seg_number for it.
-> > 
-> > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> > ---
-> >  include/linux/device.h      |    1 +
-> >  include/linux/dma-mapping.h |   15 +++++++++++++++
-> >  2 files changed, 16 insertions(+), 0 deletions(-)
+building != correct
 
-include/linux/dma-mapping.h is for DMA mapping API (please see
-Documentation/DMA-API*.txt).
+r is being added to a list in rndis_add_response
+Andre is right, rndis_free_response handles list removal
 
-What does dma_set(get)_max_seg_size do? And it's related with DMA
-mapping API?
+982 if (r && r->buf == buf) {
+983                         list_del(&r->list);
+984                         kfree(r);
+985                 }
 
+in fact all of the kfree calls I believe are incorrect.
 
-> > 
-> > diff --git a/include/linux/device.h b/include/linux/device.h
-> > index c66111a..44cb2528 100644
-> > --- a/include/linux/device.h
-> > +++ b/include/linux/device.h
-> > @@ -487,6 +487,7 @@ struct device_dma_parameters {
-> >  	 * sg limitations.
-> >  	 */
-> >  	unsigned int max_segment_size;
-> > +	unsigned int max_segment_number;
-> >  	unsigned long segment_boundary_mask;
-> >  };
-> >  
-> > diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-> > index ba8319a..fd314f4 100644
-> > --- a/include/linux/dma-mapping.h
-> > +++ b/include/linux/dma-mapping.h
-> > @@ -131,6 +131,21 @@ static inline unsigned int dma_set_max_seg_size(struct device *dev,
-> >  		return -EIO;
-> >  }
-> >  
-> > +static inline unsigned int dma_get_max_seg_number(struct device *dev)
-> > +{
-> > +	return dev->dma_parms ? dev->dma_parms->max_segment_number : 1;
-> > +}
-> > +
-> > +static inline unsigned int dma_set_max_seg_number(struct device *dev,
-> > +						  unsigned int number)
-> > +{
-> > +	if (dev->dma_parms) {
-> > +		dev->dma_parms->max_segment_number = number;
-> > +		return 0;
-> > +	} else
-> > +		return -EIO;
-> > +}
-> > +
-> >  static inline unsigned long dma_get_seg_boundary(struct device *dev)
-> >  {
-> >  	return dev->dma_parms ?
-> > -- 
-> > 1.7.4.1
-> 
+Connor
+
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
