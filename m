@@ -1,106 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab1FEQbJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 12:31:09 -0400
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:59486 "EHLO
+	id S1754948Ab1FEQbe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 12:31:34 -0400
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:59523 "EHLO
 	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab1FEQbI (ORCPT
+	with ESMTP id S1754024Ab1FEQbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 12:31:08 -0400
-Subject: [PATCH 4/5] block: rename the return of two functions
+	Sun, 5 Jun 2011 12:31:31 -0400
+Subject: [PATCH 5/5] CFQ: use proper locking for cache of last hit cic
 From: Paul Bolle <pebolle@tiscali.nl>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
-Date: Sun, 05 Jun 2011 18:26:37 +0200
+Date: Sun, 05 Jun 2011 18:26:40 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.1.1 (3.1.1-3.fc16) 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1307291197.8545.45.camel@t41.thuisdomein>
+Message-ID: <1307291201.8545.46.camel@t41.thuisdomein>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we rename the return of alloc_io_context() and get_io_context() from
-"ret" to "ioc" the code get's (a bit) more readable and (a lot) more
-grepable.
+io_context.last_cic is a (single entry) cache of the last hit
+cfq_io_context ("cic").
+
+It turns out last_cic wasn't always accessed with io_context.lock held
+and under the correct RCU semantics. That meant that last_cic could be
+out of sync with the hlist it was supposed to cache, leading to hard to
+reproduce and hard to debug issues. Using proper locking makes those
+issues go away.
+
+Many thanks to Vivek Goyal, Paul McKenney, and Jens Axboe, in suggesting
+various options, looking at all the debug output I generated, etc. If we
+hadn't done all that I would have never concluded that the best way to
+solve this issue was to, yet again, read the code looking for
+problematic sections.
+
+This should finally resolve bugzilla.redhat.com/show_bug.cgi?id=577968
 
 Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- block/blk-ioc.c |   38 +++++++++++++++++++-------------------
- 1 files changed, 19 insertions(+), 19 deletions(-)
+ block/cfq-iosched.c |   27 +++++++++++++++++++--------
+ 1 files changed, 19 insertions(+), 8 deletions(-)
 
-diff --git a/block/blk-ioc.c b/block/blk-ioc.c
-index 998fa67..79c543f 100644
---- a/block/blk-ioc.c
-+++ b/block/blk-ioc.c
-@@ -82,23 +82,23 @@ void exit_io_context(struct task_struct *task)
- 
- struct io_context *alloc_io_context(gfp_t gfp_flags, int node)
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 39e4d01..9206ee3 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -2695,6 +2695,8 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
+ 					 struct cfq_io_context *cic)
  {
--	struct io_context *ret;
-+	struct io_context *ioc;
+ 	struct io_context *ioc = cic->ioc;
++	struct cfq_io_context *last_cic;
++	unsigned long flags;
  
--	ret = kmem_cache_alloc_node(iocontext_cachep, gfp_flags, node);
--	if (ret) {
--		atomic_long_set(&ret->refcount, 1);
--		atomic_set(&ret->nr_tasks, 1);
--		spin_lock_init(&ret->lock);
--		ret->ioprio_changed = 0;
--		ret->ioprio = 0;
--		ret->last_waited = 0; /* doesn't matter... */
--		ret->nr_batch_requests = 0; /* because this is 0 */
--		INIT_RADIX_TREE(&ret->radix_root, GFP_ATOMIC | __GFP_HIGH);
--		INIT_HLIST_HEAD(&ret->cic_hlist);
--		ret->last_cic = NULL;
-+	ioc = kmem_cache_alloc_node(iocontext_cachep, gfp_flags, node);
-+	if (ioc) {
-+		atomic_long_set(&ioc->refcount, 1);
-+		atomic_set(&ioc->nr_tasks, 1);
-+		spin_lock_init(&ioc->lock);
-+		ioc->ioprio_changed = 0;
-+		ioc->ioprio = 0;
-+		ioc->last_waited = 0; /* doesn't matter... */
-+		ioc->nr_batch_requests = 0; /* because this is 0 */
-+		INIT_RADIX_TREE(&ioc->radix_root, GFP_ATOMIC | __GFP_HIGH);
-+		INIT_HLIST_HEAD(&ioc->cic_hlist);
-+		ioc->last_cic = NULL;
- 	}
+ 	list_del_init(&cic->queue_list);
  
--	return ret;
-+	return ioc;
- }
+@@ -2704,8 +2706,13 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
+ 	smp_wmb();
+ 	cic->key = cfqd_dead_key(cfqd);
+ 
+-	if (ioc->last_cic == cic)
++	spin_lock_irqsave(&ioc->lock, flags);
++	rcu_read_lock();
++	last_cic = rcu_dereference(ioc->last_cic);
++	rcu_read_unlock();
++	if (last_cic == cic)
+ 		rcu_assign_pointer(ioc->last_cic, NULL);
++	spin_unlock_irqrestore(&ioc->lock, flags);
+ 
+ 	if (cic->cfqq[BLK_RW_ASYNC]) {
+ 		cfq_exit_cfqq(cfqd, cic->cfqq[BLK_RW_ASYNC]);
+@@ -3000,23 +3007,25 @@ cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct io_context *ioc,
  
  /*
-@@ -136,19 +136,19 @@ struct io_context *current_io_context(gfp_t gfp_flags, int node)
+  * We drop cfq io contexts lazily, so we may find a dead one.
++ *
++ * Called with ioc->lock held.
   */
- struct io_context *get_io_context(gfp_t gfp_flags, int node)
+ static void
+ cfq_drop_dead_cic(struct cfq_data *cfqd, struct io_context *ioc,
+ 		  struct cfq_io_context *cic)
  {
--	struct io_context *ret = NULL;
-+	struct io_context *ioc = NULL;
+-	unsigned long flags;
++	struct cfq_io_context *last_cic;
  
- 	/*
- 	 * Check for unlikely race with exiting task. ioc ref count is
- 	 * zero when ioc is being detached.
- 	 */
- 	do {
--		ret = current_io_context(gfp_flags, node);
--		if (unlikely(!ret))
-+		ioc = current_io_context(gfp_flags, node);
-+		if (unlikely(!ioc))
- 			break;
--	} while (!atomic_long_inc_not_zero(&ret->refcount));
-+	} while (!atomic_long_inc_not_zero(&ioc->refcount));
+ 	WARN_ON(!list_empty(&cic->queue_list));
+ 	BUG_ON(cic->key != cfqd_dead_key(cfqd));
  
--	return ret;
-+	return ioc;
+-	spin_lock_irqsave(&ioc->lock, flags);
+-
+-	BUG_ON(ioc->last_cic == cic);
++	rcu_read_lock();
++	last_cic = rcu_dereference(ioc->last_cic);
++	rcu_read_unlock();
++	BUG_ON(last_cic == cic);
+ 
+ 	radix_tree_delete(&ioc->radix_root, cfqd->cic_index);
+ 	hlist_del_rcu(&cic->cic_node);
+-	spin_unlock_irqrestore(&ioc->lock, flags);
+ 
+ 	cfq_cic_free(cic);
  }
- EXPORT_SYMBOL(get_io_context);
+@@ -3035,8 +3044,10 @@ cfq_cic_lookup(struct cfq_data *cfqd, struct io_context *ioc)
+ 	/*
+ 	 * we maintain a last-hit cache, to avoid browsing over the tree
+ 	 */
++	spin_lock_irqsave(&ioc->lock, flags);
+ 	cic = rcu_dereference(ioc->last_cic);
+ 	if (cic && cic->key == cfqd) {
++		spin_unlock_irqrestore(&ioc->lock, flags);
+ 		rcu_read_unlock();
+ 		return cic;
+ 	}
+@@ -3052,12 +3063,12 @@ cfq_cic_lookup(struct cfq_data *cfqd, struct io_context *ioc)
+ 			continue;
+ 		}
+ 
+-		spin_lock_irqsave(&ioc->lock, flags);
+ 		rcu_assign_pointer(ioc->last_cic, cic);
+-		spin_unlock_irqrestore(&ioc->lock, flags);
+ 		break;
+ 	} while (1);
+ 
++	spin_unlock_irqrestore(&ioc->lock, flags);
++
+ 	return cic;
+ }
  
 -- 
 1.7.5.2
-
 
 
 
