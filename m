@@ -1,113 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab1FEIx7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 04:53:59 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:37533 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755238Ab1FEIx5 (ORCPT
+	id S1755529Ab1FEJHn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 05:07:43 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46668 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755217Ab1FEJHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 04:53:57 -0400
-X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
-X-RZG-CLASS-ID: mo00
-Message-ID: <4DEB4417.9070003@die-jansens.de>
-Date: Sun, 05 Jun 2011 10:53:43 +0200
-From: Arne Jansen <lists@die-jansens.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Sun, 5 Jun 2011 05:07:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=qAjqr/w/1SiOwYsGP1fvcfya1VcWmwnOyPMkwPbh/RJT1hA2FLSMVeWUN5NaE3L2VV
+         l7o9EyFRnzUpH7N+eaoVJtISKpra/ZpGzL2pjcDy7+n4a0jBx9czrnE6OPN28KK5O2Us
+         9//KfPryTaigKsh43JzRMRLtay9X7Ey5L+q1s=
+Message-ID: <4DEB4759.3070403@gmail.com>
+Date: Sun, 05 Jun 2011 11:07:37 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110531 Thunderbird/5.0b1
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
-References: <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop> <4DE674EB.1000200@die-jansens.de> <1306951751.2497.626.camel@laptop> <1306953870.2497.627.camel@laptop> <4DE6936F.7090700@die-jansens.de> <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com> <1307092535.2353.2973.camel@twins> <4DE8B13D.9020302@die-jansens.de> <1307097052.2353.3061.camel@twins> <20110605081747.GA17920@elte.hu>
-In-Reply-To: <20110605081747.GA17920@elte.hu>
+To: Ed Tomlinson <edt@aei.ca>
+CC: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, stable@kernel.org
+Subject: magicmouse regression [was: Linux 2.6.39.1]
+References: <201106032246.25979.edt@aei.ca>
+In-Reply-To: <201106032246.25979.edt@aei.ca>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.06.2011 10:17, Ingo Molnar wrote:
->
-> * Peter Zijlstra<peterz@infradead.org>  wrote:
->
->> On Fri, 2011-06-03 at 12:02 +0200, Arne Jansen wrote:
->>> On 03.06.2011 11:15, Peter Zijlstra wrote:
+Ccing some people.
+
+On 06/04/2011 04:46 AM, Ed Tomlinson wrote:
+> On Thursday 02 June 2011 20:38:35 you wrote:
+>> I'm announcing the release of the 2.6.39.1 kernel.
 >>
->>>> Anyway, Arne, how long did you wait before power cycling the box? The
->>>> NMI watchdog should trigger in about a minute or so if it will trigger
->>>> at all (its enabled in your config).
->>>
->>> No, it doesn't trigger,
+>> All users of the 2.6.39 kernel series must upgrade.
 >>
->> Bummer.
+>> The updated 2.6.39.y git tree can be found at:
+>>          git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.39.y.git
+>> and can be browsed at the normal kernel.org git web browser:
+>>          http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.39.y.git;a=summary
+>>
 >
-> Is there no output even when the console is configured to do an
-> earlyprintk? That will allow the NMI watchdog to punch through even a
-> printk or scheduler lockup.
+> Greg,
 >
+> Just updated to 39.1 and it breaks my magicmouse
+>
+> [  107.360715] input: Apple Wireless Mouse as /devices/pci0000:00/0000:00:13.2/usb2/2-4/2-4.4/2-4.4:1.0/bluetooth/hci0/hci0:21/input8
+> [  107.376797] magicmouse 0005:05AC:030D.0005: input,hidraw3: BLUETOOTH HID v0.84 Mouse [Apple Wireless Mouse] on 00:02:72:20:20:1D
+> [  107.423387] magicmouse 0005:05AC:030D.0005: unable to request touch data (2)
+> [  107.451216] magicmouse: probe of 0005:05AC:030D.0005 failed with error 2
+>
+> and the magicmouse is dead.
+>
+> reverting 23746a66d7d9e73402c68ef00d708796b97ebd72
+>
+> makes it work as before.
 
-Just to be clear, I have no boot problems whatsoever. And I have no
-problems with the serial console. It's just the regular printk locking
-up when e.g. I load the test module.
 
-> Arne, you can turn this on via one of these:
->
->    earlyprintk=vga,keep
-
-I don't have access to vga as it is a remote machine.
-
->    earlyprintk=serial,ttyS0,115200,keep
-
-I'll try that.
-
->
-> (the ',keep' portion is important to have it active even after the
-> regular console has been switched on.)
->
-> Could you also please check with the (untested) patch below applied?
-> This will turn off *all* printk done by the NMI watchdog and switches
-> it to do pure early_printk() - which does not use any locking so it
-> should never lock up.
->
-> [ If you keep seeing 'NMI watchdog tick' messages periodically
->    occuring after the lockup then i'll send a more complete patch that
->    shuts off the regular printk path and makes sure that all output is
->    early_printk() based only. ]
->
-> earlyprintk=,keep with such a patch has let me down only on the
-> rarest of occasions.
->
-> ( Arne, please also double check on a working bootup that the NMI
->    watchdog is actually ticking, by checking the NMI counts in
->    /proc/interrupts go up slowly but surely on all CPUs. )
->
-> Thanks,
->
-> 	Ingo
->
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 3d0c56a..7c7e33f 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -234,15 +234,12 @@ static void watchdog_overflow_callback(struct perf_event *event, int nmi,
->   		if (__this_cpu_read(hard_watchdog_warn) == true)
->   			return;
->
-> -		if (hardlockup_panic)
-> -			panic("Watchdog detected hard LOCKUP on cpu %d", this_cpu);
-> -		else
-> -			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);
-> -
->   		__this_cpu_write(hard_watchdog_warn, true);
->   		return;
->   	}
->
-> +	early_printk("NMI watchog tick %ld\n", jiffies);
-> +
->   	__this_cpu_write(hard_watchdog_warn, false);
->   	return;
->   }
-
+-- 
+js
