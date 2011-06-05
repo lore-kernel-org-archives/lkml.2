@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab1FETaZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 15:30:25 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41308 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968Ab1FETaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 15:30:24 -0400
-Date: Sun, 5 Jun 2011 21:30:01 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andy Lutomirski <luto@MIT.EDU>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
-Message-ID: <20110605193001.GB3971@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>
- <e64e1b3c64858820d12c48fa739efbd1485e79d5.1307292171.git.luto@mit.edu>
+	id S1756253Ab1FETao (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 15:30:44 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:47267 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755603Ab1FETam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 15:30:42 -0400
+X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4DEBD95B.6030901@die-jansens.de>
+Date: Sun, 05 Jun 2011 21:30:35 +0200
+From: Arne Jansen <lists@die-jansens.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e64e1b3c64858820d12c48fa739efbd1485e79d5.1307292171.git.luto@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+References: <20110605141003.GB29338@elte.hu> <4DEB933C.1070900@die-jansens.de> <20110605151323.GA30590@elte.hu> <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu> <4DEBA9CC.4090503@die-jansens.de> <4DEBB05C.8090506@die-jansens.de> <4DEBB3DA.8060001@die-jansens.de> <20110605172052.GA1036@elte.hu> <4DEBBFF9.2030101@die-jansens.de> <20110605185957.GA3452@elte.hu>
+In-Reply-To: <20110605185957.GA3452@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05.06.2011 20:59, Ingo Molnar wrote:
+>
+> * Arne Jansen<lists@die-jansens.de>  wrote:
+>
+>>> hm, it's hard to interpret that without the spin_lock()/unlock()
+>>> logic keeping the dumps apart.
+>>
+>> The locking was in place from the beginning. [...]
+>
+> Ok, i was surprised it looked relatively ordered :-)
+>
+>> [...] As the output is still scrambled, there are other sources for
+>> BUG/WARN outside the watchdog that trigger in parallel. Maybe we
+>> should protect the whole BUG/WARN mechanism with a lock and send it
+>> to early_printk from the beginning, so we don't have to wait for
+>> the watchdog to kill printk off and the first BUG can come through.
+>> Or just let WARN/BUG kill off printk instead of the watchdog
+>> (though I have to get rid of that syslog-WARN on startup).
+>
+> I had yet another look at your lockup.txt and i think the main cause
+> is the WARN_ON() caused by the not-held pi_lock. The lockup there
+> causes other CPUs to wedge in printk, which triggers spinlock-lockup
+> messages there.
+>
+> So i think the primary trigger is the pi_lock WARN_ON() (as your
+> bisection has confirmed that too), everything else comes from this.
+>
+> Unfortunately i don't think we can really 'fix' the problem by
+> removing the assert. By all means the assert is correct: pi_lock
+> should be held there. If we are not holding it then we likely won't
+> crash in an easily visible way - it's a lot easier to trigger asserts
+> than to trigger obscure side-effects of locking bugs.
+>
+> It is also a mystery why only printk() triggers this bug. The wakeup
+> done there is not particularly special, so by all means we should
+> have seen similar lockups elsewhere as well - not just with
+> printk()s. Yet we are not seeing them.
 
-* Andy Lutomirski <luto@MIT.EDU> wrote:
+ From the timing I see I'd guess it has something to do with the
+scheduler kicking in during printk. I'm neither familiar with the
+printk code nor with the scheduler.
+If you have any ideas what I should test or add please let me know.
 
-> This patch is not perfect: the vread_tsc and vread_hpet functions 
-> are still at a fixed address.  Fixing that might involve making 
-> alternative patching work in the vDSO.
+-Arne
 
-Can you see any problem with them? Here is how they are looking like 
-currently:
+>
+> So some essential piece of the puzzle is still missing.
+>
+> Thanks,
+>
+> 	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-ffffffffff600100 <vread_tsc>:
-ffffffffff600100:	55                   	push   %rbp
-ffffffffff600101:	48 89 e5             	mov    %rsp,%rbp
-ffffffffff600104:	66 66 90             	data32 xchg %ax,%ax
-ffffffffff600107:	66 66 90             	data32 xchg %ax,%ax
-ffffffffff60010a:	0f 31                	rdtsc  
-ffffffffff60010c:	89 c1                	mov    %eax,%ecx
-ffffffffff60010e:	48 89 d0             	mov    %rdx,%rax
-ffffffffff600111:	48 8b 14 25 28 0d 60 	mov    0xffffffffff600d28,%rdx
-ffffffffff600118:	ff 
-ffffffffff600119:	48 c1 e0 20          	shl    $0x20,%rax
-ffffffffff60011d:	48 09 c8             	or     %rcx,%rax
-ffffffffff600120:	48 39 d0             	cmp    %rdx,%rax
-ffffffffff600123:	73 03                	jae    ffffffffff600128 <vread_tsc+0x28>
-ffffffffff600125:	48 89 d0             	mov    %rdx,%rax
-ffffffffff600128:	5d                   	pop    %rbp
-ffffffffff600129:	c3                   	retq   
-
-ffffffffff60012a <vread_hpet>:
-ffffffffff60012a:	55                   	push   %rbp
-ffffffffff60012b:	48 89 e5             	mov    %rsp,%rbp
-ffffffffff60012e:	8b 04 25 f0 f0 5f ff 	mov    0xffffffffff5ff0f0,%eax
-ffffffffff600135:	89 c0                	mov    %eax,%eax
-ffffffffff600137:	5d                   	pop    %rbp
-ffffffffff600138:	c3                   	retq   
-
-There's no obvious syscall instruction in them that i can see. No 
-0x0f 0x05 pattern (even misaligned), no 0xcd-anything.
-
-We could even 'tie down' the actual assembly by moving this all to a 
-.S - this way we protect against GCC accidentally generating 
-something dangerous in there. I suggested that before.
-
-Thanks,
-
-	Ingo
