@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755785Ab1FEKfT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 06:35:19 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34028 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755349Ab1FEKfR (ORCPT
+	id S1755959Ab1FEKiq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 06:38:46 -0400
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:36521 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754974Ab1FEKip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 06:35:17 -0400
-Date: Sun, 5 Jun 2011 11:37:02 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: joe@perches.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] MAINTAINERS: Saying goodbye to David Brownell
-Message-ID: <20110605113702.32ed0707@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110605071058.25982.76948.stgit@ponder>
-References: <20110605071058.25982.76948.stgit@ponder>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 5 Jun 2011 06:38:45 -0400
+Subject: Re: Mysterious CFQ crash and RCU
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Date: Sun, 05 Jun 2011 12:38:43 +0200
+References: <20110519222404.GG12600@redhat.com>
+	 <20110521210013.GJ2271@linux.vnet.ibm.com>
+	 <20110523152141.GB4019@redhat.com>
+	 <20110523153848.GC2310@linux.vnet.ibm.com>
+	 <1306401337.27271.3.camel@t41.thuisdomein>
+	 <20110603050724.GB2304@linux.vnet.ibm.com>
+	 <1307191830.23387.24.camel@t41.thuisdomein>
+	 <20110604160326.GA6093@linux.vnet.ibm.com>
+	 <1307227686.28359.23.camel@t41.thuisdomein> <4DEB28A1.5090109@fusionio.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.1 (3.1.1-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1307270324.25014.14.camel@t41.thuisdomein>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 05 Jun 2011 01:12:03 -0600
-Grant Likely <grant.likely@secretlab.ca> wrote:
-
-> We had to say goodbye when David passed away recently.  David had a
-> huge impact on our community, both personally in the lives of the
-> people he worked with, and technically in the design and maintenance
-> of several subsystems.  He is greatly missed.
+On Sun, 2011-06-05 at 10:39 +0200, Paul Bolle wrote:
+> 0) I'd guess not, as the last thing I tried before simply ripping
+> io_context.ioc_data out, was:
 > 
-> He also leaves behind a number of much loved subsystems now orphaned.
-> This patch updates the MAINTAINERS file for the areas that David was
-> responsible for.  While it removes Davids name from the MAINTAINERS
-> file, it by no mean should be seen as forgetting David's involvement
-> or the work he's accomplished.  Indeed, his name remains prominent
-> in the changelog and copyright notices of many files in the kernel.
+>         spin_lock_irqsave(&ioc->lock, flags);
+>         rcu_read_lock();
+>         ioc_data = rcu_dereference(ioc->ioc_data);
+>         rcu_read_unlock();
+>         if (ioc_data == cic)
+>                 rcu_assign_pointer(ioc->ioc_data, NULL);
+>         spin_unlock_irqrestore(&ioc->lock, flags);
 
-Could always move him into CREDITS instead ?
+0) Strike that. It does seem to fix it. I must have done something silly
+while doing yet another test of this stuff (perhaps by forgetting to
+remove an old, crashing version of the cfq_iosched module before
+installing a new version and switching back to cfq).
+
+1) Jens, I suggest I'll send in a small series of patches, along these
+lines:
+- cleanup: make two functions static in block/cfq-iosched.c
+- cleanup: rename io_context.cic_list -> io_context.cic_hlist
+           rename io_context.ioc_data -> io_context.last_cic
+           change io_context.last_cic from void* to cfq_io_context* 
+           rename cfq_io_context.cic_list -> cfq_io_context.cic_node
+- cleanup: rename *ret -> *ioc in two functions
+- locking: make sure io_context.last_cic is accessed under
+           io_context.lock and using the required RCU voodoo
+
+2) Any objections beforehand?
+
+
+Paul Bolle
+
