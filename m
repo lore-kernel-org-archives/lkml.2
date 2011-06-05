@@ -1,113 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab1FEISI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 04:18:08 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36625 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754691Ab1FEISF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 04:18:05 -0400
-Date: Sun, 5 Jun 2011 10:17:47 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
-Message-ID: <20110605081747.GA17920@elte.hu>
-References: <4DE64596.5010006@die-jansens.de>
- <1306946120.2497.606.camel@laptop>
- <4DE674EB.1000200@die-jansens.de>
- <1306951751.2497.626.camel@laptop>
- <1306953870.2497.627.camel@laptop>
- <4DE6936F.7090700@die-jansens.de>
- <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com>
- <1307092535.2353.2973.camel@twins>
- <4DE8B13D.9020302@die-jansens.de>
- <1307097052.2353.3061.camel@twins>
+	id S1755456Ab1FEIVW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 04:21:22 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:43907 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab1FEIVU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 04:21:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PH6rGbUNvOkOmr8izOFniWEVmiVn/f0mrJkbqteF8+M25adroFip8pMqvCk1NCIxJW
+         E+LszvysbrjDY4drLE1JTUL1Bjj5RdaFUJk1yWORMvYS0fo572vKaWh8NqBLCU8YE1SV
+         QV0Y/C4SduY2dqUwZbL/I7rgZEdeMbpXGB8r4=
+Date: Sun, 5 Jun 2011 11:19:04 +0300
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: vinod.koul@intel.com
+Cc: hsweeten@visionengravers.com, rmallon@gmail.com, dan.j.williams@intel.com,
+        lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 0/5] ep93xx DMA patches
+Message-ID: <20110605081904.GA16018@acer>
+References: <cover.1306662317.git.mika.westerberg@iki.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307097052.2353.3061.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <cover.1306662317.git.mika.westerberg@iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Vinod,
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+As this series has acks for all the subsystem maintainers, would it be ok for
+you to take the entire series via your tree? Or do you have any idea how to
+get it merged?
 
-> On Fri, 2011-06-03 at 12:02 +0200, Arne Jansen wrote:
-> > On 03.06.2011 11:15, Peter Zijlstra wrote:
+On Sun, May 29, 2011 at 01:10:01PM +0300, Mika Westerberg wrote:
+> This is an updated version of the ep93xx DMA patches. Previous version can be
+> found here: https://lkml.org/lkml/2011/5/22/86.
 > 
-> > > Anyway, Arne, how long did you wait before power cycling the box? The
-> > > NMI watchdog should trigger in about a minute or so if it will trigger
-> > > at all (its enabled in your config).
-> > 
-> > No, it doesn't trigger,
+> Changes to v1:
+>  * removed unnecessary header
+>  * corrected SPI driver documentation
+>  * DMA driver platform code is only compiled when CONFIG_EP93XX_DMA is
+>    enabled
 > 
-> Bummer.
-
-Is there no output even when the console is configured to do an 
-earlyprintk? That will allow the NMI watchdog to punch through even a 
-printk or scheduler lockup.
-
-Arne, you can turn this on via one of these:
-
-  earlyprintk=vga,keep
-  earlyprintk=serial,ttyS0,115200,keep
-
-(the ',keep' portion is important to have it active even after the 
-regular console has been switched on.)
-
-Could you also please check with the (untested) patch below applied? 
-This will turn off *all* printk done by the NMI watchdog and switches 
-it to do pure early_printk() - which does not use any locking so it 
-should never lock up.
-
-[ If you keep seeing 'NMI watchdog tick' messages periodically 
-  occuring after the lockup then i'll send a more complete patch that 
-  shuts off the regular printk path and makes sure that all output is 
-  early_printk() based only. ]
-
-earlyprintk=,keep with such a patch has let me down only on the 
-rarest of occasions.
-
-( Arne, please also double check on a working bootup that the NMI 
-  watchdog is actually ticking, by checking the NMI counts in 
-  /proc/interrupts go up slowly but surely on all CPUs. )
-
-Thanks,
-
-	Ingo
-
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 3d0c56a..7c7e33f 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -234,15 +234,12 @@ static void watchdog_overflow_callback(struct perf_event *event, int nmi,
- 		if (__this_cpu_read(hard_watchdog_warn) == true)
- 			return;
- 
--		if (hardlockup_panic)
--			panic("Watchdog detected hard LOCKUP on cpu %d", this_cpu);
--		else
--			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);
--
- 		__this_cpu_write(hard_watchdog_warn, true);
- 		return;
- 	}
- 
-+	early_printk("NMI watchog tick %ld\n", jiffies);
-+
- 	__this_cpu_write(hard_watchdog_warn, false);
- 	return;
- }
+> I tried to put all the acks in place, hope I got them right.
+> 
+> There is a dependency between patch 1 and patch 4 which I'm not entirely sure
+> how to solve. Basically it is required that we have patch 1 applied before
+> patch 4 or merge conflict results.
+> 
+> Otherwise it shouldn't matter in which order the patches arrive to the
+> mainline.
+> 
+> Unless someone has a better idea, I suggest that these patches will go through
+> their respective subsystem trees. All the maintainers should be copied.
+> 
+> Thanks,
+> MW
+> 
+> Mika Westerberg (5):
+>   dmaengine: add ep93xx DMA support
+>   ep93xx: add dmaengine platform code
+>   ASoC: ep93xx: convert to use the DMA engine API
+>   ep93xx: remove the old M2P DMA code
+>   spi/ep93xx: add DMA support
+> 
+>  Documentation/spi/ep93xx_spi                   |   10 +
+>  arch/arm/mach-ep93xx/Makefile                  |    4 +-
+>  arch/arm/mach-ep93xx/core.c                    |    6 +-
+>  arch/arm/mach-ep93xx/dma-m2p.c                 |  411 -------
+>  arch/arm/mach-ep93xx/dma.c                     |  108 ++
+>  arch/arm/mach-ep93xx/include/mach/dma.h        |  190 ++---
+>  arch/arm/mach-ep93xx/include/mach/ep93xx_spi.h |    2 +
+>  drivers/dma/Kconfig                            |    7 +
+>  drivers/dma/Makefile                           |    1 +
+>  drivers/dma/ep93xx_dma.c                       | 1355 ++++++++++++++++++++++++
+>  drivers/spi/ep93xx_spi.c                       |  303 +++++-
+>  sound/soc/ep93xx/ep93xx-ac97.c                 |    4 +-
+>  sound/soc/ep93xx/ep93xx-i2s.c                  |    4 +-
+>  sound/soc/ep93xx/ep93xx-pcm.c                  |  137 ++--
+>  14 files changed, 1930 insertions(+), 612 deletions(-)
+>  delete mode 100644 arch/arm/mach-ep93xx/dma-m2p.c
+>  create mode 100644 arch/arm/mach-ep93xx/dma.c
+>  create mode 100644 drivers/dma/ep93xx_dma.c
+> 
+> -- 
+> 1.7.4.4
