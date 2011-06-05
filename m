@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab1FESxD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 14:53:03 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:34708 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753325Ab1FESxB (ORCPT
+	id S1756154Ab1FES7O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 14:59:14 -0400
+Received: from fep22.mx.upcmail.net ([62.179.121.42]:46636 "EHLO
+	fep22.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756031Ab1FES7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 14:53:01 -0400
-X-Sasl-enc: nPwSx3bzpoQ3Q9jJmlj3Up6C3PuXHKIw1kiIIrdHK9PJ 1307299979
-Date: Sun, 5 Jun 2011 15:52:56 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Keith Packard <keithp@keithp.com>
-Cc: ibm-acpi-devel@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] thinkpad-acpi: Some BIOS versions don't end in WW,
- remove check
-Message-ID: <20110605185255.GA9549@khazad-dum.debian.net>
-References: <1300085555-31022-1-git-send-email-keithp@keithp.com>
+	Sun, 5 Jun 2011 14:59:13 -0400
+X-SourceIP: 178.83.226.131
+Message-ID: <4DEBD1B4.3000307@odi.ch>
+Date: Sun, 05 Jun 2011 20:57:56 +0200
+From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1300085555-31022-1-git-send-email-keithp@keithp.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Oops fs/ext4/inode.c:2188
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Cloudmark-Analysis: v=1.1 cv=kRmApA04uPli/d8B8u1M0swu98hronvs6VvAqI8uQP0= c=1 sm=0 a=GuWncwZLQJwA:10 a=8nJEP1OIZ-IA:10 a=WxGPA_uYBO4Q75SGcNkA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Mar 2011, Keith Packard wrote:
-> My X201s BIOS version string is 6QET46V1 (1.16 ). The
-> EC version string is 6QHT28WW-1.09. The driver was requiring that both
-> of these have 'WW' in positions 6 and 7. I don't know what the
-> significance of having 'V1' there instead is, but removing the test
-> makes the driver load on my machine.
-
-Keith, thanks for the patch.  It has been shipped in mainline for a while
-now.  That V1 postfix means the factory shipped a pre-release BIOS image for
-some reason.  That's not a first with Lenovo and ThinkPads.
-
-http://www-307.ibm.com/pc/support/site.wss/document.do?lndocid=MIGR-74983
-(check the .txt file link):
-
-VERSION INFORMATION
-  The following versions of BIOS and ECP (Embedded Controller Program) have
-  been released to date.
-
-  Package        BIOS (BIOS ID)  ECP       (ECP ID)             Rev.  Issue
-Date
-  -------------- --------------- -----------------------------  ----
-----------
-  1.34           1.34 (6QET64WW) 1.13/1.13 (6QHT32WW/6SHT32WW)  01
-2011/03/23
-  1.32           1.32 (6QET62WW) 1.12/1.12 (6QHT31WW/6SHT31WW)  01
-2011/01/13
-  1.31           1.31 (6QET61WW) 1.12/1.12 (6QHT31WW/6SHT31WW)  01
-2010/11/12
-  1.22           1.22 (6QET52WW) 1.11/1.11 (6QHT30WW/6SHT30WW)  01
-2010/09/09
-  1.17           1.17 (6QET47WW) 1.10/1.10 (6QHT29WW/6SHT29WW)  01
-2010/07/30
-  1.16           1.16 (6QET46WW) 1.09/1.09 (6QHT28WW/6SHT28WW)  01
-2010/06/29
-  1.15-1.09/1.09 1.15 (6QET45WW) 1.09/1.09 (6QHT28WW/6SHT28WW)  01
-2010/05/19
-  1.14-1.09/1.09 1.14 (6QET44WW) 1.09/1.09 (6QHT28WW/6SHT28WW)  02
-2010/05/07
-  1.14-1.09/1.09 1.14 (6QET44WW) 1.09/1.09 (6QHT28WW/6SHT28WW)  01
-2010/04/23
-  1.12-1.07/1.07 1.12 (6QET42WW) 1.07/1.07 (6QHT26WW/6SHT26WW)  01
-2010/04/05
-  1.09-1.06/1.06 1.09 (6QET39WW) 1.06/1.06 (6QHT25WW/6SHT25WW)  01
-2010/03/03
-  1.05-1.03/1.03 1.05 (6QET35WW) 1.03/1.03 (6QHT22WW/6SHT22WW)  01
-2010/02/16
-
-Notice that all public releases have the WW suffix.
-
-The changelog in that .txt file worries me.  You might really want to update
-if you're still at 1.16/1.09.
-
-Anyway, I will add an extra patch to the driver to keep accepting non-WW
-firmware, but to alert the user that something is weird and to check for a
-BIOS update.  Since that might well still trigger on your box, I thought I
-should drop you a direct note.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Jun  5 20:34:11 box kernel: ------------[ cut here ]------------
+Jun  5 20:34:11 box kernel: kernel BUG at fs/ext4/inode.c:2188!
+Jun  5 20:34:11 box kernel: invalid opcode: 0000 [#1] PREEMPT SMP
+Jun  5 20:34:11 box kernel: last sysfs file:
+/sys/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1:1.
+0/host7/target7:0:0/7:0:0:0/block/sdc/dev
+Jun  5 20:34:11 box kernel: Modules linked in:
+Jun  5 20:34:11 box kernel:
+Jun  5 20:34:11 box kernel: Pid: 13696, comm: flush-8:32 Not tainted
+2.6.38.7 #2 To Be Filled By
+O.E.M. To Be Filled By O.E.M./P4P800
+Jun  5 20:34:12 box kernel: EIP: 0060:[<c1106622>] EFLAGS: 00010246 CPU: 1
+Jun  5 20:34:12 box kernel: EIP is at mpage_da_map_and_submit+0x56c/0x5ba
+Jun  5 20:34:12 box kernel: EAX: 40000024 EBX: dfe17e00 ECX: 0000000e
+EDX: 00000000
+Jun  5 20:34:12 box kernel: ESI: 001b4800 EDI: 001b4fff EBP: c1dafd4c
+ESP: c1dafcb0
+Jun  5 20:34:12 box kernel: DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+Jun  5 20:34:12 box kernel: Process flush-8:32 (pid: 13696, ti=c1dae000
+task=df2a0f40 task.ti=c1d
+ae000)
+Jun  5 20:34:12 box kernel: Stack:
+Jun  5 20:34:12 box kernel: 0000000e c14898ca c1494b28 00000015 001b4800
+00000000 00000800 ffffff
+fb
+Jun  5 20:34:12 box kernel: 0000000c 00000000 001b500a 00000000 dedfe390
+0000000e 00000000 000000
+0e
+Jun  5 20:34:12 box kernel: 00000004 dfe17e00 dfcd8220 dfdbe980 dfd0bc40
+dfbed540 dfca32e0 dfe94c
+c0
+Jun  5 20:34:12 box kernel: Call Trace:
+Jun  5 20:34:12 box kernel: [<c11066c0>] mpage_add_bh_to_extent+0x50/0xdd
+Jun  5 20:34:12 box kernel: [<c110696c>] write_cache_pages_da+0x21f/0x312
+Jun  5 20:34:12 box kernel: [<c1106c97>] ext4_da_writepages+0x238/0x45f
+Jun  5 20:34:12 box kernel: [<c1070335>] do_writepages+0x17/0x2d
+Jun  5 20:34:12 box kernel: [<c10afa73>] writeback_single_inode+0x78/0x1b1
+Jun  5 20:34:12 box kernel: [<c10aff7d>] writeback_sb_inodes+0x86/0x118
+Jun  5 20:34:12 box kernel: [<c10b0691>] wb_writeback+0x162/0x235
+Jun  5 20:34:12 box kernel: [<c107057e>] ? global_dirty_limits+0x23/0xb9
+Jun  5 20:34:12 box kernel: [<c10b07c9>] wb_do_writeback+0x65/0x191
+Jun  5 20:34:12 box kernel: [<c10b0958>] bdi_writeback_thread+0x63/0x10b
+Jun  5 20:34:12 box kernel: [<c10b08f5>] ? bdi_writeback_thread+0x0/0x10b
+Jun  5 20:34:12 box kernel: [<c10406a0>] kthread+0x68/0x6a
+Jun  5 20:34:12 box kernel: [<c1040638>] ? kthread+0x0/0x6a
+Jun  5 20:34:12 box kernel: [<c1002fb6>] kernel_thread_helper+0x6/0x10
+Jun  5 20:34:12 box kernel: Code: 24 04 c7 04 24 80 a0 48 c1 e8 f2 42 2d
+00 8b 86 08 02 00 00 89 44 24 04 c7 04 24 9e a0 48 c1 e8 dc 42 2d 00 8b
+03 e9 64 fd ff ff <0f> 0b eb fe 0f 0b eb fe 89 f0 e8 98 44 ff ff 09 c2
+75 07 8b 03
+Jun  5 20:34:12 box kernel: EIP: [<c1106622>]
+mpage_da_map_and_submit+0x56c/0x5ba SS:ESP 0068:c1dafcb0
+Jun  5 20:34:12 box kernel: JBD2: Detected IO errors while flushing file
+data on sdc1-8
+Jun  5 20:34:12 box kernel: Aborting journal on device sdc1-8.
+Jun  5 20:34:12 box kernel: JBD2: I/O error detected when updating
+journal superblock for sdc1-8.
+Jun  5 20:34:12 box kernel: ---[ end trace 736424b87d636c31 ]---
