@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab1FELgo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 07:36:44 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56140 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755968Ab1FELgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 07:36:42 -0400
-Date: Sun, 5 Jun 2011 13:36:27 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arne Jansen <lists@die-jansens.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-Message-ID: <20110605113627.GA25724@elte.hu>
-References: <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com>
- <1307092535.2353.2973.camel@twins>
- <4DE8B13D.9020302@die-jansens.de>
- <1307097052.2353.3061.camel@twins>
- <20110605081747.GA17920@elte.hu>
- <4DEB4FA7.3050400@die-jansens.de>
- <20110605095555.GA22058@elte.hu>
- <4DEB58D8.4000805@die-jansens.de>
- <20110605110132.GB23463@elte.hu>
- <20110605111933.GA24592@elte.hu>
+	id S1755986Ab1FELt6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 07:49:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45139 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755305Ab1FELt5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 07:49:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=k8sV6nFwBcQcDkkb0wmyp4jiy5dGNyvkq7417/BXJmYuCODOS4C6/YTRjsUYhlAsuK
+         qc++pqUaPCNp4iuHz9d1CPcAnGgbo9oga3HQ9SzunzWgDsSZ65VD/zutPJNDX+VMPLY4
+         jjM4PmO9SMHv0HiaeSb0IuQjFOwsgZbcPtn2U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110605111933.GA24592@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110605075458.GA2712@tarshish>
+References: <20110605071725.26517.11573.stgit@ponder>
+	<BANLkTinoEQf2a65KwQZOVK_4H9DSfqybjA@mail.gmail.com>
+	<20110605075458.GA2712@tarshish>
+Date: Sun, 5 Jun 2011 13:49:54 +0200
+X-Google-Sender-Auth: RnE19Q8moe8svtGBQElwQjasQps
+Message-ID: <BANLkTi=5XLxcZiBcZT8W4Gh+Ph_BUjs-yw@mail.gmail.com>
+Subject: Re: [PATCH] spi: reorganize drivers
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Baruch Siach <baruch@tkos.co.il>, Grant Likely <grant.likely@secretlab.ca>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jun 5, 2011 at 09:54, Baruch Siach <baruch@tkos.co.il> wrote:
+> On Sun, Jun 05, 2011 at 01:13:28PM +0530, Jassi Brar wrote:
+>> On Sun, Jun 5, 2011 at 12:48 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> > [repost: I had a typo on the spi-devel-general mailing list address]
+>> >
+>> > Sort the SPI makefile and enforce the naming convention spi_*.c for
+>> > spi drivers.
+>
+> [snip]
+>
+>> Though the spi_ prefix seems redundant considering the files are in
+>> 'spi' directory.
+>> Just a thought, no objection.
+>
+> When looking at the list of loaded modules (e.g. in an Oops message), the name
+> "spi_xilinx" is much more meaningful than just "xilinx", for example.
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+Plus, when dropping the prefix, spi_xilinx.ko and gpio-xilinx.ko
+become the same...
 
-> > If the ticks stop this suggests a lockup within the printk code. 
-> > [...]
-> 
-> In which case the printk-killswitch patch below (to be applied 
-> *instead* of the previous debugging patch i sent) should provide 
-> the desired NMI watchdog output on the serial console.
-> 
-> Warning: it's entirely untested.
+So now we have spi_<name>.c (with underscore) and gpio-<name>.c (with dash)?
+And other subsystems go with <name>-<type>.c instead, e.g.
+drivers/mfd/wm831x-spi.c?
 
-Note, since this is an SMP box, if the lockup messages show up with 
-this patch but are mixed up with each other then adding a spinlock 
-around the WARN() would probably help keeping the output serialized.
+Gr{oetje,eeting}s,
 
-A simple:
+                        Geert
 
- static DEFINE_SPINLOCK(watchdog_output_lock);
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
- ...
-	spin_lock(&watchdog_output_lock);
- ...
-	[ the WARN_ON() logic. ]
- ...
-	spin_unlock(&watchdog_output_lock);
- ...
-
-would suffice.
-
-Thanks,
-
-	Ingo
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
