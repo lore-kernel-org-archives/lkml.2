@@ -1,109 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab1FEFNb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 01:13:31 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:51529 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab1FEFN3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 01:13:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=bFba/T5lQnyRxkBjWCtd2yIYxmlybXNI3838wxnOm6qe89SR39xJOIo/an4/TbB9DA
-         5nyHcWokZB7AYTVyH3XkYuiP9EEPCNn0cdYdVP6crmpQX/I4hrpQUO9OcM/Jow8BgSYX
-         +ZGHSVikq7CuK99A9yCSfHTMlrs0CcyBNGDkw=
+	id S1753660Ab1FEFa7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 01:30:59 -0400
+Received: from home.kolivas.org ([59.167.196.135]:41293 "EHLO home.kolivas.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751486Ab1FEFa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 01:30:59 -0400
+From: Con Kolivas <kernel@kolivas.org>
+To: linux-kernel@vger.kernel.org
+Subject: lrzip compressed tarball of all 161 stable linux kernels
+Date: Sun, 5 Jun 2011 15:30:52 +1000
+User-Agent: KMail/1.13.6 (Linux/2.6.39-ck1; KDE/4.6.2; x86_64; ; )
+References: <201106041945.25922.kernel@kolivas.org>
+In-Reply-To: <201106041945.25922.kernel@kolivas.org>
 MIME-Version: 1.0
-In-Reply-To: <4DEA5D78.5030402@centrum.cz>
-References: <4DEA5D78.5030402@centrum.cz>
-Date: Sun, 5 Jun 2011 13:13:28 +0800
-Message-ID: <BANLkTin3KKoa4A3xie7J0QaBcvr-NYPrbQ@mail.gmail.com>
-Subject: Re: ETH over USB: NFS state (seeking ARM platform for NFS-based builds)
-From: Ming Lei <tom.leiming@gmail.com>
-To: Karel Gardas <karel.gardas@centrum.cz>
-Cc: linux-kernel@vger.kernel.org, linux-usb <linux-usb@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106051530.52053.kernel@kolivas.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, 4 Jun 2011 19:45:25 Con Kolivas wrote:
+> With the 2.6 linux kernel now officially finished, I'm providing an lrzip
+> tarball of all 40 of the 3 point kernel releases as an lrzip tarball. This
+> is a convenient way of getting all the releases in a relatively low
+> bandwidth form, and previous archives of this nature have had a few
+> downloads so I figured I'd complete the archive for those who want to
+> download it and use it as an ad for lrzip:
+> 
+> 163.9MB:
+> http://ck.kolivas.org/linux-2.6.0-2.6.39.tar.lrz
+> 
+> 10.3GB:
+> linux-2.6.0-2.6.39.tar
+> 
+> Original file is a tarball of all 3 point linux kernel release tarballs
+> 2.6.0 to 2.6.39 coming to a grand total of 10.3GB
+> 
+> Of course this is a plug for lrzip on something it is particularly good at
+> compressing.
+> 
+> lrzip can be obtained here:
+> http:://lrzip.kolivas.org
+> 
+> About this archive: It was compressed with lrzip version 0.606 on a quad
+> core 3GHz core 2 on a relatively slow external USB2 hard drive with the
+> following options:
+> 
+> lrzip -UL 9 linux-2.6.0-2.6.39.tar
+> Total time: 00:56:19.88
+> 
+> It would have compressed a lot faster without the -L 9 option, but given
+> this is the "final" archive of 2.6, I figured I'd push it a bit further.
+> Lrzip can compress it even further with zpaq as an option, but it makes
+> decompression much slower so I'd personally find the archive less useful.
+> 
+> Of course someone will ask how it compares to xz, so for completion:
+> 
+> xz -9 linux-2.6.0-2.6.39.tar
+> Total time: 2:05:32.218
+> 
+> 11067473920 linux-2.6.0-2.6.39.tar
+> 1535618848 linux-2.6.0-2.6.39.tar.xz 13.8%
+> 171879382 linux-2.6.0-2.6.39.tar.lrz 1.6%
 
-2011/6/5 Karel Gardas <karel.gardas@centrum.cz>:
-> Hello,
->
-> while searching for ARMv7/NEON platform for my own hacking I've found this
-> interesting issue:
->
-> [ 2945.114135] cc1: page allocation failure. order:3, mode:0x4020
+I figured I'd do the rest as well.
 
-Maybe the patch below can fix the issue, please try it:
+Here is a tarball of all 161 stable 3 point releases from linux-1.0 to 
+linux-2.6.39:
 
-diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
-index 9ab439d..f16e448 100644
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -324,12 +324,20 @@ static int rx_submit (struct usbnet *dev, struct
-urb *urb, gfp_t flags)
- 	unsigned long		lockflags;
- 	size_t			size = dev->rx_urb_size;
+211MB:
+http://ck.kolivas.org/linux-1.0-2.6.39.tar.lrz
 
--	if ((skb = alloc_skb (size + NET_IP_ALIGN, flags)) == NULL) {
--		netif_dbg(dev, rx_err, dev->net, "no rx skb\n");
-+	if (atomic_read(&dev->rx_skb_on_fly) > MAX_RX_SKB_ON_FLY &&
-+		flags == GFP_ATOMIC) {
-+		netif_dbg(dev, rx_err, dev->net, "too many rx skbs on the fly\n");
-+fail_rx_memory:
- 		usbnet_defer_kevent (dev, EVENT_RX_MEMORY);
- 		usb_free_urb (urb);
- 		return -ENOMEM;
- 	}
-+
-+	if ((skb = alloc_skb (size + NET_IP_ALIGN, flags)) == NULL) {
-+		netif_dbg(dev, rx_err, dev->net, "no rx skb\n");
-+		goto fail_rx_memory;
-+	}
-+	atomic_inc(&dev->rx_skb_on_fly);
- 	skb_reserve (skb, NET_IP_ALIGN);
+19617064960 linux-1.0-2.6.39.tar
+221368298 linux-1.0-2.6.39.tar.lrz 1.1%
 
- 	entry = (struct skb_data *) skb->cb;
-@@ -375,6 +383,7 @@ static int rx_submit (struct usbnet *dev, struct
-urb *urb, gfp_t flags)
- 	}
- 	spin_unlock_irqrestore (&dev->rxq.lock, lockflags);
- 	if (retval) {
-+		atomic_dec(&dev->rx_skb_on_fly);
- 		dev_kfree_skb_any (skb);
- 		usb_free_urb (urb);
- 	}
-@@ -1177,8 +1186,9 @@ static void usbnet_bh (unsigned long param)
- 			entry->state = rx_cleanup;
- 			rx_process (dev, skb);
- 			continue;
--		case tx_done:
- 		case rx_cleanup:
-+			atomic_dec(&dev->rx_skb_on_fly);
-+		case tx_done:
- 			usb_free_urb (entry->urb);
- 			dev_kfree_skb (skb);
- 			continue;
-diff --git a/include/linux/usb/usbnet.h b/include/linux/usb/usbnet.h
-index 605b0aa..1dace0d 100644
---- a/include/linux/usb/usbnet.h
-+++ b/include/linux/usb/usbnet.h
-@@ -33,6 +33,8 @@ struct usbnet {
- 	wait_queue_head_t	*wait;
- 	struct mutex		phy_mutex;
- 	unsigned char		suspend_count;
-+	atomic_t		rx_skb_on_fly;
-+#		define MAX_RX_SKB_ON_FLY	2048
+As compressing this workload is mostly I/O bound I performed it on an SSD 
+drive this time:
 
- 	/* i/o info: pipes etc */
- 	unsigned		in, out;
+linux-1.0-2.6.39.tar - Compression Ratio: 88.617. Average Compression Speed:  
+8.026MB/s.
+Total time: 00:38:50.76
 
-
-thanks,
 -- 
-Ming Lei
+-ck
