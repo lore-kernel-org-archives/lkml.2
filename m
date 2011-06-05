@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298Ab1FEVqG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 17:46:06 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40401 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755967Ab1FEVqE (ORCPT
+	id S1756129Ab1FEWNs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 18:13:48 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:33301 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721Ab1FEWNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 17:46:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=gYkt4rndxVQIGnNizEc8P4f+eDU/rlZjO+e0+cubDX7WB//tlxgq36u4lHpz0NPiI3
-         33CgcC568GsK1PcMik4lSxI0Mrt5UtGTvnlGUyPxtp5I/oMEVo/iyxgZwvPMQOgAGUCy
-         tGlG9pYhUUbXRCKyKKABlbM1qxlhk5jpgOFQs=
-Message-ID: <4DEBF96D.3030209@gmail.com>
-Date: Sun, 05 Jun 2011 23:47:25 +0200
-From: Emese Revfy <re.emese@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Sun, 5 Jun 2011 18:13:47 -0400
+Date: Sun, 5 Jun 2011 23:13:44 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
+        linux-kernel@vger.kernel.org
+Subject: Re: ENOSPC returned by handle_mm_fault()
+Message-ID: <20110605221344.GJ11521@ZenIV.linux.org.uk>
+References: <20110605134317.GF11521@ZenIV.linux.org.uk>
+ <alpine.LSU.2.00.1106051141570.5792@sister.anvils>
+ <20110605195025.GH11521@ZenIV.linux.org.uk>
+ <alpine.LSU.2.00.1106051339001.8317@sister.anvils>
 MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        cocci@diku.dk
-Subject: Re: [Cocci] Re: status of constification
-References: <20101108223844.GS5876@outflux.net> <4CD9BF25.4090306@gmail.com> <20110528031348.GA19633@outflux.net> <Pine.LNX.4.64.1105280838150.30088@ask.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1105280838150.30088@ask.diku.dk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1106051339001.8317@sister.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Could I see the semantic patch?  The clean up issue sounds interesting.
-> Perhaps there is a way around it.
+On Sun, Jun 05, 2011 at 01:48:55PM -0700, Hugh Dickins wrote:
+> On Sun, 5 Jun 2011, Al Viro wrote:
+> > On Sun, Jun 05, 2011 at 12:16:08PM -0700, Hugh Dickins wrote:
+> > 
+> > > Good find, news to me.  Interesting uses of -PTR_ERR()!
+> > 
+> > You mean, something like the diff below?
+> 
+> Second hunk yes, but first hunk no: there's at least one other place
+> (hugetlb_reserve_pages) which calls region_chg(), and expects a
+> conventional -errno return from it; and even if there weren't,
+> I'd rather not spread these unconventional return values any deeper.
 
-Hi,
-I no longer use Coccinelle to generate constification patch, but only to find
-candidate structures for constification. This is because I ran into several issues
-some of which I will try describe now from memory (unfortunately I don't have
-those Cocci scripts anymore):
+Umm...  FWIW, callers of hugetlb_reserve_pages() only check if it's 0;
+exact value is lost.  But yes, I agree that your variant makes more
+sense - they might start caring at some point.
 
-1. Sometimes (always?) cocci removed NULL initialization while emitting the constified patch:
+> Signed-off-by: Hugh Dickins <hughd@google.com
+Acked-by: Al Viro <viro@zeniv.linux.org.uk>
 
-linux-2.6.39-rc7/arch/frv/mb93090-mb00/pci-vdk.c
-@@ -356,7 +356,7 @@ void __init pcibios_fixup_bus(struct pci
-  
-  int __init pcibios_init(void)
-  {
--       struct pci_ops *dir = NULL;
-+       const struct pci_ops *dir;
-  
-         if (!mb93090_mb00_detected)
-                 return -ENXIO;
-
-2. Sometimes (always?) cocci joined structure field lines into one line while constifying  them:
-
-linux-2.6.39-rc7/arch/x86/include/asm/x86_init.h
-@@ -119,14 +119,7 @@ struct x86_init_pci {
-   *
-   */
-  struct x86_init_ops {
--       struct x86_init_resources       resources;
--       struct x86_init_mpparse         mpparse;
--       struct x86_init_irqs            irqs;
--       struct x86_init_oem             oem;
--       struct x86_init_paging          paging;
--       struct x86_init_timers          timers;
--       struct x86_init_iommu           iommu;
--       struct x86_init_pci             pci;
-+       const struct x86_init_resources resources;const struct x86_init_mpparse mpparse;const struct x86_init_irqs irqs;const struct x86_init_oem oem;const struct x86_init_paging paging;const struct x86_init_timers timers;const struct x86_init_iommu iommu;const struct x86_init_pci pci;
-  };
-
-  /**
-
-3. Sometimes cocci removed comment lines while joining others, maybe related
-    to the previous issue:
-  
-linux-2.6.39-rc7/drivers/net/wireless/ath/ath9k/hw.h
-@@ -753,9 +753,7 @@ struct ath_hw {
-         } enable_32kHz_clock;
-
-         /* Private to hardware code */
--       struct ath_hw_private_ops private_ops;
--       /* Accessed by the lower level driver */
--       struct ath_hw_ops ops;
-+       const struct ath_hw_private_ops private_ops;const struct ath_hw_ops ops;
-
-         /* Used to program the radio on non single-chip devices */
-         u32 *analogBank0Data;
-
-4. My constification patch generator cocci script didn't find all structures that it should have, I don't know whether it was a bug in my script or in cocci but in the end I just gave it up.
-
---
-Emese
+>  mm/hugetlb.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> --- 3.0-rc1/mm/hugetlb.c	2011-05-29 18:42:37.425882575 -0700
+> +++ linux/mm/hugetlb.c	2011-06-05 13:33:22.795341004 -0700
+> @@ -1033,10 +1033,10 @@ static struct page *alloc_huge_page(stru
+>  	 */
+>  	chg = vma_needs_reservation(h, vma, addr);
+>  	if (chg < 0)
+> -		return ERR_PTR(chg);
+> +		return ERR_PTR(-VM_FAULT_OOM);
+>  	if (chg)
+>  		if (hugetlb_get_quota(inode->i_mapping, chg))
+> -			return ERR_PTR(-ENOSPC);
+> +			return ERR_PTR(-VM_FAULT_SIGBUS);
+>  
+>  	spin_lock(&hugetlb_lock);
+>  	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
