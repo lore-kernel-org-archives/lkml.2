@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253Ab1FETao (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 15:30:44 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:47267 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755603Ab1FETam (ORCPT
+	id S1756389Ab1FETa7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 15:30:59 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:53485 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756230Ab1FETa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 15:30:42 -0400
-X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
-X-RZG-CLASS-ID: mo00
-Message-ID: <4DEBD95B.6030901@die-jansens.de>
-Date: Sun, 05 Jun 2011 21:30:35 +0200
-From: Arne Jansen <lists@die-jansens.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Sun, 5 Jun 2011 15:30:57 -0400
+Date: Sun, 5 Jun 2011 15:30:55 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Keshava Munegowda <keshava_mgowda@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <tony@atomide.com>, <khilman@ti.com>, <b-cousson@ti.com>,
+        <paul@pwsan.com>
+Subject: Re: [PATCH 4/4] mfd: global Suspend and resume support of ehci and
+ ohci
+In-Reply-To: <20110605185047.GB18731@legolas.emea.dhcp.ti.com>
+Message-ID: <Pine.LNX.4.44L0.1106051519560.5916-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-References: <20110605141003.GB29338@elte.hu> <4DEB933C.1070900@die-jansens.de> <20110605151323.GA30590@elte.hu> <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu> <4DEBA9CC.4090503@die-jansens.de> <4DEBB05C.8090506@die-jansens.de> <4DEBB3DA.8060001@die-jansens.de> <20110605172052.GA1036@elte.hu> <4DEBBFF9.2030101@die-jansens.de> <20110605185957.GA3452@elte.hu>
-In-Reply-To: <20110605185957.GA3452@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.06.2011 20:59, Ingo Molnar wrote:
->
-> * Arne Jansen<lists@die-jansens.de>  wrote:
->
->>> hm, it's hard to interpret that without the spin_lock()/unlock()
->>> logic keeping the dumps apart.
->>
->> The locking was in place from the beginning. [...]
->
-> Ok, i was surprised it looked relatively ordered :-)
->
->> [...] As the output is still scrambled, there are other sources for
->> BUG/WARN outside the watchdog that trigger in parallel. Maybe we
->> should protect the whole BUG/WARN mechanism with a lock and send it
->> to early_printk from the beginning, so we don't have to wait for
->> the watchdog to kill printk off and the first BUG can come through.
->> Or just let WARN/BUG kill off printk instead of the watchdog
->> (though I have to get rid of that syslog-WARN on startup).
->
-> I had yet another look at your lockup.txt and i think the main cause
-> is the WARN_ON() caused by the not-held pi_lock. The lockup there
-> causes other CPUs to wedge in printk, which triggers spinlock-lockup
-> messages there.
->
-> So i think the primary trigger is the pi_lock WARN_ON() (as your
-> bisection has confirmed that too), everything else comes from this.
->
-> Unfortunately i don't think we can really 'fix' the problem by
-> removing the assert. By all means the assert is correct: pi_lock
-> should be held there. If we are not holding it then we likely won't
-> crash in an easily visible way - it's a lot easier to trigger asserts
-> than to trigger obscure side-effects of locking bugs.
->
-> It is also a mystery why only printk() triggers this bug. The wakeup
-> done there is not particularly special, so by all means we should
-> have seen similar lockups elsewhere as well - not just with
-> printk()s. Yet we are not seeing them.
+On Sun, 5 Jun 2011, Felipe Balbi wrote:
 
- From the timing I see I'd guess it has something to do with the
-scheduler kicking in during printk. I'm neither familiar with the
-printk code nor with the scheduler.
-If you have any ideas what I should test or add please let me know.
+> > > good point. BTW, do we need this #ifdef CONFIG_PM stuff which has been
+> > > popping on most drivers recently ? To me it looks like driver.pm field
+> > > is always available even if PM is disabled, so what's the point ? Saving
+> > > a few bytes ?
+> > 
+> > Basically, yes (you may want to avoid defining the object this points to if
+> > CONFIG_PM is unset).
+> 
+> wouldn't it look nicer to have a specific section for dev_pm_ops which
+> gets automatically freed if CONFIG_PM isn't set ? I mean, there are a
+> few drivers which don't have the ifdeferry around dev_pm_ops anyway.
+> 
+> So, something like:
+> 
+> #define __pm_ops	__section(.pm.ops)
+> 
+> static const struct dev_pm_ops my_driver_pm_ops __pm_ops = {
+> 	.suspend	= my_driver_suspend,
+> 	.resume		= my_driver_resume,
+> 	[ blablabla ]
+> };
+> 
+> to simplify things, you could:
+> 
+> #define DEFINE_DEV_PM_OPS(_ops)		\
+> 	const struct dev_pm_ops _ops __pm_ops
+> 
+> that would mean changes to all linker scripts, though and a utility call
+> that only does anything ifndef CONFIG_PM to free the .pm.ops section.
 
--Arne
+In my opinion this would make programming harder, not easier.  It's
+very easy to understand "#ifdef" followed by "#endif"; people see them
+all the time.  The new tags you propose would force people to go
+searching through tons of source files to see what they mean, and then
+readers would still have to figure out when these tags should be used
+or what advantage they might bring.
 
->
-> So some essential piece of the puzzle is still missing.
->
-> Thanks,
->
-> 	Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+It's a little like "typedef struct foo foo_t;" -- doing this forces
+people to remember one extra piece of information that serves no real
+purpose except perhaps a minimal reduction in the amount of typing.  
+Since the limiting factor in kernel programming is human brainpower,
+not source file length, this is a bad tradeoff.  (Not to mention that
+it also obscures an important fact: A foo_t is an extended structure
+rather than a single value.)
+
+Alan Stern
 
