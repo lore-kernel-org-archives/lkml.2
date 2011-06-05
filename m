@@ -1,115 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab1FEKpj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 06:45:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39757 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755256Ab1FEKph convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 06:45:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=O2b2IEc09AqbjYj3UO2kf7Og1+UjEstCGfEUk5CyG9o1xeYKGt9PMLeGk4MeoHpiDo
-         QjupNbKf9ZSyNOPmeMVxurnuLU0i3/NRsKmdyYtBzUS9hM1Cv0ZnZ7iNkExxskKp1qe3
-         q4XRMRY/N1mX+kUBafsjxGPsWCTlU3x6U8OCM=
+	id S1755795Ab1FELB4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 07:01:56 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50307 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754655Ab1FELBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 07:01:55 -0400
+Date: Sun, 5 Jun 2011 13:01:32 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arne Jansen <lists@die-jansens.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
+Message-ID: <20110605110132.GB23463@elte.hu>
+References: <1306953870.2497.627.camel@laptop>
+ <4DE6936F.7090700@die-jansens.de>
+ <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com>
+ <1307092535.2353.2973.camel@twins>
+ <4DE8B13D.9020302@die-jansens.de>
+ <1307097052.2353.3061.camel@twins>
+ <20110605081747.GA17920@elte.hu>
+ <4DEB4FA7.3050400@die-jansens.de>
+ <20110605095555.GA22058@elte.hu>
+ <4DEB58D8.4000805@die-jansens.de>
 MIME-Version: 1.0
-In-Reply-To: <1306873915.10135.11.camel@gandalf.stny.rr.com>
-References: <BANLkTikG4v6xPGcKU6YVTYhXCnxWaWwoKg@mail.gmail.com>
-	<1306873915.10135.11.camel@gandalf.stny.rr.com>
-Date: Sun, 5 Jun 2011 18:45:36 +0800
-Message-ID: <BANLkTi=Xp0UAHm4R=TQPoqJJTwc55ewg0Q@mail.gmail.com>
-Subject: Re: [PATCH] sched: check and preempt the current task at right place
-From: Hillf Danton <dhillf@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DEB58D8.4000805@die-jansens.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 1, 2011 at 4:31 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2011-05-31 at 21:04 +0800, Hillf Danton wrote:
->> When switching a task to RT, it is the right place to preempt the current
->> running task if the task is not running. Same scenario also rises when the
->> priority of task has changed.
->>
->> Signed-off-by: Hillf Danton <dhillf@gmail.com>
->> ---
->>  kernel/sched_rt.c |   19 +++----------------
->>  1 files changed, 3 insertions(+), 16 deletions(-)
->>
->> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
->> index 88725c9..4a9553e 100644
->> --- a/kernel/sched_rt.c
->> +++ b/kernel/sched_rt.c
->> @@ -1671,25 +1671,13 @@ static inline void init_sched_rt_class(void)
->>   */
->>  static void switched_to_rt(struct rq *rq, struct task_struct *p)
->>  {
->> -     int check_resched = 1;
->> -
->>       /*
->>        * If we are already running, then there's nothing
->>        * that needs to be done. But if we are not running
->>        * we may need to preempt the current running task.
->> -      * If that current running task is also an RT task
->> -      * then see if we can move to another run queue.
->>        */
->> -     if (p->on_rq && rq->curr != p) {
->> -#ifdef CONFIG_SMP
->> -             if (rq->rt.overloaded && push_rt_task(rq) &&
->> -                 /* Don't resched if we changed runqueues */
->> -                 rq != task_rq(p))
->> -                     check_resched = 0;
->> -#endif /* CONFIG_SMP */
->> -             if (check_resched && p->prio < rq->curr->prio)
->> -                     resched_task(rq->curr);
->> -     }
->> +     if (p->on_rq && rq->curr != p)
->> +             check_preempt_curr_rt(rq, p, 0);
->
->
-> Note, although it works now, there's no guarantee that
-> check_preempt_curr_rt() will work with something other than an rt task
-> on the runqueue.
->
 
-If check_preempt_curr_rt has solid shortage to do its work, we could do more
-for it later.
+* Arne Jansen <lists@die-jansens.de> wrote:
 
-> Also, this code removes the push_rt_task(rq) entirely, which means that
-> if we don't preempt current, and p is an RT task (as it is), we wont
-> push it off to another rq even if one is available for it to run on.
->
+> On 05.06.2011 11:55, Ingo Molnar wrote:
+> >
+> >* Arne Jansen<lists@die-jansens.de>  wrote:
+> >
+> >>>( Arne, please also double check on a working bootup that the NMI
+> >>>   watchdog is actually ticking, by checking the NMI counts in
+> >>>   /proc/interrupts go up slowly but surely on all CPUs. )
+> >>
+> >>It does, but _very_ slowly. Some CPUs do not count up for tens of
+> >>minutes if the machine is idle. If I generate some load like 'make
+> >>tags', the counters go up quite quickly.
+> >>After 4 minutes and one 'make cscope' it looks like this:
+> >>NMI:          8         13         43          5          2
+> >>3        22          1   Non-maskable interrupts
+> >>
+> >>But I never see a single tick on console or in dmesg, even when I
+> >>replace the early_printk with a printk.
+> >
+> >hm, that might be because the NMI watchdog uses halted cycles to
+> >tick.
+> >
+> >That's not a problem (the kernel cannot lock up while there are no
+> >cycles ticking) but nevertheless could you work this around please
+> >by starting 8 infinite shell loops:
+> >
+> >    for ((i=0; i<8; i++)); do while : ; do : ; done&  done
+> >
+> >?
+> >
+> >This will saturate all cores and makes sure the NMI watchdog is
+> >ticking everywhere.
+> >
+> >Hopefully this wont make the bug go away :-)
+> >
+> 
+> OK, now we get going. I get the ticks, the bug is still there, and
+> all CPUs still tick after the lockup. I also added an early_printk
+> inside the lockup-if, and it reports hard lockups. At first for only
+> one or 2 CPUs, and after some time all CPUs are locked up.
 
-If it is concerned that we fail to preempt the current task with a RT task, why
-is preempt checked after pushing?
+Very good!
 
-If we really fail to preempt, it is not too late to push the starved
-tasks, though
-starvation is eligible as you taught a while ago.
+If you add a dump_stack() do you get a stacktrace, or do the NMI 
+watchdog ticks stop?
 
-thanks
-          Hillf
+If the ticks stop this suggests a lockup within the printk code. If 
+you get a stack dump then we'll have good debug data.
 
->>  }
->>
->>  /*
->> @@ -1729,8 +1717,7 @@ prio_changed_rt(struct rq *rq, struct
->> task_struct *p, int oldprio)
->>                * greater than the current running task
->>                * then reschedule.
->>                */
->> -             if (p->prio < rq->curr->prio)
->> -                     resched_task(rq->curr);
->> +             check_preempt_curr_rt(rq, p, 0);
->>       }
->>  }
->
->
->
+Thanks,
+
+	Ingo
