@@ -1,75 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998Ab1FEFIt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 01:08:49 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:54444 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab1FEFIs (ORCPT
+	id S1753914Ab1FEFNb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 01:13:31 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:51529 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab1FEFN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 01:08:48 -0400
+	Sun, 5 Jun 2011 01:13:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=XR4tRwauFkSzKz6TDZ08O4tWP0R/mIG5msQgsOeHAlOQm5sBaZKeTG+FhI2AkmX3lV
-         ZCnUwg9gFbOINXTRWwsPZjfLsrdjfUUTC6UkqL7B7x5v/PXDlYQPU2oK+yEoXRt3vjT9
-         Md1xK+wxvpgTvxR3ZAct2yWlP0GLrwLRinuqg=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH] Fix page isolated count mismatch
-Date: Sun,  5 Jun 2011 14:08:36 +0900
-Message-Id: <1307250516-10756-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=bFba/T5lQnyRxkBjWCtd2yIYxmlybXNI3838wxnOm6qe89SR39xJOIo/an4/TbB9DA
+         5nyHcWokZB7AYTVyH3XkYuiP9EEPCNn0cdYdVP6crmpQX/I4hrpQUO9OcM/Jow8BgSYX
+         +ZGHSVikq7CuK99A9yCSfHTMlrs0CcyBNGDkw=
+MIME-Version: 1.0
+In-Reply-To: <4DEA5D78.5030402@centrum.cz>
+References: <4DEA5D78.5030402@centrum.cz>
+Date: Sun, 5 Jun 2011 13:13:28 +0800
+Message-ID: <BANLkTin3KKoa4A3xie7J0QaBcvr-NYPrbQ@mail.gmail.com>
+Subject: Re: ETH over USB: NFS state (seeking ARM platform for NFS-based builds)
+From: Ming Lei <tom.leiming@gmail.com>
+To: Karel Gardas <karel.gardas@centrum.cz>
+Cc: linux-kernel@vger.kernel.org, linux-usb <linux-usb@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If migration is failed, normally we call putback_lru_pages which
-decreases NR_ISOLATE_[ANON|FILE].
-It means we should increase NR_ISOLATE_[ANON|FILE] before calling
-putback_lru_pages. But soft_offline_page dosn't it.
+Hi,
 
-It can make NR_ISOLATE_[ANON|FILE] with negative value and in UP build
-, zone_page_state will say huge isolated pages so too_many_isolated
-functions be deceived completely. At last, some process stuck in D state
-as it expect while loop ending with congestion_wait.
-But it's never ending story.
+2011/6/5 Karel Gardas <karel.gardas@centrum.cz>:
+> Hello,
+>
+> while searching for ARMv7/NEON platform for my own hacking I've found this
+> interesting issue:
+>
+> [ 2945.114135] cc1: page allocation failure. order:3, mode:0x4020
 
-If it is right, it would be -stable stuff.
+Maybe the patch below can fix the issue, please try it:
 
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/memory-failure.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index 9ab439d..f16e448 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -324,12 +324,20 @@ static int rx_submit (struct usbnet *dev, struct
+urb *urb, gfp_t flags)
+ 	unsigned long		lockflags;
+ 	size_t			size = dev->rx_urb_size;
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 5c8f7e0..eac0ba5 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -52,6 +52,7 @@
- #include <linux/swapops.h>
- #include <linux/hugetlb.h>
- #include <linux/memory_hotplug.h>
-+#include <linux/mm_inline.h>
- #include "internal.h"
- 
- int sysctl_memory_failure_early_kill __read_mostly = 0;
-@@ -1468,7 +1469,8 @@ int soft_offline_page(struct page *page, int flags)
- 	put_page(page);
- 	if (!ret) {
- 		LIST_HEAD(pagelist);
--
-+		inc_zone_page_state(page, NR_ISOLATED_ANON +
-+					    page_is_file_cache(page));
- 		list_add(&page->lru, &pagelist);
- 		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
- 								0, true);
+-	if ((skb = alloc_skb (size + NET_IP_ALIGN, flags)) == NULL) {
+-		netif_dbg(dev, rx_err, dev->net, "no rx skb\n");
++	if (atomic_read(&dev->rx_skb_on_fly) > MAX_RX_SKB_ON_FLY &&
++		flags == GFP_ATOMIC) {
++		netif_dbg(dev, rx_err, dev->net, "too many rx skbs on the fly\n");
++fail_rx_memory:
+ 		usbnet_defer_kevent (dev, EVENT_RX_MEMORY);
+ 		usb_free_urb (urb);
+ 		return -ENOMEM;
+ 	}
++
++	if ((skb = alloc_skb (size + NET_IP_ALIGN, flags)) == NULL) {
++		netif_dbg(dev, rx_err, dev->net, "no rx skb\n");
++		goto fail_rx_memory;
++	}
++	atomic_inc(&dev->rx_skb_on_fly);
+ 	skb_reserve (skb, NET_IP_ALIGN);
+
+ 	entry = (struct skb_data *) skb->cb;
+@@ -375,6 +383,7 @@ static int rx_submit (struct usbnet *dev, struct
+urb *urb, gfp_t flags)
+ 	}
+ 	spin_unlock_irqrestore (&dev->rxq.lock, lockflags);
+ 	if (retval) {
++		atomic_dec(&dev->rx_skb_on_fly);
+ 		dev_kfree_skb_any (skb);
+ 		usb_free_urb (urb);
+ 	}
+@@ -1177,8 +1186,9 @@ static void usbnet_bh (unsigned long param)
+ 			entry->state = rx_cleanup;
+ 			rx_process (dev, skb);
+ 			continue;
+-		case tx_done:
+ 		case rx_cleanup:
++			atomic_dec(&dev->rx_skb_on_fly);
++		case tx_done:
+ 			usb_free_urb (entry->urb);
+ 			dev_kfree_skb (skb);
+ 			continue;
+diff --git a/include/linux/usb/usbnet.h b/include/linux/usb/usbnet.h
+index 605b0aa..1dace0d 100644
+--- a/include/linux/usb/usbnet.h
++++ b/include/linux/usb/usbnet.h
+@@ -33,6 +33,8 @@ struct usbnet {
+ 	wait_queue_head_t	*wait;
+ 	struct mutex		phy_mutex;
+ 	unsigned char		suspend_count;
++	atomic_t		rx_skb_on_fly;
++#		define MAX_RX_SKB_ON_FLY	2048
+
+ 	/* i/o info: pipes etc */
+ 	unsigned		in, out;
+
+
+thanks,
 -- 
-1.7.0.4
-
+Ming Lei
