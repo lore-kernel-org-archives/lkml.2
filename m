@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab1FEUEz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 16:04:55 -0400
-Received: from lucidpixels.com ([75.144.35.66]:39418 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753325Ab1FEUEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 16:04:53 -0400
-Date: Sun, 5 Jun 2011 16:04:52 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Brad Campbell <lists2009@fnarfbargle.com>
-cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: 2.6.39 kernel panic w/screenshots & kernel cfg link provided
-In-Reply-To: <4DE4FBB0.9080708@fnarfbargle.com>
-Message-ID: <alpine.DEB.2.02.1106051601230.3462@p34.internal.lan>
-References: <alpine.DEB.2.02.1105280755050.4345@p34.internal.lan> <4DE4FBB0.9080708@fnarfbargle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755465Ab1FEUF2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 16:05:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51425 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753910Ab1FEUF0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 16:05:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=NsRAGURb8DMgTVURmjKLjRWJEYDS3DggrCAA255TjX6XZb4GQQrt7oRC1y6iO/K5bY
+         FzMpgB0srtU7XZtN38z2jpE0CNcRPG5k753ZFlP3NXVvmaJ0U3KvCwD1DgiXx7E2mTJv
+         HD4HpOvouqQbmPdRdZdaCtz9V0DKF0szy47D8=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <cover.1307292171.git.luto@mit.edu>
+References: <cover.1307292171.git.luto@mit.edu>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sun, 5 Jun 2011 16:05:05 -0400
+X-Google-Sender-Auth: F8L_A8VtVBXiDKssdcO4ztaqg1Q
+Message-ID: <BANLkTin5Si3EPDWU++WAy0SsLmsHS5k_uw@mail.gmail.com>
+Subject: Re: [PATCH v5 0/9] Remove syscall instructions at fixed addresses
+To: Ingo Molnar <mingo@elte.hu>, x86@kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu, Andy Lutomirski <luto@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jun 5, 2011 at 1:50 PM, Andy Lutomirski <luto@mit.edu> wrote:
 
+>  x86-64: Remove vsyscall number 3 (venosys)
 
-On Tue, 31 May 2011, Brad Campbell wrote:
+Torsten Kaiser pointed out that this patch will break bisection due to
+a typo.  So please don't apply this series as is.
 
-> On 28/05/11 20:01, Justin Piszcz wrote:
->> Hello,
+If there are no further changes I need to make, I'll send out v6 with
+the fix in a day or two (unless someone wants it sooner).
 
-Hi,
-
-This was happening on a regular basis, since then I have performed the
-following: (sdc,sdd,sde were recently added)
-
-# hal-disable-polling --device /dev/sr0
-Polling is already disabled on the given drive.
-# hal-disable-polling --device /dev/sdd
-Polling for drive /dev/sdd have been disabled. The fdi file written was
-# hal-disable-polling --device /dev/sde
-Polling for drive /dev/sde have been disabled. The fdi file written was
-# hal-disable-polling --device /dev/sdc
-Polling for drive /dev/sdc have been disabled. The fdi file written was
-
-# ps auxww|grep udisks
-root      4125  0.0  0.0 127464  5844 ?        Sl   07:54   0:00 /usr/lib/udisks/udisks-daemon
-root      4126  0.0  0.0  45088  1100 ?        S    07:54   0:00 udisks-daemon: polling /dev/sr0 /dev/sdd /dev/sde /dev/sdc
-root     13335  0.0  0.0   8648   844 pts/8    S+   08:23   0:00 grep udisks
-# dpkg -S /usr/lib/udisks/udisks-daemon
-udisks: /usr/lib/udisks/udisks-daemon
-# apt-get remove udisks
-
-# uname -a
-Linux box 2.6.39 #11 SMP Tue May 31 15:51:52 EDT 2011 x86_64 GNU/Linux
-
-So far, my system has not crashed in 4 days after doing this, I am also 
-using the 'threadirqs' boot option, if it crashes again I'll provide an update
-but so far it has been stable..
-
-Justin.
+--Andy
