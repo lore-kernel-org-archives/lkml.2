@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab1FESC5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 14:02:57 -0400
-Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:45361 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755523Ab1FESCy (ORCPT
+	id S1755845Ab1FESDB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 14:03:01 -0400
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:51694 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755644Ab1FESC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 14:02:54 -0400
-X-AuditID: 1209190d-b7bdeae0000004f8-59-4debc48ada1b
+	Sun, 5 Jun 2011 14:02:58 -0400
+X-AuditID: 12074423-b7ce8ae000000a29-bd-4debc4ccc11e
 From: Andy Lutomirski <luto@MIT.EDU>
 To: Ingo Molnar <mingo@elte.hu>, x86@kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
@@ -21,208 +21,223 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         Brian Gerst <brgerst@gmail.com>,
         Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
         pageexec@freemail.hu, Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v5 3/9] x86-64: Give vvars their own page
-Date: Sun,  5 Jun 2011 13:50:19 -0400
-Message-Id: <b1460f81dc4463d66ea3f2b5ce240f58d48effec.1307292171.git.luto@mit.edu>
+Subject: [PATCH v5 4/9] x86-64: Remove kernel.vsyscall64 sysctl
+Date: Sun,  5 Jun 2011 13:50:20 -0400
+Message-Id: <973ae803fe76f712da4b2740e66dccf452d3b1e4.1307292171.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.5.2
 In-Reply-To: <cover.1307292171.git.luto@mit.edu>
 References: <cover.1307292171.git.luto@mit.edu>
 In-Reply-To: <cover.1307292171.git.luto@mit.edu>
 References: <cover.1307292171.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA3VSWUwTURT1dabTKTIwDiAPjFtRNCqIS8jTuKBEM0ZRgyYSl+hAR9rYFtIp
-	BNAYiICICYHEBQEDxh0JNLWExbi0VkBZo4L7EsWoZSlIDIjrDAh++XfvPeedc2/eITHmq9yf
-	1BpMvNHA6VSEG84ofeYHZTu6IkJuFHqgoooyAuU8vqdAjo5BBSrooNCA+ReBmu0Q3Rn+QCBX
-	exWBHtUWEaj65WMCdR55ApD14RE5el/2EUN9eWYCXbecxNC7nB4Feujqw9GQ+b08jGEHM3Jw
-	tq7pLmCfZ/7A2OKafsBeyBpSsDUFrxTs9Svz2N+fHQSb1/0UsJbSYwTb29KiYBvyv+NsfVM4
-	O2CZxtqruomtnjvdVqh5nTaRNy5ctc9NU3L0JhZ/YlFSWtttLBVY5mYDkoT0UmjNC88GSrGc
-	DNteVxDZwI1k6FsAFl21gNGmAsBrtrq/zQcZ/NxaLpeeEPQsmHXxrUxS8qYXwvaBEQ5GF8uh
-	pfE4LnG86GWwNc8MpBqnZ8OOoQJMqik6EhZnpBGjW8yAraVx0lhJh8C2J80j8owoae+5T/xv
-	ngvoEjChFExV61OC9JxWJ/AxQUIMZzDwxqDFwXqtKZhXJ1jAyN/5UdWg16ayA5oEKnfKWtYV
-	wci5RCFZbwd+pEzlQ5XcFUce0XHqZA0naPYaE3S8YAeQxFTe1GFvZwRDqbnkFN4YNwZNIXGV
-	L3XGb04EQ8dyJv4Az8fzxjF0AUnSzS96JtLphT93+OOGOAOvgtQbyWSSkY/lk/ZrdaZ/dBmp
-	lMzcRbOfEocS4jm9oI0dxR+AJWRms9MGyMqGHhtgRuT8fSmnRKUlqibBMK42llYn8BWP9aKU
-	YmgZdzHL43pO0UomWtWvle4STNw/yD8VcKvSD+Y7YgYnROb2RwV77Cm//MNRlLpx88qQM2sW
-	k5DzbFUEtAe2RxfXNoVpT4e6bOs2RW6bfmpXRuKnDQLuCs80f1NO7kpVvLJ2eta/PXsosrPk
-	y+65Tp/K4apG+blNqzcOezujt0SdP7stNGD7UOHyS+tdnYHPlFVzStdOTLDOfK3CBQ23aB5m
-	FLg/Z7r5h4gDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPKsWRmVeSWpSXmKPExsUixG6nrnvmyGtfgx+TdSzmrF/DZtF35Si7
+	xZFr39ktZl3jtfi84R+bxdlDEhYHfj1ls3h/dTubxeVdc9gsdty5wmbxpPk6o8WWS82sFo/X
+	PGe2+DBxA5vF5k1TmS0e9b1lt7j0/gOLxY8Nj1kdhDy+t/axeBw7c5jR41bbH2aP+Ts/Mnos
+	6fjB7rFz1l12j80rtDz+vzzC5jHxzQ1Gj02rOtk83p07x+5xYsZvFo/jZ5w9Pm+S8zi0/Q1b
+	AH8Ul01Kak5mWWqRvl0CV8a5j11sBXcMKt6v2MjSwNih0cXIwSEhYCJxrMW6i5ETyBSTuHBv
+	PVsXIxeHkMA+RomPHw6yQDjrGSV2LH0DlXnKJPHn5g8mkBY2ARWJjqUPmEAmiQjoS1z9zAhS
+	wywwn1Vi0+luFpAaYQF7iZWtb1lBbBYBVYmP13axgdi8AkES5/oes0BcoSBxflU+SJhTwEDi
+	wvWzYOVCQCMPvT3Jhkt8AqPAAkaGVYyyKblVurmJmTnFqcm6xcmJeXmpRbpmermZJXqpKaWb
+	GMFx56K8g/HPQaVDjAIcjEo8vBvWvPYVYk0sK67MPcQoycGkJMq74DBQiC8pP6UyI7E4I76o
+	NCe1+BCjBAezkghvncgrXyHelMTKqtSifJiUNAeLkjjvXEl1XyGB9MSS1OzU1ILUIpisDAeH
+	kgSvBjC9CAkWpaanVqRl5pQgpJk4OEGG8wANNwep4S0uSMwtzkyHyJ9i1OXYeuLtQUYhlrz8
+	vFQpcV5DkCIBkKKM0jy4ObB0+YpRHOgtYV5OkCoeYKqFm/QKaAkT0JLjTiAfFJckIqSkGhh1
+	Odt4Vy5YGmLUtFg+cfLkyBWVC2dyC18u7d9rmjo3Tj5y9eePqlGi5ik30qaIBG+Q2ri95Omh
+	N/J9jiwc1QaPvq1LLn//f5nXt5k3zrIwLtj6t8rqoda2HylRvcyt4uxG+wP+bXmoW58l23D3
+	0VVvs2CW2wzTLltErujgDzocoSXDU80VdUCJpTgj0VCLuag4EQCJoUHrcgMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move vvars out of the vsyscall page into their own page and mark it
-NX.
+It's unnecessary overhead in code that's supposed to be highly
+optimized.  Removing it allows us to remove one of the two syscall
+instructions in the vsyscall page.
 
-Without this patch, an attacker who can force a daemon to call some
-fixed address could wait until the time contains, say, 0xCD80, and
-then execute the current time.
+The only sensible use for it is for UML users, and it doesn't fully
+address inconsistent vsyscall results on UML.  The real fix for UML
+is to stop using vsyscalls entirely.
 
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/include/asm/fixmap.h        |    1 +
- arch/x86/include/asm/pgtable_types.h |    2 ++
- arch/x86/include/asm/vvar.h          |   22 ++++++++++------------
- arch/x86/kernel/vmlinux.lds.S        |   28 +++++++++++++++++-----------
- arch/x86/kernel/vsyscall_64.c        |    5 +++++
- 5 files changed, 35 insertions(+), 23 deletions(-)
+ arch/x86/include/asm/vgtod.h   |    1 -
+ arch/x86/kernel/vsyscall_64.c  |   34 +------------------------
+ arch/x86/vdso/vclock_gettime.c |   55 +++++++++++++++------------------------
+ 3 files changed, 22 insertions(+), 68 deletions(-)
 
-diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-index 4729b2b..460c74e 100644
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -78,6 +78,7 @@ enum fixed_addresses {
- 	VSYSCALL_LAST_PAGE,
- 	VSYSCALL_FIRST_PAGE = VSYSCALL_LAST_PAGE
- 			    + ((VSYSCALL_END-VSYSCALL_START) >> PAGE_SHIFT) - 1,
-+	VVAR_PAGE,
- 	VSYSCALL_HPET,
- #endif
- 	FIX_DBGP_BASE,
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index d56187c..6a29aed6 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -108,6 +108,7 @@
- #define __PAGE_KERNEL_UC_MINUS		(__PAGE_KERNEL | _PAGE_PCD)
- #define __PAGE_KERNEL_VSYSCALL		(__PAGE_KERNEL_RX | _PAGE_USER)
- #define __PAGE_KERNEL_VSYSCALL_NOCACHE	(__PAGE_KERNEL_VSYSCALL | _PAGE_PCD | _PAGE_PWT)
-+#define __PAGE_KERNEL_VVAR		(__PAGE_KERNEL_RO | _PAGE_USER)
- #define __PAGE_KERNEL_LARGE		(__PAGE_KERNEL | _PAGE_PSE)
- #define __PAGE_KERNEL_LARGE_NOCACHE	(__PAGE_KERNEL | _PAGE_CACHE_UC | _PAGE_PSE)
- #define __PAGE_KERNEL_LARGE_EXEC	(__PAGE_KERNEL_EXEC | _PAGE_PSE)
-@@ -130,6 +131,7 @@
- #define PAGE_KERNEL_LARGE_EXEC		__pgprot(__PAGE_KERNEL_LARGE_EXEC)
- #define PAGE_KERNEL_VSYSCALL		__pgprot(__PAGE_KERNEL_VSYSCALL)
- #define PAGE_KERNEL_VSYSCALL_NOCACHE	__pgprot(__PAGE_KERNEL_VSYSCALL_NOCACHE)
-+#define PAGE_KERNEL_VVAR		__pgprot(__PAGE_KERNEL_VVAR)
+diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
+index 646b4c1..aa5add8 100644
+--- a/arch/x86/include/asm/vgtod.h
++++ b/arch/x86/include/asm/vgtod.h
+@@ -11,7 +11,6 @@ struct vsyscall_gtod_data {
+ 	time_t		wall_time_sec;
+ 	u32		wall_time_nsec;
  
- #define PAGE_KERNEL_IO			__pgprot(__PAGE_KERNEL_IO)
- #define PAGE_KERNEL_IO_NOCACHE		__pgprot(__PAGE_KERNEL_IO_NOCACHE)
-diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
-index a4eaca4..de656ac 100644
---- a/arch/x86/include/asm/vvar.h
-+++ b/arch/x86/include/asm/vvar.h
-@@ -10,15 +10,14 @@
-  * In normal kernel code, they are used like any other variable.
-  * In user code, they are accessed through the VVAR macro.
-  *
-- * Each of these variables lives in the vsyscall page, and each
-- * one needs a unique offset within the little piece of the page
-- * reserved for vvars.  Specify that offset in DECLARE_VVAR.
-- * (There are 896 bytes available.  If you mess up, the linker will
-- * catch it.)
-+ * These variables live in a page of kernel data that has an extra RO
-+ * mapping for userspace.  Each variable needs a unique offset within
-+ * that page; specify that offset with the DECLARE_VVAR macro.  (If
-+ * you mess up, the linker will catch it.)
-  */
- 
--/* Offset of vars within vsyscall page */
--#define VSYSCALL_VARS_OFFSET (3072 + 128)
-+/* Base address of vvars.  This is not ABI. */
-+#define VVAR_ADDRESS (-10*1024*1024 - 4096)
- 
- #if defined(__VVAR_KERNEL_LDS)
- 
-@@ -26,17 +25,17 @@
-  * right place.
-  */
- #define DECLARE_VVAR(offset, type, name) \
--	EMIT_VVAR(name, VSYSCALL_VARS_OFFSET + offset)
-+	EMIT_VVAR(name, offset)
- 
- #else
- 
- #define DECLARE_VVAR(offset, type, name)				\
- 	static type const * const vvaraddr_ ## name =			\
--		(void *)(VSYSCALL_START + VSYSCALL_VARS_OFFSET + (offset));
-+		(void *)(VVAR_ADDRESS + (offset));
- 
- #define DEFINE_VVAR(type, name)						\
--	type __vvar_ ## name						\
--	__attribute__((section(".vsyscall_var_" #name), aligned(16)))
-+	type name							\
-+	__attribute__((section(".vvar_" #name), aligned(16)))
- 
- #define VVAR(name) (*vvaraddr_ ## name)
- 
-@@ -49,4 +48,3 @@ DECLARE_VVAR(16, int, vgetcpu_mode)
- DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
- 
- #undef DECLARE_VVAR
--#undef VSYSCALL_VARS_OFFSET
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index 89aed99..98b378d 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -161,12 +161,6 @@ SECTIONS
- 
- #define VVIRT_OFFSET (VSYSCALL_ADDR - __vsyscall_0)
- #define VVIRT(x) (ADDR(x) - VVIRT_OFFSET)
--#define EMIT_VVAR(x, offset) .vsyscall_var_ ## x	\
--	ADDR(.vsyscall_0) + offset		 	\
--	: AT(VLOAD(.vsyscall_var_ ## x)) {     		\
--		*(.vsyscall_var_ ## x)			\
--	}						\
--	x = VVIRT(.vsyscall_var_ ## x);
- 
- 	. = ALIGN(4096);
- 	__vsyscall_0 = .;
-@@ -192,19 +186,31 @@ SECTIONS
- 		*(.vsyscall_3)
- 	}
- 
--#define __VVAR_KERNEL_LDS
--#include <asm/vvar.h>
--#undef __VVAR_KERNEL_LDS
--
--	. = __vsyscall_0 + PAGE_SIZE;
-+	. = ALIGN(__vsyscall_0 + PAGE_SIZE, PAGE_SIZE);
- 
- #undef VSYSCALL_ADDR
- #undef VLOAD_OFFSET
- #undef VLOAD
- #undef VVIRT_OFFSET
- #undef VVIRT
-+
-+	__vvar_page = .;
-+
-+	.vvar : AT(ADDR(.vvar) - LOAD_OFFSET) {
-+
-+	      /* Place all vvars at the offsets in asm/vvar.h. */
-+#define EMIT_VVAR(name, offset) 		\
-+		. = offset;		\
-+		*(.vvar_ ## name)
-+#define __VVAR_KERNEL_LDS
-+#include <asm/vvar.h>
-+#undef __VVAR_KERNEL_LDS
- #undef EMIT_VVAR
- 
-+	} :data
-+
-+       . = ALIGN(__vvar_page + PAGE_SIZE, PAGE_SIZE);
-+
- #endif /* CONFIG_X86_64 */
- 
- 	/* Init code and data - will be freed after init */
+-	int		sysctl_enabled;
+ 	struct timezone sys_tz;
+ 	struct { /* extract of a clocksource struct */
+ 		cycle_t (*vread)(void);
 diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 3e68218..3cf1cef 100644
+index 3cf1cef..9b2f3f5 100644
 --- a/arch/x86/kernel/vsyscall_64.c
 +++ b/arch/x86/kernel/vsyscall_64.c
-@@ -284,9 +284,14 @@ void __init map_vsyscall(void)
+@@ -53,7 +53,6 @@ DEFINE_VVAR(int, vgetcpu_mode);
+ DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
  {
- 	extern char __vsyscall_0;
- 	unsigned long physaddr_page0 = __pa_symbol(&__vsyscall_0);
-+	extern char __vvar_page;
-+	unsigned long physaddr_vvar_page = __pa_symbol(&__vvar_page);
+ 	.lock = __SEQLOCK_UNLOCKED(__vsyscall_gtod_data.lock),
+-	.sysctl_enabled = 1,
+ };
  
- 	/* Note that VSYSCALL_MAPPED_PAGES must agree with the code below. */
- 	__set_fixmap(VSYSCALL_FIRST_PAGE, physaddr_page0, PAGE_KERNEL_VSYSCALL);
-+	__set_fixmap(VVAR_PAGE, physaddr_vvar_page, PAGE_KERNEL_VVAR);
-+	BUILD_BUG_ON((unsigned long)__fix_to_virt(VVAR_PAGE) !=
-+		     (unsigned long)VVAR_ADDRESS);
+ void update_vsyscall_tz(void)
+@@ -103,15 +102,6 @@ static __always_inline int gettimeofday(struct timeval *tv, struct timezone *tz)
+ 	return ret;
  }
  
- static int __init vsyscall_init(void)
+-static __always_inline long time_syscall(long *t)
+-{
+-	long secs;
+-	asm volatile("syscall"
+-		: "=a" (secs)
+-		: "0" (__NR_time),"D" (t) : __syscall_clobber);
+-	return secs;
+-}
+-
+ static __always_inline void do_vgettimeofday(struct timeval * tv)
+ {
+ 	cycle_t now, base, mask, cycle_delta;
+@@ -122,8 +112,7 @@ static __always_inline void do_vgettimeofday(struct timeval * tv)
+ 		seq = read_seqbegin(&VVAR(vsyscall_gtod_data).lock);
+ 
+ 		vread = VVAR(vsyscall_gtod_data).clock.vread;
+-		if (unlikely(!VVAR(vsyscall_gtod_data).sysctl_enabled ||
+-			     !vread)) {
++		if (unlikely(!vread)) {
+ 			gettimeofday(tv,NULL);
+ 			return;
+ 		}
+@@ -165,8 +154,6 @@ time_t __vsyscall(1) vtime(time_t *t)
+ {
+ 	unsigned seq;
+ 	time_t result;
+-	if (unlikely(!VVAR(vsyscall_gtod_data).sysctl_enabled))
+-		return time_syscall(t);
+ 
+ 	do {
+ 		seq = read_seqbegin(&VVAR(vsyscall_gtod_data).lock);
+@@ -227,22 +214,6 @@ static long __vsyscall(3) venosys_1(void)
+ 	return -ENOSYS;
+ }
+ 
+-#ifdef CONFIG_SYSCTL
+-static ctl_table kernel_table2[] = {
+-	{ .procname = "vsyscall64",
+-	  .data = &vsyscall_gtod_data.sysctl_enabled, .maxlen = sizeof(int),
+-	  .mode = 0644,
+-	  .proc_handler = proc_dointvec },
+-	{}
+-};
+-
+-static ctl_table kernel_root_table2[] = {
+-	{ .procname = "kernel", .mode = 0555,
+-	  .child = kernel_table2 },
+-	{}
+-};
+-#endif
+-
+ /* Assume __initcall executes before all user space. Hopefully kmod
+    doesn't violate that. We'll find out if it does. */
+ static void __cpuinit vsyscall_set_cpu(int cpu)
+@@ -301,9 +272,6 @@ static int __init vsyscall_init(void)
+ 	BUG_ON((unsigned long) &vtime != VSYSCALL_ADDR(__NR_vtime));
+ 	BUG_ON((VSYSCALL_ADDR(0) != __fix_to_virt(VSYSCALL_FIRST_PAGE)));
+ 	BUG_ON((unsigned long) &vgetcpu != VSYSCALL_ADDR(__NR_vgetcpu));
+-#ifdef CONFIG_SYSCTL
+-	register_sysctl_table(kernel_root_table2);
+-#endif
+ 	on_each_cpu(cpu_vsyscall_init, NULL, 1);
+ 	/* notifier priority > KVM */
+ 	hotcpu_notifier(cpu_vsyscall_notifier, 30);
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index a724905..cf54813 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -116,21 +116,21 @@ notrace static noinline int do_monotonic_coarse(struct timespec *ts)
+ 
+ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+ {
+-	if (likely(gtod->sysctl_enabled))
+-		switch (clock) {
+-		case CLOCK_REALTIME:
+-			if (likely(gtod->clock.vread))
+-				return do_realtime(ts);
+-			break;
+-		case CLOCK_MONOTONIC:
+-			if (likely(gtod->clock.vread))
+-				return do_monotonic(ts);
+-			break;
+-		case CLOCK_REALTIME_COARSE:
+-			return do_realtime_coarse(ts);
+-		case CLOCK_MONOTONIC_COARSE:
+-			return do_monotonic_coarse(ts);
+-		}
++	switch (clock) {
++	case CLOCK_REALTIME:
++		if (likely(gtod->clock.vread))
++			return do_realtime(ts);
++		break;
++	case CLOCK_MONOTONIC:
++		if (likely(gtod->clock.vread))
++			return do_monotonic(ts);
++		break;
++	case CLOCK_REALTIME_COARSE:
++		return do_realtime_coarse(ts);
++	case CLOCK_MONOTONIC_COARSE:
++		return do_monotonic_coarse(ts);
++	}
++
+ 	return vdso_fallback_gettime(clock, ts);
+ }
+ int clock_gettime(clockid_t, struct timespec *)
+@@ -139,7 +139,7 @@ int clock_gettime(clockid_t, struct timespec *)
+ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+ {
+ 	long ret;
+-	if (likely(gtod->sysctl_enabled && gtod->clock.vread)) {
++	if (likely(gtod->clock.vread)) {
+ 		if (likely(tv != NULL)) {
+ 			BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
+ 				     offsetof(struct timespec, tv_nsec) ||
+@@ -161,27 +161,14 @@ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+ int gettimeofday(struct timeval *, struct timezone *)
+ 	__attribute__((weak, alias("__vdso_gettimeofday")));
+ 
+-/* This will break when the xtime seconds get inaccurate, but that is
+- * unlikely */
+-
+-static __always_inline long time_syscall(long *t)
+-{
+-	long secs;
+-	asm volatile("syscall"
+-		     : "=a" (secs)
+-		     : "0" (__NR_time), "D" (t) : "cc", "r11", "cx", "memory");
+-	return secs;
+-}
+-
++/*
++ * This will break when the xtime seconds get inaccurate, but that is
++ * unlikely
++ */
+ notrace time_t __vdso_time(time_t *t)
+ {
+-	time_t result;
+-
+-	if (unlikely(!VVAR(vsyscall_gtod_data).sysctl_enabled))
+-		return time_syscall(t);
+-
+ 	/* This is atomic on x86_64 so we don't need any locks. */
+-	result = ACCESS_ONCE(VVAR(vsyscall_gtod_data).wall_time_sec);
++	time_t result = ACCESS_ONCE(VVAR(vsyscall_gtod_data).wall_time_sec);
+ 
+ 	if (t)
+ 		*t = result;
 -- 
 1.7.5.2
 
