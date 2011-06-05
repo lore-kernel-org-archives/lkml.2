@@ -1,106 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab1FEPvd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 11:51:33 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47460 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107Ab1FEPvc (ORCPT
+	id S1753028Ab1FEQHw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 12:07:52 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:45076 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998Ab1FEQHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 11:51:32 -0400
-From: Shawn Guo <shawn.guo@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: grant.likely@secretlab.ca, arnd@arndb.de, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH v4 3/3] gpio/mxs: Remove the use of gpio-mxs.h
-Date: Sun,  5 Jun 2011 23:59:05 +0800
-Message-Id: <1307289545-6993-4-git-send-email-shawn.guo@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1307289545-6993-1-git-send-email-shawn.guo@linaro.org>
-References: <1307289545-6993-1-git-send-email-shawn.guo@linaro.org>
+	Sun, 5 Jun 2011 12:07:51 -0400
+X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4DEBA9CC.4090503@die-jansens.de>
+Date: Sun, 05 Jun 2011 18:07:40 +0200
+From: Arne Jansen <lists@die-jansens.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+References: <20110605110132.GB23463@elte.hu> <20110605111933.GA24592@elte.hu> <20110605113627.GA25724@elte.hu> <4DEB6F3A.3000109@die-jansens.de> <20110605133958.GA27812@elte.hu> <4DEB8A93.30601@die-jansens.de> <20110605141003.GB29338@elte.hu> <4DEB933C.1070900@die-jansens.de> <20110605151323.GA30590@elte.hu> <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu>
+In-Reply-To: <20110605153218.GA31471@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch moves "struct mxs_gpio_port" into gpio-mxs.c, as it needs
-not to be public at all.  And then the header
-arch/arm/mach-mxs/include/mach/gpio-mxs.h can be deleted.
+On 05.06.2011 17:32, Ingo Molnar wrote:
+>
+> one more thing, could you please add this call:
+>
+> 	debug_show_all_locks();
+>
+> to after the WARN(), in watchdog.c?
+>
+> Please surround the whole printout portion by the
+> spin_lock()/unlock() protection code i suggested, full-lock-state
+> printouts are slow and other CPUs might start printing their NMI
+> ticks ...
+>
+> With the all-locks-printed output we can double check what locks are
+> held.
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
----
- arch/arm/mach-mxs/include/mach/gpio-mxs.h |   34 -----------------------------
- drivers/gpio/gpio-mxs.c                   |   10 +++++++-
- 2 files changed, 9 insertions(+), 35 deletions(-)
- delete mode 100644 arch/arm/mach-mxs/include/mach/gpio-mxs.h
+Hm, on first try:
 
-diff --git a/arch/arm/mach-mxs/include/mach/gpio-mxs.h b/arch/arm/mach-mxs/include/mach/gpio-mxs.h
-deleted file mode 100644
-index 005bb06..0000000
---- a/arch/arm/mach-mxs/include/mach/gpio-mxs.h
-+++ /dev/null
-@@ -1,34 +0,0 @@
--/*
-- * Copyright 2007 Freescale Semiconductor, Inc. All Rights Reserved.
-- * Copyright 2008 Juergen Beisert, kernel@pengutronix.de
-- *
-- * This program is free software; you can redistribute it and/or
-- * modify it under the terms of the GNU General Public License
-- * as published by the Free Software Foundation; either version 2
-- * of the License, or (at your option) any later version.
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-- * MA  02110-1301, USA.
-- */
--
--#ifndef __MXS_GPIO_H__
--#define __MXS_GPIO_H__
--
--struct mxs_gpio_port {
--	void __iomem *base;
--	int id;
--	int irq;
--	int irq_high;
--	int virtual_irq_start;
--	struct gpio_chip chip;
--};
--
--int mxs_gpio_init(struct mxs_gpio_port*, int);
--
--#endif /* __MXS_GPIO_H__ */
-diff --git a/drivers/gpio/gpio-mxs.c b/drivers/gpio/gpio-mxs.c
-index 6fd9f01..a287614 100644
---- a/drivers/gpio/gpio-mxs.c
-+++ b/drivers/gpio/gpio-mxs.c
-@@ -28,7 +28,6 @@
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <mach/mxs.h>
--#include <mach/gpio-mxs.h>
- 
- #define MXS_SET		0x4
- #define MXS_CLR		0x8
-@@ -49,6 +48,15 @@
- #define GPIO_INT_LEV_MASK	(1 << 0)
- #define GPIO_INT_POL_MASK	(1 << 1)
- 
-+struct mxs_gpio_port {
-+	void __iomem *base;
-+	int id;
-+	int irq;
-+	int irq_high;
-+	int virtual_irq_start;
-+	struct gpio_chip chip;
-+};
-+
- /* Note: This driver assumes 32 GPIOs are handled in one register */
- 
- static void clear_gpio_irqstatus(struct mxs_gpio_port *port, u32 index)
--- 
-1.7.4.1
+INFO: lockdep is turned off.
+
+Recompiling...
+
+>
+> Thanks,
+>
+> 	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
