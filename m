@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab1FEGoS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 02:44:18 -0400
-Received: from cynthia.allandria.com ([76.245.85.235]:58109 "EHLO
-	cynthia.pants.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753494Ab1FEGoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 02:44:17 -0400
-X-Greylist: delayed 1019 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Jun 2011 02:44:17 EDT
-Date: Sat, 4 Jun 2011 23:27:02 -0700
-From: Brad Boyer <flar@allandria.com>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: m68k: Convert to genirq (WIP)
-Message-ID: <20110605062702.GA2034@cynthia.pants.nu>
-References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
- <alpine.OSX.2.00.1106011300550.199@ibook.intranet>
+	id S1754302Ab1FEG4q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 02:56:46 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:57972 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754048Ab1FEG4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 02:56:44 -0400
+X-ASG-Debug-ID: 1307257002-01de280c1e24760001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4DEB28A1.5090109@fusionio.com>
+Date: Sun, 5 Jun 2011 08:56:33 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.OSX.2.00.1106011300550.199@ibook.intranet>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: Mysterious CFQ crash and RCU
+References: <20110519222404.GG12600@redhat.com>	 <20110521210013.GJ2271@linux.vnet.ibm.com>	 <20110523152141.GB4019@redhat.com>	 <20110523153848.GC2310@linux.vnet.ibm.com>	 <1306401337.27271.3.camel@t41.thuisdomein>	 <20110603050724.GB2304@linux.vnet.ibm.com>	 <1307191830.23387.24.camel@t41.thuisdomein>	 <20110604160326.GA6093@linux.vnet.ibm.com> <1307227686.28359.23.camel@t41.thuisdomein>
+X-ASG-Orig-Subj: Re: Mysterious CFQ crash and RCU
+In-Reply-To: <1307227686.28359.23.camel@t41.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1307257002
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.65534
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 03, 2011 at 09:20:23PM +1000, Finn Thain wrote:
-> On Sat, 28 May 2011, Geert Uytterhoeven wrote:
-> > Of course any help is welcome, especially for Mac
+On 2011-06-05 00:48, Paul Bolle wrote:
+> I think I finally found it!
 > 
-> What kind of help are you looking for? I read through your patch series 
-> but I'm not sure how much work is left. Probably I need to look at a 
-> genirq reference implementation to get an idea of the goal...
-
-If there are any good documents on genirq, I would like to look at it
-as well. I didn't see anything obvious in Documentation/ in the tree.
-
-> > (with its maze of interrupt controllers)
+> The culprit seems to be io_context.ioc_data (not the most clear of
+> names!). It seems to be a single entry "last-hit cache" of an hlist
+> called cic_list. (There are three, subtly different, cic_lists in the
+> CFQ code!) It is not entirely clear, but that last-hit cache can get out
+> of sync with the hlist it is supposed to cache. My guess it that every
+> now and then a member of the hlist gets deleted while it's still in that
+> (single entry) cache. If it then gets retrieved from that cache it
+> already points to poisoned memory. For some strange reason this only
+> results in an Oops if one or more debugging options are set (as are set
+> in the Fedora Rawhide non-stable kernels that I ran into this). I have
+> no clue whatsoever, why that is ...
 > 
-> Perhaps we do not need to model that complexity in generic irq terms?
-> 
-> The mac port could probably make good use of the irq startup and shutdown 
-> hooks though.
+> Anyhow, after ripping out ioc_data this bug seems to have disappeared!
+> Jens, Vivek, could you please have a look at this? In the mean time I
+> hope to pinpoint this issue and draft a small patch to really solve it
+> (ie, not by simply ripping out ioc_data).
 
-If we could really map all the interrupt controllers, we could probably
-cut down on the largest interrupt number. Most Macs really only have
-20 or 30 actual interrupt sources. The problem is the two or three
-layers of cascaded mess. None of them have just a single layer. Just
-getting rid of the fixed global mapping could take us down to 64 since
-nothing has both Baboon and PSC, but we have unique numbers for them.
-We have 3 whole blocks of 8 just for PSC, even though that's just in
-two models. We don't even know what most of those do, if anything.
+Does this fix it? It will introduce a hierarchy that is queue -> ioc
+lock, but as far as I can remember (and tell from a quick look), we
+don't have any dependencies on that order of locking at this moment. So
+should be OK.
 
-We would probably need to move everything to platform devices if we
-do that so that drivers don't need to use hard-coded interrupts. I
-suppose we really should do that anyway.
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 3c7b537..fa7ef54 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -2772,8 +2772,11 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
+ 	smp_wmb();
+ 	cic->key = cfqd_dead_key(cfqd);
+ 
+-	if (ioc->ioc_data == cic)
++	if (ioc->ioc_data == cic) {
++		spin_lock(&ioc->lock);
+ 		rcu_assign_pointer(ioc->ioc_data, NULL);
++		spin_unlock(&ioc->lock);
++	}
+ 
+ 	if (cic->cfqq[BLK_RW_ASYNC]) {
+ 		cfq_exit_cfqq(cfqd, cic->cfqq[BLK_RW_ASYNC]);
 
-	Brad Boyer
-	flar@allandria.com
+-- 
+Jens Axboe
 
