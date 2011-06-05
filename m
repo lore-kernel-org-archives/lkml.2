@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab1FETQU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 15:16:20 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:6351 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753870Ab1FETQT (ORCPT
+	id S1756258Ab1FETTE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 15:19:04 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:52921 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715Ab1FETTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 15:16:19 -0400
+	Sun, 5 Jun 2011 15:19:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=RBD+MvYP5hoKfDbFuIaMXva5oG9gtPZC9iy8+gHV5OInxc5qF+QMX/c0ggizqdHVVb
-         g1DPkMcQBjm5W0DuGggQ==
-Date: Sun, 5 Jun 2011 12:16:08 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Al Viro <viro@zeniv.linux.org.uk>
-cc: linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
-        linux-kernel@vger.kernel.org
-Subject: Re: ENOSPC returned by handle_mm_fault()
-In-Reply-To: <20110605134317.GF11521@ZenIV.linux.org.uk>
-Message-ID: <alpine.LSU.2.00.1106051141570.5792@sister.anvils>
-References: <20110605134317.GF11521@ZenIV.linux.org.uk>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=message-id:reply-to:from:to:cc:subject:date:mime-version
+         :content-type:content-transfer-encoding:x-priority:x-msmail-priority
+         :x-mailer:x-mimeole;
+        b=BpGudsefgJZ41XbGDayn8dnedGdIJWNphK6Z0jJMRekCvOT5+Sk/hqkWZRHHbyIUGH
+         IwGMusJDkzI+bbFFyTkt7/UuNWklGFFjkGMwQZX31pgrO62d/qJ2n8Tj2Dx3Ro0n9nzb
+         B4I2FxZ/NO8dyhWzWhQM+nk5Z/6bGCtSs6Q6k=
+Message-ID: <45538E4040B9494CA605BDF7475381AE@your6c359a3bdc>
+Reply-To: "anish kumar" <anish198519851985@gmail.com>
+From: "anish kumar" <anish198519851985@gmail.com>
+To: <jic23@cam.ac.uk>, <manuel.stahl@iis.fraunhofer.de>, <gregkh@suse.de>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: IIO corrected the spelling
+Date: Mon, 6 Jun 2011 00:48:57 +0530
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6090
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Jun 2011, Al Viro wrote:
-> 	When alloc_huge_page() runs afoul of quota, it returns ERR_PTR(-ENOSPC).
-> Callers do not expect that - hugetlb_cow() returns ENOSPC if it gets that
-> and so does hugetlb_no_page().  Eventually the thing propagates back to
-> hugetlb_fault() and is returned by it.
-> 
-> 	Callers of hugetlb_fault() clearly expect a bitmap of VM_... and
-> not something from errno.h: one place is 
->                         ret = hugetlb_fault(mm, vma, vaddr,
->                                 (flags & FOLL_WRITE) ? FAULT_FLAG_WRITE : 0);
->                         spin_lock(&mm->page_table_lock);
->                         if (!(ret & VM_FAULT_ERROR))
->                                 continue;
-> and another is handle_mm_fault(), which ends up returning ENOSPC and *its*
-> callers are definitely not ready to deal with that.
-> 
-> ENOSPC is 28, i.e. VM_FAULT_MAJOR | VM_FAULT_WRITE | VM_FAULT_HWPOISON;
-> it's also theoretically possible to get ENOMEM if region_chg() ends up
-> hitting
->                 nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
->                 if (!nrg)
->                         return -ENOMEM;
-> region_chg() <- vma_needs_reservation() <- alloc_huge_page() and from that
-> point as with ENOSPC.  ENOMEM is 12, i.e. VM_FAULT_MAJOR | VM_FAULT_WRITE...
+From: anish <anish198519851985@gmail.com>
 
-Good find, news to me.  Interesting uses of -PTR_ERR()!
-Looks like we'd better not have more than 12 VM_FAULT_ flags.
+Corrected the spelling.
 
-> 
-> Am I right assuming that we want VM_FAULT_OOM in both cases?
+Signed-off-by: anish kumar <anish198519851985@gmail.com>
+---
+ drivers/staging/iio/trigger/iio-trig-gpio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-No, where hugetlb_get_quota() fails it should be VM_FAULT_SIGBUS:
-there's no excuse to go on an OOM-killing spree just because hugetlb
-quota is exhausted.
+diff --git a/drivers/staging/iio/trigger/iio-trig-gpio.c 
+b/drivers/staging/iio/trigger/iio-trig-gpio.c
+index 2ce95e9..0799128 100644
+--- a/drivers/staging/iio/trigger/iio-trig-gpio.c
++++ b/drivers/staging/iio/trigger/iio-trig-gpio.c
+@@ -7,7 +7,7 @@
+  * under the terms of the GNU General Public License version 2 as published by
+  * the Free Software Foundation.
+  *
+- * Currently this is more of a functioning proof of concept that a fully
++ * Currently this is more of a functioning proof of concept than a full
+  * fledged trigger driver.
+  *
+  * TODO:
+--
+1.7.0.4 
 
-VM_FAULT_OOM is appropriate where vma_needs_reservation() fails,
-because region_chg() couldn't kmalloc a structure, as you point out.
-
-(Though that doesn't matter much, since the only way the kmalloc can
-fail is when this task is already selected for OOM-kill - I think.)
-
-Hugh
