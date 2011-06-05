@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab1FEIVW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 04:21:22 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43907 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab1FEIVU (ORCPT
+	id S1755290Ab1FEIVb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 04:21:31 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:44816 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755463Ab1FEIVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 04:21:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=PH6rGbUNvOkOmr8izOFniWEVmiVn/f0mrJkbqteF8+M25adroFip8pMqvCk1NCIxJW
-         E+LszvysbrjDY4drLE1JTUL1Bjj5RdaFUJk1yWORMvYS0fo572vKaWh8NqBLCU8YE1SV
-         QV0Y/C4SduY2dqUwZbL/I7rgZEdeMbpXGB8r4=
-Date: Sun, 5 Jun 2011 11:19:04 +0300
-From: Mika Westerberg <mika.westerberg@iki.fi>
-To: vinod.koul@intel.com
-Cc: hsweeten@visionengravers.com, rmallon@gmail.com, dan.j.williams@intel.com,
-        lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 0/5] ep93xx DMA patches
-Message-ID: <20110605081904.GA16018@acer>
-References: <cover.1306662317.git.mika.westerberg@iki.fi>
+	Sun, 5 Jun 2011 04:21:25 -0400
+X-Originating-IP: 217.70.178.134
+X-Originating-IP: 50.43.15.19
+Date: Sun, 5 Jun 2011 01:21:02 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
+        Jeff Dike <jdike@addtoit.com>, Andi Kleen <andi@firstfloor.org>,
+        Huang Ying <ying.huang@intel.com>, Li Wei <W.Li@Sun.COM>,
+        Michael Ellerman <michaele@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Heiko Carstens <heicars2@linux.vnet.ibm.com>,
+        Martin Schwidefsky <mschwid2@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Disable CONFIG_CONSTRUCTORS when not needed by
+ CONFIG_GCOV_KERNEL
+Message-ID: <20110605082100.GA18151@leaf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1306662317.git.mika.westerberg@iki.fi>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vinod,
+CONFIG_CONSTRUCTORS controls support for running constructor functions
+at kernel init time.  According to commit
+b99b87f70c7785ab1e253c6220f4b0b57ce3a7f7, gcov (CONFIG_GCOV_KERNEL)
+needs this.  However, CONFIG_CONSTRUCTORS currently defaults to y, with
+no option to disable it, and CONFIG_GCOV_KERNEL depends on it.  Instead,
+default it to n and have CONFIG_GCOV_KERNEL select it, so that the
+normal case of CONFIG_GCOV_KERNEL=n will result in
+CONFIG_CONSTRUCTORS=n.
 
-As this series has acks for all the subsystem maintainers, would it be ok for
-you to take the entire series via your tree? Or do you have any idea how to
-get it merged?
+Observed in the short list of =y values in a minimal kernel
+configuration.
 
-On Sun, May 29, 2011 at 01:10:01PM +0300, Mika Westerberg wrote:
-> This is an updated version of the ep93xx DMA patches. Previous version can be
-> found here: https://lkml.org/lkml/2011/5/22/86.
-> 
-> Changes to v1:
->  * removed unnecessary header
->  * corrected SPI driver documentation
->  * DMA driver platform code is only compiled when CONFIG_EP93XX_DMA is
->    enabled
-> 
-> I tried to put all the acks in place, hope I got them right.
-> 
-> There is a dependency between patch 1 and patch 4 which I'm not entirely sure
-> how to solve. Basically it is required that we have patch 1 applied before
-> patch 4 or merge conflict results.
-> 
-> Otherwise it shouldn't matter in which order the patches arrive to the
-> mainline.
-> 
-> Unless someone has a better idea, I suggest that these patches will go through
-> their respective subsystem trees. All the maintainers should be copied.
-> 
-> Thanks,
-> MW
-> 
-> Mika Westerberg (5):
->   dmaengine: add ep93xx DMA support
->   ep93xx: add dmaengine platform code
->   ASoC: ep93xx: convert to use the DMA engine API
->   ep93xx: remove the old M2P DMA code
->   spi/ep93xx: add DMA support
-> 
->  Documentation/spi/ep93xx_spi                   |   10 +
->  arch/arm/mach-ep93xx/Makefile                  |    4 +-
->  arch/arm/mach-ep93xx/core.c                    |    6 +-
->  arch/arm/mach-ep93xx/dma-m2p.c                 |  411 -------
->  arch/arm/mach-ep93xx/dma.c                     |  108 ++
->  arch/arm/mach-ep93xx/include/mach/dma.h        |  190 ++---
->  arch/arm/mach-ep93xx/include/mach/ep93xx_spi.h |    2 +
->  drivers/dma/Kconfig                            |    7 +
->  drivers/dma/Makefile                           |    1 +
->  drivers/dma/ep93xx_dma.c                       | 1355 ++++++++++++++++++++++++
->  drivers/spi/ep93xx_spi.c                       |  303 +++++-
->  sound/soc/ep93xx/ep93xx-ac97.c                 |    4 +-
->  sound/soc/ep93xx/ep93xx-i2s.c                  |    4 +-
->  sound/soc/ep93xx/ep93xx-pcm.c                  |  137 ++--
->  14 files changed, 1930 insertions(+), 612 deletions(-)
->  delete mode 100644 arch/arm/mach-ep93xx/dma-m2p.c
->  create mode 100644 arch/arm/mach-ep93xx/dma.c
->  create mode 100644 drivers/dma/ep93xx_dma.c
-> 
-> -- 
-> 1.7.4.4
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+CCing people copied on the original commit
+b99b87f70c7785ab1e253c6220f4b0b57ce3a7f7.
+
+ init/Kconfig        |    1 -
+ kernel/gcov/Kconfig |    3 ++-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/init/Kconfig b/init/Kconfig
+index ebafac4..e9bf65f 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -19,7 +19,6 @@ config DEFCONFIG_LIST
+ config CONSTRUCTORS
+ 	bool
+ 	depends on !UML
+-	default y
+ 
+ config HAVE_IRQ_WORK
+ 	bool
+diff --git a/kernel/gcov/Kconfig b/kernel/gcov/Kconfig
+index b8cadf7..5bf924d 100644
+--- a/kernel/gcov/Kconfig
++++ b/kernel/gcov/Kconfig
+@@ -2,7 +2,8 @@ menu "GCOV-based kernel profiling"
+ 
+ config GCOV_KERNEL
+ 	bool "Enable gcov-based kernel profiling"
+-	depends on DEBUG_FS && CONSTRUCTORS
++	depends on DEBUG_FS
++	select CONSTRUCTORS
+ 	default n
+ 	---help---
+ 	This option enables gcov-based code profiling (e.g. for code coverage
+-- 
+1.7.5.3
+
