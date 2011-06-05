@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab1FEUYv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 16:24:51 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:44582 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab1FEUYu (ORCPT
+	id S1755839Ab1FEUmi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 16:42:38 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62842 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755380Ab1FEUmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 16:24:50 -0400
-X-Originating-IP: 217.70.178.134
-X-Originating-IP: 50.43.15.19
-Date: Sun, 5 Jun 2011 13:24:34 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Unhide DEBUG_BUGVERBOSE when EXPERT=y, even if
- DEBUG_KERNEL=n
-Message-ID: <20110605202434.GA1986@leaf>
-References: <20110605083230.GA18260@leaf>
- <20110605093445.GA19927@elte.hu>
- <20110605170639.GA739@leaf>
- <20110605173143.GA1297@elte.hu>
+	Sun, 5 Jun 2011 16:42:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fffWk5l/dGV1l45FlkNpJKK3cddnKG2+fRcEuySVMw/8/tuU0aw91gyS1KZzb8460/
+         ICMq6wTgP0XzWlx/n4gqVawIbyKvKjg/X1VooK5xZsdw7bM3Tgdba74cfkWHT2chriod
+         mjUqg37aTpsDkyGZ78z7WW11gW/P451FDYgX4=
+Date: Sun, 5 Jun 2011 16:42:33 -0400
+From: Khaled <kernel@fuzzbuzz.org>
+To: Ilyes Gouta <ilyes.gouta@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Looking for a good reference, a book, on the Linux kernel
+Message-ID: <20110605204233.GA2186@wuzzy.fuzzbuzz.org>
+References: <BANLkTik3cMHc44szHX+6Rw-9iB0s0qxOEw@mail.gmail.com>
+ <BANLkTimf3zKGuFn_c=VSFvWGigeg-zJ8kw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110605173143.GA1297@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTimf3zKGuFn_c=VSFvWGigeg-zJ8kw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 05, 2011 at 07:31:43PM +0200, Ingo Molnar wrote:
-> * Josh Triplett <josh@joshtriplett.org> wrote:
-> > On Sun, Jun 05, 2011 at 11:34:45AM +0200, Ingo Molnar wrote:
-> > > * Josh Triplett <josh@joshtriplett.org> wrote:
-> > > 
-> > > >  config DEBUG_BUGVERBOSE
-> > > > -	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
-> > > > +	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL || EXPERT
-> > > 
-> > > Well, DEBUG_KERNEL really means two things:
-> > > 
-> > >   - make more debugging options available
-> > >   - allow the *disabling* of existing (default-enabled) debug options
-> > 
-> > As well as one more: a quick "git grep DEBUG_KERNEL" turns up a few uses
-> > in actual kernel source code, to control debugging features.  Those
-> > should likely use separately selectable debug options, but they
-> > currently don't.
-> > 
-> > ~/src/linux-2.6$ find * -not -name 'Kconfig*' -not -name '*defconfig' | xargs grep -n DEBUG_KERNEL
-> > arch/parisc/mm/init.c:653:#ifdef CONFIG_DEBUG_KERNEL /* double-sanity-check paranoia */
-> > arch/powerpc/kernel/sysfs.c:229:#ifdef CONFIG_DEBUG_KERNEL
-> > arch/powerpc/kernel/sysfs.c:258:#endif /* CONFIG_DEBUG_KERNEL */
-> > arch/powerpc/kernel/sysfs.c:299:#ifdef CONFIG_DEBUG_KERNEL
-> > arch/powerpc/kernel/sysfs.c:328:#endif /* CONFIG_DEBUG_KERNEL */
-> > arch/blackfin/include/asm/entry.h:53:/* As a debugging aid - we save IPEND when DEBUG_KERNEL is on,
-> > arch/blackfin/include/asm/entry.h:56:# ifndef CONFIG_DEBUG_KERNEL
-> > arch/blackfin/include/asm/entry.h:65:# else /* CONFIG_DEBUG_KERNEL */
-> > arch/blackfin/include/asm/entry.h:77:# endif /* CONFIG_DEBUG_KERNEL */
-> > arch/blackfin/include/asm/context.S:208:#ifdef CONFIG_DEBUG_KERNEL
-> > drivers/usb/musb/musb_core.c:557:                * REVISIT:  do delays from lots of DEBUG_KERNEL checks
+Linux Kernel Development, Robert Love
+Understanding the Linux Kernel, Daniel Bovet + Marco Cesati
+
+
+On Sun, Jun 05, 2011 at 03:12:18PM +0100, Ilyes Gouta wrote:
+> > Hi,
+> >
+> > I do know that this might not be the 100% appropriate place to place
+> > such a request, but please bear with me.
+> >
+> > I'm looking for a fine book describing the Linux kernel internals (mm,
+> > scheduling, processes management, network stack, devices handling,
+> > etc.) but also at the same time also explaining the rationale behind
+> > the design and implementation decisions.
+> >
+> > Do you know about any good references,
+> >
+> > Thanks a lot,
+> >
+> > -Ilyes
+> >
 > 
-> These are basically just 4 cases out of thousands of drivers, zero in 
-> essence. Also, none seems significant in terms of code size.
-
-Sure, but they still need fixing.
-
-> > > So i think the right solution would be to select DEBUG_KERNEL if 
-> > > EXPERT is enabled - this would simplify things and would allow the 
-> > > removal of a lot of EXPERT conditions from the debug options.
-> > > 
-> > > Ok?
-> > 
-> > I could live with that, as long as CONFIG_DEBUG_KERNEL never 
-> > directly enables any debugging code like it does above, and just 
-> > acts like CONFIG_EXPERT in hiding a pile of unnecessary options.  
-> > DEBUG_KERNEL should probably also have some text saying it doesn't 
-> > actually enable any kernel debugging on its own, once that becomes 
-> > true.
+> Please CC me, when replaying, as I'm not subscribed to the mailing-list. Thanks!
 > 
-> Yeah. I'd suggest you try that route instead of cluttering all of the 
-> debugging Kconfigs with || EXPERT conditions, which doesnt really 
-> look acceptable.
-
-In fairness, I didn't plan to add it to more than two. :)
-
-Nonetheless, patch shortly.
-
-- Josh Triplett
+> -Ilyes
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
