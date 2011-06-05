@@ -1,154 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab1FEQbH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 12:31:07 -0400
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:59480 "EHLO
+	id S1754134Ab1FEQar (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 12:30:47 -0400
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:59444 "EHLO
 	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428Ab1FEQbE (ORCPT
+	with ESMTP id S1753788Ab1FEQaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 12:31:04 -0400
-Subject: [PATCH 2/5] Rename two struct members called "cic_list"
+	Sun, 5 Jun 2011 12:30:46 -0400
+Subject: [PATCH 3/5] CFQ: rename ioc_data to last_cic
 From: Paul Bolle <pebolle@tiscali.nl>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>
-Date: Sun, 05 Jun 2011 18:26:26 +0200
+        Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
+Date: Sun, 05 Jun 2011 18:26:33 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.1.1 (3.1.1-3.fc16) 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1307291188.8545.43.camel@t41.thuisdomein>
+Message-ID: <1307291194.8545.44.camel@t41.thuisdomein>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's call them io_context.cic_hlist and cfq_io_context.cic_node. That
-should be much less confusing.
-
-There's also cfq_data.cic_list. It is allowed to keep its name (as it's
-the struct member that's most entitled to that name).
+Set its type to struct cfq_io_context too.
 
 Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- block/blk-ioc.c           |   14 +++++++-------
+ block/blk-ioc.c           |    2 +-
  block/cfq-iosched.c       |   10 +++++-----
- include/linux/iocontext.h |    4 ++--
- 3 files changed, 14 insertions(+), 14 deletions(-)
+ include/linux/iocontext.h |    2 +-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/block/blk-ioc.c b/block/blk-ioc.c
-index 812fba4..430945c 100644
+index 430945c..998fa67 100644
 --- a/block/blk-ioc.c
 +++ b/block/blk-ioc.c
-@@ -18,11 +18,11 @@ static struct kmem_cache *iocontext_cachep;
- 
- static void cfq_dtor(struct io_context *ioc)
- {
--	if (!hlist_empty(&ioc->cic_list)) {
-+	if (!hlist_empty(&ioc->cic_hlist)) {
- 		struct cfq_io_context *cic;
- 
--		cic = hlist_entry(ioc->cic_list.first, struct cfq_io_context,
--								cic_list);
-+		cic = hlist_entry(ioc->cic_hlist.first, struct cfq_io_context,
-+								cic_node);
- 		cic->dtor(ioc);
- 	}
- }
-@@ -54,11 +54,11 @@ static void cfq_exit(struct io_context *ioc)
- {
- 	rcu_read_lock();
- 
--	if (!hlist_empty(&ioc->cic_list)) {
-+	if (!hlist_empty(&ioc->cic_hlist)) {
- 		struct cfq_io_context *cic;
- 
--		cic = hlist_entry(ioc->cic_list.first, struct cfq_io_context,
--								cic_list);
-+		cic = hlist_entry(ioc->cic_hlist.first, struct cfq_io_context,
-+								cic_node);
- 		cic->exit(ioc);
- 	}
- 	rcu_read_unlock();
-@@ -94,7 +94,7 @@ struct io_context *alloc_io_context(gfp_t gfp_flags, int node)
- 		ret->last_waited = 0; /* doesn't matter... */
+@@ -95,7 +95,7 @@ struct io_context *alloc_io_context(gfp_t gfp_flags, int node)
  		ret->nr_batch_requests = 0; /* because this is 0 */
  		INIT_RADIX_TREE(&ret->radix_root, GFP_ATOMIC | __GFP_HIGH);
--		INIT_HLIST_HEAD(&ret->cic_list);
-+		INIT_HLIST_HEAD(&ret->cic_hlist);
- 		ret->ioc_data = NULL;
+ 		INIT_HLIST_HEAD(&ret->cic_hlist);
+-		ret->ioc_data = NULL;
++		ret->last_cic = NULL;
  	}
  
+ 	return ret;
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 79606f9..89ff2e7 100644
+index 89ff2e7..39e4d01 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -2592,7 +2592,7 @@ call_for_each_cic(struct io_context *ioc,
+@@ -2704,8 +2704,8 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
+ 	smp_wmb();
+ 	cic->key = cfqd_dead_key(cfqd);
  
- 	rcu_read_lock();
+-	if (ioc->ioc_data == cic)
+-		rcu_assign_pointer(ioc->ioc_data, NULL);
++	if (ioc->last_cic == cic)
++		rcu_assign_pointer(ioc->last_cic, NULL);
  
--	hlist_for_each_entry_rcu(cic, n, &ioc->cic_list, cic_list)
-+	hlist_for_each_entry_rcu(cic, n, &ioc->cic_hlist, cic_node)
- 		func(ioc, cic);
- 
- 	rcu_read_unlock();
-@@ -2636,7 +2636,7 @@ static void cic_free_func(struct io_context *ioc, struct cfq_io_context *cic)
+ 	if (cic->cfqq[BLK_RW_ASYNC]) {
+ 		cfq_exit_cfqq(cfqd, cic->cfqq[BLK_RW_ASYNC]);
+@@ -3012,7 +3012,7 @@ cfq_drop_dead_cic(struct cfq_data *cfqd, struct io_context *ioc,
  
  	spin_lock_irqsave(&ioc->lock, flags);
- 	radix_tree_delete(&ioc->radix_root, dead_key >> CIC_DEAD_INDEX_SHIFT);
--	hlist_del_rcu(&cic->cic_list);
-+	hlist_del_rcu(&cic->cic_node);
- 	spin_unlock_irqrestore(&ioc->lock, flags);
  
- 	cfq_cic_free(cic);
-@@ -2760,7 +2760,7 @@ cfq_alloc_io_context(struct cfq_data *cfqd, gfp_t gfp_mask)
- 	if (cic) {
- 		cic->last_end_request = jiffies;
- 		INIT_LIST_HEAD(&cic->queue_list);
--		INIT_HLIST_NODE(&cic->cic_list);
-+		INIT_HLIST_NODE(&cic->cic_node);
- 		cic->dtor = cfq_free_io_context;
- 		cic->exit = cfq_exit_io_context;
- 		elv_ioc_count_inc(cfq_ioc_count);
-@@ -3015,7 +3015,7 @@ cfq_drop_dead_cic(struct cfq_data *cfqd, struct io_context *ioc,
- 	BUG_ON(ioc->ioc_data == cic);
+-	BUG_ON(ioc->ioc_data == cic);
++	BUG_ON(ioc->last_cic == cic);
  
  	radix_tree_delete(&ioc->radix_root, cfqd->cic_index);
--	hlist_del_rcu(&cic->cic_list);
-+	hlist_del_rcu(&cic->cic_node);
- 	spin_unlock_irqrestore(&ioc->lock, flags);
+ 	hlist_del_rcu(&cic->cic_node);
+@@ -3035,7 +3035,7 @@ cfq_cic_lookup(struct cfq_data *cfqd, struct io_context *ioc)
+ 	/*
+ 	 * we maintain a last-hit cache, to avoid browsing over the tree
+ 	 */
+-	cic = rcu_dereference(ioc->ioc_data);
++	cic = rcu_dereference(ioc->last_cic);
+ 	if (cic && cic->key == cfqd) {
+ 		rcu_read_unlock();
+ 		return cic;
+@@ -3053,7 +3053,7 @@ cfq_cic_lookup(struct cfq_data *cfqd, struct io_context *ioc)
+ 		}
  
- 	cfq_cic_free(cic);
-@@ -3081,7 +3081,7 @@ static int cfq_cic_link(struct cfq_data *cfqd, struct io_context *ioc,
- 		ret = radix_tree_insert(&ioc->radix_root,
- 						cfqd->cic_index, cic);
- 		if (!ret)
--			hlist_add_head_rcu(&cic->cic_list, &ioc->cic_list);
-+			hlist_add_head_rcu(&cic->cic_node, &ioc->cic_hlist);
+ 		spin_lock_irqsave(&ioc->lock, flags);
+-		rcu_assign_pointer(ioc->ioc_data, cic);
++		rcu_assign_pointer(ioc->last_cic, cic);
  		spin_unlock_irqrestore(&ioc->lock, flags);
- 
- 		radix_tree_preload_end();
+ 		break;
+ 	} while (1);
 diff --git a/include/linux/iocontext.h b/include/linux/iocontext.h
-index b2eee89..f560b84 100644
+index f560b84..308678b 100644
 --- a/include/linux/iocontext.h
 +++ b/include/linux/iocontext.h
-@@ -19,7 +19,7 @@ struct cfq_io_context {
- 	unsigned long ttime_mean;
- 
- 	struct list_head queue_list;
--	struct hlist_node cic_list;
-+	struct hlist_node cic_node;
- 
- 	void (*dtor)(struct io_context *); /* destructor */
- 	void (*exit)(struct io_context *); /* called on task exit */
-@@ -52,7 +52,7 @@ struct io_context {
- 	unsigned long last_waited; /* Time last woken after wait for request */
+@@ -53,7 +53,7 @@ struct io_context {
  
  	struct radix_tree_root radix_root;
--	struct hlist_head cic_list;
-+	struct hlist_head cic_hlist;
- 	void __rcu *ioc_data;
+ 	struct hlist_head cic_hlist;
+-	void __rcu *ioc_data;
++	struct cfq_io_context __rcu *last_cic;
  };
  
+ static inline struct io_context *ioc_task_link(struct io_context *ioc)
 -- 
 1.7.5.2
 
