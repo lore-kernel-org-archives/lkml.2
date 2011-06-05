@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab1FEJuq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 05:50:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35446 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755583Ab1FEJuo convert rfc822-to-8bit (ORCPT
+	id S1755515Ab1FEJyI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 05:54:08 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64033 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184Ab1FEJyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 05:50:44 -0400
+	Sun, 5 Jun 2011 05:54:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=Zvc0DqSZ6B+cadYDyJaqny1YiO5F4j5oJ3QtrHic+vCSil6b22j18dZ6zwuNVLTnkH
-         W9F4P1qW9sJwL3rhZeVdrwPfJc9p9xHMOK5MByMl1nJQWep5vzJqDnVq/Zed7mld7+Zk
-         ghLRg8bEs5ogf5eRUFqfwR/Z7myMkamb8J4fg=
-Date: Sun, 5 Jun 2011 11:50:37 +0200
-From: Andre Bartke <andre.bartke@googlemail.com>
-To: Connor H <cmdkhh@gmail.com>
-Cc: Andre Bartke <andre.bartke@googlemail.com>,
-        Michal Nazarewicz <mina86@mina86.com>, gregkh@suse.de,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/usb/gadget: add missing kfree calls
-Message-ID: <20110605115037.56b8983c@kvasir>
-In-Reply-To: <BANLkTi=G3gxT0WHham9Yi6SecysGoov68A@mail.gmail.com>
-References: <1307216094-13570-1-git-send-email-andre.bartke@gmail.com>
-	<op.vwkl82ut3l0zgt@mnazarewicz-glaptop>
-	<20110604235449.6a00218c@kvasir>
-	<BANLkTi=G3gxT0WHham9Yi6SecysGoov68A@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=dKx4Bf2e72yMxDKzvM48V2c4NChKb+HsZvISLUnB6Y+bdlkc8+iE6uDxXMGvzbMcQG
+         FWxIlwIbSXknAtr3sILUaM9R+K2iGpc8QtYhR/91EALuPVFIosFMQoh/wa5pjLbi1Qdo
+         LbDuL3fjPcCLzyh2HJq20nqj3EgnmFQiisEj0=
+MIME-Version: 1.0
+Date: Sun, 5 Jun 2011 17:54:04 +0800
+Message-ID: <BANLkTint_00+oHVGpgV4n4E2A9W5O8nJxA@mail.gmail.com>
+Subject: [PATCH] sched: update cpupri for runqueue when its priority changes
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 4 Jun 2011 18:35:35 -0700
-Connor H <cmdkhh@gmail.com> wrote:
+When the priority of runqueue changes, lower or higer, the info of cpupri
+should be updated, in cases such as pick_next_task_rt() and switched_to_rt().
 
-> On Sat, Jun 4, 2011 at 2:54 PM, Andre Bartke
-> <andre.bartke@googlemail.com> wrote:
-> > On Sat, 04 Jun 2011 23:35:16 +0200
-> > "Michal Nazarewicz" <mina86@mina86.com> wrote:
-> >
-> >> On Sat, 04 Jun 2011 21:34:54 +0200, Andre Bartke
-> >> <andre.bartke@googlemail.com> wrote:
-> >> > diff --git a/drivers/usb/gadget/rndis.c
-> >> > b/drivers/usb/gadget/rndis.c @@ -700,6 +701,7 @@ static int
-> >> > rndis_reset_response(int configNr, rndis_reset_msg_type *buf)
-> >> >     resp->AddressingReset = cpu_to_le32(1);
-> >> >     params->resp_avail(params->v);
-> >> > +   kfree(r);
-> >> >     return 0;
-> >> >  }
-> >>
-> >> Have you tested this?  It does not look right to me.
-> >> rndis_add_response() allocates memory and puts the request on a
-> >> list.  It is later freed in rndis_free_response().
-> >>
-> >
-> > Nope, the only way I can test this is a build - which it does.
-> > You might be right though.
-> 
-> building != correct
-> 
-> r is being added to a list in rndis_add_response
-> Andre is right, rndis_free_response handles list removal
-> 
-> 982 if (r && r->buf == buf) {
-> 983                         list_del(&r->list);
-> 984                         kfree(r);
-> 985                 }
-> 
-> in fact all of the kfree calls I believe are incorrect.
-> 
-> Connor
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
+ kernel/sched_rt.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-alright, then drop this patch please.
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index 08e9374..9508168 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -1158,6 +1158,8 @@ static struct task_struct
+*pick_next_task_rt(struct rq *rq)
+ 	 * lock again later if there is no need to push
+ 	 */
+ 	rq->post_schedule = has_pushable_tasks(rq);
++
++	cpupri_set(&rq->rd->cpupri, rq->cpu, p == NULL ? MAX_RT_PRIO : p->prio);
+ #endif
 
-> 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe
-> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
+ 	return p;
+@@ -1673,6 +1675,8 @@ static void switched_to_rt(struct rq *rq, struct
+task_struct *p)
+ {
+ 	int check_resched = 1;
 
++	if (!p->on_rq)
++		return;
+ 	/*
+ 	 * If we are already running, then there's nothing
+ 	 * that needs to be done. But if we are not running
+@@ -1680,7 +1684,7 @@ static void switched_to_rt(struct rq *rq, struct
+task_struct *p)
+ 	 * If that current running task is also an RT task
+ 	 * then see if we can move to another run queue.
+ 	 */
+-	if (p->on_rq && rq->curr != p) {
++	if (rq->curr != p) {
+ #ifdef CONFIG_SMP
+ 		if (rq->rt.overloaded && push_rt_task(rq) &&
+ 		    /* Don't resched if we changed runqueues */
+@@ -1690,6 +1694,11 @@ static void switched_to_rt(struct rq *rq,
+struct task_struct *p)
+ 		if (check_resched && p->prio < rq->curr->prio)
+ 			resched_task(rq->curr);
+ 	}
++	else {
++#ifdef CONFIG_SMP
++		cpupri_set(&rq->rd->cpupri, rq->cpu, p->prio);
++#endif
++	}
+ }
+
+ /*
