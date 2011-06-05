@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab1FEBPL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 21:15:11 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57276 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121Ab1FEBPK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 21:15:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:content-type:content-transfer-encoding;
-        b=SslX7PSyg8sCqSRrMAuPoqrFqFmJOY4zmDoVqu+tBjf3BqG0gnH4gNgzeormYfhFCU
-         bbG2bJNbF8Fj6WIi+C9oFvCVa1OBCwwv1uxU80r9ffz4PyFmw5spxIj6R7unE1AZ6F8d
-         OhamUuM4nWX3iIg6LASoGyZyBZOCd62dpV7nA=
-MIME-Version: 1.0
-Reply-To: andrea.merello@gmail.com
-In-Reply-To: <BANLkTimpYniHhN6ccMXN7Lx3xDdK6sC+FQ@mail.gmail.com>
-References: <BANLkTimpYniHhN6ccMXN7Lx3xDdK6sC+FQ@mail.gmail.com>
-From: Andrea Merello <andrea.merello@gmail.com>
-Date: Sun, 5 Jun 2011 03:14:49 +0200
-Message-ID: <BANLkTikRU1qrBPoaQT9tbgryXV92YHZzpw@mail.gmail.com>
-Subject: [PATCH] e100: Fix inconsistency in bad frames handling
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754878Ab1FEBau (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 21:30:50 -0400
+Received: from sh.osrg.net ([192.16.179.4]:51155 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753858Ab1FEBas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jun 2011 21:30:48 -0400
+Date: Sun, 5 Jun 2011 10:30:20 +0900
+To: shawn.guo@freescale.com
+Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dan.j.williams@intel.com,
+        patches@linaro.org
+Subject: Re: [PATCH 1/3] dmaengine: add new dma API for max_segment_number
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20110601023356.GA1501@S2100-06.ap.freescale.net>
+References: <1306391493-29425-1-git-send-email-shawn.guo@linaro.org>
+	<20110601023356.GA1501@S2100-06.ap.freescale.net>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20110605102855L.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 05 Jun 2011 10:30:22 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Wed, 1 Jun 2011 10:33:57 +0800
+Shawn Guo <shawn.guo@freescale.com> wrote:
 
-In e100 driver it seems that the intention was to accept bad frames in
-promiscuous mode and loopback mode.
-I think this is evident because of the following code in the driver:
+> On Thu, May 26, 2011 at 02:31:31PM +0800, Shawn Guo wrote:
+> > Like dma_set(get)_max_seg_size for max_segment_size, the patch adds
+> > max_segment_number into device_dma_parameters and creates the
+> > corresponding dmaengine API dma_set(get)_max_seg_number for it.
+> > 
+> > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> > ---
+> >  include/linux/device.h      |    1 +
+> >  include/linux/dma-mapping.h |   15 +++++++++++++++
+> >  2 files changed, 16 insertions(+), 0 deletions(-)
 
-if (nic->flags & promiscuous || nic->loopback) {
-               config->rx_save_bad_frames = 0x1;       /* 1=save, 0=discard */
-               config->rx_discard_short_frames = 0x0;  /* 1=discard, 0=save */
-               config->promiscuous_mode = 0x1;         /* 1=on, 0=off */
-       }
+include/linux/dma-mapping.h is for DMA mapping API (please see
+Documentation/DMA-API*.txt).
+
+What does dma_set(get)_max_seg_size do? And it's related with DMA
+mapping API?
 
 
-However this intention is not really realized because bad frames are
-discarded later by SW check.
-This patch finally honors the above intention, making the RX code to
-let bad frames to pass when the NIC is in promiscuous or loopback
-mode.
-
-This helped me a lot to debug an FPGA ethernet core.
-Maybe it can be also useful to someone else..
-
-Thanks
-Andrea
-
- --- drivers/net/e100_orig.c     2011-06-14 23:29:38.322267075 +0200
-+++ drivers/net/e100.c  2011-06-14 23:34:10.700791472 +0200
-@@ -1975,7 +1975,8 @@ static int e100_rx_indicate(struct nic *
-       skb_put(skb, actual_size);
-       skb->protocol = eth_type_trans(skb, nic->netdev);
-
--       if (unlikely(!(rfd_status & cb_ok))) {
-+       if (unlikely(!(nic->flags & promiscuous || nic->loopback) &&
-+           !(rfd_status & cb_ok))) {
-               /* Don't indicate if hardware indicates errors */
-               dev_kfree_skb_any(skb);
-       } else if (actual_size > ETH_DATA_LEN + VLAN_ETH_HLEN) {
+> > 
+> > diff --git a/include/linux/device.h b/include/linux/device.h
+> > index c66111a..44cb2528 100644
+> > --- a/include/linux/device.h
+> > +++ b/include/linux/device.h
+> > @@ -487,6 +487,7 @@ struct device_dma_parameters {
+> >  	 * sg limitations.
+> >  	 */
+> >  	unsigned int max_segment_size;
+> > +	unsigned int max_segment_number;
+> >  	unsigned long segment_boundary_mask;
+> >  };
+> >  
+> > diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+> > index ba8319a..fd314f4 100644
+> > --- a/include/linux/dma-mapping.h
+> > +++ b/include/linux/dma-mapping.h
+> > @@ -131,6 +131,21 @@ static inline unsigned int dma_set_max_seg_size(struct device *dev,
+> >  		return -EIO;
+> >  }
+> >  
+> > +static inline unsigned int dma_get_max_seg_number(struct device *dev)
+> > +{
+> > +	return dev->dma_parms ? dev->dma_parms->max_segment_number : 1;
+> > +}
+> > +
+> > +static inline unsigned int dma_set_max_seg_number(struct device *dev,
+> > +						  unsigned int number)
+> > +{
+> > +	if (dev->dma_parms) {
+> > +		dev->dma_parms->max_segment_number = number;
+> > +		return 0;
+> > +	} else
+> > +		return -EIO;
+> > +}
+> > +
+> >  static inline unsigned long dma_get_seg_boundary(struct device *dev)
+> >  {
+> >  	return dev->dma_parms ?
+> > -- 
+> > 1.7.4.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
