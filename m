@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab1FEUPh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 16:15:37 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:36542 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788Ab1FEUPg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 16:15:36 -0400
-X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
-X-RZG-CLASS-ID: mo00
-Message-ID: <4DEBE3DF.70104@die-jansens.de>
-Date: Sun, 05 Jun 2011 22:15:27 +0200
-From: Arne Jansen <lists@die-jansens.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1755595Ab1FEUQp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 16:16:45 -0400
+Received: from home.keithp.com ([63.227.221.253]:40670 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753870Ab1FEUQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 16:16:44 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Dave Airlie <airlied@redhat.com>
+Cc: dri-devel@lists.freedesktop.org,
+        "drivers\, Intel" <Intel-gfx@lists.freedesktop.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: drivers/drm/i915 maintenance process
+In-Reply-To: <1307255026.17387.8.camel@t60prh>
+References: <yunipskolss.fsf@aiko.keithp.com> <1307255026.17387.8.camel@t60prh>
+User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sun, 05 Jun 2011 13:16:38 -0700
+Message-ID: <yunlixg2fvd.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-References: <20110605151323.GA30590@elte.hu> <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu> <4DEBA9CC.4090503@die-jansens.de> <4DEBB05C.8090506@die-jansens.de> <4DEBB3DA.8060001@die-jansens.de> <20110605172052.GA1036@elte.hu> <4DEBBFF9.2030101@die-jansens.de> <20110605185957.GA3452@elte.hu> <4DEBD95B.6030901@die-jansens.de> <20110605194419.GA12965@elte.hu>
-In-Reply-To: <20110605194419.GA12965@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.06.2011 21:44, Ingo Molnar wrote:
->
-> * Arne Jansen<lists@die-jansens.de>  wrote:
->
->>  From the timing I see I'd guess it has something to do with the
->> scheduler kicking in during printk. I'm neither familiar with the
->> printk code nor with the scheduler.
->
-> Yeah, that's the well-known wake-up of klogd:
->
-> void console_unlock(void)
-> {
-> ...
->          up(&console_sem);
->
-> actually ... that's not the klogd wake-up at all (!). I so suck today
-> at bug analysis :-)
->
-> It's the console lock()/unlock() sequence, and guess what does it:
->
->   drivers/tty/tty_io.c:   console_lock();
->   drivers/tty/vt/selection.c:     console_lock();
->
-> and the vt.c code in a dozen places.
->
-> So maybe it's some sort of tty related memory corruption that was
-> made *visible* via the extra assert that the scheduler is doing? The
-> pi_list is embedded in task struct.
->
-> This would explain why only printk() triggers it and other wakeup
-> patterns not.
->
-> Now, i don't really like this theory either. Why is there no other
-> type of corruption? And exactly why did only the task_struct::pi_lock
-> field get corrupted while nearby fields not? Also, none of the fields
-> near pi_lock are even remotely tty related.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Can lockdep just get confused by the lockdep_off/on calls in printk
-while scheduling is allowed? There aren't many users of lockdep_off().
+On Sun, 05 Jun 2011 16:23:43 +1000, Dave Airlie <airlied@redhat.com> wrote:
 
-I'll can try again tomorrow to get a dump of all logs from the
-watchdog, but enough for today...
+> So when Linus is releasing rc4/5 you should really be cutting down stuff
+> going into your -next, and getting the tree ready for me to take. We can
+> probably add your tree direct to the -next git list as well so that we
+> can get the benefits of -next testing earlier.
 
+Right, even earlier than I had thought. That should be pretty easy to follo=
+w.
+
+> Just make sure any merge commits are documented in the commit, this
+> generally means having to git commit --amend the merge commit since most
+> of the time it doesn't allow you to write anything unless you get a
+> conflict, esp if its a strange non i915 commit (like say some ACPI or
+> bluetooth commit that fixes a test laptop).
+
+Thanks for your comments; I'll try to have -next ready by rc4/rc5 time
+this release.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFN6+QmQp8BWwlsTdMRAgWJAJ49w56z5GsMbI+Zah51igvsVPpdgQCcCwDu
+zAErxwwlrXX7Q+WpS0VvQmU=
+=aYqV
+-----END PGP SIGNATURE-----
+--=-=-=--
