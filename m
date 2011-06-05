@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab1FEGbh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 02:31:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5172 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752592Ab1FEGbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 02:31:36 -0400
-Subject: Re: drivers/drm/i915 maintenance process
-From: Dave Airlie <airlied@redhat.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: dri-devel@lists.freedesktop.org,
-        "drivers, Intel" <Intel-gfx@lists.freedesktop.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Sun, 05 Jun 2011 16:23:43 +1000
-In-Reply-To: <yunipskolss.fsf@aiko.keithp.com>
-References: <yunipskolss.fsf@aiko.keithp.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1307255026.17387.8.camel@t60prh>
-Mime-Version: 1.0
+	id S1754042Ab1FEGoS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 02:44:18 -0400
+Received: from cynthia.allandria.com ([76.245.85.235]:58109 "EHLO
+	cynthia.pants.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753494Ab1FEGoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 02:44:17 -0400
+X-Greylist: delayed 1019 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Jun 2011 02:44:17 EDT
+Date: Sat, 4 Jun 2011 23:27:02 -0700
+From: Brad Boyer <flar@allandria.com>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: m68k: Convert to genirq (WIP)
+Message-ID: <20110605062702.GA2034@cynthia.pants.nu>
+References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
+ <alpine.OSX.2.00.1106011300550.199@ibook.intranet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.OSX.2.00.1106011300550.199@ibook.intranet>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-06-04 at 23:05 -0700, Keith Packard wrote:
-> I'm trying to formalize the process for merging code into the drm/i915
-> driver. Here's a first draft, please send along your comments.
-
-Okay so you made the same mistake a lot of people make, the merge window
-for -next from me to Linus is from when he releases a .x release.
-However the merge window for you to me, should happen before this,
-multiple -next merges are allowed before Linus releases a kernel, though
-I'd really like to close the door around -rc6 in general. Generally I've
-found though with graphics we are crunch time for late found regression
-around rc6 time so I rarely push back too hard as I'd rather the kernel
-release with no regressions than worry overly about -next.
-
-So when Linus is releasing rc4/5 you should really be cutting down stuff
-going into your -next, and getting the tree ready for me to take. We can
-probably add your tree direct to the -next git list as well so that we
-can get the benefits of -next testing earlier.
-
-
-Some misc stuff inline:
-
-<snip>
-> 	The part I'm less sure about is how to deal with patches that
-> 	affect both drm/i915 and drm itself. In that case, we may have
-> 	patches on both drm-intel-fixes and drm-fixes which work
-> 	together to resolve an issue. I think the right thing will be to
-> 	have drm-intel-fixes get merged into drm and from there be
-> 	merged into master. That's what I've done with a set of fixes
->         posted after 3.0-RC1.
-
-Yes if you have any interdepends then you need to coordinate with me,
-hopefully outside of -next we don't have that sort of work happening, as
-generally individual drm patches should be in my tree anyways.
-
-> 	I'm interested in hearing comments about whether this will cause
-> 	too many additional issues with merges from other parts of the
-> 	kernel, or whether we'll end up far behind other trees somehow.
-
-Linus rule is to avoid misc merges, however if you are only getting fast
-forwards then it seems like it should be fine as we are getting people
-testing from a better base.
-
+On Fri, Jun 03, 2011 at 09:20:23PM +1000, Finn Thain wrote:
+> On Sat, 28 May 2011, Geert Uytterhoeven wrote:
+> > Of course any help is welcome, especially for Mac
 > 
-> drm-intel-next
+> What kind of help are you looking for? I read through your patch series 
+> but I'm not sure how much work is left. Probably I need to look at a 
+> genirq reference implementation to get an idea of the goal...
+
+If there are any good documents on genirq, I would like to look at it
+as well. I didn't see anything obvious in Documentation/ in the tree.
+
+> > (with its maze of interrupt controllers)
 > 
-> 	While the merge window is closed, this tree will be accumulating
-> 	patches in preparation for the subsequent merge window. However,
-> 	to reduce the divergence from drm-intel-fixes, I'm proposing
-> 	that drm-intel-fixes get merged to drm-intel-next whenever it is
-> 	merged to master. I fully expect this to cause merge conflicts,
-> 	but resolving those within our own tree before they are sent
-> 	upstream should reduce the conflicts at that level. As
-> 	drm-intel-fixes is periodically fast-forwarded to points along
-> 	master, those merges will get pulled across to drm-intel-next.
+> Perhaps we do not need to model that complexity in generic irq terms?
 > 
-> 	At the opening of the merge window, drm-intel-next should
-> 	contain all of drm-intel-fixes from the release, and most of the
-> 	rest of the release as well.
+> The mac port could probably make good use of the irq startup and shutdown 
+> hooks though.
 
-Just make sure any merge commits are documented in the commit, this
-generally means having to git commit --amend the merge commit since most
-of the time it doesn't allow you to write anything unless you get a
-conflict, esp if its a strange non i915 commit (like say some ACPI or
-bluetooth commit that fixes a test laptop).
+If we could really map all the interrupt controllers, we could probably
+cut down on the largest interrupt number. Most Macs really only have
+20 or 30 actual interrupt sources. The problem is the two or three
+layers of cascaded mess. None of them have just a single layer. Just
+getting rid of the fixed global mapping could take us down to 64 since
+nothing has both Baboon and PSC, but we have unique numbers for them.
+We have 3 whole blocks of 8 just for PSC, even though that's just in
+two models. We don't even know what most of those do, if anything.
 
-Otherwise sounds good.
+We would probably need to move everything to platform devices if we
+do that so that drivers don't need to use hard-coded interrupts. I
+suppose we really should do that anyway.
 
-Dave.
+	Brad Boyer
+	flar@allandria.com
 
