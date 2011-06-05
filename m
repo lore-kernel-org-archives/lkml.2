@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab1FEMQK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 08:16:10 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42969 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab1FEMQJ (ORCPT
+	id S1756098Ab1FEMQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 08:16:28 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:34393 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755925Ab1FEMQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 08:16:09 -0400
-Date: Sun, 5 Jun 2011 14:15:56 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Brian Gerst <brgerst@gmail.com>
-Cc: "greg@kroah.com" <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] sysdev: Do not register with sysdev when erroring
- on add
-Message-ID: <20110605121556.GA3294@aftab>
-References: <1296577197-9766-1-git-send-email-bp@amd64.org>
- <BANLkTikJ8jUVeEk=GuV6iaw2ASuOLPA4yw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikJ8jUVeEk=GuV6iaw2ASuOLPA4yw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 5 Jun 2011 08:16:26 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH v2 2/2] TTY: ntty, add one more sanity check
+Date: Sun,  5 Jun 2011 14:16:17 +0200
+Message-Id: <1307276177-20957-2-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.5.3
+In-Reply-To: <1307276177-20957-1-git-send-email-jslaby@suse.cz>
+References: <BANLkTik5QP7e=+FWSa1kLVpCjZpWEtF1PQ@mail.gmail.com>
+ <1307276177-20957-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 05, 2011 at 07:07:34AM -0400, Brian Gerst wrote:
-> On Tue, Feb 1, 2011 at 11:19 AM, Borislav Petkov <bp@amd64.org> wrote:
-> > From: Borislav Petkov <borislav.petkov@amd.com>
-> >
-> > When encountering an error while executing the driver's ->add method, we
-> > should cancel registration and unwind what we've regged so far. The low
-> > level ->add methods do return proper error codes but those aren't looked
-> > at in sysdev_driver_register(). Fix that by sharing the unregistering
-> > code.
-> 
-> This patch is causing boot failures on a virtual machine running
-> Fedora 15 32-bit.  With this patch, the microcode driver repeatedly
-> spews:
-> microcode: CPU0: AMD CPU family 0x6 not supported
-> modprobe: FATAL: Error inserting microcode: Invalid argument.
-> until eventually causing an oops.  Reverting this patch allows the
-> boot to proceed.
+With the previous patch, we fixed another bug where read_buf was freed
+while we still was in n_tty_read. We currently check whether read_buf
+is NULL at the start of the function. Add one more check after we wake
+up from waiting for input.
 
-Yeah, we had a similar issue with a K8 machine on Fedora:
-https://bugzilla.kernel.org/show_bug.cgi?id=35522
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+---
+ drivers/tty/n_tty.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Another fix would be if you remove the *microcode.rules in
-/etc/udev/rules.d/ which tries to load the microcode driver
-continuously. The funny thing is, this happens only on Fedora - all the
-other distros simply get the -EINVAL from the driver failing to load
-and that's it. I guess Fedora's udev doesn't accept the error value and
-continues to try to load the module.
-
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 95d0a9c..c62c856 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1785,6 +1785,7 @@ do_it_again:
+ 				break;
+ 			}
+ 			timeout = schedule_timeout(timeout);
++			BUG_ON(!tty->read_buf);
+ 			continue;
+ 		}
+ 		__set_current_state(TASK_RUNNING);
 -- 
-Regards/Gruss,
-Boris.
+1.7.5.3
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+
