@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab1FEAIl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Jun 2011 20:08:41 -0400
-Received: from nm2.bt.bullet.mail.ird.yahoo.com ([212.82.108.233]:28235 "HELO
-	nm2.bt.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754485Ab1FEAIj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Jun 2011 20:08:39 -0400
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Sat, 04 Jun 2011 20:08:38 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 501308.37572.bm@omp1001.bt.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=talk21.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=Wux+lRl5FMyjLss44RtE0q7Rw2MfNjZ/31O+8iozudcWTg4XZ/XsU7WYo/yVt4t4Vk/NTcyXvP95jgqEnHODEoD5XMvyn/Fm26PWnHCm17riCcHMZbBMooADeO5zBuziIDzHNabKE78h67rHloOzsn9pcLq2Himgf8+j9llnJoA=;
-Message-ID: <327832.31822.qm@web87014.mail.ird.yahoo.com>
-X-YMail-OSG: sIssEaIVM1lROFeQEr49GjGWhvo3aESBaub1luo0q7jJupm
- ohaYcO5RHEvpAXNWM8SknJW9S1MKih8h77grq4l2pF3kWISA67UJ5osYCnt5
- xKTCwgcsddovhJzGq_36T6Ojdlhk.LTbRPxMdob8UHeWaTlMNGfBxf0.XL5i
- V3nr348BarbqtXwGC03FrH004vA.WiMwDi5gAKmQdB7QsktNSZv1_oAm6E.G
- d5teZ4PdhRtRP6kqtnJ4py1wAPeSbZO0oZQMWATZqrE.cyYQBt4WdKDaQqr9
- 7_KBBFmZc1D3MN8fPoK7lt3vio.RG.LU7Ll6boGdTFqSFjhDlQjuL4g5uFEK
- d9eQ1ruVq0VYQjbkmkLBMCAsCkwELYk0PaciYSQxW5Ei.rB5Ee_pSVnkY9lr
- bhsetDM6paCQnhlL94JHc.EdNEcAAdslDclFEDVinO1uSKeebSkvhH2LtoIN
- FyI2TuvurIXW3q0qlVJFCXZZuMoh9C.lFwwgHldWDsgPvMQiiYTzUm9x4U8P
- fY2UZUGJblfz7dAlGEl34ZNWDghrflje5
-X-Mailer: YahooMailRC/570 YahooMailWebService/0.8.111.303096
-Date: Sun, 5 Jun 2011 01:02:35 +0100 (BST)
-From: Scott Ashcroft <scott.ashcroft@talk21.com>
-Subject: Oops in i915 intel_init_clock_gating
-To: jbarnes@virtuousgeek.org
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1753848Ab1FEAX3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Jun 2011 20:23:29 -0400
+Received: from science.horizon.com ([71.41.210.146]:22345 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751717Ab1FEAX0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Jun 2011 20:23:26 -0400
+Date: 4 Jun 2011 20:23:23 -0400
+Message-ID: <20110605002323.16365.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: andi@firstfloor.org
+Subject: Re: How to measure enable_kernel_fpu overhead?
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org
+In-Reply-To: <m2pqmts654.fsf@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like the following commit:
+> This seems to clever for its own good. Even if you come up with some
+> number on one CPU it could be completely different on another.
+> I would suggest KISS.
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=6067aaeadb5b3df26f27ac827256b1ef01e674f5
+I don't understand.  Do you mean different CPUs of the same SMP system?
+That would be really bad...
+
+The whole point is to, like the RAID6 code, benchmark after boot time
+so that the numbers reflect the individual hardware instance.
+
+Doing that in a clean maintainable way suitabkle for merging into Linus's
+tree is the problem.  If I just needed a one-off rude hack to measure
+on my systems, it would be easy.  But that's so obviously not useful
+that I didn't bother to mention it.
+
+"Too clever for its own good" would be to keep more statistics, including
+confidence intervals, on actual calls, and randomly dispatch requests
+to code paths based on the current estimated probabilities of A being
+faster than B.
+
+That avoids doing redundant work just for benchmarking, but does entail
+quite a lot of bookkeeping overhead.  I'd rather just measure once at boot
+(or module load) and be done with it.
 
 
-didn't cope with the pineview case so dev_priv->display.init_clock_gating is 
-NULL causing an Oops.
-
-The old code didn't seem to do anything for pineview so I wrapped the call with 
-a simple NULL check but I'm not sure if that's the correct fix.
-
-Cheers,
-Scott
-
+Anyway, thanks for thinking about the problem.
