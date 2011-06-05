@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab1FEQ2q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 12:28:46 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46694 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753722Ab1FEQ2p (ORCPT
+	id S1755058Ab1FEQfx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 12:35:53 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:47766 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab1FEQfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 12:28:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=o2lu4/p+9auKNuTezpFlRQtz0d6GyL4hJLQQQ9FyOqMCw0RxNxPWhOjv6+DakZvbSA
-         ++NixKF+cGVjI5ydCkbcl+gJq5DhspOSMEe5zUCRTVZE4PoBP2rU2cnTflXQkzDueCZr
-         dxurePOBVktDnsAMXI5TMlVcBaiW7Okddqw6U=
-From: Joseph Salisbury <salisbury.joseph@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Joseph Salisbury <salisbury.joseph@googlemail.com>,
-        Joseph Salisbury <salisbury.joseph@gmail.com>
-Subject: [PATCH] Staging: wlan-ng: fix brace coding style issue in prism2fw.c
-Date: Sun,  5 Jun 2011 17:28:12 +0100
-Message-Id: <1307291292-11142-1-git-send-email-salisbury.joseph@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Sun, 5 Jun 2011 12:35:52 -0400
+X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4DEBB05C.8090506@die-jansens.de>
+Date: Sun, 05 Jun 2011 18:35:40 +0200
+From: Arne Jansen <lists@die-jansens.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+References: <20110605110132.GB23463@elte.hu> <20110605111933.GA24592@elte.hu> <20110605113627.GA25724@elte.hu> <4DEB6F3A.3000109@die-jansens.de> <20110605133958.GA27812@elte.hu> <4DEB8A93.30601@die-jansens.de> <20110605141003.GB29338@elte.hu> <4DEB933C.1070900@die-jansens.de> <20110605151323.GA30590@elte.hu> <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu> <4DEBA9CC.4090503@die-jansens.de>
+In-Reply-To: <4DEBA9CC.4090503@die-jansens.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joseph Salisbury <salisbury.joseph@googlemail.com>
+On 05.06.2011 18:07, Arne Jansen wrote:
+> On 05.06.2011 17:32, Ingo Molnar wrote:
+>>
+>> one more thing, could you please add this call:
+>>
+>> debug_show_all_locks();
+>>
+>> to after the WARN(), in watchdog.c?
+>>
+>> Please surround the whole printout portion by the
+>> spin_lock()/unlock() protection code i suggested, full-lock-state
+>> printouts are slow and other CPUs might start printing their NMI
+>> ticks ...
+>>
+>> With the all-locks-printed output we can double check what locks are
+>> held.
+>
+> Hm, on first try:
+>
+> INFO: lockdep is turned off.
+>
+> Recompiling...
+>
 
-This is a patch to the prism2fw.c file that fixes up a brace
-warning found by the checkpatch.pl tool.
+same after a full recompile.
 
-Signed-off-by: Joseph Salisbury <salisbury.joseph@gmail.com>
----
- drivers/staging/wlan-ng/prism2fw.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+# grep LOCKDEP .config
 
-diff --git a/drivers/staging/wlan-ng/prism2fw.c b/drivers/staging/wlan-ng/prism2fw.c
-index 729d03d..3c40096 100644
---- a/drivers/staging/wlan-ng/prism2fw.c
-+++ b/drivers/staging/wlan-ng/prism2fw.c
-@@ -442,9 +442,9 @@ int crcimage(struct imgchunk *fchunk, unsigned int nfchunks,
- void free_chunks(struct imgchunk *fchunk, unsigned int *nfchunks)
- {
- 	int i;
--	for (i = 0; i < *nfchunks; i++) {
-+	for (i = 0; i < *nfchunks; i++)
- 		kfree(fchunk[i].data);
--	}
-+
- 	*nfchunks = 0;
- 	memset(fchunk, 0, sizeof(*fchunk));
- 
--- 
-1.7.4.1
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_LOCKDEP=y
+# CONFIG_DEBUG_LOCKDEP is not set
+
+
+-Arne
+
+>>
+>> Thanks,
+>>
+>> Ingo
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe
+>> linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at http://www.tux.org/lkml/
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at http://www.tux.org/lkml/
 
