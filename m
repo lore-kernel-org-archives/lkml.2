@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab1FES7O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 14:59:14 -0400
-Received: from fep22.mx.upcmail.net ([62.179.121.42]:46636 "EHLO
-	fep22.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756031Ab1FES7N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 14:59:13 -0400
-X-SourceIP: 178.83.226.131
-Message-ID: <4DEBD1B4.3000307@odi.ch>
-Date: Sun, 05 Jun 2011 20:57:56 +0200
-From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Thunderbird/3.1.10
+	id S1756269Ab1FETAN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 15:00:13 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:40103 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755551Ab1FETAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 15:00:11 -0400
+Date: Sun, 5 Jun 2011 20:59:57 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arne Jansen <lists@die-jansens.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+Message-ID: <20110605185957.GA3452@elte.hu>
+References: <20110605141003.GB29338@elte.hu>
+ <4DEB933C.1070900@die-jansens.de>
+ <20110605151323.GA30590@elte.hu>
+ <20110605152641.GA31124@elte.hu>
+ <20110605153218.GA31471@elte.hu>
+ <4DEBA9CC.4090503@die-jansens.de>
+ <4DEBB05C.8090506@die-jansens.de>
+ <4DEBB3DA.8060001@die-jansens.de>
+ <20110605172052.GA1036@elte.hu>
+ <4DEBBFF9.2030101@die-jansens.de>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Oops fs/ext4/inode.c:2188
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=kRmApA04uPli/d8B8u1M0swu98hronvs6VvAqI8uQP0= c=1 sm=0 a=GuWncwZLQJwA:10 a=8nJEP1OIZ-IA:10 a=WxGPA_uYBO4Q75SGcNkA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DEBBFF9.2030101@die-jansens.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jun  5 20:34:11 box kernel: ------------[ cut here ]------------
-Jun  5 20:34:11 box kernel: kernel BUG at fs/ext4/inode.c:2188!
-Jun  5 20:34:11 box kernel: invalid opcode: 0000 [#1] PREEMPT SMP
-Jun  5 20:34:11 box kernel: last sysfs file:
-/sys/devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1:1.
-0/host7/target7:0:0/7:0:0:0/block/sdc/dev
-Jun  5 20:34:11 box kernel: Modules linked in:
-Jun  5 20:34:11 box kernel:
-Jun  5 20:34:11 box kernel: Pid: 13696, comm: flush-8:32 Not tainted
-2.6.38.7 #2 To Be Filled By
-O.E.M. To Be Filled By O.E.M./P4P800
-Jun  5 20:34:12 box kernel: EIP: 0060:[<c1106622>] EFLAGS: 00010246 CPU: 1
-Jun  5 20:34:12 box kernel: EIP is at mpage_da_map_and_submit+0x56c/0x5ba
-Jun  5 20:34:12 box kernel: EAX: 40000024 EBX: dfe17e00 ECX: 0000000e
-EDX: 00000000
-Jun  5 20:34:12 box kernel: ESI: 001b4800 EDI: 001b4fff EBP: c1dafd4c
-ESP: c1dafcb0
-Jun  5 20:34:12 box kernel: DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-Jun  5 20:34:12 box kernel: Process flush-8:32 (pid: 13696, ti=c1dae000
-task=df2a0f40 task.ti=c1d
-ae000)
-Jun  5 20:34:12 box kernel: Stack:
-Jun  5 20:34:12 box kernel: 0000000e c14898ca c1494b28 00000015 001b4800
-00000000 00000800 ffffff
-fb
-Jun  5 20:34:12 box kernel: 0000000c 00000000 001b500a 00000000 dedfe390
-0000000e 00000000 000000
-0e
-Jun  5 20:34:12 box kernel: 00000004 dfe17e00 dfcd8220 dfdbe980 dfd0bc40
-dfbed540 dfca32e0 dfe94c
-c0
-Jun  5 20:34:12 box kernel: Call Trace:
-Jun  5 20:34:12 box kernel: [<c11066c0>] mpage_add_bh_to_extent+0x50/0xdd
-Jun  5 20:34:12 box kernel: [<c110696c>] write_cache_pages_da+0x21f/0x312
-Jun  5 20:34:12 box kernel: [<c1106c97>] ext4_da_writepages+0x238/0x45f
-Jun  5 20:34:12 box kernel: [<c1070335>] do_writepages+0x17/0x2d
-Jun  5 20:34:12 box kernel: [<c10afa73>] writeback_single_inode+0x78/0x1b1
-Jun  5 20:34:12 box kernel: [<c10aff7d>] writeback_sb_inodes+0x86/0x118
-Jun  5 20:34:12 box kernel: [<c10b0691>] wb_writeback+0x162/0x235
-Jun  5 20:34:12 box kernel: [<c107057e>] ? global_dirty_limits+0x23/0xb9
-Jun  5 20:34:12 box kernel: [<c10b07c9>] wb_do_writeback+0x65/0x191
-Jun  5 20:34:12 box kernel: [<c10b0958>] bdi_writeback_thread+0x63/0x10b
-Jun  5 20:34:12 box kernel: [<c10b08f5>] ? bdi_writeback_thread+0x0/0x10b
-Jun  5 20:34:12 box kernel: [<c10406a0>] kthread+0x68/0x6a
-Jun  5 20:34:12 box kernel: [<c1040638>] ? kthread+0x0/0x6a
-Jun  5 20:34:12 box kernel: [<c1002fb6>] kernel_thread_helper+0x6/0x10
-Jun  5 20:34:12 box kernel: Code: 24 04 c7 04 24 80 a0 48 c1 e8 f2 42 2d
-00 8b 86 08 02 00 00 89 44 24 04 c7 04 24 9e a0 48 c1 e8 dc 42 2d 00 8b
-03 e9 64 fd ff ff <0f> 0b eb fe 0f 0b eb fe 89 f0 e8 98 44 ff ff 09 c2
-75 07 8b 03
-Jun  5 20:34:12 box kernel: EIP: [<c1106622>]
-mpage_da_map_and_submit+0x56c/0x5ba SS:ESP 0068:c1dafcb0
-Jun  5 20:34:12 box kernel: JBD2: Detected IO errors while flushing file
-data on sdc1-8
-Jun  5 20:34:12 box kernel: Aborting journal on device sdc1-8.
-Jun  5 20:34:12 box kernel: JBD2: I/O error detected when updating
-journal superblock for sdc1-8.
-Jun  5 20:34:12 box kernel: ---[ end trace 736424b87d636c31 ]---
+
+* Arne Jansen <lists@die-jansens.de> wrote:
+
+> > hm, it's hard to interpret that without the spin_lock()/unlock() 
+> > logic keeping the dumps apart.
+> 
+> The locking was in place from the beginning. [...]
+
+Ok, i was surprised it looked relatively ordered :-)
+
+> [...] As the output is still scrambled, there are other sources for 
+> BUG/WARN outside the watchdog that trigger in parallel. Maybe we 
+> should protect the whole BUG/WARN mechanism with a lock and send it 
+> to early_printk from the beginning, so we don't have to wait for 
+> the watchdog to kill printk off and the first BUG can come through. 
+> Or just let WARN/BUG kill off printk instead of the watchdog 
+> (though I have to get rid of that syslog-WARN on startup).
+
+I had yet another look at your lockup.txt and i think the main cause 
+is the WARN_ON() caused by the not-held pi_lock. The lockup there 
+causes other CPUs to wedge in printk, which triggers spinlock-lockup 
+messages there.
+
+So i think the primary trigger is the pi_lock WARN_ON() (as your 
+bisection has confirmed that too), everything else comes from this.
+
+Unfortunately i don't think we can really 'fix' the problem by 
+removing the assert. By all means the assert is correct: pi_lock 
+should be held there. If we are not holding it then we likely won't 
+crash in an easily visible way - it's a lot easier to trigger asserts 
+than to trigger obscure side-effects of locking bugs.
+
+It is also a mystery why only printk() triggers this bug. The wakeup 
+done there is not particularly special, so by all means we should 
+have seen similar lockups elsewhere as well - not just with 
+printk()s. Yet we are not seeing them.
+
+So some essential piece of the puzzle is still missing.
+
+Thanks,
+
+	Ingo
