@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab1FEFhu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 01:37:50 -0400
-Received: from home.kolivas.org ([59.167.196.135]:49519 "EHLO home.kolivas.org"
+	id S1754373Ab1FEFsf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 01:48:35 -0400
+Received: from home.keithp.com ([63.227.221.253]:34338 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752859Ab1FEFhu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 01:37:50 -0400
-From: Con Kolivas <kernel@kolivas.org>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.39-ck2
-Date: Sun, 5 Jun 2011 15:37:43 +1000
-User-Agent: KMail/1.13.6 (Linux/2.6.39-ck1; KDE/4.6.2; x86_64; ; )
+	id S1753946Ab1FEFse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 01:48:34 -0400
+From: "Keith Packard" <keithp@keithp.com>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: [PULL] drm-intel-fixes
+User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sat, 04 Jun 2011 22:48:30 -0700
+Message-ID: <yunoc2comkx.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Message-Id: <201106051537.43488.kernel@kolivas.org>
-X-Length: 4750
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are patches designed to improve system responsiveness and interactivity 
-with specific emphasis on the desktop, but suitable to any commodity hardware 
-workload.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
 
-Apply to 2.6.39(.x):
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.39/2.6.39-ck2/patch-2.6.39-ck2.bz2
+Mostly mode setting cleanups and fixes.
 
-Broken out tarball:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.39/2.6.39-ck2/2.6.39-ck2-broken-out.tar.bz2
+The following changes since commit 55922c9d1b84b89cb946c777fddccb3247e7df2c:
 
-Discrete patches:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.39/2.6.39-ck2/patches/
+  Linux 3.0-rc1 (2011-05-29 17:43:36 -0700)
 
-All -ck patches:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6.git drm=
+-intel-fixes
 
-BFS by itself:
-http://ck.kolivas.org/patches/bfs/
+Chris Wilson (5):
+      drm/i915: s/addr & ~PAGE_MASK/offset_in_page(addr)/
+      drm/i915: Replace ironlake_compute_wm0 with g4x_compute_wm0
+      drm/i915/crt: Explicitly return false if connected to a digital monit=
+or
+      drm/i915: Remove unused enum "chip_family"
+      drm/i915: Share the common force-audio property between connectors
 
-Web:
-http://kernel.kolivas.org
+Dan Carpenter (1):
+      drm/i915: fix if statement in ivybridge irq handler
 
-Code blog when I feel like it:
-http://ck-hack.blogspot.com/
+Daniel Vetter (2):
+      drm/i915: Only print out the actual number of fences for i915_error_s=
+tate
+      drm/915: fix relaxed tiling on gen2: tile height
 
-Each discrete patch contains a brief description of what it does at the top of 
-the patch itself.
+Hans de Goede (1):
+      drm/i915: Add a no lvds quirk for the Asus EeeBox PC EB1007
 
+Jason Stubbs (1):
+      drm/i915: fix regression after clock gating init split
 
-The only change from 2.6.39-ck1 is an upgrade to BFS CPU scheduler version 0.406.
-A bug that would cause hangs due to an incompatibility with the new block plug
-flushing code and BFS was fixed.
+Nicolas Kaiser (1):
+      drm: i915: correct return status in intel_hdmi_mode_valid()
 
-Full patchlist:
-2.6.39-sched-bfs-406.patch
-sched-add-above-background-load-function.patch
-mm-zero_swappiness.patch
-mm-enable_swaptoken_only_when_swap_full.patch
-mm-drop_swap_cache_aggressively.patch
-mm-kswapd_inherit_prio-1.patch
-mm-background_scan.patch
-mm-idleprio_prio-1.patch
-mm-lru_cache_add_lru_tail-1.patch
-mm-decrease_default_dirty_ratio.patch
-kconfig-expose_vmsplit_option.patch
-hz-default_1000.patch
-hz-no_default_250.patch
-hz-raise_max.patch
-preempt-desktop-tune.patch
-ck2-version.patch
+ drivers/gpu/drm/i915/i915_debugfs.c  |    2 +-
+ drivers/gpu/drm/i915/i915_drv.h      |    8 +---
+ drivers/gpu/drm/i915/i915_gem.c      |   26 +++++-----
+ drivers/gpu/drm/i915/i915_irq.c      |    2 +-
+ drivers/gpu/drm/i915/intel_crt.c     |    4 ++
+ drivers/gpu/drm/i915/intel_display.c |   89 ++++++++----------------------=
+----
+ drivers/gpu/drm/i915/intel_dp.c      |   15 +-----
+ drivers/gpu/drm/i915/intel_drv.h     |    1 +
+ drivers/gpu/drm/i915/intel_hdmi.c    |   16 +-----
+ drivers/gpu/drm/i915/intel_lvds.c    |    8 +++
+ drivers/gpu/drm/i915/intel_modes.c   |   30 +++++++++++
+ drivers/gpu/drm/i915/intel_sdvo.c    |   14 +-----
+ 12 files changed, 87 insertions(+), 128 deletions(-)
 
-Please enjoy!
-お楽しみください
--- 
--ck
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFN6xiuQp8BWwlsTdMRAqkAAJ9jx9TCodVjdnDd3AW5T6uDWSqQMQCeOyzF
+EYZHBqI1eORaTiEGxLtqSp4=
+=xmTu
+-----END PGP SIGNATURE-----
+--=-=-=--
