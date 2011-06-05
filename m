@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755795Ab1FELB4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 07:01:56 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50307 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754655Ab1FELBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 07:01:55 -0400
-Date: Sun, 5 Jun 2011 13:01:32 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arne Jansen <lists@die-jansens.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
-Message-ID: <20110605110132.GB23463@elte.hu>
-References: <1306953870.2497.627.camel@laptop>
- <4DE6936F.7090700@die-jansens.de>
- <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com>
- <1307092535.2353.2973.camel@twins>
- <4DE8B13D.9020302@die-jansens.de>
- <1307097052.2353.3061.camel@twins>
- <20110605081747.GA17920@elte.hu>
- <4DEB4FA7.3050400@die-jansens.de>
- <20110605095555.GA22058@elte.hu>
- <4DEB58D8.4000805@die-jansens.de>
+	id S1755842Ab1FELHh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 07:07:37 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62875 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485Ab1FELHg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 07:07:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=WnhS4tUzIHj6NFXXgdoDaekKWMdy3CgElv2Ubyw5kTP3AS67yqq98vhcaPiSptlLrF
+         DlvxtP3zMSthsLoMyO8bBgTINHrGbPRpAivsDg04aB9n2SF85aZFxK75yAHfriIym6tR
+         i9XGMZyxwkpZ3AUwszCZYpnJm016pXl/fHx4E=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DEB58D8.4000805@die-jansens.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1296577197-9766-1-git-send-email-bp@amd64.org>
+References: <1296577197-9766-1-git-send-email-bp@amd64.org>
+Date: Sun, 5 Jun 2011 07:07:34 -0400
+Message-ID: <BANLkTikJ8jUVeEk=GuV6iaw2ASuOLPA4yw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] sysdev: Do not register with sysdev when erroring on add
+From: Brian Gerst <brgerst@gmail.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
+        Borislav Petkov <borislav.petkov@amd.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 1, 2011 at 11:19 AM, Borislav Petkov <bp@amd64.org> wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
+>
+> When encountering an error while executing the driver's ->add method, we
+> should cancel registration and unwind what we've regged so far. The low
+> level ->add methods do return proper error codes but those aren't looked
+> at in sysdev_driver_register(). Fix that by sharing the unregistering
+> code.
 
-* Arne Jansen <lists@die-jansens.de> wrote:
+This patch is causing boot failures on a virtual machine running
+Fedora 15 32-bit.  With this patch, the microcode driver repeatedly
+spews:
+microcode: CPU0: AMD CPU family 0x6 not supported
+modprobe: FATAL: Error inserting microcode: Invalid argument.
+until eventually causing an oops.  Reverting this patch allows the
+boot to proceed.
 
-> On 05.06.2011 11:55, Ingo Molnar wrote:
-> >
-> >* Arne Jansen<lists@die-jansens.de>  wrote:
-> >
-> >>>( Arne, please also double check on a working bootup that the NMI
-> >>>   watchdog is actually ticking, by checking the NMI counts in
-> >>>   /proc/interrupts go up slowly but surely on all CPUs. )
-> >>
-> >>It does, but _very_ slowly. Some CPUs do not count up for tens of
-> >>minutes if the machine is idle. If I generate some load like 'make
-> >>tags', the counters go up quite quickly.
-> >>After 4 minutes and one 'make cscope' it looks like this:
-> >>NMI:          8         13         43          5          2
-> >>3        22          1   Non-maskable interrupts
-> >>
-> >>But I never see a single tick on console or in dmesg, even when I
-> >>replace the early_printk with a printk.
-> >
-> >hm, that might be because the NMI watchdog uses halted cycles to
-> >tick.
-> >
-> >That's not a problem (the kernel cannot lock up while there are no
-> >cycles ticking) but nevertheless could you work this around please
-> >by starting 8 infinite shell loops:
-> >
-> >    for ((i=0; i<8; i++)); do while : ; do : ; done&  done
-> >
-> >?
-> >
-> >This will saturate all cores and makes sure the NMI watchdog is
-> >ticking everywhere.
-> >
-> >Hopefully this wont make the bug go away :-)
-> >
-> 
-> OK, now we get going. I get the ticks, the bug is still there, and
-> all CPUs still tick after the lockup. I also added an early_printk
-> inside the lockup-if, and it reports hard lockups. At first for only
-> one or 2 CPUs, and after some time all CPUs are locked up.
+/proc/cpuinfo:
+processor	: 0
+vendor_id	: AuthenticAMD
+cpu family	: 6
+model		: 2
+model name	: QEMU Virtual CPU version 0.13.0
+stepping	: 3
+cpu MHz		: 2809.416
+cache size	: 512 KB
+fdiv_bug	: no
+hlt_bug		: no
+f00f_bug	: no
+coma_bug	: no
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 4
+wp		: yes
+flags		: fpu de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat
+pse36 clflush mmx fxsr sse sse2 syscall nx lm pni cx16 popcnt
+hypervisor lahf_lm abm sse4a
+bogomips	: 5618.83
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 40 bits physical, 48 bits virtual
+power management:
 
-Very good!
-
-If you add a dump_stack() do you get a stacktrace, or do the NMI 
-watchdog ticks stop?
-
-If the ticks stop this suggests a lockup within the printk code. If 
-you get a stack dump then we'll have good debug data.
-
-Thanks,
-
-	Ingo
+--
+Brian Gerst
