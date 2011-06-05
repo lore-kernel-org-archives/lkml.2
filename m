@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab1FEOGS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 10:06:18 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36078 "EHLO mx2.mail.elte.hu"
+	id S1755965Ab1FEOKT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 10:10:19 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35051 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755890Ab1FEOGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 10:06:17 -0400
-Date: Sun, 5 Jun 2011 16:06:02 +0200
+	id S1752680Ab1FEOKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 10:10:17 -0400
+Date: Sun, 5 Jun 2011 16:10:03 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Arne Jansen <lists@die-jansens.de>
 Cc: Peter Zijlstra <peterz@infradead.org>,
@@ -16,7 +16,7 @@ Cc: Peter Zijlstra <peterz@infradead.org>,
         tglx@linutronix.de, linux-tip-commits@vger.kernel.org
 Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
  watchdog messages
-Message-ID: <20110605140602.GA29338@elte.hu>
+Message-ID: <20110605141003.GB29338@elte.hu>
 References: <20110605081747.GA17920@elte.hu>
  <4DEB4FA7.3050400@die-jansens.de>
  <20110605095555.GA22058@elte.hu>
@@ -46,25 +46,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Arne Jansen <lists@die-jansens.de> wrote:
 
-> On 05.06.2011 15:39, Ingo Molnar wrote:
-> >
-> >* Arne Jansen<lists@die-jansens.de>  wrote:
-> >
-> >>>>Warning: it's entirely untested.
-> >>
-> >>How is the output supposed to come through? shouldn't printk revert
-> >>to early_printk instead of just returning?
-> >
-> >oh, right you are.
-> >
-> >Does the patch below work? It does early-printk within printk().
+> Here we go:
 > 
-> Too late, I already built my on early_vprintk ;)
+> http://eischnee.de/lockup.txt
+> 
+> Now it's your turn :)
 
-heh :-)
+So the lockup is in:
 
-Mind posting the patch? Your tested patch is infinitely more valuable 
-than my not-even-build-tested patch ;-)
+ [<ffffffff813af2d9>] do_raw_spin_lock+0x129/0x170
+ [<ffffffff8108a4bd>] ? try_to_wake_up+0x29d/0x350
+ [<ffffffff8185ce71>] _raw_spin_lock+0x51/0x70
+ [<ffffffff81092df6>] ? vprintk+0x76/0x4a0
+ [<ffffffff81092df6>] vprintk+0x76/0x4a0
+ [<ffffffff810c5f8d>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff8108a4bd>] ? try_to_wake_up+0x29d/0x350
+ [<ffffffff81859e19>] printk+0x63/0x65
+ [<ffffffff8108a4bd>] ? try_to_wake_up+0x29d/0x350
+ [<ffffffff81091f98>] warn_slowpath_common+0x38/0xb0
+ [<ffffffff81092025>] warn_slowpath_null+0x15/0x20
+ [<ffffffff8108a4bd>] try_to_wake_up+0x29d/0x350
+ [<ffffffff8108a5a0>] wake_up_process+0x10/0x20
+ [<ffffffff8185c071>] __up+0x41/0x50
+ [<ffffffff810b937c>] up+0x3c/0x50
+ [<ffffffff81092a36>] console_unlock+0x1a6/0x200
+ [<ffffffff81092f86>] vprintk+0x206/0x4a0
+ [<ffffffff810c5f8d>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff810ba6db>] ? local_clock+0x4b/0x60
+ [<ffffffffa0012000>] ? 0xffffffffa0011fff
+ [<ffffffff81859e19>] printk+0x63/0x65
+ [<ffffffffa001201d>] test_init+0x1d/0x2b [test]
+ [<ffffffff810001ce>] do_one_initcall+0x3e/0x170
+
+Somehow we end up generating a WARN_ON() within a printk()'s 
+try_to_wake_up() and predictably we lock up on that ...
+
+Peter?
+
+Arne, mind helping a bit with:
+
+ [<ffffffff81091f98>] warn_slowpath_common+0x38/0xb0
+ [<ffffffff81092025>] warn_slowpath_null+0x15/0x20
+ [<ffffffff8108a4bd>] try_to_wake_up+0x29d/0x350
+
+which WARN_ON() does that correspond to in try_to_wake_up()?
 
 Thanks,
 
