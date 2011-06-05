@@ -1,100 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab1FEIj7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 04:39:59 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:44751 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878Ab1FEIj6 (ORCPT
+	id S1755592Ab1FEIx7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 04:53:59 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:37533 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755238Ab1FEIx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 04:39:58 -0400
-Subject: Re: Mysterious CFQ crash and RCU
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Sun, 05 Jun 2011 10:39:55 +0200
-In-Reply-To: <4DEB28A1.5090109@fusionio.com>
-References: <20110519222404.GG12600@redhat.com>
-		 <20110521210013.GJ2271@linux.vnet.ibm.com>
-		 <20110523152141.GB4019@redhat.com>
-		 <20110523153848.GC2310@linux.vnet.ibm.com>
-		 <1306401337.27271.3.camel@t41.thuisdomein>
-		 <20110603050724.GB2304@linux.vnet.ibm.com>
-		 <1307191830.23387.24.camel@t41.thuisdomein>
-		 <20110604160326.GA6093@linux.vnet.ibm.com>
-	 <1307227686.28359.23.camel@t41.thuisdomein> <4DEB28A1.5090109@fusionio.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.1 (3.1.1-3.fc16) 
+	Sun, 5 Jun 2011 04:53:57 -0400
+X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4DEB4417.9070003@die-jansens.de>
+Date: Sun, 05 Jun 2011 10:53:43 +0200
+From: Arne Jansen <lists@die-jansens.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/locking] sched: Add p->pi_lock to task_rq_lock()
+References: <4DE64596.5010006@die-jansens.de> <1306946120.2497.606.camel@laptop> <4DE674EB.1000200@die-jansens.de> <1306951751.2497.626.camel@laptop> <1306953870.2497.627.camel@laptop> <4DE6936F.7090700@die-jansens.de> <BANLkTimXXR1mJDtdCsbXF410sd3irFSitQ@mail.gmail.com> <1307092535.2353.2973.camel@twins> <4DE8B13D.9020302@die-jansens.de> <1307097052.2353.3061.camel@twins> <20110605081747.GA17920@elte.hu>
+In-Reply-To: <20110605081747.GA17920@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-ID: <1307263197.28359.42.camel@t41.thuisdomein>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-06-05 at 08:56 +0200, Jens Axboe wrote:
-> Does this fix it? It will introduce a hierarchy that is queue -> ioc
-> lock, but as far as I can remember (and tell from a quick look), we
-> don't have any dependencies on that order of locking at this moment. So
-> should be OK.
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 3c7b537..fa7ef54 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -2772,8 +2772,11 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
->  	smp_wmb();
->  	cic->key = cfqd_dead_key(cfqd);
->  
-> -	if (ioc->ioc_data == cic)
-> +	if (ioc->ioc_data == cic) {
-> +		spin_lock(&ioc->lock);
->  		rcu_assign_pointer(ioc->ioc_data, NULL);
-> +		spin_unlock(&ioc->lock);
-> +	}
->  
->  	if (cic->cfqq[BLK_RW_ASYNC]) {
->  		cfq_exit_cfqq(cfqd, cic->cfqq[BLK_RW_ASYNC]);
-> 
+On 05.06.2011 10:17, Ingo Molnar wrote:
+>
+> * Peter Zijlstra<peterz@infradead.org>  wrote:
+>
+>> On Fri, 2011-06-03 at 12:02 +0200, Arne Jansen wrote:
+>>> On 03.06.2011 11:15, Peter Zijlstra wrote:
+>>
+>>>> Anyway, Arne, how long did you wait before power cycling the box? The
+>>>> NMI watchdog should trigger in about a minute or so if it will trigger
+>>>> at all (its enabled in your config).
+>>>
+>>> No, it doesn't trigger,
+>>
+>> Bummer.
+>
+> Is there no output even when the console is configured to do an
+> earlyprintk? That will allow the NMI watchdog to punch through even a
+> printk or scheduler lockup.
+>
 
-0) I'd guess not, as the last thing I tried before simply ripping
-io_context.ioc_data out, was:
+Just to be clear, I have no boot problems whatsoever. And I have no
+problems with the serial console. It's just the regular printk locking
+up when e.g. I load the test module.
 
-        spin_lock_irqsave(&ioc->lock, flags);
-        rcu_read_lock();
-        ioc_data = rcu_dereference(ioc->ioc_data);
-        rcu_read_unlock();
-        if (ioc_data == cic)
-                rcu_assign_pointer(ioc->ioc_data, NULL);
-        spin_unlock_irqrestore(&ioc->lock, flags);
+> Arne, you can turn this on via one of these:
+>
+>    earlyprintk=vga,keep
 
-(By this time I had already wrapped all access to io_context.ioc_data in
-rcu_read_lock(), rcu_dereference(), and rcu_read_unlock() voodoo. I also
-wrapped all access of io_context members - other than refcount and
-nr_tasks - in a spin_lock_irqsave()/spin_unlock_irqrestore() on
-io_context.lock. This gave no warnings, nor lockups, but the code just
-kept crashing in the exact same location it always did!)
+I don't have access to vga as it is a remote machine.
 
-1) Of course, by now I have forgotten what I had in mind when I stopped
-working on this last night. My first bet currently is to change the core
-of cic_free_func() into something like:
+>    earlyprintk=serial,ttyS0,115200,keep
 
-        spin_lock_irqsave(&ioc->lock, flags);
-        radix_tree_delete(&ioc->radix_root, dead_key >>
-CIC_DEAD_INDEX_SHIFT);
+I'll try that.
 
-        rcu_read_lock();
-        ioc_data = rcu_dereference(ioc->ioc_data);
-        rcu_read_unlock();
-        if (ioc_data == cic)
-		rcu_assign_pointer(ioc->ioc_data, NULL);
-
-        hlist_del_rcu(&cic->cic_list);
-        spin_unlock_irqrestore(&ioc->lock, flags);
-
-2) But, I must admit I'm not yet at full speed today.
-
-
-Paul Bolle
+>
+> (the ',keep' portion is important to have it active even after the
+> regular console has been switched on.)
+>
+> Could you also please check with the (untested) patch below applied?
+> This will turn off *all* printk done by the NMI watchdog and switches
+> it to do pure early_printk() - which does not use any locking so it
+> should never lock up.
+>
+> [ If you keep seeing 'NMI watchdog tick' messages periodically
+>    occuring after the lockup then i'll send a more complete patch that
+>    shuts off the regular printk path and makes sure that all output is
+>    early_printk() based only. ]
+>
+> earlyprintk=,keep with such a patch has let me down only on the
+> rarest of occasions.
+>
+> ( Arne, please also double check on a working bootup that the NMI
+>    watchdog is actually ticking, by checking the NMI counts in
+>    /proc/interrupts go up slowly but surely on all CPUs. )
+>
+> Thanks,
+>
+> 	Ingo
+>
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 3d0c56a..7c7e33f 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -234,15 +234,12 @@ static void watchdog_overflow_callback(struct perf_event *event, int nmi,
+>   		if (__this_cpu_read(hard_watchdog_warn) == true)
+>   			return;
+>
+> -		if (hardlockup_panic)
+> -			panic("Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+> -		else
+> -			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", this_cpu);
+> -
+>   		__this_cpu_write(hard_watchdog_warn, true);
+>   		return;
+>   	}
+>
+> +	early_printk("NMI watchog tick %ld\n", jiffies);
+> +
+>   	__this_cpu_write(hard_watchdog_warn, false);
+>   	return;
+>   }
 
