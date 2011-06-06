@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab1FFRMM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 13:12:12 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58364 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750896Ab1FFRMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 13:12:08 -0400
-Date: Mon, 6 Jun 2011 19:11:53 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-Message-ID: <20110606171153.GE2391@elte.hu>
-References: <1307349530.2353.7374.camel@twins>
- <20110606145827.GD30348@elte.hu>
- <1307372989.2322.136.camel@twins>
- <1307375227.2322.161.camel@twins>
- <20110606155236.GA7374@elte.hu>
- <1307376039.2322.164.camel@twins>
- <20110606160810.GA16636@elte.hu>
- <1307376771.2322.168.camel@twins>
- <20110606161749.GA22157@elte.hu>
- <1307378649.2322.198.camel@twins>
+	id S1756240Ab1FFRNN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 13:13:13 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:35369 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab1FFRNG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 13:13:06 -0400
+Date: Mon, 6 Jun 2011 13:12:53 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Keith Packard <keithp@keithp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Regression: Borked display on second output with Intel G45 in 3.0-rc2
+Message-ID: <20110606171253.GA2925@elliptictech.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307378649.2322.198.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+After upgrading to 3.0-rc2, my second display is no longer working
+correctly on a desktop with an Intel G45 graphics chip.  The system has
+two displays, one connected by HDMI and the other by VGA.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Both displays work fine in the console; the troubles begin after
+starting X.  It *looks* as if one of the displays is still scanning out
+from the old framebuffer: what I see on the VGA monitor after starting X
+is a black screen with a console cursor at the top -- this is just like
+an empty VT except that the cursor is not blinking.  If I switch to VT 1
+and then back to X, the display contains all the bootup text that was on
+VT 1.  In any case, the mouse cursor works properly on the display.
+There are no unusual messages in dmesg or the Xorg log in any case.
 
-> > > but console_sem isn't klogd. We delay klogd and that's 
-> > > perfectly fine, but afaict we don't delay console_sem.
-> > 
-> > But console_sem is really a similar special case as klogd. See, 
-> > it's about a *printk*. That's rare by definition.
-> 
-> But its not rare, its _the_ lock that serialized the whole console 
-> layer. Pretty much everything a console does goes through that 
-> lock.
+If I fiddle around with the xrandr tool (e.g. do an xrandr --output VGA1
+--same-as HDMI1 && xrandr --output VGA1 --right-of VGA1) , it's possible
+to get both displays showing the right thing.  But then if I switch back
+to the console, I end up with one display showing the console text and
+the other is still showing my X session!  (In this instance, the VGA was
+working and the HDMI was showing the wrong thing).
 
-Please. Think.
+This is a regression from 2.6.39, but that's not the whole story: this
+problem appears to have been introduced very briefly late in the 2.6.39
+-rc cycle and subsequently fixed on mainline.  It then reappeared during
+the 3.0 merge window.  Unfortunately, this fact seems to make it
+impossible to bisect to a specific commit.
 
-If console_sem was so frequently held then why on earth were you 
-*unable* to trigger the lockup with an artificial printk() storm and 
-why on earth has almost no-one else but Arne triggered it? :-)
+What I do know is that the problem was originally introduced by
+49183b2818de ("drm/i915: Only enable the plane after setting the fb
+base (pre-ILK)").  It was subsequently fixed by 982b2035d9d7 ("Revert
+"drm/i915: Only enable the plane after setting the fb base (pre-ILK)"").
+The problem was reintroduced by 98b98d316349 ("Merge branch 'drm-core-next'
+of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6").
+Unfortunately, I cannot be more specific than that because it appears
+that the entire drm side of that merge consists of 'bad' commits and git
+bisect gets very confused.
 
-This bug is the very proof that console_sem is seldom contended!
-
-> Ahh, what we could do is something like the below and delay both 
-> the acquire and release of the console_sem.
-
-Yeah!
-
-> +void printk_tick(void)
-> +{
-> +	if (!__this_cpu_read(printk_pending))
-> +		return;
-> +
-> +	/*
-> +	 * Try to acquire and then immediately release the
-> +	 * console semaphore. The release will do all the
-> +	 * actual magic (print out buffers, wake up klogd,
-> +	 * etc). 
-> +	 */
-> +	if (console_trylock_for_printk(smp_processor_id())) {
-> +		console_unlock();
-> +		__this_cpu_write(printk_pending, 0);
-> +	}
-> +}
-
-Arne does this fix the hang you are seeing?
-
-Now, we probably don't want to do this in 3.0, just to give time for 
-interactions to found and complaints to be worded. So we could do the 
-minimal fix first and queue up the bigger change for 3.1.
-
-Hm?
-
-Thanks,
-
-	Ingo
+Let me know if you need any more info,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
