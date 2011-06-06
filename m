@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab1FFE4B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 00:56:01 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:43327 "EHLO mgw2.diku.dk"
+	id S1756626Ab1FFE4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 00:56:45 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:43392 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752101Ab1FFE4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 00:56:00 -0400
-Date: Mon, 6 Jun 2011 06:55:54 +0200 (CEST)
+	id S1752641Ab1FFE4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 00:56:43 -0400
+Date: Mon, 6 Jun 2011 06:56:37 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
 To: Greg Dietsche <Gregory.Dietsche@cuw.edu>
 Cc: Gilles.Muller@lip6.fr, npalix.work@gmail.com, cocci@diku.dk,
@@ -14,42 +14,13 @@ Cc: Gilles.Muller@lip6.fr, npalix.work@gmail.com, cocci@diku.dk,
 Subject: Re: [PATCH] coccinelle: if(ret)return ret; return ret; semantic
  patch
 In-Reply-To: <1307320012-31292-1-git-send-email-Gregory.Dietsche@cuw.edu>
-Message-ID: <Pine.LNX.4.64.1106060651320.7113@ask.diku.dk>
+Message-ID: <Pine.LNX.4.64.1106060656050.7113@ask.diku.dk>
 References: <1307320012-31292-1-git-send-email-Gregory.Dietsche@cuw.edu>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Thanks.  I tried this too, but I wasn't sure about the results.  The 
-question is why stop here.  For example, there are IS_ERR calls that one 
-could consider as well.  Or ret < 0.  Or why not just:
-
-@@
-expression ret;
-@@
-
-- if (...) return ret;
-  return ret;
-
-Although there might be function calls that one doesn't want to touch, so:
-
-@@
-identifier f != IS_ERR;
-expression ret;
-statement S;
-@@
-
-(
-if (<+...f(...)...+>) S
-|
-- if (...) return ret;
-  return ret;
-)
-
-julia
-
 
 On Sun, 5 Jun 2011, Greg Dietsche wrote:
 
@@ -87,6 +58,11 @@ On Sun, 5 Jun 2011, Greg Dietsche wrote:
 > +virtual patch
 > +
 > +@@
+
+This line should be @depends on patch@
+
+julia
+
 > +identifier retval;
 > +@@
 > +-if (retval)
