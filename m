@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab1FFR4P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 13:56:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64500 "EHLO mga02.intel.com"
+	id S1756635Ab1FFR4w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 13:56:52 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:60274 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607Ab1FFR4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 13:56:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,327,1304319600"; 
-   d="scan'208";a="9777295"
-Message-ID: <4DED14BD.9000706@linux.intel.com>
-Date: Mon, 06 Jun 2011 10:56:13 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1751665Ab1FFR4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 13:56:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH 5/8] PCI / Intel IOMMU: Use syscore_ops instead of sysdev class and sysdev
+Date: Mon, 6 Jun 2011 19:57:35 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
+        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Avi Kivity <avi@redhat.com>, linux-pci@vger.kernel.org
+References: <201103100131.58206.rjw@sisk.pl> <201103122218.14832.rjw@sisk.pl> <BANLkTi=xhg7_0O-aVC8s1Uyo4Wkz5OTCdg@mail.gmail.com>
+In-Reply-To: <BANLkTi=xhg7_0O-aVC8s1Uyo4Wkz5OTCdg@mail.gmail.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Zachary Vonler <zvonler@rgmadvisors.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: Change in functionality of futex() system call.
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com> <1307373819.3098.40.camel@edumazet-laptop> <1307376672.2322.167.camel@twins> <1307376989.2322.171.camel@twins> <1307377349.3098.65.camel@edumazet-laptop> <1307377782.2322.183.camel@twins> <1307378564.3098.67.camel@edumazet-laptop> <1307379926.2322.219.camel@twins> <1307380297.3098.74.camel@edumazet-laptop> <20110606172707.GB27245@home.goodmis.org>
-In-Reply-To: <20110606172707.GB27245@home.goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106061957.35413.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 06/06/2011 10:27 AM, Steven Rostedt wrote:
-> On Mon, Jun 06, 2011 at 07:11:37PM +0200, Eric Dumazet wrote:
->> Le lundi 06 juin 2011 à 19:05 +0200, Peter Zijlstra a écrit :
->>
->>> Dunno, using futexes on private file maps is stupid imo, its just asking
->>> for trouble, ro private file maps are even worse. Forcing the COW is the
->>> only sane answer in that it gives consistent results and 'breaks' silly
->>> expectations early instead of sometimes.
->>>
->>> Anyway, that's not really the issue here, as David uses MAP_SHARED (as
->>> one should if one is interested in the shared value).
->>
->> Sure, but maybe another guy is 'stupid' and uses MAP_PRIVATE on its
->> read-only mappings. With old kernels this was working, and we were not
->> doing the COW.
+On Thursday, June 02, 2011, Tony Luck wrote:
+> On Sat, Mar 12, 2011 at 1:18 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > -static int __init init_iommu_sysfs(void)
+> > -{
+> > -       return 0;
+> > -}
+> > +static inline int init_iommu_pm_ops(void) { }
+> >  #endif /* CONFIG_PM */
 > 
-> That sounds like a bug in both the kernel and userspace. I would expect
-> a MAP_PRIVATE not be seen by any other process regardless. That's the
-> definition of PRIVATE.
+> drivers/pci/intel-iommu.c:3391: warning: no return statement in
+> function returning non-void
 > 
->  From: http://www.gnu.org/s/hello/manual/libc/Memory_002dmapped-I_002fO.html
+> s/static inline int/static inline void/
 > 
-> MAP_PRIVATE
->     This specifies that writes to the region should never be written back
->     to the attached file. Instead, a copy is made for the process, and the
->     region will be swapped normally if memory runs low. No other process
->     will see the changes. 
+> Reported-by: Tony Luck <tony.luck@intel.com>
 
+I guess you mean the following?
 
-This doesn't address what happens if changes to a MAP_SHARED mapping are
-visible to a MAP_PRIVATE mapping, which is more the issue at hand I believe.
+Rafael
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+
+If CONFIG_PM is not set, init_iommu_pm_ops() introduced by commit
+134fac3f457f3dd753ecdb25e6da3e5f6629f696 (PCI / Intel IOMMU: Use
+syscore_ops instead of sysdev class and sysdev) is not defined
+appropriately.  Fix this issue.
+
+Reported-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/pci/intel-iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6/drivers/pci/intel-iommu.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/intel-iommu.c
++++ linux-2.6/drivers/pci/intel-iommu.c
+@@ -3388,7 +3388,7 @@ static void __init init_iommu_pm_ops(voi
+ }
+ 
+ #else
+-static inline int init_iommu_pm_ops(void) { }
++static inline void init_iommu_pm_ops(void) {}
+ #endif	/* CONFIG_PM */
+ 
+ /*
