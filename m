@@ -1,157 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365Ab1FFO0K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 10:26:10 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57350 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab1FFO0I (ORCPT
+	id S1757044Ab1FFO0e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 10:26:34 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51675 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab1FFO0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 10:26:08 -0400
+	Mon, 6 Jun 2011 10:26:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=BdHMxDixFFZMTo+gOODpcipdqZlM5vwdptWkMI/QflA0vQJdc2zXGFY68dcmuztkIV
-         mjA56wI/om7hXWnL4xbRqAM9H95sTQPcOayAslK/Vi2YfDbg+6zEpVTvKH8q+/bM6QVr
-         W5F6No733PHYO1qgH02oGB+fUok75qHmL/0QE=
-Subject: Re: bridge/netfilter: regression in 2.6.39.1
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org
-In-Reply-To: <4DECD657.9010807@ahsoftware.de>
-References: <4DE93422.3070000@ahsoftware.de>
-	 <20110606111507.GA1000@hmsreliant.think-freely.org>
-	 <4DECBEA3.6070408@ahsoftware.de> <1307362358.3098.6.camel@edumazet-laptop>
-	 <4DECCCC0.70905@ahsoftware.de> <1307366166.3098.15.camel@edumazet-laptop>
-	 <4DECD657.9010807@ahsoftware.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 16:26:03 +0200
-Message-ID: <1307370363.3098.37.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bc4k2LQvm3RIPyce24ujdYb6NWGx+JZm/9QyDveaod9HeGaIleUqmojFwYIdHOniJJ
+         Lltmb83hCK3CrmgCVOeMzLaXzZGhHrbBmORUfGLY8kBECo+ZxnRUtA6ICoLuiT2EFRqs
+         auYdoHbv1+cMUFkfCIqE/H+jbRI9A2JHclL0g=
+Date: Mon, 6 Jun 2011 23:26:23 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        akpm@linux-foundation.org, Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110606142623.GF1686@barrios-laptop>
+References: <20110531141402.GK19505@random.random>
+ <20110531143734.GB13418@barrios-laptop>
+ <20110531143830.GC13418@barrios-laptop>
+ <20110602182302.GA2802@random.random>
+ <20110602202156.GA23486@barrios-laptop>
+ <20110602214041.GF2802@random.random>
+ <BANLkTim1WjdHWOQp7bMg5pFFKp1SSFoLKw@mail.gmail.com>
+ <20110602223201.GH2802@random.random>
+ <BANLkTikA+ugFNS95Zs_o6QqG2u4r2g93=Q@mail.gmail.com>
+ <20110606101557.GA5247@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606101557.GA5247@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Holler <holler@ahsoftware.de>
+On Mon, Jun 06, 2011 at 11:15:57AM +0100, Mel Gorman wrote:
+> On Fri, Jun 03, 2011 at 08:01:44AM +0900, Minchan Kim wrote:
+> > On Fri, Jun 3, 2011 at 7:32 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> > > On Fri, Jun 03, 2011 at 07:23:48AM +0900, Minchan Kim wrote:
 
-Le lundi 06 juin 2011 à 15:29 +0200, Alexander Holler a écrit :
-> > Nice, now please submit a patch with 0972ddb237 as a guideline.
-> >
-> > BTW, you could also check other struct dst_ops methods for
-> > bridge/netfilter:
+<snip>
+
+> > >> AFAIK, it's final destination to go as compaction will not break lru
+> > >> ordering if my patch(inorder-putback) is merged.
+> > >
+> > > Agreed. I like your patchset, sorry for not having reviewed it in
+> > > detail yet but there were other issues popping up in the last few
+> > > days.
+> > 
+> > No problem. it's urgent than mine. :)
+> > 
 > 
-> Sorry, but I prefer to submit patches I understand by myself and for 
-> stuff I know something about. The patch in my first mail was just meant 
-> as a quick fix (which seemed to work here).
+> I'm going to take the opportunity to apologise for not reviewing that
+> series yet. I've been kept too busy with other bugs to set side the
+> few hours I need to review the series. I'm hoping to get to it this
+> week if everything goes well.
+
+I am refactoring the code about migration.
+Maybe, I will resend it on tomorrow.
+I hope you guys reviews that. :)
+
+Thanks, Mel.
+
 > 
-> So even if I might be able to construct a working patch using commit 
-> 0972ddb237, I don't think I should do that.
+> -- 
+> Mel Gorman
+> SUSE Labs
 
-OK, I'll do it for you then, I am surprised you dont understand my
-review / suggestion.
-
-One patch submitter is supposed to followup and send a new version to
-take into account reviews/comments, not wait that eventually everybody
-says "OK, lets take it as is"
-
-
-[PATCH] bridge: provide a cow_metrics method for fake_ops
-
-Like in commit 0972ddb237 (provide cow_metrics() methods to blackhole
-dst_ops), we must provide a cow_metrics for bridges fake_dst_ops as
-well.
-
-This fixes a regression coming from commits 62fa8a846d7d (net: Implement
-read-only protection and COW'ing of metrics.) and 33eb9873a28 (bridge:
-initialize fake_rtable metrics)
-
-ip link set mybridge mtu 1234
--->
-[  136.546243] Pid: 8415, comm: ip Tainted: P 
-2.6.39.1-00006-g40545b7 #103 ASUSTeK Computer Inc.         V1Sn 
-        /V1Sn
-[  136.546256] EIP: 0060:[<00000000>] EFLAGS: 00010202 CPU: 0
-[  136.546268] EIP is at 0x0
-[  136.546273] EAX: f14a389c EBX: 000005d4 ECX: f80d32c0 EDX: f80d1da1
-[  136.546279] ESI: f14a3000 EDI: f255bf10 EBP: f15c3b54 ESP: f15c3b48
-[  136.546285]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[  136.546293] Process ip (pid: 8415, ti=f15c2000 task=f4741f80 
-task.ti=f15c2000)
-[  136.546297] Stack:
-[  136.546301]  f80c658f f14a3000 ffffffed f15c3b64 c12cb9c8 f80d1b80 
-ffffffa1 f15c3bbc
-[  136.546315]  c12da347 c12d9c7d 00000000 f7670b00 00000000 f80d1b80 
-ffffffa6 f15c3be4
-[  136.546329]  00000004 f14a3000 f255bf20 00000008 f15c3bbc c11d6cae 
-00000000 00000000
-[  136.546343] Call Trace:
-[  136.546359]  [<f80c658f>] ? br_change_mtu+0x5f/0x80 [bridge]
-[  136.546372]  [<c12cb9c8>] dev_set_mtu+0x38/0x80
-[  136.546381]  [<c12da347>] do_setlink+0x1a7/0x860
-[  136.546390]  [<c12d9c7d>] ? rtnl_fill_ifinfo+0x9bd/0xc70
-[  136.546400]  [<c11d6cae>] ? nla_parse+0x6e/0xb0
-[  136.546409]  [<c12db931>] rtnl_newlink+0x361/0x510
-[  136.546420]  [<c1023240>] ? vmalloc_sync_all+0x100/0x100
-[  136.546429]  [<c1362762>] ? error_code+0x5a/0x60
-[  136.546438]  [<c12db5d0>] ? rtnl_configure_link+0x80/0x80
-[  136.546446]  [<c12db27a>] rtnetlink_rcv_msg+0xfa/0x210
-[  136.546454]  [<c12db180>] ? __rtnl_unlock+0x20/0x20
-[  136.546463]  [<c12ee0fe>] netlink_rcv_skb+0x8e/0xb0
-[  136.546471]  [<c12daf1c>] rtnetlink_rcv+0x1c/0x30
-[  136.546479]  [<c12edafa>] netlink_unicast+0x23a/0x280
-[  136.546487]  [<c12ede6b>] netlink_sendmsg+0x26b/0x2f0
-[  136.546497]  [<c12bb828>] sock_sendmsg+0xc8/0x100
-[  136.546508]  [<c10adf61>] ? __alloc_pages_nodemask+0xe1/0x750
-[  136.546517]  [<c11d0602>] ? _copy_from_user+0x42/0x60
-[  136.546525]  [<c12c5e4c>] ? verify_iovec+0x4c/0xc0
-[  136.546534]  [<c12bd805>] sys_sendmsg+0x1c5/0x200
-[  136.546542]  [<c10c2150>] ? __do_fault+0x310/0x410
-[  136.546549]  [<c10c2c46>] ? do_wp_page+0x1d6/0x6b0
-[  136.546557]  [<c10c47d1>] ? handle_pte_fault+0xe1/0x720
-[  136.546565]  [<c12bd1af>] ? sys_getsockname+0x7f/0x90
-[  136.546574]  [<c10c4ec1>] ? handle_mm_fault+0xb1/0x180
-[  136.546582]  [<c1023240>] ? vmalloc_sync_all+0x100/0x100
-[  136.546589]  [<c10233b3>] ? do_page_fault+0x173/0x3d0
-[  136.546596]  [<c12bd87b>] ? sys_recvmsg+0x3b/0x60
-[  136.546605]  [<c12bdd83>] sys_socketcall+0x293/0x2d0
-[  136.546614]  [<c13629d0>] sysenter_do_call+0x12/0x26
-[  136.546619] Code:  Bad EIP value.
-[  136.546627] EIP: [<00000000>] 0x0 SS:ESP 0068:f15c3b48
-[  136.546645] CR2: 0000000000000000
-[  136.546652] ---[ end trace 6909b560e78934fa ]---
-
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Neil Horman <nhorman@tuxdriver.com>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
----
-net/bridge/br_netfilter.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
-index 3fa1231..23b43d2 100644
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -104,10 +104,16 @@ static void fake_update_pmtu(struct dst_entry *dst, u32 mtu)
- {
- }
- 
-+static u32 *fake_cow_metrics(struct dst_entry *dst, unsigned long old)
-+{
-+	return NULL;
-+}
-+
- static struct dst_ops fake_dst_ops = {
- 	.family =		AF_INET,
- 	.protocol =		cpu_to_be16(ETH_P_IP),
- 	.update_pmtu =		fake_update_pmtu,
-+	.cow_metrics =		fake_cow_metrics,
- };
- 
- /*
-
-
+-- 
+Kind regards
+Minchan Kim
