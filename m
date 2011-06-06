@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757981Ab1FFUim (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 16:38:42 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:56514 "EHLO
+	id S1758019Ab1FFUiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 16:38:46 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:23551 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965Ab1FFUik (ORCPT
+	with ESMTP id S1757989Ab1FFUim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 16:38:40 -0400
+	Mon, 6 Jun 2011 16:38:42 -0400
 From: Colin Cross <ccross@android.com>
 To: linux-omap@vger.kernel.org
 Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, tarun.kanti@ti.com,
         linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@android.com>,
         Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] ARM: omap4: gpio: fix setting IRQWAKEN bits
-Date: Mon,  6 Jun 2011 13:38:17 -0700
-Message-Id: <1307392698-21170-1-git-send-email-ccross@android.com>
+Subject: [PATCH v2 2/2] ARM: omap4: gpio: add locking around calls to _set_gpio_triggering
+Date: Mon,  6 Jun 2011 13:38:18 -0700
+Message-Id: <1307392698-21170-2-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1307392698-21170-1-git-send-email-ccross@android.com>
+References: <1307392698-21170-1-git-send-email-ccross@android.com>
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting the IRQWAKEN bit was overwriting previous IRQWAKEN bits,
-causing only the last bit set to take effect, resulting in lost
-wakeups when the GPIO controller is in idle.
-
-Replace direct writes to IRQWAKEN with MOD_REG_BIT calls to
-perform a read-modify-write on the register.
+_set_gpio_triggering uses read-modify-write on bank registers,
+lock bank->lock around all calls to it to prevent register
+corruption if two cpus access gpios in the same bank at the
+same time.
 
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- drivers/gpio/gpio-omap.c |   12 ++----------
- 1 files changed, 2 insertions(+), 10 deletions(-)
-
-Santosh, I left your Acked-by off this patch because I changed
-the register access to match the OMAP4 TRM.
+ drivers/gpio/gpio-omap.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-index 6c51191..8ba6957 100644
+index 8ba6957..b14bfd4 100644
 --- a/drivers/gpio/gpio-omap.c
 +++ b/drivers/gpio/gpio-omap.c
-@@ -432,7 +432,6 @@ static inline void set_24xx_gpio_triggering(struct gpio_bank *bank, int gpio,
+@@ -1126,8 +1126,11 @@ static void gpio_irq_shutdown(struct irq_data *d)
  {
- 	void __iomem *base = bank->base;
- 	u32 gpio_bit = 1 << gpio;
--	u32 val;
+ 	unsigned int gpio = d->irq - IH_GPIO_BASE;
+ 	struct gpio_bank *bank = irq_data_get_irq_chip_data(d);
++	unsigned long flags;
  
- 	if (cpu_is_omap44xx()) {
- 		MOD_REG_BIT(OMAP4_GPIO_LEVELDETECT0, gpio_bit,
-@@ -455,15 +454,8 @@ static inline void set_24xx_gpio_triggering(struct gpio_bank *bank, int gpio,
++	spin_lock_irqsave(&bank->lock, flags);
+ 	_reset_gpio(bank, gpio);
++	spin_unlock_irqrestore(&bank->lock, flags);
+ }
+ 
+ static void gpio_ack_irq(struct irq_data *d)
+@@ -1142,9 +1145,12 @@ static void gpio_mask_irq(struct irq_data *d)
+ {
+ 	unsigned int gpio = d->irq - IH_GPIO_BASE;
+ 	struct gpio_bank *bank = irq_data_get_irq_chip_data(d);
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&bank->lock, flags);
+ 	_set_gpio_irqenable(bank, gpio, 0);
+ 	_set_gpio_triggering(bank, get_gpio_index(gpio), IRQ_TYPE_NONE);
++	spin_unlock_irqrestore(&bank->lock, flags);
+ }
+ 
+ static void gpio_unmask_irq(struct irq_data *d)
+@@ -1153,7 +1159,9 @@ static void gpio_unmask_irq(struct irq_data *d)
+ 	struct gpio_bank *bank = irq_data_get_irq_chip_data(d);
+ 	unsigned int irq_mask = 1 << get_gpio_index(gpio);
+ 	u32 trigger = irqd_get_trigger_type(d);
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&bank->lock, flags);
+ 	if (trigger)
+ 		_set_gpio_triggering(bank, get_gpio_index(gpio), trigger);
+ 
+@@ -1165,6 +1173,7 @@ static void gpio_unmask_irq(struct irq_data *d)
  	}
- 	if (likely(!(bank->non_wakeup_gpios & gpio_bit))) {
- 		if (cpu_is_omap44xx()) {
--			if (trigger != 0)
--				__raw_writel(1 << gpio, bank->base+
--						OMAP4_GPIO_IRQWAKEN0);
--			else {
--				val = __raw_readl(bank->base +
--							OMAP4_GPIO_IRQWAKEN0);
--				__raw_writel(val & (~(1 << gpio)), bank->base +
--							 OMAP4_GPIO_IRQWAKEN0);
--			}
-+			MOD_REG_BIT(OMAP4_GPIO_IRQWAKEN0, gpio_bit,
-+				trigger != 0);
- 		} else {
- 			/*
- 			 * GPIO wakeup request can only be generated on edge
+ 
+ 	_set_gpio_irqenable(bank, gpio, 1);
++	spin_unlock_irqrestore(&bank->lock, flags);
+ }
+ 
+ static struct irq_chip gpio_irq_chip = {
 -- 
 1.7.4.1
 
