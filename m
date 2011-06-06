@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab1FFG1o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 02:27:44 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:1745 "EHLO sjogate2.atmel.com"
+	id S1756728Ab1FFHI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 03:08:57 -0400
+Received: from ozlabs.org ([203.10.76.45]:52403 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752679Ab1FFG1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 02:27:40 -0400
-Subject: Re: [PATCH] Fix build warning of the defconfigs
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Wanlong Gao <wanlong.gao@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
-        linux@arm.linux.org.uk, vapier@gentoo.org, ralf@linux-mips.org,
-        benh@kernel.crashing.org, paulus@samba.org, lethal@linux-sh.org,
-        gxt@mprc.pku.edu.cn, david.woodhouse@intel.com,
-        akpm@linux-foundation.org, u.kleine-koenig@pengutronix.de,
-        mingo@elte.hu, rientjes@google.com, w.sang@pengutronix.de,
-        sam@ravnborg.org, manuel.lauss@googlemail.com, anton@samba.org,
-        arnd@arndb.de
-In-Reply-To: <1306945763-6583-1-git-send-email-wanlong.gao@gmail.com>
-References: <1306945763-6583-1-git-send-email-wanlong.gao@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Mon, 06 Jun 2011 08:24:45 +0200
-Message-ID: <1307341485.3104.0.camel@hcegtvedt.norway.atmel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Jun 2011 06:24:48.0479 (UTC) FILETIME=[6F740EF0:01CC2412]
+	id S1752108Ab1FFHIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 03:08:54 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Christian Dietrich 
+	<christian.dietrich@informatik.uni-erlangen.de>,
+        "Venkatesh Pallipadi \(Venki\)" <venki@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Kevin Tian <kevin.tian@intel.com>,
+        Fengzhe Zhang <fengzhe.zhang@intel.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        lguest@lists.ozlabs.org, trivial@kernel.org
+Subject: Re: [PATCH 8/8] arch/x86: use printk_ratelimited instead of printk_ratelimit
+In-Reply-To: <fce87f1efab55e15e91b21f1b73f0e86016a27d9.1307199715.git.christian.dietrich@informatik.uni-erlangen.de>
+References: <cover.1307199715.git.christian.dietrich@informatik.uni-erlangen.de> <fce87f1efab55e15e91b21f1b73f0e86016a27d9.1307199715.git.christian.dietrich@informatik.uni-erlangen.de>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Mon, 06 Jun 2011 16:05:17 +0930
+Message-ID: <874o43ii1m.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-02 at 00:29 +0800, Wanlong Gao wrote:
-> RTC_CLASS is changed to bool.
-> So value 'm' is invalid.
-> 
-> Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+On Sat, 4 Jun 2011 17:37:04 +0200, Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de> wrote:
+> Since printk_ratelimit() shouldn't be used anymore (see comment in
+> include/linux/printk.h), replace it with printk_ratelimited.
 
-<snipp>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au> (lguest part)
 
->  arch/avr32/configs/atngw100_mrmt_defconfig |    2 +-
->
+> diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+> index db832fd..23a6eff 100644
+> --- a/arch/x86/lguest/boot.c
+> +++ b/arch/x86/lguest/boot.c
+> @@ -56,6 +56,7 @@
+>  #include <linux/lguest_launcher.h>
+>  #include <linux/virtio_console.h>
+>  #include <linux/pm.h>
+> +#include <linux/ratelimit.h>
+>  #include <asm/apic.h>
+>  #include <asm/lguest.h>
+>  #include <asm/paravirt.h>
 
-For the AVR32 related changes.
+Is this new include really needed?  The printk_ratelimited() definition
+is in printk.h...
 
-Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-
-<snipp>
-
--- 
-Hans-Christian Egtvedt
-
+Thanks,
+Rusty.
