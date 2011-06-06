@@ -1,303 +1,512 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab1FFDUm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 23:20:42 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59863 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755370Ab1FFDUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 23:20:39 -0400
-Date: Mon, 6 Jun 2011 13:20:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for June 6
-Message-Id: <20110606132036.aebd73a4.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__6_Jun_2011_13_20_36_+1000_.L1iZ/_R._qk/jc/"
+	id S1756578Ab1FFDUu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 23:20:50 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37789 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756549Ab1FFDUp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 23:20:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=T+0CBWci33U8j8dy5lA8AVc1oPAuzkuypJrGDCcqqr2Fdu1Vvg/H7mwbN4KoKo2JBJ
+         gWY8pHeXJIO+oCfCDKxJJ9fjNgiM9gNFsiljRgwAgIohmwAQFI/o1F8wTtog1cMt/Wly
+         mnyqXxqgszLbiC588/J3RSOuxLtVbyDKQxlK8=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Mike Frysinger <vapier@gentoo.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>, David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: [PATCH 2/4 v2] nohz: Split extended quiescent state handling from nohz switch
+Date: Mon,  6 Jun 2011 05:20:36 +0200
+Message-Id: <1307330437-15372-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1307329858-14999-4-git-send-email-fweisbec@gmail.com>
+References: <1307329858-14999-4-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__6_Jun_2011_13_20_36_+1000_.L1iZ/_R._qk/jc/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It is assumed that rcu won't be used once we switch to tickless
+mode and until we restart the tick. However this is not always
+true, as in x86-64 where we dereference the idle notifiers after
+the tick is stopped.
 
-Hi all,
+To prepare for fixing this, split the tickless mode switching and
+RCU extended quiescent state logics.
+Make tick_nohz_stop/restart_sched_tick() RCU agnostic but provide
+a new pair of APIs tick_nohz_enter/exit_idle() that keep the
+old behaviour by handling both the nohz mode and RCU extended
+quiescent states, then convert every archs to use these.
 
-Changes since 20110603:
+Archs that want to switch to extended QS to some custom points
+can do it later by using tick_nohz_stop_sched_tick() and
+rcu_enter_nohz() seperately.
 
-New tree: arm-lpae
+v2: Remove rcu_exit_nohz() from tick_nohz_restart_sched_tick()
 
-The sparc-current tree lost its build failure.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+---
+ arch/arm/kernel/process.c              |    4 +-
+ arch/avr32/kernel/process.c            |    4 +-
+ arch/blackfin/kernel/process.c         |    4 +-
+ arch/microblaze/kernel/process.c       |    4 +-
+ arch/mips/kernel/process.c             |    4 +-
+ arch/powerpc/kernel/idle.c             |    4 +-
+ arch/powerpc/platforms/iseries/setup.c |    8 +++---
+ arch/s390/kernel/process.c             |    4 +-
+ arch/sh/kernel/idle.c                  |    2 +-
+ arch/sparc/kernel/process_64.c         |    4 +-
+ arch/tile/kernel/process.c             |    4 +-
+ arch/um/kernel/process.c               |    4 +-
+ arch/unicore32/kernel/process.c        |    4 +-
+ arch/x86/kernel/process_32.c           |    4 +-
+ arch/x86/kernel/process_64.c           |    4 +-
+ include/linux/tick.h                   |   10 ++++++--
+ kernel/time/tick-sched.c               |   36 ++++++++++++++++++++++++++++---
+ 17 files changed, 70 insertions(+), 38 deletions(-)
 
-----------------------------------------------------------------------------
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 5e1e541..27b68b0 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -182,7 +182,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		leds_event(led_idle_start);
+ 		while (!need_resched()) {
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -208,7 +208,7 @@ void cpu_idle(void)
+ 			}
+ 		}
+ 		leds_event(led_idle_end);
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/avr32/kernel/process.c b/arch/avr32/kernel/process.c
+index ef5a2a0..e683a34 100644
+--- a/arch/avr32/kernel/process.c
++++ b/arch/avr32/kernel/process.c
+@@ -34,10 +34,10 @@ void cpu_idle(void)
+ {
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched())
+ 			cpu_idle_sleep();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/blackfin/kernel/process.c b/arch/blackfin/kernel/process.c
+index 6a660fa..8082a8f 100644
+--- a/arch/blackfin/kernel/process.c
++++ b/arch/blackfin/kernel/process.c
+@@ -88,10 +88,10 @@ void cpu_idle(void)
+ #endif
+ 		if (!idle)
+ 			idle = default_idle;
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched())
+ 			idle();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/microblaze/kernel/process.c b/arch/microblaze/kernel/process.c
+index 968648a..1b295b2 100644
+--- a/arch/microblaze/kernel/process.c
++++ b/arch/microblaze/kernel/process.c
+@@ -103,10 +103,10 @@ void cpu_idle(void)
+ 		if (!idle)
+ 			idle = default_idle;
+ 
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched())
+ 			idle();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 
+ 		preempt_enable_no_resched();
+ 		schedule();
+diff --git a/arch/mips/kernel/process.c b/arch/mips/kernel/process.c
+index d2112d3..cdbfa52 100644
+--- a/arch/mips/kernel/process.c
++++ b/arch/mips/kernel/process.c
+@@ -56,7 +56,7 @@ void __noreturn cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched() && cpu_online(cpu)) {
+ #ifdef CONFIG_MIPS_MT_SMTC
+ 			extern void smtc_idle_loop_hook(void);
+@@ -77,7 +77,7 @@ void __noreturn cpu_idle(void)
+ 		     system_state == SYSTEM_BOOTING))
+ 			play_dead();
+ #endif
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
+index 39a2baa..1108260 100644
+--- a/arch/powerpc/kernel/idle.c
++++ b/arch/powerpc/kernel/idle.c
+@@ -56,7 +56,7 @@ void cpu_idle(void)
+ 
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched() && !cpu_should_die()) {
+ 			ppc64_runlatch_off();
+ 
+@@ -93,7 +93,7 @@ void cpu_idle(void)
+ 
+ 		HMT_medium();
+ 		ppc64_runlatch_on();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		if (cpu_should_die())
+ 			cpu_die();
+diff --git a/arch/powerpc/platforms/iseries/setup.c b/arch/powerpc/platforms/iseries/setup.c
+index c25a081..d40dcd9 100644
+--- a/arch/powerpc/platforms/iseries/setup.c
++++ b/arch/powerpc/platforms/iseries/setup.c
+@@ -562,7 +562,7 @@ static void yield_shared_processor(void)
+ static void iseries_shared_idle(void)
+ {
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched() && !hvlpevent_is_pending()) {
+ 			local_irq_disable();
+ 			ppc64_runlatch_off();
+@@ -576,7 +576,7 @@ static void iseries_shared_idle(void)
+ 		}
+ 
+ 		ppc64_runlatch_on();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 
+ 		if (hvlpevent_is_pending())
+ 			process_iSeries_events();
+@@ -592,7 +592,7 @@ static void iseries_dedicated_idle(void)
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		if (!need_resched()) {
+ 			while (!need_resched()) {
+ 				ppc64_runlatch_off();
+@@ -609,7 +609,7 @@ static void iseries_dedicated_idle(void)
+ 		}
+ 
+ 		ppc64_runlatch_on();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
+index 541a750..560cd94 100644
+--- a/arch/s390/kernel/process.c
++++ b/arch/s390/kernel/process.c
+@@ -90,10 +90,10 @@ static void default_idle(void)
+ void cpu_idle(void)
+ {
+ 	for (;;) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched())
+ 			default_idle();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
+index 425d604..3957972 100644
+--- a/arch/sh/kernel/idle.c
++++ b/arch/sh/kernel/idle.c
+@@ -88,7 +88,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 
+ 		while (!need_resched()) {
+ 			check_pgt_cache();
+diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+index c158a95..5c36632 100644
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -95,12 +95,12 @@ void cpu_idle(void)
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 
+ 	while(1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 
+ 		while (!need_resched() && !cpu_is_offline(cpu))
+ 			sparc64_yield(cpu);
+ 
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 
+ 		preempt_enable_no_resched();
+ 
+diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
+index 9c45d8b..cc1bd4f 100644
+--- a/arch/tile/kernel/process.c
++++ b/arch/tile/kernel/process.c
+@@ -85,7 +85,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched()) {
+ 			if (cpu_is_offline(cpu))
+ 				BUG();  /* no HOTPLUG_CPU */
+@@ -105,7 +105,7 @@ void cpu_idle(void)
+ 				local_irq_enable();
+ 			current_thread_info()->status |= TS_POLLING;
+ 		}
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/um/kernel/process.c b/arch/um/kernel/process.c
+index fab4371..f1b3864 100644
+--- a/arch/um/kernel/process.c
++++ b/arch/um/kernel/process.c
+@@ -245,10 +245,10 @@ void default_idle(void)
+ 		if (need_resched())
+ 			schedule();
+ 
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		nsecs = disable_timer();
+ 		idle_sleep(nsecs);
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 	}
+ }
+ 
+diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
+index ba401df..e2df91a 100644
+--- a/arch/unicore32/kernel/process.c
++++ b/arch/unicore32/kernel/process.c
+@@ -55,7 +55,7 @@ void cpu_idle(void)
+ {
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched()) {
+ 			local_irq_disable();
+ 			stop_critical_timings();
+@@ -63,7 +63,7 @@ void cpu_idle(void)
+ 			local_irq_enable();
+ 			start_critical_timings();
+ 		}
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index 8d12878..41e7d1b 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -97,7 +97,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched()) {
+ 
+ 			check_pgt_cache();
+@@ -112,7 +112,7 @@ void cpu_idle(void)
+ 			pm_idle();
+ 			start_critical_timings();
+ 		}
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 6c9dd92..3fe0883 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -120,7 +120,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched()) {
+ 
+ 			rmb();
+@@ -145,7 +145,7 @@ void cpu_idle(void)
+ 			__exit_idle();
+ 		}
+ 
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index b232ccc..ff31a71 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -121,14 +121,18 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
+ #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
+ 
+ # ifdef CONFIG_NO_HZ
+-extern void tick_nohz_stop_sched_tick(int inidle);
++extern bool tick_nohz_stop_sched_tick(int inidle);
+ extern void tick_nohz_restart_sched_tick(void);
++extern void tick_nohz_enter_idle(void);
++extern void tick_nohz_exit_idle(void);
+ extern ktime_t tick_nohz_get_sleep_length(void);
+ extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+ extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+ # else
+-static inline void tick_nohz_stop_sched_tick(int inidle) { }
+-static inline void tick_nohz_restart_sched_tick(void) { }
++static inline bool tick_nohz_stop_sched_tick(int inidle) { return false; }
++static inline void tick_nohz_restart_sched_tick(void) { return false; }
++static inline void tick_nohz_enter_idle(void) { }
++static inline void tick_nohz_exit_idle(void) { }
+ static inline ktime_t tick_nohz_get_sleep_length(void)
+ {
+ 	ktime_t len = { .tv64 = NSEC_PER_SEC/HZ };
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index d5097c4..8e81e9f 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -254,12 +254,13 @@ EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
+  * Called either from the idle loop or from irq_exit() when an idle period was
+  * just interrupted by an interrupt which did not cause a reschedule.
+  */
+-void tick_nohz_stop_sched_tick(int inidle)
++bool tick_nohz_stop_sched_tick(int inidle)
+ {
+ 	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies, flags;
+ 	struct tick_sched *ts;
+ 	ktime_t last_update, expires, now;
+ 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
++	int stopped = false;
+ 	u64 time_delta;
+ 	int cpu;
+ 
+@@ -409,7 +410,7 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
+ 			ts->idle_jiffies = last_jiffies;
+-			rcu_enter_nohz();
++			stopped = true;
+ 		}
+ 
+ 		ts->idle_sleeps++;
+@@ -450,6 +451,22 @@ out:
+ 	ts->sleep_length = ktime_sub(dev->next_event, now);
+ end:
+ 	local_irq_restore(flags);
++
++	return stopped;
++}
++
++
++/**
++ * tick_nohz_enter_idle - stop the tick and enter extended quiescent state
++ *
++ * Most arch may want to enter RCU extended state right after they switched
++ * to nohz mode. Beware though, no read side use of RCU can be done until we
++ * call tick_nohz_exit_idle().
++ */
++void tick_nohz_enter_idle(void)
++{
++	if (tick_nohz_stop_sched_tick(1))
++		rcu_enter_nohz();
+ }
+ 
+ /**
+@@ -519,8 +536,6 @@ void tick_nohz_restart_sched_tick(void)
+ 
+ 	ts->inidle = 0;
+ 
+-	rcu_exit_nohz();
+-
+ 	/* Update jiffies first */
+ 	select_nohz_load_balancer(0);
+ 	tick_do_update_jiffies64(now);
+@@ -552,6 +567,19 @@ void tick_nohz_restart_sched_tick(void)
+ 	local_irq_enable();
+ }
+ 
++/**
++ * tick_nohz_exit_idle - restart the tick and exit extended quiescent state
++ */
++void tick_nohz_exit_idle(void)
++{
++	struct tick_sched *ts = &__raw_get_cpu_var(tick_cpu_sched);
++
++	if (ts->tick_stopped)
++		rcu_exit_nohz();
++
++	tick_nohz_restart_sched_tick();
++}
++
+ static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
+ {
+ 	hrtimer_forward(&ts->sched_timer, now, tick_period);
+-- 
+1.7.5.4
 
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 192 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging arm-lpae/for-next
-CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
-CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
-CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
-Merging at91/at91-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging xilinx/arm-next
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
-CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-CONFLICT (content): Merge conflict in drivers/rtc/Kconfig
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/dev
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging docs/docs-move
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
-Merging powertools/tools-test
-Merging cpupowerutils/master
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging slave-dma/next
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging cpufreq-move/move-drivers
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
-mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
-e.c left in tree.
-$ git rm -f drivers/mmc/host/sdhci-of-core.c
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging suspend/linux-next
-Merging apm/for-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging gpio/gpio/next
-Merging tip/auto-latest
-Merging rcu/rcu/next
-CONFLICT (content): Merge conflict in kernel/rcutree.c
-Merging kvm/linux-next
-Merging oprofile/for-next
-Merging ptrace/ptrace
-Merging xen/upstream/xen
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging namespace/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-Merging staging/staging-next
-Merging bkl-config/config
-Merging tmem/linux-next
-Merging arm-dt/devicetree/arm-next
-Merging scsi-post-merge/merge-base:master
-
---Signature=_Mon__6_Jun_2011_13_20_36_+1000_.L1iZ/_R._qk/jc/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN7EeEAAoJEDMEi1NhKgbs56EH/2Ec6Y9O0FUPr4VTn+JU2jJi
-Sr9zomMxr476AEIRCEmNZC8tK7x/hNZ59MTImJbQLyHRNG0FOXJpZdXEULoV1s1U
-C9icIBT+shHjxuYd2XKYe03T8JHtLWPKdM7IEePNCwCu9YycnWSUGQMJvh5yNAiF
-27vGaNk5azUUE/wYqtRY52uCm+aJWsKA8dtzyGz85BX2/GwrG8/N3Lsv+i2pAxfL
-8D4SQl3wHN5Yjwl5+zSHNhDNGDkRTNcCajVV0wAD2ONliW7oJF8ldMbHi2lubyhl
-xc+9I/YYzfaW8M1srGTQoUQlqSewXMU8/k1yLpEsFrhggQfTK/rBv0ONkCduQ8I=
-=ABkh
------END PGP SIGNATURE-----
-
---Signature=_Mon__6_Jun_2011_13_20_36_+1000_.L1iZ/_R._qk/jc/--
