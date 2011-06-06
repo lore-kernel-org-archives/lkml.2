@@ -1,152 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab1FFQCq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:02:46 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49659 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755433Ab1FFQCp convert rfc822-to-8bit (ORCPT
+	id S1754826Ab1FFQEG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:04:06 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62226 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442Ab1FFQED convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:02:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Cqc53SDuzkeCp90ixM242RwjR9g2gvRuDpSGSQAycrpOvxLqTSFcoG6y9OHzfo0lEi
-         j0nDGwzHeETiEvRt0AyTLksv73siO5Gsin9w41Azrx8/gllAgxrbbuOmHksegzfcpGnq
-         /mlSGCOFnpzd/TpAS0Y0N0tV6H+wBLn9KrEZY=
+	Mon, 6 Jun 2011 12:04:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <4DE10B4D.50501@gmail.com>
-References: <4DE0B9D8.3020405@gmail.com>
-	<4DE10B4D.50501@gmail.com>
-Date: Tue, 7 Jun 2011 00:02:44 +0800
-Message-ID: <BANLkTimbZ75=XeaNrZQJD0OihEmMMt_5tQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2 v2] ramoops: use module parameters instead of platform
- data if not available
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, kyungmin.park@samsung.com,
-        stevie.trujillo@gmail.com
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110606084720.GZ23771@pengutronix.de>
+References: <1307290075-7062-1-git-send-email-shawn.guo@linaro.org>
+ <1307290075-7062-3-git-send-email-shawn.guo@linaro.org> <20110606075241.GD10410@ponder.secretlab.ca>
+ <20110606081205.GC32632@pengutronix.de> <BANLkTinY44trVnt-XXaH85Vsj46put6N1Q@mail.gmail.com>
+ <20110606084720.GZ23771@pengutronix.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 6 Jun 2011 10:03:42 -0600
+X-Google-Sender-Auth: fs5BrMglEPoLM45R3pLE1apoU00
+Message-ID: <BANLkTi=1jMPLM3aW2wQo=yE5mEybVbV5PA@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] gpio/mxc: Change gpio-mxc into an upstanding gpio driver
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@linaro.org>, arnd@arndb.de, patches@linaro.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de, olof@lixom.net,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 28, 2011 at 10:48 PM, Marco Stornelli
-<marco.stornelli@gmail.com> wrote:
-> From: Marco Stornelli <marco.stornelli@gmail.com>
+On Mon, Jun 6, 2011 at 2:47 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Mon, Jun 06, 2011 at 02:18:29AM -0600, Grant Likely wrote:
+>> On Mon, Jun 6, 2011 at 2:12 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+>> > On Mon, Jun 06, 2011 at 01:52:41AM -0600, Grant Likely wrote:
+>> >> On Mon, Jun 06, 2011 at 12:07:55AM +0800, Shawn Guo wrote:
+>> >> > The patch makes necessary changes on gpio-mxc as below to turn it
+>> >> > into an upstanding gpio driver.
+>> >> >
+>> >> > �* Add a list to save all mx2 ports references, so that
+>> >> > � �mx2_gpio_irq_handler can walk through all interrupt status
+>> >> > � �registers
+>> >> >
+>> >> > �* Use readl/writel to replace mach-specific accessors
+>> >> > � �__raw_readl/__raw_writel
+>> >> >
+>> >> > �* Change mxc_gpio_init into mxc_gpio_probe function
+>> >> >
+>> >> > �* Move "struct mxc_gpio_port" into gpio-mxc.c, as it needs not to
+>> >> > � �be public at all, and also make some other cleanup on
+>> >> > � �plat-mxc/include/mach/gpio.h at the same time
+>> >> >
+>> >> > And the patch then migrates mach-imx and mach-mx5 to the updated
+>> >> > driver by adding corresponding platform devices.
+>> >> >
+>> >> > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+>> >> > Acked-by: Olof Johansson <olof@lixom.net>
+>> >>
+>> >> Applied, thanks.
+>> >
+>> > I'm not completely happy with this patch going through your tree. It
+>> > does massive changes to arch/arm/mach-*mx*, so expect merge conflicts
+>> > here.
+>>
+>> There are also massive changes going on in drivers/gpio. �The solution
+>> here is to probably put these changes into a new dedicated branch
+>> based on Linus' tree, we both agree not to rebase that branch, and
+>> both of us merge the branch into our trees.
 >
-> Use generic module parameters instead of platform data, if platform
-> data are not available. This limitation has been introduced with
-> commit c3b92ce9e75f6353104fc7f8e32fb9fdb2550ad0.
->
-> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-> CC: Kyungmin Park <kyungmin.park@samsung.com>
-> Reported-by: Stevie Trujillo <stevie.trujillo@gmail.com>
-> ---
-> ChangeLog
-> v2: fixed tab/space problem
->
-> diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
-> index 1a9f5f6..bf5f9f6 100644
-> --- a/drivers/char/ramoops.c
-> +++ b/drivers/char/ramoops.c
-> @@ -26,6 +26,7 @@
->  #include <linux/io.h>
->  #include <linux/ioport.h>
->  #include <linux/platform_device.h>
-> +#include <linux/slab.h>
->  #include <linux/ramoops.h>
->
->  #define RAMOOPS_KERNMSG_HDR "===="
-> @@ -56,6 +57,9 @@ static struct ramoops_context {
->        int max_count;
->  } oops_cxt;
->
-> +static struct platform_device *dummy;
-> +static struct ramoops_platform_data *dummy_data;
-> +
->  static void ramoops_do_dump(struct kmsg_dumper *dumper,
->                enum kmsg_dump_reason reason, const char *s1, unsigned long l1,
->                const char *s2, unsigned long l2)
-> @@ -106,27 +110,22 @@ static int __init ramoops_probe(struct platform_device *pdev)
->        struct ramoops_context *cxt = &oops_cxt;
->        int err = -EINVAL;
->
-> -       if (pdata) {
-> -               mem_size = pdata->mem_size;
-> -               mem_address = pdata->mem_address;
-> -       }
-> -
-> -       if (!mem_size) {
-> +       if (!pdata->mem_size) {
->                printk(KERN_ERR "ramoops: invalid size specification");
->                goto fail3;
->        }
->
-> -       rounddown_pow_of_two(mem_size);
-> +       rounddown_pow_of_two(pdata->mem_size);
->
-> -       if (mem_size < RECORD_SIZE) {
-> +       if (pdata->mem_size < RECORD_SIZE) {
->                printk(KERN_ERR "ramoops: size too small");
->                goto fail3;
->        }
->
-> -       cxt->max_count = mem_size / RECORD_SIZE;
-> +       cxt->max_count = pdata->mem_size / RECORD_SIZE;
->        cxt->count = 0;
-> -       cxt->size = mem_size;
-> -       cxt->phys_addr = mem_address;
-> +       cxt->size = pdata->mem_size;
-> +       cxt->phys_addr = pdata->mem_address;
->
->        if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
->                printk(KERN_ERR "ramoops: request mem region failed");
-> @@ -179,12 +178,35 @@ static struct platform_driver ramoops_driver = {
->
->  static int __init ramoops_init(void)
->  {
-> -       return platform_driver_probe(&ramoops_driver, ramoops_probe);
-> +       int ret;
-> +       ret = platform_driver_probe(&ramoops_driver, ramoops_probe);
-> +       if (ret == -ENODEV)
-> +       {
+> That can work. I just checked that atm there are no conflicts between my
+> branch and Shawns patches. Can you set up such a branch? Otherwise I can
+> just keep an eye on conflicts and we set up such a branch once a real
+> conflict arises.
+
+Done.  I'm assuming this constitutes an 'acked-by' for the mxs
+patches.  I've already got your a-b for the mxc patches.  The whole
+thing is based on 3.0-rc2, and is pushed out to the following branch.
+If it looks good to you, then go ahead and merge it into your tree,
+and I'll merge it into gpio/next.
+
+The following changes since commit 59c5f46fbe01a00eedf54a23789634438bb80603:
+
+  Linux 3.0-rc2 (2011-06-06 18:06:33 +0900)
+
+are available in the git repository at:
+  git://git.secretlab.ca/git/linux-2.6 gpio/next-mx
+
+Grant Likely (1):
+      gpio/mxs: Move Freescale mxs gpio driver to drivers/gpio
+
+Shawn Guo (4):
+      gpio/mxs: Change gpio-mxs into an upstanding gpio driver
+      gpio/mxc: Move Freescale MXC gpio driver to drivers/gpio
+      gpio/mxc: Change gpio-mxc into an upstanding gpio driver
+      gpio/mxc: convert gpio-mxc to use basic_mmio_gpio library
+
+ arch/arm/mach-imx/mach-apf9328.c                   |    2 +
+ arch/arm/mach-imx/mach-armadillo5x0.c              |    2 +
+ arch/arm/mach-imx/mach-bug.c                       |    2 +
+ arch/arm/mach-imx/mach-cpuimx27.c                  |    2 +
+ arch/arm/mach-imx/mach-cpuimx35.c                  |    2 +
+ arch/arm/mach-imx/mach-eukrea_cpuimx25.c           |    2 +
+ arch/arm/mach-imx/mach-imx27_visstrim_m10.c        |    2 +
+ arch/arm/mach-imx/mach-imx27ipcam.c                |    2 +
+ arch/arm/mach-imx/mach-imx27lite.c                 |    2 +
+ arch/arm/mach-imx/mach-kzm_arm11_01.c              |    2 +
+ arch/arm/mach-imx/mach-mx1ads.c                    |    2 +
+ arch/arm/mach-imx/mach-mx21ads.c                   |    2 +
+ arch/arm/mach-imx/mach-mx25_3ds.c                  |    2 +
+ arch/arm/mach-imx/mach-mx27_3ds.c                  |    2 +
+ arch/arm/mach-imx/mach-mx27ads.c                   |    2 +
+ arch/arm/mach-imx/mach-mx31_3ds.c                  |    2 +
+ arch/arm/mach-imx/mach-mx31ads.c                   |    2 +
+ arch/arm/mach-imx/mach-mx31lilly.c                 |    2 +
+ arch/arm/mach-imx/mach-mx31lite.c                  |    2 +
+ arch/arm/mach-imx/mach-mx31moboard.c               |    2 +
+ arch/arm/mach-imx/mach-mx35_3ds.c                  |    2 +
+ arch/arm/mach-imx/mach-mxt_td60.c                  |    2 +
+ arch/arm/mach-imx/mach-pca100.c                    |    2 +
+ arch/arm/mach-imx/mach-pcm037.c                    |    2 +
+ arch/arm/mach-imx/mach-pcm038.c                    |    2 +
+ arch/arm/mach-imx/mach-pcm043.c                    |    2 +
+ arch/arm/mach-imx/mach-qong.c                      |    2 +
+ arch/arm/mach-imx/mach-scb9328.c                   |    2 +
+ arch/arm/mach-imx/mach-vpr200.c                    |    2 +
+ arch/arm/mach-imx/mm-imx1.c                        |   17 +-
+ arch/arm/mach-imx/mm-imx21.c                       |   21 +-
+ arch/arm/mach-imx/mm-imx25.c                       |   16 +-
+ arch/arm/mach-imx/mm-imx27.c                       |   21 +-
+ arch/arm/mach-imx/mm-imx31.c                       |   15 +-
+ arch/arm/mach-imx/mm-imx35.c                       |   15 +-
+ arch/arm/mach-mx5/board-cpuimx51.c                 |    2 +
+ arch/arm/mach-mx5/board-cpuimx51sd.c               |    2 +
+ arch/arm/mach-mx5/board-mx50_rdp.c                 |    2 +
+ arch/arm/mach-mx5/board-mx51_3ds.c                 |    2 +
+ arch/arm/mach-mx5/board-mx51_babbage.c             |    2 +
+ arch/arm/mach-mx5/board-mx51_efikamx.c             |    2 +
+ arch/arm/mach-mx5/board-mx51_efikasb.c             |    2 +
+ arch/arm/mach-mx5/board-mx53_evk.c                 |    2 +
+ arch/arm/mach-mx5/board-mx53_loco.c                |    2 +
+ arch/arm/mach-mx5/board-mx53_smd.c                 |    2 +
+ arch/arm/mach-mx5/devices.c                        |   64 -----
+ arch/arm/mach-mx5/mm-mx50.c                        |   21 +-
+ arch/arm/mach-mx5/mm.c                             |   25 ++-
+ arch/arm/mach-mxs/Makefile                         |    2 +-
+ arch/arm/mach-mxs/devices.c                        |   11 +
+ arch/arm/mach-mxs/devices/Makefile                 |    1 +
+ arch/arm/mach-mxs/devices/platform-gpio-mxs.c      |   53 ++++
+ arch/arm/mach-mxs/gpio.h                           |   34 ---
+ arch/arm/mach-mxs/include/mach/devices-common.h    |    2 +
+ arch/arm/mach-mxs/mach-mx28evk.c                   |    1 -
+ arch/arm/mach-mxs/mm-mx23.c                        |    1 -
+ arch/arm/mach-mxs/mm-mx28.c                        |    1 -
+ arch/arm/plat-mxc/Makefile                         |    2 +-
+ arch/arm/plat-mxc/devices.c                        |   11 +
+ arch/arm/plat-mxc/devices/Makefile                 |    1 +
+ arch/arm/plat-mxc/devices/platform-gpio-mxc.c      |   32 +++
+ arch/arm/plat-mxc/include/mach/common.h            |   12 +-
+ arch/arm/plat-mxc/include/mach/devices-common.h    |    2 +
+ arch/arm/plat-mxc/include/mach/gpio.h              |   27 --
+ drivers/gpio/Kconfig                               |    9 +
+ drivers/gpio/Makefile                              |    2 +
+ .../arm/plat-mxc/gpio.c => drivers/gpio/gpio-mxc.c |  266 +++++++++++---------
+ .../arm/mach-mxs/gpio.c => drivers/gpio/gpio-mxs.c |  227 ++++++++++-------
+ 68 files changed, 568 insertions(+), 422 deletions(-)
+ create mode 100644 arch/arm/mach-mxs/devices/platform-gpio-mxs.c
+ delete mode 100644 arch/arm/mach-mxs/gpio.h
+ create mode 100644 arch/arm/plat-mxc/devices/platform-gpio-mxc.c
+ rename arch/arm/plat-mxc/gpio.c => drivers/gpio/gpio-mxc.c (60%)
+ rename arch/arm/mach-mxs/gpio.c => drivers/gpio/gpio-mxs.c (58%)
 
 
-Wrong coding style...
+>
+> Sascha
+>
+> --
+> Pengutronix e.K. � � � � � � � � � � � � � | � � � � � � � � � � � � � � |
+> Industrial Linux Solutions � � � � � � � � | http://www.pengutronix.de/ �|
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0 � �|
+> Amtsgericht Hildesheim, HRA 2686 � � � � � | Fax: � +49-5121-206917-5555 |
+>
 
-> +               /*
-> +                * if we didn't find a platform device, we use module parameters
-> +                * building platform data on the fly.
-> +                */
-> +               dummy_data = (struct ramoops_platform_data *)
-> +                    kzalloc(sizeof(struct ramoops_platform_data), GFP_KERNEL);
 
-Please check the return value of kzalloc(), and, you don't need to
-cast it.
 
-> +               dummy_data->mem_size = mem_size;
-> +               dummy_data->mem_address = mem_address;
-> +               dummy = platform_create_bundle(&ramoops_driver, ramoops_probe,
-> +                       NULL, 0, dummy_data,
-> +                       sizeof(struct ramoops_platform_data));
-> +
-> +               if (IS_ERR(dummy))
-> +                       ret = PTR_ERR(dummy);
-> +               else
-> +                       ret = 0;
-> +       }
-> +
-> +       return ret;
->  }
->
->  static void __exit ramoops_exit(void)
->  {
->        platform_driver_unregister(&ramoops_driver);
-> +       kfree(dummy_data);
->  }
->
->  module_init(ramoops_init);
->
->
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
