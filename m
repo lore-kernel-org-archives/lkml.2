@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab1FFPmQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 11:42:16 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61633 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab1FFPmK (ORCPT
+	id S1757570Ab1FFPoh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 11:44:37 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:38411 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab1FFPoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 11:42:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Timur Tabi <timur@freescale.com>
-Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor management driver
-Date: Mon, 6 Jun 2011 17:42:01 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: kumar.gala@freescale.com, benh@kernel.crashing.org, greg@kroah.com,
-        akpm@kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106031724.44957.arnd@arndb.de> <4DE8FD85.7000703@freescale.com>
-In-Reply-To: <4DE8FD85.7000703@freescale.com>
+	Mon, 6 Jun 2011 11:44:34 -0400
+Date: Mon, 6 Jun 2011 16:44:24 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Jim Bos <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+Message-ID: <20110606154424.GA27252@srcf.ucam.org>
+References: <20101115185848.GI2583@sunsite.ms.mff.cuni.cz>
+ <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>
+ <AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com>
+ <20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>
+ <4CE1968D.3050706@xs4all.nl>
+ <4DE8DC16.6030308@xs4all.nl>
+ <20110603133351.GA25130@srcf.ucam.org>
+ <4DE8EF13.9030609@xs4all.nl>
+ <20110603144644.GA26782@srcf.ucam.org>
+ <4DECEBE6.3060302@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106061742.01974.arnd@arndb.de>
-X-Provags-ID: V02:K0:QHCZYr+4MsS2imWCjqQZlqANB4aTfPu+vPSmFWgGqvX
- BxKRC9+tJlPbn9KZDn0vme/DNgA7ExNEAu+7HMeDjryYnnLMEi
- QTiozhIj8ByGs8MRWR65RVoE5hrIFT8zqiMsxDd9onaE+CSDj4
- Mi3i5PQm1k8ZilBl7txEDrdvQrdh0svrW7A4p+qbLSR8rgmto2
- yxuM4n2Vc4UO0HHZKWrfg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DECEBE6.3060302@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 03 June 2011, Timur Tabi wrote:
-> Arnd Bergmann wrote:
-> >> > I don't think it's correct to think of a hypervisor as firmware, so I don't
-> >> > think drivers/firmware is better.
-> >> > 
-> >> > I'm not sure that creating virt/fsl and putting the driver in there is a good
-> >> > idea, because it will be the only driver in that directory.  Unlike KVM, this
-> >> > driver is just a collection of front-ends to our hypervisor API.  The actual
-> >> > hypervisor is completely separate.  That's why I put it in drivers/misc, because
-> >> > it's just a single driver with a miscellaneous collection of interfaces.
-> 
-> > Ok, fair enough. If nobody has a strong preference any other way, just make it
-> > drivers/firmware then.
-> 
-> Did you mean to say drivers/misc?
+On Mon, Jun 06, 2011 at 05:01:58PM +0200, Maarten Lankhorst wrote:
+> Maybe this is causing the pager issue on 3.0, can you test this patch?
 
-Sorry, I misread your first sentence above. I thought you said that you prefer
-drivers/firmware over virt/fsl. drivers/misc is definitely the wrong
-place for this, please choose a better one. Maybe drivers/virt/ ?
+Looks good to me. Can you post this to x86@ ?
 
-	Arnd
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
