@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab1FFQje (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:39:34 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39242 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755357Ab1FFQjc (ORCPT
+	id S1755109Ab1FFQi4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:38:56 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:15592 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941Ab1FFQix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:39:32 -0400
-Date: Mon, 6 Jun 2011 12:38:41 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: jeremy.fitzhardinge@citrix.com, stefano.stabellini@eu.citrix.com,
-        error27@gmail.com, Ian Campbell <Ian.Campbell@eu.citrix.com>
-Subject: [GIT PULL] (xen) bug-fixes for 3.0-rc2: stable/bug.fixes (and
- potentially stable/vga.support)
-Message-ID: <20110606163841.GA19556@dumpdata.com>
+	Mon, 6 Jun 2011 12:38:53 -0400
+X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4DED0292.1040605@die-jansens.de>
+Date: Mon, 06 Jun 2011 18:38:42 +0200
+From: Arne Jansen <lists@die-jansens.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4DED02A2.0018:SCFMA922111,ss=1,fgs=0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+References: <4DEB933C.1070900@die-jansens.de> <20110605151323.GA30590@elte.hu> <1307349530.2353.7374.camel@twins> <20110606145827.GD30348@elte.hu> <1307372989.2322.136.camel@twins> <1307375227.2322.161.camel@twins> <20110606155236.GA7374@elte.hu> <1307376039.2322.164.camel@twins> <20110606160810.GA16636@elte.hu> <1307376771.2322.168.camel@twins> <20110606161749.GA22157@elte.hu>
+In-Reply-To: <20110606161749.GA22157@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
+On 06.06.2011 18:17, Ingo Molnar wrote:
+>
+> * Peter Zijlstra<peterz@infradead.org>  wrote:
+>
+>> On Mon, 2011-06-06 at 18:08 +0200, Ingo Molnar wrote:
+>>> * Peter Zijlstra<peterz@infradead.org>  wrote:
+>>>
+>>>> On Mon, 2011-06-06 at 17:52 +0200, Ingo Molnar wrote:
+>>>>> * Peter Zijlstra<peterz@infradead.org>  wrote:
+>>>>>
+>>>>>> Needs more staring at, preferably by someone who actually
+>>>>>> understands that horrid mess :/ Also, this all still doesn't make
+>>>>>> printk() work reliably while holding rq->lock.
+>>>>>
+>>>>> So, what about my suggestion to just *remove* the wakeup from there
+>>>>> and use the deferred wakeup mechanism that klogd uses.
+>>>>>
+>>>>> That would make printk() *visibly* more robust in practice.
+>>>>
+>>>> That's currently done from the jiffy tick, do you want to effectively
+>>>> delay releasing the console_sem for the better part of a jiffy?
+>>>
+>>> Yes, and we already do it in some other circumstances.
+>>
+>> We do?
+>
+> Yes, see the whole printk_pending logic, it delays:
+>
+>                  wake_up_interruptible(&log_wait);
+>
+> to the next jiffies tick.
+>
+>>> Can you see
+>>> any problem with that? klogd is an utter slowpath anyway.
+>>
+>> but console_sem isn't klogd. We delay klogd and that's perfectly
+>> fine, but afaict we don't delay console_sem.
+>
+> But console_sem is really a similar special case as klogd. See, it's
+> about a *printk*. That's rare by definition.
+>
+> If someone on the console sees it he'll be startled by at least 10
+> msecs ;-) So delaying the wakeup to the next jiffy really fits into
+> the same approach as we already do with&log_wait, hm?
 
-Please git pull the two (or one) following branches:
+As long as it doesn't scramble the order of the messages, the delay
+imho doesn't matter even in very printk-heavy debugging sessions.
 
- git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug.fixes stable/vga.support
-
-The #stable/bug.fixes is based on (v3.0-rc1) tag and has two bug-fixes:
- 1). Dan found an past the array comparison. That bug has been in the code
-     since 2.6.27 - so lurking for quite a while.
- 2). Based on testing we found a bug in the IRQ code where we would "forget" to
-     ACK edge interrupts (such as PS/2 keyboard) and the user would be left without
-     the usage of a keyboard. This only happened during guest creation on specific
-     hardware - but the bug is generic that it could happened on any hardware.
-
-The #stable/vga.support is based off 2.6.39 and here I am going to defer to your
-judgment whether you would be OK pulling it in or if I should defer to v3.1 with it.
-
-The patch adds VGA text support for the Linux kernel to boot under the Xen hypervisor.
-In the past we have been using the frame-buffer (so KMS) or serial console so it never
-occurred to me to actually look at the VGA text output (and hence the reason why I did
-not include it in the initial git pull for 3.0-rc1) - but it is still important for
-users with servers where they don't want to use KMS or Xorg - and without this
-patch they won't be able to see anything. Furthermore folks have been popping up on the
-mailing list testing 3.0-rc1 and this is the first thing they notice not working right :-(
-
-The patch is contained within the Xen code base so the potential regression impact on
-other platforms is nill.
-
-#stable/bug.fixes:
- arch/x86/xen/multicalls.c |   12 ++++++------
- drivers/xen/events.c      |   18 +++++++++---------
- 2 files changed, 15 insertions(+), 15 deletions(-)
-
-Dan Carpenter (1):
-      xen: off by one errors in multicalls.c
-
-Stefano Stabellini (1):
-      xen: use the trigger info we already have to choose the irq handler
-
-
-#stable/vga.support:
-
- arch/x86/xen/Makefile       |    2 +-
- arch/x86/xen/enlighten.c    |    8 +++++
- arch/x86/xen/vga.c          |   67 +++++++++++++++++++++++++++++++++++++++++++
- arch/x86/xen/xen-ops.h      |   11 +++++++
- include/xen/interface/xen.h |   39 +++++++++++++++++++++++++
- 5 files changed, 126 insertions(+), 1 deletions(-)
-
-Jeremy Fitzhardinge (1):
-      xen: allow enable use of VGA console on dom0
+>
+> This would solve a real nightmare that has plagued us ever since
+> printk() has done wakeups directly - i.e. like forever.
+>
+> Thanks,
+>
+> 	Ingo
 
