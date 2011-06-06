@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab1FFJKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:10:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:50283 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974Ab1FFJKq (ORCPT
+	id S1754469Ab1FFJOv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:14:51 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43585 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab1FFJOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:10:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Ohad Ben-Cohen" <ohad@wizery.com>
-Subject: Re: [RFC 0/6] iommu: generic api migration and grouping
-Date: Mon, 6 Jun 2011 11:10:30 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        laurent.pinchart@ideasonboard.com, Hiroshi.DOYU@nokia.com,
-        davidb@codeaurora.org, Joerg.Roedel@amd.com,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        David Woodhouse <dwmw2@infradead.org>, anil.s.keshavamurthy@intel.com
-References: <1307053663-24572-1-git-send-email-ohad@wizery.com> <201106031753.16095.arnd@arndb.de> <BANLkTim2pDu25ZudZ7ZzOwka0V1sYEhDKw@mail.gmail.com>
-In-Reply-To: <BANLkTim2pDu25ZudZ7ZzOwka0V1sYEhDKw@mail.gmail.com>
+	Mon, 6 Jun 2011 05:14:50 -0400
+Date: Mon, 6 Jun 2011 10:14:10 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: shawn.guo@linaro.org, patches@linaro.org, vinod.koul@intel.com,
+        gregkh@suse.de, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dan.j.williams@intel.com, cjb@laptop.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/3] dmaengine: add new dma API for
+	max_segment_number
+Message-ID: <20110606091410.GB10508@n2100.arm.linux.org.uk>
+References: <1307345414-26872-1-git-send-email-shawn.guo@linaro.org> <20110606170420I.fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106061110.30601.arnd@arndb.de>
-X-Provags-ID: V02:K0:aJ6EVbmPrI8OjVCaoknZktHXefNc70PoG56ZsI+XEAX
- m8SZW3IbXk4/bYDQlfgR4Ae/WEoahCGj6T0Fn1Le7Y1OOQN92d
- BEEwAFXQ7Y6ZXA8OWNVJbKULYu6lnlwTXibnP8Gs2HEGf90rOk
- kZhghwmHyOFvAj00ikFnjyeXGCYxNCeC3lQSmY2T3V4tUsqJVo
- oQ+WznHm8m83Xlci1DQ6A==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606170420I.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 05 June 2011, Ohad Ben-Cohen wrote:
-> > As far as I can tell, once we have that in
-> > place, we you can migrate omap3isp from iovmm to dma-mapping and
-> > remove iovmm.
+On Mon, Jun 06, 2011 at 05:06:03PM +0900, FUJITA Tomonori wrote:
+> max_segs isn't unrelated with the dma mapping API. I explained above,
+> IOMMUs doesn't increase the number of segments (could decrease the
+> number of segments by merging).
 > 
-> Sounds like a plan.
-> 
-> I'd still prefer us to take small steps here, and not gate the omap
-> iommu cleanups with Marek's generic dma_map_ops work though. Let's go
-> forward and migrate omap's iommu to the generic iommu API, so new code
-> will be able to use it (e.g. the long coming virtio-based IPC/AMP
-> framework).
+> The limitation about the number of segment already lives elsewhere
+> (e.g. queue's limits.max_segments).
 
-Yes, of course. That's what I meant. Moving over omap to the IOMMU API
-is required anyway, so there is no point delaying that.
+I think you're missing the point entirely.
 
-> We'll migrate iovmm/omap3isp just enough so they don't break, but once
-> the generic dma_map_ops work materializes, we'd be able to complete
-> the migration, remove iovmm, and decouple omap3isp from omap-specific
-> iommu APIs for good.
+Lets take the problem at hand: you have two devices.  One of them is
+handled by the DMA engine code.  One of them is a block device.
 
-Ok, great!
+The block layer needs to know the various parameters of what is
+allowable for DMA, including such things as the maximum size of a
+segment, and the _number_ of segments that can be placed into any
+one request.
 
-	Arnd
+As the DMA provider is _entirely_ separate and unknown to the block
+device driver, the block device driver has no way to sanely provide
+these parameters to the block layer - they are not a property of the
+block device driver, but of the DMA provider.
+
+However, the DMA provider can't know that it'll be interacting with
+the block layer, so there's no way for the DMA provider to tell the
+block layer about its parameters.
+
+The only way this can happen is for there to be some way for the DMA
+provider to export this information to the block device driver, so
+the block device driver can then inform its upper layers what the DMA
+capabilities are.
+
+So to say that "it lives elsewhere" is completely missing the problem
+trying to be addressed by these patches.
