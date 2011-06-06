@@ -1,89 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab1FFSOd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 14:14:33 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:15017 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab1FFSOa (ORCPT
+	id S1752778Ab1FFSP2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 14:15:28 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:13321
+	"EHLO CH1EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753712Ab1FFSPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 14:14:30 -0400
-X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
-X-RZG-CLASS-ID: mo00
-Message-ID: <4DED18FD.4@die-jansens.de>
-Date: Mon, 06 Jun 2011 20:14:21 +0200
-From: Arne Jansen <lists@die-jansens.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Mon, 6 Jun 2011 14:15:22 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h8e3h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Mon, 6 Jun 2011 13:15:16 -0500
+From: Scott Wood <scottwood@freescale.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Timur Tabi <timur@freescale.com>, <kumar.gala@freescale.com>,
+        <linux-kernel@vger.kernel.org>, <akpm@kernel.org>,
+        <linux-console@vger.kernel.org>, <greg@kroah.com>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
+ management driver
+Message-ID: <20110606131516.69b9f361@schlenkerla.am.freescale.net>
+In-Reply-To: <201106061753.10154.arnd@arndb.de>
+References: <1306953337-15698-1-git-send-email-timur@freescale.com>
+	<201106031728.43707.arnd@arndb.de>
+	<20110603112213.4f4d1b4e@schlenkerla.am.freescale.net>
+	<201106061753.10154.arnd@arndb.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-References: <1307372989.2322.136.camel@twins> <1307375227.2322.161.camel@twins> <20110606155236.GA7374@elte.hu> <1307376039.2322.164.camel@twins> <20110606160810.GA16636@elte.hu> <1307376771.2322.168.camel@twins> <20110606161749.GA22157@elte.hu> <1307378649.2322.198.camel@twins> <20110606171153.GE2391@elte.hu> <4DED1519.2020803@die-jansens.de> <20110606180733.GA20123@elte.hu>
-In-Reply-To: <20110606180733.GA20123@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.06.2011 20:07, Ingo Molnar wrote:
->
-> * Arne Jansen<lists@die-jansens.de>  wrote:
->
->> On 06.06.2011 19:11, Ingo Molnar wrote:
->>>
->>> * Peter Zijlstra<peterz@infradead.org>   wrote:
->>
->>>
->>>> +void printk_tick(void)
->>>> +{
->>>> +	if (!__this_cpu_read(printk_pending))
->>>> +		return;
->>>> +
->>>> +	/*
->>>> +	 * Try to acquire and then immediately release the
->>>> +	 * console semaphore. The release will do all the
->>>> +	 * actual magic (print out buffers, wake up klogd,
->>>> +	 * etc).
->>>> +	 */
->>>> +	if (console_trylock_for_printk(smp_processor_id())) {
->>>> +		console_unlock();
->>>> +		__this_cpu_write(printk_pending, 0);
->>>> +	}
->>>> +}
->>>
->>> Arne does this fix the hang you are seeing?
->>
->> What do you want me to test? just replace printk_tick with the
->> above version? If I do that, the machine doesn't even boot up any
->> more.
->
-> Yeah.
->
-> So i think we want two patches:
->
->   - The first one that minimally removes the lockdep_off()/on() dance
->     and fixes the regression: the patch that i sent earlier today.
->     I *think* that should fix the crash.
+On Mon, 6 Jun 2011 17:53:09 +0200
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-Isn't the regression just the false lockdep_assert_held(&p->pi_lock)?
-The patch Peter sent earlier seems like the minimal changeset to fix
-that, plus it fixes a bug that might pop up somewhere else, too.
+> On Friday 03 June 2011, Scott Wood wrote:
+> > On Fri, 3 Jun 2011 17:28:43 +0200
+> > Arnd Bergmann <arnd@arndb.de> wrote:
+> > 
+> > > On Thursday 02 June 2011, Scott Wood wrote:
+> > > > I wanted to have the hypervisor take an update dtb (we already have special
+> > > > meta-properties for things like deletion as part of the hv config
+> > > > mechanism).  But others on the project wanted to keep it simple, and so
+> > > > get/set property it was. :-/
+> > > > 
+> > > > It's unlikely to change at this point without a real need.
+> > > > 
+> > > > As for a filesystem interface, it's not a good match either. 
+> > > > You can't iterate over anything to read out the full tree from the hv.
+> > > 
+> > > kexec iterates over /proc/device-tree to create a dts blob.
+> > 
+> > That's irrelevant, because we're not talking about that device tree.  We're
+> > talking about the device tree of another hypervisor guest.
+> 
+> I understand that it's a different device tree. That doesn't mean we
+> can't use the same tools.
 
->
->     3.0 material.
->
->   - The second one that moves console_sem wakeups to the jiffies tick.
->     It does not push the acquiring and the console->write() calls to
->     jiffies context, only delays the wakeup.
->
->     3.1 material.
->
-> Thanks,
->
-> 	Ingo
+The kernel does not have the same sort of access to this tree.
+
+> > > > You can't delete anything. 
+> > > 
+> > > rm, rmdir
+> > > 
+> > > > You can't create empty nodes.
+> > > 
+> > > mkdir
+> > 
+> > I know how to operate a filesystem.  You can't do these operations *on
+> > another guest's device tree through the hv interface*.
+> 
+> Why not?
+
+Because the hypervisor does not support it.  It provides only getprop and
+setprop.  I think you took my "you can't do that" statements to be a
+statement about limitations of using a filesystem interfcae -- quite the
+opposite, I was saying the hv functionality is too limited to support a
+filesystem interface with normal semantics.
+
+> > And what would be the benefit of this major restructuring and added
+> > complexity?
+> 
+> I think it would be a slightly better abstraction, and the complexity
+> is not as big as you make it sound. I'm mainly countering your statement
+> that it would be a bad interface or that would not possible to do.
+> 
+> I'm not that opposed to having an ioctl interface for your hypervisor
+> interface, but I am opposed to making design choices based on
+> a bad representations of facts or not having considered the options
+> that other people suggest.
+
+I don't really see how a filesystem is a better abstraction for a wrapper
+around a procedural interface.  A somewhat better argument is that ioctls
+are a pain, and Linux doesn't have a better way to expose a procedural
+interface, that doesn't require a wrapper program -- though as the wrapper
+already exists, and the fs interface would probably be sufficiently awkward
+that people would still use a wrapper, that doesn't buy us too much either.
+
+This is not being proposed as any sort of standard kernel API, just a way
+for userspace to get access to implementation-specific hcalls.
+Implementation-specific backdoor is practically the definition of ioctl. :-)
+
+I would be interested to see a concrete proposal for what this would look
+like as a filesystem, though, based on the actual operations that are
+available.  How would you deal with getting all the parameters in,
+performing the operation, and getting the results back?  What about when
+multiple processes are doing this at the same time?  What would the memcpy
+hcall look like?
+
+-Scott
 
