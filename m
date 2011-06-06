@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365Ab1FFVZr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 17:25:47 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21602 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979Ab1FFVZp (ORCPT
+	id S1756079Ab1FFVZK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 17:25:10 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33307 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab1FFVZI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 17:25:45 -0400
-Date: Mon, 6 Jun 2011 17:23:56 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Timur Tabi <timur@freescale.com>,
-        Deepak Saxena <dsaxena@linaro.org>, kumar.gala@freescale.com,
-        benh@kernel.crashing.org, greg@kroah.com, akpm@kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-console@vger.kernel.org
-Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
- management driver
-Message-ID: <20110606212356.GA20112@dumpdata.com>
-References: <1306953337-15698-1-git-send-email-timur@freescale.com>
- <201106061803.58531.arnd@arndb.de>
- <4DECFBC5.6070205@freescale.com>
- <201106061824.53844.arnd@arndb.de>
- <4DED4030.9050503@tilera.com>
+	Mon, 6 Jun 2011 17:25:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=r5ZJE/8h26+S+LRhAZqwAOyYKdmgq36C4QnSh2wIWI51zAPNJm29DrXGiU5QcMoNKH
+         oZkTXS/TMza9g+V2v5Pbf3MyJ1lfMetnqMSJxVxgR5ZvJwYRByG61CogAJZuoqyQB7Kb
+         Ya95BOTUVcfaj1W7QKBZQ7s2SeDA5AiGzVjGk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DED4030.9050503@tilera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090207.4DED4582.0019:SCFSTAT5015188,ss=1,fgs=0
+In-Reply-To: <20110606203252.1854e4d7@sf>
+References: <20110605201042.21c86763@sf>
+	<BANLkTimLXr1+OLtGGXE2kzccRRG5T-G2mw@mail.gmail.com>
+	<20110606203252.1854e4d7@sf>
+Date: Mon, 6 Jun 2011 22:25:07 +0100
+Message-ID: <BANLkTinEecGCZPCUeLrXu4o+hN9cKGa39w@mail.gmail.com>
+Subject: Re: 3.0.0-rc1: dmesg shows 'wlan%d' instead of 'wlan0'
+From: julie Sullivan <kernelmail.jms@gmail.com>
+To: Sergei Trofimovich <slyich@gmail.com>
+Cc: Mohammed Shafi <shafi.wireless@gmail.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 05:01:36PM -0400, Chris Metcalf wrote:
-> On 6/6/2011 12:24 PM, Arnd Bergmann wrote:
-> > On Monday 06 June 2011, Timur Tabi wrote:.
-> >> And what about my concern that my driver will be the only one in drivers/virt?
-> > I have no doubt that more of these will come. Chris Metcalf is currently
-> > looking for a home for his tilera hypervisor drivers, and we have the
-> > microsoft hyperv drivers in drivers/staging, so they will hopefully
-> > move to a proper place later. We also have similar drivers in other
-> > places, e.g. drivers/ps3/ps3-sys-manager.c, drivers/s390/char/vmcp.c
-> > or parts of drivers/xen.
-> 
-> It might help if someone (Arnd?) wanted to propose a statement of what
-> drivers/virt was really for.  If it's for any Linux driver that upcalls to
-
-Was for? I am not seeing it in v3.0-rc2?
-
-> a hypervisor for any reason, then the Tilera paravirtualized drivers fit in
-> well.  If it's intended more for drivers that guests running under a
-> hypervisor can use to talk to the hypervisor itself (e.g. managing
-
-I believe that the code that deals with specific subsystem (so block API
-for example) would reside in subsystem directory (so drivers/block would have
-your virtualization block driver). This allows the maintainer of block
-to make sure your driver is OK.
-
-> notifications that a hypervisor delivers to a guest to cause it to shut
-> down or take other actions), then it doesn't seem like the Tilera
-
-That looks to be arch/<x>/tilera/virt/ candidate?
-
-> paravirtualized device drivers belong there, since they're just using the
-> Tilera hypervisor synchronously to do I/O or get/set device and driver state.
-
-Well, I/O sounds like block API or network API. But then you are also
-doing management ioctl - which implies "drivers". "drivers/tilera" does not
-work?
-
-> 
-> -- 
-> Chris Metcalf, Tilera Corp.
-> http://www.tilera.com
-> 
-> 
+>
+> Applied this commit on top of 3.0-rc2 and wlan%d switched to wlan0 back.
+>
+> Thanks!
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>  Sergei
+>
+
+Yes, with me too:
+
+
+before patch application (3.0-rc2):
+
+[   63.837522] wlan%d: authenticate with 00:18:f6:aa:6e:25 (try 1)
+[   63.843805] wlan%d: authenticated
+[   63.844282] wlan%d: associate with 00:18:f6:aa:6e:25 (try 1)
+[   63.846887] wlan%d: RX AssocResp from 00:18:f6:aa:6e:25
+(capab=0x411 status=0 aid=2)
+[   63.846891] wlan%d: associated
+
+after patch application:
+
+[   69.472955] wlan0: authenticate with 00:18:f6:aa:6e:25 (try 1)
+[   69.479356] wlan0: authenticated
+[   69.479863] wlan0: associate with 00:18:f6:aa:6e:25 (try 1)
+[   69.482425] wlan0: RX AssocResp from 00:18:f6:aa:6e:25 (capab=0x411
+status=0 aid=2)
+[   69.482428] wlan0: associated
+
+
+Thanks for the pointer, Shafi.
+
+Cheers
+Julie
