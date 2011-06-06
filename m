@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757688Ab1FFTcu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 15:32:50 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:41031 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753344Ab1FFTct (ORCPT
+	id S1757860Ab1FFTeD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 15:34:03 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45839 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757037Ab1FFTeA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 15:32:49 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19y1G4eVdlyGMvBUZFk5PWFP27IXomho7eZwYHued
-	rKw341v5+4XvOS
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: William Hubbs <w.d.hubbs@gmail.com>,
-        Christopher Brannon <chris@the-brannons.com>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] staging/speakup: Use kstrtoul_from_user
-Date: Mon,  6 Jun 2011 21:32:32 +0200
-Message-Id: <1307388752-32420-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-X-Y-GMX-Trusted: 0
+	Mon, 6 Jun 2011 15:34:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=m9+AgsY2kytDhz351llxkJSTG+gUyhHgpb3S5CQJ1mAKf3fxb3uRgd7o+0a1SBvoFH
+         ibCRHcpKUb66yOr0rUb2rjdPn57w4tdtcLD0KKjNRtC2Sql5mYsjZ/NHo5ekaVCw9z0J
+         /vyUD5u8VXx2aByBrcaYkO/zHUsBrrNx1HdbY=
+MIME-Version: 1.0
+In-Reply-To: <4DED25AD.9050504@uw.no>
+References: <1307386711-8866-1-git-send-email-lacombar@gmail.com>
+	<1307386711-8866-2-git-send-email-lacombar@gmail.com>
+	<4DED25AD.9050504@uw.no>
+Date: Mon, 6 Jun 2011 15:34:00 -0400
+Message-ID: <BANLkTi=DmPSGzevPDcepmHYQrcAhVOOEkA@mail.gmail.com>
+Subject: Re: [PATCH 1/9] kconfig: annotate non-trivial fall-trough
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: "Daniel K." <dk@uw.no>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces the code for getting an unsigned long from a
-userspace buffer by a simple call to kstroul_from_user.
-This makes it easier to read and less error prone.
+Hi,
 
-Kernel Version: staging of 20110606
+On Mon, Jun 6, 2011 at 3:08 PM, Daniel K. <dk@uw.no> wrote:
+> Arnaud Lacombe wrote:
+>>
+>> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+>> ---
+>>  scripts/kconfig/conf.c     |    4 ++++
+>>  scripts/kconfig/confdata.c |    5 +++++
+>>  scripts/kconfig/gconf.c    |    1 +
+>>  scripts/kconfig/mconf.c    |    1 +
+>>  4 files changed, 11 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
+>> index 006ad81..8be7374 100644
+>> --- a/scripts/kconfig/conf.c
+>> +++ b/scripts/kconfig/conf.c
+>> @@ -106,6 +106,7 @@ static int conf_askvalue(struct symbol *sym, const
+>> char *def)
+>>                        return 0;
+>>                }
+>>                check_stdin();
+>> +               /* FALLTHOUGH */
+>>        case oldaskconfig:
+>>                fflush(stdout);
+>>                xfgets(line, 128, stdin);
+>
+> Could it be done using the inside voice?
+>
+> s/FALLTHOUGH/fall through/
+>
+Sure, I followed the LINT syntax and missed
+`Documentation/CodingStyle' defined its own. [And I actually managed
+to make a typo in a so trivial patch :(]. Anyway, thanks for pointing
+that out. The tree at github contains the fixed version.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/speakup/speakup_soft.c |    9 +--------
- 1 files changed, 1 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/staging/speakup/speakup_soft.c b/drivers/staging/speakup/speakup_soft.c
-index a2c3dc4..42cdafe 100644
---- a/drivers/staging/speakup/speakup_soft.c
-+++ b/drivers/staging/speakup/speakup_soft.c
-@@ -273,15 +273,8 @@ static ssize_t softsynth_write(struct file *fp, const char *buf, size_t count,
- {
- 	unsigned long supplied_index = 0;
- 	int converted;
--	char indbuf[5];
--	if (count >= sizeof(indbuf))
--		return -EINVAL;
- 
--	if (copy_from_user(indbuf, buf, count))
--		return -EFAULT;
--	indbuf[count] = '\0';
--
--	converted = strict_strtoul(indbuf, 0, &supplied_index);
-+	converted = kstrtoul_from_user(buf, count, 0, &supplied_index);
- 
- 	if (converted < 0)
- 		return converted;
--- 
-1.7.3.4
-
+ - Arnaud
