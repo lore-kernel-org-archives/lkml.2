@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab1FFUhZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 16:37:25 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:47339 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753834Ab1FFUhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 16:37:22 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@ZenIV.linux.org.uk
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH] vfs: make unlink() return ENOENT in preference to EROFS
-Date: Mon,  6 Jun 2011 16:37:20 -0400
-Message-Id: <1307392640-28018-1-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 1.7.4.1.22.gec8e1.dirty
-In-Reply-To: <20110606195555.GB20818@thunk.org>
-References: <20110606195555.GB20818@thunk.org>
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1757981Ab1FFUim (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 16:38:42 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:56514 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965Ab1FFUik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 16:38:40 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-omap@vger.kernel.org
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, tarun.kanti@ti.com,
+        linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@android.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] ARM: omap4: gpio: fix setting IRQWAKEN bits
+Date: Mon,  6 Jun 2011 13:38:17 -0700
+Message-Id: <1307392698-21170-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.4.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If user space attempts to unlink a non-existent file, and the file
-system is mounted read-only, return ENOENT instead of EROFS.  Either
-error code is arguably valid/correct, but ENOENT is a more specific
-error message.
+Setting the IRQWAKEN bit was overwriting previous IRQWAKEN bits,
+causing only the last bit set to take effect, resulting in lost
+wakeups when the GPIO controller is in idle.
 
-Reported-by: Michael Tokarev <mjt@tls.msk.ru>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Replace direct writes to IRQWAKEN with MOD_REG_BIT calls to
+perform a read-modify-write on the register.
+
+Signed-off-by: Colin Cross <ccross@android.com>
 ---
- fs/namei.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpio/gpio-omap.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 1ab641f..a9edbe0 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2708,9 +2708,9 @@ static long do_unlinkat(int dfd, const char __user *pathname)
- 	error = PTR_ERR(dentry);
- 	if (!IS_ERR(dentry)) {
- 		/* Why not before? Because we want correct error value */
--		if (nd.last.name[nd.last.len])
--			goto slashes;
- 		inode = dentry->d_inode;
-+		if (nd.last.name[nd.last.len] || !inode)
-+			goto slashes;
- 		if (inode)
- 			ihold(inode);
- 		error = mnt_want_write(nd.path.mnt);
+Santosh, I left your Acked-by off this patch because I changed
+the register access to match the OMAP4 TRM.
+
+diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+index 6c51191..8ba6957 100644
+--- a/drivers/gpio/gpio-omap.c
++++ b/drivers/gpio/gpio-omap.c
+@@ -432,7 +432,6 @@ static inline void set_24xx_gpio_triggering(struct gpio_bank *bank, int gpio,
+ {
+ 	void __iomem *base = bank->base;
+ 	u32 gpio_bit = 1 << gpio;
+-	u32 val;
+ 
+ 	if (cpu_is_omap44xx()) {
+ 		MOD_REG_BIT(OMAP4_GPIO_LEVELDETECT0, gpio_bit,
+@@ -455,15 +454,8 @@ static inline void set_24xx_gpio_triggering(struct gpio_bank *bank, int gpio,
+ 	}
+ 	if (likely(!(bank->non_wakeup_gpios & gpio_bit))) {
+ 		if (cpu_is_omap44xx()) {
+-			if (trigger != 0)
+-				__raw_writel(1 << gpio, bank->base+
+-						OMAP4_GPIO_IRQWAKEN0);
+-			else {
+-				val = __raw_readl(bank->base +
+-							OMAP4_GPIO_IRQWAKEN0);
+-				__raw_writel(val & (~(1 << gpio)), bank->base +
+-							 OMAP4_GPIO_IRQWAKEN0);
+-			}
++			MOD_REG_BIT(OMAP4_GPIO_IRQWAKEN0, gpio_bit,
++				trigger != 0);
+ 		} else {
+ 			/*
+ 			 * GPIO wakeup request can only be generated on edge
 -- 
-1.7.4.1.22.gec8e1.dirty
+1.7.4.1
 
