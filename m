@@ -1,130 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328Ab1FFNXd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 09:23:33 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:55453 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab1FFNXc (ORCPT
+	id S1757327Ab1FFNZj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 09:25:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:38554 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785Ab1FFNZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 09:23:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=IQRCWmXsyTteaROWrvfOfY4A9y6KcrqJ4g+PZUfw+B/H/ke++QakbSHuvc0VCpEYWb
-         XMa2sL/tmSJj7mCOzXgYku3BxOk0VK9FJk5PSazHjk0fZ+cYDrqTDRwzU/oOVeUtPrIR
-         qQTXELDwyO8q424aTbCoI3Fhb7D//FFQlrRtw=
-Date: Mon, 6 Jun 2011 22:23:21 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, akpm@linux-foundation.org,
-        Ury Stankevich <urykhy@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous
-Message-ID: <20110606132321.GA1686@barrios-laptop>
-References: <20110601214018.GC7306@suse.de>
- <20110601233036.GZ19505@random.random>
- <20110602010352.GD7306@suse.de>
- <20110602132954.GC19505@random.random>
- <20110602145019.GG7306@suse.de>
- <20110602153754.GF19505@random.random>
- <20110603020920.GA26753@suse.de>
- <20110603144941.GI7306@suse.de>
- <20110604065853.GA4114@barrios-laptop>
- <20110606104345.GE5247@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110606104345.GE5247@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 6 Jun 2011 09:25:36 -0400
+X-Authority-Analysis: v=1.1 cv=rr9DlE2fnT1UeYFJeFag6ks/js+bHNfqVlaSByoS2d4= c=1 sm=0 a=MbabkVIayccA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=FRjYEXmO_ycf1_xor_4A:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] sched: remove noop in pre_schedule_rt()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <BANLkTinCbAhE_Zkf393wbtqwu5L0U2jU7w@mail.gmail.com>
+References: <BANLkTin1QYAx7as41t78-n0giLSBWoToVA@mail.gmail.com>
+	 <BANLkTi=N8cm_9OKk8VCPVxPPn+Ejuhzq6w@mail.gmail.com>
+	 <BANLkTinO4p5d-aShHuSOQoPLTCZvAcVjcQ@mail.gmail.com>
+	 <1307359563.31814.14.camel@gandalf.stny.rr.com>
+	 <BANLkTinCbAhE_Zkf393wbtqwu5L0U2jU7w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 06 Jun 2011 09:25:34 -0400
+Message-ID: <1307366734.31814.18.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 11:43:45AM +0100, Mel Gorman wrote:
-> On Sat, Jun 04, 2011 at 03:58:53PM +0900, Minchan Kim wrote:
-> > On Fri, Jun 03, 2011 at 03:49:41PM +0100, Mel Gorman wrote:
-> > > On Fri, Jun 03, 2011 at 03:09:20AM +0100, Mel Gorman wrote:
-> > > > On Thu, Jun 02, 2011 at 05:37:54PM +0200, Andrea Arcangeli wrote:
-> > > > > > There is an explanation in here somewhere because as I write this,
-> > > > > > the test machine has survived 14 hours under continual stress without
-> > > > > > the isolated counters going negative with over 128 million pages
-> > > > > > successfully migrated and a million pages failed to migrate due to
-> > > > > > direct compaction being called 80,000 times. It's possible it's a
-> > > > > > co-incidence but it's some co-incidence!
-> > > > > 
-> > > > > No idea...
-> > > > 
-> > > > I wasn't able to work on this most of the day but was looking at this
-> > > > closer this evening again and I think I might have thought of another
-> > > > theory that could cause this problem.
-> > > > 
-> > > > When THP is isolating pages, it accounts for the pages isolated against
-> > > > the zone of course. If it backs out, it finds the pages from the PTEs.
-> > > > On !SMP but PREEMPT, we may not have adequate protection against a new
-> > > > page from a different zone being inserted into the PTE causing us to
-> > > > decrement against the wrong zone. While the global counter is fine,
-> > > > the per-zone counters look corrupted. You'd still think it was the
-> > > > anon counter tht got screwed rather than the file one if it really was
-> > > > THP unfortunately so it's not the full picture. I'm going to start
-> > > > a test monitoring both zoneinfo and vmstat to see if vmstat looks
-> > > > fine while the per-zone counters that are negative are offset by a
-> > > > positive count on the other zones that when added together become 0.
-> > > > Hopefully it'll actually trigger overnight :/
-> > > > 
-> > > 
-> > > Right idea of the wrong zone being accounted for but wrong place. I
-> > > think the following patch should fix the problem;
-> > > 
-> > > ==== CUT HERE ===
-> > > mm: compaction: Ensure that the compaction free scanner does not move to the next zone
-> > > 
-> > > Compaction works with two scanners, a migration and a free
-> > > scanner. When the scanners crossover, migration within the zone is
-> > > complete. The location of the scanner is recorded on each cycle to
-> > > avoid excesive scanning.
-> > > 
-> > > When a zone is small and mostly reserved, it's very easy for the
-> > > migration scanner to be close to the end of the zone. Then the following
-> > > situation can occurs
-> > > 
-> > >   o migration scanner isolates some pages near the end of the zone
-> > >   o free scanner starts at the end of the zone but finds that the
-> > >     migration scanner is already there
-> > >   o free scanner gets reinitialised for the next cycle as
-> > >     cc->migrate_pfn + pageblock_nr_pages
-> > >     moving the free scanner into the next zone
-> > >   o migration scanner moves into the next zone but continues accounting
-> > >     against the old zone
-> > > 
-> > > When this happens, NR_ISOLATED accounting goes haywire because some
-> > > of the accounting happens against the wrong zone. One zones counter
-> > > remains positive while the other goes negative even though the overall
-> > > global count is accurate. This was reported on X86-32 with !SMP because
-> > > !SMP allows the negative counters to be visible. The fact that it is
-> > > difficult to reproduce on X86-64 is probably just a co-incidence as
-> > 
-> > I guess it's related to zone sizes.
-> > X86-64 has small DMA and large DMA32 zones for fallback of NORMAL while
-> > x86 has just a small DMA(16M) zone.
-> > 
-> 
-> Yep, this is a possibility as well as the use of lowmem reserves.
-> 
-> > I think DMA zone in x86 is easily full of non-LRU or non-movable pages.
-> 
-> Maybe not full, but it has more PageReserved pages than anywhere else
+On Mon, 2011-06-06 at 21:14 +0800, Hillf Danton wrote:
 
-Yeb. It's very possible. 
+> The work was repeated not only by Yong, you see, almost
+> impossible, which shows RT scheduling was and is
+> attracting minds, and will be as well, right?
 
-> and few MIGRATE_MOVABLE blocks. MIGRATE_MOVABLE gets skipped during
-				  non-MIGRATE_MOVABLE gets skipped during
-To be clear for someone in future, let's fix typo.
+It was an obvious fix, hardly impossible for it to be done twice. This
+happens all the time in the kernel. Especially if for some reason a fix
+doesn't make it in. This fix didn't make it in simply because it wasn't
+one of my normal branches I push to Ingo, and it was at a time that we
+all were quite busy and it was simply overlooked.
 
-> async compaction we could easily reach the end of the DMA zone quickly.
+But yes, the RT scheduler (and the scheduler itself) always attracts
+newcomers, and we welcome them. Nothing curious or unusually about it.
 
--- 
-Kind regards
-Minchan Kim
+-- Steve
+
+
