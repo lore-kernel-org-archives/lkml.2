@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab1FFJbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:31:11 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:56479 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754804Ab1FFJbF (ORCPT
+	id S1755112Ab1FFJX0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:23:26 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:40431 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754054Ab1FFJXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:31:05 -0400
-Date: Mon, 6 Jun 2011 11:31:02 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Lutomirski <luto@mit.edu>, Ingo Molnar <mingo@elte.hu>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
-        pageexec@freemail.hu
-Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
-Message-ID: <20110606093102.GW27166@one.firstfloor.org>
-References: <cover.1307292171.git.luto@mit.edu> <4de62bfbf6974f14d0e9d9ae37cc137dbc926a30.1307292171.git.luto@mit.edu> <BANLkTimrhO8QfBqQsH_Q13ghRH2P+ZP7AA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimrhO8QfBqQsH_Q13ghRH2P+ZP7AA@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	Mon, 6 Jun 2011 05:23:24 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4DEC9E6B.8030505@cam.ac.uk>
+Date: Mon, 06 Jun 2011 10:31:23 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+CC: perex@perex.cz, tiwai@suse.de, broonie@opensource.wolfsonmicro.com,
+        dp@opensource.wolfsonmicro.com, lrg@ti.com,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] wm8940: remove unecessary if statement
+References: <1307321274-21858-1-git-send-email-Gregory.Dietsche@cuw.edu>
+In-Reply-To: <1307321274-21858-1-git-send-email-Gregory.Dietsche@cuw.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 05:46:41PM +0900, Linus Torvalds wrote:
-> On Mon, Jun 6, 2011 at 2:50 AM, Andy Lutomirski <luto@mit.edu> wrote:
-> > CONFIG_UNSAFE_VSYSCALLS was added in the previous patch as a
-> > temporary hack to avoid penalizing users who don't build glibc from
-> > git.
-> 
-> I really hate that name.
-> 
-> Do you have *any* reason to call this "unsafe"?
-> 
-> Seriously. The whole patch series just seems annoying.
+On 06/06/11 01:47, Greg Dietsche wrote:
+> the code always returns ret regardless, so if(ret) check is unecessary.
+Good point, though please spell check your commit messages.
+unecessary -> unnecessary
 
-and assumes everyone is using glibc which is just wrong.
+Also if you want to do this sort of cleanup, please also fix the
+equivalent in wm8940_resume and wm8940_add_widgets.  Ack is for
+what is here, plus those if you do them.
 
--Andi
+Just as an aside, there is no earthly point in cc'ing lkml for a
+simple cleanup like this. Just adds to already huge amount of noise!
+> 
+> Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> ---
+>  sound/soc/codecs/wm8940.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
+> index 25580e3..1ada6d3 100644
+> --- a/sound/soc/codecs/wm8940.c
+> +++ b/sound/soc/codecs/wm8940.c
+> @@ -730,9 +730,6 @@ static int wm8940_probe(struct snd_soc_codec *codec)
+>  	if (ret)
+>  		return ret;
+>  	ret = wm8940_add_widgets(codec);
+> -	if (ret)
+> -		return ret;
+> -
+>  	return ret;
+>  }
+>  
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
