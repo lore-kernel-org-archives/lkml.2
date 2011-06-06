@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758429Ab1FFWlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:41:25 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:39454
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1758399Ab1FFWkU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:40:20 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:37290
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758190Ab1FFWfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758192Ab1FFWfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Jun 2011 18:35:01 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -13,9 +13,9 @@ To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>
-Subject: [PATCH 32/49] Staging: hv: vmbus: Correct some dated comments in channel.c
-Date: Mon,  6 Jun 2011 15:49:56 -0700
-Message-Id: <1307400613-13234-32-git-send-email-kys@microsoft.com>
+Subject: [PATCH 33/49] Staging: hv: vmbus: Move the definition of struct vmbus_channel
+Date: Mon,  6 Jun 2011 15:49:57 -0700
+Message-Id: <1307400613-13234-33-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1307400613-13234-1-git-send-email-kys@microsoft.com>
 References: <1307400540-13193-1-git-send-email-kys@microsoft.com>
@@ -24,65 +24,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct some dated comments in channel.c.
+In preparation for embedding the state needed to close the channel, move
+the definition of struct vmbus_channel.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 ---
- drivers/staging/hv/channel.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
+ drivers/staging/hv/hyperv.h |   77 +++++++++++++++++++++----------------------
+ 1 files changed, 38 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/staging/hv/channel.c b/drivers/staging/hv/channel.c
-index 95b410f..043fe25 100644
---- a/drivers/staging/hv/channel.c
-+++ b/drivers/staging/hv/channel.c
-@@ -185,12 +185,12 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
+diff --git a/drivers/staging/hv/hyperv.h b/drivers/staging/hv/hyperv.h
+index 73c251e..93bbeab 100644
+--- a/drivers/staging/hv/hyperv.h
++++ b/drivers/staging/hv/hyperv.h
+@@ -523,45 +523,6 @@ enum vmbus_channel_state {
+ 	CHANNEL_OPEN_STATE,
+ };
  
- 	openMsg = (struct vmbus_channel_open_channel *)openInfo->msg;
- 	openMsg->header.msgtype = CHANNELMSG_OPENCHANNEL;
--	openMsg->openid = newchannel->offermsg.child_relid; /* FIXME */
-+	openMsg->openid = newchannel->offermsg.child_relid;
- 	openMsg->child_relid = newchannel->offermsg.child_relid;
- 	openMsg->ringbuffer_gpadlhandle = newchannel->ringbuffer_gpadlhandle;
- 	openMsg->downstream_ringbuffer_pageoffset = send_ringbuffer_size >>
- 						  PAGE_SHIFT;
--	openMsg->server_contextarea_gpadlhandle = 0; /* TODO */
-+	openMsg->server_contextarea_gpadlhandle = 0;
- 
- 	if (userdatalen > MAX_USER_DEFINED_BYTES) {
- 		err = -EINVAL;
-@@ -364,11 +364,11 @@ static int create_gpadl_header(void *kbuffer, u32 size,
- 				(struct vmbus_channel_gpadl_body *)msgbody->msg;
- 
- 			/*
--			 * FIXME:
- 			 * Gpadl is u32 and we are using a pointer which could
- 			 * be 64-bit
-+			 * This is governed by the guest/host protocol and
-+			 * so the hypervisor gurantees that this is ok.
- 			 */
--			/* gpadl_body->Gpadl = kbuffer; */
- 			for (i = 0; i < pfncurr; i++)
- 				gpadl_body->pfn[i] = pfn + pfnsum + i;
- 
-@@ -462,7 +462,6 @@ int vmbus_establish_gpadl(struct vmbus_channel *channel, void *kbuffer,
- 	if (msgcount > 1) {
- 		list_for_each(curr, &msginfo->submsglist) {
- 
--			/* FIXME: should this use list_entry() instead ? */
- 			submsginfo = (struct vmbus_channel_msginfo *)curr;
- 			gpadl_body =
- 			     (struct vmbus_channel_gpadl_body *)submsginfo->msg;
-@@ -577,8 +576,6 @@ void vmbus_close(struct vmbus_channel *channel)
- 		vmbus_teardown_gpadl(channel,
- 					  channel->ringbuffer_gpadlhandle);
- 
--	/* TODO: Send a msg to release the childRelId */
+-struct vmbus_channel {
+-	struct list_head listentry;
 -
- 	/* Cleanup the ring buffers for this channel */
- 	hv_ringbuffer_cleanup(&channel->outbound);
- 	hv_ringbuffer_cleanup(&channel->inbound);
+-	struct hv_device *device_obj;
+-
+-	struct work_struct work;
+-
+-	enum vmbus_channel_state state;
+-	/*
+-	 * For util channels, stash the
+-	 * the service index for easy access.
+-	 */
+-	s8 util_index;
+-
+-	struct vmbus_channel_offer_channel offermsg;
+-	/*
+-	 * These are based on the OfferMsg.MonitorId.
+-	 * Save it here for easy access.
+-	 */
+-	u8 monitor_grp;
+-	u8 monitor_bit;
+-
+-	u32 ringbuffer_gpadlhandle;
+-
+-	/* Allocated memory for ring buffer */
+-	void *ringbuffer_pages;
+-	u32 ringbuffer_pagecount;
+-	struct hv_ring_buffer_info outbound;	/* send to parent */
+-	struct hv_ring_buffer_info inbound;	/* receive from parent */
+-	spinlock_t inbound_lock;
+-	struct workqueue_struct *controlwq;
+-
+-	/* Channel callback are invoked in this workqueue context */
+-	/* HANDLE dataWorkQueue; */
+-
+-	void (*onchannel_callback)(void *context);
+-	void *channel_callback_context;
+-};
+-
+ struct vmbus_channel_debug_info {
+ 	u32 relid;
+ 	enum vmbus_channel_state state;
+@@ -608,6 +569,44 @@ struct vmbus_channel_msginfo {
+ 	unsigned char msg[0];
+ };
+ 
++struct vmbus_channel {
++	struct list_head listentry;
++
++	struct hv_device *device_obj;
++
++	struct work_struct work;
++
++	enum vmbus_channel_state state;
++	/*
++	 * For util channels, stash the
++	 * the service index for easy access.
++	 */
++	s8 util_index;
++
++	struct vmbus_channel_offer_channel offermsg;
++	/*
++	 * These are based on the OfferMsg.MonitorId.
++	 * Save it here for easy access.
++	 */
++	u8 monitor_grp;
++	u8 monitor_bit;
++
++	u32 ringbuffer_gpadlhandle;
++
++	/* Allocated memory for ring buffer */
++	void *ringbuffer_pages;
++	u32 ringbuffer_pagecount;
++	struct hv_ring_buffer_info outbound;	/* send to parent */
++	struct hv_ring_buffer_info inbound;	/* receive from parent */
++	spinlock_t inbound_lock;
++	struct workqueue_struct *controlwq;
++
++	/* Channel callback are invoked in this workqueue context */
++	/* HANDLE dataWorkQueue; */
++
++	void (*onchannel_callback)(void *context);
++	void *channel_callback_context;
++};
+ 
+ void free_channel(struct vmbus_channel *channel);
+ 
 -- 
 1.7.4.1
 
