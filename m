@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270Ab1FFJsO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:48:14 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52016 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755313Ab1FFJsN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:48:13 -0400
-Date: Mon, 6 Jun 2011 10:47:51 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: shawn.guo@linaro.org, patches@linaro.org, vinod.koul@intel.com,
-        gregkh@suse.de, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dan.j.williams@intel.com, cjb@laptop.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/3] dmaengine: add new dma API for
-	max_segment_number
-Message-ID: <20110606094751.GC10508@n2100.arm.linux.org.uk>
-References: <1307345414-26872-1-git-send-email-shawn.guo@linaro.org> <20110606170420I.fujita.tomonori@lab.ntt.co.jp> <20110606091410.GB10508@n2100.arm.linux.org.uk> <20110606183925D.fujita.tomonori@lab.ntt.co.jp>
+	id S1755860Ab1FFJwQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:52:16 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53959 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755316Ab1FFJwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 05:52:14 -0400
+Message-ID: <4DECA33E.5040306@ti.com>
+Date: Mon, 6 Jun 2011 10:51:58 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110606183925D.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+CC: Jonathan Cameron <jic23@cam.ac.uk>, "perex@perex.cz" <perex@perex.cz>,
+        "tiwai@suse.de" <tiwai@suse.de>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "dp@opensource.wolfsonmicro.com" <dp@opensource.wolfsonmicro.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] wm8940: remove unecessary if statement
+References: <1307321274-21858-1-git-send-email-Gregory.Dietsche@cuw.edu> <4DEC9E6B.8030505@cam.ac.uk>
+In-Reply-To: <4DEC9E6B.8030505@cam.ac.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 06:41:09PM +0900, FUJITA Tomonori wrote:
-> On Mon, 6 Jun 2011 10:14:10 +0100
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+On 06/06/11 10:31, Jonathan Cameron wrote:
+> On 06/06/11 01:47, Greg Dietsche wrote:
+>> the code always returns ret regardless, so if(ret) check is unecessary.
+> Good point, though please spell check your commit messages.
+> unecessary -> unnecessary
 > 
-> > On Mon, Jun 06, 2011 at 05:06:03PM +0900, FUJITA Tomonori wrote:
-> > > max_segs isn't unrelated with the dma mapping API. I explained above,
-> > > IOMMUs doesn't increase the number of segments (could decrease the
-> > > number of segments by merging).
-> > > 
-> > > The limitation about the number of segment already lives elsewhere
-> > > (e.g. queue's limits.max_segments).
-> > 
-> > I think you're missing the point entirely.
-> > 
-> > Lets take the problem at hand: you have two devices.  One of them is
-> > handled by the DMA engine code.  One of them is a block device.
-> > 
-> > The block layer needs to know the various parameters of what is
-> > allowable for DMA, including such things as the maximum size of a
-> > segment, and the _number_ of segments that can be placed into any
-> > one request.
-> > 
-> > As the DMA provider is _entirely_ separate and unknown to the block
-> > device driver, the block device driver has no way to sanely provide
-> > these parameters to the block layer - they are not a property of the
-> > block device driver, but of the DMA provider.
+> Also if you want to do this sort of cleanup, please also fix the
+> equivalent in wm8940_resume and wm8940_add_widgets.  Ack is for
+> what is here, plus those if you do them.
 > 
-> struct device_dma_parameters is used for a property of the block
-> device drivers (and scsi HBA drivers, etc). Not DMA provider. Right?
+> Just as an aside, there is no earthly point in cc'ing lkml for a
+> simple cleanup like this. Just adds to already huge amount of noise!
+>>
+>> Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 
-Wrong.  struct device_dma_parameters is a property of the _DMA_ _provider_.
-It has to be.  Read what I said above and think about it.
-
-In many cases, it so happens that the DMA provider and the block device
-driver are the same entity, and so it may appear that device_dma_parameters
-is a property of the block device driver.  As soon as you have to start
-dealing with DMA providers being separate from the block device driver
-then your eyes will be opened and you'll see that it can't work the way
-you seem to want it to.
-
-The DMA parameters have to come from the DMA provider or they're a total
-nonsense.
-
-> The drivers calls dma_set_seg_boundary() and the subsystems call
-> dma_get_seg_boundary to set the value to queues.
-
-And the device parameter which you pass into that has to be the DMA
-providers struct device, not the block device's struct device.  The
-block device itself has no DMA parameters of its own.
-
-> This patch is trying to use struct device_dma_parameters in a
-> different way. It adds a new DMA parameter but for the DMA parameter
-> for a different layer. I'm not sure about different-layer stuff in 
-> one structure and using similar API.
-
-No it's not.
+Acked-by: Liam Girdwood <lrg@ti.com>
