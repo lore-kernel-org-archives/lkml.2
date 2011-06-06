@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757136Ab1FFIfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 04:35:21 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40161 "EHLO hera.kernel.org"
+	id S1757181Ab1FFIf5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 04:35:57 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40190 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757037Ab1FFIfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 04:35:16 -0400
-Date: Mon, 6 Jun 2011 08:34:29 GMT
-From: tip-bot for Andy Lutomirski <luto@MIT.EDU>
-Message-ID: <tip-d55ed1d30b82f941b37f9dbf5ed4aaf8b3f917e3@git.kernel.org>
+	id S1756980Ab1FFIfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 04:35:51 -0400
+Date: Mon, 6 Jun 2011 08:34:54 GMT
+From: tip-bot for Andy Lutomirski <luto@mit.edu>
+Message-ID: <tip-38172403a97828ae2ea12281b19528582d6625d4@git.kernel.org>
 Cc: mingo@redhat.com, brgerst@gmail.com, torvalds@linux-foundation.org,
         mikpe@it.uu.se, richard.weinberger@gmail.com, jj@chaosbits.net,
         JBeulich@novell.com, tglx@linutronix.de, Louis.Rilling@kerlabs.com,
-        luto@MIT.EDU, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        luto@MIT.EDU, andi@firstfloor.org, bp@alien8.de, arjan@infradead.org,
-        mingo@elte.hu
+        hpa@zytor.com, linux-kernel@vger.kernel.org, luto@mit.edu,
+        andi@firstfloor.org, bp@alien8.de, arjan@infradead.org, mingo@elte.hu
 Reply-To: mingo@redhat.com, torvalds@linux-foundation.org, brgerst@gmail.com,
         mikpe@it.uu.se, richard.weinberger@gmail.com, jj@chaosbits.net,
-        JBeulich@novell.com, tglx@linutronix.de, luto@MIT.EDU,
-        Louis.Rilling@kerlabs.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        luto@MIT.EDU, andi@firstfloor.org, bp@alien8.de, arjan@infradead.org,
-        mingo@elte.hu
-In-Reply-To: <e64e1b3c64858820d12c48fa739efbd1485e79d5.1307292171.git.luto@mit.edu>
-References: <e64e1b3c64858820d12c48fa739efbd1485e79d5.1307292171.git.luto@mit.edu>
+        JBeulich@novell.com, tglx@linutronix.de, Louis.Rilling@kerlabs.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, luto@mit.edu,
+        andi@firstfloor.org, bp@alien8.de, arjan@infradead.org, mingo@elte.hu
+In-Reply-To: <4de62bfbf6974f14d0e9d9ae37cc137dbc926a30.1307292171.git.luto@mit.edu>
+References: <4de62bfbf6974f14d0e9d9ae37cc137dbc926a30.1307292171.git.luto@mit.edu>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86-64: Emulate legacy vsyscalls
-Git-Commit-ID: d55ed1d30b82f941b37f9dbf5ed4aaf8b3f917e3
+Subject: [tip:x86/vdso] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+Git-Commit-ID: 38172403a97828ae2ea12281b19528582d6625d4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Jun 2011 08:34:30 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Jun 2011 08:34:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d55ed1d30b82f941b37f9dbf5ed4aaf8b3f917e3
-Gitweb:     http://git.kernel.org/tip/d55ed1d30b82f941b37f9dbf5ed4aaf8b3f917e3
-Author:     Andy Lutomirski <luto@MIT.EDU>
-AuthorDate: Sun, 5 Jun 2011 13:50:24 -0400
+Commit-ID:  38172403a97828ae2ea12281b19528582d6625d4
+Gitweb:     http://git.kernel.org/tip/38172403a97828ae2ea12281b19528582d6625d4
+Author:     Andy Lutomirski <luto@mit.edu>
+AuthorDate: Sun, 5 Jun 2011 13:50:25 -0400
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 6 Jun 2011 09:43:14 +0200
+CommitDate: Mon, 6 Jun 2011 09:43:15 +0200
 
-x86-64: Emulate legacy vsyscalls
+x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
 
-There's a fair amount of code in the vsyscall page.  It contains
-a syscall instruction (in the gettimeofday fallback) and who
-knows what will happen if an exploit jumps into the middle of
-some other code.
-
-Reduce the risk by replacing the vsyscalls with short magic
-incantations that cause the kernel to emulate the real
-vsyscalls. These incantations are useless if entered in the
-middle.
-
-This causes vsyscalls to be a little more expensive than real
-syscalls.  Fortunately sensible programs don't use them.
-
-Less fortunately, current glibc uses the vsyscall for time()
-even in dynamic binaries.  So there's a CONFIG_UNSAFE_VSYSCALLS
-(default y) option that leaves in the native code for time().
-That should go away in awhile when glibc gets fixed.
-
-Some care is taken to make sure that tools like valgrind and
-ThreadSpotter still work.
-
-This patch is not perfect: the vread_tsc and vread_hpet
-functions are still at a fixed address.  Fixing that might
-involve making alternative patching work in the vDSO.
+CONFIG_UNSAFE_VSYSCALLS was added in the previous patch as a
+temporary hack to avoid penalizing users who don't build glibc
+from git.
 
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 Cc: Jesper Juhl <jj@chaosbits.net>
@@ -84,511 +61,26 @@ Cc: Brian Gerst <brgerst@gmail.com>
 Cc: Louis Rilling <Louis.Rilling@kerlabs.com>
 Cc: Valdis.Kletnieks@vt.edu
 Cc: pageexec@freemail.hu
-Link: http://lkml.kernel.org/r/e64e1b3c64858820d12c48fa739efbd1485e79d5.1307292171.git.luto@mit.edu
+Link: http://lkml.kernel.org/r/4de62bfbf6974f14d0e9d9ae37cc137dbc926a30.1307292171.git.luto@mit.edu
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/Kconfig                   |   17 +++
- arch/x86/include/asm/irq_vectors.h |    6 +-
- arch/x86/include/asm/traps.h       |    4 +
- arch/x86/include/asm/vsyscall.h    |    6 +
- arch/x86/kernel/Makefile           |    1 +
- arch/x86/kernel/entry_64.S         |    2 +
- arch/x86/kernel/traps.c            |    6 +
- arch/x86/kernel/vsyscall_64.c      |  253 +++++++++++++++++++++---------------
- arch/x86/kernel/vsyscall_emu_64.S  |   42 ++++++
- 9 files changed, 234 insertions(+), 103 deletions(-)
+ Documentation/feature-removal-schedule.txt |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index da34972..79e5d8a 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1646,6 +1646,23 @@ config COMPAT_VDSO
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 1a9446b..94b4470 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -600,3 +600,12 @@ Why:	Superseded by the UVCIOC_CTRL_QUERY ioctl.
+ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
  
- 	  If unsure, say Y.
- 
-+config UNSAFE_VSYSCALLS
-+	def_bool y
-+	prompt "Unsafe fast legacy vsyscalls"
-+	depends on X86_64
-+	---help---
-+	  Legacy user code expects to be able to issue three syscalls
-+	  by calling fixed addresses in kernel space.  If you say N,
-+	  then the kernel traps and emulates these calls.  If you say
-+	  Y, then there is actual executable code at a fixed address
-+	  to implement time() efficiently.
+ ----------------------------
 +
-+	  On a system with recent enough glibc (probably 2.14 or
-+	  newer) and no static binaries, you can say N without a
-+	  performance penalty to improve security
++What:	CONFIG_UNSAFE_VSYSCALLS (x86_64)
++When:	When glibc 2.14 or newer is ubitquitous.  Perhaps mid-2012.
++Why:	Having user-executable code at a fixed address is a security problem.
++	Turning off CONFIG_UNSAFE_VSYSCALLS mostly removes the risk but will
++	make the time() function slower on glibc versions 2.13 and below.
++Who:	Andy Lutomirski <luto@mit.edu>
 +
-+	  If unsure, say Y.
-+
- config CMDLINE_BOOL
- 	bool "Built-in kernel command line"
- 	---help---
-diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
-index 6e976ee..a563c50 100644
---- a/arch/x86/include/asm/irq_vectors.h
-+++ b/arch/x86/include/asm/irq_vectors.h
-@@ -17,7 +17,8 @@
-  *  Vectors   0 ...  31 : system traps and exceptions - hardcoded events
-  *  Vectors  32 ... 127 : device interrupts
-  *  Vector  128         : legacy int80 syscall interface
-- *  Vectors 129 ... INVALIDATE_TLB_VECTOR_START-1 : device interrupts
-+ *  Vector  204         : legacy x86_64 vsyscall emulation
-+ *  Vectors 129 ... INVALIDATE_TLB_VECTOR_START-1 except 204 : device interrupts
-  *  Vectors INVALIDATE_TLB_VECTOR_START ... 255 : special interrupts
-  *
-  * 64-bit x86 has per CPU IDT tables, 32-bit has one shared IDT table.
-@@ -50,6 +51,9 @@
- #ifdef CONFIG_X86_32
- # define SYSCALL_VECTOR			0x80
- #endif
-+#ifdef CONFIG_X86_64
-+# define VSYSCALL_EMU_VECTOR		0xcc
-+#endif
- 
- /*
-  * Vectors 0x30-0x3f are used for ISA interrupts.
-diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
-index 0310da6..2bae0a5 100644
---- a/arch/x86/include/asm/traps.h
-+++ b/arch/x86/include/asm/traps.h
-@@ -1,6 +1,8 @@
- #ifndef _ASM_X86_TRAPS_H
- #define _ASM_X86_TRAPS_H
- 
-+#include <linux/kprobes.h>
-+
- #include <asm/debugreg.h>
- #include <asm/siginfo.h>			/* TRAP_TRACE, ... */
- 
-@@ -38,6 +40,7 @@ asmlinkage void alignment_check(void);
- asmlinkage void machine_check(void);
- #endif /* CONFIG_X86_MCE */
- asmlinkage void simd_coprocessor_error(void);
-+asmlinkage void emulate_vsyscall(void);
- 
- dotraplinkage void do_divide_error(struct pt_regs *, long);
- dotraplinkage void do_debug(struct pt_regs *, long);
-@@ -64,6 +67,7 @@ dotraplinkage void do_alignment_check(struct pt_regs *, long);
- dotraplinkage void do_machine_check(struct pt_regs *, long);
- #endif
- dotraplinkage void do_simd_coprocessor_error(struct pt_regs *, long);
-+dotraplinkage void do_emulate_vsyscall(struct pt_regs *, long);
- #ifdef CONFIG_X86_32
- dotraplinkage void do_iret_error(struct pt_regs *, long);
- #endif
-diff --git a/arch/x86/include/asm/vsyscall.h b/arch/x86/include/asm/vsyscall.h
-index d555973..293ae08 100644
---- a/arch/x86/include/asm/vsyscall.h
-+++ b/arch/x86/include/asm/vsyscall.h
-@@ -31,6 +31,12 @@ extern struct timezone sys_tz;
- 
- extern void map_vsyscall(void);
- 
-+/* Emulation */
-+static inline bool in_vsyscall_page(unsigned long addr)
-+{
-+	return (addr & ~(PAGE_SIZE - 1)) == VSYSCALL_START;
-+}
-+
- #endif /* __KERNEL__ */
- 
- #endif /* _ASM_X86_VSYSCALL_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 90b06d4..cc0469a 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -44,6 +44,7 @@ obj-y			+= probe_roms.o
- obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
- obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
- obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o vread_tsc_64.o
-+obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
- obj-y			+= bootflag.o e820.o
- obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
- obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 72c4a77..e949793 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1123,6 +1123,8 @@ zeroentry spurious_interrupt_bug do_spurious_interrupt_bug
- zeroentry coprocessor_error do_coprocessor_error
- errorentry alignment_check do_alignment_check
- zeroentry simd_coprocessor_error do_simd_coprocessor_error
-+zeroentry emulate_vsyscall do_emulate_vsyscall
-+
- 
- 	/* Reload gs selector with exception handling */
- 	/* edi:  new selector */
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index b9b6716..fbc097a 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -872,6 +872,12 @@ void __init trap_init(void)
- 	set_bit(SYSCALL_VECTOR, used_vectors);
- #endif
- 
-+#ifdef CONFIG_X86_64
-+	BUG_ON(test_bit(VSYSCALL_EMU_VECTOR, used_vectors));
-+	set_system_intr_gate(VSYSCALL_EMU_VECTOR, &emulate_vsyscall);
-+	set_bit(VSYSCALL_EMU_VECTOR, used_vectors);
-+#endif
-+
- 	/*
- 	 * Should be a barrier for any external CPU state:
- 	 */
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 70a5f6e..52ba392 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -32,6 +32,8 @@
- #include <linux/cpu.h>
- #include <linux/smp.h>
- #include <linux/notifier.h>
-+#include <linux/syscalls.h>
-+#include <linux/ratelimit.h>
- 
- #include <asm/vsyscall.h>
- #include <asm/pgtable.h>
-@@ -44,10 +46,7 @@
- #include <asm/desc.h>
- #include <asm/topology.h>
- #include <asm/vgtod.h>
--
--#define __vsyscall(nr) \
--		__attribute__ ((unused, __section__(".vsyscall_" #nr))) notrace
--#define __syscall_clobber "r11","cx","memory"
-+#include <asm/traps.h>
- 
- DEFINE_VVAR(int, vgetcpu_mode);
- DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
-@@ -84,73 +83,45 @@ void update_vsyscall(struct timespec *wall_time, struct timespec *wtm,
- 	write_sequnlock_irqrestore(&vsyscall_gtod_data.lock, flags);
- }
- 
--/* RED-PEN may want to readd seq locking, but then the variable should be
-- * write-once.
-- */
--static __always_inline void do_get_tz(struct timezone * tz)
-+static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
-+			      const char *message)
- {
--	*tz = VVAR(vsyscall_gtod_data).sys_tz;
-+	struct task_struct *tsk;
-+	static DEFINE_RATELIMIT_STATE(rs, DEFAULT_RATELIMIT_INTERVAL,
-+				      DEFAULT_RATELIMIT_BURST);
-+
-+	if (!show_unhandled_signals || !__ratelimit(&rs))
-+		return;
-+
-+	tsk = current;
-+
-+	printk("%s%s[%d] %s ip:%lx sp:%lx ax:%lx si:%lx di:%lx",
-+	       level, tsk->comm, task_pid_nr(tsk),
-+	       message,
-+	       regs->ip - 2, regs->sp, regs->ax, regs->si, regs->di);
-+	if (!in_vsyscall_page(regs->ip - 2))
-+		print_vma_addr(" in ", regs->ip - 2);
-+	printk("\n");
- }
- 
--static __always_inline int gettimeofday(struct timeval *tv, struct timezone *tz)
--{
--	int ret;
--	asm volatile("syscall"
--		: "=a" (ret)
--		: "0" (__NR_gettimeofday),"D" (tv),"S" (tz)
--		: __syscall_clobber );
--	return ret;
--}
-+/* al values for each vsyscall; see vsyscall_emu_64.S for why. */
-+static u8 vsyscall_nr_to_al[] = {0xcc, 0xce, 0xf0};
- 
--static __always_inline void do_vgettimeofday(struct timeval * tv)
-+static int al_to_vsyscall_nr(u8 al)
- {
--	cycle_t now, base, mask, cycle_delta;
--	unsigned seq;
--	unsigned long mult, shift, nsec;
--	cycle_t (*vread)(void);
--	do {
--		seq = read_seqbegin(&VVAR(vsyscall_gtod_data).lock);
--
--		vread = VVAR(vsyscall_gtod_data).clock.vread;
--		if (unlikely(!vread)) {
--			gettimeofday(tv,NULL);
--			return;
--		}
--
--		now = vread();
--		base = VVAR(vsyscall_gtod_data).clock.cycle_last;
--		mask = VVAR(vsyscall_gtod_data).clock.mask;
--		mult = VVAR(vsyscall_gtod_data).clock.mult;
--		shift = VVAR(vsyscall_gtod_data).clock.shift;
--
--		tv->tv_sec = VVAR(vsyscall_gtod_data).wall_time_sec;
--		nsec = VVAR(vsyscall_gtod_data).wall_time_nsec;
--	} while (read_seqretry(&VVAR(vsyscall_gtod_data).lock, seq));
--
--	/* calculate interval: */
--	cycle_delta = (now - base) & mask;
--	/* convert to nsecs: */
--	nsec += (cycle_delta * mult) >> shift;
--
--	while (nsec >= NSEC_PER_SEC) {
--		tv->tv_sec += 1;
--		nsec -= NSEC_PER_SEC;
--	}
--	tv->tv_usec = nsec / NSEC_PER_USEC;
-+	int i;
-+	for (i = 0; i < ARRAY_SIZE(vsyscall_nr_to_al); i++)
-+		if (vsyscall_nr_to_al[i] == al)
-+			return i;
-+	return -1;
- }
- 
--int __vsyscall(0) vgettimeofday(struct timeval * tv, struct timezone * tz)
--{
--	if (tv)
--		do_vgettimeofday(tv);
--	if (tz)
--		do_get_tz(tz);
--	return 0;
--}
-+#ifdef CONFIG_UNSAFE_VSYSCALLS
- 
- /* This will break when the xtime seconds get inaccurate, but that is
-  * unlikely */
--time_t __vsyscall(1) vtime(time_t *t)
-+time_t __attribute__ ((unused, __section__(".vsyscall_1"))) notrace
-+vtime(time_t *t)
- {
- 	unsigned seq;
- 	time_t result;
-@@ -167,46 +138,127 @@ time_t __vsyscall(1) vtime(time_t *t)
- 	return result;
- }
- 
--/* Fast way to get current CPU and node.
--   This helps to do per node and per CPU caches in user space.
--   The result is not guaranteed without CPU affinity, but usually
--   works out because the scheduler tries to keep a thread on the same
--   CPU.
-+#endif /* CONFIG_UNSAFE_VSYSCALLS */
-+
-+/* If CONFIG_UNSAFE_VSYSCALLS=y, then this is incorrect for vsyscall_nr == 1. */
-+static inline unsigned long vsyscall_intcc_addr(int vsyscall_nr)
-+{
-+	return VSYSCALL_START + 1024*vsyscall_nr + 2;
-+}
- 
--   tcache must point to a two element sized long array.
--   All arguments can be NULL. */
--long __vsyscall(2)
--vgetcpu(unsigned *cpu, unsigned *node, struct getcpu_cache *tcache)
-+void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
- {
--	unsigned int p;
--	unsigned long j = 0;
--
--	/* Fast cache - only recompute value once per jiffies and avoid
--	   relatively costly rdtscp/cpuid otherwise.
--	   This works because the scheduler usually keeps the process
--	   on the same CPU and this syscall doesn't guarantee its
--	   results anyways.
--	   We do this here because otherwise user space would do it on
--	   its own in a likely inferior way (no access to jiffies).
--	   If you don't like it pass NULL. */
--	if (tcache && tcache->blob[0] == (j = VVAR(jiffies))) {
--		p = tcache->blob[1];
--	} else if (VVAR(vgetcpu_mode) == VGETCPU_RDTSCP) {
--		/* Load per CPU data from RDTSCP */
--		native_read_tscp(&p);
--	} else {
--		/* Load per CPU data from GDT */
--		asm("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
-+	static DEFINE_RATELIMIT_STATE(rs, 3600 * HZ, 3);
-+	struct task_struct *tsk;
-+	const char *vsyscall_name;
-+	int vsyscall_nr;
-+	long ret;
-+
-+	/* Kernel code must never get here. */
-+	BUG_ON(!user_mode(regs));
-+
-+	local_irq_enable();
-+
-+	vsyscall_nr = al_to_vsyscall_nr(regs->ax & 0xff);
-+	if (vsyscall_nr < 0) {
-+		warn_bad_vsyscall(KERN_WARNING, regs, "illegal int 0xcc "
-+				  "(exploit attempt?)");
-+		goto sigsegv;
- 	}
--	if (tcache) {
--		tcache->blob[0] = j;
--		tcache->blob[1] = p;
-+
-+	if (regs->ip - 2 != vsyscall_intcc_addr(vsyscall_nr)) {
-+		if (in_vsyscall_page(regs->ip - 2)) {
-+			/* This should not be possible. */
-+			warn_bad_vsyscall(KERN_WARNING, regs,
-+					  "int 0xcc bogus magic "
-+					  "(exploit attempt?)");
-+			goto sigsegv;
-+		} else {
-+			/*
-+			 * We allow the call because tools like ThreadSpotter
-+			 * might copy the int 0xcc instruction to user memory.
-+			 * We make it annoying, though, to try to persuade
-+			 * the authors to stop doing that...
-+			 */
-+			warn_bad_vsyscall(KERN_WARNING, regs,
-+					  "int 0xcc in user code "
-+					  "(exploit attempt? legacy "
-+					  "instrumented code?)");
-+		}
- 	}
--	if (cpu)
--		*cpu = p & 0xfff;
--	if (node)
--		*node = p >> 12;
--	return 0;
-+
-+	tsk = current;
-+	if (tsk->seccomp.mode) {
-+		do_exit(SIGKILL);
-+		goto out;
-+	}
-+
-+	switch (vsyscall_nr) {
-+	case 0:
-+		vsyscall_name = "gettimeofday";
-+		ret = sys_gettimeofday(
-+			(struct timeval __user *)regs->di,
-+			(struct timezone __user *)regs->si);
-+		break;
-+
-+	case 1:
-+#ifdef CONFIG_UNSAFE_VSYSCALLS
-+		warn_bad_vsyscall(KERN_WARNING, regs, "bogus time() vsyscall "
-+				  "emulation (exploit attempt?)");
-+		goto sigsegv;
-+#else
-+		vsyscall_name = "time";
-+		ret = sys_time((time_t __user *)regs->di);
-+		break;
-+#endif
-+
-+	case 2:
-+		vsyscall_name = "getcpu";
-+		ret = sys_getcpu((unsigned __user *)regs->di,
-+				 (unsigned __user *)regs->si,
-+				 0);
-+		break;
-+
-+	default:
-+		BUG();
-+	}
-+
-+	if (ret == -EFAULT) {
-+		/*
-+		 * Bad news -- userspace fed a bad pointer to a vsyscall.
-+		 *
-+		 * With a real vsyscall, that would have caused SIGSEGV.
-+		 * To make writing reliable exploits using the emulated
-+		 * vsyscalls harder, generate SIGSEGV here as well.
-+		 */
-+		warn_bad_vsyscall(KERN_INFO, regs,
-+				  "vsyscall fault (exploit attempt?)");
-+		goto sigsegv;
-+	}
-+
-+	regs->ax = ret;
-+
-+	if (__ratelimit(&rs)) {
-+		unsigned long caller;
-+		if (get_user(caller, (unsigned long __user *)regs->sp))
-+			caller = 0;  /* no need to crash on this fault. */
-+		printk(KERN_INFO "%s[%d] emulated legacy vsyscall %s(); "
-+		       "upgrade your code to avoid a performance hit. "
-+		       "ip:%lx sp:%lx caller:%lx",
-+		       tsk->comm, task_pid_nr(tsk), vsyscall_name,
-+		       regs->ip - 2, regs->sp, caller);
-+		if (caller)
-+			print_vma_addr(" in ", caller);
-+		printk("\n");
-+	}
-+
-+out:
-+	local_irq_disable();
-+	return;
-+
-+sigsegv:
-+	regs->ip -= 2;  /* The faulting instruction should be the int 0xcc. */
-+	force_sig(SIGSEGV, current);
- }
- 
- /* Assume __initcall executes before all user space. Hopefully kmod
-@@ -262,11 +314,8 @@ void __init map_vsyscall(void)
- 
- static int __init vsyscall_init(void)
- {
--	BUG_ON(((unsigned long) &vgettimeofday !=
--			VSYSCALL_ADDR(__NR_vgettimeofday)));
--	BUG_ON((unsigned long) &vtime != VSYSCALL_ADDR(__NR_vtime));
--	BUG_ON((VSYSCALL_ADDR(0) != __fix_to_virt(VSYSCALL_FIRST_PAGE)));
--	BUG_ON((unsigned long) &vgetcpu != VSYSCALL_ADDR(__NR_vgetcpu));
-+	BUG_ON(VSYSCALL_ADDR(0) != __fix_to_virt(VSYSCALL_FIRST_PAGE));
-+
- 	on_each_cpu(cpu_vsyscall_init, NULL, 1);
- 	/* notifier priority > KVM */
- 	hotcpu_notifier(cpu_vsyscall_notifier, 30);
-diff --git a/arch/x86/kernel/vsyscall_emu_64.S b/arch/x86/kernel/vsyscall_emu_64.S
-new file mode 100644
-index 0000000..7ebde61
---- /dev/null
-+++ b/arch/x86/kernel/vsyscall_emu_64.S
-@@ -0,0 +1,42 @@
-+/*
-+ * vsyscall_emu_64.S: Vsyscall emulation page
-+ * Copyright (c) 2011 Andy Lutomirski
-+ * Subject to the GNU General Public License, version 2
-+*/
-+
-+#include <linux/linkage.h>
-+#include <asm/irq_vectors.h>
-+
-+/*
-+ * These magic incantations are chosen so that they fault if entered anywhere
-+ * other than an instruction boundary.  The movb instruction is two bytes, and
-+ * the int imm8 instruction is also two bytes, so the only misaligned places
-+ * to enter are the immediate values for the two instructions.  0xcc is int3
-+ * (always faults), 0xce is into (faults on x64-64, and 32-bit code can't get
-+ * here), and 0xf0 is lock (lock int is invalid).
-+ *
-+ * The unused parts of the page are filled with 0xcc by the linker script.
-+ */
-+
-+.section .vsyscall_0, "a"
-+ENTRY(vsyscall_0)
-+	movb $0xcc, %al
-+	int $VSYSCALL_EMU_VECTOR
-+	ret
-+END(vsyscall_0)
-+
-+#ifndef CONFIG_UNSAFE_VSYSCALLS
-+.section .vsyscall_1, "a"
-+ENTRY(vsyscall_1)
-+	movb $0xce, %al
-+	int $VSYSCALL_EMU_VECTOR
-+	ret
-+END(vsyscall_1)
-+#endif
-+
-+.section .vsyscall_2, "a"
-+ENTRY(vsyscall_2)
-+	movb $0xf0, %al
-+	int $VSYSCALL_EMU_VECTOR
-+	ret
-+END(vsyscall_2)
++----------------------------
