@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab1FFL0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 07:26:11 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59857 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754624Ab1FFL0I (ORCPT
+	id S1756155Ab1FFL3i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 07:29:38 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:33020 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754302Ab1FFL3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 07:26:08 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=MbabkVIayccA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=D19gQVrFAAAA:8 a=bEVj1oVnpHg5j2bvhWAA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] sched: remove noop in pre_schedule_rt()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <BANLkTinO4p5d-aShHuSOQoPLTCZvAcVjcQ@mail.gmail.com>
-References: <BANLkTin1QYAx7as41t78-n0giLSBWoToVA@mail.gmail.com>
-	 <BANLkTi=N8cm_9OKk8VCPVxPPn+Ejuhzq6w@mail.gmail.com>
-	 <BANLkTinO4p5d-aShHuSOQoPLTCZvAcVjcQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 06 Jun 2011 07:26:03 -0400
-Message-ID: <1307359563.31814.14.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Mon, 6 Jun 2011 07:29:37 -0400
+Message-ID: <4DECBA16.7070300@in.ibm.com>
+Date: Mon, 06 Jun 2011 16:59:26 +0530
+From: Suzuki Poulose <suzuki@in.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: David Laight <David.Laight@ACULAB.COM>
+CC: Simon Horman <horms@verge.net.au>,
+        linux ppc dev <linuxppc-dev@lists.ozlabs.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        kexec@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFC][PATCH] powerpc: Use the #address-cells information to parsememory/reg
+References: <AE90C24D6B3A694183C094C60CF0A2F6D8AD73@saturn3.aculab.com>
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AD73@saturn3.aculab.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-06 at 16:35 +0800, Hillf Danton wrote:
-> On Fri, May 27, 2011 at 5:17 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> > On Thu, May 26, 2011 at 9:08 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> >> Checking task to be RT is removed since only RT task is served here.
-> >>
-> >> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> >
-> > Actually this patch has been raised for two times:
-> > https://lkml.org/lkml/2010/12/13/622
-> > http://lkml.org/lkml/2010/2/9/139
-> >
-> 
-> Hm... looks curious why it had been delivered more than once.
+On 06/06/11 14:30, David Laight wrote:
+>>> Changed the add_usable_mem_property() to accept FILE* fp instead of
+> int fd,
+>>> as most of the other users of read_memory_region_limits() deals with
+> FILE*.
+>>>
+>>> Signed-off-by: Suzuki K. Poulose<suzuki@in.ibm.com>
+>>
+>> Could you please let me know your thoughts/comments about this patch ?
+>
+> Is the change to use 'FILE *' actually progress?
+> I'd have thought that the randomly aligned read/lseek system calls
+> that this allows to happen are not desirable for anything that
+> isn't a true file.
+I will revert the other users back to 'fd'
+>
+> I'd also suggest that the sizeof's should be applied to the
+> actual type of the variable being read/written, not arbitrarily
+> 'long' or 'int', and this probably ought to be some fixed size type.
+I have used 'unsigned long'(for word sized values) or 'unsigned long long'
+(for double words) just to make sure we get the right values. Is this OK ?
 
-What's curious about it?
-
-Yong sent me the patch, and I pulled it into git, and sent a pull
-request to Ingo along with some trivial changes of mine. All my pull
-requests are posted back to LKML so that we keep an open environment of
-what goes into the kernel.
-
--- Steve
-
-
-
+Thanks
+Suzuki
