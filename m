@@ -1,63 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab1FFPfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 11:35:43 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:34803
-	"EHLO CH1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752287Ab1FFPfl (ORCPT
+	id S1757575Ab1FFPjF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 11:39:05 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:39492 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757230Ab1FFPjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 11:35:41 -0400
-X-SpamScore: -5
-X-BigFish: VPS-5(z1039oz98dKzz1202hzz15d4Rz32i668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LMDKNB-02-B4A-02
-X-M-MSG: 
-Date: Mon, 6 Jun 2011 17:35:57 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "laurent.pinchart@ideasonboard.com" 
-	<laurent.pinchart@ideasonboard.com>,
-        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "davidb@codeaurora.org" <davidb@codeaurora.org>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Subject: Re: [RFC 0/6] iommu: generic api migration and grouping
-Message-ID: <20110606153557.GE1953@amd.com>
-References: <1307053663-24572-1-git-send-email-ohad@wizery.com>
- <20110606100950.GC30762@amd.com>
- <BANLkTi=i2s-Ujiy4qn_XQv+9dMjUC9R66A@mail.gmail.com>
+	Mon, 6 Jun 2011 11:39:01 -0400
+Date: Mon, 6 Jun 2011 18:36:20 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>, Tanya Brokhman <tlinder@codeaurora.org>,
+        greg@kroah.com, linux-usb@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, ablay@codeaurora.org,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v14 4/9] usb: Add max_speed to usb_composite_driver
+ structure
+Message-ID: <20110606153619.GI12242@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20110606113742.GY18731@legolas.emea.dhcp.ti.com>
+ <Pine.LNX.4.44L0.1106061120060.1953-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PWfwoUCx3AFJRUBq"
 Content-Disposition: inline
-In-Reply-To: <BANLkTi=i2s-Ujiy4qn_XQv+9dMjUC9R66A@mail.gmail.com>
+In-Reply-To: <Pine.LNX.4.44L0.1106061120060.1953-100000@iolanthe.rowland.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 11:15:30AM -0400, Ohad Ben-Cohen wrote:
 
-> This is insufficient; users need somehow to tell what page sizes are
-> supported by the underlying hardware (we can't assume host page-sizes,
-> and we want to use bigger pages whenever possible, to relax the TLB
-> pressure).
-/
-What does the IOMMU-API user need this info for? On the x86 IOMMUs these
-details are handled transparently by the IOMMU driver.
+--PWfwoUCx3AFJRUBq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Joerg
+Hi,
 
--- 
-AMD Operating System Research Center
+On Mon, Jun 06, 2011 at 11:25:14AM -0400, Alan Stern wrote:
+> On Mon, 6 Jun 2011, Felipe Balbi wrote:
+>=20
+> > But we might still want to force HighSpeed even though the HW has
+> > SuperSpeed support.
+>=20
+> That would be a useful module parameter for a SuperSpeed UDC driver. =20
+> Like the parameter Tanya added to dummy-hcd.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+what I meant was that if you combine a SS-capable function with a
+FS-capable function, you would have to run at FS.
 
+> >  The real solution, for the long run would be to
+> > always start with pullups disabled (iow, don't connect to host
+> > immediately) and only connect after the gadget driver is all
+> > initialized, then we will know the gadget speed before connecting, and
+> > we can have the gadget driver "request" for a particular speed from the
+> > controller.
+>=20
+> Unfortunately this would mean changing a bunch of UDC drivers.  But I=20
+> agree, it makes sense for the gadget driver to specifically ask for the=
+=20
+> pullups to be enabled when it is ready.
+>=20
+> Don't some of the existing UDC drivers fail to implement the pullup=20
+> method at all?
+
+I would have to check to answer that, but I guess it could be one goal
+to 'require' that method to be valid. So we could start by:
+
+diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
+index dd1571d..6c2586f 100644
+--- a/include/linux/usb/gadget.h
++++ b/include/linux/usb/gadget.h
+@@ -671,8 +671,8 @@ static inline int usb_gadget_vbus_disconnect(struct usb=
+_gadget *gadge
+  */
+ static inline int usb_gadget_connect(struct usb_gadget *gadget)
+ {
+-       if (!gadget->ops->pullup)
+-               return -EOPNOTSUPP;
++       BUG_ON(!gadget->ops->pullup);
++
+        return gadget->ops->pullup(gadget, 1);
+ }
+=20
+@@ -693,8 +693,8 @@ static inline int usb_gadget_connect(struct usb_gadget =
+*gadget)
+  */
+ static inline int usb_gadget_disconnect(struct usb_gadget *gadget)
+ {
+-       if (!gadget->ops->pullup)
+-               return -EOPNOTSUPP;
++       BUG_ON(!gadget->ops->pullup);
++
+        return gadget->ops->pullup(gadget, 0);
+ }
+=20
+
+and checking if anyone complains. Another approach is to grep all udc
+driver for the missing pullup field and start bugging their maintainers
+to implement that.
+
+--=20
+balbi
+
+--PWfwoUCx3AFJRUBq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN7PPzAAoJEAv8Txj19kN1c38H/jRXFAwNquUqXbAP34aYouul
+nmOTxaOBl/iNJuDwGPfZU1RV72aSwibM2XfaP+NZbHERgInL1bsRJ5YGLZUJSXtM
+9nSSDlWygqmxCHniFTBsc5+5DvHtq5B1iBIxnyrGpwvlaLEH5/9zCSn3EJYOuK66
+pN40K990I9cCMV9aLgzHZiGUTYW7nHYMwidENkWAezqx5MS9ZeBoJ3SAka9Wqx4n
+pGhJTGo02WksSHWDZUU84+clFlAaokvfOnSeAkuj0TtiIO9PTGOIMxjVNRzH8XSr
+RZ7orl2c8Bz3Qg2GNjH7Oy+9cFuIF6haoijjKHo/j1WVU/e0Wk2F7MZaEtC6fqA=
+=q1Hj
+-----END PGP SIGNATURE-----
+
+--PWfwoUCx3AFJRUBq--
