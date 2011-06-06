@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab1FFXSs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 19:18:48 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:36287 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751634Ab1FFXSr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 19:18:47 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Colin Cross <ccross@android.com>
-Cc: linux-omap@vger.kernel.org, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        tarun.kanti@ti.com, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] ARM: omap4: gpio: fix setting IRQWAKEN bits
-Organization: Texas Instruments, Inc.
-References: <1307392698-21170-1-git-send-email-ccross@android.com>
-Date: Mon, 06 Jun 2011 16:18:44 -0700
-In-Reply-To: <1307392698-21170-1-git-send-email-ccross@android.com> (Colin
-	Cross's message of "Mon, 6 Jun 2011 13:38:17 -0700")
-Message-ID: <87boyav99n.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756405Ab1FFXTq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 19:19:46 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:33984 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752798Ab1FFXTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 19:19:45 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@ZenIV.linux.org.uk, mjt@tls.msk.ru
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH -v3] vfs: make unlink() and rmdir() return ENOENT in preference to EROFS
+Date: Mon,  6 Jun 2011 19:19:40 -0400
+Message-Id: <1307402380-14166-1-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 1.7.4.1.22.gec8e1.dirty
+In-Reply-To: <4DED5926.80504@msgid.tls.msk.ru>
+References: <4DED5926.80504@msgid.tls.msk.ru>
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Colin,
+If user space attempts to remove a non-existent file or directory, and
+the file system is mounted read-only, return ENOENT instead of EROFS.
+Either error code is arguably valid/correct, but ENOENT is a more
+specific error message.
 
-Colin Cross <ccross@android.com> writes:
+Reported-by: Michael Tokarev <mjt@tls.msk.ru>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+---
+ fs/namei.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
-> Setting the IRQWAKEN bit was overwriting previous IRQWAKEN bits,
-> causing only the last bit set to take effect, resulting in lost
-> wakeups when the GPIO controller is in idle.
->
-> Replace direct writes to IRQWAKEN with MOD_REG_BIT calls to
-> perform a read-modify-write on the register.
->
-> Signed-off-by: Colin Cross <ccross@android.com>
+diff --git a/fs/namei.c b/fs/namei.c
+index 1ab641f..647ca6e 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2623,6 +2623,10 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ 	error = PTR_ERR(dentry);
+ 	if (IS_ERR(dentry))
+ 		goto exit2;
++	if (!dentry->d_inode) {
++		error = -ENOENT;
++		goto exit3;
++	}
+ 	error = mnt_want_write(nd.path.mnt);
+ 	if (error)
+ 		goto exit3;
+@@ -2708,11 +2712,10 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ 	error = PTR_ERR(dentry);
+ 	if (!IS_ERR(dentry)) {
+ 		/* Why not before? Because we want correct error value */
+-		if (nd.last.name[nd.last.len])
+-			goto slashes;
+ 		inode = dentry->d_inode;
+-		if (inode)
+-			ihold(inode);
++		if (nd.last.name[nd.last.len] || !inode)
++			goto slashes;
++		ihold(inode);
+ 		error = mnt_want_write(nd.path.mnt);
+ 		if (error)
+ 			goto exit2;
+-- 
+1.7.4.1.22.gec8e1.dirty
 
-Thanks, I'll queue these both for Grant for the 3.0-rc fixes along with
-another GPIO fix for a section mismatch I have queued.
-
-Minor: now that this driver has moved to drivers, I changed the subject
-prefixes slightly.  They now read:
-
-GPIO: OMAP: fix setting IRQWAKEN bits for OMAP4
-GPIO: OMAP: add locking around calls to _set_gpio_triggering
-
-Kevin
