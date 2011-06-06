@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab1FFRdF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 13:33:05 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50421 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753601Ab1FFRdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 13:33:01 -0400
-Date: Mon, 6 Jun 2011 19:32:51 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, acme@redhat.com
-Subject: Re: [PATCH] perf: fix missing event name init for default event
-Message-ID: <20110606173251.GJ2391@elte.hu>
-References: <20110606151024.GA9464@quad>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110606151024.GA9464@quad>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1756577Ab1FFRaF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 13:30:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57761 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab1FFRaB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 13:30:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type;
+        b=QdhvAl2PsWDv1aRpmB/7/NG3mCOQMgiXW0N8Rz3xn/Aq8+QJepJYFYZaParH69gi4U
+         yBURhkQEM+w12CHnN+D3RAoyHBtwjKKk40UCnB6axAI3YUjXdqk4V82OfkphCEh4Empn
+         7yaVKo9hugbXlEqNY8cI7LUGUcheuKu95c+dE=
+Date: Mon, 6 Jun 2011 20:32:52 +0300
+From: Sergei Trofimovich <slyich@gmail.com>
+To: Mohammed Shafi <shafi.wireless@gmail.com>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: 3.0.0-rc1: dmesg shows 'wlan%d' instead of 'wlan0'
+Message-ID: <20110606203252.1854e4d7@sf>
+In-Reply-To: <BANLkTimLXr1+OLtGGXE2kzccRRG5T-G2mw@mail.gmail.com>
+References: <20110605201042.21c86763@sf>
+	<BANLkTimLXr1+OLtGGXE2kzccRRG5T-G2mw@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/jj9.r26ILmc22Vhoji_+JUq"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/jj9.r26ILmc22Vhoji_+JUq
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-* Stephane Eranian <eranian@google.com> wrote:
+> > Here we see 'wlan0' -> 'wlan%d' switch. I presume those lines go from f=
+irmware
+> > (and not from userspace).
 
-> @@ -87,6 +87,13 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
->  	if (evsel == NULL)
->  		return -ENOMEM;
->  
-> +	/* use strdup() because free(evsel) assumes name is allocated */
-> +	evsel->name = strdup("cycles");
-> +	if (!evsel->name) {
-> +		free(evsel);
-> +		return -ENOMEM;
-> +	}
-> +
->  	perf_evlist__add(evlist, evsel);
->  	return 0;
->  }
+> this seems to be fixed by the following commit which was recently
+> merged in wireless-testing
+>=20
+> commit 59e7e7078d6c2c6294caf454c6e3695f9d3e46a2
+> Author: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+> Date:   Thu Jun 2 17:28:37 2011 -0300
 
-Hm, nice fix, but this function should really follow the standard 
-exception tear-down sequence pattern we use in the kernel:
+> are we still getting it?
 
-  	if (evsel == NULL)
-		goto err;
+I never ran 'wireless-testing' before.
 
-	...
+Applied this commit on top of 3.0-rc2 and wlan%d switched to wlan0 back.
 
-	if (!evsel->name)
-		goto err_free;
+Thanks!
 
-	...
+--=20
 
-	return 0;
+  Sergei
 
-err_free:
-	free(evsel);
-err:
-	return -ENOMEM;
+--Sig_/jj9.r26ILmc22Vhoji_+JUq
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-	Ingo
+iEYEARECAAYFAk3tD0YACgkQcaHudmEf86rf8QCfXRTQ2CsG4cjRoZrhP9AfsCYW
+gzMAniPXfLGSQSsFq5t+l6yFTJaPjMpC
+=j2qX
+-----END PGP SIGNATURE-----
+
+--Sig_/jj9.r26ILmc22Vhoji_+JUq--
