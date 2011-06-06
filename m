@@ -1,89 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab1FFEnO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 00:43:14 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33542 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756570Ab1FFEnK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 00:43:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PUk9svuhk7pGhfyVhrhEIvy98o3oCR70Cx0cm0l4tdwDox4hq6cWvyE+eDPidw+NbR
-         LPgj8lFoCRuRf4ul0GzEp1PpjEGAOq2dE+5rVHhfiypj3RFAJvmVJZRjlCCDhY/xFeNW
-         lgxOsMINBmcq1qcXEaRAcqQfdBenAjQg4uBwA=
-MIME-Version: 1.0
-In-Reply-To: <20110605201042.21c86763@sf>
-References: <20110605201042.21c86763@sf>
-Date: Mon, 6 Jun 2011 10:13:08 +0530
-Message-ID: <BANLkTimLXr1+OLtGGXE2kzccRRG5T-G2mw@mail.gmail.com>
-Subject: Re: 3.0.0-rc1: dmesg shows 'wlan%d' instead of 'wlan0'
-From: Mohammed Shafi <shafi.wireless@gmail.com>
-To: Sergei Trofimovich <slyich@gmail.com>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	id S1756597Ab1FFE4B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 00:56:01 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:43327 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752101Ab1FFE4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 00:56:00 -0400
+Date: Mon, 6 Jun 2011 06:55:54 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Cc: Gilles.Muller@lip6.fr, npalix.work@gmail.com, cocci@diku.dk,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] coccinelle: if(ret)return ret; return ret; semantic
+ patch
+In-Reply-To: <1307320012-31292-1-git-send-email-Gregory.Dietsche@cuw.edu>
+Message-ID: <Pine.LNX.4.64.1106060651320.7113@ask.diku.dk>
+References: <1307320012-31292-1-git-send-email-Gregory.Dietsche@cuw.edu>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 5, 2011 at 10:40 PM, Sergei Trofimovich <slyich@gmail.com> wrote:
-> Recently I've noticed small discrepancy in dmesg:
->
-> $ { zcat messages.2.gz messages.1.gz; cat messages; } | egrep "(deauthen|Linux version)"
-> ...
-> May 21 22:01:31 sf kernel: [    0.000000] Linux version 2.6.39-00004-g29c77fa (slyfox@sf) (gcc version 4.4.5 (Gentoo 4.4.5 p1.2, pie-0.4.5) ) #116 SMP PREEMPT Thu May 19 22:46:16 EEST 2011
-> May 24 05:37:54 sf kernel: [81845.885094] wlan0: deauthenticated from ...
->
-> Jun  1 22:38:38 sf kernel: [    0.000000] Linux version 3.0.0-rc1-00035-g79f3f61 (slyfox@sf) (gcc version 4.4.5 (Gentoo 4.4.5 p1.2, pie-0.4.5) ) #118 SMP PREEMPT Wed Jun 1 22:14:46 EEST 2011
-> Jun  1 23:41:23 sf kernel: [ 3877.773727] wlan%d: deauthenticating from ...
->
-> Jun  1 23:42:16 sf kernel: [    0.000000] Linux version 3.0.0-rc1-00035-g79f3f61-dirty (slyfox@sf) (gcc version 4.4.5 (Gentoo 4.4.5 p1.2, pie-0.4.5) ) #119 SMP PREEMPT Wed Jun 1 23:35:43 EEST 2011
-> Jun  2 07:35:10 sf kernel: [ 5972.879970] wlan%d: deauthenticated from ...
->
-> Here we see 'wlan0' -> 'wlan%d' switch. I presume those lines go from firmware
-> (and not from userspace).
->
-> The card is an iwl4965
->
-> 10:00.0 Network controller: Intel Corporation PRO/Wireless 4965 AG or AGN [Kedron] Network Connection (rev 61)
+Thanks.  I tried this too, but I wasn't sure about the results.  The 
+question is why stop here.  For example, there are IS_ERR calls that one 
+could consider as well.  Or ret < 0.  Or why not just:
+
+@@
+expression ret;
+@@
+
+- if (...) return ret;
+  return ret;
+
+Although there might be function calls that one doesn't want to touch, so:
+
+@@
+identifier f != IS_ERR;
+expression ret;
+statement S;
+@@
+
+(
+if (<+...f(...)...+>) S
+|
+- if (...) return ret;
+  return ret;
+)
+
+julia
 
 
-this seems to be fixed by the following commit which was recently
-merged in wireless-testing
+On Sun, 5 Jun 2011, Greg Dietsche wrote:
 
-commit 59e7e7078d6c2c6294caf454c6e3695f9d3e46a2
-Author: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-Date:   Thu Jun 2 17:28:37 2011 -0300
-
-    mac80211: call dev_alloc_name before copying name to sdata
-
-    This partially reverts 1c5cae815d19ffe02bdfda1260949ef2b1806171, because
-    the netdev name is copied into sdata->name, which is used for debugging
-    messages, for example. Otherwise, we get messages like this:
-
-    wlan%d: authenticated
-
-    Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-    Cc: Jiri Pirko <jpirko@redhat.com>
-    Cc: David S. Miller <davem@davemloft.net>
-    Cc: Johannes Berg <johannes@sipsolutions.net>
-    Cc: "John W. Linville" <linville@tuxdriver.com>
-    Signed-off-by: John W. Linville <linville@tuxdriver.com>
-
-
-are we still getting it?
-
->
-> --
->
->  Sergei
->
-
-
-
--- 
-shafi
+> This semantic patch finds code matching this pattern:
+> 	if(ret)
+> 		return ret;
+> 	return ret;
+> 
+> I will be submitting patches shortly against the mainline to cleanup all
+> code matching this pattern.
+> 
+> Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+> ---
+>  scripts/coccinelle/misc/doublereturn.cocci |   20 ++++++++++++++++++++
+>  1 files changed, 20 insertions(+), 0 deletions(-)
+>  create mode 100644 scripts/coccinelle/misc/doublereturn.cocci
+> 
+> diff --git a/scripts/coccinelle/misc/doublereturn.cocci b/scripts/coccinelle/misc/doublereturn.cocci
+> new file mode 100644
+> index 0000000..656a118
+> --- /dev/null
+> +++ b/scripts/coccinelle/misc/doublereturn.cocci
+> @@ -0,0 +1,20 @@
+> +/// Remove unecessary if/return in code that follows this pattern:
+> +///	if(retval)
+> +///		return retval;
+> +///	return retval;
+> +//
+> +// Confidence: High
+> +// Copyright: (C) 2011 Greg Dietsche GPLv2.
+> +// URL: http://www.gregd.org
+> +// Comments:
+> +// Options: -no_includes
+> +
+> +virtual patch
+> +
+> +@@
+> +identifier retval;
+> +@@
+> +-if (retval)
+> +-	return retval;
+> +-return retval;
+> ++return retval;
+> -- 
+> 1.7.2.5
+> 
+> 
