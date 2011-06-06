@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab1FFXYw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 19:24:52 -0400
-Received: from home.keithp.com ([63.227.221.253]:59894 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722Ab1FFXYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 19:24:51 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: dri-devel@lists.freedesktop.org,
-        "drivers\, Intel" <Intel-gfx@lists.freedesktop.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: drivers/drm/i915 maintenance process
-In-Reply-To: <20110606133618.478fc5d9@jbarnes-desktop>
-References: <yunipskolss.fsf@aiko.keithp.com> <20110606133618.478fc5d9@jbarnes-desktop>
-User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Mon, 06 Jun 2011 16:24:46 -0700
-Message-ID: <yun39jm1r29.fsf@aiko.keithp.com>
+	id S1753712Ab1FFX0L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 19:26:11 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:52451 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751780Ab1FFX0J convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 19:26:09 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Todd Poynor <toddpoynor@google.com>
+Cc: l-o <linux-omap@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>
+Subject: Re: [PATCH] ARM: omap4: gpio: fix setting IRQWAKEN bits
+Organization: Texas Instruments, Inc.
+References: <1307214239-16316-1-git-send-email-ccross@android.com>
+	<BANLkTingmUNvZO_szivRkmn7LRO4L5A+5Q@mail.gmail.com>
+	<87r576wpz6.fsf@ti.com> <20110606230522.GA16590@google.com>
+Date: Mon, 06 Jun 2011 16:25:02 -0700
+In-Reply-To: <20110606230522.GA16590@google.com> (Todd Poynor's message of
+	"Mon, 6 Jun 2011 16:05:22 -0700")
+Message-ID: <87y61etuep.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Todd Poynor <toddpoynor@google.com> writes:
 
-On Mon, 6 Jun 2011 13:36:18 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> =
-wrote:
+> On Mon, Jun 06, 2011 at 03:32:29PM -0700, Kevin Hilman wrote:
+>> Colin Cross <ccross@android.com> writes:
+>> 
+>> > On Sat, Jun 4, 2011 at 12:03 PM, Colin Cross <ccross@android.com> wrote:
+>> >> Setting the IRQWAKEN bit was overwriting previous IRQWAKEN bits,
+>> >> causing only the last bit set to take effect, resulting in lost
+>> >> wakeups when the GPIO controller is in idle.
+>> >>
+>> >> Replace direct writes to IRQWAKEN with writes to SETWKUENA and
+>> >> CLEARWKUEN.
+>> >>
+>> >> Signed-off-by: Colin Cross <ccross@android.com>
+>> 
+>> [...]
+>> 
+>> >
+>> > Todd pointed out that the OMAP4 TRM says not to use SETWKUENA and
+>> > CLEARWKUENA.  
+>> 
+>> In my GPIO cleanups, I was wondering why the set/clear registers were
+>> not used here. Todd, can you give the TRM version & reference for this?
+>> I didn't find anything after a quick scan/search.
+>
+> http://focus.ti.com/general/docs/wtbu/wtbudocumentcenter.tsp?templateId=6123&navigationId=12037
+>
+> OMAP4460 Multimedia Device Silicon Revision 1.0 Version E
+> February 2011–Revised May 2011
+>
+> p. 5357 Table 25-68. GPIO_CLEARWKUPENA
+>
+> "Caution: This register is kept for backward software compatibility. Use
+> GPIO_IRQWAKEN_0 and GPIO_IRQWAKEN_1 instead."
 
-> Can you keep drm-intel-next fairly up to date with respect to the fixes
-> branch?  I.e. keep it a superset of drm-intel-fixes for the most part?
+OK, I see it now.
 
-Yes, I wanted to do that now, but -fixes is not a fast-forward from
-=2Dnext and I thought I shouldn't be doing rebases.
+Thanks,
 
-> In PCI-land, this means re-basing my -next tree periodically before the
-> merge window opens (though not right before the merge window unless
-> something unexpected happens, like a patch needing to be dropped; in
-> that case I'll delay the merge window push a bit to allow for more
-> testing).
+Kevin
 
-If a rebase around -RC1 is reasonable, then I'll do that now and move
-changes over to that.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFN7WG+Qp8BWwlsTdMRAsSCAJ0XP1prBpeQmG7YYkV0zoq4uWkd5gCgoR1E
-A6J+XqUUIroEF4IyI8KdPsE=
-=jq7b
------END PGP SIGNATURE-----
---=-=-=--
