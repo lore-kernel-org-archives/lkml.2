@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab1FFUBA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 16:01:00 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:46676 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757576Ab1FFUA7 (ORCPT
+	id S1757126Ab1FFUGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 16:06:36 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:45894 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756453Ab1FFUGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 16:00:59 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] scsi/atari_scsi: Remove obsolete variable oldto
-Date: Mon,  6 Jun 2011 22:00:51 +0200
-Message-Id: <1307390451-29536-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 6 Jun 2011 16:06:34 -0400
+Date: Mon, 06 Jun 2011 13:06:20 -0700 (PDT)
+Message-Id: <20110606.130620.1866725220563870006.davem@davemloft.net>
+To: randy.dunlap@oracle.com
+Cc: sfr@canb.auug.org.au, linux-sctp@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: linux-next: Tree for June 6 (sctp)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110606125532.793b3cfd.randy.dunlap@oracle.com>
+References: <20110606132036.aebd73a4.sfr@canb.auug.org.au>
+	<20110606125532.793b3cfd.randy.dunlap@oracle.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 06 Jun 2011 13:06:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 8ce7955aa52c37db1425ea4bd4edcfa67e253454 ("[SCSI] atari_NCR5380:
-update_timeout removal") removed all users, but not the avtual variable.
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Date: Mon, 6 Jun 2011 12:55:32 -0700
 
-Suggested-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> On Mon, 6 Jun 2011 13:20:36 +1000 Stephen Rothwell wrote:
+> 
+>> Hi all,
+>> 
+>> Changes since 20110603:
+> 
+> 
+> when CONFIG_IPV6 is not enabled:
+> 
+> ERROR: "ipv6_chk_addr" [net/sctp/sctp.ko] undefined!
+
+I'll push the following after some build testing, thanks.
+
+--------------------
+sctp: Guard IPV6 specific code properly.
+
+Outside of net/sctp/ipv6.c, IPV6 specific code needs to
+be ifdef guarded.
+
+This fixes build failures with IPV6 disabled.
+
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- drivers/scsi/atari_NCR5380.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ net/sctp/protocol.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/atari_NCR5380.c b/drivers/scsi/atari_NCR5380.c
-index ea439f9..24652f1 100644
---- a/drivers/scsi/atari_NCR5380.c
-+++ b/drivers/scsi/atari_NCR5380.c
-@@ -914,7 +914,6 @@ static int NCR5380_queue_command_lck(Scsi_Cmnd *cmd, void (*done)(Scsi_Cmnd *))
- {
- 	SETUP_HOSTDATA(cmd->device->host);
- 	Scsi_Cmnd *tmp;
--	int oldto;
- 	unsigned long flags;
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index af0a6b0..ab5ded2 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -637,6 +637,7 @@ void sctp_addr_wq_timeout_handler(unsigned long arg)
+ 		    " for cmd %d at entry %p\n", &sctp_addr_waitq, &addrw->a, addrw->state,
+ 		    addrw);
  
- #if (NDEBUG & NDEBUG_NO_WRITE)
++#if defined(CONFIG_IPV6) || defined (CONFIG_IPV6_MODULE)
+ 		/* Now we send an ASCONF for each association */
+ 		/* Note. we currently don't handle link local IPv6 addressees */
+ 		if (addrw->a.sa.sa_family == AF_INET6) {
+@@ -659,7 +660,7 @@ void sctp_addr_wq_timeout_handler(unsigned long arg)
+ 				break;
+ 			}
+ 		}
+-
++#endif
+ 		list_for_each_entry(sp, &sctp_auto_asconf_splist, auto_asconf_list) {
+ 			struct sock *sk;
+ 
 -- 
-1.7.0.4
+1.7.5.2
 
