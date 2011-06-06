@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab1FFXat (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 19:30:49 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:51956 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751085Ab1FFXas (ORCPT
+	id S1754511Ab1FFXju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 19:39:50 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:47495 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753798Ab1FFXjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 19:30:48 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=TG3N6lSpW+Kjoo7eZIUBcyQ0ly+hx8TsFLHCC2ajEzeT4RSfZCrNCBsS57m34iUCfDKVrOVe5ZYOO8/yxrRHwcEhbAL2iTeBSuw9gi0/76bAHolFUeJ5IhvmnlLN5LAQ;
-Date: Mon, 6 Jun 2011 16:30:25 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: dri-devel@lists.freedesktop.org,
-        "drivers\, Intel" <Intel-gfx@lists.freedesktop.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: drivers/drm/i915 maintenance process
-Message-ID: <20110606163025.5b1bfdee@jbarnes-desktop>
-In-Reply-To: <yun39jm1r29.fsf@aiko.keithp.com>
-References: <yunipskolss.fsf@aiko.keithp.com>
-	<20110606133618.478fc5d9@jbarnes-desktop>
-	<yun39jm1r29.fsf@aiko.keithp.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Mon, 6 Jun 2011 19:39:49 -0400
+X-Sasl-enc: kxPrw0v66shukI2XEho701iwr0i/ozOG1Sg8pZHVhTDy 1307403588
+Date: Mon, 6 Jun 2011 16:35:23 -0700
+From: Greg KH <greg@kroah.com>
+To: Russ Gorby <russ.gorby@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        suhail.ahmed@intel.com
+Subject: Re: [PATCHv2 0/5] N_GSM patchset : 06/03/2011: v2
+Message-ID: <20110606233523.GA13043@kroah.com>
+References: <1307144642-5915-1-git-send-email-russ.gorby@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307144642-5915-1-git-send-email-russ.gorby@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 Jun 2011 16:24:46 -0700
-Keith Packard <keithp@keithp.com> wrote:
-
-> On Mon, 6 Jun 2011 13:36:18 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+On Fri, Jun 03, 2011 at 04:43:55PM -0700, Russ Gorby wrote:
+> Hello N_GSM Maintainers,
 > 
-> > Can you keep drm-intel-next fairly up to date with respect to the fixes
-> > branch?  I.e. keep it a superset of drm-intel-fixes for the most part?
+> I'm sending this patchset
 > 
-> Yes, I wanted to do that now, but -fixes is not a fast-forward from
-> -next and I thought I shouldn't be doing rebases.
+> [PATCHv2 0/5] N_GSM patchset : 06/03/2011: v2
+> 
+> This patchset is the same as version 1 except it contains 2
+> additional patches that are needed to make the network interface
+> functionality usable.
+> These are the pertinent changes that we have done to the driver.
+> Thank you for yor comments.
 
-You shouldn't if your downstream is using git trees and you're pulling
-from them, but it depends on your downstream.  In my particular case,
-I'm ok with rebases if it means I get fixes. :)
+The next time you resend these, please send them with the bugfixes
+first, so I can send them to Linus before 3.0 is out, and the others
+will get queued up for 3.1.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+thanks,
+
+greg k-h
