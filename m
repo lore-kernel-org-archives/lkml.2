@@ -1,47 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab1FFQRA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:17:00 -0400
-Received: from keys.smcoe.k12.ca.us ([209.188.132.13]:43926 "HELO
-	keys.smcoe.k12.ca.us" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753760Ab1FFQQ6 convert rfc822-to-8bit (ORCPT
+	id S1756841Ab1FFIK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 04:10:56 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41330 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755545Ab1FFIKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:16:58 -0400
-X-Greylist: delayed 8095 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Jun 2011 12:16:48 EDT
-X-PGP-Universal: processed;
-	by keys.smcoe.k12.ca.us on Mon, 06 Jun 2011 01:19:24 -0700
-From: "Jackie Daily" <jdaily@un-habitat.org>
-Reply-to: ups@manager.in.th
-Organization: Jackie Daily
-Subject: Your cashier check
-To: undisclosed-recipients:;
-Message-ID: <20110606010825.bea6bd64@smcoe.k12.ca.us>
-Date: Mon, 06 Jun 2011 01:08:25 -0700
-X-User-Agent: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; SearchToolbar 1.2; SLCC1;
-	.NET CLR 2.0.50727; Media Center PC 5.0; .NET CLR 3.5.30729; .NET CLR
-	3.0.30618; Crazy Browser 2.0.1)
+	Mon, 6 Jun 2011 04:10:53 -0400
+Date: Mon, 6 Jun 2011 02:10:52 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org
+Subject: Re: [PATCH v3 1/3] gpio: gpio-mxs: copy mach-mxs/gpio.c into
+ drivers/gpio
+Message-ID: <20110606081052.GE10410@ponder.secretlab.ca>
+References: <1307184940-16291-1-git-send-email-shawn.guo@linaro.org>
+ <1307184940-16291-2-git-send-email-shawn.guo@linaro.org>
+ <20110604222946.GA31236@ponder.secretlab.ca>
+ <20110605162313.GA20553@S2100-06.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110605162313.GA20553@S2100-06.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delay on my part has been due to the change of my duties. I have sucessfully deposited your Cashier Check of $825,000.00 USD with the United Parcel Service. I am now in Kenya for my new job.
+On Mon, Jun 06, 2011 at 12:23:14AM +0800, Shawn Guo wrote:
+> On Sat, Jun 04, 2011 at 04:29:46PM -0600, Grant Likely wrote:
+> > On Sat, Jun 04, 2011 at 06:55:38PM +0800, Shawn Guo wrote:
+> > > As the first patch of the series that moves mach-mxc gpio driver into
+> > > drivers/gpio, it copies arch/arm/mach-mxs/gpio.c into
+> > > drivers/gpio/gpio-mxs.c.  The later patches will make necessary
+> > > changes to the driver, migrate the existing users to it, and lastly
+> > > deletes mach-mxs gpio driver.
+> > > 
+> > > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> > > ---
+> > >  drivers/gpio/gpio-mxs.c |  331 +++++++++++++++++++++++++++++++++++++++++++++++
+> > 
+> > [sigh]  I fear we are having a communication breakdown.  Since your
+> > /moving/ a file, you need to make it easy for readers to understand
+> > what has changed and why.  That means using 1 patch to move the file
+> > with only the changes absolutely necessary to ensure bisectability,
+> > and then followup patches for the clean up.
+> > 
+> > Adding a new copy in one patch, and then removing the old copy in the
+> > other patch does not make it easy for a reader to understand what
+> > changed.  Below is what you're first patch should look like (using the
+> > -M flag to show the actual changes which are only #include differences).
+> > 
+> Oops, I misunderstood your point.  But one thing I have been trying
+> hard is to keep changes for driver and subarch in separate patches,
+> which is something I was asked to do when I started working with
+> community.
 
-I need you to contact the United Parcel Service (UPS) for delivery of your check.
+Heh, and sometimes those of us actually maintaining stuff just plain
+change our mind when we see what something actually looks like in
+practise.  :-)
 
-Please take note that you will pay a shipping/handling fee of $87.00 US Dollars.
+In this case, the changes were intertwined enough that there wasn't
+much benefit in keeping the arch and drivers stuff in separate
+patches.
 
-Contact UPS with below details and pay the shipping/handling fee ($87 USD) to receive your cashier check: 
+> As you will anyway pick up the patch set as a whole,
+> this is not a problem then.  I just sent the updates of gpio-mxs
+> and gpio-mxc with you approach.  As a side effect, you will see
+> patch #2 of gpio-mxc becomes a very big patch in term of number of
+> files it changes.
 
-Name: Collins Abah 
-Tel: +2347033364633 
-E-mail: ups@manager.in.th 
+Thanks.  It's actually not that big.  I've seen (and created) much
+worse.
 
-Thank you for your patience.
+> 
+> > I've build tested this patch and have it sitting in the gpio/next
+> > branch of git://git.secretlab.ca/git/linux-2.6 at the moment if you
+> > want to build the rest of your series on top of it.
+> > 
+> Thanks for the patch demonstrating.  I have one minor comment below.
+> 
+> > g.
+> > 
+> > ---
+> > 
+> > commit e084f5b06ca7f3d94d9d042d288a3311398e5c49
+> > Author: Grant Likely <grant.likely@secretlab.ca>
+> > Date:   Sat Jun 4 16:18:59 2011 -0600
+> > 
+> >     gpio/mxs: Move Freescale mxs gpio driver to drivers/gpio
+> >     
+> >     GPIO drivers are getting moved to drivers/gpio for cleanup and
+> >     consolidation.  This patch moves the mxs driver.  Follow up patches
+> >     will clean it up and make it a fine upstanding example of a gpio
+> >     driver.
+> >     
+> >     Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> > 
+> >  arch/arm/mach-mxs/Makefile                         |    2 +-
+> >  .../mach-mxs/{gpio.h => include/mach/gpio-mxs.h}   |    0
+> >  arch/arm/mach-mxs/mach-mx28evk.c                   |    2 +-
+> >  drivers/gpio/Kconfig                               |    4 ++++
+> >  drivers/gpio/Makefile                              |    1 +
+> >  .../arm/mach-mxs/gpio.c => drivers/gpio/gpio-mxs.c |    3 +--
+> >  6 files changed, 8 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-mxs/Makefile b/arch/arm/mach-mxs/Makefile
+> > index 58e8923..6c38262 100644
+> > --- a/arch/arm/mach-mxs/Makefile
+> > +++ b/arch/arm/mach-mxs/Makefile
+> > @@ -1,5 +1,5 @@
+> >  # Common support
+> > -obj-y := clock.o devices.o gpio.o icoll.o iomux.o system.o timer.o
+> > +obj-y := clock.o devices.o icoll.o iomux.o system.o timer.o
+> >  
+> >  obj-$(CONFIG_MXS_OCOTP) += ocotp.o
+> >  obj-$(CONFIG_PM) += pm.o
+> > diff --git a/arch/arm/mach-mxs/gpio.h b/arch/arm/mach-mxs/include/mach/gpio-mxs.h
+> > similarity index 100%
+> > rename from arch/arm/mach-mxs/gpio.h
+> > rename to arch/arm/mach-mxs/include/mach/gpio-mxs.h
+> > diff --git a/arch/arm/mach-mxs/mach-mx28evk.c b/arch/arm/mach-mxs/mach-mx28evk.c
+> > index eacdc6b..347cf35 100644
+> > --- a/arch/arm/mach-mxs/mach-mx28evk.c
+> > +++ b/arch/arm/mach-mxs/mach-mx28evk.c
+> > @@ -24,9 +24,9 @@
+> >  
+> >  #include <mach/common.h>
+> >  #include <mach/iomux-mx28.h>
+> > +#include <mach/gpio-mxs.h>
+> >  
+> This is the problem of existing code.  The gpio.h (in turn gpio-mxs.h)
+> does not need to be included here.  So we can simply drop it in this
+> patch.  I have incorporated it when sending the patch within my series.
 
-Jackie Daily
-Programme Manager 
-United Nations Human Settlements Programme
+Oops, I missed you comment here and replied to one of your patches
+with a nonsensical comment about missing a header.  Sorry.  Everything
+should be in order in my tree now.
+
+> 
+> >  #include "devices-mx28.h"
+> > -#include "gpio.h"
+> >  
+> >  #define MX28EVK_FLEXCAN_SWITCH	MXS_GPIO_NR(2, 13)
+> >  #define MX28EVK_FEC_PHY_POWER	MXS_GPIO_NR(2, 15)
+> > diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> > index 21271a5..afe44aa 100644
+> > --- a/drivers/gpio/Kconfig
+> > +++ b/drivers/gpio/Kconfig
+> > @@ -94,6 +94,10 @@ config GPIO_EXYNOS4
+> >  	def_bool y
+> >  	depends on CPU_EXYNOS4210
+> >  
+> > +config GPIO_MXS
+> > +	def_bool y
+> > +	depends on ARCH_MXS
+> > +
+> >  config GPIO_PLAT_SAMSUNG
+> >  	def_bool y
+> >  	depends on SAMSUNG_GPIOLIB_4BIT
+> > diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> > index e6e5032..8733d02 100644
+> > --- a/drivers/gpio/Makefile
+> > +++ b/drivers/gpio/Makefile
+> > @@ -10,6 +10,7 @@ obj-$(CONFIG_GPIO_BASIC_MMIO_CORE)	+= basic_mmio_gpio.o
+> >  obj-$(CONFIG_GPIO_BASIC_MMIO)	+= basic_mmio_gpio.o
+> >  obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
+> >  obj-$(CONFIG_GPIO_EXYNOS4)	+= gpio-exynos4.o
+> > +obj-$(CONFIG_GPIO_MXS)		+= gpio-mxs.o
+> >  obj-$(CONFIG_GPIO_PLAT_SAMSUNG)	+= gpio-plat-samsung.o
+> >  obj-$(CONFIG_GPIO_S5PC100)	+= gpio-s5pc100.o
+> >  obj-$(CONFIG_GPIO_S5PV210)	+= gpio-s5pv210.o
+> > diff --git a/arch/arm/mach-mxs/gpio.c b/drivers/gpio/gpio-mxs.c
+> > similarity index 99%
+> > rename from arch/arm/mach-mxs/gpio.c
+> > rename to drivers/gpio/gpio-mxs.c
+> > index 2c950fe..bac7b6b 100644
+> > --- a/arch/arm/mach-mxs/gpio.c
+> > +++ b/drivers/gpio/gpio-mxs.c
+> > @@ -27,10 +27,9 @@
+> >  #include <linux/gpio.h>
+> >  #include <mach/mx23.h>
+> >  #include <mach/mx28.h>
+> > +#include <mach/gpio-mxs.h>
+> >  #include <asm-generic/bug.h>
+> >  
+> > -#include "gpio.h"
+> > -
+> >  static struct mxs_gpio_port *mxs_gpio_ports;
+> >  static int gpio_table_size;
+> >  
+> 
+> -- 
+> Regards,
+> Shawn
+> 
