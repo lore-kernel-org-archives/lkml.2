@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757821Ab1FFQBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:01:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50922 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757757Ab1FFQBI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:01:08 -0400
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-In-Reply-To: <20110606155236.GA7374@elte.hu>
-References: <4DEB6F3A.3000109@die-jansens.de>
-	 <20110605133958.GA27812@elte.hu> <4DEB8A93.30601@die-jansens.de>
-	 <20110605141003.GB29338@elte.hu> <4DEB933C.1070900@die-jansens.de>
-	 <20110605151323.GA30590@elte.hu> <1307349530.2353.7374.camel@twins>
-	 <20110606145827.GD30348@elte.hu> <1307372989.2322.136.camel@twins>
-	 <1307375227.2322.161.camel@twins>  <20110606155236.GA7374@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 06 Jun 2011 18:00:39 +0200
-Message-ID: <1307376039.2322.164.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756646Ab1FFQEe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:04:34 -0400
+Received: from www.jamboworld.com ([212.49.70.11]:33124 "EHLO mail.jambo.co.ke"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756571Ab1FFQEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 12:04:31 -0400
+X-Greylist: delayed 503 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Jun 2011 12:04:30 EDT
+Message-ID: <023120dcdb9d16e289106424c327d0e5.squirrel@mail.jambo.co.ke>
+Date: Mon, 6 Jun 2011 19:01:32 +0300 (EAT)
+Subject: Dear mit! User,
+From: emambo@jambo.co.ke
+User-Agent: SquirrelMail/1.4.16
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-jambo-MailScanner-Information: Please contact Jambo Telkom Tech(support@jambo.co.ke) for more information
+X-MailScanner-ID: 5A1EB10A32.29C99
+X-jambo-MailScanner: Found to Have No Virus Infection
+X-jambo-MailScanner-SpamCheck: not spam, SpamAssassin (cached, score=-1.3,
+	required 5, ALL_TRUSTED -1.80, BAYES_00 0.50)
+X-jambo-MailScanner-From: emambo@jambo.co.ke
+X-jambo-MailScanner-To: admin-trillian@ecf.mit.edu, afaghih@mit.edu,
+	andersk@mit.edu, andi@firstfloor.org, arjan@infradead.org,
+	arthur@langerman.net, belcher@mit.edu, bp@alien8.de,
+	cfj@xx.lcs.mit.edu, csg@xx.lcs.mit.edu, daemon@athena.mit.edu,
+	davidben@mit.edu, ebrynjo@mit.edu, edemaine@mit.edu, gbaldan@mit.edu,
+	gnu@prep.ai.mit.edu, hammond@mit.edu, hershey@alum.mit.edu,
+	hpa@zytor.com, hrm@mit.edu.au, jbelcher@mit.edu, jgoss@mit.edu,
+	jhp@csail.mit.edu, jj@chaosbits.net, ken_yoko@mit.edu,
+	kothari@mit.edu, lagha@mit.edu, leonidg@mit.edu,
+	linux-kernel@vger.kernel.org, luto@mit.edu, lyla@mit.edu,
+	marshall@mit.edu, mdemaine@mit.edu, mernst@cs.washington.edu,
+	meyer@theory.lcs.mit, mingo@elte.hu, nelhage@mit.edu,
+	netusers@mit.edu, rilling@kerlabs.com, rinard@csail.mit.edu,
+	sipb-reading-group@mit.edu, sipb@mit.edu, stubbe@mit.edu,
+	tabbott@mit.edu, tang-government@mit.edu, tang-president@mit.edu,
+	teri85@mit.edu, webmasters@www.gnu.ai.mit.edu, zahn@mit.edu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-06 at 17:52 +0200, Ingo Molnar wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > Needs more staring at, preferably by someone who actually 
-> > understands that horrid mess :/ Also, this all still doesn't make 
-> > printk() work reliably while holding rq->lock.
-> 
-> So, what about my suggestion to just *remove* the wakeup from there 
-> and use the deferred wakeup mechanism that klogd uses.
-> 
-> That would make printk() *visibly* more robust in practice.
+Dear mit! User,
 
-That's currently done from the jiffy tick, do you want to effectively
-delay releasing the console_sem for the better part of a jiffy?
+  This message is from .mit® Internet SM message center to all .mit®
+account owners. We are currently upgrading our data base and e-mail
+account center. We are deleting all unused .mit® account to create more
+space for new accounts. You are advice to verify and confirm your
+account details below to enable us upgrade our .mit® Internet Service
+e.g. mit E-mail, Password,and Address etc.
+ Anyone who fails to do his or her own will automatically lost his/her own
+Account.
 
-> [ It would also open up the way to possibly make printk() NMI entry 
->   safe - currently we lock up if we printk in an NMI or #MC context 
->   that happens to nest inside a printk(). ]
+ Thanks for using .mit® Internet SM To prevent your Account from closing
+you will have to update it below before three days from now!
 
-Well, for that to happen you also need to deal with logbuf_lock nesting.
-Personally I think using printk() from NMI context is quite beyond sane.
+ Confirm Your Account Details
+
+ Username:
+ Password:
+ Zip Code:
+
+You will be sent a confirmation letter from .mit customer service after
+our upgrading,Thanks for your understanding.Customer Service Warning!!!
+Account owner that refuses to update his or .mit account before five days
+of receiving this warning will lose his or her account permanently. Please
+tell us about your recent experience with mit! Customer Care in a brief
+E-mail.Thanks so much for taking the time to give us your feedback.Have a
+great day,
+mit! Customer Care
+Property: Mail Copyright © 2011 mit! Inc. All rights reserved.
+
+
+---------------------------------------------- 
+This message has been scanned for viruses and
+dangerous content by Jambo MailScanner, and is
+believed to be clean.
+---------------------------------------------
+"easy access to the world" 
+
