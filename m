@@ -1,27 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab1FFDMC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 23:12:02 -0400
+	id S1756155Ab1FFDLR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 23:11:17 -0400
 Received: from mail-ww0-f44.google.com ([74.125.82.44]:62855 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755586Ab1FFDLH (ORCPT
+	with ESMTP id S1755752Ab1FFDLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 23:11:07 -0400
+	Sun, 5 Jun 2011 23:11:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=a2TlhP8HhI2axoPCu/PJjyNlii2fDMynAJA0IjWBcI8Up7G81C4dYTIx72OhMrXAsz
-         wisx/Nq79CVOfDCCbWQs6qmYMzW7V90Qr65POyH/slfXYZO64l9ayGSCB57or8gETp8H
-         BUMYb7ynIC8wRBMaicRLqGQMyztxc4A00te9A=
+        b=oveihTaXF9bBwniqKS4PZ4SPCIo2ZlDiPG1VXC1CXWeXxb14kMCQfKlXJNhMahZgHW
+         zbbHaYLfqUheOiYg5PWrymMNydlOUkYro6v3vUHdLXXuYHSxYStI/KB5F7KDUI5bv20U
+         NxRaV0qO81jocI+WR0YnHHM0LRYgwaQFayFKo=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 1/4] rcu: Detect uses of rcu read side in extended quiescent states
-Date: Mon,  6 Jun 2011 05:10:55 +0200
-Message-Id: <1307329858-14999-3-git-send-email-fweisbec@gmail.com>
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Mike Frysinger <vapier@gentoo.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>, David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: [PATCH 2/4] nohz: Split extended quiescent state handling from nohz switch
+Date: Mon,  6 Jun 2011 05:10:56 +0200
+Message-Id: <1307329858-14999-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1307329858-14999-1-git-send-email-fweisbec@gmail.com>
 References: <1307329858-14999-1-git-send-email-fweisbec@gmail.com>
@@ -29,179 +36,466 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Detect uses of rcu that are not supposed to happen when we
-are in an extended quiescent state.
+It is assumed that rcu won't be used once we switch to tickless
+mode and until we restart the tick. However this is not always
+true, as in x86-64 where we dereference the idle notifiers after
+the tick is stopped.
 
-This can happen for example if we use rcu between the time we
-stop the tick and the time we restart it. Or inside an irq that
-didn't use rcu_irq_enter,exit() or other possible kind of rcu API
-misuse.
+To prepare for fixing this, split the tickless mode switching and
+RCU extended quiescent state logics.
+Make tick_nohz_stop/restart_sched_tick() RCU agnostic but provide
+a new pair of APIs tick_nohz_enter/exit_idle() that keep the
+old behaviour by handling both the nohz mode and RCU extended
+quiescent states, then convert every archs to use these.
+
+Archs that want to switch to extended QS to some custom points
+can do it later by using tick_nohz_stop_sched_tick() and
+rcu_enter_nohz() seperately.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 ---
- include/linux/lockdep.h  |    8 +++++++-
- include/linux/rcupdate.h |   20 ++++++++++++++------
- kernel/lockdep.c         |   12 +++++++++---
- kernel/pid.c             |    2 +-
- kernel/rcutree.c         |   14 ++++++++++++++
- 5 files changed, 45 insertions(+), 11 deletions(-)
+ arch/arm/kernel/process.c              |    4 +-
+ arch/avr32/kernel/process.c            |    4 +-
+ arch/blackfin/kernel/process.c         |    4 +-
+ arch/microblaze/kernel/process.c       |    4 +-
+ arch/mips/kernel/process.c             |    4 +-
+ arch/powerpc/kernel/idle.c             |    4 +-
+ arch/powerpc/platforms/iseries/setup.c |    8 +++---
+ arch/s390/kernel/process.c             |    4 +-
+ arch/sh/kernel/idle.c                  |    2 +-
+ arch/sparc/kernel/process_64.c         |    4 +-
+ arch/tile/kernel/process.c             |    4 +-
+ arch/um/kernel/process.c               |    4 +-
+ arch/unicore32/kernel/process.c        |    4 +-
+ arch/x86/kernel/process_32.c           |    4 +-
+ arch/x86/kernel/process_64.c           |    4 +-
+ include/linux/tick.h                   |   10 ++++++--
+ kernel/time/tick-sched.c               |   34 ++++++++++++++++++++++++++++++-
+ 17 files changed, 70 insertions(+), 36 deletions(-)
 
-diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-index ef820a3..452d547 100644
---- a/include/linux/lockdep.h
-+++ b/include/linux/lockdep.h
-@@ -547,8 +547,14 @@ do {									\
- # define might_lock_read(lock) do { } while (0)
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 5e1e541..27b68b0 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -182,7 +182,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		leds_event(led_idle_start);
+ 		while (!need_resched()) {
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -208,7 +208,7 @@ void cpu_idle(void)
+ 			}
+ 		}
+ 		leds_event(led_idle_end);
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/avr32/kernel/process.c b/arch/avr32/kernel/process.c
+index ef5a2a0..e683a34 100644
+--- a/arch/avr32/kernel/process.c
++++ b/arch/avr32/kernel/process.c
+@@ -34,10 +34,10 @@ void cpu_idle(void)
+ {
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched())
+ 			cpu_idle_sleep();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/blackfin/kernel/process.c b/arch/blackfin/kernel/process.c
+index 6a660fa..8082a8f 100644
+--- a/arch/blackfin/kernel/process.c
++++ b/arch/blackfin/kernel/process.c
+@@ -88,10 +88,10 @@ void cpu_idle(void)
  #endif
+ 		if (!idle)
+ 			idle = default_idle;
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched())
+ 			idle();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/microblaze/kernel/process.c b/arch/microblaze/kernel/process.c
+index 968648a..1b295b2 100644
+--- a/arch/microblaze/kernel/process.c
++++ b/arch/microblaze/kernel/process.c
+@@ -103,10 +103,10 @@ void cpu_idle(void)
+ 		if (!idle)
+ 			idle = default_idle;
  
-+enum rcu_warn {
-+	RCU_WARN_UNPROTECTED,
-+	RCU_WARN_EXT_QS
-+};
-+
- #ifdef CONFIG_PROVE_RCU
--extern void lockdep_rcu_dereference(const char *file, const int line);
-+extern void
-+lockdep_rcu_dereference(const char *file, const int line, enum rcu_warn type);
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched())
+ 			idle();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 
+ 		preempt_enable_no_resched();
+ 		schedule();
+diff --git a/arch/mips/kernel/process.c b/arch/mips/kernel/process.c
+index d2112d3..cdbfa52 100644
+--- a/arch/mips/kernel/process.c
++++ b/arch/mips/kernel/process.c
+@@ -56,7 +56,7 @@ void __noreturn cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched() && cpu_online(cpu)) {
+ #ifdef CONFIG_MIPS_MT_SMTC
+ 			extern void smtc_idle_loop_hook(void);
+@@ -77,7 +77,7 @@ void __noreturn cpu_idle(void)
+ 		     system_state == SYSTEM_BOOTING))
+ 			play_dead();
  #endif
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
+index 39a2baa..1108260 100644
+--- a/arch/powerpc/kernel/idle.c
++++ b/arch/powerpc/kernel/idle.c
+@@ -56,7 +56,7 @@ void cpu_idle(void)
  
- #endif /* __LINUX_LOCKDEP_H */
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 99f9aa7..651d90b 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -297,22 +297,29 @@ extern int rcu_my_thread_group_empty(void);
- /**
-  * rcu_lockdep_assert - emit lockdep splat if specified condition not met
-  * @c: condition to check
-+ * @t: type of the rcu problem detected
-  */
--#define rcu_lockdep_assert(c)						\
-+#define rcu_lockdep_assert(c, t)					\
- 	do {								\
- 		static bool __warned;					\
- 		if (debug_lockdep_rcu_enabled() && !__warned && !(c)) {	\
- 			__warned = true;				\
--			lockdep_rcu_dereference(__FILE__, __LINE__);	\
-+			lockdep_rcu_dereference(__FILE__, __LINE__, t);	\
- 		}							\
- 	} while (0)
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched() && !cpu_should_die()) {
+ 			ppc64_runlatch_off();
  
- #else /* #ifdef CONFIG_PROVE_RCU */
+@@ -93,7 +93,7 @@ void cpu_idle(void)
  
--#define rcu_lockdep_assert(c) do { } while (0)
-+#define rcu_lockdep_assert(c, t) do { } while (0)
+ 		HMT_medium();
+ 		ppc64_runlatch_on();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		if (cpu_should_die())
+ 			cpu_die();
+diff --git a/arch/powerpc/platforms/iseries/setup.c b/arch/powerpc/platforms/iseries/setup.c
+index c25a081..d40dcd9 100644
+--- a/arch/powerpc/platforms/iseries/setup.c
++++ b/arch/powerpc/platforms/iseries/setup.c
+@@ -562,7 +562,7 @@ static void yield_shared_processor(void)
+ static void iseries_shared_idle(void)
+ {
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched() && !hvlpevent_is_pending()) {
+ 			local_irq_disable();
+ 			ppc64_runlatch_off();
+@@ -576,7 +576,7 @@ static void iseries_shared_idle(void)
+ 		}
  
- #endif /* #else #ifdef CONFIG_PROVE_RCU */
+ 		ppc64_runlatch_on();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
  
-+#if defined(CONFIG_PROVE_RCU) && defined(CONFIG_NO_HZ)
-+extern bool rcu_check_extended_qs(void);
-+#else
-+static inline bool rcu_check_extended_qs(void) { return false; }
-+#endif
-+
- /*
-  * Helper functions for rcu_dereference_check(), rcu_dereference_protected()
-  * and rcu_assign_pointer().  Some of these could be folded into their
-@@ -338,14 +345,15 @@ extern int rcu_my_thread_group_empty(void);
- #define __rcu_dereference_check(p, c, space) \
- 	({ \
- 		typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
--		rcu_lockdep_assert(c); \
-+		rcu_lockdep_assert(c, RCU_WARN_UNPROTECTED); \
-+		rcu_lockdep_assert(!rcu_check_extended_qs(), RCU_WARN_EXT_QS); \
- 		rcu_dereference_sparse(p, space); \
- 		smp_read_barrier_depends(); \
- 		((typeof(*p) __force __kernel *)(_________p1)); \
- 	})
- #define __rcu_dereference_protected(p, c, space) \
- 	({ \
--		rcu_lockdep_assert(c); \
-+		rcu_lockdep_assert(c, RCU_WARN_UNPROTECTED); \
- 		rcu_dereference_sparse(p, space); \
- 		((typeof(*p) __force __kernel *)(p)); \
- 	})
-@@ -359,7 +367,7 @@ extern int rcu_my_thread_group_empty(void);
- #define __rcu_dereference_index_check(p, c) \
- 	({ \
- 		typeof(p) _________p1 = ACCESS_ONCE(p); \
--		rcu_lockdep_assert(c); \
-+		rcu_lockdep_assert(c, RCU_WARN_UNPROTECTED); \
- 		smp_read_barrier_depends(); \
- 		(_________p1); \
- 	})
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 63437d0..eccfede 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -3982,7 +3982,8 @@ void lockdep_sys_exit(void)
+ 		if (hvlpevent_is_pending())
+ 			process_iSeries_events();
+@@ -592,7 +592,7 @@ static void iseries_dedicated_idle(void)
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		if (!need_resched()) {
+ 			while (!need_resched()) {
+ 				ppc64_runlatch_off();
+@@ -609,7 +609,7 @@ static void iseries_dedicated_idle(void)
+ 		}
+ 
+ 		ppc64_runlatch_on();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
+index 541a750..560cd94 100644
+--- a/arch/s390/kernel/process.c
++++ b/arch/s390/kernel/process.c
+@@ -90,10 +90,10 @@ static void default_idle(void)
+ void cpu_idle(void)
+ {
+ 	for (;;) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched())
+ 			default_idle();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
+index 425d604..3957972 100644
+--- a/arch/sh/kernel/idle.c
++++ b/arch/sh/kernel/idle.c
+@@ -88,7 +88,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 
+ 		while (!need_resched()) {
+ 			check_pgt_cache();
+diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+index c158a95..5c36632 100644
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -95,12 +95,12 @@ void cpu_idle(void)
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 
+ 	while(1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 
+ 		while (!need_resched() && !cpu_is_offline(cpu))
+ 			sparc64_yield(cpu);
+ 
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 
+ 		preempt_enable_no_resched();
+ 
+diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
+index 9c45d8b..cc1bd4f 100644
+--- a/arch/tile/kernel/process.c
++++ b/arch/tile/kernel/process.c
+@@ -85,7 +85,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched()) {
+ 			if (cpu_is_offline(cpu))
+ 				BUG();  /* no HOTPLUG_CPU */
+@@ -105,7 +105,7 @@ void cpu_idle(void)
+ 				local_irq_enable();
+ 			current_thread_info()->status |= TS_POLLING;
+ 		}
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/um/kernel/process.c b/arch/um/kernel/process.c
+index fab4371..f1b3864 100644
+--- a/arch/um/kernel/process.c
++++ b/arch/um/kernel/process.c
+@@ -245,10 +245,10 @@ void default_idle(void)
+ 		if (need_resched())
+ 			schedule();
+ 
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		nsecs = disable_timer();
+ 		idle_sleep(nsecs);
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
  	}
  }
  
--void lockdep_rcu_dereference(const char *file, const int line)
-+void lockdep_rcu_dereference(const char *file, const int line,
-+			     enum rcu_warn type)
+diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
+index ba401df..e2df91a 100644
+--- a/arch/unicore32/kernel/process.c
++++ b/arch/unicore32/kernel/process.c
+@@ -55,7 +55,7 @@ void cpu_idle(void)
  {
- 	struct task_struct *curr = current;
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched()) {
+ 			local_irq_disable();
+ 			stop_critical_timings();
+@@ -63,7 +63,7 @@ void cpu_idle(void)
+ 			local_irq_enable();
+ 			start_critical_timings();
+ 		}
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index 8d12878..41e7d1b 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -97,7 +97,7 @@ void cpu_idle(void)
  
-@@ -3994,8 +3995,13 @@ void lockdep_rcu_dereference(const char *file, const int line)
- 	printk("\n===================================================\n");
- 	printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
- 	printk(  "---------------------------------------------------\n");
--	printk("%s:%d invoked rcu_dereference_check() without protection!\n",
--			file, line);
-+	printk("%s:%d invoked rcu_dereference_check() ", file, line);
-+
-+	if (type == RCU_WARN_UNPROTECTED)
-+		printk("without protection!\n");
-+	else if (type == RCU_WARN_EXT_QS)
-+		printk("while in RCU extended quiescent state!\n");
-+
- 	printk("\nother info that might help us debug this:\n\n");
- 	printk("\nrcu_scheduler_active = %d, debug_locks = %d\n", rcu_scheduler_active, debug_locks);
- 	lockdep_print_held_locks(curr);
-diff --git a/kernel/pid.c b/kernel/pid.c
-index 57a8346..87dd3c5 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -419,7 +419,7 @@ EXPORT_SYMBOL(pid_task);
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched()) {
+ 
+ 			check_pgt_cache();
+@@ -112,7 +112,7 @@ void cpu_idle(void)
+ 			pm_idle();
+ 			start_critical_timings();
+ 		}
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 6c9dd92..3fe0883 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -120,7 +120,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_enter_idle();
+ 		while (!need_resched()) {
+ 
+ 			rmb();
+@@ -145,7 +145,7 @@ void cpu_idle(void)
+ 			__exit_idle();
+ 		}
+ 
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_exit_idle();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index b232ccc..ff31a71 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -121,14 +121,18 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
+ #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
+ 
+ # ifdef CONFIG_NO_HZ
+-extern void tick_nohz_stop_sched_tick(int inidle);
++extern bool tick_nohz_stop_sched_tick(int inidle);
+ extern void tick_nohz_restart_sched_tick(void);
++extern void tick_nohz_enter_idle(void);
++extern void tick_nohz_exit_idle(void);
+ extern ktime_t tick_nohz_get_sleep_length(void);
+ extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+ extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+ # else
+-static inline void tick_nohz_stop_sched_tick(int inidle) { }
+-static inline void tick_nohz_restart_sched_tick(void) { }
++static inline bool tick_nohz_stop_sched_tick(int inidle) { return false; }
++static inline void tick_nohz_restart_sched_tick(void) { return false; }
++static inline void tick_nohz_enter_idle(void) { }
++static inline void tick_nohz_exit_idle(void) { }
+ static inline ktime_t tick_nohz_get_sleep_length(void)
+ {
+ 	ktime_t len = { .tv64 = NSEC_PER_SEC/HZ };
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index d5097c4..9437af2 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -254,12 +254,13 @@ EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
+  * Called either from the idle loop or from irq_exit() when an idle period was
+  * just interrupted by an interrupt which did not cause a reschedule.
   */
- struct task_struct *find_task_by_pid_ns(pid_t nr, struct pid_namespace *ns)
+-void tick_nohz_stop_sched_tick(int inidle)
++bool tick_nohz_stop_sched_tick(int inidle)
  {
--	rcu_lockdep_assert(rcu_read_lock_held());
-+	rcu_lockdep_assert(rcu_read_lock_held(), RCU_WARN_UNPROTECTED);
- 	return pid_task(find_pid_ns(nr, ns), PIDTYPE_PID);
- }
+ 	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies, flags;
+ 	struct tick_sched *ts;
+ 	ktime_t last_update, expires, now;
+ 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
++	int stopped = false;
+ 	u64 time_delta;
+ 	int cpu;
  
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 89419ff..992ec56 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -433,6 +433,20 @@ void rcu_irq_exit(void)
- 	rcu_enter_nohz();
- }
+@@ -409,7 +410,7 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
+ 			ts->idle_jiffies = last_jiffies;
+-			rcu_enter_nohz();
++			stopped = true;
+ 		}
  
-+#ifdef CONFIG_PROVE_RCU
+ 		ts->idle_sleeps++;
+@@ -450,6 +451,22 @@ out:
+ 	ts->sleep_length = ktime_sub(dev->next_event, now);
+ end:
+ 	local_irq_restore(flags);
 +
-+bool rcu_check_extended_qs(void)
-+{
-+	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
-+
-+	if (atomic_read(&rdtp->dynticks) & 0x1)
-+		return false;
-+
-+	return true;
++	return stopped;
 +}
 +
-+#endif /* CONFIG_PROVE_RCU */
 +
- #ifdef CONFIG_SMP
++/**
++ * tick_nohz_enter_idle - stop the tick and enter extended quiescent state
++ *
++ * Most arch may want to enter RCU extended state right after they switched
++ * to nohz mode. Beware though, no read side use of RCU can be done until we
++ * call tick_nohz_exit_idle().
++ */
++void tick_nohz_enter_idle(void)
++{
++	if (tick_nohz_stop_sched_tick(1))
++		rcu_enter_nohz();
+ }
  
- /*
+ /**
+@@ -552,6 +569,19 @@ void tick_nohz_restart_sched_tick(void)
+ 	local_irq_enable();
+ }
+ 
++/**
++ * tick_nohz_exit_idle - restart the tick and exit extended quiescent state
++ */
++void tick_nohz_exit_idle(void)
++{
++	struct tick_sched *ts = &__raw_get_cpu_var(tick_cpu_sched);
++
++	if (ts->tick_stopped)
++		rcu_exit_nohz();
++
++	tick_nohz_restart_sched_tick();
++}
++
+ static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
+ {
+ 	hrtimer_forward(&ts->sched_timer, now, tick_period);
 -- 
 1.7.5.2
 
