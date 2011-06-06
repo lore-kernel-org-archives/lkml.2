@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab1FFJKh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:10:37 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43575 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab1FFJKf (ORCPT
+	id S1754210Ab1FFJJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:09:33 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51889 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754015Ab1FFJJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:10:35 -0400
-Date: Mon, 6 Jun 2011 10:08:39 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-pcmcia@lists.infradead.org,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        "David S. Miller" <davem@davemloft.net>, Michael Buesch <mb@bu3sch.de>,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Florian Fainelli <florian@openwrt.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: reorganize drivers
-Message-ID: <20110606090839.GA10508@n2100.arm.linux.org.uk>
-References: <20110605071725.26517.11573.stgit@ponder> <201106061100.38249.arnd@arndb.de>
+	Mon, 6 Jun 2011 05:09:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=WE8rC2RWeC+xSMjSfXntlaQevWqag95qX7MhZsp2xEOE4oS/Rb8Nrw2YMHlPfwFn/1
+         7KyGl+YEJdTCLB+S4tKWZ/n4+iK8ovJ0mrrgNpka6C3nZnhe0V482DYhxwHrdGmXfps5
+         Q/70axpzek4N+uprdPqvJIG+fa3B44cAWfNC4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106061100.38249.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Date: Mon, 6 Jun 2011 14:39:30 +0530
+Message-ID: <BANLkTi=q0f8aYc2+fhaY5yFRRfgkOOME-g@mail.gmail.com>
+Subject: Seeing DMAR errors after multiple load/unload with SR-IOV
+From: padmanabh ratnakar <pratnakarlx@gmail.com>
+To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 11:00:38AM +0200, Arnd Bergmann wrote:
-> This leaves out the two most common buses, USB and PCI, mostly because
-> the directories contain a lot of stuff that is not really bus code
-> but actual drivers. It does include i2c and spi, which stick out by
-> being a lot larger than most others.
-> 
-> Opinions? Move or don't move?
+Hi,
+        I am using linux kernel 2.6.39. I have a IBM x3650 M3 system.
+I have used following boot options -
+intel_iommu=on iommu=pt
 
-I don't see much point in adding an additional level of directories.
-All that it'll do is add to the shell filename completion workload
-and wear out our tab keys faster...
+I was loading/unloading my NIC driver(be2net) with num_vfs=7.
 
-We'll still have these directories with not a lot under them.
+After some iterations I get following DMAR errors -
+Jun  4 03:50:20 rhel6 kernel: Uhhuh. NMI received for unknown reason
+2d on CPU 0.
+Jun  4 03:50:20 rhel6 kernel: Do you have a strange power saving mode enabled?
+Jun  4 03:50:20 rhel6 kernel: Dazed and confused, but trying to continue
+Jun  4 03:50:20 rhel6 kernel: DRHD: handling fault status reg 2
+Jun  4 03:50:20 rhel6 kernel: DMAR:[DMA Read] Request device [1a:00.2]
+fault addr 78077000
+Jun  4 03:50:20 rhel6 kernel: DMAR:[fault reason 02] Present bit in
+context entry is clear
+
+I was trying to debug this. I dont understand iommu code much.
+The physical address belongs the printed PCI function and there should
+not have been an error.
+
+I am unable to see pci_dev(pdev) of VFs getting removed from
+si_domain->devices list(intel-iommu.c)
+when driver gets unloaded calling pci_disable_sriov() freeing VF pdevs.
+Looks like issue happens when when freed pdev is allocated again and
+as it is already in list,
+required initializations dont happen.
+
+I dont know if my understanding is correct. Can anyone point me to
+what the issue may be?
+
+Thanks,
+Padmanabh
