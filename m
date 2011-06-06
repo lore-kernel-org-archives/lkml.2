@@ -1,40 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab1FFWaf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:30:35 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53972 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab1FFWae (ORCPT
+	id S1758156Ab1FFWdB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:33:01 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54806 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756634Ab1FFWc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 18:30:34 -0400
-Date: Mon, 6 Jun 2011 23:30:30 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lacombar@gmail.com
-Subject: Re: [PATCH -v2] vfs: make unlink() return ENOENT in preference to
- EROFS
-Message-ID: <20110606223030.GN11521@ZenIV.linux.org.uk>
-References: <BANLkTimX_R8-mT4PqAhqwvCPm_-bcDFqVQ@mail.gmail.com>
- <1307393893-28672-1-git-send-email-tytso@mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307393893-28672-1-git-send-email-tytso@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Jun 2011 18:32:59 -0400
+Date: Mon, 6 Jun 2011 15:32:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-Id: <20110606153222.68dc2636.akpm@linux-foundation.org>
+In-Reply-To: <20110603154554.GK2802@random.random>
+References: <20110601175809.GB7306@suse.de>
+	<20110601191529.GY19505@random.random>
+	<20110601214018.GC7306@suse.de>
+	<20110601233036.GZ19505@random.random>
+	<20110602010352.GD7306@suse.de>
+	<20110602132954.GC19505@random.random>
+	<20110602145019.GG7306@suse.de>
+	<20110602153754.GF19505@random.random>
+	<20110603020920.GA26753@suse.de>
+	<20110603144941.GI7306@suse.de>
+	<20110603154554.GK2802@random.random>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 04:58:13PM -0400, Theodore Ts'o wrote:
-> If user space attempts to unlink a non-existent file, and the file
-> system is mounted read-only, return ENOENT instead of EROFS.  Either
-> error code is arguably valid/correct, but ENOENT is a more specific
-> error message.
+On Fri, 3 Jun 2011 17:45:54 +0200
+Andrea Arcangeli <aarcange@redhat.com> wrote:
 
-Umm...  I can live with that.  What about rmdir(2)?  We have similar situation
-there as well.  If we care about one, why not the other?
+> On Fri, Jun 03, 2011 at 03:49:41PM +0100, Mel Gorman wrote:
+> > Right idea of the wrong zone being accounted for but wrong place. I
+> > think the following patch should fix the problem;
+> 
+> Looks good thanks.
+> 
+> I also found this bug during my debugging that made NR_SHMEM underflow.
+> 
+> ===
+> Subject: migrate: don't account swapcache as shmem
+> 
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> swapcache will reach the below code path in migrate_page_move_mapping,
+> and swapcache is accounted as NR_FILE_PAGES but it's not accounted as
+> NR_SHMEM.
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> ---
+> 
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index e4a5c91..2597a27 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -288,7 +288,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+>  	 */
+>  	__dec_zone_page_state(page, NR_FILE_PAGES);
+>  	__inc_zone_page_state(newpage, NR_FILE_PAGES);
+> -	if (PageSwapBacked(page)) {
+> +	if (mapping != &swapper_space && PageSwapBacked(page)) {
+>  		__dec_zone_page_state(page, NR_SHMEM);
+>  		__inc_zone_page_state(newpage, NR_SHMEM);
+>  	}
 
-Mind you, I'm not at all convinced that it matters enough to bother, but
-yes, ENOENT is a bit more specific (and likelier to be handled by luserland
-code).
+fyi, this was the only patch I applied from this whole thread.  Once the
+dust has settled, could people please resend whatever they have,
+including any acked-by's and reviewed-by's?
+
+Thanks.
