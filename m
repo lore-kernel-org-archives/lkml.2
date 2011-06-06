@@ -1,177 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab1FFOf7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 10:35:59 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53192 "EHLO hera.kernel.org"
+	id S1755009Ab1FFOie (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 10:38:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30947 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754559Ab1FFOf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 10:35:57 -0400
-Date: Mon, 6 Jun 2011 14:34:11 GMT
-From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Message-ID: <tip-1593843e2ada6d6832d0de4d633aacd997dc3a45@git.kernel.org>
-Cc: mingo@redhat.com, brgerst@gmail.com, torvalds@linux-foundation.org,
-        mikpe@it.uu.se, richard.weinberger@gmail.com, jj@chaosbits.net,
-        JBeulich@novell.com, tglx@linutronix.de, Louis.Rilling@kerlabs.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, luto@mit.edu,
-        andi@firstfloor.org, bp@alien8.de, arjan@infradead.org, mingo@elte.hu
-Reply-To: mingo@redhat.com, torvalds@linux-foundation.org, brgerst@gmail.com,
-        mikpe@it.uu.se, richard.weinberger@gmail.com, jj@chaosbits.net,
-        JBeulich@novell.com, tglx@linutronix.de, Louis.Rilling@kerlabs.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, luto@mit.edu,
-        andi@firstfloor.org, bp@alien8.de, arjan@infradead.org, mingo@elte.hu
-In-Reply-To: <BANLkTimrhO8QfBqQsH_Q13ghRH2P+ZP7AA@mail.gmail.com>
-References: <BANLkTimrhO8QfBqQsH_Q13ghRH2P+ZP7AA@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to COMPAT_VSYSCALLS
-Git-Commit-ID: 1593843e2ada6d6832d0de4d633aacd997dc3a45
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Jun 2011 14:34:13 +0000 (UTC)
+	id S1751164Ab1FFOid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 10:38:33 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: pzijlstr@redhat.com, paulus@samba.org, mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, oleg@redhat.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] perf, core: Fix initial task_ctx/event installation
+Date: Mon,  6 Jun 2011 16:38:15 +0200
+Message-Id: <1307371095-10141-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1593843e2ada6d6832d0de4d633aacd997dc3a45
-Gitweb:     http://git.kernel.org/tip/1593843e2ada6d6832d0de4d633aacd997dc3a45
-Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Mon, 6 Jun 2011 12:13:40 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 6 Jun 2011 12:13:40 +0200
+hi,
 
-x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to COMPAT_VSYSCALLS
+I think I found a bug in the __perf_install_in_context. The attached
+patch fixies the problem for me, but I'm not sure it did not break
+anything else.. ;)
 
-Linus pointed out that the UNSAFE_VSYSCALL naming was inherently
-bad: it suggests that there's something unsafe about enabling them,
-while in reality they only have any security effect in the presence
-of some *other* security hole.
+thanks,
+jirka
 
-So rename it to CONFIG_COMPAT_VSYSCALL and fix the documentation
-and Kconfig text to correctly explain the purpose of this change.
-
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Lutomirski <luto@mit.edu>
-Cc: Jesper Juhl <jj@chaosbits.net>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Arjan van de Ven <arjan@infradead.org>
-Cc: Jan Beulich <JBeulich@novell.com>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Mikael Pettersson <mikpe@it.uu.se>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Brian Gerst <brgerst@gmail.com>
-Cc: Louis Rilling <Louis.Rilling@kerlabs.com>
-Cc: Valdis.Kletnieks@vt.edu
-Cc: pageexec@freemail.hu
-Link: http://lkml.kernel.org/r/BANLkTimrhO8QfBqQsH_Q13ghRH2P%2BZP7AA@mail.gmail.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- Documentation/feature-removal-schedule.txt |    7 ++++---
- arch/x86/Kconfig                           |   17 ++++++++++-------
- arch/x86/kernel/vsyscall_64.c              |    8 ++++----
- arch/x86/kernel/vsyscall_emu_64.S          |    2 +-
- 4 files changed, 19 insertions(+), 15 deletions(-)
+The __perf_install_in_context function does not install context
+events in case there's no active task context.
 
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 94b4470..4282ab2 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -601,10 +601,11 @@ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
- 
- ----------------------------
- 
--What:	CONFIG_UNSAFE_VSYSCALLS (x86_64)
-+What:	CONFIG_COMPAT_VSYSCALLS (x86_64)
- When:	When glibc 2.14 or newer is ubitquitous.  Perhaps mid-2012.
--Why:	Having user-executable code at a fixed address is a security problem.
--	Turning off CONFIG_UNSAFE_VSYSCALLS mostly removes the risk but will
-+Why:	Having user-executable syscall invoking code at a fixed addresses makes
-+	it easier for attackers to exploit security holes.
-+	Turning off CONFIG_COMPAT_VSYSCALLS mostly removes the risk but will
- 	make the time() function slower on glibc versions 2.13 and below.
- Who:	Andy Lutomirski <luto@mit.edu>
- 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 79e5d8a..30041d8 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1646,20 +1646,23 @@ config COMPAT_VDSO
- 
- 	  If unsure, say Y.
- 
--config UNSAFE_VSYSCALLS
-+config COMPAT_VSYSCALLS
- 	def_bool y
--	prompt "Unsafe fast legacy vsyscalls"
-+	prompt "Fixed address legacy vsyscalls"
- 	depends on X86_64
- 	---help---
- 	  Legacy user code expects to be able to issue three syscalls
--	  by calling fixed addresses in kernel space.  If you say N,
--	  then the kernel traps and emulates these calls.  If you say
--	  Y, then there is actual executable code at a fixed address
--	  to implement time() efficiently.
-+	  by calling a fixed addresses.  If you say N, then the kernel
-+	  traps and emulates these calls.  If you say Y, then there is
-+	  actual executable code at a fixed address to implement time()
-+	  efficiently.
- 
- 	  On a system with recent enough glibc (probably 2.14 or
- 	  newer) and no static binaries, you can say N without a
--	  performance penalty to improve security
-+	  performance penalty to improve security: having no fixed
-+	  address userspace-executable syscall invoking code makes
-+	  it harder for both remote and local attackers to exploit
-+	  security holes.
- 
- 	  If unsure, say Y.
- 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 285af7a..27d49b7 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -116,7 +116,7 @@ static int al_to_vsyscall_nr(u8 al)
- 	return -1;
- }
- 
--#ifdef CONFIG_UNSAFE_VSYSCALLS
-+#ifdef CONFIG_COMPAT_VSYSCALLS
- 
- /* This will break when the xtime seconds get inaccurate, but that is
-  * unlikely */
-@@ -138,9 +138,9 @@ vtime(time_t *t)
- 	return result;
- }
- 
--#endif /* CONFIG_UNSAFE_VSYSCALLS */
-+#endif /* CONFIG_COMPAT_VSYSCALLS */
- 
--/* If CONFIG_UNSAFE_VSYSCALLS=y, then this is incorrect for vsyscall_nr == 1. */
-+/* If CONFIG_COMPAT_VSYSCALLS=y, then this is incorrect for vsyscall_nr == 1. */
- static inline unsigned long vsyscall_intcc_addr(int vsyscall_nr)
- {
- 	return VSYSCALL_START + 1024*vsyscall_nr + 2;
-@@ -202,7 +202,7 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
- 		break;
- 
- 	case 1:
--#ifdef CONFIG_UNSAFE_VSYSCALLS
-+#ifdef CONFIG_COMPAT_VSYSCALLS
- 		warn_bad_vsyscall(KERN_WARNING, regs, "bogus time() vsyscall "
- 				  "emulation (exploit attempt?)");
- 		goto sigsegv;
-diff --git a/arch/x86/kernel/vsyscall_emu_64.S b/arch/x86/kernel/vsyscall_emu_64.S
-index 7ebde61..2d53e26 100644
---- a/arch/x86/kernel/vsyscall_emu_64.S
-+++ b/arch/x86/kernel/vsyscall_emu_64.S
-@@ -25,7 +25,7 @@ ENTRY(vsyscall_0)
- 	ret
- END(vsyscall_0)
- 
--#ifndef CONFIG_UNSAFE_VSYSCALLS
-+#ifndef CONFIG_COMPAT_VSYSCALLS
- .section .vsyscall_1, "a"
- ENTRY(vsyscall_1)
- 	movb $0xce, %al
+This might cause incorrect counts if application opens counter
+in its own task context. 
+
+Following scenario leads to wrong counts:
+(this is the case for "perf test - test__open_syscall_event
+which counts sys_enter_open calls)
+
+1  - application is scheduled in
+2  - application enters perf_event_open syscall with its own pid
+3  - event/context is created
+4  - __perf_install_in_context is called
+5  - cpuctx->task_ctx is NULL
+6  - perf_event_sched_in gets called with ctx == NULL, new event is not scheduled in
+7  - application leaves the perf_event_open syscall
+8  - application running code leading to increment the event counter
+     !!! this is where we lost the counts, since the event is not scheduled in !!!
+9  - application is scheduled out
+11 - application is scheduled in
+12 - event is properly sceduled in
+13 - event counter is now incremented
+
+If the task is scheduled out and back in after the context is installed,
+but before it exits the perf_event_open syscall, the task_ctx gets
+properly set and event is properly scheduled in. In this case
+the perf test returns proper counts.
+
+Attached patch changed this behaviour to install new task_ctx
+even if the current task_ctx is NULL.
+
+Tested by succesfully running perf test command.
+
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ kernel/events/core.c |   21 +++++++++++----------
+ 1 files changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index ba89f40..291fb72 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1511,17 +1511,18 @@ static int  __perf_install_in_context(void *info)
+ 	/*
+ 	 * If there was an active task_ctx schedule it out.
+ 	 */
+-	if (task_ctx) {
++	if (task_ctx)
+ 		task_ctx_sched_out(task_ctx);
+-		/*
+-		 * If the context we're installing events in is not the
+-		 * active task_ctx, flip them.
+-		 */
+-		if (ctx->task && task_ctx != ctx) {
+-			raw_spin_unlock(&cpuctx->ctx.lock);
+-			raw_spin_lock(&ctx->lock);
+-			cpuctx->task_ctx = task_ctx = ctx;
+-		}
++
++	/*
++	 * If the context we're installing events in is not the
++	 * active task_ctx, flip them.
++	 */
++	if (ctx->task && task_ctx != ctx) {
++		if (task_ctx)
++			raw_spin_unlock(&task_ctx->lock);
++		raw_spin_lock(&ctx->lock);
++		cpuctx->task_ctx = task_ctx = ctx;
+ 		task = task_ctx->task;
+ 	}
+ 	cpu_ctx_sched_out(cpuctx, EVENT_ALL);
+-- 
+1.7.1
+
