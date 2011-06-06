@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab1FFIGW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 04:06:22 -0400
-Received: from sh.osrg.net ([192.16.179.4]:40780 "EHLO sh.osrg.net"
+	id S1756905Ab1FFIGd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 04:06:33 -0400
+Received: from sh.osrg.net ([192.16.179.4]:40783 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755115Ab1FFIGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 04:06:19 -0400
-Date: Mon, 6 Jun 2011 17:06:01 +0900
-To: shawn.guo@freescale.com
-Cc: fujita.tomonori@lab.ntt.co.jp, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dan.j.williams@intel.com, patches@linaro.org
-Subject: Re: [PATCH 1/3] dmaengine: add new dma API for max_segment_number
+	id S1755115Ab1FFIG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 04:06:29 -0400
+Date: Mon, 6 Jun 2011 17:06:03 +0900
+To: shawn.guo@linaro.org
+Cc: linux-kernel@vger.kernel.org, vinod.koul@intel.com,
+        dan.j.williams@intel.com, cjb@laptop.org, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        gregkh@suse.de
+Subject: Re: [PATCH v2 1/3] dmaengine: add new dma API for
+ max_segment_number
 From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20110606065419.GA20904@S2100-06.ap.freescale.net>
-References: <1307338118.10976.74.camel@vkoul-udesk3>
-	<20110606153634D.fujita.tomonori@lab.ntt.co.jp>
-	<20110606065419.GA20904@S2100-06.ap.freescale.net>
+In-Reply-To: <1307345414-26872-1-git-send-email-shawn.guo@linaro.org>
+References: <1307345414-26872-1-git-send-email-shawn.guo@linaro.org>
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <20110606163913U.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 06 Jun 2011 17:06:03 +0900 (JST)
+Message-Id: <20110606170420I.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 06 Jun 2011 17:06:04 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Jun 2011 14:54:21 +0800
-Shawn Guo <shawn.guo@freescale.com> wrote:
+On Mon,  6 Jun 2011 15:30:12 +0800
+Shawn Guo <shawn.guo@linaro.org> wrote:
 
-> On Mon, Jun 06, 2011 at 03:38:12PM +0900, FUJITA Tomonori wrote:
-> > On Mon, 06 Jun 2011 10:58:38 +0530
-> > "Koul, Vinod" <vinod.koul@intel.com> wrote:
-> > 
-> > > On Sun, 2011-06-05 at 10:30 +0900, FUJITA Tomonori wrote:
-> > > > On Wed, 1 Jun 2011 10:33:57 +0800
-> > > > Shawn Guo <shawn.guo@freescale.com> wrote:
-> > > > 
-> > > > > On Thu, May 26, 2011 at 02:31:31PM +0800, Shawn Guo wrote:
-> > > > > > Like dma_set(get)_max_seg_size for max_segment_size, the patch adds
-> > > > > > max_segment_number into device_dma_parameters and creates the
-> > > > > > corresponding dmaengine API dma_set(get)_max_seg_number for it.
-> > > > > > 
-> > > > > > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> > > > > > ---
-> > > > > >  include/linux/device.h      |    1 +
-> > > > > >  include/linux/dma-mapping.h |   15 +++++++++++++++
-> > > > > >  2 files changed, 16 insertions(+), 0 deletions(-)
-> > > > 
-> > > > include/linux/dma-mapping.h is for DMA mapping API (please see
-> > > > Documentation/DMA-API*.txt).
-> > > > 
-> Hmm, I think they are all about dmaengine.
+> Like dma_set(get)_max_seg_size for max_segment_size, the patch adds
+> max_segment_number into device_dma_parameters and creates the
+> corresponding dmaengine API dma_set(get)_max_seg_number for it.
 
-No, I added them for the DMA mapping API (mainly, IOMMUs).
+As I wrote in another mail, dma_get|set_max_seg_size and
+dma_get|set_seg_boundary are added to the dma mapping API. That is,
+they enable the drivers (or subsystems) to tell IOMMUs about the
+device dma limitations. When IOMMUs merge scatter list entries, they
+look at the limitations.
+
+
+> Here is the user story that tells the need of the new api.  The
+> mxs-mmc is the mmc host controller for Freescale MXS architecture.
+> There are a pair of  mmc host specific parameters max_seg_size and
+> max_segs that mxs-mmc host driver needs to tell mmc core, so that
+> mmc core can know how big each data segment could be and how many
+> segments could be handled one time in a scatter list by host driver.
+> 
+> The mxs-mmc driver is one user of dmaengine mxs-dma, and it will call
+> mxs-dma to transfer data in scatter list.  That is to say mxs-mmc has
+> no idea of what max_seg_size and max_segs should be, because they are
+> all mxs-dma capability parameters, and mxs-mmc needs to query them
+> from mxs-dma.
+
+max_segs isn't unrelated with the dma mapping API. I explained above,
+IOMMUs doesn't increase the number of segments (could decrease the
+number of segments by merging).
+
+The limitation about the number of segment already lives elsewhere
+(e.g. queue's limits.max_segments).
