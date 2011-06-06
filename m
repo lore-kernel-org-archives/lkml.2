@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab1FFRll (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 13:41:41 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50493 "EHLO mx3.mail.elte.hu"
+	id S1756812Ab1FFRlt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 13:41:49 -0400
+Received: from hyde.gogi.tv ([87.106.161.174]:49154 "EHLO hyde.gogi.tv"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752121Ab1FFRlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 13:41:40 -0400
-Date: Mon, 6 Jun 2011 19:41:29 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andy Lutomirski <luto@MIT.EDU>
-Cc: x86@kernel.org, pageexec@freemail.hu, Mikael Pettersson <mikpe@it.uu.se>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/3] x86-64: Clean up vsyscall emulation and remove
- fixed-address ret
-Message-ID: <20110606174129.GA6412@elte.hu>
-References: <cover.1307380481.git.luto@mit.edu>
- <bd468a0e02befab146667fab5de57df7332d54d9.1307380481.git.luto@mit.edu>
+	id S1756775Ab1FFRlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 13:41:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <bd468a0e02befab146667fab5de57df7332d54d9.1307380481.git.luto@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Mon, 06 Jun 2011 18:41:44 +0100
+From: Daniel Haid <d.haid@gogi.tv>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, <airlied@linux.ie>
+Subject: Re: [PATCH] tentative fix for radeon on systems >4GB without
+ hardware iommu
+In-Reply-To: <BANLkTik+p65G5f08RfxiYojvAax_nrDiqg@mail.gmail.com>
+References: <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv>
+ <20110531134519.GC14641@dumpdata.com>
+ <59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv>
+ <20110531160221.GA31659@dumpdata.com>
+ <0a8cb4bcad7fcf091a6bbe158323bba0@admin.gogi.tv>
+ <20110531190412.GA21245@dumpdata.com>
+ <d0ce6a4ba6092a1a9ef0f1e8f3cac9c9@admin.gogi.tv>
+ <20110601132444.GA4081@dumpdata.com>
+ <21491fcfb013e21177140326efc0ee66@admin.gogi.tv>
+ <34fa3fe7780241e452b268fd5ecfdee9@admin.gogi.tv>
+ <20110601222226.GH27166@one.firstfloor.org>
+ <72a54a970741bfc342467045351df812@admin.gogi.tv>
+ <BANLkTik+p65G5f08RfxiYojvAax_nrDiqg@mail.gmail.com>
+Message-ID: <f2b1d34b5be1bb910f82b961956c3787@admin.gogi.tv>
+User-Agent: Roundcube Webmail/0.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> This looks like the correct fix. rdev->need_dma32 is used when we 
+> init
+> ttm for memory management later.
 
-* Andy Lutomirski <luto@MIT.EDU> wrote:
-
-> Remove the fixed-address ret in the vsyscall emulation stubs.  As a
-> result, int 0xcc no longer works if executed from user address space
-> (which is OK -- nothing sensible should do that).
-> 
-> Removing support for int 0xcc in user address space cleans up the
-> code considerably.
-> 
-> Signed-off-by: Andy Lutomirski <luto@mit.edu>
-> ---
->  arch/x86/include/asm/vsyscall.h   |   10 ++++-
->  arch/x86/kernel/vsyscall_64.c     |   78 +++++++++++--------------------------
->  arch/x86/kernel/vsyscall_emu_64.S |   17 +--------
->  3 files changed, 32 insertions(+), 73 deletions(-)
-
-Ok, this makes the whole series a lot more palatable!
-
-Can i propagate the rename suggested by hpa into patch #3:
-
-  CONFIG_COMPAT_VSYSCALL => CONFIG_LEGACY_VSYSCALL
-
-? 'legacy' is probably the best name for this and it thus won't be 
-confused with the 32-bit compat facilities we have.
-
-Thanks,
-
-	Ingo
+ Is there anything I have to do now to have it included? Will it also
+ go into the stable releases?
