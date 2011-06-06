@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab1FFQmv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:42:51 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48926 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab1FFQmt (ORCPT
+	id S1755768Ab1FFQnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:43:07 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38190 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703Ab1FFQnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:42:49 -0400
+	Mon, 6 Jun 2011 12:43:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=lr0b+WcB/T9VV/kKFpMSG+P8tcDHtUpEUyLgIoSlzXbahu8NMWYZglGqC8EzfNEdpz
-         kpNbGPPyVOvx83M1n+dl6CZwowyLm/kWTvqnp7X/PYQSTibcTkpiOnYkzFKHxD1K14rI
-         YuJJbqgHRIi3xvWgwO/AsQujfVgVrX0eMKtW4=
-Subject: Re: Change in functionality of futex() system call.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Zachary Vonler <zvonler@rgmadvisors.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1307377782.2322.183.camel@twins>
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
-	 <1307373819.3098.40.camel@edumazet-laptop>
-	 <1307376672.2322.167.camel@twins>  <1307376989.2322.171.camel@twins>
-	 <1307377349.3098.65.camel@edumazet-laptop>
-	 <1307377782.2322.183.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 18:42:44 +0200
-Message-ID: <1307378564.3098.67.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=npDk/pQXvUQXKFZmVl5Bp83tbmLvYZRCwjU7D2AdxRpfeoMlL0lSN/ZjZZYza5bRE4
+         xo3MKjdOB3EqGhIEzbnbKy//jWckKsb8hdwFSFPaxV8/sE3kD0eT6n76ftyJ/QqaFc8k
+         Z+VN9DrQstVYYRNagKK4KZlAWDURFU1fBkq9o=
+Message-ID: <4DED0394.2090000@gmail.com>
+Date: Mon, 06 Jun 2011 18:43:00 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Jim Bos <jim876@xs4all.nl>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+References: <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com>	<4CE17098.8090000@xs4all.nl>	<AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com>	<4CE17C4B.1070305@xs4all.nl>	<20101115185848.GI2583@sunsite.ms.mff.cuni.cz>	<20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>	<AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com>	<20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>	<4CE1968D.3050706@xs4all.nl>	<4DE8DC16.6030308@xs4all.nl>	<20110603133351.GA25130@srcf.ucam.org>	<4DE8EF13.9030609@xs4all.nl> <BANLkTinWj1LvQLverPTUm9rKEx=+HZUpDA@mail.gmail.com> <4DECFC1C.10801@xs4all.nl>
+In-Reply-To: <4DECFC1C.10801@xs4all.nl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 06 juin 2011 à 18:29 +0200, Peter Zijlstra a écrit :
-> On Mon, 2011-06-06 at 18:22 +0200, Eric Dumazet wrote:
-> > Le lundi 06 juin 2011 à 18:16 +0200, Peter Zijlstra a écrit :
-> > 
-> > > Hmm, wouldn't that still be susceptible to the zero-page thing if: we
-> > > create a writable private file map of a sparse file, touch a page and
-> > > then remap the thing RO?
-> > > 
-> > > 
-> > > 
-> > 
-> > Also I am not sure how MAP_PRIVATE could be affected. If we still try a
-> > RW gup()... It will allocate a page for us, instead of still pointing to
-> > shared one.
-> > 
-> > On previous kernel, the application using read-only mapping could use
-> > MAP_PRIVATE or MAP_SHARED with same 'behavior'
-> 
-> But by not forcing the COW you get different behaviour depending on when
-> you call FUTEX_WAIT, surely that's not correct either?
+Hi Jim,
 
+Op 06-06-11 18:11, Jim Bos schreef:
+> On 06/06/2011 05:27 PM, Maarten Lankhorst wrote:
+>> Hi Jim,
+>>
+>> 2011/6/3 Jim Bos <jim876@xs4all.nl>:
+>>> On 06/03/2011 03:33 PM, Matthew Garrett wrote:
+>>>> On Fri, Jun 03, 2011 at 03:05:26PM +0200, Jim Bos wrote:
+>>>>> *,
+>>>>>
+>>>>> Just applied 2.6.39.1 but my system: 64-bit SLackware, 8GB RAM, MSI mobo
+>>>>> P67A-C45 bios V1.9. previously happily booting via EFI (nice to see
+>>>>> Linux and the other OS actually NOT overwriting each others boot
+>>>>> loaders!) immediately re-booted just after loading the kernel.
+>>>>>
+>>>>> Not even a single message is making it on the console, almost immediate
+>>>>> system reset.  As I noticed there are several EFI related patches, I
+>>>>> first tried to backout the change to setup.c but that didn't help so
+>>>>> backing out all the efi changes in the 2.6.39.1 patch, i.e. the files:
+>>>>>  - arch/x86/kernel/setup.c
+>>>>>  - arch/x86/platform/efi/efi.c
+>>>>>  - arch/x86/platform/efi/efi_64.c
+>>>>> and sure enough system is booting on 2.6.39.1 with these changes removed.
+>>>> Can you try just reverting
+>>>>
+>>>> "x86, efi: Retain boot service code until after switching to virtual mode"
+>>>>
+>>>> ? You've got 143 boot services/code regions, which is more than I'd
+>>>> tested against, so I'm unsure whether we're overflowing something here.
+>>>>
+>>> That's seems to be the only EFI patch in 2.6.39.1 and I effectively
+>>> removed by =not= applying (skipping) the parts of the 2.6.39.1 patch to
+>>> above 3 files.
+>>> So yes removing "x86, efi: Retain boot service code until after
+>>> switching to virtual mode" indeed fixes the problem for me.
+>> Does manually applying commit 9cd2b07c1 fix things for 2.6.39.1?
+>> commit is: x86, efi: Consolidate EFI nx control
+>>
+>> There will be 1 apply  failure, need to change the call to
+>> early_mapping_set_exec in early_runtime_code_mapping_set_exec to
+>> efi_set_executable.
+>>
+>> ~Maarten
+>>
+> Maarten,
+>
+> Yes that boots, but with the "BUG Bad page state .." as well (so would
+> need you other patch).
+>
+> Jim
+So the options are applying that patch + free fix to stable,
+or revert the change. Also looking at the comments of the
+original patch, it seems it was changed because of Yinghai's comments:
+> No, at that point memblock is not used any more. after mm_init()/mem_init()
+> need to use free_bootmem_late() in free_efi_boot_services
 
-As long as the current process never writes to the page holding the
-futex, the page stay shared. Behavior should be same with PRIVATE or
-SHARED ?
+But that appears to have been incorrect now, seeing that
+commit 774ea0bcb27f57b removed that transition
 
-In David Oliver case, this is needed : He wants to catch a change in a
-file/memory region written by another process.
-
-
-
+~Maarten
