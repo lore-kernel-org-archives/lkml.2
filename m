@@ -1,1300 +1,413 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab1FFHSc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 03:18:32 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:52921 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab1FFHSa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 03:18:30 -0400
-Subject: [PATCH v2] spi: reorganize drivers
-To: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 06 Jun 2011 01:18:29 -0600
-Message-ID: <20110606071829.10334.90865.stgit@ponder>
-User-Agent: StGit/0.15
+	id S1756701Ab1FFHSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 03:18:50 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:39399 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754168Ab1FFHSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 03:18:48 -0400
+Message-ID: <4DEC7F49.8060000@in.ibm.com>
+Date: Mon, 06 Jun 2011 12:48:33 +0530
+From: Suzuki Poulose <suzuki@in.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Simon Horman <horms@verge.net.au>
+CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        linux ppc dev <linuxppc-dev@lists.ozlabs.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFC][PATCH] powerpc: Use the #address-cells information to parse
+ memory/reg
+References: <4DC923C4.6080707@in.ibm.com> <4DC92784.2040001@in.ibm.com> <20110510134152.GB18537@in.ibm.com> <4DCA285D.2080006@in.ibm.com> <4DE3396E.4090801@in.ibm.com>
+In-Reply-To: <4DE3396E.4090801@in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sort the SPI makefile and enforce the naming convention spi_*.c for
-spi drivers.
+On 05/30/11 12:00, Suzuki Poulose wrote:
+> Use the #address-cells, #size-cells information to parse the memory/reg info
+> from device tree.
+>
+> The format of memory/reg is based on the #address-cells,#size-cells. Currently,
+> the kexec-tools doesn't use the above values in parsing the memory/reg values.
+> Hence the kexec cannot handle cases where #address-cells, #size-cells are
+> different, (for e.g, PPC440X ).
+>
+> This patch introduces a read_memory_region_limits(), which parses the
+> memory/reg contents based on the values of #address-cells and #size-cells.
+>
+> Changed the add_usable_mem_property() to accept FILE* fp instead of int fd,
+> as most of the other users of read_memory_region_limits() deals with FILE*.
+>
+> Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
 
-This change also rolls the contents of atmel_spi.h into the .c file
-since there is only one user of that particular include file.
+Could you please let me know your thoughts/comments about this patch ?
 
-v2: - Use 'spi-' prefix instead of 'spi_' to match what seems to be
-      be the predominant pattern for subsystem prefixes.
-    - Clean up filenames in Kconfig and header comment blocks
+Thanks
+Suzuki
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
- drivers/spi/Kconfig             |   18 ----
- drivers/spi/Makefile            |  112 ++++++++++++--------------
- drivers/spi/atmel_spi.h         |  167 ---------------------------------------
- drivers/spi/spi-altera.c        |    0 
- drivers/spi/spi-ath79.c         |    0 
- drivers/spi/spi-atmel.c         |  155 ++++++++++++++++++++++++++++++++++++
- drivers/spi/spi-au1550.c        |    2 
- drivers/spi/spi-bfin-sport.c    |    0 
- drivers/spi/spi-bfin5xx.c       |    0 
- drivers/spi/spi-bitbang-txrx.h  |    0 
- drivers/spi/spi-bitbang.c       |    2 
- drivers/spi/spi-butterfly.c     |    4 -
- drivers/spi/spi-coldfire-qspi.c |    0 
- drivers/spi/spi-davinci.c       |    0 
- drivers/spi/spi-dw-mid.c        |    4 -
- drivers/spi/spi-dw-mmio.c       |    4 -
- drivers/spi/spi-dw-pci.c        |    4 -
- drivers/spi/spi-dw.c            |    4 -
- drivers/spi/spi-dw.h            |    0 
- drivers/spi/spi-ep93xx.c        |    0 
- drivers/spi/spi-fsl-espi.c      |    2 
- drivers/spi/spi-fsl-lib.c       |    2 
- drivers/spi/spi-fsl-lib.h       |    0 
- drivers/spi/spi-fsl-spi.c       |    2 
- drivers/spi/spi-gpio.c          |    6 +
- drivers/spi/spi-imx.c           |    0 
- drivers/spi/spi-lm70llp.c       |    4 -
- drivers/spi/spi-mpc512x-psc.c   |    0 
- drivers/spi/spi-mpc52xx-psc.c   |    0 
- drivers/spi/spi-mpc52xx.c       |    0 
- drivers/spi/spi-nuc900.c        |    5 -
- drivers/spi/spi-oc-tiny.c       |    0 
- drivers/spi/spi-omap-100k.c     |    0 
- drivers/spi/spi-omap-uwire.c    |    2 
- drivers/spi/spi-omap2-mcspi.c   |    0 
- drivers/spi/spi-orion.c         |    2 
- drivers/spi/spi-pl022.c         |    2 
- drivers/spi/spi-ppc4xx.c        |    0 
- drivers/spi/spi-pxa2xx-pci.c    |    0 
- drivers/spi/spi-pxa2xx.c        |    0 
- drivers/spi/spi-s3c24xx-fiq.S   |    2 
- drivers/spi/spi-s3c24xx-fiq.h   |    0 
- drivers/spi/spi-s3c24xx-gpio.c  |    5 -
- drivers/spi/spi-s3c24xx.c       |    5 -
- drivers/spi/spi-s3c64xx.c       |    3 -
- drivers/spi/spi-sh-msiof.c      |    0 
- drivers/spi/spi-sh-sci.c        |    2 
- drivers/spi/spi-sh.c            |    0 
- drivers/spi/spi-stmp.c          |    0 
- drivers/spi/spi-tegra.c         |    0 
- drivers/spi/spi-ti-ssp.c        |    0 
- drivers/spi/spi-tle62x0.c       |    2 
- drivers/spi/spi-topcliff-pch.c  |    0 
- drivers/spi/spi-txx9.c          |    2 
- drivers/spi/spi-xilinx.c        |    0 
- drivers/spi/spi.c               |    2 
- drivers/spi/spidev.c            |    2 
- 57 files changed, 239 insertions(+), 289 deletions(-)
- delete mode 100644 drivers/spi/atmel_spi.h
- rename drivers/spi/{spi_altera.c => spi-altera.c} (100%)
- rename drivers/spi/{ath79_spi.c => spi-ath79.c} (100%)
- rename drivers/spi/{atmel_spi.c => spi-atmel.c} (85%)
- rename drivers/spi/{au1550_spi.c => spi-au1550.c} (99%)
- rename drivers/spi/{spi_bfin_sport.c => spi-bfin-sport.c} (100%)
- rename drivers/spi/{spi_bfin5xx.c => spi-bfin5xx.c} (100%)
- rename drivers/spi/{spi_bitbang_txrx.h => spi-bitbang-txrx.h} (100%)
- rename drivers/spi/{spi_bitbang.c => spi-bitbang.c} (99%)
- rename drivers/spi/{spi_butterfly.c => spi-butterfly.c} (99%)
- rename drivers/spi/{coldfire_qspi.c => spi-coldfire-qspi.c} (100%)
- rename drivers/spi/{davinci_spi.c => spi-davinci.c} (100%)
- rename drivers/spi/{dw_spi_mid.c => spi-dw-mid.c} (98%)
- rename drivers/spi/{dw_spi_mmio.c => spi-dw-mmio.c} (97%)
- rename drivers/spi/{dw_spi_pci.c => spi-dw-pci.c} (98%)
- rename drivers/spi/{dw_spi.c => spi-dw.c} (99%)
- rename drivers/spi/{dw_spi.h => spi-dw.h} (100%)
- rename drivers/spi/{ep93xx_spi.c => spi-ep93xx.c} (100%)
- rename drivers/spi/{spi_fsl_espi.c => spi-fsl-espi.c} (99%)
- rename drivers/spi/{spi_fsl_lib.c => spi-fsl-lib.c} (99%)
- rename drivers/spi/{spi_fsl_lib.h => spi-fsl-lib.h} (100%)
- rename drivers/spi/{spi_fsl_spi.c => spi-fsl-spi.c} (99%)
- rename drivers/spi/{spi_gpio.c => spi-gpio.c} (99%)
- rename drivers/spi/{spi_imx.c => spi-imx.c} (100%)
- rename drivers/spi/{spi_lm70llp.c => spi-lm70llp.c} (98%)
- rename drivers/spi/{mpc512x_psc_spi.c => spi-mpc512x-psc.c} (100%)
- rename drivers/spi/{mpc52xx_psc_spi.c => spi-mpc52xx-psc.c} (100%)
- rename drivers/spi/{mpc52xx_spi.c => spi-mpc52xx.c} (100%)
- rename drivers/spi/{spi_nuc900.c => spi-nuc900.c} (99%)
- rename drivers/spi/{spi_oc_tiny.c => spi-oc-tiny.c} (100%)
- rename drivers/spi/{omap_spi_100k.c => spi-omap-100k.c} (100%)
- rename drivers/spi/{omap_uwire.c => spi-omap-uwire.c} (99%)
- rename drivers/spi/{omap2_mcspi.c => spi-omap2-mcspi.c} (100%)
- rename drivers/spi/{orion_spi.c => spi-orion.c} (99%)
- rename drivers/spi/{amba-pl022.c => spi-pl022.c} (99%)
- rename drivers/spi/{spi_ppc4xx.c => spi-ppc4xx.c} (100%)
- rename drivers/spi/{pxa2xx_spi_pci.c => spi-pxa2xx-pci.c} (100%)
- rename drivers/spi/{pxa2xx_spi.c => spi-pxa2xx.c} (100%)
- rename drivers/spi/{spi_s3c24xx_fiq.S => spi-s3c24xx-fiq.S} (99%)
- rename drivers/spi/{spi_s3c24xx_fiq.h => spi-s3c24xx-fiq.h} (100%)
- rename drivers/spi/{spi_s3c24xx_gpio.c => spi-s3c24xx-gpio.c} (98%)
- rename drivers/spi/{spi_s3c24xx.c => spi-s3c24xx.c} (99%)
- rename drivers/spi/{spi_s3c64xx.c => spi-s3c64xx.c} (99%)
- rename drivers/spi/{spi_sh_msiof.c => spi-sh-msiof.c} (100%)
- rename drivers/spi/{spi_sh_sci.c => spi-sh-sci.c} (99%)
- rename drivers/spi/{spi_sh.c => spi-sh.c} (100%)
- rename drivers/spi/{spi_stmp.c => spi-stmp.c} (100%)
- rename drivers/spi/{spi_tegra.c => spi-tegra.c} (100%)
- rename drivers/spi/{ti-ssp-spi.c => spi-ti-ssp.c} (100%)
- rename drivers/spi/{tle62x0.c => spi-tle62x0.c} (99%)
- rename drivers/spi/{spi_topcliff_pch.c => spi-topcliff-pch.c} (100%)
- rename drivers/spi/{spi_txx9.c => spi-txx9.c} (99%)
- rename drivers/spi/{xilinx_spi.c => spi-xilinx.c} (100%)
-
- drivers/spi/Kconfig                                |   18 --
- drivers/spi/Makefile                               |  112 ++++++-------
- drivers/spi/atmel_spi.h                            |  167 --------------------
- drivers/spi/{spi_altera.c => spi-altera.c}         |    0
- drivers/spi/{ath79_spi.c => spi-ath79.c}           |    0
- drivers/spi/{atmel_spi.c => spi-atmel.c}           |  155 ++++++++++++++++++-
- drivers/spi/{au1550_spi.c => spi-au1550.c}         |    2 +-
- drivers/spi/{spi_bfin_sport.c => spi-bfin-sport.c} |    0
- drivers/spi/{spi_bfin5xx.c => spi-bfin5xx.c}       |    0
- .../spi/{spi_bitbang_txrx.h => spi-bitbang-txrx.h} |    0
- drivers/spi/{spi_bitbang.c => spi-bitbang.c}       |    2 +-
- drivers/spi/{spi_butterfly.c => spi-butterfly.c}   |    4 +-
- .../spi/{coldfire_qspi.c => spi-coldfire-qspi.c}   |    0
- drivers/spi/{davinci_spi.c => spi-davinci.c}       |    0
- drivers/spi/{dw_spi_mid.c => spi-dw-mid.c}         |    4 +-
- drivers/spi/{dw_spi_mmio.c => spi-dw-mmio.c}       |    4 +-
- drivers/spi/{dw_spi_pci.c => spi-dw-pci.c}         |    4 +-
- drivers/spi/{dw_spi.c => spi-dw.c}                 |    4 +-
- drivers/spi/{dw_spi.h => spi-dw.h}                 |    0
- drivers/spi/{ep93xx_spi.c => spi-ep93xx.c}         |    0
- drivers/spi/{spi_fsl_espi.c => spi-fsl-espi.c}     |    2 +-
- drivers/spi/{spi_fsl_lib.c => spi-fsl-lib.c}       |    2 +-
- drivers/spi/{spi_fsl_lib.h => spi-fsl-lib.h}       |    0
- drivers/spi/{spi_fsl_spi.c => spi-fsl-spi.c}       |    2 +-
- drivers/spi/{spi_gpio.c => spi-gpio.c}             |    6 +-
- drivers/spi/{spi_imx.c => spi-imx.c}               |    0
- drivers/spi/{spi_lm70llp.c => spi-lm70llp.c}       |    4 +-
- .../spi/{mpc512x_psc_spi.c => spi-mpc512x-psc.c}   |    0
- .../spi/{mpc52xx_psc_spi.c => spi-mpc52xx-psc.c}   |    0
- drivers/spi/{mpc52xx_spi.c => spi-mpc52xx.c}       |    0
- drivers/spi/{spi_nuc900.c => spi-nuc900.c}         |    5 +-
- drivers/spi/{spi_oc_tiny.c => spi-oc-tiny.c}       |    0
- drivers/spi/{omap_spi_100k.c => spi-omap-100k.c}   |    0
- drivers/spi/{omap_uwire.c => spi-omap-uwire.c}     |    2 +-
- drivers/spi/{omap2_mcspi.c => spi-omap2-mcspi.c}   |    0
- drivers/spi/{orion_spi.c => spi-orion.c}           |    2 +-
- drivers/spi/{amba-pl022.c => spi-pl022.c}          |    2 -
- drivers/spi/{spi_ppc4xx.c => spi-ppc4xx.c}         |    0
- drivers/spi/{pxa2xx_spi_pci.c => spi-pxa2xx-pci.c} |    0
- drivers/spi/{pxa2xx_spi.c => spi-pxa2xx.c}         |    0
- .../spi/{spi_s3c24xx_fiq.S => spi-s3c24xx-fiq.S}   |    2 +-
- .../spi/{spi_s3c24xx_fiq.h => spi-s3c24xx-fiq.h}   |    0
- .../spi/{spi_s3c24xx_gpio.c => spi-s3c24xx-gpio.c} |    5 +-
- drivers/spi/{spi_s3c24xx.c => spi-s3c24xx.c}       |    5 +-
- drivers/spi/{spi_s3c64xx.c => spi-s3c64xx.c}       |    3 +-
- drivers/spi/{spi_sh_msiof.c => spi-sh-msiof.c}     |    0
- drivers/spi/{spi_sh_sci.c => spi-sh-sci.c}         |    2 +-
- drivers/spi/{spi_sh.c => spi-sh.c}                 |    0
- drivers/spi/{spi_stmp.c => spi-stmp.c}             |    0
- drivers/spi/{spi_tegra.c => spi-tegra.c}           |    0
- drivers/spi/{ti-ssp-spi.c => spi-ti-ssp.c}         |    0
- drivers/spi/{tle62x0.c => spi-tle62x0.c}           |    2 +-
- .../spi/{spi_topcliff_pch.c => spi-topcliff-pch.c} |    0
- drivers/spi/{spi_txx9.c => spi-txx9.c}             |    2 +-
- drivers/spi/{xilinx_spi.c => spi-xilinx.c}         |    0
- drivers/spi/spi.c                                  |    2 +-
- drivers/spi/spidev.c                               |    2 +-
- 57 files changed, 239 insertions(+), 289 deletions(-)
-
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index de35c3a..9578a84 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -86,9 +86,6 @@ config SPI_BFIN_SPORT
- 	help
- 	  Enable support for a SPI bus via the Blackfin SPORT peripheral.
- 
--	  This driver can also be built as a module.  If so, the module
--	  will be called spi_bfin_sport.
--
- config SPI_AU1550
- 	tristate "Au1550/Au12x0 SPI Controller"
- 	depends on (SOC_AU1550 || SOC_AU1200) && EXPERIMENTAL
-@@ -97,9 +94,6 @@ config SPI_AU1550
- 	  If you say yes to this option, support will be included for the
- 	  Au1550 SPI controller (may also work with Au1200,Au1210,Au1250).
- 
--	  This driver can also be built as a module.  If so, the module
--	  will be called au1550_spi.
--
- config SPI_BITBANG
- 	tristate "Utilities for Bitbanging SPI masters"
- 	help
-@@ -130,9 +124,6 @@ config SPI_COLDFIRE_QSPI
- 	  This enables support for the Coldfire QSPI controller in master
- 	  mode.
- 
--	  This driver can also be built as a module.  If so, the module
--	  will be called coldfire_qspi.
--
- config SPI_DAVINCI
- 	tristate "Texas Instruments DaVinci/DA8x/OMAP-L/AM1x SoC SPI controller"
- 	depends on SPI_MASTER && ARCH_DAVINCI
-@@ -140,9 +131,6 @@ config SPI_DAVINCI
- 	help
- 	  SPI master controller for DaVinci/DA8x/OMAP-L/AM1x SPI modules.
- 
--	  This driver can also be built as a module. The module will be called
--	  davinci_spi.
--
- config SPI_EP93XX
- 	tristate "Cirrus Logic EP93xx SPI controller"
- 	depends on ARCH_EP93XX
-@@ -150,9 +138,6 @@ config SPI_EP93XX
- 	  This enables using the Cirrus EP93xx SPI controller in master
- 	  mode.
- 
--	  To compile this driver as a module, choose M here. The module will be
--	  called ep93xx_spi.
--
- config SPI_GPIO
- 	tristate "GPIO-based bitbanging SPI Master"
- 	depends on GENERIC_GPIO
-@@ -385,9 +370,6 @@ config SPI_TI_SSP
- 	  This selects an SPI master implementation using a TI sequencer
- 	  serial port.
- 
--	  To compile this driver as a module, choose M here: the
--	  module will be called ti-ssp-spi.
--
- config SPI_TOPCLIFF_PCH
- 	tristate "Topcliff PCH SPI Controller"
- 	depends on PCI
-diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 0f8c69b..f6d5018 100644
---- a/drivers/spi/Makefile
-+++ b/drivers/spi/Makefile
-@@ -7,68 +7,56 @@ ccflags-$(CONFIG_SPI_DEBUG) := -DDEBUG
- # small core, mostly translating board-specific
- # config declarations into driver model code
- obj-$(CONFIG_SPI_MASTER)		+= spi.o
-+obj-$(CONFIG_SPI_SPIDEV)		+= spidev.o
- 
- # SPI master controller drivers (bus)
--obj-$(CONFIG_SPI_ALTERA)		+= spi_altera.o
--obj-$(CONFIG_SPI_ATMEL)			+= atmel_spi.o
--obj-$(CONFIG_SPI_ATH79)			+= ath79_spi.o
--obj-$(CONFIG_SPI_BFIN)			+= spi_bfin5xx.o
--obj-$(CONFIG_SPI_BFIN_SPORT)		+= spi_bfin_sport.o
--obj-$(CONFIG_SPI_BITBANG)		+= spi_bitbang.o
--obj-$(CONFIG_SPI_AU1550)		+= au1550_spi.o
--obj-$(CONFIG_SPI_BUTTERFLY)		+= spi_butterfly.o
--obj-$(CONFIG_SPI_COLDFIRE_QSPI)		+= coldfire_qspi.o
--obj-$(CONFIG_SPI_DAVINCI)		+= davinci_spi.o
--obj-$(CONFIG_SPI_DESIGNWARE)		+= dw_spi.o
--obj-$(CONFIG_SPI_DW_PCI)		+= dw_spi_midpci.o
--dw_spi_midpci-objs			:= dw_spi_pci.o dw_spi_mid.o
--obj-$(CONFIG_SPI_DW_MMIO)		+= dw_spi_mmio.o
--obj-$(CONFIG_SPI_EP93XX)		+= ep93xx_spi.o
--obj-$(CONFIG_SPI_GPIO)			+= spi_gpio.o
--obj-$(CONFIG_SPI_IMX)			+= spi_imx.o
--obj-$(CONFIG_SPI_LM70_LLP)		+= spi_lm70llp.o
--obj-$(CONFIG_SPI_PXA2XX)		+= pxa2xx_spi.o
--obj-$(CONFIG_SPI_PXA2XX_PCI)		+= pxa2xx_spi_pci.o
--obj-$(CONFIG_SPI_OC_TINY)		+= spi_oc_tiny.o
--obj-$(CONFIG_SPI_OMAP_UWIRE)		+= omap_uwire.o
--obj-$(CONFIG_SPI_OMAP24XX)		+= omap2_mcspi.o
--obj-$(CONFIG_SPI_OMAP_100K)		+= omap_spi_100k.o
--obj-$(CONFIG_SPI_ORION)			+= orion_spi.o
--obj-$(CONFIG_SPI_PL022)			+= amba-pl022.o
--obj-$(CONFIG_SPI_MPC512x_PSC)		+= mpc512x_psc_spi.o
--obj-$(CONFIG_SPI_MPC52xx_PSC)		+= mpc52xx_psc_spi.o
--obj-$(CONFIG_SPI_MPC52xx)		+= mpc52xx_spi.o
--obj-$(CONFIG_SPI_FSL_LIB)		+= spi_fsl_lib.o
--obj-$(CONFIG_SPI_FSL_ESPI)		+= spi_fsl_espi.o
--obj-$(CONFIG_SPI_FSL_SPI)		+= spi_fsl_spi.o
--obj-$(CONFIG_SPI_PPC4xx)		+= spi_ppc4xx.o
--obj-$(CONFIG_SPI_S3C24XX_GPIO)		+= spi_s3c24xx_gpio.o
--obj-$(CONFIG_SPI_S3C24XX)		+= spi_s3c24xx_hw.o
--obj-$(CONFIG_SPI_S3C64XX)		+= spi_s3c64xx.o
--obj-$(CONFIG_SPI_TEGRA)			+= spi_tegra.o
--obj-$(CONFIG_SPI_TI_SSP)		+= ti-ssp-spi.o
--obj-$(CONFIG_SPI_TOPCLIFF_PCH)		+= spi_topcliff_pch.o
--obj-$(CONFIG_SPI_TXX9)			+= spi_txx9.o
--obj-$(CONFIG_SPI_XILINX)		+= xilinx_spi.o
--obj-$(CONFIG_SPI_SH)			+= spi_sh.o
--obj-$(CONFIG_SPI_SH_SCI)		+= spi_sh_sci.o
--obj-$(CONFIG_SPI_SH_MSIOF)		+= spi_sh_msiof.o
--obj-$(CONFIG_SPI_STMP3XXX)		+= spi_stmp.o
--obj-$(CONFIG_SPI_NUC900)		+= spi_nuc900.o
-+obj-$(CONFIG_SPI_ALTERA)		+= spi-altera.o
-+obj-$(CONFIG_SPI_ATMEL)			+= spi-atmel.o
-+obj-$(CONFIG_SPI_ATH79)			+= spi-ath79.o
-+obj-$(CONFIG_SPI_AU1550)		+= spi-au1550.o
-+obj-$(CONFIG_SPI_BFIN)			+= spi-bfin5xx.o
-+obj-$(CONFIG_SPI_BFIN_SPORT)		+= spi-bfin-sport.o
-+obj-$(CONFIG_SPI_BITBANG)		+= spi-bitbang.o
-+obj-$(CONFIG_SPI_BUTTERFLY)		+= spi-butterfly.o
-+obj-$(CONFIG_SPI_COLDFIRE_QSPI)		+= spi-coldfire-qspi.o
-+obj-$(CONFIG_SPI_DAVINCI)		+= spi-davinci.o
-+obj-$(CONFIG_SPI_DESIGNWARE)		+= spi-dw.o
-+obj-$(CONFIG_SPI_DW_MMIO)		+= spi-dw-mmio.o
-+obj-$(CONFIG_SPI_DW_PCI)		+= spi-dw-midpci.o
-+spi_dw_midpci-objs			:= spi-dw-pci.o spi-dw-mid.o
-+obj-$(CONFIG_SPI_EP93XX)		+= spi-ep93xx.o
-+obj-$(CONFIG_SPI_FSL_LIB)		+= spi-fsl-lib.o
-+obj-$(CONFIG_SPI_FSL_ESPI)		+= spi-fsl-espi.o
-+obj-$(CONFIG_SPI_FSL_SPI)		+= spi-fsl-spi.o
-+obj-$(CONFIG_SPI_GPIO)			+= spi-gpio.o
-+obj-$(CONFIG_SPI_IMX)			+= spi-imx.o
-+obj-$(CONFIG_SPI_LM70_LLP)		+= spi-lm70llp.o
-+obj-$(CONFIG_SPI_MPC512x_PSC)		+= spi-mpc512x-psc.o
-+obj-$(CONFIG_SPI_MPC52xx_PSC)		+= spi-mpc52xx-psc.o
-+obj-$(CONFIG_SPI_MPC52xx)		+= spi-mpc52xx.o
-+obj-$(CONFIG_SPI_NUC900)		+= spi-nuc900.o
-+obj-$(CONFIG_SPI_OC_TINY)		+= spi-oc-tiny.o
-+obj-$(CONFIG_SPI_OMAP_UWIRE)		+= spi-omap-uwire.o
-+obj-$(CONFIG_SPI_OMAP_100K)		+= spi-omap-100k.o
-+obj-$(CONFIG_SPI_OMAP24XX)		+= spi-omap2-mcspi.o
-+obj-$(CONFIG_SPI_ORION)			+= spi-orion.o
-+obj-$(CONFIG_SPI_PL022)			+= spi-pl022.o
-+obj-$(CONFIG_SPI_PPC4xx)		+= spi-ppc4xx.o
-+obj-$(CONFIG_SPI_PXA2XX)		+= spi-pxa2xx.o
-+obj-$(CONFIG_SPI_PXA2XX_PCI)		+= spi-pxa2xx-pci.o
-+obj-$(CONFIG_SPI_S3C24XX_GPIO)		+= spi-s3c24xx-gpio.o
-+obj-$(CONFIG_SPI_S3C24XX)		+= spi-s3c24xx-hw.o
-+spi-s3c24xx-hw-y			:= spi-s3c24xx.o
-+spi-s3c24xx-hw-$(CONFIG_SPI_S3C24XX_FIQ) += spi-s3c24xx-fiq.o
-+obj-$(CONFIG_SPI_S3C64XX)		+= spi-s3c64xx.o
-+obj-$(CONFIG_SPI_SH)			+= spi-sh.o
-+obj-$(CONFIG_SPI_SH_MSIOF)		+= spi-sh-msiof.o
-+obj-$(CONFIG_SPI_SH_SCI)		+= spi-sh-sci.o
-+obj-$(CONFIG_SPI_STMP3XXX)		+= spi-stmp.o
-+obj-$(CONFIG_SPI_TEGRA)			+= spi-tegra.o
-+obj-$(CONFIG_SPI_TI_SSP)		+= spi-ti-ssp.o
-+obj-$(CONFIG_SPI_TLE62X0)		+= spi-tle62x0.o
-+obj-$(CONFIG_SPI_TOPCLIFF_PCH)		+= spi-topcliff-pch.o
-+obj-$(CONFIG_SPI_TXX9)			+= spi-txx9.o
-+obj-$(CONFIG_SPI_XILINX)		+= spi-xilinx.o
- 
--# special build for s3c24xx spi driver with fiq support
--spi_s3c24xx_hw-y			:= spi_s3c24xx.o
--spi_s3c24xx_hw-$(CONFIG_SPI_S3C24XX_FIQ) += spi_s3c24xx_fiq.o
--
--# 	... add above this line ...
--
--# SPI protocol drivers (device/link on bus)
--obj-$(CONFIG_SPI_SPIDEV)	+= spidev.o
--obj-$(CONFIG_SPI_TLE62X0)	+= tle62x0.o
--# 	... add above this line ...
--
--# SPI slave controller drivers (upstream link)
--# 	... add above this line ...
--
--# SPI slave drivers (protocol for that link)
--# 	... add above this line ...
-diff --git a/drivers/spi/atmel_spi.h b/drivers/spi/atmel_spi.h
-deleted file mode 100644
-index 6e06b6a..0000000
---- a/drivers/spi/atmel_spi.h
-+++ /dev/null
-@@ -1,167 +0,0 @@
--/*
-- * Register definitions for Atmel Serial Peripheral Interface (SPI)
-- *
-- * Copyright (C) 2006 Atmel Corporation
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#ifndef __ATMEL_SPI_H__
--#define __ATMEL_SPI_H__
--
--/* SPI register offsets */
--#define SPI_CR					0x0000
--#define SPI_MR					0x0004
--#define SPI_RDR					0x0008
--#define SPI_TDR					0x000c
--#define SPI_SR					0x0010
--#define SPI_IER					0x0014
--#define SPI_IDR					0x0018
--#define SPI_IMR					0x001c
--#define SPI_CSR0				0x0030
--#define SPI_CSR1				0x0034
--#define SPI_CSR2				0x0038
--#define SPI_CSR3				0x003c
--#define SPI_RPR					0x0100
--#define SPI_RCR					0x0104
--#define SPI_TPR					0x0108
--#define SPI_TCR					0x010c
--#define SPI_RNPR				0x0110
--#define SPI_RNCR				0x0114
--#define SPI_TNPR				0x0118
--#define SPI_TNCR				0x011c
--#define SPI_PTCR				0x0120
--#define SPI_PTSR				0x0124
--
--/* Bitfields in CR */
--#define SPI_SPIEN_OFFSET			0
--#define SPI_SPIEN_SIZE				1
--#define SPI_SPIDIS_OFFSET			1
--#define SPI_SPIDIS_SIZE				1
--#define SPI_SWRST_OFFSET			7
--#define SPI_SWRST_SIZE				1
--#define SPI_LASTXFER_OFFSET			24
--#define SPI_LASTXFER_SIZE			1
--
--/* Bitfields in MR */
--#define SPI_MSTR_OFFSET				0
--#define SPI_MSTR_SIZE				1
--#define SPI_PS_OFFSET				1
--#define SPI_PS_SIZE				1
--#define SPI_PCSDEC_OFFSET			2
--#define SPI_PCSDEC_SIZE				1
--#define SPI_FDIV_OFFSET				3
--#define SPI_FDIV_SIZE				1
--#define SPI_MODFDIS_OFFSET			4
--#define SPI_MODFDIS_SIZE			1
--#define SPI_LLB_OFFSET				7
--#define SPI_LLB_SIZE				1
--#define SPI_PCS_OFFSET				16
--#define SPI_PCS_SIZE				4
--#define SPI_DLYBCS_OFFSET			24
--#define SPI_DLYBCS_SIZE				8
--
--/* Bitfields in RDR */
--#define SPI_RD_OFFSET				0
--#define SPI_RD_SIZE				16
--
--/* Bitfields in TDR */
--#define SPI_TD_OFFSET				0
--#define SPI_TD_SIZE				16
--
--/* Bitfields in SR */
--#define SPI_RDRF_OFFSET				0
--#define SPI_RDRF_SIZE				1
--#define SPI_TDRE_OFFSET				1
--#define SPI_TDRE_SIZE				1
--#define SPI_MODF_OFFSET				2
--#define SPI_MODF_SIZE				1
--#define SPI_OVRES_OFFSET			3
--#define SPI_OVRES_SIZE				1
--#define SPI_ENDRX_OFFSET			4
--#define SPI_ENDRX_SIZE				1
--#define SPI_ENDTX_OFFSET			5
--#define SPI_ENDTX_SIZE				1
--#define SPI_RXBUFF_OFFSET			6
--#define SPI_RXBUFF_SIZE				1
--#define SPI_TXBUFE_OFFSET			7
--#define SPI_TXBUFE_SIZE				1
--#define SPI_NSSR_OFFSET				8
--#define SPI_NSSR_SIZE				1
--#define SPI_TXEMPTY_OFFSET			9
--#define SPI_TXEMPTY_SIZE			1
--#define SPI_SPIENS_OFFSET			16
--#define SPI_SPIENS_SIZE				1
--
--/* Bitfields in CSR0 */
--#define SPI_CPOL_OFFSET				0
--#define SPI_CPOL_SIZE				1
--#define SPI_NCPHA_OFFSET			1
--#define SPI_NCPHA_SIZE				1
--#define SPI_CSAAT_OFFSET			3
--#define SPI_CSAAT_SIZE				1
--#define SPI_BITS_OFFSET				4
--#define SPI_BITS_SIZE				4
--#define SPI_SCBR_OFFSET				8
--#define SPI_SCBR_SIZE				8
--#define SPI_DLYBS_OFFSET			16
--#define SPI_DLYBS_SIZE				8
--#define SPI_DLYBCT_OFFSET			24
--#define SPI_DLYBCT_SIZE				8
--
--/* Bitfields in RCR */
--#define SPI_RXCTR_OFFSET			0
--#define SPI_RXCTR_SIZE				16
--
--/* Bitfields in TCR */
--#define SPI_TXCTR_OFFSET			0
--#define SPI_TXCTR_SIZE				16
--
--/* Bitfields in RNCR */
--#define SPI_RXNCR_OFFSET			0
--#define SPI_RXNCR_SIZE				16
--
--/* Bitfields in TNCR */
--#define SPI_TXNCR_OFFSET			0
--#define SPI_TXNCR_SIZE				16
--
--/* Bitfields in PTCR */
--#define SPI_RXTEN_OFFSET			0
--#define SPI_RXTEN_SIZE				1
--#define SPI_RXTDIS_OFFSET			1
--#define SPI_RXTDIS_SIZE				1
--#define SPI_TXTEN_OFFSET			8
--#define SPI_TXTEN_SIZE				1
--#define SPI_TXTDIS_OFFSET			9
--#define SPI_TXTDIS_SIZE				1
--
--/* Constants for BITS */
--#define SPI_BITS_8_BPT				0
--#define SPI_BITS_9_BPT				1
--#define SPI_BITS_10_BPT				2
--#define SPI_BITS_11_BPT				3
--#define SPI_BITS_12_BPT				4
--#define SPI_BITS_13_BPT				5
--#define SPI_BITS_14_BPT				6
--#define SPI_BITS_15_BPT				7
--#define SPI_BITS_16_BPT				8
--
--/* Bit manipulation macros */
--#define SPI_BIT(name) \
--	(1 << SPI_##name##_OFFSET)
--#define SPI_BF(name,value) \
--	(((value) & ((1 << SPI_##name##_SIZE) - 1)) << SPI_##name##_OFFSET)
--#define SPI_BFEXT(name,value) \
--	(((value) >> SPI_##name##_OFFSET) & ((1 << SPI_##name##_SIZE) - 1))
--#define SPI_BFINS(name,value,old) \
--	( ((old) & ~(((1 << SPI_##name##_SIZE) - 1) << SPI_##name##_OFFSET)) \
--	  | SPI_BF(name,value))
--
--/* Register access macros */
--#define spi_readl(port,reg) \
--	__raw_readl((port)->regs + SPI_##reg)
--#define spi_writel(port,reg,value) \
--	__raw_writel((value), (port)->regs + SPI_##reg)
--
--#endif /* __ATMEL_SPI_H__ */
-diff --git a/drivers/spi/spi_altera.c b/drivers/spi/spi-altera.c
-similarity index 100%
-rename from drivers/spi/spi_altera.c
-rename to drivers/spi/spi-altera.c
-diff --git a/drivers/spi/ath79_spi.c b/drivers/spi/spi-ath79.c
-similarity index 100%
-rename from drivers/spi/ath79_spi.c
-rename to drivers/spi/spi-ath79.c
-diff --git a/drivers/spi/atmel_spi.c b/drivers/spi/spi-atmel.c
-similarity index 85%
-rename from drivers/spi/atmel_spi.c
-rename to drivers/spi/spi-atmel.c
-index 08711e9..82dee9a 100644
---- a/drivers/spi/atmel_spi.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -25,7 +25,160 @@
- #include <mach/gpio.h>
- #include <mach/cpu.h>
- 
--#include "atmel_spi.h"
-+/* SPI register offsets */
-+#define SPI_CR					0x0000
-+#define SPI_MR					0x0004
-+#define SPI_RDR					0x0008
-+#define SPI_TDR					0x000c
-+#define SPI_SR					0x0010
-+#define SPI_IER					0x0014
-+#define SPI_IDR					0x0018
-+#define SPI_IMR					0x001c
-+#define SPI_CSR0				0x0030
-+#define SPI_CSR1				0x0034
-+#define SPI_CSR2				0x0038
-+#define SPI_CSR3				0x003c
-+#define SPI_RPR					0x0100
-+#define SPI_RCR					0x0104
-+#define SPI_TPR					0x0108
-+#define SPI_TCR					0x010c
-+#define SPI_RNPR				0x0110
-+#define SPI_RNCR				0x0114
-+#define SPI_TNPR				0x0118
-+#define SPI_TNCR				0x011c
-+#define SPI_PTCR				0x0120
-+#define SPI_PTSR				0x0124
-+
-+/* Bitfields in CR */
-+#define SPI_SPIEN_OFFSET			0
-+#define SPI_SPIEN_SIZE				1
-+#define SPI_SPIDIS_OFFSET			1
-+#define SPI_SPIDIS_SIZE				1
-+#define SPI_SWRST_OFFSET			7
-+#define SPI_SWRST_SIZE				1
-+#define SPI_LASTXFER_OFFSET			24
-+#define SPI_LASTXFER_SIZE			1
-+
-+/* Bitfields in MR */
-+#define SPI_MSTR_OFFSET				0
-+#define SPI_MSTR_SIZE				1
-+#define SPI_PS_OFFSET				1
-+#define SPI_PS_SIZE				1
-+#define SPI_PCSDEC_OFFSET			2
-+#define SPI_PCSDEC_SIZE				1
-+#define SPI_FDIV_OFFSET				3
-+#define SPI_FDIV_SIZE				1
-+#define SPI_MODFDIS_OFFSET			4
-+#define SPI_MODFDIS_SIZE			1
-+#define SPI_LLB_OFFSET				7
-+#define SPI_LLB_SIZE				1
-+#define SPI_PCS_OFFSET				16
-+#define SPI_PCS_SIZE				4
-+#define SPI_DLYBCS_OFFSET			24
-+#define SPI_DLYBCS_SIZE				8
-+
-+/* Bitfields in RDR */
-+#define SPI_RD_OFFSET				0
-+#define SPI_RD_SIZE				16
-+
-+/* Bitfields in TDR */
-+#define SPI_TD_OFFSET				0
-+#define SPI_TD_SIZE				16
-+
-+/* Bitfields in SR */
-+#define SPI_RDRF_OFFSET				0
-+#define SPI_RDRF_SIZE				1
-+#define SPI_TDRE_OFFSET				1
-+#define SPI_TDRE_SIZE				1
-+#define SPI_MODF_OFFSET				2
-+#define SPI_MODF_SIZE				1
-+#define SPI_OVRES_OFFSET			3
-+#define SPI_OVRES_SIZE				1
-+#define SPI_ENDRX_OFFSET			4
-+#define SPI_ENDRX_SIZE				1
-+#define SPI_ENDTX_OFFSET			5
-+#define SPI_ENDTX_SIZE				1
-+#define SPI_RXBUFF_OFFSET			6
-+#define SPI_RXBUFF_SIZE				1
-+#define SPI_TXBUFE_OFFSET			7
-+#define SPI_TXBUFE_SIZE				1
-+#define SPI_NSSR_OFFSET				8
-+#define SPI_NSSR_SIZE				1
-+#define SPI_TXEMPTY_OFFSET			9
-+#define SPI_TXEMPTY_SIZE			1
-+#define SPI_SPIENS_OFFSET			16
-+#define SPI_SPIENS_SIZE				1
-+
-+/* Bitfields in CSR0 */
-+#define SPI_CPOL_OFFSET				0
-+#define SPI_CPOL_SIZE				1
-+#define SPI_NCPHA_OFFSET			1
-+#define SPI_NCPHA_SIZE				1
-+#define SPI_CSAAT_OFFSET			3
-+#define SPI_CSAAT_SIZE				1
-+#define SPI_BITS_OFFSET				4
-+#define SPI_BITS_SIZE				4
-+#define SPI_SCBR_OFFSET				8
-+#define SPI_SCBR_SIZE				8
-+#define SPI_DLYBS_OFFSET			16
-+#define SPI_DLYBS_SIZE				8
-+#define SPI_DLYBCT_OFFSET			24
-+#define SPI_DLYBCT_SIZE				8
-+
-+/* Bitfields in RCR */
-+#define SPI_RXCTR_OFFSET			0
-+#define SPI_RXCTR_SIZE				16
-+
-+/* Bitfields in TCR */
-+#define SPI_TXCTR_OFFSET			0
-+#define SPI_TXCTR_SIZE				16
-+
-+/* Bitfields in RNCR */
-+#define SPI_RXNCR_OFFSET			0
-+#define SPI_RXNCR_SIZE				16
-+
-+/* Bitfields in TNCR */
-+#define SPI_TXNCR_OFFSET			0
-+#define SPI_TXNCR_SIZE				16
-+
-+/* Bitfields in PTCR */
-+#define SPI_RXTEN_OFFSET			0
-+#define SPI_RXTEN_SIZE				1
-+#define SPI_RXTDIS_OFFSET			1
-+#define SPI_RXTDIS_SIZE				1
-+#define SPI_TXTEN_OFFSET			8
-+#define SPI_TXTEN_SIZE				1
-+#define SPI_TXTDIS_OFFSET			9
-+#define SPI_TXTDIS_SIZE				1
-+
-+/* Constants for BITS */
-+#define SPI_BITS_8_BPT				0
-+#define SPI_BITS_9_BPT				1
-+#define SPI_BITS_10_BPT				2
-+#define SPI_BITS_11_BPT				3
-+#define SPI_BITS_12_BPT				4
-+#define SPI_BITS_13_BPT				5
-+#define SPI_BITS_14_BPT				6
-+#define SPI_BITS_15_BPT				7
-+#define SPI_BITS_16_BPT				8
-+
-+/* Bit manipulation macros */
-+#define SPI_BIT(name) \
-+	(1 << SPI_##name##_OFFSET)
-+#define SPI_BF(name,value) \
-+	(((value) & ((1 << SPI_##name##_SIZE) - 1)) << SPI_##name##_OFFSET)
-+#define SPI_BFEXT(name,value) \
-+	(((value) >> SPI_##name##_OFFSET) & ((1 << SPI_##name##_SIZE) - 1))
-+#define SPI_BFINS(name,value,old) \
-+	( ((old) & ~(((1 << SPI_##name##_SIZE) - 1) << SPI_##name##_OFFSET)) \
-+	  | SPI_BF(name,value))
-+
-+/* Register access macros */
-+#define spi_readl(port,reg) \
-+	__raw_readl((port)->regs + SPI_##reg)
-+#define spi_writel(port,reg,value) \
-+	__raw_writel((value), (port)->regs + SPI_##reg)
-+
- 
- /*
-  * The core SPI transfer engine just talks to a register bank to set up
-diff --git a/drivers/spi/au1550_spi.c b/drivers/spi/spi-au1550.c
-similarity index 99%
-rename from drivers/spi/au1550_spi.c
-rename to drivers/spi/spi-au1550.c
-index b50563d..bddee5f 100644
---- a/drivers/spi/au1550_spi.c
-+++ b/drivers/spi/spi-au1550.c
-@@ -1,5 +1,5 @@
- /*
-- * au1550_spi.c - au1550 psc spi controller driver
-+ * au1550 psc spi controller driver
-  * may work also with au1200, au1210, au1250
-  * will not work on au1000, au1100 and au1500 (no full spi controller there)
-  *
-diff --git a/drivers/spi/spi_bfin_sport.c b/drivers/spi/spi-bfin-sport.c
-similarity index 100%
-rename from drivers/spi/spi_bfin_sport.c
-rename to drivers/spi/spi-bfin-sport.c
-diff --git a/drivers/spi/spi_bfin5xx.c b/drivers/spi/spi-bfin5xx.c
-similarity index 100%
-rename from drivers/spi/spi_bfin5xx.c
-rename to drivers/spi/spi-bfin5xx.c
-diff --git a/drivers/spi/spi_bitbang_txrx.h b/drivers/spi/spi-bitbang-txrx.h
-similarity index 100%
-rename from drivers/spi/spi_bitbang_txrx.h
-rename to drivers/spi/spi-bitbang-txrx.h
-diff --git a/drivers/spi/spi_bitbang.c b/drivers/spi/spi-bitbang.c
-similarity index 99%
-rename from drivers/spi/spi_bitbang.c
-rename to drivers/spi/spi-bitbang.c
-index bb38c83..02d57fb 100644
---- a/drivers/spi/spi_bitbang.c
-+++ b/drivers/spi/spi-bitbang.c
-@@ -1,5 +1,5 @@
- /*
-- * spi_bitbang.c - polling/bitbanging SPI master controller driver utilities
-+ * polling/bitbanging SPI master controller driver utilities
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-diff --git a/drivers/spi/spi_butterfly.c b/drivers/spi/spi-butterfly.c
-similarity index 99%
-rename from drivers/spi/spi_butterfly.c
-rename to drivers/spi/spi-butterfly.c
-index 0d4ceba..9f907ec 100644
---- a/drivers/spi/spi_butterfly.c
-+++ b/drivers/spi/spi-butterfly.c
-@@ -1,5 +1,5 @@
- /*
-- * spi_butterfly.c - parport-to-butterfly adapter
-+ * parport-to-butterfly adapter
-  *
-  * Copyright (C) 2005 David Brownell
-  *
-@@ -149,7 +149,7 @@ static void butterfly_chipselect(struct spi_device *spi, int value)
- #define	spidelay(X)	do{}while(0)
- //#define	spidelay	ndelay
- 
--#include "spi_bitbang_txrx.h"
-+#include "spi-bitbang-txrx.h"
- 
- static u32
- butterfly_txrx_word_mode0(struct spi_device *spi,
-diff --git a/drivers/spi/coldfire_qspi.c b/drivers/spi/spi-coldfire-qspi.c
-similarity index 100%
-rename from drivers/spi/coldfire_qspi.c
-rename to drivers/spi/spi-coldfire-qspi.c
-diff --git a/drivers/spi/davinci_spi.c b/drivers/spi/spi-davinci.c
-similarity index 100%
-rename from drivers/spi/davinci_spi.c
-rename to drivers/spi/spi-davinci.c
-diff --git a/drivers/spi/dw_spi_mid.c b/drivers/spi/spi-dw-mid.c
-similarity index 98%
-rename from drivers/spi/dw_spi_mid.c
-rename to drivers/spi/spi-dw-mid.c
-index 4891782..130e555 100644
---- a/drivers/spi/dw_spi_mid.c
-+++ b/drivers/spi/spi-dw-mid.c
-@@ -1,5 +1,5 @@
- /*
-- * dw_spi_mid.c - special handling for DW core on Intel MID platform
-+ * Special handling for DW core on Intel MID platform
-  *
-  * Copyright (c) 2009, Intel Corporation.
-  *
-@@ -23,7 +23,7 @@
- #include <linux/slab.h>
- #include <linux/spi/spi.h>
- 
--#include "dw_spi.h"
-+#include "spi-dw.h"
- 
- #ifdef CONFIG_SPI_DW_MID_DMA
- #include <linux/intel_mid_dma.h>
-diff --git a/drivers/spi/dw_spi_mmio.c b/drivers/spi/spi-dw-mmio.c
-similarity index 97%
-rename from drivers/spi/dw_spi_mmio.c
-rename to drivers/spi/spi-dw-mmio.c
-index e0e813d..34eb665 100644
---- a/drivers/spi/dw_spi_mmio.c
-+++ b/drivers/spi/spi-dw-mmio.c
-@@ -1,5 +1,5 @@
- /*
-- * dw_spi_mmio.c - Memory-mapped interface driver for DW SPI Core
-+ * Memory-mapped interface driver for DW SPI Core
-  *
-  * Copyright (c) 2010, Octasic semiconductor.
-  *
-@@ -16,7 +16,7 @@
- #include <linux/spi/spi.h>
- #include <linux/scatterlist.h>
- 
--#include "dw_spi.h"
-+#include "spi-dw.h"
- 
- #define DRIVER_NAME "dw_spi_mmio"
- 
-diff --git a/drivers/spi/dw_spi_pci.c b/drivers/spi/spi-dw-pci.c
-similarity index 98%
-rename from drivers/spi/dw_spi_pci.c
-rename to drivers/spi/spi-dw-pci.c
-index ad260aa..c5f37f0 100644
---- a/drivers/spi/dw_spi_pci.c
-+++ b/drivers/spi/spi-dw-pci.c
-@@ -1,5 +1,5 @@
- /*
-- * dw_spi_pci.c - PCI interface driver for DW SPI Core
-+ * PCI interface driver for DW SPI Core
-  *
-  * Copyright (c) 2009, Intel Corporation.
-  *
-@@ -22,7 +22,7 @@
- #include <linux/slab.h>
- #include <linux/spi/spi.h>
- 
--#include "dw_spi.h"
-+#include "spi-dw.h"
- 
- #define DRIVER_NAME "dw_spi_pci"
- 
-diff --git a/drivers/spi/dw_spi.c b/drivers/spi/spi-dw.c
-similarity index 99%
-rename from drivers/spi/dw_spi.c
-rename to drivers/spi/spi-dw.c
-index 919fa9d..ece5f69 100644
---- a/drivers/spi/dw_spi.c
-+++ b/drivers/spi/spi-dw.c
-@@ -1,5 +1,5 @@
- /*
-- * dw_spi.c - Designware SPI core controller driver (refer pxa2xx_spi.c)
-+ * Designware SPI core controller driver (refer pxa2xx_spi.c)
-  *
-  * Copyright (c) 2009, Intel Corporation.
-  *
-@@ -24,7 +24,7 @@
- #include <linux/slab.h>
- #include <linux/spi/spi.h>
- 
--#include "dw_spi.h"
-+#include "spi-dw.h"
- 
- #ifdef CONFIG_DEBUG_FS
- #include <linux/debugfs.h>
-diff --git a/drivers/spi/dw_spi.h b/drivers/spi/spi-dw.h
-similarity index 100%
-rename from drivers/spi/dw_spi.h
-rename to drivers/spi/spi-dw.h
-diff --git a/drivers/spi/ep93xx_spi.c b/drivers/spi/spi-ep93xx.c
-similarity index 100%
-rename from drivers/spi/ep93xx_spi.c
-rename to drivers/spi/spi-ep93xx.c
-diff --git a/drivers/spi/spi_fsl_espi.c b/drivers/spi/spi-fsl-espi.c
-similarity index 99%
-rename from drivers/spi/spi_fsl_espi.c
-rename to drivers/spi/spi-fsl-espi.c
-index 496f895..54e499d 100644
---- a/drivers/spi/spi_fsl_espi.c
-+++ b/drivers/spi/spi-fsl-espi.c
-@@ -22,7 +22,7 @@
- #include <linux/err.h>
- #include <sysdev/fsl_soc.h>
- 
--#include "spi_fsl_lib.h"
-+#include "spi-fsl-lib.h"
- 
- /* eSPI Controller registers */
- struct fsl_espi_reg {
-diff --git a/drivers/spi/spi_fsl_lib.c b/drivers/spi/spi-fsl-lib.c
-similarity index 99%
-rename from drivers/spi/spi_fsl_lib.c
-rename to drivers/spi/spi-fsl-lib.c
-index ff59f42..2674fad 100644
---- a/drivers/spi/spi_fsl_lib.c
-+++ b/drivers/spi/spi-fsl-lib.c
-@@ -25,7 +25,7 @@
- #include <linux/of_spi.h>
- #include <sysdev/fsl_soc.h>
- 
--#include "spi_fsl_lib.h"
-+#include "spi-fsl-lib.h"
- 
- #define MPC8XXX_SPI_RX_BUF(type) 					  \
- void mpc8xxx_spi_rx_buf_##type(u32 data, struct mpc8xxx_spi *mpc8xxx_spi) \
-diff --git a/drivers/spi/spi_fsl_lib.h b/drivers/spi/spi-fsl-lib.h
-similarity index 100%
-rename from drivers/spi/spi_fsl_lib.h
-rename to drivers/spi/spi-fsl-lib.h
-diff --git a/drivers/spi/spi_fsl_spi.c b/drivers/spi/spi-fsl-spi.c
-similarity index 99%
-rename from drivers/spi/spi_fsl_spi.c
-rename to drivers/spi/spi-fsl-spi.c
-index 7963c9b..e013117 100644
---- a/drivers/spi/spi_fsl_spi.c
-+++ b/drivers/spi/spi-fsl-spi.c
-@@ -37,7 +37,7 @@
- #include <asm/cpm.h>
- #include <asm/qe.h>
- 
--#include "spi_fsl_lib.h"
-+#include "spi-fsl-lib.h"
- 
- /* CPM1 and CPM2 are mutually exclusive. */
- #ifdef CONFIG_CPM1
-diff --git a/drivers/spi/spi_gpio.c b/drivers/spi/spi-gpio.c
-similarity index 99%
-rename from drivers/spi/spi_gpio.c
-rename to drivers/spi/spi-gpio.c
-index 63e51b0..0e88ab7 100644
---- a/drivers/spi/spi_gpio.c
-+++ b/drivers/spi/spi-gpio.c
-@@ -1,5 +1,5 @@
- /*
-- * spi_gpio.c - SPI master driver using generic bitbanged GPIO
-+ * SPI master driver using generic bitbanged GPIO
-  *
-  * Copyright (C) 2006,2008 David Brownell
-  *
-@@ -69,7 +69,7 @@ struct spi_gpio {
-  *		#define	SPI_MOSI_GPIO	120
-  *		#define	SPI_SCK_GPIO	121
-  *		#define	SPI_N_CHIPSEL	4
-- *		#include "spi_gpio.c"
-+ *		#include "spi-gpio.c"
-  */
- 
- #ifndef DRIVER_NAME
-@@ -127,7 +127,7 @@ static inline int getmiso(const struct spi_device *spi)
-  */
- #define spidelay(nsecs)	do {} while (0)
- 
--#include "spi_bitbang_txrx.h"
-+#include "spi-bitbang-txrx.h"
- 
- /*
-  * These functions can leverage inline expansion of GPIO calls to shrink
-diff --git a/drivers/spi/spi_imx.c b/drivers/spi/spi-imx.c
-similarity index 100%
-rename from drivers/spi/spi_imx.c
-rename to drivers/spi/spi-imx.c
-diff --git a/drivers/spi/spi_lm70llp.c b/drivers/spi/spi-lm70llp.c
-similarity index 98%
-rename from drivers/spi/spi_lm70llp.c
-rename to drivers/spi/spi-lm70llp.c
-index 7746a41..933eb9d 100644
---- a/drivers/spi/spi_lm70llp.c
-+++ b/drivers/spi/spi-lm70llp.c
-@@ -1,5 +1,5 @@
- /*
-- * spi_lm70llp.c - driver for LM70EVAL-LLP board for the LM70 sensor
-+ * Driver for LM70EVAL-LLP board for the LM70 sensor
-  *
-  * Copyright (C) 2006 Kaiwan N Billimoria <kaiwan@designergraphix.com>
-  *
-@@ -174,7 +174,7 @@ static inline int getmiso(struct spi_device *s)
- }
- /*--------------------------------------------------------------------*/
- 
--#include "spi_bitbang_txrx.h"
-+#include "spi-bitbang-txrx.h"
- 
- static void lm70_chipselect(struct spi_device *spi, int value)
- {
-diff --git a/drivers/spi/mpc512x_psc_spi.c b/drivers/spi/spi-mpc512x-psc.c
-similarity index 100%
-rename from drivers/spi/mpc512x_psc_spi.c
-rename to drivers/spi/spi-mpc512x-psc.c
-diff --git a/drivers/spi/mpc52xx_psc_spi.c b/drivers/spi/spi-mpc52xx-psc.c
-similarity index 100%
-rename from drivers/spi/mpc52xx_psc_spi.c
-rename to drivers/spi/spi-mpc52xx-psc.c
-diff --git a/drivers/spi/mpc52xx_spi.c b/drivers/spi/spi-mpc52xx.c
-similarity index 100%
-rename from drivers/spi/mpc52xx_spi.c
-rename to drivers/spi/spi-mpc52xx.c
-diff --git a/drivers/spi/spi_nuc900.c b/drivers/spi/spi-nuc900.c
-similarity index 99%
-rename from drivers/spi/spi_nuc900.c
-rename to drivers/spi/spi-nuc900.c
-index 3cd15f6..c0a6ce8 100644
---- a/drivers/spi/spi_nuc900.c
-+++ b/drivers/spi/spi-nuc900.c
-@@ -1,5 +1,4 @@
--/* linux/drivers/spi/spi_nuc900.c
-- *
-+/*
-  * Copyright (c) 2009 Nuvoton technology.
-  * Wan ZongShun <mcuos.com@gmail.com>
-  *
-@@ -7,7 +6,7 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  *
--*/
-+ */
- 
- #include <linux/init.h>
- #include <linux/spinlock.h>
-diff --git a/drivers/spi/spi_oc_tiny.c b/drivers/spi/spi-oc-tiny.c
-similarity index 100%
-rename from drivers/spi/spi_oc_tiny.c
-rename to drivers/spi/spi-oc-tiny.c
-diff --git a/drivers/spi/omap_spi_100k.c b/drivers/spi/spi-omap-100k.c
-similarity index 100%
-rename from drivers/spi/omap_spi_100k.c
-rename to drivers/spi/spi-omap-100k.c
-diff --git a/drivers/spi/omap_uwire.c b/drivers/spi/spi-omap-uwire.c
-similarity index 99%
-rename from drivers/spi/omap_uwire.c
-rename to drivers/spi/spi-omap-uwire.c
-index 160d326..00a8e9d 100644
---- a/drivers/spi/omap_uwire.c
-+++ b/drivers/spi/spi-omap-uwire.c
-@@ -1,5 +1,5 @@
- /*
-- * omap_uwire.c -- MicroWire interface driver for OMAP
-+ * MicroWire interface driver for OMAP
-  *
-  * Copyright 2003 MontaVista Software Inc. <source@mvista.com>
-  *
-diff --git a/drivers/spi/omap2_mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-similarity index 100%
-rename from drivers/spi/omap2_mcspi.c
-rename to drivers/spi/spi-omap2-mcspi.c
-diff --git a/drivers/spi/orion_spi.c b/drivers/spi/spi-orion.c
-similarity index 99%
-rename from drivers/spi/orion_spi.c
-rename to drivers/spi/spi-orion.c
-index 0b677dc..d482628 100644
---- a/drivers/spi/orion_spi.c
-+++ b/drivers/spi/spi-orion.c
-@@ -1,5 +1,5 @@
- /*
-- * orion_spi.c -- Marvell Orion SPI controller driver
-+ * Marvell Orion SPI controller driver
-  *
-  * Author: Shadi Ammouri <shadi@marvell.com>
-  * Copyright (C) 2007-2008 Marvell Ltd.
-diff --git a/drivers/spi/amba-pl022.c b/drivers/spi/spi-pl022.c
-similarity index 99%
-rename from drivers/spi/amba-pl022.c
-rename to drivers/spi/spi-pl022.c
-index 6a9e58d..2541705 100644
---- a/drivers/spi/amba-pl022.c
-+++ b/drivers/spi/spi-pl022.c
-@@ -1,6 +1,4 @@
- /*
-- * drivers/spi/amba-pl022.c
-- *
-  * A driver for the ARM PL022 PrimeCell SSP/SPI bus master.
-  *
-  * Copyright (C) 2008-2009 ST-Ericsson AB
-diff --git a/drivers/spi/spi_ppc4xx.c b/drivers/spi/spi-ppc4xx.c
-similarity index 100%
-rename from drivers/spi/spi_ppc4xx.c
-rename to drivers/spi/spi-ppc4xx.c
-diff --git a/drivers/spi/pxa2xx_spi_pci.c b/drivers/spi/spi-pxa2xx-pci.c
-similarity index 100%
-rename from drivers/spi/pxa2xx_spi_pci.c
-rename to drivers/spi/spi-pxa2xx-pci.c
-diff --git a/drivers/spi/pxa2xx_spi.c b/drivers/spi/spi-pxa2xx.c
-similarity index 100%
-rename from drivers/spi/pxa2xx_spi.c
-rename to drivers/spi/spi-pxa2xx.c
-diff --git a/drivers/spi/spi_s3c24xx_fiq.S b/drivers/spi/spi-s3c24xx-fiq.S
-similarity index 99%
-rename from drivers/spi/spi_s3c24xx_fiq.S
-rename to drivers/spi/spi-s3c24xx-fiq.S
-index 3793cae..059f2dc 100644
---- a/drivers/spi/spi_s3c24xx_fiq.S
-+++ b/drivers/spi/spi-s3c24xx-fiq.S
-@@ -17,7 +17,7 @@
- #include <mach/regs-irq.h>
- #include <plat/regs-spi.h>
- 
--#include "spi_s3c24xx_fiq.h"
-+#include "spi-s3c24xx-fiq.h"
- 
- 	.text
- 
-diff --git a/drivers/spi/spi_s3c24xx_fiq.h b/drivers/spi/spi-s3c24xx-fiq.h
-similarity index 100%
-rename from drivers/spi/spi_s3c24xx_fiq.h
-rename to drivers/spi/spi-s3c24xx-fiq.h
-diff --git a/drivers/spi/spi_s3c24xx_gpio.c b/drivers/spi/spi-s3c24xx-gpio.c
-similarity index 98%
-rename from drivers/spi/spi_s3c24xx_gpio.c
-rename to drivers/spi/spi-s3c24xx-gpio.c
-index be99135..2d3c085 100644
---- a/drivers/spi/spi_s3c24xx_gpio.c
-+++ b/drivers/spi/spi-s3c24xx-gpio.c
-@@ -1,5 +1,4 @@
--/* linux/drivers/spi/spi_s3c24xx_gpio.c
-- *
-+/*
-  * Copyright (c) 2006 Ben Dooks
-  * Copyright (c) 2006 Simtec Electronics
-  *
-@@ -58,7 +57,7 @@ static inline u32 getmiso(struct spi_device *dev)
- 
- #define spidelay(x) ndelay(x)
- 
--#include "spi_bitbang_txrx.h"
-+#include "spi-bitbang-txrx.h"
- 
- 
- static u32 s3c2410_spigpio_txrx_mode0(struct spi_device *spi,
-diff --git a/drivers/spi/spi_s3c24xx.c b/drivers/spi/spi-s3c24xx.c
-similarity index 99%
-rename from drivers/spi/spi_s3c24xx.c
-rename to drivers/spi/spi-s3c24xx.c
-index 1a5fcab..1996ac5 100644
---- a/drivers/spi/spi_s3c24xx.c
-+++ b/drivers/spi/spi-s3c24xx.c
-@@ -1,5 +1,4 @@
--/* linux/drivers/spi/spi_s3c24xx.c
-- *
-+/*
-  * Copyright (c) 2006 Ben Dooks
-  * Copyright 2006-2009 Simtec Electronics
-  *	Ben Dooks <ben@simtec.co.uk>
-@@ -32,7 +31,7 @@
- #include <plat/fiq.h>
- #include <asm/fiq.h>
- 
--#include "spi_s3c24xx_fiq.h"
-+#include "spi-s3c24xx-fiq.h"
- 
- /**
-  * s3c24xx_spi_devstate - per device data
-diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-similarity index 99%
-rename from drivers/spi/spi_s3c64xx.c
-rename to drivers/spi/spi-s3c64xx.c
-index 795828b9..75e3a9b 100644
---- a/drivers/spi/spi_s3c64xx.c
-+++ b/drivers/spi/spi-s3c64xx.c
-@@ -1,5 +1,4 @@
--/* linux/drivers/spi/spi_s3c64xx.c
-- *
-+/*
-  * Copyright (C) 2009 Samsung Electronics Ltd.
-  *	Jaswinder Singh <jassi.brar@samsung.com>
-  *
-diff --git a/drivers/spi/spi_sh_msiof.c b/drivers/spi/spi-sh-msiof.c
-similarity index 100%
-rename from drivers/spi/spi_sh_msiof.c
-rename to drivers/spi/spi-sh-msiof.c
-diff --git a/drivers/spi/spi_sh_sci.c b/drivers/spi/spi-sh-sci.c
-similarity index 99%
-rename from drivers/spi/spi_sh_sci.c
-rename to drivers/spi/spi-sh-sci.c
-index 5c64391..e7779c0 100644
---- a/drivers/spi/spi_sh_sci.c
-+++ b/drivers/spi/spi-sh-sci.c
-@@ -78,7 +78,7 @@ static inline u32 getmiso(struct spi_device *dev)
- 
- #define spidelay(x) ndelay(x)
- 
--#include "spi_bitbang_txrx.h"
-+#include "spi-bitbang-txrx.h"
- 
- static u32 sh_sci_spi_txrx_mode0(struct spi_device *spi,
- 				      unsigned nsecs, u32 word, u8 bits)
-diff --git a/drivers/spi/spi_sh.c b/drivers/spi/spi-sh.c
-similarity index 100%
-rename from drivers/spi/spi_sh.c
-rename to drivers/spi/spi-sh.c
-diff --git a/drivers/spi/spi_stmp.c b/drivers/spi/spi-stmp.c
-similarity index 100%
-rename from drivers/spi/spi_stmp.c
-rename to drivers/spi/spi-stmp.c
-diff --git a/drivers/spi/spi_tegra.c b/drivers/spi/spi-tegra.c
-similarity index 100%
-rename from drivers/spi/spi_tegra.c
-rename to drivers/spi/spi-tegra.c
-diff --git a/drivers/spi/ti-ssp-spi.c b/drivers/spi/spi-ti-ssp.c
-similarity index 100%
-rename from drivers/spi/ti-ssp-spi.c
-rename to drivers/spi/spi-ti-ssp.c
-diff --git a/drivers/spi/tle62x0.c b/drivers/spi/spi-tle62x0.c
-similarity index 99%
-rename from drivers/spi/tle62x0.c
-rename to drivers/spi/spi-tle62x0.c
-index 32a4087..940e73d 100644
---- a/drivers/spi/tle62x0.c
-+++ b/drivers/spi/spi-tle62x0.c
-@@ -1,5 +1,5 @@
- /*
-- * tle62x0.c -- support Infineon TLE62x0 driver chips
-+ * Support Infineon TLE62x0 driver chips
-  *
-  * Copyright (c) 2007 Simtec Electronics
-  *	Ben Dooks, <ben@simtec.co.uk>
-diff --git a/drivers/spi/spi_topcliff_pch.c b/drivers/spi/spi-topcliff-pch.c
-similarity index 100%
-rename from drivers/spi/spi_topcliff_pch.c
-rename to drivers/spi/spi-topcliff-pch.c
-diff --git a/drivers/spi/spi_txx9.c b/drivers/spi/spi-txx9.c
-similarity index 99%
-rename from drivers/spi/spi_txx9.c
-rename to drivers/spi/spi-txx9.c
-index dfa024b..f0a2ab0 100644
---- a/drivers/spi/spi_txx9.c
-+++ b/drivers/spi/spi-txx9.c
-@@ -1,5 +1,5 @@
- /*
-- * spi_txx9.c - TXx9 SPI controller driver.
-+ * TXx9 SPI controller driver.
-  *
-  * Based on linux/arch/mips/tx4938/toshiba_rbtx4938/spi_txx9.c
-  * Copyright (C) 2000-2001 Toshiba Corporation
-diff --git a/drivers/spi/xilinx_spi.c b/drivers/spi/spi-xilinx.c
-similarity index 100%
-rename from drivers/spi/xilinx_spi.c
-rename to drivers/spi/spi-xilinx.c
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 2e13a14..4d1b9f5 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1,5 +1,5 @@
- /*
-- * spi.c - SPI init/core code
-+ * SPI init/core code
-  *
-  * Copyright (C) 2005 David Brownell
-  *
-diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
-index d9fd862..830adbe 100644
---- a/drivers/spi/spidev.c
-+++ b/drivers/spi/spidev.c
-@@ -1,5 +1,5 @@
- /*
-- * spidev.c -- simple synchronous userspace interface to SPI devices
-+ * Simple synchronous userspace interface to SPI devices
-  *
-  * Copyright (C) 2006 SWAPP
-  *	Andrea Paterniani <a.paterniani@swapp-eng.it>
+>
+> ---
+> kexec/arch/ppc/crashdump-powerpc.c | 23 ------
+> kexec/arch/ppc/fs2dt.c | 31 ++------
+> kexec/arch/ppc/kexec-ppc.c | 136 ++++++++++++++++++++++++++-----------
+> kexec/arch/ppc/kexec-ppc.h | 6 +
+> 4 files changed, 118 insertions(+), 78 deletions(-)
+>
+> Index: kexec-tools-2.0.4/kexec/arch/ppc/kexec-ppc.c
+> ===================================================================
+> --- kexec-tools-2.0.4.orig/kexec/arch/ppc/kexec-ppc.c
+> +++ kexec-tools-2.0.4/kexec/arch/ppc/kexec-ppc.c
+> @@ -26,6 +26,7 @@
+>
+> #include "config.h"
+>
+> +unsigned long dt_address_cells = 0, dt_size_cells = 0;
+> uint64_t rmo_top;
+> unsigned long long crash_base = 0, crash_size = 0;
+> unsigned long long initrd_base = 0, initrd_size = 0;
+> @@ -34,6 +35,92 @@ unsigned int rtas_base, rtas_size;
+> int max_memory_ranges;
+> const char *ramdisk;
+>
+> +/*
+> + * Reads the #address-cells and #size-cells on this platform.
+> + * This is used to parse the memory/reg info from the device-tree
+> + */
+> +int init_memory_region_info()
+> +{
+> + size_t res = 0;
+> + FILE *fp;
+> + char *file;
+> +
+> + file = "/proc/device-tree/#address-cells";
+> + fp = fopen(file, "r");
+> + if (!fp) {
+> + fprintf(stderr,"Unable to open %s\n", file);
+> + return -1;
+> + }
+> +
+> + res = fread(&dt_address_cells,sizeof(unsigned long),1,fp);
+> + if (res != 1) {
+> + fprintf(stderr,"Error reading %s\n", file);
+> + return -1;
+> + }
+> + fclose(fp);
+> + dt_address_cells *= sizeof(unsigned long);
+> +
+> + file = "/proc/device-tree/#size-cells";
+> + fp = fopen(file, "r");
+> + if (!fp) {
+> + fprintf(stderr,"Unable to open %s\n", file);
+> + return -1;
+> + }
+> +
+> + res = fread(&dt_size_cells,sizeof(unsigned long),1,fp);
+> + if (res != 1) {
+> + fprintf(stderr,"Error reading %s\n", file);
+> + return -1;
+> + }
+> + fclose(fp);
+> + dt_size_cells *= sizeof(unsigned long);
+> +
+> + return 0;
+> +}
+> +
+> +#define MAXBYTES 128
+> +/*
+> + * Reads the memory region info from the device-tree node pointed
+> + * by @fp and fills the *start, *end with the boundaries of the region
+> + */
+> +int read_memory_region_limits(FILE* fp, unsigned long long *start,
+> + unsigned long long *end)
+> +{
+> + char buf[MAXBYTES];
+> + unsigned long *p;
+> + unsigned long nbytes = dt_address_cells + dt_size_cells;
+> +
+> + if (fread(buf, 1, MAXBYTES, fp) != nbytes) {
+> + fprintf(stderr, "Error reading the memory region info\n");
+> + return -1;
+> + }
+> +
+> + p = (unsigned long*)buf;
+> + if (dt_address_cells == sizeof(unsigned long)) {
+> + *start = p[0];
+> + p++;
+> + } else if (dt_address_cells == sizeof(unsigned long long)) {
+> + *start = ((unsigned long long *)p)[0];
+> + p = (unsigned long long *)p + 1;
+> + } else {
+> + fprintf(stderr,"Unsupported value for #address-cells : %ld\n",
+> + dt_address_cells);
+> + return -1;
+> + }
+> +
+> + if (dt_size_cells == sizeof(unsigned long))
+> + *end = *start + p[0];
+> + else if (dt_size_cells == sizeof(unsigned long long))
+> + *end = *start + ((unsigned long long *)p)[0];
+> + else {
+> + fprintf(stderr,"Unsupported value for #size-cells : %ld\n",
+> + dt_size_cells);
+> + return -1;
+> + }
+> +
+> + return 0;
+> +}
+> +
+> void arch_reuse_initrd(void)
+> {
+> reuse_initrd = 1;
+> @@ -182,9 +269,6 @@ static int sort_base_ranges(void)
+> return 0;
+> }
+>
+> -
+> -#define MAXBYTES 128
+> -
+> static int realloc_memory_ranges(void)
+> {
+> size_t memory_range_len;
+> @@ -248,6 +332,8 @@ static int get_base_ranges(void)
+> return -1;
+> }
+> while ((mentry = readdir(dmem)) != NULL) {
+> + unsigned long long start, end;
+> +
+> if (strcmp(mentry->d_name, "reg"))
+> continue;
+> strcat(fname, "/reg");
+> @@ -257,8 +343,7 @@ static int get_base_ranges(void)
+> closedir(dir);
+> return -1;
+> }
+> - if ((n = fread(buf, 1, MAXBYTES, file)) < 0) {
+> - perror(fname);
+> + if (read_memory_region_limits(file, &start, &end) != 0) {
+> fclose(file);
+> closedir(dmem);
+> closedir(dir);
+> @@ -271,24 +356,8 @@ static int get_base_ranges(void)
+> }
+> }
+>
+> - if (n == sizeof(uint32_t) * 2) {
+> - base_memory_range[local_memory_ranges].start =
+> - ((uint32_t *)buf)[0];
+> - base_memory_range[local_memory_ranges].end =
+> - base_memory_range[local_memory_ranges].start +
+> - ((uint32_t *)buf)[1];
+> - }
+> - else if (n == sizeof(uint64_t) * 2) {
+> - base_memory_range[local_memory_ranges].start =
+> - ((uint64_t *)buf)[0];
+> - base_memory_range[local_memory_ranges].end =
+> - base_memory_range[local_memory_ranges].start +
+> - ((uint64_t *)buf)[1];
+> - }
+> - else {
+> - fprintf(stderr, "Mem node has invalid size: %d\n", n);
+> - return -1;
+> - }
+> + base_memory_range[local_memory_ranges].start = start;
+> + base_memory_range[local_memory_ranges].end = end;
+> base_memory_range[local_memory_ranges].type = RANGE_RAM;
+> local_memory_ranges++;
+> dbgprintf("%016llx-%016llx : %x\n",
+> @@ -577,20 +646,10 @@ static int get_devtree_details(unsigned
+> perror(fname);
+> goto error_opencdir;
+> }
+> - if ((n = fread(buf, 1, MAXBYTES, file)) < 0) {
+> - perror(fname);
+> - goto error_openfile;
+> - }
+> - if (n == sizeof(uint64_t)) {
+> - rmo_base = ((uint32_t *)buf)[0];
+> - rmo_top = rmo_base + ((uint32_t *)buf)[1];
+> - } else if (n == 16) {
+> - rmo_base = ((uint64_t *)buf)[0];
+> - rmo_top = rmo_base + ((uint64_t *)buf)[1];
+> - } else {
+> - fprintf(stderr, "Mem node has invalid size: %d\n", n);
+> + if (read_memory_region_limits(file, &rmo_base, &rmo_top) != 0) {
+> goto error_openfile;
+> }
+> +
+> if (rmo_top > 0x30000000UL)
+> rmo_top = 0x30000000UL;
+>
+> @@ -664,7 +723,6 @@ error_opendir:
+> return -1;
+> }
+>
+> -
+> /* Setup a sorted list of memory ranges. */
+> static int setup_memory_ranges(unsigned long kexec_flags)
+> {
+> @@ -756,7 +814,6 @@ out:
+> return -1;
+> }
+>
+> -
+> /* Return a list of valid memory ranges */
+> int get_memory_ranges_dt(struct memory_range **range, int *ranges,
+> unsigned long kexec_flags)
+> @@ -778,6 +835,11 @@ int get_memory_ranges_dt(struct memory_r
+> int get_memory_ranges(struct memory_range **range, int *ranges,
+> unsigned long kexec_flags)
+> {
+> + int res = 0;
+> +
+> + res = init_memory_region_info();
+> + if (res != 0)
+> + return res;
+> #ifdef WITH_GAMECUBE
+> return get_memory_ranges_gc(range, ranges, kexec_flags);
+> #else
+> Index: kexec-tools-2.0.4/kexec/arch/ppc/kexec-ppc.h
+> ===================================================================
+> --- kexec-tools-2.0.4.orig/kexec/arch/ppc/kexec-ppc.h
+> +++ kexec-tools-2.0.4/kexec/arch/ppc/kexec-ppc.h
+> @@ -69,6 +69,12 @@ extern unsigned long long initrd_base, i
+> extern unsigned long long ramdisk_base, ramdisk_size;
+> extern unsigned char reuse_initrd;
+> extern const char *ramdisk;
+> +
+> +/* Method to parse the memory/reg nodes in device-tree */
+> +extern unsigned long dt_address_cells, dt_size_cells;
+> +extern int init_memory_region_info(void);
+> +extern int read_memory_region_limits(FILE *fp, unsigned long long *start,
+> + unsigned long long *end);
+> #define COMMAND_LINE_SIZE 512 /* from kernel */
+> /*fs2dt*/
+> void reserve(unsigned long long where, unsigned long long length);
+> Index: kexec-tools-2.0.4/kexec/arch/ppc/crashdump-powerpc.c
+> ===================================================================
+> --- kexec-tools-2.0.4.orig/kexec/arch/ppc/crashdump-powerpc.c
+> +++ kexec-tools-2.0.4/kexec/arch/ppc/crashdump-powerpc.c
+> @@ -130,9 +130,8 @@ static int get_crash_memory_ranges(struc
+> closedir(dir);
+> goto err;
+> }
+> - n = fread(buf, 1, MAXBYTES, file);
+> - if (n < 0) {
+> - perror(fname);
+> + n = read_memory_region_limits(file, &start, &end);
+> + if (n != 0) {
+> fclose(file);
+> closedir(dmem);
+> closedir(dir);
+> @@ -146,24 +145,6 @@ static int get_crash_memory_ranges(struc
+> goto err;
+> }
+>
+> - /*
+> - * FIXME: This code fails on platforms that
+> - * have more than one memory range specified
+> - * in the device-tree's /memory/reg property.
+> - * or where the #address-cells and #size-cells
+> - * are not identical.
+> - *
+> - * We should interpret the /memory/reg property
+> - * based on the values of the #address-cells and
+> - * #size-cells properites.
+> - */
+> - if (n == (sizeof(unsigned long) * 2)) {
+> - start = ((unsigned long *)buf)[0];
+> - end = start + ((unsigned long *)buf)[1];
+> - } else {
+> - start = ((unsigned long long *)buf)[0];
+> - end = start + ((unsigned long long *)buf)[1];
+> - }
+> if (start == 0 && end >= (BACKUP_SRC_END + 1))
+> start = BACKUP_SRC_END + 1;
+>
+> Index: kexec-tools-2.0.4/kexec/arch/ppc/fs2dt.c
+> ===================================================================
+> --- kexec-tools-2.0.4.orig/kexec/arch/ppc/fs2dt.c
+> +++ kexec-tools-2.0.4/kexec/arch/ppc/fs2dt.c
+> @@ -122,7 +122,7 @@ static unsigned propnum(const char *name
+> return offset;
+> }
+>
+> -static void add_usable_mem_property(int fd, int len)
+> +static void add_usable_mem_property(FILE* fp, int len)
+> {
+> char fname[MAXPATH], *bname;
+> unsigned long buf[2];
+> @@ -137,21 +137,11 @@ static void add_usable_mem_property(int
+> if (strncmp(bname, "/memory@", 8) && strcmp(bname, "/memory"))
+> return;
+>
+> - if (len < 2 * sizeof(unsigned long))
+> - die("unrecoverable error: not enough data for mem property\n");
+> - len = 2 * sizeof(unsigned long);
+> -
+> - if (lseek(fd, 0, SEEK_SET) < 0)
+> + if (fseek(fp, 0, SEEK_SET) < 0)
+> die("unrecoverable error: error seeking in \"%s\": %s\n",
+> pathname, strerror(errno));
+> - if (read(fd, buf, len) != len)
+> - die("unrecoverable error: error reading \"%s\": %s\n",
+> - pathname, strerror(errno));
+> -
+> - if (~0ULL - buf[0] < buf[1])
+> - die("unrecoverable error: mem property overflow\n");
+> - base = buf[0];
+> - end = base + buf[1];
+> + if (read_memory_region_limits(fp, &base, &end) != 0)
+> + die("unrecoverable error: error parsing memory/reg limits\n");
+>
+> for (range = 0; range < usablemem_rgns.size; range++) {
+> loc_base = usablemem_rgns.ranges[range].start;
+> @@ -194,8 +184,9 @@ static void add_usable_mem_property(int
+> static void putprops(char *fn, struct dirent **nlist, int numlist)
+> {
+> struct dirent *dp;
+> - int i = 0, fd, len;
+> + int i = 0, len;
+> struct stat statbuf;
+> + FILE *fp;
+>
+> for (i = 0; i < numlist; i++) {
+> dp = nlist[i];
+> @@ -243,12 +234,12 @@ static void putprops(char *fn, struct di
+> *dt++ = len;
+> *dt++ = propnum(fn);
+>
+> - fd = open(pathname, O_RDONLY);
+> - if (fd == -1)
+> + fp = fopen(pathname, "r");
+> + if (fp == NULL)
+> die("unrecoverable error: could not open \"%s\": %s\n",
+> pathname, strerror(errno));
+>
+> - if (read(fd, dt, len) != len)
+> + if (fread(dt, 1, len, fp) != len)
+> die("unrecoverable error: could not read \"%s\": %s\n",
+> pathname, strerror(errno));
+>
+> @@ -290,8 +281,8 @@ static void putprops(char *fn, struct di
+>
+> dt += (len + 3)/4;
+> if (!strcmp(dp->d_name, "reg") && usablemem_rgns.size)
+> - add_usable_mem_property(fd, len);
+> - close(fd);
+> + add_usable_mem_property(fp, len);
+> + fclose(fp);
+> }
+>
+> fn[0] = '\0';
+>
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
 
