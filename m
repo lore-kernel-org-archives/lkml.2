@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab1FFK2B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 06:28:01 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48174 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab1FFK15 convert rfc822-to-8bit (ORCPT
+	id S1754793Ab1FFK3M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 06:29:12 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:35390 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750998Ab1FFK3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 06:27:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mqTllro8PWV6tOzGkb4GOB4huGerDiYkQ2QRScOHmqSb++nWRq6ZSSOEgjadwM5cet
-         oIMmsb/fs5aLEsBx5IwNpCI2qAyQUnK2ySQ8xmneAtAWKyIOE4HmdJR+F6nDzl7/8j4k
-         GmQ9PBkZphf0U9ntMvsUceOAXzFdfhOdkDHOU=
+	Mon, 6 Jun 2011 06:29:08 -0400
+Date: Mon, 6 Jun 2011 12:29:06 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
+	locks up on ARM
+Message-ID: <20110606102905.GB5820@atrey.karlin.mff.cuni.cz>
+References: <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com> <1306405979.1200.63.camel@twins> <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com> <1306409575.1200.71.camel@twins> <1306412511.1200.90.camel@twins> <20110526122623.GA11875@elte.hu> <20110526123137.GG24876@n2100.arm.linux.org.uk> <20110526125007.GA27083@elte.hu> <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com> <20110527120629.GA32617@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinrbh7Xi27an3uY7pDWrNKhJRYmEA@mail.gmail.com>
-References: <BANLkTinrbh7Xi27an3uY7pDWrNKhJRYmEA@mail.gmail.com>
-Date: Mon, 6 Jun 2011 12:27:57 +0200
-Message-ID: <BANLkTik-xtEnf8Bxz3PmP6H+YYSDXe1adw@mail.gmail.com>
-Subject: Re: Linux 3.0-rc2
-From: Alessandro Suardi <alessandro.suardi@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110527120629.GA32617@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 6, 2011 at 11:32 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> You all know the drill by now: another week, another -rc.
->
-> It's been reasonably quiet, although the btrfs update is bigger than I
-> was hoping for. Other than that, it's mostly driver fixes, some ubifs
-> updates too, and a few reverts for the early regressions.
->
-> But -rc2 is already small enough that it easily fits as an appended
-> shortlog, and hopefully things will stay calm. Of course, part of that
-> may be due to other people also havin been busy traveling, so let's
-> see (and hope for the best). And I haven't been super-eager to pull,
-> so there is a couple of pending requests still in my mail queue.
+Hi!
 
-3.0-rc2 tarball appeared, but patch-3.0-rc2.bz2/gz hasn't yet,
- at least according to the proxy server I'm currently behind.
+> The expectations are to have irqs off (we are holding the runqueue 
+> lock if !__ARCH_WANT_INTERRUPTS_ON_CTXSW), so that's not workable i 
+> suspect.
+> 
+> But in theory we could drop the rq lock and restart the scheduler 
+> task-pick and balancing sequence when the ARM TLB tag rolls over. So 
+> instead of this fragile and assymetric method we'd have a 
+> straightforward retry-in-rare-cases method.
+> 
+> That means some modifications to switch_mm() but should be solvable.
+> 
+> That would make ARM special only in so far that it's one of the few 
+> architectures that signal 'retry task pickup' via switch_mm() - it 
+> would use the stock scheduler otherwise and we could remove 
+> __ARCH_WANT_INTERRUPTS_ON_CTXSW and perhaps even 
+> __ARCH_WANT_UNLOCKED_CTXSW altogether.
+> 
+> I'd suggest doing this once modern ARM chips get so widespread that 
+> you can realistically induce a ~700 usecs irqs-off delays on old, 
+> virtual-cache ARM chips. Old chips would likely use old kernels 
+> anyway, right?
 
---alessandro
+Not really. Equivalent machines (400g) with new chips do not exist, so
+many people are stuck with Sharp Zaurus, and track latest kernels,
+because support is actually improving there.
 
- "There's always a siren singing you to shipwreck"
-
-   (Radiohead, "There There")
+(And yes, I'd like to keep using bluetooth CF card with 16550-style
+chip.)
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
