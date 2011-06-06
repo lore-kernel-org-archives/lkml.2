@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab1FFSHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 14:07:41 -0400
+	id S1757412Ab1FFSHo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 14:07:44 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:32875 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757100Ab1FFSHc (ORCPT
+	with ESMTP id S1757229Ab1FFSHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 14:07:32 -0400
+	Mon, 6 Jun 2011 14:07:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=cUZw96ycQmgII1B1gmdfVU9DorC9QldMG9+zPK6cAdKEeqSnyz9WAFL5ORprk6AiWo
-         L6WRoW0MJiQL1dIG4kTmMezJda1KFOM73YvZQRA25aMRY/skLDDA+hSEEO9cnQfQwJga
-         AyMtqWU+hX4jtmqWJMUKmlEvu6pSPF4fETiE4=
+        b=X73yyW366pv/r95ZgfwvKudEW1L2sw89IaZGKB0eQGQx1MVg9cFAzuAIGg9MY+NgkA
+         7KSJN2ppZNTzNBKgsfS7VLOSjt7nd+YvDMIorqeiiXcAI0GzX46+U1Un000MM+c30IpG
+         rH3xRubp0fM85N4wi9gcrHj9MrVfF/KeDocfI=
 From: Mark Einon <mark.einon@gmail.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         o.hartmann@telovital.com, alan@lxorguk.ukuu.org.uk,
-        Mark Einon <Mark.Einon@gmail.com>, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH v2 4/7] staging: et131x: et131x_initpci.c checkpatch fixes
-Date: Mon,  6 Jun 2011 19:07:01 +0100
-Message-Id: <1307383624-8740-5-git-send-email-mark.einon@gmail.com>
+        Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH v2 5/7] staging: et131x: et131x_netdev.c checkpatch fixes
+Date: Mon,  6 Jun 2011 19:07:02 +0100
+Message-Id: <1307383624-8740-6-git-send-email-mark.einon@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1307383624-8740-1-git-send-email-mark.einon@gmail.com>
 References: <1307295320-31716-1-git-send-email-mark.einon@gmail.com>
@@ -29,67 +29,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Einon <Mark.Einon@gmail.com>
-
 Signed-off-by: Mark Einon <mark.einon@gmail.com>
 ---
- drivers/staging/et131x/et131x_initpci.c |   29 +++++++++++++++--------------
- 1 files changed, 15 insertions(+), 14 deletions(-)
+ drivers/staging/et131x/et131x_netdev.c |  112 ++++++++++++++-----------------
+ 1 files changed, 51 insertions(+), 61 deletions(-)
 
-diff --git a/drivers/staging/et131x/et131x_initpci.c b/drivers/staging/et131x/et131x_initpci.c
-index 50237ac..1dd2e5e 100644
---- a/drivers/staging/et131x/et131x_initpci.c
-+++ b/drivers/staging/et131x/et131x_initpci.c
-@@ -113,13 +113,13 @@
- static u32 et131x_speed_set;
- module_param(et131x_speed_set, uint, 0);
- MODULE_PARM_DESC(et131x_speed_set,
--		"Set Link speed and dublex manually (0-5)  [0]\n \
--		 1 : 10Mb   Half-Duplex\n \
--		 2 : 10Mb   Full-Duplex\n \
--		 3 : 100Mb  Half-Duplex\n \
--		 4 : 100Mb  Full-Duplex\n \
--		 5 : 1000Mb Full-Duplex\n \
--		 0 : Auto Speed Auto Dublex");
-+		"Set Link speed and dublex manually (0-5)  [0]\n"
-+		"1 : 10Mb   Half-Duplex\n"
-+		"2 : 10Mb   Full-Duplex\n"
-+		"3 : 100Mb  Half-Duplex\n"
-+		"4 : 100Mb  Full-Duplex\n"
-+		"5 : 1000Mb Full-Duplex\n"
-+		"0 : Auto Speed Auto Dublex");
+diff --git a/drivers/staging/et131x/et131x_netdev.c b/drivers/staging/et131x/et131x_netdev.c
+index 5f6522c..7cc4b48 100644
+--- a/drivers/staging/et131x/et131x_netdev.c
++++ b/drivers/staging/et131x/et131x_netdev.c
+@@ -89,67 +89,6 @@
+ #include "et131x.h"
+ 
+ struct net_device_stats *et131x_stats(struct net_device *netdev);
+-int et131x_open(struct net_device *netdev);
+-int et131x_close(struct net_device *netdev);
+-int et131x_ioctl(struct net_device *netdev, struct ifreq *reqbuf, int cmd);
+-void et131x_multicast(struct net_device *netdev);
+-int et131x_tx(struct sk_buff *skb, struct net_device *netdev);
+-void et131x_tx_timeout(struct net_device *netdev);
+-int et131x_change_mtu(struct net_device *netdev, int new_mtu);
+-int et131x_set_mac_addr(struct net_device *netdev, void *new_mac);
+-void et131x_vlan_rx_register(struct net_device *netdev, struct vlan_group *grp);
+-void et131x_vlan_rx_add_vid(struct net_device *netdev, uint16_t vid);
+-void et131x_vlan_rx_kill_vid(struct net_device *netdev, uint16_t vid);
+-
+-static const struct net_device_ops et131x_netdev_ops = {
+-	.ndo_open		= et131x_open,
+-	.ndo_stop		= et131x_close,
+-	.ndo_start_xmit		= et131x_tx,
+-	.ndo_set_multicast_list	= et131x_multicast,
+-	.ndo_tx_timeout		= et131x_tx_timeout,
+-	.ndo_change_mtu		= et131x_change_mtu,
+-	.ndo_set_mac_address	= et131x_set_mac_addr,
+-	.ndo_validate_addr	= eth_validate_addr,
+-	.ndo_get_stats		= et131x_stats,
+-	.ndo_do_ioctl		= et131x_ioctl,
+-};
+-
+-/**
+- * et131x_device_alloc
+- *
+- * Returns pointer to the allocated and initialized net_device struct for
+- * this device.
+- *
+- * Create instances of net_device and wl_private for the new adapter and
+- * register the device's entry points in the net_device structure.
+- */
+-struct net_device *et131x_device_alloc(void)
+-{
+-	struct net_device *netdev;
+-
+-	/* Alloc net_device and adapter structs */
+-	netdev = alloc_etherdev(sizeof(struct et131x_adapter));
+-
+-	if (netdev == NULL) {
+-		printk(KERN_ERR "et131x: Alloc of net_device struct failed\n");
+-		return NULL;
+-	}
+-
+-	/* Setup the function registration table (and other data) for a
+-	 * net_device
+-	 */
+-	/* netdev->init               = &et131x_init; */
+-	/* netdev->set_config = &et131x_config; */
+-	netdev->watchdog_timeo = ET131X_TX_TIMEOUT;
+-	netdev->netdev_ops = &et131x_netdev_ops;
+-
+-	/* netdev->ethtool_ops        = &et131x_ethtool_ops; */
+-
+-	/* Poll? */
+-	/* netdev->poll               = &et131x_poll; */
+-	/* netdev->poll_controller    = &et131x_poll_controller; */
+-	return netdev;
+-}
  
  /**
-  * et131x_hwaddr_init - set up the MAC Address on the ET1310
-@@ -539,7 +539,8 @@ static struct et131x_adapter *et131x_adapter_init(struct net_device *netdev,
- 
- 	struct et131x_adapter *etdev;
- 
--	/* Setup the fundamental net_device and private adapter structure elements  */
-+	/* Setup the fundamental net_device and private adapter structure
-+	 * elements  */
- 	SET_NETDEV_DEV(netdev, &pdev->dev);
- 
- 	/* Allocate private adapter struct and copy in relevant information */
-@@ -807,12 +808,12 @@ static struct pci_device_id et131x_pci_table[] __devinitdata = {
- MODULE_DEVICE_TABLE(pci, et131x_pci_table);
- 
- static struct pci_driver et131x_driver = {
--      .name	= DRIVER_NAME,
--      .id_table	= et131x_pci_table,
--      .probe	= et131x_pci_setup,
--      .remove	= __devexit_p(et131x_pci_remove),
--      .suspend	= NULL,		/* et131x_pci_suspend */
--      .resume	= NULL,		/* et131x_pci_resume */
-+	.name		= DRIVER_NAME,
-+	.id_table	= et131x_pci_table,
-+	.probe		= et131x_pci_setup,
-+	.remove		= __devexit_p(et131x_pci_remove),
-+	.suspend	= NULL,		/* et131x_pci_suspend */
-+	.resume		= NULL,		/* et131x_pci_resume */
- };
- 
- 
+  * et131x_stats - Return the current device statistics.
+@@ -702,3 +641,54 @@ int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
+ 	netif_wake_queue(netdev);
+ 	return result;
+ }
++
++static const struct net_device_ops et131x_netdev_ops = {
++	.ndo_open		= et131x_open,
++	.ndo_stop		= et131x_close,
++	.ndo_start_xmit		= et131x_tx,
++	.ndo_set_multicast_list	= et131x_multicast,
++	.ndo_tx_timeout		= et131x_tx_timeout,
++	.ndo_change_mtu		= et131x_change_mtu,
++	.ndo_set_mac_address	= et131x_set_mac_addr,
++	.ndo_validate_addr	= eth_validate_addr,
++	.ndo_get_stats		= et131x_stats,
++	.ndo_do_ioctl		= et131x_ioctl,
++};
++
++/**
++ * et131x_device_alloc
++ *
++ * Returns pointer to the allocated and initialized net_device struct for
++ * this device.
++ *
++ * Create instances of net_device and wl_private for the new adapter and
++ * register the device's entry points in the net_device structure.
++ */
++struct net_device *et131x_device_alloc(void)
++{
++	struct net_device *netdev;
++
++	/* Alloc net_device and adapter structs */
++	netdev = alloc_etherdev(sizeof(struct et131x_adapter));
++
++	if (netdev == NULL) {
++		printk(KERN_ERR "et131x: Alloc of net_device struct failed\n");
++		return NULL;
++	}
++
++	/* Setup the function registration table (and other data) for a
++	 * net_device
++	 */
++	/* netdev->init               = &et131x_init; */
++	/* netdev->set_config = &et131x_config; */
++	netdev->watchdog_timeo = ET131X_TX_TIMEOUT;
++	netdev->netdev_ops = &et131x_netdev_ops;
++
++	/* netdev->ethtool_ops        = &et131x_ethtool_ops; */
++
++	/* Poll? */
++	/* netdev->poll               = &et131x_poll; */
++	/* netdev->poll_controller    = &et131x_poll_controller; */
++	return netdev;
++}
++
 -- 
 1.7.4.4
 
