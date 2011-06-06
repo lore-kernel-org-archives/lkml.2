@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab1FFNah (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 09:30:37 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55933 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756365Ab1FFNag (ORCPT
+	id S1757155Ab1FFNaN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 09:30:13 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:40311 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab1FFNaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 09:30:36 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: Re: [PATCH v2] asm-generic: add another generic ext2 atomic bitops
-Date: Mon, 6 Jun 2011 15:29:57 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Andreas Dilger <adilger@dilger.ca>, linux-arch@vger.kernel.org
-References: <1307201251-16805-1-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1307201251-16805-1-git-send-email-akinobu.mita@gmail.com>
+	Mon, 6 Jun 2011 09:30:11 -0400
+Message-ID: <4DECD657.9010807@ahsoftware.de>
+Date: Mon, 06 Jun 2011 15:29:59 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org
+Subject: Re: bridge/netfilter: regression in 2.6.39.1
+References: <4DE93422.3070000@ahsoftware.de>	 <20110606111507.GA1000@hmsreliant.think-freely.org>	 <4DECBEA3.6070408@ahsoftware.de> <1307362358.3098.6.camel@edumazet-laptop>	 <4DECCCC0.70905@ahsoftware.de> <1307366166.3098.15.camel@edumazet-laptop>
+In-Reply-To: <1307366166.3098.15.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106061529.57417.arnd@arndb.de>
-X-Provags-ID: V02:K0:qDosqFTvGX9D81FJhJFHuaMN60pvrLipbh0HzONqDzm
- 44VgHdB/skI5RReOQCJAu53OaU9XwkqxR1GNnHwoQ5jfM3mAnZ
- qhGRYDQabP7eA01P8js4/01y9+7VFkZCPVTuXTMwrEnl+oL9Fw
- CL49nQGLs7LxAStEDzr/ve+ikfL+e8vxgrWPx8lyS2rA1J90Cp
- B2mQf0FvcP7AyMp3OmcBA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 04 June 2011, Akinobu Mita wrote:
-> The majority of architectures implement ext2 atomic bitops as
-> test_and_{set,clear}_bit() without spinlock.
-> 
-> This adds this type of generic implementation in ext2-atomic-setbit.h
-> and use it wherever possible.
-> 
-> Suggested-by: Andreas Dilger <adilger@dilger.ca>
-> Suggested-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: linux-arch@vger.kernel.org
 
-Looks good,
+> Nice, now please submit a patch with 0972ddb237 as a guideline.
+>
+> BTW, you could also check other struct dst_ops methods for
+> bridge/netfilter:
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Sorry, but I prefer to submit patches I understand by myself and for 
+stuff I know something about. The patch in my first mail was just meant 
+as a quick fix (which seemed to work here).
+
+So even if I might be able to construct a working patch using commit 
+0972ddb237, I don't think I should do that.
+
+Regards,
+
+Alexander
