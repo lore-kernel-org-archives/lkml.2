@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab1FFJpj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:45:39 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52815 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545Ab1FFJpg (ORCPT
+	id S1756156Ab1FFJrD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:47:03 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:60545 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754804Ab1FFJq7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:45:36 -0400
-Date: Mon, 6 Jun 2011 10:45:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gadiyar@ti.com, sameo@linux.intel.com, parthab@india.ti.com,
-        tony@atomide.com, khilman@ti.com, b-cousson@ti.com, paul@pwsan.com
-Subject: Re: [PATCH 4/4] mfd: global Suspend and resume support of ehci and
-	ohci
-Message-ID: <20110606094524.GA23682@sirena.org.uk>
-References: <20110605185047.GB18731@legolas.emea.dhcp.ti.com> <Pine.LNX.4.44L0.1106051519560.5916-100000@netrider.rowland.org>
+	Mon, 6 Jun 2011 05:46:59 -0400
+Date: Mon, 6 Jun 2011 11:46:56 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] media: soc_camera_video_start - type should be const
+In-Reply-To: <1307306757-7068-1-git-send-email-geert@linux-m68k.org>
+Message-ID: <Pine.LNX.4.64.1106061146070.11169@axis700.grange>
+References: <1307306757-7068-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1106051519560.5916-100000@netrider.rowland.org>
-X-Cookie: Edited for television.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V02:K0:XZpfF2YUWs72c8RXkSG2iRFMxPz2TIyallF4VIvZVuD
+ czFpeeZkv1ZF44oSSQw25ObZ/JrtaePoJwwvTfW1+hBrxDNWNB
+ N4NOeT44UUKwScqAXgUG4oy9aRbfVBt539RMMFJDXR8iAy/YbN
+ oIJFpY5HH0v/ajTRORA4xVg0PM+AsBkVrDcXaNM8NuFCJhPJtI
+ czhgQUYZBt7dgI8JcM631oKlA2HS6PRSjmI3YwRdMU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 05, 2011 at 03:30:55PM -0400, Alan Stern wrote:
-> On Sun, 5 Jun 2011, Felipe Balbi wrote:
+Hi Geert
 
-> > that would mean changes to all linker scripts, though and a utility call
-> > that only does anything ifndef CONFIG_PM to free the .pm.ops section.
+On Sun, 5 Jun 2011, Geert Uytterhoeven wrote:
 
-> In my opinion this would make programming harder, not easier.  It's
-> very easy to understand "#ifdef" followed by "#endif"; people see them
-> all the time.  The new tags you propose would force people to go
-> searching through tons of source files to see what they mean, and then
-> readers would still have to figure out when these tags should be used
-> or what advantage they might bring.
+> drivers/media/video/soc_camera.c: In function ‘soc_camera_video_start’:
+> drivers/media/video/soc_camera.c:1515: warning: initialization discards qualifiers from pointer target type
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  drivers/media/video/soc_camera.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/video/soc_camera.c b/drivers/media/video/soc_camera.c
+> index 3988643..4e4d412 100644
+> --- a/drivers/media/video/soc_camera.c
+> +++ b/drivers/media/video/soc_camera.c
+> @@ -1512,7 +1512,7 @@ static int video_dev_create(struct soc_camera_device *icd)
+>   */
+>  static int soc_camera_video_start(struct soc_camera_device *icd)
+>  {
+> -	struct device_type *type = icd->vdev->dev.type;
+> +	const struct device_type *type = icd->vdev->dev.type;
+>  	int ret;
+>  
+>  	if (!icd->dev.parent)
+> -- 
+> 1.7.0.4
 
-The big advantage is that they make it much harder to introduce random
-build breakage and they're an awful lot less fiddly to do - it used to
-be not so bad when it was just the function pointers that needed to be
-defined to NULL but now we need to faff around with both the functions
-and the dev_pm_ops.
+Thanks for the patchm unfortunately, you're not the first:
 
-The annotation approach is already familiar from the init stuff so it
-wouldn't be so hard for people to understand.
+http://www.mail-archive.com/linux-media@vger.kernel.org/msg32245.html
+
+and not even the second;)
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
