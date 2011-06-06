@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab1FFLrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 07:47:05 -0400
-Received: from ccserver2.unican.es ([130.206.5.101]:48091 "EHLO
-	ccserver2.unican.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998Ab1FFLrC (ORCPT
+	id S1755701Ab1FFLtM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 07:49:12 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:60964 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998Ab1FFLtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 07:47:02 -0400
-Message-ID: <4DECBE44.2070803@unican.es>
-Date: Mon, 6 Jun 2011 13:47:16 +0200
-From: Monica Puig-Pey <puigpeym@unican.es>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) 
-	Gecko/20110424 Thunderbird/3.1.10
+	Mon, 6 Jun 2011 07:49:10 -0400
+Message-ID: <4DECBEA3.6070408@ahsoftware.de>
+Date: Mon, 06 Jun 2011 13:48:51 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-To: <linux-rt-users@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Changing Kernel thread priorities
-References: <4DEA1BA9.7020303@unican.es> <4DEA1F22.6000603@unican.es> 
-	<4DEA255B.2050503@unican.es>
-In-Reply-To: <4DEA255B.2050503@unican.es>
-Content-Type: text/plain;
-	charset=windows-1252;
-	format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [193.144.198.131]
-X-imss-version: 2.054
-X-imss-result: Passed
-X-imss-scanInfo: M:P L:E SM:0
-X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18182.006)
-X-imss-scores: Clean:45.15099 C:2 M:3 S:5 R:5
-X-imss-settings: Baseline:1 C:1 M:2 S:2 R:2 (0.0000 0.0000)
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org
+Subject: Re: bridge/netfilter: regression in 2.6.39.1
+References: <4DE93422.3070000@ahsoftware.de> <20110606111507.GA1000@hmsreliant.think-freely.org>
+In-Reply-To: <20110606111507.GA1000@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am writing a driver which has one kernel thread associated with it.
-I want to change the priority of this thread, so that I can specify the 
-order in which it is scheduled following an interrupt.
-I'm using:
+Am 06.06.2011 13:15, schrieb Neil Horman:
+> On Fri, Jun 03, 2011 at 09:21:06PM +0200, Alexander Holler wrote:
+>> Hello,
+>>
+>> I'm getting a oops in the bridge code in br_change_mtu() with
+>> 2.6.39.1. The patch below seems to fix that.
+>>
+>> I'm not sure about the usage of dst_cow_metrics_generic() in
+>> fake_dst_ops, but after having a quick look at it seems to be ok to
+>> use that here.
+>>
+>> Regards,
+>>
+>> Alexander
+>>
+> How did the flags of the dst entry on which we're callnig dst_entry_write_ptr
+> wind up getting the  READ_ONLY flag set on it?  I don't see how we'er falling
+> into that clause in which we call cow_metrics when we call dst_metric_set.  It
+> seems like that flag is set erroneously.  perhaps we should just update
+> fake_rtable.dst to have the correct flags?
+> Neil
 
-  sched_setscheduler(struct task_struct *, int, struct sched_param *);
+It is set by that change:
 
-but it doesn't work. I tried to change the priority from the 
-init_module, and also from the Kernel Thread, but there is no way.
+--------
+@@ -124,7 +128,7 @@ void br_netfilter_rtable_init(struct net_bridge *br)
+  	atomic_set(&rt->dst.__refcnt, 1);
+  	rt->dst.dev = br->dev;
+  	rt->dst.path = &rt->dst;
+-	dst_metric_set(&rt->dst, RTAX_MTU, 1500);
++	dst_init_metrics(&rt->dst, br_dst_default_metrics, true);
+  	rt->dst.flags	= DST_NOXFRM;
+  	rt->dst.ops = &fake_dst_ops;
+  }
+--------
 
-Kernel version is 2.6.31-11-rt
+The true in dst_init_metrics() is responsible for that flag.
 
-What do I call to change a kernel thread priority?
+Regards,
 
-Thanks you very much
-
-Mónica
-
+Alexander
