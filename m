@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757617Ab1FFWCt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:02:49 -0400
-Received: from lucidpixels.com ([75.144.35.66]:42137 "EHLO lucidpixels.com"
+	id S1758023Ab1FFWHM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:07:12 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60329 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756155Ab1FFWCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 18:02:48 -0400
-Date: Mon, 6 Jun 2011 18:02:47 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Brad Campbell <lists2009@fnarfbargle.com>
-cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: 2.6.39 kernel panic w/screenshots & kernel cfg link provided
-In-Reply-To: <alpine.DEB.2.02.1106051601230.3462@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1106061800480.3462@p34.internal.lan>
-References: <alpine.DEB.2.02.1105280755050.4345@p34.internal.lan> <4DE4FBB0.9080708@fnarfbargle.com> <alpine.DEB.2.02.1106051601230.3462@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753290Ab1FFWHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 18:07:10 -0400
+Date: Mon, 6 Jun 2011 22:06:48 GMT
+From: tip-bot for Josh Triplett <josh@joshtriplett.org>
+Message-ID: <tip-f505c553dbe24b18a8590eb0eb5890a839acd0c3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, sam@ravnborg.org, fweisbec@gmail.com,
+        tglx@linutronix.de, josh@joshtriplett.org, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sam@ravnborg.org, torvalds@linux-foundation.org, fweisbec@gmail.com,
+        tglx@linutronix.de, josh@joshtriplett.org, mingo@elte.hu
+In-Reply-To: <20110606012358.GA1909@leaf>
+References: <20110606012358.GA1909@leaf>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/debug] debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
+Git-Commit-ID: f505c553dbe24b18a8590eb0eb5890a839acd0c3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Jun 2011 22:06:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  f505c553dbe24b18a8590eb0eb5890a839acd0c3
+Gitweb:     http://git.kernel.org/tip/f505c553dbe24b18a8590eb0eb5890a839acd0c3
+Author:     Josh Triplett <josh@joshtriplett.org>
+AuthorDate: Sun, 5 Jun 2011 18:23:58 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 7 Jun 2011 00:05:15 +0200
 
+debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
 
-On Sun, 5 Jun 2011, Justin Piszcz wrote:
+Several debugging options currently default to y, such as
+CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.  Embedded users
+might want to turn those options off to save space; however,
+turning them off requires turning on CONFIG_DEBUG_KERNEL to
+unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
+unhide debugging options, and CONFIG_EXPERT exists specifically
+to unhide options potentially needed by experts and/or embedded
+users, make CONFIG_EXPERT automatically imply
+CONFIG_DEBUG_KERNEL.
 
->
->
-> On Tue, 31 May 2011, Brad Campbell wrote:
->
->> On 28/05/11 20:01, Justin Piszcz wrote:
->>> Hello,
->
-> Hi,
->
-> This was happening on a regular basis, since then I have performed the
-> following: (sdc,sdd,sde were recently added)
->
-> # hal-disable-polling --device /dev/sr0
-> Polling is already disabled on the given drive.
-> # hal-disable-polling --device /dev/sdd
-> Polling for drive /dev/sdd have been disabled. The fdi file written was
-> # hal-disable-polling --device /dev/sde
-> Polling for drive /dev/sde have been disabled. The fdi file written was
-> # hal-disable-polling --device /dev/sdc
-> Polling for drive /dev/sdc have been disabled. The fdi file written was
->
-> # ps auxww|grep udisks
-> root      4125  0.0  0.0 127464  5844 ?        Sl   07:54   0:00 
-> /usr/lib/udisks/udisks-daemon
-> root      4126  0.0  0.0  45088  1100 ?        S    07:54   0:00 
-> udisks-daemon: polling /dev/sr0 /dev/sdd /dev/sde /dev/sdc
-> root     13335  0.0  0.0   8648   844 pts/8    S+   08:23   0:00 grep udisks
-> # dpkg -S /usr/lib/udisks/udisks-daemon
-> udisks: /usr/lib/udisks/udisks-daemon
-> # apt-get remove udisks
->
-> # uname -a
-> Linux box 2.6.39 #11 SMP Tue May 31 15:51:52 EDT 2011 x86_64 GNU/Linux
->
-> So far, my system has not crashed in 4 days after doing this, I am also using 
-> the 'threadirqs' boot option, if it crashes again I'll provide an update
-> but so far it has been stable..
->
-> Justin.
->
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20110606012358.GA1909@leaf
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ init/Kconfig |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-For others who also have crashes, do your crashes persist when you disable 
-these options (don't use ACPI) for ATA/SATA.
-
-CONFIG_ATA_ACPI=y
-CONFIG_PATA_ACPI=m
-
-Recently I added a lot of options to my .config (compiled them as 
-modules), I noticed two items, one, when all of the ATA devices (SATA), 
-not the deprecated ones and/or the ACPI option for libata, that seemed to 
-be the final culprit that may have been causing my issues, no crashes.. 
-yet.
-
-Justin.
-
+diff --git a/init/Kconfig b/init/Kconfig
+index ebafac4..14370d3 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -909,6 +909,8 @@ config ANON_INODES
+ 
+ menuconfig EXPERT
+ 	bool "Configure standard kernel features (expert users)"
++	# Unhide debug options, to make the on-by-default options visible
++	select DEBUG_KERNEL
+ 	help
+ 	  This option allows certain base kernel options and settings
+           to be disabled or tweaked. This is for specialized
