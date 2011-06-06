@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab1FFSCC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 14:02:02 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47382 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756277Ab1FFSB6 (ORCPT
+	id S1757243Ab1FFSCT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 14:02:19 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:51369 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757074Ab1FFSCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 14:01:58 -0400
+	Mon, 6 Jun 2011 14:02:00 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: v9fs-developer@lists.sourceforge.net
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 2/3] fs/9p: remove rename work around in 9p
-Date: Mon,  6 Jun 2011 23:31:47 +0530
-Message-Id: <1307383308-5773-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 3/3] 9p: add 9P2000.L unlinkat operation
+Date: Mon,  6 Jun 2011 23:31:48 +0530
+Message-Id: <1307383308-5773-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1307383308-5773-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1307383308-5773-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -21,29 +21,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that VFS does the right thing remove the work around.
+unlinkat - Remove a directory entry
+
+size[4] Tunlinkat tag[2] dirfid[4] name[s] flag[4]
+size[4] Runlinkat tag[2]
+
+older Tremove have the below request format
+
+size[4] Tremove tag[2] fid[4]
+
+The remove message is used to remove a directory entry either file or directory
+The remove opreation is actually a directory opertation and should ideally have
+dirfid, if not we cannot represent the fid on server with anything other than
+name. We will have to derive the directory name from fid in the Tremove request.
+
+NOTE: The operation doesn't clunk the unlink fid.
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/9p/vfs_inode.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+ fs/9p/vfs_inode.c       |   43 ++++++++++++++++++++++++++-----------------
+ include/net/9p/9p.h     |    2 ++
+ include/net/9p/client.h |    1 +
+ net/9p/client.c         |   23 +++++++++++++++++++++++
+ 4 files changed, 52 insertions(+), 17 deletions(-)
 
 diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index 651f577..ded6309 100644
+index ded6309..f40fdc3 100644
 --- a/fs/9p/vfs_inode.c
 +++ b/fs/9p/vfs_inode.c
-@@ -892,11 +892,6 @@ clunk_newdir:
- 				clear_nlink(new_inode);
- 			else
- 				drop_nlink(new_inode);
--			/*
--			 * Work around vfs rename rehash bug with
--			 * FS_RENAME_DOES_D_MOVE
--			 */
--			v9fs_invalidate_inode_attr(new_inode);
- 		}
- 		if (S_ISDIR(old_inode->i_mode)) {
- 			if (!new_inode)
+@@ -492,38 +492,47 @@ v9fs_inode_from_fid(struct v9fs_session_info *v9ses, struct p9_fid *fid,
+ /**
+  * v9fs_remove - helper function to remove files and directories
+  * @dir: directory inode that is being deleted
+- * @file:  dentry that is being deleted
++ * @dentry:  dentry that is being deleted
+  * @rmdir: removing a directory
+  *
+  */
+ 
+-static int v9fs_remove(struct inode *dir, struct dentry *file, int rmdir)
++static int v9fs_remove(struct inode *dir, struct dentry *dentry, int flags)
+ {
+ 	int retval;
+-	struct p9_fid *v9fid;
+-	struct inode *file_inode;
+-
+-	P9_DPRINTK(P9_DEBUG_VFS, "inode: %p dentry: %p rmdir: %d\n", dir, file,
+-		rmdir);
++	struct inode *inode;
++	struct p9_fid *v9fid, *dfid;
+ 
+-	file_inode = file->d_inode;
+-	v9fid = v9fs_fid_clone(file);
+-	if (IS_ERR(v9fid))
+-		return PTR_ERR(v9fid);
++	P9_DPRINTK(P9_DEBUG_VFS, "inode: %p dentry: %p rmdir: %x\n",
++		   dir, dentry, flags);
+ 
+-	retval = p9_client_remove(v9fid);
++	inode = dentry->d_inode;
++	dfid = v9fs_fid_lookup(dentry->d_parent);
++	if (IS_ERR(dfid)) {
++		retval = PTR_ERR(dfid);
++		P9_DPRINTK(P9_DEBUG_VFS, "fid lookup failed %d\n", retval);
++		return retval;
++	}
++	retval = p9_client_unlinkat(dfid, dentry->d_name.name, flags);
++	if (retval == -EOPNOTSUPP) {
++		/* Try the one based on path */
++		v9fid = v9fs_fid_clone(dentry);
++		if (IS_ERR(v9fid))
++			return PTR_ERR(v9fid);
++		retval = p9_client_remove(v9fid);
++	}
+ 	if (!retval) {
+ 		/*
+ 		 * directories on unlink should have zero
+ 		 * link count
+ 		 */
+-		if (rmdir) {
+-			clear_nlink(file_inode);
++		if (flags & AT_REMOVEDIR) {
++			clear_nlink(inode);
+ 			drop_nlink(dir);
+ 		} else
+-			drop_nlink(file_inode);
++			drop_nlink(inode);
+ 
+-		v9fs_invalidate_inode_attr(file_inode);
++		v9fs_invalidate_inode_attr(inode);
+ 		v9fs_invalidate_inode_attr(dir);
+ 	}
+ 	return retval;
+@@ -814,7 +823,7 @@ int v9fs_vfs_unlink(struct inode *i, struct dentry *d)
+ 
+ int v9fs_vfs_rmdir(struct inode *i, struct dentry *d)
+ {
+-	return v9fs_remove(i, d, 1);
++	return v9fs_remove(i, d, AT_REMOVEDIR);
+ }
+ 
+ /**
+diff --git a/include/net/9p/9p.h b/include/net/9p/9p.h
+index 094c3dd..fe1efa6 100644
+--- a/include/net/9p/9p.h
++++ b/include/net/9p/9p.h
+@@ -177,6 +177,8 @@ enum p9_msg_t {
+ 	P9_RMKDIR,
+ 	P9_TRENAMEAT = 74,
+ 	P9_RRENAMEAT,
++	P9_TUNLINKAT = 76,
++	P9_RUNLINKAT,
+ 	P9_TVERSION = 100,
+ 	P9_RVERSION,
+ 	P9_TAUTH = 102,
+diff --git a/include/net/9p/client.h b/include/net/9p/client.h
+index 5353cbc..976d12a 100644
+--- a/include/net/9p/client.h
++++ b/include/net/9p/client.h
+@@ -234,6 +234,7 @@ int p9_client_create_dotl(struct p9_fid *ofid, char *name, u32 flags, u32 mode,
+ int p9_client_clunk(struct p9_fid *fid);
+ int p9_client_fsync(struct p9_fid *fid, int datasync);
+ int p9_client_remove(struct p9_fid *fid);
++int p9_client_unlinkat(struct p9_fid *dfid, const char *name, int flags);
+ int p9_client_read(struct p9_fid *fid, char *data, char __user *udata,
+ 							u64 offset, u32 count);
+ int p9_client_write(struct p9_fid *fid, char *data, const char __user *udata,
+diff --git a/net/9p/client.c b/net/9p/client.c
+index 677ae8d..d225158 100644
+--- a/net/9p/client.c
++++ b/net/9p/client.c
+@@ -1281,6 +1281,29 @@ error:
+ }
+ EXPORT_SYMBOL(p9_client_remove);
+ 
++int p9_client_unlinkat(struct p9_fid *dfid, const char *name, int flags)
++{
++	int err = 0;
++	struct p9_req_t *req;
++	struct p9_client *clnt;
++
++	P9_DPRINTK(P9_DEBUG_9P, ">>> TUNLINKAT fid %d %s %d\n",
++		   dfid->fid, name, flags);
++
++	clnt = dfid->clnt;
++	req = p9_client_rpc(clnt, P9_TUNLINKAT, "dsd", dfid->fid, name, flags);
++	if (IS_ERR(req)) {
++		err = PTR_ERR(req);
++		goto error;
++	}
++	P9_DPRINTK(P9_DEBUG_9P, "<<< RUNLINKAT fid %d %s\n", dfid->fid, name);
++
++	p9_free_req(clnt, req);
++error:
++	return err;
++}
++EXPORT_SYMBOL(p9_client_unlinkat);
++
+ int
+ p9_client_read(struct p9_fid *fid, char *data, char __user *udata, u64 offset,
+ 								u32 count)
 -- 
 1.7.4.1
 
