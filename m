@@ -1,60 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab1FFQu7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:50:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55540 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703Ab1FFQu4 convert rfc822-to-8bit (ORCPT
+	id S1752798Ab1FFQvo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:51:44 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:37598 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab1FFQvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:50:56 -0400
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-From: Peter Zijlstra <peterz@infradead.org>
+	Mon, 6 Jun 2011 12:51:43 -0400
+X-Originating-IP: 217.70.178.134
+X-Originating-IP: 50.43.15.19
+Date: Mon, 6 Jun 2011 09:51:30 -0700
+From: Josh Triplett <josh@joshtriplett.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-In-Reply-To: <1307378649.2322.198.camel@twins>
-References: <4DEB933C.1070900@die-jansens.de>
-	 <20110605151323.GA30590@elte.hu> <1307349530.2353.7374.camel@twins>
-	 <20110606145827.GD30348@elte.hu> <1307372989.2322.136.camel@twins>
-	 <1307375227.2322.161.camel@twins> <20110606155236.GA7374@elte.hu>
-	 <1307376039.2322.164.camel@twins> <20110606160810.GA16636@elte.hu>
-	 <1307376771.2322.168.camel@twins>  <20110606161749.GA22157@elte.hu>
-	 <1307378649.2322.198.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 06 Jun 2011 18:50:48 +0200
-Message-ID: <1307379048.2322.199.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Cc: Thomas Gleixner <tglx@linutronix.de>, Sam Ravnborg <sam@ravnborg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3] Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide
+ debug options
+Message-ID: <20110606165130.GA1844@leaf>
+References: <20110605210223.GA7595@leaf>
+ <20110606151832.GI30348@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606151832.GI30348@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-06 at 18:44 +0200, Peter Zijlstra wrote:
-> +void printk_tick(void)
-> +{
-> +       if (!__this_cpu_read(printk_pending))
-> +               return;
-> +
-> +       /*
-> +        * Try to acquire and then immediately release the
-> +        * console semaphore. The release will do all the
-> +        * actual magic (print out buffers, wake up klogd,
-> +        * etc). 
-> +        */
-> +       if (console_trylock_for_printk(smp_processor_id())) {
-> +               console_unlock();
-> +               __this_cpu_write(printk_pending, 0);
-> +       }
-> +} 
+Several debugging options currently default to y, such as
+CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.  Embedded users might
+want to turn those options off to save space; however, turning them off
+requires turning on CONFIG_DEBUG_KERNEL to unhide them.  Since
+CONFIG_DEBUG_KERNEL exists specifically to unhide debugging options, and
+CONFIG_EXPERT exists specifically to unhide options potentially needed
+by experts and/or embedded users, make CONFIG_EXPERT automatically imply
+CONFIG_DEBUG_KERNEL.
 
-Aside from not compiling (someone stuck a ref to wake_up_klogd somewhere
-in lib/) this does delay the whole of printk() output by up to a jiffy,
-if the machine dies funny you could be missing large parts of the
-output :/
+Change various debugging options to only reference DEBUG_KERNEL, not
+EXPERT.
 
+Note that DEBUG_MEMORY_INIT defaulted to !EXPERT, which seemed wrong,
+since EXPERT should not directly affect anything except the availability
+of other options.  (And EXPERT definitely shouldn't mean "implicitly
+turn off default safety features".)  Change it to default to y, which
+means that turning on EXPERT does not automatically disable it, but will
+provide the option to disable it.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+
+v3: Changed other debugging options to stop referencing EXPERT.
+
+ arch/tile/Kconfig.debug |    2 +-
+ init/Kconfig            |    2 ++
+ lib/Kconfig.debug       |    6 +++---
+ 3 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/arch/tile/Kconfig.debug b/arch/tile/Kconfig.debug
+index ddbfc33..afc9cf3 100644
+--- a/arch/tile/Kconfig.debug
++++ b/arch/tile/Kconfig.debug
+@@ -3,7 +3,7 @@ menu "Kernel hacking"
+ source "lib/Kconfig.debug"
+ 
+ config EARLY_PRINTK
+-	bool "Early printk" if EXPERT && DEBUG_KERNEL
++	bool "Early printk" if DEBUG_KERNEL
+ 	default y
+ 	help
+ 	  Write kernel log output directly via the hypervisor console.
+diff --git a/init/Kconfig b/init/Kconfig
+index ebafac4..14370d3 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -909,6 +909,8 @@ config ANON_INODES
+ 
+ menuconfig EXPERT
+ 	bool "Configure standard kernel features (expert users)"
++	# Unhide debug options, to make the on-by-default options visible
++	select DEBUG_KERNEL
+ 	help
+ 	  This option allows certain base kernel options and settings
+           to be disabled or tweaked. This is for specialized
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index dd373c8..b121413 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -694,7 +694,7 @@ config DEBUG_HIGHMEM
+ 	  Disable for production systems.
+ 
+ config DEBUG_BUGVERBOSE
+-	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
++	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL
+ 	depends on BUG
+ 	depends on ARM || AVR32 || M32R || M68K || SPARC32 || SPARC64 || \
+ 		   FRV || SUPERH || GENERIC_BUG || BLACKFIN || MN10300 || TILE
+@@ -766,8 +766,8 @@ config DEBUG_WRITECOUNT
+ 	  If unsure, say N.
+ 
+ config DEBUG_MEMORY_INIT
+-	bool "Debug memory initialisation" if EXPERT
+-	default !EXPERT
++	bool "Debug memory initialisation" if DEBUG_KERNEL
++	default y
+ 	help
+ 	  Enable this for additional checks during memory initialisation.
+ 	  The sanity checks verify aspects of the VM such as the memory model
+-- 
+1.7.5.3
 
