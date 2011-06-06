@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab1FFWLA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:11:00 -0400
-Received: from mail.perches.com ([173.55.12.10]:2549 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab1FFWK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 18:10:59 -0400
-Subject: Re: [PATCH 1/2] staging: iio replaced kmalloc with local variables.
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@suse.de>
-Cc: anish <anish198519851985@gmail.com>, devel@driverdev.osuosl.org,
-        arnd@arndb.de, lucas.demarchi@profusion.mobi,
-        linux-kernel@vger.kernel.org, jic23@cam.ac.uk,
-        manuel.stahl@iis.fraunhofer.de
-In-Reply-To: <20110606215549.GA7543@suse.de>
-References: <1307387257.4327.12.camel@anish-desktop>
-	 <20110606215549.GA7543@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 15:10:57 -0700
-Message-ID: <1307398257.4994.30.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1758158Ab1FFWLQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:11:16 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:51511 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758139Ab1FFWLM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 18:11:12 -0400
+X-Originating-IP: 217.70.178.134
+X-Originating-IP: 131.252.246.56
+Date: Mon, 6 Jun 2011 15:11:01 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
+        Jeff Dike <jdike@addtoit.com>, Andi Kleen <andi@firstfloor.org>,
+        Huang Ying <ying.huang@intel.com>, Li Wei <W.Li@Sun.COM>,
+        Michael Ellerman <michaele@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Heiko Carstens <heicars2@linux.vnet.ibm.com>,
+        Martin Schwidefsky <mschwid2@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Disable CONFIG_CONSTRUCTORS when not needed by
+ CONFIG_GCOV_KERNEL
+Message-ID: <20110606221101.GC1999@leaf>
+References: <20110605082100.GA18151@leaf>
+ <4DECB261.5090109@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DECB261.5090109@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-06 at 14:55 -0700, Greg KH wrote:
-> On Tue, Jun 07, 2011 at 12:37:37AM +0530, anish wrote:
-> > From: anish kumar <anish198519851985@gmail.com>
-> > Replace kmalloc with local variables as it was un-necessary and
-> > also removed the redudant code after this change.
-> SPI data, like USB data, has to come from kmalloced data, not from the
-> stack, or bad things can, and will, happen.
+On Mon, Jun 06, 2011 at 12:56:33PM +0200, Peter Oberparleiter wrote:
+> On 05.06.2011 10:21, Josh Triplett wrote:
+> >CONFIG_CONSTRUCTORS controls support for running constructor functions
+> >at kernel init time.  According to commit
+> >b99b87f70c7785ab1e253c6220f4b0b57ce3a7f7, gcov (CONFIG_GCOV_KERNEL)
+> >needs this.  However, CONFIG_CONSTRUCTORS currently defaults to y, with
+> >no option to disable it, and CONFIG_GCOV_KERNEL depends on it.  Instead,
+> >default it to n and have CONFIG_GCOV_KERNEL select it, so that the
+> >normal case of CONFIG_GCOV_KERNEL=n will result in
+> >CONFIG_CONSTRUCTORS=n.
+> >
+> >Observed in the short list of =y values in a minimal kernel
+> >configuration.
+> >
+> >Signed-off-by: Josh Triplett<josh@joshtriplett.org>
+> >---
+> 
+> I tested this patch and GCOV profiling still works with it applied.
+> To my knowledge, GCOV profiling is the only kernel mechanism using
+> GCC's constructors and this may save some bytes.
+> 
+> Acked-by: Peter Oberparleiter <peter.oberparleiter@de.ibm.com>
 
-Perhaps just add a comment like:
+Excellent, thanks for testing and acking.
 
-+       u8 *tx = kmalloc(2, GFP_KERNEL);	/* can't be on stack */
+What tree should this patch go through?
 
-It might be better to do a single kmalloc(4)
-than 2 separate kmalloc(2)'s.
-
-
+- Josh Triplett
