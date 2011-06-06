@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab1FFK0s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 06:26:48 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:47521 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134Ab1FFK0o (ORCPT
+	id S1754965Ab1FFK1W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 06:27:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45355 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab1FFK1U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 06:26:44 -0400
-Message-ID: <4DECAB5E.8030700@linux.vnet.ibm.com>
-Date: Mon, 06 Jun 2011 15:56:38 +0530
-From: Shubham Goyal <shubham@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: LTP list <ltp-list@lists.sourceforge.net>, linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        yanegomi@gmail.com, chrubis@suse.cz, subrata@linux.vnet.ibm.com,
-        vapier@gentoo.org
-Subject: [ANNOUNCE] The Linux Test Project has been released for MAY 2011.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Jun 2011 06:27:20 -0400
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arne Jansen <lists@die-jansens.de>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <4DECA525.7030503@die-jansens.de>
+References: <20110605151323.GA30590@elte.hu>
+	 <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu>
+	 <4DEBA9CC.4090503@die-jansens.de> <4DEBB05C.8090506@die-jansens.de>
+	 <4DEBB3DA.8060001@die-jansens.de> <20110605172052.GA1036@elte.hu>
+	 <4DEBBFF9.2030101@die-jansens.de> <20110605185957.GA3452@elte.hu>
+	 <4DEBD95B.6030901@die-jansens.de> <20110605194419.GA12965@elte.hu>
+	 <4DEBE3DF.70104@die-jansens.de> <1307350909.2353.7408.camel@twins>
+	 <4DECA525.7030503@die-jansens.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 06 Jun 2011 12:26:57 +0200
+Message-ID: <1307356017.2353.7511.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2011-06-06 at 12:00 +0200, Arne Jansen wrote:
+> As expected this apparently fixes the problem. But are we confident
+> enough this is the true source? If it's really that simple, printk
+> calling into the scheduler, why am I the only one seeing this?
 
-The Linux Test Project test suite has been released for the month of
-MAY 2011. Please see ltp/INSTALL file carefully, as there has been multiple
-changes for building/installing the test suite after the recent changes in
-Makefile infrastructure.
+Right, so apparently you have contention on console_sem and the up()
+actually does a wakeup. I'm still trying to figure out how to do that.
 
-The latest version of the test-suite contains 3000+ tests for the Linux
-OS and can be found at:
-http://ltp.sourceforge.net/,
-Latest happenings in LTP can also be found at:
-http://ltp.sourceforge.net/wiki/,
-http://ltp.sourceforge.net/wikiArchives.php, and,
-IRC: irc.freenode.org #ltp.
-
-Our web site also contains other information such as:
-- A Linux test tools matrix
-- Technical papers
-- How To's on Linux testing
-- Code coverage analysis tool.
-
-We would encourage the community to post results to 
-ltp-results@lists.sf.net,
-
-patches, new tests, bugs or comments/questions to ltp-list@lists.sf.net,
-
-http://sourceforge.net/tracker/?func=add&group_id=3382&atid=103382  (for
-New Bug(s)),
-http://sourceforge.net/tracker/?func=add&group_id=3382&atid=303382  (for
-New Patch(s)),
-http://sourceforge.net/tracker/?func=add&group_id=3382&atid=353382  (for
-New Feature Request(s))
-
-**Note: Some pending patches will be checked in for next release.
-
-Happy testing,
-Regards,
-Shubham
 
