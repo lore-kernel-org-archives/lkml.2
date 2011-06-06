@@ -1,42 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373Ab1FFKSQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 06:18:16 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:41898 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751713Ab1FFKSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 06:18:15 -0400
-Subject: Re: [PATCH 1/2] mtd: nuc900_nand: add missing nand_release in
- nuc900_nand_remove
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reply-To: Artem.Bityutskiy@nokia.com
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Wan ZongShun <mcuos.com@gmail.com>
-In-Reply-To: <1307065913.10001.2.camel@phoenix>
-References: <1307065913.10001.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia
-Date: Mon, 06 Jun 2011 13:13:47 +0300
-Message-ID: <1307355227.3112.26.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+	id S1754253Ab1FFKQU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 06:16:20 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36898 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191Ab1FFKQR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 06:16:17 -0400
+Date: Mon, 6 Jun 2011 11:15:56 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: shawn.guo@linaro.org, patches@linaro.org, vinod.koul@intel.com,
+        gregkh@suse.de, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dan.j.williams@intel.com, cjb@laptop.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/3] dmaengine: add new dma API for
+	max_segment_number
+Message-ID: <20110606101556.GE10508@n2100.arm.linux.org.uk>
+References: <20110606091410.GB10508@n2100.arm.linux.org.uk> <20110606183925D.fujita.tomonori@lab.ntt.co.jp> <20110606094751.GC10508@n2100.arm.linux.org.uk> <20110606191041U.fujita.tomonori@lab.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606191041U.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-03 at 09:51 +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mtd/nand/nuc900_nand.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+On Mon, Jun 06, 2011 at 07:12:20PM +0900, FUJITA Tomonori wrote:
+> On Mon, 6 Jun 2011 10:47:51 +0100
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> 
+> > On Mon, Jun 06, 2011 at 06:41:09PM +0900, FUJITA Tomonori wrote:
+> > > On Mon, 6 Jun 2011 10:14:10 +0100
+> > > Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> > > 
+> > > > On Mon, Jun 06, 2011 at 05:06:03PM +0900, FUJITA Tomonori wrote:
+> > > > > max_segs isn't unrelated with the dma mapping API. I explained above,
+> > > > > IOMMUs doesn't increase the number of segments (could decrease the
+> > > > > number of segments by merging).
+> > > > > 
+> > > > > The limitation about the number of segment already lives elsewhere
+> > > > > (e.g. queue's limits.max_segments).
+> > > > 
+> > > > I think you're missing the point entirely.
+> > > > 
+> > > > Lets take the problem at hand: you have two devices.  One of them is
+> > > > handled by the DMA engine code.  One of them is a block device.
+> > > > 
+> > > > The block layer needs to know the various parameters of what is
+> > > > allowable for DMA, including such things as the maximum size of a
+> > > > segment, and the _number_ of segments that can be placed into any
+> > > > one request.
+> > > > 
+> > > > As the DMA provider is _entirely_ separate and unknown to the block
+> > > > device driver, the block device driver has no way to sanely provide
+> > > > these parameters to the block layer - they are not a property of the
+> > > > block device driver, but of the DMA provider.
+> > > 
+> > > struct device_dma_parameters is used for a property of the block
+> > > device drivers (and scsi HBA drivers, etc). Not DMA provider. Right?
+> > 
+> > Wrong.  struct device_dma_parameters is a property of the _DMA_ _provider_.
+> > It has to be.  Read what I said above and think about it.
+> 
+> I think that it's up to your definition of DMA provider.
 
-Pushed both to l2-mtd-2.6.git, thanks.
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+I give up.
