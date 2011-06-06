@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab1FFM7b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 08:59:31 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48884 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756129Ab1FFM7a convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 08:59:30 -0400
+	id S1756523Ab1FFNFu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 09:05:50 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:49682 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752785Ab1FFNFt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 09:05:49 -0400
+Date: Mon, 6 Jun 2011 15:05:48 +0200
+From: Cyril Hrubis <metan@ucw.cz>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        thommycheck@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
+        Marek Vasut <marek.vasut@gmail.com>
+Subject: Re: Disable CF during suspend
+Message-ID: <20110606130548.GA4966@atrey.karlin.mff.cuni.cz>
+References: <20110521094326.GB26323@elf.ucw.cz>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTik-xtEnf8Bxz3PmP6H+YYSDXe1adw@mail.gmail.com>
-References: <BANLkTinrbh7Xi27an3uY7pDWrNKhJRYmEA@mail.gmail.com> <BANLkTik-xtEnf8Bxz3PmP6H+YYSDXe1adw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 6 Jun 2011 21:59:06 +0900
-Message-ID: <BANLkTim1ms9ND6evpDVPFRrJBNffMr4KNg@mail.gmail.com>
-Subject: Re: Linux 3.0-rc2
-To: Alessandro Suardi <alessandro.suardi@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110521094326.GB26323@elf.ucw.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 6, 2011 at 7:27 PM, Alessandro Suardi
-<alessandro.suardi@gmail.com> wrote:
->
-> 3.0-rc2 tarball appeared, but patch-3.0-rc2.bz2/gz hasn't yet,
->  at least according to the proxy server I'm currently behind.
+Hi!
+> Disable SPITZ_SCP_CF_POWER during suspend. Otherwise it eats battery,
+> fast. Thanks to Stanislav Brabec.
+>     
+> Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-I'm still traveling (will be home tomorrow, for some definition of
-"tomorrow"), and it appears that there's probably some throttling or
-other going on with the hotel internet. So the git tree is fine, but
-the tar-ball isn't going out.
+Works on the top of the 3.0-rc2 on my spitz.
 
-I'll try to at least get the patch out.
+Acked-by: Cyril Hrubis <metan@ucw.cz>
 
-                   Linus
+-- 
+metan
