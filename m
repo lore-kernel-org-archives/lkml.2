@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab1FFJSb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:18:31 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:10006 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab1FFJSa (ORCPT
+	id S1755008Ab1FFJSo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:18:44 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:37303 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754571Ab1FFJSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:18:30 -0400
-Date: Mon, 6 Jun 2011 11:17:13 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-pcmcia@lists.infradead.org,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        "David S. Miller" <davem@davemloft.net>, Michael Buesch <mb@bu3sch.de>,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Florian Fainelli <florian@openwrt.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] spi: reorganize drivers
-Message-ID: <20110606111713.2b801103@endymion.delvare>
-In-Reply-To: <201106061100.38249.arnd@arndb.de>
-References: <20110605071725.26517.11573.stgit@ponder>
-	<201106061100.38249.arnd@arndb.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 6 Jun 2011 05:18:41 -0400
+X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/f7yb6+x1CF1B3oIP27v4=
+X-RZG-CLASS-ID: mo00
+Message-ID: <4DEC9B67.2070908@die-jansens.de>
+Date: Mon, 06 Jun 2011 11:18:31 +0200
+From: Arne Jansen <lists@die-jansens.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+References: <20110605151323.GA30590@elte.hu>	 <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu>	 <4DEBA9CC.4090503@die-jansens.de> <4DEBB05C.8090506@die-jansens.de>	 <4DEBB3DA.8060001@die-jansens.de> <20110605172052.GA1036@elte.hu>	 <4DEBBFF9.2030101@die-jansens.de> <20110605185957.GA3452@elte.hu>	 <4DEBD95B.6030901@die-jansens.de> <20110605194419.GA12965@elte.hu>	 <4DEBE3DF.70104@die-jansens.de> <1307350909.2353.7408.camel@twins>
+In-Reply-To: <1307350909.2353.7408.camel@twins>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Jun 2011 11:00:38 +0200, Arnd Bergmann wrote:
-> On Sunday 05 June 2011, Grant Likely wrote:
-> >  rename drivers/spi/{omap2_mcspi.c => spi_omap2_mcspi.c} (100%)
-> >  rename drivers/spi/{omap_spi_100k.c => spi_omap_100k.c} (100%)
-> >  rename drivers/spi/{omap_uwire.c => spi_omap_uwire.c} (100%)
-> >  rename drivers/spi/{orion_spi.c => spi_orion.c} (100%)
-> >  rename drivers/spi/{amba-pl022.c => spi_pl022.c} (100%)
-> >  rename drivers/spi/{pxa2xx_spi.c => spi_pxa2xx.c} (100%)
-> >  rename drivers/spi/{pxa2xx_spi_pci.c => spi_pxa2xx_pci.c} (100%)
-> >  rename drivers/spi/{ti-ssp-spi.c => spi_ti_ssp.c} (100%)
-> >  rename drivers/spi/{tle62x0.c => spi_tle62x0.c} (100%)
-> >  rename drivers/spi/{xilinx_spi.c => spi_xilinx.c} (100%)
+On 06.06.2011 11:01, Peter Zijlstra wrote:
+> On Sun, 2011-06-05 at 22:15 +0200, Arne Jansen wrote:
+>>
+>> Can lockdep just get confused by the lockdep_off/on calls in printk
+>> while scheduling is allowed? There aren't many users of lockdep_off().
 > 
-> I recently looked at the directory structure in drivers/ and found a lot
-> of bus drivers with very few files, plus a few bus drivers with a lot
-> of files in them besides directories for non-bus specific subsystems.
-> 
-> I think it would be good to move them into a deeper directory drivers/bus/
-> if we have support from the maintainers, and it's probably better if we
-> only have to move the files once to reduce the amount of churn on the
-> MAINTAINERS file and any out of tree patches.
-> 
-> Specifically, I'd like to do these moves:
-> 
-> drivers/{ => bus}/amba
-> drivers/{ => bus}/dio
-> drivers/{ => bus}/eisa
-> drivers/{ => bus}/firewire
-> drivers/{ => bus}/i2c
-> drivers/{ => bus}/mca
-> drivers/{ => bus}/nubus
-> drivers/{ => bus}/pcmcia
-> drivers/{ => bus}/rapidio
-> drivers/{ => bus}/sbus
-> drivers/{ => bus}/spi
-> drivers/{ => bus}/ssb
-> drivers/{ => bus}/tc
-> drivers/{ => bus}/uwb
-> drivers/{ => bus}/virtio
-> drivers/{ => bus}/vlync
-> drivers/{ => bus}/w1
-> drivers/{ => bus}/zorro
-> 
-> This leaves out the two most common buses, USB and PCI, mostly because
-> the directories contain a lot of stuff that is not really bus code
-> but actual drivers. It does include i2c and spi, which stick out by
-> being a lot larger than most others.
-> 
-> Opinions? Move or don't move?
+> Yes!, in that case lock_is_held() returns false, triggering the warning.
+> I guess there's an argument to be made in favour of the below..
 
-No opinion, I just don't care.
 
--- 
-Jean Delvare
+Two questions... is there any protection between the lockdep_recursion
+check and the set to one? I guess in our case it is, because it's the
+scheduler that calls it, but in general?
+And why is lockdep needed to check if a lock is help? Isn't it reflected
+in the lock structure itself?
+
+-Arne
+
+> 
+> ---
+>  kernel/lockdep.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index 53a6895..e4129cf 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -3242,7 +3242,7 @@ int lock_is_held(struct lockdep_map *lock)
+>  	int ret = 0;
+>  
+>  	if (unlikely(current->lockdep_recursion))
+> -		return ret;
+> +		return 1; /* avoid false negative lockdep_assert_held */
+>  
+>  	raw_local_irq_save(flags);
+>  	check_flags(flags);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
