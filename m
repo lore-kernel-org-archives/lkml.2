@@ -1,109 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758133Ab1FFV6Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 17:58:25 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53564 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737Ab1FFV6X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 17:58:23 -0400
-Date: Mon, 06 Jun 2011 14:58:18 -0700 (PDT)
-Message-Id: <20110606.145818.802224963792889208.davem@davemloft.net>
-To: cmdkhh@gmail.com
-Cc: hadi@cyberus.ca, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sch_generic unused variable warning
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1307143106-14523-1-git-send-email-cmdkhh@gmail.com>
-References: <1307143106-14523-1-git-send-email-cmdkhh@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 06 Jun 2011 14:58:19 -0700 (PDT)
+	id S1758127Ab1FFWCz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:02:55 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:37113 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757989Ab1FFWCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 18:02:52 -0400
+Date: Tue, 7 Jun 2011 00:02:40 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Sam Ravnborg <sam@ravnborg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3] Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to
+ unhide debug options
+Message-ID: <20110606220240.GB12079@elte.hu>
+References: <20110605210223.GA7595@leaf>
+ <20110606151832.GI30348@elte.hu>
+ <20110606165130.GA1844@leaf>
+ <20110606181606.GB7862@somewhere>
+ <20110606183939.GA2335@leaf>
+ <20110606213446.GA17026@somewhere.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606213446.GA17026@somewhere.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Connor Hansen <cmdkhh@gmail.com>
-Date: Fri,  3 Jun 2011 16:18:26 -0700
 
-> during randconfig testing net/sched/sch_generic produced
-> net/sched/sch_generic.c: In function dev_watchdog
-> net/sched/sch_generic.c:254:10: warning: unused variable drivername
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> On Mon, Jun 06, 2011 at 11:39:39AM -0700, Josh Triplett wrote:
+> > On Mon, Jun 06, 2011 at 08:16:09PM +0200, Frederic Weisbecker wrote:
+> > > On Mon, Jun 06, 2011 at 09:51:30AM -0700, Josh Triplett wrote:
+> > > > Several debugging options currently default to y, such as
+> > > > CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.  Embedded users might
+> > > > want to turn those options off to save space; however, turning them off
+> > > > requires turning on CONFIG_DEBUG_KERNEL to unhide them.  Since
+> > > > CONFIG_DEBUG_KERNEL exists specifically to unhide debugging options, and
+> > > > CONFIG_EXPERT exists specifically to unhide options potentially needed
+> > > > by experts and/or embedded users, make CONFIG_EXPERT automatically imply
+> > > > CONFIG_DEBUG_KERNEL.
+> > > > 
+> > > > Change various debugging options to only reference DEBUG_KERNEL, not
+> > > > EXPERT.
+> > > 
+> > > Ok, so ideally this should have been done in two patches. They are both
+> > > different logical changes that don't imply the same.
+> > 
+> > Fair enough; I'd considered whether to split this patch or not, and
+> > ended up with "not" on the theory that this seemed like a case of "fix
+> > an API and fix up the callers", but I can easily split it in v4.
 > 
-> drivername is only used in the scope of the WARN_ONCE
+> You haven't just fixed the API and propagated to the callers accordingly.
+> What you did is to fix the API and also completely change the behaviour of the callers.
 > 
-> Signed-off-by: Connor Hansen <cmdkhh@gmail.com>
+> You have changed EXPERT to imply DEBUG_KERNEL.
 
-I think this warning is telling us to fix the netdev_drivername()
-helper instead.
+yes, i suggested that, because it leads to a more maintainable 
+(EXPERT noise free) DEBUG_KERNEL Kconfig section.
 
-I'll commit the following:
+> You'd have fixed the callers accordingly if you only changed 
+> "depend on EXPERT && DEBUG_KERNEL" into "depend on EXPERT" in the 
+> callers, because if EXPERT => DEBUG_KERNEL then (EXPERT && 
+> DEBUG_KERNEL) == EXPERT. Thus it would have fit into the same logic 
+> and gathering the whole into a single patch would have made sense 
+> (although that's debatable, I would have cut that personally, but 
+> we don't care at that level).
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index ca333e7..54b8b4d 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -2555,7 +2555,7 @@ extern void netdev_class_remove_file(struct class_attribute *class_attr);
- 
- extern struct kobj_ns_type_operations net_ns_type_operations;
- 
--extern char *netdev_drivername(const struct net_device *dev, char *buffer, int len);
-+extern const char *netdev_drivername(const struct net_device *dev);
- 
- extern void linkwatch_run_queue(void);
- 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 9393078..1af6cb2 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6264,29 +6264,23 @@ err_name:
- /**
-  *	netdev_drivername - network driver for the device
-  *	@dev: network device
-- *	@buffer: buffer for resulting name
-- *	@len: size of buffer
-  *
-  *	Determine network driver for device.
-  */
--char *netdev_drivername(const struct net_device *dev, char *buffer, int len)
-+const char *netdev_drivername(const struct net_device *dev)
- {
- 	const struct device_driver *driver;
- 	const struct device *parent;
--
--	if (len <= 0 || !buffer)
--		return buffer;
--	buffer[0] = 0;
-+	const char *empty = "";
- 
- 	parent = dev->dev.parent;
--
- 	if (!parent)
--		return buffer;
-+		return empty;
- 
- 	driver = parent->driver;
- 	if (driver && driver->name)
--		strlcpy(buffer, driver->name, len);
--	return buffer;
-+		return driver->name;
-+	return empty;
- }
- 
- static int __netdev_printk(const char *level, const struct net_device *dev,
-diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
-index b1721d7..b4c6809 100644
---- a/net/sched/sch_generic.c
-+++ b/net/sched/sch_generic.c
-@@ -251,9 +251,8 @@ static void dev_watchdog(unsigned long arg)
- 			}
- 
- 			if (some_queue_timedout) {
--				char drivername[64];
- 				WARN_ONCE(1, KERN_INFO "NETDEV WATCHDOG: %s (%s): transmit queue %u timed out\n",
--				       dev->name, netdev_drivername(dev, drivername, 64), i);
-+				       dev->name, netdev_drivername(dev), i);
- 				dev->netdev_ops->ndo_tx_timeout(dev);
- 			}
- 			if (!mod_timer(&dev->watchdog_timer,
+Hm, that's my fault - i missed that.
+
+Thanks,
+
+	Ingo
