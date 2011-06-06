@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757930Ab1FFTgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 15:36:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64510 "EHLO mx1.redhat.com"
+	id S1753570Ab1FFTjT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 15:39:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11306 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757877Ab1FFTgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 15:36:51 -0400
+	id S1751133Ab1FFTjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 15:39:18 -0400
 From: Matthew Garrett <mjg@redhat.com>
-To: x86@kernel.org
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org,
+To: tony.luck@intel.com
+Cc: linux-kernel@vger.kernel.org, Matt_Domsch@dell.com,
         Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH 2/2] efi: Add infrastructure for UEFI 2.0 runtime services
-Date: Mon,  6 Jun 2011 15:36:25 -0400
-Message-Id: <1307388985-7852-2-git-send-email-mjg@redhat.com>
-In-Reply-To: <1307388985-7852-1-git-send-email-mjg@redhat.com>
-References: <1307388985-7852-1-git-send-email-mjg@redhat.com>
+Subject: [PATCH 1/3] pstore: Extend API
+Date: Mon,  6 Jun 2011 15:38:53 -0400
+Message-Id: <1307389135-8150-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
 X-SA-Exim-Connect-IP: 66.187.233.202
 X-SA-Exim-Mail-From: mjg@redhat.com
@@ -23,156 +21,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're currently missing support for any of the runtime service calls
-introduced with the UEFI 2.0 spec in 2006. Add the infrastructure for
-supporting them.
+Some pstore implementations may not have a static context, so extend the
+API to pass the pstore_info struct to all calls and allow for a context
+pointer.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- arch/x86/platform/efi/efi.c |   37 +++++++++++++++++++++++++++++++++++++
- include/linux/efi.h         |   32 ++++++++++++++++++++++++++++++++
- 2 files changed, 69 insertions(+), 0 deletions(-)
+ drivers/acpi/apei/erst.c |   18 +++++++++++++-----
+ fs/pstore/inode.c        |   10 +++++-----
+ fs/pstore/internal.h     |    2 +-
+ fs/pstore/platform.c     |   13 +++++++------
+ include/linux/pstore.h   |    8 +++++---
+ 5 files changed, 31 insertions(+), 20 deletions(-)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index f4f6de9..a0e4244 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -131,6 +131,18 @@ static efi_status_t virt_efi_set_variable(efi_char16_t *name,
- 			      data_size, data);
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index e6cef8e..de3ae92 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -932,8 +932,10 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
+ static int erst_open_pstore(struct pstore_info *psi);
+ static int erst_close_pstore(struct pstore_info *psi);
+ static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+-		       struct timespec *time);
+-static u64 erst_writer(enum pstore_type_id type, size_t size);
++			   struct timespec *time, struct pstore_info *psi);
++static u64 erst_writer(enum pstore_type_id type, size_t size,
++		       struct pstore_info *psi);
++static int erst_clearer(u64 id, struct pstore_info *psi);
+ 
+ static struct pstore_info erst_info = {
+ 	.owner		= THIS_MODULE,
+@@ -942,7 +944,7 @@ static struct pstore_info erst_info = {
+ 	.close		= erst_close_pstore,
+ 	.read		= erst_reader,
+ 	.write		= erst_writer,
+-	.erase		= erst_clear
++	.erase		= erst_clearer
+ };
+ 
+ #define CPER_CREATOR_PSTORE						\
+@@ -983,7 +985,7 @@ static int erst_close_pstore(struct pstore_info *psi)
  }
  
-+static efi_status_t virt_efi_query_variable_info(u32 attr,
-+						 u64 *storage_space,
-+						 u64 *remaining_space,
-+						 u64 *max_variable_size)
-+{
-+	if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
-+		return EFI_UNSUPPORTED;
-+
-+	return efi_call_virt4(query_variable_info, attr, storage_space,
-+			      remaining_space, max_variable_size);
-+}
-+
- static efi_status_t virt_efi_get_next_high_mono_count(u32 *count)
+ static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+-		       struct timespec *time)
++			   struct timespec *time, struct pstore_info *psi)
  {
- 	return efi_call_virt1(get_next_high_mono_count, count);
-@@ -145,6 +157,28 @@ static void virt_efi_reset_system(int reset_type,
- 		       data_size, data);
+ 	int rc;
+ 	ssize_t len = 0;
+@@ -1037,7 +1039,8 @@ out:
+ 	return (rc < 0) ? rc : (len - sizeof(*rcd));
  }
  
-+static efi_status_t virt_efi_update_capsule(efi_capsule_header_t **capsules,
-+					    unsigned long count,
-+					    unsigned long sg_list)
+-static u64 erst_writer(enum pstore_type_id type, size_t size)
++static u64 erst_writer(enum pstore_type_id type, size_t size,
++		       struct pstore_info *psi)
+ {
+ 	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
+ 					(erst_info.buf - sizeof(*rcd));
+@@ -1080,6 +1083,11 @@ static u64 erst_writer(enum pstore_type_id type, size_t size)
+ 	return rcd->hdr.record_id;
+ }
+ 
++static int erst_clearer(u64 id, struct pstore_info *psi)
 +{
-+	if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
-+		return EFI_UNSUPPORTED;
-+
-+	return efi_call_virt3(update_capsule, capsules, count, sg_list);
++	return erst_clear(id);
 +}
 +
-+static efi_status_t virt_efi_query_capsule_caps(efi_capsule_header_t **capsules,
-+						unsigned long count,
-+						u64 *max_size,
-+						int *reset_type)
-+{
-+	if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
-+		return EFI_UNSUPPORTED;
-+
-+	return efi_call_virt4(query_capsule_caps, capsules, count, max_size,
-+			      reset_type);
-+}
-+
- static efi_status_t __init phys_efi_set_virtual_address_map(
- 	unsigned long memory_map_size,
- 	unsigned long descriptor_size,
-@@ -651,6 +685,9 @@ void __init efi_enter_virtual_mode(void)
- 	efi.get_next_high_mono_count = virt_efi_get_next_high_mono_count;
- 	efi.reset_system = virt_efi_reset_system;
- 	efi.set_virtual_address_map = NULL;
-+	efi.query_variable_info = virt_efi_query_variable_info;
-+	efi.update_capsule = virt_efi_update_capsule;
-+	efi.query_capsule_caps = virt_efi_query_capsule_caps;
- 	if (__supported_pte_mask & _PAGE_NX)
- 		runtime_code_page_mkexec();
- 	early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 0758753..ec25726 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -101,6 +101,13 @@ typedef struct {
- 	u64 attribute;
- } efi_memory_desc_t;
+ static int __init erst_init(void)
+ {
+ 	int rc = 0;
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 977ed27..b19884a 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -40,7 +40,7 @@
  
-+typedef struct {
-+	efi_guid_t guid;
-+	u32 headersize;
-+	u32 flags;
-+	u32 imagesize;
-+} efi_capsule_header_t;
-+
- typedef int (*efi_freemem_callback_t) (u64 start, u64 end, void *arg);
+ struct pstore_private {
+ 	u64	id;
+-	int	(*erase)(u64);
++	struct pstore_info *psi;
+ 	ssize_t	size;
+ 	char	data[];
+ };
+@@ -73,7 +73,7 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
+ {
+ 	struct pstore_private *p = dentry->d_inode->i_private;
  
- /*
-@@ -156,6 +163,9 @@ typedef struct {
- 	unsigned long set_variable;
- 	unsigned long get_next_high_mono_count;
- 	unsigned long reset_system;
-+	unsigned long update_capsule;
-+	unsigned long query_capsule_caps;
-+	unsigned long query_variable_info;
- } efi_runtime_services_t;
+-	p->erase(p->id);
++	p->psi->erase(p->id, p->psi);
  
- typedef efi_status_t efi_get_time_t (efi_time_t *tm, efi_time_cap_t *tc);
-@@ -177,6 +187,17 @@ typedef efi_status_t efi_set_virtual_address_map_t (unsigned long memory_map_siz
- 						unsigned long descriptor_size,
- 						u32 descriptor_version,
- 						efi_memory_desc_t *virtual_map);
-+typedef efi_status_t efi_query_variable_info_t(u32 attr,
-+					       u64 *storage_space,
-+					       u64 *remaining_space,
-+					       u64 *max_variable_size);
-+typedef efi_status_t efi_update_capsule_t(efi_capsule_header_t **capsules,
-+					  unsigned long count,
-+					  unsigned long sg_list);
-+typedef efi_status_t efi_query_capsule_caps_t(efi_capsule_header_t **capsules,
-+					      unsigned long count,
-+					      u64 *max_size,
-+					      int *reset_type);
- 
- /*
-  *  EFI Configuration Table and GUID definitions
-@@ -218,6 +239,13 @@ typedef struct {
- 
- #define EFI_SYSTEM_TABLE_SIGNATURE ((u64)0x5453595320494249ULL)
- 
-+#define EFI_2_30_SYSTEM_TABLE_REVISION  ((2 << 16) | (30))
-+#define EFI_2_20_SYSTEM_TABLE_REVISION  ((2 << 16) | (20))
-+#define EFI_2_10_SYSTEM_TABLE_REVISION  ((2 << 16) | (10))
-+#define EFI_2_00_SYSTEM_TABLE_REVISION  ((2 << 16) | (00))
-+#define EFI_1_10_SYSTEM_TABLE_REVISION  ((1 << 16) | (10))
-+#define EFI_1_02_SYSTEM_TABLE_REVISION  ((1 << 16) | (02))
-+
- typedef struct {
- 	efi_table_hdr_t hdr;
- 	unsigned long fw_vendor;	/* physical addr of CHAR16 vendor string */
-@@ -250,6 +278,7 @@ struct efi_memory_map {
+ 	return simple_unlink(dir, dentry);
+ }
+@@ -175,8 +175,8 @@ int pstore_is_mounted(void)
+  * Set the mtime & ctime to the date that this record was originally stored.
   */
- extern struct efi {
- 	efi_system_table_t *systab;	/* EFI system table */
-+	unsigned int runtime_version;	/* Runtime services version */
- 	unsigned long mps;		/* MPS table */
- 	unsigned long acpi;		/* ACPI table  (IA64 ext 0.71) */
- 	unsigned long acpi20;		/* ACPI table  (ACPI 2.0) */
-@@ -266,6 +295,9 @@ extern struct efi {
- 	efi_get_variable_t *get_variable;
- 	efi_get_next_variable_t *get_next_variable;
- 	efi_set_variable_t *set_variable;
-+	efi_query_variable_info_t *query_variable_info;
-+	efi_update_capsule_t *update_capsule;
-+	efi_query_capsule_caps_t *query_capsule_caps;
- 	efi_get_next_high_mono_count_t *get_next_high_mono_count;
- 	efi_reset_system_t *reset_system;
- 	efi_set_virtual_address_map_t *set_virtual_address_map;
+ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+-			      char *data, size_t size,
+-			      struct timespec time, int (*erase)(u64))
++		  char *data, size_t size, struct timespec time,
++		  struct pstore_info *psi)
+ {
+ 	struct dentry		*root = pstore_sb->s_root;
+ 	struct dentry		*dentry;
+@@ -193,7 +193,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+ 	if (!private)
+ 		goto fail_alloc;
+ 	private->id = id;
+-	private->erase = erase;
++	private->psi = psi;
+ 
+ 	switch (type) {
+ 	case PSTORE_TYPE_DMESG:
+diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
+index 8c9f23e..611c1b3 100644
+--- a/fs/pstore/internal.h
++++ b/fs/pstore/internal.h
+@@ -2,5 +2,5 @@ extern void	pstore_set_kmsg_bytes(int);
+ extern void	pstore_get_records(void);
+ extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
+ 			      char *data, size_t size,
+-			      struct timespec time, int (*erase)(u64));
++			      struct timespec time, struct pstore_info *psi);
+ extern int	pstore_is_mounted(void);
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index f2c3ff2..221c04e 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -94,11 +94,12 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 		memcpy(dst, s1 + s1_start, l1_cpy);
+ 		memcpy(dst + l1_cpy, s2 + s2_start, l2_cpy);
+ 
+-		id = psinfo->write(PSTORE_TYPE_DMESG, hsize + l1_cpy + l2_cpy);
++		id = psinfo->write(PSTORE_TYPE_DMESG, hsize + l1_cpy + l2_cpy,
++				   psinfo);
+ 		if (reason == KMSG_DUMP_OOPS && pstore_is_mounted())
+ 			pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id,
+ 				      psinfo->buf, hsize + l1_cpy + l2_cpy,
+-				      CURRENT_TIME, psinfo->erase);
++				      CURRENT_TIME, psinfo);
+ 		l1 -= l1_cpy;
+ 		l2 -= l2_cpy;
+ 		total += l1_cpy + l2_cpy;
+@@ -166,9 +167,9 @@ void pstore_get_records(void)
+ 	if (rc)
+ 		goto out;
+ 
+-	while ((size = psi->read(&id, &type, &time)) > 0) {
++	while ((size = psi->read(&id, &type, &time, psi)) > 0) {
+ 		if (pstore_mkfile(type, psi->name, id, psi->buf, (size_t)size,
+-				  time, psi->erase))
++				  time, psi))
+ 			failed++;
+ 	}
+ 	psi->close(psi);
+@@ -196,10 +197,10 @@ int pstore_write(enum pstore_type_id type, char *buf, size_t size)
+ 
+ 	mutex_lock(&psinfo->buf_mutex);
+ 	memcpy(psinfo->buf, buf, size);
+-	id = psinfo->write(type, size);
++	id = psinfo->write(type, size, psinfo);
+ 	if (pstore_is_mounted())
+ 		pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id, psinfo->buf,
+-			      size, CURRENT_TIME, psinfo->erase);
++			      size, CURRENT_TIME, psinfo);
+ 	mutex_unlock(&psinfo->buf_mutex);
+ 
+ 	return 0;
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index 2455ef2..b2f1d97 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -38,9 +38,11 @@ struct pstore_info {
+ 	int		(*open)(struct pstore_info *psi);
+ 	int		(*close)(struct pstore_info *psi);
+ 	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
+-			struct timespec *time);
+-	u64		(*write)(enum pstore_type_id type, size_t size);
+-	int		(*erase)(u64 id);
++			struct timespec *time, struct pstore_info *psi);
++	u64		(*write)(enum pstore_type_id type, size_t size,
++			struct pstore_info *psi);
++	int		(*erase)(u64 id, struct pstore_info *psi);
++	void		*data;
+ };
+ 
+ #ifdef CONFIG_PSTORE
 -- 
 1.7.5.2
 
