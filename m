@@ -1,175 +1,412 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757564Ab1FFPdK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 11:33:10 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:43650 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757277Ab1FFPdI (ORCPT
+	id S1757581Ab1FFPe1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 11:34:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37296 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756076Ab1FFPeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 11:33:08 -0400
-Date: Mon, 6 Jun 2011 11:32:14 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org
-Subject: Re: bridge/netfilter: regression in 2.6.39.1
-Message-ID: <20110606153213.GC1000@hmsreliant.think-freely.org>
-References: <4DE93422.3070000@ahsoftware.de>
- <20110606111507.GA1000@hmsreliant.think-freely.org>
- <4DECBEA3.6070408@ahsoftware.de>
- <1307362358.3098.6.camel@edumazet-laptop>
- <4DECCCC0.70905@ahsoftware.de>
- <1307366166.3098.15.camel@edumazet-laptop>
- <4DECD657.9010807@ahsoftware.de>
- <1307370363.3098.37.camel@edumazet-laptop>
+	Mon, 6 Jun 2011 11:34:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=svw2pPXDLwlbK+EY95z7SauGh/zQTyEXck0rBvBu2lJ+TxFGQQu7ARECYLdjHp5y0Q
+         MKPLCsNG51snSRx6tququAzLpjiiUfHjT5myCOnHPAHs3eRCcLIB4dZYjQu9gSLLC+nq
+         wCSliZCdOWHPmoejmQAykUSJm9FEY/Dh8zEw8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1307370363.3098.37.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -1.7 (-)
+From: Hui Zhu <teawater@gmail.com>
+Date: Mon, 6 Jun 2011 23:33:32 +0800
+Message-ID: <BANLkTi=cqG7DFDAvnUVmZq8KyBq6fAcjeg@mail.gmail.com>
+Subject: KGTP example 1: count the function vfs_read running clock and called
+ times of each program with GDB+Python
+To: linux-kernel@vger.kernel.org, gdb@sourceware.org
+Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: multipart/mixed; boundary=0015174753e8cf54d904a50cd594
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 04:26:03PM +0200, Eric Dumazet wrote:
-> From: Alexander Holler <holler@ahsoftware.de>
-> 
-> Le lundi 06 juin 2011 à 15:29 +0200, Alexander Holler a écrit :
-> > > Nice, now please submit a patch with 0972ddb237 as a guideline.
-> > >
-> > > BTW, you could also check other struct dst_ops methods for
-> > > bridge/netfilter:
-> > 
-> > Sorry, but I prefer to submit patches I understand by myself and for 
-> > stuff I know something about. The patch in my first mail was just meant 
-> > as a quick fix (which seemed to work here).
-> > 
-> > So even if I might be able to construct a working patch using commit 
-> > 0972ddb237, I don't think I should do that.
-> 
-> OK, I'll do it for you then, I am surprised you dont understand my
-> review / suggestion.
-> 
-> One patch submitter is supposed to followup and send a new version to
-> take into account reviews/comments, not wait that eventually everybody
-> says "OK, lets take it as is"
-> 
-> 
-> [PATCH] bridge: provide a cow_metrics method for fake_ops
-> 
-> Like in commit 0972ddb237 (provide cow_metrics() methods to blackhole
-> dst_ops), we must provide a cow_metrics for bridges fake_dst_ops as
-> well.
-> 
-> This fixes a regression coming from commits 62fa8a846d7d (net: Implement
-> read-only protection and COW'ing of metrics.) and 33eb9873a28 (bridge:
-> initialize fake_rtable metrics)
-> 
-> ip link set mybridge mtu 1234
-> -->
-> [  136.546243] Pid: 8415, comm: ip Tainted: P 
-> 2.6.39.1-00006-g40545b7 #103 ASUSTeK Computer Inc.         V1Sn 
->         /V1Sn
-> [  136.546256] EIP: 0060:[<00000000>] EFLAGS: 00010202 CPU: 0
-> [  136.546268] EIP is at 0x0
-> [  136.546273] EAX: f14a389c EBX: 000005d4 ECX: f80d32c0 EDX: f80d1da1
-> [  136.546279] ESI: f14a3000 EDI: f255bf10 EBP: f15c3b54 ESP: f15c3b48
-> [  136.546285]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-> [  136.546293] Process ip (pid: 8415, ti=f15c2000 task=f4741f80 
-> task.ti=f15c2000)
-> [  136.546297] Stack:
-> [  136.546301]  f80c658f f14a3000 ffffffed f15c3b64 c12cb9c8 f80d1b80 
-> ffffffa1 f15c3bbc
-> [  136.546315]  c12da347 c12d9c7d 00000000 f7670b00 00000000 f80d1b80 
-> ffffffa6 f15c3be4
-> [  136.546329]  00000004 f14a3000 f255bf20 00000008 f15c3bbc c11d6cae 
-> 00000000 00000000
-> [  136.546343] Call Trace:
-> [  136.546359]  [<f80c658f>] ? br_change_mtu+0x5f/0x80 [bridge]
-> [  136.546372]  [<c12cb9c8>] dev_set_mtu+0x38/0x80
-> [  136.546381]  [<c12da347>] do_setlink+0x1a7/0x860
-> [  136.546390]  [<c12d9c7d>] ? rtnl_fill_ifinfo+0x9bd/0xc70
-> [  136.546400]  [<c11d6cae>] ? nla_parse+0x6e/0xb0
-> [  136.546409]  [<c12db931>] rtnl_newlink+0x361/0x510
-> [  136.546420]  [<c1023240>] ? vmalloc_sync_all+0x100/0x100
-> [  136.546429]  [<c1362762>] ? error_code+0x5a/0x60
-> [  136.546438]  [<c12db5d0>] ? rtnl_configure_link+0x80/0x80
-> [  136.546446]  [<c12db27a>] rtnetlink_rcv_msg+0xfa/0x210
-> [  136.546454]  [<c12db180>] ? __rtnl_unlock+0x20/0x20
-> [  136.546463]  [<c12ee0fe>] netlink_rcv_skb+0x8e/0xb0
-> [  136.546471]  [<c12daf1c>] rtnetlink_rcv+0x1c/0x30
-> [  136.546479]  [<c12edafa>] netlink_unicast+0x23a/0x280
-> [  136.546487]  [<c12ede6b>] netlink_sendmsg+0x26b/0x2f0
-> [  136.546497]  [<c12bb828>] sock_sendmsg+0xc8/0x100
-> [  136.546508]  [<c10adf61>] ? __alloc_pages_nodemask+0xe1/0x750
-> [  136.546517]  [<c11d0602>] ? _copy_from_user+0x42/0x60
-> [  136.546525]  [<c12c5e4c>] ? verify_iovec+0x4c/0xc0
-> [  136.546534]  [<c12bd805>] sys_sendmsg+0x1c5/0x200
-> [  136.546542]  [<c10c2150>] ? __do_fault+0x310/0x410
-> [  136.546549]  [<c10c2c46>] ? do_wp_page+0x1d6/0x6b0
-> [  136.546557]  [<c10c47d1>] ? handle_pte_fault+0xe1/0x720
-> [  136.546565]  [<c12bd1af>] ? sys_getsockname+0x7f/0x90
-> [  136.546574]  [<c10c4ec1>] ? handle_mm_fault+0xb1/0x180
-> [  136.546582]  [<c1023240>] ? vmalloc_sync_all+0x100/0x100
-> [  136.546589]  [<c10233b3>] ? do_page_fault+0x173/0x3d0
-> [  136.546596]  [<c12bd87b>] ? sys_recvmsg+0x3b/0x60
-> [  136.546605]  [<c12bdd83>] sys_socketcall+0x293/0x2d0
-> [  136.546614]  [<c13629d0>] sysenter_do_call+0x12/0x26
-> [  136.546619] Code:  Bad EIP value.
-> [  136.546627] EIP: [<00000000>] 0x0 SS:ESP 0068:f15c3b48
-> [  136.546645] CR2: 0000000000000000
-> [  136.546652] ---[ end trace 6909b560e78934fa ]---
-> 
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> CC: Neil Horman <nhorman@tuxdriver.com>
-> CC: Herbert Xu <herbert@gondor.apana.org.au>
-> ---
-> net/bridge/br_netfilter.c |    6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
-> index 3fa1231..23b43d2 100644
-> --- a/net/bridge/br_netfilter.c
-> +++ b/net/bridge/br_netfilter.c
-> @@ -104,10 +104,16 @@ static void fake_update_pmtu(struct dst_entry *dst, u32 mtu)
->  {
->  }
->  
-> +static u32 *fake_cow_metrics(struct dst_entry *dst, unsigned long old)
-> +{
-> +	return NULL;
-> +}
-> +
->  static struct dst_ops fake_dst_ops = {
->  	.family =		AF_INET,
->  	.protocol =		cpu_to_be16(ETH_P_IP),
->  	.update_pmtu =		fake_update_pmtu,
-> +	.cow_metrics =		fake_cow_metrics,
->  };
->  
->  /*
-> 
-> 
-Not to drag this out further, but since you illustrated the correct way to do
-this with the blackhole_ops test, and this modification now gives us two
-instances of that case, would it perhaps be better to just do this in
-dst_metrics_write_ptr:
+--0015174753e8cf54d904a50cd594
+Content-Type: text/plain; charset=ISO-8859-1
 
-return dst->ops->cow_metrics ? return dst->ops->cow_metrics(dst, p) : NULL;
+Hi,
 
-Then we could eliminate the two functions that do nothing be retun NULL (along
-with their respective call instructions), and save any future users from having
-to remember to include a dummy cow_metrics method if they happen to set the read
-only flag on thier dst_ops?
+In the release note of KGTP
+201100601(https://lkml.org/lkml/2011/6/1/543), I introduce the
+gtpframe_pipe.  It supply to get the tracepoint frame entry when kgtp
+is running.
+I will show a example to count the function vfs_read running clock and
+called times of each program with GDB+Python.
 
-Neil
+Before using the examples, you need to make some preparations.
+1. Make sure your kernel is built by GCC 4.5 or later version.
+Because Kernel is built by -O2, new version GCC generate more debug
+info.
+2. Make sure your kernel support Kprobe because KGTP need it.
+3. Use the GDB 7.3 or later version.  Because old version GDB have a
+lot of bugs of tracepoint and miss some feature that we need in the
+example.  If you use UBUNTU, You can got later version GDB package in
+https://lkml.org/lkml/2011/6/4/65
+4. Make sure your GDB support Python.  To make sure that, you can use
+following command in GDB:
+(gdb) python print("python is OK.\n")
+If GDB output "python is OK.", GDB support Python is OK.
+If not, you need rebuild your GDB with config "--with-python".
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+See https://code.google.com/p/kgtp/wiki/HOWTO#Get_KGTP_through_http to
+get howto get, build and insmod KGTP.
+
+After insmod KGTP module you can set the tracepoint.  The attachment
+"r.source" is the GDB source file for set the tracepoint in the
+address that we need.
+You can let your GDB set the tracepoint with command:
+sudo gdb ./vmlinux -x ./r.source
+Or GDB command:
+source r.source
+To load it.
+After set the tracepoint, you can use GDB command "tstart" and "tstop"
+to start and stop the trace.
+
+Then we can begin to parse the KGTP tracepoint frame entry with
+GDB+Python.  The attachemt "r.py" is the Python script that will do
+it.  You can use the command:
+sudo gdb ./vmlinux -x r.py
+Or GDB command:
+source r.py
+When the parse begin, you can use ctrl-c to get the info like:
+vfs_read:  1146144473124 ns 54981 times
+
+Top 3 of clock is:
+{<unavailable> <repeats 16 times>} 859234925034
+"chrome\000\000\000\000\000\000\000\000\000" 286747105396
+"Xorg", '\000' <repeats 11 times> 87940392
+
+Top 3 of times is:
+"chrome\000\000\000\000\000\000\000\000\000" 35956
+"Xorg", '\000' <repeats 11 times> 7915
+"pulseaudio\000\000\000\000\000" 2406
+
+Top 3 of clock per times is:
+{<unavailable> <repeats 16 times>} 15343480804
+"chrome\000\000\000\000\000\000\000\000\000" 7974944
+"hald", '\000' <repeats 11 times> 462464
+
+Top 3 of real clock is:
+{<unavailable> <repeats 16 times>} 859234925034
+"chrome\000\000\000\000\000\000\000\000\000" 286747105396
+"Xorg", '\000' <repeats 11 times> 87940392
+
+Top 3 of real clock per times is:
+"kscope\000\000\000\000\000\000\000\000\000" 9085
+"GoogleTalkPlugi" 2290
+"udisks-helper-a" 2158
+
+The clock is the vfs_read exec ns.
+The real clock is the vfs_read exec ns that only when the process that
+call vfs_read is running.
+
+
+
+I will introduce the r.source and r.py in following part:
+Following part I will explain r.source:
+     1	list vfs_read
+     2	target remote /sys/kernel/debug/gtp
+This line connect the interface of KGTP.
+     3	trace read_write.c:310
+     4	  commands
+     5	    collect ((struct task_struct *)$current_task)->pid
+     6	    collect $no_self_trace
+     7	  end
+These lines set tracepoint in the begin of function vfs_read.
+Line 5 mean collect current pid of process.
+Line 6 mean this tracepoint set in a code that have process context.
+Don't need trace the current KGTP user space code such as GDB connect
+to the KGTP interface.  It introduce in
+https://code.google.com/p/kgtp/wiki/HOWTO#Special_trace_state_variable_$no_self_trace
+     8	trace read_write.c:331
+     9	  commands
+    10	    collect ((struct task_struct *)$current_task)->pid
+    11	    collect ((struct task_struct *)$current_task)->comm
+    12	    collect $no_self_trace
+    13	  end
+These lines set tracepoint in the end of function vfs_read.  All the
+return of vfs_read will trace by this tracepoint.
+This tracepoint collect other value that need in Python script.
+    14	list schedule
+    15	trace 4247
+    16	  commands
+    17	    collect prev->pid
+    18	    collect next->pid
+    19	  end
+This tracepoint trace in the "schedule" function, we will use it to
+get which process is running on the CPU.
+    20	set circular-trace-buffer on
+This command set the frame circular.  When the frame is full, it will
+auto overwrite the old entry.
+
+
+Following part I will explain r.py:
+     1	#!/usr/bin/python
+     2	
+     3	import signal;
+     4	import gdb;
+gdb is a special lib when use python inside GDB, you can get more
+about it in http://sourceware.org/gdb/current/onlinedocs/gdb/Python.html
+     5	
+     6	real_read_clock = 0;
+     7	read_clock = 0;
+     8	read_num = 0;
+     9	read_comm = {};
+These vals is for record the info from Kernel.
+    10	
+    11	def tfind_entry(num):
+    12		if num < 0:
+    13			tid = gdb.execute("tfind", False, True);
+    14		else:
+    15			tid = gdb.execute("tfind "+str(num), False, True);
+    16		if tid.find(", tracepoint ") < 0:
+    17			return -1;
+    18		tid = tid[tid.find(", tracepoint ") + len(", tracepoint "):];
+    19		return int(tid);
+This function can get the "num" entry and return the tracepoint
+number.  If num < 0, will get the next entry.
+The tracepoint return value can use to make sure which address we arrive.
+If you write a python parse code, you can use this function.
+    20	
+    21	def print_top(comm, index, num):
+    22		for e in comm:
+    23			print e[0], e[1][index];
+    24			num -= 1;
+    25			if num <= 0:
+    26				break;
+    27	
+    28	def sigint_handler(num, e):
+    29		print "vfs_read: ", read_clock, "ns", read_num, "times";
+    30		print "";
+    31		print "Top 3 of clock is:";
+    32		print_top (sorted(read_comm.items(), key=lambda d:d[1][0],
+reverse=True), 0, 3);
+    33		print "";
+    34		print "Top 3 of times is:";
+    35		print_top (sorted(read_comm.items(), key=lambda d:d[1][1],
+reverse=True), 1, 3);
+    36		print "";
+    37		print "Top 3 of clock per times is:";
+    38		print_top (sorted(read_comm.items(), key=lambda d:d[1][2],
+reverse=True), 2, 3);
+    39		print "";
+    40		print "Top 3 of real clock is:";
+    41		print_top (sorted(read_comm.items(), key=lambda d:d[1][3],
+reverse=True), 3, 3);
+    42		print "";
+    43		print "Top 3 of real clock per times is:";
+    44		print_top (sorted(read_comm.items(), key=lambda d:d[1][4],
+reverse=True), 4, 3);
+    45	
+    46		try:
+    47			s = raw_input('Continue? (yes)')
+    48		except:
+    49			s = 'y'
+    50		finally:
+    51			if s[0:1] != 'n' and s[0:1] != 'N':
+    52				return;
+    53		exit(1);
+This function is the handler of ctrl-c.  It output the parse info with
+function print_top.
+    54	
+    55	gdb.execute("set pagination off", True, True);
+This is the first line of parser.
+The line close pagination then it will not affect the parse.  If you
+write yourself parser, suggest add this line too.
+    56	
+    57	#set tracepoint id
+    58	vfs_read_begin = 1;
+    59	vfs_read_end = 2;
+    60	schedule = 3;
+    61	
+    62	signal.signal(signal.SIGINT, sigint_handler);
+    63	signal.siginterrupt(signal.SIGINT, False);
+Setup the ctrl-c handler and set system call restart when it return.
+    64	
+    65	#connect to the gdbframe_pipe
+    66	gdb.execute("list vfs_read");
+    67	gdb.execute("target tfile /sys/kernel/debug/gtpframe_pipe");
+Connect to KGTP interface.
+    68	
+    69	r_list = {};
+    70	
+    71	while 1:
+    72		try:
+    73			tid = tfind_entry(-1);
+    74			if tid < 0:
+    75				raise gdb.error ("Something wrong, drop one entry.");
+Get entry from gtpframe_pipe is special.  Please see
+https://code.google.com/p/kgtp/wiki/HOWTO#Get_the_frame_info_with_GDB
+to get info.
+    76	
+    77			if tid == vfs_read_begin:
+    78				entry = {};
+    79				entry["begin_clock"] = long(gdb.parse_and_eval("$clock"));
+    80				entry["prev_clock"] = entry["begin_clock"];
+    81				entry["real_clock"] = 0;
+    82				pid = long(gdb.parse_and_eval("((struct task_struct
+*)$current_task)->pid"));
+    83				r_list[pid] = entry;
+This the parser of begin of vfs_read.  It will record the entry of a
+pid to the r_list.
+In GDB python you can access special trace state variables with
+function "gdb.parse_and_eval".  This function will return a special
+type that inside GDB.  So need convert it to other type before use it.
+    84			elif tid == schedule:
+    85				pid = long(gdb.parse_and_eval("prev->pid"));
+    86				if pid in r_list:
+    87					clock = long(gdb.parse_and_eval("$clock"));
+    88					r_list[pid]["real_clock"] += clock - r_list[pid]["prev_clock"];
+    89					r_list[pid]["prev_clock"] = clock;
+    90				else:
+    91					pid = long(gdb.parse_and_eval("next->pid"));
+    92					if pid in r_list:
+    93						r_list[pid]["prev_clock"] = long(gdb.parse_and_eval("$clock"));
+This is the parser of schedule.
+When the prev pid or next pid is inside r_list, it will set the
+real_clock inside r_list.
+    94			elif tid == vfs_read_end:
+    95				pid = long(gdb.parse_and_eval("((struct task_struct
+*)$current_task)->pid"));
+    96				if pid not in r_list:
+    97					raise gdb.error ("cannot find vfs_read_begin for vfs_read_end");
+    98	
+    99				clock = long(gdb.parse_and_eval("$clock"));
+   100				r_list[pid]["real_clock"] += clock - r_list[pid]["prev_clock"];
+   101				clock = clock - r_list[pid]["begin_clock"];
+   102	
+   103				read_clock += clock;
+   104				real_read_clock += r_list[pid]["real_clock"];
+   105				read_num += 1;
+   106	
+   107				comm = str(gdb.parse_and_eval("((struct task_struct
+*)$current_task)->comm"));
+   108				if comm in read_comm:
+   109					read_comm[comm][0] += clock;
+   110					read_comm[comm][1] += 1;
+   111					read_comm[comm][2] = read_comm[comm][0] / read_comm[comm][1];
+   112					read_comm[comm][3] += r_list[pid]["real_clock"];
+   113					read_comm[comm][4] = r_list[pid]["real_clock"] / read_comm[comm][1];
+   114				else:
+   115					read_comm[comm] = [clock, 1, clock,
+r_list[pid]["real_clock"], r_list[pid]["real_clock"]];
+   116				del(r_list[pid]);
+This is handler of vfs_read end.  When get the pid inside r_list,
+record it and remove it.
+   117			else:
+   118				raise gdb.error ("Trace id error.");
+   119		except gdb.error, x:
+   120			print("Drop one entry because", x);
+   121		except gdb.MemoryError, x:
+   122			print("Drop one entry because", x);
+This is the except handler, we didn't handle all the except because we
+want handle ctrl-c.
+   123	
+   124		gdb.execute("tfind", False, True);
+Tell KGTP pipe interface that we need the next entry.
+
+This code have a bug.  Because we set circular-trace-buffer on, some
+entry will be overwrite.  If a vfs_read_end is overwrite but
+vfs_read_begin is record in r_list, it will never be removed.  r_list
+will increase too big.
+
+Thanks,
+Hui
+
+--0015174753e8cf54d904a50cd594
+Content-Type: application/octet-stream; name="r.source"
+Content-Disposition: attachment; filename="r.source"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_golj0i1e0
+
+bGlzdCB2ZnNfcmVhZAp0YXJnZXQgcmVtb3RlIC9zeXMva2VybmVsL2RlYnVnL2d0cAp0cmFjZSBy
+ZWFkX3dyaXRlLmM6MzEwCiAgY29tbWFuZHMKICAgIGNvbGxlY3QgKChzdHJ1Y3QgdGFza19zdHJ1
+Y3QgKikkY3VycmVudF90YXNrKS0+cGlkCiAgICBjb2xsZWN0ICRub19zZWxmX3RyYWNlCiAgZW5k
+CnRyYWNlIHJlYWRfd3JpdGUuYzozMzEKICBjb21tYW5kcwogICAgY29sbGVjdCAoKHN0cnVjdCB0
+YXNrX3N0cnVjdCAqKSRjdXJyZW50X3Rhc2spLT5waWQKICAgIGNvbGxlY3QgKChzdHJ1Y3QgdGFz
+a19zdHJ1Y3QgKikkY3VycmVudF90YXNrKS0+Y29tbQogICAgY29sbGVjdCAkbm9fc2VsZl90cmFj
+ZQogIGVuZApzZXQgY2lyY3VsYXItdHJhY2UtYnVmZmVyIG9uCmxpc3Qgc2NoZWR1bGUKdHJhY2Ug
+NDI0NwogIGNvbW1hbmRzCiAgICBjb2xsZWN0IHByZXYtPnBpZAogICAgY29sbGVjdCBuZXh0LT5w
+aWQKICBlbmQKc2V0IGNpcmN1bGFyLXRyYWNlLWJ1ZmZlciBvbgo=
+--0015174753e8cf54d904a50cd594
+Content-Type: text/x-python; charset=US-ASCII; name="r.py"
+Content-Disposition: attachment; filename="r.py"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_golj0ipd1
+
+IyEvdXNyL2Jpbi9weXRob24KCmltcG9ydCBzaWduYWw7CmltcG9ydCBnZGI7CgpyZWFsX3JlYWRf
+Y2xvY2sgPSAwOwpyZWFkX2Nsb2NrID0gMDsKcmVhZF9udW0gPSAwOwpyZWFkX2NvbW0gPSB7fTsK
+CmRlZiB0ZmluZF9lbnRyeShudW0pOgoJaWYgbnVtIDwgMDoKCQl0aWQgPSBnZGIuZXhlY3V0ZSgi
+dGZpbmQiLCBGYWxzZSwgVHJ1ZSk7CgllbHNlOgoJCXRpZCA9IGdkYi5leGVjdXRlKCJ0ZmluZCAi
+K3N0cihudW0pLCBGYWxzZSwgVHJ1ZSk7CglpZiB0aWQuZmluZCgiLCB0cmFjZXBvaW50ICIpIDwg
+MDoKCQlyZXR1cm4gLTE7Cgl0aWQgPSB0aWRbdGlkLmZpbmQoIiwgdHJhY2Vwb2ludCAiKSArIGxl
+bigiLCB0cmFjZXBvaW50ICIpOl07CglyZXR1cm4gaW50KHRpZCk7CgpkZWYgcHJpbnRfdG9wKGNv
+bW0sIGluZGV4LCBudW0pOgoJZm9yIGUgaW4gY29tbToKCQlwcmludCBlWzBdLCBlWzFdW2luZGV4
+XTsKCQludW0gLT0gMTsKCQlpZiBudW0gPD0gMDoKCQkJYnJlYWs7CgpkZWYgc2lnaW50X2hhbmRs
+ZXIobnVtLCBlKToKCXByaW50ICJ2ZnNfcmVhZDogIiwgcmVhZF9jbG9jaywgIm5zIiwgcmVhZF9u
+dW0sICJ0aW1lcyI7CglwcmludCAiIjsKCXByaW50ICJUb3AgMyBvZiBjbG9jayBpczoiOwoJcHJp
+bnRfdG9wIChzb3J0ZWQocmVhZF9jb21tLml0ZW1zKCksIGtleT1sYW1iZGEgZDpkWzFdWzBdLCBy
+ZXZlcnNlPVRydWUpLCAwLCAzKTsKCXByaW50ICIiOwoJcHJpbnQgIlRvcCAzIG9mIHRpbWVzIGlz
+OiI7CglwcmludF90b3AgKHNvcnRlZChyZWFkX2NvbW0uaXRlbXMoKSwga2V5PWxhbWJkYSBkOmRb
+MV1bMV0sIHJldmVyc2U9VHJ1ZSksIDEsIDMpOwoJcHJpbnQgIiI7CglwcmludCAiVG9wIDMgb2Yg
+Y2xvY2sgcGVyIHRpbWVzIGlzOiI7CglwcmludF90b3AgKHNvcnRlZChyZWFkX2NvbW0uaXRlbXMo
+KSwga2V5PWxhbWJkYSBkOmRbMV1bMl0sIHJldmVyc2U9VHJ1ZSksIDIsIDMpOwoJcHJpbnQgIiI7
+CglwcmludCAiVG9wIDMgb2YgcmVhbCBjbG9jayBpczoiOwoJcHJpbnRfdG9wIChzb3J0ZWQocmVh
+ZF9jb21tLml0ZW1zKCksIGtleT1sYW1iZGEgZDpkWzFdWzNdLCByZXZlcnNlPVRydWUpLCAzLCAz
+KTsKCXByaW50ICIiOwoJcHJpbnQgIlRvcCAzIG9mIHJlYWwgY2xvY2sgcGVyIHRpbWVzIGlzOiI7
+CglwcmludF90b3AgKHNvcnRlZChyZWFkX2NvbW0uaXRlbXMoKSwga2V5PWxhbWJkYSBkOmRbMV1b
+NF0sIHJldmVyc2U9VHJ1ZSksIDQsIDMpOwoKCXRyeToKCQlzID0gcmF3X2lucHV0KCdDb250aW51
+ZT8gKHllcyknKQoJZXhjZXB0OgoJCXMgPSAneScKCWZpbmFsbHk6CgkJaWYgc1swOjFdICE9ICdu
+JyBhbmQgc1swOjFdICE9ICdOJzoKCQkJcmV0dXJuOwoJZXhpdCgxKTsKCmdkYi5leGVjdXRlKCJz
+ZXQgcGFnaW5hdGlvbiBvZmYiLCBUcnVlLCBUcnVlKTsKCiNzZXQgdHJhY2Vwb2ludCBpZAp2ZnNf
+cmVhZF9iZWdpbiA9IDE7CnZmc19yZWFkX2VuZCA9IDI7CnNjaGVkdWxlID0gMzsKCnNpZ25hbC5z
+aWduYWwoc2lnbmFsLlNJR0lOVCwgc2lnaW50X2hhbmRsZXIpOwpzaWduYWwuc2lnaW50ZXJydXB0
+KHNpZ25hbC5TSUdJTlQsIEZhbHNlKTsKCiNjb25uZWN0IHRvIHRoZSBnZGJmcmFtZV9waXBlCmdk
+Yi5leGVjdXRlKCJsaXN0IHZmc19yZWFkIik7CmdkYi5leGVjdXRlKCJ0YXJnZXQgdGZpbGUgL3N5
+cy9rZXJuZWwvZGVidWcvZ3RwZnJhbWVfcGlwZSIpOwoKcl9saXN0ID0ge307Cgp3aGlsZSAxOgoJ
+dHJ5OgoJCXRpZCA9IHRmaW5kX2VudHJ5KC0xKTsKCQlpZiB0aWQgPCAwOgoJCQlyYWlzZSBnZGIu
+ZXJyb3IgKCJTb21ldGhpbmcgd3JvbmcsIGRyb3Agb25lIGVudHJ5LiIpOwoKCQlpZiB0aWQgPT0g
+dmZzX3JlYWRfYmVnaW46CgkJCWVudHJ5ID0ge307CgkJCWVudHJ5WyJiZWdpbl9jbG9jayJdID0g
+bG9uZyhnZGIucGFyc2VfYW5kX2V2YWwoIiRjbG9jayIpKTsKCQkJZW50cnlbInByZXZfY2xvY2si
+XSA9IGVudHJ5WyJiZWdpbl9jbG9jayJdOwoJCQllbnRyeVsicmVhbF9jbG9jayJdID0gMDsKCQkJ
+cGlkID0gbG9uZyhnZGIucGFyc2VfYW5kX2V2YWwoIigoc3RydWN0IHRhc2tfc3RydWN0ICopJGN1
+cnJlbnRfdGFzayktPnBpZCIpKTsKCQkJcl9saXN0W3BpZF0gPSBlbnRyeTsKCQllbGlmIHRpZCA9
+PSBzY2hlZHVsZToKCQkJcGlkID0gbG9uZyhnZGIucGFyc2VfYW5kX2V2YWwoInByZXYtPnBpZCIp
+KTsKCQkJaWYgcGlkIGluIHJfbGlzdDoKCQkJCWNsb2NrID0gbG9uZyhnZGIucGFyc2VfYW5kX2V2
+YWwoIiRjbG9jayIpKTsKCQkJCXJfbGlzdFtwaWRdWyJyZWFsX2Nsb2NrIl0gKz0gY2xvY2sgLSBy
+X2xpc3RbcGlkXVsicHJldl9jbG9jayJdOwoJCQkJcl9saXN0W3BpZF1bInByZXZfY2xvY2siXSA9
+IGNsb2NrOwoJCQllbHNlOgoJCQkJcGlkID0gbG9uZyhnZGIucGFyc2VfYW5kX2V2YWwoIm5leHQt
+PnBpZCIpKTsKCQkJCWlmIHBpZCBpbiByX2xpc3Q6CgkJCQkJcl9saXN0W3BpZF1bInByZXZfY2xv
+Y2siXSA9IGxvbmcoZ2RiLnBhcnNlX2FuZF9ldmFsKCIkY2xvY2siKSk7CgkJZWxpZiB0aWQgPT0g
+dmZzX3JlYWRfZW5kOgoJCQlwaWQgPSBsb25nKGdkYi5wYXJzZV9hbmRfZXZhbCgiKChzdHJ1Y3Qg
+dGFza19zdHJ1Y3QgKikkY3VycmVudF90YXNrKS0+cGlkIikpOwoJCQlpZiBwaWQgbm90IGluIHJf
+bGlzdDoKCQkJCXJhaXNlIGdkYi5lcnJvciAoImNhbm5vdCBmaW5kIHZmc19yZWFkX2JlZ2luIGZv
+ciB2ZnNfcmVhZF9lbmQiKTsKCgkJCWNsb2NrID0gbG9uZyhnZGIucGFyc2VfYW5kX2V2YWwoIiRj
+bG9jayIpKTsKCQkJcl9saXN0W3BpZF1bInJlYWxfY2xvY2siXSArPSBjbG9jayAtIHJfbGlzdFtw
+aWRdWyJwcmV2X2Nsb2NrIl07CgkJCWNsb2NrID0gY2xvY2sgLSByX2xpc3RbcGlkXVsiYmVnaW5f
+Y2xvY2siXTsKCgkJCXJlYWRfY2xvY2sgKz0gY2xvY2s7CgkJCXJlYWxfcmVhZF9jbG9jayArPSBy
+X2xpc3RbcGlkXVsicmVhbF9jbG9jayJdOwoJCQlyZWFkX251bSArPSAxOwoKCQkJY29tbSA9IHN0
+cihnZGIucGFyc2VfYW5kX2V2YWwoIigoc3RydWN0IHRhc2tfc3RydWN0ICopJGN1cnJlbnRfdGFz
+ayktPmNvbW0iKSk7CgkJCWlmIGNvbW0gaW4gcmVhZF9jb21tOgoJCQkJcmVhZF9jb21tW2NvbW1d
+WzBdICs9IGNsb2NrOwoJCQkJcmVhZF9jb21tW2NvbW1dWzFdICs9IDE7CgkJCQlyZWFkX2NvbW1b
+Y29tbV1bMl0gPSByZWFkX2NvbW1bY29tbV1bMF0gLyByZWFkX2NvbW1bY29tbV1bMV07CgkJCQly
+ZWFkX2NvbW1bY29tbV1bM10gKz0gcl9saXN0W3BpZF1bInJlYWxfY2xvY2siXTsKCQkJCXJlYWRf
+Y29tbVtjb21tXVs0XSA9IHJfbGlzdFtwaWRdWyJyZWFsX2Nsb2NrIl0gLyByZWFkX2NvbW1bY29t
+bV1bMV07CgkJCWVsc2U6CgkJCQlyZWFkX2NvbW1bY29tbV0gPSBbY2xvY2ssIDEsIGNsb2NrLCBy
+X2xpc3RbcGlkXVsicmVhbF9jbG9jayJdLCByX2xpc3RbcGlkXVsicmVhbF9jbG9jayJdXTsKCQkJ
+ZGVsKHJfbGlzdFtwaWRdKTsKCQllbHNlOgoJCQlyYWlzZSBnZGIuZXJyb3IgKCJUcmFjZSBpZCBl
+cnJvci4iKTsKCWV4Y2VwdCBnZGIuZXJyb3IsIHg6CgkJcHJpbnQoIkRyb3Agb25lIGVudHJ5IGJl
+Y2F1c2UiLCB4KTsKCWV4Y2VwdCBnZGIuTWVtb3J5RXJyb3IsIHg6CgkJcHJpbnQoIkRyb3Agb25l
+IGVudHJ5IGJlY2F1c2UiLCB4KTsgCgoJZ2RiLmV4ZWN1dGUoInRmaW5kIiwgRmFsc2UsIFRydWUp
+Owo=
+--0015174753e8cf54d904a50cd594--
