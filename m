@@ -1,145 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab1FFK0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 06:26:43 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36583 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754134Ab1FFK0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 06:26:42 -0400
-Date: Mon, 6 Jun 2011 11:26:37 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        akpm@linux-foundation.org, Ury Stankevich <urykhy@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous
-Message-ID: <20110606102637.GB5247@suse.de>
-References: <20110531141402.GK19505@random.random>
- <20110531143734.GB13418@barrios-laptop>
- <20110531143830.GC13418@barrios-laptop>
- <20110602182302.GA2802@random.random>
- <20110602202156.GA23486@barrios-laptop>
- <20110602214041.GF2802@random.random>
- <BANLkTim1WjdHWOQp7bMg5pFFKp1SSFoLKw@mail.gmail.com>
- <20110602223201.GH2802@random.random>
- <BANLkTikA+ugFNS95Zs_o6QqG2u4r2g93=Q@mail.gmail.com>
- <20110606101557.GA5247@suse.de>
+	id S1754851Ab1FFK0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 06:26:48 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:47521 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134Ab1FFK0o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 06:26:44 -0400
+Message-ID: <4DECAB5E.8030700@linux.vnet.ibm.com>
+Date: Mon, 06 Jun 2011 15:56:38 +0530
+From: Shubham Goyal <shubham@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110606101557.GA5247@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: LTP list <ltp-list@lists.sourceforge.net>, linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        yanegomi@gmail.com, chrubis@suse.cz, subrata@linux.vnet.ibm.com,
+        vapier@gentoo.org
+Subject: [ANNOUNCE] The Linux Test Project has been released for MAY 2011.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 11:15:57AM +0100, Mel Gorman wrote:
-> On Fri, Jun 03, 2011 at 08:01:44AM +0900, Minchan Kim wrote:
-> > On Fri, Jun 3, 2011 at 7:32 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> > > On Fri, Jun 03, 2011 at 07:23:48AM +0900, Minchan Kim wrote:
-> > >> I mean we have more tail pages than head pages. So I think we are likely to
-> > >> meet tail pages. Of course, compared to all pages(page cache, anon and
-> > >> so on), compound pages would be very small percentage.
-> > >
-> > > Yes that's my point, that being a small percentage it's no big deal to
-> > > break the loop early.
-> > 
-> > Indeed.
-> > 
-> > >
-> > >> > isolated the head and it's useless to insist on more tail pages (at
-> > >> > least for large page size like on x86). Plus we've compaction so
-> > >>
-> > >> I can't understand your point. Could you elaborate it?
-> > >
-> > > What I meant is that if we already isolated the head page of the THP,
-> > > we don't need to try to free the tail pages and breaking the loop
-> > > early, will still give us a chance to free a whole 2m because we
-> > > isolated the head page (it'll involve some work and swapping but if it
-> > > was a compoundtranspage we're ok to break the loop and we're not
-> > > making the logic any worse). Provided the PMD_SIZE is quite large like
-> > > 2/4m...
-> > 
-> > Do you want this? (it's almost pseudo-code)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 7a4469b..9d7609f 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -1017,7 +1017,7 @@ static unsigned long isolate_lru_pages(unsigned
-> > long nr_to_scan,
-> >         for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
-> >                 struct page *page;
-> >                 unsigned long pfn;
-> > -               unsigned long end_pfn;
-> > +               unsigned long start_pfn, end_pfn;
-> >                 unsigned long page_pfn;
-> >                 int zone_id;
-> > 
-> > @@ -1057,9 +1057,9 @@ static unsigned long isolate_lru_pages(unsigned
-> > long nr_to_scan,
-> >                  */
-> >                 zone_id = page_zone_id(page);
-> >                 page_pfn = page_to_pfn(page);
-> > -               pfn = page_pfn & ~((1 << order) - 1);
-> > +               start_pfn = pfn = page_pfn & ~((1 << order) - 1);
-> >                 end_pfn = pfn + (1 << order);
-> > -               for (; pfn < end_pfn; pfn++) {
-> > +               while (pfn < end_pfn) {
-> >                         struct page *cursor_page;
-> > 
-> >                         /* The target page is in the block, ignore it. */
-> > @@ -1086,17 +1086,25 @@ static unsigned long
-> > isolate_lru_pages(unsigned long nr_to_scan,
-> >                                 break;
-> > 
-> >                         if (__isolate_lru_page(cursor_page, mode, file) == 0) {
-> > +                               int isolated_pages;
-> >                                 list_move(&cursor_page->lru, dst);
-> >                                 mem_cgroup_del_lru(cursor_page);
-> > -                               nr_taken += hpage_nr_pages(page);
-> > +                               isolated_pages = hpage_nr_pages(page);
-> > +                               nr_taken += isolated_pages;
-> > +                               /* if we isolated pages enough, let's
-> > break early */
-> > +                               if (nr_taken > end_pfn - start_pfn)
-> > +                                       break;
-> > +                               pfn += isolated_pages;
-> 
-> I think this condition is somewhat unlikely. We are scanning within
-> aligned blocks in this linear scanner. Huge pages are always aligned
-> so the only situation where we'll encounter a hugepage in the middle
-> of this linear scan is when the requested order is larger than a huge
-> page. This is exceptionally rare.
-> 
-> Did I miss something?
-> 
+Hi,
 
-I forgot to mention the "pfn += isolated_pages" but I'm also worried
-about it. It's a performance gain iif we are encountering huge pages
-during the linear scan which I think is rare but also, I think this
-is now skipping pages in the linear scan because we now have
+The Linux Test Project test suite has been released for the month of
+MAY 2011. Please see ltp/INSTALL file carefully, as there has been multiple
+changes for building/installing the test suite after the recent changes in
+Makefile infrastructure.
 
-                for (; pfn < end_pfn; pfn++) {
-			if (isolate page) {
-                               	isolated_pages = hpage_nr_pages(page);
-                                pfn += isolated_pages;
-			}
-		}
+The latest version of the test-suite contains 3000+ tests for the Linux
+OS and can be found at:
+http://ltp.sourceforge.net/,
+Latest happenings in LTP can also be found at:
+http://ltp.sourceforge.net/wiki/,
+http://ltp.sourceforge.net/wikiArchives.php, and,
+IRC: irc.freenode.org #ltp.
 
-hpage_nr_pages is returning 1 for order-0 LRU pages so now the loop is
-effectively 
+Our web site also contains other information such as:
+- A Linux test tools matrix
+- Technical papers
+- How To's on Linux testing
+- Code coverage analysis tool.
 
-		for (; pfn < end_pfn; pfn += 2)
+We would encourage the community to post results to 
+ltp-results@lists.sf.net,
 
-Did you mean
+patches, new tests, bugs or comments/questions to ltp-list@lists.sf.net,
 
-				pfn += isolated_pages - 1;
+http://sourceforge.net/tracker/?func=add&group_id=3382&atid=103382  (for
+New Bug(s)),
+http://sourceforge.net/tracker/?func=add&group_id=3382&atid=303382  (for
+New Patch(s)),
+http://sourceforge.net/tracker/?func=add&group_id=3382&atid=353382  (for
+New Feature Request(s))
 
-?
+**Note: Some pending patches will be checked in for next release.
 
--- 
-Mel Gorman
-SUSE Labs
+Happy testing,
+Regards,
+Shubham
+
