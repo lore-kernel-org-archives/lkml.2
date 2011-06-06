@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537Ab1FFM5z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 08:57:55 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:54211 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab1FFM5x (ORCPT
+	id S1756973Ab1FFNHy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 09:07:54 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60020 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756802Ab1FFNHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 08:57:53 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DECD0B1.4010802@cam.ac.uk>
-Date: Mon, 06 Jun 2011 14:05:53 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Greg Dietsche <gregory.dietsche@cuw.edu>
-CC: perex@perex.cz, tiwai@suse.de, broonie@opensource.wolfsonmicro.com,
-        dp@opensource.wolfsonmicro.com, lrg@ti.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] wm8940: remove unecessary if statement
-References: <1307321274-21858-1-git-send-email-Gregory.Dietsche@cuw.edu> <4DEC9E6B.8030505@cam.ac.uk> <4DECCBFB.2020307@cuw.edu>
-In-Reply-To: <4DECCBFB.2020307@cuw.edu>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Jun 2011 09:07:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=akshayjoshi.com; s=google;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Z1XbLOIxOpY9EAOn4x8kcpqmp2Hz/smzDC4AaMndCW8qRz04zxFAXX5nd5gxeui9f/
+         DMa0i1ntsg8a4WWaWY9z7FIU5RKIxQMqLL5MssZQfhk0r53IRz1mOh4wGC/GhqRSQT/v
+         6bc0G/ZBUT2SHhF64O7EpOCtp5ZzjPFLsTx6I=
+From: Akshay Joshi <me@akshayjoshi.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Akshay Joshi <me@akshayjoshi.com>
+Subject: [PATCH] USBIP: Remove unnecessary whitespace before newline characters.
+Date: Mon,  6 Jun 2011 09:07:31 -0400
+Message-Id: <1307365651-13715-1-git-send-email-me@akshayjoshi.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/11 13:45, Greg Dietsche wrote:
-> Hi Jonathan,
-> 
-> On 06/06/2011 04:31 AM, Jonathan Cameron wrote:
->> On 06/06/11 01:47, Greg Dietsche wrote:
->>   
->>> the code always returns ret regardless, so if(ret) check is unecessary.
->>>      
->> Good point, though please spell check your commit messages.
->> unecessary ->  unnecessary
->>    
-> oops! usually I'm the guy critiquing spelling :)
-The advantage of reviewing patches in an email client that sticks wiggly
-red lines under words it doesn't recognise (I'd never have noticed otherwise!)
->> Also if you want to do this sort of cleanup, please also fix the
->> equivalent in wm8940_resume and wm8940_add_widgets.  Ack is for
->> what is here, plus those if you do them.
->>    
-> I will take a look at these, but it might be a few days. I used coccinelle to create this patch and my semantic patch wasn't 'smart' enough to find them.
->> Just as an aside, there is no earthly point in cc'ing lkml for a
->> simple cleanup like this. Just adds to already huge amount of noise!
->>    
-> Thanks for all of your feedback. In your opinion, what is the best
-> way for someone such as myself to send patches like these? I read in
-> Documentation/SubmittingPatches "Unless you have a reason NOT to do
-> so, CC linux-kernel@vger.kernel.org"
+In this file, in certain places, newline characters in pr_debug() calls had
+whitespace before them. This patch removes this extraneous whitespace.
 
-Fair enough.  The posting to lkml makes more sense now I know it came
-out of coccinelle (I guess with a load of others? - if so convention would be
-to put them all in a series cc'ing the relevant lists / maintainers for individual
-patches in the series - that way everyone knows what is going on).
+Signed-off-by: Akshay Joshi <me@akshayjoshi.com>
+---
+ drivers/staging/usbip/usbip_common.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-If it is an individual patch like this, then use apply common sense. It makes
-no functional changes + is well within a subsystem with it's own active mailing
-list.  It needs to be sent somewhere publicly, but in this case
-I'd say alsa-devel is the right destination.  The only people who are even going
-to read this are the subsystem maintainer, the driver author or the chronically
-bored.
-
-Also I think convention is to have the script somewhere (cover letter to that 
-series perhaps?).  See the other series people have done with coccinelle and
-how they handled this.
-> 
-> Also, for this embarrassing spelling problem... do I submit a new patch? :)
-Probably easiest option, though maintainer might just fix it up for you
-(best not to assume they will though).
-
-Git history is full of typos, so I wouldn't worry too much (a good few
-of them are mine for starters).
-> Thanks,
-> Greg
-> 
-> 
+diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
+index 433a3b6..7182700 100644
+--- a/drivers/staging/usbip/usbip_common.c
++++ b/drivers/staging/usbip/usbip_common.c
+@@ -204,7 +204,7 @@ static void usbip_dump_usb_ctrlrequest(struct usb_ctrlrequest *cmd)
+ 			pr_debug("CLEAR_FEAT\n");
+ 			break;
+ 		case USB_REQ_SET_FEATURE:
+-			pr_debug("SET_FEAT  \n");
++			pr_debug("SET_FEAT\n");
+ 			break;
+ 		case USB_REQ_SET_ADDRESS:
+ 			pr_debug("SET_ADDRRS\n");
+@@ -231,14 +231,14 @@ static void usbip_dump_usb_ctrlrequest(struct usb_ctrlrequest *cmd)
+ 			pr_debug("SYNC_FRAME\n");
+ 			break;
+ 		default:
+-			pr_debug("REQ(%02X) \n", cmd->bRequest);
++			pr_debug("REQ(%02X)\n", cmd->bRequest);
+ 			break;
+ 		}
+ 		usbip_dump_request_type(cmd->bRequestType);
+ 	} else if ((cmd->bRequestType & USB_TYPE_MASK) == USB_TYPE_CLASS) {
+-		pr_debug("CLASS   \n");
++		pr_debug("CLASS\n");
+ 	} else if ((cmd->bRequestType & USB_TYPE_MASK) == USB_TYPE_VENDOR) {
+-		pr_debug("VENDOR  \n");
++		pr_debug("VENDOR\n");
+ 	} else if ((cmd->bRequestType & USB_TYPE_MASK) == USB_TYPE_RESERVED) {
+ 		pr_debug("RESERVED\n");
+ 	}
+-- 
+1.7.4.4
 
