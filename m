@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab1FFDUu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 23:20:50 -0400
+	id S1756059Ab1FFDVM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 23:21:12 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:37789 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756549Ab1FFDUp (ORCPT
+	with ESMTP id S1755690Ab1FFDVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 23:20:45 -0400
+	Sun, 5 Jun 2011 23:21:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=T+0CBWci33U8j8dy5lA8AVc1oPAuzkuypJrGDCcqqr2Fdu1Vvg/H7mwbN4KoKo2JBJ
-         gWY8pHeXJIO+oCfCDKxJJ9fjNgiM9gNFsiljRgwAgIohmwAQFI/o1F8wTtog1cMt/Wly
-         mnyqXxqgszLbiC588/J3RSOuxLtVbyDKQxlK8=
+        b=Yvt4O9QZ3tscoe9lVzDCsPyLu8XJFNYTyUDlOFA5qirI3h5B+Y+QciRSA72hDWlsRG
+         57jelcHlrDBwaITDg4ctDJEKkXclAfZXq/SZJRARQimau3/lKVJHG6cujH1a24n+/qmQ
+         DeQycEj+PQW90rnmHaRA1KOQgpMlO5MVGXz/0=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -26,12 +26,13 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Paul Mundt <lethal@linux-sh.org>, David Miller <davem@davemloft.net>,
         Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: [PATCH 2/4 v2] nohz: Split extended quiescent state handling from nohz switch
-Date: Mon,  6 Jun 2011 05:20:36 +0200
-Message-Id: <1307330437-15372-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/4] nohz: Split extended quiescent state handling from nohz switch
+Date: Mon,  6 Jun 2011 05:20:37 +0200
+Message-Id: <1307330437-15372-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1307329858-14999-4-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1307330437-15372-1-git-send-email-fweisbec@gmail.com>
 References: <1307329858-14999-4-git-send-email-fweisbec@gmail.com>
+ <1307330437-15372-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -51,8 +52,6 @@ quiescent states, then convert every archs to use these.
 Archs that want to switch to extended QS to some custom points
 can do it later by using tick_nohz_stop_sched_tick() and
 rcu_enter_nohz() seperately.
-
-v2: Remove rcu_exit_nohz() from tick_nohz_restart_sched_tick()
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
