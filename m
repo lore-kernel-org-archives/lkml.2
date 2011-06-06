@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab1FFSHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 14:07:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:32875 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757001Ab1FFSH3 (ORCPT
+	id S1757309Ab1FFSHi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 14:07:38 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63244 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756584Ab1FFSHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 14:07:29 -0400
+	Mon, 6 Jun 2011 14:07:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=G7/DtB3p8IjSNwoE/wkhZwgVkYrwUBurQtvIyXDG5QM1PZfImQZrSdamOxWc5dDjFk
-         L6M1ES611DKYGqAb+7CLzj7X8xcxZK5Wnv9XuUWj5IIq7KgwgK2NcgJkrHVaoUWlcbxS
-         /VU0NYBHCH8L0EvxMgfbTcsgO48qSccng99G0=
+        b=dIqDNY9GniMmjMz9MJAZm2knGsw1A+cjGvVc6vT7CRPoNPyJUE06Uvbcornp6CkyHa
+         XvdgMWWu9CX0e6Uly6wfFV+VOzUB5Mm6u93ukPXyoVA6UU13JJDMVe74JeJHb03J/K1l
+         GWoJvNahsBGy980LNIUX/v+hSHIULP1aAku3M=
 From: Mark Einon <mark.einon@gmail.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         o.hartmann@telovital.com, alan@lxorguk.ukuu.org.uk,
         Mark Einon <Mark.Einon@gmail.com>, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH v2 2/7] staging: et131x: et1310_rx.c checkpatch fixes
-Date: Mon,  6 Jun 2011 19:06:59 +0100
-Message-Id: <1307383624-8740-3-git-send-email-mark.einon@gmail.com>
+Subject: [PATCH v2 3/7] staging: et131x: et131x_adapter.h checkpatch fixes
+Date: Mon,  6 Jun 2011 19:07:00 +0100
+Message-Id: <1307383624-8740-4-git-send-email-mark.einon@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1307383624-8740-1-git-send-email-mark.einon@gmail.com>
 References: <1307295320-31716-1-git-send-email-mark.einon@gmail.com>
@@ -33,245 +33,77 @@ From: Mark Einon <Mark.Einon@gmail.com>
 
 Signed-off-by: Mark Einon <mark.einon@gmail.com>
 ---
- drivers/staging/et131x/et1310_rx.c |  193 ++++++++++++++++++------------------
- 1 files changed, 96 insertions(+), 97 deletions(-)
+ drivers/staging/et131x/et1310_mac.c     |    2 +-
+ drivers/staging/et131x/et131x_adapter.h |    8 ++++----
+ drivers/staging/et131x/et131x_netdev.c  |    2 +-
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/et131x/et1310_rx.c b/drivers/staging/et131x/et1310_rx.c
-index fc6bd43..cd72a0b 100644
---- a/drivers/staging/et131x/et1310_rx.c
-+++ b/drivers/staging/et131x/et1310_rx.c
-@@ -88,7 +88,23 @@
- #include "et1310_rx.h"
- #include "et131x.h"
- 
--void nic_return_rfd(struct et131x_adapter *etdev, struct rfd *rfd);
-+static inline u32 bump_fbr(u32 *fbr, u32 limit)
-+{
-+	u32 v = *fbr;
-+	v++;
-+	/* This works for all cases where limit < 1024. The 1023 case
-+	   works because 1023++ is 1024 which means the if condition is not
-+	   taken but the carry of the bit into the wrap bit toggles the wrap
-+	   value correctly */
-+	if ((v & ET_DMA10_MASK) > limit) {
-+		v &= ~ET_DMA10_MASK;
-+		v ^= ET_DMA10_WRAP;
-+	}
-+	/* For the 1023 case */
-+	v &= (ET_DMA10_MASK|ET_DMA10_WRAP);
-+	*fbr = v;
-+	return v;
-+}
- 
- /**
-  * et131x_rx_dma_memory_alloc
-@@ -246,7 +262,7 @@ int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 					 &rx_ring->Fbr1MemPa[i]);
- 
- 		if (!rx_ring->Fbr1MemVa[i]) {
--		dev_err(&adapter->pdev->dev,
-+			dev_err(&adapter->pdev->dev,
- 				"Could not alloc memory\n");
- 			return -ENOMEM;
- 		}
-@@ -491,7 +507,7 @@ void et131x_rx_dma_memory_free(struct et131x_adapter *adapter)
- 	/* Free Packet Status Ring */
- 	if (rx_ring->pPSRingVa) {
- 		pktStatRingSize =
--		    sizeof(struct pkt_stat_desc) * adapter->rx_ring.PsrNumEntries;
-+		  sizeof(struct pkt_stat_desc) * adapter->rx_ring.PsrNumEntries;
- 
- 		pci_free_consistent(adapter->pdev, pktStatRingSize,
- 				    rx_ring->pPSRingVa, rx_ring->pPSRingPa);
-@@ -708,6 +724,82 @@ void SetRxDmaTimer(struct et131x_adapter *etdev)
- }
- 
- /**
-+ * NICReturnRFD - Recycle a RFD and put it back onto the receive list
-+ * @etdev: pointer to our adapter
-+ * @rfd: pointer to the RFD
-+ */
-+void nic_return_rfd(struct et131x_adapter *etdev, struct rfd *rfd)
-+{
-+	struct rx_ring *rx_local = &etdev->rx_ring;
-+	struct rxdma_regs __iomem *rx_dma = &etdev->regs->rxdma;
-+	u16 bi = rfd->bufferindex;
-+	u8 ri = rfd->ringindex;
-+	unsigned long flags;
-+
-+	/* We don't use any of the OOB data besides status. Otherwise, we
-+	 * need to clean up OOB data
-+	 */
-+	if (
-+#ifdef USE_FBR0
-+	    (ri == 0 && bi < rx_local->Fbr0NumEntries) ||
-+#endif
-+	    (ri == 1 && bi < rx_local->Fbr1NumEntries)) {
-+		spin_lock_irqsave(&etdev->FbrLock, flags);
-+
-+		if (ri == 1) {
-+			struct fbr_desc *next =
-+			    (struct fbr_desc *) (rx_local->pFbr1RingVa) +
-+					 INDEX10(rx_local->local_Fbr1_full);
-+
-+			/* Handle the Free Buffer Ring advancement here. Write
-+			 * the PA / Buffer Index for the returned buffer into
-+			 * the oldest (next to be freed)FBR entry
-+			 */
-+			next->addr_hi = rx_local->fbr[1]->bus_high[bi];
-+			next->addr_lo = rx_local->fbr[1]->bus_low[bi];
-+			next->word2 = bi;
-+
-+			writel(bump_fbr(&rx_local->local_Fbr1_full,
-+				rx_local->Fbr1NumEntries - 1),
-+				&rx_dma->fbr1_full_offset);
-+		}
-+#ifdef USE_FBR0
-+		else {
-+			struct fbr_desc *next = (struct fbr_desc *)
-+				rx_local->pFbr0RingVa +
-+					INDEX10(rx_local->local_Fbr0_full);
-+
-+			/* Handle the Free Buffer Ring advancement here. Write
-+			 * the PA / Buffer Index for the returned buffer into
-+			 * the oldest (next to be freed) FBR entry
-+			 */
-+			next->addr_hi = rx_local->fbr[0]->bus_high[bi];
-+			next->addr_lo = rx_local->fbr[0]->bus_low[bi];
-+			next->word2 = bi;
-+
-+			writel(bump_fbr(&rx_local->local_Fbr0_full,
-+					rx_local->Fbr0NumEntries - 1),
-+			       &rx_dma->fbr0_full_offset);
-+		}
-+#endif
-+		spin_unlock_irqrestore(&etdev->FbrLock, flags);
-+	} else {
-+		dev_err(&etdev->pdev->dev,
-+			  "NICReturnRFD illegal Buffer Index returned\n");
-+	}
-+
-+	/* The processing on this RFD is done, so put it back on the tail of
-+	 * our list
-+	 */
-+	spin_lock_irqsave(&etdev->rcv_lock, flags);
-+	list_add_tail(&rfd->list_node, &rx_local->RecvList);
-+	rx_local->nReadyRecv++;
-+	spin_unlock_irqrestore(&etdev->rcv_lock, flags);
-+
-+	WARN_ON(rx_local->nReadyRecv > rx_local->NumRfd);
-+}
-+
-+/**
-  * et131x_rx_dma_disable - Stop of Rx_DMA on the ET1310
-  * @etdev: pointer to our adapter structure
+diff --git a/drivers/staging/et131x/et1310_mac.c b/drivers/staging/et131x/et1310_mac.c
+index c634e35..1425af2 100644
+--- a/drivers/staging/et131x/et1310_mac.c
++++ b/drivers/staging/et131x/et1310_mac.c
+@@ -452,7 +452,7 @@ void ConfigFlowControl(struct et131x_adapter *etdev)
   */
-@@ -776,7 +868,7 @@ void et131x_rx_dma_enable(struct et131x_adapter *etdev)
-  * the packet to it, puts the RFD in the RecvPendList, and also returns
-  * the pointer to the RFD.
-  */
--struct rfd * nic_rx_pkts(struct et131x_adapter *etdev)
-+struct rfd *nic_rx_pkts(struct et131x_adapter *etdev)
+ void UpdateMacStatHostCounters(struct et131x_adapter *etdev)
  {
- 	struct rx_ring *rx_local = &etdev->rx_ring;
- 	struct rx_status_block *status;
-@@ -1059,96 +1151,3 @@ void et131x_handle_recv_interrupt(struct et131x_adapter *etdev)
- 		etdev->rx_ring.UnfinishedReceives = false;
- }
+-	struct _ce_stats_t *stats = &etdev->Stats;
++	struct ce_stats_t *stats = &etdev->Stats;
+ 	struct macstat_regs __iomem *macstat =
+ 		&etdev->regs->macstat;
  
--static inline u32 bump_fbr(u32 *fbr, u32 limit)
--{
--	u32 v = *fbr;
--	v++;
--	/* This works for all cases where limit < 1024. The 1023 case
--	   works because 1023++ is 1024 which means the if condition is not
--	   taken but the carry of the bit into the wrap bit toggles the wrap
--	   value correctly */
--	if ((v & ET_DMA10_MASK) > limit) {
--		v &= ~ET_DMA10_MASK;
--		v ^= ET_DMA10_WRAP;
--	}
--	/* For the 1023 case */
--	v &= (ET_DMA10_MASK|ET_DMA10_WRAP);
--	*fbr = v;
--	return v;
--}
--
--/**
-- * NICReturnRFD - Recycle a RFD and put it back onto the receive list
-- * @etdev: pointer to our adapter
-- * @rfd: pointer to the RFD
-- */
--void nic_return_rfd(struct et131x_adapter *etdev, struct rfd *rfd)
--{
--	struct rx_ring *rx_local = &etdev->rx_ring;
--	struct rxdma_regs __iomem *rx_dma = &etdev->regs->rxdma;
--	u16 bi = rfd->bufferindex;
--	u8 ri = rfd->ringindex;
--	unsigned long flags;
--
--	/* We don't use any of the OOB data besides status. Otherwise, we
--	 * need to clean up OOB data
--	 */
--	if (
--#ifdef USE_FBR0
--	    (ri == 0 && bi < rx_local->Fbr0NumEntries) ||
--#endif
--	    (ri == 1 && bi < rx_local->Fbr1NumEntries)) {
--		spin_lock_irqsave(&etdev->FbrLock, flags);
--
--		if (ri == 1) {
--			struct fbr_desc *next =
--			    (struct fbr_desc *) (rx_local->pFbr1RingVa) +
--					 INDEX10(rx_local->local_Fbr1_full);
--
--			/* Handle the Free Buffer Ring advancement here. Write
--			 * the PA / Buffer Index for the returned buffer into
--			 * the oldest (next to be freed)FBR entry
--			 */
--			next->addr_hi = rx_local->fbr[1]->bus_high[bi];
--			next->addr_lo = rx_local->fbr[1]->bus_low[bi];
--			next->word2 = bi;
--
--			writel(bump_fbr(&rx_local->local_Fbr1_full,
--				rx_local->Fbr1NumEntries - 1),
--				&rx_dma->fbr1_full_offset);
--		}
--#ifdef USE_FBR0
--		else {
--			struct fbr_desc *next = (struct fbr_desc *)
--				rx_local->pFbr0RingVa +
--					INDEX10(rx_local->local_Fbr0_full);
--
--			/* Handle the Free Buffer Ring advancement here. Write
--			 * the PA / Buffer Index for the returned buffer into
--			 * the oldest (next to be freed) FBR entry
--			 */
--			next->addr_hi = rx_local->fbr[0]->bus_high[bi];
--			next->addr_lo = rx_local->fbr[0]->bus_low[bi];
--			next->word2 = bi;
--
--			writel(bump_fbr(&rx_local->local_Fbr0_full,
--					rx_local->Fbr0NumEntries - 1),
--			       &rx_dma->fbr0_full_offset);
--		}
--#endif
--		spin_unlock_irqrestore(&etdev->FbrLock, flags);
--	} else {
--		dev_err(&etdev->pdev->dev,
--			  "NICReturnRFD illegal Buffer Index returned\n");
--	}
--
--	/* The processing on this RFD is done, so put it back on the tail of
--	 * our list
--	 */
--	spin_lock_irqsave(&etdev->rcv_lock, flags);
--	list_add_tail(&rfd->list_node, &rx_local->RecvList);
--	rx_local->nReadyRecv++;
--	spin_unlock_irqrestore(&etdev->rcv_lock, flags);
--
--	WARN_ON(rx_local->nReadyRecv > rx_local->NumRfd);
--}
+diff --git a/drivers/staging/et131x/et131x_adapter.h b/drivers/staging/et131x/et131x_adapter.h
+index c9a119e..87905e7 100644
+--- a/drivers/staging/et131x/et131x_adapter.h
++++ b/drivers/staging/et131x/et131x_adapter.h
+@@ -67,7 +67,7 @@
+  * Do not change these values: if changed, then change also in respective
+  * TXdma and Rxdma engines
+  */
+-#define NUM_DESC_PER_RING_TX         512	/* TX Do not change these values */
++#define NUM_DESC_PER_RING_TX         512    /* TX Do not change these values */
+ #define NUM_TCB                      64
+ 
+ /*
+@@ -98,7 +98,7 @@ struct rfd {
+ #define FLOW_NONE	3
+ 
+ /* Struct to define some device statistics */
+-typedef struct _ce_stats_t {
++struct ce_stats_t {
+ 	/* Link Input/Output stats */
+ 	uint64_t ipackets;	/* # of in packets */
+ 	uint64_t opackets;	/* # of out packets */
+@@ -143,7 +143,7 @@ typedef struct _ce_stats_t {
+ 
+ 	u32 SynchrounousIterations;
+ 	u32 InterruptStatus;
+-} CE_STATS_t, *PCE_STATS_t;
++};
+ 
+ 
+ /* The private adapter structure */
+@@ -239,7 +239,7 @@ struct et131x_adapter {
+ 	u8 ReplicaPhyLoopbkPF;	/* Replica Enable Pass/Fail */
+ 
+ 	/* Stats */
+-	CE_STATS_t Stats;
++	struct ce_stats_t Stats;
+ 
+ 	struct net_device_stats net_stats;
+ 	struct net_device_stats net_stats_prev;
+diff --git a/drivers/staging/et131x/et131x_netdev.c b/drivers/staging/et131x/et131x_netdev.c
+index b25bae2..5f6522c 100644
+--- a/drivers/staging/et131x/et131x_netdev.c
++++ b/drivers/staging/et131x/et131x_netdev.c
+@@ -161,7 +161,7 @@ struct net_device_stats *et131x_stats(struct net_device *netdev)
+ {
+ 	struct et131x_adapter *adapter = netdev_priv(netdev);
+ 	struct net_device_stats *stats = &adapter->net_stats;
+-	CE_STATS_t *devstat = &adapter->Stats;
++	struct ce_stats_t *devstat = &adapter->Stats;
+ 
+ 	stats->rx_packets = devstat->ipackets;
+ 	stats->tx_packets = devstat->opackets;
 -- 
 1.7.4.4
 
