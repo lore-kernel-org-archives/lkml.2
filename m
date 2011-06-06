@@ -1,208 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab1FFNQN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 09:16:13 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55303 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756763Ab1FFNQK (ORCPT
+	id S1757145Ab1FFNRI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 09:17:08 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41874 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048Ab1FFNRF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 09:16:10 -0400
+	Mon, 6 Jun 2011 09:17:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ghy4gasDX8PReblAD06hFrLNgHlhGN1DkR7fKh5H7dhFAxsafdpkgM9ws/jUi5rOGe
-         DL0O1aB425ZCCt30aQODLmMRVLm1ctJQVjhYX1KR7Q6btlI1fIc2/jwPYCXcrTWtJsQf
-         gLaJaLAurMnb8fyZ7mDmCD+8JA6zxGejzDDp4=
-Subject: Re: bridge/netfilter: regression in 2.6.39.1
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org
-In-Reply-To: <4DECCCC0.70905@ahsoftware.de>
-References: <4DE93422.3070000@ahsoftware.de>
-	 <20110606111507.GA1000@hmsreliant.think-freely.org>
-	 <4DECBEA3.6070408@ahsoftware.de> <1307362358.3098.6.camel@edumazet-laptop>
-	 <4DECCCC0.70905@ahsoftware.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 15:16:06 +0200
-Message-ID: <1307366166.3098.15.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MAcT7TvHr+o91BHD3Dt+cIpjYEAyV8va2jhOS+RK0Y04i3MX4i+Xii1Yxo5PXK0cCC
+         Dg2M6MIZa8QmpnkjDa9rZLBeLzbNsTIJx4MAs3e+IQZ84TOPlSW6H6WI3RzBxp3gbjLC
+         2Wj19+n6dm2lrlI/9lMBBukQrAy2ZgyYvreSI=
+MIME-Version: 1.0
+In-Reply-To: <m31v052nle.fsf@pullcord.laptop.org>
+References: <1305128885-21275-1-git-send-email-per.forlin@linaro.org>
+	<1305128885-21275-2-git-send-email-per.forlin@linaro.org>
+	<m31v052nle.fsf@pullcord.laptop.org>
+Date: Mon, 6 Jun 2011 15:17:05 +0200
+Message-ID: <BANLkTincsU5=RvrA91Vy3bpSyGfzCvfF-A@mail.gmail.com>
+Subject: Re: [PATCH v5] sdio: optimized SDIO IRQ handling for single irq
+From: Daniel Mack <zonque@gmail.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Per Forlin <per.forlin@linaro.org>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org,
+        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Dan Williams <dcbw@redhat.com>, libertas-dev@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 06 juin 2011 Ã  14:49 +0200, Alexander Holler a Ã©crit :
-> Am 06.06.2011 14:12, schrieb Eric Dumazet:
-> > Le lundi 06 juin 2011 Ã  13:48 +0200, Alexander Holler a Ã©crit :
-> >> Am 06.06.2011 13:15, schrieb Neil Horman:
-> >>> On Fri, Jun 03, 2011 at 09:21:06PM +0200, Alexander Holler wrote:
-> >>>> Hello,
-> >>>>
-> >>>> I'm getting a oops in the bridge code in br_change_mtu() with
-> >>>> 2.6.39.1. The patch below seems to fix that.
-> >>>>
-> >>>> I'm not sure about the usage of dst_cow_metrics_generic() in
-> >>>> fake_dst_ops, but after having a quick look at it seems to be ok to
-> >>>> use that here.
-> >>>>
-> >>>> Regards,
-> >>>>
-> >>>> Alexander
-> >>>>
-> >>> How did the flags of the dst entry on which we're callnig dst_entry_write_ptr
-> >>> wind up getting the  READ_ONLY flag set on it?  I don't see how we'er falling
-> >>> into that clause in which we call cow_metrics when we call dst_metric_set.  It
-> >>> seems like that flag is set erroneously.  perhaps we should just update
-> >>> fake_rtable.dst to have the correct flags?
-> >>> Neil
-> >>
-> >> It is set by that change:
-> >>
-> >> --------
-> >> @@ -124,7 +128,7 @@ void br_netfilter_rtable_init(struct net_bridge *br)
-> >>    	atomic_set(&rt->dst.__refcnt, 1);
-> >>    	rt->dst.dev = br->dev;
-> >>    	rt->dst.path =&rt->dst;
-> >> -	dst_metric_set(&rt->dst, RTAX_MTU, 1500);
-> >> +	dst_init_metrics(&rt->dst, br_dst_default_metrics, true);
-> >>    	rt->dst.flags	= DST_NOXFRM;
-> >>    	rt->dst.ops =&fake_dst_ops;
-> >>    }
-> >> --------
-> >>
-> >> The true in dst_init_metrics() is responsible for that flag.
-> >>
-> >
-> > You are aware this change fixed an oops ?
-> 
-> No, I'm not aware of this. I know almost nothing about what all that 
-> stuff is doing. For me that change above just introduced an oops through 
-> an immediate NULL pointer dereference in br_change_mtu().
-> 
-> > read_only in this context means : In case this must be written, we make
-> > a COW first
-> > (allocate a piece of memory, copy the source in it before applying any
-> > change)
-> >
-> > It would be nice you send us the stack trace, so that we can have a clue
-> > of whats going on.
-> 
-> Here is the text as found in my first mail:
-> ----
-> Commit 42923465fb8d025a2b5153f2e7ab1e6e1058bf00 does here what it
-> should prevent, it introduces NULL a dereference.
-> 
+On Wed, May 11, 2011 at 6:45 PM, Chris Ball <cjb@laptop.org> wrote:
+> Hi Per,
+>
+> On Wed, May 11 2011, Per Forlin wrote:
+>> From: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+>>
+>> If there is only 1 function interrupt registered it is possible to
+>> improve performance by directly calling the irq handler
+>> and avoiding the overhead of reading the CCCR registers.
+>>
+>> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+>> Acked-by: Ulf Hansson <ulf.hansson@stericsson.com>
+>> Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+>> ---
+>>  drivers/mmc/core/sdio_irq.c |   33 ++++++++++++++++++++++++++++++++-
+>>  include/linux/mmc/card.h    |    1 +
+>>  2 files changed, 33 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
+>> index bb192f9..a0890ac 100644
+>> --- a/drivers/mmc/core/sdio_irq.c
+>> +++ b/drivers/mmc/core/sdio_irq.c
+>> @@ -31,6 +31,17 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
+>>  {
+>>       int i, ret, count;
+>>       unsigned char pending;
+>> +     struct sdio_func *func;
+>> +
+>> +     /*
+>> +      * Optimization, if there is only 1 function interrupt registered
+>> +      * call irq handler directly
+>> +      */
+>> +     func = card->sdio_single_irq;
+>> +     if (func) {
+>> +             func->irq_handler(func);
+>> +             return 1;
+>> +     }
+>>
+>>       ret = mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_INTx, 0, &pending);
+>>       if (ret) {
+>> @@ -42,7 +53,7 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
+>>       count = 0;
+>>       for (i = 1; i <= 7; i++) {
+>>               if (pending & (1 << i)) {
+>> -                     struct sdio_func *func = card->sdio_func[i - 1];
+>> +                     func = card->sdio_func[i - 1];
+>>                       if (!func) {
+>>                               printk(KERN_WARNING "%s: pending IRQ for "
+>>                                       "non-existant function\n",
+>> @@ -186,6 +197,24 @@ static int sdio_card_irq_put(struct mmc_card *card)
+>>       return 0;
+>>  }
+>>
+>> +/* If there is only 1 function registered set sdio_single_irq */
+>> +static void sdio_single_irq_set(struct mmc_card *card)
+>> +{
+>> +     struct sdio_func *func;
+>> +     int i;
+>> +
+>> +     card->sdio_single_irq = NULL;
+>> +     if ((card->host->caps & MMC_CAP_SDIO_IRQ) &&
+>> +         card->host->sdio_irqs == 1)
+>> +             for (i = 0; i < card->sdio_funcs; i++) {
+>> +                    func = card->sdio_func[i];
+>> +                    if (func && func->irq_handler) {
+>> +                            card->sdio_single_irq = func;
+>> +                            break;
+>> +                    }
+>> +            }
+>> +}
+>> +
+>>  /**
+>>   *   sdio_claim_irq - claim the IRQ for a SDIO function
+>>   *   @func: SDIO function
+>> @@ -227,6 +256,7 @@ int sdio_claim_irq(struct sdio_func *func, sdio_irq_handler_t *handler)
+>>       ret = sdio_card_irq_get(func->card);
+>>       if (ret)
+>>               func->irq_handler = NULL;
+>> +     sdio_single_irq_set(func->card);
+>>
+>>       return ret;
+>>  }
+>> @@ -251,6 +281,7 @@ int sdio_release_irq(struct sdio_func *func)
+>>       if (func->irq_handler) {
+>>               func->irq_handler = NULL;
+>>               sdio_card_irq_put(func->card);
+>> +             sdio_single_irq_set(func->card);
+>>       }
+>>
+>>       ret = mmc_io_rw_direct(func->card, 0, 0, SDIO_CCCR_IENx, 0, &reg);
+>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+>> index d8dffc9..4910dec 100644
+>> --- a/include/linux/mmc/card.h
+>> +++ b/include/linux/mmc/card.h
+>> @@ -191,6 +191,7 @@ struct mmc_card {
+>>       struct sdio_cccr        cccr;           /* common card info */
+>>       struct sdio_cis         cis;            /* common tuple info */
+>>       struct sdio_func        *sdio_func[SDIO_MAX_FUNCS]; /* SDIO functions (devices) */
+>> +     struct sdio_func        *sdio_single_irq; /* SDIO function when only one IRQ active */
+>>       unsigned                num_info;       /* number of info strings */
+>>       const char              **info;         /* info strings */
+>>       struct sdio_func_tuple  *tuples;        /* unknown common tuples */
+>
+> Thanks, looks good now -- pushed to mmc-next for .40.
 
-Hmm, this commit uncovers a previous bug, introduced in commit
-62fa8a846d7d.
+This patch breaks libertas over SDIO, as the interrupt handler of that
+driver is now called even though the hardware didn't signal any
+interrupt condition. This is a problem for at least two reasons in
+this case:
 
-> The above commit uses dst_init_metrics() which sets the metrics as
-> read only. As result br_change_mtu() dies in dst_metric_set()
-> which calls dst_metrics_write_ptr() which calls
-> dst->ops->cow_metrics() if the metrics are read only.
-> 
-> I don't have a system with 2.6.39.1 or 3.0-rcN ready which writes an 
-> oops to somewhere else than the screen. Just set up a bridge and change 
-> the MTU for the IF, that will trigger the oops.
-> ----
-> 
-> Here is the oops:
-> 
-> ----
-> [  136.546023] BUG: unable to handle kernel NULL pointer dereference at 
->    (null)
-> [  136.546038] IP: [<  (null)>]   (null)
-> [  136.546046] *pde = 00000000
-> [  136.546052] Oops: 0000 [#1] SMP
-> [  136.546059] last sysfs file: /sys/devices/virtual/net/mybridge/uevent
-> [  136.546066] Modules linked in: sit tunnel4 tun iwlagn sch_sfq bridge 
-> stp llc nfs lockd auth_rpcgss nfs_acl sunrpc ipt_LOG xt_recent xt_state 
-> iptable_filter iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 
-> xt_addrtype xt_dscp xt_iprange xt_DSCP xt_set ip_set nfnetlink ip6t_LOG 
-> xt_limit ip6table_filter xt_string xt_owner xt_multiport xt_hashlimit 
-> xt_conntrack xt_NFQUEUE xt_mark xt_connmark nf_conntrack ip6_tables 
-> snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss 
-> snd_mixer_oss uinput ipv6 dm_mod nvidiafb fb_ddc i2c_algo_bit vgastate 
-> nvidia(P) arc4 uvcvideo videodev ecb snd_hda_codec_realtek iwl4965 
-> snd_hda_intel iwl_legacy snd_hda_codec uhci_hcd firewire_ohci mac80211 
-> sdhci_pci snd_hwdep snd_pcm sdhci ehci_hcd intel_agp firewire_core 
-> cfg80211 snd_timer asus_laptop snd e1000e usbcore sparse_keymap rfkill 
-> tpm_infineon crc_itu_t intel_gtt mmc_core iTCO_wdt tpm_tis ata_piix 
-> agpgart tpm video soundcore sg tpm_bios joydev snd_page_alloc [last 
-> unloaded: microcode]
-> [  136.546235]
-> [  136.546243] Pid: 8415, comm: ip Tainted: P 
-> 2.6.39.1-00006-g40545b7 #103 ASUSTeK Computer Inc.         V1Sn 
->         /V1Sn
-> [  136.546256] EIP: 0060:[<00000000>] EFLAGS: 00010202 CPU: 0
-> [  136.546268] EIP is at 0x0
-> [  136.546273] EAX: f14a389c EBX: 000005d4 ECX: f80d32c0 EDX: f80d1da1
-> [  136.546279] ESI: f14a3000 EDI: f255bf10 EBP: f15c3b54 ESP: f15c3b48
-> [  136.546285]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-> [  136.546293] Process ip (pid: 8415, ti=f15c2000 task=f4741f80 
-> task.ti=f15c2000)
-> [  136.546297] Stack:
-> [  136.546301]  f80c658f f14a3000 ffffffed f15c3b64 c12cb9c8 f80d1b80 
-> ffffffa1 f15c3bbc
-> [  136.546315]  c12da347 c12d9c7d 00000000 f7670b00 00000000 f80d1b80 
-> ffffffa6 f15c3be4
-> [  136.546329]  00000004 f14a3000 f255bf20 00000008 f15c3bbc c11d6cae 
-> 00000000 00000000
-> [  136.546343] Call Trace:
-> [  136.546359]  [<f80c658f>] ? br_change_mtu+0x5f/0x80 [bridge]
-> [  136.546372]  [<c12cb9c8>] dev_set_mtu+0x38/0x80
-> [  136.546381]  [<c12da347>] do_setlink+0x1a7/0x860
-> [  136.546390]  [<c12d9c7d>] ? rtnl_fill_ifinfo+0x9bd/0xc70
-> [  136.546400]  [<c11d6cae>] ? nla_parse+0x6e/0xb0
-> [  136.546409]  [<c12db931>] rtnl_newlink+0x361/0x510
-> [  136.546420]  [<c1023240>] ? vmalloc_sync_all+0x100/0x100
-> [  136.546429]  [<c1362762>] ? error_code+0x5a/0x60
-> [  136.546438]  [<c12db5d0>] ? rtnl_configure_link+0x80/0x80
-> [  136.546446]  [<c12db27a>] rtnetlink_rcv_msg+0xfa/0x210
-> [  136.546454]  [<c12db180>] ? __rtnl_unlock+0x20/0x20
-> [  136.546463]  [<c12ee0fe>] netlink_rcv_skb+0x8e/0xb0
-> [  136.546471]  [<c12daf1c>] rtnetlink_rcv+0x1c/0x30
-> [  136.546479]  [<c12edafa>] netlink_unicast+0x23a/0x280
-> [  136.546487]  [<c12ede6b>] netlink_sendmsg+0x26b/0x2f0
-> [  136.546497]  [<c12bb828>] sock_sendmsg+0xc8/0x100
-> [  136.546508]  [<c10adf61>] ? __alloc_pages_nodemask+0xe1/0x750
-> [  136.546517]  [<c11d0602>] ? _copy_from_user+0x42/0x60
-> [  136.546525]  [<c12c5e4c>] ? verify_iovec+0x4c/0xc0
-> [  136.546534]  [<c12bd805>] sys_sendmsg+0x1c5/0x200
-> [  136.546542]  [<c10c2150>] ? __do_fault+0x310/0x410
-> [  136.546549]  [<c10c2c46>] ? do_wp_page+0x1d6/0x6b0
-> [  136.546557]  [<c10c47d1>] ? handle_pte_fault+0xe1/0x720
-> [  136.546565]  [<c12bd1af>] ? sys_getsockname+0x7f/0x90
-> [  136.546574]  [<c10c4ec1>] ? handle_mm_fault+0xb1/0x180
-> [  136.546582]  [<c1023240>] ? vmalloc_sync_all+0x100/0x100
-> [  136.546589]  [<c10233b3>] ? do_page_fault+0x173/0x3d0
-> [  136.546596]  [<c12bd87b>] ? sys_recvmsg+0x3b/0x60
-> [  136.546605]  [<c12bdd83>] sys_socketcall+0x293/0x2d0
-> [  136.546614]  [<c13629d0>] sysenter_do_call+0x12/0x26
-> [  136.546619] Code:  Bad EIP value.
-> [  136.546627] EIP: [<00000000>] 0x0 SS:ESP 0068:f15c3b48
-> [  136.546645] CR2: 0000000000000000
-> [  136.546652] ---[ end trace 6909b560e78934fa ]---
-> ----
-> 
-> And if you want the oops on your machine (uisng 2.6.39.1 or 3.0-rcN):
-> 
-> ----
-> brctl addbr mybridge
-> ip link set mybridge mtu 1234
-> oops
-> ----
+a) the libertas code is currently structured in a way that it calls
+sdio_claim_irq() before everything is fully set up (which wasn't a
+problem so far as the hardware has an own register to mask
+interrupts). That results in a kernel Ooops as card->priv == NULL.
 
-Nice, now please submit a patch with 0972ddb237 as a guideline.
-
-BTW, you could also check other struct dst_ops methods for
-bridge/netfilter:
-
-- What about ADVMSS or things like that, see commit 214f45c9
+b) the libertas interrupt handler assumes that a received callback to
+its interrupt handler signals activity per se
+("card->priv->activty_detected = 1").
 
 
+I have a patch ready for libertas that works around the first problem,
+but I'm unsure if that's not fixing the wrong end. What the driver
+really should do is poll the card's CCCR register to find out if there
+was any interrupt at all and bail if that's not the case, but then
+we're back to the implementation without this patch.
 
+The other option is to revert the patch again.
+
+Any suggestions?
+
+Daniel
