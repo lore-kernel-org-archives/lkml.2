@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab1FFUuG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 16:50:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1648 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757302Ab1FFUuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 16:50:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,327,1304319600"; 
-   d="scan'208";a="10224425"
-Date: Mon, 6 Jun 2011 22:50:00 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Pavan Savoy <pavan_savoy@sify.com>
-Cc: Waldemar.Rymarkiewicz@tieto.com, arnd@arndb.de, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hthebaud@insidefr.com,
-        matti.j.aaltonen@nokia.com, alan@lxorguk.ukuu.org.uk,
-        Sebastian.Chlad@tieto.com
-Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
-Message-ID: <20110606205000.GB2880@sortiz-mobl>
-References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
- <20110325142648.GC3879@sortiz-mobl>
- <99B09243E1A5DA4898CDD8B7001114481085E2375D@EXMB04.eu.tieto.com>
- <201103291305.02293.arnd@arndb.de>
- <20110331141650.GB2704@sortiz-mobl>
- <99B09243E1A5DA4898CDD8B7001114481085F0FE7C@EXMB04.eu.tieto.com>
- <20110331153010.GD2704@sortiz-mobl>
- <BANLkTimsZeqvSWj+kKWLSmFOQc70KWodcw@mail.gmail.com>
+	id S1758012Ab1FFUvt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 16:51:49 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:58407 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217Ab1FFUvs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 16:51:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=nvSgQpH0Cw1F2MwrN8OTyUHdbUHHkmbcsRAJwS0xVjXdT/q/fSznJT+3SBeGO8kPoi
+         GBFlMN+qVJuypeww7iO/dFCPbKIgJRpv2uFFxnW5CV78Bhs93FoSVesEfHiHBsMqZKBW
+         D7uf+W9FVQGT5/li9XRW6gW3yOzJXbeOBxoNs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimsZeqvSWj+kKWLSmFOQc70KWodcw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTi=choqfXPYmnivznYBbEFeg2UfbuA@mail.gmail.com>
+References: <cover.1307292171.git.luto@mit.edu> <4DECAE68.16683.1203EBBB@pageexec.freemail.hu>
+ <BANLkTin5jEmUUxWUUkYn9pKzGRwcA-zRLw@mail.gmail.com> <4DED206E.20356.13C155EA@pageexec.freemail.hu>
+ <BANLkTi=choqfXPYmnivznYBbEFeg2UfbuA@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 6 Jun 2011 16:51:24 -0400
+X-Google-Sender-Auth: JBtV3-rYJf6jc70U-33BgpHrNms
+Message-ID: <BANLkTim8mSoifxoN=b2Gpe+WLjJyuqBR8g@mail.gmail.com>
+Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: pageexec@freemail.hu, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavan,
+On Mon, Jun 6, 2011 at 4:40 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 
-On Mon, Jun 06, 2011 at 03:22:01PM -0500, Pavan Savoy wrote:
-> On Thu, Mar 31, 2011 at 9:30 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> > On Thu, Mar 31, 2011 at 06:24:50PM +0300, Waldemar.Rymarkiewicz@tieto.com wrote:
-> >> Hi Samuel,
-> >>
-> >> >That's the Bluetooth approach, and it works just fine as well.
-> >> >However, the netlink option for sending commands and receiving
-> >> >answers to/from a subsystem sounds more appropriate, at least to me.
-> >>
-> >> I haven't used netlink in practice, so just wondering why netlink. I assume, then, it's more suitable :)
-> >>
-> > Have a look at the wireless nl80211.c implementation. It's a good example for
-> > that sort of usage.
-> 
-> So, why was the network interface 'ala eth0 or the netlink interface dropped?
-The netlink interface was not dropped. See:
-http://marc.info/?l=linux-wireless&m=130705125228073&w=2
+> We *definitely* don't want to name it in a way that makes some random
+> person just turn it off because it's scary, since the random person
+> *shouldn't* turn it off today. Comprende?
 
-> I saw these patches recently "NFC: add nfc subsystem core" - which
-> seem to add just the device /dev/nfc - am I correct ?
-No, the /dev/nfc interface is gone with this subsystem. Instead you will talk
-to an AF_NFC socket, or to the NFC generic netlink socket for some NFC high
-level commands and events. See:
-http://marc.info/?l=linux-wireless&m=130705125728090&w=2
+Yes, and fixed in the cleaned up version.
 
-for more details.
+>
+> And the annoying part about the whole patch series is how the whole
+> re-sending has gone on forever.
 
-Cheers,
-Samuel.
+If I have the patch-resending protocol wrong, please enlighten me.
+I'm not sure how to make future work less annoying.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> Just pick some approach, do it, and
+> don't even bother making it a config option for now. If we can replace
+> the vsyscall page with a page fault or int3 or whatever, and it's only
+> used for the 'time()' system call, just do it.
+
+Really?
+
+I won't personally complain about the 200+ ns hit, but I'm sure
+someone will cc: me on a regression report if there's no option.
+
+>
+> The series is now extended with the cleanup patches so the end result
+> looks reasonable, but why have the whole "first implement it, then
+> clean it up" and sending it as a whole series. That's annoying. Just
+> send the cleaned-up end result to begin with.
+
+--Andy
