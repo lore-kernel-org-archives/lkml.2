@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab1FFR4w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 13:56:52 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:60274 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751665Ab1FFR4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 13:56:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH 5/8] PCI / Intel IOMMU: Use syscore_ops instead of sysdev class and sysdev
-Date: Mon, 6 Jun 2011 19:57:35 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
-        Dave Jones <davej@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Avi Kivity <avi@redhat.com>, linux-pci@vger.kernel.org
-References: <201103100131.58206.rjw@sisk.pl> <201103122218.14832.rjw@sisk.pl> <BANLkTi=xhg7_0O-aVC8s1Uyo4Wkz5OTCdg@mail.gmail.com>
-In-Reply-To: <BANLkTi=xhg7_0O-aVC8s1Uyo4Wkz5OTCdg@mail.gmail.com>
+	id S1756905Ab1FFR54 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 13:57:56 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:55299 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab1FFR5y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 13:57:54 -0400
+X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4DED1519.2020803@die-jansens.de>
+Date: Mon, 06 Jun 2011 19:57:45 +0200
+From: Arne Jansen <lists@die-jansens.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+References: <1307349530.2353.7374.camel@twins> <20110606145827.GD30348@elte.hu> <1307372989.2322.136.camel@twins> <1307375227.2322.161.camel@twins> <20110606155236.GA7374@elte.hu> <1307376039.2322.164.camel@twins> <20110606160810.GA16636@elte.hu> <1307376771.2322.168.camel@twins> <20110606161749.GA22157@elte.hu> <1307378649.2322.198.camel@twins> <20110606171153.GE2391@elte.hu>
+In-Reply-To: <20110606171153.GE2391@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106061957.35413.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 02, 2011, Tony Luck wrote:
-> On Sat, Mar 12, 2011 at 1:18 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > -static int __init init_iommu_sysfs(void)
-> > -{
-> > -       return 0;
-> > -}
-> > +static inline int init_iommu_pm_ops(void) { }
-> >  #endif /* CONFIG_PM */
-> 
-> drivers/pci/intel-iommu.c:3391: warning: no return statement in
-> function returning non-void
-> 
-> s/static inline int/static inline void/
-> 
-> Reported-by: Tony Luck <tony.luck@intel.com>
+On 06.06.2011 19:11, Ingo Molnar wrote:
+>
+> * Peter Zijlstra<peterz@infradead.org>  wrote:
 
-I guess you mean the following?
+>
+>> +void printk_tick(void)
+>> +{
+>> +	if (!__this_cpu_read(printk_pending))
+>> +		return;
+>> +
+>> +	/*
+>> +	 * Try to acquire and then immediately release the
+>> +	 * console semaphore. The release will do all the
+>> +	 * actual magic (print out buffers, wake up klogd,
+>> +	 * etc).
+>> +	 */
+>> +	if (console_trylock_for_printk(smp_processor_id())) {
+>> +		console_unlock();
+>> +		__this_cpu_write(printk_pending, 0);
+>> +	}
+>> +}
+>
+> Arne does this fix the hang you are seeing?
 
-Rafael
+What do you want me to test? just replace printk_tick with the
+above version? If I do that, the machine doesn't even boot up
+any more.
 
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-
-If CONFIG_PM is not set, init_iommu_pm_ops() introduced by commit
-134fac3f457f3dd753ecdb25e6da3e5f6629f696 (PCI / Intel IOMMU: Use
-syscore_ops instead of sysdev class and sysdev) is not defined
-appropriately.  Fix this issue.
-
-Reported-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/pci/intel-iommu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6/drivers/pci/intel-iommu.c
-===================================================================
---- linux-2.6.orig/drivers/pci/intel-iommu.c
-+++ linux-2.6/drivers/pci/intel-iommu.c
-@@ -3388,7 +3388,7 @@ static void __init init_iommu_pm_ops(voi
- }
- 
- #else
--static inline int init_iommu_pm_ops(void) { }
-+static inline void init_iommu_pm_ops(void) {}
- #endif	/* CONFIG_PM */
- 
- /*
