@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab1FFAoU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 20:44:20 -0400
-Received: from mta11.charter.net ([216.33.127.80]:57909 "EHLO
-	mta11.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab1FFAoR (ORCPT
+	id S1754415Ab1FFApv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 20:45:51 -0400
+Received: from mta31.charter.net ([216.33.127.82]:55328 "EHLO
+	mta31.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab1FFApt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 20:44:17 -0400
-X-Authority-Analysis: v=1.1 cv=G6Q69DB3AUoJKS2BpLRaz8MQ2NORN7h5HRzrJMPOhRw=
- c=1 sm=1 a=be8ZlSnZ4WMA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
- a=Npi6bBMuPX851LGtqNAA:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
+	Sun, 5 Jun 2011 20:45:49 -0400
+X-Authority-Analysis: v=1.1 cv=1b2X7W/SifksZeClH/haT1SUt4udqxFGF00pZw2/jJk=
+ c=1 sm=1 a=u3sn8yqUGDIA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
+ a=bLk9klsuDOYPjdy2bMMA:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
 From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-To: ron.mercer@qlogic.com
-Cc: linux-driver@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Subject: [PATCH] qlge: remove unecessary if statement
-Date: Sun,  5 Jun 2011 19:44:13 -0500
-Message-Id: <1307321053-21695-1-git-send-email-Gregory.Dietsche@cuw.edu>
+To: JBottomley@parallels.com
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Subject: [PATCH] mpt2sas: remove unecessary if statement
+Date: Sun,  5 Jun 2011 19:45:45 -0500
+Message-Id: <1307321145-21789-1-git-send-email-Gregory.Dietsche@cuw.edu>
 X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the code always returns 'status' regardless, so if(status) check is unecessary.
+the code always returns r regardless, so if(r) check is unecessary.
 
 Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
 ---
- drivers/net/qlge/qlge_ethtool.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_base.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/qlge/qlge_ethtool.c b/drivers/net/qlge/qlge_ethtool.c
-index 19b00fa..9b67bfe 100644
---- a/drivers/net/qlge/qlge_ethtool.c
-+++ b/drivers/net/qlge/qlge_ethtool.c
-@@ -650,8 +650,6 @@ static int ql_set_pauseparam(struct net_device *netdev,
- 		return -EINVAL;
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index efa0255..26577ef 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -3796,9 +3796,6 @@ _base_make_ioc_operational(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
+ 	}
  
- 	status = ql_mb_set_port_cfg(qdev);
--	if (status)
--		return status;
- 	return status;
+ 	r = _base_send_port_enable(ioc, sleep_flag);
+-	if (r)
+-		return r;
+-
+ 	return r;
  }
  
 -- 
