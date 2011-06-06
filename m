@@ -1,108 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929Ab1FFOH5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 10:07:57 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56661 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100Ab1FFOHy convert rfc822-to-8bit (ORCPT
+	id S1755066Ab1FFOIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 10:08:09 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:59270 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754911Ab1FFOIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 10:07:54 -0400
+	Mon, 6 Jun 2011 10:08:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=b+/7pUIiQlrtjMBqj/hNVwEhVGQxwAp7gzr5X2MfcxMnOsbWZrhOlDqcKWtzlgjQbE
-         sGaKmrr3+4Jw4JwCY7GA0jTKqw2JjCBJMIiQxiZR6O5fYO6yoWwsda1BZeJtHS0qwaEO
-         Mbfp1F+lhtnVzHae+0Nc47eWf4RZ29EkGO8Nk=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=v86tcHApZpF0/2KZ2TiUZVV5q/hJjOJy+hVLVjSNxcDpfK9e8AbNHUjgLBeuoR0Z1l
+         tfsHal8fci/mCqmvyGDJSD9nfzPz+sTDy9WWRe0OmX8RnN+Oh4lGZbmUq2DG9XuTrV8J
+         HI7Wygq7cW//fmBaT0K0N0+u6ZFqnMN54yp+8=
+Date: Mon, 6 Jun 2011 23:07:56 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        akpm@linux-foundation.org, Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110606140756.GD1686@barrios-laptop>
+References: <20110531143830.GC13418@barrios-laptop>
+ <20110602182302.GA2802@random.random>
+ <20110602202156.GA23486@barrios-laptop>
+ <20110602214041.GF2802@random.random>
+ <BANLkTim1WjdHWOQp7bMg5pFFKp1SSFoLKw@mail.gmail.com>
+ <20110602223201.GH2802@random.random>
+ <BANLkTikA+ugFNS95Zs_o6QqG2u4r2g93=Q@mail.gmail.com>
+ <20110603173707.GL2802@random.random>
+ <20110603180730.GM2802@random.random>
+ <20110606103216.GC5247@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <4DECDD14.5845.12BA3C18@pageexec.freemail.hu>
-References: <cover.1307292171.git.luto@mit.edu>
-	<4DECC07A.8317.124A847C@pageexec.freemail.hu>
-	<BANLkTi=viR9DaQu2hzX4THdpDqfOZq-cXw@mail.gmail.com>
-	<4DECDD14.5845.12BA3C18@pageexec.freemail.hu>
-Date: Mon, 6 Jun 2011 10:07:53 -0400
-Message-ID: <BANLkTim4sN-bymGPPDU_f9V3FYCWP=PhNA@mail.gmail.com>
-Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
-From: Brian Gerst <brgerst@gmail.com>
-To: pageexec@freemail.hu
-Cc: Andrew Lutomirski <luto@mit.edu>, Ingo Molnar <mingo@elte.hu>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606103216.GC5247@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 6, 2011 at 9:58 AM,  <pageexec@freemail.hu> wrote:
-> On 6 Jun 2011 at 8:43, Andrew Lutomirski wrote:
->
->> >> and it's less flexible
->> >
->> > why? as in, what kind of flexibility do you need that int xx can provide but a page
->> > fault cannot?
->>
->> The ability to make time() fast when configured that way.
->
-> true, nx and fast time() at vsyscall addresses will never mix. but it's a temporary
-> problem for anyone who cares, a trivial glibc patch fixes it.
->
->> >> and it could impact a fast path in the kernel.
->> >
->> > a page fault is never a fast path, after all the cpu has just taken an exception
->> > (vs. the syscall/sysenter style actually fast user->kernel transition) and is
->> > about to make page table changes (and possibly TLB flushes).
->>
->> Sure it is.  It's a path that's optimized carefully and needs to be as
->> fast as possible.  Just because it's annoyingly slow doesn't mean we
->> get to make it even slower.
->
-> sorry, but stating that the pf handler is a fast path doesn't make it so ;).
-> the typical pf is caused by userland to either fill in non-present pages
-> or do c-o-w, a few well predicted conditional branches in those paths are
-> simply not measurable (actually, those conditional branches would not be
-> on those paths, at least they aren't in PaX). seriously, try it ;).
->
->> >> > another thing to consider for using the int xx redirection scheme (speaking
->> >> > of which, it should just be an int3):
->> >>
->> >> Why?  0xcd 0xcc traps no matter what offset you enter it at.
->> >
->> > but you're wasting/abusing an IDT entry for no real gain (and it's lots of code
->> > for such a little change). also placing sw interrupts among hw ones is what can
->> > result in (ab)use like this:
->>
->> I think it's less messy than mucking with the page fault handler.
->
-> do you know what that mucking looks like? ;) prepare for the most complex code
-> you've ever seen (it's in __bad_area_nosemaphore):
->
->  779 #ifdef CONFIG_X86_64
->  780 »·······if (mm && (error_code & PF_INSTR) && mm->context.vdso) {
->  781 »·······»·······if (regs->ip == (unsigned long)vgettimeofday) {
->  782 »·······»·······»·······regs->ip = (unsigned long)VDSO64_SYMBOL(mm->context.vdso, gettimeofday);
->  783 »·······»·······»·······return;
->  784 »·······»·······} else if (regs->ip == (unsigned long)vtime) {
->  785 »·······»·······»·······regs->ip = (unsigned long)VDSO64_SYMBOL(mm->context.vdso, clock_gettime);
->  786 »·······»·······»·······return;
->  787 »·······»·······} else if (regs->ip == (unsigned long)vgetcpu) {
->  788 »·······»·······»·······regs->ip = (unsigned long)VDSO64_SYMBOL(mm->context.vdso, getcpu);
->  789 »·······»·······»·······return;
->  790 »·······»·······}
->  791 »·······}
->  792 #endif
+On Mon, Jun 06, 2011 at 11:32:16AM +0100, Mel Gorman wrote:
+> On Fri, Jun 03, 2011 at 08:07:30PM +0200, Andrea Arcangeli wrote:
+> > On Fri, Jun 03, 2011 at 07:37:07PM +0200, Andrea Arcangeli wrote:
+> > > On Fri, Jun 03, 2011 at 08:01:44AM +0900, Minchan Kim wrote:
+> > > > Do you want this? (it's almost pseudo-code)
+> > > 
+> > > Yes that's good idea so we at least take into account if we isolated
+> > > something big, and it's pointless to insist wasting CPU on the tail
+> > > pages and even trace a fail because of tail pages after it.
+> > > 
+> > > I introduced a __page_count to increase readability. It's still
+> > > hackish to work on subpages in vmscan.c but at least I added a comment
+> > > and until we serialize destroy_compound_page vs compound_head, I guess
+> > > there's no better way. I didn't attempt to add out of order
+> > > serialization similar to what exists for split_huge_page vs
+> > > compound_trans_head yet, as the page can be allocated or go away from
+> > > under us, in split_huge_page vs compound_trans_head it's simpler
+> > > because both callers are required to hold a pin on the page so the
+> > > page can't go be reallocated and destroyed under it.
+> > 
+> > Sent too fast... had to shuffle a few things around... trying again.
+> > 
+> > ===
+> > Subject: mm: no page_count without a page pin
+> > 
+> > From: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > It's unsafe to run page_count during the physical pfn scan because
+> > compound_head could trip on a dangling pointer when reading page->first_page if
+> > the compound page is being freed by another CPU. Also properly take into
+> > account if we isolated a compound page during the scan and break the loop if
+> > we've isolated enoguh. Introduce __page_count to cleanup some atomic_read from
+> > &page->_count in common code to cleanup.
+> > 
+> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> This patch is pulling in stuff from Minchan. Minimally his patch should
+> be kept separate to preserve history or his Signed-off should be
+> included on this patch.
+> 
+> > ---
+> >  arch/powerpc/mm/gup.c                        |    2 -
+> >  arch/powerpc/platforms/512x/mpc512x_shared.c |    2 -
+> >  arch/x86/mm/gup.c                            |    2 -
+> >  fs/nilfs2/page.c                             |    2 -
+> >  include/linux/mm.h                           |   13 ++++++----
+> >  mm/huge_memory.c                             |    4 +--
+> >  mm/internal.h                                |    2 -
+> >  mm/page_alloc.c                              |    6 ++--
+> >  mm/swap.c                                    |    4 +--
+> >  mm/vmscan.c                                  |   35 ++++++++++++++++++++-------
+> >  10 files changed, 47 insertions(+), 25 deletions(-)
+> > 
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1047,7 +1047,7 @@ static unsigned long isolate_lru_pages(u
+> >  	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
+> >  		struct page *page;
+> >  		unsigned long pfn;
+> > -		unsigned long end_pfn;
+> > +		unsigned long start_pfn, end_pfn;
+> >  		unsigned long page_pfn;
+> >  		int zone_id;
+> >  
+> > @@ -1087,9 +1087,9 @@ static unsigned long isolate_lru_pages(u
+> >  		 */
+> >  		zone_id = page_zone_id(page);
+> >  		page_pfn = page_to_pfn(page);
+> > -		pfn = page_pfn & ~((1 << order) - 1);
+> > -		end_pfn = pfn + (1 << order);
+> > -		for (; pfn < end_pfn; pfn++) {
+> > +		start_pfn = page_pfn & ~((1 << order) - 1);
+> > +		end_pfn = start_pfn + (1 << order);
+> > +		for (pfn = start_pfn; pfn < end_pfn; pfn++) {
+> >  			struct page *cursor_page;
+> >  
+> >  			/* The target page is in the block, ignore it. */
+> > @@ -1116,16 +1116,33 @@ static unsigned long isolate_lru_pages(u
+> >  				break;
+> >  
+> >  			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+> > +				unsigned int isolated_pages;
+> >  				list_move(&cursor_page->lru, dst);
+> >  				mem_cgroup_del_lru(cursor_page);
+> > -				nr_taken += hpage_nr_pages(page);
+> > -				nr_lumpy_taken++;
+> > +				isolated_pages = hpage_nr_pages(page);
+> > +				nr_taken += isolated_pages;
+> > +				nr_lumpy_taken += isolated_pages;
+> >  				if (PageDirty(cursor_page))
+> > -					nr_lumpy_dirty++;
+> > +					nr_lumpy_dirty += isolated_pages;
+> >  				scan++;
+> > +				pfn += isolated_pages-1;
+> 
+> Ah, here is the isolated_pages - 1 which is necessary. Should have read
+> the whole thread before responding to anything :).
+> 
+> I still think this optimisation is rare and only applies if we are
+> encountering huge pages during the linear scan. How often are we doing
+> that really?
+> 
+> > +				VM_BUG_ON(!isolated_pages);
+> 
+> This BUG_ON is overkill. hpage_nr_pages would have to return 0.
+> 
+> > +				VM_BUG_ON(isolated_pages > MAX_ORDER_NR_PAGES);
+> 
+> This would require order > MAX_ORDER_NR_PAGES to be passed into
+> isolate_lru_pages or for a huge page to be unaligned to a power of
+> two. The former is very unlikely and the latter is not supported by
+> any CPU.
+> 
+> >  			} else {
+> > -				/* the page is freed already. */
+> > -				if (!page_count(cursor_page))
+> > +				/*
+> > +				 * Check if the page is freed already.
+> > +				 *
+> > +				 * We can't use page_count() as that
+> > +				 * requires compound_head and we don't
+> > +				 * have a pin on the page here. If a
+> > +				 * page is tail, we may or may not
+> > +				 * have isolated the head, so assume
+> > +				 * it's not free, it'd be tricky to
+> > +				 * track the head status without a
+> > +				 * page pin.
+> > +				 */
+> > +				if (!PageTail(cursor_page) &&
+> > +				    !__page_count(cursor_page))
+> >  					continue;
+> >  				break;
+> 
+> Ack to this part.
+> 
+> I'm not keen on __page_count() as __ normally means the "unlocked"
+> version of a function although I realise that rule isn't universal
 
-I like this approach, however since we're already in the kernel it
-makes sense just to run the normal syscall instead of redirecting to
-the vdso.
+Yes. It's not univeral.
+I have thought about it as it's just private function or utility function
+(ie, not-exportable).
+So I don't mind the name.
 
---
-Brian Gerst
+> either. I can't think of a better name though.
+
+Me, too.
+
+-- 
+Kind regards
+Minchan Kim
