@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab1FFRJn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 13:09:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:4708 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753027Ab1FFRJj convert rfc822-to-8bit (ORCPT
+	id S1756098Ab1FFRLn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 13:11:43 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43011 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab1FFRLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 13:09:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,327,1304319600"; 
-   d="scan'208";a="7933107"
-From: "Gorby, Russ" <russ.gorby@intel.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ahmed, Suhail" <suhail.ahmed@intel.com>
-Subject: RE: [PATCH 4/5] tty: n_gsm: initiate close of all DLCIs during mux
- shutdown
-Thread-Topic: [PATCH 4/5] tty: n_gsm: initiate close of all DLCIs during mux
- shutdown
-Thread-Index: AQHMIjoPAB/bGYdY3Uq1UIRRprDnsZSwj8iw
-Date: Mon, 6 Jun 2011 17:09:37 +0000
-Message-ID: <330DDCE36F8D7D47BF87CF587C91A247023149@ORSMSX101.amr.corp.intel.com>
-References: <[PATCH 0/5] N_GSM patchset : 06/03/2011>
-	<1307127821-21665-5-git-send-email-russ.gorby@intel.com>
- <20110603230514.334df229@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110603230514.334df229@lxorguk.ukuu.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.131.214]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 6 Jun 2011 13:11:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=NhkMkYR1+yszfgF2qrdtUdftuymzKFoyx1g8+jyfiHde1ZEKygDizP6P3NoKuLU+IS
+         geGupo6KlLHEEeHnbw/VbfKEGwoUJefwy9468Eaheu5FIYmDIdBvy31KAa1dAm6pTIlu
+         qi5GHpg+m+ENf7i26AApnlsbWZHAdzpTTAsLI=
+Subject: Re: Change in functionality of futex() system call.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Zachary Vonler <zvonler@rgmadvisors.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1307379926.2322.219.camel@twins>
+References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
+	 <1307373819.3098.40.camel@edumazet-laptop>
+	 <1307376672.2322.167.camel@twins>  <1307376989.2322.171.camel@twins>
+	 <1307377349.3098.65.camel@edumazet-laptop>
+	 <1307377782.2322.183.camel@twins>
+	 <1307378564.3098.67.camel@edumazet-laptop>
+	 <1307379926.2322.219.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Jun 2011 19:11:37 +0200
+Message-ID: <1307380297.3098.74.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le lundi 06 juin 2011 à 19:05 +0200, Peter Zijlstra a écrit :
+
+> Dunno, using futexes on private file maps is stupid imo, its just asking
+> for trouble, ro private file maps are even worse. Forcing the COW is the
+> only sane answer in that it gives consistent results and 'breaks' silly
+> expectations early instead of sometimes.
+> 
+> Anyway, that's not really the issue here, as David uses MAP_SHARED (as
+> one should if one is interested in the shared value).
+
+Sure, but maybe another guy is 'stupid' and uses MAP_PRIVATE on its
+read-only mappings. With old kernels this was working, and we were not
+doing the COW.
+
+(Note : the other process writes to the file, using MAP_SHARED)
 
 
->-----Original Message-----
->From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
->Sent: Friday, June 03, 2011 3:05 PM
->To: Gorby, Russ
->Cc: Greg Kroah-Hartman; linux-kernel@vger.kernel.org; Ahmed, Suhail
->Subject: Re: [PATCH 4/5] tty: n_gsm: initiate close of all DLCIs during
->mux shutdown
->
->On Fri,  3 Jun 2011 12:03:40 -0700
->Russ Gorby <russ.gorby@intel.com> wrote:
->
->> Although DLCI-0 is closed during ldisc close, we found the
->> applications were better served when open DLCI shutdowns where
->> initiated at that time as well.
->
->They should all see a hangup on the gsm client tty anyway ?
->
->> -	for (i = 0; i < NUM_DLCI; i++)
->> +	for (i = NUM_DLCI-1; i >= 0; i--) {
->> +		dlci = gsm->dlci[i];
->> +		if (dlci) {
->> +			if (i != 0)
->> +				gsm_dlci_begin_close(dlci);
->> +			else {
->> +				dlci->dead = 1;
->> +				gsm_dlci_begin_close(dlci);
->> +				t = wait_event_timeout(gsm->event,
->> +					   dlci->state == DLCI_CLOSED,
->> +					   gsm->t2 * HZ / 100);
->> +				if (!t) {
->> +					pr_info("%s: timeout dlci0 close",
->> +						__func__);
->> +					gsm_dlci_close(dlci);
->> +				}
->> +			}
->> +		}
->> +	}
->> +	for (i = NUM_DLCI-1; i >= 0; i--)
->
->I'd like to understand better why it is needed and also why you don't
->want for the others to close but just set it off ?
 
-[Gorby, Russ] I suppose it is possible the issue this code helped alleviate was due to modem firmware or
-Other s/w bugs or timing issues, but since we're waiting for DLCI0 to close it made sense to at least start the
-Close of the other channels first. If you don't want to take this patch at this point, I can revalidate if it is needed
-at a later time and resubmit then if so.
