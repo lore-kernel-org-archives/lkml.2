@@ -1,68 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab1FFWIX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:08:23 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59176 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752569Ab1FFWIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 18:08:22 -0400
-Date: Tue, 7 Jun 2011 00:08:06 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-Message-ID: <20110606220806.GC12079@elte.hu>
-References: <20110606155236.GA7374@elte.hu>
- <1307376039.2322.164.camel@twins>
- <20110606160810.GA16636@elte.hu>
- <1307376771.2322.168.camel@twins>
- <20110606161749.GA22157@elte.hu>
- <1307378649.2322.198.camel@twins>
- <20110606171153.GE2391@elte.hu>
- <4DED1519.2020803@die-jansens.de>
- <20110606180733.GA20123@elte.hu>
- <1307384349.2497.732.camel@laptop>
+	id S1758143Ab1FFWI1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:08:27 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:50180 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758090Ab1FFWIZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 18:08:25 -0400
+X-Originating-IP: 217.70.178.137
+X-Originating-IP: 131.252.246.56
+Date: Mon, 6 Jun 2011 15:08:10 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv4] Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide
+ debug options
+Message-ID: <20110606220810.GA1999@leaf>
+References: <20110605210223.GA7595@leaf>
+ <20110606151832.GI30348@elte.hu>
+ <20110606165130.GA1844@leaf>
+ <20110606181606.GB7862@somewhere>
+ <20110606183939.GA2335@leaf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307384349.2497.732.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110606183939.GA2335@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Several debugging options currently default to y, such as
+CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.  Embedded users might
+want to turn those options off to save space; however, turning them off
+requires turning on CONFIG_DEBUG_KERNEL to unhide them.  Since
+CONFIG_DEBUG_KERNEL exists specifically to unhide debugging options, and
+CONFIG_EXPERT exists specifically to unhide options potentially needed
+by experts and/or embedded users, make CONFIG_EXPERT automatically imply
+CONFIG_DEBUG_KERNEL.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Since EXPERT now implies DEBUG_KERNEL, change debugging options that
+reference DEBUG_KERNEL && EXPERT to just reference EXPERT.
 
-> On Mon, 2011-06-06 at 20:07 +0200, Ingo Molnar wrote:
-> 
-> >  - The first one that minimally removes the lockdep_off()/on() dance 
-> >    and fixes the regression: the patch that i sent earlier today.
-> >    I *think* that should fix the crash.
-> > 
-> >    3.0 material.
-> 
-> I think the lock_is_held() fix is the urgent one, all the others are
-> make printk() suck less patches, ie. not so very important.
-> 
-> Without that lock_is_held() thing all lockdep_off() sites, inc ntfs will
-> still be able to trigger this problem.
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+v4: Avoid semantic changes, by changing DEBUG_KERNEL && EXPERT to EXPERT
+rather than to DEBUG_KERNEL.  This avoids exposing debug options that
+only experts should turn off, such as DEBUG_BUGVERBOSE.
 
-ok. Could you please send a changeloggified patch with a 
-Reported-and-tested-by from Arne in a new thread, etc?
+A subsequent patch should probably go through and change the various
+"default !EXPERT" lines to "default y", since enabling CONFIG_EXPERT
+should not directly change anything.
 
-Thanks,
+ arch/tile/Kconfig.debug |    2 +-
+ init/Kconfig            |    2 ++
+ lib/Kconfig.debug       |    2 +-
+ 3 files changed, 4 insertions(+), 2 deletions(-)
 
-	Ingo
+diff --git a/arch/tile/Kconfig.debug b/arch/tile/Kconfig.debug
+index ddbfc33..1d31246 100644
+--- a/arch/tile/Kconfig.debug
++++ b/arch/tile/Kconfig.debug
+@@ -3,7 +3,7 @@ menu "Kernel hacking"
+ source "lib/Kconfig.debug"
+ 
+ config EARLY_PRINTK
+-	bool "Early printk" if EXPERT && DEBUG_KERNEL
++	bool "Early printk" if EXPERT
+ 	default y
+ 	help
+ 	  Write kernel log output directly via the hypervisor console.
+diff --git a/init/Kconfig b/init/Kconfig
+index ebafac4..14370d3 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -909,6 +909,8 @@ config ANON_INODES
+ 
+ menuconfig EXPERT
+ 	bool "Configure standard kernel features (expert users)"
++	# Unhide debug options, to make the on-by-default options visible
++	select DEBUG_KERNEL
+ 	help
+ 	  This option allows certain base kernel options and settings
+           to be disabled or tweaked. This is for specialized
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index dd373c8..9a00361 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -694,7 +694,7 @@ config DEBUG_HIGHMEM
+ 	  Disable for production systems.
+ 
+ config DEBUG_BUGVERBOSE
+-	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
++	bool "Verbose BUG() reporting (adds 70K)" if EXPERT
+ 	depends on BUG
+ 	depends on ARM || AVR32 || M32R || M68K || SPARC32 || SPARC64 || \
+ 		   FRV || SUPERH || GENERIC_BUG || BLACKFIN || MN10300 || TILE
+-- 
+1.7.5.3
+
