@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566Ab1FFPd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 11:33:59 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56260 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751596Ab1FFPd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 11:33:58 -0400
-Date: Mon, 6 Jun 2011 17:33:35 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: pageexec@freemail.hu
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
-Message-ID: <20110606153335.GK30348@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>
- <4DECC07A.8317.124A847C@pageexec.freemail.hu>
- <BANLkTimZjqEYHt=MBBthXOoUXcorJz4J1A@mail.gmail.com>
- <4DECEA50.12659.12EDEED6@pageexec.freemail.hu>
+	id S1757556Ab1FFPfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 11:35:43 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:34803
+	"EHLO CH1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752287Ab1FFPfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 11:35:41 -0400
+X-SpamScore: -5
+X-BigFish: VPS-5(z1039oz98dKzz1202hzz15d4Rz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LMDKNB-02-B4A-02
+X-M-MSG: 
+Date: Mon, 6 Jun 2011 17:35:57 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "laurent.pinchart@ideasonboard.com" 
+	<laurent.pinchart@ideasonboard.com>,
+        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "davidb@codeaurora.org" <davidb@codeaurora.org>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>
+Subject: Re: [RFC 0/6] iommu: generic api migration and grouping
+Message-ID: <20110606153557.GE1953@amd.com>
+References: <1307053663-24572-1-git-send-email-ohad@wizery.com>
+ <20110606100950.GC30762@amd.com>
+ <BANLkTi=i2s-Ujiy4qn_XQv+9dMjUC9R66A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4DECEA50.12659.12EDEED6@pageexec.freemail.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <BANLkTi=i2s-Ujiy4qn_XQv+9dMjUC9R66A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 06, 2011 at 11:15:30AM -0400, Ohad Ben-Cohen wrote:
 
-* pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+> This is insufficient; users need somehow to tell what page sizes are
+> supported by the underlying hardware (we can't assume host page-sizes,
+> and we want to use bigger pages whenever possible, to relax the TLB
+> pressure).
+/
+What does the IOMMU-API user need this info for? On the x86 IOMMUs these
+details are handled transparently by the IOMMU driver.
 
-> > No, we don't update any libraries for a kernel upgrade. Ever. End 
-> > of story.
-> 
-> then you *must* revert the utterly *wrong* heap/stack gap 'fix' of 
-> yours that you cooked up without any public discussion a year ago 
-> and have been 'fixing' it for various userland breakage ever since.
+	Joerg
 
-Is it this commit:
+-- 
+AMD Operating System Research Center
 
- 320b2b8de126: mm: keep a guard page below a grow-down stack segment
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-?
-
-It has a few followup fixes indeed:
-
- a1fde08c74e9: VM: skip the stack guard page lookup in get_user_pages only for mlock
- a626ca6a6564: vm: fix vm_pgoff wrap in stack expansion
- 95042f9eb78a: vm: fix mlock() on stack guard page
- 0e8e50e20c83: mm: make stack guard page logic use vm_prev pointer
- 7798330ac811: mm: make the mlock() stack guard page checks stricter
- d7824370e263: mm: fix up some user-visible effects of the stack guard page
- 11ac552477e3: mm: fix page table unmap for stack guard page properly
- 5528f9132cf6: mm: fix missing page table unmap for stack guard page failure case
-
-But you say that there's a Sun JVM breakage still left, right? Is 
-there a bugzilla # or simple .c reproducer for that?
-
-Thanks,
-
-	Ingo
