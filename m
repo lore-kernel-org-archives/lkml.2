@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab1FFMRk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 08:17:40 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:1585 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756071Ab1FFMRh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 08:17:37 -0400
-Date: Mon, 6 Jun 2011 14:16:36 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        linux-pcmcia@lists.infradead.org,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        "David S. Miller" <davem@davemloft.net>, Michael Buesch <mb@bu3sch.de>,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Florian Fainelli <florian@openwrt.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] spi: reorganize drivers
-Message-ID: <20110606141636.150c54b5@endymion.delvare>
-In-Reply-To: <201106061321.07400.arnd@arndb.de>
-References: <20110605071725.26517.11573.stgit@ponder>
-	<201106061100.38249.arnd@arndb.de>
-	<1307352547.7586.6.camel@mulgrave.site>
-	<201106061321.07400.arnd@arndb.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756204Ab1FFMTx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 08:19:53 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:48513 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754624Ab1FFMTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 08:19:51 -0400
+Date: Mon, 6 Jun 2011 08:19:37 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+Subject: Re: [PATCH] x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to
+ COMPAT_VSYSCALLS
+Message-ID: <20110606121937.GI7180@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Ingo Molnar <mingo@elte.hu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andy Lutomirski <luto@mit.edu>, x86@kernel.org,
+	Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+	Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Arjan van de Ven <arjan@infradead.org>,
+	Jan Beulich <JBeulich@novell.com>,
+	richard -rw- weinberger <richard.weinberger@gmail.com>,
+	Mikael Pettersson <mikpe@it.uu.se>,
+	Andi Kleen <andi@firstfloor.org>, Brian Gerst <brgerst@gmail.com>,
+	Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
+	pageexec@freemail.hu
+References: <cover.1307292171.git.luto@mit.edu>
+ <4de62bfbf6974f14d0e9d9ae37cc137dbc926a30.1307292171.git.luto@mit.edu>
+ <BANLkTimrhO8QfBqQsH_Q13ghRH2P+ZP7AA@mail.gmail.com>
+ <20110606102419.GA837@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606102419.GA837@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Jun 2011 13:21:07 +0200, Arnd Bergmann wrote:
-> On Monday 06 June 2011, James Bottomley wrote:
-> > I'd say it only makes sense if we do it for all busses ... so USB and
-> > PCI would have to move too.  Logically, the bus code should move and we
-> > should be left with the drivers in both of those directories.  I'd also
-> > say that we don't have to deepen the tree: /bus would be fine.  That
-> > way, /drivers/<bus> would be only for <bus> specific drivers, with non
-> > bus specific drivers we just group them by function as now.
-> 
-> A top-level /bus would work for me, and I guess would also address Russell's
-> concern. Regarding bus-specific drivers, we're gradually moving those out
-> of the bus specific directories anyway, basically the only bus directory
-> that really has device driver in it is USB at this point. It makes some
-> sense to have a bus-specific low-level user space interface driver like
-> sg or uio in the bus directory, but everything else should really belong
-> into some other subsystem.
+On Mon, Jun 06, 2011 at 12:24:19PM +0200, Ingo Molnar wrote:
+>  
+> -What:	CONFIG_UNSAFE_VSYSCALLS (x86_64)
+> +What:	CONFIG_COMPAT_VSYSCALLS (x86_64)
+>  When:	When glibc 2.14 or newer is ubitquitous.  Perhaps mid-2012.
+> -Why:	Having user-executable code at a fixed address is a security problem.
+> -	Turning off CONFIG_UNSAFE_VSYSCALLS mostly removes the risk but will
+> +Why:	Having user-executable syscall invoking code at a fixed addresses makes
+> +	it easier for attackers to exploit security holes.
+> +	Turning off CONFIG_COMPAT_VSYSCALLS mostly removes the risk but will
+>  	make the time() function slower on glibc versions 2.13 and below.
+>  Who:	Andy Lutomirski <luto@mit.edu>
 
-Err, what about I2C and SPI? Aren't drivers/i2c/busses and drivers/spi
-full of "device drivers"? Or are these what you call "bus-specific
-drivers"? Maybe we need to define all the terms before the discussion
-continues further.
+I'd suggest 2013 or 2014, at least.  People using Ubuntu LTS and RHEL
+6 are stuck back at glibc 2.11, and many of those users do like being
+able to upgrade to newer kernels.  And there are probably are a large
+number of static binaries around.
 
-> (...)
-> This is about to get worse as we introduce new subsystems (e.g. iommu,
-> irq, clocksource, eeprom, nvram, ...) into which we are moving
-> code from arch/arm, drivers/char and drivers/misc. Having buses and
-> drivers in a separate hierarchy would make the drivers directory and
-> the respective menuconfig list more clearly structured IMHO.
+Maybe in 2012 or so we change the to be 'no' (and I'd suggest adding a
+comment in the feature-removal-schedule.txt file that this will also
+break static binaries).
 
-This gets interesting. Would you suggest for example that i2c-core.c
-goes to bus/i2c, and drivers/i2c/busses becomes drivers/i2c? And that
-CONFIG_I2C is somewhere in menuconfig, and the hardware driver
-selection for drivers/i2c is in a totally different place?
+Regards,
 
-While I am surprised, I am not necessarily objecting. But it seems that
-you should better define what your actual plan is, before asking us if
-we agree with it.
-
--- 
-Jean Delvare
+						- Ted
