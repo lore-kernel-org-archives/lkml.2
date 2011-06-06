@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758383Ab1FFWmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:42:10 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:58041
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	id S1758522Ab1FFWmI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:42:08 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:39430
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758178Ab1FFWfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758181Ab1FFWfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Jun 2011 18:35:00 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -13,9 +13,9 @@ To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>
-Subject: [PATCH 25/49] Staging: hv: vmbus: Get rid of unneeded calls to dump_vmbus_channel
-Date: Mon,  6 Jun 2011 15:49:49 -0700
-Message-Id: <1307400613-13234-25-git-send-email-kys@microsoft.com>
+Subject: [PATCH 26/49] Staging: hv: vmbus: Get rid of the poll timer in the channel state
+Date: Mon,  6 Jun 2011 15:49:50 -0700
+Message-Id: <1307400613-13234-26-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1307400613-13234-1-git-send-email-kys@microsoft.com>
 References: <1307400540-13193-1-git-send-email-kys@microsoft.com>
@@ -24,65 +24,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of unneeded calls to dump_vmbus_channel and get rid of the unused 
-static function that dumps the channel.
+Since tis is not used anymore,  get rid of the poll timer in the channel state.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 ---
- drivers/staging/hv/channel.c |   13 -------------
- 1 files changed, 0 insertions(+), 13 deletions(-)
+ drivers/staging/hv/channel.c      |    1 -
+ drivers/staging/hv/channel_mgmt.c |    5 -----
+ drivers/staging/hv/hyperv.h       |    1 -
+ 3 files changed, 0 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/staging/hv/channel.c b/drivers/staging/hv/channel.c
-index 334885d..b6f8674 100644
+index b6f8674..b91b369 100644
 --- a/drivers/staging/hv/channel.c
 +++ b/drivers/staging/hv/channel.c
-@@ -39,7 +39,6 @@ static int create_gpadl_header(
- 	u32 size,	/* page-size multiple */
- 	struct vmbus_channel_msginfo **msginfo,
- 	u32 *messagecount);
--static void dump_vmbus_channel(struct vmbus_channel *channel);
- static void vmbus_setevent(struct vmbus_channel *channel);
+@@ -555,7 +555,6 @@ void vmbus_close(struct vmbus_channel *channel)
  
- /*
-@@ -618,7 +617,6 @@ int vmbus_sendpacket(struct vmbus_channel *channel, const void *buffer,
- 	u64 aligned_data = 0;
- 	int ret;
+ 	/* Stop callback and cancel the timer asap */
+ 	channel->onchannel_callback = NULL;
+-	del_timer_sync(&channel->poll_timer);
  
--	dump_vmbus_channel(channel);
+ 	/* Send a closing message */
+ 	info = kmalloc(sizeof(*info) +
+diff --git a/drivers/staging/hv/channel_mgmt.c b/drivers/staging/hv/channel_mgmt.c
+index 957d61e..178e1c4 100644
+--- a/drivers/staging/hv/channel_mgmt.c
++++ b/drivers/staging/hv/channel_mgmt.c
+@@ -283,10 +283,6 @@ static struct vmbus_channel *alloc_channel(void)
  
- 	/* Setup the descriptor */
- 	desc.type = type; /* VmbusPacketTypeDataInBand; */
-@@ -665,7 +663,6 @@ int vmbus_sendpacket_pagebuffer(struct vmbus_channel *channel,
- 	if (pagecount > MAX_PAGE_BUFFER_COUNT)
- 		return -EINVAL;
+ 	spin_lock_init(&channel->inbound_lock);
  
--	dump_vmbus_channel(channel);
+-	init_timer(&channel->poll_timer);
+-	channel->poll_timer.data = (unsigned long)channel;
+-	channel->poll_timer.function = vmbus_ontimer;
+-
+ 	channel->controlwq = create_workqueue("hv_vmbus_ctl");
+ 	if (!channel->controlwq) {
+ 		kfree(channel);
+@@ -315,7 +311,6 @@ static void release_channel(struct work_struct *work)
+  */
+ void free_channel(struct vmbus_channel *channel)
+ {
+-	del_timer_sync(&channel->poll_timer);
  
  	/*
- 	 * Adjust the size down since vmbus_channel_packet_page_buffer is the
-@@ -725,7 +722,6 @@ int vmbus_sendpacket_multipagebuffer(struct vmbus_channel *channel,
- 	u32 pfncount = NUM_PAGES_SPANNED(multi_pagebuffer->offset,
- 					 multi_pagebuffer->len);
+ 	 * We have to release the channel's workqueue/thread in the vmbus's
+diff --git a/drivers/staging/hv/hyperv.h b/drivers/staging/hv/hyperv.h
+index e881cfe..73c251e 100644
+--- a/drivers/staging/hv/hyperv.h
++++ b/drivers/staging/hv/hyperv.h
+@@ -528,7 +528,6 @@ struct vmbus_channel {
  
--	dump_vmbus_channel(channel);
+ 	struct hv_device *device_obj;
  
- 	if ((pfncount < 0) || (pfncount > MAX_MULTIPAGE_BUFFER_COUNT))
- 		return -EINVAL;
-@@ -891,12 +887,3 @@ void vmbus_ontimer(unsigned long data)
- 		channel->onchannel_callback(channel->channel_callback_context);
- }
+-	struct timer_list poll_timer; /* SA-111 workaround */
+ 	struct work_struct work;
  
--/*
-- * dump_vmbus_channel- Dump vmbus channel info to the console
-- */
--static void dump_vmbus_channel(struct vmbus_channel *channel)
--{
--	DPRINT_DBG(VMBUS, "Channel (%d)", channel->offermsg.child_relid);
--	hv_dump_ring_info(&channel->outbound, "Outbound ");
--	hv_dump_ring_info(&channel->inbound, "Inbound ");
--}
+ 	enum vmbus_channel_state state;
 -- 
 1.7.4.1
 
