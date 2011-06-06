@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087Ab1FFM4F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 08:56:05 -0400
-Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:40548 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965Ab1FFM4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 08:56:03 -0400
-X-Greylist: delayed 440 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Jun 2011 08:56:02 EDT
-Subject: Re: [PATCH v4 03/13] seccomp_filters: new mode with configurable
- syscall filters
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: Colin Walters <walters@verbum.org>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, torvalds@linux-foundation.org,
-        tglx@linutronix.de, mingo@elte.hu, rostedt@goodmis.org,
-        jmorris@namei.org, paulmck@linux.vnet.ibm.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-security-module@vger.kernel.org
-In-Reply-To: <BANLkTink868yzHYHd-FyK9BH6nybdSUCuA@mail.gmail.com>
-References: <1307133252-23259-1-git-send-email-wad@chromium.org>
-	 <1307133252-23259-3-git-send-email-wad@chromium.org>
-	 <BANLkTink868yzHYHd-FyK9BH6nybdSUCuA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Mon, 06 Jun 2011 08:48:07 -0400
-Message-ID: <1307364487.2876.18.camel@moss-pluto>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1756889Ab1FFMtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 08:49:19 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:55650 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754559Ab1FFMtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 08:49:15 -0400
+Date: Mon, 6 Jun 2011 14:48:51 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: pageexec@freemail.hu
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to
+ COMPAT_VSYSCALLS
+Message-ID: <20110606124851.GA29865@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>
+ <BANLkTimrhO8QfBqQsH_Q13ghRH2P+ZP7AA@mail.gmail.com>
+ <20110606102419.GA837@elte.hu>
+ <4DECB7E8.5549.12290923@pageexec.freemail.hu>
+ <20110606124743.GB22375@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606124743.GB22375@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-03 at 18:16 -0400, Colin Walters wrote:
-> On Fri, Jun 3, 2011 at 4:34 PM, Will Drewry <wad@chromium.org> wrote:
-> > (Any thoughts specifically on the mutex use would be greatly appreciated!)
-> >
-> > This change adds a new seccomp mode which specifies the allowed system
-> > calls dynamically.
+
+* Ingo Molnar <mingo@elte.hu> wrote:
+
+> > [...] does that mean that you guys would accept a patch that 
+> > would map the vdso at a fixed address for old times's sake? if 
+> > not, on what grounds would you refuse it? see, you can't have it 
+> > both ways.
 > 
-> One thing to consider (not sure if it's been discussed, but I think
-> not) is whether some of the LSMs should hook this.
-> 
-> Notably, it looks like SELinux doesn't have an access vector for prctl
-> at all now; it doesn't hook task_prctl from what I see, and so we fall
-> back to cap_task_prctl.  While I know the idea of restricting a
-> process' ability to enter seccomp is a bit perverse, we should
-> probably at least allow mandatory controls.  James?
+> You can actually do that by enabling CONFIG_COMPAT_VDSO=y.
 
-I may be missing something, but so long as seccomp can only be enabled
-by a process on itself and is not inherited across exec (or as in this
-case prohibits exec), then I don't see why MAC systems should care.
+(on 32-bit x86)
 
-Suppose we did add a MAC check on enabling seccomp.  Under what
-circumstances would we want to deny a process the ability to further
-restrict its own actions?
+Thanks,
 
-Denying the ability to enable seccomp could itself lead to
-vulnerabilities, as applications have shown that they often fail to
-check or handle errors from privilege-limiting calls correctly.
-
-The situation would differ if seccomp could be enabled for a different
-target process than current, or if it could be inherited across exec.
-
--- 
-Stephen Smalley
-National Security Agency
-
+	Ingo
