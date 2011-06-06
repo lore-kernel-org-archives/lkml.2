@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab1FFN4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 09:56:20 -0400
-Received: from mail.bbaw.de ([194.95.188.6]:38067 "EHLO mail.bbaw.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756241Ab1FFN4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 09:56:12 -0400
-Date: Mon, 6 Jun 2011 15:56:10 +0200
-From: Lars =?UTF-8?B?VMOkdWJlcg==?= <taeuber@bbaw.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PROBLEM] reproduceable storage errors on high IO load
-Message-Id: <20110606155610.69a0d17a.taeuber@bbaw.de>
-In-Reply-To: <201106060920.32257.gene.heskett@gmail.com>
-References: <20110606095127.21d23a70.taeuber@bbaw.de>
-	<201106060559.03131.gene.heskett@gmail.com>
-	<20110606130628.e86f0c67.taeuber@bbaw.de>
-	<201106060920.32257.gene.heskett@gmail.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-AntiVirus: checked by Avira MailGate (version: 2.1.4-7; AVE: 7.9.5.12; VDF: 7.11.9.33; host: mailhub); id=2562-hH6YoS
+	id S1757363Ab1FFN4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 09:56:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27055 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab1FFN4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 09:56:43 -0400
+Date: Mon, 6 Jun 2011 09:56:18 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] swiotlb: Export io_tlb_nslabs as swiotlb_nslabs and use
+ it.
+Message-ID: <20110606135618.GA25007@dumpdata.com>
+References: <1306946564-30481-1-git-send-email-konrad.wilk@oracle.com>
+ <1306946564-30481-2-git-send-email-konrad.wilk@oracle.com>
+ <20110605114548K.fujita.tomonori@lab.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110605114548K.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090204.4DECDC94.0062:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gene,
-
-Am Mon, 6 Jun 2011 09:20:32 -0400
-Gene Heskett <gene.heskett@gmail.com> schrieb:
-[...]
-> >
-> I started here:
-> <http://support.wdc.com/product/download.asp?modelno=WD2003FYYS&x=8&y=10>
+On Sun, Jun 05, 2011 at 11:47:29AM +0900, FUJITA Tomonori wrote:
+> On Wed,  1 Jun 2011 12:42:44 -0400
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 > 
-> I entered your drives model number, and got here:
+> > By default the io_tlb_nslabs is set to zero, and gets set to
+> > whatever value is passed in via swiotlb_init_with_tbl function.
+> > The default value passed in is 64MB. However, if the user provides
+> > the 'swiotlb=<nslabs>' the default value is ignored and
+> > the value provided by the user is used... Except when the SWIOTLB
+> > is used under Xen - there the default value of 64MB is used and
+> > the Xen-SWIOTLB has no mechanism to get the 'io_tlb_nslabs' filled
+> > out by setup_io_tlb_npages functions. This patch exports the
+> > value that is potentially set by setup_io_tlb_npages and renames
+> > it to swiotlb_nslabs.
+> > 
+> > CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  drivers/xen/swiotlb-xen.c |    7 +++-
+> >  include/linux/swiotlb.h   |    5 +++
+> >  lib/swiotlb.c             |   78 ++++++++++++++++++++++----------------------
+> >  3 files changed, 49 insertions(+), 41 deletions(-)
 > 
-> <http://community.wdc.com/t5/News-Announcements/bd-p/Announcements>
+> Hmm, exporting the internal valuable and all the renaming look
+> overdoing?
 > 
-> That is the link I got when I entered the WDC drive # shown in your dmesg.
-> That looks like too many choices, and probably is, so I would email the 
-> support link shown and ask for clarification.  Be sure to use the full 
-> model number of the drive as shown on the drive or the packaging as its 
-> possible I blew it with my copy/paste here.
+> Why can't we simply do like this?
 
-I already found these, but this are all posts regarding consumer products. The harddisks I have are 2TB Raid Editions types. I couldn't find anything related there.
-
-I sent an email to the WD support.
+We can do that too. Let me queue this up for 3.1.
 
 > 
-> The point is, the stuff is there.  But its easier to find on Seagates site 
-> I believe.
-
-The seagate drives were only for testing, because they are only 320GB in size.
-I don't have six other drives for testing here, but I want to test with the same quantitiy of drives.
-
-Is there anything else I can do OS-wise? Some hint how to debug deeper?
-
-Thanks
-Lars
+> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> index 65ea21a..6e8c15a 100644
+> --- a/drivers/xen/swiotlb-xen.c
+> +++ b/drivers/xen/swiotlb-xen.c
+> @@ -147,9 +147,15 @@ void __init xen_swiotlb_init(int verbose)
+>  {
+>  	unsigned long bytes;
+>  	int rc;
+> -
+> -	xen_io_tlb_nslabs = (64 * 1024 * 1024 >> IO_TLB_SHIFT);
+> -	xen_io_tlb_nslabs = ALIGN(xen_io_tlb_nslabs, IO_TLB_SEGSIZE);
+> +	unsigned long nr_tbl;
+> +
+> +	nr_tbl = swioltb_nr_tbl();
+> +	if (nr_tbl)
+> +		xen_io_tlb_nslabs = nr_tbl;
+> +	else {
+> +		xen_io_tlb_nslabs = (64 * 1024 * 1024 >> IO_TLB_SHIFT);
+> +		xen_io_tlb_nslabs = ALIGN(xen_io_tlb_nslabs, IO_TLB_SEGSIZE);
+> +	}
+>  
+>  	bytes = xen_io_tlb_nslabs << IO_TLB_SHIFT;
+>  
+> diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+> index 8c0e349..445702c 100644
+> --- a/include/linux/swiotlb.h
+> +++ b/include/linux/swiotlb.h
+> @@ -24,6 +24,7 @@ extern int swiotlb_force;
+>  
+>  extern void swiotlb_init(int verbose);
+>  extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+> +extern unsigned long swioltb_nr_tbl(void);
+>  
+>  /*
+>   * Enumeration for sync targets
+> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> index 93ca08b..99093b3 100644
+> --- a/lib/swiotlb.c
+> +++ b/lib/swiotlb.c
+> @@ -110,6 +110,11 @@ setup_io_tlb_npages(char *str)
+>  __setup("swiotlb=", setup_io_tlb_npages);
+>  /* make io_tlb_overflow tunable too? */
+>  
+> +unsigned long swioltb_nr_tbl(void)
+> +{
+> +	return io_tlb_nslabs;
+> +}
+> +
+>  /* Note that this doesn't work with highmem page */
+>  static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
+>  				      volatile void *address)
