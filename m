@@ -1,204 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab1FFDLm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 23:11:42 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62855 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978Ab1FFDLO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 23:11:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=guqqbjTfprmoMf1TapDf8clNpa44mn0N9SfjQQ0f4MEsryuplBkUnuuXbU3r3EF9oX
-         /vd5od22g4tGa9MzJKXp/LZvvL2gcCwCZP1BekiojW5FGObEkuU/VJM4p2aT01vJ6lb4
-         Y9i4rY6SBEGOddANlh0Nwq1tRKXjC8Io6kDhU=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 4/4] x86: Call idle_exit() after irq_enter()
-Date: Mon,  6 Jun 2011 05:10:58 +0200
-Message-Id: <1307329858-14999-6-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1307329858-14999-1-git-send-email-fweisbec@gmail.com>
-References: <1307329858-14999-1-git-send-email-fweisbec@gmail.com>
+	id S1756428Ab1FFDUm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 23:20:42 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59863 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755370Ab1FFDUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 23:20:39 -0400
+Date: Mon, 6 Jun 2011 13:20:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for June 6
+Message-Id: <20110606132036.aebd73a4.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__6_Jun_2011_13_20_36_+1000_.L1iZ/_R._qk/jc/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-idle_exit() calls the idle notifier, which uses RCU. But
-this is called before we call irq_enter(), thus before we
-exit the RCU extended quiescent state if we are in idle.
+--Signature=_Mon__6_Jun_2011_13_20_36_+1000_.L1iZ/_R._qk/jc/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Fix this by calling the idle exit notifier after irq_enter().
+Hi all,
 
-This fixes the following warning:
+Changes since 20110603:
 
-[    0.559953] ===================================================
-[    0.559954] [ INFO: suspicious rcu_dereference_check() usage. ]
-[    0.559956] ---------------------------------------------------
-[    0.559958] kernel/notifier.c:81 invoked rcu_dereference_check() while in RCU extended quiescent state!
-[    0.559960]
-[    0.559961] other info that might help us debug this:
-[    0.559961]
-[    0.559962]
-[    0.559963] rcu_scheduler_active = 1, debug_locks = 1
-[    0.559965] 1 lock held by kworker/0:0/0:
-[    0.559966]  #0:  (rcu_read_lock){......}, at: [<ffffffff81785ce0>] __atomic_notifier_call_chain+0x0/0xa0
-[    0.559976]
-[    0.559977] stack backtrace:
-[    0.559980] Pid: 0, comm: kworker/0:0 Not tainted 3.0.0-rc1+ #108
-[    0.559981] Call Trace:
-[    0.559983]  <IRQ>  [<ffffffff8108e176>] lockdep_rcu_dereference+0xb6/0xf0
-[    0.559990]  [<ffffffff81785cca>] notifier_call_chain+0x13a/0x150
-[    0.559993]  [<ffffffff81785d47>] __atomic_notifier_call_chain+0x67/0xa0
-[    0.559996]  [<ffffffff81785ce0>] ? notifier_call_chain+0x150/0x150
-[    0.560000]  [<ffffffff812a454e>] ? do_raw_spin_unlock+0x5e/0xb0
-[    0.560000]  [<ffffffff81785d91>] atomic_notifier_call_chain+0x11/0x20
-[    0.560000]  [<ffffffff8100af73>] exit_idle+0x43/0x50
-[    0.560000]  [<ffffffff81027869>] smp_apic_timer_interrupt+0x39/0xa0
-[    0.560000]  [<ffffffff81789e13>] apic_timer_interrupt+0x13/0x20
-[    0.560000]  <EOI>  [<ffffffff810301e6>] ? native_safe_halt+0x6/0x10
-[    0.560000]  [<ffffffff8108fecd>] ? trace_hardirqs_on+0xd/0x10
-[    0.560000]  [<ffffffff810130ac>] default_idle+0x2c/0x50
-[    0.560000]  [<ffffffff810131c8>] amd_e400_idle+0x58/0x130
-[    0.560000]  [<ffffffff8100b069>] cpu_idle+0xb9/0x110
-[    0.560000]  [<ffffffff817795af>] start_secondary+0x1cf/0x1d6
+New tree: arm-lpae
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/apic/apic.c              |    6 +++---
- arch/x86/kernel/apic/io_apic.c           |    3 ++-
- arch/x86/kernel/cpu/mcheck/mce.c         |    2 +-
- arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
- arch/x86/kernel/cpu/mcheck/threshold.c   |    2 +-
- arch/x86/kernel/irq.c                    |    5 ++---
- 6 files changed, 10 insertions(+), 10 deletions(-)
+The sparc-current tree lost its build failure.
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index b961af8..73b61ff 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -855,8 +855,8 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
- 	 * Besides, if we don't timer interrupts ignore the global
- 	 * interrupt lock, which is the WrongThing (tm) to do.
- 	 */
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 	local_apic_timer_interrupt();
- 	irq_exit();
- 
-@@ -1789,8 +1789,8 @@ void smp_spurious_interrupt(struct pt_regs *regs)
- {
- 	u32 v;
- 
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 	/*
- 	 * Check if this really is a spurious interrupt and ACK it
- 	 * if it is a vectored one.  Just in case...
-@@ -1826,8 +1826,8 @@ void smp_error_interrupt(struct pt_regs *regs)
- 		"Illegal register address",	/* APIC Error Bit 7 */
- 	};
- 
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 	/* First tickle the hardware, only then report what went on. -- REW */
- 	v0 = apic_read(APIC_ESR);
- 	apic_write(APIC_ESR, 0);
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index e529339..f60bc30 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2275,8 +2275,9 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
- 	unsigned vector, me;
- 
- 	ack_APIC_irq();
--	exit_idle();
-+
- 	irq_enter();
-+	exit_idle();
- 
- 	me = smp_processor_id();
- 	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index ff1ae9b..7ba9757 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -470,8 +470,8 @@ static inline void mce_get_rip(struct mce *m, struct pt_regs *regs)
- asmlinkage void smp_mce_self_interrupt(struct pt_regs *regs)
- {
- 	ack_APIC_irq();
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 	mce_notify_irq();
- 	mce_schedule_work();
- 	irq_exit();
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index 27c6251..f6bbc64 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -396,8 +396,8 @@ static void (*smp_thermal_vector)(void) = unexpected_thermal_interrupt;
- 
- asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
- {
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 	inc_irq_stat(irq_thermal_count);
- 	smp_thermal_vector();
- 	irq_exit();
-diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c b/arch/x86/kernel/cpu/mcheck/threshold.c
-index d746df2..aa578ca 100644
---- a/arch/x86/kernel/cpu/mcheck/threshold.c
-+++ b/arch/x86/kernel/cpu/mcheck/threshold.c
-@@ -19,8 +19,8 @@ void (*mce_threshold_vector)(void) = default_threshold_interrupt;
- 
- asmlinkage void smp_threshold_interrupt(void)
- {
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 	inc_irq_stat(irq_threshold_count);
- 	mce_threshold_vector();
- 	irq_exit();
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 6c0802e..b01c5ed 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -180,8 +180,8 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
- 	unsigned vector = ~regs->orig_ax;
- 	unsigned irq;
- 
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 
- 	irq = __this_cpu_read(vector_irq[vector]);
- 
-@@ -208,9 +208,8 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
- 
- 	ack_APIC_irq();
- 
--	exit_idle();
--
- 	irq_enter();
-+	exit_idle();
- 
- 	inc_irq_stat(x86_platform_ipis);
- 
--- 
-1.7.5.2
+----------------------------------------------------------------------------
 
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 192 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging arm-lpae/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020ds.dts
+CONFLICT (content): Merge conflict in arch/powerpc/boot/dts/p2020rdb.dts
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+CONFLICT (content): Merge conflict in drivers/rtc/Kconfig
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging slave-dma/next
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging cpufreq-move/move-drivers
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
+mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
+e.c left in tree.
+$ git rm -f drivers/mmc/host/sdhci-of-core.c
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging gpio/gpio/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+CONFLICT (content): Merge conflict in kernel/rcutree.c
+Merging kvm/linux-next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+Merging bkl-config/config
+Merging tmem/linux-next
+Merging arm-dt/devicetree/arm-next
+Merging scsi-post-merge/merge-base:master
+
+--Signature=_Mon__6_Jun_2011_13_20_36_+1000_.L1iZ/_R._qk/jc/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN7EeEAAoJEDMEi1NhKgbs56EH/2Ec6Y9O0FUPr4VTn+JU2jJi
+Sr9zomMxr476AEIRCEmNZC8tK7x/hNZ59MTImJbQLyHRNG0FOXJpZdXEULoV1s1U
+C9icIBT+shHjxuYd2XKYe03T8JHtLWPKdM7IEePNCwCu9YycnWSUGQMJvh5yNAiF
+27vGaNk5azUUE/wYqtRY52uCm+aJWsKA8dtzyGz85BX2/GwrG8/N3Lsv+i2pAxfL
+8D4SQl3wHN5Yjwl5+zSHNhDNGDkRTNcCajVV0wAD2ONliW7oJF8ldMbHi2lubyhl
+xc+9I/YYzfaW8M1srGTQoUQlqSewXMU8/k1yLpEsFrhggQfTK/rBv0ONkCduQ8I=
+=ABkh
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__6_Jun_2011_13_20_36_+1000_.L1iZ/_R._qk/jc/--
