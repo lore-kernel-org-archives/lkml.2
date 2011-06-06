@@ -1,35 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757040Ab1FFMtw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 08:49:52 -0400
-Received: from mail.play-mail.info ([211.47.140.228]:51664 "EHLO
-	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756155Ab1FFMtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 08:49:50 -0400
+	id S1757012Ab1FFMua (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 08:50:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25381 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750964Ab1FFMu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 08:50:27 -0400
+Date: Mon, 6 Jun 2011 14:49:54 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        akpm@linux-foundation.org, Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110606124954.GC12887@random.random>
+References: <20110531143830.GC13418@barrios-laptop>
+ <20110602182302.GA2802@random.random>
+ <20110602202156.GA23486@barrios-laptop>
+ <20110602214041.GF2802@random.random>
+ <BANLkTim1WjdHWOQp7bMg5pFFKp1SSFoLKw@mail.gmail.com>
+ <20110602223201.GH2802@random.random>
+ <BANLkTikA+ugFNS95Zs_o6QqG2u4r2g93=Q@mail.gmail.com>
+ <20110603173707.GL2802@random.random>
+ <20110603180730.GM2802@random.random>
+ <20110606103216.GC5247@suse.de>
 MIME-Version: 1.0
-Message-Id: <110606214947P3.16915@mail.play-mail.info>
-Date: Mon, 6 Jun 2011 21:49:47 +0900
-From: =?UTF-8?B?44GK6L+U5LqL44Gr6L+344KP44KM44Gm44GE44KJ44Gj44GX44KD44GE44G+44GZ?= 
-	<marina4250@inter7.jp>
-To: linux-kernel@vger.kernel.org
-Content-Type: Text/Plain;charset="utf-8"
-Subject: =?UTF-8?B?44GK6L+U5LqL44Gr6L+344KP44KM44Gm44GE44KJ44Gj44GX44KD44GE44G+44GZ44GL77yf?=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606103216.GC5247@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p56Co2Cs006059
 
-マリナです！
-もしかして不安な思いにさせてしまっていますか？
-私の記憶が正しければ貴方は今まで女性からこういうお話を持ちかけられ関係を築いた事がないと伺っております。
+On Mon, Jun 06, 2011 at 11:32:16AM +0100, Mel Gorman wrote:
+> This patch is pulling in stuff from Minchan. Minimally his patch should
+> be kept separate to preserve history or his Signed-off should be
+> included on this patch.
 
-困惑してしまっているのかもしれないですね。申し訳ありません。
-私も冗談でこんなお話を貴方にもち掛けた訳ではありません。
-何度も迷い考えた結果でご連絡させて戴きました。
+Well I didn't apply Minchan's patch, just improved it as he suggested
+from pseudocode, but I can add his signed-off-by no prob.
 
-何も毎日私の相手をして欲しいとはそんな我侭な事は私も言いません。
-貴方には貴方の仕事も時間も仲間もいるでしょうから。でもその環境の中に私との時間を少しだけ組み込んで欲しいと願っているんです。
+> I still think this optimisation is rare and only applies if we are
+> encountering huge pages during the linear scan. How often are we doing
+> that really?
 
-今日待ってますので、具体的な金額、会う条件を決めましょう。
-そして、直接電話できたらと思ってます。   ���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Well it's so fast to do it, that it looks worthwhile. You probably
+noticed initially I suggested only the fix for page_count
+(theoretical) oops, and I argued we could improve some more bits, but
+then it was kind of obvious to improve the upper side of the loop too
+according to pseudocode.
+
+> 
+> > +				VM_BUG_ON(!isolated_pages);
+> 
+> This BUG_ON is overkill. hpage_nr_pages would have to return 0.
+> 
+> > +				VM_BUG_ON(isolated_pages > MAX_ORDER_NR_PAGES);
+> 
+> This would require order > MAX_ORDER_NR_PAGES to be passed into
+> isolate_lru_pages or for a huge page to be unaligned to a power of
+> two. The former is very unlikely and the latter is not supported by
+> any CPU.
+
+Minchan also disliked the VM_BUG_ON, it's clearly way overkill, but
+frankly the pfn physical scans are tricky enough things and if there's
+a race and the order is wrong for whatever reason (no compound page or
+overwritten by driver messing with subpages) we'll just trip into some
+weird pointer next iteration (or maybe not and it'll go ahead
+unnoticed if it's not beyond the range) and in that case I'd like to
+notice immediately.
+
+But probably it's too paranoid even of a VM_BUG_ON so I surely can
+remove it...
+
+> 
+> >  			} else {
+> > -				/* the page is freed already. */
+> > -				if (!page_count(cursor_page))
+> > +				/*
+> > +				 * Check if the page is freed already.
+> > +				 *
+> > +				 * We can't use page_count() as that
+> > +				 * requires compound_head and we don't
+> > +				 * have a pin on the page here. If a
+> > +				 * page is tail, we may or may not
+> > +				 * have isolated the head, so assume
+> > +				 * it's not free, it'd be tricky to
+> > +				 * track the head status without a
+> > +				 * page pin.
+> > +				 */
+> > +				if (!PageTail(cursor_page) &&
+> > +				    !__page_count(cursor_page))
+> >  					continue;
+> >  				break;
+> 
+> Ack to this part.
+
+This is also the only important part that fixes the potential oops.
+
+> I'm not keen on __page_count() as __ normally means the "unlocked"
+> version of a function although I realise that rule isn't universal
+> either. I can't think of a better name though.
+
+If better suggestions comes to mind I can change it... Or I can also
+use atomic_read like in the first patch... it's up to you. I figured
+it wasn't so nice to call atomic_read and there are other places in
+huge_memory.c that used that for bugchecks and it can be cleaned up
+with __page_count. The _count having _ prefix is the thing that makes
+it look like a more private field not to use in generic VM code so the
+raw value can be altered without changing all callers of __page_count
+similar to _mapcount.
