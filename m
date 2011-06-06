@@ -1,156 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757758Ab1FFTTW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 15:19:22 -0400
-Received: from d1.icnet.pl ([212.160.220.21]:46166 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752956Ab1FFTTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 15:19:20 -0400
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 3.0-rc1] PM / runtime: fix broken iteration over clock ids
-Date: Mon, 6 Jun 2011 21:18:17 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r5; KDE/4.4.5; i686; ; )
-Cc: linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-References: <201106051531.32878.jkrzyszt@tis.icnet.pl> <201106061947.36238.rjw@sisk.pl>
-In-Reply-To: <201106061947.36238.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106062118.18734.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+	id S1757822Ab1FFTUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 15:20:00 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:11412 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754165Ab1FFTT7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 15:19:59 -0400
+From: David Daney <ddaney@caviumnetworks.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org
+Cc: David Daney <ddaney@caviumnetworks.com>
+Subject: [RFC PATCH v5 0/6] MIPS: Octeon: Use Device Tree.
+Date: Mon,  6 Jun 2011 12:19:40 -0700
+Message-Id: <1307387986-27069-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 06 Jun 2011 19:19:58.0642 (UTC) FILETIME=[B9ABB920:01CC247E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 06 Jun 2011 at 19:47:36 Rafael J. Wysocki wrote:
-> Hi,
-> 
-> On Sunday, June 05, 2011, Janusz Krzysztofik wrote:
-> > In its current form, pm_runtime_clk_notify() iterates through sub-
-> > strings of pm_clk_notifier_block.con_ids[0] rather than consecutive
-> > pm_clk_notifier_block.con_ids[] elements. As a noticeable result,
-> > McBSP1 port no longer worked for me on updated
-> > arch/arm/mach-omap1/pm_bus.c (commit
-> > 600b776eb39a13a28b090ba9efceb0c69d4508aa, "OMAP1 / PM: Use generic
-> > clock manipulation routines for runtime PM"), not being able to
-> > activate "fck" when required.
-> > 
-> > Tested on Amstrad Delta.
-> > 
-> > Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-> > ---
-> > 
-> >  drivers/base/power/clock_ops.c |    6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > --- git/drivers/base/power/clock_ops.c.orig	2011-05-30
-> > 22:16:35.000000000 +0200 +++
-> > git/drivers/base/power/clock_ops.c	2011-06-05 15:19:55.000000000
-> > +0200 @@ -291,7 +291,7 @@ static int pm_runtime_clk_notify(struct
-> > 
-> >  {
-> >  
-> >  	struct pm_clk_notifier_block *clknb;
-> >  	struct device *dev = data;
-> > 
-> > -	char *con_id;
-> > +	char **con_id;
-> > 
-> >  	int error;
-> >  	
-> >  	dev_dbg(dev, "%s() %ld\n", __func__, action);
-> > 
-> > @@ -309,8 +309,8 @@ static int pm_runtime_clk_notify(struct
-> > 
-> >  		dev->pwr_domain = clknb->pwr_domain;
-> >  		if (clknb->con_ids[0]) {
-> > 
-> > -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
-> > -				pm_runtime_clk_add(dev, con_id);
-> > +			for (con_id = &clknb->con_ids[0]; *con_id; con_id++)
-> > +				pm_runtime_clk_add(dev, *con_id);
-> > 
-> >  		} else {
-> >  		
-> >  			pm_runtime_clk_add(dev, NULL);
-> >  		
-> >  		}
-> 
-> First off, sorry for the breakage.  Second, while the patch is
-> correct in the part is covered, it is incomplete (it also should
-> cover the !CONFIG_PM_RUNTIME case.  So, I think the appended patch
-> would be better.
+Note: Ralf has started to work on converting more of the MIPS tree to
+use the device tree.  We will be working to make both efforts mesh.
 
-That's right, please take it over.
+New in v5:
 
-Thanks,
-Janusz
+Build libfdt in the lib directory instead of devices/of, and include
+all libfdt files.
+
+Changes to of_find_node_by_path() requested by Grant Likely.
+
+New irq triggering mode constants.
+
+Boot protocol to pass flattened device tree from bootloader.  This
+protocol may change based on attempts to arrive at a common protocol
+for all MIPS boards.
+
+New in v4:
+
+Cleanup and error checking suggested by Sergei Shtylyov.
+
+Use device tree passed by bootloader if present.
+
+New in v3:
+
+More updates to device tree bindings, and perhaps more importantly
+descriptions/definitions of the bindings
+
+libfdt building moved to devices/of/libfdt.
+
+Cleanup and style improvements as suggested by Grant Likley.
+
+Omitted all the driver changes, as they are unchanged from the last
+set, and at this stage the patches are just an RFC.
+
+New in v2:
+
+Changed many device tree bindings.  They should be closer to the
+standard naming scheme now.
+
+Editing of the template device tree is done in the flattened form
+using libfdt.
+
+Standard platform driver functions used in preference to the
+ of_platform variety.
+
+v1:
+
+Background: The Octeon family of SOCs has a variety of on-chip
+controllers for Ethernet, MDIO, I2C, and several other I/O devices.
+These chips are used on boards with a great variety of different
+configurations.  To date, the configuration and bus topology
+information has been hard coded in the drivers and support code.
+
+To facilitate supporting new chips and boards, we would like to make
+use use the Device Tree to encode the configuration information.
+
+I would like to get some feedback on the current code I am working
+with.  The migration approach is as follows:
+
+o A device tree template is statically linked into the kernel image.
+  Based on SOC type and board type, legacy configuration probing code
+  is used to prune and patch the device tree template.
+
+o New SOCs and boards will directly use a device tree passed by the
+  bootloader.
 
 
-> Thanks,
-> Rafael
-> 
-> ---
->  drivers/base/power/clock_ops.c |   16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
-> 
-> Index: linux-2.6/drivers/base/power/clock_ops.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/base/power/clock_ops.c
-> +++ linux-2.6/drivers/base/power/clock_ops.c
-> @@ -291,7 +291,7 @@ static int pm_runtime_clk_notify(struct
->  {
->  	struct pm_clk_notifier_block *clknb;
->  	struct device *dev = data;
-> -	char *con_id;
-> +	char **con_id;
->  	int error;
-> 
->  	dev_dbg(dev, "%s() %ld\n", __func__, action);
-> @@ -309,8 +309,8 @@ static int pm_runtime_clk_notify(struct
-> 
->  		dev->pwr_domain = clknb->pwr_domain;
->  		if (clknb->con_ids[0]) {
-> -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
-> -				pm_runtime_clk_add(dev, con_id);
-> +			for (con_id = clknb->con_ids; *con_id; con_id++)
-> +				pm_runtime_clk_add(dev, *con_id);
->  		} else {
->  			pm_runtime_clk_add(dev, NULL);
->  		}
-> @@ -380,7 +380,7 @@ static int pm_runtime_clk_notify(struct
->  {
->  	struct pm_clk_notifier_block *clknb;
->  	struct device *dev = data;
-> -	char *con_id;
-> +	char **con_id;
-> 
->  	dev_dbg(dev, "%s() %ld\n", __func__, action);
-> 
-> @@ -389,16 +389,16 @@ static int pm_runtime_clk_notify(struct
->  	switch (action) {
->  	case BUS_NOTIFY_ADD_DEVICE:
->  		if (clknb->con_ids[0]) {
-> -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
-> -				enable_clock(dev, con_id);
-> +			for (con_id = clknb->con_ids; *con_id; con_id++)
-> +				enable_clock(dev, *con_id);
->  		} else {
->  			enable_clock(dev, NULL);
->  		}
->  		break;
->  	case BUS_NOTIFY_DEL_DEVICE:
->  		if (clknb->con_ids[0]) {
-> -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
-> -				disable_clock(dev, con_id);
-> +			for (con_id = clknb->con_ids; *con_id; con_id++)
-> +				disable_clock(dev, *con_id);
->  		} else {
->  			disable_clock(dev, NULL);
->  		}
+1/6 -  Infrastructure to allow scripts/dtc/libfdt to be used in the
+       kernel.
+
+2/6 - OF patch to simplify of_find_node_by_path().
+
+3/6 - Add the statically linked Device Tree templates and bindings
+      descriptions.
+
+4/6 - Remove unused arch/mips/prom.c code that conflicts with
+      following patches.
+
+5/6 - irq_create_of_mapping() function.
+
+6/6 - Fix up Device Tree template for current environment.
+
+David Daney (6):
+  of/lib: Allow scripts/dtc/libfdt to be used from kernel code
+  of: Make of_find_node_by_path() traverse /aliases for relative paths.
+  MIPS: Octeon: Add device tree source files.
+  MIPS: Prune some target specific code out of prom.c
+  MIPS: Octeon: Add irq_create_of_mapping() and GPIO interrupts.
+  MIPS: Octeon: Initialize and fixup device tree.
+
+ .../devicetree/bindings/mips/cavium/bootbus.txt    |   37 ++
+ .../devicetree/bindings/mips/cavium/ciu.txt        |   26 ++
+ .../devicetree/bindings/mips/cavium/gpio.txt       |   48 +++
+ .../devicetree/bindings/mips/cavium/mdio.txt       |   27 ++
+ .../devicetree/bindings/mips/cavium/mix.txt        |   40 ++
+ .../devicetree/bindings/mips/cavium/pip.txt        |   98 +++++
+ .../devicetree/bindings/mips/cavium/twsi.txt       |   34 ++
+ .../devicetree/bindings/mips/cavium/uart.txt       |   19 +
+ .../devicetree/bindings/mips/cavium/uctl.txt       |   47 +++
+ arch/mips/Kconfig                                  |    1 +
+ arch/mips/cavium-octeon/.gitignore                 |    2 +
+ arch/mips/cavium-octeon/Makefile                   |   16 +
+ arch/mips/cavium-octeon/octeon-irq.c               |  188 +++++++++-
+ arch/mips/cavium-octeon/octeon-platform.c          |  319 +++++++++++++++
+ arch/mips/cavium-octeon/octeon_3xxx.dts            |  427 ++++++++++++++++++++
+ arch/mips/cavium-octeon/setup.c                    |   39 ++
+ arch/mips/kernel/prom.c                            |   50 ---
+ drivers/of/base.c                                  |   65 +++-
+ include/linux/libfdt.h                             |    8 +
+ include/linux/libfdt_env.h                         |   13 +
+ lib/Kconfig                                        |    6 +
+ lib/Makefile                                       |    5 +
+ lib/fdt.c                                          |    2 +
+ lib/fdt_ro.c                                       |    2 +
+ lib/fdt_rw.c                                       |    2 +
+ lib/fdt_strerror.c                                 |    2 +
+ lib/fdt_sw.c                                       |    2 +
+ lib/fdt_wip.c                                      |    2 +
+ 28 files changed, 1473 insertions(+), 54 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/bootbus.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/ciu.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/gpio.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/mdio.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/mix.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/pip.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/twsi.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/uart.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/cavium/uctl.txt
+ create mode 100644 arch/mips/cavium-octeon/.gitignore
+ create mode 100644 arch/mips/cavium-octeon/octeon_3xxx.dts
+ create mode 100644 include/linux/libfdt.h
+ create mode 100644 include/linux/libfdt_env.h
+ create mode 100644 lib/fdt.c
+ create mode 100644 lib/fdt_ro.c
+ create mode 100644 lib/fdt_rw.c
+ create mode 100644 lib/fdt_strerror.c
+ create mode 100644 lib/fdt_sw.c
+ create mode 100644 lib/fdt_wip.c
+
+-- 
+1.7.2.3
+
