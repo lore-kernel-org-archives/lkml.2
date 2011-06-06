@@ -1,37 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab1FFPjG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 11:39:06 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39308 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757416Ab1FFPjC (ORCPT
+	id S1757236Ab1FFPk0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 11:40:26 -0400
+Received: from smtp-vbr4.xs4all.nl ([194.109.24.24]:1261 "EHLO
+	smtp-vbr4.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596Ab1FFPkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 11:39:02 -0400
-Date: Mon, 6 Jun 2011 11:38:56 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-cc: greg@kroah.com, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <balbi@ti.com>,
-        <ablay@codeaurora.org>, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v15 10/10] usb:dummy_hcd: Force FS device connection
- according to module parameter
-In-Reply-To: <1307360469-29120-10-git-send-email-tlinder@codeaurora.org>
-Message-ID: <Pine.LNX.4.44L0.1106061138060.1953-100000@iolanthe.rowland.org>
+	Mon, 6 Jun 2011 11:40:25 -0400
+Message-ID: <4DECF4E2.2010907@xs4all.nl>
+Date: Mon, 06 Jun 2011 17:40:18 +0200
+From: Jim Bos <jim876@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110429 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+References: <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com>	<4CE17C4B.1070305@xs4all.nl>	<20101115185848.GI2583@sunsite.ms.mff.cuni.cz>	<20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>	<AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com>	<20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>	<4CE1968D.3050706@xs4all.nl>	<4DE8DC16.6030308@xs4all.nl>	<20110603133351.GA25130@srcf.ucam.org>	<4DE8EF13.9030609@xs4all.nl>	<20110603144644.GA26782@srcf.ucam.org> <4DECEBE6.3060302@gmail.com>
+In-Reply-To: <4DECEBE6.3060302@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Jun 2011, Tatyana Brokhman wrote:
+On 06/06/2011 05:01 PM, Maarten Lankhorst wrote:
+> Hi Matthew,
+> 
+> 2011/6/3 Matthew Garrett <mjg59@srcf.ucam.org>:
+>> On Fri, Jun 03, 2011 at 04:26:27PM +0200, Jim Bos wrote:
+>>> On 06/03/2011 03:33 PM, Matthew Garrett wrote:
+>>>> ? You've got 143 boot services/code regions, which is more than I'd
+>>>> tested against, so I'm unsure whether we're overflowing something here.
+>>>>
+>>>
+>>> That's seems to be the only EFI patch in 2.6.39.1 and I effectively
+>>> removed by =not= applying (skipping) the parts of the 2.6.39.1 patch to
+>>> above 3 files.
+>>> So yes removing "x86, efi: Retain boot service code until after
+>>> switching to virtual mode" indeed fixes the problem for me.
+>>
+>> Ok, thanks. I'll look into that. Might be best to drop it from stable
+>> for the moment until I've made sure it works on machines with excessive
+>> maps.
+> 
+> Looking at your patch in 2.6.39.1
+> 
+> I see:
+> +               memblock_x86_reserve_range(start, start + size, "EFI Boot");
+> 
+> and to free it:
+> +               free_bootmem_late(start, size);
+> 
+> Maybe this is causing the pager issue on 3.0, can you test this patch?
+> 
+> 
+> efi: free memory with the correct call
+> 
+> Commit 916f676f8dc introduced a call to free_bootmem_late while it
+> reserves memory with memblock_x64_reserve_range
+> Fix this call to silence the swapper BUGs:
+> 
+> BUG: Bad page state in process swapper  pfn:00000
+> 
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> index 0d3a4fa..d2eefaa 100644
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -29,7 +29,6 @@
+>  #include <linux/kernel.h>
+>  #include <linux/init.h>
+>  #include <linux/efi.h>
+> -#include <linux/bootmem.h>
+>  #include <linux/memblock.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/uaccess.h>
+> @@ -334,7 +333,7 @@ static void __init efi_free_boot_services(void)
+>  		    md->type != EFI_BOOT_SERVICES_DATA)
+>  			continue;
+>  
+> -		free_bootmem_late(start, size);
+> +		memblock_x86_free_memory_in_range(start, start + size);
+>  	}
+>  }
+>  
+> 
+> --
+> ~Maarten
+> 
 
-> This patch adds a new module parameter to dummy_hcd: is_high_speed
-> When set to false the connected device will be forced to operate in FS
-> mode. The default of this parameter is true.
+For me that indeed gets rid of the "BUG Bad page state...", ie. all is
+fine on 3.0-rc1 with this patch on top.
 
-You might want to print out some kind of error message if the user 
-specifies is_super_speed = True and is_high_speed = False.
+Tested-By: Jim Bos <jim876@xs4all.nl>
 
-Alan Stern
+Jim.
 
