@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390Ab1FFPmO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 11:42:14 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:36701 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751596Ab1FFPmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757536Ab1FFPmQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 11:42:16 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61633 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab1FFPmK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Jun 2011 11:42:10 -0400
-Date: Mon, 6 Jun 2011 17:41:46 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: pageexec@freemail.hu
-Cc: Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
-Message-ID: <20110606154146.GM30348@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>
- <20110605193001.GB3971@elte.hu>
- <BANLkTikQB6=Te6=E7DRmeD5+G4TESuy--w@mail.gmail.com>
- <4DECA101.5994.11CF924E@pageexec.freemail.hu>
+From: Arnd Bergmann <arnd@arndb.de>
+To: Timur Tabi <timur@freescale.com>
+Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor management driver
+Date: Mon, 6 Jun 2011 17:42:01 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: kumar.gala@freescale.com, benh@kernel.crashing.org, greg@kroah.com,
+        akpm@kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
+References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106031724.44957.arnd@arndb.de> <4DE8FD85.7000703@freescale.com>
+In-Reply-To: <4DE8FD85.7000703@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DECA101.5994.11CF924E@pageexec.freemail.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106061742.01974.arnd@arndb.de>
+X-Provags-ID: V02:K0:QHCZYr+4MsS2imWCjqQZlqANB4aTfPu+vPSmFWgGqvX
+ BxKRC9+tJlPbn9KZDn0vme/DNgA7ExNEAu+7HMeDjryYnnLMEi
+ QTiozhIj8ByGs8MRWR65RVoE5hrIFT8zqiMsxDd9onaE+CSDj4
+ Mi3i5PQm1k8ZilBl7txEDrdvQrdh0svrW7A4p+qbLSR8rgmto2
+ yxuM4n2Vc4UO0HHZKWrfg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* pageexec@freemail.hu <pageexec@freemail.hu> wrote:
-
-> > I can't see any problem, but exploit writers are exceedingly 
-> > clever, and maybe someone has a use for a piece of the code that 
-> > isn't a syscall.  Just as a completely artificial example, here's 
-> > some buggy code:
+On Friday 03 June 2011, Timur Tabi wrote:
+> Arnd Bergmann wrote:
+> >> > I don't think it's correct to think of a hypervisor as firmware, so I don't
+> >> > think drivers/firmware is better.
+> >> > 
+> >> > I'm not sure that creating virt/fsl and putting the driver in there is a good
+> >> > idea, because it will be the only driver in that directory.  Unlike KVM, this
+> >> > driver is just a collection of front-ends to our hypervisor API.  The actual
+> >> > hypervisor is completely separate.  That's why I put it in drivers/misc, because
+> >> > it's just a single driver with a miscellaneous collection of interfaces.
 > 
-> what you're describing here is a classical ret2libc (in modern 
-> marketing speak, ROP) attack. in general, having an executable ret 
-> insn (with an optional pop even) at a fixed address is very useful, 
-> especially for the all too classical case of stack overflows where 
-> the attacker may already know of a 'good' function pointer 
-> somewhere on the stack but in order to have the cpu reach it, he 
-> needs to pop enough bytes off of it. guess what they'll use this 
-> ret at a fixed address for...
+> > Ok, fair enough. If nobody has a strong preference any other way, just make it
+> > drivers/firmware then.
+> 
+> Did you mean to say drivers/misc?
 
-Good point and i agree that we should get rid of the RETQ there. The 
-do_intcc() code can fetch the return address without much fuss - this 
-is much faster than doing a #PF.
+Sorry, I misread your first sentence above. I thought you said that you prefer
+drivers/firmware over virt/fsl. drivers/misc is definitely the wrong
+place for this, please choose a better one. Maybe drivers/virt/ ?
 
-Please keep reviewing these patches, the security-technical aspects 
-of your reviews are extremely useful.
-
-> imho, moving everything to and executing from the vdso page is the 
-> only viable solution if you really want to fix the security aspect 
-> of the vsyscall mess. it's worked fine for PaX for years now ;).
-
-FYI, this probably means that no-one ever benchmared postgresql 
-scalability on a PaX kernel i suspect? Past versions of postgresql 
-would big time if you drive the vsyscall time() through through a
-#PF ...
-
-Thanks,
-
-	Ingo
+	Arnd
