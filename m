@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab1FFDLV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 23:11:21 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:32919 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755944Ab1FFDLM (ORCPT
+	id S1756296Ab1FFDLm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 23:11:42 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62855 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978Ab1FFDLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 23:11:12 -0400
+	Sun, 5 Jun 2011 23:11:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=qM0HH6eHPzLV4I7dvq6IqLAHOGDt6y9Rp/zbQbgOsxs3EWSjeJ9t/XcBlANXTNOSjr
-         4hjaG9EACeek9F+5l9IlWKYHEaBBB1obxM9N+hm2M0vCB9qS+xxa7saFaygrBndzZlRI
-         YMDLtRkkDmqavrc8NJn6hr/75QRmLu7kwjYn8=
+        b=guqqbjTfprmoMf1TapDf8clNpa44mn0N9SfjQQ0f4MEsryuplBkUnuuXbU3r3EF9oX
+         /vd5od22g4tGa9MzJKXp/LZvvL2gcCwCZP1BekiojW5FGObEkuU/VJM4p2aT01vJ6lb4
+         Y9i4rY6SBEGOddANlh0Nwq1tRKXjC8Io6kDhU=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3/4] x86: Don't call idle notifier inside rcu extended QS
-Date: Mon,  6 Jun 2011 05:10:57 +0200
-Message-Id: <1307329858-14999-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/4] x86: Call idle_exit() after irq_enter()
+Date: Mon,  6 Jun 2011 05:10:58 +0200
+Message-Id: <1307329858-14999-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1307329858-14999-1-git-send-email-fweisbec@gmail.com>
 References: <1307329858-14999-1-git-send-email-fweisbec@gmail.com>
@@ -29,37 +29,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The idle notifier in enter_idle / __exit_idle is called
-inside the RCU extended quiescent state.
+idle_exit() calls the idle notifier, which uses RCU. But
+this is called before we call irq_enter(), thus before we
+exit the RCU extended quiescent state if we are in idle.
 
-This results in the following warning:
+Fix this by calling the idle exit notifier after irq_enter().
 
-[    2.081278] ===================================================
-[    2.081281] [ INFO: suspicious rcu_dereference_check() usage. ]
-[    2.081282] ---------------------------------------------------
-[    2.081284] kernel/notifier.c:81 invoked rcu_dereference_check() while in RCU extended quiescent state!
-[    2.081286]
-[    2.081287] other info that might help us debug this:
-[    2.081288]
-[    2.081289]
-[    2.081289] rcu_scheduler_active = 1, debug_locks = 0
-[    2.081292] 1 lock held by kworker/0:0/0:
-[    2.081293]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff81785c60>] __atomic_notifier_call_chain+0x0/0xa0
-[    2.081301]
-[    2.081302] stack backtrace:
-[    2.081305] Pid: 0, comm: kworker/0:0 Not tainted 3.0.0-rc1+ #103
-[    2.081307] Call Trace:
-[    2.081313]  [<ffffffff8108e0e4>] lockdep_rcu_dereference+0xd4/0x100
-[    2.081316]  [<ffffffff81785c4a>] notifier_call_chain+0x13a/0x150
-[    2.081319]  [<ffffffff81785cc7>] __atomic_notifier_call_chain+0x67/0xa0
-[    2.081322]  [<ffffffff81785c60>] ? notifier_call_chain+0x150/0x150
-[    2.081325]  [<ffffffff81785d11>] atomic_notifier_call_chain+0x11/0x20
-[    2.081329]  [<ffffffff8100afa0>] enter_idle+0x20/0x30
-[    2.081332]  [<ffffffff8100b05e>] cpu_idle+0xae/0x100
-[    2.081335]  [<ffffffff8177951f>] start_secondary+0x1cf/0x1d6
+This fixes the following warning:
 
-Fix this by entering RCU extended QS later, after we call the
-notifier. Exit it also sooner to call the exit idle notifier.
+[    0.559953] ===================================================
+[    0.559954] [ INFO: suspicious rcu_dereference_check() usage. ]
+[    0.559956] ---------------------------------------------------
+[    0.559958] kernel/notifier.c:81 invoked rcu_dereference_check() while in RCU extended quiescent state!
+[    0.559960]
+[    0.559961] other info that might help us debug this:
+[    0.559961]
+[    0.559962]
+[    0.559963] rcu_scheduler_active = 1, debug_locks = 1
+[    0.559965] 1 lock held by kworker/0:0/0:
+[    0.559966]  #0:  (rcu_read_lock){......}, at: [<ffffffff81785ce0>] __atomic_notifier_call_chain+0x0/0xa0
+[    0.559976]
+[    0.559977] stack backtrace:
+[    0.559980] Pid: 0, comm: kworker/0:0 Not tainted 3.0.0-rc1+ #108
+[    0.559981] Call Trace:
+[    0.559983]  <IRQ>  [<ffffffff8108e176>] lockdep_rcu_dereference+0xb6/0xf0
+[    0.559990]  [<ffffffff81785cca>] notifier_call_chain+0x13a/0x150
+[    0.559993]  [<ffffffff81785d47>] __atomic_notifier_call_chain+0x67/0xa0
+[    0.559996]  [<ffffffff81785ce0>] ? notifier_call_chain+0x150/0x150
+[    0.560000]  [<ffffffff812a454e>] ? do_raw_spin_unlock+0x5e/0xb0
+[    0.560000]  [<ffffffff81785d91>] atomic_notifier_call_chain+0x11/0x20
+[    0.560000]  [<ffffffff8100af73>] exit_idle+0x43/0x50
+[    0.560000]  [<ffffffff81027869>] smp_apic_timer_interrupt+0x39/0xa0
+[    0.560000]  [<ffffffff81789e13>] apic_timer_interrupt+0x13/0x20
+[    0.560000]  <EOI>  [<ffffffff810301e6>] ? native_safe_halt+0x6/0x10
+[    0.560000]  [<ffffffff8108fecd>] ? trace_hardirqs_on+0xd/0x10
+[    0.560000]  [<ffffffff810130ac>] default_idle+0x2c/0x50
+[    0.560000]  [<ffffffff810131c8>] amd_e400_idle+0x58/0x130
+[    0.560000]  [<ffffffff8100b069>] cpu_idle+0xb9/0x110
+[    0.560000]  [<ffffffff817795af>] start_secondary+0x1cf/0x1d6
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
@@ -68,48 +75,130 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/kernel/process_64.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ arch/x86/kernel/apic/apic.c              |    6 +++---
+ arch/x86/kernel/apic/io_apic.c           |    3 ++-
+ arch/x86/kernel/cpu/mcheck/mce.c         |    2 +-
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
+ arch/x86/kernel/cpu/mcheck/threshold.c   |    2 +-
+ arch/x86/kernel/irq.c                    |    5 ++---
+ 6 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 3fe0883..a8bd222 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -120,7 +120,7 @@ void cpu_idle(void)
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index b961af8..73b61ff 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -855,8 +855,8 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+ 	 * Besides, if we don't timer interrupts ignore the global
+ 	 * interrupt lock, which is the WrongThing (tm) to do.
+ 	 */
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 	local_apic_timer_interrupt();
+ 	irq_exit();
  
- 	/* endless idle loop with no priority at all */
- 	while (1) {
--		tick_nohz_enter_idle();
-+		tick_nohz_stop_sched_tick(1);
- 		while (!need_resched()) {
+@@ -1789,8 +1789,8 @@ void smp_spurious_interrupt(struct pt_regs *regs)
+ {
+ 	u32 v;
  
- 			rmb();
-@@ -134,18 +134,23 @@ void cpu_idle(void)
- 			 */
- 			local_irq_disable();
- 			enter_idle();
-+			/*
-+			 * We can't enter extended QS before due to idle
-+			 * notifier that uses RCU.
-+			 */
-+			rcu_enter_nohz();
- 			/* Don't trace irqs off for idle */
- 			stop_critical_timings();
- 			pm_idle();
- 			start_critical_timings();
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 	/*
+ 	 * Check if this really is a spurious interrupt and ACK it
+ 	 * if it is a vectored one.  Just in case...
+@@ -1826,8 +1826,8 @@ void smp_error_interrupt(struct pt_regs *regs)
+ 		"Illegal register address",	/* APIC Error Bit 7 */
+ 	};
+ 
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 	/* First tickle the hardware, only then report what went on. -- REW */
+ 	v0 = apic_read(APIC_ESR);
+ 	apic_write(APIC_ESR, 0);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index e529339..f60bc30 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2275,8 +2275,9 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
+ 	unsigned vector, me;
+ 
+ 	ack_APIC_irq();
+-	exit_idle();
++
+ 	irq_enter();
++	exit_idle();
+ 
+ 	me = smp_processor_id();
+ 	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index ff1ae9b..7ba9757 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -470,8 +470,8 @@ static inline void mce_get_rip(struct mce *m, struct pt_regs *regs)
+ asmlinkage void smp_mce_self_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 	mce_notify_irq();
+ 	mce_schedule_work();
+ 	irq_exit();
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 27c6251..f6bbc64 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -396,8 +396,8 @@ static void (*smp_thermal_vector)(void) = unexpected_thermal_interrupt;
+ 
+ asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
+ {
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 	inc_irq_stat(irq_thermal_count);
+ 	smp_thermal_vector();
+ 	irq_exit();
+diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c b/arch/x86/kernel/cpu/mcheck/threshold.c
+index d746df2..aa578ca 100644
+--- a/arch/x86/kernel/cpu/mcheck/threshold.c
++++ b/arch/x86/kernel/cpu/mcheck/threshold.c
+@@ -19,8 +19,8 @@ void (*mce_threshold_vector)(void) = default_threshold_interrupt;
+ 
+ asmlinkage void smp_threshold_interrupt(void)
+ {
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 	inc_irq_stat(irq_threshold_count);
+ 	mce_threshold_vector();
+ 	irq_exit();
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 6c0802e..b01c5ed 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -180,8 +180,8 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
+ 	unsigned vector = ~regs->orig_ax;
+ 	unsigned irq;
+ 
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 
+ 	irq = __this_cpu_read(vector_irq[vector]);
+ 
+@@ -208,9 +208,8 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
+ 
+ 	ack_APIC_irq();
+ 
+-	exit_idle();
 -
-+			rcu_exit_nohz();
- 			/* In many cases the interrupt that ended idle
- 			   has already called exit_idle. But some idle
- 			   loops can be woken up without interrupt. */
- 			__exit_idle();
- 		}
+ 	irq_enter();
++	exit_idle();
  
--		tick_nohz_exit_idle();
-+		tick_nohz_restart_sched_tick();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
+ 	inc_irq_stat(x86_platform_ipis);
+ 
 -- 
 1.7.5.2
 
