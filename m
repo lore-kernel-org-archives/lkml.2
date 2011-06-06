@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab1FFQIg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:08:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36975 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab1FFQIc (ORCPT
+	id S1754181Ab1FFQJr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:09:47 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:24613 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199Ab1FFQJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:08:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=jpZ6DfE0VRP7Qn8h9UiOpRqj5+duYGqiXXm6O5y8Z/tV8m6Nn3l19nodyI36VmYt9i
-         r+VNES476luO35X/omQ3I5dEsvkC7mypsjlwKsnHLCeBPZRZ5ZLTCvjf1aftd1CBkuDA
-         90k9yrxpjnEWXtOlBC7a6y23x/BYHpfVzzBQ8=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]Documentation:i2o:ioctl Fix typo Settting.
-Date: Mon,  6 Jun 2011 09:08:10 -0700
-Message-Id: <1307376490-2781-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
+	Mon, 6 Jun 2011 12:09:45 -0400
+X-SpamScore: -8
+X-BigFish: VS-8(zz1419M98dKzz1202hzzz2dh2a8h668h839h8e3h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4DECFBC5.6070205@freescale.com>
+Date: Mon, 6 Jun 2011 11:09:41 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Deepak Saxena <dsaxena@linaro.org>, <kumar.gala@freescale.com>,
+        <benh@kernel.crashing.org>, <greg@kroah.com>, <akpm@kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-console@vger.kernel.org>
+Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
+ management driver
+References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106061742.01974.arnd@arndb.de> <4DECF6B3.5020700@freescale.com> <201106061803.58531.arnd@arndb.de>
+In-Reply-To: <201106061803.58531.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
+Arnd Bergmann wrote:
+> When we talked about the situation of drivers/misc and drivers/char at
+> one of the recent conferences, a broad consensus was that they are in
+> need of a maintainer, which I foolishly signed up for. Deepak wanted
+> to send an update to the MAINTAINERS file for this (I guess I can do
+> that too, since he must have forgotten about it), but the main idea is
+> that I'm there to say no to any driver that someone tries to add there,
+> unless there are really good reasons why it is actually a good place
+> to live for that driver.
 
-The below patch fixes a typo "Settting" to "Setting".
-Note: I might have sent something similar, but looking through
-my archives I dont see anything.
+Can you give me an example of a driver that *does* belong in drivers/misc?
+Frankly, I just don't see what's wrong with a repository of various drivers that
+don't really belong anywhere else.
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+And what about my concern that my driver will be the only one in drivers/virt?
 
----
- Documentation/i2o/ioctl |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/i2o/ioctl b/Documentation/i2o/ioctl
-index 1e77fac..22ca53a 100644
---- a/Documentation/i2o/ioctl
-+++ b/Documentation/i2o/ioctl
-@@ -110,7 +110,7 @@ V. Getting Logical Configuration Table
-       ENOBUFS     Buffer not large enough.  If this occurs, the required
-                   buffer length is written into *(lct->reslen)
- 
--VI. Settting Parameters
-+VI. Setting Parameters
- 
-    SYNOPSIS
- 
 -- 
-1.7.5.2
+Timur Tabi
+Linux kernel developer at Freescale
 
