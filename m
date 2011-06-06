@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758023Ab1FFWHM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:07:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60329 "EHLO hera.kernel.org"
+	id S1757972Ab1FFWIX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:08:23 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59176 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab1FFWHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 18:07:10 -0400
-Date: Mon, 6 Jun 2011 22:06:48 GMT
-From: tip-bot for Josh Triplett <josh@joshtriplett.org>
-Message-ID: <tip-f505c553dbe24b18a8590eb0eb5890a839acd0c3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, sam@ravnborg.org, fweisbec@gmail.com,
-        tglx@linutronix.de, josh@joshtriplett.org, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        sam@ravnborg.org, torvalds@linux-foundation.org, fweisbec@gmail.com,
-        tglx@linutronix.de, josh@joshtriplett.org, mingo@elte.hu
-In-Reply-To: <20110606012358.GA1909@leaf>
-References: <20110606012358.GA1909@leaf>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/debug] debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
-Git-Commit-ID: f505c553dbe24b18a8590eb0eb5890a839acd0c3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752569Ab1FFWIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 18:08:22 -0400
+Date: Tue, 7 Jun 2011 00:08:06 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arne Jansen <lists@die-jansens.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+Message-ID: <20110606220806.GC12079@elte.hu>
+References: <20110606155236.GA7374@elte.hu>
+ <1307376039.2322.164.camel@twins>
+ <20110606160810.GA16636@elte.hu>
+ <1307376771.2322.168.camel@twins>
+ <20110606161749.GA22157@elte.hu>
+ <1307378649.2322.198.camel@twins>
+ <20110606171153.GE2391@elte.hu>
+ <4DED1519.2020803@die-jansens.de>
+ <20110606180733.GA20123@elte.hu>
+ <1307384349.2497.732.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Jun 2011 22:06:49 +0000 (UTC)
+In-Reply-To: <1307384349.2497.732.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f505c553dbe24b18a8590eb0eb5890a839acd0c3
-Gitweb:     http://git.kernel.org/tip/f505c553dbe24b18a8590eb0eb5890a839acd0c3
-Author:     Josh Triplett <josh@joshtriplett.org>
-AuthorDate: Sun, 5 Jun 2011 18:23:58 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 7 Jun 2011 00:05:15 +0200
 
-debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-Several debugging options currently default to y, such as
-CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.  Embedded users
-might want to turn those options off to save space; however,
-turning them off requires turning on CONFIG_DEBUG_KERNEL to
-unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
-unhide debugging options, and CONFIG_EXPERT exists specifically
-to unhide options potentially needed by experts and/or embedded
-users, make CONFIG_EXPERT automatically imply
-CONFIG_DEBUG_KERNEL.
+> On Mon, 2011-06-06 at 20:07 +0200, Ingo Molnar wrote:
+> 
+> >  - The first one that minimally removes the lockdep_off()/on() dance 
+> >    and fixes the regression: the patch that i sent earlier today.
+> >    I *think* that should fix the crash.
+> > 
+> >    3.0 material.
+> 
+> I think the lock_is_held() fix is the urgent one, all the others are
+> make printk() suck less patches, ie. not so very important.
+> 
+> Without that lock_is_held() thing all lockdep_off() sites, inc ntfs will
+> still be able to trigger this problem.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20110606012358.GA1909@leaf
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- init/Kconfig |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ok. Could you please send a changeloggified patch with a 
+Reported-and-tested-by from Arne in a new thread, etc?
 
-diff --git a/init/Kconfig b/init/Kconfig
-index ebafac4..14370d3 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -909,6 +909,8 @@ config ANON_INODES
- 
- menuconfig EXPERT
- 	bool "Configure standard kernel features (expert users)"
-+	# Unhide debug options, to make the on-by-default options visible
-+	select DEBUG_KERNEL
- 	help
- 	  This option allows certain base kernel options and settings
-           to be disabled or tweaked. This is for specialized
+Thanks,
+
+	Ingo
