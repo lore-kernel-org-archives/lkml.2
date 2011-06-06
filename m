@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab1FFQLy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:11:54 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47255 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147Ab1FFQLt (ORCPT
+	id S1755797Ab1FFQMR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:12:17 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:39364 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754422Ab1FFQMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:11:49 -0400
+	Mon, 6 Jun 2011 12:12:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ENSrXIVSdOtG8WPL+CQUxZ0+85S5pkRkuGFUqsyD0OTQ/mCJ2+Z9PVWN46MMo5p0l4
-         DvTnJFq75n5bHiUI15TgwFFsPn6T8FSwihsFLuEUOqoOaKpgvE7eYHNDv8gFP6XddZmh
-         qNIB6bygst/4rnrMYMEbMImsH/Dm0AzQ09Xd8=
-Subject: Re: bridge/netfilter: regression in 2.6.39.1
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org
-In-Reply-To: <20110606153213.GC1000@hmsreliant.think-freely.org>
-References: <4DE93422.3070000@ahsoftware.de>
-	 <20110606111507.GA1000@hmsreliant.think-freely.org>
-	 <4DECBEA3.6070408@ahsoftware.de> <1307362358.3098.6.camel@edumazet-laptop>
-	 <4DECCCC0.70905@ahsoftware.de> <1307366166.3098.15.camel@edumazet-laptop>
-	 <4DECD657.9010807@ahsoftware.de> <1307370363.3098.37.camel@edumazet-laptop>
-	 <20110606153213.GC1000@hmsreliant.think-freely.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 18:11:45 +0200
-Message-ID: <1307376705.3098.58.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=KVk8FhlRCkRAK8eJj8RzrKfzWGB/S9/GUgCj1JMcVYbJcuIGujOeU8ZVEf3qiyzhXk
+         vFqaL3CLPratD98FFZLV+U/UnIa+6AS5+UHEbe2JSMY73oTGEV4q3uo/RR2l+wgOL623
+         V9PFa09QF8ZhKSCfLDGUYjn5Qu6wgObmavEcE=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]drivers:media:dvb:frontends:s5h1420.c Change: clock_settting to clock_setting
+Date: Mon,  6 Jun 2011 09:11:52 -0700
+Message-Id: <1307376712-3283-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 06 juin 2011 à 11:32 -0400, Neil Horman a écrit :
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-> Not to drag this out further, but since you illustrated the correct way to do
-> this with the blackhole_ops test, and this modification now gives us two
-> instances of that case, would it perhaps be better to just do this in
-> dst_metrics_write_ptr:
-> 
-> return dst->ops->cow_metrics ? return dst->ops->cow_metrics(dst, p) : NULL;
-> 
-> Then we could eliminate the two functions that do nothing be retun NULL (along
-> with their respective call instructions), and save any future users from having
-> to remember to include a dummy cow_metrics method if they happen to set the read
-> only flag on thier dst_ops?
+The below patch, changes clock_settting to clock_setting. 
+Note: This could be intentionally set this way from the beginning and/or is a typo.
 
-Well, I prefer how David coded the thing.
-We can add selective traces where we want.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Having a default behavior might give much more work to find a bug in
-this area. A NULL pointer access gives us an immediate indication.
+---
+ drivers/media/dvb/frontends/s5h1420.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Its a bit late to add an "if (dst->ops->cow_metrics)" test now that we
-covered all call sites ;)
-
-But we probably have more bugs elsewhere, because of many dst changes in
-2.6.39
-
-
+diff --git a/drivers/media/dvb/frontends/s5h1420.c b/drivers/media/dvb/frontends/s5h1420.c
+index 17f8cdf..3879d2e 100644
+--- a/drivers/media/dvb/frontends/s5h1420.c
++++ b/drivers/media/dvb/frontends/s5h1420.c
+@@ -634,7 +634,7 @@ static int s5h1420_set_frontend(struct dvb_frontend* fe,
+ 	struct s5h1420_state* state = fe->demodulator_priv;
+ 	int frequency_delta;
+ 	struct dvb_frontend_tune_settings fesettings;
+-	uint8_t clock_settting;
++	uint8_t clock_setting;
+ 
+ 	dprintk("enter %s\n", __func__);
+ 
+@@ -684,19 +684,19 @@ static int s5h1420_set_frontend(struct dvb_frontend* fe,
+ 	switch (state->fclk) {
+ 	default:
+ 	case 88000000:
+-		clock_settting = 80;
++		clock_setting = 80;
+ 		break;
+ 	case 86000000:
+-		clock_settting = 78;
++		clock_setting = 78;
+ 		break;
+ 	case 80000000:
+-		clock_settting = 72;
++		clock_setting = 72;
+ 		break;
+ 	case 59000000:
+-		clock_settting = 51;
++		clock_setting = 51;
+ 		break;
+ 	case 44000000:
+-		clock_settting = 36;
++		clock_setting = 36;
+ 		break;
+ 	}
+ 	dprintk("pll01: %d, ToneFreq: %d\n", state->fclk/1000000 - 8, (state->fclk + (TONE_FREQ * 32) - 1) / (TONE_FREQ * 32));
+-- 
+1.7.5.2
 
