@@ -1,46 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab1FFMWY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 08:22:24 -0400
-Received: from mga14.intel.com ([143.182.124.37]:23444 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754357Ab1FFMWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 08:22:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,326,1304319600"; 
-   d="scan'208";a="7739619"
-Date: Mon, 6 Jun 2011 13:09:45 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@suse.de, jirislaby@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serial: 8250, increase PASS_LIMIT
-Message-ID: <20110606130945.7ad9edef@bob.linux.org.uk>
-In-Reply-To: <1307307109-27776-1-git-send-email-jslaby@suse.cz>
-References: <1307307109-27776-1-git-send-email-jslaby@suse.cz>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755876Ab1FFMRM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 08:17:12 -0400
+Received: from nat-warsl417-02.aon.at ([195.3.96.120]:11987 "EHLO email.aon.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754559Ab1FFMRL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 08:17:11 -0400
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Jun 2011 08:17:10 EDT
+Date: Mon, 6 Jun 2011 14:10:25 +0200 (CEST)
+From: Johannes Bauer <hannes_bauer@aon.at>
+Reply-To: hannes_bauer@aon.at
+To: Monica Puig-Pey <puigpeym@unican.es>,
+        Rolando Martins <rolando.martins@gmail.com>
+Cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <4829399.10721.1307362225402.JavaMail.root@WARSBL213.highway.telekom.at>
+Subject: Re: Changing Kernel thread priorities
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+X-MSMail-Priority: Normal
+Sensitivity: Normal
+X-Originating-IP: 81.223.102.6
+X-Mailer: aon Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  5 Jun 2011 22:51:49 +0200
-Jiri Slaby <jslaby@suse.cz> wrote:
+Hi!
 
-> From: Jiri Slaby <jirislaby@gmail.com>
-> 
-> With virtual machines like qemu, it's pretty common to see "too much
-> work for irq4" messages nowadays. This happens when a bunch of output
-> is printed on the emulated serial console. This is caused by too low
-> PASS_LIMIT. When ISR loops more than the limit, it spits the message.
-> 
-> I've been using a kernel with doubled the limit and I couldn't see no
-> problems. Maybe it's time to get rid of the message now?
+i thought i sent you the discussion already...
 
-We need a limit to deal with hangs caused by misconfiguration /
-mis-detection on ISA ports in particular but we can certainly bump the
-limit to handle poor emulations.
+But again, here is how Remy Bohmer does it using the same sched_setscheduler call!
+http://www.mail-archive.com/linux-rt-users@vger.kernel.org/msg01046.html
+
+If it does not help you, i woul dsuggest to post your code, maybe this would help people to help you...
+
+regards JB
+
+
+
+----- Ursprüngliche Nachricht -----
+Von: "Monica Puig-Pey" <puigpeym@unican.es>
+Erhalten: 06.06.2011 13:58
+An: "Rolando Martins" <rolando.martins@gmail.com>
+
+El 06/06/11 13:54, Rolando Martins escribió:
+> Hi,
+> I use the following:
+>
+> PIDs=$(ps -eLo pid,cls,rtprio,pri,nice,cmd | grep -i "irq" | awk '{
+> print $1; }' | xargs echo)
+> for i in $PIDs
+> do
+> ret=$(chrt -f -p 99 $i)
+> done
+>
+> This will change the kernel thread associated with an irq handler to
+> RT FIFO prio 99.
+> Just change the script to your specific interrupt.
+>
+> Hope it helps,
+> Rolando
+>
+> On Mon, Jun 6, 2011 at 12:47 PM, Monica Puig-Pey wrote:
+>> I am writing a driver which has one kernel thread associated with it.
+>> I want to change the priority of this thread, so that I can specify the
+>> order in which it is scheduled following an interrupt.
+>> I'm using:
+>>
+>> sched_setscheduler(struct task_struct *, int, struct sched_param *);
+>>
+>> but it doesn't work. I tried to change the priority from the init_module,
+>> and also from the Kernel Thread, but there is no way.
+>>
+>> Kernel version is 2.6.31-11-rt
+>>
+>> What do I call to change a kernel thread priority?
+>>
+>> Thanks you very much
+>>
+>> Mónica
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>
+
+I need to change the priority from inside the driver, when creating the 
+kernel thread.
+Your script is useful but it is done in user context,
+Any other help please?
+
+Mónica
+
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at http://vger.kernel.org/majordomo-info.html
