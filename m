@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab1FFQyH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:54:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55593 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab1FFQyE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:54:04 -0400
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arne Jansen <lists@die-jansens.de>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-In-Reply-To: <4DED0423.4050904@die-jansens.de>
-References: <4DEB933C.1070900@die-jansens.de>
-	 <20110605151323.GA30590@elte.hu> <1307349530.2353.7374.camel@twins>
-	 <20110606145827.GD30348@elte.hu> <1307372989.2322.136.camel@twins>
-	 <1307375227.2322.161.camel@twins> <20110606155236.GA7374@elte.hu>
-	 <1307376039.2322.164.camel@twins> <20110606160810.GA16636@elte.hu>
-	 <1307376771.2322.168.camel@twins> <20110606161749.GA22157@elte.hu>
-	 <4DED0292.1040605@die-jansens.de>  <4DED0423.4050904@die-jansens.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 06 Jun 2011 18:53:57 +0200
-Message-ID: <1307379237.2322.203.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755411Ab1FFQyx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:54:53 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56804 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751889Ab1FFQyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 12:54:52 -0400
+Date: Mon, 6 Jun 2011 18:54:24 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: pageexec@freemail.hu
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@mit.edu>,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to
+ feature-removal-schedule
+Message-ID: <20110606165424.GB2391@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>
+ <4DECEBD6.10522.12F3E13C@pageexec.freemail.hu>
+ <20110606151546.GH30348@elte.hu>
+ <4DECF25F.27062.130D695E@pageexec.freemail.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DECF25F.27062.130D695E@pageexec.freemail.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-06 at 18:45 +0200, Arne Jansen wrote:
-> > As long as it doesn't scramble the order of the messages, the delay
-> > imho doesn't matter even in very printk-heavy debugging sessions.
+
+* pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+
+> On 6 Jun 2011 at 17:15, Ingo Molnar wrote:
+
+> > pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+> >
+> > > my bandwidth/quota for replying to idiocy is limited (and is 
+> > > close to exhaustion for today ;), be patient, i'll reply to
+> > > you as well.
+> > 
+> > You might want to save the insults to after we are done with the 
+> > discussion.
 > 
-> And, as important, doesn't reduce the throughput of printk. Having only
-> 100 wakeups/s sounds like the throughput is limited to 100xsizeof(ring 
-> buffer). 
+> haha, Ingo, seriously, you wrote the above 20 minutes after this 
+> one?
+>
+> > Unfortunately Andi has been spouting nonsense in this thread 
+> > without replying to mails that challenge his points, such as:
+> 
+> tell you what Ingo, heed your own advice. better, you can even keep 
+> it to yourself. i do whatever i want, including what you reserve 
+> for seemingly yourself only.
 
-Right, that's another problem.. not really sure delaying all this is
-going to work :/
+The difference is that:
 
+ - You wrote an insult without waiting for the discussion to come to
+   a conclusion. I think you are wrong and i am willing to argue it.
 
+ - Andi first tried to injected fear, uncertainty and doubt into the
+   discussion a week ago, then ignored 3 mails from 3 separate people
+   and thus when he repeated his nonsense today (while still ignoring
+   the feedback he got) i sure can call his opinion 'nonsense'.
+
+Thanks,
+
+	Ingo
