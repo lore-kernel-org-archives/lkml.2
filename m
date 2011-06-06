@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab1FFJxl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:53:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48340 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500Ab1FFJxg convert rfc822-to-8bit (ORCPT
+	id S1756104Ab1FFJzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:55:48 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:33309 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751199Ab1FFJzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:53:36 -0400
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arne Jansen <lists@die-jansens.de>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-In-Reply-To: <1307352281.2353.7437.camel@twins>
-References: <20110605151323.GA30590@elte.hu>
-	 <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu>
-	 <4DEBA9CC.4090503@die-jansens.de> <4DEBB05C.8090506@die-jansens.de>
-	 <4DEBB3DA.8060001@die-jansens.de> <20110605172052.GA1036@elte.hu>
-	 <4DEBBFF9.2030101@die-jansens.de> <20110605185957.GA3452@elte.hu>
-	 <4DEBD95B.6030901@die-jansens.de> <20110605194419.GA12965@elte.hu>
-	 <4DEBE3DF.70104@die-jansens.de> <1307350909.2353.7408.camel@twins>
-	 <4DEC9B67.2070908@die-jansens.de>  <1307352281.2353.7437.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 06 Jun 2011 11:52:59 +0200
-Message-ID: <1307353979.2353.7466.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 6 Jun 2011 05:55:46 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX198uBLHyuIaoNssH++HpASb
+Date: Mon, 6 Jun 2011 12:55:40 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: "Girdwood, Liam" <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH 3/8] MFD: twl4030-audio: Rename platform data
+Message-ID: <20110606095540.GR8696@atomide.com>
+References: <1306927051-8937-1-git-send-email-peter.ujfalusi@ti.com>
+ <201106020915.46491.peter.ujfalusi@ti.com>
+ <20110603080819.GK8696@atomide.com>
+ <201106031638.26094.peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106031638.26094.peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-06 at 11:24 +0200, Peter Zijlstra wrote:
-> On Mon, 2011-06-06 at 11:18 +0200, Arne Jansen wrote:
-> > On 06.06.2011 11:01, Peter Zijlstra wrote:
-> > > On Sun, 2011-06-05 at 22:15 +0200, Arne Jansen wrote:
-> > >>
-> > >> Can lockdep just get confused by the lockdep_off/on calls in printk
-> > >> while scheduling is allowed? There aren't many users of lockdep_off().
-> > > 
-> > > Yes!, in that case lock_is_held() returns false, triggering the warning.
-> > > I guess there's an argument to be made in favour of the below..
-> > 
-> > 
-> > Two questions... is there any protection between the lockdep_recursion
-> > check and the set to one? I guess in our case it is, because it's the
-> > scheduler that calls it, but in general?
+* Peter Ujfalusi <peter.ujfalusi@ti.com> [110603 16:34]:
+> On Friday 03 June 2011 11:08:22 Tony Lindgren wrote:
+> > Yeah if it gets big then a separate file is better. Also, if we have
+> > a common init function for twl, then it's easy to add the board specific
+> > device tree initialization to that too and just leave out the calls to
+> > omap_pmic_init from board-*.c files.
 > 
-> Yeah, its always current->lockdep_recursion, so there is no
-> concurrency :-)
+> I have parsed the board files for a pattern.
+> There are some, but I have my doubts as well:
+> We have eight platform data members in twl4030_platform_data for child 
+> devices.
+> USB, and audio/codec configuration might worth to move out (since most of the 
+> board does not have fine tuned parameters for codec).
 > 
-> > And why is lockdep needed to check if a lock is help? Isn't it reflected
-> > in the lock structure itself?
-> 
-> Ah, so the difference is between _who_ owns the lock. Things like
-> spin_is_locked() check if the lock is taken but cannot tell you who owns
-> it, but lock_is_held() checks if the current context owns the lock.
+> The majority of the code related to pmic is coming from regulator setups, I 
+> can see similarities, but there are differences here and there, which makes 
+> the common configuration mostly useless (different peripherals, boot loader 
+> diffs, etc).
 
-Also, lockdep_assert_held() doesn't generate any code when lockdep is
-not configured.
+Yeah we still need the board specific data passed for sure.
+ 
+> Having said that, I try to create a wrapper for omap_pmic_init, which can 
+> replace the current omap2/3/4_pmic_init, with that we can use common config 
+> for USB, audio, and some selected few regulators initially.
+> Later other parts might be possible to consolidate as well.
+> I'm going to call this new wrapper for now omap2/3/4_pmic_config.
+> 
+> Is this a good way to approach this issue?
+
+Sounds good to me!
+
+Tony
