@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab1FFPI0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 11:08:26 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42133 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164Ab1FFPIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 11:08:24 -0400
-Date: Mon, 6 Jun 2011 17:08:08 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
+	id S1756753Ab1FFPKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 11:10:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38874 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab1FFPKE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 11:10:04 -0400
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
 Cc: Arne Jansen <lists@die-jansens.de>,
         Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
         hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
         npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
         tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-Message-ID: <20110606150808.GF30348@elte.hu>
-References: <4DEBB05C.8090506@die-jansens.de>
- <4DEBB3DA.8060001@die-jansens.de>
- <20110605172052.GA1036@elte.hu>
- <4DEBBFF9.2030101@die-jansens.de>
- <20110605185957.GA3452@elte.hu>
- <4DEBD95B.6030901@die-jansens.de>
- <20110605194419.GA12965@elte.hu>
- <4DEBE3DF.70104@die-jansens.de>
- <1307350909.2353.7408.camel@twins>
- <20110606150409.GE30348@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110606150409.GE30348@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110606145827.GD30348@elte.hu>
+References: <20110605110132.GB23463@elte.hu>
+	 <20110605111933.GA24592@elte.hu> <20110605113627.GA25724@elte.hu>
+	 <4DEB6F3A.3000109@die-jansens.de> <20110605133958.GA27812@elte.hu>
+	 <4DEB8A93.30601@die-jansens.de> <20110605141003.GB29338@elte.hu>
+	 <4DEB933C.1070900@die-jansens.de> <20110605151323.GA30590@elte.hu>
+	 <1307349530.2353.7374.camel@twins>  <20110606145827.GD30348@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 06 Jun 2011 17:09:49 +0200
+Message-ID: <1307372989.2322.136.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-06-06 at 16:58 +0200, Ingo Molnar wrote:
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Sun, 2011-06-05 at 17:13 +0200, Ingo Molnar wrote:
+> > 
+> > > Now, this patch alone just removes a debugging check - but i'm not 
+> > > sure the debugging check is correct - we take the pi_lock in a raw 
+> > > way - which means it's not lockdep covered.
+> > 
+> > Ever since tglx did s/raw_/arch_/g raw_ is covered by lockdep.
+> 
+> It's not lockdep covered due to the lockdep_off(), or am i missing 
+> something?
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+Your initial stmt was about the raw_ part, raw_ locks are tracked by
+lockdep ever since tglx renamed them to arch_ and introduced new raw_
+primitives.
 
-> The real fix might be to remove the lockdep_off()/on() call from 
-> printk(), that looks actively evil ... we had to hack through 
-> several layers of side-effects before we found the real bug - so 
-> it's not like the off()/on() made things more robust!
+But yeah, the lockdep_off() stuff also disables all tracking, on top of
+that it also makes lock_is_held() return an unconditional false (even if
+the lock was acquired before lockdep_off and thus registered).
 
-The other obvious fix would be to *remove* the blasted wakeup from 
-printk(). It's a serious debugging robustness violation and it's not 
-like the wakeup is super important latency-wise.
+My patch that fixes lock_is_held() should avoid false
+lockdep_assert_held() explosions and this this printk() while rq->lock
+problem.
 
-We *already* have a timer tick driven klogd wakeup poll routine. So i 
-doubt we'd have many problems from not doing wakeups from printk(). 
-Opinions?
+Removing lockdep_off() usage from printk() would also be nice, but Mike
+triggered logbuf_lock <-> rq->lock inversion with that due to the
+up(&console_sem) wakeup muck.
 
-Thanks,
-
-	Ingo
+Ideally we'd pull the up() out from under logbuf_lock, am looking at
+that.
