@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab1FFSPi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 14:15:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54806 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755932Ab1FFSPg (ORCPT
+	id S1757196Ab1FFSLR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 14:11:17 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:60473 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab1FFSLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 14:15:36 -0400
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-In-Reply-To: <20110606180733.GA20123@elte.hu>
-References: <1307372989.2322.136.camel@twins>
-	 <1307375227.2322.161.camel@twins> <20110606155236.GA7374@elte.hu>
-	 <1307376039.2322.164.camel@twins> <20110606160810.GA16636@elte.hu>
-	 <1307376771.2322.168.camel@twins> <20110606161749.GA22157@elte.hu>
-	 <1307378649.2322.198.camel@twins> <20110606171153.GE2391@elte.hu>
-	 <4DED1519.2020803@die-jansens.de>  <20110606180733.GA20123@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 20:19:09 +0200
-Message-ID: <1307384349.2497.732.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Jun 2011 14:11:14 -0400
+Message-ID: <4DED1A86.9030502@steinhoff.de>
+Date: Mon, 06 Jun 2011 20:20:54 +0200
+From: Armin Steinhoff <armin@steinhoff.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Monica Puig-Pey <puigpeym@unican.es>
+CC: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Changing Kernel thread priorities
+References: <4DEA1BA9.7020303@unican.es> <4DEA1F22.6000603@unican.es> 	<4DEA255B.2050503@unican.es> <4DECBE44.2070803@unican.es>
+In-Reply-To: <4DECBE44.2070803@unican.es>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:EqRu9wbGqS6j2lpBYoOR5Qf+iBp5wk/VBQ8mMabfmZD
+ p5D6OwZdSbYea+gd+wQZAYlz7nPEiYHl+0qz8jP5Ibq/bfAB5S
+ 9wrNQOUeq3kVFi1m3EsT0fSd8hjM6PYaL9sdC9g/s8ntHuYDua
+ DonLJztpA3IMTKdO6zzn621Ve11sJCgCMKqAFMgg4j9cW0UUDJ
+ JVw5PUuHfC67k9lvOaskA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-06 at 20:07 +0200, Ingo Molnar wrote:
+Monica Puig-Pey wrote:
+> I am writing a driver which has one kernel thread associated with it.
+> I want to change the priority of this thread, so that I can specify 
+> the order in which it is scheduled following an interrupt.
+> I'm using:
+>
+>  sched_setscheduler(struct task_struct *, int, struct sched_param *);  
+> -> sys_sched_setscheduler
 
->  - The first one that minimally removes the lockdep_off()/on() dance 
->    and fixes the regression: the patch that i sent earlier today.
->    I *think* that should fix the crash.
-> 
->    3.0 material.
+http://ftp.au.debian.org/linux-mandocs/2.6.0-test7-full/sys_sched_setscheduler.html
 
-I think the lock_is_held() fix is the urgent one, all the others are
-make printk() suck less patches, ie. not so very important.
+Hope this helps ..
 
-Without that lock_is_held() thing all lockdep_off() sites, inc ntfs will
-still be able to trigger this problem.
+--Armin
+
+>
+> but it doesn't work. I tried to change the priority from the 
+> init_module, and also from the Kernel Thread, but there is no way.
+>
+> Kernel version is 2.6.31-11-rt
+>
+> What do I call to change a kernel thread priority?
+>
+> Thanks you very much
+>
+> Mónica
+>
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
