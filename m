@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab1FFRlt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 13:41:49 -0400
-Received: from hyde.gogi.tv ([87.106.161.174]:49154 "EHLO hyde.gogi.tv"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756775Ab1FFRlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 13:41:47 -0400
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
+	id S1756902Ab1FFRoJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 13:44:09 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:42223 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756618Ab1FFRoH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 13:44:07 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18ZjcQ7Ez4Zlfu2yBF5aa+p8UGISC5hUykwKy3pLb
+	/FJltQo2zQy4b6
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+From: Mike Galbraith <efault@gmx.de>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>, Arne Jansen <lists@die-jansens.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, npiggin@kernel.dk,
+        akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <20110606150808.GF30348@elte.hu>
+References: <4DEBB05C.8090506@die-jansens.de>
+	 <4DEBB3DA.8060001@die-jansens.de> <20110605172052.GA1036@elte.hu>
+	 <4DEBBFF9.2030101@die-jansens.de> <20110605185957.GA3452@elte.hu>
+	 <4DEBD95B.6030901@die-jansens.de> <20110605194419.GA12965@elte.hu>
+	 <4DEBE3DF.70104@die-jansens.de> <1307350909.2353.7408.camel@twins>
+	 <20110606150409.GE30348@elte.hu>  <20110606150808.GF30348@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Jun 2011 19:44:00 +0200
+Message-ID: <1307382240.7490.1.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-Date: Mon, 06 Jun 2011 18:41:44 +0100
-From: Daniel Haid <d.haid@gogi.tv>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, <airlied@linux.ie>
-Subject: Re: [PATCH] tentative fix for radeon on systems >4GB without
- hardware iommu
-In-Reply-To: <BANLkTik+p65G5f08RfxiYojvAax_nrDiqg@mail.gmail.com>
-References: <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv>
- <20110531134519.GC14641@dumpdata.com>
- <59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv>
- <20110531160221.GA31659@dumpdata.com>
- <0a8cb4bcad7fcf091a6bbe158323bba0@admin.gogi.tv>
- <20110531190412.GA21245@dumpdata.com>
- <d0ce6a4ba6092a1a9ef0f1e8f3cac9c9@admin.gogi.tv>
- <20110601132444.GA4081@dumpdata.com>
- <21491fcfb013e21177140326efc0ee66@admin.gogi.tv>
- <34fa3fe7780241e452b268fd5ecfdee9@admin.gogi.tv>
- <20110601222226.GH27166@one.firstfloor.org>
- <72a54a970741bfc342467045351df812@admin.gogi.tv>
- <BANLkTik+p65G5f08RfxiYojvAax_nrDiqg@mail.gmail.com>
-Message-ID: <f2b1d34b5be1bb910f82b961956c3787@admin.gogi.tv>
-User-Agent: Roundcube Webmail/0.4.2
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This looks like the correct fix. rdev->need_dma32 is used when we 
-> init
-> ttm for memory management later.
+On Mon, 2011-06-06 at 17:08 +0200, Ingo Molnar wrote:
+> * Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> > The real fix might be to remove the lockdep_off()/on() call from 
+> > printk(), that looks actively evil ... we had to hack through 
+> > several layers of side-effects before we found the real bug - so 
+> > it's not like the off()/on() made things more robust!
+> 
+> The other obvious fix would be to *remove* the blasted wakeup from 
+> printk(). It's a serious debugging robustness violation and it's not 
+> like the wakeup is super important latency-wise.
+> 
+> We *already* have a timer tick driven klogd wakeup poll routine. So i 
+> doubt we'd have many problems from not doing wakeups from printk(). 
+> Opinions?
 
- Is there anything I have to do now to have it included? Will it also
- go into the stable releases?
+Seconded!  I routinely whack that damn thing.
+
+	-Mike
+
