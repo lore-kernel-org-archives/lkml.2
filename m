@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab1FFSbr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 14:31:47 -0400
-Received: from mail.perches.com ([173.55.12.10]:2536 "EHLO mail.perches.com"
+	id S1755964Ab1FFShO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 14:37:14 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46727 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756005Ab1FFSbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 14:31:46 -0400
-Subject: Re: [PATCH v2 7/7] staging: et131x: Removing '_t' from ce_stats_t
- struct
-From: Joe Perches <joe@perches.com>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, o.hartmann@telovital.com
-In-Reply-To: <1307383624-8740-8-git-send-email-mark.einon@gmail.com>
-References: <1307295320-31716-1-git-send-email-mark.einon@gmail.com>
-	 <1307383624-8740-1-git-send-email-mark.einon@gmail.com>
-	 <1307383624-8740-8-git-send-email-mark.einon@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 11:31:45 -0700
-Message-ID: <1307385105.4994.15.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751607Ab1FFShM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 14:37:12 -0400
+Date: Mon, 6 Jun 2011 11:37:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Milton Miller <miltonm@bga.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [1/4] rcu: Detect uses of rcu read side in extended quiescent
+ states
+Message-ID: <20110606183709.GN3066@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1307329858-14999-3-git-send-email-fweisbec@gmail.com>
+ <rcu-splat-split-printk@mdm.bga.com>
+ <20110606181021.GL3066@linux.vnet.ibm.com>
+ <20110606182052.GC7862@somewhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606182052.GC7862@somewhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-06 at 19:07 +0100, Mark Einon wrote:
-> Removing '_t' from ce_stats_t struct name and renaming et131x_adapter ce_stats member from
->  'Stats' to 'stats'
-[]
-> diff --git a/drivers/staging/et131x/et1310_mac.c b/drivers/staging/et131x/et1310_mac.c
-[]
-> @@ -452,7 +452,7 @@ void ConfigFlowControl(struct et131x_adapter *etdev)
->   */
->  void UpdateMacStatHostCounters(struct et131x_adapter *etdev)
->  {
-> -	struct ce_stats_t *stats = &etdev->Stats;
-> +	struct ce_stats *stats = &etdev->stats;
->  	struct macstat_regs __iomem *macstat =
->  		&etdev->regs->macstat;
->  
-> @@ -503,33 +503,33 @@ void HandleMacStatInterrupt(struct et131x_adapter *etdev)
+On Mon, Jun 06, 2011 at 08:20:54PM +0200, Frederic Weisbecker wrote:
+> On Mon, Jun 06, 2011 at 11:10:21AM -0700, Paul E. McKenney wrote:
+> > On Sun, Jun 05, 2011 at 10:44:33PM -0500, Milton Miller wrote:
+> > > On Mon, 06 Jun 2011 about 03:10:55 -0000, Frederic Weisbecker wrote:
+> > > > @@ -3994,8 +3995,13 @@ void lockdep_rcu_dereference(const char *file, const int line)
+> > > >  	printk("\n===================================================\n");
+> > > >  	printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
+> > > >  	printk(  "---------------------------------------------------\n");
+> > > > -	printk("%s:%d invoked rcu_dereference_check() without protection!\n",
+> > > > -			file, line);
+> > > > +	printk("%s:%d invoked rcu_dereference_check() ", file, line);
+> > > > +
+> > > > +	if (type == RCU_WARN_UNPROTECTED)
+> > > > +		printk("without protection!\n");
+> > > > +	else if (type == RCU_WARN_EXT_QS)
+> > > > +		printk("while in RCU extended quiescent state!\n");
+> > > > +
+> > > >  	printk("\nother info that might help us debug this:\n\n");
+> > > >  	printk("\nrcu_scheduler_active = %d, debug_locks = %d\n", rcu_scheduler_active, debug_locks);
+> > > >  	lockdep_print_held_locks(curr);
+> > > 
+> > > Can we keep the above in one printk?   That way the printing is
+> > > guaranteed to come out on one line.  Probably the easiest way would
+> > > be add char *why = "" then assign a string based on the current
+> > > conditions.  Do all of that before the first printk which gets the
+> > > a %s added.
+> > 
+> > I have the following queued the -rcu tree which does add the string.
+> > 
+> > Frederic, would it be possible to base on this patch?
+> > 
+> > 							Thanx, Paul
+> 
+> No problem. Will respin soon.
 
-Might as well copy from UpdateMacStatHostCounters and add
+Thank you!
 
-	struct ce_stats *stats = &etdev->stats;
+> What's the branch in your tree? rcu/next ?
 
->  	 * block indicates that one of the counters has wrapped.
->  	 */
->  	if (Carry1 & (1 << 14))
-> -		etdev->Stats.code_violations += COUNTER_WRAP_16_BIT;
-> +		etdev->stats.code_violations += COUNTER_WRAP_16_BIT;
+That is the one!
 
-and change these to
-		stats->foo += bar...
-
->  	if (Carry1 & (1 << 8))
-> -		etdev->Stats.alignment_err += COUNTER_WRAP_12_BIT;
-> +		etdev->stats.alignment_err += COUNTER_WRAP_12_BIT;
->  	if (Carry1 & (1 << 7))
-> -		etdev->Stats.length_err += COUNTER_WRAP_16_BIT;
-> +		etdev->stats.length_err += COUNTER_WRAP_16_BIT;
->  	if (Carry1 & (1 << 2))
-> -		etdev->Stats.other_errors += COUNTER_WRAP_16_BIT;
-> +		etdev->stats.other_errors += COUNTER_WRAP_16_BIT;
->  	if (Carry1 & (1 << 6))
-> -		etdev->Stats.crc_err += COUNTER_WRAP_16_BIT;
-> +		etdev->stats.crc_err += COUNTER_WRAP_16_BIT;
->  	if (Carry1 & (1 << 3))
-> -		etdev->Stats.rx_ov_flow += COUNTER_WRAP_16_BIT;
-> +		etdev->stats.rx_ov_flow += COUNTER_WRAP_16_BIT;
->  	if (Carry1 & (1 << 0))
-> -		etdev->Stats.norcvbuf += COUNTER_WRAP_16_BIT;
-> +		etdev->stats.norcvbuf += COUNTER_WRAP_16_BIT;
->  	if (Carry2 & (1 << 16))
-> -		etdev->Stats.max_pkt_error += COUNTER_WRAP_12_BIT;
-> +		etdev->stats.max_pkt_error += COUNTER_WRAP_12_BIT;
->  	if (Carry2 & (1 << 15))
-> -		etdev->Stats.tx_uflo += COUNTER_WRAP_12_BIT;
-> +		etdev->stats.tx_uflo += COUNTER_WRAP_12_BIT;
->  	if (Carry2 & (1 << 6))
-> -		etdev->Stats.first_collision += COUNTER_WRAP_12_BIT;
-> +		etdev->stats.first_collision += COUNTER_WRAP_12_BIT;
->  	if (Carry2 & (1 << 8))
-> -		etdev->Stats.tx_deferred += COUNTER_WRAP_12_BIT;
-> +		etdev->stats.tx_deferred += COUNTER_WRAP_12_BIT;
->  	if (Carry2 & (1 << 5))
-> -		etdev->Stats.excessive_collisions += COUNTER_WRAP_12_BIT;
-> +		etdev->stats.excessive_collisions += COUNTER_WRAP_12_BIT;
->  	if (Carry2 & (1 << 4))
-> -		etdev->Stats.late_collisions += COUNTER_WRAP_12_BIT;
-> +		etdev->stats.late_collisions += COUNTER_WRAP_12_BIT;
->  	if (Carry2 & (1 << 2))
-> -		etdev->Stats.collisions += COUNTER_WRAP_12_BIT;
-> +		etdev->stats.collisions += COUNTER_WRAP_12_BIT;
->  }
-
-
+							Thanx, Paul
