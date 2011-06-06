@@ -1,86 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab1FFKiQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 06:38:16 -0400
-Received: from r00tworld.com ([212.85.137.150]:46650 "EHLO r00tworld.com"
+	id S1755695Ab1FFJnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:43:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54989 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751713Ab1FFKiO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 06:38:14 -0400
-X-Greylist: delayed 2860 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Jun 2011 06:38:14 EDT
-From: pageexec@freemail.hu
-To: Ingo Molnar <mingo@elte.hu>, Andrew Lutomirski <luto@mit.edu>
-Date: Mon, 06 Jun 2011 11:42:25 +0200
-MIME-Version: 1.0
-Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
-Reply-to: pageexec@freemail.hu
-CC: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Message-ID: <4DECA101.5994.11CF924E@pageexec.freemail.hu>
-In-reply-to: <BANLkTikQB6=Te6=E7DRmeD5+G4TESuy--w@mail.gmail.com>
-References: <cover.1307292171.git.luto@mit.edu>, <20110605193001.GB3971@elte.hu>, <BANLkTikQB6=Te6=E7DRmeD5+G4TESuy--w@mail.gmail.com>
-X-mailer: Pegasus Mail for Windows (4.61)
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 8BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Mon, 06 Jun 2011 11:43:00 +0200 (CEST)
+	id S1755316Ab1FFJnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 05:43:31 -0400
+Subject: GFS2: Pull request (fix)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 06 Jun 2011 10:44:27 +0100
+Message-ID: <1307353467.2880.4.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 Jun 2011 at 16:01, Andrew Lutomirski wrote:
+Hi,
 
-> On Sun, Jun 5, 2011 at 3:30 PM, Ingo Molnar <mingo@elte.hu> wrote:
-[...]
-> > ffffffffff60012a <vread_hpet>:
-> > ffffffffff60012a:       55                      push   %rbp
-> > ffffffffff60012b:       48 89 e5                mov    %rsp,%rbp
-> > ffffffffff60012e:       8b 04 25 f0 f0 5f ff    mov    0xffffffffff5ff0f0,%eax
-> > ffffffffff600135:       89 c0                   mov    %eax,%eax
-> > ffffffffff600137:       5d                      pop    %rbp
-> > ffffffffff600138:       c3                      retq
-> >
-> > There's no obvious syscall instruction in them that i can see. No
-> > 0x0f 0x05 pattern (even misaligned), no 0xcd-anything.
-> 
-> I can't see any problem, but exploit writers are exceedingly clever,
-> and maybe someone has a use for a piece of the code that isn't a
-> syscall.  Just as a completely artificial example, here's some buggy
-> code:
+Please consider pulling the following change. Since there is only
+one patch I included it at the end of this email rather than as a
+separate message,
 
-what you're describing here is a classical ret2libc (in modern marketing
-speak, ROP) attack. in general, having an executable ret insn (with an
-optional pop even) at a fixed address is very useful, especially for the
-all too classical case of stack overflows where the attacker may already
-know of a 'good' function pointer somewhere on the stack but in order to
-have the cpu reach it, he needs to pop enough bytes off of it. guess what
-they'll use this ret at a fixed address for...
+Steve.
 
-as i said in private already, for security there's only one real solution
-here: make the vsyscall page non-executable (as i did in PaX years ago)
-and move or redirect every entry point to the vdso. yes, that kills the
-fast path performance until glibc stops using the vsyscall page.
+-------------------------------------------------------------------------------
 
-another thing to consider for using the int xx redirection scheme (speaking
-of which, it should just be an int3): it enables new kinds of 'nop sled'
-sequences that IDS/IPS systems will be unaware of, not exactly a win for
-the security conscious/aware people who this change is supposed to serve.
+The following changes since commit 1fa7b6a29c61358cc2ca6f64cef4aa0e1a7ca74c:
 
-> I have no problem with that suggestion, except that once the current
-> series makes it into -tip I intend to move vread_tsc and vread_hpet to
-> the vDSO.  So leaving them alone for now saves work, and they'll be
-> more maintainable later if they're written in C.
+  Revert "mm: fail GFP_DMA allocations when ZONE_DMA is not configured" (2011-06-02 06:11:24 +0900)
 
-imho, moving everything to and executing from the vdso page is the only
-viable solution if you really want to fix the security aspect of the
-vsyscall mess. it's worked fine for PaX for years now ;).
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-2.6-fixes.git master
+
+Bob Peterson (1):
+      GFS2: Processes waiting on inode glock that no processes are holding
+
+ fs/gfs2/glock.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+
+--------------------------------------------------------------------------------------------
+
+>From f90e5b5b136ede1f0fd15999e95f13124d6b0dbd Mon Sep 17 00:00:00 2001
+From: Bob Peterson <rpeterso@redhat.com>
+Date: Tue, 24 May 2011 10:44:42 -0400
+Subject: [PATCH] GFS2: Processes waiting on inode glock that no processes are holding
+
+This patch fixes a race in the GFS2 glock state machine that may
+result in lockups.  The symptom is that all nodes but one will
+hang, waiting for a particular glock.  All the holder records
+will have the "W" (Waiting) bit set.  The other node will
+typically have the glock stuck in Exclusive mode (EX) with no
+holder records, but the dinode will be cached.  In other words,
+an entry with "I:" will appear in the glock dump for that glock,
+but nothing else.
+
+The race has to do with the glock "Pending Demote" bit, which
+can be set, then immediately reset, thus losing the fact that
+another node needs the glock.  The sequence of events is:
+
+1. Something schedules the glock workqueue (e.g. glock request from fs)
+2. The glock workqueue gets to the point between the test of the reply pending
+bit and the spin lock:
+
+        if (test_and_clear_bit(GLF_REPLY_PENDING, &gl->gl_flags)) {
+                finish_xmote(gl, gl->gl_reply);
+                drop_ref = 1;
+        }
+        down_read(&gfs2_umount_flush_sem);         <---- i.e. here
+        spin_lock(&gl->gl_spin);
+
+3. In comes (a) the reply to our EX lock request setting GLF_REPLY_PENDING and
+            (b) the demote request which sets GLF_PENDING_DEMOTE
+
+4. The following test is executed:
+
+        if (test_and_clear_bit(GLF_PENDING_DEMOTE, &gl->gl_flags) &&
+            gl->gl_state != LM_ST_UNLOCKED &&
+            gl->gl_demote_state != LM_ST_EXCLUSIVE) {
+
+This resets the pending demote flag, and gl->gl_demote_state is not equal to
+exclusive, however because the reply from the dlm arrived after we checked for
+the GLF_REPLY_PENDING flag, gl->gl_state is still equal to unlocked, so
+although we reset the GLF_PENDING_DEMOTE flag, we didn't then set the
+GLF_DEMOTE flag or reinstate the GLF_PENDING_DEMOTE_FLAG.
+
+The patch closes the timing window by only transitioning the
+"Pending demote" bit to the "demote" flag once we know the
+other conditions (not unlocked and not exclusive) are met.
+
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+
+diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
+index a2a6abb..7137750 100644
+--- a/fs/gfs2/glock.c
++++ b/fs/gfs2/glock.c
+@@ -663,14 +663,19 @@ static void glock_work_func(struct work_struct *work)
+ 		drop_ref = 1;
+ 	}
+ 	spin_lock(&gl->gl_spin);
+-	if (test_and_clear_bit(GLF_PENDING_DEMOTE, &gl->gl_flags) &&
++	if (test_bit(GLF_PENDING_DEMOTE, &gl->gl_flags) &&
+ 	    gl->gl_state != LM_ST_UNLOCKED &&
+ 	    gl->gl_demote_state != LM_ST_EXCLUSIVE) {
+ 		unsigned long holdtime, now = jiffies;
++
+ 		holdtime = gl->gl_tchange + gl->gl_ops->go_min_hold_time;
+ 		if (time_before(now, holdtime))
+ 			delay = holdtime - now;
+-		set_bit(delay ? GLF_PENDING_DEMOTE : GLF_DEMOTE, &gl->gl_flags);
++
++		if (!delay) {
++			clear_bit(GLF_PENDING_DEMOTE, &gl->gl_flags);
++			set_bit(GLF_DEMOTE, &gl->gl_flags);
++		}
+ 	}
+ 	run_queue(gl, 0);
+ 	spin_unlock(&gl->gl_spin);
+-- 
+1.7.4
+
+
+
 
