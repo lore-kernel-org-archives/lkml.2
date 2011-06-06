@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119Ab1FFOrR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 10:47:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5414 "EHLO mx1.redhat.com"
+	id S1757269Ab1FFOr2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 10:47:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49470 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164Ab1FFOrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 10:47:16 -0400
+	id S1756749Ab1FFOrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 10:47:24 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 1/3] MN10300: Fix one of the kernel debugger cacheflush
- variants
+Subject: [PATCH 2/3] MN10300: die_if_no_fixup() shouldn't use get_user() as it
+ doesn't call set_fs()
 To: torvalds@osdl.org, akpm@linux-foundation.org
 Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
         David Howells <dhowells@redhat.com>
-Date: Mon, 06 Jun 2011 15:47:05 +0100
-Message-ID: <20110606144705.19155.22278.stgit@warthog.procyon.org.uk>
+Date: Mon, 06 Jun 2011 15:47:14 +0100
+Message-ID: <20110606144714.19155.2243.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20110606144705.19155.22278.stgit@warthog.procyon.org.uk>
+References: <20110606144705.19155.22278.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -26,55 +28,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One of the kernel debugger cacheflush variants escaped proper testing.  Two of
-the labels are wrong, being derived from the code that was copied to construct
-the variant.
+die_if_no_fixup() shouldn't use get_user() as it doesn't call set_fs() to
+indicate that it wants to probe a kernel address.  Instead it should use
+probe_kernel_read().
 
-The first label results in the following assembler message:
+This fixes the problem of gdb seeing SIGILL rather than SIGTRAP when hitting
+the KGDB special breakpoint upon SysRq+g being seen.  The problem was that
+die_if_no_fixup() was failing to read the opcode of the instruction that caused
+the exception, and thus not fixing up the exception.
 
-  AS      arch/mn10300/mm/cache-dbg-flush-by-reg.o
-arch/mn10300/mm/cache-dbg-flush-by-reg.S: Assembler messages:
-arch/mn10300/mm/cache-dbg-flush-by-reg.S:123: Error: symbol `debugger_local_cache_flushinv_no_dcache' is already defined
+This caused gdb to get a S04 response to the $? request in its remote protocol
+rather than S05 - which would then cause it to continue with $C04 rather than
+$c in an attempt to pass the signal onto the inferior process.  The kernel,
+however, does not support $Cnn, and so objects by returning an E22 response,
+indicating an error.  gdb does not expect this and prints:
 
-And the second label results in the following linker message:
+	warning: Remote failure reply: E22
 
-arch/mn10300/mm/built-in.o:(.text+0x1d39): undefined reference to `mn10300_local_icache_inv_range_reg_end'
-arch/mn10300/mm/built-in.o:(.text+0x1d39): relocation truncated to fit: R_MN10300_PCREL16 against undefined symbol `mn10300_local_icache_inv_range_reg_end'
-
-To test this file the following configuration pieces must be set:
-
-	CONFIG_AM34=y
-	CONFIG_MN10300_CACHE_WBACK=y
-	CONFIG_MN10300_DEBUGGER_CACHE_FLUSH_BY_REG=y
-	CONFIG_MN10300_CACHE_MANAGE_BY_REG=y
-	CONFIG_AM34_HAS_CACHE_SNOOP=n
+and then returns to the gdb command prompt unable to continue.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/mn10300/mm/cache-dbg-flush-by-reg.S |    4 ++--
+ arch/mn10300/kernel/traps.c |    4 ++--
  1 files changed, 2 insertions(+), 2 deletions(-)
 
 
-diff --git a/arch/mn10300/mm/cache-dbg-flush-by-reg.S b/arch/mn10300/mm/cache-dbg-flush-by-reg.S
-index 665919f..a775ea5 100644
---- a/arch/mn10300/mm/cache-dbg-flush-by-reg.S
-+++ b/arch/mn10300/mm/cache-dbg-flush-by-reg.S
-@@ -120,14 +120,14 @@ debugger_local_cache_flushinv_one:
- 	# conditionally purge this line in all ways
- 	mov	d1,(L1_CACHE_WAYDISP*0,a0)
+diff --git a/arch/mn10300/kernel/traps.c b/arch/mn10300/kernel/traps.c
+index f03cb27..bd3e5e7 100644
+--- a/arch/mn10300/kernel/traps.c
++++ b/arch/mn10300/kernel/traps.c
+@@ -28,7 +28,7 @@
+ #include <linux/irq.h>
+ #include <asm/processor.h>
+ #include <asm/system.h>
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ #include <asm/io.h>
+ #include <asm/atomic.h>
+ #include <asm/smp.h>
+@@ -156,7 +156,7 @@ int die_if_no_fixup(const char *str, struct pt_regs *regs,
  
--debugger_local_cache_flushinv_no_dcache:
-+debugger_local_cache_flushinv_one_no_dcache:
- 	#
- 	# now try to flush the icache
- 	#
- 	mov	CHCTR,a0
- 	movhu	(a0),d0
- 	btst	CHCTR_ICEN,d0
--	beq	mn10300_local_icache_inv_range_reg_end
-+	beq	debugger_local_cache_flushinv_one_end
- 
- 	LOCAL_CLI_SAVE(d1)
- 
+ 	case EXCEP_TRAP:
+ 	case EXCEP_UNIMPINS:
+-		if (get_user(opcode, (uint8_t __user *)regs->pc) != 0)
++		if (probe_kernel_read(&opcode, (u8 *)regs->pc, 1) < 0)
+ 			break;
+ 		if (opcode == 0xff) {
+ 			if (notify_die(DIE_BREAKPOINT, str, regs, code, 0, 0))
 
