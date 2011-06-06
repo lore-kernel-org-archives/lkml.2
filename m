@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab1FFO2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 10:28:40 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:48606 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756104Ab1FFO2g convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 10:28:36 -0400
+	id S1755540Ab1FFObN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 10:31:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62441 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752048Ab1FFObL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 10:31:11 -0400
+Message-ID: <4DECE4A9.4030505@redhat.com>
+Date: Mon, 06 Jun 2011 17:31:05 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Date: Mon, 6 Jun 2011 09:28:35 -0500
-Message-ID: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
-Subject: Change in functionality of futex() system call.
-From: David Oliver <david@rgmadvisors.com>
-To: linux-kernel@vger.kernel.org
-Cc: Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Zachary Vonler <zvonler@rgmadvisors.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] KVM updates for 3.0-rc2
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Linus, please pull from
 
-The functionality of the futex() system call appears to have changed
-between versions 2.6.18 and 2.6.32.28.
+   ssh://master.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/3.0
 
-Specifically, performing a FUTEX_WAIT on a read-only mapped location
-results in an EFAULT. Although other operations, such as FUTEX_WAKE,
-are only meaningful for writable locations, FUTEX_WAIT is useful for
-processes with read-only access to a memory-mapped file.
-
-The code below illustrates the changed behavior (each of the EXPECT
-operations succeed on the older kernel, the ASSERTs pass in each
-case), assuming the file /tmp/futex_test exists and contains int(42).
-
-With the older kernel, the syscall() suspends until another process
-changes the file and issues a FUTEX_WAKE, whereas the new behavior is
-for an EFAULT error, independent of the file contents.
-
-Let me know if you need further clarification.
-
-Cheers!
-
-David Oliver.
+to receive a few KVM fixes for -rc2.  In particular, guest in/out 
+instructions have been faulting when they shouldn't have.
 
 
-#include <errno.h>
-#include <fcntl.h>
-#include <stdint.h>
-typedef uint32_t u32;   // for futex.h
-#include <linux/futex.h>
-#include <sys/mman.h>
-#include <sys/syscall.h>
-#include <unistd.h>
-#include "gtest/gtest.h" // test framework to illustrate issue.
+Heiko Carstens (1):
+       KVM: add missing void __user * cast to access_ok() call
 
+Marcelo Tosatti (1):
+       KVM: x86: use proper port value when checking io instruction 
+permission
 
-TEST(Futex, futex_in_read_only_file_is_ok) {
-  int fd = open("/tmp/futex_test", O_RDONLY);
-  ASSERT_GE(fd, 0);
-  int* futex = static_cast<int *>(mmap(0, sizeof(int), PROT_READ,
-MAP_SHARED, fd, 0));
-  ASSERT_NE((int *)(0), futex);
+Mike Waychison (1):
+       KVM: Initialize kvm before registering the mmu notifier
 
-  int rc = syscall(SYS_futex, futex, FUTEX_WAIT, 42, 0, 0, 0);
+  arch/x86/kvm/emulate.c |   82 
++++++++++++++++++++++++++++--------------------
+  virt/kvm/kvm_main.c    |   15 +++++---
+  2 files changed, 56 insertions(+), 41 deletions(-)
 
-  EXPECT_NE(-1, rc);              // fails.
-  if (rc == -1) {
-      EXPECT_NE(errno, EFAULT);   // fails.
-  }
-}
-
-
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
+-- 
+error compiling committee.c: too many arguments to function
 
