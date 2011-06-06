@@ -1,199 +1,511 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab1FFIK4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 04:10:56 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41330 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755545Ab1FFIKx (ORCPT
+	id S1756956Ab1FFIMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 04:12:37 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:33969 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753955Ab1FFILj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 04:10:53 -0400
-Date: Mon, 6 Jun 2011 02:10:52 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org
-Subject: Re: [PATCH v3 1/3] gpio: gpio-mxs: copy mach-mxs/gpio.c into
- drivers/gpio
-Message-ID: <20110606081052.GE10410@ponder.secretlab.ca>
-References: <1307184940-16291-1-git-send-email-shawn.guo@linaro.org>
- <1307184940-16291-2-git-send-email-shawn.guo@linaro.org>
- <20110604222946.GA31236@ponder.secretlab.ca>
- <20110605162313.GA20553@S2100-06.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110605162313.GA20553@S2100-06.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Jun 2011 04:11:39 -0400
+X-Auth-Info: nbGTtHXbWFzpVyZ8YLxq4420jvchOhOqzKI4J7xctrc=
+From: Anatolij Gustschin <agust@denx.de>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, jic23@cam.ac.uk, dzu@denx.de,
+        Anatolij Gustschin <agust@denx.de>
+Subject: [PATCH 1/2] misc/eeprom: add driver for microwire 93xx46 EEPROMs
+Date: Mon,  6 Jun 2011 10:11:21 +0200
+Message-Id: <1307347882-25301-1-git-send-email-agust@denx.de>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 12:23:14AM +0800, Shawn Guo wrote:
-> On Sat, Jun 04, 2011 at 04:29:46PM -0600, Grant Likely wrote:
-> > On Sat, Jun 04, 2011 at 06:55:38PM +0800, Shawn Guo wrote:
-> > > As the first patch of the series that moves mach-mxc gpio driver into
-> > > drivers/gpio, it copies arch/arm/mach-mxs/gpio.c into
-> > > drivers/gpio/gpio-mxs.c.  The later patches will make necessary
-> > > changes to the driver, migrate the existing users to it, and lastly
-> > > deletes mach-mxs gpio driver.
-> > > 
-> > > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> > > ---
-> > >  drivers/gpio/gpio-mxs.c |  331 +++++++++++++++++++++++++++++++++++++++++++++++
-> > 
-> > [sigh]  I fear we are having a communication breakdown.  Since your
-> > /moving/ a file, you need to make it easy for readers to understand
-> > what has changed and why.  That means using 1 patch to move the file
-> > with only the changes absolutely necessary to ensure bisectability,
-> > and then followup patches for the clean up.
-> > 
-> > Adding a new copy in one patch, and then removing the old copy in the
-> > other patch does not make it easy for a reader to understand what
-> > changed.  Below is what you're first patch should look like (using the
-> > -M flag to show the actual changes which are only #include differences).
-> > 
-> Oops, I misunderstood your point.  But one thing I have been trying
-> hard is to keep changes for driver and subarch in separate patches,
-> which is something I was asked to do when I started working with
-> community.
+Add EEPROM driver for 93xx46 chips. It can also be used with
+spi_gpio driver to access 93xx46 EEPROMs connected over GPIO
+lines. This driver supports read/write/erase access to the
+EEPROM chips over sysfs files.
 
-Heh, and sometimes those of us actually maintaining stuff just plain
-change our mind when we see what something actually looks like in
-practise.  :-)
+Signed-off-by: Anatolij Gustschin <agust@denx.de>
+---
+ drivers/misc/eeprom/Kconfig         |   13 +
+ drivers/misc/eeprom/Makefile        |    1 +
+ drivers/misc/eeprom/eeprom_93xx46.c |  410 +++++++++++++++++++++++++++++++++++
+ include/linux/eeprom_93xx46.h       |   18 ++
+ 4 files changed, 442 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/eeprom/eeprom_93xx46.c
+ create mode 100644 include/linux/eeprom_93xx46.h
 
-In this case, the changes were intertwined enough that there wasn't
-much benefit in keeping the arch and drivers stuff in separate
-patches.
+diff --git a/drivers/misc/eeprom/Kconfig b/drivers/misc/eeprom/Kconfig
+index 9118613..620de28 100644
+--- a/drivers/misc/eeprom/Kconfig
++++ b/drivers/misc/eeprom/Kconfig
+@@ -70,4 +70,17 @@ config EEPROM_93CX6
+ 
+ 	  If unsure, say N.
+ 
++config EEPROM_93XX46
++	tristate "Microwire EEPROM 93XX46 support"
++	depends on SPI && SYSFS
++	help
++	  Driver for the microwire EEPROM chipsets 93xx46x. The driver
++	  supports both read and write commands and also the command to
++	  erase the whole EEPROM.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called eeprom_93xx46.
++
++	  If unsure, say N.
++
+ endmenu
+diff --git a/drivers/misc/eeprom/Makefile b/drivers/misc/eeprom/Makefile
+index df3d68f..ec55aad 100644
+--- a/drivers/misc/eeprom/Makefile
++++ b/drivers/misc/eeprom/Makefile
+@@ -3,3 +3,4 @@ obj-$(CONFIG_EEPROM_AT25)	+= at25.o
+ obj-$(CONFIG_EEPROM_LEGACY)	+= eeprom.o
+ obj-$(CONFIG_EEPROM_MAX6875)	+= max6875.o
+ obj-$(CONFIG_EEPROM_93CX6)	+= eeprom_93cx6.o
++obj-$(CONFIG_EEPROM_93XX46)	+= eeprom_93xx46.o
+diff --git a/drivers/misc/eeprom/eeprom_93xx46.c b/drivers/misc/eeprom/eeprom_93xx46.c
+new file mode 100644
+index 0000000..d73317c
+--- /dev/null
++++ b/drivers/misc/eeprom/eeprom_93xx46.c
+@@ -0,0 +1,410 @@
++/*
++ * Driver for 93xx46 EEPROMs
++ *
++ * (C) 2011 DENX Software Engineering, Anatolij Gustschin <agust@denx.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/delay.h>
++#include <linux/device.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/slab.h>
++#include <linux/spi/spi.h>
++#include <linux/sysfs.h>
++#include <linux/eeprom_93xx46.h>
++
++#define OP_START	0x4
++#define OP_WRITE	(OP_START | 0x1)
++#define OP_READ		(OP_START | 0x2)
++#define ADDR_EWDS	0x00
++#define ADDR_ERAL	0x20
++#define ADDR_EWEN	0x30
++
++struct eeprom_93xx46_dev {
++	struct spi_device *spi;
++	struct eeprom_93xx46_platform_data *pdata;
++	struct bin_attribute bin;
++	struct mutex lock;
++	int addrlen;
++};
++
++static ssize_t
++eeprom_93xx46_bin_read(struct file *filp, struct kobject *kobj,
++		       struct bin_attribute *bin_attr,
++		       char *buf, loff_t off, size_t count)
++{
++	struct eeprom_93xx46_dev *edev;
++	struct device *dev;
++	struct spi_message m;
++	struct spi_transfer t[2];
++	int bits, ret;
++	u16 cmd_addr;
++
++	dev = container_of(kobj, struct device, kobj);
++	edev = dev_get_drvdata(dev);
++
++	if (unlikely(off >= edev->bin.size))
++		return 0;
++	if ((off + count) > edev->bin.size)
++		count = edev->bin.size - off;
++	if (unlikely(!count))
++		return count;
++
++	cmd_addr = OP_READ << edev->addrlen;
++
++	if (edev->addrlen == 7) {
++		cmd_addr |= off & 0x7f;
++		bits = 10;
++	} else {
++		cmd_addr |= off & 0x3f;
++		bits = 9;
++	}
++
++	dev_dbg(&edev->spi->dev, "read cmd 0x%x, %d Hz\n",
++		cmd_addr, edev->spi->max_speed_hz);
++
++	spi_message_init(&m);
++	memset(t, 0, sizeof(t));
++
++	t[0].tx_buf = (char *)&cmd_addr;
++	t[0].len = 2;
++	t[0].bits_per_word = bits;
++	spi_message_add_tail(&t[0], &m);
++
++	t[1].rx_buf = buf;
++	t[1].len = count;
++	t[1].bits_per_word = 8;
++	spi_message_add_tail(&t[1], &m);
++
++	mutex_lock(&edev->lock);
++
++	if (edev->pdata->prepare)
++		edev->pdata->prepare(edev);
++
++	ret = spi_sync(edev->spi, &m);
++	/* have to wait at least Tcsl ns */
++	ndelay(250);
++	if (ret) {
++		dev_err(&edev->spi->dev, "read %d bytes at %d: err. %d\n",
++			count, (int)off, ret);
++	}
++
++	if (edev->pdata->finish)
++		edev->pdata->finish(edev);
++
++	mutex_unlock(&edev->lock);
++	return ret ? : count;
++}
++
++static int eeprom_93xx46_ew(struct eeprom_93xx46_dev *edev, int is_on)
++{
++	struct spi_message m;
++	struct spi_transfer t;
++	int bits, ret;
++	u16 cmd_addr;
++
++	cmd_addr = OP_START << edev->addrlen;
++	if (edev->addrlen == 7) {
++		cmd_addr |= (is_on ? ADDR_EWEN : ADDR_EWDS) << 1;
++		bits = 10;
++	} else {
++		cmd_addr |= (is_on ? ADDR_EWEN : ADDR_EWDS);
++		bits = 9;
++	}
++
++	dev_dbg(&edev->spi->dev, "ew cmd 0x%04x\n", cmd_addr);
++
++	spi_message_init(&m);
++	memset(&t, 0, sizeof(t));
++
++	t.tx_buf = &cmd_addr;
++	t.len = 2;
++	t.bits_per_word = bits;
++	spi_message_add_tail(&t, &m);
++
++	mutex_lock(&edev->lock);
++
++	if (edev->pdata->prepare)
++		edev->pdata->prepare(edev);
++
++	ret = spi_sync(edev->spi, &m);
++	/* have to wait at least Tcsl ns */
++	ndelay(250);
++	if (ret)
++		dev_err(&edev->spi->dev, "erase/write %sable error %d\n",
++			is_on ? "en" : "dis", ret);
++
++	if (edev->pdata->finish)
++		edev->pdata->finish(edev);
++
++	mutex_unlock(&edev->lock);
++	return ret;
++}
++
++static ssize_t
++eeprom_93xx46_write_word(struct eeprom_93xx46_dev *edev,
++			 const char *buf, unsigned off)
++{
++	struct spi_message m;
++	struct spi_transfer t[2];
++	int bits, data_len, ret;
++	u16 cmd_addr;
++
++	cmd_addr = OP_WRITE << edev->addrlen;
++
++	if (edev->addrlen == 7) {
++		cmd_addr |= off & 0x7f;
++		bits = 10;
++		data_len = 1;
++	} else {
++		cmd_addr |= off & 0x3f;
++		bits = 9;
++		data_len = 2;
++	}
++
++	dev_dbg(&edev->spi->dev, "write cmd 0x%x\n", cmd_addr);
++
++	spi_message_init(&m);
++	memset(t, 0, sizeof(t));
++
++	t[0].tx_buf = (char *)&cmd_addr;
++	t[0].len = 2;
++	t[0].bits_per_word = bits;
++	spi_message_add_tail(&t[0], &m);
++
++	t[1].tx_buf = buf;
++	t[1].len = data_len;
++	t[1].bits_per_word = 8;
++	spi_message_add_tail(&t[1], &m);
++
++	ret = spi_sync(edev->spi, &m);
++	/* have to wait program cycle time Twc ms */
++	mdelay(6);
++	return ret;
++}
++
++static ssize_t
++eeprom_93xx46_bin_write(struct file *filp, struct kobject *kobj,
++			struct bin_attribute *bin_attr,
++			char *buf, loff_t off, size_t count)
++{
++	struct eeprom_93xx46_dev *edev;
++	struct device *dev;
++	int i, ret, step = 1;
++
++	dev = container_of(kobj, struct device, kobj);
++	edev = dev_get_drvdata(dev);
++
++	if (unlikely(off >= edev->bin.size))
++		return 0;
++	if ((off + count) > edev->bin.size)
++		count = edev->bin.size - off;
++	if (unlikely(!count))
++		return count;
++
++	/* only write even number of bytes on 16-bit devices */
++	if (edev->addrlen == 6) {
++		step = 2;
++		count &= ~1;
++	}
++
++	/* erase/write enable */
++	ret = eeprom_93xx46_ew(edev, 1);
++	if (ret)
++		return ret;
++
++	mutex_lock(&edev->lock);
++
++	if (edev->pdata->prepare)
++		edev->pdata->prepare(edev);
++
++	for (i = 0; i < count; i += step) {
++		ret = eeprom_93xx46_write_word(edev, &buf[i], off + i);
++		if (ret) {
++			dev_err(&edev->spi->dev, "write failed at %d: %d\n",
++				(int)off + i, ret);
++			break;
++		}
++	}
++
++	if (edev->pdata->finish)
++		edev->pdata->finish(edev);
++
++	mutex_unlock(&edev->lock);
++
++	/* erase/write disable */
++	eeprom_93xx46_ew(edev, 0);
++	return ret ? : count;
++}
++
++static int eeprom_93xx46_eral(struct eeprom_93xx46_dev *edev)
++{
++	struct eeprom_93xx46_platform_data *pd = edev->pdata;
++	struct spi_message m;
++	struct spi_transfer t;
++	int bits, ret;
++	u16 cmd_addr;
++
++	cmd_addr = OP_START << edev->addrlen;
++	if (edev->addrlen == 7) {
++		cmd_addr |= ADDR_ERAL << 1;
++		bits = 10;
++	} else {
++		cmd_addr |= ADDR_ERAL;
++		bits = 9;
++	}
++
++	spi_message_init(&m);
++	memset(&t, 0, sizeof(t));
++
++	t.tx_buf = &cmd_addr;
++	t.len = 2;
++	t.bits_per_word = bits;
++	spi_message_add_tail(&t, &m);
++
++	mutex_lock(&edev->lock);
++
++	if (edev->pdata->prepare)
++		edev->pdata->prepare(edev);
++
++	ret = spi_sync(edev->spi, &m);
++	if (ret)
++		dev_err(&edev->spi->dev, "erase error %d\n", ret);
++	/* have to wait erase cycle time Tec ms */
++	mdelay(6);
++
++	if (pd->finish)
++		pd->finish(edev);
++
++	mutex_unlock(&edev->lock);
++	return ret;
++}
++
++static ssize_t eeprom_93xx46_store_erase(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf, size_t count)
++{
++	struct eeprom_93xx46_dev *edev = dev_get_drvdata(dev);
++	int erase = 0, ret;
++
++	sscanf(buf, "%d", &erase);
++	if (erase) {
++		ret = eeprom_93xx46_ew(edev, 1);
++		if (ret)
++			return ret;
++		ret = eeprom_93xx46_eral(edev);
++		if (ret)
++			return ret;
++		ret = eeprom_93xx46_ew(edev, 0);
++		if (ret)
++			return ret;
++	}
++	return count;
++}
++static DEVICE_ATTR(erase, S_IWUSR, NULL, eeprom_93xx46_store_erase);
++
++static int __devinit eeprom_93xx46_probe(struct spi_device *spi)
++{
++	struct eeprom_93xx46_platform_data *pd;
++	struct eeprom_93xx46_dev *edev;
++	int err;
++
++	pd = spi->dev.platform_data;
++	if (!pd) {
++		dev_err(&spi->dev, "missing platform data\n");
++		return -ENODEV;
++	}
++
++	edev = kzalloc(sizeof(*edev), GFP_KERNEL);
++	if (!edev)
++		return -ENOMEM;
++
++	if (pd->flags & EE_ADDR8)
++		edev->addrlen = 7;
++	else if (pd->flags & EE_ADDR16)
++		edev->addrlen = 6;
++	else {
++		dev_err(&spi->dev, "unspecified address type\n");
++		err = -EINVAL;
++		goto fail;
++	}
++
++	mutex_init(&edev->lock);
++
++	edev->spi = spi_dev_get(spi);
++	edev->pdata = pd;
++
++	sysfs_bin_attr_init(&edev->bin);
++	edev->bin.attr.name = "eeprom";
++	edev->bin.attr.mode = S_IRUSR;
++	edev->bin.read = eeprom_93xx46_bin_read;
++	edev->bin.size = 128;
++	if (!(pd->flags & EE_READONLY)) {
++		edev->bin.write = eeprom_93xx46_bin_write;
++		edev->bin.attr.mode |= S_IWUSR;
++	}
++
++	err = sysfs_create_bin_file(&spi->dev.kobj, &edev->bin);
++	if (err)
++		goto fail;
++
++	dev_info(&spi->dev, "%d-bit eeprom %s\n",
++		(pd->flags & EE_ADDR8) ? 8 : 16,
++		(pd->flags & EE_READONLY) ? "(readonly)" : "");
++
++	if (!(pd->flags & EE_READONLY)) {
++		if (device_create_file(&spi->dev, &dev_attr_erase))
++			dev_err(&spi->dev, "can't create erase interface\n");
++	}
++
++	dev_set_drvdata(&spi->dev, edev);
++	return 0;
++fail:
++	kfree(edev);
++	return err;
++}
++
++static int __devexit eeprom_93xx46_remove(struct spi_device *spi)
++{
++	struct eeprom_93xx46_dev *edev = dev_get_drvdata(&spi->dev);
++
++	if (!(edev->pdata->flags & EE_READONLY))
++		device_remove_file(&spi->dev, &dev_attr_erase);
++
++	sysfs_remove_bin_file(&spi->dev.kobj, &edev->bin);
++	dev_set_drvdata(&spi->dev, NULL);
++	kfree(edev);
++	return 0;
++}
++
++static struct spi_driver eeprom_93xx46_driver = {
++	.driver = {
++		.name	= "93xx46",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= eeprom_93xx46_probe,
++	.remove		= __devexit_p(eeprom_93xx46_remove),
++};
++
++static int __init eeprom_93xx46_init(void)
++{
++	return spi_register_driver(&eeprom_93xx46_driver);
++}
++module_init(eeprom_93xx46_init);
++
++static void __exit eeprom_93xx46_exit(void)
++{
++	spi_unregister_driver(&eeprom_93xx46_driver);
++}
++module_exit(eeprom_93xx46_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Driver for 93xx46 EEPROMs");
++MODULE_AUTHOR("Anatolij Gustschin <agust@denx.de>");
++MODULE_ALIAS("spi:93xx46");
+diff --git a/include/linux/eeprom_93xx46.h b/include/linux/eeprom_93xx46.h
+new file mode 100644
+index 0000000..0679181
+--- /dev/null
++++ b/include/linux/eeprom_93xx46.h
+@@ -0,0 +1,18 @@
++/*
++ * Module: eeprom_93xx46
++ * platform description for 93xx46 EEPROMs.
++ */
++
++struct eeprom_93xx46_platform_data {
++	unsigned char	flags;
++#define EE_ADDR8	0x01		/*  8 bit addr. cfg */
++#define EE_ADDR16	0x02		/* 16 bit addr. cfg */
++#define EE_READONLY	0x08		/* forbid writing */
++
++	/*
++	 * optional hooks to control additional logic
++	 * before and after spi transfer.
++	 */
++	void (*prepare)(void *);
++	void (*finish)(void *);
++};
+-- 
+1.7.1
 
-> As you will anyway pick up the patch set as a whole,
-> this is not a problem then.  I just sent the updates of gpio-mxs
-> and gpio-mxc with you approach.  As a side effect, you will see
-> patch #2 of gpio-mxc becomes a very big patch in term of number of
-> files it changes.
-
-Thanks.  It's actually not that big.  I've seen (and created) much
-worse.
-
-> 
-> > I've build tested this patch and have it sitting in the gpio/next
-> > branch of git://git.secretlab.ca/git/linux-2.6 at the moment if you
-> > want to build the rest of your series on top of it.
-> > 
-> Thanks for the patch demonstrating.  I have one minor comment below.
-> 
-> > g.
-> > 
-> > ---
-> > 
-> > commit e084f5b06ca7f3d94d9d042d288a3311398e5c49
-> > Author: Grant Likely <grant.likely@secretlab.ca>
-> > Date:   Sat Jun 4 16:18:59 2011 -0600
-> > 
-> >     gpio/mxs: Move Freescale mxs gpio driver to drivers/gpio
-> >     
-> >     GPIO drivers are getting moved to drivers/gpio for cleanup and
-> >     consolidation.  This patch moves the mxs driver.  Follow up patches
-> >     will clean it up and make it a fine upstanding example of a gpio
-> >     driver.
-> >     
-> >     Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> > 
-> >  arch/arm/mach-mxs/Makefile                         |    2 +-
-> >  .../mach-mxs/{gpio.h => include/mach/gpio-mxs.h}   |    0
-> >  arch/arm/mach-mxs/mach-mx28evk.c                   |    2 +-
-> >  drivers/gpio/Kconfig                               |    4 ++++
-> >  drivers/gpio/Makefile                              |    1 +
-> >  .../arm/mach-mxs/gpio.c => drivers/gpio/gpio-mxs.c |    3 +--
-> >  6 files changed, 8 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-mxs/Makefile b/arch/arm/mach-mxs/Makefile
-> > index 58e8923..6c38262 100644
-> > --- a/arch/arm/mach-mxs/Makefile
-> > +++ b/arch/arm/mach-mxs/Makefile
-> > @@ -1,5 +1,5 @@
-> >  # Common support
-> > -obj-y := clock.o devices.o gpio.o icoll.o iomux.o system.o timer.o
-> > +obj-y := clock.o devices.o icoll.o iomux.o system.o timer.o
-> >  
-> >  obj-$(CONFIG_MXS_OCOTP) += ocotp.o
-> >  obj-$(CONFIG_PM) += pm.o
-> > diff --git a/arch/arm/mach-mxs/gpio.h b/arch/arm/mach-mxs/include/mach/gpio-mxs.h
-> > similarity index 100%
-> > rename from arch/arm/mach-mxs/gpio.h
-> > rename to arch/arm/mach-mxs/include/mach/gpio-mxs.h
-> > diff --git a/arch/arm/mach-mxs/mach-mx28evk.c b/arch/arm/mach-mxs/mach-mx28evk.c
-> > index eacdc6b..347cf35 100644
-> > --- a/arch/arm/mach-mxs/mach-mx28evk.c
-> > +++ b/arch/arm/mach-mxs/mach-mx28evk.c
-> > @@ -24,9 +24,9 @@
-> >  
-> >  #include <mach/common.h>
-> >  #include <mach/iomux-mx28.h>
-> > +#include <mach/gpio-mxs.h>
-> >  
-> This is the problem of existing code.  The gpio.h (in turn gpio-mxs.h)
-> does not need to be included here.  So we can simply drop it in this
-> patch.  I have incorporated it when sending the patch within my series.
-
-Oops, I missed you comment here and replied to one of your patches
-with a nonsensical comment about missing a header.  Sorry.  Everything
-should be in order in my tree now.
-
-> 
-> >  #include "devices-mx28.h"
-> > -#include "gpio.h"
-> >  
-> >  #define MX28EVK_FLEXCAN_SWITCH	MXS_GPIO_NR(2, 13)
-> >  #define MX28EVK_FEC_PHY_POWER	MXS_GPIO_NR(2, 15)
-> > diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> > index 21271a5..afe44aa 100644
-> > --- a/drivers/gpio/Kconfig
-> > +++ b/drivers/gpio/Kconfig
-> > @@ -94,6 +94,10 @@ config GPIO_EXYNOS4
-> >  	def_bool y
-> >  	depends on CPU_EXYNOS4210
-> >  
-> > +config GPIO_MXS
-> > +	def_bool y
-> > +	depends on ARCH_MXS
-> > +
-> >  config GPIO_PLAT_SAMSUNG
-> >  	def_bool y
-> >  	depends on SAMSUNG_GPIOLIB_4BIT
-> > diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> > index e6e5032..8733d02 100644
-> > --- a/drivers/gpio/Makefile
-> > +++ b/drivers/gpio/Makefile
-> > @@ -10,6 +10,7 @@ obj-$(CONFIG_GPIO_BASIC_MMIO_CORE)	+= basic_mmio_gpio.o
-> >  obj-$(CONFIG_GPIO_BASIC_MMIO)	+= basic_mmio_gpio.o
-> >  obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
-> >  obj-$(CONFIG_GPIO_EXYNOS4)	+= gpio-exynos4.o
-> > +obj-$(CONFIG_GPIO_MXS)		+= gpio-mxs.o
-> >  obj-$(CONFIG_GPIO_PLAT_SAMSUNG)	+= gpio-plat-samsung.o
-> >  obj-$(CONFIG_GPIO_S5PC100)	+= gpio-s5pc100.o
-> >  obj-$(CONFIG_GPIO_S5PV210)	+= gpio-s5pv210.o
-> > diff --git a/arch/arm/mach-mxs/gpio.c b/drivers/gpio/gpio-mxs.c
-> > similarity index 99%
-> > rename from arch/arm/mach-mxs/gpio.c
-> > rename to drivers/gpio/gpio-mxs.c
-> > index 2c950fe..bac7b6b 100644
-> > --- a/arch/arm/mach-mxs/gpio.c
-> > +++ b/drivers/gpio/gpio-mxs.c
-> > @@ -27,10 +27,9 @@
-> >  #include <linux/gpio.h>
-> >  #include <mach/mx23.h>
-> >  #include <mach/mx28.h>
-> > +#include <mach/gpio-mxs.h>
-> >  #include <asm-generic/bug.h>
-> >  
-> > -#include "gpio.h"
-> > -
-> >  static struct mxs_gpio_port *mxs_gpio_ports;
-> >  static int gpio_table_size;
-> >  
-> 
-> -- 
-> Regards,
-> Shawn
-> 
