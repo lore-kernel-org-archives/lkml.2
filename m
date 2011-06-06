@@ -1,91 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757937Ab1FFUK7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 16:10:59 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:36114 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753712Ab1FFUK6 (ORCPT
+	id S1757957Ab1FFULV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 16:11:21 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:65094 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756918Ab1FFULR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 16:10:58 -0400
-Message-ID: <4DED344D.7000005@pandora.be>
-Date: Mon, 06 Jun 2011 22:10:53 +0200
-From: Bart De Schuymer <bdschuym@pandora.be>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; nl; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Mon, 6 Jun 2011 16:11:17 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH/RFC] m68k/bitops: Make bitmap data pointer of atomic ops volatile
+Date: Mon, 6 Jun 2011 22:11:15 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: linux-m68k@vger.kernel.org, Akinobu Mita <akinobu.mita@gmail.com>,
+        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
+References: <1307390873-29687-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1307390873-29687-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-To: Brad Campbell <brad@fnarfbargle.com>
-CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
-References: <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com> <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com> <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com> <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com> <isavsg$3or$1@dough.gmane.org> <4DE906C0.6060901@fnarfbargle.com>
-In-Reply-To: <4DE906C0.6060901@fnarfbargle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Antivirus: avast! (VPS 110606-1, 06/06/2011), Outbound message
-X-Antivirus-Status: Clean
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201106062211.15247.arnd@arndb.de>
+X-Provags-ID: V02:K0:fNSsaN0wIkw3yWWFLxIm3/bgNK/q3QG3MgDURJgt2hs
+ nkMdj3Yq8Z9Cz1ABpUt4mwHHD8CUkiR/j+688q4Vgpc4mIfsmm
+ wWpT+HwjfVELWl6XKWW49RZdCYZmQHTcHxDocs3duW6hivSpIM
+ l4jUXclc+5mkwI2xNfq1y2zcuaU66XLZZoltOJVKdH/zGn94eZ
+ rp8TEFd+cISWyV2GKsaZA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brad,
+On Monday 06 June 2011 22:07:53 Geert Uytterhoeven wrote:
+> 
+> This fixes a.o.
+> 
+> drivers/ide/ide-io.c: In function ‘ide_lock_host’:
+> drivers/ide/ide-io.c:415: warning: passing argument 2 of ‘__constant_test_and_set_bit’ discards qualifiers from pointer target type
+> drivers/ide/ide-io.c:415: warning: passing argument 2 of ‘__generic_test_and_set_bit’ discards qualifiers from pointer target type
+> 
+> Suggested-by: Ben Hutchings <ben@decadent.org.uk>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-This has probably nothing to do with ebtables, so please rmmod in case 
-it's loaded.
-A few questions I didn't directly see an answer to in the threads I 
-scanned...
-I'm assuming you actually use the bridging firewall functionality. So, 
-what iptables modules do you use? Can you reduce your iptables rules to 
-a core that triggers the bug?
-Or does it get triggered even with an empty set of firewall rules?
-Are you using a stock .35 kernel or is it patched?
-Is this something I can trigger on a poor guy's laptop or does it 
-require specialized hardware (I'm catching up on qemu/kvm...)?
+I think the correct fix would be to mark the variable not volatile, as it
+clearly has no business be marked as such. That doesn't mean your patch
+is wrong, though. It probably doesn't hurt to do both.
 
-cheers,
-Bart
-
-PS: I'm not sure if we should keep CC-ing everybody, netfilter-devel 
-together with kvm should probably do fine.
-
-Op 3/06/2011 18:07, Brad Campbell schreef:
-> On 03/06/11 23:50, Bernhard Held wrote:
->> Am 03.06.2011 15:38, schrieb Brad Campbell:
->>> On 02/06/11 07:03, CaT wrote:
->>>> On Wed, Jun 01, 2011 at 07:52:33PM +0800, Brad Campbell wrote:
->>>>> Unfortunately the only interface that is mentioned by name anywhere
->>>>> in my firewall is $DMZ (which is ppp0 and not part of any bridge).
->>>>>
->>>>> All of the nat/dnat and other horrible hacks are based on IP 
->>>>> addresses.
->>>>
->>>> Damn. Not referencing the bridge interfaces at all stopped our host 
->>>> from
->>>> going down in flames when we passed it a few packets. These are two
->>>> of the oopses we got from it. Whilst the kernel here is .35 we got the
->>>> same issue from a range of kernels. Seems related.
->>>
->>> Well, I tried sending an explanatory message to netdev, netfilter &
->>> cc'd to kvm,
->>> but it appears not to have made it to kvm or netfilter, and the cc to
->>> netdev has
->>> not elicited a response. My resend to netfilter seems to have dropped
->>> into the
->>> bit bucket also.
->> Just another reference 3.5 months ago:
->> http://www.spinics.net/lists/netfilter-devel/msg17239.html
->
-> <waves hands around shouting "I have a reproducible test case for this 
-> and don't mind patching and crashing the machine to get it fixed">
->
-> Attempted to add netfilter-devel to the cc this time.
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe 
-> netfilter-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
->
-
-
--- 
-Bart De Schuymer
-www.artinalgorithms.be
-
+	Arnd
