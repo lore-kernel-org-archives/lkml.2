@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab1FFXvK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 19:51:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33357 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753153Ab1FFXvI (ORCPT
+	id S1755235Ab1FFX7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 19:59:06 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:40059 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010Ab1FFX7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 19:51:08 -0400
-Date: Mon, 6 Jun 2011 16:51:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dmitry Dmitriev <dimondmm@yandex.ru>
-Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: Corrupt inode flags when remove ATTR_SYS flag on fat
- file system mounted with =?UTF-8?Q?=E2=80=9Csys=5Fimmutable=E2=80=9D?=
- mount option.
-Message-Id: <20110606165106.b0afea46.akpm@linux-foundation.org>
-In-Reply-To: <31181306830445@web159.yandex.ru>
-References: <31181306830445@web159.yandex.ru>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 6 Jun 2011 19:59:05 -0400
+Message-ID: <4DED69C6.1090301@candelatech.com>
+Date: Mon, 06 Jun 2011 16:59:02 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Keith Packard <keithp@keithp.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jbarnes@virtuousgeek.org
+Subject: Re: 3.0.0-rc2 fails to boot on Atom appliance (bisected, drm/i915)
+References: <4DED33DF.8000201@candelatech.com> <4DED6221.1060806@candelatech.com> <yunzkluzfw9.fsf@aiko.keithp.com>
+In-Reply-To: <yunzkluzfw9.fsf@aiko.keithp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 May 2011 12:27:24 +0400
-Dmitry Dmitriev <dimondmm@yandex.ru> wrote:
+On 06/06/2011 04:41 PM, Keith Packard wrote:
+> On Mon, 06 Jun 2011 16:26:25 -0700, Ben Greear<greearb@candelatech.com>  wrote:
+>> On 06/06/2011 01:09 PM, Ben Greear wrote:
+>>> Anyone seen something like this?  For what it's worth, it seems
+>>> that -rc1 had the same problem. I'll start bisecting soon if
+>>> the problem isn't already resolved somehow...
+>>
+>> I bisected this problem down to this commit:
+>
+> This should be fixed by this patch:
+>
+> -------------------- drivers/gpu/drm/i915/intel_display.c ---------------------
+> index f553ddf..bb1b59b 100644
+> @@ -7675,6 +7675,7 @@ static void intel_init_display(struct drm_device *dev)
+>   			dev_priv->display.update_wm = NULL;
+>   		} else
+>   			dev_priv->display.update_wm = pineview_update_wm;
+> +		dev_priv->display.init_clock_gating = gen3_init_clock_gating;
+>   	} else if (IS_G4X(dev)) {
+>   		dev_priv->display.update_wm = g4x_update_wm;
+>   		dev_priv->display.init_clock_gating = g4x_init_clock_gating;
+>
+> This hasn't been merged yet, but should be soon.
 
-> Hello,
-> 
-> Inode flags are corrupted when removing ATTR_SYS flag by FAT_IOCTL_SET_ATTRIBUTES ioctl on fat file system mounted with ___sys_immutable___ mount option. In this case S_IMMUTABLE flag must be removed from inode flags, but actually removed all other flags except S_IMMUTABLE. This problem observed on 2.6.34 kernel, but it seems still exist( after examine of 2.6.39 kernel source code ).
-> 
-> The problem in fat_ioctl_set_attributes function( fs/fat/file.c ). This function contains following code(2.6.39 kernel):
->  101        if (sbi->options.sys_immutable) {
->  102                if (attr & ATTR_SYS)
->  103                        inode->i_flags |= S_IMMUTABLE;
->  104                else
->  105                        inode->i_flags &= S_IMMUTABLE;
->  106        }
-> 
-> Instead of removing S_IMMUTABLE flag from inode flags on line 105 function removes all other flags from inode flags. I think that line 105 must be following:
-> 
->  105                        inode->i_flags &= ~S_IMMUTABLE;
-> 
+I tried adding that, but the problem stays the same.
 
-Thank, I queued this:
+Any other patches I should try?
+
+Thanks,
+Ben
+
+>
 
 
-From: Andrew Morton <akpm@linux-foundation.org>
-
-Inode flags are corrupted when removing ATTR_SYS flag by
-FAT_IOCTL_SET_ATTRIBUTES ioctl on fat file system mounted with
-`sys_immutable' mount option.
-
-Fix fat-fingered bitop from 21bea495943f9532 ("fat: split
-fat_generic_ioctl").
-
-Reported-by: Dmitry Dmitriev <dimondmm@yandex.ru>
-Cc: Cristoph Hellwig <hch@lst.de>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: <stable@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- fs/fat/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff -puN fs/fat/file.c~fs-fat-filec-fix-clearing-of-s_immutable fs/fat/file.c
---- a/fs/fat/file.c~fs-fat-filec-fix-clearing-of-s_immutable
-+++ a/fs/fat/file.c
-@@ -102,7 +102,7 @@ static int fat_ioctl_set_attributes(stru
- 		if (attr & ATTR_SYS)
- 			inode->i_flags |= S_IMMUTABLE;
- 		else
--			inode->i_flags &= S_IMMUTABLE;
-+			inode->i_flags &= ~S_IMMUTABLE;
- 	}
- 
- 	fat_save_attrs(inode, attr);
-_
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
