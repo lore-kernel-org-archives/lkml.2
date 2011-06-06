@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab1FFMke (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 08:40:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40387 "EHLO mx1.redhat.com"
+	id S1756285Ab1FFMlr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 08:41:47 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:49201 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756048Ab1FFMkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 08:40:33 -0400
-Date: Mon, 6 Jun 2011 14:40:25 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan.kim@gmail.com>, akpm@linux-foundation.org,
-        Ury Stankevich <urykhy@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous
-Message-ID: <20110606124025.GB12887@random.random>
-References: <20110601214018.GC7306@suse.de>
- <20110601233036.GZ19505@random.random>
- <20110602010352.GD7306@suse.de>
- <20110602132954.GC19505@random.random>
- <20110602145019.GG7306@suse.de>
- <20110602153754.GF19505@random.random>
- <20110603020920.GA26753@suse.de>
- <20110603144941.GI7306@suse.de>
- <20110604065853.GA4114@barrios-laptop>
- <20110606104345.GE5247@suse.de>
+	id S1754501Ab1FFMlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 08:41:46 -0400
+Date: Mon, 6 Jun 2011 05:40:47 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: "sdevrien@cisco.com" <sdevrien@cisco.com>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] Add support for the Philips SA56004 temperature
+ sensor.
+Message-ID: <20110606124047.GA26180@ericsson.com>
+References: <1307356845-10095-1-git-send-email-sdevrien@cisco.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20110606104345.GE5247@suse.de>
+In-Reply-To: <1307356845-10095-1-git-send-email-sdevrien@cisco.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 11:43:45AM +0100, Mel Gorman wrote:
-> Maybe not full, but it has more PageReserved pages than anywhere else
-> and few MIGRATE_MOVABLE blocks. MIGRATE_MOVABLE gets skipped during
-> async compaction we could easily reach the end of the DMA zone quickly.
+On Mon, Jun 06, 2011 at 06:40:45AM -0400, sdevrien@cisco.com wrote:
+> From: Stijn Devriendt <sdevrien@cisco.com>
+> 
+> Add support for the Philips SA56004, an LM86
+> compatible temperature sensor.
+> 
+> Changes since v2:
+> - Changed BUG_ON to WARN_ON
+> Changes since v1:
+> - Updated documentation
+> - Trace replaced by BUG_ON
+> - style updates
+> 
+> Signed-off-by: Stijn Devriendt <sdevrien@cisco.com>
 
-Debug data has nr_isolated_file in dma zone 1 and nr_isolated_file in
-normal zone being -1.
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+
+Jean, do you want to take this and/or have a look, or should I ?
+
+Thanks,
+Guenter
