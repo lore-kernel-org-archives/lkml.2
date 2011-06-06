@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab1FFQSG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:18:06 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41049 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429Ab1FFQSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:18:04 -0400
-Date: Mon, 6 Jun 2011 18:17:49 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-Message-ID: <20110606161749.GA22157@elte.hu>
-References: <4DEB933C.1070900@die-jansens.de>
- <20110605151323.GA30590@elte.hu>
- <1307349530.2353.7374.camel@twins>
- <20110606145827.GD30348@elte.hu>
- <1307372989.2322.136.camel@twins>
- <1307375227.2322.161.camel@twins>
- <20110606155236.GA7374@elte.hu>
- <1307376039.2322.164.camel@twins>
- <20110606160810.GA16636@elte.hu>
- <1307376771.2322.168.camel@twins>
+	id S1754469Ab1FFQSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:18:45 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54273 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752500Ab1FFQSn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 12:18:43 -0400
+Date: Mon, 6 Jun 2011 18:18:41 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Jander <david.jander@protonic.nl>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: Why does handle_simple_irq() require IRQ's to be disabled?
+In-Reply-To: <20110606172840.322f09d4@archvile>
+Message-ID: <alpine.LFD.2.02.1106061816280.13964@ionos>
+References: <20110606172840.322f09d4@archvile>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307376771.2322.168.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Mon, 2011-06-06 at 18:08 +0200, Ingo Molnar wrote:
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > On Mon, 2011-06-06 at 17:52 +0200, Ingo Molnar wrote:
-> > > > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > > > 
-> > > > > Needs more staring at, preferably by someone who actually 
-> > > > > understands that horrid mess :/ Also, this all still doesn't make 
-> > > > > printk() work reliably while holding rq->lock.
-> > > > 
-> > > > So, what about my suggestion to just *remove* the wakeup from there 
-> > > > and use the deferred wakeup mechanism that klogd uses.
-> > > > 
-> > > > That would make printk() *visibly* more robust in practice.
-> > > 
-> > > That's currently done from the jiffy tick, do you want to effectively
-> > > delay releasing the console_sem for the better part of a jiffy?
-> > 
-> > Yes, and we already do it in some other circumstances. 
+On Mon, 6 Jun 2011, David Jander wrote:
 > 
-> We do?
-
-Yes, see the whole printk_pending logic, it delays:
-
-                wake_up_interruptible(&log_wait);
-
-to the next jiffies tick.
-
-> > Can you see 
-> > any problem with that? klogd is an utter slowpath anyway.
+> Hi,
 > 
-> but console_sem isn't klogd. We delay klogd and that's perfectly 
-> fine, but afaict we don't delay console_sem.
+> I am trying to implement/fix interrupt controller functionality in
+> gpio/pca953x.c, and for some reason which I don't understand, I need to disable
+> interrupts with local_irq_disable() before calling generic_handle_irq(). This
+> does not seem right.
+> If I follow the code of handle_simple_irq(), the handler function setup for
+> this IRQ, I get to handle_irq_event_percpu(), which has a
+> WARN_ONCE(!irqs_disabled(),...
+> This WARN is triggered, since nobody explicitly disables interrupts. Why?
+>  
+> generic_hanlde_irq() is called from a threaded interrupt handler of the parent
+> of this interrupt controller, and calling local_irq_disable() here seems like
+> a crime. What am I doing wrong?
 
-But console_sem is really a similar special case as klogd. See, it's 
-about a *printk*. That's rare by definition.
-
-If someone on the console sees it he'll be startled by at least 10 
-msecs ;-) So delaying the wakeup to the next jiffy really fits into 
-the same approach as we already do with &log_wait, hm?
-
-This would solve a real nightmare that has plagued us ever since 
-printk() has done wakeups directly - i.e. like forever.
-
-Thanks,
-
-	Ingo
+handle_nested_irq() is your friend.
