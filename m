@@ -1,167 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab1FFOQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 10:16:30 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:42195 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753892Ab1FFOQ2 (ORCPT
+	id S1756634Ab1FFOUG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 10:20:06 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:61316 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab1FFOUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 10:16:28 -0400
-Date: Mon, 6 Jun 2011 16:16:25 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: David C Niemi <dniemi@verisign.com>, cpufreq@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: switching to top frequency too frequent with ondemand governor
- and no_hz
-Message-ID: <20110606141625.GA1768@x4.trippels.de>
-References: <20110601160805.GA1775@x4.trippels.de>
- <4DE6783E.70508@verisign.com>
- <20110601180038.GA1780@x4.trippels.de>
- <20110602114113.GA1771@x4.trippels.de>
- <BANLkTimB5OdiHhRKwB1KpuNnXD55MmXWjQ@mail.gmail.com>
- <20110606112015.GA1776@x4.trippels.de>
- <BANLkTik0UeiieJDY7FHJHC9H4fwgBTh=PQ@mail.gmail.com>
+	Mon, 6 Jun 2011 10:20:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=dZuObfGuS/9ARcVpMFio1hdx3x3mWGeIImAObYvQFMDNGOoBOUiWCD6FxVZTkUoJJr
+         uwk8MDTPRIppT5sM/ImaUd/+SoF+WwdSvNwJRw05Oo6lFI+85gAfnjx6mAzeuA5PQN/k
+         LBkEXMc9UGrji45ms9W/sucAUcSLkOTdCOyXI=
+Date: Mon, 6 Jun 2011 23:19:52 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, akpm@linux-foundation.org,
+        Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110606141952.GE1686@barrios-laptop>
+References: <20110601214018.GC7306@suse.de>
+ <20110601233036.GZ19505@random.random>
+ <20110602010352.GD7306@suse.de>
+ <20110602132954.GC19505@random.random>
+ <20110602145019.GG7306@suse.de>
+ <20110602153754.GF19505@random.random>
+ <20110603020920.GA26753@suse.de>
+ <20110603144941.GI7306@suse.de>
+ <20110603154554.GK2802@random.random>
+ <20110606103924.GD5247@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTik0UeiieJDY7FHJHC9H4fwgBTh=PQ@mail.gmail.com>
+In-Reply-To: <20110606103924.GD5247@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.06.06 at 15:11 +0200, Vincent Guittot wrote:
-> On 6 June 2011 13:20, Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
-> > On 2011.06.06 at 09:35 +0200, Vincent Guittot wrote:
-> >> On 2 June 2011 13:41, Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
-> >> > On 2011.06.01 at 20:00 +0200, Markus Trippelsdorf wrote:
-> >> >> But I have found the root cause of symptoms described above by
-> >> >> bisection. It turned out that 2.6.39 is also affected, so I've bisected
-> >> >> down to 2.6.38.
-> >> >> This is the result:
-> >> >>
-> >> >>  5cb2c3bd0c5e0f3ced63f250ec2ad59d7c5c626a is the first bad commit
-> >> >>  commit 5cb2c3bd0c5e0f3ced63f250ec2ad59d7c5c626a
-> >> >>  Author: Vincent Guittot <vincent.guittot@linaro.org>
-> >> >>  Date:   Mon Feb 7 17:14:25 2011 +0100
-> >> >>
-> >> >>      [CPUFREQ] calculate delay after dbs_check_cpu
-> >> >>
-> >> >> When I revert the above in 3.0-rc1 the CONFIG_NO_HZ=y symptoms vanish.
-> >> >
-> >>
-> >> The patch, you have mentioned, solves a problem when ondemand governor
-> >> goes  from highest frequency to a lower one. Without the patch, the
-> >> governor uses the longest sampling period (sampling period * scaling
-> >> down factor) with a low frequency during the 1st period after
-> >> decreasing the frequency. This can lead to a large time frame
-> >> (sampling period * scaling down factor) with a low frequency but an
-> >> overloaded cpu.
-> >
-> > The problem with the patch is that it results in an ondemand behavior
-> > that almost totally ignores the middle frequencies (2100 and 2500 MHz in
-> > my case) with CONFIG_NO_HZ. If you also set the sampling_down_factor to
-> > something like >=100 then the CPU will spend much of the time at the top
-> > frequency even if there is no workload whatsoever.
-> >
+On Mon, Jun 06, 2011 at 11:39:24AM +0100, Mel Gorman wrote:
+> On Fri, Jun 03, 2011 at 05:45:54PM +0200, Andrea Arcangeli wrote:
+> > On Fri, Jun 03, 2011 at 03:49:41PM +0100, Mel Gorman wrote:
+> > > Right idea of the wrong zone being accounted for but wrong place. I
+> > > think the following patch should fix the problem;
+> > 
+> > Looks good thanks.
+> > 
+> > I also found this bug during my debugging that made NR_SHMEM underflow.
+> > 
+> > ===
+> > Subject: migrate: don't account swapcache as shmem
+> > 
+> > From: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > swapcache will reach the below code path in migrate_page_move_mapping,
+> > and swapcache is accounted as NR_FILE_PAGES but it's not accounted as
+> > NR_SHMEM.
+> > 
+> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 > 
-> In fact, one main goal of the ondemand governor is to switch to max
-> frequency as soon as there is a cpu activity is detected to ensure the
-> responsiveness of the system. If your idle activity is made of burst
-> of cpu activity and your sampling period is small,  your sytems will
-> switch between the highest and the lowest frequency. At the contrary,
-> the conservative governor modifies the frequency in a step by step
-> manner.
-
-Understood. But this a change in behavior due to your patch.
-
-> >> The other correction of the patch is linked to the powersave bias
-> >> mode. The governor didn't use the right period for the low frequency
-> >> step (freq_lo_jiffies) but a larger one (sampling period * scaling
-> >> down factor). The ratio between low and high frequency was not the
-> >> right one.
-> >>
-> >> Do you use the powersave bias mode ?
-> >
-> > No.
-> >
-> >> Could you give us more statistics : the number of state transition
-> >> could be an interesting value. Is there a difference with and without
-> >> CONFIG_NO_HZ ? What is your sampling rate ?
-> >
-> > These are my settings:
-> >
-> > ignore_nice_load 0
-> > io_is_busy 0
-> > powersave_bias 0
-> > sampling_down_factor 200
-> > sampling_rate 10000
-> > sampling_rate_min 10000
-> > up_threshold 95
-> >
-> > cat sys/devices/system/cpu/cpu0/cpufreq/stats/* on an otherwise idle
-> > machine with CONFIG_NO_HZ and 5cb2c3bd0c5e0f reverted:
-> > 3200000 532
-> > 2500000 172
-> > 2100000 2703
-> > 800000 20995
-> > 153
-> >
+> Well spotted.
 > 
-> With this configuration (without the patch), there is a period of 2
-> seconds with a low frequency when the governor comes back from the
-> highest frequency. During these 2 seconds, you will not be able to go
-> back to max frequency. So, if your cpu is overloaded during this 2
-> seconds period, you will not increase your frequency. For this use
-> case, your cpufreq responsiveness is more then 2 seconds.
-
-I don't see these 2 second delays (being stuck on a low frequency) on my
-system. On the contrary as soon as there is sufficient load it switches
-to the highest frequency immediately.
-
-> > and with your patch and also CONFIG_NO_HZ:
-> > 3200000 11795
-> > 2500000 0
-> > 2100000 0
-> > 800000 20620
-> > 213
-> >
-> > Which shows the problem very nicely.
-> >
+> Acked-by: Mel Gorman <mgorman@suse.de>
 > 
-> My understand is that your idle activity is made of cpu activities
-> which are 10ms long and which trigs the increase of the frequency.
-
-Could it be that the call to dbs_check_cpu(dbs_info) itself is the
-reason for these activities?
-
-> >> One difference with CONFIG_NO_HZ is the real sampling period which can
-> >> be greater than the timer configuration because of the deferrable
-> >> mode. The deferrable mode has nearly no effect when CONFIG_NO_HZ is
-> >> not set because the tick timer will ensure enough cpu activity to
-> >> trigger the governor. When CONFIG_NO_HZ is set, the ondemand governor
-> >> work is triggered at the beginning of a cpu activity so we have more
-> >> chance to have a short cpu load in one period instead of splitting it
-> >> into 2 differents periods. This behavior is quite useful for
-> >> responsiveness but can generates spurious frequency increase if the
-> >> sampling rate is too short.
-> >
-> > Hm, my sampling rate (10000) is already the most minimal rate available.
-> >
+> Minor nit. swapper_space is rarely referred to outside of the swap
+> code. Might it be more readable to use
 > 
-> It's seems that your sampling period is too small and the ondemand
-> governor detects your idle activity as an increase of the cpu activity
-> and as a result, it increases the frequency. Have you tried to
-> increase the sampling rate and decrease your sampling_down_factor
-> which seems to be also quite high ?
+> 	/*
+> 	 * swapcache is accounted as NR_FILE_PAGES but it is not
+> 	 * accounted as NR_SHMEM
+> 	 *
+> 	if (PageSwapBacked(page) && !PageSwapCache(page))
 
-Please note that these are all default values (with the exception of
-sampling_down_factor). So why should I fiddle with the parameters when
-everything was working fine before your patch went in? And even if I
-increase the sampling rate and decrease the sampling_down_factor, I
-cannot replicate the old behavior. So IMHO it's a regression.
+I like this. but as it's "and" operation, CPU have to execute two condition comparison.
+but how about below?
+	if (!PageSwapCache(page) && PageSwapBacked(page))
 
-Thanks.
+PageSwapCache implys PageSwapBacked so we can handle non-swapbacked pages as just 1 comparison.
+
+> 
+> ?
+> 
+> > ---
+> > 
+> > diff --git a/mm/migrate.c b/mm/migrate.c
+> > index e4a5c91..2597a27 100644
+> > --- a/mm/migrate.c
+> > +++ b/mm/migrate.c
+> > @@ -288,7 +288,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+> >  	 */
+> >  	__dec_zone_page_state(page, NR_FILE_PAGES);
+> >  	__inc_zone_page_state(newpage, NR_FILE_PAGES);
+> > -	if (PageSwapBacked(page)) {
+> > +	if (mapping != &swapper_space && PageSwapBacked(page)) {
+> >  		__dec_zone_page_state(page, NR_SHMEM);
+> >  		__inc_zone_page_state(newpage, NR_SHMEM);
+> >  	}
+> > 
+> > 
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
+
 -- 
-Markus
+Kind regards
+Minchan Kim
