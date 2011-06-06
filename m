@@ -1,71 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab1FFJzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:55:48 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:33309 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751199Ab1FFJzq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:55:46 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX198uBLHyuIaoNssH++HpASb
-Date: Mon, 6 Jun 2011 12:55:40 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: "Girdwood, Liam" <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH 3/8] MFD: twl4030-audio: Rename platform data
-Message-ID: <20110606095540.GR8696@atomide.com>
-References: <1306927051-8937-1-git-send-email-peter.ujfalusi@ti.com>
- <201106020915.46491.peter.ujfalusi@ti.com>
- <20110603080819.GK8696@atomide.com>
- <201106031638.26094.peter.ujfalusi@ti.com>
+	id S1755957Ab1FFJ7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:59:13 -0400
+Received: from mail.wdtv.com ([66.118.69.84]:39870 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754571Ab1FFJ7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 05:59:08 -0400
+From: Gene Heskett <gene.heskett@gmail.com>
+To: Lars =?utf-8?q?T=C3=A4uber?= <taeuber@bbaw.de>
+Subject: Re: [PROBLEM] reproduceable storage errors on high IO load
+Date: Mon, 6 Jun 2011 05:59:02 -0400
+User-Agent: KMail/1.13.7 (Linux/2.6.38.8-pclos1.pae.bfs; KDE/4.6.3; i686; ; )
+References: <20110606095127.21d23a70.taeuber@bbaw.de>
+In-Reply-To: <20110606095127.21d23a70.taeuber@bbaw.de>
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106031638.26094.peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201106060559.03131.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Ujfalusi <peter.ujfalusi@ti.com> [110603 16:34]:
-> On Friday 03 June 2011 11:08:22 Tony Lindgren wrote:
-> > Yeah if it gets big then a separate file is better. Also, if we have
-> > a common init function for twl, then it's easy to add the board specific
-> > device tree initialization to that too and just leave out the calls to
-> > omap_pmic_init from board-*.c files.
-> 
-> I have parsed the board files for a pattern.
-> There are some, but I have my doubts as well:
-> We have eight platform data members in twl4030_platform_data for child 
-> devices.
-> USB, and audio/codec configuration might worth to move out (since most of the 
-> board does not have fine tuned parameters for codec).
-> 
-> The majority of the code related to pmic is coming from regulator setups, I 
-> can see similarities, but there are differences here and there, which makes 
-> the common configuration mostly useless (different peripherals, boot loader 
-> diffs, etc).
+On Monday, June 06, 2011, Lars Täuber wrote:
+>Hallo!
+>
+>This is a message originally sent to linux-scsi.
+>I got no reply so I think this was the wrong ML.
+>Please tell me if I should send more specific information about
+>something. Since january I struggle with this problem. It prevents me
+>from running a backup server productively.
+>
+>Thank you.
+>Lars
+>
+>
+>
+>Hi there,
+>
+>I have a problem with a SW-RAID6. It is reproduceable also after changing
+>the hole hardware. I startet with a Suse 11.2. The problem occured
+>during writing much data to the array (high io load). This is hopefully
+>the right ML for my problem. Otherwise please excuse me and point me the
+>the right ML.
+>
+>
+>Then I changed the PSU. Still errors on high load.
+>Then I changed the sata controller (Sil 3114 - sata_sil) with one with a
+>different chipset (driver: sata_mv). Still errors on high load. Then I
+>changed the disk enclosure and all cables. Still errors.
+>Then I changed the mainboard (tyan opteron) with one from supermicro
+>(H8SCM-F) with 6-core opteron. Still errors. Then I changed to ubuntu
+>10.04 -> 10.10. Still errors
+>Then I tried different schedulars (noop,anticipatory,cfq,deadline). Still
+>errors. Then I tried kernel options: noapic + acpi=off without luck.
+>Then I changed the sata controller with a areca sas (driver: mvsas).
+>Still errors. Then I tried some different hdds (orig: Western Digital
+>WDC WD2002FYPS + WDC WD2003FYYS; new: Seagate ST3320620NS). Still
+>errors. Then I tried some different kernel versions from ubuntu without
+>luck: 2.6.32-22-server
+>2.6.35-25-server
+>
+>Then I tried self compiled kernels without luck:
+>2.6.35.13
+>2.6.38.6
+>2.6.39: same problem occurs but later
+>
+>The current configuration:
+>- tested only 64-bit kernels
+>- Supermicro H8SCM-F (AMD SR5650+SP5100) with 6-core opteron
+>- Areca (non-raid) ARC-1300ix-16 sas controller
+>- SW-RAID6 over 8 Western Digital HDDs (sone WDC WD2002FYPS + some WDC
+>WD2003FYYS) - redundant PSU
+>
+>How to reproduce my problem:
+>mdadm -C /dev/md3 -l6 -n8 /dev/sd[c-h] missing missing
+>(the two missing hdds prevent this raid from initial sync)
+>
+>Everything is just fine till yet.
+>Now produce high io-load:
+>mke2fs -j /dev/md3
+>
+>The detailed history (search for Lars to get my posts):
+>https://bugs.launchpad.net/ubuntu/+bug/550559
+>
+>The error messages changed a bit during the kernel versions.
+>The nearly complete dmesg output:
+>https://launchpadlibrarian.net/72325163/20110524.dmesg.out
+>
+>Is there something I do wrong? Could someone help me to debug this?
+>Thanks
+>Lars
 
-Yeah we still need the board specific data passed for sure.
- 
-> Having said that, I try to create a wrapper for omap_pmic_init, which can 
-> replace the current omap2/3/4_pmic_init, with that we can use common config 
-> for USB, audio, and some selected few regulators initially.
-> Later other parts might be possible to consolidate as well.
-> I'm going to call this new wrapper for now omap2/3/4_pmic_config.
-> 
-> Is this a good way to approach this issue?
+Looking at your dmesg, I get the impression you have a bunch of disks that 
+are in need of a firmware update.  Unforch, the dmesg snippet does not 
+include the drive discovery and identification data.
 
-Sounds good to me!
+However, I would back that data up to another medium before I did that as I 
+had the seagate firmware update scramble the blkid's and partition names of 
+one of two 1Tb drives I have.  Neither drive errors now, but the read/write 
+speeds for the 2nd identical drive are about 1/3rd the rate of the first.
 
-Tony
+Firmware updates are in the form of a bootable cd .iso, and you can 
+download the cd image from the makers site.
+
+Cheers, gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Eisenhower!!  Your mimeograph machine upsets my stomach!!
