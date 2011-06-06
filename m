@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab1FFRke (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 13:40:34 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56626 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511Ab1FFRkd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 13:40:33 -0400
-Subject: Re: [PATCH] perf, core: Fix initial task_ctx/event installation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: paulus@samba.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-        oleg@redhat.com
-In-Reply-To: <1307371095-10141-1-git-send-email-jolsa@redhat.com>
-References: <1307371095-10141-1-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 06 Jun 2011 19:40:26 +0200
-Message-ID: <1307382026.2322.226.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756763Ab1FFRll (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 13:41:41 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50493 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752121Ab1FFRlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 13:41:40 -0400
+Date: Mon, 6 Jun 2011 19:41:29 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andy Lutomirski <luto@MIT.EDU>
+Cc: x86@kernel.org, pageexec@freemail.hu, Mikael Pettersson <mikpe@it.uu.se>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/3] x86-64: Clean up vsyscall emulation and remove
+ fixed-address ret
+Message-ID: <20110606174129.GA6412@elte.hu>
+References: <cover.1307380481.git.luto@mit.edu>
+ <bd468a0e02befab146667fab5de57df7332d54d9.1307380481.git.luto@mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <bd468a0e02befab146667fab5de57df7332d54d9.1307380481.git.luto@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It helps if you actually use the right email address for me ;-)
 
-On Mon, 2011-06-06 at 16:38 +0200, Jiri Olsa wrote:
-> hi,
+* Andy Lutomirski <luto@MIT.EDU> wrote:
+
+> Remove the fixed-address ret in the vsyscall emulation stubs.  As a
+> result, int 0xcc no longer works if executed from user address space
+> (which is OK -- nothing sensible should do that).
 > 
-> I think I found a bug in the __perf_install_in_context. The attached
-> patch fixies the problem for me, but I'm not sure it did not break
-> anything else.. ;)
+> Removing support for int 0xcc in user address space cleans up the
+> code considerably.
 > 
-> thanks,
-> jirka
-> 
+> Signed-off-by: Andy Lutomirski <luto@mit.edu>
 > ---
-> The __perf_install_in_context function does not install context
-> events in case there's no active task context.
-> 
-> This might cause incorrect counts if application opens counter
-> in its own task context. 
-> 
-> Following scenario leads to wrong counts:
-> (this is the case for "perf test - test__open_syscall_event
-> which counts sys_enter_open calls)
-> 
-> 1  - application is scheduled in
-> 2  - application enters perf_event_open syscall with its own pid
-> 3  - event/context is created
-> 4  - __perf_install_in_context is called
-> 5  - cpuctx->task_ctx is NULL
-> 6  - perf_event_sched_in gets called with ctx == NULL, new event is not scheduled in
-> 7  - application leaves the perf_event_open syscall
-> 8  - application running code leading to increment the event counter
->      !!! this is where we lost the counts, since the event is not scheduled in !!!
-> 9  - application is scheduled out
-> 11 - application is scheduled in
-> 12 - event is properly sceduled in
-> 13 - event counter is now incremented
-> 
-> If the task is scheduled out and back in after the context is installed,
-> but before it exits the perf_event_open syscall, the task_ctx gets
-> properly set and event is properly scheduled in. In this case
-> the perf test returns proper counts.
-> 
-> Attached patch changed this behaviour to install new task_ctx
-> even if the current task_ctx is NULL.
-> 
-> Tested by succesfully running perf test command.
+>  arch/x86/include/asm/vsyscall.h   |   10 ++++-
+>  arch/x86/kernel/vsyscall_64.c     |   78 +++++++++++--------------------------
+>  arch/x86/kernel/vsyscall_emu_64.S |   17 +--------
+>  3 files changed, 32 insertions(+), 73 deletions(-)
 
-Right, so I have those bits as per https://lkml.org/lkml/2011/4/10/17,
-they got lost in the commit due to a quilt refresh boo-boo.
+Ok, this makes the whole series a lot more palatable!
 
-With these bits it works on my dual core, but I still get lockups on my
-24-cpu wsm machine.
+Can i propagate the rename suggested by hpa into patch #3:
 
+  CONFIG_COMPAT_VSYSCALL => CONFIG_LEGACY_VSYSCALL
+
+? 'legacy' is probably the best name for this and it thus won't be 
+confused with the 32-bit compat facilities we have.
+
+Thanks,
+
+	Ingo
