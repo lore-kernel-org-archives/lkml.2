@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab1FFJP6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:15:58 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:49821 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab1FFJPz (ORCPT
+	id S1755133Ab1FFJZH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:25:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38320 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab1FFJZD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:15:55 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DEC9CAE.7030407@cam.ac.uk>
-Date: Mon, 06 Jun 2011 10:23:58 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: anish kumar <anish198519851985@gmail.com>
-CC: manuel.stahl@iis.fraunhofer.de, gregkh@suse.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: IIO corrected the spelling
-References: <45538E4040B9494CA605BDF7475381AE@your6c359a3bdc>
-In-Reply-To: <45538E4040B9494CA605BDF7475381AE@your6c359a3bdc>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Jun 2011 05:25:03 -0400
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arne Jansen <lists@die-jansens.de>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <4DEC9B67.2070908@die-jansens.de>
+References: <20110605151323.GA30590@elte.hu>
+	 <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu>
+	 <4DEBA9CC.4090503@die-jansens.de> <4DEBB05C.8090506@die-jansens.de>
+	 <4DEBB3DA.8060001@die-jansens.de> <20110605172052.GA1036@elte.hu>
+	 <4DEBBFF9.2030101@die-jansens.de> <20110605185957.GA3452@elte.hu>
+	 <4DEBD95B.6030901@die-jansens.de> <20110605194419.GA12965@elte.hu>
+	 <4DEBE3DF.70104@die-jansens.de> <1307350909.2353.7408.camel@twins>
+	 <4DEC9B67.2070908@die-jansens.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 06 Jun 2011 11:24:41 +0200
+Message-ID: <1307352281.2353.7437.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/11 20:18, anish kumar wrote:
-> From: anish <anish198519851985@gmail.com>
+On Mon, 2011-06-06 at 11:18 +0200, Arne Jansen wrote:
+> On 06.06.2011 11:01, Peter Zijlstra wrote:
+> > On Sun, 2011-06-05 at 22:15 +0200, Arne Jansen wrote:
+> >>
+> >> Can lockdep just get confused by the lockdep_off/on calls in printk
+> >> while scheduling is allowed? There aren't many users of lockdep_off().
+> > 
+> > Yes!, in that case lock_is_held() returns false, triggering the warning.
+> > I guess there's an argument to be made in favour of the below..
 > 
-> Corrected the spelling.
-Thanks, I have put this in my next series of clean up patches,
-though Greg may well have picked it up before hand.
 > 
-> Signed-off-by: anish kumar <anish198519851985@gmail.com>
-> ---
-> drivers/staging/iio/trigger/iio-trig-gpio.c |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/trigger/iio-trig-gpio.c b/drivers/staging/iio/trigger/iio-trig-gpio.c
-> index 2ce95e9..0799128 100644
-> --- a/drivers/staging/iio/trigger/iio-trig-gpio.c
-> +++ b/drivers/staging/iio/trigger/iio-trig-gpio.c
-> @@ -7,7 +7,7 @@
->  * under the terms of the GNU General Public License version 2 as published by
->  * the Free Software Foundation.
->  *
-> - * Currently this is more of a functioning proof of concept that a fully
-> + * Currently this is more of a functioning proof of concept than a full
->  * fledged trigger driver.
->  *
->  * TODO:
-> -- 
-> 1.7.0.4
-> 
+> Two questions... is there any protection between the lockdep_recursion
+> check and the set to one? I guess in our case it is, because it's the
+> scheduler that calls it, but in general?
+
+Yeah, its always current->lockdep_recursion, so there is no
+concurrency :-)
+
+> And why is lockdep needed to check if a lock is help? Isn't it reflected
+> in the lock structure itself?
+
+Ah, so the difference is between _who_ owns the lock. Things like
+spin_is_locked() check if the lock is taken but cannot tell you who owns
+it, but lock_is_held() checks if the current context owns the lock.
+
+
+
 
