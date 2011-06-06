@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252Ab1FFSjv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 14:39:51 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40803 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752104Ab1FFSjs (ORCPT
+	id S1754887Ab1FFSoA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 14:44:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37499 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607Ab1FFSn6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 14:39:48 -0400
-Date: Mon, 6 Jun 2011 19:41:22 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Bastien Nocera <hadess@hadess.net>
-Cc: Alberto Mardegan <mardy@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, "Javier S. Pedro" <maemo@javispedro.com>,
-        linux-input@vger.kernel.org
-Subject: Re: Reporting screen/laptop orientation data to userspace
-Message-ID: <20110606194122.0fb8d46c@lxorguk.ukuu.org.uk>
-In-Reply-To: <1307382639.2669.147.camel@novo.hadess.net>
-References: <4DE1FA7F.3050308@users.sourceforge.net>
-	<1307116529.2669.130.camel@novo.hadess.net>
-	<4DEC796E.1050307@users.sourceforge.net>
-	<1307382639.2669.147.camel@novo.hadess.net>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Jun 2011 14:43:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=rJpwckP2lKAPdyM+48DXLNC+89ta4cn4LrvzaoZqxz6Hyf/YORb+FUfizQRnooD+Gp
+         ibZDCFq+6IjtG949F1y33i8oGCItyUdgoGUDFSMbe6qNJyhkj/AusY/hI9tTKOY3jtYr
+         Qv8W/coXwME7a4D9xHQwe8cv1sV2C1YR4Rlnw=
+MIME-Version: 1.0
+In-Reply-To: <1307330437-15372-1-git-send-email-fweisbec@gmail.com>
+References: <1307329858-14999-4-git-send-email-fweisbec@gmail.com> <1307330437-15372-1-git-send-email-fweisbec@gmail.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Mon, 6 Jun 2011 14:43:37 -0400
+X-Google-Sender-Auth: bz98K1opxVr0n5EzFVBK4QiEkNs
+Message-ID: <BANLkTimWuM7baYvGv8=woNGA8KVuujG53A@mail.gmail.com>
+Subject: Re: [PATCH 2/4 v2] nohz: Split extended quiescent state handling from
+ nohz switch
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>, David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> When an "change" event is received on an accelerometer,
-> open its device node, and from the value, as well as the previous
-> value of the property, calculate the device's new orientation,
-> and export it as ID_INPUT_ACCELEROMETER_ORIENTATION.
->     
-> Possible values are:
-> * undefined
-> * normal
-> * bottom-up
-> * left-up
-> * right-up
+On Sun, Jun 5, 2011 at 23:20, Frederic Weisbecker wrote:
+>  arch/blackfin/kernel/process.c         |    4 +-
 
-For quite a few of the discrete accelerometers not being used in
-'joystick' mode this would make quite a sensible input interface,
-at least for those that generate inputs for their transitions.
-
-You need a couple more values though because some devices care if they
-are held up/down/left/right or if they are lying flat on their front or
-on their back.
-
-Phones for example sometimes go to speakerphone if laid flat on their
-back, and go into silent mode if turned over.
-
-Alan
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
