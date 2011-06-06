@@ -1,146 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab1FFN4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 09:56:13 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:45566 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751147Ab1FFN4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 09:56:07 -0400
-Date: Mon, 06 Jun 2011 09:56:01 -0400
-Message-Id: <E1QTaHh-00048w-Qn@tytso-glaptop>
-To: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: checkpatch gives false positives for include/trace/events/*.h
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1757350Ab1FFN4U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 09:56:20 -0400
+Received: from mail.bbaw.de ([194.95.188.6]:38067 "EHLO mail.bbaw.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756241Ab1FFN4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 09:56:12 -0400
+Date: Mon, 6 Jun 2011 15:56:10 +0200
+From: Lars =?UTF-8?B?VMOkdWJlcg==?= <taeuber@bbaw.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PROBLEM] reproduceable storage errors on high IO load
+Message-Id: <20110606155610.69a0d17a.taeuber@bbaw.de>
+In-Reply-To: <201106060920.32257.gene.heskett@gmail.com>
+References: <20110606095127.21d23a70.taeuber@bbaw.de>
+	<201106060559.03131.gene.heskett@gmail.com>
+	<20110606130628.e86f0c67.taeuber@bbaw.de>
+	<201106060920.32257.gene.heskett@gmail.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-AntiVirus: checked by Avira MailGate (version: 2.1.4-7; AVE: 7.9.5.12; VDF: 7.11.9.33; host: mailhub); id=2562-hH6YoS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The format used for trace/events/*.h files makes checkpatch very
-unhappy.
+Hi Gene,
 
-Fortunately the trivial patch brigade haven't (yet) started sending
-pointless patches to fix checkpatch "errors".
+Am Mon, 6 Jun 2011 09:20:32 -0400
+Gene Heskett <gene.heskett@gmail.com> schrieb:
+[...]
+> >
+> I started here:
+> <http://support.wdc.com/product/download.asp?modelno=WD2003FYYS&x=8&y=10>
+> 
+> I entered your drives model number, and got here:
+> 
+> <http://community.wdc.com/t5/News-Announcements/bd-p/Announcements>
+> 
+> That is the link I got when I entered the WDC drive # shown in your dmesg.
+> That looks like too many choices, and probably is, so I would email the 
+> support link shown and ask for clarification.  Be sure to use the full 
+> model number of the drive as shown on the drive or the packaging as its 
+> possible I blew it with my copy/paste here.
 
-						- Ted
+I already found these, but this are all posts regarding consumer products. The harddisks I have are 2TB Raid Editions types. I couldn't find anything related there.
 
-ERROR: space prohibited after that open parenthesis '('
-#64: FILE: include/trace/events/ext4.h:29:
-+		__field(	__u64, blocks			)
+I sent an email to the WD support.
 
-ERROR: space prohibited before that close parenthesis ')'
-#64: FILE: include/trace/events/ext4.h:29:
-+		__field(	__u64, blocks			)
+> 
+> The point is, the stuff is there.  But its easier to find on Seagates site 
+> I believe.
 
-ERROR: space prohibited after that open parenthesis '('
-#224: FILE: include/trace/events/ext4.h:649:
-+		__field(	__u32,  logical			)
+The seagate drives were only for testing, because they are only 320GB in size.
+I don't have six other drives for testing here, but I want to test with the same quantitiy of drives.
 
-ERROR: space prohibited before that close parenthesis ')'
-#224: FILE: include/trace/events/ext4.h:649:
-+		__field(	__u32,  logical			)
+Is there anything else I can do OS-wise? Some hint how to debug deeper?
 
-ERROR: space prohibited after that open parenthesis '('
-#225: FILE: include/trace/events/ext4.h:650:
-+		__field(	__u32,	lleft			)
-
-ERROR: space prohibited before that close parenthesis ')'
-#225: FILE: include/trace/events/ext4.h:650:
-+		__field(	__u32,	lleft			)
-
-ERROR: space prohibited after that open parenthesis '('
-#226: FILE: include/trace/events/ext4.h:651:
-+		__field(	__u32,	lright			)
-
-ERROR: space prohibited before that close parenthesis ')'
-#226: FILE: include/trace/events/ext4.h:651:
-+		__field(	__u32,	lright			)
-
-ERROR: space prohibited after that open parenthesis '('
-#262: FILE: include/trace/events/ext4.h:690:
-+		__field(	__u32,  logical			)
-
-ERROR: space prohibited before that close parenthesis ')'
-#262: FILE: include/trace/events/ext4.h:690:
-+		__field(	__u32,  logical			)
-
-ERROR: space prohibited after that open parenthesis '('
-#263: FILE: include/trace/events/ext4.h:691:
-+		__field(	__u32,	lleft			)
-
-ERROR: space prohibited before that close parenthesis ')'
-#263: FILE: include/trace/events/ext4.h:691:
-+		__field(	__u32,	lleft			)
-
-ERROR: space prohibited after that open parenthesis '('
-#264: FILE: include/trace/events/ext4.h:692:
-+		__field(	__u32,	lright			)
-
-ERROR: space prohibited before that close parenthesis ')'
-#264: FILE: include/trace/events/ext4.h:692:
-+		__field(	__u32,	lright			)
-
-ERROR: space prohibited after that open parenthesis '('
-#300: FILE: include/trace/events/ext4.h:730:
-+		__field(	umode_t, mode			)
-
-ERROR: space prohibited before that close parenthesis ')'
-#300: FILE: include/trace/events/ext4.h:730:
-+		__field(	umode_t, mode			)
-
-ERROR: space prohibited after that open parenthesis '('
-#304: FILE: include/trace/events/ext4.h:733:
-+		__field(	int,	flags			)
-
-ERROR: space prohibited before that close parenthesis ')'
-#304: FILE: include/trace/events/ext4.h:733:
-+		__field(	int,	flags			)
-
-ERROR: space prohibited after that open parenthesis '('
-#420: FILE: include/trace/events/ext4.h:1288:
-+		__field(	unsigned int,	blocks		)
-
-ERROR: space prohibited before that close parenthesis ')'
-#420: FILE: include/trace/events/ext4.h:1288:
-+		__field(	unsigned int,	blocks		)
-
-ERROR: space prohibited after that open parenthesis '('
-#460: FILE: include/trace/events/ext4.h:1363:
-+		__field(	__u64,		blocks		)
-
-ERROR: space prohibited before that close parenthesis ')'
-#460: FILE: include/trace/events/ext4.h:1363:
-+		__field(	__u64,		blocks		)
-
-ERROR: space prohibited after that open parenthesis '('
-#491: FILE: include/trace/events/ext4.h:1401:
-+		__field(	unsigned int,	len		)
-
-ERROR: space prohibited before that close parenthesis ')'
-#491: FILE: include/trace/events/ext4.h:1401:
-+		__field(	unsigned int,	len		)
-
-ERROR: space prohibited after that open parenthesis '('
-#492: FILE: include/trace/events/ext4.h:1402:
-+		__field(	unsigned int,	flags		)
-
-ERROR: space prohibited before that close parenthesis ')'
-#492: FILE: include/trace/events/ext4.h:1402:
-+		__field(	unsigned int,	flags		)
-
-ERROR: space prohibited after that open parenthesis '('
-#519: FILE: include/trace/events/ext4.h:1444:
-+		__field(	unsigned int,	len		)
-
-ERROR: space prohibited before that close parenthesis ')'
-#519: FILE: include/trace/events/ext4.h:1444:
-+		__field(	unsigned int,	len		)
-
-total: 28 errors, 0 warnings, 468 lines checked
-
-Your patch has style problems, please review.  If any of these errors
-are false positives report them to the maintainer, see
-CHECKPATCH in MAINTAINERS.
+Thanks
+Lars
