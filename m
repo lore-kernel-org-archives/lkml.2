@@ -1,127 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995Ab1FFUXe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 16:23:34 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:42867 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756023Ab1FFUXc convert rfc822-to-8bit (ORCPT
+	id S1757977Ab1FFUXZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 16:23:25 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63735 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756146Ab1FFUXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 16:23:32 -0400
-MIME-Version: 1.0
-Message-ID: <b06ff74d-fc79-4c01-b159-9d352ca1a0f5@default>
-Date: Mon, 6 Jun 2011 13:23:09 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: RE: linux-next: Tree for June 6 (frontswap)
-References: <20110606132036.aebd73a4.sfr@canb.auug.org.au
- 20110606130628.e0110e18.randy.dunlap@oracle.com>
-In-Reply-To: <20110606130628.e0110e18.randy.dunlap@oracle.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4DED373E.01AE:SCFMA922111,ss=1,fgs=0
+	Mon, 6 Jun 2011 16:23:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=eqtp4tTQjRd9/DnJtztStpp+Y5LjVI7Po7l2rr13PB6jVCY2ogc9wBawWJ23t6mhgi
+         qZJwSTT27LkBlMk5zhEBVP8SIN88KQM6bx2Zbsy58W1XI4Kqdpp6wMvXyn/03LwT4Cjz
+         gt69spdPBV6NULHtvix4iQc6PSlyu0DQNcQ6U=
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Bart De Schuymer <bdschuym@pandora.be>
+Cc: Brad Campbell <brad@fnarfbargle.com>, kvm@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
+In-Reply-To: <4DED344D.7000005@pandora.be>
+References: <20110601011527.GN19505@random.random>
+	 <alpine.LSU.2.00.1105312120530.22808@sister.anvils>
+	 <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com>
+	 <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com>
+	 <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com>
+	 <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com>
+	 <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com>
+	 <isavsg$3or$1@dough.gmane.org> <4DE906C0.6060901@fnarfbargle.com>
+	 <4DED344D.7000005@pandora.be>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Jun 2011 22:23:17 +0200
+Message-ID: <1307391797.2642.12.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy --
+Le lundi 06 juin 2011 à 22:10 +0200, Bart De Schuymer a écrit :
+> Hi Brad,
+> 
+> This has probably nothing to do with ebtables, so please rmmod in case 
+> it's loaded.
+> A few questions I didn't directly see an answer to in the threads I 
+> scanned...
+> I'm assuming you actually use the bridging firewall functionality. So, 
+> what iptables modules do you use? Can you reduce your iptables rules to 
+> a core that triggers the bug?
+> Or does it get triggered even with an empty set of firewall rules?
+> Are you using a stock .35 kernel or is it patched?
+> Is this something I can trigger on a poor guy's laptop or does it 
+> require specialized hardware (I'm catching up on qemu/kvm...)?
+> 
 
-Indeed you are correct!  Thanks for catching that!
-
-Dan
-
-Thanks... for the memory!
-I really could use more / my throughput's on the floor
-The balloon is flat / my swap disk's fat / I've OOM's in store
-Overcommitted so much
-(with apologies to Bob Hope)
+Keep netdev, as this most probably is a networking bug.
 
 
-> -----Original Message-----
-> From: Randy Dunlap
-> Sent: Monday, June 06, 2011 2:06 PM
-> To: Stephen Rothwell; Dan Magenheimer
-> Cc: linux-next@vger.kernel.org; LKML
-> Subject: Re: linux-next: Tree for June 6 (frontswap)
-> 
-> On Mon, 6 Jun 2011 13:20:36 +1000 Stephen Rothwell wrote:
-> 
-> > Hi all,
-> >
-> > Changes since 20110603:
-> 
-> 
-> Does frontswap need to depend on SWAP?
-> 
-> When SWAP is not enabled:
-> 
-> mm/built-in.o: In function `frontswap_curr_pages':
-> (.text+0x467c1): undefined reference to `swap_lock'
-> mm/built-in.o: In function `frontswap_curr_pages':
-> (.text+0x467ce): undefined reference to `swap_list'
-> mm/built-in.o: In function `frontswap_curr_pages':
-> (.text+0x467e6): undefined reference to `swap_info'
-> mm/built-in.o: In function `frontswap_curr_pages':
-> (.text+0x467fe): undefined reference to `swap_lock'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x4688d): undefined reference to `swap_lock'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x46898): undefined reference to `swap_list'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x468b6): undefined reference to `swap_info'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x4690d): undefined reference to `swap_info'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x469d3): undefined reference to `swap_lock'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x469ec): undefined reference to `try_to_unuse'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x46a1c): undefined reference to `swap_lock'
-> mm/built-in.o: In function `__frontswap_flush_area':
-> (.text+0x46aa4): undefined reference to `swap_info'
-> mm/built-in.o: In function `__frontswap_get_page':
-> (.text+0x46b1f): undefined reference to `swap_info'
-> mm/built-in.o: In function `__frontswap_put_page':
-> (.text+0x46bf8): undefined reference to `swap_info'
-> mm/built-in.o: In function `__frontswap_flush_page':
-> (.text+0x46d86): undefined reference to `swap_info'
-> mm/built-in.o: In function `frontswap_curr_pages':
-> (.text+0x467c1): undefined reference to `swap_lock'
-> mm/built-in.o: In function `frontswap_curr_pages':
-> (.text+0x467ce): undefined reference to `swap_list'
-> mm/built-in.o: In function `frontswap_curr_pages':
-> (.text+0x467e6): undefined reference to `swap_info'
-> mm/built-in.o: In function `frontswap_curr_pages':
-> (.text+0x467fe): undefined reference to `swap_lock'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x4688d): undefined reference to `swap_lock'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x46898): undefined reference to `swap_list'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x468b6): undefined reference to `swap_info'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x4690d): undefined reference to `swap_info'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x469d3): undefined reference to `swap_lock'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x469ec): undefined reference to `try_to_unuse'
-> mm/built-in.o: In function `frontswap_shrink':
-> (.text+0x46a1c): undefined reference to `swap_lock'
-> mm/built-in.o: In function `__frontswap_flush_area':
-> (.text+0x46aa4): undefined reference to `swap_info'
-> mm/built-in.o: In function `__frontswap_get_page':
-> (.text+0x46b1f): undefined reference to `swap_info'
-> mm/built-in.o: In function `__frontswap_put_page':
-> (.text+0x46bf8): undefined reference to `swap_info'
-> mm/built-in.o: In function `__frontswap_flush_page':
-> (.text+0x46d86): undefined reference to `swap_info'
-> 
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+
