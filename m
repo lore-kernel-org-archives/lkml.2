@@ -1,19 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084Ab1FFVyg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 17:54:36 -0400
-Received: from r00tworld.com ([212.85.137.150]:38471 "EHLO r00tworld.com"
+	id S1758119Ab1FFVyt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 17:54:49 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53315 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757845Ab1FFVyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 17:54:35 -0400
-From: pageexec@freemail.hu
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 06 Jun 2011 23:53:09 +0200
-MIME-Version: 1.0
-Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
-Reply-to: pageexec@freemail.hu
-CC: Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@mit.edu>,
-        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+	id S1758055Ab1FFVyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 17:54:46 -0400
+Date: Mon, 6 Jun 2011 23:54:21 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, pageexec@freemail.hu,
+        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
         Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -22,57 +19,50 @@ CC: Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@mit.edu>,
         richard -rw- weinberger <richard.weinberger@gmail.com>,
         Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
         Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Message-ID: <4DED4C45.19293.146C9286@pageexec.freemail.hu>
-In-reply-to: <BANLkTi=choqfXPYmnivznYBbEFeg2UfbuA@mail.gmail.com>
-References: <cover.1307292171.git.luto@mit.edu>, <4DED206E.20356.13C155EA@pageexec.freemail.hu>, <BANLkTi=choqfXPYmnivznYBbEFeg2UfbuA@mail.gmail.com>
-X-mailer: Pegasus Mail for Windows (4.61)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Mon, 06 Jun 2011 23:53:43 +0200 (CEST)
+Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to
+ feature-removal-schedule
+Message-ID: <20110606215421.GA12079@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>
+ <4DECAE68.16683.1203EBBB@pageexec.freemail.hu>
+ <BANLkTin5jEmUUxWUUkYn9pKzGRwcA-zRLw@mail.gmail.com>
+ <4DED206E.20356.13C155EA@pageexec.freemail.hu>
+ <BANLkTi=choqfXPYmnivznYBbEFeg2UfbuA@mail.gmail.com>
+ <BANLkTim8mSoifxoN=b2Gpe+WLjJyuqBR8g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTim8mSoifxoN=b2Gpe+WLjJyuqBR8g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 Jun 2011 at 5:40, Linus Torvalds wrote:
 
-> On Tue, Jun 7, 2011 at 3:46 AM,  <pageexec@freemail.hu> wrote:
-> >
-> >> I'm happy with perhaps moving away from the fixed-address vdso,
-> >
-> > it's not about the vdso that has been mmap'ed and randomized for quite some
-> > time now. it's about the amd64 specific vsyscall page.
+* Andrew Lutomirski <luto@mit.edu> wrote:
+
+> > don't even bother making it a config option for now. If we can 
+> > replace the vsyscall page with a page fault or int3 or whatever, 
+> > and it's only used for the 'time()' system call, just do it.
 > 
-> Duh. What do you think that thing is? It's a special fixed-address
-> vdso.
-
-that we call the vsyscall page and not some random vdso thing, they're quite
-different, that's why there's this whole patch series, duh.
-
-> What I complain about in the patch series was (specifically) that I
-> think the naming sucks and (non-specifically) that the whole series is
-> annoying.
+> Really?
 > 
-> The config name is misleading and pointlessly scary - the whole thing
-> is not in itself "unsafe", so calling it that is just wrong.
+> I won't personally complain about the 200+ ns hit, but I'm sure 
+> someone will cc: me on a regression report if there's no option.
 
-if it's safe to have the vsyscall page at a fixed address, then you surely
-wouldn't object to have its replacement at a fixed address as well, would
-you? yes/no? (if it's a 'yes' then you'd better have some non-security
-arguments too ;)
+Well, for 0.2 usecs to show up one would have to do like a million of 
+them per second.
 
-> We *definitely* don't want to name it in a way that makes some random
-> person just turn it off because it's scary, since the random person
-> *shouldn't* turn it off today. Comprende?
+Why an application would want to query the *same value* from the 
+kernel a million times per second is beyond me. vgettimeofday()? 
+Sure. But vtime()?
 
-actually you confused yourself and got it backwards. we want everyone sane
-who cares an iota about security to turn off the legacy/fixed address vsyscall
-as soon as possible else it's a pointless exercise. capito?
+Thanks,
 
-> If we can replace the vsyscall page with a page fault or int3 or
-> whatever, and it's only used for the 'time()' system call, just do it. 
-
-i agree fully, there's no real reason for a config option imho, i never
-had one in PaX and noone ever complained let alone noticed it (except
-perhaps for failed exploit attempts but that's by design).
-
+	Ingo
