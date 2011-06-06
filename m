@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab1FFKja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 06:39:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34571 "EHLO mx2.suse.de"
+	id S1755583Ab1FFKko (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 06:40:44 -0400
+Received: from r00tworld.com ([212.85.137.150]:41543 "EHLO r00tworld.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752513Ab1FFKj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 06:39:28 -0400
-Date: Mon, 6 Jun 2011 11:39:24 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>, akpm@linux-foundation.org,
-        Ury Stankevich <urykhy@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous
-Message-ID: <20110606103924.GD5247@suse.de>
-References: <20110601191529.GY19505@random.random>
- <20110601214018.GC7306@suse.de>
- <20110601233036.GZ19505@random.random>
- <20110602010352.GD7306@suse.de>
- <20110602132954.GC19505@random.random>
- <20110602145019.GG7306@suse.de>
- <20110602153754.GF19505@random.random>
- <20110603020920.GA26753@suse.de>
- <20110603144941.GI7306@suse.de>
- <20110603154554.GK2802@random.random>
+	id S1753104Ab1FFKkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 06:40:42 -0400
+From: pageexec@freemail.hu
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Date: Mon, 06 Jun 2011 12:39:36 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110603154554.GK2802@random.random>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+Reply-to: pageexec@freemail.hu
+CC: Andy Lutomirski <luto@mit.edu>, Ingo Molnar <mingo@elte.hu>,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Message-ID: <4DECAE68.16683.1203EBBB@pageexec.freemail.hu>
+In-reply-to: <20110606093102.GW27166@one.firstfloor.org>
+References: <cover.1307292171.git.luto@mit.edu>, <BANLkTimrhO8QfBqQsH_Q13ghRH2P+ZP7AA@mail.gmail.com>, <20110606093102.GW27166@one.firstfloor.org>
+X-mailer: Pegasus Mail for Windows (4.61)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Mon, 06 Jun 2011 12:40:10 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 03, 2011 at 05:45:54PM +0200, Andrea Arcangeli wrote:
-> On Fri, Jun 03, 2011 at 03:49:41PM +0100, Mel Gorman wrote:
-> > Right idea of the wrong zone being accounted for but wrong place. I
-> > think the following patch should fix the problem;
-> 
-> Looks good thanks.
-> 
-> I also found this bug during my debugging that made NR_SHMEM underflow.
-> 
-> ===
-> Subject: migrate: don't account swapcache as shmem
-> 
-> From: Andrea Arcangeli <aarcange@redhat.com>
-> 
-> swapcache will reach the below code path in migrate_page_move_mapping,
-> and swapcache is accounted as NR_FILE_PAGES but it's not accounted as
-> NR_SHMEM.
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+On 6 Jun 2011 at 11:31, Andi Kleen wrote:
 
-Well spotted.
+> On Mon, Jun 06, 2011 at 05:46:41PM +0900, Linus Torvalds wrote:
+> > On Mon, Jun 6, 2011 at 2:50 AM, Andy Lutomirski <luto@mit.edu> wrote:
+> > > CONFIG_UNSAFE_VSYSCALLS was added in the previous patch as a
+> > > temporary hack to avoid penalizing users who don't build glibc from
+> > > git.
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+[didn't get your mail directly (yet?), so i'm replying here]
 
-Minor nit. swapper_space is rarely referred to outside of the swap
-code. Might it be more readable to use
+> > I really hate that name.
+> > 
+> > Do you have *any* reason to call this "unsafe"?
 
-	/*
-	 * swapcache is accounted as NR_FILE_PAGES but it is not
-	 * accounted as NR_SHMEM
-	 *
-	if (PageSwapBacked(page) && !PageSwapCache(page))
+any userland executable code at a universally (read: across any and all 2.6+ linux
+boxes) fixed address is not secure (no really, it's worse, it's simply insane design,
+there's a reason the vdso got randomized eventually), it's the prime vehicle used by
+both reliable userland and kernel exploits who need to execute syscalls and/or pop
+the stack until something useful is reached, etc. not to mention the generic snippets
+of both code and data (marketing word: ROP) that one may find in there.
 
-?
+> > Seriously. The whole patch series just seems annoying.
 
-> ---
-> 
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index e4a5c91..2597a27 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -288,7 +288,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
->  	 */
->  	__dec_zone_page_state(page, NR_FILE_PAGES);
->  	__inc_zone_page_state(newpage, NR_FILE_PAGES);
-> -	if (PageSwapBacked(page)) {
-> +	if (mapping != &swapper_space && PageSwapBacked(page)) {
->  		__dec_zone_page_state(page, NR_SHMEM);
->  		__inc_zone_page_state(newpage, NR_SHMEM);
->  	}
-> 
-> 
+what is annoying is your covering up of security fixes on grounds that you don't want
+to help script kiddies (a bullshit argument as it were) but at the same time question
+proactive security measures (one can debate the implementation, see my other mail) that
+would *actually* prevent the same kiddies from writing textbook exploits.
 
--- 
-Mel Gorman
-SUSE Labs
+but hey, spouting security to journalists works so much better for marketing, doesn't it.
+
+> and assumes everyone is using glibc which is just wrong.
+
+the libc is irrelevant, they can all be fixed up to use the vdso entry points if they
+haven't been doing it already. already deployed systems will simply continue to use
+their flawed kernel and libc, they're not affected.
+
