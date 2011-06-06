@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391Ab1FFDqW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 23:46:22 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54027 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755800Ab1FFDqU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 23:46:20 -0400
-Message-ID: <4DEC4D67.6010506@oracle.com>
-Date: Sun, 05 Jun 2011 20:45:43 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, alsa-devel@alsa-project.org,
-        Dmitry Artamonow <mad_soft@inbox.ru>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Harald Welte <laforge@gnufiish.org>
-Subject: Re: [PATCH] gpio: add GPIOF_ values regardless on kconfig settings
-References: <20110523155343.2e68c265.randy.dunlap@oracle.com> <20110524000837.GA30515@opensource.wolfsonmicro.com> <4DDB082F.3010107@oracle.com> <20110524014959.GA27710@opensource.wolfsonmicro.com> <4DDB3AFF.9030006@oracle.com> <20110524075248.GB19734@sirena.org.uk> <20110527074552.GA907@ponder.secretlab.ca> <4DDFE391.2030507@oracle.com> <20110527201201.GA6645@ponder.secretlab.ca> <BANLkTin-KSVcG2cQfRM3Ys0_g_uJVruDMw@mail.gmail.com> <20110603171837.GA9918@opensource.wolfsonmicro.com> <BANLkTi=oko_C8_46Y8p5O1Qvw1KEn-1PjA@mail.gmail.com>
-In-Reply-To: <BANLkTi=oko_C8_46Y8p5O1Qvw1KEn-1PjA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756436Ab1FFDrb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 23:47:31 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46597 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755800Ab1FFDra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Jun 2011 23:47:30 -0400
+Subject: Re: 3.0-rc1: powerpc hangs at Kernel virtual memory layout
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: linville@tuxdriver.com, LKML <linux-kernel@vger.kernel.org>,
+        linux ppc dev <linuxppc-dev@lists.ozlabs.org>, zajec5@gmail.com
+In-Reply-To: <alpine.DEB.2.01.1106051907190.21697@trent.utfs.org>
+References: <alpine.DEB.2.01.1105311644010.21697@trent.utfs.org>
+	 <alpine.DEB.2.01.1106011712270.21697@trent.utfs.org>
+	 <1306983467.29297.51.camel@pasglop>
+	 <alpine.DEB.2.01.1106012057130.21697@trent.utfs.org>
+	 <1307000008.29297.59.camel@pasglop>
+	 <alpine.DEB.2.01.1106051907190.21697@trent.utfs.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Jun 2011 13:46:51 +1000
+Message-ID: <1307332011.2874.5.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4DEC4D77.0066:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/11 10:42, Grant Likely wrote:
-> On Fri, Jun 3, 2011 at 11:18 AM, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
->> On Fri, Jun 03, 2011 at 11:04:52AM -0600, Grant Likely wrote:
->>
->>> I ended up not pushing this one to Linus.  Turns out it causes other
->>> breakage on other platforms that don't include include/linux/gpio.h.
->>> Since I don't have confidence that I'll be able to find all the
->>> offenders, I'm dropping it.  I recommend making any drivers that are
->>
->> So, this originally came about because I pushed back on adding random
->> dependencies like this for features which are pretty much optional in
->> drivers - their use of GPIOs is totally optional and the dependencies
->> are just too fragile, leading to noise with all the randconfigs.  It
->> seems better to get the architectures to keep up with enhancements to
->> gpiolib (or convert to it) than to have to worry about this in drivers.
+On Sun, 2011-06-05 at 19:11 -0700, Christian Kujau wrote:
+> On Thu, 2 Jun 2011 at 17:33, Benjamin Herrenschmidt wrote:
+> > It -looks- to me that something goes wrong in the tty code when a large
+> > file is piped through a pty, causing the kernel to hang for minutes in
+> > the workqueue / ldisk flush code. I've just sent an initial report to
+> > Alan Cox about it and am currently bisecting it.
 > 
-> Fair enough.  Randy, if you or someone else can check that all GPIOF_
-> users have the required #include <linux/gpio.h>, then I'm okay with
-> this patch.
+> This was the "tty vs workqueue oddities" thread, right? FWIW, 
+> 55db4c64eddf37 ("Revert "tty: make receive_buf() return the amout of bytes 
+> received"") seems to have fixed it on this powerpc machine as well.
 
-OK, I'll look at that.
+Yup.
 
-Do you have any examples of builds that failed with this patch?
+> With your "ssb: pci: Don't call PCIe specific workarounds on PCI cores" 
+> patch applied, powerpc32 seems to be quite happy with 3.0-rc1+
 
-thanks,
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Good :-)
+
+Cheers,
+Ben.
+
+
