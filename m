@@ -1,84 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab1FFQEe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:04:34 -0400
-Received: from www.jamboworld.com ([212.49.70.11]:33124 "EHLO mail.jambo.co.ke"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756571Ab1FFQEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:04:31 -0400
-X-Greylist: delayed 503 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Jun 2011 12:04:30 EDT
-Message-ID: <023120dcdb9d16e289106424c327d0e5.squirrel@mail.jambo.co.ke>
-Date: Mon, 6 Jun 2011 19:01:32 +0300 (EAT)
-Subject: Dear mit! User,
-From: emambo@jambo.co.ke
-User-Agent: SquirrelMail/1.4.16
+	id S1756464Ab1FFQCq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:02:46 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49659 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755433Ab1FFQCp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 12:02:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Cqc53SDuzkeCp90ixM242RwjR9g2gvRuDpSGSQAycrpOvxLqTSFcoG6y9OHzfo0lEi
+         j0nDGwzHeETiEvRt0AyTLksv73siO5Gsin9w41Azrx8/gllAgxrbbuOmHksegzfcpGnq
+         /mlSGCOFnpzd/TpAS0Y0N0tV6H+wBLn9KrEZY=
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-jambo-MailScanner-Information: Please contact Jambo Telkom Tech(support@jambo.co.ke) for more information
-X-MailScanner-ID: 5A1EB10A32.29C99
-X-jambo-MailScanner: Found to Have No Virus Infection
-X-jambo-MailScanner-SpamCheck: not spam, SpamAssassin (cached, score=-1.3,
-	required 5, ALL_TRUSTED -1.80, BAYES_00 0.50)
-X-jambo-MailScanner-From: emambo@jambo.co.ke
-X-jambo-MailScanner-To: admin-trillian@ecf.mit.edu, afaghih@mit.edu,
-	andersk@mit.edu, andi@firstfloor.org, arjan@infradead.org,
-	arthur@langerman.net, belcher@mit.edu, bp@alien8.de,
-	cfj@xx.lcs.mit.edu, csg@xx.lcs.mit.edu, daemon@athena.mit.edu,
-	davidben@mit.edu, ebrynjo@mit.edu, edemaine@mit.edu, gbaldan@mit.edu,
-	gnu@prep.ai.mit.edu, hammond@mit.edu, hershey@alum.mit.edu,
-	hpa@zytor.com, hrm@mit.edu.au, jbelcher@mit.edu, jgoss@mit.edu,
-	jhp@csail.mit.edu, jj@chaosbits.net, ken_yoko@mit.edu,
-	kothari@mit.edu, lagha@mit.edu, leonidg@mit.edu,
-	linux-kernel@vger.kernel.org, luto@mit.edu, lyla@mit.edu,
-	marshall@mit.edu, mdemaine@mit.edu, mernst@cs.washington.edu,
-	meyer@theory.lcs.mit, mingo@elte.hu, nelhage@mit.edu,
-	netusers@mit.edu, rilling@kerlabs.com, rinard@csail.mit.edu,
-	sipb-reading-group@mit.edu, sipb@mit.edu, stubbe@mit.edu,
-	tabbott@mit.edu, tang-government@mit.edu, tang-president@mit.edu,
-	teri85@mit.edu, webmasters@www.gnu.ai.mit.edu, zahn@mit.edu
+In-Reply-To: <4DE10B4D.50501@gmail.com>
+References: <4DE0B9D8.3020405@gmail.com>
+	<4DE10B4D.50501@gmail.com>
+Date: Tue, 7 Jun 2011 00:02:44 +0800
+Message-ID: <BANLkTimbZ75=XeaNrZQJD0OihEmMMt_5tQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2 v2] ramoops: use module parameters instead of platform
+ data if not available
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, kyungmin.park@samsung.com,
+        stevie.trujillo@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear mit! User,
+On Sat, May 28, 2011 at 10:48 PM, Marco Stornelli
+<marco.stornelli@gmail.com> wrote:
+> From: Marco Stornelli <marco.stornelli@gmail.com>
+>
+> Use generic module parameters instead of platform data, if platform
+> data are not available. This limitation has been introduced with
+> commit c3b92ce9e75f6353104fc7f8e32fb9fdb2550ad0.
+>
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+> CC: Kyungmin Park <kyungmin.park@samsung.com>
+> Reported-by: Stevie Trujillo <stevie.trujillo@gmail.com>
+> ---
+> ChangeLog
+> v2: fixed tab/space problem
+>
+> diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
+> index 1a9f5f6..bf5f9f6 100644
+> --- a/drivers/char/ramoops.c
+> +++ b/drivers/char/ramoops.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/io.h>
+>  #include <linux/ioport.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/slab.h>
+>  #include <linux/ramoops.h>
+>
+>  #define RAMOOPS_KERNMSG_HDR "===="
+> @@ -56,6 +57,9 @@ static struct ramoops_context {
+>        int max_count;
+>  } oops_cxt;
+>
+> +static struct platform_device *dummy;
+> +static struct ramoops_platform_data *dummy_data;
+> +
+>  static void ramoops_do_dump(struct kmsg_dumper *dumper,
+>                enum kmsg_dump_reason reason, const char *s1, unsigned long l1,
+>                const char *s2, unsigned long l2)
+> @@ -106,27 +110,22 @@ static int __init ramoops_probe(struct platform_device *pdev)
+>        struct ramoops_context *cxt = &oops_cxt;
+>        int err = -EINVAL;
+>
+> -       if (pdata) {
+> -               mem_size = pdata->mem_size;
+> -               mem_address = pdata->mem_address;
+> -       }
+> -
+> -       if (!mem_size) {
+> +       if (!pdata->mem_size) {
+>                printk(KERN_ERR "ramoops: invalid size specification");
+>                goto fail3;
+>        }
+>
+> -       rounddown_pow_of_two(mem_size);
+> +       rounddown_pow_of_two(pdata->mem_size);
+>
+> -       if (mem_size < RECORD_SIZE) {
+> +       if (pdata->mem_size < RECORD_SIZE) {
+>                printk(KERN_ERR "ramoops: size too small");
+>                goto fail3;
+>        }
+>
+> -       cxt->max_count = mem_size / RECORD_SIZE;
+> +       cxt->max_count = pdata->mem_size / RECORD_SIZE;
+>        cxt->count = 0;
+> -       cxt->size = mem_size;
+> -       cxt->phys_addr = mem_address;
+> +       cxt->size = pdata->mem_size;
+> +       cxt->phys_addr = pdata->mem_address;
+>
+>        if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
+>                printk(KERN_ERR "ramoops: request mem region failed");
+> @@ -179,12 +178,35 @@ static struct platform_driver ramoops_driver = {
+>
+>  static int __init ramoops_init(void)
+>  {
+> -       return platform_driver_probe(&ramoops_driver, ramoops_probe);
+> +       int ret;
+> +       ret = platform_driver_probe(&ramoops_driver, ramoops_probe);
+> +       if (ret == -ENODEV)
+> +       {
 
-  This message is from .mit� Internet SM message center to all .mit�
-account owners. We are currently upgrading our data base and e-mail
-account center. We are deleting all unused .mit� account to create more
-space for new accounts. You are advice to verify and confirm your
-account details below to enable us upgrade our .mit� Internet Service
-e.g. mit E-mail, Password,and Address etc.
- Anyone who fails to do his or her own will automatically lost his/her own
-Account.
 
- Thanks for using .mit� Internet SM To prevent your Account from closing
-you will have to update it below before three days from now!
+Wrong coding style...
 
- Confirm Your Account Details
+> +               /*
+> +                * if we didn't find a platform device, we use module parameters
+> +                * building platform data on the fly.
+> +                */
+> +               dummy_data = (struct ramoops_platform_data *)
+> +                    kzalloc(sizeof(struct ramoops_platform_data), GFP_KERNEL);
 
- Username:
- Password:
- Zip Code:
+Please check the return value of kzalloc(), and, you don't need to
+cast it.
 
-You will be sent a confirmation letter from .mit customer service after
-our upgrading,Thanks for your understanding.Customer Service Warning!!!
-Account owner that refuses to update his or .mit account before five days
-of receiving this warning will lose his or her account permanently. Please
-tell us about your recent experience with mit! Customer Care in a brief
-E-mail.Thanks so much for taking the time to give us your feedback.Have a
-great day,
-mit! Customer Care
-Property: Mail Copyright � 2011 mit! Inc. All rights reserved.
-
-
----------------------------------------------- 
-This message has been scanned for viruses and
-dangerous content by Jambo MailScanner, and is
-believed to be clean.
----------------------------------------------
-"easy access to the world" 
-
+> +               dummy_data->mem_size = mem_size;
+> +               dummy_data->mem_address = mem_address;
+> +               dummy = platform_create_bundle(&ramoops_driver, ramoops_probe,
+> +                       NULL, 0, dummy_data,
+> +                       sizeof(struct ramoops_platform_data));
+> +
+> +               if (IS_ERR(dummy))
+> +                       ret = PTR_ERR(dummy);
+> +               else
+> +                       ret = 0;
+> +       }
+> +
+> +       return ret;
+>  }
+>
+>  static void __exit ramoops_exit(void)
+>  {
+>        platform_driver_unregister(&ramoops_driver);
+> +       kfree(dummy_data);
+>  }
+>
+>  module_init(ramoops_init);
+>
+>
