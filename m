@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758104Ab1FFV4S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 17:56:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59404 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758044Ab1FFV4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 17:56:17 -0400
-Date: Mon, 6 Jun 2011 14:55:49 -0700
-From: Greg KH <gregkh@suse.de>
-To: anish <anish198519851985@gmail.com>
-Cc: jic23@cam.ac.uk, manuel.stahl@iis.fraunhofer.de,
-        lucas.demarchi@profusion.mobi, arnd@arndb.de,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] staging: iio replaced kmalloc with local variables.
-Message-ID: <20110606215549.GA7543@suse.de>
-References: <1307387257.4327.12.camel@anish-desktop>
+	id S1758116Ab1FFV5p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 17:57:45 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:6839 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757423Ab1FFV5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 17:57:44 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-14.tower-132.messagelabs.com!1307397458!28049539!13
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.99]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Joe Perches <joe@perches.com>, cocci <cocci@diku.dk>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>
+Date: Mon, 6 Jun 2011 16:57:31 -0500
+Subject: RE: [RFC] Convert "resource->end - resource->start + 1" to
+ resource_size(resource) via coccinelle
+Thread-Topic: [RFC] Convert "resource->end - resource->start + 1" to
+ resource_size(resource) via coccinelle
+Thread-Index: AcwklBoUmB7F+AXyQS+Q6q4T6zgwlgAACcZg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3820B7C78@AUSP01VMBX24.collaborationhost.net>
+References: <201106061349.00474.hartleys@visionengravers.com>
+ <1307397174.4994.26.camel@Joe-Laptop>
+In-Reply-To: <1307397174.4994.26.camel@Joe-Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307387257.4327.12.camel@anish-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p56Lvro0009718
 
-On Tue, Jun 07, 2011 at 12:37:37AM +0530, anish wrote:
-> From: anish kumar <anish198519851985@gmail.com>
-> 
-> Replace kmalloc with local variables as it was un-necessary and
-> also removed the redudant code after this change.
+On Monday, June 06, 2011 2:53 PM, Joe Perches wrote:
+> On Mon, 2011-06-06 at 13:49 -0700, H Hartley Sweeten wrote:
+>> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+>> Cc: Dan Williams <dan.j.williams@intel.com> (supporter:ASYNCHRONOUS TRAN...)
+>> Cc: Vinod Koul <vinod.koul@intel.com> (supporter:DMA GENERIC OFFLO...)
+>
+> Perhaps do a treewide update via:
+>
+> $ cat resource.cocci
+> @@
+> struct resource *ptr;
+> @@
+>
+> - ptr->end - ptr->start + 1
+> + resource_size(ptr)
+>
+> $ spatch -sp_file resource.cocci linux-2.6/
 
-No, it was necessary, you just broke this driver on ARM-based systems,
-which isn't nice at all :(
+Joe,
 
-SPI data, like USB data, has to come from kmalloced data, not from the
-stack, or bad things can, and will, happen.
+I think most of the offenders were caught back in late 2009.
 
-So I can't accept this patch, sorry.
+I found a couple old patches that I submitted back then that were never acked
+so I just updated and reposted them.
 
-greg k-h
+Also, I have never looked at coccielle... ;-)
+
+Regards,
+Hartley
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
