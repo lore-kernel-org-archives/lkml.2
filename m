@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab1FFWCz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:02:55 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37113 "EHLO mx2.mail.elte.hu"
+	id S1757617Ab1FFWCt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:02:49 -0400
+Received: from lucidpixels.com ([75.144.35.66]:42137 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757989Ab1FFWCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 18:02:52 -0400
-Date: Tue, 7 Jun 2011 00:02:40 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Sam Ravnborg <sam@ravnborg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3] Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to
- unhide debug options
-Message-ID: <20110606220240.GB12079@elte.hu>
-References: <20110605210223.GA7595@leaf>
- <20110606151832.GI30348@elte.hu>
- <20110606165130.GA1844@leaf>
- <20110606181606.GB7862@somewhere>
- <20110606183939.GA2335@leaf>
- <20110606213446.GA17026@somewhere.redhat.com>
+	id S1756155Ab1FFWCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 18:02:48 -0400
+Date: Mon, 6 Jun 2011 18:02:47 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Brad Campbell <lists2009@fnarfbargle.com>
+cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: 2.6.39 kernel panic w/screenshots & kernel cfg link provided
+In-Reply-To: <alpine.DEB.2.02.1106051601230.3462@p34.internal.lan>
+Message-ID: <alpine.DEB.2.02.1106061800480.3462@p34.internal.lan>
+References: <alpine.DEB.2.02.1105280755050.4345@p34.internal.lan> <4DE4FBB0.9080708@fnarfbargle.com> <alpine.DEB.2.02.1106051601230.3462@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110606213446.GA17026@somewhere.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> On Mon, Jun 06, 2011 at 11:39:39AM -0700, Josh Triplett wrote:
-> > On Mon, Jun 06, 2011 at 08:16:09PM +0200, Frederic Weisbecker wrote:
-> > > On Mon, Jun 06, 2011 at 09:51:30AM -0700, Josh Triplett wrote:
-> > > > Several debugging options currently default to y, such as
-> > > > CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.  Embedded users might
-> > > > want to turn those options off to save space; however, turning them off
-> > > > requires turning on CONFIG_DEBUG_KERNEL to unhide them.  Since
-> > > > CONFIG_DEBUG_KERNEL exists specifically to unhide debugging options, and
-> > > > CONFIG_EXPERT exists specifically to unhide options potentially needed
-> > > > by experts and/or embedded users, make CONFIG_EXPERT automatically imply
-> > > > CONFIG_DEBUG_KERNEL.
-> > > > 
-> > > > Change various debugging options to only reference DEBUG_KERNEL, not
-> > > > EXPERT.
-> > > 
-> > > Ok, so ideally this should have been done in two patches. They are both
-> > > different logical changes that don't imply the same.
-> > 
-> > Fair enough; I'd considered whether to split this patch or not, and
-> > ended up with "not" on the theory that this seemed like a case of "fix
-> > an API and fix up the callers", but I can easily split it in v4.
-> 
-> You haven't just fixed the API and propagated to the callers accordingly.
-> What you did is to fix the API and also completely change the behaviour of the callers.
-> 
-> You have changed EXPERT to imply DEBUG_KERNEL.
+On Sun, 5 Jun 2011, Justin Piszcz wrote:
 
-yes, i suggested that, because it leads to a more maintainable 
-(EXPERT noise free) DEBUG_KERNEL Kconfig section.
+>
+>
+> On Tue, 31 May 2011, Brad Campbell wrote:
+>
+>> On 28/05/11 20:01, Justin Piszcz wrote:
+>>> Hello,
+>
+> Hi,
+>
+> This was happening on a regular basis, since then I have performed the
+> following: (sdc,sdd,sde were recently added)
+>
+> # hal-disable-polling --device /dev/sr0
+> Polling is already disabled on the given drive.
+> # hal-disable-polling --device /dev/sdd
+> Polling for drive /dev/sdd have been disabled. The fdi file written was
+> # hal-disable-polling --device /dev/sde
+> Polling for drive /dev/sde have been disabled. The fdi file written was
+> # hal-disable-polling --device /dev/sdc
+> Polling for drive /dev/sdc have been disabled. The fdi file written was
+>
+> # ps auxww|grep udisks
+> root      4125  0.0  0.0 127464  5844 ?        Sl   07:54   0:00 
+> /usr/lib/udisks/udisks-daemon
+> root      4126  0.0  0.0  45088  1100 ?        S    07:54   0:00 
+> udisks-daemon: polling /dev/sr0 /dev/sdd /dev/sde /dev/sdc
+> root     13335  0.0  0.0   8648   844 pts/8    S+   08:23   0:00 grep udisks
+> # dpkg -S /usr/lib/udisks/udisks-daemon
+> udisks: /usr/lib/udisks/udisks-daemon
+> # apt-get remove udisks
+>
+> # uname -a
+> Linux box 2.6.39 #11 SMP Tue May 31 15:51:52 EDT 2011 x86_64 GNU/Linux
+>
+> So far, my system has not crashed in 4 days after doing this, I am also using 
+> the 'threadirqs' boot option, if it crashes again I'll provide an update
+> but so far it has been stable..
+>
+> Justin.
+>
 
-> You'd have fixed the callers accordingly if you only changed 
-> "depend on EXPERT && DEBUG_KERNEL" into "depend on EXPERT" in the 
-> callers, because if EXPERT => DEBUG_KERNEL then (EXPERT && 
-> DEBUG_KERNEL) == EXPERT. Thus it would have fit into the same logic 
-> and gathering the whole into a single patch would have made sense 
-> (although that's debatable, I would have cut that personally, but 
-> we don't care at that level).
+For others who also have crashes, do your crashes persist when you disable 
+these options (don't use ACPI) for ATA/SATA.
 
-Hm, that's my fault - i missed that.
+CONFIG_ATA_ACPI=y
+CONFIG_PATA_ACPI=m
 
-Thanks,
+Recently I added a lot of options to my .config (compiled them as 
+modules), I noticed two items, one, when all of the ATA devices (SATA), 
+not the deprecated ones and/or the ACPI option for libata, that seemed to 
+be the final culprit that may have been causing my issues, no crashes.. 
+yet.
 
-	Ingo
+Justin.
+
