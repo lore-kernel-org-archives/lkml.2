@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757082Ab1FFVpL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 17:45:11 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48813 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500Ab1FFVpJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 17:45:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=enoDoBgECgp5VJCpq/aAmJMms+bVi4VGoY7x1Xi3QUscgn2tufw2XTi/z/5aj2qY4P
-         XGVYqlOtwasxnD02siJADEMAG0SCQRYVUw4+JbpW3vnyopt10ZjIpmK6EP/+XAsLRKSg
-         xunTR0ln/fmFtc2sm1OTpa4RdjKvbKdZFLlJs=
-Date: Mon, 6 Jun 2011 23:45:04 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        sam@ravnborg.org, torvalds@linux-foundation.org, tglx@linutronix.de,
-        josh@joshtriplett.org, mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/debug] debug: Make CONFIG_EXPERT select
- CONFIG_DEBUG_KERNEL to unhide debug options
-Message-ID: <20110606214502.GB17026@somewhere.redhat.com>
-References: <20110606165130.GA1844@leaf>
- <tip-2458073da04571182748aa4289630dca52ba63cc@git.kernel.org>
+	id S1757144Ab1FFVqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 17:46:19 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55555 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752500Ab1FFVqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 17:46:18 -0400
+Date: Mon, 6 Jun 2011 23:45:45 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: pageexec@freemail.hu, Andi Kleen <andi@firstfloor.org>,
+        Andy Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to
+ feature-removal-schedule
+Message-ID: <20110606214545.GA6492@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>
+ <4DECAE68.16683.1203EBBB@pageexec.freemail.hu>
+ <BANLkTin5jEmUUxWUUkYn9pKzGRwcA-zRLw@mail.gmail.com>
+ <4DED206E.20356.13C155EA@pageexec.freemail.hu>
+ <BANLkTi=choqfXPYmnivznYBbEFeg2UfbuA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <tip-2458073da04571182748aa4289630dca52ba63cc@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTi=choqfXPYmnivznYBbEFeg2UfbuA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 09:39:40PM +0000, tip-bot for Josh Triplett wrote:
-> Commit-ID:  2458073da04571182748aa4289630dca52ba63cc
-> Gitweb:     http://git.kernel.org/tip/2458073da04571182748aa4289630dca52ba63cc
-> Author:     Josh Triplett <josh@joshtriplett.org>
-> AuthorDate: Mon, 6 Jun 2011 09:51:30 -0700
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Mon, 6 Jun 2011 19:30:01 +0200
-> 
-> debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
-> 
-> Several debugging options currently default to y, such as
-> CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.
-> 
-> Embedded users might want to turn those options off to save space;
-> however, turning them off requires turning on CONFIG_DEBUG_KERNEL to
-> unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
-> unhide debugging options, and CONFIG_EXPERT exists specifically
-> to unhide options potentially needed by experts and/or embedded
-> users, make CONFIG_EXPERT automatically imply CONFIG_DEBUG_KERNEL.
-> 
-> Change various debugging options to only reference DEBUG_KERNEL,
-> not EXPERT.
-> 
-> Note that DEBUG_MEMORY_INIT defaulted to !EXPERT, which seemed
-> wrong, since EXPERT should not directly affect anything except
-> the availability of other options.  (And EXPERT definitely
-> shouldn't mean "implicitly turn off default safety features".)
-> 
-> Change it to default to y, which means that turning on EXPERT
-> does not automatically disable it, but will provide the option
-> to disable it.
-> 
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-No, Nacked actually. I'm fine with the v2 that only changed
-the EXPERT config to imply DEBUG_KERNEL. But all the other
-changes here need to be revised, as I outlined in the thread.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> We *definitely* don't want to name it in a way that makes some 
+> random person just turn it off because it's scary, since the random 
+> person *shouldn't* turn it off today. Comprende?
+
+Agreed, and that's fixed now.
+
+> And the annoying part about the whole patch series is how the whole 
+> re-sending has gone on forever. Just pick some approach, do it, and 
+> don't even bother making it a config option for now. If we can 
+> replace the vsyscall page with a page fault or int3 or whatever, 
+> and it's only used for the 'time()' system call, just do it.
+
+Ok, we can certainly remove CONFIG_LEGACY_VTIME - that would further 
+simplify things!
+
+I was unsure how big of a problem the time() slowdown was and the 
+config option was easy enough to provide. My preference would be to 
+just remove the config option and simplify the code - complexity is 
+the #1 enemy of security.
+
+> The series is now extended with the cleanup patches so the end 
+> result looks reasonable, but why have the whole "first implement 
+> it, then clean it up" and sending it as a whole series. That's 
+> annoying. Just send the cleaned-up end result to begin with.
+
+Do you think x86/vdso is worth rebasing at this stage? Right now it 
+has:
+
+ feba7e97df8c: x86-64: Rename COMPAT_VSYSCALLS to LEGACY_VTIME and clarify documentation
+ 7dc0452808b7: x86-64: Clean up vsyscall emulation and remove fixed-address ret
+ 8d6316596441: x86-64: Fix outdated comments in vsyscall_64.c
+ 1593843e2ada: x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to COMPAT_VSYSCALLS
+ 764611c8dfb5: x86-64, vdso, seccomp: Fix !CONFIG_SECCOMP build
+ 38172403a978: x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+ d55ed1d30b82: x86-64: Emulate legacy vsyscalls
+ 5dfcea629a08: x86-64: Fill unused parts of the vsyscall page with 0xcc
+ bb5fe2f78ead: x86-64: Remove vsyscall number 3 (venosys)
+ d319bb79afa4: x86-64: Map the HPET NX
+ 0d7b8547fb67: x86-64: Remove kernel.vsyscall64 sysctl
+ 9fd67b4ed071: x86-64: Give vvars their own page
+ 8b4777a4b50c: x86-64: Document some of entry_64.S
+ 6879eb2deed7: x86-64: Fix alignment of jiffies variable
+
+it's reasonably tested by now. We'd keep about 80% of the commits 
+after the rebase.
+
+Thanks,
+
+	Ingo
