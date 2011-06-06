@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757864Ab1FFTex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 15:34:53 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54264
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753716Ab1FFTev (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 15:34:51 -0400
-Date: Mon, 6 Jun 2011 15:34:51 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: XFS status update for May 2011
-Message-ID: <20110606193451.GA9800@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1757905Ab1FFTgw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 15:36:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2213 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757868Ab1FFTgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 15:36:51 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: x86@kernel.org
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 1/2] efi: Fix argument types for SetVariable()
+Date: Mon,  6 Jun 2011 15:36:24 -0400
+Message-Id: <1307388985-7852-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.202
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-May finally saw the release of Linux 2.6.39, which was a little more calm
-than usual for XFS, and only contains about half the amount of the changes
-we are used to see:
+The spec says this takes uint32 for attributes, not uintn.
 
-  58 files changed, 1660 insertions(+), 1912 deletions(-)
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ arch/x86/platform/efi/efi.c |    2 +-
+ include/linux/efi.h         |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-The most visible change is an overhaul of the XFS-internal interfaces
-to print kernel messages, which makes all messages from XFS look slightly
-different from before by always providing information about which device
-these messages relate to.  In addition to that support for the RT subvolume,
-which had been broken for a while has been resurrect, the XFS buffer cache
-switched away from using the Linux pagecache to improve performance on
-metadata intensive workloads, and all but one of the XFS kernel threads have
-been switched to the new concurrent managed workqueue infrastructure that
-is present in more recent Linux 2.6 releases.
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 0d3a4fa..f4f6de9 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -122,7 +122,7 @@ static efi_status_t virt_efi_get_next_variable(unsigned long *name_size,
+ 
+ static efi_status_t virt_efi_set_variable(efi_char16_t *name,
+ 					  efi_guid_t *vendor,
+-					  unsigned long attr,
++					  u32 attr,
+ 					  unsigned long data_size,
+ 					  void *data)
+ {
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index e376270..0758753 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -168,7 +168,7 @@ typedef efi_status_t efi_get_variable_t (efi_char16_t *name, efi_guid_t *vendor,
+ typedef efi_status_t efi_get_next_variable_t (unsigned long *name_size, efi_char16_t *name,
+ 					      efi_guid_t *vendor);
+ typedef efi_status_t efi_set_variable_t (efi_char16_t *name, efi_guid_t *vendor, 
+-					 unsigned long attr, unsigned long data_size, 
++					 u32 attr, unsigned long data_size,
+ 					 void *data);
+ typedef efi_status_t efi_get_next_high_mono_count_t (u32 *count);
+ typedef void efi_reset_system_t (int reset_type, efi_status_t status,
+-- 
+1.7.5.2
 
-In the meantime development for the release now known as Linux 3.0 went
-ahead full steam up to the merge of the XFS tree into Linux 3.0-rc1. News
-in that release contain support for vastly improved busy extent tracking,
-support for online discard (aka TRIM) and the usual amount of bug fixes.
-
-On the user space side the xfsprogs saw a fix for a corner case in xfs_repair,
-and xfstests saw a few bug fixes as well as a new test case to test
-btrfs-specific functionality.
