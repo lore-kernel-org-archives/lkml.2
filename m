@@ -1,79 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab1FFQLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:11:48 -0400
-Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:1595 "EHLO
-	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab1FFQLp (ORCPT
+	id S1754402Ab1FFQL0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:11:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39907 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785Ab1FFQLY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:11:45 -0400
-Message-ID: <4DECFC1C.10801@xs4all.nl>
-Date: Mon, 06 Jun 2011 18:11:08 +0200
-From: Jim Bos <jim876@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110429 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com>	<4CE17098.8090000@xs4all.nl>	<AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com>	<4CE17C4B.1070305@xs4all.nl>	<20101115185848.GI2583@sunsite.ms.mff.cuni.cz>	<20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>	<AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com>	<20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>	<4CE1968D.3050706@xs4all.nl>	<4DE8DC16.6030308@xs4all.nl>	<20110603133351.GA25130@srcf.ucam.org>	<4DE8EF13.9030609@xs4all.nl> <BANLkTinWj1LvQLverPTUm9rKEx=+HZUpDA@mail.gmail.com>
-In-Reply-To: <BANLkTinWj1LvQLverPTUm9rKEx=+HZUpDA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Jun 2011 12:11:24 -0400
+Subject: Re: Change in functionality of futex() system call.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Zachary Vonler <zvonler@rgmadvisors.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1307373819.3098.40.camel@edumazet-laptop>
+References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
+	 <1307373819.3098.40.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 06 Jun 2011 18:11:12 +0200
+Message-ID: <1307376672.2322.167.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2011 05:27 PM, Maarten Lankhorst wrote:
-> Hi Jim,
+On Mon, 2011-06-06 at 17:23 +0200, Eric Dumazet wrote:
+> Le lundi 06 juin 2011 à 09:28 -0500, David Oliver a écrit :
+> > Hello,
+> > 
+> > The functionality of the futex() system call appears to have changed
+> > between versions 2.6.18 and 2.6.32.28.
+> > 
+> > Specifically, performing a FUTEX_WAIT on a read-only mapped location
+> > results in an EFAULT. Although other operations, such as FUTEX_WAKE,
+> > are only meaningful for writable locations, FUTEX_WAIT is useful for
+> > processes with read-only access to a memory-mapped file.
+> > 
+> > The code below illustrates the changed behavior (each of the EXPECT
+> > operations succeed on the older kernel, the ASSERTs pass in each
+> > case), assuming the file /tmp/futex_test exists and contains int(42).
+> > 
+> > With the older kernel, the syscall() suspends until another process
+> > changes the file and issues a FUTEX_WAKE, whereas the new behavior is
+> > for an EFAULT error, independent of the file contents.
+> > 
+> > Let me know if you need further clarification.
+> > 
+> > Cheers!
+> > 
+> > David Oliver.
+> > 
+> > 
+> > #include <errno.h>
+> > #include <fcntl.h>
+> > #include <stdint.h>
+> > typedef uint32_t u32;   // for futex.h
+> > #include <linux/futex.h>
+> > #include <sys/mman.h>
+> > #include <sys/syscall.h>
+> > #include <unistd.h>
+> > #include "gtest/gtest.h" // test framework to illustrate issue.
+> > 
+> > 
+> > TEST(Futex, futex_in_read_only_file_is_ok) {
+> >   int fd = open("/tmp/futex_test", O_RDONLY);
+> >   ASSERT_GE(fd, 0);
+> >   int* futex = static_cast<int *>(mmap(0, sizeof(int), PROT_READ,
+> > MAP_SHARED, fd, 0));
+> >   ASSERT_NE((int *)(0), futex);
+> > 
+> >   int rc = syscall(SYS_futex, futex, FUTEX_WAIT, 42, 0, 0, 0);
+> > 
+> >   EXPECT_NE(-1, rc);              // fails.
+> >   if (rc == -1) {
+> >       EXPECT_NE(errno, EFAULT);   // fails.
+> >   }
+> > }
+> > 
 > 
-> 2011/6/3 Jim Bos <jim876@xs4all.nl>:
->> On 06/03/2011 03:33 PM, Matthew Garrett wrote:
->>> On Fri, Jun 03, 2011 at 03:05:26PM +0200, Jim Bos wrote:
->>>>
->>>> *,
->>>>
->>>> Just applied 2.6.39.1 but my system: 64-bit SLackware, 8GB RAM, MSI mobo
->>>> P67A-C45 bios V1.9. previously happily booting via EFI (nice to see
->>>> Linux and the other OS actually NOT overwriting each others boot
->>>> loaders!) immediately re-booted just after loading the kernel.
->>>>
->>>> Not even a single message is making it on the console, almost immediate
->>>> system reset.  As I noticed there are several EFI related patches, I
->>>> first tried to backout the change to setup.c but that didn't help so
->>>> backing out all the efi changes in the 2.6.39.1 patch, i.e. the files:
->>>>  - arch/x86/kernel/setup.c
->>>>  - arch/x86/platform/efi/efi.c
->>>>  - arch/x86/platform/efi/efi_64.c
->>>> and sure enough system is booting on 2.6.39.1 with these changes removed.
->>>
->>> Can you try just reverting
->>>
->>> "x86, efi: Retain boot service code until after switching to virtual mode"
->>>
->>> ? You've got 143 boot services/code regions, which is more than I'd
->>> tested against, so I'm unsure whether we're overflowing something here.
->>>
->>
->> That's seems to be the only EFI patch in 2.6.39.1 and I effectively
->> removed by =not= applying (skipping) the parts of the 2.6.39.1 patch to
->> above 3 files.
->> So yes removing "x86, efi: Retain boot service code until after
->> switching to virtual mode" indeed fixes the problem for me.
-> Does manually applying commit 9cd2b07c1 fix things for 2.6.39.1?
-> commit is: x86, efi: Consolidate EFI nx control
+> Right you are, this came from commit 7485d0d3758e8e6491a5 (futexes:
+> Remove rw parameter from get_futex_key()) in 2.6.33
 > 
-> There will be 1 apply  failure, need to change the call to
-> early_mapping_set_exec in early_runtime_code_mapping_set_exec to
-> efi_set_executable.
+> commit 7485d0d3758e8e6491a5c9468114e74dc050785d
+> Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Date:   Tue Jan 5 16:32:43 2010 +0900
 > 
-> ~Maarten
+>     futexes: Remove rw parameter from get_futex_key()
+>     
+>     Currently, futexes have two problem:
+>     
+>     A) The current futex code doesn't handle private file mappings properly.
+>     
+>     get_futex_key() uses PageAnon() to distinguish file and
+>     anon, which can cause the following bad scenario:
+>     
+>       1) thread-A call futex(private-mapping, FUTEX_WAIT), it
+>          sleeps on file mapping object.
+>       2) thread-B writes a variable and it makes it cow.
+>       3) thread-B calls futex(private-mapping, FUTEX_WAKE), it
+>          wakes up blocked thread on the anonymous page. (but it's nothing)
+>     
+>     B) Current futex code doesn't handle zero page properly.
 > 
+>     Read mode get_user_pages() can return zero page, but current
+>     futex code doesn't handle it at all. Then, zero page makes
+>     infinite loop internally.
+>     
+>     The solution is to use write mode get_user_page() always for
+>     page lookup. It prevents the lookup of both file page of private
+>     mappings and zero page.
+>     
+>     Performance concerns:
+>     
+>     Probaly very little, because glibc always initialize variables
+>     for futex before to call futex(). It means glibc users never see
+>     the overhead of this patch.
+>     
+>     Compatibility concerns:
+>     
+>     This patch has few compatibility issues. After this patch,
+>     FUTEX_WAIT require writable access to futex variables (read-only
+>     mappings makes EFAULT). But practically it's not a problem,
+>     glibc always initalizes variables for futexes explicitly - nobody
+>     uses read-only mappings.
 
-Maarten,
+Urgh,. maybe something like the below but with more conditionals that
+enable the extra logic only for FUTEX_WAIT..
 
-Yes that boots, but with the "BUG Bad page state .." as well (so would
-need you other patch).
+The idea is to try a RO gup() when the RW gup() fails so as not to slow
+down the common path of writable anonymous maps and bail when we used
+the RO path on anonymous memory.
 
-Jim
+---
+diff --git a/kernel/futex.c b/kernel/futex.c
+index fe28dc2..11f2ad1 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -234,7 +234,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+ 	unsigned long address = (unsigned long)uaddr;
+ 	struct mm_struct *mm = current->mm;
+ 	struct page *page, *page_head;
+-	int err;
++	int err, ro = 0;
+ 
+ 	/*
+ 	 * The futex address must be "naturally" aligned.
+@@ -262,6 +262,10 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+ 
+ again:
+ 	err = get_user_pages_fast(address, 1, 1, &page);
++	if (err == -EFAULT) {
++		err = get_user_pages_fast(address, 1, 0, &page);
++		ro = 1;
++	}
+ 	if (err < 0)
+ 		return err;
+ 
+@@ -316,6 +320,11 @@ again:
+ 	 * the object not the particular process.
+ 	 */
+ 	if (PageAnon(page_head)) {
++		if (ro) {
++			err = -EFAULT;
++			goto out;
++		}
++
+ 		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
+ 		key->private.mm = mm;
+ 		key->private.address = address;
+@@ -327,9 +336,10 @@ again:
+ 
+ 	get_futex_key_refs(key);
+ 
++out:
+ 	unlock_page(page_head);
+ 	put_page(page_head);
+-	return 0;
++	return err;
+ }
+ 
+ static inline void put_futex_key(union futex_key *key)
+
