@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab1FFNHy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 09:07:54 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60020 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756802Ab1FFNHx (ORCPT
+	id S1757106Ab1FFNJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 09:09:28 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60970 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965Ab1FFNJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 09:07:53 -0400
+	Mon, 6 Jun 2011 09:09:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=akshayjoshi.com; s=google;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Z1XbLOIxOpY9EAOn4x8kcpqmp2Hz/smzDC4AaMndCW8qRz04zxFAXX5nd5gxeui9f/
-         DMa0i1ntsg8a4WWaWY9z7FIU5RKIxQMqLL5MssZQfhk0r53IRz1mOh4wGC/GhqRSQT/v
-         6bc0G/ZBUT2SHhF64O7EpOCtp5ZzjPFLsTx6I=
-From: Akshay Joshi <me@akshayjoshi.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Akshay Joshi <me@akshayjoshi.com>
-Subject: [PATCH] USBIP: Remove unnecessary whitespace before newline characters.
-Date: Mon,  6 Jun 2011 09:07:31 -0400
-Message-Id: <1307365651-13715-1-git-send-email-me@akshayjoshi.com>
-X-Mailer: git-send-email 1.7.4.4
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=w5u4Kjnt+dKPfl0H334huDCozV4OW7GCf9DC30ydiOCudb6SK70OOeErAc9TL98A6o
+         wPzHhbdaYdBQTDufSPUxWHN/gbfZ954SxaamjFgdHfyR706996XfEdA7AF1ai4LnBq1E
+         VD4JJU/Z14NRAZDoc61kUPsx1sF1x7Rcv6x84=
+Subject: Re: bridge/netfilter: regression in 2.6.39.1
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org
+In-Reply-To: <1307362358.3098.6.camel@edumazet-laptop>
+References: <4DE93422.3070000@ahsoftware.de>
+	 <20110606111507.GA1000@hmsreliant.think-freely.org>
+	 <4DECBEA3.6070408@ahsoftware.de>  <1307362358.3098.6.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Jun 2011 15:09:22 +0200
+Message-ID: <1307365762.3098.11.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this file, in certain places, newline characters in pr_debug() calls had
-whitespace before them. This patch removes this extraneous whitespace.
+Le lundi 06 juin 2011 à 14:12 +0200, Eric Dumazet a écrit :
+> Le lundi 06 juin 2011 à 13:48 +0200, Alexander Holler a écrit :
+> > Am 06.06.2011 13:15, schrieb Neil Horman:
+> > > On Fri, Jun 03, 2011 at 09:21:06PM +0200, Alexander Holler wrote:
+> > >> Hello,
+> > >>
+> > >> I'm getting a oops in the bridge code in br_change_mtu() with
+> > >> 2.6.39.1. The patch below seems to fix that.
+> > >>
+> > >> I'm not sure about the usage of dst_cow_metrics_generic() in
+> > >> fake_dst_ops, but after having a quick look at it seems to be ok to
+> > >> use that here.
+> > >>
+> > >> Regards,
+> > >>
+> > >> Alexander
+> > >>
+> > > How did the flags of the dst entry on which we're callnig dst_entry_write_ptr
+> > > wind up getting the  READ_ONLY flag set on it?  I don't see how we'er falling
+> > > into that clause in which we call cow_metrics when we call dst_metric_set.  It
+> > > seems like that flag is set erroneously.  perhaps we should just update
+> > > fake_rtable.dst to have the correct flags?
+> > > Neil
+> > 
+> > It is set by that change:
+> > 
+> > --------
+> > @@ -124,7 +128,7 @@ void br_netfilter_rtable_init(struct net_bridge *br)
+> >   	atomic_set(&rt->dst.__refcnt, 1);
+> >   	rt->dst.dev = br->dev;
+> >   	rt->dst.path = &rt->dst;
+> > -	dst_metric_set(&rt->dst, RTAX_MTU, 1500);
+> > +	dst_init_metrics(&rt->dst, br_dst_default_metrics, true);
+> >   	rt->dst.flags	= DST_NOXFRM;
+> >   	rt->dst.ops = &fake_dst_ops;
+> >   }
+> > --------
+> > 
+> > The true in dst_init_metrics() is responsible for that flag.
+> > 
+> 
+> You are aware this change fixed an oops ?
+> 
+> read_only in this context means : In case this must be written, we make
+> a COW first
+> (allocate a piece of memory, copy the source in it before applying any
+> change)
+> 
+> It would be nice you send us the stack trace, so that we can have a clue
+> of whats going on.
+> 
 
-Signed-off-by: Akshay Joshi <me@akshayjoshi.com>
----
- drivers/staging/usbip/usbip_common.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Alexander, you should take a look at :
 
-diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
-index 433a3b6..7182700 100644
---- a/drivers/staging/usbip/usbip_common.c
-+++ b/drivers/staging/usbip/usbip_common.c
-@@ -204,7 +204,7 @@ static void usbip_dump_usb_ctrlrequest(struct usb_ctrlrequest *cmd)
- 			pr_debug("CLEAR_FEAT\n");
- 			break;
- 		case USB_REQ_SET_FEATURE:
--			pr_debug("SET_FEAT  \n");
-+			pr_debug("SET_FEAT\n");
- 			break;
- 		case USB_REQ_SET_ADDRESS:
- 			pr_debug("SET_ADDRRS\n");
-@@ -231,14 +231,14 @@ static void usbip_dump_usb_ctrlrequest(struct usb_ctrlrequest *cmd)
- 			pr_debug("SYNC_FRAME\n");
- 			break;
- 		default:
--			pr_debug("REQ(%02X) \n", cmd->bRequest);
-+			pr_debug("REQ(%02X)\n", cmd->bRequest);
- 			break;
- 		}
- 		usbip_dump_request_type(cmd->bRequestType);
- 	} else if ((cmd->bRequestType & USB_TYPE_MASK) == USB_TYPE_CLASS) {
--		pr_debug("CLASS   \n");
-+		pr_debug("CLASS\n");
- 	} else if ((cmd->bRequestType & USB_TYPE_MASK) == USB_TYPE_VENDOR) {
--		pr_debug("VENDOR  \n");
-+		pr_debug("VENDOR\n");
- 	} else if ((cmd->bRequestType & USB_TYPE_MASK) == USB_TYPE_RESERVED) {
- 		pr_debug("RESERVED\n");
- 	}
--- 
-1.7.4.4
+git show 0972ddb2
+
+To get an idea of how to deal with this problem 
+(See how Held Bernhard included a backtrace to help us make a
+diagnostic)
+
+We dont want to even allocate a piece of memory to copy
+br_dst_default_metric for a fake dst.
+
 
