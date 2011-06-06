@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab1FFOpN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 10:45:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45370 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978Ab1FFOpK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 10:45:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=g3A91e1O2Ut15RfJpWqPOgKHFl0L3LieKfLwk8GYGFd/0OyL0+7GU5GzRR7HuXWPee
-         ERrMAxXfB0Korni7QeyCtOrRv4WYvjDl4opssJf05uAVXT0CfPeXJySktl5bqfBnA3JE
-         +cYKu8OhNe4RY6c6ZJaJlvdPFd9RGeG6+QgTE=
-Date: Mon, 6 Jun 2011 23:44:59 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: caiqian@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, rientjes@google.com, hughd@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com
-Subject: Re: [PATCH v2 0/5] Fix oom killer doesn't work at all if system
- have > gigabytes memory  (aka CAI founded issue)
-Message-ID: <20110606144458.GG1686@barrios-laptop>
-References: <348391538.318712.1306828778575.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
- <4DE4A2A0.6090704@jp.fujitsu.com>
- <4DE4BC64.3040807@jp.fujitsu.com>
- <20110601033258.GA12653@barrios-laptop>
- <4DEC4463.1060206@jp.fujitsu.com>
+	id S1757119Ab1FFOrR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 10:47:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5414 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751164Ab1FFOrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 10:47:16 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 1/3] MN10300: Fix one of the kernel debugger cacheflush
+ variants
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Mon, 06 Jun 2011 15:47:05 +0100
+Message-ID: <20110606144705.19155.22278.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DEC4463.1060206@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 12:07:15PM +0900, KOSAKI Motohiro wrote:
-> >> Of course, we recommend to drop privileges as far as possible
-> >> instead of keeping them. Thus, oom killer don't have to check
-> >> any capability. It implicitly suggest wrong programming style.
-> >>
-> >> This patch change root process check way from CAP_SYS_ADMIN to
-> >> just euid==0.
-> > 
-> > I like this but I have some comments.
-> > Firstly, it's not dependent with your series so I think this could
-> > be merged firstly.
-> 
-> I agree.
-> 
-> > Before that, I would like to make clear my concern.
-> > As I look below comment, 3% bonus is dependent with __vm_enough_memory's logic?
-> 
-> No. completely independent.
-> 
-> vm_enough_memory() check the task _can_ allocate more memory. IOW, the task
-> is subjective. And oom-killer check the task should be protected from oom-killer.
-> IOW, the task is objective.
-> 
+One of the kernel debugger cacheflush variants escaped proper testing.  Two of
+the labels are wrong, being derived from the code that was copied to construct
+the variant.
 
-Hmm, maybe I can't understand your point.
-My though was below.
+The first label results in the following assembler message:
 
-Assumption)
-1. root allocation bonus point -> 10% 
-2. OOM have no bonus about root process
+  AS      arch/mn10300/mm/cache-dbg-flush-by-reg.o
+arch/mn10300/mm/cache-dbg-flush-by-reg.S: Assembler messages:
+arch/mn10300/mm/cache-dbg-flush-by-reg.S:123: Error: symbol `debugger_local_cache_flushinv_no_dcache' is already defined
 
-Scenario)
-1.
-System has 101 free pages and 10 normal tasks.
-Ideally, 10 tasks allocates free memory fairly so each task will have 10 pages.
-So OOM killer can select victim fairly when new task which requires 10 pages forks.
+And the second label results in the following linker message:
 
-2.
-System has 101 free pages and 10 tasks. (9 normal task , 1 root task)
-10 * 9 + 11 will be consumed. So each normal task will have 10 pages
-but a root task have 11 pages.
-So OOM killer can always selectd root process as vicim.(We assumed
-OOM doesn't have a bonus on root process)
+arch/mn10300/mm/built-in.o:(.text+0x1d39): undefined reference to `mn10300_local_icache_inv_range_reg_end'
+arch/mn10300/mm/built-in.o:(.text+0x1d39): relocation truncated to fit: R_MN10300_PCREL16 against undefined symbol `mn10300_local_icache_inv_range_reg_end'
 
-Conclusion)
-For solving above problem, we have to give bonus which was given
-in allocation to OOM, too. It's fair.
-So I think it has a dependency.
+To test this file the following configuration pieces must be set:
 
--- 
-Kind regards
-Minchan Kim
+	CONFIG_AM34=y
+	CONFIG_MN10300_CACHE_WBACK=y
+	CONFIG_MN10300_DEBUGGER_CACHE_FLUSH_BY_REG=y
+	CONFIG_MN10300_CACHE_MANAGE_BY_REG=y
+	CONFIG_AM34_HAS_CACHE_SNOOP=n
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ arch/mn10300/mm/cache-dbg-flush-by-reg.S |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+
+diff --git a/arch/mn10300/mm/cache-dbg-flush-by-reg.S b/arch/mn10300/mm/cache-dbg-flush-by-reg.S
+index 665919f..a775ea5 100644
+--- a/arch/mn10300/mm/cache-dbg-flush-by-reg.S
++++ b/arch/mn10300/mm/cache-dbg-flush-by-reg.S
+@@ -120,14 +120,14 @@ debugger_local_cache_flushinv_one:
+ 	# conditionally purge this line in all ways
+ 	mov	d1,(L1_CACHE_WAYDISP*0,a0)
+ 
+-debugger_local_cache_flushinv_no_dcache:
++debugger_local_cache_flushinv_one_no_dcache:
+ 	#
+ 	# now try to flush the icache
+ 	#
+ 	mov	CHCTR,a0
+ 	movhu	(a0),d0
+ 	btst	CHCTR_ICEN,d0
+-	beq	mn10300_local_icache_inv_range_reg_end
++	beq	debugger_local_cache_flushinv_one_end
+ 
+ 	LOCAL_CLI_SAVE(d1)
+ 
+
