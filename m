@@ -1,166 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848Ab1FFILt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 04:11:49 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:48001 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab1FFILr (ORCPT
+	id S1756925Ab1FFIL7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 04:11:59 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:54655 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754175Ab1FFILy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 04:11:47 -0400
-X-Auth-Info: /XdUkUIo2QLDeEMOBHRntu4B4t78zGJsfccUnGf5VHo=
-From: Anatolij Gustschin <agust@denx.de>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, jic23@cam.ac.uk, dzu@denx.de,
-        Anatolij Gustschin <agust@denx.de>
-Subject: [PATCH 2/2] misc/eeprom: add eeprom access driver for digsy_mtc board
-Date: Mon,  6 Jun 2011 10:11:22 +0200
-Message-Id: <1307347882-25301-2-git-send-email-agust@denx.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1307347882-25301-1-git-send-email-agust@denx.de>
-References: <1307347882-25301-1-git-send-email-agust@denx.de>
+	Mon, 6 Jun 2011 04:11:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=s47JDooPTOPdl8CFs080tMNHZD6hRPkmbz3OcYMj06qJ8ek9s9C+Yfj7vXDKZbOXao
+         hlVMgMondgliGqEr/9xjJ1Cr+cdWPuRLWhgIZIyU49+zi6u5sT4gq3e+OHRRwjG5g2k9
+         cmlwRyybtYD5aFsSZ1n+SR+GPd5XatC8X6cJg=
+MIME-Version: 1.0
+In-Reply-To: <874o43ii1m.fsf@rustcorp.com.au>
+References: <cover.1307199715.git.christian.dietrich@informatik.uni-erlangen.de>
+	<fce87f1efab55e15e91b21f1b73f0e86016a27d9.1307199715.git.christian.dietrich@informatik.uni-erlangen.de>
+	<874o43ii1m.fsf@rustcorp.com.au>
+Date: Mon, 6 Jun 2011 10:11:53 +0200
+Message-ID: <BANLkTinS67qH-pm2=Z9G1UXk4OOuZNsN9g@mail.gmail.com>
+Subject: Re: [PATCH 8/8] arch/x86: use printk_ratelimited instead of printk_ratelimit
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Christian Dietrich 
+	<christian.dietrich@informatik.uni-erlangen.de>,
+        "Venkatesh Pallipadi (Venki)" <venki@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Kevin Tian <kevin.tian@intel.com>,
+        Fengzhe Zhang <fengzhe.zhang@intel.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        lguest@lists.ozlabs.org, trivial@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both displays on digsy_mtc board obtain their configuration
-from microwire EEPROMs which are connected to the SoC
-over GPIO lines. We need an easy way to access the EEPROMs
-to write the needed display configuration or to read out the
-currently programmed configuration. The generic eeprom_93xx46
-SPI driver added by previous patch allows EEPROM access over
-sysfs. Using the simple driver added by this patch we provide
-used GPIO interface and access control description on the board
-for generic eeprom_93xx46 driver and spi_gpio driver.
+On Mon, Jun 6, 2011 at 8:35 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> On Sat, 4 Jun 2011 17:37:04 +0200, Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de> wrote:
+>> Since printk_ratelimit() shouldn't be used anymore (see comment in
+>> include/linux/printk.h), replace it with printk_ratelimited.
+>
+> Acked-by: Rusty Russell <rusty@rustcorp.com.au> (lguest part)
+>
+>> diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+>> index db832fd..23a6eff 100644
+>> --- a/arch/x86/lguest/boot.c
+>> +++ b/arch/x86/lguest/boot.c
+>> @@ -56,6 +56,7 @@
+>>  #include <linux/lguest_launcher.h>
+>>  #include <linux/virtio_console.h>
+>>  #include <linux/pm.h>
+>> +#include <linux/ratelimit.h>
+>>  #include <asm/apic.h>
+>>  #include <asm/lguest.h>
+>>  #include <asm/paravirt.h>
+>
+> Is this new include really needed?  The printk_ratelimited() definition
+> is in printk.h...
 
-Signed-off-by: Anatolij Gustschin <agust@denx.de>
----
- drivers/misc/eeprom/Kconfig            |   12 +++++
- drivers/misc/eeprom/Makefile           |    1 +
- drivers/misc/eeprom/digsy_mtc_eeprom.c |   85 ++++++++++++++++++++++++++++++++
- 3 files changed, 98 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/eeprom/digsy_mtc_eeprom.c
+Yes.
+printk_ratelimited() needs DEFINE_RATELIMIT_STATE() which is defined
+in ratelimit.h.
 
-diff --git a/drivers/misc/eeprom/Kconfig b/drivers/misc/eeprom/Kconfig
-index 620de28..26cf12c 100644
---- a/drivers/misc/eeprom/Kconfig
-+++ b/drivers/misc/eeprom/Kconfig
-@@ -83,4 +83,16 @@ config EEPROM_93XX46
- 
- 	  If unsure, say N.
- 
-+config EEPROM_DIGSY_MTC_CFG
-+	bool "DigsyMTC display configuration EEPROMs device"
-+	depends on PPC_MPC5200_GPIO && GPIOLIB && SPI_GPIO
-+	help
-+	  This option enables access to display configuration EEPROMs
-+	  on digsy_mtc board. You have to additionally select Microwire
-+	  EEPROM 93XX46 driver. sysfs entries will be created for that
-+	  EEPROM allowing to read/write the configuration data or to
-+	  erase the whole EEPROM.
-+
-+	  If unsure, say N.
-+
- endmenu
-diff --git a/drivers/misc/eeprom/Makefile b/drivers/misc/eeprom/Makefile
-index ec55aad..fc1e81d 100644
---- a/drivers/misc/eeprom/Makefile
-+++ b/drivers/misc/eeprom/Makefile
-@@ -4,3 +4,4 @@ obj-$(CONFIG_EEPROM_LEGACY)	+= eeprom.o
- obj-$(CONFIG_EEPROM_MAX6875)	+= max6875.o
- obj-$(CONFIG_EEPROM_93CX6)	+= eeprom_93cx6.o
- obj-$(CONFIG_EEPROM_93XX46)	+= eeprom_93xx46.o
-+obj-$(CONFIG_EEPROM_DIGSY_MTC_CFG) += digsy_mtc_eeprom.o
-diff --git a/drivers/misc/eeprom/digsy_mtc_eeprom.c b/drivers/misc/eeprom/digsy_mtc_eeprom.c
-new file mode 100644
-index 0000000..66d9e1b
---- /dev/null
-+++ b/drivers/misc/eeprom/digsy_mtc_eeprom.c
-@@ -0,0 +1,85 @@
-+/*
-+ * EEPROMs access control driver for display configuration EEPROMs
-+ * on DigsyMTC board.
-+ *
-+ * (C) 2011 DENX Software Engineering, Anatolij Gustschin <agust@denx.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/gpio.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/spi/spi.h>
-+#include <linux/spi/spi_gpio.h>
-+#include <linux/eeprom_93xx46.h>
-+
-+#define GPIO_EEPROM_CLK		216
-+#define GPIO_EEPROM_CS		210
-+#define GPIO_EEPROM_DI		217
-+#define GPIO_EEPROM_DO		249
-+#define GPIO_EEPROM_OE		255
-+#define EE_SPI_BUS_NUM	1
-+
-+static void digsy_mtc_op_prepare(void *p)
-+{
-+	/* enable */
-+	gpio_set_value(GPIO_EEPROM_OE, 0);
-+}
-+
-+static void digsy_mtc_op_finish(void *p)
-+{
-+	/* disable */
-+	gpio_set_value(GPIO_EEPROM_OE, 1);
-+}
-+
-+struct eeprom_93xx46_platform_data digsy_mtc_eeprom_data = {
-+	.flags		= EE_ADDR8,
-+	.prepare	= digsy_mtc_op_prepare,
-+	.finish		= digsy_mtc_op_finish,
-+};
-+
-+static struct spi_gpio_platform_data eeprom_spi_gpio_data = {
-+	.sck		= GPIO_EEPROM_CLK,
-+	.mosi		= GPIO_EEPROM_DI,
-+	.miso		= GPIO_EEPROM_DO,
-+	.num_chipselect	= 1,
-+};
-+
-+static struct platform_device digsy_mtc_eeprom = {
-+	.name	= "spi_gpio",
-+	.id	= EE_SPI_BUS_NUM,
-+	.dev	= {
-+		.platform_data	= &eeprom_spi_gpio_data,
-+	},
-+};
-+
-+static struct spi_board_info digsy_mtc_eeprom_info[] __initdata = {
-+	{
-+		.modalias		= "93xx46",
-+		.max_speed_hz		= 1000000,
-+		.bus_num		= EE_SPI_BUS_NUM,
-+		.chip_select		= 0,
-+		.mode			= SPI_MODE_0,
-+		.controller_data	= (void *)GPIO_EEPROM_CS,
-+		.platform_data		= &digsy_mtc_eeprom_data,
-+	},
-+};
-+
-+static int __init digsy_mtc_eeprom_devices_init(void)
-+{
-+	int ret;
-+
-+	ret = gpio_request_one(GPIO_EEPROM_OE, GPIOF_OUT_INIT_HIGH,
-+				"93xx46 EEPROMs OE");
-+	if (ret) {
-+		pr_err("can't request gpio %d\n", GPIO_EEPROM_OE);
-+		return ret;
-+	}
-+	spi_register_board_info(digsy_mtc_eeprom_info,
-+				ARRAY_SIZE(digsy_mtc_eeprom_info));
-+	return platform_device_register(&digsy_mtc_eeprom);
-+}
-+device_initcall(digsy_mtc_eeprom_devices_init);
 -- 
-1.7.1
-
+Thanks,
+//richard
