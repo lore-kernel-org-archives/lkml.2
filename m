@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab1FFPZW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 11:25:22 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44542 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757460Ab1FFPZT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 11:25:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=c3fo8ytkGGtLiTNmLs2Hbbb7GpLji9dzh0iuy8h68m7ZF/Pfu/AMmCFt34bbKAzFe0
-         PRp0+ZS9v85EXj7IIRuUafJG+Joo0kMLLz17BU0lli6kNHWBQuE6c3OVibZb7RoMvTmI
-         mOPRsvBj/7WxMP2o8nyXwXvLH4/yZOlj4Y7i8=
+	id S1757520Ab1FFP1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 11:27:16 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41595 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751539Ab1FFP1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 11:27:15 -0400
+Date: Mon, 6 Jun 2011 17:26:57 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: pageexec@freemail.hu
+Cc: Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
+Message-ID: <20110606152657.GJ30348@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>
+ <4DECC07A.8317.124A847C@pageexec.freemail.hu>
+ <BANLkTi=viR9DaQu2hzX4THdpDqfOZq-cXw@mail.gmail.com>
+ <4DECDD14.5845.12BA3C18@pageexec.freemail.hu>
 MIME-Version: 1.0
-In-Reply-To: <1307364487.2876.18.camel@moss-pluto>
-References: <1307133252-23259-1-git-send-email-wad@chromium.org>
-	<1307133252-23259-3-git-send-email-wad@chromium.org>
-	<BANLkTink868yzHYHd-FyK9BH6nybdSUCuA@mail.gmail.com>
-	<1307364487.2876.18.camel@moss-pluto>
-Date: Mon, 6 Jun 2011 11:25:17 -0400
-X-Google-Sender-Auth: -zIDy64juWdyKh9j3ZwAeub2_Wo
-Message-ID: <BANLkTi=WGCrT3Z5qar0P-EqN=aKn9z-HYA@mail.gmail.com>
-Subject: Re: [PATCH v4 03/13] seccomp_filters: new mode with configurable
- syscall filters
-From: Colin Walters <walters@verbum.org>
-To: Stephen Smalley <sds@tycho.nsa.gov>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        kees.cook@canonical.com, torvalds@linux-foundation.org,
-        tglx@linutronix.de, mingo@elte.hu, rostedt@goodmis.org,
-        jmorris@namei.org, paulmck@linux.vnet.ibm.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DECDD14.5845.12BA3C18@pageexec.freemail.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 6, 2011 at 8:48 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
->
-> Suppose we did add a MAC check on enabling seccomp.  Under what
-> circumstances would we want to deny a process the ability to further
-> restrict its own actions?
 
-Well, I could understand a simple argument about limiting the exposed
-kernel API; again I know this is sort of ironic, but seccomp is a
-pretty complex new API, and there will be processes that *aren't*
-using it for whatever reason and might be exploited.
+* pageexec@freemail.hu <pageexec@freemail.hu> wrote:
 
-I'm not arguing strongly for this, I just wanted to bring it up.  The
-set of hooks seems rather inconsistent right now.
+> > > a page fault is never a fast path, after all the cpu has just 
+> > > taken an exception (vs. the syscall/sysenter style actually 
+> > > fast user->kernel transition) and is about to make page table 
+> > > changes (and possibly TLB flushes).
+> >
+> > Sure it is.  It's a path that's optimized carefully and needs to 
+> > be as fast as possible.  Just because it's annoyingly slow 
+> > doesn't mean we get to make it even slower.
+> 
+> sorry, but stating that the pf handler is a fast path doesn't make 
+> it so ;) [...]
 
-Given the above rationale, why for example is there a SELinux access
-vector for sched_getscheduler (process:getsched)?
+Are you talking about the Linux kernel?
 
-> Denying the ability to enable seccomp could itself lead to
-> vulnerabilities, as applications have shown that they often fail to
-> check or handle errors from privilege-limiting calls correctly.
+FYI, incredible amount of work has gone into making pagefaults as 
+fast and scalable as possible. If you are following Linux kernel 
+development you'd have to be virtually blind to not see all that 
+effort.
 
-Right.
+[ And yes, serious amount of work has gone into the hardware side as
+  well - P4's used to suck *really* bad at pagefaults. ]
 
-> The situation would differ if seccomp could be enabled for a different
-> target process than current, or if it could be inherited across exec.
+You claiming that pagefaults are a slow-path and ridiculing those who 
+point out your mistake does not make it a slowpath.
 
-It's based on prctl() so only affects the current process, and as for
-the latter - it looks like the current state is that if seccomp is
-active, exec is always disallowed.
+Thanks,
+
+	Ingo
