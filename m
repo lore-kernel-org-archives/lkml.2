@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab1FFVkZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 17:40:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55112 "EHLO hera.kernel.org"
+	id S1757086Ab1FFVkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 17:40:46 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55123 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756131Ab1FFVkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 17:40:24 -0400
-Date: Mon, 6 Jun 2011 21:39:40 GMT
-From: tip-bot for Josh Triplett <josh@joshtriplett.org>
-Message-ID: <tip-2458073da04571182748aa4289630dca52ba63cc@git.kernel.org>
+	id S1756131Ab1FFVko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 17:40:44 -0400
+Date: Mon, 6 Jun 2011 21:40:08 GMT
+From: tip-bot for Andy Lutomirski <luto@mit.edu>
+Message-ID: <tip-8d6316596441de42e3f30c8e536579f6292b46a0@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, sam@ravnborg.org, fweisbec@gmail.com,
-        tglx@linutronix.de, josh@joshtriplett.org, mingo@elte.hu
+        luto@mit.edu, torvalds@linux-foundation.org, mikpe@it.uu.se,
+        tglx@linutronix.de, mingo@elte.hu, luto@mit.edu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        sam@ravnborg.org, torvalds@linux-foundation.org, fweisbec@gmail.com,
-        tglx@linutronix.de, josh@joshtriplett.org, mingo@elte.hu
-In-Reply-To: <20110606165130.GA1844@leaf>
-References: <20110606165130.GA1844@leaf>
+        luto@mit.edu, torvalds@linux-foundation.org, mikpe@it.uu.se,
+        tglx@linutronix.de, mingo@elte.hu, luto@mit.edu
+In-Reply-To: <ab1699caaea6c7863fb74abc2f5718353680070c.1307380481.git.luto@mit.edu>
+References: <ab1699caaea6c7863fb74abc2f5718353680070c.1307380481.git.luto@mit.edu>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/debug] debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
-Git-Commit-ID: 2458073da04571182748aa4289630dca52ba63cc
+Subject: [tip:x86/vdso] x86-64: Fix outdated comments in vsyscall_64.c
+Git-Commit-ID: 8d6316596441de42e3f30c8e536579f6292b46a0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Jun 2011 21:39:41 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Jun 2011 21:40:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2458073da04571182748aa4289630dca52ba63cc
-Gitweb:     http://git.kernel.org/tip/2458073da04571182748aa4289630dca52ba63cc
-Author:     Josh Triplett <josh@joshtriplett.org>
-AuthorDate: Mon, 6 Jun 2011 09:51:30 -0700
+Commit-ID:  8d6316596441de42e3f30c8e536579f6292b46a0
+Gitweb:     http://git.kernel.org/tip/8d6316596441de42e3f30c8e536579f6292b46a0
+Author:     Andy Lutomirski <luto@MIT.EDU>
+AuthorDate: Mon, 6 Jun 2011 13:27:23 -0400
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 6 Jun 2011 19:30:01 +0200
+CommitDate: Mon, 6 Jun 2011 19:47:20 +0200
 
-debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
+x86-64: Fix outdated comments in vsyscall_64.c
 
-Several debugging options currently default to y, such as
-CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.
-
-Embedded users might want to turn those options off to save space;
-however, turning them off requires turning on CONFIG_DEBUG_KERNEL to
-unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
-unhide debugging options, and CONFIG_EXPERT exists specifically
-to unhide options potentially needed by experts and/or embedded
-users, make CONFIG_EXPERT automatically imply CONFIG_DEBUG_KERNEL.
-
-Change various debugging options to only reference DEBUG_KERNEL,
-not EXPERT.
-
-Note that DEBUG_MEMORY_INIT defaulted to !EXPERT, which seemed
-wrong, since EXPERT should not directly affect anything except
-the availability of other options.  (And EXPERT definitely
-shouldn't mean "implicitly turn off default safety features".)
-
-Change it to default to y, which means that turning on EXPERT
-does not automatically disable it, but will provide the option
-to disable it.
-
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Cc: pageexec@freemail.hu
+Cc: Mikael Pettersson <mikpe@it.uu.se>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20110606165130.GA1844@leaf
+Link: http://lkml.kernel.org/r/ab1699caaea6c7863fb74abc2f5718353680070c.1307380481.git.luto@mit.edu
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/tile/Kconfig.debug |    2 +-
- init/Kconfig            |    2 ++
- lib/Kconfig.debug       |    6 +++---
- 3 files changed, 6 insertions(+), 4 deletions(-)
+ arch/x86/kernel/vsyscall_64.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/tile/Kconfig.debug b/arch/tile/Kconfig.debug
-index ddbfc33..afc9cf3 100644
---- a/arch/tile/Kconfig.debug
-+++ b/arch/tile/Kconfig.debug
-@@ -3,7 +3,7 @@ menu "Kernel hacking"
- source "lib/Kconfig.debug"
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 27d49b7..0b50b3c 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -11,10 +11,11 @@
+  *  vsyscalls. One vsyscall can reserve more than 1 slot to avoid
+  *  jumping out of line if necessary. We cannot add more with this
+  *  mechanism because older kernels won't return -ENOSYS.
+- *  If we want more than four we need a vDSO.
+  *
+- *  Note: the concept clashes with user mode linux. If you use UML and
+- *  want per guest time just set the kernel.vsyscall64 sysctl to 0.
++ *  This mechanism is deprecated in favor of the vDSO.
++ *
++ *  Note: the concept clashes with user mode linux.  UML users should
++ *  use the vDSO.
+  */
  
- config EARLY_PRINTK
--	bool "Early printk" if EXPERT && DEBUG_KERNEL
-+	bool "Early printk" if DEBUG_KERNEL
- 	default y
- 	help
- 	  Write kernel log output directly via the hypervisor console.
-diff --git a/init/Kconfig b/init/Kconfig
-index ebafac4..14370d3 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -909,6 +909,8 @@ config ANON_INODES
- 
- menuconfig EXPERT
- 	bool "Configure standard kernel features (expert users)"
-+	# Unhide debug options, to make the on-by-default options visible
-+	select DEBUG_KERNEL
- 	help
- 	  This option allows certain base kernel options and settings
-           to be disabled or tweaked. This is for specialized
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index dd373c8..b121413 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -694,7 +694,7 @@ config DEBUG_HIGHMEM
- 	  Disable for production systems.
- 
- config DEBUG_BUGVERBOSE
--	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
-+	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL
- 	depends on BUG
- 	depends on ARM || AVR32 || M32R || M68K || SPARC32 || SPARC64 || \
- 		   FRV || SUPERH || GENERIC_BUG || BLACKFIN || MN10300 || TILE
-@@ -766,8 +766,8 @@ config DEBUG_WRITECOUNT
- 	  If unsure, say N.
- 
- config DEBUG_MEMORY_INIT
--	bool "Debug memory initialisation" if EXPERT
--	default !EXPERT
-+	bool "Debug memory initialisation" if DEBUG_KERNEL
-+	default y
- 	help
- 	  Enable this for additional checks during memory initialisation.
- 	  The sanity checks verify aspects of the VM such as the memory model
+ /* Disable profiling for userspace code: */
