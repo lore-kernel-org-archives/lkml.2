@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758158Ab1FFWLQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:11:16 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:51511 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758139Ab1FFWLM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 18:11:12 -0400
-X-Originating-IP: 217.70.178.134
-X-Originating-IP: 131.252.246.56
-Date: Mon, 6 Jun 2011 15:11:01 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Jeff Dike <jdike@addtoit.com>, Andi Kleen <andi@firstfloor.org>,
-        Huang Ying <ying.huang@intel.com>, Li Wei <W.Li@Sun.COM>,
-        Michael Ellerman <michaele@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heicars2@linux.vnet.ibm.com>,
-        Martin Schwidefsky <mschwid2@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Disable CONFIG_CONSTRUCTORS when not needed by
- CONFIG_GCOV_KERNEL
-Message-ID: <20110606221101.GC1999@leaf>
-References: <20110605082100.GA18151@leaf>
- <4DECB261.5090109@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DECB261.5090109@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758088Ab1FFWSX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:18:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38897 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751772Ab1FFWSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 18:18:22 -0400
+Subject: Re: Seeing DMAR errors after multiple load/unload with SR-IOV
+From: Alex Williamson <alex.williamson@redhat.com>
+To: padmanabh ratnakar <pratnakarlx@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        iommu <iommu@lists.linux-foundation.org>, dwmw2@infradead.org
+Date: Mon, 06 Jun 2011 16:17:40 -0600
+In-Reply-To: <BANLkTi=q0f8aYc2+fhaY5yFRRfgkOOME-g@mail.gmail.com>
+References: <BANLkTi=q0f8aYc2+fhaY5yFRRfgkOOME-g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1307398661.5901.14.camel@x201>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 12:56:33PM +0200, Peter Oberparleiter wrote:
-> On 05.06.2011 10:21, Josh Triplett wrote:
-> >CONFIG_CONSTRUCTORS controls support for running constructor functions
-> >at kernel init time.  According to commit
-> >b99b87f70c7785ab1e253c6220f4b0b57ce3a7f7, gcov (CONFIG_GCOV_KERNEL)
-> >needs this.  However, CONFIG_CONSTRUCTORS currently defaults to y, with
-> >no option to disable it, and CONFIG_GCOV_KERNEL depends on it.  Instead,
-> >default it to n and have CONFIG_GCOV_KERNEL select it, so that the
-> >normal case of CONFIG_GCOV_KERNEL=n will result in
-> >CONFIG_CONSTRUCTORS=n.
-> >
-> >Observed in the short list of =y values in a minimal kernel
-> >configuration.
-> >
-> >Signed-off-by: Josh Triplett<josh@joshtriplett.org>
-> >---
+On Mon, 2011-06-06 at 14:39 +0530, padmanabh ratnakar wrote:
+> Hi,
+>         I am using linux kernel 2.6.39. I have a IBM x3650 M3 system.
+> I have used following boot options -
+> intel_iommu=on iommu=pt
 > 
-> I tested this patch and GCOV profiling still works with it applied.
-> To my knowledge, GCOV profiling is the only kernel mechanism using
-> GCC's constructors and this may save some bytes.
+> I was loading/unloading my NIC driver(be2net) with num_vfs=7.
 > 
-> Acked-by: Peter Oberparleiter <peter.oberparleiter@de.ibm.com>
+> After some iterations I get following DMAR errors -
+> Jun  4 03:50:20 rhel6 kernel: Uhhuh. NMI received for unknown reason
+> 2d on CPU 0.
+> Jun  4 03:50:20 rhel6 kernel: Do you have a strange power saving mode enabled?
+> Jun  4 03:50:20 rhel6 kernel: Dazed and confused, but trying to continue
+> Jun  4 03:50:20 rhel6 kernel: DRHD: handling fault status reg 2
+> Jun  4 03:50:20 rhel6 kernel: DMAR:[DMA Read] Request device [1a:00.2]
+> fault addr 78077000
+> Jun  4 03:50:20 rhel6 kernel: DMAR:[fault reason 02] Present bit in
+> context entry is clear
+> 
+> I was trying to debug this. I dont understand iommu code much.
+> The physical address belongs the printed PCI function and there should
+> not have been an error.
+> 
+> I am unable to see pci_dev(pdev) of VFs getting removed from
+> si_domain->devices list(intel-iommu.c)
+> when driver gets unloaded calling pci_disable_sriov() freeing VF pdevs.
+> Looks like issue happens when when freed pdev is allocated again and
+> as it is already in list,
+> required initializations dont happen.
+> 
+> I dont know if my understanding is correct. Can anyone point me to
+> what the issue may be?
 
-Excellent, thanks for testing and acking.
+Typically devices are removed from the domain via
+drivers/pci/intel-iommu.c:device_notifier(), which is called as the
+device is unbound from the driver.  However, this seems to get skipped
+when running in passthrough mode, so I'm not sure where that's supposed
+to occur.  Does it happen w/o passthrough?  Also note that some
+intel-iommu fixes have rolled into 3.0.0-rc2, you might want to update
+and see if anything is better there.  Thanks,
 
-What tree should this patch go through?
+Alex
 
-- Josh Triplett
