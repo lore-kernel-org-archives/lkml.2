@@ -1,42 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab1FFJQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:16:06 -0400
-Received: from linux-sh.org ([111.68.239.195]:37548 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754100Ab1FFJQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:16:03 -0400
-Date: Mon, 6 Jun 2011 18:15:57 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] fbdev fixes for 3.0-rc2
-Message-ID: <20110606091556.GG26101@linux-sh.org>
-References: <20110606033900.GF26101@linux-sh.org> <BANLkTik1nLG6f27JkR0kBvcJEoqUrq602A@mail.gmail.com>
+	id S1754158Ab1FFJSb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:18:31 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:10006 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab1FFJSa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 05:18:30 -0400
+Date: Mon, 6 Jun 2011 11:17:13 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-pcmcia@lists.infradead.org,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        "David S. Miller" <davem@davemloft.net>, Michael Buesch <mb@bu3sch.de>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Florian Fainelli <florian@openwrt.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] spi: reorganize drivers
+Message-ID: <20110606111713.2b801103@endymion.delvare>
+In-Reply-To: <201106061100.38249.arnd@arndb.de>
+References: <20110605071725.26517.11573.stgit@ponder>
+	<201106061100.38249.arnd@arndb.de>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTik1nLG6f27JkR0kBvcJEoqUrq602A@mail.gmail.com>
-User-Agent: Mutt/1.4.1i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 06:04:58PM +0900, Linus Torvalds wrote:
-> On Mon, Jun 6, 2011 at 12:39 PM, Paul Mundt <lethal@linux-sh.org> wrote:
-> >
-> > Bruno Pr??????????????????mont (1):
-> > ?? ?? ??video: Fix use-after-free by vga16fb on rmmod
+On Mon, 6 Jun 2011 11:00:38 +0200, Arnd Bergmann wrote:
+> On Sunday 05 June 2011, Grant Likely wrote:
+> >  rename drivers/spi/{omap2_mcspi.c => spi_omap2_mcspi.c} (100%)
+> >  rename drivers/spi/{omap_spi_100k.c => spi_omap_100k.c} (100%)
+> >  rename drivers/spi/{omap_uwire.c => spi_omap_uwire.c} (100%)
+> >  rename drivers/spi/{orion_spi.c => spi_orion.c} (100%)
+> >  rename drivers/spi/{amba-pl022.c => spi_pl022.c} (100%)
+> >  rename drivers/spi/{pxa2xx_spi.c => spi_pxa2xx.c} (100%)
+> >  rename drivers/spi/{pxa2xx_spi_pci.c => spi_pxa2xx_pci.c} (100%)
+> >  rename drivers/spi/{ti-ssp-spi.c => spi_ti_ssp.c} (100%)
+> >  rename drivers/spi/{tle62x0.c => spi_tle62x0.c} (100%)
+> >  rename drivers/spi/{xilinx_spi.c => spi_xilinx.c} (100%)
 > 
-> Do you even *look* at what you ask me to pull from you?
+> I recently looked at the directory structure in drivers/ and found a lot
+> of bus drivers with very few files, plus a few bus drivers with a lot
+> of files in them besides directories for non-bus specific subsystems.
 > 
-> Spend a bit of effort in not sending obviously bogus and corrupted
-> authorship patches. That one has Bruno's name correctly in the
-> sign-off, but you've done something horrible to it in the authorship.
+> I think it would be good to move them into a deeper directory drivers/bus/
+> if we have support from the maintainers, and it's probably better if we
+> only have to move the files once to reduce the amount of churn on the
+> MAINTAINERS file and any out of tree patches.
 > 
-That's how I got it from patchwork, so it looks like it was mangled
-already on the way in. I assumed it was just my console that was screwing
-it up, but it looks to be in a similar state in the list archives, too.
+> Specifically, I'd like to do these moves:
+> 
+> drivers/{ => bus}/amba
+> drivers/{ => bus}/dio
+> drivers/{ => bus}/eisa
+> drivers/{ => bus}/firewire
+> drivers/{ => bus}/i2c
+> drivers/{ => bus}/mca
+> drivers/{ => bus}/nubus
+> drivers/{ => bus}/pcmcia
+> drivers/{ => bus}/rapidio
+> drivers/{ => bus}/sbus
+> drivers/{ => bus}/spi
+> drivers/{ => bus}/ssb
+> drivers/{ => bus}/tc
+> drivers/{ => bus}/uwb
+> drivers/{ => bus}/virtio
+> drivers/{ => bus}/vlync
+> drivers/{ => bus}/w1
+> drivers/{ => bus}/zorro
+> 
+> This leaves out the two most common buses, USB and PCI, mostly because
+> the directories contain a lot of stuff that is not really bus code
+> but actual drivers. It does include i2c and spi, which stick out by
+> being a lot larger than most others.
+> 
+> Opinions? Move or don't move?
 
-In any event, I've fixed it up and pushed out a cleaned up version, sorry
-for the noise.
+No opinion, I just don't care.
+
+-- 
+Jean Delvare
