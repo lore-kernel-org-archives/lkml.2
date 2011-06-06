@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab1FFQWe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:22:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43346 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635Ab1FFQWd (ORCPT
+	id S1755274Ab1FFQYI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:24:08 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62210 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236Ab1FFQYF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:22:33 -0400
+	Mon, 6 Jun 2011 12:24:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=eD0DBWUWFmn82IwbgQ4aGf97Bw1Dwn9WNSXgKvkPGQFIPNCA2INYTp1BqoHFFw7SSb
-         5XSnnogTrQsDZ8oLUTn42g7iKBxIYGmYQzULuK+bS5YYxFbhwqRuhuuKqfOYMlZF0Sa+
-         Wn9pjQAIFW3c0KxcTsNfdNObQPEoNqGEt+1s4=
-Subject: Re: Change in functionality of futex() system call.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Zachary Vonler <zvonler@rgmadvisors.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1307376989.2322.171.camel@twins>
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
-	 <1307373819.3098.40.camel@edumazet-laptop>
-	 <1307376672.2322.167.camel@twins>  <1307376989.2322.171.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 18:22:29 +0200
-Message-ID: <1307377349.3098.65.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ecw+X3tVC0/If5+q4JNXPFpeGGAQeNOObNJfXi3gCODfvBW1eQ9HBVXvl217q3LdWH
+         thRfiguG9v6ww58xJjZYdnsu6bulZF37+cgWCFbEHI4GUOol5Oiiw+MhDF3E78vQWsxD
+         mvQcGB7Emfczx4HvaR+isCqDnQXVZzzxrjNo0=
+MIME-Version: 1.0
+In-Reply-To: <1307243793-31007-1-git-send-email-panweiping3@gmail.com>
+References: <19046.1307130148@death>
+	<1307243793-31007-1-git-send-email-panweiping3@gmail.com>
+Date: Tue, 7 Jun 2011 00:24:04 +0800
+Message-ID: <BANLkTi=9HbFEM0WxTX+gbiB8J37mW+PCUA@mail.gmail.com>
+Subject: Re: [PATCH net-next] bonding: make 802.3ad use update lacp_rate (v2)
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Weiping Pan <panweiping3@gmail.com>
+Cc: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        "open list:BONDING DRIVER" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 06 juin 2011 à 18:16 +0200, Peter Zijlstra a écrit :
+On Sun, Jun 5, 2011 at 11:16 AM, Weiping Pan <panweiping3@gmail.com> wrote:
+> There is a bug that when you modify lacp_rate via sysfs,
+> 802.3ad won't use the new value of lacp_rate to transmit packets.
+> That is because port->actor_oper_port_state isn't changed.
+>
+> Change Notes:
+> v2)
+> 1 Hold read_lock(&bond->lock) when iterate slaves, suggested by Jiri Pirko.
+> 2 Modify actor_oper_port_state via a helper function in bond_3ad.c,
+> suggested by Jay Vosburgh.
+> 3 Hold slave->state_machine_lock,
+> so we can modify port->actor_oper_port_state, no matter bond is up or down.
+>
+> Signed-off-by: Weiping Pan <panweiping3@gmail.com>
+> ---
+>  drivers/net/bonding/bond_3ad.c   |   27 +++++++++++++++++++++++++++
+>  drivers/net/bonding/bond_3ad.h   |    1 +
+>  drivers/net/bonding/bond_sysfs.c |    1 +
+>  3 files changed, 29 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
+> index c7537abc..5111e0d 100644
+> --- a/drivers/net/bonding/bond_3ad.c
+> +++ b/drivers/net/bonding/bond_3ad.c
+> @@ -2473,3 +2473,30 @@ void bond_3ad_lacpdu_recv(struct sk_buff *skb, struct bonding *bond,
+>        bond_3ad_rx_indication((struct lacpdu *) skb->data, slave, skb->len);
+>        read_unlock(&bond->lock);
+>  }
+> +
+> +/*
+> + * When modify lacp_rate parameter via sysfs,
+> + * update actor_oper_port_state of each port.
+> + *
+> + * Hold slave->state_machine_lock,
+> + * so we can modify port->actor_oper_port_state,
+> + * no matter bond is up or down.
+> + */
+> +void bond_3ad_update_lacp_rate(struct bonding *bond)
+> +{
+> +       int i;
+> +       struct slave *slave;
+> +       struct port *port = NULL;
+> +
+> +       read_lock(&bond->lock);
+> +       bond_for_each_slave(bond, slave, i) {
+> +               port = &(slave->ad_info.port);
 
-> Hmm, wouldn't that still be susceptible to the zero-page thing if: we
-> create a writable private file map of a sparse file, touch a page and
-> then remap the thing RO?
-> 
-> 
-> 
+Please use SLAVE_AD_INFO().
 
-Also I am not sure how MAP_PRIVATE could be affected. If we still try a
-RW gup()... It will allocate a page for us, instead of still pointing to
-shared one.
+Other than this, it looks good to me,
 
-On previous kernel, the application using read-only mapping could use
-MAP_PRIVATE or MAP_SHARED with same 'behavior'
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-
+Thanks!
