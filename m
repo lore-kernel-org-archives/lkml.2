@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab1FFMRP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 08:17:15 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:59464 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab1FFMRN (ORCPT
+	id S1756552Ab1FFMXa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 08:23:30 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:44308 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754357Ab1FFMX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 08:17:13 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h8e3h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Mon, 6 Jun 2011 20:22:19 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Shawn Guo <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@secretlab.ca>, <arnd@arndb.de>, <olof@lixom.net>,
-        <kernel@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>,
-        <patches@linaro.org>
-Subject: Re: [PATCH v4 0/2] Move plat-mxc gpio driver into drivers/gpio
-Message-ID: <20110606122219.GC21204@S2100-06.ap.freescale.net>
-References: <1307290075-7062-1-git-send-email-shawn.guo@linaro.org>
- <20110606085051.GA23771@pengutronix.de>
+	Mon, 6 Jun 2011 08:23:28 -0400
+X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h8JiYXs/HrEl2yUn8V3w==
+X-RZG-CLASS-ID: mo05
+Message-ID: <4DECC6B4.5020108@samba.org>
+Date: Mon, 06 Jun 2011 14:23:16 +0200
+From: "Stefan (metze) Metzmacher" <metze@samba.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110606085051.GA23771@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+To: David Miller <davem@davemloft.net>
+CC: oliver@neukum.name, gregkh@suse.de, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usbnet/cdc_ncm: add missing .reset_resume hook
+References: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E568@EXDCVYMBSTM006.EQ1STM.local>	<1306929701-22861-1-git-send-email-metze@samba.org>	<1306929701-22861-2-git-send-email-metze@samba.org> <20110601.211142.557328157396419857.davem@davemloft.net>
+In-Reply-To: <20110601.211142.557328157396419857.davem@davemloft.net>
+X-Enigmail-Version: 1.1.2
+OpenPGP: id=0E53083F
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig9604938BF97759CABEE2856C"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 10:50:51AM +0200, Sascha Hauer wrote:
-> On Mon, Jun 06, 2011 at 12:07:53AM +0800, Shawn Guo wrote:
-> > The patch set moves plat-mxc gpio driver into drivers/gpio, and
-> > migrates mach-imx and mach-mx5 to the new driver.
-> > 
-> > Changes since v3:
-> >  * Reorganize the patch set per Grant's comments
-> > 
-> > Shawn Guo (2):
-> >       gpio/mxc: Move Freescale MXC gpio driver to drivers/gpio
-> >       gpio/mxc: Change gpio-mxc into an upstanding gpio driver
-> > 
-> >  arch/arm/plat-mxc/include/mach/common.h            |   12 +-
-> >  arch/arm/plat-mxc/include/mach/devices-common.h    |    2 +
-> >  arch/arm/plat-mxc/include/mach/gpio.h              |   27 ---
-> >  drivers/gpio/Kconfig                               |    4 +
-> >  drivers/gpio/Makefile                              |    1 +
-> >  .../arm/plat-mxc/gpio.c => drivers/gpio/gpio-mxc.c |  217 +++++++++++++-------
-> 
-> While at renaming I'd prefer naming this file gpio-imx.c. We currently
-> have inconsistent naming between mxc vs. imx and I'd like to get rid
-> of the former.
-> 
-It's not just a file name.  The "mxc" is embedded in the variable
-and function name all over the driver.  I would currently keep it as
-it is for the reasons below.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig9604938BF97759CABEE2856C
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
- * The driver was moved out from plat-mxc, so naturally the name
-   gpio-mxc is picked.
+Hi David,
 
- * Changing name to gpio-imx would require replace all "mxc" with
-   "imx" all over the file, IMO.  This makes the diff of the patch
-   look complex.
+> From: Stefan Metzmacher <metze@samba.org>
+> Date: Wed,  1 Jun 2011 14:01:41 +0200
+>=20
+>> This avoids messages like this after suspend:
+>>
+>>    cdc_ncm 2-1.4:1.6: no reset_resume for driver cdc_ncm?
+>>    cdc_ncm 2-1.4:1.7: no reset_resume for driver cdc_ncm?
+>>    cdc_ncm 2-1.4:1.6: usb0: unregister 'cdc_ncm' usb-0000:00:1d.0-1.4,=
+ CDC NCM
+>>
+>> This is important for the Ericsson F5521gw GSM/UMTS modem.
+>> Otherwise modemmanager looses the fact that the cdc_ncm and cdc_acm de=
+vices
+>> belong together.
+>>
+>> The cdc_ether module does the same.
+>>
+>> Signed-off-by: Stefan Metzmacher <metze@samba.org>
+>=20
+> Applied and queued up for -stable, thanks.
 
- * i.MX23 and i.MX28 are also part of imx family, but architecture
-   name "imx" does not cover it.  Taking "mxs" as the architecture name 
-   for i.MX23 and i.MX28, "mxc" stands well what it stands right now.
+It seems to be part of 3.0-rc2, but I'm not seeing it in any stable tree
+yet...
 
-I would start renaming the driver with another patch, probably when
-I see mach-mx5 start getting merged into mach-imx and plat-mxc renamed
-to plat-imx.
+When can I expect it in stable trees like 2.6.38.y?
 
--- 
-Regards,
-Shawn
+metze
 
+
+--------------enig9604938BF97759CABEE2856C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk3sxrcACgkQm70gjA5TCD8utQCgjasCJ5x8pTFcoc900VckFHQj
+LQQAn2hIj/Ip/PK89y7lT4Fh26mb5WTw
+=oKTy
+-----END PGP SIGNATURE-----
+
+--------------enig9604938BF97759CABEE2856C--
