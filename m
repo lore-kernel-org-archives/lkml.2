@@ -1,105 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab1FFJ3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:29:13 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:32799 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751977Ab1FFJ3M (ORCPT
+	id S1755348Ab1FFJbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:31:11 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:56479 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754804Ab1FFJbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:29:12 -0400
-Subject: Re: [PATCH] spi: reorganize drivers
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        linux-pcmcia@lists.infradead.org,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        "David S. Miller" <davem@davemloft.net>, Michael Buesch <mb@bu3sch.de>,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Florian Fainelli <florian@openwrt.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-In-Reply-To: <201106061100.38249.arnd@arndb.de>
-References: <20110605071725.26517.11573.stgit@ponder>
-	 <201106061100.38249.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 18:29:07 +0900
-Message-ID: <1307352547.7586.6.camel@mulgrave.site>
+	Mon, 6 Jun 2011 05:31:05 -0400
+Date: Mon, 6 Jun 2011 11:31:02 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andy Lutomirski <luto@mit.edu>, Ingo Molnar <mingo@elte.hu>,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+Message-ID: <20110606093102.GW27166@one.firstfloor.org>
+References: <cover.1307292171.git.luto@mit.edu> <4de62bfbf6974f14d0e9d9ae37cc137dbc926a30.1307292171.git.luto@mit.edu> <BANLkTimrhO8QfBqQsH_Q13ghRH2P+ZP7AA@mail.gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimrhO8QfBqQsH_Q13ghRH2P+ZP7AA@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-06 at 11:00 +0200, Arnd Bergmann wrote:
-> On Sunday 05 June 2011, Grant Likely wrote:
-> >  rename drivers/spi/{omap2_mcspi.c => spi_omap2_mcspi.c} (100%)
-> >  rename drivers/spi/{omap_spi_100k.c => spi_omap_100k.c} (100%)
-> >  rename drivers/spi/{omap_uwire.c => spi_omap_uwire.c} (100%)
-> >  rename drivers/spi/{orion_spi.c => spi_orion.c} (100%)
-> >  rename drivers/spi/{amba-pl022.c => spi_pl022.c} (100%)
-> >  rename drivers/spi/{pxa2xx_spi.c => spi_pxa2xx.c} (100%)
-> >  rename drivers/spi/{pxa2xx_spi_pci.c => spi_pxa2xx_pci.c} (100%)
-> >  rename drivers/spi/{ti-ssp-spi.c => spi_ti_ssp.c} (100%)
-> >  rename drivers/spi/{tle62x0.c => spi_tle62x0.c} (100%)
-> >  rename drivers/spi/{xilinx_spi.c => spi_xilinx.c} (100%)
+On Mon, Jun 06, 2011 at 05:46:41PM +0900, Linus Torvalds wrote:
+> On Mon, Jun 6, 2011 at 2:50 AM, Andy Lutomirski <luto@mit.edu> wrote:
+> > CONFIG_UNSAFE_VSYSCALLS was added in the previous patch as a
+> > temporary hack to avoid penalizing users who don't build glibc from
+> > git.
 > 
-> I recently looked at the directory structure in drivers/ and found a lot
-> of bus drivers with very few files, plus a few bus drivers with a lot
-> of files in them besides directories for non-bus specific subsystems.
+> I really hate that name.
 > 
-> I think it would be good to move them into a deeper directory drivers/bus/
-> if we have support from the maintainers, and it's probably better if we
-> only have to move the files once to reduce the amount of churn on the
-> MAINTAINERS file and any out of tree patches.
+> Do you have *any* reason to call this "unsafe"?
 > 
-> Specifically, I'd like to do these moves:
-> 
-> drivers/{ => bus}/amba
-> drivers/{ => bus}/dio
-> drivers/{ => bus}/eisa
-> drivers/{ => bus}/firewire
-> drivers/{ => bus}/i2c
-> drivers/{ => bus}/mca
-> drivers/{ => bus}/nubus
-> drivers/{ => bus}/pcmcia
-> drivers/{ => bus}/rapidio
-> drivers/{ => bus}/sbus
-> drivers/{ => bus}/spi
-> drivers/{ => bus}/ssb
-> drivers/{ => bus}/tc
-> drivers/{ => bus}/uwb
-> drivers/{ => bus}/virtio
-> drivers/{ => bus}/vlync
-> drivers/{ => bus}/w1
-> drivers/{ => bus}/zorro
-> 
-> This leaves out the two most common buses, USB and PCI, mostly because
-> the directories contain a lot of stuff that is not really bus code
-> but actual drivers. It does include i2c and spi, which stick out by
-> being a lot larger than most others.
-> 
-> Opinions? Move or don't move?
+> Seriously. The whole patch series just seems annoying.
 
-I'd say it only makes sense if we do it for all busses ... so USB and
-PCI would have to move too.  Logically, the bus code should move and we
-should be left with the drivers in both of those directories.  I'd also
-say that we don't have to deepen the tree: /bus would be fine.  That
-way, /drivers/<bus> would be only for <bus> specific drivers, with non
-bus specific drivers we just group them by function as now.
+and assumes everyone is using glibc which is just wrong.
 
-What about the half busses (like SCSI)?
+-Andi
 
-Finally, is there any real point (other than we can do it)?  what is
-actually helped by having the bus code obviously separated from the
-driver code (assuming we sort out what is bus and what is driver)?
-
-James
-
-
+-- 
+ak@linux.intel.com -- Speaking for myself only.
