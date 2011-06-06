@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab1FFVGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 17:06:08 -0400
-Received: from outmail007.snc4.facebook.com ([66.220.144.139]:36213 "EHLO
-	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750919Ab1FFVGH (ORCPT
+	id S1755098Ab1FFVID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 17:08:03 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:45383 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754042Ab1FFVH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 17:06:07 -0400
-Message-ID: <4DED4160.4010403@fb.com>
-Date: Mon, 06 Jun 2011 14:06:40 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        David Miller <davem@davemloft.net>, Andrew Morton <akpm@osdl.org>
-Subject: Re: [PATCH 1/3] atomic: use <linux/atomic.h>
-References: <1307381251-15729-1-git-send-email-asharma@fb.com> <1307393746.2642.26.camel@edumazet-laptop>
-In-Reply-To: <1307393746.2642.26.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Jun 2011 17:07:59 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX193oVQNMKN3jUc/Dm3/kHwBQDNatO8Xru4r9vNXO+
+	0HWydIa2b+nLFz
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Huewe <peterhuewe@gmx.de>, Jan Glauber <jang@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Frank Blaschka <frank.blaschka@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 1/2] s390/sclp_async: Use kstrtoul_from_user
+Date: Mon,  6 Jun 2011 23:07:53 +0200
+Message-Id: <1307394474-747-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.3.4
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/6/11 1:55 PM, Eric Dumazet wrote:
+This patch replaces the code for getting an unsigned long from a
+userspace buffer by a simple call to kstroul_from_user.
+This makes it easier to read and less error prone.
 
-> OK, you moved atomic_inc_not_zero() into include/linux/atomic.h without
-> telling so in Changelog.
->
-> Reviewed-by: Eric Dumazet<eric.dumazet@gmail.com>
->
+Kernel Version: v3.0-rc2
 
-Thanks for the review. I amended the commit message as follows:
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/s390/char/sclp_async.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
-commit 283188caee98f9c106ee943374589571939ca75a
-Author: Arun Sharma <asharma@fb.com>
-Date:   Tue May 31 11:11:10 2011 -0700
+diff --git a/drivers/s390/char/sclp_async.c b/drivers/s390/char/sclp_async.c
+index 7ad30e7..012d1a8 100644
+--- a/drivers/s390/char/sclp_async.c
++++ b/drivers/s390/char/sclp_async.c
+@@ -82,12 +82,10 @@ static int proc_handler_callhome(struct ctl_table *ctl, int write,
+ 			return -EFAULT;
+ 	} else {
+ 		len = *count;
+-		rc = copy_from_user(buf, buffer, sizeof(buf));
+-		if (rc != 0)
+-			return -EFAULT;
+-		buf[sizeof(buf) - 1] = '\0';
+-		if (strict_strtoul(buf, 0, &val) != 0)
+-			return -EINVAL;
++		rc = kstrtoul_from_user(buffer, len, 0, &val);
++		if (rc)
++			return rc;
++
+ 		if (val != 0 && val != 1)
+ 			return -EINVAL;
+ 		callhome_enabled = val;
+-- 
+1.7.3.4
 
-     atomic: use <linux/atomic.h>
-
-     This allows us to move duplicated code in <asm/atomic.h>
-     (atomic_inc_not_zero() for now) to <linux/atomic.h>
-
-     More cleanup patches to follow.
-
-  -Arun
