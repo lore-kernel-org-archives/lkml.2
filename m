@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab1FFUUZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 16:20:25 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:26493 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956Ab1FFUUY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 16:20:24 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-127.messagelabs.com!1307391608!21640262!11
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.72]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] seq_file.h: introduce DECLARE_SEQ_FOPS_{RO,RW}
-Date: Mon, 6 Jun 2011 13:19:45 -0700
-User-Agent: KMail/1.9.9
+	id S1757952Ab1FFUWB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 16:22:01 -0400
+Received: from home.keithp.com ([63.227.221.253]:54419 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756081Ab1FFUWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 16:22:00 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Melchior FRANZ <melchior.franz@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Nick Bowler <nbowler@elliptictech.com>, dri-devel@lists.freedesktop.org,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Regression: Borked display on second output with Intel G45 in 3.0-rc2
+In-Reply-To: <201106061920.07144@rk-nord.at>
+References: <20110606171253.GA2925@elliptictech.com> <201106061920.07144@rk-nord.at>
+User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 06 Jun 2011 13:21:53 -0700
+Message-ID: <yunaadu1zj2.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201106061319.45855.hartleys@visionengravers.com>
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many of the procfs and debugfs attribute file_operations in the kernel are
-missing the .owner information. Introduce some macro's to fill in the .owner
-field as well as the common methods for virtual file file_operations.  This
-simplifies creating the attributes and makes sure all the fields are properly
-initialized.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+On Mon, 6 Jun 2011 19:20:06 +0200, Melchior FRANZ <melchior.franz@gmail.com=
+> wrote:
 
----
+> That's apparently the bug that I've submitted a patch for on 2011/5/31:
+> https://lkml.org/lkml/2011/5/31/393
+> I assume/hope it's still in someone's queue.
 
-diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-index 03c0232..6a1f991 100644
---- a/include/linux/seq_file.h
-+++ b/include/linux/seq_file.h
-@@ -153,4 +153,28 @@ extern struct hlist_node *seq_hlist_start_head_rcu(struct hlist_head *head,
- extern struct hlist_node *seq_hlist_next_rcu(void *v,
- 						   struct hlist_head *head,
- 						   loff_t *ppos);
-+
-+/*
-+ * virtual filesystem attribute files
-+ */
-+
-+#define DECLARE_SEQ_FOPS_RO(name)			\
-+static const struct file_operations name##_fops = {	\
-+	.owner		= THIS_MODULE,			\
-+	.llseek		= seq_lseek,			\
-+	.read		= seq_read,			\
-+	.open		= name##_open,			\
-+	.release	= single_release,		\
-+}
-+
-+#define DECLARE_SEQ_FOPS_RW(name)			\
-+static const struct file_operations name##_fops = {	\
-+	.owner		= THIS_MODULE,			\
-+	.llseek		= seq_lseek,			\
-+	.read		= seq_read,			\
-+	.write		= name##_write,			\
-+	.open		= name##_open,			\
-+	.release	= single_release,		\
-+}
-+
- #endif
+Yeah, we "shouldn't" need to call intel_enable_plane from
+i9xx_crtc_mode_set as it is called immediately afterwards from
+i9xx_crtc_enable.
+
+In any case, there's a bogus call in ironlake_crtc_mode_set which
+clearly belongs in i9xx_crtc_mode_set:
+
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/in=
+tel_display.c
+index 81a9059..aa43e7b 100644
+=2D-- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -4687,6 +4687,7 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
+=20
+ 	I915_WRITE(DSPCNTR(plane), dspcntr);
+ 	POSTING_READ(DSPCNTR(plane));
++	intel_enable_plane(dev_priv, plane, pipe);
+=20
+ 	ret =3D intel_pipe_set_base(crtc, x, y, old_fb);
+=20
+@@ -5217,8 +5218,6 @@ static int ironlake_crtc_mode_set(struct drm_crtc *cr=
+tc,
+=20
+ 	I915_WRITE(DSPCNTR(plane), dspcntr);
+ 	POSTING_READ(DSPCNTR(plane));
+=2D	if (!HAS_PCH_SPLIT(dev))
+=2D		intel_enable_plane(dev_priv, plane, pipe);
+=20
+ 	ret =3D intel_pipe_set_base(crtc, x, y, old_fb);
+=20
+We need to figure out why this call (in i9xx_crtc_mode_set) is required,
+but that will require finding hardware that reproduces the bug and
+fixing it there.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFN7TbhQp8BWwlsTdMRAiqQAJ40Tr4L6/tmo4ZuU3LVsgXKNUIbtACdGugo
+jz46IpDmn9W4nes7VP/09hc=
+=bZY2
+-----END PGP SIGNATURE-----
+--=-=-=--
