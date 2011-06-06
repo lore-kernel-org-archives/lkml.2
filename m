@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab1FFK3M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 06:29:12 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:35390 "EHLO
+	id S1755191Ab1FFK3X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 06:29:23 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:35399 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750998Ab1FFK3I (ORCPT
+	by vger.kernel.org with ESMTP id S1754416Ab1FFK3L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 06:29:08 -0400
-Date: Mon, 6 Jun 2011 12:29:06 +0200
+	Mon, 6 Jun 2011 06:29:11 -0400
+Date: Mon, 6 Jun 2011 12:29:10 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Frank Rowand <frank.rowand@am.sony.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [BUG] "sched: Remove rq->lock from the first half of ttwu()"
-	locks up on ARM
-Message-ID: <20110606102905.GB5820@atrey.karlin.mff.cuni.cz>
-References: <BANLkTi=XbTXQsu3jUEvQyCfBy6-aRnqSpw@mail.gmail.com> <1306405979.1200.63.camel@twins> <1306407759.27474.207.camel@e102391-lin.cambridge.arm.com> <1306409575.1200.71.camel@twins> <1306412511.1200.90.camel@twins> <20110526122623.GA11875@elte.hu> <20110526123137.GG24876@n2100.arm.linux.org.uk> <20110526125007.GA27083@elte.hu> <BANLkTinUZ7EwN_nBCi_RQ9u8-LBcr_A74g@mail.gmail.com> <20110527120629.GA32617@elte.hu>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@suse.de>, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com
+Subject: Re: [PATCH v5] PM / Core: suspend_again callback for suspend_ops.
+Message-ID: <20110606102909.GC5820@atrey.karlin.mff.cuni.cz>
+References: <1306999978-4663-1-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110527120629.GA32617@elte.hu>
+In-Reply-To: <1306999978-4663-1-git-send-email-myungjoo.ham@samsung.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+> A system or a device may need to control suspend/wakeup events. It may
+> want to wakeup the system after a predefined amount of time or at a
+> predefined event decided while entering suspend for polling or delayed
+> work. Then, it may want to enter suspend again if its predefined wakeup
+> condition is the only wakeup reason and there is no outstanding events;
+> thus, it does not wakeup the userspace unnecessary or unnecessary
+> devices and keeps suspended as long as possible (saving the power).
+> 
+> Enabling a system to wakeup after a specified time can be easily
+> achieved by using RTC. However, to enter suspend again immediately
+> without invoking userland and unrelated devices, we need additional
+> features in the suspend framework.
+> 
+> Such need comes from:
+> 
+> 1. Monitoring a critical device status without interrupts that can
+> wakeup the system. (in-suspend polling)
+>  An example is ambient temperature monitoring that needs to shut down
+> the system or a specific device function if it is too hot or cold. The
+> temperature of a specific device may be needed to be monitored as well;
+> e.g., a charger monitors battery temperature in order to stop charging
+> if overheated.
+> 
+> 2. Execute critical "delayed work" at suspend.
+>  A driver or a system/board may have a delayed work (or any similar
+> things) that it wants to execute at the requested time.
+>  For example, some chargers want to check the battery voltage some
+> time (e.g., 30 seconds) after the battery is fully charged and the
+> charger has stopped. Then, the charger restarts charging if the voltage
+> has dropped more than a threshold, which is smaller than "restart-charger"
+> voltage, which is a threshold to restart charging regardless of the
+> time passed.
+> 
+> This patch allows to add "suspend_again" callback at struct
+> platform_suspend_ops and let the "suspend_again" callback return true if
+> the system is required to enter suspend again after the current instance
+> of wakeup. Device-wise suspend_again implemented at dev_pm_ops or
+> syscore is not done because: a) suspend_again feature is usually under
+> platform-wise decision and controls the behavior of the whole platform
+> and b) There are very limited devices related to the usage cases of
+> suspend_again; chargers and temperature sensors are mentioned so far.
+> 
+> With suspend_again callback registered at struct platform_suspend_ops
+> suspend_ops in kernel/power/suspend.c with suspend_set_ops by the
+> platform, the suspend framework tries to enter suspend again by
+> looping suspend_enter() if suspend_again has returned true and there has
+> been no errors in the suspending sequence or pending wakeups (by
+> pm_wakeup_pending).
+> 
+> Tested at Exynos4-NURI.
+> 
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-> The expectations are to have irqs off (we are holding the runqueue 
-> lock if !__ARCH_WANT_INTERRUPTS_ON_CTXSW), so that's not workable i 
-> suspect.
-> 
-> But in theory we could drop the rq lock and restart the scheduler 
-> task-pick and balancing sequence when the ARM TLB tag rolls over. So 
-> instead of this fragile and assymetric method we'd have a 
-> straightforward retry-in-rare-cases method.
-> 
-> That means some modifications to switch_mm() but should be solvable.
-> 
-> That would make ARM special only in so far that it's one of the few 
-> architectures that signal 'retry task pickup' via switch_mm() - it 
-> would use the stock scheduler otherwise and we could remove 
-> __ARCH_WANT_INTERRUPTS_ON_CTXSW and perhaps even 
-> __ARCH_WANT_UNLOCKED_CTXSW altogether.
-> 
-> I'd suggest doing this once modern ARM chips get so widespread that 
-> you can realistically induce a ~700 usecs irqs-off delays on old, 
-> virtual-cache ARM chips. Old chips would likely use old kernels 
-> anyway, right?
-
-Not really. Equivalent machines (400g) with new chips do not exist, so
-many people are stuck with Sharp Zaurus, and track latest kernels,
-because support is actually improving there.
-
-(And yes, I'd like to keep using bluetooth CF card with 16550-style
-chip.)
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+ACK.
