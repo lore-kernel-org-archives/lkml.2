@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab1FFJBv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:01:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:58908 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043Ab1FFJBu (ORCPT
+	id S1753780Ab1FFJCR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:02:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50524 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752663Ab1FFJCP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:01:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-pcmcia@lists.infradead.org,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        "David S. Miller" <davem@davemloft.net>, Michael Buesch <mb@bu3sch.de>,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Florian Fainelli <florian@openwrt.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH] spi: reorganize drivers
-Date: Mon, 6 Jun 2011 11:00:38 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-References: <20110605071725.26517.11573.stgit@ponder>
-In-Reply-To: <20110605071725.26517.11573.stgit@ponder>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106061100.38249.arnd@arndb.de>
-X-Provags-ID: V02:K0:fpyC304fwcIaIkkYiuBNPzK42FLyFUr6L0Nbg0WWcXt
- OHH8FiATmdQ91DZvK/L327hf46obTHtuKQ+Ku4nlhSplVyUORi
- D/m6l1y7d9gU/44fbg7fm2IBhkI2YR93Tp1/xgw/Ym9wdW/DTI
- QaPYZqNeYSO+/9CxaVbigHq3mVS2gXXSWrySMt1istjOz1tRtl
- UuWGXNI/7kvj+8EDGVZvg==
+	Mon, 6 Jun 2011 05:02:15 -0400
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arne Jansen <lists@die-jansens.de>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <4DEBE3DF.70104@die-jansens.de>
+References: <20110605151323.GA30590@elte.hu>
+	 <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu>
+	 <4DEBA9CC.4090503@die-jansens.de> <4DEBB05C.8090506@die-jansens.de>
+	 <4DEBB3DA.8060001@die-jansens.de> <20110605172052.GA1036@elte.hu>
+	 <4DEBBFF9.2030101@die-jansens.de> <20110605185957.GA3452@elte.hu>
+	 <4DEBD95B.6030901@die-jansens.de> <20110605194419.GA12965@elte.hu>
+	 <4DEBE3DF.70104@die-jansens.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 06 Jun 2011 11:01:49 +0200
+Message-ID: <1307350909.2353.7408.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 05 June 2011, Grant Likely wrote:
->  rename drivers/spi/{omap2_mcspi.c => spi_omap2_mcspi.c} (100%)
->  rename drivers/spi/{omap_spi_100k.c => spi_omap_100k.c} (100%)
->  rename drivers/spi/{omap_uwire.c => spi_omap_uwire.c} (100%)
->  rename drivers/spi/{orion_spi.c => spi_orion.c} (100%)
->  rename drivers/spi/{amba-pl022.c => spi_pl022.c} (100%)
->  rename drivers/spi/{pxa2xx_spi.c => spi_pxa2xx.c} (100%)
->  rename drivers/spi/{pxa2xx_spi_pci.c => spi_pxa2xx_pci.c} (100%)
->  rename drivers/spi/{ti-ssp-spi.c => spi_ti_ssp.c} (100%)
->  rename drivers/spi/{tle62x0.c => spi_tle62x0.c} (100%)
->  rename drivers/spi/{xilinx_spi.c => spi_xilinx.c} (100%)
+On Sun, 2011-06-05 at 22:15 +0200, Arne Jansen wrote:
+> 
+> Can lockdep just get confused by the lockdep_off/on calls in printk
+> while scheduling is allowed? There aren't many users of lockdep_off().
 
-I recently looked at the directory structure in drivers/ and found a lot
-of bus drivers with very few files, plus a few bus drivers with a lot
-of files in them besides directories for non-bus specific subsystems.
+Yes!, in that case lock_is_held() returns false, triggering the warning.
+I guess there's an argument to be made in favour of the below..
 
-I think it would be good to move them into a deeper directory drivers/bus/
-if we have support from the maintainers, and it's probably better if we
-only have to move the files once to reduce the amount of churn on the
-MAINTAINERS file and any out of tree patches.
+---
+ kernel/lockdep.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Specifically, I'd like to do these moves:
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 53a6895..e4129cf 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -3242,7 +3242,7 @@ int lock_is_held(struct lockdep_map *lock)
+ 	int ret = 0;
+ 
+ 	if (unlikely(current->lockdep_recursion))
+-		return ret;
++		return 1; /* avoid false negative lockdep_assert_held */
+ 
+ 	raw_local_irq_save(flags);
+ 	check_flags(flags);
 
-drivers/{ => bus}/amba
-drivers/{ => bus}/dio
-drivers/{ => bus}/eisa
-drivers/{ => bus}/firewire
-drivers/{ => bus}/i2c
-drivers/{ => bus}/mca
-drivers/{ => bus}/nubus
-drivers/{ => bus}/pcmcia
-drivers/{ => bus}/rapidio
-drivers/{ => bus}/sbus
-drivers/{ => bus}/spi
-drivers/{ => bus}/ssb
-drivers/{ => bus}/tc
-drivers/{ => bus}/uwb
-drivers/{ => bus}/virtio
-drivers/{ => bus}/vlync
-drivers/{ => bus}/w1
-drivers/{ => bus}/zorro
-
-This leaves out the two most common buses, USB and PCI, mostly because
-the directories contain a lot of stuff that is not really bus code
-but actual drivers. It does include i2c and spi, which stick out by
-being a lot larger than most others.
-
-Opinions? Move or don't move?
-
-	Arnd
