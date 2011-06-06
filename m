@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab1FFQ1j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:27:39 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:49491
-	"EHLO CH1EHSOBE015.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751199Ab1FFQ1g (ORCPT
+	id S1755189Ab1FFQ3z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:29:55 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52850 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199Ab1FFQ3w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:27:36 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h8e3h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4DECFFF3.6060601@freescale.com>
-Date: Mon, 6 Jun 2011 11:27:31 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Deepak Saxena <dsaxena@linaro.org>, <kumar.gala@freescale.com>,
-        <benh@kernel.crashing.org>, <greg@kroah.com>, <akpm@kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <linux-console@vger.kernel.org>, Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
- management driver
-References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106061803.58531.arnd@arndb.de> <4DECFBC5.6070205@freescale.com> <201106061824.53844.arnd@arndb.de>
-In-Reply-To: <201106061824.53844.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+	Mon, 6 Jun 2011 12:29:52 -0400
+Subject: Re: Change in functionality of futex() system call.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Zachary Vonler <zvonler@rgmadvisors.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1307377349.3098.65.camel@edumazet-laptop>
+References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
+	 <1307373819.3098.40.camel@edumazet-laptop>
+	 <1307376672.2322.167.camel@twins>  <1307376989.2322.171.camel@twins>
+	 <1307377349.3098.65.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 06 Jun 2011 18:29:42 +0200
+Message-ID: <1307377782.2322.183.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> I have no doubt that more of these will come. Chris Metcalf is currently
-> looking for a home for his tilera hypervisor drivers, and we have the
-> microsoft hyperv drivers in drivers/staging, so they will hopefully
-> move to a proper place later. We also have similar drivers in other
-> places, e.g. drivers/ps3/ps3-sys-manager.c, drivers/s390/char/vmcp.c
-> or parts of drivers/xen.
+On Mon, 2011-06-06 at 18:22 +0200, Eric Dumazet wrote:
+> Le lundi 06 juin 2011 à 18:16 +0200, Peter Zijlstra a écrit :
+> 
+> > Hmm, wouldn't that still be susceptible to the zero-page thing if: we
+> > create a writable private file map of a sparse file, touch a page and
+> > then remap the thing RO?
+> > 
+> > 
+> > 
+> 
+> Also I am not sure how MAP_PRIVATE could be affected. If we still try a
+> RW gup()... It will allocate a page for us, instead of still pointing to
+> shared one.
+> 
+> On previous kernel, the application using read-only mapping could use
+> MAP_PRIVATE or MAP_SHARED with same 'behavior'
 
-Alright, drivers/virt it is.  I'll post a v4 once everyone else has had a chance
-to comment on v3.
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+But by not forcing the COW you get different behaviour depending on when
+you call FUTEX_WAIT, surely that's not correct either?
