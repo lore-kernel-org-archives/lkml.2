@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab1FFGJx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 02:09:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58445 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751703Ab1FFGJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 02:09:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,325,1304319600"; 
-   d="scan'208";a="9861329"
-Subject: Re: [PATCH 1/3] dmaengine: add new dma API for max_segment_number
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>, dan.j.williams@intel.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org
-In-Reply-To: <20110602055614.GA18508@S2100-06.ap.freescale.net>
-References: <1306391493-29425-1-git-send-email-shawn.guo@linaro.org>
-	 <1306914144.10976.4.camel@vkoul-udesk3>
-	 <20110602055614.GA18508@S2100-06.ap.freescale.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 11:05:01 +0530
-Message-ID: <1307338501.10976.77.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752667Ab1FFFhW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 01:37:22 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:38545 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424Ab1FFFhS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 01:37:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=rTVhuf1pa4e0+HsnBwm8afXZnk3qbQ7JwGRHZx6gbUZgejU9usbZPiNC4C+3wELhzs
+         qiKd9vW+5+Y4w1Ez8htg==
+Date: Sun, 5 Jun 2011 22:37:08 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Christoph Hellwig <hch@infradead.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 3/14] tmpfs: take control of its truncate_range
+In-Reply-To: <20110603051609.GC16721@infradead.org>
+Message-ID: <alpine.LSU.2.00.1106052206260.17330@sister.anvils>
+References: <alpine.LSU.2.00.1105301726180.5482@sister.anvils> <alpine.LSU.2.00.1105301737040.5482@sister.anvils> <20110601003942.GB4433@infradead.org> <alpine.LSU.2.00.1106010940590.23468@sister.anvils> <20110603051609.GC16721@infradead.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-02 at 13:56 +0800, Shawn Guo wrote:
-> On Wed, Jun 01, 2011 at 01:12:24PM +0530, Koul, Vinod wrote:
-> > On Thu, 2011-05-26 at 14:31 +0800, Shawn Guo wrote:
-> > > Like dma_set(get)_max_seg_size for max_segment_size, the patch adds
-> > > max_segment_number into device_dma_parameters and creates the
-> > > corresponding dmaengine API dma_set(get)_max_seg_number for it.
-> > > 
-> > > Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> > > ---
-> > >  include/linux/device.h      |    1 +
-> > >  include/linux/dma-mapping.h |   15 +++++++++++++++
-> > >  2 files changed, 16 insertions(+), 0 deletions(-)
-> > Can you explain me why this change is required, the patch description
-> > isn't helping for this.
-> > 
-> > If you satisfy me with above then I am okay with it, but I need ACK from
-> > Dan before applying...
-> > 
-> I recently saw you people are trying to sort out the slave dma api
-> document.  This reminds me there is small piece missing, which the
-> patch here is trying to add.
+On Fri, 3 Jun 2011, Christoph Hellwig wrote:
+> On Wed, Jun 01, 2011 at 09:58:18AM -0700, Hugh Dickins wrote:
 > 
-> Here is the user story.  The mxs-mmc is the mmc host controller for
-> Freescale MXS architecture.  There are a pair of  mmc host specific
-> parameters max_seg_size and max_segs that mxs-mmc host driver needs
-> to tell mmc core, so that mmc core can know how big each data segment
-> could be and how many segments could be handled one time in a scatter
-> list by host driver.
+> > Fine, I'll add tmpfs PUNCH_HOLE later on.  And wire up madvise MADV_REMOVE
+> > to fallocate PUNCH_HOLE, yes?
 > 
-> The mxs-mmc driver is one user of dmaengine mxs-dma, and it will call
-> mxs-dma to transfer data in scatter list.  That is to say mxs-mmc has
-> not idea of what max_seg_size and max_segs should be, because they are
-> all mxs-dma capability parameters, and mxs-mmc needs to query them
-> from mxs-dma.
-> 
-> Right now, there is well defined dma api (dma_get_max_seg_size) for
-> mmc to query max_seg_size from dma driver, but the one for max_segs is
-> missing.  That's why mxs-mmc driver has to hard-code it.
-> 
-> The mxs-mmc is just one example to demonstrate the need of the new
-> api, and I'm sure there are other mmc host drivers (mxcmmc on imx-dma
-> is another example) and possibly even other dmaengine users need this
-> new api to know the maximum segments that dma driver can handle per
-> dma call.
-> 
-Looks fine, care to add above in your patch description.
-Few years down it will be really helpful to know why this was added.
+> Yeah.  One thing I've noticed is that the hole punching doesn't seem
+> to do the unmap_mapping_range.  It might be worth to audit that from the
+> VM point of view.
 
--- 
-~Vinod
+I'd noticed that recently too.
 
+At first I was alarmed, but it's actually an inefficiency rather than
+a danger: because at some stage a safety unmap_mapping_range() call has
+been added into truncate_inode_page().  I don't know what case that was
+originally for, but it will cover fallocate() for now.
+
+This is a call to unmap_mapping_range() with 0 for the even_cows arg
+i.e. it will not remove COWed copies of the file page from private
+mappings.  I think that's good semantics for hole punching (and it's
+difficult to enforce the alternative, because we've neither i_size nor
+page lock to prevent races); but it does differ from the (odd) POSIX
+truncation behaviour, to unmap even the private COWs.
+
+What do you think?  If you think we should unmap COWs, then it ought
+to be corrrected sooner.  Otherwise I was inclined not to rush (I'm
+also wondering about cleancache in truncation: that should be another
+mail thread, but might call for passing down a flag useful here too).
+
+You might notice that the alternate hole-punching's vmtruncate_range()
+is passing even_cows 1: doesn't matter in practice, since that one has
+been restricted to operating on shared writable mappings.  Oh, I
+suppose there could also be a parallel private writable mapping,
+whose COWs would get unmapped.  Hmm, worth worrying about if we
+choose the opposite with fallocate hole punching?
+
+> 
+> > Would you like me to remove the ->truncate_range method from
+> > inode_operations completely?
+> 
+> Doing that would be nice.  Do we always have the required file struct
+> for ->fallocate in the callers?
+
+Good point, but yes, no problem.
+
+I'm carrying on using ->truncate_range for the moment, partly because
+I don't want to get diverted by testing the ->fallocate alternative yet,
+but also because removing ->truncate_range now would force an immediate
+change on drm/i915: better use shmem_truncate_range() for the transition.
+
+Hugh
