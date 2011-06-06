@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab1FFQol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:44:41 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:50733 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754386Ab1FFQok (ORCPT
+	id S1755586Ab1FFQmv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:42:51 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48926 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab1FFQmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:44:40 -0400
+	Mon, 6 Jun 2011 12:42:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=BPyNj9kwerRCbXQiYDVG827ReE/IPwspqT8RUsFFe4sQnpUHyULg/wyKpz38J94zF/
-         FVfm/qnRqrGtN+X0Y8fXweDZex7xYjlCxS131WY1PLG9PKHAG6NL7uZurMkW5dLUThpv
-         KRafUeEftV9QzmHsbo9Ou40sbusy6EaqRzu0s=
-Date: Mon, 6 Jun 2011 19:42:21 +0300
-From: Mika Westerberg <mika.westerberg@iki.fi>
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: hsweeten@visionengravers.com, rmallon@gmail.com, dan.j.williams@intel.com,
-        lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 0/5] ep93xx DMA patches
-Message-ID: <20110606164221.GA3082@acer>
-References: <cover.1306662317.git.mika.westerberg@iki.fi>
- <20110605081904.GA16018@acer>
- <1307342380.10976.79.camel@vkoul-udesk3>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307342380.10976.79.camel@vkoul-udesk3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=lr0b+WcB/T9VV/kKFpMSG+P8tcDHtUpEUyLgIoSlzXbahu8NMWYZglGqC8EzfNEdpz
+         kpNbGPPyVOvx83M1n+dl6CZwowyLm/kWTvqnp7X/PYQSTibcTkpiOnYkzFKHxD1K14rI
+         YuJJbqgHRIi3xvWgwO/AsQujfVgVrX0eMKtW4=
+Subject: Re: Change in functionality of futex() system call.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Zachary Vonler <zvonler@rgmadvisors.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1307377782.2322.183.camel@twins>
+References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
+	 <1307373819.3098.40.camel@edumazet-laptop>
+	 <1307376672.2322.167.camel@twins>  <1307376989.2322.171.camel@twins>
+	 <1307377349.3098.65.camel@edumazet-laptop>
+	 <1307377782.2322.183.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Jun 2011 18:42:44 +0200
+Message-ID: <1307378564.3098.67.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 12:09:40PM +0530, Koul, Vinod wrote:
+Le lundi 06 juin 2011 à 18:29 +0200, Peter Zijlstra a écrit :
+> On Mon, 2011-06-06 at 18:22 +0200, Eric Dumazet wrote:
+> > Le lundi 06 juin 2011 à 18:16 +0200, Peter Zijlstra a écrit :
+> > 
+> > > Hmm, wouldn't that still be susceptible to the zero-page thing if: we
+> > > create a writable private file map of a sparse file, touch a page and
+> > > then remap the thing RO?
+> > > 
+> > > 
+> > > 
+> > 
+> > Also I am not sure how MAP_PRIVATE could be affected. If we still try a
+> > RW gup()... It will allocate a page for us, instead of still pointing to
+> > shared one.
+> > 
+> > On previous kernel, the application using read-only mapping could use
+> > MAP_PRIVATE or MAP_SHARED with same 'behavior'
 > 
-> I have applied this series to next including the asoc and spi changes,
-> if anyone has any objections please let me know
+> But by not forcing the COW you get different behaviour depending on when
+> you call FUTEX_WAIT, surely that's not correct either?
 
-Great, thanks!
 
-I believe that this was the best option considering that now we don't have to
-worry about dependencies.
+As long as the current process never writes to the page holding the
+futex, the page stay shared. Behavior should be same with PRIVATE or
+SHARED ?
+
+In David Oliver case, this is needed : He wants to catch a change in a
+file/memory region written by another process.
+
+
+
