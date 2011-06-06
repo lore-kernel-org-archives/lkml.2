@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab1FFJrD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:47:03 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60545 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754804Ab1FFJq7 convert rfc822-to-8bit (ORCPT
+	id S1756270Ab1FFJsO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:48:14 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52016 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755313Ab1FFJsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:46:59 -0400
-Date: Mon, 6 Jun 2011 11:46:56 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] media: soc_camera_video_start - type should be const
-In-Reply-To: <1307306757-7068-1-git-send-email-geert@linux-m68k.org>
-Message-ID: <Pine.LNX.4.64.1106061146070.11169@axis700.grange>
-References: <1307306757-7068-1-git-send-email-geert@linux-m68k.org>
+	Mon, 6 Jun 2011 05:48:13 -0400
+Date: Mon, 6 Jun 2011 10:47:51 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: shawn.guo@linaro.org, patches@linaro.org, vinod.koul@intel.com,
+        gregkh@suse.de, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dan.j.williams@intel.com, cjb@laptop.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/3] dmaengine: add new dma API for
+	max_segment_number
+Message-ID: <20110606094751.GC10508@n2100.arm.linux.org.uk>
+References: <1307345414-26872-1-git-send-email-shawn.guo@linaro.org> <20110606170420I.fujita.tomonori@lab.ntt.co.jp> <20110606091410.GB10508@n2100.arm.linux.org.uk> <20110606183925D.fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:XZpfF2YUWs72c8RXkSG2iRFMxPz2TIyallF4VIvZVuD
- czFpeeZkv1ZF44oSSQw25ObZ/JrtaePoJwwvTfW1+hBrxDNWNB
- N4NOeT44UUKwScqAXgUG4oy9aRbfVBt539RMMFJDXR8iAy/YbN
- oIJFpY5HH0v/ajTRORA4xVg0PM+AsBkVrDcXaNM8NuFCJhPJtI
- czhgQUYZBt7dgI8JcM631oKlA2HS6PRSjmI3YwRdMU=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606183925D.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert
-
-On Sun, 5 Jun 2011, Geert Uytterhoeven wrote:
-
-> drivers/media/video/soc_camera.c: In function ‘soc_camera_video_start’:
-> drivers/media/video/soc_camera.c:1515: warning: initialization discards qualifiers from pointer target type
+On Mon, Jun 06, 2011 at 06:41:09PM +0900, FUJITA Tomonori wrote:
+> On Mon, 6 Jun 2011 10:14:10 +0100
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 > 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  drivers/media/video/soc_camera.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> > On Mon, Jun 06, 2011 at 05:06:03PM +0900, FUJITA Tomonori wrote:
+> > > max_segs isn't unrelated with the dma mapping API. I explained above,
+> > > IOMMUs doesn't increase the number of segments (could decrease the
+> > > number of segments by merging).
+> > > 
+> > > The limitation about the number of segment already lives elsewhere
+> > > (e.g. queue's limits.max_segments).
+> > 
+> > I think you're missing the point entirely.
+> > 
+> > Lets take the problem at hand: you have two devices.  One of them is
+> > handled by the DMA engine code.  One of them is a block device.
+> > 
+> > The block layer needs to know the various parameters of what is
+> > allowable for DMA, including such things as the maximum size of a
+> > segment, and the _number_ of segments that can be placed into any
+> > one request.
+> > 
+> > As the DMA provider is _entirely_ separate and unknown to the block
+> > device driver, the block device driver has no way to sanely provide
+> > these parameters to the block layer - they are not a property of the
+> > block device driver, but of the DMA provider.
 > 
-> diff --git a/drivers/media/video/soc_camera.c b/drivers/media/video/soc_camera.c
-> index 3988643..4e4d412 100644
-> --- a/drivers/media/video/soc_camera.c
-> +++ b/drivers/media/video/soc_camera.c
-> @@ -1512,7 +1512,7 @@ static int video_dev_create(struct soc_camera_device *icd)
->   */
->  static int soc_camera_video_start(struct soc_camera_device *icd)
->  {
-> -	struct device_type *type = icd->vdev->dev.type;
-> +	const struct device_type *type = icd->vdev->dev.type;
->  	int ret;
->  
->  	if (!icd->dev.parent)
-> -- 
-> 1.7.0.4
+> struct device_dma_parameters is used for a property of the block
+> device drivers (and scsi HBA drivers, etc). Not DMA provider. Right?
 
-Thanks for the patchm unfortunately, you're not the first:
+Wrong.  struct device_dma_parameters is a property of the _DMA_ _provider_.
+It has to be.  Read what I said above and think about it.
 
-http://www.mail-archive.com/linux-media@vger.kernel.org/msg32245.html
+In many cases, it so happens that the DMA provider and the block device
+driver are the same entity, and so it may appear that device_dma_parameters
+is a property of the block device driver.  As soon as you have to start
+dealing with DMA providers being separate from the block device driver
+then your eyes will be opened and you'll see that it can't work the way
+you seem to want it to.
 
-and not even the second;)
+The DMA parameters have to come from the DMA provider or they're a total
+nonsense.
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+> The drivers calls dma_set_seg_boundary() and the subsystems call
+> dma_get_seg_boundary to set the value to queues.
+
+And the device parameter which you pass into that has to be the DMA
+providers struct device, not the block device's struct device.  The
+block device itself has no DMA parameters of its own.
+
+> This patch is trying to use struct device_dma_parameters in a
+> different way. It adds a new DMA parameter but for the DMA parameter
+> for a different layer. I'm not sure about different-layer stuff in 
+> one structure and using similar API.
+
+No it's not.
