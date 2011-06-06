@@ -1,73 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab1FFHec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 03:34:32 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:40562 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab1FFHe3 (ORCPT
+	id S1756791Ab1FFHf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 03:35:26 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36827 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050Ab1FFHfW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 03:34:29 -0400
-X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/f7yb6+x1CF1B3oIP27v4=
-X-RZG-CLASS-ID: mo00
-Message-ID: <4DEC82FA.2060603@die-jansens.de>
-Date: Mon, 06 Jun 2011 09:34:18 +0200
-From: Arne Jansen <lists@die-jansens.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Mon, 6 Jun 2011 03:35:22 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-References: <4DEB58D8.4000805@die-jansens.de> <20110605110132.GB23463@elte.hu> <20110605111933.GA24592@elte.hu> <20110605113627.GA25724@elte.hu> <4DEB6F3A.3000109@die-jansens.de> <20110605133958.GA27812@elte.hu> <4DEB8A93.30601@die-jansens.de> <20110605141003.GB29338@elte.hu> <4DEB933C.1070900@die-jansens.de> <20110605151323.GA30590@elte.hu> <20110605152641.GA31124@elte.hu>
-In-Reply-To: <20110605152641.GA31124@elte.hu>
-X-Enigmail-Version: 1.1.1
+In-Reply-To: <20110602114113.GA1771@x4.trippels.de>
+References: <20110601160805.GA1775@x4.trippels.de>
+	<4DE6783E.70508@verisign.com>
+	<20110601180038.GA1780@x4.trippels.de>
+	<20110602114113.GA1771@x4.trippels.de>
+Date: Mon, 6 Jun 2011 09:35:20 +0200
+Message-ID: <BANLkTimB5OdiHhRKwB1KpuNnXD55MmXWjQ@mail.gmail.com>
+Subject: Re: switching to top frequency too frequent with ondemand governor
+ and no_hz
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: David C Niemi <dniemi@verisign.com>, cpufreq@vger.kernel.org,
+        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.06.2011 17:26, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@elte.hu> wrote:
-> 
+On 2 June 2011 13:41, Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+> On 2011.06.01 at 20:00 +0200, Markus Trippelsdorf wrote:
+>> On 2011.06.01 at 13:34 -0400, David C Niemi wrote:
+>> > On 06/01/2011 12:08 PM, Markus Trippelsdorf wrote:
+>> > > There seems to be a major difference in the behavior of the ondemand
+>> > > governor depending on whether CONFIG_NO_HZ is set or not in the kernel
+>> > > .config.
+>> > >
+>> > > In the NO_HZ case the ondemand governor spends too much time at the
+>> > > highest frequency and is also very trigger happy.
+>> > >
+>> > > I have compared the two cases on my system:
+>> > > powernow-k8: Found 1 AMD Phenom(tm) II X4 955 Processor (4 cpu cores) (version 2.20.00)
+>> > > powernow-k8:    0 : pstate 0 (3200 MHz)
+>> > > powernow-k8:    1 : pstate 1 (2500 MHz)
+>> > > powernow-k8:    2 : pstate 2 (2100 MHz)
+>> > > powernow-k8:    3 : pstate 3 (800 MHz)
+>> > >
+>> > > When I run:
+>> > > watch -n.1 'cat /proc/cpuinfo|grep MHz'
+>> > > on an otherwise idle system, I can see that the frequency always stays
+>> > > at 800 MHz in the "CONFIG_NO_HZ not set" case. But it will very
+>> > > frequently switch to 3200 MHz in the CONFIG_NO_HZ=y case under the same
+>> > > conditions.
+>> > >
+>> > > This also manifests itself in the cpufreq/stats/time_in_state
+>> > > statistics (again on a mostly idle system):
+>> > >
+>> > > First taken with:
+>> > > echo 200 > /sys/devices/system/cpu/cpufreq/ondemand/sampling_down_factor
+>> > > (BTW wouldn't it make sense to use something like this as the default
+>> > > value?)
+>> > >
+>> > > cat /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state
+>> > >
+>> > > CONFIG_NO_HZ not set:
+>> > > 3200000 5845
+>> > > 2500000 0
+>> > > 2100000 5
+>> > > 800000 31552
+>> > >
+>> > > CONFIG_NO_HZ=y:
+>> > > 3200000 17650
+>> > > 2500000 0
+>> > > 2100000 0
+>> > > 800000 31129
+>> > >
+>> > >
+>> > > And with the default sampling_down_factor=1
+>> > >
+>> > > CONFIG_NO_HZ not set:
+>> > > 3200000 140
+>> > > 2500000 2
+>> > > 2100000 29
+>> > > 800000 16614
+>> > >
+>> > > CONFIG_NO_HZ=y:
+>> > > 3200000 538
+>> > > 2500000 9
+>> > > 2100000 77
+>> > > 800000 16287
+>> > >
+>> > > Now my question is, is this expected? And what could be done to make the
+>> > > NO_HZ behavior more like the "CONFIG_NO_HZ not set" behavior.
+>> >
+>> > A very interesting bit of information.  What do you have set for
+>> > up_threshold?  You may have to set it higher for CONFIG_NO_HZ than
+>> > without, based on your symptoms.  Another thing to look at is your
+>> > sampling_rate.  I'm guessing it differs between CONFIG_NO_HZ being set
+>> > or not.
 >>
->> * Arne Jansen <lists@die-jansens.de> wrote:
+>> I've played with all those parameters, but unfortunately it didn't make
+>> any difference.
 >>
->>> sched.c:934: in function __task_rq_lock
->>>         lockdep_assert_held(&p->pi_lock);
+>> > And perhaps you need to set sampling_down_factor a bit lower.  I
+>> > consider 100 a reasonable default, but a default of "1" was put in
+>> > initially to make the behavior of the patch that enabled the factor
+>> > identical with not having the patch.  If you are more concerned with
+>> > saving power than maximizing throughput, you might consider a much
+>> > lower value like 5 or 10.
 >>
->> Oh. Could you remove that line with the patch below - does it result 
->> in a working system?
+>> Yes, I've tried different values and 200 turned out to be the best based
+>> on my preferences (throughput over power saving). It makes a big
+>> difference in the compile time of bigger projects, especially during the
+>> configuration phase.
 >>
->> Now, this patch alone just removes a debugging check - but i'm not 
->> sure the debugging check is correct - we take the pi_lock in a raw 
->> way - which means it's not lockdep covered.
+>> But I have found the root cause of symptoms described above by
+>> bisection. It turned out that 2.6.39 is also affected, so I've bisected
+>> down to 2.6.38.
+>> This is the result:
 >>
->> So how can lockdep_assert_held() be called on it?
-> 
-> Ok, i'm wrong there - it's lockdep covered.
-> 
-> I also reviewed all the __task_rq_lock() call sites and each of them 
-> has the pi_lock acquired. So unless both Peter and me are blind, the 
-> other option would be some sort of memory corruption corrupting the 
-> runqueue.
+>>  5cb2c3bd0c5e0f3ced63f250ec2ad59d7c5c626a is the first bad commit
+>>  commit 5cb2c3bd0c5e0f3ced63f250ec2ad59d7c5c626a
+>>  Author: Vincent Guittot <vincent.guittot@linaro.org>
+>>  Date:   Mon Feb 7 17:14:25 2011 +0100
+>>
+>>      [CPUFREQ] calculate delay after dbs_check_cpu
+>>
+>> When I revert the above in 3.0-rc1 the CONFIG_NO_HZ=y symptoms vanish.
+>
 
-Another small idea, can we install the assert into a pre-0122ec5b02f766c
-to see if it's an older problem that just got uncovered by the assert?
+The patch, you have mentioned, solves a problem when ondemand governor
+goes  from highest frequency to a lower one. Without the patch, the
+governor uses the longest sampling period (sampling period * scaling
+down factor) with a low frequency during the 1st period after
+decreasing the frequency. This can lead to a large time frame
+(sampling period * scaling down factor) with a low frequency but an
+overloaded cpu.
 
--Arne
+The other correction of the patch is linked to the powersave bias
+mode. The governor didn't use the right period for the low frequency
+step (freq_lo_jiffies) but a larger one (sampling period * scaling
+down factor). The ratio between low and high frequency was not the
+right one.
 
-> 
-> But ... that looks so unlikely here, it's clearly heavy printk() and 
-> console_sem twiddling that triggers the bug, not any other scheduler 
-> activity.
-> 
-> Thanks,
-> 
-> 	Ingo
+Do you use the powersave bias mode ?
 
+Could you give us more statistics : the number of state transition
+could be an interesting value. Is there a difference with and without
+CONFIG_NO_HZ ? What is your sampling rate ?
+
+One difference with CONFIG_NO_HZ is the real sampling period which can
+be greater than the timer configuration because of the deferrable
+mode. The deferrable mode has nearly no effect when CONFIG_NO_HZ is
+not set because the tick timer will ensure enough cpu activity to
+trigger the governor. When CONFIG_NO_HZ is set, the ondemand governor
+work is triggered at the beginning of a cpu activity so we have more
+chance to have a short cpu load in one period instead of splitting it
+into 2 differents periods. This behavior is quite useful for
+responsiveness but can generates spurious frequency increase if the
+sampling rate is too short.
+
+Vincent
+
+> Here are some numbers to back this claim:
+>
+> cat /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state
+> (with sampling_down_factor=200)
+>
+> CONFIG_NO_HZ not set:
+> 3200000 1766
+> 2500000 0
+> 2100000 1479
+> 800000 30787
+>
+> CONFIG_NO_HZ=y:
+> 3200000 922
+> 2500000 0
+> 2100000 2313
+> 800000 31217
+>
+> So the behavior in both cases is (roughly) the same again.
+>
+
+> --
+> Markus
+>
