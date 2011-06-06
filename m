@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757365Ab1FFN2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 09:28:17 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46859 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755946Ab1FFN2Q (ORCPT
+	id S1757378Ab1FFNah (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 09:30:37 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:55933 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756365Ab1FFNag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 09:28:16 -0400
-Date: Mon, 6 Jun 2011 14:28:14 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] more vfs fixes
-Message-ID: <20110606132814.GK11521@ZenIV.linux.org.uk>
+	Mon, 6 Jun 2011 09:30:36 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Subject: Re: [PATCH v2] asm-generic: add another generic ext2 atomic bitops
+Date: Mon, 6 Jun 2011 15:29:57 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Andreas Dilger <adilger@dilger.ca>, linux-arch@vger.kernel.org
+References: <1307201251-16805-1-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <1307201251-16805-1-git-send-email-akinobu.mita@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106061529.57417.arnd@arndb.de>
+X-Provags-ID: V02:K0:qDosqFTvGX9D81FJhJFHuaMN60pvrLipbh0HzONqDzm
+ 44VgHdB/skI5RReOQCJAu53OaU9XwkqxR1GNnHwoQ5jfM3mAnZ
+ qhGRYDQabP7eA01P8js4/01y9+7VFkZCPVTuXTMwrEnl+oL9Fw
+ CL49nQGLs7LxAStEDzr/ve+ikfL+e8vxgrWPx8lyS2rA1J90Cp
+ B2mQf0FvcP7AyMp3OmcBA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	More fixes for the stuff that went in during the merge window...
-I've dropped the get_net_ns_by_fd fix from this queue, since davem has taken
-it in net-2.6.git.  Please, pull from usual place -
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ #for-linus
+On Saturday 04 June 2011, Akinobu Mita wrote:
+> The majority of architectures implement ext2 atomic bitops as
+> test_and_{set,clear}_bit() without spinlock.
+> 
+> This adds this type of generic implementation in ext2-atomic-setbit.h
+> and use it wherever possible.
+> 
+> Suggested-by: Andreas Dilger <adilger@dilger.ca>
+> Suggested-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: linux-arch@vger.kernel.org
 
-Shortlog:
-Al Viro (1):
-      more conservative S_NOSEC handling
+Looks good,
 
-Sage Weil (1):
-      usb: remove bad dput after dentry_unhash
-
-Diffstat:
- drivers/usb/core/inode.c |    1 -
- fs/btrfs/super.c         |    2 +-
- fs/fuse/inode.c          |    2 ++
- fs/ocfs2/super.c         |    2 +-
- fs/super.c               |    2 +-
- include/linux/fs.h       |    3 ++-
- mm/filemap.c             |    2 +-
- 7 files changed, 8 insertions(+), 6 deletions(-)
+Acked-by: Arnd Bergmann <arnd@arndb.de>
