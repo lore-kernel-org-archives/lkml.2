@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab1FFRIf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 13:08:35 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27335 "EHLO mga03.intel.com"
+	id S1756179Ab1FFRJn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 13:09:43 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4708 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752007Ab1FFRId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 13:08:33 -0400
+	id S1753027Ab1FFRJj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 13:09:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,327,1304319600"; 
-   d="scan'208";a="7932237"
-Message-ID: <4DED0990.8090309@linux.intel.com>
-Date: Mon, 06 Jun 2011 10:08:32 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Organization: Intel Open Source Technology Center
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+   d="scan'208";a="7933107"
+From: "Gorby, Russ" <russ.gorby@intel.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ahmed, Suhail" <suhail.ahmed@intel.com>
+Subject: RE: [PATCH 4/5] tty: n_gsm: initiate close of all DLCIs during mux
+ shutdown
+Thread-Topic: [PATCH 4/5] tty: n_gsm: initiate close of all DLCIs during mux
+ shutdown
+Thread-Index: AQHMIjoPAB/bGYdY3Uq1UIRRprDnsZSwj8iw
+Date: Mon, 6 Jun 2011 17:09:37 +0000
+Message-ID: <330DDCE36F8D7D47BF87CF587C91A247023149@ORSMSX101.amr.corp.intel.com>
+References: <[PATCH 0/5] N_GSM patchset : 06/03/2011>
+	<1307127821-21665-5-git-send-email-russ.gorby@intel.com>
+ <20110603230514.334df229@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110603230514.334df229@lxorguk.ukuu.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.131.214]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jean Sacren <sakiwit@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] boot: Enhance performance by eliminating unnecessary
- calls to printf()
-References: <20110606004038.GA28970@mail.gmail.com>
-In-Reply-To: <20110606004038.GA28970@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2011 05:40 PM, Jean Sacren wrote:
-> Hi,
-> 
-> Repeated calling to printf() for 13 times is a dire waste of CPU cycles.
-> For performance, combine all those calls into one while source code
-> formatting is preserved for readability.
-> 
-> Compile tested only.
-> 
-> Signed-off-by: Jean Sacren <sakiwit@gmail.com>
 
-You're got to be bloody kidding.
 
-First of all, this is a build time tool which is executed exactly once
-during the entire kernel build.
+>-----Original Message-----
+>From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
+>Sent: Friday, June 03, 2011 3:05 PM
+>To: Gorby, Russ
+>Cc: Greg Kroah-Hartman; linux-kernel@vger.kernel.org; Ahmed, Suhail
+>Subject: Re: [PATCH 4/5] tty: n_gsm: initiate close of all DLCIs during
+>mux shutdown
+>
+>On Fri,  3 Jun 2011 12:03:40 -0700
+>Russ Gorby <russ.gorby@intel.com> wrote:
+>
+>> Although DLCI-0 is closed during ldisc close, we found the
+>> applications were better served when open DLCI shutdowns where
+>> initiated at that time as well.
+>
+>They should all see a hangup on the gsm client tty anyway ?
+>
+>> -	for (i = 0; i < NUM_DLCI; i++)
+>> +	for (i = NUM_DLCI-1; i >= 0; i--) {
+>> +		dlci = gsm->dlci[i];
+>> +		if (dlci) {
+>> +			if (i != 0)
+>> +				gsm_dlci_begin_close(dlci);
+>> +			else {
+>> +				dlci->dead = 1;
+>> +				gsm_dlci_begin_close(dlci);
+>> +				t = wait_event_timeout(gsm->event,
+>> +					   dlci->state == DLCI_CLOSED,
+>> +					   gsm->t2 * HZ / 100);
+>> +				if (!t) {
+>> +					pr_info("%s: timeout dlci0 close",
+>> +						__func__);
+>> +					gsm_dlci_close(dlci);
+>> +				}
+>> +			}
+>> +		}
+>> +	}
+>> +	for (i = NUM_DLCI-1; i >= 0; i--)
+>
+>I'd like to understand better why it is needed and also why you don't
+>want for the others to close but just set it off ?
 
-Second, printf execution time is largely dependent on the size
-formatting string; since the I/O is buffered it is only issued once
-anyway... which basically means that there is no time saved at all.
-
-Third, the resulting code is substantially harder to read.
-
-Fourth, carrying this as a patch will cost kernel developers more time
-in additional git execution time than it ever will save them in build time.
-
-Nacked-by: H. Peter Anvin <hpa@zytor.com>
-
-	-hpa
+[Gorby, Russ] I suppose it is possible the issue this code helped alleviate was due to modem firmware or
+Other s/w bugs or timing issues, but since we're waiting for DLCI0 to close it made sense to at least start the
+Close of the other channels first. If you don't want to take this patch at this point, I can revalidate if it is needed
+at a later time and resubmit then if so.
