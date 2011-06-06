@@ -1,172 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab1FFXTG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 19:19:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5058 "EHLO mga01.intel.com"
+	id S1756179Ab1FFXTI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 19:19:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52872 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754525Ab1FFXSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754511Ab1FFXSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Jun 2011 19:18:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,328,1304319600"; 
-   d="scan'208";a="14612202"
-Message-Id: <20110606231752.023885847@sbsiddha-MOBL3.sc.intel.com>
+   d="scan'208";a="8128062"
+Message-Id: <20110606231752.109862236@sbsiddha-MOBL3.sc.intel.com>
 User-Agent: quilt/0.47-1
-Date: Mon, 06 Jun 2011 16:16:56 -0700
+Date: Mon, 06 Jun 2011 16:16:57 -0700
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, trenn@novell.com,
         prarit@redhat.com, tj@kernel.org
 Cc: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com,
         youquan.song@intel.com, stable@kernel.org
-Subject: [patch 1/2] stop_machine: enable __stop_machine() to be called from the cpu online path
+Subject: [patch 2/2] x86, mtrr: use __stop_machine() for doing MTRR rendezvous
 References: <20110606231655.824641917@sbsiddha-MOBL3.sc.intel.com>
-Content-Disposition: inline; filename=stop_machine_from_cpu_hotplug_path.patch
+Content-Disposition: inline; filename=use_stop_machine_for_mtrr_rendezvous.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently stop machine infrastructure can be called only from a cpu that is
-online. But for !CONFIG_SMP, we do allow calling __stop_machine() before the
-cpu is online.
+MTRR rendezvous sequence using stop_one_cpu_nowait() can potentially
+happen in parallel with another system wide rendezvous using
+stop_machine(). This can lead to deadlock (The order in which
+works are queued can be different on different cpu's. Some cpu's
+will be running the first rendezvous handler and others will be running
+the second rendezvous handler. Each set waiting for the other set to join
+for the system wide rendezvous, leading to a deadlock).
 
-x86 for example requires stop machine infrastructure in the cpu online path
-and currently implements its own stop machine (using stop_one_cpu_nowait())
-for MTRR initialization in the cpu online path.
+MTRR rendezvous sequence is not implemented using stop_machine() before, as this
+gets called both from the process context aswell as the cpu online paths
+(where the cpu has not come online and the interrupts are disabled etc).
 
-Enhance the __stop_machine() so that it can be called before the cpu
-is onlined. This will pave the way for code consolidation and address potential
-deadlocks caused by multiple mechanisms of doing system wide rendezvous.
-
-This will also address the behavioral differences of __stop_machine()
-between SMP and UP builds.
+Now that __stop_machine() works even when the calling cpu is not online,
+use __stop_machine() to implement the MTRR rendezvous sequence. This
+will consolidate the code aswell as avoid the above mentioned deadlock.
 
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 Cc: stable@kernel.org    # v2.6.35+
 ---
- kernel/stop_machine.c |   62 +++++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 57 insertions(+), 5 deletions(-)
+ arch/x86/kernel/cpu/mtrr/main.c |  154 +++++++---------------------------------
+ 1 file changed, 27 insertions(+), 127 deletions(-)
 
-Index: tree/kernel/stop_machine.c
+Index: tree/arch/x86/kernel/cpu/mtrr/main.c
 ===================================================================
---- tree.orig/kernel/stop_machine.c
-+++ tree/kernel/stop_machine.c
-@@ -136,12 +136,35 @@ void stop_one_cpu_nowait(unsigned int cp
- static DEFINE_MUTEX(stop_cpus_mutex);
- static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
+--- tree.orig/arch/x86/kernel/cpu/mtrr/main.c
++++ tree/arch/x86/kernel/cpu/mtrr/main.c
+@@ -137,18 +137,15 @@ static void __init init_table(void)
+ }
  
-+/**
-+ * __stop_cpus - stop multiple cpus
-+ * @cpumask: cpus to stop
-+ * @fn: function to execute
-+ * @arg: argument to @fn
-+ *
-+ * Execute @fn(@arg) on online cpus in @cpumask. If @cpumask is NULL, @fn
-+ * is run on all the online cpus including the current cpu (even if it
-+ * is not online).
-+ * On each target cpu, @fn is run in a process context (except when run on
-+ * the cpu that is in the process of coming online, in which case @fn is run
-+ * in the same context as __stop_cpus()) with the highest priority
-+ * preempting any task on the cpu and monopolizing it.  This function
-+ * returns after all executions are complete.
-+ */
- int __stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
+ struct set_mtrr_data {
+-	atomic_t	count;
+-	atomic_t	gate;
+ 	unsigned long	smp_base;
+ 	unsigned long	smp_size;
+ 	unsigned int	smp_reg;
+ 	mtrr_type	smp_type;
+ };
+ 
+-static DEFINE_PER_CPU(struct cpu_stop_work, mtrr_work);
+-
+ /**
+- * mtrr_work_handler - Synchronisation handler. Executed by "other" CPUs.
++ * mtrr_work_handler - Work done in the synchronisation handler. Executed by
++ * all the CPUs.
+  * @info: pointer to mtrr configuration data
+  *
+  * Returns nothing.
+@@ -157,35 +154,26 @@ static int mtrr_work_handler(void *info)
  {
-+	int online = cpu_online(smp_processor_id());
-+	int include_this_offline = 0;
- 	struct cpu_stop_work *work;
- 	struct cpu_stop_done done;
-+	unsigned int weight;
- 	unsigned int cpu;
+ #ifdef CONFIG_SMP
+ 	struct set_mtrr_data *data = info;
+-	unsigned long flags;
+-
+-	atomic_dec(&data->count);
+-	while (!atomic_read(&data->gate))
+-		cpu_relax();
+-
+-	local_irq_save(flags);
  
-+	if (!cpumask) {
-+		cpumask = cpu_online_mask;
-+		include_this_offline = 1;
-+	}
-+
- 	/* initialize works and done */
- 	for_each_cpu(cpu, cpumask) {
- 		work = &per_cpu(stop_cpus_work, cpu);
-@@ -149,7 +172,12 @@ int __stop_cpus(const struct cpumask *cp
- 		work->arg = arg;
- 		work->done = &done;
+-	atomic_dec(&data->count);
+-	while (atomic_read(&data->gate))
+-		cpu_relax();
+-
+-	/*  The master has cleared me to execute  */
++	/*
++	 * We use this same function to initialize the mtrrs during boot,
++	 * resume, runtime cpu online and on an explicit request to set a
++	 * specific MTRR.
++	 *
++	 * During boot or suspend, the state of the boot cpu's mtrrs has been
++	 * saved, and we want to replicate that across all the cpus that come
++	 * online (either at the end of boot or resume or during a runtime cpu
++	 * online). If we're doing that, @reg is set to something special and on
++	 * all the cpu's we do mtrr_if->set_all() (On the logical cpu that
++	 * started the boot/resume sequence, this might be a duplicate
++	 * set_all()).
++	 */
+ 	if (data->smp_reg != ~0U) {
+ 		mtrr_if->set(data->smp_reg, data->smp_base,
+ 			     data->smp_size, data->smp_type);
+-	} else if (mtrr_aps_delayed_init) {
+-		/*
+-		 * Initialize the MTRRs inaddition to the synchronisation.
+-		 */
++	} else if (mtrr_aps_delayed_init || !cpu_online(smp_processor_id())) {
+ 		mtrr_if->set_all();
  	}
--	cpu_stop_init_done(&done, cpumask_weight(cpumask));
-+
-+	weight = cpumask_weight(cpumask);
-+	if (!online && include_this_offline)
-+		weight++;
-+
-+	cpu_stop_init_done(&done, weight);
+-
+-	atomic_dec(&data->count);
+-	while (!atomic_read(&data->gate))
+-		cpu_relax();
+-
+-	atomic_dec(&data->count);
+-	local_irq_restore(flags);
+ #endif
+ 	return 0;
+ }
+@@ -223,20 +211,11 @@ static inline int types_compatible(mtrr_
+  * 14. Wait for buddies to catch up
+  * 15. Enable interrupts.
+  *
+- * What does that mean for us? Well, first we set data.count to the number
+- * of CPUs. As each CPU announces that it started the rendezvous handler by
+- * decrementing the count, We reset data.count and set the data.gate flag
+- * allowing all the cpu's to proceed with the work. As each cpu disables
+- * interrupts, it'll decrement data.count once. We wait until it hits 0 and
+- * proceed. We clear the data.gate flag and reset data.count. Meanwhile, they
+- * are waiting for that flag to be cleared. Once it's cleared, each
+- * CPU goes through the transition of updating MTRRs.
+- * The CPU vendors may each do it differently,
+- * so we call mtrr_if->set() callback and let them take care of it.
+- * When they're done, they again decrement data->count and wait for data.gate
+- * to be set.
+- * When we finish, we wait for data.count to hit 0 and toggle the data.gate flag
+- * Everyone then enables interrupts and we all continue on.
++ * What does that mean for us? Well, __stop_machine() will ensure that
++ * the rendezvous handler is started on each CPU. And in lockstep they
++ * do the state transition of disabling interrupts, updating MTRR's
++ * (the CPU vendors may each do it differently, so we call mtrr_if->set()
++ * callback and let them take care of it.) and enabling interrupts.
+  *
+  * Note that the mechanism is the same for UP systems, too; all the SMP stuff
+  * becomes nops.
+@@ -244,92 +223,13 @@ static inline int types_compatible(mtrr_
+ static void
+ set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type type)
+ {
+-	struct set_mtrr_data data;
+-	unsigned long flags;
+-	int cpu;
+-
+-	preempt_disable();
+-
+-	data.smp_reg = reg;
+-	data.smp_base = base;
+-	data.smp_size = size;
+-	data.smp_type = type;
+-	atomic_set(&data.count, num_booting_cpus() - 1);
+-
+-	/* Make sure data.count is visible before unleashing other CPUs */
+-	smp_wmb();
+-	atomic_set(&data.gate, 0);
+-
+-	/* Start the ball rolling on other CPUs */
+-	for_each_online_cpu(cpu) {
+-		struct cpu_stop_work *work = &per_cpu(mtrr_work, cpu);
+-
+-		if (cpu == smp_processor_id())
+-			continue;
+-
+-		stop_one_cpu_nowait(cpu, mtrr_work_handler, &data, work);
+-	}
+-
+-
+-	while (atomic_read(&data.count))
+-		cpu_relax();
+-
+-	/* Ok, reset count and toggle gate */
+-	atomic_set(&data.count, num_booting_cpus() - 1);
+-	smp_wmb();
+-	atomic_set(&data.gate, 1);
+-
+-	local_irq_save(flags);
+-
+-	while (atomic_read(&data.count))
+-		cpu_relax();
+-
+-	/* Ok, reset count and toggle gate */
+-	atomic_set(&data.count, num_booting_cpus() - 1);
+-	smp_wmb();
+-	atomic_set(&data.gate, 0);
+-
+-	/* Do our MTRR business */
+-
+-	/*
+-	 * HACK!
+-	 *
+-	 * We use this same function to initialize the mtrrs during boot,
+-	 * resume, runtime cpu online and on an explicit request to set a
+-	 * specific MTRR.
+-	 *
+-	 * During boot or suspend, the state of the boot cpu's mtrrs has been
+-	 * saved, and we want to replicate that across all the cpus that come
+-	 * online (either at the end of boot or resume or during a runtime cpu
+-	 * online). If we're doing that, @reg is set to something special and on
+-	 * this cpu we still do mtrr_if->set_all(). During boot/resume, this
+-	 * is unnecessary if at this point we are still on the cpu that started
+-	 * the boot/resume sequence. But there is no guarantee that we are still
+-	 * on the same cpu. So we do mtrr_if->set_all() on this cpu aswell to be
+-	 * sure that we are in sync with everyone else.
+-	 */
+-	if (reg != ~0U)
+-		mtrr_if->set(reg, base, size, type);
+-	else
+-		mtrr_if->set_all();
+-
+-	/* Wait for the others */
+-	while (atomic_read(&data.count))
+-		cpu_relax();
+-
+-	atomic_set(&data.count, num_booting_cpus() - 1);
+-	smp_wmb();
+-	atomic_set(&data.gate, 1);
+-
+-	/*
+-	 * Wait here for everyone to have seen the gate change
+-	 * So we're the last ones to touch 'data'
+-	 */
+-	while (atomic_read(&data.count))
+-		cpu_relax();
++	struct set_mtrr_data data = { .smp_reg = reg,
++				      .smp_base = base,
++				      .smp_size = size,
++				      .smp_type = type
++				    };
  
- 	/*
- 	 * Disable preemption while queueing to avoid getting
-@@ -162,7 +190,20 @@ int __stop_cpus(const struct cpumask *cp
- 				    &per_cpu(stop_cpus_work, cpu));
- 	preempt_enable();
- 
--	wait_for_completion(&done.completion);
-+	if (online)
-+		wait_for_completion(&done.completion);
-+	else {
-+		/*
-+		 * This cpu is not yet online. If @fn needs to be run on this
-+		 * cpu, run it now. Also, we can't afford to sleep here,
-+		 * so poll till the work is completed on all the cpu's.
-+		 */
-+		if (include_this_offline)
-+			fn(arg);
-+		while (atomic_read(&done.nr_todo) > 1)
-+			cpu_relax();
-+	}
-+
- 	return done.executed ? done.ret : -ENOENT;
+-	local_irq_restore(flags);
+-	preempt_enable();
++	__stop_machine(mtrr_work_handler, &data, cpu_callout_mask);
  }
  
-@@ -431,6 +472,7 @@ static int stop_machine_cpu_stop(void *d
- 	struct stop_machine_data *smdata = data;
- 	enum stopmachine_state curstate = STOPMACHINE_NONE;
- 	int cpu = smp_processor_id(), err = 0;
-+	unsigned long flags = 0;
- 	bool is_active;
- 
- 	if (!smdata->active_cpus)
-@@ -446,7 +488,7 @@ static int stop_machine_cpu_stop(void *d
- 			curstate = smdata->state;
- 			switch (curstate) {
- 			case STOPMACHINE_DISABLE_IRQ:
--				local_irq_disable();
-+				local_irq_save(flags);
- 				hard_irq_disable();
- 				break;
- 			case STOPMACHINE_RUN:
-@@ -460,7 +502,7 @@ static int stop_machine_cpu_stop(void *d
- 		}
- 	} while (curstate != STOPMACHINE_EXIT);
- 
--	local_irq_enable();
-+	local_irq_restore(flags);
- 	return err;
- }
- 
-@@ -470,9 +512,19 @@ int __stop_machine(int (*fn)(void *), vo
- 					    .num_threads = num_online_cpus(),
- 					    .active_cpus = cpus };
- 
-+	/* Include the calling cpu that might not be online yet. */
-+	if (!cpu_online(smp_processor_id()))
-+		smdata.num_threads++;
-+
- 	/* Set the initial state and stop all online cpus. */
- 	set_state(&smdata, STOPMACHINE_PREPARE);
--	return stop_cpus(cpu_online_mask, stop_machine_cpu_stop, &smdata);
-+
-+	if (cpu_online(smp_processor_id()))
-+		return stop_cpus(cpu_online_mask, stop_machine_cpu_stop,
-+				 &smdata);
-+	else
-+		return __stop_cpus(NULL, stop_machine_cpu_stop,
-+				   &smdata);
- }
- 
- int stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
+ /**
 
 
