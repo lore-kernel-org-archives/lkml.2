@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758143Ab1FFWI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:08:27 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:50180 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758090Ab1FFWIZ (ORCPT
+	id S1758068Ab1FFWJP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:09:15 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:56890 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab1FFWJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 18:08:25 -0400
-X-Originating-IP: 217.70.178.137
+	Mon, 6 Jun 2011 18:09:14 -0400
+X-Originating-IP: 217.70.178.134
 X-Originating-IP: 131.252.246.56
-Date: Mon, 6 Jun 2011 15:08:10 -0700
+Date: Mon, 6 Jun 2011 15:09:05 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv4] Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide
- debug options
-Message-ID: <20110606220810.GA1999@leaf>
-References: <20110605210223.GA7595@leaf>
- <20110606151832.GI30348@elte.hu>
- <20110606165130.GA1844@leaf>
- <20110606181606.GB7862@somewhere>
- <20110606183939.GA2335@leaf>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sam@ravnborg.org, torvalds@linux-foundation.org, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/debug] debug: Make CONFIG_EXPERT select
+ CONFIG_DEBUG_KERNEL to unhide debug options
+Message-ID: <20110606220905.GB1999@leaf>
+References: <20110606165130.GA1844@leaf>
+ <tip-2458073da04571182748aa4289630dca52ba63cc@git.kernel.org>
+ <20110606214502.GB17026@somewhere.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110606183939.GA2335@leaf>
+In-Reply-To: <20110606214502.GB17026@somewhere.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several debugging options currently default to y, such as
-CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.  Embedded users might
-want to turn those options off to save space; however, turning them off
-requires turning on CONFIG_DEBUG_KERNEL to unhide them.  Since
-CONFIG_DEBUG_KERNEL exists specifically to unhide debugging options, and
-CONFIG_EXPERT exists specifically to unhide options potentially needed
-by experts and/or embedded users, make CONFIG_EXPERT automatically imply
-CONFIG_DEBUG_KERNEL.
+On Mon, Jun 06, 2011 at 11:45:04PM +0200, Frederic Weisbecker wrote:
+> On Mon, Jun 06, 2011 at 09:39:40PM +0000, tip-bot for Josh Triplett wrote:
+> > Commit-ID:  2458073da04571182748aa4289630dca52ba63cc
+> > Gitweb:     http://git.kernel.org/tip/2458073da04571182748aa4289630dca52ba63cc
+> > Author:     Josh Triplett <josh@joshtriplett.org>
+> > AuthorDate: Mon, 6 Jun 2011 09:51:30 -0700
+> > Committer:  Ingo Molnar <mingo@elte.hu>
+> > CommitDate: Mon, 6 Jun 2011 19:30:01 +0200
+> > 
+> > debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
+> > 
+> > Several debugging options currently default to y, such as
+> > CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.
+> > 
+> > Embedded users might want to turn those options off to save space;
+> > however, turning them off requires turning on CONFIG_DEBUG_KERNEL to
+> > unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
+> > unhide debugging options, and CONFIG_EXPERT exists specifically
+> > to unhide options potentially needed by experts and/or embedded
+> > users, make CONFIG_EXPERT automatically imply CONFIG_DEBUG_KERNEL.
+> > 
+> > Change various debugging options to only reference DEBUG_KERNEL,
+> > not EXPERT.
+> > 
+> > Note that DEBUG_MEMORY_INIT defaulted to !EXPERT, which seemed
+> > wrong, since EXPERT should not directly affect anything except
+> > the availability of other options.  (And EXPERT definitely
+> > shouldn't mean "implicitly turn off default safety features".)
+> > 
+> > Change it to default to y, which means that turning on EXPERT
+> > does not automatically disable it, but will provide the option
+> > to disable it.
+> > 
+> > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> > Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+> No, Nacked actually. I'm fine with the v2 that only changed
+> the EXPERT config to imply DEBUG_KERNEL. But all the other
+> changes here need to be revised, as I outlined in the thread.
 
-Since EXPERT now implies DEBUG_KERNEL, change debugging options that
-reference DEBUG_KERNEL && EXPERT to just reference EXPERT.
+Fixed in v4; please replace the patch in tip with that.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
-v4: Avoid semantic changes, by changing DEBUG_KERNEL && EXPERT to EXPERT
-rather than to DEBUG_KERNEL.  This avoids exposing debug options that
-only experts should turn off, such as DEBUG_BUGVERBOSE.
-
-A subsequent patch should probably go through and change the various
-"default !EXPERT" lines to "default y", since enabling CONFIG_EXPERT
-should not directly change anything.
-
- arch/tile/Kconfig.debug |    2 +-
- init/Kconfig            |    2 ++
- lib/Kconfig.debug       |    2 +-
- 3 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/arch/tile/Kconfig.debug b/arch/tile/Kconfig.debug
-index ddbfc33..1d31246 100644
---- a/arch/tile/Kconfig.debug
-+++ b/arch/tile/Kconfig.debug
-@@ -3,7 +3,7 @@ menu "Kernel hacking"
- source "lib/Kconfig.debug"
- 
- config EARLY_PRINTK
--	bool "Early printk" if EXPERT && DEBUG_KERNEL
-+	bool "Early printk" if EXPERT
- 	default y
- 	help
- 	  Write kernel log output directly via the hypervisor console.
-diff --git a/init/Kconfig b/init/Kconfig
-index ebafac4..14370d3 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -909,6 +909,8 @@ config ANON_INODES
- 
- menuconfig EXPERT
- 	bool "Configure standard kernel features (expert users)"
-+	# Unhide debug options, to make the on-by-default options visible
-+	select DEBUG_KERNEL
- 	help
- 	  This option allows certain base kernel options and settings
-           to be disabled or tweaked. This is for specialized
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index dd373c8..9a00361 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -694,7 +694,7 @@ config DEBUG_HIGHMEM
- 	  Disable for production systems.
- 
- config DEBUG_BUGVERBOSE
--	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
-+	bool "Verbose BUG() reporting (adds 70K)" if EXPERT
- 	depends on BUG
- 	depends on ARM || AVR32 || M32R || M68K || SPARC32 || SPARC64 || \
- 		   FRV || SUPERH || GENERIC_BUG || BLACKFIN || MN10300 || TILE
--- 
-1.7.5.3
-
+- Josh Triplett
