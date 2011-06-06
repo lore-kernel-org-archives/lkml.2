@@ -1,92 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757079Ab1FFS2A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 14:28:00 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59769 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234Ab1FFS16 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 14:27:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=gyDEEvGxOjsFXz4O2WBnndPa3y8x/cELRlwXnXL/rPYt13LO/KOXLmIicP8jMigVj4
-         H+qCaKC9jg1Lb+TpSidQAGytvA8I653lf52cAP3YlntirncH30V5axBhGaks8fdI0SPV
-         ppCVAsFjBbB/Qm+bq6ZMqK3vD/DbvWkrCJxNc=
-Subject: Re: Change in functionality of futex() system call.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Zachary Vonler <zvonler@rgmadvisors.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1307384634.2497.736.camel@laptop>
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
-	 <1307373819.3098.40.camel@edumazet-laptop>
-	 <1307376672.2322.167.camel@twins>  <1307376989.2322.171.camel@twins>
-	 <1307377349.3098.65.camel@edumazet-laptop>
-	 <1307377782.2322.183.camel@twins>
-	 <1307378564.3098.67.camel@edumazet-laptop>
-	 <1307379926.2322.219.camel@twins>
-	 <1307380297.3098.74.camel@edumazet-laptop>
-	 <1307384634.2497.736.camel@laptop>
+	id S1757490Ab1FFSbr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 14:31:47 -0400
+Received: from mail.perches.com ([173.55.12.10]:2536 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756005Ab1FFSbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 14:31:46 -0400
+Subject: Re: [PATCH v2 7/7] staging: et131x: Removing '_t' from ce_stats_t
+ struct
+From: Joe Perches <joe@perches.com>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, o.hartmann@telovital.com
+In-Reply-To: <1307383624-8740-8-git-send-email-mark.einon@gmail.com>
+References: <1307295320-31716-1-git-send-email-mark.einon@gmail.com>
+	 <1307383624-8740-1-git-send-email-mark.einon@gmail.com>
+	 <1307383624-8740-8-git-send-email-mark.einon@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 20:27:51 +0200
-Message-ID: <1307384871.3098.98.camel@edumazet-laptop>
+Date: Mon, 06 Jun 2011 11:31:45 -0700
+Message-ID: <1307385105.4994.15.camel@Joe-Laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 06 juin 2011 à 20:23 +0200, Peter Zijlstra a écrit :
+On Mon, 2011-06-06 at 19:07 +0100, Mark Einon wrote:
+> Removing '_t' from ce_stats_t struct name and renaming et131x_adapter ce_stats member from
+>  'Stats' to 'stats'
+[]
+> diff --git a/drivers/staging/et131x/et1310_mac.c b/drivers/staging/et131x/et1310_mac.c
+[]
+> @@ -452,7 +452,7 @@ void ConfigFlowControl(struct et131x_adapter *etdev)
+>   */
+>  void UpdateMacStatHostCounters(struct et131x_adapter *etdev)
+>  {
+> -	struct ce_stats_t *stats = &etdev->Stats;
+> +	struct ce_stats *stats = &etdev->stats;
+>  	struct macstat_regs __iomem *macstat =
+>  		&etdev->regs->macstat;
+>  
+> @@ -503,33 +503,33 @@ void HandleMacStatInterrupt(struct et131x_adapter *etdev)
 
-> 
-> That's really not the point, what do we do when the COW happens during
-> the FUTEX_WAIT? At that point the process vaddr changes mapping and we
-> cannot continue the wait on the old page, since that would expose
-> invisible information, nor can we switch to the new page since we queued
-> on the old page.
-> 
-> Therefore we have to force the COW and queue on the private copy, it
-> really is the only semi sane semantic.
+Might as well copy from UpdateMacStatHostCounters and add
 
-The point is we dont necessarly have to COW the page. If you attempt
-this COW, you shoot on user that did not expect to have a COW.
+	struct ce_stats *stats = &etdev->stats;
 
-Take this program : COW is not allowed, still this worked on 2.6.18 (it
-waits until another process change the value in file and call
-futex_wait())
+>  	 * block indicates that one of the counters has wrapped.
+>  	 */
+>  	if (Carry1 & (1 << 14))
+> -		etdev->Stats.code_violations += COUNTER_WRAP_16_BIT;
+> +		etdev->stats.code_violations += COUNTER_WRAP_16_BIT;
 
-Using PROT_READ | PROT_WRITE instead of PROT_READ was OK too.
+and change these to
+		stats->foo += bar...
 
-(If we use PROT_READ | PROT_WRITE, then after your patch, program doesnt
-work anymore since this process gets a private page after your hidden
-COW : It'll wait forever)
-
-#include <errno.h>
-#include <fcntl.h>
-#include <stdint.h>
-typedef uint32_t u32;   // for futex.h
-#include <linux/futex.h>
-#include <sys/mman.h>
-#include <sys/syscall.h>
-#include <unistd.h>
-
-
-int main(int argc, char *argv[]) {
- 	int fd, *futex, rc, val = 42;
-
-	fd = open("/tmp/futex_test", O_RDWR|O_CREAT, 0644);
-	write(fd, &val, 4);
-	futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_PRIVATE, fd, 0);
-	rc = syscall(SYS_futex, futex, FUTEX_WAIT, val, 0, 0, 0);
-	printf("rc=%d errno=%d\n", rc, errno);
-}
-
+>  	if (Carry1 & (1 << 8))
+> -		etdev->Stats.alignment_err += COUNTER_WRAP_12_BIT;
+> +		etdev->stats.alignment_err += COUNTER_WRAP_12_BIT;
+>  	if (Carry1 & (1 << 7))
+> -		etdev->Stats.length_err += COUNTER_WRAP_16_BIT;
+> +		etdev->stats.length_err += COUNTER_WRAP_16_BIT;
+>  	if (Carry1 & (1 << 2))
+> -		etdev->Stats.other_errors += COUNTER_WRAP_16_BIT;
+> +		etdev->stats.other_errors += COUNTER_WRAP_16_BIT;
+>  	if (Carry1 & (1 << 6))
+> -		etdev->Stats.crc_err += COUNTER_WRAP_16_BIT;
+> +		etdev->stats.crc_err += COUNTER_WRAP_16_BIT;
+>  	if (Carry1 & (1 << 3))
+> -		etdev->Stats.rx_ov_flow += COUNTER_WRAP_16_BIT;
+> +		etdev->stats.rx_ov_flow += COUNTER_WRAP_16_BIT;
+>  	if (Carry1 & (1 << 0))
+> -		etdev->Stats.norcvbuf += COUNTER_WRAP_16_BIT;
+> +		etdev->stats.norcvbuf += COUNTER_WRAP_16_BIT;
+>  	if (Carry2 & (1 << 16))
+> -		etdev->Stats.max_pkt_error += COUNTER_WRAP_12_BIT;
+> +		etdev->stats.max_pkt_error += COUNTER_WRAP_12_BIT;
+>  	if (Carry2 & (1 << 15))
+> -		etdev->Stats.tx_uflo += COUNTER_WRAP_12_BIT;
+> +		etdev->stats.tx_uflo += COUNTER_WRAP_12_BIT;
+>  	if (Carry2 & (1 << 6))
+> -		etdev->Stats.first_collision += COUNTER_WRAP_12_BIT;
+> +		etdev->stats.first_collision += COUNTER_WRAP_12_BIT;
+>  	if (Carry2 & (1 << 8))
+> -		etdev->Stats.tx_deferred += COUNTER_WRAP_12_BIT;
+> +		etdev->stats.tx_deferred += COUNTER_WRAP_12_BIT;
+>  	if (Carry2 & (1 << 5))
+> -		etdev->Stats.excessive_collisions += COUNTER_WRAP_12_BIT;
+> +		etdev->stats.excessive_collisions += COUNTER_WRAP_12_BIT;
+>  	if (Carry2 & (1 << 4))
+> -		etdev->Stats.late_collisions += COUNTER_WRAP_12_BIT;
+> +		etdev->stats.late_collisions += COUNTER_WRAP_12_BIT;
+>  	if (Carry2 & (1 << 2))
+> -		etdev->Stats.collisions += COUNTER_WRAP_12_BIT;
+> +		etdev->stats.collisions += COUNTER_WRAP_12_BIT;
+>  }
 
 
