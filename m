@@ -1,457 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757944Ab1FFTUy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 15:20:54 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:11441 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757855Ab1FFTUL (ORCPT
+	id S1757920Ab1FFTUV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 15:20:21 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:42088 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757859Ab1FFTUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 15:20:11 -0400
-From: David Daney <ddaney@caviumnetworks.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Cc: David Daney <ddaney@caviumnetworks.com>
-Subject: [RFC PATCH v5 6/6] MIPS: Octeon: Initialize and fixup device tree.
-Date: Mon,  6 Jun 2011 12:19:46 -0700
-Message-Id: <1307387986-27069-7-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1307387986-27069-1-git-send-email-ddaney@caviumnetworks.com>
-References: <1307387986-27069-1-git-send-email-ddaney@caviumnetworks.com>
-X-OriginalArrivalTime: 06 Jun 2011 19:20:11.0189 (UTC) FILETIME=[C1263E50:01CC247E]
+	Mon, 6 Jun 2011 15:20:14 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(z1039oz9371M1432N98dKzz1202hzz15d4R8275bhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LMDV1K-02-3TQ-02
+X-M-MSG: 
+Date: Mon, 6 Jun 2011 21:20:30 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "laurent.pinchart@ideasonboard.com" 
+	<laurent.pinchart@ideasonboard.com>,
+        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "davidb@codeaurora.org" <davidb@codeaurora.org>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>
+Subject: Re: [RFC 0/6] iommu: generic api migration and grouping
+Message-ID: <20110606192030.GA4356@amd.com>
+References: <1307053663-24572-1-git-send-email-ohad@wizery.com>
+ <20110606100950.GC30762@amd.com>
+ <BANLkTi=i2s-Ujiy4qn_XQv+9dMjUC9R66A@mail.gmail.com>
+ <20110606153557.GE1953@amd.com>
+ <BANLkTinwwVO4TmsxuTfSBf6jqYrEVV3b_A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <BANLkTinwwVO4TmsxuTfSBf6jqYrEVV3b_A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
----
- arch/mips/Kconfig                         |    1 +
- arch/mips/cavium-octeon/Makefile          |    3 +
- arch/mips/cavium-octeon/octeon-platform.c |  319 +++++++++++++++++++++++++++++
- arch/mips/cavium-octeon/setup.c           |   39 ++++
- 4 files changed, 362 insertions(+), 0 deletions(-)
+On Mon, Jun 06, 2011 at 12:36:13PM -0400, Ohad Ben-Cohen wrote:
+> On Mon, Jun 6, 2011 at 6:35 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> > On Mon, Jun 06, 2011 at 11:15:30AM -0400, Ohad Ben-Cohen wrote:
+> >
+> >> This is insufficient; users need somehow to tell what page sizes are
+> >> supported by the underlying hardware (we can't assume host page-sizes,
+> >> and we want to use bigger pages whenever possible, to relax the TLB
+> >> pressure).
+> > /
+> > What does the IOMMU-API user need this info for? On the x86 IOMMUs these
+> > details are handled transparently by the IOMMU driver.
+> 
+> That's one way to do that, but then it means duplicating this logic
+> inside the different IOMMU implementations.
+> 
+> Take the OMAP (and seemingly MSM too) example: we have 4KB, 64KB, 1MB
+> and 16MB page-table entries. When we map a memory region, we need to
+> break it up to a minimum number of pages (while validating
+> sizes/alignments are sane). It's not complicated, but it can be nice
+> if it'd be implemented only once.
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index d2849b4..97f044a 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -1402,6 +1402,7 @@ config CPU_CAVIUM_OCTEON
- 	select WEAK_ORDERING
- 	select CPU_SUPPORTS_HIGHMEM
- 	select CPU_SUPPORTS_HUGEPAGES
-+	select LIBFDT
- 	help
- 	  The Cavium Octeon processor is a highly integrated chip containing
- 	  many ethernet hardware widgets for networking tasks. The processor
-diff --git a/arch/mips/cavium-octeon/Makefile b/arch/mips/cavium-octeon/Makefile
-index b8d4f63..a11b35a 100644
---- a/arch/mips/cavium-octeon/Makefile
-+++ b/arch/mips/cavium-octeon/Makefile
-@@ -9,6 +9,9 @@
- # Copyright (C) 2005-2009 Cavium Networks
- #
- 
-+CFLAGS_octeon-platform.o = -I$(src)/../../../scripts/dtc/libfdt
-+CFLAGS_setup.o = -I$(src)/../../../scripts/dtc/libfdt
-+
- obj-y := cpu.o setup.o serial.o octeon-platform.o octeon-irq.o csrc-octeon.o
- obj-y += dma-octeon.o flash_setup.o
- obj-y += octeon-memcpy.o
-diff --git a/arch/mips/cavium-octeon/octeon-platform.c b/arch/mips/cavium-octeon/octeon-platform.c
-index cd61d72..17329e5 100644
---- a/arch/mips/cavium-octeon/octeon-platform.c
-+++ b/arch/mips/cavium-octeon/octeon-platform.c
-@@ -13,10 +13,16 @@
- #include <linux/usb.h>
- #include <linux/dma-mapping.h>
- #include <linux/module.h>
-+#include <linux/slab.h>
- #include <linux/platform_device.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_fdt.h>
-+#include <linux/libfdt.h>
- 
- #include <asm/octeon/octeon.h>
- #include <asm/octeon/cvmx-rnm-defs.h>
-+#include <asm/octeon/cvmx-helper.h>
-+#include <asm/octeon/cvmx-helper-board.h>
- 
- static struct octeon_cf_data octeon_cf_data;
- 
-@@ -440,6 +446,319 @@ device_initcall(octeon_ohci_device_init);
- 
- #endif /* CONFIG_USB */
- 
-+static struct of_device_id __initdata octeon_ids[] = {
-+	{ .compatible = "simple-bus", },
-+	{ .compatible = "cavium,octeon-6335-uctl", },
-+	{ .compatible = "cavium,octeon-3860-bootbus", },
-+	{},
-+};
-+
-+static bool __init octeon_has_88e1145(void)
-+{
-+	return !OCTEON_IS_MODEL(OCTEON_CN52XX) &&
-+	       !OCTEON_IS_MODEL(OCTEON_CN6XXX) &&
-+	       !OCTEON_IS_MODEL(OCTEON_CN56XX);
-+}
-+
-+static void __init octeon_fdt_set_phy(int eth, int phy_addr)
-+{
-+	const __be32 *phy_handle;
-+	const __be32 *reg;
-+	u32 phandle;
-+	int phy;
-+	const char *p;
-+	int current_len;
-+	char new_name[20];
-+
-+	phy_handle = fdt_getprop(initial_boot_params, eth, "phy-handle", NULL);
-+	if (!phy_handle)
-+		return;
-+
-+	phandle = be32_to_cpup(phy_handle);
-+	phy = fdt_node_offset_by_phandle(initial_boot_params, phandle);
-+	if (phy_addr < 0 || phy < 0) {
-+		/* Delete the PHY things */
-+		fdt_nop_property(initial_boot_params, eth, "phy-handle");
-+		if (phy >= 0)
-+			fdt_nop_node(initial_boot_params, phy);
-+		return;
-+	}
-+
-+	if (octeon_has_88e1145()) {
-+		fdt_nop_property(initial_boot_params, phy, "marvell,reg-init");
-+		memset(new_name, 0, sizeof(new_name));
-+		strcpy(new_name, "marvell,88e1145");
-+		p = fdt_getprop(initial_boot_params, phy, "compatible",
-+				&current_len);
-+		if (p && current_len >= strlen(new_name))
-+			fdt_setprop_inplace(initial_boot_params, phy,
-+					"compatible", new_name, current_len);
-+	}
-+
-+	reg = fdt_getprop(initial_boot_params, phy, "reg", NULL);
-+	if (phy_addr == be32_to_cpup(reg))
-+		return;
-+
-+	fdt_setprop_inplace_cell(initial_boot_params, phy, "reg", phy_addr);
-+
-+	snprintf(new_name, sizeof(new_name), "ethernet-phy@%x", phy_addr);
-+
-+	p = fdt_get_name(initial_boot_params, phy, &current_len);
-+	if (p && current_len == strlen(new_name))
-+		fdt_set_name(initial_boot_params, phy, new_name);
-+	else
-+		pr_err("Error: could not rename ethernet phy: <%s>", p);
-+}
-+
-+static void __init octeon_fdt_set_mac_addr(int n, u64 *pmac)
-+{
-+	u8 new_mac[6];
-+	u64 mac = *pmac;
-+	int r;
-+
-+	new_mac[0] = (mac >> 40) & 0xff;
-+	new_mac[1] = (mac >> 32) & 0xff;
-+	new_mac[2] = (mac >> 24) & 0xff;
-+	new_mac[3] = (mac >> 16) & 0xff;
-+	new_mac[4] = (mac >> 8) & 0xff;
-+	new_mac[5] = mac & 0xff;
-+
-+	r = fdt_setprop_inplace(initial_boot_params, n, "local-mac-address",
-+				new_mac, sizeof(new_mac));
-+
-+	if (r) {
-+		pr_err("Setting \"local-mac-address\" failed %d", r);
-+		return;
-+	}
-+	*pmac = mac + 1;
-+}
-+
-+static void __init octeon_fdt_rm_ethernet(int node)
-+{
-+	const __be32 *phy_handle;
-+
-+	phy_handle = fdt_getprop(initial_boot_params, node, "phy-handle", NULL);
-+	if (phy_handle) {
-+		u32 ph = be32_to_cpup(phy_handle);
-+		int p = fdt_node_offset_by_phandle(initial_boot_params, ph);
-+		if (p >= 0)
-+			fdt_nop_node(initial_boot_params, p);
-+	}
-+	fdt_nop_node(initial_boot_params, node);
-+}
-+
-+static void __init octeon_fdt_pip_port(int iface, int i, int p, u64 *pmac)
-+{
-+	char name_buffer[20];
-+	int eth;
-+	int phy_addr;
-+
-+	snprintf(name_buffer, sizeof(name_buffer), "ethernet@%x", p);
-+	eth = fdt_subnode_offset(initial_boot_params, iface, name_buffer);
-+	if (eth < 0)
-+		return;
-+	if (p >= cvmx_helper_ports_on_interface(i)) {
-+		pr_notice("Deleting port %x:%x\n", i, p);
-+		octeon_fdt_rm_ethernet(eth);
-+		return;
-+	}
-+
-+	phy_addr = cvmx_helper_board_get_mii_address(16 * i + p);
-+	octeon_fdt_set_phy(eth, phy_addr);
-+	octeon_fdt_set_mac_addr(eth, pmac);
-+}
-+
-+static void __init octeon_fdt_pip_iface(int pip, int idx, u64 *pmac)
-+{
-+	char name_buffer[20];
-+	int iface;
-+	int p;
-+
-+	cvmx_helper_interface_enumerate(idx);
-+	snprintf(name_buffer, sizeof(name_buffer), "interface@%d", idx);
-+	iface = fdt_subnode_offset(initial_boot_params, pip, name_buffer);
-+	if (iface < 0)
-+		return;
-+
-+	for (p = 0; p < 16; p++)
-+		octeon_fdt_pip_port(iface, idx, p, pmac);
-+}
-+
-+int __init octeon_prune_device_tree(void)
-+{
-+	int i, max_port, uart_mask;
-+	const char *pip_path;
-+	char name_buffer[20];
-+	int aliases;
-+	u64 mac_addr_base;
-+
-+	if (fdt_check_header(initial_boot_params))
-+		panic("Corrupt Device Tree.");
-+
-+	aliases = fdt_path_offset(initial_boot_params, "/aliases");
-+	if (aliases < 0) {
-+		pr_err("Error: No /aliases node in device tree.");
-+		return -EINVAL;
-+	}
-+
-+
-+	mac_addr_base =
-+		((octeon_bootinfo->mac_addr_base[0] & 0xffull)) << 40 |
-+		((octeon_bootinfo->mac_addr_base[1] & 0xffull)) << 32 |
-+		((octeon_bootinfo->mac_addr_base[2] & 0xffull)) << 24 |
-+		((octeon_bootinfo->mac_addr_base[3] & 0xffull)) << 16 |
-+		((octeon_bootinfo->mac_addr_base[4] & 0xffull)) << 8 |
-+		(octeon_bootinfo->mac_addr_base[5] & 0xffull);
-+
-+	if (OCTEON_IS_MODEL(OCTEON_CN52XX) || OCTEON_IS_MODEL(OCTEON_CN63XX))
-+		max_port = 2;
-+	else if (OCTEON_IS_MODEL(OCTEON_CN56XX))
-+		max_port = 1;
-+	else
-+		max_port = 0;
-+
-+	for (i = 0; i < 2; i++) {
-+		const char *alias_prop;
-+		int mgmt;
-+		snprintf(name_buffer, sizeof(name_buffer),
-+			 "mix%d", i);
-+		alias_prop = fdt_getprop(initial_boot_params, aliases,
-+					name_buffer, NULL);
-+		if (alias_prop) {
-+			mgmt = fdt_path_offset(initial_boot_params, alias_prop);
-+			if (mgmt < 0)
-+				continue;
-+			if (i >= max_port) {
-+				pr_notice("Deleting mix%d\n", i);
-+				octeon_fdt_rm_ethernet(mgmt);
-+				fdt_nop_property(initial_boot_params, aliases,
-+						 name_buffer);
-+			} else {
-+				octeon_fdt_set_phy(mgmt, i);
-+				octeon_fdt_set_mac_addr(mgmt, &mac_addr_base);
-+			}
-+		}
-+	}
-+
-+	pip_path = fdt_getprop(initial_boot_params, aliases, "pip", NULL);
-+	if (pip_path) {
-+		int pip = fdt_path_offset(initial_boot_params, pip_path);
-+		if (pip  >= 0)
-+			for (i = 0; i < 4; i++)
-+				octeon_fdt_pip_iface(pip, i, &mac_addr_base);
-+	}
-+
-+	/* I2C */
-+	if (OCTEON_IS_MODEL(OCTEON_CN52XX) ||
-+	    OCTEON_IS_MODEL(OCTEON_CN63XX) ||
-+	    OCTEON_IS_MODEL(OCTEON_CN56XX))
-+		max_port = 2;
-+	else
-+		max_port = 1;
-+
-+	for (i = 0; i < 2; i++) {
-+		const char *alias_prop;
-+		int i2c;
-+		snprintf(name_buffer, sizeof(name_buffer),
-+			 "twsi%d", i);
-+		alias_prop = fdt_getprop(initial_boot_params, aliases,
-+					name_buffer, NULL);
-+
-+		if (alias_prop) {
-+			i2c = fdt_path_offset(initial_boot_params, alias_prop);
-+			if (i2c < 0)
-+				continue;
-+			if (i >= max_port) {
-+				pr_notice("Deleting twsi%d\n", i);
-+				fdt_nop_node(initial_boot_params, i2c);
-+				fdt_nop_property(initial_boot_params, aliases,
-+						 name_buffer);
-+			}
-+		}
-+	}
-+
-+	/* SMI/MDIO Same number of ports as I2C*/
-+
-+	for (i = 0; i < 2; i++) {
-+		const char *alias_prop;
-+		int i2c;
-+		snprintf(name_buffer, sizeof(name_buffer),
-+			 "smi%d", i);
-+		alias_prop = fdt_getprop(initial_boot_params, aliases,
-+					name_buffer, NULL);
-+
-+		if (alias_prop) {
-+			i2c = fdt_path_offset(initial_boot_params, alias_prop);
-+			if (i2c < 0)
-+				continue;
-+			if (i >= max_port) {
-+				pr_notice("Deleting smi%d\n", i);
-+				fdt_nop_node(initial_boot_params, i2c);
-+				fdt_nop_property(initial_boot_params, aliases,
-+						 name_buffer);
-+			}
-+		}
-+	}
-+
-+	/* Serial */
-+	uart_mask = 0;
-+
-+#ifdef CONFIG_CAVIUM_OCTEON_2ND_KERNEL
-+	/*
-+	 * If we are configured to run as the second of two kernels,
-+	 * disable uart0 and enable uart1. Uart0 is owned by the first
-+	 * kernel
-+	 */
-+	uart_mask |= 2; /* uart1 */
-+#else
-+	/*
-+	 * We are configured for the first kernel. We'll enable uart0
-+	 * if the bootloader told us to use 0, otherwise will enable
-+	 * uart 1.
-+	 */
-+	if (octeon_get_boot_uart() == 0)
-+		uart_mask |= 1; /* uart0 */
-+	if (octeon_get_boot_uart() == 1)
-+		uart_mask |= 2; /* uart1 */
-+
-+#ifdef CONFIG_KGDB
-+	uart_mask |= 2; /* uart1 */
-+#endif
-+#endif
-+
-+	/* Right now CN52XX is the only chip with a third uart */
-+	if (OCTEON_IS_MODEL(OCTEON_CN52XX))
-+		uart_mask |= 4; /* uart2 */
-+
-+	for (i = 0; i < 3; i++) {
-+		const char *alias_prop;
-+		int uart;
-+		snprintf(name_buffer, sizeof(name_buffer),
-+			 "uart%d", i);
-+		alias_prop = fdt_getprop(initial_boot_params, aliases,
-+					name_buffer, NULL);
-+
-+		if (alias_prop) {
-+			uart = fdt_path_offset(initial_boot_params, alias_prop);
-+			if (uart_mask & (1 << i))
-+				continue;
-+			pr_notice("Deleting uart%d\n", i);
-+			fdt_nop_node(initial_boot_params, uart);
-+			fdt_nop_property(initial_boot_params, aliases,
-+					 name_buffer);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int __init octeon_publish_devices(void)
-+{
-+	return of_platform_bus_probe(NULL, octeon_ids, NULL);
-+}
-+device_initcall(octeon_publish_devices);
-+
-+
- MODULE_AUTHOR("David Daney <ddaney@caviumnetworks.com>");
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Platform driver for Octeon SOC");
-diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
-index 36221b3..15f876e 100644
---- a/arch/mips/cavium-octeon/setup.c
-+++ b/arch/mips/cavium-octeon/setup.c
-@@ -20,6 +20,8 @@
- #include <linux/platform_device.h>
- #include <linux/serial_core.h>
- #include <linux/serial_8250.h>
-+#include <linux/of_fdt.h>
-+#include <linux/libfdt.h>
- #ifdef CONFIG_BLK_DEV_INITRD
- #include <linux/initrd.h>
- #endif
-@@ -797,3 +799,40 @@ void prom_free_prom_memory(void)
- 	}
- #endif
- }
-+
-+int octeon_prune_device_tree(void);
-+
-+extern const char __dtb_octeon_3xxx_begin;
-+extern const char __dtb_octeon_3xxx_end;
-+void __init device_tree_init(void)
-+{
-+	int dt_size;
-+	struct boot_param_header *fdt;
-+	bool do_prune;
-+
-+	if (octeon_bootinfo->minor_version >= 3 && octeon_bootinfo->fdt_addr) {
-+		fdt = (struct boot_param_header *)PHYS_TO_XKSEG_CACHED(octeon_bootinfo->fdt_addr);
-+		if (fdt_check_header(fdt))
-+			panic("Corrupt Device Tree passed to kernel.");
-+		dt_size = be32_to_cpu(fdt->totalsize);
-+		do_prune = false;
-+	} else {
-+		fdt = (struct boot_param_header *)&__dtb_octeon_3xxx_begin;
-+		dt_size = &__dtb_octeon_3xxx_end - &__dtb_octeon_3xxx_begin;
-+		do_prune = true;
-+	}
-+
-+	/* Copy the default tree from init memory. */
-+	initial_boot_params = early_init_dt_alloc_memory_arch(dt_size, 8);
-+	if (initial_boot_params == NULL)
-+		panic("Could not allocate initial_boot_params\n");
-+	memcpy(initial_boot_params, fdt, dt_size);
-+
-+	if (do_prune) {
-+		octeon_prune_device_tree();
-+		pr_info("Using internal Device Tree.\n");
-+	} else {
-+		pr_info("Using passed Device Tree.\n");
-+	}
-+	unflatten_device_tree();
-+}
+Well, it certainly makes sense to have a single implementation for this.
+But I want to hide this complexity to the user of the IOMMU-API. The
+best choice is to put this into the layer between the IOMMU-API and the
+backend implementation.
+
+> In addition, unless we require 'va' and 'pa' to have the exact same
+> alignment, we might run into specific page configuration that the
+> IOMMU implementation cannot restore on ->unmap, since unmap only takes
+> 'va' and 'order'. So we will either have to supply 'pa' too, or have
+> the implementation remember the mapping in order to unmap it later.
+> That begins to be a bit messy...
+
+That interface is not put into stone. There were other complains about
+the ->unmap part recently, so there is certainly room for improvement
+there.
+
+Regards,
+
+	Joerg
+
 -- 
-1.7.2.3
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
