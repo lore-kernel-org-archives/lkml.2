@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab1FFU65 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 16:58:57 -0400
-Received: from mta21.charter.net ([216.33.127.81]:52471 "EHLO
-	mta21.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896Ab1FFU6z (ORCPT
+	id S1752963Ab1FFVBm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 17:01:42 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:17400 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab1FFVBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 16:58:55 -0400
-X-Authority-Analysis: v=1.1 cv=G6Q69DB3AUoJKS2BpLRaz8MQ2NORN7h5HRzrJMPOhRw=
- c=1 sm=1 a=p9YancsnzTcA:10 a=j3k67WWd678A:10 a=8nJEP1OIZ-IA:10
- a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=OeLhE_-LqMPHxz7CbD8A:9
- a=t7j9Nbo1v-DgU4PPCIwA:7 a=wPNLvfGTeEIA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:117
-Message-ID: <4DED3F8E.60400@cuw.edu>
-Date: Mon, 06 Jun 2011 15:58:54 -0500
-From: Greg Dietsche <gregory.dietsche@cuw.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
+	Mon, 6 Jun 2011 17:01:41 -0400
+Message-ID: <4DED4030.9050503@tilera.com>
+Date: Mon, 6 Jun 2011 17:01:36 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: perex@perex.cz, tiwai@suse.de, broonie@opensource.wolfsonmicro.com,
-        dp@opensource.wolfsonmicro.com, lrg@ti.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] wm8940: remove unecessary if statement
-References: <1307321274-21858-1-git-send-email-Gregory.Dietsche@cuw.edu> <4DEC9E6B.8030505@cam.ac.uk> <4DECCBFB.2020307@cuw.edu> <4DECD0B1.4010802@cam.ac.uk>
-In-Reply-To: <4DECD0B1.4010802@cam.ac.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Timur Tabi <timur@freescale.com>, Deepak Saxena <dsaxena@linaro.org>,
+        <kumar.gala@freescale.com>, <benh@kernel.crashing.org>,
+        <greg@kroah.com>, <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
+Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
+ management driver
+References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106061803.58531.arnd@arndb.de> <4DECFBC5.6070205@freescale.com> <201106061824.53844.arnd@arndb.de>
+In-Reply-To: <201106061824.53844.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonathan,
+On 6/6/2011 12:24 PM, Arnd Bergmann wrote:
+> On Monday 06 June 2011, Timur Tabi wrote:.
+>> And what about my concern that my driver will be the only one in drivers/virt?
+> I have no doubt that more of these will come. Chris Metcalf is currently
+> looking for a home for his tilera hypervisor drivers, and we have the
+> microsoft hyperv drivers in drivers/staging, so they will hopefully
+> move to a proper place later. We also have similar drivers in other
+> places, e.g. drivers/ps3/ps3-sys-manager.c, drivers/s390/char/vmcp.c
+> or parts of drivers/xen.
 
-On 06/06/2011 08:05 AM, Jonathan Cameron wrote:
-> On 06/06/11 13:45, Greg Dietsche wrote:
->    
->
->>> Also if you want to do this sort of cleanup, please also fix the
->>> equivalent in wm8940_resume and wm8940_add_widgets.  Ack is for
->>> what is here, plus those if you do them.
->>>
->>>        
-I updated the patch to include these too.
->>> Just as an aside, there is no earthly point in cc'ing lkml for a
->>> simple cleanup like this. Just adds to already huge amount of noise!
->>>
->>>        
-...and remove LKML from the CC list... :)
-> Fair enough.  The posting to lkml makes more sense now I know it came
-> out of coccinelle (I guess with a load of others? - if so convention would be
->    
-a handful... not too many, but it sounds like if my semantic patch were 
-to be improved,
-there might be a few more.
-> to put them all in a series cc'ing the relevant lists / maintainers for individual
-> patches in the series - that way everyone knows what is going on).
->
-> If it is an individual patch like this, then use apply common sense. It makes
-> no functional changes + is well within a subsystem with it's own active mailing
-> list.  It needs to be sent somewhere publicly, but in this case
-> I'd say alsa-devel is the right destination.  The only people who are even going
-> to read this are the subsystem maintainer, the driver author or the chronically
-> bored.
->
-> Also I think convention is to have the script somewhere (cover letter to that
-> series perhaps?).  See the other series people have done with coccinelle and
-> how they handled this.
->    
->
-Thanks so much for the great explanation being patient with a kernel 
-newbie :)
+It might help if someone (Arnd?) wanted to propose a statement of what
+drivers/virt was really for.  If it's for any Linux driver that upcalls to
+a hypervisor for any reason, then the Tilera paravirtualized drivers fit in
+well.  If it's intended more for drivers that guests running under a
+hypervisor can use to talk to the hypervisor itself (e.g. managing
+notifications that a hypervisor delivers to a guest to cause it to shut
+down or take other actions), then it doesn't seem like the Tilera
+paravirtualized device drivers belong there, since they're just using the
+Tilera hypervisor synchronously to do I/O or get/set device and driver state.
 
-Greg
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
 
