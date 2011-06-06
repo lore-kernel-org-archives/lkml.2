@@ -1,130 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab1FFKnu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 06:43:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34756 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753028Ab1FFKnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 06:43:49 -0400
-Date: Mon, 6 Jun 2011 11:43:45 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, akpm@linux-foundation.org,
-        Ury Stankevich <urykhy@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
-Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous
-Message-ID: <20110606104345.GE5247@suse.de>
-References: <20110601191529.GY19505@random.random>
- <20110601214018.GC7306@suse.de>
- <20110601233036.GZ19505@random.random>
- <20110602010352.GD7306@suse.de>
- <20110602132954.GC19505@random.random>
- <20110602145019.GG7306@suse.de>
- <20110602153754.GF19505@random.random>
- <20110603020920.GA26753@suse.de>
- <20110603144941.GI7306@suse.de>
- <20110604065853.GA4114@barrios-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110604065853.GA4114@barrios-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755126Ab1FFKxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 06:53:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45599 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191Ab1FFKxH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 06:53:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=mVvOIFxv46xynrlXPl19CiVU8Hhkq2xChE/e0d/jU5W6gYElbR+yRfuXqu0bLwCmOb
+         /0E7JdVVXlCKogmU6RxOXUZ6Y7FgJ008NXJwi1cxPtkcdxUQ2AP6TI36TM+z9tP3doxn
+         oo0q1OJ11Ziau+wKyPG6pls1usFxKoAX7CSKA=
+From: Connor Hansen <cmdkhh@gmail.com>
+To: tj@kernel.org
+Cc: arjan@infradead.org, linux-kernel@vger.kernel.org,
+        Connor Hansen <cmdkhh@gmail.com>
+Subject: [PATCH] kernel/async.c: Add missing loglevel to initcall_debug printks
+Date: Mon,  6 Jun 2011 03:52:44 -0700
+Message-Id: <1307357564-5258-1-git-send-email-cmdkhh@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 04, 2011 at 03:58:53PM +0900, Minchan Kim wrote:
-> On Fri, Jun 03, 2011 at 03:49:41PM +0100, Mel Gorman wrote:
-> > On Fri, Jun 03, 2011 at 03:09:20AM +0100, Mel Gorman wrote:
-> > > On Thu, Jun 02, 2011 at 05:37:54PM +0200, Andrea Arcangeli wrote:
-> > > > > There is an explanation in here somewhere because as I write this,
-> > > > > the test machine has survived 14 hours under continual stress without
-> > > > > the isolated counters going negative with over 128 million pages
-> > > > > successfully migrated and a million pages failed to migrate due to
-> > > > > direct compaction being called 80,000 times. It's possible it's a
-> > > > > co-incidence but it's some co-incidence!
-> > > > 
-> > > > No idea...
-> > > 
-> > > I wasn't able to work on this most of the day but was looking at this
-> > > closer this evening again and I think I might have thought of another
-> > > theory that could cause this problem.
-> > > 
-> > > When THP is isolating pages, it accounts for the pages isolated against
-> > > the zone of course. If it backs out, it finds the pages from the PTEs.
-> > > On !SMP but PREEMPT, we may not have adequate protection against a new
-> > > page from a different zone being inserted into the PTE causing us to
-> > > decrement against the wrong zone. While the global counter is fine,
-> > > the per-zone counters look corrupted. You'd still think it was the
-> > > anon counter tht got screwed rather than the file one if it really was
-> > > THP unfortunately so it's not the full picture. I'm going to start
-> > > a test monitoring both zoneinfo and vmstat to see if vmstat looks
-> > > fine while the per-zone counters that are negative are offset by a
-> > > positive count on the other zones that when added together become 0.
-> > > Hopefully it'll actually trigger overnight :/
-> > > 
-> > 
-> > Right idea of the wrong zone being accounted for but wrong place. I
-> > think the following patch should fix the problem;
-> > 
-> > ==== CUT HERE ===
-> > mm: compaction: Ensure that the compaction free scanner does not move to the next zone
-> > 
-> > Compaction works with two scanners, a migration and a free
-> > scanner. When the scanners crossover, migration within the zone is
-> > complete. The location of the scanner is recorded on each cycle to
-> > avoid excesive scanning.
-> > 
-> > When a zone is small and mostly reserved, it's very easy for the
-> > migration scanner to be close to the end of the zone. Then the following
-> > situation can occurs
-> > 
-> >   o migration scanner isolates some pages near the end of the zone
-> >   o free scanner starts at the end of the zone but finds that the
-> >     migration scanner is already there
-> >   o free scanner gets reinitialised for the next cycle as
-> >     cc->migrate_pfn + pageblock_nr_pages
-> >     moving the free scanner into the next zone
-> >   o migration scanner moves into the next zone but continues accounting
-> >     against the old zone
-> > 
-> > When this happens, NR_ISOLATED accounting goes haywire because some
-> > of the accounting happens against the wrong zone. One zones counter
-> > remains positive while the other goes negative even though the overall
-> > global count is accurate. This was reported on X86-32 with !SMP because
-> > !SMP allows the negative counters to be visible. The fact that it is
-> > difficult to reproduce on X86-64 is probably just a co-incidence as
-> 
-> I guess it's related to zone sizes.
-> X86-64 has small DMA and large DMA32 zones for fallback of NORMAL while
-> x86 has just a small DMA(16M) zone.
-> 
+printk messages in initcall_debug checks are informational
+and should be marked with the KERN_INFO log level.
 
-Yep, this is a possibility as well as the use of lowmem reserves.
+Signed-off-by: Connor Hansen <cmdkhh@gmail.com>
+---
+ kernel/async.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-> I think DMA zone in x86 is easily full of non-LRU or non-movable pages.
-
-Maybe not full, but it has more PageReserved pages than anywhere else
-and few MIGRATE_MOVABLE blocks. MIGRATE_MOVABLE gets skipped during
-async compaction we could easily reach the end of the DMA zone quickly.
-
-> So isolate_migratepagse continues to scan for finding pages which are migratable
-> and then it reaches near end of zone.
-> 
-> > the bug should theoritically be possible there.
->
-> Finally, you found it. Congratulations on!
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> 
-> When we are debugging this problem, we found a few of bugs and enhance points
-> and submitted patches. It was a very good chance to fix Linux VM.
-> 
-
-Thanks.
-
+diff --git a/kernel/async.c b/kernel/async.c
+index cd9dbb9..c25f9c1 100644
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -128,7 +128,8 @@ static void async_run_entry_fn(struct work_struct *work)
+ 
+ 	/* 2) run (and print duration) */
+ 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
+-		printk("calling  %lli_%pF @ %i\n", (long long)entry->cookie,
++		printk(KERN_INFO "calling  %lli_%pF @ %i\n",
++			(long long)entry->cookie,
+ 			entry->func, task_pid_nr(current));
+ 		calltime = ktime_get();
+ 	}
+@@ -136,7 +137,7 @@ static void async_run_entry_fn(struct work_struct *work)
+ 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
+ 		rettime = ktime_get();
+ 		delta = ktime_sub(rettime, calltime);
+-		printk("initcall %lli_%pF returned 0 after %lld usecs\n",
++		printk(KERN_INFO "initcall %lli_%pF returned 0 after %lld usecs\n",
+ 			(long long)entry->cookie,
+ 			entry->func,
+ 			(long long)ktime_to_ns(delta) >> 10);
+@@ -270,7 +271,8 @@ void async_synchronize_cookie_domain(async_cookie_t cookie,
+ 	ktime_t starttime, delta, endtime;
+ 
+ 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
+-		printk("async_waiting @ %i\n", task_pid_nr(current));
++		printk(KERN_INFO "async_waiting @ %i\n",
++			task_pid_nr(current));
+ 		starttime = ktime_get();
+ 	}
+ 
+@@ -280,7 +282,7 @@ void async_synchronize_cookie_domain(async_cookie_t cookie,
+ 		endtime = ktime_get();
+ 		delta = ktime_sub(endtime, starttime);
+ 
+-		printk("async_continuing @ %i after %lli usec\n",
++		printk(KERN_INFO "async_continuing @ %i after %lli usec\n",
+ 			task_pid_nr(current),
+ 			(long long)ktime_to_ns(delta) >> 10);
+ 	}
 -- 
-Mel Gorman
-SUSE Labs
+1.7.4.4
+
