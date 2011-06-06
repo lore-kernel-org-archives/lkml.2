@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab1FFDLI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Jun 2011 23:11:08 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62855 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755057Ab1FFDLE (ORCPT
+	id S1755897Ab1FFDLL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Jun 2011 23:11:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:32919 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755191Ab1FFDLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Jun 2011 23:11:04 -0400
+	Sun, 5 Jun 2011 23:11:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=lgkh4XEMiVtPZY7V+6YkPYAOAE2MjLdLxlI6sMp+/nGSC01lCADsGY41jOn6VfAjrh
-         IEuJSaNifVmIsfccPyzuQgxWzkHIk5U0P5ALqcEn+SvYIUfWTy7YSFJeO3Rllqj7Crvu
-         EU8KJ7feoxcurVLOIkv6R90MTV17f2gqvuyzw=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=eJYBKznHUslxv89eAwcgxT0xhVNqGiGU3DMcaRngvnU74cw9QGWGSkbF5GZ32G3ddc
+         0R3doWtnJ+9uCiIPGrZiXWIxwfo5g9mshNNOdMnC/Q3eUedxPO9symPOkQ5vIb6tI1MT
+         FJIBztauYE6fYWFGpZ8ro0k5Jo1Fd8N3IdH4k=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -20,15 +20,17 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
 Subject: [PATCH 0/4] rcu: Detect rcu uses under extended quiescent state, and fix some
-Date: Mon,  6 Jun 2011 05:10:53 +0200
-Message-Id: <1307329858-14999-1-git-send-email-fweisbec@gmail.com>
+Date: Mon,  6 Jun 2011 05:10:54 +0200
+Message-Id: <1307329858-14999-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1307329858-14999-1-git-send-email-fweisbec@gmail.com>
+References: <1307329858-14999-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 I found two examples with the last two patches but I suspect there are more bugs
-waiting to be detected under other configs and/or archs.
+waiting to be detected under other configs or archs.
 
 Frederic Weisbecker (4):
   rcu: Detect uses of rcu read side in extended quiescent states
