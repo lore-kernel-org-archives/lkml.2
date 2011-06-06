@@ -1,156 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab1FFNWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 09:22:51 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:59315 "EHLO
+	id S1757328Ab1FFNXd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 09:23:33 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:55453 "EHLO
 	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755785Ab1FFNWs convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751147Ab1FFNXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 09:22:48 -0400
+	Mon, 6 Jun 2011 09:23:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rE9dQRc8WtN2Ax0Us09YmZR50EYY+761CQtPg88scK4OuBZ3IgSc987yPSgVYu0ROe
-         PmbtfpxMV0g4i7mg3PQE5OyVCx/86CS8yfrlzcWHCrp44GwXCPBMgS/gbH8/hWs0GINz
-         OkngVrsWzI2PUFEzm0HgDkd+Mner0kOQCdwlM=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IQRCWmXsyTteaROWrvfOfY4A9y6KcrqJ4g+PZUfw+B/H/ke++QakbSHuvc0VCpEYWb
+         XMa2sL/tmSJj7mCOzXgYku3BxOk0VK9FJk5PSazHjk0fZ+cYDrqTDRwzU/oOVeUtPrIR
+         qQTXELDwyO8q424aTbCoI3Fhb7D//FFQlrRtw=
+Date: Mon, 6 Jun 2011 22:23:21 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, akpm@linux-foundation.org,
+        Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110606132321.GA1686@barrios-laptop>
+References: <20110601214018.GC7306@suse.de>
+ <20110601233036.GZ19505@random.random>
+ <20110602010352.GD7306@suse.de>
+ <20110602132954.GC19505@random.random>
+ <20110602145019.GG7306@suse.de>
+ <20110602153754.GF19505@random.random>
+ <20110603020920.GA26753@suse.de>
+ <20110603144941.GI7306@suse.de>
+ <20110604065853.GA4114@barrios-laptop>
+ <20110606104345.GE5247@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTincsU5=RvrA91Vy3bpSyGfzCvfF-A@mail.gmail.com>
-References: <1305128885-21275-1-git-send-email-per.forlin@linaro.org>
-	<1305128885-21275-2-git-send-email-per.forlin@linaro.org>
-	<m31v052nle.fsf@pullcord.laptop.org>
-	<BANLkTincsU5=RvrA91Vy3bpSyGfzCvfF-A@mail.gmail.com>
-Date: Mon, 6 Jun 2011 15:22:48 +0200
-Message-ID: <BANLkTi=umBJyi9CDu47UxhvA3vERmx7c-A@mail.gmail.com>
-Subject: Re: [PATCH v5] sdio: optimized SDIO IRQ handling for single irq
-From: Daniel Mack <zonque@gmail.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Per Forlin <per.forlin@linaro.org>, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org,
-        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Dan Williams <dcbw@redhat.com>, libertas-dev@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606104345.GE5247@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 6, 2011 at 3:17 PM, Daniel Mack <zonque@gmail.com> wrote:
-> On Wed, May 11, 2011 at 6:45 PM, Chris Ball <cjb@laptop.org> wrote:
->> Hi Per,
->>
->> On Wed, May 11 2011, Per Forlin wrote:
->>> From: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
->>>
->>> If there is only 1 function interrupt registered it is possible to
->>> improve performance by directly calling the irq handler
->>> and avoiding the overhead of reading the CCCR registers.
->>>
->>> Signed-off-by: Per Forlin <per.forlin@linaro.org>
->>> Acked-by: Ulf Hansson <ulf.hansson@stericsson.com>
->>> Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
->>> ---
->>>  drivers/mmc/core/sdio_irq.c |   33 ++++++++++++++++++++++++++++++++-
->>>  include/linux/mmc/card.h    |    1 +
->>>  2 files changed, 33 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
->>> index bb192f9..a0890ac 100644
->>> --- a/drivers/mmc/core/sdio_irq.c
->>> +++ b/drivers/mmc/core/sdio_irq.c
->>> @@ -31,6 +31,17 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
->>>  {
->>>       int i, ret, count;
->>>       unsigned char pending;
->>> +     struct sdio_func *func;
->>> +
->>> +     /*
->>> +      * Optimization, if there is only 1 function interrupt registered
->>> +      * call irq handler directly
->>> +      */
->>> +     func = card->sdio_single_irq;
->>> +     if (func) {
->>> +             func->irq_handler(func);
->>> +             return 1;
->>> +     }
->>>
->>>       ret = mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_INTx, 0, &pending);
->>>       if (ret) {
->>> @@ -42,7 +53,7 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
->>>       count = 0;
->>>       for (i = 1; i <= 7; i++) {
->>>               if (pending & (1 << i)) {
->>> -                     struct sdio_func *func = card->sdio_func[i - 1];
->>> +                     func = card->sdio_func[i - 1];
->>>                       if (!func) {
->>>                               printk(KERN_WARNING "%s: pending IRQ for "
->>>                                       "non-existant function\n",
->>> @@ -186,6 +197,24 @@ static int sdio_card_irq_put(struct mmc_card *card)
->>>       return 0;
->>>  }
->>>
->>> +/* If there is only 1 function registered set sdio_single_irq */
->>> +static void sdio_single_irq_set(struct mmc_card *card)
->>> +{
->>> +     struct sdio_func *func;
->>> +     int i;
->>> +
->>> +     card->sdio_single_irq = NULL;
->>> +     if ((card->host->caps & MMC_CAP_SDIO_IRQ) &&
->>> +         card->host->sdio_irqs == 1)
->>> +             for (i = 0; i < card->sdio_funcs; i++) {
->>> +                    func = card->sdio_func[i];
->>> +                    if (func && func->irq_handler) {
->>> +                            card->sdio_single_irq = func;
->>> +                            break;
->>> +                    }
->>> +            }
->>> +}
->>> +
->>>  /**
->>>   *   sdio_claim_irq - claim the IRQ for a SDIO function
->>>   *   @func: SDIO function
->>> @@ -227,6 +256,7 @@ int sdio_claim_irq(struct sdio_func *func, sdio_irq_handler_t *handler)
->>>       ret = sdio_card_irq_get(func->card);
->>>       if (ret)
->>>               func->irq_handler = NULL;
->>> +     sdio_single_irq_set(func->card);
->>>
->>>       return ret;
->>>  }
->>> @@ -251,6 +281,7 @@ int sdio_release_irq(struct sdio_func *func)
->>>       if (func->irq_handler) {
->>>               func->irq_handler = NULL;
->>>               sdio_card_irq_put(func->card);
->>> +             sdio_single_irq_set(func->card);
->>>       }
->>>
->>>       ret = mmc_io_rw_direct(func->card, 0, 0, SDIO_CCCR_IENx, 0, &reg);
->>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
->>> index d8dffc9..4910dec 100644
->>> --- a/include/linux/mmc/card.h
->>> +++ b/include/linux/mmc/card.h
->>> @@ -191,6 +191,7 @@ struct mmc_card {
->>>       struct sdio_cccr        cccr;           /* common card info */
->>>       struct sdio_cis         cis;            /* common tuple info */
->>>       struct sdio_func        *sdio_func[SDIO_MAX_FUNCS]; /* SDIO functions (devices) */
->>> +     struct sdio_func        *sdio_single_irq; /* SDIO function when only one IRQ active */
->>>       unsigned                num_info;       /* number of info strings */
->>>       const char              **info;         /* info strings */
->>>       struct sdio_func_tuple  *tuples;        /* unknown common tuples */
->>
->> Thanks, looks good now -- pushed to mmc-next for .40.
->
-> This patch breaks libertas over SDIO, as the interrupt handler of that
-> driver is now called even though the hardware didn't signal any
-> interrupt condition. This is a problem for at least two reasons in
-> this case:
+On Mon, Jun 06, 2011 at 11:43:45AM +0100, Mel Gorman wrote:
+> On Sat, Jun 04, 2011 at 03:58:53PM +0900, Minchan Kim wrote:
+> > On Fri, Jun 03, 2011 at 03:49:41PM +0100, Mel Gorman wrote:
+> > > On Fri, Jun 03, 2011 at 03:09:20AM +0100, Mel Gorman wrote:
+> > > > On Thu, Jun 02, 2011 at 05:37:54PM +0200, Andrea Arcangeli wrote:
+> > > > > > There is an explanation in here somewhere because as I write this,
+> > > > > > the test machine has survived 14 hours under continual stress without
+> > > > > > the isolated counters going negative with over 128 million pages
+> > > > > > successfully migrated and a million pages failed to migrate due to
+> > > > > > direct compaction being called 80,000 times. It's possible it's a
+> > > > > > co-incidence but it's some co-incidence!
+> > > > > 
+> > > > > No idea...
+> > > > 
+> > > > I wasn't able to work on this most of the day but was looking at this
+> > > > closer this evening again and I think I might have thought of another
+> > > > theory that could cause this problem.
+> > > > 
+> > > > When THP is isolating pages, it accounts for the pages isolated against
+> > > > the zone of course. If it backs out, it finds the pages from the PTEs.
+> > > > On !SMP but PREEMPT, we may not have adequate protection against a new
+> > > > page from a different zone being inserted into the PTE causing us to
+> > > > decrement against the wrong zone. While the global counter is fine,
+> > > > the per-zone counters look corrupted. You'd still think it was the
+> > > > anon counter tht got screwed rather than the file one if it really was
+> > > > THP unfortunately so it's not the full picture. I'm going to start
+> > > > a test monitoring both zoneinfo and vmstat to see if vmstat looks
+> > > > fine while the per-zone counters that are negative are offset by a
+> > > > positive count on the other zones that when added together become 0.
+> > > > Hopefully it'll actually trigger overnight :/
+> > > > 
+> > > 
+> > > Right idea of the wrong zone being accounted for but wrong place. I
+> > > think the following patch should fix the problem;
+> > > 
+> > > ==== CUT HERE ===
+> > > mm: compaction: Ensure that the compaction free scanner does not move to the next zone
+> > > 
+> > > Compaction works with two scanners, a migration and a free
+> > > scanner. When the scanners crossover, migration within the zone is
+> > > complete. The location of the scanner is recorded on each cycle to
+> > > avoid excesive scanning.
+> > > 
+> > > When a zone is small and mostly reserved, it's very easy for the
+> > > migration scanner to be close to the end of the zone. Then the following
+> > > situation can occurs
+> > > 
+> > >   o migration scanner isolates some pages near the end of the zone
+> > >   o free scanner starts at the end of the zone but finds that the
+> > >     migration scanner is already there
+> > >   o free scanner gets reinitialised for the next cycle as
+> > >     cc->migrate_pfn + pageblock_nr_pages
+> > >     moving the free scanner into the next zone
+> > >   o migration scanner moves into the next zone but continues accounting
+> > >     against the old zone
+> > > 
+> > > When this happens, NR_ISOLATED accounting goes haywire because some
+> > > of the accounting happens against the wrong zone. One zones counter
+> > > remains positive while the other goes negative even though the overall
+> > > global count is accurate. This was reported on X86-32 with !SMP because
+> > > !SMP allows the negative counters to be visible. The fact that it is
+> > > difficult to reproduce on X86-64 is probably just a co-incidence as
+> > 
+> > I guess it's related to zone sizes.
+> > X86-64 has small DMA and large DMA32 zones for fallback of NORMAL while
+> > x86 has just a small DMA(16M) zone.
+> > 
+> 
+> Yep, this is a possibility as well as the use of lowmem reserves.
+> 
+> > I think DMA zone in x86 is easily full of non-LRU or non-movable pages.
+> 
+> Maybe not full, but it has more PageReserved pages than anywhere else
 
-I checked the libertas-dev archives too late and saw that there is a
-fix by Daniel Drake for this problem already.
+Yeb. It's very possible. 
 
-Sorry for the noise.
+> and few MIGRATE_MOVABLE blocks. MIGRATE_MOVABLE gets skipped during
+				  non-MIGRATE_MOVABLE gets skipped during
+To be clear for someone in future, let's fix typo.
 
-Daniel
+> async compaction we could easily reach the end of the DMA zone quickly.
+
+-- 
+Kind regards
+Minchan Kim
