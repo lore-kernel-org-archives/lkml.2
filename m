@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab1FFMXa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 08:23:30 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:44308 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754357Ab1FFMX2 (ORCPT
+	id S1756701Ab1FFMeN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 08:34:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49670 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754501Ab1FFMeJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 08:23:28 -0400
-X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h8JiYXs/HrEl2yUn8V3w==
-X-RZG-CLASS-ID: mo05
-Message-ID: <4DECC6B4.5020108@samba.org>
-Date: Mon, 06 Jun 2011 14:23:16 +0200
-From: "Stefan (metze) Metzmacher" <metze@samba.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Mon, 6 Jun 2011 08:34:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:content-type
+         :content-transfer-encoding;
+        b=HjtFHkfyGKhNQ+UrQ7sjcER+HRLwjRUh9RnSkkJkUY0OH50ha21aI431vbn1pVan8Y
+         mRPq2n3yh3tRomf9Vg1IB9LGbU4zqp12o714Qyv/E5uUM8lHztW1ksPVXz79L045Xztn
+         fi6OTxSEMu7wMQeQffGIEfKuji2oS6bw9gElo=
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: oliver@neukum.name, gregkh@suse.de, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usbnet/cdc_ncm: add missing .reset_resume hook
-References: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E568@EXDCVYMBSTM006.EQ1STM.local>	<1306929701-22861-1-git-send-email-metze@samba.org>	<1306929701-22861-2-git-send-email-metze@samba.org> <20110601.211142.557328157396419857.davem@davemloft.net>
-In-Reply-To: <20110601.211142.557328157396419857.davem@davemloft.net>
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=0E53083F
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig9604938BF97759CABEE2856C"
+In-Reply-To: <20110606121937.GI7180@thunk.org>
+References: <cover.1307292171.git.luto@mit.edu> <4de62bfbf6974f14d0e9d9ae37cc137dbc926a30.1307292171.git.luto@mit.edu>
+ <BANLkTimrhO8QfBqQsH_Q13ghRH2P+ZP7AA@mail.gmail.com> <20110606102419.GA837@elte.hu>
+ <20110606121937.GI7180@thunk.org>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 6 Jun 2011 08:33:49 -0400
+X-Google-Sender-Auth: iUYnaJaU7wT89YXfKOwBHwpQTho
+Message-ID: <BANLkTik86BuPwktj1R1vnMoqrReY8RhHtw@mail.gmail.com>
+Subject: Re: [PATCH] x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to COMPAT_VSYSCALLS
+To: "Ted Ts'o" <tytso@mit.edu>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
+        pageexec@freemail.hu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig9604938BF97759CABEE2856C
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-Hi David,
-
-> From: Stefan Metzmacher <metze@samba.org>
-> Date: Wed,  1 Jun 2011 14:01:41 +0200
->=20
->> This avoids messages like this after suspend:
+On Mon, Jun 6, 2011 at 8:19 AM, Ted Ts'o <tytso@mit.edu> wrote:
+> On Mon, Jun 06, 2011 at 12:24:19PM +0200, Ingo Molnar wrote:
 >>
->>    cdc_ncm 2-1.4:1.6: no reset_resume for driver cdc_ncm?
->>    cdc_ncm 2-1.4:1.7: no reset_resume for driver cdc_ncm?
->>    cdc_ncm 2-1.4:1.6: usb0: unregister 'cdc_ncm' usb-0000:00:1d.0-1.4,=
- CDC NCM
->>
->> This is important for the Ericsson F5521gw GSM/UMTS modem.
->> Otherwise modemmanager looses the fact that the cdc_ncm and cdc_acm de=
-vices
->> belong together.
->>
->> The cdc_ether module does the same.
->>
->> Signed-off-by: Stefan Metzmacher <metze@samba.org>
->=20
-> Applied and queued up for -stable, thanks.
+>> -What:        CONFIG_UNSAFE_VSYSCALLS (x86_64)
+>> +What:        CONFIG_COMPAT_VSYSCALLS (x86_64)
+>>  When:        When glibc 2.14 or newer is ubitquitous.  Perhaps mid-2012.
+>> -Why: Having user-executable code at a fixed address is a security problem.
+>> -     Turning off CONFIG_UNSAFE_VSYSCALLS mostly removes the risk but will
+>> +Why: Having user-executable syscall invoking code at a fixed addresses makes
+>> +     it easier for attackers to exploit security holes.
+>> +     Turning off CONFIG_COMPAT_VSYSCALLS mostly removes the risk but will
+>>       make the time() function slower on glibc versions 2.13 and below.
+>>  Who: Andy Lutomirski <luto@mit.edu>
+>
+> I'd suggest 2013 or 2014, at least.  People using Ubuntu LTS and RHEL
+> 6 are stuck back at glibc 2.11, and many of those users do like being
+> able to upgrade to newer kernels.  And there are probably are a large
+> number of static binaries around.
+>
+> Maybe in 2012 or so we change the to be 'no' (and I'd suggest adding a
+> comment in the feature-removal-schedule.txt file that this will also
+> break static binaries).
 
-It seems to be part of 3.0-rc2, but I'm not seeing it in any stable tree
-yet...
+It doesn't actually break them; it just slows them down.  But I'm very
+particular about the date.
 
-When can I expect it in stable trees like 2.6.38.y?
-
-metze
-
-
---------------enig9604938BF97759CABEE2856C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk3sxrcACgkQm70gjA5TCD8utQCgjasCJ5x8pTFcoc900VckFHQj
-LQQAn2hIj/Ip/PK89y7lT4Fh26mb5WTw
-=oKTy
------END PGP SIGNATURE-----
-
---------------enig9604938BF97759CABEE2856C--
+--Andy
