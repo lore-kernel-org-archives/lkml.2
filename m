@@ -1,50 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab1FFKpL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 06:45:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47772 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100Ab1FFKpH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 06:45:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=JNYVaxh+knyylNKoyVHI4iBjXaAMPBVGyZlxrYcUFZGoXHGYnqCS+1c/saFtzJo4ld
-         sbG7OmD48x6h9+dRZa4cM0REPZQrdapjyaHEgDD/hJvT/fSaw2i9UZUO39esLI3B47vL
-         Fi9+EHJiNWzMjbZY5VggKgxLGG04e0mjICXuQ=
-Subject: Re: [PATCH] MTD: pxa3xx_nand: Fix blank page ECC mismatch
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Lei Wen <adrian.wenl@gmail.com>
-Cc: Daniel Mack <zonque@gmail.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Lei Wen <leiwen@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        stable@kernel.org, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <BANLkTik1_cuo5UH995agoNYa2FdQ8Qasiw@mail.gmail.com>
-References: <1307106198-11965-1-git-send-email-zonque@gmail.com>
-	 <BANLkTimpLKkfSJbeuM6kc7bUE+JybTmVrA@mail.gmail.com>
-	 <BANLkTik1_cuo5UH995agoNYa2FdQ8Qasiw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 13:40:49 +0300
-Message-ID: <1307356849.3112.33.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S1754042Ab1FFKnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 06:43:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34756 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753028Ab1FFKnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 06:43:49 -0400
+Date: Mon, 6 Jun 2011 11:43:45 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, akpm@linux-foundation.org,
+        Ury Stankevich <urykhy@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org
+Subject: Re: [PATCH] mm: compaction: Abort compaction if too many pages are
+ isolated and caller is asynchronous
+Message-ID: <20110606104345.GE5247@suse.de>
+References: <20110601191529.GY19505@random.random>
+ <20110601214018.GC7306@suse.de>
+ <20110601233036.GZ19505@random.random>
+ <20110602010352.GD7306@suse.de>
+ <20110602132954.GC19505@random.random>
+ <20110602145019.GG7306@suse.de>
+ <20110602153754.GF19505@random.random>
+ <20110603020920.GA26753@suse.de>
+ <20110603144941.GI7306@suse.de>
+ <20110604065853.GA4114@barrios-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110604065853.GA4114@barrios-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-03 at 23:31 +0800, Lei Wen wrote:
-> Also cc to MTD mailist
-> Cc: linux-mtd@lists.infradead.org
+On Sat, Jun 04, 2011 at 03:58:53PM +0900, Minchan Kim wrote:
+> On Fri, Jun 03, 2011 at 03:49:41PM +0100, Mel Gorman wrote:
+> > On Fri, Jun 03, 2011 at 03:09:20AM +0100, Mel Gorman wrote:
+> > > On Thu, Jun 02, 2011 at 05:37:54PM +0200, Andrea Arcangeli wrote:
+> > > > > There is an explanation in here somewhere because as I write this,
+> > > > > the test machine has survived 14 hours under continual stress without
+> > > > > the isolated counters going negative with over 128 million pages
+> > > > > successfully migrated and a million pages failed to migrate due to
+> > > > > direct compaction being called 80,000 times. It's possible it's a
+> > > > > co-incidence but it's some co-incidence!
+> > > > 
+> > > > No idea...
+> > > 
+> > > I wasn't able to work on this most of the day but was looking at this
+> > > closer this evening again and I think I might have thought of another
+> > > theory that could cause this problem.
+> > > 
+> > > When THP is isolating pages, it accounts for the pages isolated against
+> > > the zone of course. If it backs out, it finds the pages from the PTEs.
+> > > On !SMP but PREEMPT, we may not have adequate protection against a new
+> > > page from a different zone being inserted into the PTE causing us to
+> > > decrement against the wrong zone. While the global counter is fine,
+> > > the per-zone counters look corrupted. You'd still think it was the
+> > > anon counter tht got screwed rather than the file one if it really was
+> > > THP unfortunately so it's not the full picture. I'm going to start
+> > > a test monitoring both zoneinfo and vmstat to see if vmstat looks
+> > > fine while the per-zone counters that are negative are offset by a
+> > > positive count on the other zones that when added together become 0.
+> > > Hopefully it'll actually trigger overnight :/
+> > > 
+> > 
+> > Right idea of the wrong zone being accounted for but wrong place. I
+> > think the following patch should fix the problem;
+> > 
+> > ==== CUT HERE ===
+> > mm: compaction: Ensure that the compaction free scanner does not move to the next zone
+> > 
+> > Compaction works with two scanners, a migration and a free
+> > scanner. When the scanners crossover, migration within the zone is
+> > complete. The location of the scanner is recorded on each cycle to
+> > avoid excesive scanning.
+> > 
+> > When a zone is small and mostly reserved, it's very easy for the
+> > migration scanner to be close to the end of the zone. Then the following
+> > situation can occurs
+> > 
+> >   o migration scanner isolates some pages near the end of the zone
+> >   o free scanner starts at the end of the zone but finds that the
+> >     migration scanner is already there
+> >   o free scanner gets reinitialised for the next cycle as
+> >     cc->migrate_pfn + pageblock_nr_pages
+> >     moving the free scanner into the next zone
+> >   o migration scanner moves into the next zone but continues accounting
+> >     against the old zone
+> > 
+> > When this happens, NR_ISOLATED accounting goes haywire because some
+> > of the accounting happens against the wrong zone. One zones counter
+> > remains positive while the other goes negative even though the overall
+> > global count is accurate. This was reported on X86-32 with !SMP because
+> > !SMP allows the negative counters to be visible. The fact that it is
+> > difficult to reproduce on X86-64 is probably just a co-incidence as
+> 
+> I guess it's related to zone sizes.
+> X86-64 has small DMA and large DMA32 zones for fallback of NORMAL while
+> x86 has just a small DMA(16M) zone.
+> 
 
-Please, re-send non-quoted patch.
+Yep, this is a possibility as well as the use of lowmem reserves.
+
+> I think DMA zone in x86 is easily full of non-LRU or non-movable pages.
+
+Maybe not full, but it has more PageReserved pages than anywhere else
+and few MIGRATE_MOVABLE blocks. MIGRATE_MOVABLE gets skipped during
+async compaction we could easily reach the end of the DMA zone quickly.
+
+> So isolate_migratepagse continues to scan for finding pages which are migratable
+> and then it reaches near end of zone.
+> 
+> > the bug should theoritically be possible there.
+>
+> Finally, you found it. Congratulations on!
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> 
+> When we are debugging this problem, we found a few of bugs and enhance points
+> and submitted patches. It was a very good chance to fix Linux VM.
+> 
+
+Thanks.
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+Mel Gorman
+SUSE Labs
