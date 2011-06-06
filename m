@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab1FFUiq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 16:38:46 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:23551 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757989Ab1FFUim (ORCPT
+	id S1757189Ab1FFUlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 16:41:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56239 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751425Ab1FFUlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 16:38:42 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-omap@vger.kernel.org
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, tarun.kanti@ti.com,
-        linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@android.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] ARM: omap4: gpio: add locking around calls to _set_gpio_triggering
-Date: Mon,  6 Jun 2011 13:38:18 -0700
-Message-Id: <1307392698-21170-2-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1307392698-21170-1-git-send-email-ccross@android.com>
-References: <1307392698-21170-1-git-send-email-ccross@android.com>
-X-System-Of-Record: true
+	Mon, 6 Jun 2011 16:41:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <4DED206E.20356.13C155EA@pageexec.freemail.hu>
+References: <cover.1307292171.git.luto@mit.edu> <4DECAE68.16683.1203EBBB@pageexec.freemail.hu>
+ <BANLkTin5jEmUUxWUUkYn9pKzGRwcA-zRLw@mail.gmail.com> <4DED206E.20356.13C155EA@pageexec.freemail.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 7 Jun 2011 05:40:18 +0900
+Message-ID: <BANLkTi=choqfXPYmnivznYBbEFeg2UfbuA@mail.gmail.com>
+Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+To: pageexec@freemail.hu
+Cc: Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@mit.edu>,
+        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-_set_gpio_triggering uses read-modify-write on bank registers,
-lock bank->lock around all calls to it to prevent register
-corruption if two cpus access gpios in the same bank at the
-same time.
+On Tue, Jun 7, 2011 at 3:46 AM,  <pageexec@freemail.hu> wrote:
+>
+>> I'm happy with perhaps moving away from the fixed-address vdso,
+>
+> it's not about the vdso that has been mmap'ed and randomized for quite some
+> time now. it's about the amd64 specific vsyscall page.
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
- drivers/gpio/gpio-omap.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+Duh. What do you think that thing is? It's a special fixed-address
+vdso. Stop the whole jumping from issue to issue and making up random
+irrelevant arguments. First it was you jumping up and down about
+"covering up security issues", now you start instead complaining about
+some random word choice. Stop it.
 
-diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-index 8ba6957..b14bfd4 100644
---- a/drivers/gpio/gpio-omap.c
-+++ b/drivers/gpio/gpio-omap.c
-@@ -1126,8 +1126,11 @@ static void gpio_irq_shutdown(struct irq_data *d)
- {
- 	unsigned int gpio = d->irq - IH_GPIO_BASE;
- 	struct gpio_bank *bank = irq_data_get_irq_chip_data(d);
-+	unsigned long flags;
- 
-+	spin_lock_irqsave(&bank->lock, flags);
- 	_reset_gpio(bank, gpio);
-+	spin_unlock_irqrestore(&bank->lock, flags);
- }
- 
- static void gpio_ack_irq(struct irq_data *d)
-@@ -1142,9 +1145,12 @@ static void gpio_mask_irq(struct irq_data *d)
- {
- 	unsigned int gpio = d->irq - IH_GPIO_BASE;
- 	struct gpio_bank *bank = irq_data_get_irq_chip_data(d);
-+	unsigned long flags;
- 
-+	spin_lock_irqsave(&bank->lock, flags);
- 	_set_gpio_irqenable(bank, gpio, 0);
- 	_set_gpio_triggering(bank, get_gpio_index(gpio), IRQ_TYPE_NONE);
-+	spin_unlock_irqrestore(&bank->lock, flags);
- }
- 
- static void gpio_unmask_irq(struct irq_data *d)
-@@ -1153,7 +1159,9 @@ static void gpio_unmask_irq(struct irq_data *d)
- 	struct gpio_bank *bank = irq_data_get_irq_chip_data(d);
- 	unsigned int irq_mask = 1 << get_gpio_index(gpio);
- 	u32 trigger = irqd_get_trigger_type(d);
-+	unsigned long flags;
- 
-+	spin_lock_irqsave(&bank->lock, flags);
- 	if (trigger)
- 		_set_gpio_triggering(bank, get_gpio_index(gpio), trigger);
- 
-@@ -1165,6 +1173,7 @@ static void gpio_unmask_irq(struct irq_data *d)
- 	}
- 
- 	_set_gpio_irqenable(bank, gpio, 1);
-+	spin_unlock_irqrestore(&bank->lock, flags);
- }
- 
- static struct irq_chip gpio_irq_chip = {
--- 
-1.7.4.1
+What I complain about in the patch series was (specifically) that I
+think the naming sucks and (non-specifically) that the whole series is
+annoying.
 
+The config name is misleading and pointlessly scary - the whole thing
+is not in itself "unsafe", so calling it that is just wrong. If we
+want to make it a legacy option that you can turn off (which sounds
+sane in itself), then name it that way. But if so, the name and
+explanation should be that it's about legacy stuff and that you can
+only do so once it's no longer used. Not "UNSAFE", which it isn't.
+
+We *definitely* don't want to name it in a way that makes some random
+person just turn it off because it's scary, since the random person
+*shouldn't* turn it off today. Comprende?
+
+And the annoying part about the whole patch series is how the whole
+re-sending has gone on forever. Just pick some approach, do it, and
+don't even bother making it a config option for now. If we can replace
+the vsyscall page with a page fault or int3 or whatever, and it's only
+used for the 'time()' system call, just do it.
+
+The series is now extended with the cleanup patches so the end result
+looks reasonable, but why have the whole "first implement it, then
+clean it up" and sending it as a whole series. That's annoying. Just
+send the cleaned-up end result to begin with.
+
+                     Linus
+
+PS. The reason you don't see direct replies seems to be this from gmail:
+
+     ----- The following addresses had permanent fatal errors -----
+    <pageexec@freemail.hu>
+       (reason: 553 sorry, that domain isn't in my list of allowed
+rcpthosts (#5.7.1))
+
+which is probably because some spamming or other bad behavior from
+within the same domain.
