@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab1FFRHm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 13:07:42 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33112 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751889Ab1FFRHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 13:07:40 -0400
-Date: Mon, 6 Jun 2011 19:07:25 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arne Jansen <lists@die-jansens.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-Message-ID: <20110606170725.GD2391@elte.hu>
-References: <20110606145827.GD30348@elte.hu>
- <1307372989.2322.136.camel@twins>
- <1307375227.2322.161.camel@twins>
- <20110606155236.GA7374@elte.hu>
- <1307376039.2322.164.camel@twins>
- <20110606160810.GA16636@elte.hu>
- <1307376771.2322.168.camel@twins>
- <20110606161749.GA22157@elte.hu>
- <4DED0292.1040605@die-jansens.de>
- <4DED0423.4050904@die-jansens.de>
+	id S1756205Ab1FFRIp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 13:08:45 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48056 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756136Ab1FFRIn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 13:08:43 -0400
+Date: Mon, 6 Jun 2011 13:07:46 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org
+Subject: Re: bridge/netfilter: regression in 2.6.39.1
+Message-ID: <20110606170746.GD1000@hmsreliant.think-freely.org>
+References: <4DE93422.3070000@ahsoftware.de>
+ <20110606111507.GA1000@hmsreliant.think-freely.org>
+ <4DECBEA3.6070408@ahsoftware.de>
+ <1307362358.3098.6.camel@edumazet-laptop>
+ <4DECCCC0.70905@ahsoftware.de>
+ <1307366166.3098.15.camel@edumazet-laptop>
+ <4DECD657.9010807@ahsoftware.de>
+ <1307370363.3098.37.camel@edumazet-laptop>
+ <20110606153213.GC1000@hmsreliant.think-freely.org>
+ <1307376705.3098.58.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4DED0423.4050904@die-jansens.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1307376705.3098.58.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -1.5 (-)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Arne Jansen <lists@die-jansens.de> wrote:
-
-> > As long as it doesn't scramble the order of the messages, the 
-> > delay imho doesn't matter even in very printk-heavy debugging 
-> > sessions.
+On Mon, Jun 06, 2011 at 06:11:45PM +0200, Eric Dumazet wrote:
+> Le lundi 06 juin 2011 à 11:32 -0400, Neil Horman a écrit :
 > 
-> And, as important, doesn't reduce the throughput of printk. Having 
-> only 100 wakeups/s sounds like the throughput is limited to 
-> 100xsizeof(ring buffer).
+> > Not to drag this out further, but since you illustrated the correct way to do
+> > this with the blackhole_ops test, and this modification now gives us two
+> > instances of that case, would it perhaps be better to just do this in
+> > dst_metrics_write_ptr:
+> > 
+> > return dst->ops->cow_metrics ? return dst->ops->cow_metrics(dst, p) : NULL;
+> > 
+> > Then we could eliminate the two functions that do nothing be retun NULL (along
+> > with their respective call instructions), and save any future users from having
+> > to remember to include a dummy cow_metrics method if they happen to set the read
+> > only flag on thier dst_ops?
+> 
+> Well, I prefer how David coded the thing.
+> We can add selective traces where we want.
+> 
+> Having a default behavior might give much more work to find a bug in
+> this area. A NULL pointer access gives us an immediate indication.
+> 
+> Its a bit late to add an "if (dst->ops->cow_metrics)" test now that we
+> covered all call sites ;)
+> 
+> But we probably have more bugs elsewhere, because of many dst changes in
+> 2.6.39
+Ok, sounds reasonable to me.
 
-Nah.
+Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
 
-I for example *always* kill klogd during such printk based debugging 
-sessions, because it's *already* very easy to overflow its buffering 
-abilities. Also, klogd often interferes with debugging.
-
-So i make the log buffer big enough to contain enough debugging info.
-
-So it's a non-issue IMHO. Linus, what do you think?
-
-Thanks,
-
-	Ingo
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
