@@ -1,55 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab1FFTI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 15:08:57 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:32865 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654Ab1FFTI4 (ORCPT
+	id S1757600Ab1FFTKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 15:10:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37470 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756216Ab1FFTKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 15:08:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=dUeuNRPuLihazTGP8QevPdzYMl/C/gr3En04ga3plrPC0OsPHh+TOSYMCZSfxM9zYz
-         EYk/Qs1i1p+73GofhkANtHiuCBRNiCY5/p1saNT+CTk82VssPuq/ixZlcFB8t4BOB6Cn
-         sb9hgyFGGoQ6k4Tr8BxQH607xxT17y7/r8fr4=
+	Mon, 6 Jun 2011 15:10:19 -0400
+Date: Mon, 6 Jun 2011 21:10:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [GIT pull] timer fixes
+Message-ID: <alpine.LFD.2.02.1106062109360.13964@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <f2b1d34b5be1bb910f82b961956c3787@admin.gogi.tv>
-References: <9e26ea71798d10a3f900c777b71ff485@admin.gogi.tv>
-	<20110531134519.GC14641@dumpdata.com>
-	<59be1730ec1660abeb7b4dc584510d34@admin.gogi.tv>
-	<20110531160221.GA31659@dumpdata.com>
-	<0a8cb4bcad7fcf091a6bbe158323bba0@admin.gogi.tv>
-	<20110531190412.GA21245@dumpdata.com>
-	<d0ce6a4ba6092a1a9ef0f1e8f3cac9c9@admin.gogi.tv>
-	<20110601132444.GA4081@dumpdata.com>
-	<21491fcfb013e21177140326efc0ee66@admin.gogi.tv>
-	<34fa3fe7780241e452b268fd5ecfdee9@admin.gogi.tv>
-	<20110601222226.GH27166@one.firstfloor.org>
-	<72a54a970741bfc342467045351df812@admin.gogi.tv>
-	<BANLkTik+p65G5f08RfxiYojvAax_nrDiqg@mail.gmail.com>
-	<f2b1d34b5be1bb910f82b961956c3787@admin.gogi.tv>
-Date: Mon, 6 Jun 2011 15:08:56 -0400
-Message-ID: <BANLkTimJfcEcS4mKXgRHnzMDKn2awtp5QQ@mail.gmail.com>
-Subject: Re: [PATCH] tentative fix for radeon on systems >4GB without hardware iommu
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Daniel Haid <d.haid@gogi.tv>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, airlied@linux.ie
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 6, 2011 at 1:41 PM, Daniel Haid <d.haid@gogi.tv> wrote:
->> This looks like the correct fix. rdev->need_dma32 is used when we init
->> ttm for memory management later.
->
-> Is there anything I have to do now to have it included? Will it also
-> go into the stable releases?
->
+Linus,
 
-I think Dave will pick it up and send it through the drm tree.
+Please pull the latest timers-fixes-for-linus git tree from:
 
-Alex
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-fixes-for-linus
+
+Thanks,
+
+	tglx
+
+------------------>
+Sebastian Andrzej Siewior (1):
+      timers: Consider slack value in mod_timer()
+
+Thomas Gleixner (1):
+      clockevents: Handle empty cpumask gracefully
+
+
+ kernel/time/clockevents.c |    5 ++++-
+ kernel/timer.c            |   15 +++++++--------
+ 2 files changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index c027d4f..e4c699d 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -182,7 +182,10 @@ void clockevents_register_device(struct clock_event_device *dev)
+ 	unsigned long flags;
+ 
+ 	BUG_ON(dev->mode != CLOCK_EVT_MODE_UNUSED);
+-	BUG_ON(!dev->cpumask);
++	if (!dev->cpumask) {
++		WARN_ON(num_possible_cpus() > 1);
++		dev->cpumask = cpumask_of(smp_processor_id());
++	}
+ 
+ 	raw_spin_lock_irqsave(&clockevents_lock, flags);
+ 
+diff --git a/kernel/timer.c b/kernel/timer.c
+index fd61986..8cff361 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -749,16 +749,15 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+ 	unsigned long expires_limit, mask;
+ 	int bit;
+ 
+-	expires_limit = expires;
+-
+ 	if (timer->slack >= 0) {
+ 		expires_limit = expires + timer->slack;
+ 	} else {
+-		unsigned long now = jiffies;
++		long delta = expires - jiffies;
++
++		if (delta < 256)
++			return expires;
+ 
+-		/* No slack, if already expired else auto slack 0.4% */
+-		if (time_after(expires, now))
+-			expires_limit = expires + (expires - now)/256;
++		expires_limit = expires + delta / 256;
+ 	}
+ 	mask = expires ^ expires_limit;
+ 	if (mask == 0)
+@@ -795,6 +794,8 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+  */
+ int mod_timer(struct timer_list *timer, unsigned long expires)
+ {
++	expires = apply_slack(timer, expires);
++
+ 	/*
+ 	 * This is a common optimization triggered by the
+ 	 * networking code - if the timer is re-modified
+@@ -803,8 +804,6 @@ int mod_timer(struct timer_list *timer, unsigned long expires)
+ 	if (timer_pending(timer) && timer->expires == expires)
+ 		return 1;
+ 
+-	expires = apply_slack(timer, expires);
+-
+ 	return __mod_timer(timer, expires, false, TIMER_NOT_PINNED);
+ }
+ EXPORT_SYMBOL(mod_timer);
