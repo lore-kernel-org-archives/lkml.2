@@ -1,75 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068Ab1FFWJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:09:15 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:56890 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab1FFWJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 18:09:14 -0400
-X-Originating-IP: 217.70.178.134
-X-Originating-IP: 131.252.246.56
-Date: Mon, 6 Jun 2011 15:09:05 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        sam@ravnborg.org, torvalds@linux-foundation.org, tglx@linutronix.de,
-        mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/debug] debug: Make CONFIG_EXPERT select
- CONFIG_DEBUG_KERNEL to unhide debug options
-Message-ID: <20110606220905.GB1999@leaf>
-References: <20110606165130.GA1844@leaf>
- <tip-2458073da04571182748aa4289630dca52ba63cc@git.kernel.org>
- <20110606214502.GB17026@somewhere.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110606214502.GB17026@somewhere.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758048Ab1FFWLA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:11:00 -0400
+Received: from mail.perches.com ([173.55.12.10]:2549 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753290Ab1FFWK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 18:10:59 -0400
+Subject: Re: [PATCH 1/2] staging: iio replaced kmalloc with local variables.
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@suse.de>
+Cc: anish <anish198519851985@gmail.com>, devel@driverdev.osuosl.org,
+        arnd@arndb.de, lucas.demarchi@profusion.mobi,
+        linux-kernel@vger.kernel.org, jic23@cam.ac.uk,
+        manuel.stahl@iis.fraunhofer.de
+In-Reply-To: <20110606215549.GA7543@suse.de>
+References: <1307387257.4327.12.camel@anish-desktop>
+	 <20110606215549.GA7543@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Jun 2011 15:10:57 -0700
+Message-ID: <1307398257.4994.30.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 11:45:04PM +0200, Frederic Weisbecker wrote:
-> On Mon, Jun 06, 2011 at 09:39:40PM +0000, tip-bot for Josh Triplett wrote:
-> > Commit-ID:  2458073da04571182748aa4289630dca52ba63cc
-> > Gitweb:     http://git.kernel.org/tip/2458073da04571182748aa4289630dca52ba63cc
-> > Author:     Josh Triplett <josh@joshtriplett.org>
-> > AuthorDate: Mon, 6 Jun 2011 09:51:30 -0700
-> > Committer:  Ingo Molnar <mingo@elte.hu>
-> > CommitDate: Mon, 6 Jun 2011 19:30:01 +0200
-> > 
-> > debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
-> > 
-> > Several debugging options currently default to y, such as
-> > CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.
-> > 
-> > Embedded users might want to turn those options off to save space;
-> > however, turning them off requires turning on CONFIG_DEBUG_KERNEL to
-> > unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
-> > unhide debugging options, and CONFIG_EXPERT exists specifically
-> > to unhide options potentially needed by experts and/or embedded
-> > users, make CONFIG_EXPERT automatically imply CONFIG_DEBUG_KERNEL.
-> > 
-> > Change various debugging options to only reference DEBUG_KERNEL,
-> > not EXPERT.
-> > 
-> > Note that DEBUG_MEMORY_INIT defaulted to !EXPERT, which seemed
-> > wrong, since EXPERT should not directly affect anything except
-> > the availability of other options.  (And EXPERT definitely
-> > shouldn't mean "implicitly turn off default safety features".)
-> > 
-> > Change it to default to y, which means that turning on EXPERT
-> > does not automatically disable it, but will provide the option
-> > to disable it.
-> > 
-> > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> > Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-> 
-> No, Nacked actually. I'm fine with the v2 that only changed
-> the EXPERT config to imply DEBUG_KERNEL. But all the other
-> changes here need to be revised, as I outlined in the thread.
+On Mon, 2011-06-06 at 14:55 -0700, Greg KH wrote:
+> On Tue, Jun 07, 2011 at 12:37:37AM +0530, anish wrote:
+> > From: anish kumar <anish198519851985@gmail.com>
+> > Replace kmalloc with local variables as it was un-necessary and
+> > also removed the redudant code after this change.
+> SPI data, like USB data, has to come from kmalloced data, not from the
+> stack, or bad things can, and will, happen.
 
-Fixed in v4; please replace the patch in tip with that.
+Perhaps just add a comment like:
 
-- Josh Triplett
++       u8 *tx = kmalloc(2, GFP_KERNEL);	/* can't be on stack */
+
+It might be better to do a single kmalloc(4)
+than 2 separate kmalloc(2)'s.
+
+
