@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab1FFJwQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 05:52:16 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53959 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755316Ab1FFJwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 05:52:14 -0400
-Message-ID: <4DECA33E.5040306@ti.com>
-Date: Mon, 6 Jun 2011 10:51:58 +0100
-From: Liam Girdwood <lrg@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-CC: Jonathan Cameron <jic23@cam.ac.uk>, "perex@perex.cz" <perex@perex.cz>,
-        "tiwai@suse.de" <tiwai@suse.de>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "dp@opensource.wolfsonmicro.com" <dp@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] wm8940: remove unecessary if statement
-References: <1307321274-21858-1-git-send-email-Gregory.Dietsche@cuw.edu> <4DEC9E6B.8030505@cam.ac.uk>
-In-Reply-To: <4DEC9E6B.8030505@cam.ac.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755781Ab1FFJxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 05:53:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48340 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752500Ab1FFJxg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 05:53:36 -0400
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arne Jansen <lists@die-jansens.de>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <1307352281.2353.7437.camel@twins>
+References: <20110605151323.GA30590@elte.hu>
+	 <20110605152641.GA31124@elte.hu> <20110605153218.GA31471@elte.hu>
+	 <4DEBA9CC.4090503@die-jansens.de> <4DEBB05C.8090506@die-jansens.de>
+	 <4DEBB3DA.8060001@die-jansens.de> <20110605172052.GA1036@elte.hu>
+	 <4DEBBFF9.2030101@die-jansens.de> <20110605185957.GA3452@elte.hu>
+	 <4DEBD95B.6030901@die-jansens.de> <20110605194419.GA12965@elte.hu>
+	 <4DEBE3DF.70104@die-jansens.de> <1307350909.2353.7408.camel@twins>
+	 <4DEC9B67.2070908@die-jansens.de>  <1307352281.2353.7437.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 06 Jun 2011 11:52:59 +0200
+Message-ID: <1307353979.2353.7466.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/11 10:31, Jonathan Cameron wrote:
-> On 06/06/11 01:47, Greg Dietsche wrote:
->> the code always returns ret regardless, so if(ret) check is unecessary.
-> Good point, though please spell check your commit messages.
-> unecessary -> unnecessary
+On Mon, 2011-06-06 at 11:24 +0200, Peter Zijlstra wrote:
+> On Mon, 2011-06-06 at 11:18 +0200, Arne Jansen wrote:
+> > On 06.06.2011 11:01, Peter Zijlstra wrote:
+> > > On Sun, 2011-06-05 at 22:15 +0200, Arne Jansen wrote:
+> > >>
+> > >> Can lockdep just get confused by the lockdep_off/on calls in printk
+> > >> while scheduling is allowed? There aren't many users of lockdep_off().
+> > > 
+> > > Yes!, in that case lock_is_held() returns false, triggering the warning.
+> > > I guess there's an argument to be made in favour of the below..
+> > 
+> > 
+> > Two questions... is there any protection between the lockdep_recursion
+> > check and the set to one? I guess in our case it is, because it's the
+> > scheduler that calls it, but in general?
 > 
-> Also if you want to do this sort of cleanup, please also fix the
-> equivalent in wm8940_resume and wm8940_add_widgets.  Ack is for
-> what is here, plus those if you do them.
+> Yeah, its always current->lockdep_recursion, so there is no
+> concurrency :-)
 > 
-> Just as an aside, there is no earthly point in cc'ing lkml for a
-> simple cleanup like this. Just adds to already huge amount of noise!
->>
->> Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> > And why is lockdep needed to check if a lock is help? Isn't it reflected
+> > in the lock structure itself?
+> 
+> Ah, so the difference is between _who_ owns the lock. Things like
+> spin_is_locked() check if the lock is taken but cannot tell you who owns
+> it, but lock_is_held() checks if the current context owns the lock.
 
-Acked-by: Liam Girdwood <lrg@ti.com>
+Also, lockdep_assert_held() doesn't generate any code when lockdep is
+not configured.
