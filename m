@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab1FFNcM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 09:32:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37694 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756763Ab1FFNcH convert rfc822-to-8bit (ORCPT
+	id S1757413Ab1FFNj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 09:39:27 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:33042 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754460Ab1FFNjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 09:32:07 -0400
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-In-Reply-To: <20110606132142.GA11223@elte.hu>
-References: <20110605152641.GA31124@elte.hu>
-	 <20110605153218.GA31471@elte.hu> <4DEBA9CC.4090503@die-jansens.de>
-	 <4DEBB05C.8090506@die-jansens.de> <4DEBB3DA.8060001@die-jansens.de>
-	 <20110605172052.GA1036@elte.hu> <4DEBBFF9.2030101@die-jansens.de>
-	 <20110605185957.GA3452@elte.hu> <20110606131024.GA7386@elte.hu>
-	 <1307365928.2322.103.camel@twins>  <20110606132142.GA11223@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 06 Jun 2011 15:31:47 +0200
-Message-ID: <1307367107.2322.123.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 6 Jun 2011 09:39:25 -0400
+From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Subject: [RFC PATCH V5 0/4] cpuidle: global registration of idle states with
+	per-cpu statistics
+To: arjan@linux.intel.com, peterz@infradead.org, lenb@kernel.org,
+        venki@google.com, ak@linux.intel.com, len.brown@intel.com,
+        santosh.shilimkar@ti.com, khilman@ti.com
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-acpi@vger.kernel.org
+Date: Mon, 06 Jun 2011 19:09:18 +0530
+Message-ID: <20110606133917.5670.54949.stgit@tringupt.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-06 at 15:21 +0200, Ingo Molnar wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Mon, 2011-06-06 at 15:10 +0200, Ingo Molnar wrote:
-> > 
-> > 
-> > > diff --git a/kernel/printk.c b/kernel/printk.c
-> > > index 3518539..1b9d2be 100644
-> > > --- a/kernel/printk.c
-> > > +++ b/kernel/printk.c
-> > > @@ -859,7 +859,6 @@ asmlinkage int vprintk(const char *fmt, va_list args)
-> > >  		zap_locks();
-> > >  	}
-> > >  
-> > > -	lockdep_off();
-> > 
-> > At the very least you should also do: s/raw_local_irq_/local_irq/ on
-> > this function.
-> 
-> Right, i've also removed the preempt_disable()/enable() pair - that 
-> looks superfluous.
+The following patch series implements global registration of cpuidle
+states, and also has the necessary data structure changes to
+accommodate the per-cpu writable members of the cpuidle_states
+structure.
 
-aside from the preempt thing, such a patch was just tested, I had a
-module trigger a lockdep warning, and stuck a printk() in the middle of
-ttwu (conditional so I could actually boot).
+Previous version of the series (V4) is at https://lkml.org/lkml/2011/4/28/312
+This series applies on 3.0-rc1
 
-So go ahead, and merge this.
+Changes from previous version (V4):
 
-We still need the patch to lock_is_held() though, since there's a few
-other lockdep_off() sites in the kernel, and at least the NTFS one needs
-to be able to schedule.
+1. Rebased the series to 3.0-rc1
+2. Made same changes for Samsung exynos4 cpuidle driver registration
 
+Tests done:
+1. Compile tested for ARM using the following configs: da8xx_omapl_defconfig,
+  exynos4_defconfig, kirkwood_defconfig, omap2plus_defconfig.
 
+2. Boot tested on x86 nehalem with multiple C-states for both intel_idle
+  and acpi_idle drivers.
+
+Thanks
+-Trinabh 
