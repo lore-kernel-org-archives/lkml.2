@@ -1,186 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab1FFSCT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 14:02:19 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:51369 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757074Ab1FFSCA (ORCPT
+	id S1757168Ab1FFSDd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 14:03:33 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49391 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754431Ab1FFSDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 14:02:00 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: v9fs-developer@lists.sourceforge.net
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 3/3] 9p: add 9P2000.L unlinkat operation
-Date: Mon,  6 Jun 2011 23:31:48 +0530
-Message-Id: <1307383308-5773-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1307383308-5773-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1307383308-5773-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	Mon, 6 Jun 2011 14:03:30 -0400
+Date: Mon, 6 Jun 2011 14:03:29 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Keshava Munegowda <keshava_mgowda@ti.com>,
+        USB list <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <tony@atomide.com>, <khilman@ti.com>, <b-cousson@ti.com>,
+        <paul@pwsan.com>
+Subject: Re: [PATCH 4/4] mfd: global Suspend and resume support of ehci and
+ ohci
+In-Reply-To: <20110606172555.GL12242@legolas.emea.dhcp.ti.com>
+Message-ID: <Pine.LNX.4.44L0.1106061351240.1953-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-unlinkat - Remove a directory entry
+On Mon, 6 Jun 2011, Felipe Balbi wrote:
 
-size[4] Tunlinkat tag[2] dirfid[4] name[s] flag[4]
-size[4] Runlinkat tag[2]
+> > But what is the "right thing"?  Suppose you want to have conditional 
+> > support for dev_pm_ops whenever CONFIG_PM is enabled and you _also_ 
+> > want to have conditional support for runtime PM whenever 
+> > CONFIG_PM_RUNTIME is enabled?
+> 
+> we don't have this today either. Currently everybody does #ifdef
+> CONFIG_PM, so either all the data is available, or none is and adding
+> another #ifdef CONFIG_PM_RUNTIME for the runtime_* friends, would just
+> look even uglier :-)
 
-older Tremove have the below request format
+Like in hcd-pci.c?  :-)
 
-size[4] Tremove tag[2] fid[4]
+> > You can obtain that same guarantee by using #ifdef ... #endif.  Even 
+> > better, you can guarantee that the unused data won't be present at all, 
+> > as opposed to loaded and then freed.
+> 
+> I agree with you here, but I give you the same question as you gave me.
+> How will you have conditional on CONFIG_RUNTIME_PM and CONFIG_PM ? you'd
+> need two levels of ifdefs.
 
-The remove message is used to remove a directory entry either file or directory
-The remove opreation is actually a directory opertation and should ideally have
-dirfid, if not we cannot represent the fid on server with anything other than
-name. We will have to derive the directory name from fid in the Tremove request.
+Well, you'd need more #ifdefs, no question about that.  Whether you 
+need more _levels_ of #ifdefs is unclear.
 
-NOTE: The operation doesn't clunk the unlink fid.
+> > #ifdef CONFIG_PM
+> > 	#define DEV_PM_OPS_REF(my_pm_ops)	&(my_pm_ops)
+> > #else
+> > 	#define DEV_PM_OPS_REF(my_pm_ops)	NULL
+> > #endif
+> > 
+> > Then people could write
+> > 
+> > static struct platform_driver my_driver = {
+> > 	...
+> > 	.driver	= {
+> > 		.pm = DEV_PM_OPS_REF(my_driver_pm_ops),
+> > 	},
+> > };
+> > 
+> > without worrying about whether or not my_driver_pm_ops was defined.  
+> > And only one #ifdef block would be needed.
+> 
+> that'd be nice. Something similar to __exit_p() and __devexit_p()
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/9p/vfs_inode.c       |   43 ++++++++++++++++++++++++++-----------------
- include/net/9p/9p.h     |    2 ++
- include/net/9p/client.h |    1 +
- net/9p/client.c         |   23 +++++++++++++++++++++++
- 4 files changed, 52 insertions(+), 17 deletions(-)
+Right.  Maybe even call it __pm_ops_p().
 
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index ded6309..f40fdc3 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -492,38 +492,47 @@ v9fs_inode_from_fid(struct v9fs_session_info *v9ses, struct p9_fid *fid,
- /**
-  * v9fs_remove - helper function to remove files and directories
-  * @dir: directory inode that is being deleted
-- * @file:  dentry that is being deleted
-+ * @dentry:  dentry that is being deleted
-  * @rmdir: removing a directory
-  *
-  */
- 
--static int v9fs_remove(struct inode *dir, struct dentry *file, int rmdir)
-+static int v9fs_remove(struct inode *dir, struct dentry *dentry, int flags)
- {
- 	int retval;
--	struct p9_fid *v9fid;
--	struct inode *file_inode;
--
--	P9_DPRINTK(P9_DEBUG_VFS, "inode: %p dentry: %p rmdir: %d\n", dir, file,
--		rmdir);
-+	struct inode *inode;
-+	struct p9_fid *v9fid, *dfid;
- 
--	file_inode = file->d_inode;
--	v9fid = v9fs_fid_clone(file);
--	if (IS_ERR(v9fid))
--		return PTR_ERR(v9fid);
-+	P9_DPRINTK(P9_DEBUG_VFS, "inode: %p dentry: %p rmdir: %x\n",
-+		   dir, dentry, flags);
- 
--	retval = p9_client_remove(v9fid);
-+	inode = dentry->d_inode;
-+	dfid = v9fs_fid_lookup(dentry->d_parent);
-+	if (IS_ERR(dfid)) {
-+		retval = PTR_ERR(dfid);
-+		P9_DPRINTK(P9_DEBUG_VFS, "fid lookup failed %d\n", retval);
-+		return retval;
-+	}
-+	retval = p9_client_unlinkat(dfid, dentry->d_name.name, flags);
-+	if (retval == -EOPNOTSUPP) {
-+		/* Try the one based on path */
-+		v9fid = v9fs_fid_clone(dentry);
-+		if (IS_ERR(v9fid))
-+			return PTR_ERR(v9fid);
-+		retval = p9_client_remove(v9fid);
-+	}
- 	if (!retval) {
- 		/*
- 		 * directories on unlink should have zero
- 		 * link count
- 		 */
--		if (rmdir) {
--			clear_nlink(file_inode);
-+		if (flags & AT_REMOVEDIR) {
-+			clear_nlink(inode);
- 			drop_nlink(dir);
- 		} else
--			drop_nlink(file_inode);
-+			drop_nlink(inode);
- 
--		v9fs_invalidate_inode_attr(file_inode);
-+		v9fs_invalidate_inode_attr(inode);
- 		v9fs_invalidate_inode_attr(dir);
- 	}
- 	return retval;
-@@ -814,7 +823,7 @@ int v9fs_vfs_unlink(struct inode *i, struct dentry *d)
- 
- int v9fs_vfs_rmdir(struct inode *i, struct dentry *d)
- {
--	return v9fs_remove(i, d, 1);
-+	return v9fs_remove(i, d, AT_REMOVEDIR);
- }
- 
- /**
-diff --git a/include/net/9p/9p.h b/include/net/9p/9p.h
-index 094c3dd..fe1efa6 100644
---- a/include/net/9p/9p.h
-+++ b/include/net/9p/9p.h
-@@ -177,6 +177,8 @@ enum p9_msg_t {
- 	P9_RMKDIR,
- 	P9_TRENAMEAT = 74,
- 	P9_RRENAMEAT,
-+	P9_TUNLINKAT = 76,
-+	P9_RUNLINKAT,
- 	P9_TVERSION = 100,
- 	P9_RVERSION,
- 	P9_TAUTH = 102,
-diff --git a/include/net/9p/client.h b/include/net/9p/client.h
-index 5353cbc..976d12a 100644
---- a/include/net/9p/client.h
-+++ b/include/net/9p/client.h
-@@ -234,6 +234,7 @@ int p9_client_create_dotl(struct p9_fid *ofid, char *name, u32 flags, u32 mode,
- int p9_client_clunk(struct p9_fid *fid);
- int p9_client_fsync(struct p9_fid *fid, int datasync);
- int p9_client_remove(struct p9_fid *fid);
-+int p9_client_unlinkat(struct p9_fid *dfid, const char *name, int flags);
- int p9_client_read(struct p9_fid *fid, char *data, char __user *udata,
- 							u64 offset, u32 count);
- int p9_client_write(struct p9_fid *fid, char *data, const char __user *udata,
-diff --git a/net/9p/client.c b/net/9p/client.c
-index 677ae8d..d225158 100644
---- a/net/9p/client.c
-+++ b/net/9p/client.c
-@@ -1281,6 +1281,29 @@ error:
- }
- EXPORT_SYMBOL(p9_client_remove);
- 
-+int p9_client_unlinkat(struct p9_fid *dfid, const char *name, int flags)
-+{
-+	int err = 0;
-+	struct p9_req_t *req;
-+	struct p9_client *clnt;
-+
-+	P9_DPRINTK(P9_DEBUG_9P, ">>> TUNLINKAT fid %d %s %d\n",
-+		   dfid->fid, name, flags);
-+
-+	clnt = dfid->clnt;
-+	req = p9_client_rpc(clnt, P9_TUNLINKAT, "dsd", dfid->fid, name, flags);
-+	if (IS_ERR(req)) {
-+		err = PTR_ERR(req);
-+		goto error;
-+	}
-+	P9_DPRINTK(P9_DEBUG_9P, "<<< RUNLINKAT fid %d %s\n", dfid->fid, name);
-+
-+	p9_free_req(clnt, req);
-+error:
-+	return err;
-+}
-+EXPORT_SYMBOL(p9_client_unlinkat);
-+
- int
- p9_client_read(struct p9_fid *fid, char *data, char __user *udata, u64 offset,
- 								u32 count)
--- 
-1.7.4.1
+In fact, rather than tying this specifically to dev_pm_ops, it would 
+make sense to have a general-purpose memory section for code that won't 
+be used, and an appropriate macro (such as "__unused") to specify that 
+section attribute.  Then the PM core could do:
+
+#ifdef CONFIG_PM
+	#define __pm_ops
+#else
+	#define __pm_ops	__unused
+#endif
+
+and that would (I think) put less of a mental burden on people.
+
+> Well, it might work out if pm core makes dev_pm_ops only available on
+> CONFIG_PM builds.
+
+Currently the .pm member is part of struct bus_type, struct
+device_driver, and others whether CONFIG_PM is enabled or not.  I don't
+know if removing it when CONFIG_PM is disabled would cause build
+problems -- it might.
+
+Alan Stern
 
