@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab1FFNkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 09:40:37 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:42272 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757457Ab1FFNkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 09:40:00 -0400
-Message-ID: <4DECD8AB.3030904@secunet.com>
-Date: Mon, 06 Jun 2011 15:39:55 +0200
-From: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1756498Ab1FFNmX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 09:42:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20106 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab1FFNmW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 09:42:22 -0400
+Message-ID: <4DECD934.6000004@oracle.com>
+Date: Mon, 06 Jun 2011 08:42:12 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110601 Lightning/1.0b2 OracleBeehiveExtension/1.0.0.2-OracleInternal ObetStats/UAFCAFCATUAFLAF_1301673577011-962016341 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: linux-usb@vger.kernel.org, Matthias Urlichs <smurf@smurf.noris.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH] USB: option Add blacklist for ZTE K3765-Z (19d2:2002)
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lmLogOpen() broken failure exit
+References: <20110605182256.GG11521@ZenIV.linux.org.uk>
+In-Reply-To: <20110605182256.GG11521@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Jun 2011 13:39:55.0801 (UTC) FILETIME=[38A14090:01CC244F]
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090207.4DECD93D.00B7:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The funtion option_send_status times out when sending USB messages
-to the interfaces 0, 1, and 2 of this UMTS stick. This results in a
-5s timeout in the function causing other tty operations to feel very
-sluggish.
+Thanks, Al
 
-This patch adds a blacklist entry for these 3 interfaces on the ZTE
-K3765-Z device.
+On 06/05/2011 01:22 PM, Al Viro wrote:
+> Callers of lmLogOpen() expect it to return -E... on failure exits, which
+> is what it returns, except for the case of blkdev_get_by_dev() failure.
+> It that case lmLogOpen() return the error with the wrong sign...
+> 
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-I was also able to reproduce the problem with v2.6.38 and v2.6.39.
-
-This is very similar to a problem fixed in
-
-commit 7a89e4cb9cdaba92f5fbc509945cf4e3c48db4e2
-Author: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Date:   Wed Mar 9 09:19:48 2011 +0000
-
-    USB: serial: option: Apply OPTION_BLACKLIST_SENDSETUP also for ZTE MF626
-
-Signed-off-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-Cc: stable <stable@kernel.org>
----
- drivers/usb/serial/option.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 318dd00..b9a31b2 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -432,6 +432,13 @@ static const struct option_blacklist_info four_g_w14_blacklist = {
- 	.reason = OPTION_BLACKLIST_SENDSETUP
- };
- 
-+static const u8 zte_k3765_z_no_sendsetup[] = { 0, 1, 2 };
-+static const struct option_blacklist_info zte_k3765_z_blacklist = {
-+	.infolen = ARRAY_SIZE(zte_k3765_z_no_sendsetup),
-+	.ifaceinfo = zte_k3765_z_no_sendsetup,
-+	.reason = OPTION_BLACKLIST_SENDSETUP
-+};
-+
- static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
-@@ -916,7 +923,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0073, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0130, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0141, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff,
-+	  0xff, 0xff), .driver_info = (kernel_ulong_t)&zte_k3765_z_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2003, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710, 0xff, 0xff, 0xff) },
--- 
-1.7.2.5
-
+> ---
+> diff --git a/fs/jfs/jfs_logmgr.c b/fs/jfs/jfs_logmgr.c
+> index 278e3fb..583636f 100644
+> --- a/fs/jfs/jfs_logmgr.c
+> +++ b/fs/jfs/jfs_logmgr.c
+> @@ -1123,7 +1123,7 @@ int lmLogOpen(struct super_block *sb)
+>  	bdev = blkdev_get_by_dev(sbi->logdev, FMODE_READ|FMODE_WRITE|FMODE_EXCL,
+>  				 log);
+>  	if (IS_ERR(bdev)) {
+> -		rc = -PTR_ERR(bdev);
+> +		rc = PTR_ERR(bdev);
+>  		goto free;
+>  	}
+>  
