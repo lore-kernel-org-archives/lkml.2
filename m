@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963Ab1FFWWq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:22:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57575 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751912Ab1FFWWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 18:22:45 -0400
-Date: Mon, 6 Jun 2011 15:21:18 -0700
-From: Greg KH <gregkh@suse.de>
-To: Joe Perches <joe@perches.com>
-Cc: anish <anish198519851985@gmail.com>, devel@driverdev.osuosl.org,
-        arnd@arndb.de, lucas.demarchi@profusion.mobi,
-        linux-kernel@vger.kernel.org, jic23@cam.ac.uk,
-        manuel.stahl@iis.fraunhofer.de
-Subject: Re: [PATCH 1/2] staging: iio replaced kmalloc with local variables.
-Message-ID: <20110606222118.GA29883@suse.de>
-References: <1307387257.4327.12.camel@anish-desktop>
- <20110606215549.GA7543@suse.de>
- <1307398257.4994.30.camel@Joe-Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307398257.4994.30.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757352Ab1FFWTz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:19:55 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47577 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972Ab1FFWTy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 18:19:54 -0400
+Subject: Re: [PATCH] perf, core: Fix initial task_ctx/event installation
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: paulus@samba.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
+        oleg@redhat.com
+In-Reply-To: <1307384837.2497.738.camel@laptop>
+References: <1307371095-10141-1-git-send-email-jolsa@redhat.com>
+	 <1307382026.2322.226.camel@twins>  <1307384837.2497.738.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Jun 2011 00:23:28 +0200
+Message-ID: <1307399008.2497.971.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 03:10:57PM -0700, Joe Perches wrote:
-> On Mon, 2011-06-06 at 14:55 -0700, Greg KH wrote:
-> > On Tue, Jun 07, 2011 at 12:37:37AM +0530, anish wrote:
-> > > From: anish kumar <anish198519851985@gmail.com>
-> > > Replace kmalloc with local variables as it was un-necessary and
-> > > also removed the redudant code after this change.
-> > SPI data, like USB data, has to come from kmalloced data, not from the
-> > stack, or bad things can, and will, happen.
-> 
-> Perhaps just add a comment like:
-> 
-> +       u8 *tx = kmalloc(2, GFP_KERNEL);	/* can't be on stack */
+This works for me..
 
-You really want to do to that for _EVERY_ SPI and USB driver?  I don't
-think so.  It's a known thing that this is a requirement for SPI and USB
-drivers.
+---
+ kernel/events/core.c |   28 +++++++++++++++++-----------
+ 1 files changed, 17 insertions(+), 11 deletions(-)
 
-> It might be better to do a single kmalloc(4)
-> than 2 separate kmalloc(2)'s.
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index ba89f40..5e8c7b1 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1505,25 +1505,31 @@ static int  __perf_install_in_context(void *info)
+ 	struct perf_event_context *task_ctx = cpuctx->task_ctx;
+ 	struct task_struct *task = current;
+ 
+-	perf_ctx_lock(cpuctx, cpuctx->task_ctx);
++	perf_ctx_lock(cpuctx, task_ctx);
+ 	perf_pmu_disable(cpuctx->ctx.pmu);
+ 
+ 	/*
+ 	 * If there was an active task_ctx schedule it out.
+ 	 */
+-	if (task_ctx) {
++	if (task_ctx)
+ 		task_ctx_sched_out(task_ctx);
+-		/*
+-		 * If the context we're installing events in is not the
+-		 * active task_ctx, flip them.
+-		 */
+-		if (ctx->task && task_ctx != ctx) {
+-			raw_spin_unlock(&cpuctx->ctx.lock);
+-			raw_spin_lock(&ctx->lock);
+-			cpuctx->task_ctx = task_ctx = ctx;
+-		}
++
++	/*
++	 * If the context we're installing events in is not the
++	 * active task_ctx, flip them.
++	 */
++	if (ctx->task && task_ctx != ctx) {
++		if (task_ctx)
++			raw_spin_unlock(&task_ctx->lock);
++		raw_spin_lock(&ctx->lock);
++		task_ctx = ctx;
++	}
++
++	if (task_ctx) {
++		cpuctx->task_ctx = task_ctx;
+ 		task = task_ctx->task;
+ 	}
++
+ 	cpu_ctx_sched_out(cpuctx, EVENT_ALL);
+ 
+ 	update_context_time(ctx);
 
-No, don't do that, that might cause problems as well with some
-controllers.  We see some ARM controllers having problems with alignment
-issues.  Now ideally we are fixing them in those controllers, and not
-having to fix them in the individual drivers, but if at all possible, a
-new allocation is the way to go.
 
-thanks,
-
-greg k-h
