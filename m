@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757236Ab1FFPk0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 11:40:26 -0400
-Received: from smtp-vbr4.xs4all.nl ([194.109.24.24]:1261 "EHLO
-	smtp-vbr4.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596Ab1FFPkZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 11:40:25 -0400
-Message-ID: <4DECF4E2.2010907@xs4all.nl>
-Date: Mon, 06 Jun 2011 17:40:18 +0200
-From: Jim Bos <jim876@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110429 Thunderbird/3.1.10
+	id S1757390Ab1FFPmO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 11:42:14 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36701 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751596Ab1FFPmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 11:42:10 -0400
+Date: Mon, 6 Jun 2011 17:41:46 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: pageexec@freemail.hu
+Cc: Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
+Message-ID: <20110606154146.GM30348@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>
+ <20110605193001.GB3971@elte.hu>
+ <BANLkTikQB6=Te6=E7DRmeD5+G4TESuy--w@mail.gmail.com>
+ <4DECA101.5994.11CF924E@pageexec.freemail.hu>
 MIME-Version: 1.0
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com>	<4CE17C4B.1070305@xs4all.nl>	<20101115185848.GI2583@sunsite.ms.mff.cuni.cz>	<20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>	<AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com>	<20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>	<4CE1968D.3050706@xs4all.nl>	<4DE8DC16.6030308@xs4all.nl>	<20110603133351.GA25130@srcf.ucam.org>	<4DE8EF13.9030609@xs4all.nl>	<20110603144644.GA26782@srcf.ucam.org> <4DECEBE6.3060302@gmail.com>
-In-Reply-To: <4DECEBE6.3060302@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DECA101.5994.11CF924E@pageexec.freemail.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2011 05:01 PM, Maarten Lankhorst wrote:
-> Hi Matthew,
-> 
-> 2011/6/3 Matthew Garrett <mjg59@srcf.ucam.org>:
->> On Fri, Jun 03, 2011 at 04:26:27PM +0200, Jim Bos wrote:
->>> On 06/03/2011 03:33 PM, Matthew Garrett wrote:
->>>> ? You've got 143 boot services/code regions, which is more than I'd
->>>> tested against, so I'm unsure whether we're overflowing something here.
->>>>
->>>
->>> That's seems to be the only EFI patch in 2.6.39.1 and I effectively
->>> removed by =not= applying (skipping) the parts of the 2.6.39.1 patch to
->>> above 3 files.
->>> So yes removing "x86, efi: Retain boot service code until after
->>> switching to virtual mode" indeed fixes the problem for me.
->>
->> Ok, thanks. I'll look into that. Might be best to drop it from stable
->> for the moment until I've made sure it works on machines with excessive
->> maps.
-> 
-> Looking at your patch in 2.6.39.1
-> 
-> I see:
-> +               memblock_x86_reserve_range(start, start + size, "EFI Boot");
-> 
-> and to free it:
-> +               free_bootmem_late(start, size);
-> 
-> Maybe this is causing the pager issue on 3.0, can you test this patch?
-> 
-> 
-> efi: free memory with the correct call
-> 
-> Commit 916f676f8dc introduced a call to free_bootmem_late while it
-> reserves memory with memblock_x64_reserve_range
-> Fix this call to silence the swapper BUGs:
-> 
-> BUG: Bad page state in process swapper  pfn:00000
-> 
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> index 0d3a4fa..d2eefaa 100644
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -29,7 +29,6 @@
->  #include <linux/kernel.h>
->  #include <linux/init.h>
->  #include <linux/efi.h>
-> -#include <linux/bootmem.h>
->  #include <linux/memblock.h>
->  #include <linux/spinlock.h>
->  #include <linux/uaccess.h>
-> @@ -334,7 +333,7 @@ static void __init efi_free_boot_services(void)
->  		    md->type != EFI_BOOT_SERVICES_DATA)
->  			continue;
->  
-> -		free_bootmem_late(start, size);
-> +		memblock_x86_free_memory_in_range(start, start + size);
->  	}
->  }
->  
-> 
-> --
-> ~Maarten
-> 
 
-For me that indeed gets rid of the "BUG Bad page state...", ie. all is
-fine on 3.0-rc1 with this patch on top.
+* pageexec@freemail.hu <pageexec@freemail.hu> wrote:
 
-Tested-By: Jim Bos <jim876@xs4all.nl>
+> > I can't see any problem, but exploit writers are exceedingly 
+> > clever, and maybe someone has a use for a piece of the code that 
+> > isn't a syscall.  Just as a completely artificial example, here's 
+> > some buggy code:
+> 
+> what you're describing here is a classical ret2libc (in modern 
+> marketing speak, ROP) attack. in general, having an executable ret 
+> insn (with an optional pop even) at a fixed address is very useful, 
+> especially for the all too classical case of stack overflows where 
+> the attacker may already know of a 'good' function pointer 
+> somewhere on the stack but in order to have the cpu reach it, he 
+> needs to pop enough bytes off of it. guess what they'll use this 
+> ret at a fixed address for...
 
-Jim.
+Good point and i agree that we should get rid of the RETQ there. The 
+do_intcc() code can fetch the return address without much fuss - this 
+is much faster than doing a #PF.
 
+Please keep reviewing these patches, the security-technical aspects 
+of your reviews are extremely useful.
+
+> imho, moving everything to and executing from the vdso page is the 
+> only viable solution if you really want to fix the security aspect 
+> of the vsyscall mess. it's worked fine for PaX for years now ;).
+
+FYI, this probably means that no-one ever benchmared postgresql 
+scalability on a PaX kernel i suspect? Past versions of postgresql 
+would big time if you drive the vsyscall time() through through a
+#PF ...
+
+Thanks,
+
+	Ingo
