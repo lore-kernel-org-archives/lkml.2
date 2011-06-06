@@ -1,72 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab1FFH1t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 03:27:49 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42128 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab1FFH1s (ORCPT
+	id S1756738Ab1FFHVz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 03:21:55 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53892 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756637Ab1FFHVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 03:27:48 -0400
-Date: Mon, 6 Jun 2011 09:27:45 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] spi: reorganize drivers
-Message-ID: <20110606072744.GB4132@pengutronix.de>
-References: <20110606071829.10334.90865.stgit@ponder>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CUfgB8w4ZwR/yMy5"
-Content-Disposition: inline
-In-Reply-To: <20110606071829.10334.90865.stgit@ponder>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 6 Jun 2011 03:21:53 -0400
+From: Shawn Guo <shawn.guo@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com, cjb@laptop.org,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH v2 1/3] dmaengine: add new dma API for max_segment_number
+Date: Mon,  6 Jun 2011 15:30:12 +0800
+Message-Id: <1307345414-26872-1-git-send-email-shawn.guo@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Like dma_set(get)_max_seg_size for max_segment_size, the patch adds
+max_segment_number into device_dma_parameters and creates the
+corresponding dmaengine API dma_set(get)_max_seg_number for it.
 
---CUfgB8w4ZwR/yMy5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Here is the user story that tells the need of the new api.  The
+mxs-mmc is the mmc host controller for Freescale MXS architecture.
+There are a pair of  mmc host specific parameters max_seg_size and
+max_segs that mxs-mmc host driver needs to tell mmc core, so that
+mmc core can know how big each data segment could be and how many
+segments could be handled one time in a scatter list by host driver.
 
-On Mon, Jun 06, 2011 at 01:18:29AM -0600, Grant Likely wrote:
-> Sort the SPI makefile and enforce the naming convention spi_*.c for
-> spi drivers.
->=20
-> This change also rolls the contents of atmel_spi.h into the .c file
-> since there is only one user of that particular include file.
->=20
-> v2: - Use 'spi-' prefix instead of 'spi_' to match what seems to be
->       be the predominant pattern for subsystem prefixes.
->     - Clean up filenames in Kconfig and header comment blocks
->=20
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+The mxs-mmc driver is one user of dmaengine mxs-dma, and it will call
+mxs-dma to transfer data in scatter list.  That is to say mxs-mmc has
+no idea of what max_seg_size and max_segs should be, because they are
+all mxs-dma capability parameters, and mxs-mmc needs to query them
+from mxs-dma.
 
+Right now, there is well defined dma api (dma_get_max_seg_size) for
+mmc to query max_seg_size from dma driver, but the one for max_segs
+is missing.  That's why mxs-mmc driver has to hard-code it.
 
-/me likes.
+The mxs-mmc is just one example to demonstrate the need of the new
+api, and there are other mmc host drivers (mxcmmc on imx-dma is
+another example) and possibly even other dmaengine users need this
+new api to know the maximum segments that dma driver can handle per
+dma call.
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+---
+Changes since v1:
+ * Update commit message to explain why the new api is needed
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+ include/linux/device.h      |    1 +
+ include/linux/dma-mapping.h |   15 +++++++++++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
 
---CUfgB8w4ZwR/yMy5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+diff --git a/include/linux/device.h b/include/linux/device.h
+index c66111a..44cb2528 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -487,6 +487,7 @@ struct device_dma_parameters {
+ 	 * sg limitations.
+ 	 */
+ 	unsigned int max_segment_size;
++	unsigned int max_segment_number;
+ 	unsigned long segment_boundary_mask;
+ };
+ 
+diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+index ba8319a..fd314f4 100644
+--- a/include/linux/dma-mapping.h
++++ b/include/linux/dma-mapping.h
+@@ -131,6 +131,21 @@ static inline unsigned int dma_set_max_seg_size(struct device *dev,
+ 		return -EIO;
+ }
+ 
++static inline unsigned int dma_get_max_seg_number(struct device *dev)
++{
++	return dev->dma_parms ? dev->dma_parms->max_segment_number : 1;
++}
++
++static inline unsigned int dma_set_max_seg_number(struct device *dev,
++						  unsigned int number)
++{
++	if (dev->dma_parms) {
++		dev->dma_parms->max_segment_number = number;
++		return 0;
++	} else
++		return -EIO;
++}
++
+ static inline unsigned long dma_get_seg_boundary(struct device *dev)
+ {
+ 	return dev->dma_parms ?
+-- 
+1.7.4.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk3sgXAACgkQD27XaX1/VRtCaQCbBnnq9KDustylYR4kihXAla/5
-tpwAn0IRBo8yQ+AUSDFsowb2sFaTowos
-=udRD
------END PGP SIGNATURE-----
-
---CUfgB8w4ZwR/yMy5--
