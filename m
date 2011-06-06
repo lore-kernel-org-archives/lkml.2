@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab1FFGDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 02:03:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56745 "EHLO mga03.intel.com"
+	id S1755864Ab1FFGJx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 02:09:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58445 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751036Ab1FFGDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 02:03:30 -0400
+	id S1751703Ab1FFGJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 02:09:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,325,1304319600"; 
-   d="scan'208";a="7595580"
+   d="scan'208";a="9861329"
 Subject: Re: [PATCH 1/3] dmaengine: add new dma API for max_segment_number
 From: "Koul, Vinod" <vinod.koul@intel.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: shawn.guo@freescale.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dan.j.williams@intel.com,
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         patches@linaro.org
-In-Reply-To: <20110605102855L.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20110602055614.GA18508@S2100-06.ap.freescale.net>
 References: <1306391493-29425-1-git-send-email-shawn.guo@linaro.org>
-	 <20110601023356.GA1501@S2100-06.ap.freescale.net>
-	 <20110605102855L.fujita.tomonori@lab.ntt.co.jp>
+	 <1306914144.10976.4.camel@vkoul-udesk3>
+	 <20110602055614.GA18508@S2100-06.ap.freescale.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 10:58:38 +0530
-Message-ID: <1307338118.10976.74.camel@vkoul-udesk3>
+Date: Mon, 06 Jun 2011 11:05:01 +0530
+Message-ID: <1307338501.10976.77.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -29,11 +29,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-06-05 at 10:30 +0900, FUJITA Tomonori wrote:
-> On Wed, 1 Jun 2011 10:33:57 +0800
-> Shawn Guo <shawn.guo@freescale.com> wrote:
-> 
-> > On Thu, May 26, 2011 at 02:31:31PM +0800, Shawn Guo wrote:
+On Thu, 2011-06-02 at 13:56 +0800, Shawn Guo wrote:
+> On Wed, Jun 01, 2011 at 01:12:24PM +0530, Koul, Vinod wrote:
+> > On Thu, 2011-05-26 at 14:31 +0800, Shawn Guo wrote:
 > > > Like dma_set(get)_max_seg_size for max_segment_size, the patch adds
 > > > max_segment_number into device_dma_parameters and creates the
 > > > corresponding dmaengine API dma_set(get)_max_seg_number for it.
@@ -43,71 +41,41 @@ On Sun, 2011-06-05 at 10:30 +0900, FUJITA Tomonori wrote:
 > > >  include/linux/device.h      |    1 +
 > > >  include/linux/dma-mapping.h |   15 +++++++++++++++
 > > >  2 files changed, 16 insertions(+), 0 deletions(-)
-> 
-> include/linux/dma-mapping.h is for DMA mapping API (please see
-> Documentation/DMA-API*.txt).
-> 
-> What does dma_set(get)_max_seg_size do? And it's related with DMA
-> mapping API?
-See the other post by author
-
-
-
-> 
-> 
-> > > 
-> > > diff --git a/include/linux/device.h b/include/linux/device.h
-> > > index c66111a..44cb2528 100644
-> > > --- a/include/linux/device.h
-> > > +++ b/include/linux/device.h
-> > > @@ -487,6 +487,7 @@ struct device_dma_parameters {
-> > >  	 * sg limitations.
-> > >  	 */
-> > >  	unsigned int max_segment_size;
-> > > +	unsigned int max_segment_number;
-> > >  	unsigned long segment_boundary_mask;
-> > >  };
-> > >  
-> > > diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-> > > index ba8319a..fd314f4 100644
-> > > --- a/include/linux/dma-mapping.h
-> > > +++ b/include/linux/dma-mapping.h
-> > > @@ -131,6 +131,21 @@ static inline unsigned int dma_set_max_seg_size(struct device *dev,
-> > >  		return -EIO;
-> > >  }
-> > >  
-> > > +static inline unsigned int dma_get_max_seg_number(struct device *dev)
-> > > +{
-> > > +	return dev->dma_parms ? dev->dma_parms->max_segment_number : 1;
-> > > +}
-> > > +
-> > > +static inline unsigned int dma_set_max_seg_number(struct device *dev,
-> > > +						  unsigned int number)
-> > > +{
-> > > +	if (dev->dma_parms) {
-> > > +		dev->dma_parms->max_segment_number = number;
-> > > +		return 0;
-> > > +	} else
-> > > +		return -EIO;
-> > > +}
-> > > +
-> > >  static inline unsigned long dma_get_seg_boundary(struct device *dev)
-> > >  {
-> > >  	return dev->dma_parms ?
-> > > -- 
-> > > 1.7.4.1
+> > Can you explain me why this change is required, the patch description
+> > isn't helping for this.
 > > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+> > If you satisfy me with above then I am okay with it, but I need ACK from
+> > Dan before applying...
+> > 
+> I recently saw you people are trying to sort out the slave dma api
+> document.  This reminds me there is small piece missing, which the
+> patch here is trying to add.
+> 
+> Here is the user story.  The mxs-mmc is the mmc host controller for
+> Freescale MXS architecture.  There are a pair of  mmc host specific
+> parameters max_seg_size and max_segs that mxs-mmc host driver needs
+> to tell mmc core, so that mmc core can know how big each data segment
+> could be and how many segments could be handled one time in a scatter
+> list by host driver.
+> 
+> The mxs-mmc driver is one user of dmaengine mxs-dma, and it will call
+> mxs-dma to transfer data in scatter list.  That is to say mxs-mmc has
+> not idea of what max_seg_size and max_segs should be, because they are
+> all mxs-dma capability parameters, and mxs-mmc needs to query them
+> from mxs-dma.
+> 
+> Right now, there is well defined dma api (dma_get_max_seg_size) for
+> mmc to query max_seg_size from dma driver, but the one for max_segs is
+> missing.  That's why mxs-mmc driver has to hard-code it.
+> 
+> The mxs-mmc is just one example to demonstrate the need of the new
+> api, and I'm sure there are other mmc host drivers (mxcmmc on imx-dma
+> is another example) and possibly even other dmaengine users need this
+> new api to know the maximum segments that dma driver can handle per
+> dma call.
+> 
+Looks fine, care to add above in your patch description.
+Few years down it will be really helpful to know why this was added.
 
 -- 
 ~Vinod
