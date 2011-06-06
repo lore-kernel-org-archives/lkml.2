@@ -1,34 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab1FFLcS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 07:32:18 -0400
-Received: from smtpout04.highway.telekom.at ([195.3.96.117]:29811 "EHLO
-	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754523Ab1FFLcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 07:32:15 -0400
-From: Melchior FRANZ <melchior.franz@gmail.com>
-To: linux-kernel@vger.kernel.org, webmaster@kernel.org
-Subject: Re: About kernel.org and 3.x kernels
-Date: Mon, 6 Jun 2011 13:32:08 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39; KDE/4.6.3; x86_64; ; )
-References: <4DECB4D3.5070505@ece.ntua.gr>
-In-Reply-To: <4DECB4D3.5070505@ece.ntua.gr>
-X-Fingerprint: 9FFB C079 5B78 4F27 099C C6C6 7399 02D1 919B D903
-X-PGP: http://members.aon.at/mfranz/melchior.franz
+	id S1756209Ab1FFLdi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 07:33:38 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:53756 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794Ab1FFLdg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 07:33:36 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6368"; a="95816355"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: <balbi@ti.com>
+Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1306847914-19876-1-git-send-email-tlinder@codeaurora.org> <1306847914-19876-5-git-send-email-tlinder@codeaurora.org> <20110606111755.GV18731@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110606111755.GV18731@legolas.emea.dhcp.ti.com>
+Subject: RE: [PATCH v14 4/9] usb: Add max_speed to usb_composite_driver structure
+Date: Mon, 6 Jun 2011 14:33:32 +0300
+Message-ID: <00ef01cc243d$92c6d150$b85473f0$@org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106061332.10128@rk-nord.at>
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: AcwkO2czFsqHczilTTSMRxwAEtjSdgAANxgA
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stratos Psomadakis -- Monday 06 June 2011:
-> I'm not sure if that's how it's supposed to be, but at kernel.org, the
-> latest snapshot points to the 2.6.39-git20 snapshot.
+Hi Felipe,
 
-While we are at it: The linux-2.6-stable repo is also behind: last
-commit was on 2011/5/31, it contains neither 2.6.39.1 nor 3.0-rc2.
+> On Tue, May 31, 2011 at 04:18:24PM +0300, Tatyana Brokhman wrote:
+> > This field is used by the Gadget drivers to specify the maximum speed
+> > they support, meaning: the maximum speed they can provide descriptors
+> for.
+> >
+> > The driver speed will be set in consideration of this value.
+> >
+> > Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+> 
+> personally, I don't think this is good enough. The gadget speed is
+> actually the min() of the f_* speeds. So, IMHO this should be coming
+> from f_* and during bind you would:
+> 
+> gadget->speed = min(f->speed, gadget->speed);
+> 
+> for all functions. Also, both this patch and what I described above,
+> only works considering nobody touches that enum, so we might want to be
+> careful and add some comments to the enum to avoid anyone from touching
+> that :-)
 
-m.
+You're right, the full and best solution would be to set driver speed as the
+minimum of all the speeds its functions support. (Please note that it's the
+usb_composite_driver speed we're talking about and not the speed of the
+gadget).
+Unfortunately, we need to determine the driver speed before any of the
+functions binded to it so the above solution isn't possible.
+In any case, gadget->speed is determined upon real connection to the host
+that can occur long after the f-> bind() and it depends on whether for
+example SS HW negotiation protocol succeeded or failed.
+
+Thanks,
+Tanya Brokhman
+---
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+
+
+ 
+
+
