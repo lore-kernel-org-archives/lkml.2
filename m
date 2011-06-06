@@ -1,51 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab1FFPb2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 11:31:28 -0400
-Received: from r00tworld.com ([212.85.137.150]:40450 "EHLO r00tworld.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753822Ab1FFPb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 11:31:26 -0400
-From: pageexec@freemail.hu
-To: Ingo Molnar <mingo@elte.hu>
-Date: Mon, 06 Jun 2011 17:29:35 +0200
+	id S1757564Ab1FFPdK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 11:33:10 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:43650 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757277Ab1FFPdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 11:33:08 -0400
+Date: Mon, 6 Jun 2011 11:32:14 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org
+Subject: Re: bridge/netfilter: regression in 2.6.39.1
+Message-ID: <20110606153213.GC1000@hmsreliant.think-freely.org>
+References: <4DE93422.3070000@ahsoftware.de>
+ <20110606111507.GA1000@hmsreliant.think-freely.org>
+ <4DECBEA3.6070408@ahsoftware.de>
+ <1307362358.3098.6.camel@edumazet-laptop>
+ <4DECCCC0.70905@ahsoftware.de>
+ <1307366166.3098.15.camel@edumazet-laptop>
+ <4DECD657.9010807@ahsoftware.de>
+ <1307370363.3098.37.camel@edumazet-laptop>
 MIME-Version: 1.0
-Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
-Reply-to: pageexec@freemail.hu
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@mit.edu>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Message-ID: <4DECF25F.27062.130D695E@pageexec.freemail.hu>
-In-reply-to: <20110606151546.GH30348@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>, <4DECEBD6.10522.12F3E13C@pageexec.freemail.hu>, <20110606151546.GH30348@elte.hu>
-X-mailer: Pegasus Mail for Windows (4.61)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Mon, 06 Jun 2011 17:30:09 +0200 (CEST)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1307370363.3098.37.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -1.7 (-)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 Jun 2011 at 17:15, Ingo Molnar wrote:
+On Mon, Jun 06, 2011 at 04:26:03PM +0200, Eric Dumazet wrote:
+> From: Alexander Holler <holler@ahsoftware.de>
+> 
+> Le lundi 06 juin 2011 à 15:29 +0200, Alexander Holler a écrit :
+> > > Nice, now please submit a patch with 0972ddb237 as a guideline.
+> > >
+> > > BTW, you could also check other struct dst_ops methods for
+> > > bridge/netfilter:
+> > 
+> > Sorry, but I prefer to submit patches I understand by myself and for 
+> > stuff I know something about. The patch in my first mail was just meant 
+> > as a quick fix (which seemed to work here).
+> > 
+> > So even if I might be able to construct a working patch using commit 
+> > 0972ddb237, I don't think I should do that.
+> 
+> OK, I'll do it for you then, I am surprised you dont understand my
+> review / suggestion.
+> 
+> One patch submitter is supposed to followup and send a new version to
+> take into account reviews/comments, not wait that eventually everybody
+> says "OK, lets take it as is"
+> 
+> 
+> [PATCH] bridge: provide a cow_metrics method for fake_ops
+> 
+> Like in commit 0972ddb237 (provide cow_metrics() methods to blackhole
+> dst_ops), we must provide a cow_metrics for bridges fake_dst_ops as
+> well.
+> 
+> This fixes a regression coming from commits 62fa8a846d7d (net: Implement
+> read-only protection and COW'ing of metrics.) and 33eb9873a28 (bridge:
+> initialize fake_rtable metrics)
+> 
+> ip link set mybridge mtu 1234
+> -->
+> [  136.546243] Pid: 8415, comm: ip Tainted: P 
+> 2.6.39.1-00006-g40545b7 #103 ASUSTeK Computer Inc.         V1Sn 
+>         /V1Sn
+> [  136.546256] EIP: 0060:[<00000000>] EFLAGS: 00010202 CPU: 0
+> [  136.546268] EIP is at 0x0
+> [  136.546273] EAX: f14a389c EBX: 000005d4 ECX: f80d32c0 EDX: f80d1da1
+> [  136.546279] ESI: f14a3000 EDI: f255bf10 EBP: f15c3b54 ESP: f15c3b48
+> [  136.546285]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+> [  136.546293] Process ip (pid: 8415, ti=f15c2000 task=f4741f80 
+> task.ti=f15c2000)
+> [  136.546297] Stack:
+> [  136.546301]  f80c658f f14a3000 ffffffed f15c3b64 c12cb9c8 f80d1b80 
+> ffffffa1 f15c3bbc
+> [  136.546315]  c12da347 c12d9c7d 00000000 f7670b00 00000000 f80d1b80 
+> ffffffa6 f15c3be4
+> [  136.546329]  00000004 f14a3000 f255bf20 00000008 f15c3bbc c11d6cae 
+> 00000000 00000000
+> [  136.546343] Call Trace:
+> [  136.546359]  [<f80c658f>] ? br_change_mtu+0x5f/0x80 [bridge]
+> [  136.546372]  [<c12cb9c8>] dev_set_mtu+0x38/0x80
+> [  136.546381]  [<c12da347>] do_setlink+0x1a7/0x860
+> [  136.546390]  [<c12d9c7d>] ? rtnl_fill_ifinfo+0x9bd/0xc70
+> [  136.546400]  [<c11d6cae>] ? nla_parse+0x6e/0xb0
+> [  136.546409]  [<c12db931>] rtnl_newlink+0x361/0x510
+> [  136.546420]  [<c1023240>] ? vmalloc_sync_all+0x100/0x100
+> [  136.546429]  [<c1362762>] ? error_code+0x5a/0x60
+> [  136.546438]  [<c12db5d0>] ? rtnl_configure_link+0x80/0x80
+> [  136.546446]  [<c12db27a>] rtnetlink_rcv_msg+0xfa/0x210
+> [  136.546454]  [<c12db180>] ? __rtnl_unlock+0x20/0x20
+> [  136.546463]  [<c12ee0fe>] netlink_rcv_skb+0x8e/0xb0
+> [  136.546471]  [<c12daf1c>] rtnetlink_rcv+0x1c/0x30
+> [  136.546479]  [<c12edafa>] netlink_unicast+0x23a/0x280
+> [  136.546487]  [<c12ede6b>] netlink_sendmsg+0x26b/0x2f0
+> [  136.546497]  [<c12bb828>] sock_sendmsg+0xc8/0x100
+> [  136.546508]  [<c10adf61>] ? __alloc_pages_nodemask+0xe1/0x750
+> [  136.546517]  [<c11d0602>] ? _copy_from_user+0x42/0x60
+> [  136.546525]  [<c12c5e4c>] ? verify_iovec+0x4c/0xc0
+> [  136.546534]  [<c12bd805>] sys_sendmsg+0x1c5/0x200
+> [  136.546542]  [<c10c2150>] ? __do_fault+0x310/0x410
+> [  136.546549]  [<c10c2c46>] ? do_wp_page+0x1d6/0x6b0
+> [  136.546557]  [<c10c47d1>] ? handle_pte_fault+0xe1/0x720
+> [  136.546565]  [<c12bd1af>] ? sys_getsockname+0x7f/0x90
+> [  136.546574]  [<c10c4ec1>] ? handle_mm_fault+0xb1/0x180
+> [  136.546582]  [<c1023240>] ? vmalloc_sync_all+0x100/0x100
+> [  136.546589]  [<c10233b3>] ? do_page_fault+0x173/0x3d0
+> [  136.546596]  [<c12bd87b>] ? sys_recvmsg+0x3b/0x60
+> [  136.546605]  [<c12bdd83>] sys_socketcall+0x293/0x2d0
+> [  136.546614]  [<c13629d0>] sysenter_do_call+0x12/0x26
+> [  136.546619] Code:  Bad EIP value.
+> [  136.546627] EIP: [<00000000>] 0x0 SS:ESP 0068:f15c3b48
+> [  136.546645] CR2: 0000000000000000
+> [  136.546652] ---[ end trace 6909b560e78934fa ]---
+> 
+> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Neil Horman <nhorman@tuxdriver.com>
+> CC: Herbert Xu <herbert@gondor.apana.org.au>
+> ---
+> net/bridge/br_netfilter.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+> index 3fa1231..23b43d2 100644
+> --- a/net/bridge/br_netfilter.c
+> +++ b/net/bridge/br_netfilter.c
+> @@ -104,10 +104,16 @@ static void fake_update_pmtu(struct dst_entry *dst, u32 mtu)
+>  {
+>  }
+>  
+> +static u32 *fake_cow_metrics(struct dst_entry *dst, unsigned long old)
+> +{
+> +	return NULL;
+> +}
+> +
+>  static struct dst_ops fake_dst_ops = {
+>  	.family =		AF_INET,
+>  	.protocol =		cpu_to_be16(ETH_P_IP),
+>  	.update_pmtu =		fake_update_pmtu,
+> +	.cow_metrics =		fake_cow_metrics,
+>  };
+>  
+>  /*
+> 
+> 
+Not to drag this out further, but since you illustrated the correct way to do
+this with the blackhole_ops test, and this modification now gives us two
+instances of that case, would it perhaps be better to just do this in
+dst_metrics_write_ptr:
 
-> You might want to save the insults to after we are done with the 
-> discussion.
+return dst->ops->cow_metrics ? return dst->ops->cow_metrics(dst, p) : NULL;
 
-haha, Ingo, seriously, you wrote the above 20 minutes after this one?
+Then we could eliminate the two functions that do nothing be retun NULL (along
+with their respective call instructions), and save any future users from having
+to remember to include a dummy cow_metrics method if they happen to set the read
+only flag on thier dst_ops?
 
-> Unfortunately Andi has been spouting nonsense in this thread without 
-> replying to mails that challenge his points, such as:
+Neil
 
-tell you what Ingo, heed your own advice. better, you can even keep it
-to yourself. i do whatever i want, including what you reserve for
-seemingly yourself only.
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
