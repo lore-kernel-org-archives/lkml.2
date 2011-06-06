@@ -1,75 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587Ab1FFSMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 14:12:52 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:34270 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753764Ab1FFSMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 14:12:51 -0400
-Date: Mon, 6 Jun 2011 11:12:46 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 0/4] rcu: Detect rcu uses under extended quiescent
- state, and fix some
-Message-ID: <20110606181246.GM3066@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1307329858-14999-1-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754010Ab1FFSPK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 14:15:10 -0400
+Received: from fallbackmx10.syd.optusnet.com.au ([211.29.132.251]:33368 "EHLO
+	fallbackmx10.syd.optusnet.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750799Ab1FFSPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 14:15:08 -0400
+Message-Id: <201106061813.p56IDrmQ031009@mail03.syd.optusnet.com.au>
+Content-Type: text/plain
 Content-Disposition: inline
-In-Reply-To: <1307329858-14999-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: binary
+Mime-Version: 1.0
+X-Mailer: MIME-tools 5.420 (Entity 5.420)
+From: "U.N.O" <info@msn.com>
+Date: Tue, 07 Jun 2011 04:13:53 +1000
+Reply-To: lindamillerdesk@msn.com
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 05:10:53AM +0200, Frederic Weisbecker wrote:
-> I found two examples with the last two patches but I suspect there are more bugs
-> waiting to be detected under other configs and/or archs.
 
-Good catch!!!
 
-							Thanx, Paul
 
-> Frederic Weisbecker (4):
->   rcu: Detect uses of rcu read side in extended quiescent states
->   nohz: Split extended quiescent state handling from nohz switch
->   x86: Don't call idle notifier inside rcu extended QS
->   x86: Call idle_exit() after irq_enter()
-> 
->  arch/arm/kernel/process.c                |    4 +-
->  arch/avr32/kernel/process.c              |    4 +-
->  arch/blackfin/kernel/process.c           |    4 +-
->  arch/microblaze/kernel/process.c         |    4 +-
->  arch/mips/kernel/process.c               |    4 +-
->  arch/powerpc/kernel/idle.c               |    4 +-
->  arch/powerpc/platforms/iseries/setup.c   |    8 +++---
->  arch/s390/kernel/process.c               |    4 +-
->  arch/sh/kernel/idle.c                    |    2 +-
->  arch/sparc/kernel/process_64.c           |    4 +-
->  arch/tile/kernel/process.c               |    4 +-
->  arch/um/kernel/process.c                 |    4 +-
->  arch/unicore32/kernel/process.c          |    4 +-
->  arch/x86/kernel/apic/apic.c              |    6 ++--
->  arch/x86/kernel/apic/io_apic.c           |    3 +-
->  arch/x86/kernel/cpu/mcheck/mce.c         |    2 +-
->  arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
->  arch/x86/kernel/cpu/mcheck/threshold.c   |    2 +-
->  arch/x86/kernel/irq.c                    |    5 +--
->  arch/x86/kernel/process_32.c             |    4 +-
->  arch/x86/kernel/process_64.c             |    7 +++++-
->  include/linux/lockdep.h                  |    8 ++++++-
->  include/linux/rcupdate.h                 |   20 ++++++++++++-----
->  include/linux/tick.h                     |   10 ++++++--
->  kernel/lockdep.c                         |   12 ++++++++--
->  kernel/pid.c                             |    2 +-
->  kernel/rcutree.c                         |   14 ++++++++++++
->  kernel/time/tick-sched.c                 |   34 ++++++++++++++++++++++++++++-
->  28 files changed, 129 insertions(+), 56 deletions(-)
-> 
-> -- 
-> 1.7.5.2
-> 
+Over-due  ATM Card payment $515,810.00 USD 
+by the UN Office, We will send you an 
+International Swift ATM Card that has been 
+approved in your favor with Card 
+Number:8401236451206112,:Contact Linda 
+Miller: lindamillerdesk@msn.com, Tel:+234
+8075801322/ with this details 1.Valid 
+Delivery Address.2. Full Names.3. Phone 
+Number. Note that you will take responsibility for 
+cost of delivery $200Usd.
