@@ -1,179 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab1FFTn0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 15:43:26 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:45567 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281Ab1FFTnY (ORCPT
+	id S1754766Ab1FFTtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 15:49:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61116 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab1FFTtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 15:43:24 -0400
-Date: Mon, 6 Jun 2011 21:43:21 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: David C Niemi <dniemi@verisign.com>, cpufreq@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: switching to top frequency too frequent with ondemand governor
- and no_hz
-Message-ID: <20110606194321.GA1773@x4.trippels.de>
-References: <20110601160805.GA1775@x4.trippels.de>
- <4DE6783E.70508@verisign.com>
- <20110601180038.GA1780@x4.trippels.de>
- <20110602114113.GA1771@x4.trippels.de>
- <BANLkTimB5OdiHhRKwB1KpuNnXD55MmXWjQ@mail.gmail.com>
- <20110606112015.GA1776@x4.trippels.de>
- <BANLkTik0UeiieJDY7FHJHC9H4fwgBTh=PQ@mail.gmail.com>
- <20110606141625.GA1768@x4.trippels.de>
- <BANLkTinWQ1YBWHsCgK_JfHqXwETCy1mxEQ@mail.gmail.com>
+	Mon, 6 Jun 2011 15:49:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor management driver
+Date: Mon, 6 Jun 2011 21:48:56 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Timur Tabi <timur@freescale.com>, kumar.gala@freescale.com,
+        linux-kernel@vger.kernel.org, akpm@kernel.org,
+        linux-console@vger.kernel.org, greg@kroah.com,
+        linuxppc-dev@lists.ozlabs.org
+References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106061753.10154.arnd@arndb.de> <20110606131516.69b9f361@schlenkerla.am.freescale.net>
+In-Reply-To: <20110606131516.69b9f361@schlenkerla.am.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinWQ1YBWHsCgK_JfHqXwETCy1mxEQ@mail.gmail.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106062148.57165.arnd@arndb.de>
+X-Provags-ID: V02:K0:Umrg4CqMg74gkowG3eVS28YJNV0JSqI6ijGRO9u3/b2
+ IJhcCyLJ8aj9bpNEKtENiLlreSySlmXhVFU0NUca4LBvL2sV8A
+ A97oMQI0L9CjICiuV+VQx+94XzKBGjq064Au5IyG7IdUwDAWZK
+ QYGHkEAXOI3N3M7oZKvWTxGcgmXxXu4pqKOrczEOO/KEpdHZJA
+ BkgRN65FLTRp8yYWRnfMQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.06.06 at 18:34 +0200, Vincent Guittot wrote:
-> On 6 June 2011 16:16, Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
-> > On 2011.06.06 at 15:11 +0200, Vincent Guittot wrote:
-> >> On 6 June 2011 13:20, Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
-> >> > On 2011.06.06 at 09:35 +0200, Vincent Guittot wrote:
-> >> >> On 2 June 2011 13:41, Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
-> >> >> > On 2011.06.01 at 20:00 +0200, Markus Trippelsdorf wrote:
-> >> >> >> But I have found the root cause of symptoms described above by
-> >> >> >> bisection. It turned out that 2.6.39 is also affected, so I've bisected
-> >> >> >> down to 2.6.38.
-> >> >> >> This is the result:
-> >> >> >>
-> >> >> >>  5cb2c3bd0c5e0f3ced63f250ec2ad59d7c5c626a is the first bad commit
-> >> >> >>  commit 5cb2c3bd0c5e0f3ced63f250ec2ad59d7c5c626a
-> >> >> >>  Author: Vincent Guittot <vincent.guittot@linaro.org>
-> >> >> >>  Date:   Mon Feb 7 17:14:25 2011 +0100
-> >> >> >>
-> >> >> >>      [CPUFREQ] calculate delay after dbs_check_cpu
-> >> >> >>
-> >> >> >> When I revert the above in 3.0-rc1 the CONFIG_NO_HZ=y symptoms vanish.
-> >> >> >
-> >> >>
-> >> >> The patch, you have mentioned, solves a problem when ondemand governor
-> >> >> goes  from highest frequency to a lower one. Without the patch, the
-> >> >> governor uses the longest sampling period (sampling period * scaling
-> >> >> down factor) with a low frequency during the 1st period after
-> >> >> decreasing the frequency. This can lead to a large time frame
-> >> >> (sampling period * scaling down factor) with a low frequency but an
-> >> >> overloaded cpu.
-> >> >
-> >> > The problem with the patch is that it results in an ondemand behavior
-> >> > that almost totally ignores the middle frequencies (2100 and 2500 MHz in
-> >> > my case) with CONFIG_NO_HZ. If you also set the sampling_down_factor to
-> >> > something like >=100 then the CPU will spend much of the time at the top
-> >> > frequency even if there is no workload whatsoever.
-> >> >
-> >>
-> >> In fact, one main goal of the ondemand governor is to switch to max
-> >> frequency as soon as there is a cpu activity is detected to ensure the
-> >> responsiveness of the system. If your idle activity is made of burst
-> >> of cpu activity and your sampling period is small,  your sytems will
-> >> switch between the highest and the lowest frequency. At the contrary,
-> >> the conservative governor modifies the frequency in a step by step
-> >> manner.
-> >
-> > Understood. But this a change in behavior due to your patch.
-> >
-> >> >> The other correction of the patch is linked to the powersave bias
-> >> >> mode. The governor didn't use the right period for the low frequency
-> >> >> step (freq_lo_jiffies) but a larger one (sampling period * scaling
-> >> >> down factor). The ratio between low and high frequency was not the
-> >> >> right one.
-> >> >>
-> >> >> Do you use the powersave bias mode ?
-> >> >
-> >> > No.
-> >> >
-> >> >> Could you give us more statistics : the number of state transition
-> >> >> could be an interesting value. Is there a difference with and without
-> >> >> CONFIG_NO_HZ ? What is your sampling rate ?
-> >> >
-> >> > These are my settings:
-> >> >
-> >> > ignore_nice_load 0
-> >> > io_is_busy 0
-> >> > powersave_bias 0
-> >> > sampling_down_factor 200
-> >> > sampling_rate 10000
-> >> > sampling_rate_min 10000
-> >> > up_threshold 95
-> >> >
-> >> > cat sys/devices/system/cpu/cpu0/cpufreq/stats/* on an otherwise idle
-> >> > machine with CONFIG_NO_HZ and 5cb2c3bd0c5e0f reverted:
-> >> > 3200000 532
-> >> > 2500000 172
-> >> > 2100000 2703
-> >> > 800000 20995
-> >> > 153
-> >> >
-> >>
-> >> With this configuration (without the patch), there is a period of 2
-> >> seconds with a low frequency when the governor comes back from the
-> >> highest frequency. During these 2 seconds, you will not be able to go
-> >> back to max frequency. So, if your cpu is overloaded during this 2
-> >> seconds period, you will not increase your frequency. For this use
-> >> case, your cpufreq responsiveness is more then 2 seconds.
-> >
-> > I don't see these 2 second delays (being stuck on a low frequency) on my
-> > system. On the contrary as soon as there is sufficient load it switches
-> > to the highest frequency immediately.
-> >
+On Monday 06 June 2011 20:15:16 Scott Wood wrote:
+> On Mon, 6 Jun 2011 17:53:09 +0200
+> Arnd Bergmann <arnd@arndb.de> wrote:
+
+> > > > > You can't delete anything. 
+> > > > 
+> > > > rm, rmdir
+> > > > 
+> > > > > You can't create empty nodes.
+> > > > 
+> > > > mkdir
+> > > 
+> > > I know how to operate a filesystem.  You can't do these operations *on
+> > > another guest's device tree through the hv interface*.
+> > 
+> > Why not?
 > 
-> Let assume that your system is at the highest frequency
+> Because the hypervisor does not support it.  It provides only getprop and
+> setprop.  I think you took my "you can't do that" statements to be a
+> statement about limitations of using a filesystem interfcae -- quite the
+> opposite, I was saying the hv functionality is too limited to support a
+> filesystem interface with normal semantics.
+
+Ok, sorry for the confusion on my part. It makes a lot more sense now.
+
+> > > And what would be the benefit of this major restructuring and added
+> > > complexity?
+> > 
+> > I think it would be a slightly better abstraction, and the complexity
+> > is not as big as you make it sound. I'm mainly countering your statement
+> > that it would be a bad interface or that would not possible to do.
+> > 
+> > I'm not that opposed to having an ioctl interface for your hypervisor
+> > interface, but I am opposed to making design choices based on
+> > a bad representations of facts or not having considered the options
+> > that other people suggest.
 > 
-> without the patch, you have the following sequence :
+> I don't really see how a filesystem is a better abstraction for a wrapper
+> around a procedural interface.  A somewhat better argument is that ioctls
+> are a pain, and Linux doesn't have a better way to expose a procedural
+> interface, that doesn't require a wrapper program -- though as the wrapper
+> already exists, and the fs interface would probably be sufficiently awkward
+> that people would still use a wrapper, that doesn't buy us too much either.
 > 
-> ->do_dbs_timer
->     -> delay = usecs_to_jiffies(dbs_tuners_ins.sampling_rate *
-> dbs_info->rate_mult); // delay will be equal to 10000*200=2000000us
->     -> dbs_check_cpu
->            Let assume that your cpu load is quite small
->           -> freq_next = max_load_freq / (dbs_tuners_ins.up_threshold
-> - dbs_tuners_ins.down_differential); //freq_next is set to your lowest
-> frequency
->           -> __cpufreq_driver_target(policy, freq_next, CPUFREQ_RELATION_L);
->     -> 	queue_delayed_work_on(cpu, kondemand_wq, &dbs_info->work, delay);
+> This is not being proposed as any sort of standard kernel API, just a way
+> for userspace to get access to implementation-specific hcalls.
+> Implementation-specific backdoor is practically the definition of ioctl. :-)
 > 
-> the delay value is set to sampling_rate * rate_mult but the frequency
-> is the lowest one which is not the correct behavior of the
-> sampling_down_factor feature.
-> the patch only solves this issue.
+> I would be interested to see a concrete proposal for what this would look
+> like as a filesystem, though, based on the actual operations that are
+> available.  How would you deal with getting all the parameters in,
+> performing the operation, and getting the results back?  What about when
+> multiple processes are doing this at the same time?  What would the memcpy
+> hcall look like?
 
-> 
-> IMHO, the previous results were "good" because of the bug in the
-> sampling_down_factor which was "filtering" some cpu activities after
-> decreasing the frequency.
+In fs/libfs.c, we have support for "simple transaction files", where you
+write input parameters into a file and then read it back to get the
+results. They are very rarely used, but can serve as a way to replace ioctls
+with file operations where that makes sense.
 
-OK, this explains the issue that I was seeing.
+For an inter-partition memcpy, a better interface might be a pipe
+representation: You have a namespace that is shared between two
+partitions, so each side can create directory entries with arbitrary
+names in one of the subdirectories of the file system. Then you can
+open the file for reading on one side and writing on the other side
+and when both sides have started the respective operation, the hypervisor
+will copy data. The possible ways to use that functionality are countless.
 
-To prove the point here are the "emerge" times of the ncurses library in
-Gentoo (unpacking, configuration, compiling and installing) for
-different sampling_down_factors.
+Similarly, you can mmap a file to get inter-partition shared memory.
 
-sampling_down_factor    merge time                                                                                                                   
-(with your patch)                                                                                                                                    
-1                       1 minute and 59 seconds.                                                                                                     
-20                      1 minute and 47 seconds.                                                                                                     
-100                     1 minute and 29 seconds.                                                                                                     
-150                     1 minute and 24 seconds.                                                                                                     
-200                     1 minute and 22 seconds.                                                                                                     
-300                     1 minute and 20 seconds.                                                                                                     
-500                     1 minute and 12 seconds.                                                                                                     
-1500                    1 minute and 7 seconds.                                                                                                      
-(with patch reverted)                                                                                                                                
-1                       2 minutes and 4 seconds.                                                                                                     
-20                      1 minute and 55 seconds.                                                                                                     
-200                     1 minute and 41 seconds.                                                                                                     
-
-As you can see your patch always beats the reverted case. It also shows
-that sampling_down_factor makes a huge difference in compilation
-time.
-
--- 
-Markus
+	Arnd
