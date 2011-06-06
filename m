@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab1FFIGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 04:06:33 -0400
-Received: from sh.osrg.net ([192.16.179.4]:40783 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755115Ab1FFIG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 04:06:29 -0400
-Date: Mon, 6 Jun 2011 17:06:03 +0900
-To: shawn.guo@linaro.org
-Cc: linux-kernel@vger.kernel.org, vinod.koul@intel.com,
-        dan.j.williams@intel.com, cjb@laptop.org, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        gregkh@suse.de
-Subject: Re: [PATCH v2 1/3] dmaengine: add new dma API for
- max_segment_number
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1307345414-26872-1-git-send-email-shawn.guo@linaro.org>
-References: <1307345414-26872-1-git-send-email-shawn.guo@linaro.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20110606170420I.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 06 Jun 2011 17:06:04 +0900 (JST)
+	id S1754767Ab1FFQRA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:17:00 -0400
+Received: from keys.smcoe.k12.ca.us ([209.188.132.13]:43926 "HELO
+	keys.smcoe.k12.ca.us" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753760Ab1FFQQ6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 12:16:58 -0400
+X-Greylist: delayed 8095 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Jun 2011 12:16:48 EDT
+X-PGP-Universal: processed;
+	by keys.smcoe.k12.ca.us on Mon, 06 Jun 2011 01:19:24 -0700
+From: "Jackie Daily" <jdaily@un-habitat.org>
+Reply-to: ups@manager.in.th
+Organization: Jackie Daily
+Subject: Your cashier check
+To: undisclosed-recipients:;
+Message-ID: <20110606010825.bea6bd64@smcoe.k12.ca.us>
+Date: Mon, 06 Jun 2011 01:08:25 -0700
+X-User-Agent: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; SearchToolbar 1.2; SLCC1;
+	.NET CLR 2.0.50727; Media Center PC 5.0; .NET CLR 3.5.30729; .NET CLR
+	3.0.30618; Crazy Browser 2.0.1)
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  6 Jun 2011 15:30:12 +0800
-Shawn Guo <shawn.guo@linaro.org> wrote:
+Delay on my part has been due to the change of my duties. I have sucessfully deposited your Cashier Check of $825,000.00 USD with the United Parcel Service. I am now in Kenya for my new job.
 
-> Like dma_set(get)_max_seg_size for max_segment_size, the patch adds
-> max_segment_number into device_dma_parameters and creates the
-> corresponding dmaengine API dma_set(get)_max_seg_number for it.
+I need you to contact the United Parcel Service (UPS) for delivery of your check.
 
-As I wrote in another mail, dma_get|set_max_seg_size and
-dma_get|set_seg_boundary are added to the dma mapping API. That is,
-they enable the drivers (or subsystems) to tell IOMMUs about the
-device dma limitations. When IOMMUs merge scatter list entries, they
-look at the limitations.
+Please take note that you will pay a shipping/handling fee of $87.00 US Dollars.
 
+Contact UPS with below details and pay the shipping/handling fee ($87 USD) to receive your cashier check: 
 
-> Here is the user story that tells the need of the new api.  The
-> mxs-mmc is the mmc host controller for Freescale MXS architecture.
-> There are a pair of  mmc host specific parameters max_seg_size and
-> max_segs that mxs-mmc host driver needs to tell mmc core, so that
-> mmc core can know how big each data segment could be and how many
-> segments could be handled one time in a scatter list by host driver.
-> 
-> The mxs-mmc driver is one user of dmaengine mxs-dma, and it will call
-> mxs-dma to transfer data in scatter list.  That is to say mxs-mmc has
-> no idea of what max_seg_size and max_segs should be, because they are
-> all mxs-dma capability parameters, and mxs-mmc needs to query them
-> from mxs-dma.
+Name: Collins Abah 
+Tel: +2347033364633 
+E-mail: ups@manager.in.th 
 
-max_segs isn't unrelated with the dma mapping API. I explained above,
-IOMMUs doesn't increase the number of segments (could decrease the
-number of segments by merging).
+Thank you for your patience.
 
-The limitation about the number of segment already lives elsewhere
-(e.g. queue's limits.max_segments).
+Jackie Daily
+Programme Manager 
+United Nations Human Settlements Programme
