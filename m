@@ -1,88 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109Ab1FFQi4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 12:38:56 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:15592 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941Ab1FFQix (ORCPT
+	id S1755636Ab1FFQjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 12:39:08 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55149 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755375Ab1FFQjF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 12:38:53 -0400
-X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
-X-RZG-CLASS-ID: mo00
-Message-ID: <4DED0292.1040605@die-jansens.de>
-Date: Mon, 06 Jun 2011 18:38:42 +0200
-From: Arne Jansen <lists@die-jansens.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Mon, 6 Jun 2011 12:39:05 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-References: <4DEB933C.1070900@die-jansens.de> <20110605151323.GA30590@elte.hu> <1307349530.2353.7374.camel@twins> <20110606145827.GD30348@elte.hu> <1307372989.2322.136.camel@twins> <1307375227.2322.161.camel@twins> <20110606155236.GA7374@elte.hu> <1307376039.2322.164.camel@twins> <20110606160810.GA16636@elte.hu> <1307376771.2322.168.camel@twins> <20110606161749.GA22157@elte.hu>
-In-Reply-To: <20110606161749.GA22157@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTinqVf+uK+5T_X-EkXw-YE67DJL1Pg@mail.gmail.com>
+References: <20110606071829.10334.90865.stgit@ponder> <BANLkTinqVf+uK+5T_X-EkXw-YE67DJL1Pg@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 6 Jun 2011 10:38:44 -0600
+X-Google-Sender-Auth: y_NwdYZSzWof06LhYX-3J6ZMk0k
+Message-ID: <BANLkTinmfufSkSnmiKWWEgpaR-usbiV5tA@mail.gmail.com>
+Subject: Re: [PATCH v2] spi: reorganize drivers
+To: Mike Frysinger <vapier.adi@gmail.com>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.06.2011 18:17, Ingo Molnar wrote:
+On Mon, Jun 6, 2011 at 10:31 AM, Mike Frysinger <vapier.adi@gmail.com> wrote:
+> On Mon, Jun 6, 2011 at 03:18, Grant Likely wrote:
+>> Sort the SPI makefile and enforce the naming convention spi_*.c for
+>> spi drivers.
 >
-> * Peter Zijlstra<peterz@infradead.org>  wrote:
->
->> On Mon, 2011-06-06 at 18:08 +0200, Ingo Molnar wrote:
->>> * Peter Zijlstra<peterz@infradead.org>  wrote:
->>>
->>>> On Mon, 2011-06-06 at 17:52 +0200, Ingo Molnar wrote:
->>>>> * Peter Zijlstra<peterz@infradead.org>  wrote:
->>>>>
->>>>>> Needs more staring at, preferably by someone who actually
->>>>>> understands that horrid mess :/ Also, this all still doesn't make
->>>>>> printk() work reliably while holding rq->lock.
->>>>>
->>>>> So, what about my suggestion to just *remove* the wakeup from there
->>>>> and use the deferred wakeup mechanism that klogd uses.
->>>>>
->>>>> That would make printk() *visibly* more robust in practice.
->>>>
->>>> That's currently done from the jiffy tick, do you want to effectively
->>>> delay releasing the console_sem for the better part of a jiffy?
->>>
->>> Yes, and we already do it in some other circumstances.
->>
->> We do?
->
-> Yes, see the whole printk_pending logic, it delays:
->
->                  wake_up_interruptible(&log_wait);
->
-> to the next jiffies tick.
->
->>> Can you see
->>> any problem with that? klogd is an utter slowpath anyway.
->>
->> but console_sem isn't klogd. We delay klogd and that's perfectly
->> fine, but afaict we don't delay console_sem.
->
-> But console_sem is really a similar special case as klogd. See, it's
-> about a *printk*. That's rare by definition.
->
-> If someone on the console sees it he'll be startled by at least 10
-> msecs ;-) So delaying the wakeup to the next jiffy really fits into
-> the same approach as we already do with&log_wait, hm?
+> spi_topcliff_pch.c uses KBUILD_MODNAME with a few funcs, but perhaps
+> those are only for /proc/ status tracking ?  worth double checking ...
 
-As long as it doesn't scramble the order of the messages, the delay
-imho doesn't matter even in very printk-heavy debugging sessions.
+I just talked with Dirk Brandewie, who has a major rewrite to the
+topcliff spi driver.  I'll let him comment on whether or not changing
+KBUILD_MODNAME will cause any problems.
 
->
-> This would solve a real nightmare that has plagued us ever since
-> printk() has done wakeups directly - i.e. like forever.
->
-> Thanks,
->
-> 	Ingo
-
+g.
