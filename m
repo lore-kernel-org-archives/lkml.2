@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab1FFUaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 16:30:04 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:30428 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834Ab1FFUaD (ORCPT
+	id S1757991Ab1FFUaq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 16:30:46 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40706 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab1FFUao convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 16:30:03 -0400
-Message-ID: <4DED38C9.1080401@tilera.com>
-Date: Mon, 6 Jun 2011 16:30:01 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Mon, 6 Jun 2011 16:30:44 -0400
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Mike Frysinger <vapier@gentoo.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>, David Miller <davem@davemloft.net>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCH 2/4 v2] nohz: Split extended quiescent state handling
- from nohz switch
-References: <1307329858-14999-4-git-send-email-fweisbec@gmail.com> <1307330437-15372-1-git-send-email-fweisbec@gmail.com>
-In-Reply-To: <1307330437-15372-1-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.94.94.105]
+In-Reply-To: <BANLkTimsZeqvSWj+kKWLSmFOQc70KWodcw@mail.gmail.com>
+References: <1300444824-13713-1-git-send-email-waldemar.rymarkiewicz@tieto.com>
+	<20110325142648.GC3879@sortiz-mobl>
+	<99B09243E1A5DA4898CDD8B7001114481085E2375D@EXMB04.eu.tieto.com>
+	<201103291305.02293.arnd@arndb.de>
+	<20110331141650.GB2704@sortiz-mobl>
+	<99B09243E1A5DA4898CDD8B7001114481085F0FE7C@EXMB04.eu.tieto.com>
+	<20110331153010.GD2704@sortiz-mobl>
+	<BANLkTimsZeqvSWj+kKWLSmFOQc70KWodcw@mail.gmail.com>
+Date: Mon, 6 Jun 2011 15:30:42 -0500
+Message-ID: <BANLkTim9tyZXhLUxzHL2K-nWtujsJTB0fw@mail.gmail.com>
+Subject: Re: [PATCH] NFC: Driver for Inside Secure MicroRead NFC chip
+From: Pavan Savoy <pavan_savoy@sify.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Waldemar.Rymarkiewicz@tieto.com, arnd@arndb.de, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hthebaud@insidefr.com,
+        matti.j.aaltonen@nokia.com, alan@lxorguk.ukuu.org.uk,
+        Sebastian.Chlad@tieto.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/5/2011 11:20 PM, Frederic Weisbecker wrote:
-> It is assumed that rcu won't be used once we switch to tickless
-> mode and until we restart the tick. However this is not always
-> true, as in x86-64 where we dereference the idle notifiers after
-> the tick is stopped.
+On Mon, Jun 6, 2011 at 3:22 PM, Pavan Savoy <pavan_savoy@sify.com> wrote:
+> On Thu, Mar 31, 2011 at 9:30 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+>> On Thu, Mar 31, 2011 at 06:24:50PM +0300, Waldemar.Rymarkiewicz@tieto.com wrote:
+>>> Hi Samuel,
+>>>
+>>> >That's the Bluetooth approach, and it works just fine as well.
+>>> >However, the netlink option for sending commands and receiving
+>>> >answers to/from a subsystem sounds more appropriate, at least to me.
+>>>
+>>> I haven't used netlink in practice, so just wondering why netlink. I assume, then, it's more suitable :)
+>>>
+>> Have a look at the wireless nl80211.c implementation. It's a good example for
+>> that sort of usage.
 >
-> To prepare for fixing this, split the tickless mode switching and
-> RCU extended quiescent state logics.
-> Make tick_nohz_stop/restart_sched_tick() RCU agnostic but provide
-> a new pair of APIs tick_nohz_enter/exit_idle() that keep the
-> old behaviour by handling both the nohz mode and RCU extended
-> quiescent states, then convert every archs to use these.
+> So, why was the network interface 'ala eth0 or the netlink interface dropped?
+> I saw these patches recently "NFC: add nfc subsystem core" - which
+> seem to add just the device /dev/nfc - am I correct ?
+> Or missing something ?
+
+Yes apparently I did miss a whole of patches in the series.
+So, for anyone who is interested on the list - this is the proposed
+architecture,
+
+http://code.openbossa.org/?p=nfc/linux-nfc.git;a=blob;f=Documentation/networking/nfc.txt;h=e17ac191ca958235db99da23786c46c4c60082e9;hb=f8d3349352063626240ad1c1a15e2361dab81ef4
+
+>> Cheers,
+>> Samuel.
+>>
+>> --
+>> Intel Open Source Technology Centre
+>> http://oss.intel.com/
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>>
 >
-> Archs that want to switch to extended QS to some custom points
-> can do it later by using tick_nohz_stop_sched_tick() and
-> rcu_enter_nohz() seperately.
->
-> v2: Remove rcu_exit_nohz() from tick_nohz_restart_sched_tick()
->
-> [...]
->  arch/tile/kernel/process.c             |    4 +-
-
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
-
