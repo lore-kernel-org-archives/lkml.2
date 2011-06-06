@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382Ab1FFWPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 18:15:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49978 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab1FFWPt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 18:15:49 -0400
-Subject: [PATCH] lockdep: Fix lock_is_held on recursion
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx <tglx@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Jun 2011 00:19:19 +0200
-Message-ID: <1307398759.2497.966.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756963Ab1FFWWq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 18:22:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57575 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751912Ab1FFWWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 18:22:45 -0400
+Date: Mon, 6 Jun 2011 15:21:18 -0700
+From: Greg KH <gregkh@suse.de>
+To: Joe Perches <joe@perches.com>
+Cc: anish <anish198519851985@gmail.com>, devel@driverdev.osuosl.org,
+        arnd@arndb.de, lucas.demarchi@profusion.mobi,
+        linux-kernel@vger.kernel.org, jic23@cam.ac.uk,
+        manuel.stahl@iis.fraunhofer.de
+Subject: Re: [PATCH 1/2] staging: iio replaced kmalloc with local variables.
+Message-ID: <20110606222118.GA29883@suse.de>
+References: <1307387257.4327.12.camel@anish-desktop>
+ <20110606215549.GA7543@suse.de>
+ <1307398257.4994.30.camel@Joe-Laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307398257.4994.30.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: lockdep: Fix lock_is_held on recursion
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon Jun 06 12:32:43 CEST 2011
+On Mon, Jun 06, 2011 at 03:10:57PM -0700, Joe Perches wrote:
+> On Mon, 2011-06-06 at 14:55 -0700, Greg KH wrote:
+> > On Tue, Jun 07, 2011 at 12:37:37AM +0530, anish wrote:
+> > > From: anish kumar <anish198519851985@gmail.com>
+> > > Replace kmalloc with local variables as it was un-necessary and
+> > > also removed the redudant code after this change.
+> > SPI data, like USB data, has to come from kmalloced data, not from the
+> > stack, or bad things can, and will, happen.
+> 
+> Perhaps just add a comment like:
+> 
+> +       u8 *tx = kmalloc(2, GFP_KERNEL);	/* can't be on stack */
 
-The main lock_is_held() user is lockdep_assert_held(), avoid false
-assertions in lockdep_off() sections by unconditionally reporting the
-lock is taken.
+You really want to do to that for _EVERY_ SPI and USB driver?  I don't
+think so.  It's a known thing that this is a requirement for SPI and USB
+drivers.
 
-[ the reason this is important is a lockdep_assert_held() in ttwu()
-  which triggers a warning under lockdep_off() as in printk() which
-  can trigger another wakeup and lock up due to spinlock recursion ]
+> It might be better to do a single kmalloc(4)
+> than 2 separate kmalloc(2)'s.
 
-Reported-and-tested-by: Arne Jansen <lists@die-jansens.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
-Index: linux-2.6/kernel/lockdep.c
-===================================================================
---- linux-2.6.orig/kernel/lockdep.c
-+++ linux-2.6/kernel/lockdep.c
-@@ -3426,7 +3426,7 @@ int lock_is_held(struct lockdep_map *loc
- 	int ret = 0;
- 
- 	if (unlikely(current->lockdep_recursion))
--		return ret;
-+		return 1; /* avoid false negative lockdep_assert_held */
- 
- 	raw_local_irq_save(flags);
- 	check_flags(flags);
+No, don't do that, that might cause problems as well with some
+controllers.  We see some ARM controllers having problems with alignment
+issues.  Now ideally we are fixing them in those controllers, and not
+having to fix them in the individual drivers, but if at all possible, a
+new allocation is the way to go.
 
+thanks,
 
+greg k-h
