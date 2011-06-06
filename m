@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758078Ab1FFU4m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 16:56:42 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35799 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756701Ab1FFU4k (ORCPT
+	id S1754911Ab1FFU5V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 16:57:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49135 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752036Ab1FFU5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 16:56:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=sDPjP2LyKQwezrZcinA/RR8S42BaHHB10Fbx69wX9MxpBMQrZt1vJ5f3PlbbBwUCXJ
-         Tq9Ebbo6n6/0OfvXVpkt4/mVtqRV9nhhW+1GXyz+0V3Q+QzQZeRQzXYmUGnj0ggzdo87
-         q77cJa/cV3fKiS6iH5youM1+Lo2RBYy9eCOxE=
-Subject: Re: [PATCH 2/3] atomic: move atomic_add_unless to generic code
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Arun Sharma <asharma@fb.com>
-Cc: linux-kernel@vger.kernel.org,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@osdl.org>, Mike Frysinger <vapier.adi@gmail.com>
-In-Reply-To: <1307381251-15729-2-git-send-email-asharma@fb.com>
-References: <1307381251-15729-1-git-send-email-asharma@fb.com>
-	 <1307381251-15729-2-git-send-email-asharma@fb.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Jun 2011 22:56:33 +0200
-Message-ID: <1307393793.2642.27.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 6 Jun 2011 16:57:19 -0400
+Date: Mon, 6 Jun 2011 21:57:16 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Milton Miller <miltonm@bga.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: genirq: Ensure we locate the passed IRQ in irq_alloc_descs()
+Message-ID: <20110606205716.GC27341@opensource.wolfsonmicro.com>
+References: <1307037313-15733-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <nack-locate@mdm.bga.com>
+ <20110603104217.GA4777@opensource.wolfsonmicro.com>
+ <locate-from-more@mdm.bga.com>
+ <20110603150636.GA9492@opensource.wolfsonmicro.com>
+ <alpine.LFD.2.02.1106031823310.3078@ionos>
+ <irq-locate-ack@mdm.bga.com>
+ <20110604095138.GA708@opensource.wolfsonmicro.com>
+ <BANLkTi=MTWcKz0jd_p_n3Yz3DJQp4rs1Sg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=MTWcKz0jd_p_n3Yz3DJQp4rs1Sg@mail.gmail.com>
+X-Cookie: You will outgrow your usefulness.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 06 juin 2011 à 10:27 -0700, Arun Sharma a écrit :
-> This is in preparation for more generic atomic
-> primitives based on __atomic_add_unless.
-> 
-> Signed-off-by: Arun Sharma <asharma@fb.com>
-> Signed-off-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Andrew Morton <akpm@osdl.org>
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: Mike Frysinger <vapier.adi@gmail.com>
-> LKML-Reference: <20110531105019.GF24172@elte.hu>
+On Mon, Jun 06, 2011 at 01:42:33PM -0600, Grant Likely wrote:
+> On Sat, Jun 4, 2011 at 3:51 AM, Mark Brown
 
-Reviewed-by: Eric Dumazet <eric.dumazet@gmail.com>
+> > I'm not really sure what an IRQ domain is (the patch series you pointed
+> > at before does rather appear to assume one knows already)
 
+> (obviously I need to write some documentation).  irq_domains is some
+> infrastructure to make managing a range of irq numbers easier, and
+> also to handle the mapping of hw irq numbers to linux irq numbers.
 
+Hrm, in that case it sounds rather like a lot of interrupt controllers
+ought to be making themselves IRQ domains?
