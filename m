@@ -1,43 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab1FFKLd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 06:11:33 -0400
-Received: from smtp.nokia.com ([147.243.1.48]:54733 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751965Ab1FFKLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 06:11:32 -0400
-Subject: Re: [PATCH] mtd: denali: remove calling mtd_device_unregister()
- after nand_release()
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reply-To: Artem.Bityutskiy@nokia.com
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jamie Iles <jamie@jamieiles.com>,
-        Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
-        linux-mtd@lists.infradead.org,
-        David Woodhouse <David.Woodhouse@intel.com>
-In-Reply-To: <1307063535.10001.1.camel@phoenix>
-References: <1307063535.10001.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia
-Date: Mon, 06 Jun 2011 13:07:09 +0300
-Message-ID: <1307354829.3112.25.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+	id S1753367Ab1FFKJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 06:09:42 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:54071
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750998Ab1FFKJk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 06:09:40 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(z1039oz1432N98dKzz1202hzz15d4Rz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LMD5JU-02-B53-02
+X-M-MSG: 
+Date: Mon, 6 Jun 2011 12:09:51 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "laurent.pinchart@ideasonboard.com" 
+	<laurent.pinchart@ideasonboard.com>,
+        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "davidb@codeaurora.org" <davidb@codeaurora.org>
+Subject: Re: [RFC 0/6] iommu: generic api migration and grouping
+Message-ID: <20110606100950.GC30762@amd.com>
+References: <1307053663-24572-1-git-send-email-ohad@wizery.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1307053663-24572-1-git-send-email-ohad@wizery.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-03 at 09:12 +0800, Axel Lin wrote:
-> The implementation of nand_release() already call mtd_device_unregister(),
-> no need to call it again.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Hi,
 
-Pushed to l2-mtd-2.6.git, thanks.
+On Thu, Jun 02, 2011 at 06:27:37PM -0400, Ohad Ben-Cohen wrote:
+> First stab at iommu consolidation:
+> 
+> - Migrate OMAP's iommu driver to the generic iommu API. With this in hand,
+>   users can now start using the generic iommu layer instead of calling
+>   omap-specific iommu API.
+> 
+>   New code that requires functionality missing from the generic iommu api,
+>   will add that functionality in the generic framework (e.g. adding framework
+>   awareness to multi page sizes, supported by the underlying hardware, will
+>   avoid the otherwise-inevitable code duplication when mapping a memory
+>   region).
+
+The IOMMU-API already supports multiple page-sizes. See the
+'order'-parameter of the map/unmap functions.
+
+>   Further generalizing of iovmm strongly depends on our broader plans for
+>   providing a generic virtual memory manager and allocation framework
+>   (which, as discussed, should be separated from a specific mapper).
+
+The generic vmm for DMA is called DMA-API :) Any reason for not using
+that (those reasons should be fixed)?
+
+>   iovmm has a mainline user: omap3isp, and therefore must be maintained,
+>   but new potential users will either have to generalize it, or come up
+>   with a different generic framework that will replace it.
+
+Moving to the DMA-API should be considered here. If it is too much work
+iovmm can stay for a while, but the goal should be to get rid of it and
+only use the DMA-API.
+
+> - Create a dedicated iommu drivers folder (and put the base iommu code there)
+
+Very good idea.
+
+
+	Joerg
+
+P.S.: Please also Cc the iommu-list (iommu@lists.linux-foundation.org)
+      in the future for IOMMU related patches.
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
