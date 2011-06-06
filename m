@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756984Ab1FFOok (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 10:44:40 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47737 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab1FFOoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 10:44:39 -0400
-Date: Mon, 6 Jun 2011 16:44:14 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: pageexec@freemail.hu
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@mit.edu>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to
- feature-removal-schedule
-Message-ID: <20110606144414.GA30348@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>
- <BANLkTimrhO8QfBqQsH_Q13ghRH2P+ZP7AA@mail.gmail.com>
- <20110606093102.GW27166@one.firstfloor.org>
- <4DECAE68.16683.1203EBBB@pageexec.freemail.hu>
+	id S1757173Ab1FFOpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 10:45:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45370 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab1FFOpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 10:45:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=g3A91e1O2Ut15RfJpWqPOgKHFl0L3LieKfLwk8GYGFd/0OyL0+7GU5GzRR7HuXWPee
+         ERrMAxXfB0Korni7QeyCtOrRv4WYvjDl4opssJf05uAVXT0CfPeXJySktl5bqfBnA3JE
+         +cYKu8OhNe4RY6c6ZJaJlvdPFd9RGeG6+QgTE=
+Date: Mon, 6 Jun 2011 23:44:59 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: caiqian@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, rientjes@google.com, hughd@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com
+Subject: Re: [PATCH v2 0/5] Fix oom killer doesn't work at all if system
+ have > gigabytes memory  (aka CAI founded issue)
+Message-ID: <20110606144458.GG1686@barrios-laptop>
+References: <348391538.318712.1306828778575.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+ <4DE4A2A0.6090704@jp.fujitsu.com>
+ <4DE4BC64.3040807@jp.fujitsu.com>
+ <20110601033258.GA12653@barrios-laptop>
+ <4DEC4463.1060206@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DECAE68.16683.1203EBBB@pageexec.freemail.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4DEC4463.1060206@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* pageexec@freemail.hu <pageexec@freemail.hu> wrote:
-
-> > > Seriously. The whole patch series just seems annoying.
+On Mon, Jun 06, 2011 at 12:07:15PM +0900, KOSAKI Motohiro wrote:
+> >> Of course, we recommend to drop privileges as far as possible
+> >> instead of keeping them. Thus, oom killer don't have to check
+> >> any capability. It implicitly suggest wrong programming style.
+> >>
+> >> This patch change root process check way from CAP_SYS_ADMIN to
+> >> just euid==0.
+> > 
+> > I like this but I have some comments.
+> > Firstly, it's not dependent with your series so I think this could
+> > be merged firstly.
 > 
-> what is annoying is your covering up of security fixes on grounds 
-> that you don't want to help script kiddies (a bullshit argument as 
-> it were) but at the same time question proactive security measures 
-> (one can debate the implementation, see my other mail) that would 
-> *actually* prevent the same kiddies from writing textbook exploits.
+> I agree.
+> 
+> > Before that, I would like to make clear my concern.
+> > As I look below comment, 3% bonus is dependent with __vm_enough_memory's logic?
+> 
+> No. completely independent.
+> 
+> vm_enough_memory() check the task _can_ allocate more memory. IOW, the task
+> is subjective. And oom-killer check the task should be protected from oom-killer.
+> IOW, the task is objective.
+> 
 
-You are mixing up several issues here, and rather unfairly so.
+Hmm, maybe I can't understand your point.
+My though was below.
 
-Firstly, see my other mail, there's an imperfect balance to be
-found between statistical 'proactive' measures and the incentives
-that remove the *real* bugs. You have not replied to that mail of
-mine so can i assume that you concur and accept my points? If yes
-then why are you still arguing the same thing?
+Assumption)
+1. root allocation bonus point -> 10% 
+2. OOM have no bonus about root process
 
-Secondly, *once* a real security bug has been found the correct 
-action is different from the considerations of proactive measures. 
-How can you possibly draw equivalence between disclosure policies
-and the handling of statistical security measures?
+Scenario)
+1.
+System has 101 free pages and 10 normal tasks.
+Ideally, 10 tasks allocates free memory fairly so each task will have 10 pages.
+So OOM killer can select victim fairly when new task which requires 10 pages forks.
 
-Thanks,
+2.
+System has 101 free pages and 10 tasks. (9 normal task , 1 root task)
+10 * 9 + 11 will be consumed. So each normal task will have 10 pages
+but a root task have 11 pages.
+So OOM killer can always selectd root process as vicim.(We assumed
+OOM doesn't have a bonus on root process)
 
-	Ingo
+Conclusion)
+For solving above problem, we have to give bonus which was given
+in allocation to OOM, too. It's fair.
+So I think it has a dependency.
+
+-- 
+Kind regards
+Minchan Kim
