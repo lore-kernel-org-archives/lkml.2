@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab1FFPsO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 11:48:14 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:41459
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751445Ab1FFPsM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 11:48:12 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h8e3h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4DECF6B3.5020700@freescale.com>
-Date: Mon, 6 Jun 2011 10:48:03 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	id S1757659Ab1FFPuX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 11:50:23 -0400
+Received: from r00tworld.com ([212.85.137.150]:47572 "EHLO r00tworld.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753530Ab1FFPuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 11:50:22 -0400
+From: pageexec@freemail.hu
+To: Ingo Molnar <mingo@elte.hu>
+Date: Mon, 06 Jun 2011 17:48:56 +0200
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <kumar.gala@freescale.com>, <benh@kernel.crashing.org>, <greg@kroah.com>,
-        <akpm@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
-Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
- management driver
-References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106031724.44957.arnd@arndb.de> <4DE8FD85.7000703@freescale.com> <201106061742.01974.arnd@arndb.de>
-In-Reply-To: <201106061742.01974.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
+Reply-to: pageexec@freemail.hu
+CC: Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Message-ID: <4DECF6E8.19026.131F1F1F@pageexec.freemail.hu>
+In-reply-to: <20110606152657.GJ30348@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>, <4DECDD14.5845.12BA3C18@pageexec.freemail.hu>, <20110606152657.GJ30348@elte.hu>
+X-mailer: Pegasus Mail for Windows (4.61)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Mon, 06 Jun 2011 17:49:30 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> Sorry, I misread your first sentence above. I thought you said that you prefer
-> drivers/firmware over virt/fsl. drivers/misc is definitely the wrong
-> place for this, please choose a better one. Maybe drivers/virt/ ?
+On 6 Jun 2011 at 17:26, Ingo Molnar wrote:
 
-I'll be more than happy to go with the consensus, but I don't think it makes
-sense to create a new directory just for this one, limited-use driver.  You're
-the only person who's complained about drivers/misc.  I'm pretty sure that if I
-put it in drivers/virt, I'll get more complaints.
+> 
+> * pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+> 
+> > > > a page fault is never a fast path, after all the cpu has just 
+> > > > taken an exception (vs. the syscall/sysenter style actually 
+> > > > fast user->kernel transition) and is about to make page table 
+> > > > changes (and possibly TLB flushes).
+> > >
+> > > Sure it is.  It's a path that's optimized carefully and needs to 
+> > > be as fast as possible.  Just because it's annoyingly slow 
+> > > doesn't mean we get to make it even slower.
+> > 
+> > sorry, but stating that the pf handler is a fast path doesn't make 
+> > it so ;) [...]
+> 
+> Are you talking about the Linux kernel?
 
-I still don't understand what's wrong with drivers/misc, especially since my
-driver registers as a "misc" driver.
+yes, what else? ;)
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+> FYI, incredible amount of work has gone into making pagefaults as 
+> fast and scalable as possible.
+
+i wasn't talking about scalability (it's irrelevant anyway here), only
+speed. you're the man with the (in)famous measuring stick, tell me how
+many cycles it takes to serve a C-O-W fault or instantiation of an anon
+page and a file page (both cached and non-cached). then stick a few well
+predicted conditional branches in that path (something that wouldn't
+actually happen with my code but let's play this out fully) and show me
+measured differences. then we'll talk about the 'impact on fast path'.
+
+> If you are following Linux kernel development you'd have to be
+> virtually blind to not see all that effort. 
+
+nice attempt to question me but it won't get you anywhere (didn't i just
+tell you to heed your own advice?). case in point, i'd fixed the anon_vma
+refcount leak (exploitable and silently fixed as usual in mainline) a
+few months before you guys did. just by reading the code. now show me
+that you know your stuff around and can find the commit i'm talking about.
+unless of course you are not "following Linux kernel development" and
+are "virtually blind to not see all that effort".
+ 
+> You claiming that pagefaults are a slow-path and ridiculing those who 
+> point out your mistake does not make it a slowpath.
+
+you must have realized by now that slow/fast path in this context were
+relative to int xx vs. pf processing. and i'm yet to receive the numbers
+that show how much faster the latter is processed than the former and why
+sticking a few well predictable conditional jumps (no really, they would
+not be there, but let's assume they are) shows a measurable impact on
+these all so fast pf paths.
 
