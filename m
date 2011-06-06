@@ -1,274 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198Ab1FFVlN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 17:41:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55146 "EHLO hera.kernel.org"
+	id S1757119Ab1FFVlh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 17:41:37 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55154 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756226Ab1FFVlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 17:41:12 -0400
-Date: Mon, 6 Jun 2011 21:40:36 GMT
+	id S1756226Ab1FFVlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 17:41:35 -0400
+Date: Mon, 6 Jun 2011 21:41:01 GMT
 From: tip-bot for Andy Lutomirski <luto@mit.edu>
-Message-ID: <tip-7dc0452808b75615d1dc4d5160b26aaabc6a7300@git.kernel.org>
+Message-ID: <tip-feba7e97df8c463331071b79fba2164ead6aa14b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         luto@mit.edu, torvalds@linux-foundation.org, mikpe@it.uu.se,
         tglx@linutronix.de, mingo@elte.hu, luto@mit.edu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         luto@mit.edu, torvalds@linux-foundation.org, mikpe@it.uu.se,
         tglx@linutronix.de, mingo@elte.hu, luto@mit.edu
-In-Reply-To: <bd468a0e02befab146667fab5de57df7332d54d9.1307380481.git.luto@mit.edu>
-References: <bd468a0e02befab146667fab5de57df7332d54d9.1307380481.git.luto@mit.edu>
+In-Reply-To: <4ad5860f9c9c79ecd303f345cf9c06f8859c44d4.1307380481.git.luto@mit.edu>
+References: <4ad5860f9c9c79ecd303f345cf9c06f8859c44d4.1307380481.git.luto@mit.edu>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86-64: Clean up vsyscall emulation and remove fixed-address ret
-Git-Commit-ID: 7dc0452808b75615d1dc4d5160b26aaabc6a7300
+Subject: [tip:x86/vdso] x86-64: Rename COMPAT_VSYSCALLS to LEGACY_VTIME and clarify documentation
+Git-Commit-ID: feba7e97df8c463331071b79fba2164ead6aa14b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Jun 2011 21:40:37 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Jun 2011 21:41:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7dc0452808b75615d1dc4d5160b26aaabc6a7300
-Gitweb:     http://git.kernel.org/tip/7dc0452808b75615d1dc4d5160b26aaabc6a7300
+Commit-ID:  feba7e97df8c463331071b79fba2164ead6aa14b
+Gitweb:     http://git.kernel.org/tip/feba7e97df8c463331071b79fba2164ead6aa14b
 Author:     Andy Lutomirski <luto@MIT.EDU>
-AuthorDate: Mon, 6 Jun 2011 13:27:24 -0400
+AuthorDate: Mon, 6 Jun 2011 13:27:25 -0400
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 6 Jun 2011 19:47:20 +0200
+CommitDate: Mon, 6 Jun 2011 19:49:31 +0200
 
-x86-64: Clean up vsyscall emulation and remove fixed-address ret
+x86-64: Rename COMPAT_VSYSCALLS to LEGACY_VTIME and clarify documentation
 
-Remove the fixed-address ret in the vsyscall emulation stubs.
-As a result, int 0xcc no longer works if executed from user
-address space (which is OK -- nothing sensible should do that).
+Rename COMPAT_VSYSCALLS to LEGACY_VTIME to make sure
+it's not confused with the 32-bit compat facilities we
+have on x86-64.
 
-Removing support for int 0xcc in user address space cleans up
-the code considerably.
+Also, in the discussions enough people were confused about
+whether LEGACY_VTIME=n breaks binary compatibility that
+we should make it harder to be confused.  So make it more
+clear what's going on.
+
+[ The new text is slightly inaccurate in that LEGACY_VTIME
+  could make it slightly harder to exploit *kernel* bugs once the
+  kernel address layout is randomized, but me mentioning that in
+  the help text might just cause more confusion. ]
 
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 Cc: pageexec@freemail.hu
 Cc: Mikael Pettersson <mikpe@it.uu.se>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/bd468a0e02befab146667fab5de57df7332d54d9.1307380481.git.luto@mit.edu
+Link: http://lkml.kernel.org/r/4ad5860f9c9c79ecd303f345cf9c06f8859c44d4.1307380481.git.luto@mit.edu
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/vsyscall.h   |   10 ++++-
- arch/x86/kernel/vsyscall_64.c     |   78 +++++++++++--------------------------
- arch/x86/kernel/vsyscall_emu_64.S |   17 +--------
- 3 files changed, 32 insertions(+), 73 deletions(-)
+ Documentation/feature-removal-schedule.txt |   13 +++++++----
+ arch/x86/Kconfig                           |   29 +++++++++++++++------------
+ arch/x86/kernel/vsyscall_64.c              |    6 ++--
+ arch/x86/kernel/vsyscall_emu_64.S          |    2 +-
+ 4 files changed, 28 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/include/asm/vsyscall.h b/arch/x86/include/asm/vsyscall.h
-index 293ae08..bb710cb 100644
---- a/arch/x86/include/asm/vsyscall.h
-+++ b/arch/x86/include/asm/vsyscall.h
-@@ -32,9 +32,15 @@ extern struct timezone sys_tz;
- extern void map_vsyscall(void);
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 4282ab2..7a7446b 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -601,12 +601,15 @@ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
  
- /* Emulation */
--static inline bool in_vsyscall_page(unsigned long addr)
-+
-+static inline bool is_vsyscall_entry(unsigned long addr)
-+{
-+	return (addr & ~0xC00UL) == VSYSCALL_START;
-+}
-+
-+static inline int vsyscall_entry_nr(unsigned long addr)
- {
--	return (addr & ~(PAGE_SIZE - 1)) == VSYSCALL_START;
-+	return (addr & 0xC00UL) >> 10;
- }
+ ----------------------------
  
- #endif /* __KERNEL__ */
+-What:	CONFIG_COMPAT_VSYSCALLS (x86_64)
+-When:	When glibc 2.14 or newer is ubitquitous.  Perhaps mid-2012.
++What:	CONFIG_LEGACY_VTIME (x86_64)
++When:	When glibc 2.14 or newer is ubiquitous.  Perhaps 2013.
+ Why:	Having user-executable syscall invoking code at a fixed addresses makes
+-	it easier for attackers to exploit security holes.
+-	Turning off CONFIG_COMPAT_VSYSCALLS mostly removes the risk but will
+-	make the time() function slower on glibc versions 2.13 and below.
++	it easier for attackers to exploit security holes.  Turning off
++	CONFIG_LEGACY_VTIME reduces the risk without breaking binary
++	compatibility but will make the time() function slightly slower on
++	glibc versions 2.13 and below.
++
++	We may flip the default setting to N before 2013.
+ Who:	Andy Lutomirski <luto@mit.edu>
+ 
+ ----------------------------
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 30041d8..6746d35 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1646,26 +1646,29 @@ config COMPAT_VDSO
+ 
+ 	  If unsure, say Y.
+ 
+-config COMPAT_VSYSCALLS
++config LEGACY_VTIME
+ 	def_bool y
+-	prompt "Fixed address legacy vsyscalls"
++	prompt "Fast legacy sys_time() vsyscall"
+ 	depends on X86_64
+ 	---help---
+-	  Legacy user code expects to be able to issue three syscalls
+-	  by calling a fixed addresses.  If you say N, then the kernel
+-	  traps and emulates these calls.  If you say Y, then there is
+-	  actual executable code at a fixed address to implement time()
+-	  efficiently.
++	  Glibc 2.13 and older, statically linked binaries, and a few
++	  other things use a legacy ABI to implement time().
+ 
+-	  On a system with recent enough glibc (probably 2.14 or
+-	  newer) and no static binaries, you can say N without a
+-	  performance penalty to improve security: having no fixed
+-	  address userspace-executable syscall invoking code makes
+-	  it harder for both remote and local attackers to exploit
+-	  security holes.
++	  If you say N here, the kernel will emulate that interface in
++	  order to make certain types of userspace bugs more difficult
++	  to exploit.  This will cause some legacy software to run
++	  slightly more slowly.
++
++	  If you say Y here, then the kernel will provide native code to
++	  allow legacy programs to run without any performance impact.
++	  This could make it easier to exploit certain types of
++	  userspace bugs.
+ 
+ 	  If unsure, say Y.
+ 
++	  NOTE: disabling this option will not break any ABI; the kernel
++	        will be fully compatible with all binaries either way.
++
+ config CMDLINE_BOOL
+ 	bool "Built-in kernel command line"
+ 	---help---
 diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 0b50b3c..04540f7 100644
+index 04540f7..f56644e 100644
 --- a/arch/x86/kernel/vsyscall_64.c
 +++ b/arch/x86/kernel/vsyscall_64.c
-@@ -96,25 +96,10 @@ static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
- 
- 	tsk = current;
- 
--	printk("%s%s[%d] %s ip:%lx sp:%lx ax:%lx si:%lx di:%lx",
-+	printk("%s%s[%d] %s ip:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
- 	       level, tsk->comm, task_pid_nr(tsk),
- 	       message,
+@@ -102,7 +102,7 @@ static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
  	       regs->ip - 2, regs->sp, regs->ax, regs->si, regs->di);
--	if (!in_vsyscall_page(regs->ip - 2))
--		print_vma_addr(" in ", regs->ip - 2);
--	printk("\n");
--}
--
--/* al values for each vsyscall; see vsyscall_emu_64.S for why. */
--static u8 vsyscall_nr_to_al[] = {0xcc, 0xce, 0xf0};
--
--static int al_to_vsyscall_nr(u8 al)
--{
--	int i;
--	for (i = 0; i < ARRAY_SIZE(vsyscall_nr_to_al); i++)
--		if (vsyscall_nr_to_al[i] == al)
--			return i;
--	return -1;
  }
  
- #ifdef CONFIG_COMPAT_VSYSCALLS
-@@ -141,17 +126,12 @@ vtime(time_t *t)
+-#ifdef CONFIG_COMPAT_VSYSCALLS
++#ifdef CONFIG_LEGACY_VTIME
  
- #endif /* CONFIG_COMPAT_VSYSCALLS */
+ /* This will break when the xtime seconds get inaccurate, but that is
+  * unlikely */
+@@ -124,7 +124,7 @@ vtime(time_t *t)
+ 	return result;
+ }
  
--/* If CONFIG_COMPAT_VSYSCALLS=y, then this is incorrect for vsyscall_nr == 1. */
--static inline unsigned long vsyscall_intcc_addr(int vsyscall_nr)
--{
--	return VSYSCALL_START + 1024*vsyscall_nr + 2;
--}
--
+-#endif /* CONFIG_COMPAT_VSYSCALLS */
++#endif /* CONFIG_LEGACY_VTIME */
+ 
  void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
  {
- 	static DEFINE_RATELIMIT_STATE(rs, 3600 * HZ, 3);
- 	struct task_struct *tsk;
- 	const char *vsyscall_name;
-+	unsigned long caller;
- 	int vsyscall_nr;
- 	long ret;
- 
-@@ -160,39 +140,26 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
- 
- 	local_irq_enable();
- 
--	vsyscall_nr = al_to_vsyscall_nr(regs->ax & 0xff);
--	if (vsyscall_nr < 0) {
-+	/*
-+	 * x86-ism here: regs->ip points to the instruction after the int 0xcc,
-+	 * and int 0xcc is two bytes long.
-+	 */
-+	if (!is_vsyscall_entry(regs->ip - 2)) {
- 		warn_bad_vsyscall(KERN_WARNING, regs, "illegal int 0xcc "
- 				  "(exploit attempt?)");
- 		goto sigsegv;
- 	}
-+	vsyscall_nr = vsyscall_entry_nr(regs->ip - 2);
- 
--	if (regs->ip - 2 != vsyscall_intcc_addr(vsyscall_nr)) {
--		if (in_vsyscall_page(regs->ip - 2)) {
--			/* This should not be possible. */
--			warn_bad_vsyscall(KERN_WARNING, regs,
--					  "int 0xcc bogus magic "
--					  "(exploit attempt?)");
--			goto sigsegv;
--		} else {
--			/*
--			 * We allow the call because tools like ThreadSpotter
--			 * might copy the int 0xcc instruction to user memory.
--			 * We make it annoying, though, to try to persuade
--			 * the authors to stop doing that...
--			 */
--			warn_bad_vsyscall(KERN_WARNING, regs,
--					  "int 0xcc in user code "
--					  "(exploit attempt? legacy "
--					  "instrumented code?)");
--		}
-+	if (get_user(caller, (unsigned long __user *)regs->sp) != 0) {
-+		warn_bad_vsyscall(KERN_WARNING, regs, "int 0xcc with bad stack "
-+				  "(exploit attempt?)");
-+		goto sigsegv;
- 	}
- 
- 	tsk = current;
--	if (seccomp_mode(&tsk->seccomp)) {
-+	if (seccomp_mode(&tsk->seccomp))
- 		do_exit(SIGKILL);
--		goto out;
--	}
- 
- 	switch (vsyscall_nr) {
- 	case 0:
-@@ -202,12 +169,8 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
+@@ -169,7 +169,7 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
  			(struct timezone __user *)regs->si);
  		break;
  
-+#ifndef CONFIG_COMPAT_VSYSCALLS
+-#ifndef CONFIG_COMPAT_VSYSCALLS
++#ifndef CONFIG_LEGACY_VTIME
  	case 1:
--#ifdef CONFIG_COMPAT_VSYSCALLS
--		warn_bad_vsyscall(KERN_WARNING, regs, "bogus time() vsyscall "
--				  "emulation (exploit attempt?)");
--		goto sigsegv;
--#else
  		vsyscall_name = "time";
  		ret = sys_time((time_t __user *)regs->di);
- 		break;
-@@ -221,6 +184,11 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
- 		break;
- 
- 	default:
-+		/*
-+		 * If we get here, then vsyscall_nr indicates that int 0xcc
-+		 * happened at an address in the vsyscall page that doesn't
-+		 * contain int 0xcc.  That can't happen.
-+		 */
- 		BUG();
- 	}
- 
-@@ -240,9 +208,6 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
- 	regs->ax = ret;
- 
- 	if (__ratelimit(&rs)) {
--		unsigned long caller;
--		if (get_user(caller, (unsigned long __user *)regs->sp))
--			caller = 0;  /* no need to crash on this fault. */
- 		printk(KERN_INFO "%s[%d] emulated legacy vsyscall %s(); "
- 		       "upgrade your code to avoid a performance hit. "
- 		       "ip:%lx sp:%lx caller:%lx",
-@@ -253,7 +218,10 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
- 		printk("\n");
- 	}
- 
--out:
-+	/* Emulate a ret instruction. */
-+	regs->ip = caller;
-+	regs->sp += 8;
-+
- 	local_irq_disable();
- 	return;
- 
 diff --git a/arch/x86/kernel/vsyscall_emu_64.S b/arch/x86/kernel/vsyscall_emu_64.S
-index 2d53e26..5658d42 100644
+index 5658d42..b192283 100644
 --- a/arch/x86/kernel/vsyscall_emu_64.S
 +++ b/arch/x86/kernel/vsyscall_emu_64.S
-@@ -7,36 +7,21 @@
- #include <linux/linkage.h>
- #include <asm/irq_vectors.h>
- 
--/*
-- * These magic incantations are chosen so that they fault if entered anywhere
-- * other than an instruction boundary.  The movb instruction is two bytes, and
-- * the int imm8 instruction is also two bytes, so the only misaligned places
-- * to enter are the immediate values for the two instructions.  0xcc is int3
-- * (always faults), 0xce is into (faults on x64-64, and 32-bit code can't get
-- * here), and 0xf0 is lock (lock int is invalid).
-- *
-- * The unused parts of the page are filled with 0xcc by the linker script.
-- */
-+/* The unused parts of the page are filled with 0xcc by the linker script. */
- 
- .section .vsyscall_0, "a"
- ENTRY(vsyscall_0)
--	movb $0xcc, %al
+@@ -14,7 +14,7 @@ ENTRY(vsyscall_0)
  	int $VSYSCALL_EMU_VECTOR
--	ret
  END(vsyscall_0)
  
- #ifndef CONFIG_COMPAT_VSYSCALLS
+-#ifndef CONFIG_COMPAT_VSYSCALLS
++#ifndef CONFIG_LEGACY_VTIME
  .section .vsyscall_1, "a"
  ENTRY(vsyscall_1)
--	movb $0xce, %al
  	int $VSYSCALL_EMU_VECTOR
--	ret
- END(vsyscall_1)
- #endif
- 
- .section .vsyscall_2, "a"
- ENTRY(vsyscall_2)
--	movb $0xf0, %al
- 	int $VSYSCALL_EMU_VECTOR
--	ret
- END(vsyscall_2)
