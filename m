@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab1FFIAy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 04:00:54 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:46797 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756795Ab1FFIAx (ORCPT
+	id S1756828Ab1FFIGC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 04:06:02 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:37341 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755115Ab1FFIF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 04:00:53 -0400
-X-Auth-Info: amS9MIzlaj0vQumlRQ2yyxuUSc0HGefMDtEskPDytyI=
-Date: Mon, 6 Jun 2011 10:00:45 +0200
-From: Anatolij Gustschin <agust@denx.de>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, dzu@denx.de
-Subject: Re: [PATCH 1/2] misc/eeprom: add driver for 93xx46 EEPROMs over
- GPIO
-Message-ID: <20110606100045.3accb6e8@wker>
-In-Reply-To: <4DDCCC82.90604@cam.ac.uk>
-References: <1306252963-20746-1-git-send-email-agust@denx.de>
-	<4DDCCC82.90604@cam.ac.uk>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 6 Jun 2011 04:05:59 -0400
+Message-ID: <4DEC8A56.1030707@atmel.com>
+Date: Mon, 06 Jun 2011 10:05:42 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        David Woodhouse <dwmw2@infradead.org>
+CC: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org
+Subject: Re: [PATCH] ATMEL, AVR32: inline nand partition table access
+References: <1306676962-22308-1-git-send-email-dbaryshkov@gmail.com>	<1306935129.1097.3.camel@hcegtvedt.norway.atmel.com> <BANLkTi=s4kGg5NKrzNs1nu8S00Ue_Zv8vQ@mail.gmail.com>
+In-Reply-To: <BANLkTi=s4kGg5NKrzNs1nu8S00Ue_Zv8vQ@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 May 2011 10:31:46 +0100
-Jonathan Cameron <jic23@cam.ac.uk> wrote:
-
-> On 05/24/11 17:02, Anatolij Gustschin wrote:
-> > 93xx46 EEPROMs can be connected using GPIO lines. Add a generic
-> > 93xx46 EEPROM driver using common GPIO API for such configurations.
-> > A platform is supposed to register appropriate 93xx46 gpio device
-> > providing GPIO interface description and using this driver
-> > read/write/erase access to the EEPROM chip can be easily done
-> > over sysfs files.
-> Could you explain why this makes more sense than an spi driver and
-> use of spi_gpio ?
+Le 01/06/2011 16:54, Dmitry Eremin-Solenikov :
+> On 6/1/11, Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com> wrote:
+>> On Sun, 2011-05-29 at 17:49 +0400, Dmitry Eremin-Solenikov wrote:
+>>> Currently atmel_nand driver used by AT91 and AVR32 calls a special
+>>> callback
+>>> which return nand partition table and number of partitions. However in all
+>>> boards this callback returns just static data. So drop this callback and
+>>> make atmel_nand use partition table provided statically via platform_data.
+>>>
+>>> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+>>
+>> Thanks for this update, always nice seeing code being optimized. I
+>> really can't recall why it was made like this in the first place...
+>>
+>> For the AVR32 related parts:
+>>
+>> Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+>>
+>> <snipp diff>
+>>
+>> Will this go through the linux-mtd tree (since it spans two archs) or
+>> should it go through an arch tree?
 > 
-> It's microwire compatible according to random google provided datasheet,
-> which iirc is a particular form of spi (half duplex, spi mode 0 according
-> to wikipedia)
+> On one hand, I'd prefer for this to go through the linux-mtd, if noone objects,
+> as I'd also like to submit several (a pile) patches cleaning up mtd
+> partitioning, which would depend on this.
 > 
-> That would give us a more generally useful driver.
+> OTOH, I think there will be a cleanup of AT91 platform, which would bring
+> lot's of conflicts with this patch, if it goes through linux-mtd.
 
-Reworked the driver to be an spi driver using spi_gpio so
-it is more generally useful driver now. spi_gpio driver
-needs some fixes, though. I'll submit the new driver soon.
+
+I am in favor for a mainline inclusion through linux-mtd tree.
+
+On the AT91 side, we will have to take this inclusion into account to
+avoid merge conflicts... But as long as this cleanup is not ready yet, I
+prefer to go forward this way.
+
+For that purpose, that would be good to see this patch in linux-next.
+
+Thanks to all of you, bye,
+-- 
+Nicolas Ferre
+
