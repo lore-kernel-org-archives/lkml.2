@@ -1,106 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab1FFLhw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 07:37:52 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:43341 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755673Ab1FFLht (ORCPT
+	id S1756295Ab1FFLjg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 07:39:36 -0400
+Received: from smtp-out-228.synserver.de ([212.40.185.228]:1066 "HELO
+	smtp-out-224.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1755673Ab1FFLje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 07:37:49 -0400
-Date: Mon, 6 Jun 2011 14:37:43 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: balbi@ti.com, greg@kroah.com, linux-usb@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, ablay@codeaurora.org,
-        "'open list'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v14 4/9] usb: Add max_speed to usb_composite_driver
- structure
-Message-ID: <20110606113742.GY18731@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1306847914-19876-1-git-send-email-tlinder@codeaurora.org>
- <1306847914-19876-5-git-send-email-tlinder@codeaurora.org>
- <20110606111755.GV18731@legolas.emea.dhcp.ti.com>
- <00ef01cc243d$92c6d150$b85473f0$@org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1olvqv+k0f6DP9aD"
-Content-Disposition: inline
-In-Reply-To: <00ef01cc243d$92c6d150$b85473f0$@org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Jun 2011 07:39:34 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 13762
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: alsa-devel@alsa-project.org, device-drivers-devel@blackfin.uclinux.org,
+        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 1/6] ASoC: AD1836: Fix setting the PCM format
+Date: Mon,  6 Jun 2011 13:38:35 +0200
+Message-Id: <1307360320-4727-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
---1olvqv+k0f6DP9aD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+---
+This patch doesn't need to go into stable since there are currently no users of
+PCM formats other than S32, which is the default.
 
-Hi,
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ sound/soc/codecs/ad1836.c |   14 +++++++-------
+ sound/soc/codecs/ad1836.h |    6 ++++++
+ 2 files changed, 13 insertions(+), 7 deletions(-)
 
-On Mon, Jun 06, 2011 at 02:33:32PM +0300, Tanya Brokhman wrote:
-> > On Tue, May 31, 2011 at 04:18:24PM +0300, Tatyana Brokhman wrote:
-> > > This field is used by the Gadget drivers to specify the maximum speed
-> > > they support, meaning: the maximum speed they can provide descriptors
-> > for.
-> > >
-> > > The driver speed will be set in consideration of this value.
-> > >
-> > > Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
-> >=20
-> > personally, I don't think this is good enough. The gadget speed is
-> > actually the min() of the f_* speeds. So, IMHO this should be coming
-> > from f_* and during bind you would:
-> >=20
-> > gadget->speed =3D min(f->speed, gadget->speed);
-> >=20
-> > for all functions. Also, both this patch and what I described above,
-> > only works considering nobody touches that enum, so we might want to be
-> > careful and add some comments to the enum to avoid anyone from touching
-> > that :-)
->=20
-> You're right, the full and best solution would be to set driver speed as =
-the
-> minimum of all the speeds its functions support. (Please note that it's t=
-he
-> usb_composite_driver speed we're talking about and not the speed of the
-> gadget).
-> Unfortunately, we need to determine the driver speed before any of the
-> functions binded to it so the above solution isn't possible.
-> In any case, gadget->speed is determined upon real connection to the host
-> that can occur long after the f-> bind() and it depends on whether for
-> example SS HW negotiation protocol succeeded or failed.
+diff --git a/sound/soc/codecs/ad1836.c b/sound/soc/codecs/ad1836.c
+index ab63d52..754c496 100644
+--- a/sound/soc/codecs/ad1836.c
++++ b/sound/soc/codecs/ad1836.c
+@@ -145,22 +145,22 @@ static int ad1836_hw_params(struct snd_pcm_substream *substream,
+ 	/* bit size */
+ 	switch (params_format(params)) {
+ 	case SNDRV_PCM_FORMAT_S16_LE:
+-		word_len = 3;
++		word_len = AD1836_WORD_LEN_16;
+ 		break;
+ 	case SNDRV_PCM_FORMAT_S20_3LE:
+-		word_len = 1;
++		word_len = AD1836_WORD_LEN_20;
+ 		break;
+ 	case SNDRV_PCM_FORMAT_S24_LE:
+ 	case SNDRV_PCM_FORMAT_S32_LE:
+-		word_len = 0;
++		word_len = AD1836_WORD_LEN_24;
+ 		break;
+ 	}
+ 
+-	snd_soc_update_bits(codec, AD1836_DAC_CTRL1,
+-		AD1836_DAC_WORD_LEN_MASK, word_len);
++	snd_soc_update_bits(codec, AD1836_DAC_CTRL1, AD1836_DAC_WORD_LEN_MASK,
++		word_len << AD1836_DAC_WORD_LEN_OFFSET);
+ 
+-	snd_soc_update_bits(codec, AD1836_ADC_CTRL2,
+-		AD1836_ADC_WORD_LEN_MASK, word_len);
++	snd_soc_update_bits(codec, AD1836_ADC_CTRL2, AD1836_ADC_WORD_LEN_MASK,
++		word_len << AD1836_ADC_WORD_OFFSET);
+ 
+ 	return 0;
+ }
+diff --git a/sound/soc/codecs/ad1836.h b/sound/soc/codecs/ad1836.h
+index 8455967..9d6a3f8 100644
+--- a/sound/soc/codecs/ad1836.h
++++ b/sound/soc/codecs/ad1836.h
+@@ -25,6 +25,7 @@
+ #define AD1836_DAC_SERFMT_PCK256       (0x4 << 5)
+ #define AD1836_DAC_SERFMT_PCK128       (0x5 << 5)
+ #define AD1836_DAC_WORD_LEN_MASK       0x18
++#define AD1836_DAC_WORD_LEN_OFFSET     3
+ 
+ #define AD1836_DAC_CTRL2               1
+ #define AD1836_DACL1_MUTE              0
+@@ -51,6 +52,7 @@
+ #define AD1836_ADCL2_MUTE 		2
+ #define AD1836_ADCR2_MUTE 		3
+ #define AD1836_ADC_WORD_LEN_MASK       0x30
++#define AD1836_ADC_WORD_OFFSET         5
+ #define AD1836_ADC_SERFMT_MASK	       (7 << 6)
+ #define AD1836_ADC_SERFMT_PCK256       (0x4 << 6)
+ #define AD1836_ADC_SERFMT_PCK128       (0x5 << 6)
+@@ -60,4 +62,8 @@
+ 
+ #define AD1836_NUM_REGS                16
+ 
++#define AD1836_WORD_LEN_24 0x0
++#define AD1836_WORD_LEN_20 0x1
++#define AD1836_WORD_LEN_16 0x2
++
+ #endif
+-- 
+1.7.2.5
 
-true, let's take your approach for now.
-
-But we might still want to force HighSpeed even though the HW has
-SuperSpeed support. The real solution, for the long run would be to
-always start with pullups disabled (iow, don't connect to host
-immediately) and only connect after the gadget driver is all
-initialized, then we will know the gadget speed before connecting, and
-we can have the gadget driver "request" for a particular speed from the
-controller.
-
-For now, let's take your approach.
-
---=20
-balbi
-
---1olvqv+k0f6DP9aD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN7LwGAAoJEAv8Txj19kN14fgH/jjss8oSnsiE1hrdBeKkRC+L
-8Ke5e9nkkqq6z37YHI2og3rPAUZXB6spgbfxWygn275WyFSEPmV/4Xrc9P/LpGhR
-3O1qbi8FYKZ0RpIRChm2sp4/HkcyEG2fI8PQg09qtIZYbBbcdZr9hJBVv/DI3S3P
-9pL4b564iGa3u8KlGkRRdb72wiO4jEeF95cQFWdD8DFBOREfPm6+kXqo4O9UeovU
-O/Qk3VK/pg2haQZVyGOR0iS7CJVmoyx0zYm1di7/1iP48nbXJg7hofT/75/UPhvp
-FswYY3QzqTCwp3O0Iwn4a5pBVj2NQJtUgKzmtdOt7Z6e/Wt9yovlQh4GsHm3e2g=
-=CnNF
------END PGP SIGNATURE-----
-
---1olvqv+k0f6DP9aD--
