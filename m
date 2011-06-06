@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab1FFS66 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 14:58:58 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34179 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756562Ab1FFS6y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 14:58:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ILBFGtG4HU25TmssCTkXO/3xpIRQx5La+/OBYlLUS36p0Tj8SNEPsvkpr7PK+LFzE7
-         p4nfxryvVg6XWqZUiI78s/UJUmy4wDk5vChE7hng2pPX68FdAQmLxBYcSex5uD3su0Qt
-         vCfntHSXJxHFUtsU2OKIvsIKKWpjqazDMDdwc=
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>, Arnaud Lacombe <lacombar@gmail.com>
-Subject: [PATCH 9/9] kconfig/gconf: silent missing prototype warnings
-Date: Mon,  6 Jun 2011 14:58:31 -0400
-Message-Id: <1307386711-8866-10-git-send-email-lacombar@gmail.com>
-X-Mailer: git-send-email 1.7.3.4.574.g608b.dirty
-In-Reply-To: <1307386711-8866-1-git-send-email-lacombar@gmail.com>
-References: <1307386711-8866-1-git-send-email-lacombar@gmail.com>
+	id S1757528Ab1FFTB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 15:01:59 -0400
+Received: from r00tworld.com ([212.85.137.150]:52592 "EHLO r00tworld.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754739Ab1FFTB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 15:01:57 -0400
+From: pageexec@freemail.hu
+To: Ingo Molnar <mingo@elte.hu>
+Date: Mon, 06 Jun 2011 20:59:39 +0200
+MIME-Version: 1.0
+Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+Reply-to: pageexec@freemail.hu
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@mit.edu>,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Message-ID: <4DED239B.8177.13CDBA86@pageexec.freemail.hu>
+In-reply-to: <20110606144414.GA30348@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>, <4DECAE68.16683.1203EBBB@pageexec.freemail.hu>, <20110606144414.GA30348@elte.hu>
+X-mailer: Pegasus Mail for Windows (4.61)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Mon, 06 Jun 2011 21:00:13 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the `gconf' frontend is un-maintained, go the easy way by silencing
-the "warning: no previous prototype for '<fn>'" warnings.
+On 6 Jun 2011 at 16:44, Ingo Molnar wrote:
+> * pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+> 
+> > > > Seriously. The whole patch series just seems annoying.
+> > 
+> > what is annoying is your covering up of security fixes on grounds 
+> > that you don't want to help script kiddies (a bullshit argument as 
+> > it were) but at the same time question proactive security measures 
+> > (one can debate the implementation, see my other mail) that would 
+> > *actually* prevent the same kiddies from writing textbook exploits.
+> 
+> You are mixing up several issues here, and rather unfairly so.
 
-Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
----
- scripts/kconfig/Makefile |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+but it's very simple logic Ingo. it goes like 'I am not willing to
+do A because it would help script kiddies but I'd rather do B that
+would help script kiddies'. with A = 'disclose security bugs' and
+B = 'keep the last roadblock that prevents full ASLR'.
 
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 0460ac3..84abb2f 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -227,7 +227,8 @@ HOSTLOADLIBES_qconf	= $(KC_QT_LIBS)
- HOSTCXXFLAGS_qconf.o	= $(KC_QT_CFLAGS)
- 
- HOSTLOADLIBES_gconf	= `pkg-config --libs gtk+-2.0 gmodule-2.0 libglade-2.0`
--HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0`
-+HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
-+                          -Wno-missing-prototypes
- 
- HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags $(HOSTCC))
- 
--- 
-1.7.3.4.574.g608b.dirty
+if someone's that worried about script kiddies as Linus claims to be
+(which i always called a BS argument, but let's accept here), he can't
+possibly argue for keeping the vsyscall page at a fixed address around,
+simple as that.
+
+and it is for security, no other reason, else you'd have to accept a patch
+that maps the vdso at a fixed address again or come up with some very
+convincing arguments why the vdso must stay randomized but the vsyscall
+page is fine at a fixed address (i guess neither is forthcoming but you
+guys can act in surprising ways, so i'm not placing any bets ;).
+
+> Firstly, see my other mail, there's an imperfect balance to be
+> found between statistical 'proactive' measures and the incentives
+> that remove the *real* bugs.
+
+i hope i replied to this already now to your satisfaction else feel free
+to elaboarte.
+
+> Secondly, *once* a real security bug has been found the correct 
+> action is different from the considerations of proactive measures. 
+
+as i said already, you're mixing up fixing bugs and fighting exploit
+techniques. apples vs. oranges.
+
+> How can you possibly draw equivalence between disclosure policies
+> and the handling of statistical security measures?
+
+see the simple logic above.
 
