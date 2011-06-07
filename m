@@ -1,66 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960Ab1FGSes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:34:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:57642 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072Ab1FGSer (ORCPT
+	id S932351Ab1FGSe1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:34:27 -0400
+Received: from ccserver2.unican.es ([130.206.5.101]:57016 "EHLO
+	ccserver2.unican.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932311Ab1FGSeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:34:47 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=Nfqsw8rmjecA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=8mrF3ihsfxdIS2URd3EA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] sched: correct testing need_resched in
- mutex_spin_on_owner()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <BANLkTim-3qPKAbKfshhkVuBJcVoZKXFXQQ@mail.gmail.com>
-References: <BANLkTimZ8=YYZXZSzauy5ASsP0kwti8uxQ@mail.gmail.com>
-	 <1307454439.2322.260.camel@twins>
-	 <BANLkTikvFk7pbcw9PEtPGSK=6WCNLYXCuQ@mail.gmail.com>
-	 <1307456680.2322.270.camel@twins>
-	 <BANLkTim1htraTXtGMcyAuH1Wa-G+J05i_g@mail.gmail.com>
-	 <1307457646.2322.273.camel@twins>
-	 <BANLkTi=XTpYTZvetOUDgobRa_S4Cb=+syA@mail.gmail.com>
-	 <20110607150816.GC27245@home.goodmis.org>
-	 <BANLkTim-3qPKAbKfshhkVuBJcVoZKXFXQQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 07 Jun 2011 14:34:45 -0400
-Message-ID: <1307471685.9218.7.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jun 2011 14:34:25 -0400
+Message-ID: <4DEE6F4E.1030107@unican.es>
+Date: Tue, 7 Jun 2011 20:34:54 +0200
+From: Monica Puig-Pey <puigpeym@unican.es>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) 
+	Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: <dmarkh@cfl.rr.com>
+CC: <markh@compro.net>, Rolando Martins <rolando.martins@gmail.com>,
+        <linux-rt-users@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Changing Kernel thread priorities
+References: <4DEA1BA9.7020303@unican.es><4DEA1F22.6000603@unican.es><4DEA255
+						B.2050503@unican.es><4DECBE44.2070803@unican.es> 
+					<BANLkTi=xSJOgY735PE44YtkQmrdhgetGdQ@mail.gmail.com> 
+				<4DECC0DF.8070209@unican.es> <4DED051A.6020702@compro.net> 
+		<4DEDE411.6010807@unican.es> <4DEDEBFF.10907@cfl.rr.com> 
+	<4DEDF366.6000706@cfl.rr.com>
+In-Reply-To: <4DEDF366.6000706@cfl.rr.com>
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [193.144.198.131]
+X-imss-version: 2.054
+X-imss-result: Passed
+X-imss-scanInfo: M:P L:E SM:0
+X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18186.001)
+X-imss-scores: Clean:94.47410 C:2 M:3 S:5 R:5
+X-imss-settings: Baseline:1 C:1 M:2 S:2 R:2 (0.0000 0.0000)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-08 at 02:22 +0800, Hillf Danton wrote:
+El 07/06/11 11:46, Mark Hounschell escribió:
+> On 06/07/2011 05:14 AM, Mark Hounschell wrote:
+>> On 06/07/2011 04:40 AM, Monica Puig-Pey wrote:
+>>> El 06/06/11 18:49, Mark Hounschell escribió:
+>>>> On 06/06/2011 07:58 AM, Monica Puig-Pey wrote:
+>>>>> El 06/06/11 13:54, Rolando Martins escribió:
+>>>>>> Hi,
+>>>>>> I use the following:
+>>>>>>
+>>>>>> PIDs=$(ps -eLo pid,cls,rtprio,pri,nice,cmd | grep -i "irq" | awk '{
+>>>>>> print $1; }' | xargs echo)
+>>>>>> for i in $PIDs
+>>>>>> do
+>>>>>> ret=$(chrt -f -p 99 $i)
+>>>>>> done
+>>>>>>
+>>>>>> This will change the kernel thread associated with an irq handler to
+>>>>>> RT FIFO prio 99.
+>>>>>> Just change the script to your specific interrupt.
+>>>>>>
+>>>>>> Hope it helps,
+>>>>>> Rolando
+>>>>>>
+>>>>>> On Mon, Jun 6, 2011 at 12:47 PM, Monica Puig-Pey
+>>>>>> wrote:
+>>>>>>> I am writing a driver which has one kernel thread associated with
+>>>>>>> it.
+>>>>>>> I want to change the priority of this thread, so that I can
+>>>>>>> specify the
+>>>>>>> order in which it is scheduled following an interrupt.
+>>>>>>> I'm using:
+>>>>>>>
+>>>>>>> sched_setscheduler(struct task_struct *, int, struct sched_param *);
+>>>>>>>
+>>>>>>> but it doesn't work. I tried to change the priority from the
+>>>>>>> init_module,
+>>>>>>> and also from the Kernel Thread, but there is no way.
+>>>>>>>
+>>>>>>> Kernel version is 2.6.31-11-rt
+>>>>>>>
+>>>>>>> What do I call to change a kernel thread priority?
+>>>>>>>
+>>>>>>> Thanks you very much
+>>>>>>>
+>>>>>>> Mónica
+>>>>>>>
+>>>>>>> --
+>>>>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>>>>> linux-rt-users" in
+>>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>>>>>
+>>>>>
+>>>>> I need to change the priority from inside the driver, when creating
+>>>>> the
+>>>>> kernel thread.
+>>>>> Your script is useful but it is done in user context,
+>>>>> Any other help please?
+>>>>
+>>>> What I do is record the PID of the thread in the driver, then create an
+>>>> IOCTL for your driver that user land can call that either returns the
+>>>> PID so you can do it in user land, or cause the IOCTL code to do it in
+>>>> the driver.
+>>>>
+>>>> The same can be done with the affinity of the IRQ if you record the IRQ
+>>>> number.
+>>>>
+>>>> Mark
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>> linux-rt-users" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>
+>>> But I don't have de PID of my Kthread, I only have the task_struc * that
+>>> gives me the function:
+>>>
+>>> struct task_struct *kthread_create(int (*threadfn)(void *data),
+>>> void *data,
+>>> const char namefmt[], ...)
+>>>
+>>> How could I get the PID, and which function should I use in the IOCTL
+>>> (kernel context) for changing its priority?
+>>>
+>>
+>> The PID can be obtained from within the interrupt handler its self via
+>> current->pid.
+>> Obviously an interrupt has to occur first but after one interrupt you
+>> have it.
+>>
+>> Actually I had forgot how I handled this. Where I change the RT priority
+>> and cpu affinity is in what used to be called the Bottom Half and the
+>> IOCTL
+>> referred to above simply tells the BH to do it and with what values.
+>>
+>
+> In interrupt handler code snippet:
+>
+> struct task_struct *TSK;
+> struct sched_param PARAM = {.sched_priority = MAX_RT_PRIO };
+>
+> TSK = current;
+>
+> Code snippet from BH:
+>
+> if (((rtom_rtprio != 0) &&
+> (rtom_rtprio != PARAM.sched_priority)) ||
+> (my_rtom_rtprio[BOARD] != rtom_rtprio)) {
+>
+> PARAM.sched_priority = rtom_rtprio;
+> my_rtom_rtprio[COUNT] = rtom_rtprio;
+> sched_setscheduler(TSK, SCHED_FIFO, &PARAM);
+>
+> set_cpus_allowed(TSK, rtom_devices[BOARD].irq_cpu_mask);
+> rtom_devices[BOARD].irq_task_pid = TSK->pid;
+> }
+>
+> rtom_rtprio and irq_cpu_mask are set by userland via an IOCTL. An
+> interrupt must occur for this to happen and my BOARD never shares IRQs.
+>
+> Mark
+>
 
-> After hours chewing __mutex_lock_common() and mutex_spin_on_owner(),
-> and what you and Peter said, the owner is on different CPU from the waiter,
-> and the patched need_resched is simply meaning the waiter is no longer
-> willing to wait for whatever reasons.
-> 
-> It is really unlucky tonight:(
+Thanks, your idea seems to be very useful to me. I was doing it very 
+similar, but I didn't use the "current" variable to know the task_struct *.
 
-Please don't get discouraged.
+I have tried your suggestion on an easy example, but it didn't work.
+Insmod returns through the kernel
 
-We just want you to spend a bit more time looking at the code. Do what I
-do when something looks wrong. Try to figure out what the author was
-doing and why it may actually be correct. You may find out that the code
-is indeed correct.
+	[11334.895499] kthread: Unknown symbol sched_setscheduler
 
-When I see code that looks wrong, I first think my assumptions are
-incorrect, and I try to prove myself wrong. Only when I fail to do that,
-do I send a patch or bring it up to the author. And then, I do it in
-such a way that the author of the code may still have the ability to
-prove me wrong. And several times, an author will tell me something that
-I overlooked, and the original code stays as is.
+Code shown below:
 
-Don't take it personally, this is just a learning phase. ;)
+#include <linux/module.h>	
+#include <linux/kernel.h>
+#include <linux/ioport.h>
 
--- Steve
+#include <linux/wait.h>
+#include <linux/kthread.h>
+#include <asm/io.h>
+#include <linux/sched.h>
 
 
+struct task_struct *ts;
+
+int thread(void *data)
+{
+   struct task_struct *TSK;
+   struct sched_param PARAM = {.sched_priority = MAX_RT_PRIO };
+   TSK = current;
+
+   PARAM.sched_priority = 50;
+   sched_setscheduler(TSK, SCHED_FIFO, &PARAM); // <-- unknown symbol??
+
+   while(1){
+     printk("Hi I am kernel thread!\n");
+     msleep(100);
+     if (kthread_should_stop())
+       break;		
+}
+         return 0;
+}
+
+
+int init_module(void)
+{
+   printk(KERN_INFO "init_module() called\n");
+   ts=kthread_run(thread,NULL,"kthread");
+          return 0;
+}
+
+void cleanup_module(void)
+{
+   printk(KERN_INFO "cleanup_module() called\n");
+   kthread_stop(ts);
+}
