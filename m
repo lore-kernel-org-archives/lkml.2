@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab1FGOVn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 10:21:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35781 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab1FGOVl (ORCPT
+	id S1754501Ab1FGOYr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 10:24:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59163 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754182Ab1FGOYp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 10:21:41 -0400
-Date: Tue, 7 Jun 2011 11:21:16 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jonathan Corbet <corbet@lwn.net>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 20/22] 20: perf: perf interface for uprobes
-Message-ID: <20110607142116.GA8311@ghostprotocols.net>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607130216.28590.5724.sendpatchset@localhost6.localdomain6>
- <20110607133039.GA4929@infradead.org>
- <20110607133853.GC9949@in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110607133853.GC9949@in.ibm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 7 Jun 2011 10:24:45 -0400
+Subject: Re: [PATCH] sched: correct testing need_resched in
+ mutex_spin_on_owner()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <BANLkTikvFk7pbcw9PEtPGSK=6WCNLYXCuQ@mail.gmail.com>
+References: <BANLkTimZ8=YYZXZSzauy5ASsP0kwti8uxQ@mail.gmail.com>
+	 <1307454439.2322.260.camel@twins>
+	 <BANLkTikvFk7pbcw9PEtPGSK=6WCNLYXCuQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 07 Jun 2011 16:24:40 +0200
+Message-ID: <1307456680.2322.270.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jun 07, 2011 at 07:08:53PM +0530, Ananth N Mavinakayanahalli escreveu:
-> On Tue, Jun 07, 2011 at 09:30:39AM -0400, Christoph Hellwig wrote:
-> > On Tue, Jun 07, 2011 at 06:32:16PM +0530, Srikar Dronamraju wrote:
-> > > Enhances perf probe to user space executables and libraries.
-> > > Provides very basic support for uprobes.
+On Tue, 2011-06-07 at 22:10 +0800, Hillf Danton wrote:
+> On Tue, Jun 7, 2011 at 9:47 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, 2011-06-07 at 21:41 +0800, Hillf Danton wrote:
+> >> It is suppose to check the owner task that is not absolutly running on the
+> >> local CPU,
+> >
+> > Oh, why do you think so?
+> >
+> as the comment in __mutex_lock_common() says,
+> 
+> #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+> 	/*
+> 	 * Optimistic spinning.
+> 	 *
+> 	 * We try to spin for acquisition when we find that there are no
+> 	 * pending waiters and the lock owner is currently running on a
+> 	 ***************************
+>          * (different) CPU.
+> 	 ***************************
+>          * .....
+>          */
 
-> > Nice.  Does this require full debug info for symbolic probes,
-> > or can it also work with simple symbolc information?
- 
-> It works only with symbol information for now.
-> It doesn't (yet) know how to use debuginfo :-)
+Which is exactly what owner_running() does, clearly it cannot run on the
+current cpu, since then we wouldn't be running to check things, so for
+as long as owner is on_cpu we spin.
 
-'perf probe' uses perf symbol library, so it really don't have to know
-from where symbol resolution information is obtained, only if it needs
-things that are _just_ on debuginfo, such as line information, etc.
+However,
 
-But then that is also already supported in 'perf probe'.
+> need_resched is checked after true is returned by owner_running(),
+> in other words, owner is still on its CPU, so owner should be check
+> here. Even ower's CPU == this CPU, checking owner also gives
+> correct result.
 
-Or is there something else in particular you're thinking?
+no, after rcu_read_unlock() in owner_running() -- read that comment
+again -- the owner pointer can be free or reused memory.
 
-- Arnaldo
+Also, since we already check owner_running() this need_resched() is
+clearly something different. By your argument it would be superfluous
+not wrong.
+
+Now since it appears superfluous, ask yourself why it would exist. The
+answer is simple, we should not be greedy and consume our cpu when
+there's someone else that wants to run, we should yield the cpu on
+need_resched(), which is exactly what happens.
+
+
