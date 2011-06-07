@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab1FGTnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:43:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17959 "EHLO mx1.redhat.com"
+	id S1754014Ab1FGTp0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 15:45:26 -0400
+Received: from mail.lang.hm ([64.81.33.126]:52996 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751898Ab1FGTno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 15:43:44 -0400
-Date: Tue, 7 Jun 2011 15:42:44 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v8 11/12] writeback: make background writeback cgroup
- aware
-Message-ID: <20110607194244.GA30919@redhat.com>
-References: <1307117538-14317-1-git-send-email-gthelen@google.com>
- <1307117538-14317-12-git-send-email-gthelen@google.com>
- <20110607193835.GD26965@redhat.com>
+	id S1751883Ab1FGTpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 15:45:25 -0400
+Date: Tue, 7 Jun 2011 12:45:15 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+cc: Theodore Tso <tytso@MIT.EDU>, linux-kernel@vger.kernel.org
+Subject: Re: XFS problem in 2.6.32
+In-Reply-To: <4DEE2C70.8060301@profihost.ag>
+Message-ID: <alpine.DEB.2.02.1106071239530.28905@asgard.lang.hm>
+References: <4DEE1D96.6020208@profihost.ag> <6D8DA3D2-D90B-4D82-BDC9-C3F0264A68BF@mit.edu> <4DEE2C70.8060301@profihost.ag>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110607193835.GD26965@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 03:38:35PM -0400, Vivek Goyal wrote:
-> On Fri, Jun 03, 2011 at 09:12:17AM -0700, Greg Thelen wrote:
-> > When the system is under background dirty memory threshold but a cgroup
-> > is over its background dirty memory threshold, then only writeback
-> > inodes associated with the over-limit cgroup(s).
-> > 
-> 
-> [..]
-> > -static inline bool over_bground_thresh(void)
-> > +static inline bool over_bground_thresh(struct bdi_writeback *wb,
-> > +				       struct writeback_control *wbc)
-> >  {
-> >  	unsigned long background_thresh, dirty_thresh;
-> >  
-> >  	global_dirty_limits(&background_thresh, &dirty_thresh);
-> >  
-> > -	return (global_page_state(NR_FILE_DIRTY) +
-> > -		global_page_state(NR_UNSTABLE_NFS) > background_thresh);
-> > +	if (global_page_state(NR_FILE_DIRTY) +
-> > +	    global_page_state(NR_UNSTABLE_NFS) > background_thresh) {
-> > +		wbc->for_cgroup = 0;
-> > +		return true;
-> > +	}
-> > +
-> > +	wbc->for_cgroup = 1;
-> > +	wbc->shared_inodes = 1;
-> > +	return mem_cgroups_over_bground_dirty_thresh();
-> >  }
-> 
-> Hi Greg,
-> 
-> So all the logic of writeout from mem cgroup works only if system is
-> below background limit. The moment we cross background limit, looks
-> like we will fall back to existing way of writting inodes?
+On Tue, 7 Jun 2011, Stefan Priebe - Profihost AG wrote:
 
-If yes, then from design point of view it is little odd that as long
-as we are below background limit, we share the bdi between different
-cgroups. The moment we are above background limit, we fall back to
-algorithm of sharing the disk among individual inodes and forget
-about memory cgroups. Kind of awkward.
+> Date: Tue, 07 Jun 2011 15:49:36 +0200
+>>> So who keeps track on which patches needs to get backported or not? And 
+>>> who will backport XFS fixes back to 2.6.32?
+>> 
+>> An interested kernel developer.   They can become interested because they 
+>> personally have the time or interest, or because someone pays them to 
+>> become interested.  Support of the stable kernel series is not something 
+>> that happens magically, or which is funded by a charity, you know.  That's 
+>> why some companies pay $$$ for a supported distribution kernel.
 
-Thanks
-Vivek
+> OK so my thought was totally wrong. I thought the longterm stable releases 
+> will still get bugfixed by SGI or whoever wrote the stuff. Sorry for that 
+> then. But what is then the idea of a longterm stable?
+
+development and bugfixes are done on the latest kernel, if the problem is 
+known to affect old kernels the developers sometimes remember to notify 
+the -stable list that this patch is important and needs to be applied to 
+older kernels.
+
+whoever the maintainer of the -stable/-longterm tree is (be it an 
+individual or a team employeed by some comapny) then looks at the patch 
+and considers backporting it (if it's too hard, or to intrusive, they may 
+decide not to).
+
+the idea of the lonterm kernels is that organizations need to maintain a 
+kernel for a long time due to commitments that they have made (Debian 
+doesn't want to change the kernel it ships in a stable version, RedHat 
+doesn't want to change the kernel version in a RHEL release, etc), and so 
+they publicly announce this so that anyone else wanting to use the same 
+kernel version can share in the work (and therefor everyone can benifit 
+from each other's work)
+
+David Lang
