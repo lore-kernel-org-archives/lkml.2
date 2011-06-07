@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563Ab1FGSEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:04:48 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33706 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755961Ab1FGSEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:04:45 -0400
-Date: Tue, 7 Jun 2011 20:04:27 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, sam@ravnborg.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/debug] debug: Make CONFIG_EXPERT select
- CONFIG_DEBUG_KERNEL to unhide debug options
-Message-ID: <20110607180427.GA22523@elte.hu>
-References: <20110606165130.GA1844@leaf>
- <tip-2458073da04571182748aa4289630dca52ba63cc@git.kernel.org>
- <20110606214502.GB17026@somewhere.redhat.com>
- <20110606220905.GB1999@leaf>
- <20110607101851.GA21356@elte.hu>
- <20110607153411.GA5175@leaf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110607153411.GA5175@leaf>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1757528Ab1FGSEe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:04:34 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:36347 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755961Ab1FGSEb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 14:04:31 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Ue6kv2KahVX3g9Y4PEcFRuqo3OjlRlFEA9ogpcTuXYr9yQcd0tEq+I35FqaQcZvQvQVmCZ+KkjDoihGDJeKsMFp6AOY5miCkWQXQHPpn2cnHrwwdyeFnOs/iQZ1mduc3;
+Date: Tue, 7 Jun 2011 11:04:28 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org, Matt_Domsch@dell.com
+Subject: Re: [PATCH 3/3] efi: Add support for using efivars as a pstore
+ backend
+Message-Id: <20110607110428.86f92ee2.rdunlap@xenotime.net>
+In-Reply-To: <1307389135-8150-3-git-send-email-mjg@redhat.com>
+References: <1307389135-8150-1-git-send-email-mjg@redhat.com>
+	<1307389135-8150-3-git-send-email-mjg@redhat.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon,  6 Jun 2011 15:38:55 -0400 Matthew Garrett wrote:
 
-* Josh Triplett <josh@joshtriplett.org> wrote:
-
-> On Tue, Jun 07, 2011 at 12:18:51PM +0200, Ingo Molnar wrote:
-> > 
-> > * Josh Triplett <josh@joshtriplett.org> wrote:
-> > 
-> > > On Mon, Jun 06, 2011 at 11:45:04PM +0200, Frederic Weisbecker wrote:
-> > > > On Mon, Jun 06, 2011 at 09:39:40PM +0000, tip-bot for Josh Triplett wrote:
-> > > > > Commit-ID:  2458073da04571182748aa4289630dca52ba63cc
-> > > > > Gitweb:     http://git.kernel.org/tip/2458073da04571182748aa4289630dca52ba63cc
-> > > > > Author:     Josh Triplett <josh@joshtriplett.org>
-> > > > > AuthorDate: Mon, 6 Jun 2011 09:51:30 -0700
-> > > > > Committer:  Ingo Molnar <mingo@elte.hu>
-> > > > > CommitDate: Mon, 6 Jun 2011 19:30:01 +0200
-> > > > > 
-> > > > > debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
-> > > > > 
-> > > > > Several debugging options currently default to y, such as
-> > > > > CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.
-> > > > > 
-> > > > > Embedded users might want to turn those options off to save space;
-> > > > > however, turning them off requires turning on CONFIG_DEBUG_KERNEL to
-> > > > > unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
-> > > > > unhide debugging options, and CONFIG_EXPERT exists specifically
-> > > > > to unhide options potentially needed by experts and/or embedded
-> > > > > users, make CONFIG_EXPERT automatically imply CONFIG_DEBUG_KERNEL.
-> > > > > 
-> > > > > Change various debugging options to only reference DEBUG_KERNEL,
-> > > > > not EXPERT.
-> > > > > 
-> > > > > Note that DEBUG_MEMORY_INIT defaulted to !EXPERT, which seemed
-> > > > > wrong, since EXPERT should not directly affect anything except
-> > > > > the availability of other options.  (And EXPERT definitely
-> > > > > shouldn't mean "implicitly turn off default safety features".)
-> > > > > 
-> > > > > Change it to default to y, which means that turning on EXPERT
-> > > > > does not automatically disable it, but will provide the option
-> > > > > to disable it.
-> > > > > 
-> > > > > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> > > > > Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > 
-> > > > No, Nacked actually. I'm fine with the v2 that only changed
-> > > > the EXPERT config to imply DEBUG_KERNEL. But all the other
-> > > > changes here need to be revised, as I outlined in the thread.
-> > > 
-> > > Fixed in v4; please replace the patch in tip with that.
-> > 
-> > i applied the much simpler v2 twoliner version instead.
+> EFI provides an area of nonvolatile storage managed by the firmware. We
+> can use this as a pstore backend to maintain copies of oopses, aiding
+> diagnosis.
 > 
-> OK...
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> ---
+>  drivers/firmware/efivars.c |  158 +++++++++++++++++++++++++++++++++++++++++++-
+>  include/linux/efi.h        |    3 +
+>  2 files changed, 159 insertions(+), 2 deletions(-)
 > 
-> So, should I prepare a separate patch which changes the instances 
-> of DEBUG_KERNEL && EXPERT, or just leave them?
+> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+> index 5f29aaf..89e6a3a 100644
+> --- a/drivers/firmware/efivars.c
+> +++ b/drivers/firmware/efivars.c
+> @@ -161,18 +164,28 @@ utf8_strsize(efi_char16_t *data, unsigned long maxlength)
+>  }
+>  
+>  static efi_status_t
+> -get_var_data(struct efivars *efivars, struct efi_variable *var)
+> +get_var_data_locked(struct efivars *efivars, struct efi_variable *var)
 
-Yeah, would be nice to send a separate patch for that - 'DEBUG_KERNEL 
-&& EXPERT' is equivalent to EXPERT now, right?
+__get_var_data() would be a more common/typical name for this (unlocked,
+needs locking version), I think.
 
-Thanks,
+>  {
+>  	efi_status_t status;
+>  
+> -	spin_lock(&efivars->lock);
+>  	var->DataSize = 1024;
+>  	status = efivars->ops->get_variable(var->VariableName,
+>  					    &var->VendorGuid,
+>  					    &var->Attributes,
+>  					    &var->DataSize,
+>  					    var->Data);
+> +	return status;
+> +}
+> +
+> +static efi_status_t
+> +get_var_data(struct efivars *efivars, struct efi_variable *var)
+> +{
+> +	efi_status_t status;
+> +
+> +	spin_lock(&efivars->lock);
+> +	status = get_var_data_locked(efivars, var);
+>  	spin_unlock(&efivars->lock);
+> +
+>  	if (status != EFI_SUCCESS) {
+>  		printk(KERN_WARNING "efivars: get_variable() failed 0x%lx!\n",
+>  			status);
 
-	Ingo
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
