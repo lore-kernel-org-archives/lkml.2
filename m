@@ -1,111 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab1FGMtR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:49:17 -0400
-Received: from waste.org ([173.11.57.241]:55050 "EHLO waste.org"
+	id S1753367Ab1FGMuK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:50:10 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:52334 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753022Ab1FGMtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:49:16 -0400
-Subject: Re: [PATCH] slob/lockdep: Fix gfp flags passed to lockdep
-From: Matt Mackall <mpm@selenic.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mundt <lethal@linux-sh.org>,
-        Nick Piggin <npiggin@kernel.dk>,
+	id S1752882Ab1FGMuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 08:50:08 -0400
+Message-ID: <4DEE1E76.2060101@free.fr>
+Date: Tue, 07 Jun 2011 14:49:58 +0200
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
-In-Reply-To: <BANLkTinUcZFW6-GKQgWn-KhzEA0Qbaz8PA@mail.gmail.com>
-References: <1307445525.31814.26.camel@gandalf.stny.rr.com>
-	 <BANLkTinUcZFW6-GKQgWn-KhzEA0Qbaz8PA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Jun 2011 07:49:06 -0500
-Message-ID: <1307450946.4204.952.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+        Paul Menage <menage@google.com>
+Subject: Re: [Patch] doc: remove ns_cgroup from feature-removal-schedule.txt
+References: <20110607120630.GA3550@cr0> <4DEE1753.2060307@free.fr> <20110607122233.GB3550@cr0>
+In-Reply-To: <20110607122233.GB3550@cr0>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 14:54 +0300, Pekka Enberg wrote:
-> On Tue, Jun 7, 2011 at 2:18 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > Doing a ktest.pl randconfig, I stumbled across the following bug
-> > on boot up:
-> >
-> > ------------[ cut here ]------------
-> > WARNING: at /home/rostedt/work/autotest/nobackup/linux-test.git/kernel/lockdep.c:2649 lockdep_trace_alloc+0xed/0x100()
-> > Hardware name:
-> > Modules linked in:
-> > Pid: 0, comm: swapper Not tainted 3.0.0-rc1-test-00054-g1d68b67 #1
-> > Call Trace:
-> >  [<ffffffff810626ad>] warn_slowpath_common+0xad/0xf0
-> >  [<ffffffff8106270a>] warn_slowpath_null+0x1a/0x20
-> >  [<ffffffff810b537d>] lockdep_trace_alloc+0xed/0x100
-> >  [<ffffffff81182fb0>] __kmalloc_node+0x30/0x2f0
-> >  [<ffffffff81153eda>] pcpu_mem_alloc+0x13a/0x180
-> >  [<ffffffff82be022c>] percpu_init_late+0x48/0xc2
-> >  [<ffffffff82bd630c>] ? mem_init+0xd8/0xe3
-> >  [<ffffffff82bbcc73>] start_kernel+0x1c2/0x449
-> >  [<ffffffff82bbc35c>] x86_64_start_reservations+0x163/0x167
-> >  [<ffffffff82bbc493>] x86_64_start_kernel+0x133/0x142^M
-> > ---[ end trace a7919e7f17c0a725 ]---
-> >
-> > Then I ran a ktest.pl config_bisect and it came up with this config
-> > as the problem:
-> >
-> >  CONFIG_SLOB
-> >
-> > Looking at what is different between SLOB and SLAB and SLUB, I found
-> > that the gfp flags are masked against gfp_allowed_mask in
-> > SLAB and SLUB, but not SLOB.
-> >
-> > On boot up, interrupts are disabled and lockdep will warn if some flags
-> > are set in gfp and interrupts are disabled. But these flags are masked
-> > off with the gfp_allowed_mask during boot. Because SLOB does not
-> > mask the flags against gfp_allowed_mask it triggers the warn on.
-> >
-> > Adding this mask fixes the bug. I also found that kmem_cache_alloc_node()
-> > was missing both the mask and the lockdep check, and that was added too.
-> >
-> > Cc: Matt Mackall <mpm@selenic.com>
-> > Cc: Paul Mundt <lethal@linux-sh.org>
-> > Cc: Nick Piggin <npiggin@kernel.dk>
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> >
-> > diff --git a/mm/slob.c b/mm/slob.c
-> > index 46e0aee..0ae8818 100644
-> > --- a/mm/slob.c
-> > +++ b/mm/slob.c
-> > @@ -482,6 +482,8 @@ void *__kmalloc_node(size_t size, gfp_t gfp, int node)
-> >        int align = max(ARCH_KMALLOC_MINALIGN, ARCH_SLAB_MINALIGN);
-> >        void *ret;
-> >
-> > +       gfp &= gfp_allowed_mask;
-> > +
-> >        lockdep_trace_alloc(gfp);
-> >
-> >        if (size < PAGE_SIZE - align) {
-> > @@ -608,6 +610,10 @@ void *kmem_cache_alloc_node(struct kmem_cache *c, gfp_t flags, int node)
-> >  {
-> >        void *b;
-> >
-> > +       flags &= gfp_allowed_mask;
-> > +
-> > +       lockdep_trace_alloc(flags);
-> > +
-> >        if (c->size < PAGE_SIZE) {
-> >                b = slob_alloc(c->size, flags, c->align, node);
-> >                trace_kmem_cache_alloc_node(_RET_IP_, b, c->size,
-> 
-> Matt, any objections to merging this?
+On 06/07/2011 02:22 PM, Américo Wang wrote:
+> On Tue, Jun 07, 2011 at 02:19:31PM +0200, Daniel Lezcano wrote:
+>> On 06/07/2011 02:06 PM, Américo Wang wrote:
+>>> In the following commit Daniel removed ns_cgroup
+>>>
+>>> 	commit a77aea92010acf54ad785047234418d5d68772e2
+>>> 	Author: Daniel Lezcano<daniel.lezcano@free.fr>
+>>> 	Date:   Thu May 26 16:25:23 2011 -0700
+>>>
+>>> 	    cgroup: remove the ns_cgroup
+>>>
+>>> but Daniel forgot to remove the related doc in feature-removal-schedule.txt.
+>>> This patch removes that too.
+>> Well, I am not sure we should remove this entry from the documentation.
+> That is a list of features which will be removed,
+> not for features that was in the kernel.
+>
+>> I let this in the doc because people may want to follow what was
+>> removed and from what kernel version.
+> We have changelogs or git logs, right? :)
 
-Looks good.
+Never mind.
 
-Acked-by: Matt Mackall <mpm@selenic.com>
+The introduction in the doc file is clear:
 
+"... When the feature is removed from the kernel, it should also
+be removed from this file."
 
--- 
-Mathematics is the supreme nostalgia of our time.
+Sorry I missed this when removing the ns_cgroup.
 
+Thanks for fixing it.
 
+   -- Daniel
