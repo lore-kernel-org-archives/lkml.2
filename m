@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab1FGNJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 09:09:56 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:44588 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754733Ab1FGNJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 09:09:54 -0400
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 07 Jun 2011 18:32:41 +0530
-Message-Id: <20110607130241.28590.87063.sendpatchset@localhost6.localdomain6>
-In-Reply-To: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v4 3.0-rc2-tip 22/22] 22: perf: Documentation for perf uprobes
+	id S1753908Ab1FGNA6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 09:00:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61823 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753721Ab1FGNA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 09:00:57 -0400
+Message-ID: <4DEE2175.702@cn.fujitsu.com>
+Date: Tue, 07 Jun 2011 21:02:45 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 08/15] KVM: MMU: count used shadow pages on preparing path
+References: <4DEE205E.8000601@cn.fujitsu.com>
+In-Reply-To: <4DEE205E.8000601@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-07 21:00:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-07 21:00:29,
+	Serialize complete at 2011-06-07 21:00:29
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Move counting used shadow pages from committing path to preparing path to
+reduce tlb flush on some paths
 
-Modify perf-probe.txt to include uprobe documentation
-
-Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- tools/perf/Documentation/perf-probe.txt |   21 ++++++++++++++++++++-
- 1 files changed, 20 insertions(+), 1 deletions(-)
+ arch/x86/kvm/mmu.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index 02bafce..3db8d25 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -76,6 +76,8 @@ OPTIONS
- -F::
- --funcs::
- 	Show available functions in given module or kernel.
-+	With -x/--exe, can also list functions in a user space executable /
-+	shared library.
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 05e604d..43e7ca1 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1039,7 +1039,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+ 	percpu_counter_add(&kvm_total_used_mmu_pages, nr);
+ }
  
- --filter=FILTER::
- 	(Only for --vars and --funcs) Set filter. FILTER is a combination of glob
-@@ -96,12 +98,21 @@ OPTIONS
- --max-probes::
- 	Set the maximum number of probe points for an event. Default is 128.
+-static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
++static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
+ {
+ 	ASSERT(is_empty_shadow_page(sp->spt));
+ 	hlist_del(&sp->hash_link);
+@@ -1048,7 +1048,6 @@ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ 	if (!sp->role.direct)
+ 		free_page((unsigned long)sp->gfns);
+ 	kmem_cache_free(mmu_page_header_cache, sp);
+-	kvm_mod_used_mmu_pages(kvm, -1);
+ }
  
-+-u::
-+--uprobes::
-+	Specify a uprobe based probe point.
-+
-+-x::
-+--exe=PATH::
-+	Specify path to the executable or shared library file for user
-+	space tracing. Used with --funcs option only.
-+
- PROBE SYNTAX
- ------------
- Probe points are defined by following syntax.
+ static unsigned kvm_page_table_hashfn(gfn_t gfn)
+@@ -1655,6 +1654,7 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+ 		/* Count self */
+ 		ret++;
+ 		list_move(&sp->link, invalid_list);
++		kvm_mod_used_mmu_pages(kvm, -1);
+ 	} else {
+ 		list_move(&sp->link, &kvm->arch.active_mmu_pages);
+ 		kvm_reload_remote_mmus(kvm);
+@@ -1678,7 +1678,7 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+ 	do {
+ 		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
+ 		WARN_ON(!sp->role.invalid || sp->root_count);
+-		kvm_mmu_free_page(kvm, sp);
++		kvm_mmu_free_page(sp);
+ 	} while (!list_empty(invalid_list));
  
-     1) Define event based on function name
--     [EVENT=]FUNC[@SRC][:RLN|+OFFS|%return|;PTN] [ARG ...]
-+     [EVENT=]FUNC[@EXE][@SRC][:RLN|+OFFS|%return|;PTN] [ARG ...]
+ }
+@@ -1704,8 +1704,8 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int goal_nr_mmu_pages)
+ 			page = container_of(kvm->arch.active_mmu_pages.prev,
+ 					    struct kvm_mmu_page, link);
+ 			kvm_mmu_prepare_zap_page(kvm, page, &invalid_list);
+-			kvm_mmu_commit_zap_page(kvm, &invalid_list);
+ 		}
++		kvm_mmu_commit_zap_page(kvm, &invalid_list);
+ 		goal_nr_mmu_pages = kvm->arch.n_used_mmu_pages;
+ 	}
  
-     2) Define event based on source file with line number
-      [EVENT=]SRC:ALN [ARG ...]
-@@ -112,6 +123,7 @@ Probe points are defined by following syntax.
+@@ -3290,9 +3290,9 @@ void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
+ 		sp = container_of(vcpu->kvm->arch.active_mmu_pages.prev,
+ 				  struct kvm_mmu_page, link);
+ 		kvm_mmu_prepare_zap_page(vcpu->kvm, sp, &invalid_list);
+-		kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
+ 		++vcpu->kvm->stat.mmu_recycled;
+ 	}
++	kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
+ }
  
- 'EVENT' specifies the name of new event, if omitted, it will be set the name of the probed function. Currently, event group name is set as 'probe'.
- 'FUNC' specifies a probed function name, and it may have one of the following options; '+OFFS' is the offset from function entry address in bytes, ':RLN' is the relative-line number from function entry line, and '%return' means that it probes function return. And ';PTN' means lazy matching pattern (see LAZY MATCHING). Note that ';PTN' must be the end of the probe point definition.  In addition, '@SRC' specifies a source file which has that function.
-+'EXE' specifies the absolute or relative path of the user space executable or user space shared library.
- It is also possible to specify a probe point by the source line number or lazy matching by using 'SRC:ALN' or 'SRC;PTN' syntax, where 'SRC' is the source file path, ':ALN' is the line number and ';PTN' is the lazy matching pattern.
- 'ARG' specifies the arguments of this probe point, (see PROBE ARGUMENT).
- 
-@@ -180,6 +192,13 @@ Delete all probes on schedule().
- 
-  ./perf probe --del='schedule*'
- 
-+Add probes at zfree() function on /bin/zsh
-+
-+ ./perf probe -u zfree@/bin/zsh
-+
-+Add probes at malloc() function on libc
-+
-+ ./perf probe -u malloc@/lib/libc.so.6
- 
- SEE ALSO
- --------
+ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
+-- 
+1.7.4.4
+
