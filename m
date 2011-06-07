@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758412Ab1FGTju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:39:50 -0400
-Received: from leopard.mail.utk.edu ([160.36.0.85]:36217 "EHLO
-	leopard.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758394Ab1FGTjs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758391Ab1FGTjs (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 7 Jun 2011 15:39:48 -0400
-Date: Tue, 7 Jun 2011 15:39:31 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [patch] perf_events: more wrong events for AMD fam10h
-Message-ID: <alpine.DEB.2.00.1106071532250.21714@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:42054 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756500Ab1FGTjq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 15:39:46 -0400
+Date: Tue, 7 Jun 2011 22:39:39 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tanya Brokhman <tlinder@codeaurora.org>
+Cc: balbi@ti.com, "'Alan Stern'" <stern@rowland.harvard.edu>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        ablay@codeaurora.org, "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v15 10/10] usb:dummy_hcd: Force FS device connection
+ according to module parameter
+Message-ID: <20110607193937.GE12242@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <016d01cc2541$0bfa5980$23ef0c80$@org>
+ <Pine.LNX.4.44L0.1106071436020.1972-100000@iolanthe.rowland.org>
+ <018a01cc2543$7273a5c0$575af140$@org>
+ <20110607185415.GD12242@legolas.emea.dhcp.ti.com>
+ <019601cc2546$6359cdf0$2a0d69d0$@org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wwSkEpePV3aFlXly"
+Content-Disposition: inline
+In-Reply-To: <019601cc2546$6359cdf0$2a0d69d0$@org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
 
-I'm in the process of auditing perf_event's awesome "generalized events".
+--wwSkEpePV3aFlXly
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On AMD fam10h for some we have the following definitions:
-  cache-references = INSTRUCTION_CACHE_FETCHES	0x530080
-  cache-misses 	   = INSTRUCTION_CACHE_MISSES	0x530081
+hi,
 
-on Intel at least I'm pretty sure these events match to Last Level Cache 
-accesses/misses, not icache.  Is there a reason for this?
+On Tue, Jun 07, 2011 at 10:09:01PM +0300, Tanya Brokhman wrote:
+> > > Ok, agreed. I'll update the patch.
+> >=20
+> > Cool, I'll wait for a revised series.
+> >=20
+>=20
+> Actually, the only patch that will be updated is this one and it's not
+> really related to the SS support patches, it's just based on them.
+> I'm telling you this because unfortunately I won't be able to post new
+> version until Thursday...
 
-Attached is a patch that removes these until better events can be found.
-(LLC is tricky on AMD as it's a shared resource).
+Ok, so I'll take the others by friday and wait only for the revised
+patch 10.
 
-Note, l1-dcache-stores is broken too, I'm looking into it.
+--=20
+balbi
 
-Thanks,
+--wwSkEpePV3aFlXly
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Vince
-vweaver1@eecs.utk.edu
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index fe29c1d..a46b987 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -98,8 +98,6 @@ static const u64 amd_perfmon_event_map[] =
- {
-   [PERF_COUNT_HW_CPU_CYCLES]			= 0x0076,
-   [PERF_COUNT_HW_INSTRUCTIONS]			= 0x00c0,
--  [PERF_COUNT_HW_CACHE_REFERENCES]		= 0x0080,
--  [PERF_COUNT_HW_CACHE_MISSES]			= 0x0081,
-   [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]		= 0x00c2,
-   [PERF_COUNT_HW_BRANCH_MISSES]			= 0x00c3,
-   [PERF_COUNT_HW_STALLED_CYCLES_FRONTEND]	= 0x00d0, /* "Decoder empty" event */
+iQEcBAEBAgAGBQJN7n55AAoJEAv8Txj19kN1RdMIAJNjUUk/MTFAi6MXRPpOJpFo
+SAOtElFOA2375/1Wjc9xPOkJcqyyylyW08SeHvSCcLCdNHOEmmaguBaEYpHgVaje
+/FXx6WUgswDFe3sB8LmM3Pllbn58YeE29EuIChD/aJtVrATCVrrbl1dG3AfZ1T+R
+NF/riO2aTiuoSdL9ZZn3LN/0Hml9IyZT2nMRXaJD0g+H7H5Xu4ReehBQq40RGzFc
+8jqS34xAvG2U8TEwL3xqMUEOEOoWWoHorWF9+U3mex2BzLUi64fHRZ1Zs2e6uozq
+8S1BD9Iy27e6GWSAMxhybQ9Y8eoOQZ3mixQnwFuj3TDtwnC/uacC8NHvbjNZGus=
+=ZpbU
+-----END PGP SIGNATURE-----
+
+--wwSkEpePV3aFlXly--
