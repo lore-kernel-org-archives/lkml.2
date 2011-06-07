@@ -1,81 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab1FGJDj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 05:03:39 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36271 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803Ab1FGJDh (ORCPT
+	id S1752537Ab1FGJFG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 05:05:06 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:51737 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab1FGJFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 05:03:37 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 7 Jun 2011 17:56:34 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v8 11/12] writeback: make background writeback cgroup
- aware
-Message-Id: <20110607175634.b07f2e57.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1307117538-14317-12-git-send-email-gthelen@google.com>
-References: <1307117538-14317-1-git-send-email-gthelen@google.com>
-	<1307117538-14317-12-git-send-email-gthelen@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 7 Jun 2011 05:05:03 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: "Ohad Ben-Cohen" <ohad@wizery.com>
+Subject: Re: [RFC 2/6] omap: iovmm: generic iommu api migration
+Date: Tue, 7 Jun 2011 11:05:15 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo-r3; KDE/4.6.2; x86_64; ; )
+Cc: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Hiroshi.DOYU@nokia.com, arnd@arndb.de, davidb@codeaurora.org,
+        Joerg.Roedel@amd.com
+References: <1307053663-24572-1-git-send-email-ohad@wizery.com> <1307053663-24572-3-git-send-email-ohad@wizery.com>
+In-Reply-To: <1307053663-24572-3-git-send-email-ohad@wizery.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106071105.16262.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  3 Jun 2011 09:12:17 -0700
-Greg Thelen <gthelen@google.com> wrote:
+Hi Ohad,
 
-> When the system is under background dirty memory threshold but a cgroup
-> is over its background dirty memory threshold, then only writeback
-> inodes associated with the over-limit cgroup(s).
+Thanks for the patch.
+
+On Friday 03 June 2011 00:27:39 Ohad Ben-Cohen wrote:
+> Migrate omap's iovmm (virtual memory manager) to the generic iommu api.
 > 
-> In addition to checking if the system dirty memory usage is over the
-> system background threshold, over_bground_thresh() also checks if any
-> cgroups are over their respective background dirty memory thresholds.
-> The writeback_control.for_cgroup field is set to distinguish between a
-> system and memcg overage.
+> This brings iovmm a step forward towards being completely non
+> omap-specific (it's still assuming omap's iommu page sizes, and also
+> maintaining state inside omap's internal iommu structure, but it no
+> longer calls omap-specific iommu map/unmap api).
 > 
-> If performing cgroup writeback, move_expired_inodes() skips inodes that
-> do not contribute dirty pages to the cgroup being written back.
+> Further generalizing of iovmm (or complete removal) should take place
+> together with broader plans of providing a generic virtual memory manager
+> and allocation framework (de-coupled from specific mappers).
 > 
-> After writing some pages, wb_writeback() will call
-> mem_cgroup_writeback_done() to update the set of over-bg-limits memcg.
+> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+
+[snip]
+
+> diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
+> index 51ef43e..80bb2b6 100644
+> --- a/arch/arm/plat-omap/iovmm.c
+> +++ b/arch/arm/plat-omap/iovmm.c
+
+[snip]
+
+> @@ -473,22 +475,22 @@ static int map_iovm_area(struct iommu *obj, struct
+> iovm_struct *new, u32 pa;
+>  		int pgsz;
+>  		size_t bytes;
+> -		struct iotlb_entry e;
 > 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
+>  		pa = sg_phys(sg);
+>  		bytes = sg_dma_len(sg);
+> 
+>  		flags &= ~IOVMF_PGSZ_MASK;
+> +
+>  		pgsz = bytes_to_iopgsz(bytes);
+>  		if (pgsz < 0)
+>  			goto err_out;
+> -		flags |= pgsz;
 
+pgsz isn't used anymore, you can remove it.
 
+> +
+> +		order = get_order(bytes);
 
-> ---
-> Changelog since v7:
-> - over_bground_thresh() now sets shared_inodes=1.  In -v7 per memcg
->   background writeback did not, so it did not write pages of shared
->   inodes in background writeback.  In the (potentially common) case
->   where the system dirty memory usage is below the system background
->   dirty threshold but at least one cgroup is over its background dirty
->   limit, then per memcg background writeback is queued for any
->   over-background-threshold cgroups.  Background writeback should be
->   allowed to writeback shared inodes.  The hope is that writing such
->   inodes has good chance of cleaning the inodes so they can transition
->   from shared to non-shared.  Such a transition is good because then the
->   inode will remain unshared until it is written by multiple cgroup.
->   Non-shared inodes offer better isolation.
+Does iommu_map() handle offsets correctly, or does it expect pa to be aligned 
+to an order (or other) boundary ? Same comment for iommu_unmap() in 
+unmap_iovm_area().
 
-If you post v9,  please adds above explanation as the comments in the code.
+>  		pr_debug("%s: [%d] %08x %08x(%x)\n", __func__,
+>  			 i, da, pa, bytes);
+> 
+> -		iotlb_init_entry(&e, da, pa, flags);
+> -		err = iopgtable_store_entry(obj, &e);
+> +		err = iommu_map(domain, da, pa, order, flags);
+>  		if (err)
+>  			goto err_out;
+> 
+> @@ -502,9 +504,11 @@ err_out:
+>  	for_each_sg(sgt->sgl, sg, i, j) {
+>  		size_t bytes;
+> 
+> -		bytes = iopgtable_clear_entry(obj, da);
+> +		bytes = sg_dma_len(sg);
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+As Russell pointed out, we should use sg->length instead of sg_dma_length(sg). 
+sg_dma_length(sg) is only valid after the scatter list has been DMA-mapped, 
+which doesn't happen in the iovmm driver. This applies to all sg_dma_len(sg) 
+calls.
 
+> +		order = get_order(bytes);
+> 
+> -		BUG_ON(!iopgsz_ok(bytes));
+> +		/* ignore failures.. we're already handling one */
+> +		iommu_unmap(domain, da, order);
+> 
+>  		da += bytes;
+>  	}
+
+-- 
+Regards,
+
+Laurent Pinchart
