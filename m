@@ -1,148 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab1FGTxf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:53:35 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34808 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439Ab1FGTxd convert rfc822-to-8bit (ORCPT
+	id S1754702Ab1FGT6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 15:58:37 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:39302 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753546Ab1FGT6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 15:53:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=Na4D2k+jF+5gP/+IlhyBubL20MmNNeW6G0ZzaJ2U+x10ywfzS8pup4dLBLbQyZNdE2
-         xS2b828+alSbaQX8Z4YxgdFetL4LGlla/b4EArdvthnFT9VHWk2/Tbuezm7Updrnxkvu
-         xRLFboxj9R53kEubdu8JSMzfKLqKDvoetZ3Bg=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=KZcosEZ9_WEjQw7fZRwzBeR67yA@mail.gmail.com>
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
- <1307373819.3098.40.camel@edumazet-laptop> <1307376672.2322.167.camel@twins>
- <1307376989.2322.171.camel@twins> <1307377349.3098.65.camel@edumazet-laptop>
- <1307377782.2322.183.camel@twins> <1307378564.3098.67.camel@edumazet-laptop>
- <4DED1421.5000300@linux.intel.com> <1307383898.3098.90.camel@edumazet-laptop>
- <4DED976C.90009@linux.intel.com> <4DEE3944.5020005@mit.edu>
- <1307462300.3091.39.camel@edumazet-laptop> <BANLkTinyuHUGXACJYUT241g8rzg6AzPBiA@mail.gmail.com>
- <BANLkTinHEyRnnJqB=GTwBOAb6aRaHnjQLQ@mail.gmail.com> <BANLkTi=uQmePFOJUx=bdTsnFuFa+ZaYqVw@mail.gmail.com>
- <BANLkTi=KZcosEZ9_WEjQw7fZRwzBeR67yA@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 7 Jun 2011 15:53:13 -0400
-X-Google-Sender-Auth: ZpfyYKMkuUfJOkLlY9cP_cE5Bgs
-Message-ID: <BANLkTikM5M=ezSPg2p5=N5rGzC84Ca1+cQ@mail.gmail.com>
-Subject: Re: Change in functionality of futex() system call.
-To: David Oliver <david@rgmadvisors.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Zachary Vonler <zvonler@rgmadvisors.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Jun 2011 15:58:36 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+OhGs6nNKOVFzTGgC1z0EdE9zpunspHVkELqS44k
+	ntKhm7i6PIJGuG
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH] kernel/trace: Convert to kstrtoul_from_user
+Date: Tue,  7 Jun 2011 21:58:27 +0200
+Message-Id: <1307476707-14762-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.3.4
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 7, 2011 at 3:33 PM, David Oliver <david@rgmadvisors.com> wrote:
-> On Tue, Jun 7, 2011 at 2:19 PM, Andrew Lutomirski <luto@mit.edu> wrote:
->> On Tue, Jun 7, 2011 at 3:10 PM, David Oliver <david@rgmadvisors.com> wrote:
->>> On Tue, Jun 7, 2011 at 1:43 PM, Andrew Lutomirski <luto@mit.edu> wrote:
->>>> On Tue, Jun 7, 2011 at 11:58 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->>>>> Le mardi 07 juin 2011 à 10:44 -0400, Andy Lutomirski a écrit :
->>>>>> On 06/06/2011 11:13 PM, Darren Hart wrote:
->>>>>> >
->>>>>> >
->>>>>> > On 06/06/2011 11:11 AM, Eric Dumazet wrote:
->>>>>> >> Le lundi 06 juin 2011 à 10:53 -0700, Darren Hart a écrit :
->>>>>> >>>
->>>>>> >>
->>>>>> >>> If I understand the problem correctly, RO private mapping really doesn't
->>>>>> >>> make any sense and we should probably explicitly not support it, while
->>>>>> >>> special casing the RO shared mapping in support of David's scenario.
->>>>>> >>>
->>>>>> >>
->>>>>> >> We supported them in 2.6.18 kernels, apparently. This might sounds
->>>>>> >> stupid but who knows ?
->>>>>> >
->>>>>> >
->>>>>> > I guess this is actually the key point we need to agree on to provide a
->>>>>> > solution. This particular case "worked" in 2.6.18 kernels, but that
->>>>>> > doesn't necessarily mean it was supported, or even intentional.
->>>>>> >
->>>>>> > It sounds to me that we agree that we should support RO shared mappings.
->>>>>> > The question remains about whether we should introduce deliberate
->>>>>> > support of RO private mappings, and if so, if the forced COW approach is
->>>>>> > appropriate or not.
->>>>>> >
->>>>>>
->>>>>> I disagree.
->>>>>>
->>>>>> FUTEX_WAIT has side-effects.  Specifically, it eats one wakeup sent by
->>>>>> FUTEX_WAKE.  So if something uses futexes on a file mapping, then a
->>>>>> process with only read access could (if the semantics were changed) DoS
->>>>>> the other processes by spawning a bunch of threads and FUTEX_WAITing
->>>>>> from each of them.
->>>>>>
->>>>>> If there were a FUTEX_WAIT_NOCONSUME that did not consume a wakeup and
->>>>>> worked on RO mappings, I would drop my objection.
->>>>>
->>>>> If a group of cooperating processes uses a memory segment to exchange
->>>>> critical information, do you really think this memory segment will be
->>>>> readable by other unrelated processes on the machine ?
->>>>
->>>> Depends on the design.
->>>>
->>>> I have some software I'm working on that uses shared files and could
->>>> easily use futexes.
->>>>
->>> I have software which currently uses shared files for a one way
->>> transfer of information, which is modeled precisely by the futex (as
->>> contrasted to the mutex) model. In this case, the number of receivers
->>> is undetermined, so the number of wakeups is set to maxint.
->>>
->>> The receivers are minimally trusted: they have read access to the
->>> files, so they cannot accidentally affect other processes use of the
->>> data. Requiring my files to be writeable by all clients would require
->>> a serious increase in the amount of software needing to be trusted.
->>
->> What's wrong with adding a FUTEX_WAIT_NOCONSUME flag then?  Your
->> program can use it to get exactly the semantics it wants and my
->> program can use it or not depending on which semantics it wants.
->>
-> 1. I would prefer not to require my programs have to check for kernel
-> version (code named "working", "regressed", and "altered") to decide
-> which parameters need to be sent to the futex call.
+This patch replaces the code for getting an unsigned long from a
+userspace buffer by a simple call to kstroul_from_user.
+This makes it easier to read and less error prone.
 
-You don't have to check for kernel version.  Just try
-FUTEX_WAIT_NOCONSUME first and retry with FUTEX_WAIT if it returns
--EINVAL.
+Kernel Version: v3.0-rc2
 
-I think you've already lost on regressed kernels regardless :-/
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ kernel/trace/ftrace.c       |   13 +-------
+ kernel/trace/ring_buffer.c  |   13 +-------
+ kernel/trace/trace.c        |   65 ++++++------------------------------------
+ kernel/trace/trace_events.c |   26 ++--------------
+ kernel/trace/trace_stack.c  |   13 +-------
+ 5 files changed, 20 insertions(+), 110 deletions(-)
 
-> 2. Doing FUTEX_WAIT_NOCONSUME would change the semantics of
-> futex_wake() between the "working" and "altered" kernels, as it would
-> no longer return the number of processes woken.
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 1ee417f..508dcb4 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -806,19 +806,10 @@ ftrace_profile_write(struct file *filp, const char __user *ubuf,
+ 		     size_t cnt, loff_t *ppos)
+ {
+ 	unsigned long val;
+-	char buf[64];		/* big enough to hold a number */
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	val = !!val;
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index b0c7aa4..6c59dd9 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3978,20 +3978,11 @@ rb_simple_write(struct file *filp, const char __user *ubuf,
+ 		size_t cnt, loff_t *ppos)
+ {
+ 	unsigned long *p = filp->private_data;
+-	char buf[64];
+ 	unsigned long val;
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	if (val)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index ee9c921..2bdc019 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2701,20 +2701,11 @@ tracing_ctrl_write(struct file *filp, const char __user *ubuf,
+ 		   size_t cnt, loff_t *ppos)
+ {
+ 	struct trace_array *tr = filp->private_data;
+-	char buf[64];
+ 	unsigned long val;
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	val = !!val;
+@@ -2966,20 +2957,11 @@ tracing_max_lat_write(struct file *filp, const char __user *ubuf,
+ 		      size_t cnt, loff_t *ppos)
+ {
+ 	unsigned long *ptr = filp->private_data;
+-	char buf[64];
+ 	unsigned long val;
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	*ptr = val * 1000;
+@@ -3434,19 +3416,10 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
+ 		      size_t cnt, loff_t *ppos)
+ {
+ 	unsigned long val;
+-	char buf[64];
+ 	int ret, cpu;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	/* must have at least 1 entry */
+@@ -4099,19 +4072,10 @@ trace_options_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ {
+ 	struct trace_option_dentry *topt = filp->private_data;
+ 	unsigned long val;
+-	char buf[64];
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	if (val != 0 && val != 1)
+@@ -4159,20 +4123,11 @@ trace_options_core_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 			 loff_t *ppos)
+ {
+ 	long index = (long)filp->private_data;
+-	char buf[64];
+ 	unsigned long val;
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	if (val != 0 && val != 1)
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 686ec39..4d7e149 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -486,20 +486,11 @@ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 		   loff_t *ppos)
+ {
+ 	struct ftrace_event_call *call = filp->private_data;
+-	char buf[64];
+ 	unsigned long val;
+ 	int ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	ret = tracing_update_buffers();
+@@ -571,19 +562,10 @@ system_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ {
+ 	const char *system = filp->private_data;
+ 	unsigned long val;
+-	char buf[64];
+ 	ssize_t ret;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	ret = tracing_update_buffers();
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index b0b53b8..77575b3 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -156,20 +156,11 @@ stack_max_size_write(struct file *filp, const char __user *ubuf,
+ {
+ 	long *ptr = filp->private_data;
+ 	unsigned long val, flags;
+-	char buf[64];
+ 	int ret;
+ 	int cpu;
+ 
+-	if (count >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, count))
+-		return -EFAULT;
+-
+-	buf[count] = 0;
+-
+-	ret = strict_strtoul(buf, 10, &val);
+-	if (ret < 0)
++	ret = kstrtoul_from_user(ubuf, count, 10, &val);
++	if (ret)
+ 		return ret;
+ 
+ 	local_irq_save(flags);
+-- 
+1.7.3.4
 
-True, but that change couldn't affect old code because old code
-wouldn't use FUTEX_WAIT_NOCONSUME.
-
->
-> It seems that FUTEX_WAIT_NOCONSUME would be rather like a
-> non-consuming read on a pipe.
-
-More like a nonconsuming read on an eventfd, which sounds very useful.
- (Actually, I'm porting code from Windows to Linux right now that
-wants that feature...)
-
-The reason I bring this up now is that I've been annoyed that
-FUTEX_WAIT can be used on an R/O mapping to interfere with futexes in
-that mapping.  Under the original semantics this would have been
-pretty much impossible to fix, but the regression has been there for
-long enough that we have the option right now to fix it better instead
-of restoring the original behavior.
-
-
---Andy
