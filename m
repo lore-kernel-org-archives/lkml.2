@@ -1,99 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab1FGUA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 16:00:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48003 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753546Ab1FGUA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 16:00:27 -0400
-Message-ID: <4DEE832D.3010901@redhat.com>
-Date: Tue, 07 Jun 2011 12:59:41 -0700
-From: Josh Stone <jistone@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1755243Ab1FGUEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 16:04:30 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:49229 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754358Ab1FGUE3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 16:04:29 -0400
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 20/22] 20: perf: perf interface for uprobes
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6> <20110607130216.28590.5724.sendpatchset@localhost6.localdomain6>
-In-Reply-To: <20110607130216.28590.5724.sendpatchset@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <BANLkTikM5M=ezSPg2p5=N5rGzC84Ca1+cQ@mail.gmail.com>
+References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
+	<1307373819.3098.40.camel@edumazet-laptop>
+	<1307376672.2322.167.camel@twins>
+	<1307376989.2322.171.camel@twins>
+	<1307377349.3098.65.camel@edumazet-laptop>
+	<1307377782.2322.183.camel@twins>
+	<1307378564.3098.67.camel@edumazet-laptop>
+	<4DED1421.5000300@linux.intel.com>
+	<1307383898.3098.90.camel@edumazet-laptop>
+	<4DED976C.90009@linux.intel.com>
+	<4DEE3944.5020005@mit.edu>
+	<1307462300.3091.39.camel@edumazet-laptop>
+	<BANLkTinyuHUGXACJYUT241g8rzg6AzPBiA@mail.gmail.com>
+	<BANLkTinHEyRnnJqB=GTwBOAb6aRaHnjQLQ@mail.gmail.com>
+	<BANLkTi=uQmePFOJUx=bdTsnFuFa+ZaYqVw@mail.gmail.com>
+	<BANLkTi=KZcosEZ9_WEjQw7fZRwzBeR67yA@mail.gmail.com>
+	<BANLkTikM5M=ezSPg2p5=N5rGzC84Ca1+cQ@mail.gmail.com>
+Date: Tue, 7 Jun 2011 15:04:27 -0500
+Message-ID: <BANLkTincR0KUWA77+4Gzfm26-_W11ck1+Q@mail.gmail.com>
+Subject: Re: Change in functionality of futex() system call.
+From: David Oliver <david@rgmadvisors.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Zachary Vonler <zvonler@rgmadvisors.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2011 06:02 AM, Srikar Dronamraju wrote:
-> Enhances perf probe to user space executables and libraries.
-> Provides very basic support for uprobes.
+On Tue, Jun 7, 2011 at 2:53 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Tue, Jun 7, 2011 at 3:33 PM, David Oliver <david@rgmadvisors.com> wrote:
+>> On Tue, Jun 7, 2011 at 2:19 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>> On Tue, Jun 7, 2011 at 3:10 PM, David Oliver <david@rgmadvisors.com> wrote:
+>>>> On Tue, Jun 7, 2011 at 1:43 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>>>> On Tue, Jun 7, 2011 at 11:58 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>>>>>> Le mardi 07 juin 2011 à 10:44 -0400, Andy Lutomirski a écrit :
+>>>>>>> On 06/06/2011 11:13 PM, Darren Hart wrote:
+>>>>>>> >
+>>>>>>> >
+>>>>>>> > On 06/06/2011 11:11 AM, Eric Dumazet wrote:
+>>>>>>> >> Le lundi 06 juin 2011 à 10:53 -0700, Darren Hart a écrit :
+>>>>>>> >>>
+>>>>>>> >>
+>>>>>>> >>> If I understand the problem correctly, RO private mapping really doesn't
+>>>>>>> >>> make any sense and we should probably explicitly not support it, while
+>>>>>>> >>> special casing the RO shared mapping in support of David's scenario.
+>>>>>>> >>>
+>>>>>>> >>
+>>>>>>> >> We supported them in 2.6.18 kernels, apparently. This might sounds
+>>>>>>> >> stupid but who knows ?
+>>>>>>> >
+>>>>>>> >
+>>>>>>> > I guess this is actually the key point we need to agree on to provide a
+>>>>>>> > solution. This particular case "worked" in 2.6.18 kernels, but that
+>>>>>>> > doesn't necessarily mean it was supported, or even intentional.
+>>>>>>> >
+>>>>>>> > It sounds to me that we agree that we should support RO shared mappings.
+>>>>>>> > The question remains about whether we should introduce deliberate
+>>>>>>> > support of RO private mappings, and if so, if the forced COW approach is
+>>>>>>> > appropriate or not.
+>>>>>>> >
+>>>>>>>
+>>>>>>> I disagree.
+>>>>>>>
+>>>>>>> FUTEX_WAIT has side-effects.  Specifically, it eats one wakeup sent by
+>>>>>>> FUTEX_WAKE.  So if something uses futexes on a file mapping, then a
+>>>>>>> process with only read access could (if the semantics were changed) DoS
+>>>>>>> the other processes by spawning a bunch of threads and FUTEX_WAITing
+>>>>>>> from each of them.
+>>>>>>>
+>>>>>>> If there were a FUTEX_WAIT_NOCONSUME that did not consume a wakeup and
+>>>>>>> worked on RO mappings, I would drop my objection.
+>>>>>>
+>>>>>> If a group of cooperating processes uses a memory segment to exchange
+>>>>>> critical information, do you really think this memory segment will be
+>>>>>> readable by other unrelated processes on the machine ?
+>>>>>
+>>>>> Depends on the design.
+>>>>>
+>>>>> I have some software I'm working on that uses shared files and could
+>>>>> easily use futexes.
+>>>>>
+>>>> I have software which currently uses shared files for a one way
+>>>> transfer of information, which is modeled precisely by the futex (as
+>>>> contrasted to the mutex) model. In this case, the number of receivers
+>>>> is undetermined, so the number of wakeups is set to maxint.
+>>>>
+>>>> The receivers are minimally trusted: they have read access to the
+>>>> files, so they cannot accidentally affect other processes use of the
+>>>> data. Requiring my files to be writeable by all clients would require
+>>>> a serious increase in the amount of software needing to be trusted.
+>>>
+>>> What's wrong with adding a FUTEX_WAIT_NOCONSUME flag then?  Your
+>>> program can use it to get exactly the semantics it wants and my
+>>> program can use it or not depending on which semantics it wants.
+>>>
+>> 1. I would prefer not to require my programs have to check for kernel
+>> version (code named "working", "regressed", and "altered") to decide
+>> which parameters need to be sent to the futex call.
+>
+> You don't have to check for kernel version.  Just try
+> FUTEX_WAIT_NOCONSUME first and retry with FUTEX_WAIT if it returns
+> -EINVAL.
+>
+... and punt if that gives me an EFAULT. Possible but clumsy.
+Fortunately, I'm not writing code for general consumption.
 
-Hi Srikar,
+> I think you've already lost on regressed kernels regardless :-/
+>
+>> 2. Doing FUTEX_WAIT_NOCONSUME would change the semantics of
+>> futex_wake() between the "working" and "altered" kernels, as it would
+>> no longer return the number of processes woken.
+>
+> True, but that change couldn't affect old code because old code
+> wouldn't use FUTEX_WAIT_NOCONSUME.
+>
+So, how would I find out the number of processes awakened by the
+futex_wake() - I only care for statistical purposes.
 
-This seems to have an issue with multiple active uprobes, whereas the v3
-patchset handled this fine.  I haven't tracked down the exact code
-difference yet, but here's an example transcript of what I'm seeing:
+>>
+>> It seems that FUTEX_WAIT_NOCONSUME would be rather like a
+>> non-consuming read on a pipe.
+>
+> More like a nonconsuming read on an eventfd, which sounds very useful.
+>  (Actually, I'm porting code from Windows to Linux right now that
+> wants that feature...)
+>
+> The reason I bring this up now is that I've been annoyed that
+> FUTEX_WAIT can be used on an R/O mapping to interfere with futexes in
+> that mapping.  Under the original semantics this would have been
+> pretty much impossible to fix, but the regression has been there for
+> long enough that we have the option right now to fix it better instead
+> of restoring the original behavior.
+>
+Not being a kernel developer, the change seems very recent - about
+when I started finding my code failing with EFAULTs.
 
-# perf probe -l
-  probe_zsh:main       (on /bin/zsh:0x000000000000e3f0)
-  probe_zsh:zalloc     (on /bin/zsh:0x0000000000051120)
-  probe_zsh:zfree      (on /bin/zsh:0x0000000000051c70)
-# perf stat -e probe_zsh:main zsh -c true
+>From my perspective, that's a real case of my futexes being interfered with :).
+>
+> --Andy
+>
 
- Performance counter stats for 'zsh -c true':
+-- 
+Cheers!
 
-                 1 probe_zsh:main
-
-       0.029387785 seconds time elapsed
-
-# perf stat -e probe_zsh:zalloc zsh -c true
-
- Performance counter stats for 'zsh -c true':
-
-               605 probe_zsh:zalloc
-
-       0.043836002 seconds time elapsed
-
-# perf stat -e probe_zsh:zfree zsh -c true
-
- Performance counter stats for 'zsh -c true':
-
-                36 probe_zsh:zfree
-
-       0.029445890 seconds time elapsed
-
-# perf stat -e probe_zsh:* zsh -c true
-
- Performance counter stats for 'zsh -c true':
-
-                 0 probe_zsh:zalloc
-                 1 probe_zsh:main
-                 0 probe_zsh:zfree
-
-       0.030912587 seconds time elapsed
-
-# perf stat -e probe_zsh:z* zsh -c true
-
- Performance counter stats for 'zsh -c true':
-
-               605 probe_zsh:zalloc
-                 0 probe_zsh:zfree
-
-       0.043774671 seconds time elapsed
+David.
 
 
-It seems like among the selected probes, only one with the lowest offset
-ever gets hit.  Any ideas?
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
 
-Thanks,
-Josh
