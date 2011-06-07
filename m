@@ -1,218 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab1FGPhP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 11:37:15 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:36837 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753582Ab1FGPhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 11:37:12 -0400
-From: Richard Weinberger <richard@nod.at>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 2/2] um: Clean up delay functions
-Date: Tue,  7 Jun 2011 17:34:30 +0200
-Message-Id: <1307460870-18234-2-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.5.3
-In-Reply-To: <1307460870-18234-1-git-send-email-richard@nod.at>
-References: <1307460870-18234-1-git-send-email-richard@nod.at>
+	id S1756748Ab1FGPfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 11:35:32 -0400
+Received: from stinky.trash.net ([213.144.137.162]:54760 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582Ab1FGPfa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 11:35:30 -0400
+Message-ID: <4DEE4538.1020404@trash.net>
+Date: Tue, 07 Jun 2011 17:35:20 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+MIME-Version: 1.0
+To: Brad Campbell <brad@fnarfbargle.com>
+CC: Bart De Schuymer <bdschuym@pandora.be>, kvm@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+References: <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com> <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com> <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com> <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com> <isavsg$3or$1@dough.gmane.org> <4DE906C0.6060901@fnarfbargle.com> <4DED344D.7000005@pandora.be> <4DED9C23.2030408@fnarfbargle.com> <4DEE27DE.7060004@trash.net> <4DEE3859.6070808@fnarfbargle.com>
+In-Reply-To: <4DEE3859.6070808@fnarfbargle.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both sys-i386 and sys-x86_64 support now ndelay().
-The delay functions are based on arch/x86/lib/delay.c.
+On 07.06.2011 16:40, Brad Campbell wrote:
+> On 07/06/11 21:30, Patrick McHardy wrote:
+>> On 07.06.2011 05:33, Brad Campbell wrote:
+>>> On 07/06/11 04:10, Bart De Schuymer wrote:
+>>>> Hi Brad,
+>>>>
+>>>> This has probably nothing to do with ebtables, so please rmmod in case
+>>>> it's loaded.
+>>>> A few questions I didn't directly see an answer to in the threads I
+>>>> scanned...
+>>>> I'm assuming you actually use the bridging firewall functionality. So,
+>>>> what iptables modules do you use? Can you reduce your iptables rules to
+>>>> a core that triggers the bug?
+>>>> Or does it get triggered even with an empty set of firewall rules?
+>>>> Are you using a stock .35 kernel or is it patched?
+>>>> Is this something I can trigger on a poor guy's laptop or does it
+>>>> require specialized hardware (I'm catching up on qemu/kvm...)?
+>>>
+>>> Not specialised hardware as such, I've just not been able to reproduce
+>>> it outside of this specific operating scenario.
+>>
+>> The last similar problem we've had was related to the 32/64 bit compat
+>> code. Are you running 32 bit userspace on a 64 bit kernel?
+> 
+> No, 32 bit Guest OS, but a completely 64 bit userspace on a 64 bit kernel.
+> 
+> Userspace is current Debian Stable. Kernel is Vanilla and qemu-kvm is
+> current git
+> 
+> 
+>>> I can't trigger it with empty firewall rules as it relies on a DNAT to
+>>> occur. If I try it directly to the internal IP address (as I have to
+>>> without netfilter loaded) then of course nothing fails.
+>>>
+>>> It's a pain in the bum as a fault, but it's one I can easily reproduce
+>>> as long as I use the same set of circumstances.
+>>>
+>>> I'll try using 3.0-rc2 (current git) tonight, and if I can reproduce it
+>>> on that then I'll attempt to pare down the IPTABLES rules to a bare
+>>> minimum.
+>>>
+>>> It is nothing to do with ebtables as I don't compile it. I'm not really
+>>> sure about "bridging firewall" functionality. I just use a couple of
+>>> hand coded bash scripts to set the tables up.
+>>
+>>  From one of your previous mails:
+>>
+>>> # CONFIG_BRIDGE_NF_EBTABLES is not set
+>>
+>> How about CONFIG_BRIDGE_NETFILTER?
+>>
+> 
+> It was compiled in.
+> 
+> With the following table set I was able to reproduce the problem on
+> 3.0-rc2. Replaced my IP with xxx.xxx.xxx.xxx, but otherwise unmodified
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/um/include/asm/delay.h |    8 +----
- arch/um/sys-i386/delay.c    |   63 ++++++++++++++++++++++++++++++++-----------
- arch/um/sys-x86_64/delay.c  |   54 ++++++++++++++++++++++++++++--------
- 3 files changed, 91 insertions(+), 34 deletions(-)
+Which kernel was the last version without this problem?
 
-diff --git a/arch/um/include/asm/delay.h b/arch/um/include/asm/delay.h
-index c71e32b..1094519 100644
---- a/arch/um/include/asm/delay.h
-+++ b/arch/um/include/asm/delay.h
-@@ -1,8 +1,6 @@
- #ifndef __UM_DELAY_H
- #define __UM_DELAY_H
- 
--#define MILLION 1000000
--
- /* Undefined on purpose */
- extern void __bad_udelay(void);
- 
-@@ -12,9 +10,7 @@ extern void __delay(unsigned long loops);
- #define udelay(n) ((__builtin_constant_p(n) && (n) > 20000) ? \
- 	__bad_udelay() : __udelay(n))
- 
--/* It appears that ndelay is not used at all for UML, and has never been
-- * implemented. */
--extern void __unimplemented_ndelay(void);
--#define ndelay(n) __unimplemented_ndelay()
-+#define ndelay(n) ((__builtin_constant_p(n) && (n) > 20000) ? \
-+	__bad_udelay() : __ndelay(n))
- 
- #endif
-diff --git a/arch/um/sys-i386/delay.c b/arch/um/sys-i386/delay.c
-index d623e07..65851ce 100644
---- a/arch/um/sys-i386/delay.c
-+++ b/arch/um/sys-i386/delay.c
-@@ -1,29 +1,60 @@
-+/*
-+ * Copyright (C) 2011 Richard Weinberger <richrd@nod.at>
-+ * Mostly copied from arch/x86/lib/delay.c
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/delay.h>
- #include <asm/param.h>
- 
--void __delay(unsigned long time)
-+void __delay(unsigned long loops)
- {
--	/* Stolen from the i386 __loop_delay */
--	int d0;
--	__asm__ __volatile__(
--		"\tjmp 1f\n"
--		".align 16\n"
--		"1:\tjmp 2f\n"
--		".align 16\n"
--		"2:\tdecl %0\n\tjns 2b"
--		:"=&a" (d0)
--		:"0" (time));
-+	asm volatile(
-+		" test %0,%0  \n"
-+		" jz 3f   \n"
-+		" jmp 1f    \n"
-+
-+		".align 16    \n"
-+		"1: jmp 2f    \n"
-+
-+		".align 16    \n"
-+		"2: dec %0    \n"
-+		" jnz 2b    \n"
-+		"3: dec %0    \n"
-+
-+		: /* we don't need output */
-+		:"a" (loops)
-+	);
- }
-+EXPORT_SYMBOL(__delay);
- 
--void __udelay(unsigned long usecs)
-+inline void __const_udelay(unsigned long xloops)
- {
--	int i, n;
-+	int d0;
- 
--	n = (loops_per_jiffy * HZ * usecs) / MILLION;
--        for(i=0;i<n;i++)
--                cpu_relax();
-+	xloops *= 4;
-+	asm("mull %%edx"
-+		:"=d" (xloops), "=&a" (d0)
-+		:"1" (xloops), "0"
-+		(loops_per_jiffy * (HZ/4)));
-+
-+	__delay(++xloops);
- }
-+EXPORT_SYMBOL(__const_udelay);
- 
-+void __udelay(unsigned long usecs)
-+{
-+	__const_udelay(usecs * 0x000010c7); /* 2**32 / 1000000 (rounded up) */
-+}
- EXPORT_SYMBOL(__udelay);
-+
-+void __ndelay(unsigned long nsecs)
-+{
-+	__const_udelay(nsecs * 0x00005); /* 2**32 / 1000000000 (rounded up) */
-+}
-+EXPORT_SYMBOL(__ndelay);
-diff --git a/arch/um/sys-x86_64/delay.c b/arch/um/sys-x86_64/delay.c
-index dee5be6..65851ce 100644
---- a/arch/um/sys-x86_64/delay.c
-+++ b/arch/um/sys-x86_64/delay.c
-@@ -1,30 +1,60 @@
- /*
-- * Copyright 2003 PathScale, Inc.
-- * Copied from arch/x86_64
-+ * Copyright (C) 2011 Richard Weinberger <richrd@nod.at>
-+ * Mostly copied from arch/x86/lib/delay.c
-  *
-- * Licensed under the GPL
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-  */
- 
- #include <linux/module.h>
-+#include <linux/kernel.h>
- #include <linux/delay.h>
--#include <asm/processor.h>
- #include <asm/param.h>
- 
- void __delay(unsigned long loops)
- {
--	unsigned long i;
-+	asm volatile(
-+		" test %0,%0  \n"
-+		" jz 3f   \n"
-+		" jmp 1f    \n"
- 
--        for(i = 0; i < loops; i++)
--                cpu_relax();
-+		".align 16    \n"
-+		"1: jmp 2f    \n"
-+
-+		".align 16    \n"
-+		"2: dec %0    \n"
-+		" jnz 2b    \n"
-+		"3: dec %0    \n"
-+
-+		: /* we don't need output */
-+		:"a" (loops)
-+	);
- }
-+EXPORT_SYMBOL(__delay);
- 
--void __udelay(unsigned long usecs)
-+inline void __const_udelay(unsigned long xloops)
- {
--	unsigned long i, n;
-+	int d0;
- 
--	n = (loops_per_jiffy * HZ * usecs) / MILLION;
--        for(i=0;i<n;i++)
--                cpu_relax();
-+	xloops *= 4;
-+	asm("mull %%edx"
-+		:"=d" (xloops), "=&a" (d0)
-+		:"1" (xloops), "0"
-+		(loops_per_jiffy * (HZ/4)));
-+
-+	__delay(++xloops);
- }
-+EXPORT_SYMBOL(__const_udelay);
- 
-+void __udelay(unsigned long usecs)
-+{
-+	__const_udelay(usecs * 0x000010c7); /* 2**32 / 1000000 (rounded up) */
-+}
- EXPORT_SYMBOL(__udelay);
-+
-+void __ndelay(unsigned long nsecs)
-+{
-+	__const_udelay(nsecs * 0x00005); /* 2**32 / 1000000000 (rounded up) */
-+}
-+EXPORT_SYMBOL(__ndelay);
--- 
-1.7.5.3
+> root@srv:~# iptables-save
+> # Generated by iptables-save v1.4.10 on Tue Jun  7 22:11:30 2011
+> *filter
+> :INPUT ACCEPT [978:107619]
+> :FORWARD ACCEPT [142:7068]
+> :OUTPUT ACCEPT [1659:291870]
+> -A INPUT -i ppp0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+> -A INPUT ! -i ppp0 -m state --state NEW -j ACCEPT
+> -A INPUT -i ppp0 -j DROP
+> COMMIT
+> # Completed on Tue Jun  7 22:11:30 2011
+> # Generated by iptables-save v1.4.10 on Tue Jun  7 22:11:30 2011
+> *nat
+> :PREROUTING ACCEPT [813:49170]
+> :INPUT ACCEPT [91:7090]
+> :OUTPUT ACCEPT [267:20731]
+> :POSTROUTING ACCEPT [296:22281]
+> -A PREROUTING -d xxx.xxx.xxx.xxx/32 ! -i ppp0 -p tcp -m tcp --dport 443
+> -j DNAT --to-destination 192.168.253.198
+> COMMIT
+> # Completed on Tue Jun  7 22:11:30 2011
+> # Generated by iptables-save v1.4.10 on Tue Jun  7 22:11:30 2011
+> *mangle
+> :PREROUTING ACCEPT [2729:274392]
+> :INPUT ACCEPT [2508:262976]
+> :FORWARD ACCEPT [142:7068]
+> :OUTPUT ACCEPT [1674:293701]
+> :POSTROUTING ACCEPT [2131:346411]
+> -A FORWARD -o ppp0 -p tcp -m tcp --tcp-flags SYN,RST SYN -m tcpmss --mss
+> 1400:1536 -j TCPMSS --clamp-mss-to-pmtu
+> COMMIT
+> # Completed on Tue Jun  7 22:11:30 2011
 
+The main suspects would be NAT and TCPMSS. Did you also try whether
+the crash occurs with only one of these these rules?
+
+> I've just compiled out CONFIG_BRIDGE_NETFILTER and can no longer access
+> the address the way I was doing it, so that's a no-go for me.
+
+That's really weird since you're apparently not using any bridge
+netfilter features. It shouldn't have any effect besides changing
+at which point ip_tables is invoked. How are your network devices
+configured (specifically any bridges)?
