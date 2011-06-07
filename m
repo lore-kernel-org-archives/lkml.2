@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403Ab1FGVIC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 17:08:02 -0400
-Received: from jaguar.mail.utk.edu ([160.36.0.84]:33366 "EHLO
-	jaguar.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259Ab1FGVIA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 17:08:00 -0400
-Date: Tue, 7 Jun 2011 17:07:48 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [patch] perf_events: even more wrong events for AMD fam10h
-In-Reply-To: <alpine.DEB.2.00.1106071532250.21714@cl320.eecs.utk.edu>
-Message-ID: <alpine.DEB.2.00.1106071701560.21714@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1106071532250.21714@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757434Ab1FGVLV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:11:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47009 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757262Ab1FGVLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 17:11:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,334,1304319600"; 
+   d="scan'208";a="10370433"
+Date: Wed, 8 Jun 2011 05:11:16 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+Subject: Re: writeback merge status, was Re: [PATCH 00/18] writeback fixes
+ and cleanups for 2.6.40 (v3)
+Message-ID: <20110607211116.GA4793@localhost>
+References: <20110519214530.939830917@intel.com>
+ <20110523090739.GA27894@infradead.org>
+ <20110523092838.GA25829@localhost>
+ <20110524032859.GA17429@localhost>
+ <20110601153142.0bf83332.akpm@linux-foundation.org>
+ <20110602022919.GB6015@localhost>
+ <20110607121335.GA14080@infradead.org>
+ <20110607131512.bf27eb68.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607131512.bf27eb68.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 08, 2011 at 04:15:12AM +0800, Andrew Morton wrote:
+> On Tue, 7 Jun 2011 08:13:36 -0400
+> Christoph Hellwig <hch@infradead.org> wrote:
+> 
+> > It looks like we once again got no writeback fixes merged for $NEXT,
+> > even with Wu having a very nice, well reviewed and tested series of 
+> > fairly trivial patches.
+> 
+> We're waiting for the v4 series:
+ 
+The v4 series was posted here:
 
-Here are two more problems I found with the superlative "generalized" 
-events on AMD fam10h.
+https://lkml.org/lkml/2011/5/24/20
 
-The "l1-dcache-loads" event measures loads *and* stores.
-    This might be as close as you can get on AMD, but it's still wrong
-      as it's not what Intel measures.  
-    My patch removes it.  Better might be to add a proper
-    "l1-dcache-access" event.
+> : I'll rearrange the series and move patch 14 to the end, so that the
+> : patches come in order
+> :
+> : - 10 (updated) patches in -mm
+> : - 6 more trivial patches that is safe to go upstream after -rc1 
+> : - the current patch 14 and patch 16 (that depends on 14)
 
-The "l1-dcache-load-miss" event is an invalid event. (0x141).
-    From what I can tell that event (DATA_CACHE_MISSES) does not
-    take a mask.  It should be 0x41.  And it's actually measuring
-    all misses, not just load misses, see above.
-
-The "l1-dcache-stores" event does not work.  See the
-     ./validation/l1-dcache-stores test found in 
-     http://web.eecs.utk.edu/~vweaver1/projects/perf-events/validation.html
-   So remove it until we figure out why.
-
-
-Also, is the value for "no such event" 0 or -1?  The perf_event_amd.c
-file seems to use them interchangably from what I can tell.
+Anyway, I'll make the series straight and resubmit.
 
 Thanks,
-
-Vince
-
-Signed-off-by: Vince Weaver <vweaver1@eecs.utk.edu>
-
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index fe29c1d..71987d5 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -7,11 +7,11 @@ static __initconst const u64 amd_hw_cache_event_ids
- {
-  [ C(L1D) ] = {
- 	[ C(OP_READ) ] = {
--		[ C(RESULT_ACCESS) ] = 0x0040, /* Data Cache Accesses        */
--		[ C(RESULT_MISS)   ] = 0x0141, /* Data Cache Misses          */
-+		[ C(RESULT_ACCESS) ] = 0,      /* Not available on AMD       */
-+		[ C(RESULT_MISS)   ] = 0x0041, /* Data Cache Misses          */
- 	},
- 	[ C(OP_WRITE) ] = {
--		[ C(RESULT_ACCESS) ] = 0x0142, /* Data Cache Refills :system */
-+		[ C(RESULT_ACCESS) ] = 0,      /* Data Cache Refills :system doesn't work */
- 		[ C(RESULT_MISS)   ] = 0,
- 	},
- 	[ C(OP_PREFETCH) ] = {
-
+Fengguang
