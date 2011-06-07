@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab1FGPdn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 11:33:43 -0400
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:58591 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756714Ab1FGPdk (ORCPT
+	id S1756739Ab1FGPeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 11:34:22 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:36095 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab1FGPeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 11:33:40 -0400
-Subject: [PATCH] perf events: remove 64bit alignment padding from
- perf_event_context
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        lkml <linux-kernel@vger.kernel.org>
-Date: Tue, 07 Jun 2011 16:33:38 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1307460819.1950.5.camel@castor.rsk>
-Mime-Version: 1.0
+	Tue, 7 Jun 2011 11:34:21 -0400
+X-Greylist: delayed 62707 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jun 2011 11:34:21 EDT
+X-Originating-IP: 217.70.178.131
+X-Originating-IP: 50.43.15.19
+Date: Tue, 7 Jun 2011 08:34:11 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, sam@ravnborg.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/debug] debug: Make CONFIG_EXPERT select
+ CONFIG_DEBUG_KERNEL to unhide debug options
+Message-ID: <20110607153411.GA5175@leaf>
+References: <20110606165130.GA1844@leaf>
+ <tip-2458073da04571182748aa4289630dca52ba63cc@git.kernel.org>
+ <20110606214502.GB17026@somewhere.redhat.com>
+ <20110606220905.GB1999@leaf>
+ <20110607101851.GA21356@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607101851.GA21356@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorder perf_event_context to remove 8 bytes of 64 bit alignment padding
-shrinking its size to 192 bytes, allowing it to fit into a smaller slab
-and use one fewer cache lines.
+On Tue, Jun 07, 2011 at 12:18:51PM +0200, Ingo Molnar wrote:
+> 
+> * Josh Triplett <josh@joshtriplett.org> wrote:
+> 
+> > On Mon, Jun 06, 2011 at 11:45:04PM +0200, Frederic Weisbecker wrote:
+> > > On Mon, Jun 06, 2011 at 09:39:40PM +0000, tip-bot for Josh Triplett wrote:
+> > > > Commit-ID:  2458073da04571182748aa4289630dca52ba63cc
+> > > > Gitweb:     http://git.kernel.org/tip/2458073da04571182748aa4289630dca52ba63cc
+> > > > Author:     Josh Triplett <josh@joshtriplett.org>
+> > > > AuthorDate: Mon, 6 Jun 2011 09:51:30 -0700
+> > > > Committer:  Ingo Molnar <mingo@elte.hu>
+> > > > CommitDate: Mon, 6 Jun 2011 19:30:01 +0200
+> > > > 
+> > > > debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
+> > > > 
+> > > > Several debugging options currently default to y, such as
+> > > > CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.
+> > > > 
+> > > > Embedded users might want to turn those options off to save space;
+> > > > however, turning them off requires turning on CONFIG_DEBUG_KERNEL to
+> > > > unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
+> > > > unhide debugging options, and CONFIG_EXPERT exists specifically
+> > > > to unhide options potentially needed by experts and/or embedded
+> > > > users, make CONFIG_EXPERT automatically imply CONFIG_DEBUG_KERNEL.
+> > > > 
+> > > > Change various debugging options to only reference DEBUG_KERNEL,
+> > > > not EXPERT.
+> > > > 
+> > > > Note that DEBUG_MEMORY_INIT defaulted to !EXPERT, which seemed
+> > > > wrong, since EXPERT should not directly affect anything except
+> > > > the availability of other options.  (And EXPERT definitely
+> > > > shouldn't mean "implicitly turn off default safety features".)
+> > > > 
+> > > > Change it to default to y, which means that turning on EXPERT
+> > > > does not automatically disable it, but will provide the option
+> > > > to disable it.
+> > > > 
+> > > > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> > > > Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > > 
+> > > No, Nacked actually. I'm fine with the v2 that only changed
+> > > the EXPERT config to imply DEBUG_KERNEL. But all the other
+> > > changes here need to be revised, as I outlined in the thread.
+> > 
+> > Fixed in v4; please replace the patch in tip with that.
+> 
+> i applied the much simpler v2 twoliner version instead.
 
+OK...
 
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+So, should I prepare a separate patch which changes the instances of
+DEBUG_KERNEL && EXPERT, or just leave them?
 
----
-
-patch against v3.0-rc2
-compiled & tested on x86_64
-
-regards
-Richard
-
-
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 3412684..9d5b3d5 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -919,8 +919,8 @@ struct perf_event_context {
- 	u64				parent_gen;
- 	u64				generation;
- 	int				pin_count;
--	struct rcu_head			rcu_head;
- 	int				nr_cgroups; /* cgroup events present */
-+	struct rcu_head			rcu_head;
- };
- 
- /*
-
-
+- Josh Triplett
