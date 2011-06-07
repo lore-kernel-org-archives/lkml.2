@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab1FGLSs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 07:18:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64773 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab1FGLSr (ORCPT
+	id S1752920Ab1FGLT2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 07:19:28 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41957 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab1FGLT0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 07:18:47 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=exlEITuShSYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pwlSjyV6AAAA:8 a=1cMp6Op0AAAA:8 a=meVymXHHAAAA:8 a=QnP5dH8upvHjnkEsIAwA:9 a=LaxQagNvQeZdHgUlsjoA:7 a=PUjeQqilurYA:10 a=_1CdXZwv0MQA:10 a=PBs7KpRtM0kA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH] slob/lockdep: Fix gfp flags passed to lockdep
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Matt Mackall <mpm@selenic.com>, Paul Mundt <lethal@linux-sh.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 07 Jun 2011 07:18:45 -0400
-Message-ID: <1307445525.31814.26.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jun 2011 07:19:26 -0400
+MIME-Version: 1.0
+X-Originating-IP: [109.186.65.238]
+In-Reply-To: <201106071122.47804.laurent.pinchart@ideasonboard.com>
+References: <1307053663-24572-1-git-send-email-ohad@wizery.com>
+ <1307053663-24572-2-git-send-email-ohad@wizery.com> <201106071122.47804.laurent.pinchart@ideasonboard.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 7 Jun 2011 14:19:05 +0300
+Message-ID: <BANLkTineGVvmph=Om2FGR_+mkiMW6k7UAw@mail.gmail.com>
+Subject: Re: [RFC 1/6] omap: iommu: generic iommu api migration
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Hiroshi.DOYU@nokia.com, arnd@arndb.de, davidb@codeaurora.org,
+        Joerg.Roedel@amd.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Laurent,
 
-Doing a ktest.pl randconfig, I stumbled across the following bug
-on boot up:
+On Tue, Jun 7, 2011 at 12:22 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+>> +     BUG_ON(!IS_ALIGNED((long)omap_domain->pgtable, IOPGD_TABLE_SIZE));
+>
+> Either __get_free_pages() guarantees that the allocated memory will be aligned
+> on an IOPGD_TABLE_SIZE boundary, in which case the BUG_ON() is unnecessary, or
+> doesn't offer such guarantee, in which case the BUG_ON() will oops randomly.
 
-------------[ cut here ]------------
-WARNING: at /home/rostedt/work/autotest/nobackup/linux-test.git/kernel/lockdep.c:2649 lockdep_trace_alloc+0xed/0x100()
-Hardware name:
-Modules linked in:
-Pid: 0, comm: swapper Not tainted 3.0.0-rc1-test-00054-g1d68b67 #1
-Call Trace:
- [<ffffffff810626ad>] warn_slowpath_common+0xad/0xf0
- [<ffffffff8106270a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff810b537d>] lockdep_trace_alloc+0xed/0x100
- [<ffffffff81182fb0>] __kmalloc_node+0x30/0x2f0
- [<ffffffff81153eda>] pcpu_mem_alloc+0x13a/0x180
- [<ffffffff82be022c>] percpu_init_late+0x48/0xc2
- [<ffffffff82bd630c>] ? mem_init+0xd8/0xe3
- [<ffffffff82bbcc73>] start_kernel+0x1c2/0x449
- [<ffffffff82bbc35c>] x86_64_start_reservations+0x163/0x167
- [<ffffffff82bbc493>] x86_64_start_kernel+0x133/0x142^M
----[ end trace a7919e7f17c0a725 ]---
+Curious, does it oops randomly today ?
+(i just copied this from omap_iommu_probe, where it always existed).
 
-Then I ran a ktest.pl config_bisect and it came up with this config
-as the problem:
+It is a bit ugly though, and thinking on it again, 16KB is not that
+big. We can just use kmalloc here, which does ensure the alignment
+(or, better yet, kzalloc, and then ditch the memset).
 
-  CONFIG_SLOB
+> In both cases BUG_ON() should probably be avoided.
 
-Looking at what is different between SLOB and SLAB and SLUB, I found
-that the gfp flags are masked against gfp_allowed_mask in
-SLAB and SLUB, but not SLOB.
+I disagree; we must check this so user data won't be harmed (hardware
+requirement), and if a memory allocation API fails to meet its
+requirements - that's really bad and user data is again at stake (much
+more will break, not only the iommu driver).
 
-On boot up, interrupts are disabled and lockdep will warn if some flags
-are set in gfp and interrupts are disabled. But these flags are masked
-off with the gfp_allowed_mask during boot. Because SLOB does not
-mask the flags against gfp_allowed_mask it triggers the warn on.
+> This leaks omap_domain->pgtable.
+>
+> The free_pages() call in omap_iommu_remove() should be removed, as
+> omap_iommu_probe() doesn't allocate the pages table anymore.
 
-Adding this mask fixes the bug. I also found that kmem_cache_alloc_node()
-was missing both the mask and the lockdep check, and that was added too.
+thanks !
 
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> You can also remove the the struct iommu::iopgd field.
 
-diff --git a/mm/slob.c b/mm/slob.c
-index 46e0aee..0ae8818 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -482,6 +482,8 @@ void *__kmalloc_node(size_t size, gfp_t gfp, int node)
- 	int align = max(ARCH_KMALLOC_MINALIGN, ARCH_SLAB_MINALIGN);
- 	void *ret;
- 
-+	gfp &= gfp_allowed_mask;
-+
- 	lockdep_trace_alloc(gfp);
- 
- 	if (size < PAGE_SIZE - align) {
-@@ -608,6 +610,10 @@ void *kmem_cache_alloc_node(struct kmem_cache *c, gfp_t flags, int node)
- {
- 	void *b;
- 
-+	flags &= gfp_allowed_mask;
-+
-+	lockdep_trace_alloc(flags);
-+
- 	if (c->size < PAGE_SIZE) {
- 		b = slob_alloc(c->size, flags, c->align, node);
- 		trace_kmem_cache_alloc_node(_RET_IP_, b, c->size,
+No, I can't; it's used when the device is attached to an address space domain.
 
+> You return 0 in the bogus pte/pgd cases. Is that intentional ?
 
+Yes, that's probably the most (if any) reasonable value to return here
+(all other iommu implementations are doing so too).
+
+Thanks,
+Ohad.
