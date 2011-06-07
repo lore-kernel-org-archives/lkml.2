@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836Ab1FGXtX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 19:49:23 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50540 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755896Ab1FGXtW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 19:49:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=jIfIM/+IbM3Qee0Xz6+BmzSiZ/nQ/dSqqZSTAqSHXAXPqvzT1GjhWvu7cNsY3q+qF8
-         H44Jn0UXB8iI3sYFxLNHO80cVTAqLATudGalfBbAp63YbDB8oYqikDP+weKEO6Tc5599
-         psMZkkBILrEBYa2fqjEvXUtRolci6G/7pK0tU=
+	id S1756975Ab1FGXvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 19:51:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45363 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751920Ab1FGXvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 19:51:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,335,1304319600"; 
+   d="scan'208";a="10867248"
+Date: Wed, 8 Jun 2011 07:51:28 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/15] writeback: update dirtied_when for synced inode
+ to prevent livelock
+Message-ID: <20110607235127.GB19547@localhost>
+References: <20110607213236.634026193@intel.com>
+ <20110607213853.635444678@intel.com>
+ <20110607160245.9270aa27.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <4DEEB516.4681.19EE05CD@pageexec.freemail.hu>
-References: <cover.1307292171.git.luto@mit.edu> <4DECDD14.5845.12BA3C18@pageexec.freemail.hu>
- <BANLkTim4sN-bymGPPDU_f9V3FYCWP=PhNA@mail.gmail.com> <4DEEB516.4681.19EE05CD@pageexec.freemail.hu>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 7 Jun 2011 19:49:02 -0400
-X-Google-Sender-Auth: NlMtpFfFd3g9VaEhX1DCGMdvx4k
-Message-ID: <BANLkTimy2AkWxPAOj3JTzXEDak_othZhZA@mail.gmail.com>
-Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
-To: pageexec@freemail.hu
-Cc: Brian Gerst <brgerst@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607160245.9270aa27.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 7, 2011 at 7:32 PM,  <pageexec@freemail.hu> wrote:
->> > do you know what that mucking looks like? ;) prepare for the most complex code
->> > you've ever seen (it's in __bad_area_nosemaphore):
->> >
->> >  779 #ifdef CONFIG_X86_64
->> >  780 »·······if (mm && (error_code & PF_INSTR) && mm->context.vdso) {
->> >  781 »·······»·······if (regs->ip == (unsigned long)vgettimeofday) {
->> >  782 »·······»·······»·······regs->ip = (unsigned long)VDSO64_SYMBOL(mm->context.vdso, gettimeofday);
->> >  783 »·······»·······»·······return;
->> >  784 »·······»·······} else if (regs->ip == (unsigned long)vtime) {
->> >  785 »·······»·······»·······regs->ip = (unsigned long)VDSO64_SYMBOL(mm->context.vdso, clock_gettime);
->> >  786 »·······»·······»·······return;
->> >  787 »·······»·······} else if (regs->ip == (unsigned long)vgetcpu) {
->> >  788 »·······»·······»·······regs->ip = (unsigned long)VDSO64_SYMBOL(mm->context.vdso, getcpu);
->> >  789 »·······»·······»·······return;
->> >  790 »·······»·······}
->> >  791 »·······}
->> >  792 #endif
->>
->> I like this approach, however since we're already in the kernel it
->> makes sense just to run the normal syscall instead of redirecting to
->> the vdso.
->
-> it's not that simple as the page fault occurs not at the actual syscall
-> insn but at the first insn of the given vsyscall function, so you'd have
-> to emulate it carefully to be able to return back the original caller in
-> userland.
->
->
+On Wed, Jun 08, 2011 at 07:02:45AM +0800, Andrew Morton wrote:
+> On Wed, 08 Jun 2011 05:32:38 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
+> 
+> > Explicitly update .dirtied_when on synced inodes, so that they are no
+> > longer considered for writeback in the next round.
+> 
+> It sounds like this somewhat answers my questions for [1/15].
+> 
+> But I'm not seeing a description of exactly what caused the livelock.
 
-My patch (the version that's in tip/x86/vdso) more-or-less does that.
-It's something like six lines of code, including error handling.
+The exact livelock condition is, during sync(1):
 
-__bad_area_nosemaphore is not a fast path, and in fact I tried that
-for the very first version of this code that I wrote.  My recollection
-is that it's noticeably slower than int 0xcc because it has to go
-through the whole VMA lookup.
+(1) no new inodes are dirtied
+(2) an inode being actively dirtied
 
-If you want to submit a patch to switch from int 0xcc to
-__bad_area_nosemaphore, be my guest :)  It will have almost no effect
-on the complexity of the code, and, in fact, you'll probably get a net
-deletion of lines because you can remove all the crud in vmlinux.lds.S
-and some of the mapping code in vsyscall_64.c.
+On (2), the inode will be tagged and synced with .nr_to_write=LONG_MAX.
+When finished, it will be redirty_tail()ed because it's still dirty
+and (.nr_to_write > 0). redirty_tail() won't update its ->dirtied_when
+on condition (1). The sync work will then revisit it on the next
+queue_io() and find it eligible again because its old ->dirtied_when
+predates the sync work start time.
 
---Andy
+I'll add the above to the changelog.
+
+> > We'll do more aggressive "keep writeback as long as we wrote something"
+> > logic in wb_writeback(). The "use LONG_MAX .nr_to_write" trick in commit
+> > b9543dac5bbc ("writeback: avoid livelocking WB_SYNC_ALL writeback") will
+> > no longer be enough to stop sync livelock.
+> > 
+> > It can prevent both of the following livelock schemes:
+> > 
+> > - while true; do echo data >> f; done
+> > - while true; do touch f;        done
+> 
+> You're kidding.  This livelocks sync(1)?  When did we break this?
+
+There are no reported real cases for "touch f" style livelock.  It's
+merely a possibility in theory and the more concurrent meta data
+dirties, the more likelihood it will happen.
+
+> Why is this?  Because the inode keeps on getting rotated to head-of-list?
+
+Yes, when the inode is always redirty_tail()ed without updating its
+->dirtied_when.
+
+Thanks,
+Fengguang
