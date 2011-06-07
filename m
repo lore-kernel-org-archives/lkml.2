@@ -1,130 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab1FGPfc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 11:35:32 -0400
-Received: from stinky.trash.net ([213.144.137.162]:54760 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab1FGPfa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 11:35:30 -0400
-Message-ID: <4DEE4538.1020404@trash.net>
-Date: Tue, 07 Jun 2011 17:35:20 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+	id S1756771Ab1FGPgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 11:36:10 -0400
+Received: from sous-sol.org ([216.99.217.87]:43210 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753582Ab1FGPgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 11:36:09 -0400
+Date: Tue, 7 Jun 2011 08:35:35 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Chris Wright <chrisw@sous-sol.org>,
+        padmanabh ratnakar <pratnakarlx@gmail.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        iommu <iommu@lists.linux-foundation.org>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: Seeing DMAR errors after multiple load/unload with SR-IOV
+Message-ID: <20110607153535.GA23047@sequoia.sous-sol.org>
+References: <BANLkTi=q0f8aYc2+fhaY5yFRRfgkOOME-g@mail.gmail.com>
+ <1307398661.5901.14.camel@x201>
+ <20110606223451.GW23047@sequoia.sous-sol.org>
+ <BANLkTintUEWqwhUmR2MYC0jixqEi-wNJpg@mail.gmail.com>
+ <20110607133804.GX23047@sequoia.sous-sol.org>
+ <1307454415.24181.46.camel@i7.infradead.org>
+ <20110607151032.GZ23047@sequoia.sous-sol.org>
+ <1307460801.24181.51.camel@i7.infradead.org>
 MIME-Version: 1.0
-To: Brad Campbell <brad@fnarfbargle.com>
-CC: Bart De Schuymer <bdschuym@pandora.be>, kvm@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
-References: <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com> <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com> <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com> <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com> <isavsg$3or$1@dough.gmane.org> <4DE906C0.6060901@fnarfbargle.com> <4DED344D.7000005@pandora.be> <4DED9C23.2030408@fnarfbargle.com> <4DEE27DE.7060004@trash.net> <4DEE3859.6070808@fnarfbargle.com>
-In-Reply-To: <4DEE3859.6070808@fnarfbargle.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307460801.24181.51.camel@i7.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.06.2011 16:40, Brad Campbell wrote:
-> On 07/06/11 21:30, Patrick McHardy wrote:
->> On 07.06.2011 05:33, Brad Campbell wrote:
->>> On 07/06/11 04:10, Bart De Schuymer wrote:
->>>> Hi Brad,
->>>>
->>>> This has probably nothing to do with ebtables, so please rmmod in case
->>>> it's loaded.
->>>> A few questions I didn't directly see an answer to in the threads I
->>>> scanned...
->>>> I'm assuming you actually use the bridging firewall functionality. So,
->>>> what iptables modules do you use? Can you reduce your iptables rules to
->>>> a core that triggers the bug?
->>>> Or does it get triggered even with an empty set of firewall rules?
->>>> Are you using a stock .35 kernel or is it patched?
->>>> Is this something I can trigger on a poor guy's laptop or does it
->>>> require specialized hardware (I'm catching up on qemu/kvm...)?
->>>
->>> Not specialised hardware as such, I've just not been able to reproduce
->>> it outside of this specific operating scenario.
->>
->> The last similar problem we've had was related to the 32/64 bit compat
->> code. Are you running 32 bit userspace on a 64 bit kernel?
+* David Woodhouse (dwmw2@infradead.org) wrote:
+> On Tue, 2011-06-07 at 08:10 -0700, Chris Wright wrote:
+> > * David Woodhouse (dwmw2@infradead.org) wrote:
+> > > On Tue, 2011-06-07 at 06:38 -0700, Chris Wright wrote:
+> > > > I think we still leak the list entry though.  Bottom line is that we
+> > > > need to handle hotplug ADD_DEVICE and DEL_DEVICE notifications.  We
+> > > > happen to pick up ADD_DEVICE by accident, but it's all pretty sloppy. 
+> > > 
+> > > Yeah, keeping a list of possible stale 'pci_dev' pointers is stupid. We
+> > > should figure out the matching DMAR unit directly from the ACPI table at
+> > > ADD_DEVICE time, and store it in pdev->archdata.iommu.
+> > > 
+> > > I saw patches which were going in that direction...
+> > 
+> > Cool, where are they?  I'm working on something similar, and missed them.
 > 
-> No, 32 bit Guest OS, but a completely 64 bit userspace on a 64 bit kernel.
-> 
-> Userspace is current Debian Stable. Kernel is Vanilla and qemu-kvm is
-> current git
-> 
-> 
->>> I can't trigger it with empty firewall rules as it relies on a DNAT to
->>> occur. If I try it directly to the internal IP address (as I have to
->>> without netfilter loaded) then of course nothing fails.
->>>
->>> It's a pain in the bum as a fault, but it's one I can easily reproduce
->>> as long as I use the same set of circumstances.
->>>
->>> I'll try using 3.0-rc2 (current git) tonight, and if I can reproduce it
->>> on that then I'll attempt to pare down the IPTABLES rules to a bare
->>> minimum.
->>>
->>> It is nothing to do with ebtables as I don't compile it. I'm not really
->>> sure about "bridging firewall" functionality. I just use a couple of
->>> hand coded bash scripts to set the tables up.
->>
->>  From one of your previous mails:
->>
->>> # CONFIG_BRIDGE_NF_EBTABLES is not set
->>
->> How about CONFIG_BRIDGE_NETFILTER?
->>
-> 
-> It was compiled in.
-> 
-> With the following table set I was able to reproduce the problem on
-> 3.0-rc2. Replaced my IP with xxx.xxx.xxx.xxx, but otherwise unmodified
+> [PATCH] pci, dmar: Update dmar units devices list during hotplug
 
-Which kernel was the last version without this problem?
+Oh yeah, thanks for the reminder.
 
-> root@srv:~# iptables-save
-> # Generated by iptables-save v1.4.10 on Tue Jun  7 22:11:30 2011
-> *filter
-> :INPUT ACCEPT [978:107619]
-> :FORWARD ACCEPT [142:7068]
-> :OUTPUT ACCEPT [1659:291870]
-> -A INPUT -i ppp0 -m state --state RELATED,ESTABLISHED -j ACCEPT
-> -A INPUT ! -i ppp0 -m state --state NEW -j ACCEPT
-> -A INPUT -i ppp0 -j DROP
-> COMMIT
-> # Completed on Tue Jun  7 22:11:30 2011
-> # Generated by iptables-save v1.4.10 on Tue Jun  7 22:11:30 2011
-> *nat
-> :PREROUTING ACCEPT [813:49170]
-> :INPUT ACCEPT [91:7090]
-> :OUTPUT ACCEPT [267:20731]
-> :POSTROUTING ACCEPT [296:22281]
-> -A PREROUTING -d xxx.xxx.xxx.xxx/32 ! -i ppp0 -p tcp -m tcp --dport 443
-> -j DNAT --to-destination 192.168.253.198
-> COMMIT
-> # Completed on Tue Jun  7 22:11:30 2011
-> # Generated by iptables-save v1.4.10 on Tue Jun  7 22:11:30 2011
-> *mangle
-> :PREROUTING ACCEPT [2729:274392]
-> :INPUT ACCEPT [2508:262976]
-> :FORWARD ACCEPT [142:7068]
-> :OUTPUT ACCEPT [1674:293701]
-> :POSTROUTING ACCEPT [2131:346411]
-> -A FORWARD -o ppp0 -p tcp -m tcp --tcp-flags SYN,RST SYN -m tcpmss --mss
-> 1400:1536 -j TCPMSS --clamp-mss-to-pmtu
-> COMMIT
-> # Completed on Tue Jun  7 22:11:30 2011
-
-The main suspects would be NAT and TCPMSS. Did you also try whether
-the crash occurs with only one of these these rules?
-
-> I've just compiled out CONFIG_BRIDGE_NETFILTER and can no longer access
-> the address the way I was doing it, so that's a no-go for me.
-
-That's really weird since you're apparently not using any bridge
-netfilter features. It shouldn't have any effect besides changing
-at which point ip_tables is invoked. How are your network devices
-configured (specifically any bridges)?
+thanks,
+-chris
