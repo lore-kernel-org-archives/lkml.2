@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab1FGOpy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 10:45:54 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:10231 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700Ab1FGOpu (ORCPT
+	id S1756245Ab1FGOpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 10:45:46 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:65458 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756212Ab1FGOpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 10:45:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=Eayrl2bQw0pGxS6yncAXnC4H31Osx2MinLfV5nxZxEqRe9B53x8kEKD+M/H4LyRZ+q
-         UISO4B6GL/dbBGRPlIxw==
-Date: Tue, 7 Jun 2011 16:45:33 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, acme@redhat.com
-Subject: [PATCH] perf: bug fix and cleanups for perf lock
-Message-ID: <20110607144533.GA7359@quad>
+	Tue, 7 Jun 2011 10:45:44 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/bIUzxZu2ZzB08hK0jFhT8
+Date: Tue, 7 Jun 2011 17:45:35 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH v2 03/12] OMAP3: Move common pmic configuration to
+ pmic-common
+Message-ID: <20110607144534.GA27477@atomide.com>
+References: <1307456297-15010-1-git-send-email-peter.ujfalusi@ti.com>
+ <1307456297-15010-4-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1307456297-15010-4-git-send-email-peter.ujfalusi@ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Peter Ujfalusi <peter.ujfalusi@ti.com> [110607 17:14]:
+> Reduce the amount of duplicated code by moving the common
+> configuration for twl4030/5030/tpsxx to the pmic-common file.
+> Use the omap3_pmic_config function from board files to
+> properly configure the PMIC with the common fields.
+...
 
-This patch fixes the event names used by perf lock. The :r suffix
-is not supported anymore, it seems.
+> --- a/arch/arm/mach-omap2/pmic-common.h
+> +++ b/arch/arm/mach-omap2/pmic-common.h
+> @@ -2,6 +2,9 @@
+>  #define __OMAP_PMIC_COMMON__
+>  
+>  #define TWL_COMMON_PDATA_USB		(1 << 0)
+> +#define TWL_COMMON_PDATA_BCI		(1 << 1)
+> +#define TWL_COMMON_PDATA_MADC		(1 << 2)
+> +#define TWL_COMMON_PDATA_CODEC		(1 << 3)
 
-The patch also cleans up the help and man page to reflect
-actual options. The perf lock trace option does not exist
-anymore, AFAICT. When you use it, you get an error but you
-have no idea why.
+This is looking good, thanks for cleaning up the twl bloat in
+board-*.c files :)
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
+Maybe already define TWL_COMMON_PDATA_AUDIO here so you can
+drop most of patch 7/12?
 
-diff --git a/tools/perf/Documentation/perf-lock.txt b/tools/perf/Documentation/perf-lock.txt
-index 4a26a2f..64c7a5a 100644
---- a/tools/perf/Documentation/perf-lock.txt
-+++ b/tools/perf/Documentation/perf-lock.txt
-@@ -8,7 +8,7 @@ perf-lock - Analyze lock events
- SYNOPSIS
- --------
- [verse]
--'perf lock' {record|report|trace}
-+'perf lock' {record|report|script}
- 
- DESCRIPTION
- -----------
-@@ -20,7 +20,7 @@ and statistics with this 'perf lock' command.
-   produces the file "perf.data" which contains tracing
-   results of lock events.
- 
--  'perf lock trace' shows raw lock events.
-+  'perf lock script' shows raw lock events.
- 
-   'perf lock report' reports statistical data.
- 
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 9ac05aa..c24b820 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -925,7 +925,7 @@ static const struct option info_options[] = {
- };
- 
- static const char * const lock_usage[] = {
--	"perf lock [<options>] {record|trace|report}",
-+	"perf lock [<options>] {record|script|report|info}",
- 	NULL
- };
- 
-@@ -942,10 +942,10 @@ static const char *record_args[] = {
- 	"-f",
- 	"-m", "1024",
- 	"-c", "1",
--	"-e", "lock:lock_acquire:r",
--	"-e", "lock:lock_acquired:r",
--	"-e", "lock:lock_contended:r",
--	"-e", "lock:lock_release:r",
-+	"-e", "lock:lock_acquire",
-+	"-e", "lock:lock_acquired",
-+	"-e", "lock:lock_contended",
-+	"-e", "lock:lock_release",
- };
- 
- static int __cmd_record(int argc, const char **argv)
+If you need both then you can temporarily have:
+
+#define TWL_COMMON_PDATA_CODEC	TWL_COMMON_PDATA_AUDIO
+
+Regards,
+
+Tony
