@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758696Ab1FGV4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 17:56:51 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44164 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab1FGV4u (ORCPT
+	id S1758742Ab1FGV5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:57:23 -0400
+Received: from server655-han.de-nserver.de ([85.158.177.45]:45355 "EHLO
+	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750966Ab1FGV5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 17:56:50 -0400
-Date: Tue, 7 Jun 2011 23:56:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tim Sander <tstone@vlsi.informatik.tu-darmstadt.de>
-cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Threaded Irqs (was "Changing Kernel thread priorities")
-In-Reply-To: <201106072328.46186.tstone@vlsi.informatik.tu-darmstadt.de>
-Message-ID: <alpine.LFD.2.02.1106072345580.11814@ionos>
-References: <17185480.5304.1307435255996.JavaMail.root@WARSBL214.highway.tel ekom.at> <4DEDE232.4090007@unican.es> <alpine.LFD.2.02.1106071041550.11814@ionos> <201106072328.46186.tstone@vlsi.informatik.tu-darmstadt.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 7 Jun 2011 17:57:22 -0400
+Message-ID: <4DEE9EDA.90001@profihost.ag>
+Date: Tue, 07 Jun 2011 23:57:46 +0200
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; de; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: david@lang.hm
+CC: Theodore Tso <tytso@MIT.EDU>, linux-kernel@vger.kernel.org
+Subject: Re: XFS problem in 2.6.32
+References: <4DEE1D96.6020208@profihost.ag> <6D8DA3D2-D90B-4D82-BDC9-C3F0264A68BF@mit.edu> <4DEE2C70.8060301@profihost.ag> <alpine.DEB.2.02.1106071239530.28905@asgard.lang.hm>
+In-Reply-To: <alpine.DEB.2.02.1106071239530.28905@asgard.lang.hm>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Jun 2011, Tim Sander wrote:
-> Nevertheless are there still scheduling latencies for the usermode
-> handler thread which then runs at rt prio 99 for about 1ms. I know
-> this is not an preempt-rt kernel but i hoped to get better values out
-> of this configuration. 
-> 
-> So if anybody has an idea how to get better latencies out of a 2.6.39
-> kernel, please let me know.
+> whoever the maintainer of the -stable/-longterm tree is (be it an
+> individual or a team employeed by some comapny) then looks at the patch
+> and considers backporting it (if it's too hard, or to intrusive, they
+> may decide not to).
+So i have to contact Greg Kohan from SUSE directly?
 
-The mainline forced irq thread handling is no guarantee for lower
-latencies. We need to disable preemption via local_bh_disable() for
-the forced threaded interrupts to satisfy the handler vs. softirq
-assumptions. So you might get long lasting preempt disabled regions
-due to long running interrupt handlers. Aside of that you still can
-get long periods due to code which runs with preemption or interrupts
-disabled. The forced threaded option has no way to change that.
+> the idea of the lonterm kernels is that organizations need to maintain a
+> kernel for a long time due to commitments that they have made (Debian
+> doesn't want to change the kernel it ships in a stable version, RedHat
+> doesn't want to change the kernel version in a RHEL release, etc), and
+> so they publicly announce this so that anyone else wanting to use the
+> same kernel version can share in the work (and therefor everyone can
+> benifit from each other's work)
+That was what i thoght. So a bug like this should get fixed right? 
+Otherwise this makes no sense. Sadly Redhat has ported the fix back in 
+his RHEL 6 2.6.32 kernel but they haven't send the patch to stable / 
+vanilla team.
 
-It would be interesting to find the root cause for those >1ms
-latencies. Tracing is your friend.
-
-Thanks,
-
-	tglx
+Stefan
