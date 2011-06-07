@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab1FGNqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 09:46:09 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:60768 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab1FGNqH (ORCPT
+	id S1754516Ab1FGN5F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 09:57:05 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:50027 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767Ab1FGN5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 09:46:07 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DEE2D7D.6070506@cam.ac.uk>
-Date: Tue, 07 Jun 2011 14:54:05 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+	Tue, 7 Jun 2011 09:57:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [PATCH/RFC] m68k/bitops: Make bitmap data pointer of atomic ops volatile
+Date: Tue, 7 Jun 2011 15:56:58 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, dri-devel@lists.freedesktop.org
+References: <1307390873-29687-1-git-send-email-geert@linux-m68k.org> <201106071322.29884.arnd@arndb.de> <20110607133500.GX29924@decadent.org.uk>
+In-Reply-To: <20110607133500.GX29924@decadent.org.uk>
 MIME-Version: 1.0
-To: Ben Dooks <ben-i2c@fluff.org>
-CC: anish <anish198519851985@gmail.com>, gregkh@suse.de,
-        manuel.stahl@iis.fraunhofer.de, lucas.demarchi@profusion.mobi,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, Linux I2C <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH] staging iio: Replace kmalloc with local variable
-References: <1307450354.1516.23.camel@anish-desktop> <4DEE20E7.4020008@cam.ac.uk> <20110607134135.GD15795@trinity.fluff.org>
-In-Reply-To: <20110607134135.GD15795@trinity.fluff.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106071556.58381.arnd@arndb.de>
+X-Provags-ID: V02:K0:r5BT6LqmxViop98dbdqP0HSmZvEFb1EGW5Uy4CmBHJs
+ zNAj10iKmtxk3+cbLwSyn+QgN84WEtjamKXHJ72o1VAGIBa4M8
+ Z+AVBlW83grJQhRGNsRFj115BHMblVcGo6PYJwb9L8RZS3px/4
+ OH5PYzV9yw13XVnA7ORVEzNCsk+9S0hb+kHnQNXl4C96GQlzx5
+ B2hjwigENpNHuTh38R5hw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/11 14:41, Ben Dooks wrote:
-> On Tue, Jun 07, 2011 at 02:00:23PM +0100, Jonathan Cameron wrote:
->> On 06/07/11 13:39, anish wrote:
->>> From: anish kumar <anish198519851985@gmail.com>
->>>
->>> replaced kmalloc with local variable as I2C(in this case) doesn't require
->>> kmalloc memory it can do with stack memory.
->> I've cc'd linux-i2c just to check I'm right about the whole i2c doesn't need
->> dma safe buffers bit...
-> 
-> No, it is down to the i2c driver, and from recollection dma from stack is
-> not recommended, due to things like cache line alignment. Please do not
-> do this.
-Then lets drop this.  Sorry Anish, seems I led you down the garden path.
-I'll check all my i2c drivers don't do this...
->  
->>> Signed-off-by: anish kumar <anish198519851985@gmail.com>
->> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
->>> ---
->>>  drivers/staging/iio/adc/max1363_core.c |    5 +----
->>>  1 files changed, 1 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/drivers/staging/iio/adc/max1363_core.c b/drivers/staging/iio/adc/max1363_core.c
->>> index 1037087..9462230 100644
->>> --- a/drivers/staging/iio/adc/max1363_core.c
->>> +++ b/drivers/staging/iio/adc/max1363_core.c
->>> @@ -207,15 +207,12 @@ static int max1363_write_basic_config(struct i2c_client *client,
->>>  				      unsigned char d2)
->>>  {
->>>  	int ret;
->>> -	u8 *tx_buf = kmalloc(2, GFP_KERNEL);
->>> +	u8 tx_buf[2];
->>>  
->>> -	if (!tx_buf)
->>> -		return -ENOMEM;
->>>  	tx_buf[0] = d1;
->>>  	tx_buf[1] = d2;
->>>  
->>>  	ret = i2c_master_send(client, tx_buf, 2);
->>> -	kfree(tx_buf);
->>>  
->>>  	return (ret > 0) ? 0 : ret;
->>>  }
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+On Tuesday 07 June 2011, Ben Hutchings wrote:
+> On Tue, Jun 07, 2011 at 01:22:29PM +0200, Arnd Bergmann wrote:
 
+> > I guess what happened is that some variables are traditionally marked
+> > as volatile although they shouldn't be, and most architectures have
+> > adapted their bitops to make the warnings go away. If you see more
+> > warnings of that kind, it's probably fine to just do the same on m68k.
+> > The volatile modifier doesn't really hurt in this case.
+>  
+> These operations are required to be atomic and therefore they
+> must be suitable for use with volatile-qualified variables.
+
+As I said, it's not wrong for them to have a volatile qualifier in the
+argument list. However, there should also not be the need for the
+qualifier in any of the callers, because the bitops only work if
+all accesses to the data are done through bitops functions, and that
+means that the qualifier on the variable is completely meaningless.
+
+	Arnd
