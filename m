@@ -1,35 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab1FGXoB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 19:44:01 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:36216 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab1FGXoA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 19:44:00 -0400
-Date: Wed, 8 Jun 2011 01:43:56 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/5] Fix mismatched variable in rcutree_trace.c
-Message-ID: <20110607234356.GA27166@one.firstfloor.org>
-References: <1307485593-27196-1-git-send-email-andi@firstfloor.org> <1307485593-27196-2-git-send-email-andi@firstfloor.org> <alpine.LFD.2.02.1106080040320.11814@ionos> <20110607231306.GH2286@linux.vnet.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110607231306.GH2286@linux.vnet.ibm.com>
-User-Agent: Mutt/1.4.2.2i
+	id S932678Ab1FHAYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 20:24:52 -0400
+Received: from fnarfbargle.com ([93.93.131.224]:59547 "EHLO fnarfbargle.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756364Ab1FHAYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 20:24:50 -0400
+Message-ID: <4DEEB7BF.9000801@fnarfbargle.com>
+Date: Wed, 08 Jun 2011 07:43:59 +0800
+From: Brad Campbell <brad@fnarfbargle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Patrick McHardy <kaber@trash.net>
+CC: Bart De Schuymer <bdschuym@pandora.be>, kvm@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+References: <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com> <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com> <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com> <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com> <isavsg$3or$1@dough.gmane.org> <4DE906C0.6060901@fnarfbargle.com> <4DED344D.7000005@pandora.be> <4DED9C23.2030408@fnarfbargle.com> <4DEE27DE.7060004@trash.net> <4DEE3859.6070808@fnarfbargle.com> <4DEE4538.1020404@trash.net>
+In-Reply-To: <4DEE4538.1020404@trash.net>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hmmm...  Some arches have signed CPU numbers while others have unsigned
-> CPU numbers.  I do use "-1" to mean "no CPU" in some cases (for example,
-> in rcu_node_kthread_setaffinity()), so I guess for consistency I should
-> be using "int" everywhere.
+On 07/06/11 23:35, Patrick McHardy wrote:
 
-Do I hear that "int" is ok for you? If yes I will not revise the patch
-and please merge it.  If it needs changes please let me know.
+> The main suspects would be NAT and TCPMSS. Did you also try whether
+> the crash occurs with only one of these these rules?
 
--Andi
+To be honest I'm actually having trouble finding where TCPMSS is 
+actually set in that ruleset. This is a production machine so I can only 
+take it down after about 9PM at night. I'll have another crack at it 
+tonight.
+
+>> I've just compiled out CONFIG_BRIDGE_NETFILTER and can no longer access
+>> the address the way I was doing it, so that's a no-go for me.
+>
+> That's really weird since you're apparently not using any bridge
+> netfilter features. It shouldn't have any effect besides changing
+> at which point ip_tables is invoked. How are your network devices
+> configured (specifically any bridges)?
+>
+
+I have one bridge with all my virtual machines on it.
+
+In this particular instance the packets leave VM A destined for the IP 
+address of ppp0 (the external interface). This is intercepted by the 
+DNAT PREROUTING rule above and shunted back to VM B.
+
+The VM's are on br1 and the external address is ppp0. Without 
+CONFIG_BRIDGE_NETFILTER compiled in I can see the traffic entering and 
+leaving VM B with tcpdump, but the packets never seem to get back to VM A.
+
+VM A is XP 32 bit, VM B is Linux. I have some other Linux VM's, so I'll 
+do some more testing tonight between those to see where the packets are 
+going without CONFIG_BRIDGE_NETFILTER set.
