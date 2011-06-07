@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab1FGMN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:13:58 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38050
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753034Ab1FGMN4 (ORCPT
+	id S1752904Ab1FGMNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:13:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64872 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032Ab1FGMNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:13:56 -0400
-Date: Tue, 7 Jun 2011 08:13:36 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org
-Subject: writeback merge status, was Re: [PATCH 00/18] writeback fixes and
- cleanups for 2.6.40 (v3)
-Message-ID: <20110607121335.GA14080@infradead.org>
-References: <20110519214530.939830917@intel.com>
- <20110523090739.GA27894@infradead.org>
- <20110523092838.GA25829@localhost>
- <20110524032859.GA17429@localhost>
- <20110601153142.0bf83332.akpm@linux-foundation.org>
- <20110602022919.GB6015@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110602022919.GB6015@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 7 Jun 2011 08:13:42 -0400
+X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=auj7d2cZCtoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=t52j4xFPsvk137C7FXEA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH][GIT PULL] slob/lockdep: Fix gfp flags passed to lockdep
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Paul Mundt <lethal@linux-sh.org>, Nick Piggin <npiggin@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110607115137.GA25798@elte.hu>
+References: <1307369665.31814.20.camel@gandalf.stny.rr.com>
+	 <alpine.DEB.2.00.1106062106580.22635@chino.kir.corp.google.com>
+	 <BANLkTikmp5CFKykBXaPUP0SBZEto1idDsA@mail.gmail.com>
+	 <20110607101948.GB21356@elte.hu>
+	 <1307445322.31814.23.camel@gandalf.stny.rr.com>
+	 <20110607115137.GA25798@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 07 Jun 2011 08:13:40 -0400
+Message-ID: <1307448820.9218.1.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks like we once again got no writeback fixes merged for $NEXT,
-even with Wu having a very nice, well reviewed and tested series of 
-fairly trivial patches.
+On Tue, 2011-06-07 at 13:51 +0200, Ingo Molnar wrote:
 
-I'm getting really frustrated about this.  We need a lot of work to
-make writeback not suck with todays hardware and workloads, nevermind
-tomorrows, and we're getting stalled for completely untransparent
-reasons.  Basically people doing the work move ahead, then it gets stuck
-in -mm which doesn't even get into linux-next and gets completely
-stalled there.  So my vote is to have a proper peer-reviewed writeback
-git tree, handled like all the other git trees we have, that is
-maintained e.g. by Wu and make progress with that.
+> Pekka could pull it as well, since you've already tested that tree 
+> :-)
+> 
+> I don't think this tree includes any other commits, right?
+> 
 
-After fixing all those basic issues we have other big items like
-I/O-less balance_dirty_pages and the memcg integration on our plate,
-and with the current rate of progress we won't get there before Linux
-4.0.
+Nope, it was based off of commit:
+
+5db1256a5131d3b133946fa02ac9770a784e6eb2
+
+which is already in Linus's tree, and has just this one commit.
+
+-- Steve
+
 
