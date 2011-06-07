@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab1FGQN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 12:13:28 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:48840 "EHLO e1.ny.us.ibm.com"
+	id S1754422Ab1FGQIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 12:08:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57907 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753645Ab1FGQN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 12:13:26 -0400
-Date: Tue, 7 Jun 2011 21:36:12 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jonathan Corbet <corbet@lwn.net>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 20/22] 20: perf: perf interface for
- uprobes
-Message-ID: <20110607160612.GB8876@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607130216.28590.5724.sendpatchset@localhost6.localdomain6>
- <20110607133039.GA4929@infradead.org>
- <20110607133853.GC9949@in.ibm.com>
- <20110607142116.GA8311@ghostprotocols.net>
+	id S1750941Ab1FGQI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 12:08:29 -0400
+Date: Tue, 7 Jun 2011 19:08:30 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: Re: [PATCHv2 RFC 0/4] virtio and vhost-net capacity handling
+Message-ID: <20110607160830.GB17581@redhat.com>
+References: <cover.1307029008.git.mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110607142116.GA8311@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <cover.1307029008.git.mst@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> [2011-06-07 11:21:16]:
+On Thu, Jun 02, 2011 at 06:42:35PM +0300, Michael S. Tsirkin wrote:
+> OK, here's a new attempt to use the new capacity api.  I also added more
+> comments to clarify the logic.  Hope this is more readable.  Let me know
+> pls.
+> 
+> This is on top of the patches applied by Rusty.
+> 
+> Warning: untested. Posting now to give people chance to
+> comment on the API.
 
-> Em Tue, Jun 07, 2011 at 07:08:53PM +0530, Ananth N Mavinakayanahalli escreveu:
-> > On Tue, Jun 07, 2011 at 09:30:39AM -0400, Christoph Hellwig wrote:
-> > > On Tue, Jun 07, 2011 at 06:32:16PM +0530, Srikar Dronamraju wrote:
-> > > > Enhances perf probe to user space executables and libraries.
-> > > > Provides very basic support for uprobes.
-> 
-> > > Nice.  Does this require full debug info for symbolic probes,
-> > > or can it also work with simple symbolc information?
-> 
-> > It works only with symbol information for now.
-> > It doesn't (yet) know how to use debuginfo :-)
-> 
-> 'perf probe' uses perf symbol library, so it really don't have to know
-> from where symbol resolution information is obtained, only if it needs
-> things that are _just_ on debuginfo, such as line information, etc.
-> 
-> But then that is also already supported in 'perf probe'.
-> 
-> Or is there something else in particular you're thinking?
-> 
+OK, this seems to have survived some testing so far,
+after I dropped patch 4 and fixed build for patch 3
+(build fixup patch sent in reply to the original).
 
-What Ananth was saying was that perf probe for uprobes still has to take
-advantage of tracing using line number; Also it is still restricted to
-showing only register contents and we still have to add support for variables. I know that perf symbol library has support for that
-just that we have to enable it for uprobes.
+I'll be mostly offline until Sunday, would appreciate
+testing reports.
 
--- 
-Thanks and Regards
-Srikar
+git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git
+virtio-net-xmit-polling-v2
+git://git.kernel.org/pub/scm/linux/kernel/git/mst/qemu-kvm.git
+virtio-net-event-idx-v3
+
+Thanks!
+
+> Changes from v1:
+> - fix comment in patch 2 to correct confusion noted by Rusty
+> - rewrite patch 3 along the lines suggested by Rusty
+>   note: it's not exactly the same but I hope it's close
+>   enough, the main difference is that mine does limited
+>   polling even in the unlikely xmit failure case.
+> - added a patch to not return capacity from add_buf
+>   it always looked like a weird hack
+> 
+> Michael S. Tsirkin (4):
+>   virtio_ring: add capacity check API
+>   virtio_net: fix tx capacity checks using new API
+>   virtio_net: limit xmit polling
+>   Revert "virtio: make add_buf return capacity remaining:
+> 
+>  drivers/net/virtio_net.c     |  111 ++++++++++++++++++++++++++----------------
+>  drivers/virtio/virtio_ring.c |   10 +++-
+>  include/linux/virtio.h       |    7 ++-
+>  3 files changed, 84 insertions(+), 44 deletions(-)
+> 
+> -- 
+> 1.7.5.53.gc233e
