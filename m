@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab1FGHee (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 03:34:34 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51612 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab1FGHeb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 03:34:31 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 7 Jun 2011 16:27:10 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v8 03/12] memcg: add mem_cgroup_mark_inode_dirty()
-Message-Id: <20110607162710.0913759e.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1307117538-14317-4-git-send-email-gthelen@google.com>
-References: <1307117538-14317-1-git-send-email-gthelen@google.com>
-	<1307117538-14317-4-git-send-email-gthelen@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751693Ab1FGH2T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 03:28:19 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40897 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751055Ab1FGH2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 03:28:17 -0400
+Date: Tue, 7 Jun 2011 09:28:13 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Subject: Re: [PATCH] kvm: Fix build warnings
+Message-ID: <20110607072813.GC21263@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+	Ingo Molnar <mingo@elte.hu>, kvm@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>,
+	Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+References: <20110530124600.GB494@eferding.osrc.amd.com>
+ <1306786278-12219-1-git-send-email-bp@alien8.de>
+ <20110531073824.GA17999@elte.hu>
+ <4DE4A4E7.80503@redhat.com>
+ <20110531102655.GC24172@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110531102655.GC24172@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  3 Jun 2011 09:12:09 -0700
-Greg Thelen <gthelen@google.com> wrote:
+On Tue, May 31, 2011 at 12:26:55PM +0200, Ingo Molnar wrote:
+> 
+> * Avi Kivity <avi@redhat.com> wrote:
+> 
+> > On 05/31/2011 10:38 AM, Ingo Molnar wrote:
+> > >* Borislav Petkov<bp@alien8.de>  wrote:
+> > >
+> > >>  +++ b/arch/x86/kvm/paging_tmpl.h
+> > >>  @@ -121,7 +121,7 @@ static int FNAME(walk_addr_generic)(struct guest_walker *walker,
+> > >>   				gva_t addr, u32 access)
+> > >>   {
+> > >>   	pt_element_t pte;
+> > >>  -	pt_element_t __user *ptep_user;
+> > >>  +	pt_element_t __user *uninitialized_var(ptep_user);
+> > >
+> > >Note that doing this is actually actively dangerous for two reasons.
+> > >
+> > >
+> > 
+> > <snip lots of good advice>
+> > 
+> > > Please fix it instead.
+> > 
+> > s/instead/in addition/; while all those changes are good, they are 
+> > much too large for 3.0.  Let's push the simple fix for 3.0 and 
+> > queue the bigger refactoring to 3.1.
+> 
+> Yeah, that's probably wise, this is a tricky function.
 
-> Create the mem_cgroup_mark_inode_dirty() routine, which is called when
-> an inode is marked dirty.  In kernels without memcg, this is an inline
-> no-op.
-> 
-> Add i_memcg field to struct address_space.  When an inode is marked
-> dirty with mem_cgroup_mark_inode_dirty(), the css_id of current memcg is
-> recorded in i_memcg.  Per-memcg writeback (introduced in a latter
-> change) uses this field to isolate inodes associated with a particular
-> memcg.
-> 
-> The type of i_memcg is an 'unsigned short' because it stores the css_id
-> of the memcg.  Using a struct mem_cgroup pointer would be larger and
-> also create a reference on the memcg which would hang memcg rmdir
-> deletion.  Usage of a css_id is not a reference so cgroup deletion is
-> not affected.  The memcg can be deleted without cleaning up the i_memcg
-> field.  When a memcg is deleted its pages are recharged to the cgroup
-> parent, and the related inode(s) are marked as shared thus
-> disassociating the inodes from the deleted cgroup.
-> 
-> A mem_cgroup_mark_inode_dirty() tracepoint is also included to allow for
-> easier understanding of memcg writeback operation.
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+So, any progress on this front? Warning is still there in -rc2.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Thanks.
 
+-- 
+Regards/Gruss,
+    Boris.
