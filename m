@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab1FGNlH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 09:41:07 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50604 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753916Ab1FGNlF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 09:41:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=bgOjXlKwj5TWoa+RebUBUvVdvGwjM5WIClsRm7r6mXycYY2b85Nj9aNdIUeUzUiD+a
-         hiIdScaY4XKLmEXUOWndVEhKI6RT3AXZ8hieQXT+lz6WiTJNEhInegWvkUcHhJDEqLGD
-         WbcqCSscoxtDMhFVX5NPes5xsz34nQuxBF2aQ=
+	id S1754980Ab1FGNlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 09:41:42 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:36554 "EHLO trinity.fluff.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754001Ab1FGNll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 09:41:41 -0400
+Date: Tue, 7 Jun 2011 14:41:35 +0100
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: anish <anish198519851985@gmail.com>, gregkh@suse.de,
+        manuel.stahl@iis.fraunhofer.de, lucas.demarchi@profusion.mobi,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, Linux I2C <linux-i2c@vger.kernel.org>
+Subject: Re: [PATCH] staging iio: Replace kmalloc with local variable
+Message-ID: <20110607134135.GD15795@trinity.fluff.org>
+References: <1307450354.1516.23.camel@anish-desktop> <4DEE20E7.4020008@cam.ac.uk>
 MIME-Version: 1.0
-Date: Tue, 7 Jun 2011 21:41:03 +0800
-Message-ID: <BANLkTimZ8=YYZXZSzauy5ASsP0kwti8uxQ@mail.gmail.com>
-Subject: [PATCH] sched: correct testing need_resched in mutex_spin_on_owner()
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DEE20E7.4020008@cam.ac.uk>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is suppose to check the owner task that is not absolutly running on the
-local CPU, and if NEED_RESCHED is happenly set on the current task of local
-CPU, we get incorrect result.
+On Tue, Jun 07, 2011 at 02:00:23PM +0100, Jonathan Cameron wrote:
+> On 06/07/11 13:39, anish wrote:
+> > From: anish kumar <anish198519851985@gmail.com>
+> > 
+> > replaced kmalloc with local variable as I2C(in this case) doesn't require
+> > kmalloc memory it can do with stack memory.
+> I've cc'd linux-i2c just to check I'm right about the whole i2c doesn't need
+> dma safe buffers bit...
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
- kernel/sched.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+No, it is down to the i2c driver, and from recollection dma from stack is
+not recommended, due to things like cache line alignment. Please do not
+do this.
+ 
+> > Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> > ---
+> >  drivers/staging/iio/adc/max1363_core.c |    5 +----
+> >  1 files changed, 1 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/staging/iio/adc/max1363_core.c b/drivers/staging/iio/adc/max1363_core.c
+> > index 1037087..9462230 100644
+> > --- a/drivers/staging/iio/adc/max1363_core.c
+> > +++ b/drivers/staging/iio/adc/max1363_core.c
+> > @@ -207,15 +207,12 @@ static int max1363_write_basic_config(struct i2c_client *client,
+> >  				      unsigned char d2)
+> >  {
+> >  	int ret;
+> > -	u8 *tx_buf = kmalloc(2, GFP_KERNEL);
+> > +	u8 tx_buf[2];
+> >  
+> > -	if (!tx_buf)
+> > -		return -ENOMEM;
+> >  	tx_buf[0] = d1;
+> >  	tx_buf[1] = d2;
+> >  
+> >  	ret = i2c_master_send(client, tx_buf, 2);
+> > -	kfree(tx_buf);
+> >  
+> >  	return (ret > 0) ? 0 : ret;
+> >  }
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index fd18f39..3ea64fe 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4326,7 +4326,7 @@ int mutex_spin_on_owner(struct mutex *lock,
-struct task_struct *owner)
- 		return 0;
+-- 
+Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
 
- 	while (owner_running(lock, owner)) {
--		if (need_resched())
-+		if (test_tsk_need_resched(owner))
- 			return 0;
+Large Hadron Colada: A large Pina Colada that makes the universe disappear.
 
- 		arch_mutex_cpu_relax();
