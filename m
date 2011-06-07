@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067Ab1FGILV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 04:11:21 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49486 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab1FGILS (ORCPT
+	id S1752126Ab1FGIZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 04:25:40 -0400
+Received: from smtp-out-002.synserver.de ([212.40.185.2]:1140 "HELO
+	smtp-out-002.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752045Ab1FGIZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 04:11:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:references:in-reply-to:mime-version
-         :content-type:content-transfer-encoding:content-disposition
-         :message-id;
-        b=WTZf+/uFGfwYpZDEfouVac6dg9u42BCGo7U+QdDXjt6QJDwQxin2tToP77ZsHUEWUn
-         e5+/Ue2yAOAKCIwTSDlzh6UBpfovdqNXHvCH0844NPBAMScp8MzzNYyk+EPvcbRcTAgW
-         rmRONB77uiJ0y+nFQcTG8uCB/jlmsv+LvJAkk=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org
-Subject: Re: Status of function-sections work?
-Date: Tue, 7 Jun 2011 10:11:15 +0200
-User-Agent: KMail/1.8.2
-References: <20110606011531.GA1887@leaf>
-In-Reply-To: <20110606011531.GA1887@leaf>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201106071011.15114.vda.linux@googlemail.com>
+	Tue, 7 Jun 2011 04:25:37 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 10583
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: alsa-devel@alsa-project.org, device-drivers-devel@blackfin.uclinux.org,
+        linux-kernel@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] ASoC: Blackfin: bf5xx-ad1836: Fix codec device name
+Date: Tue,  7 Jun 2011 10:24:46 +0200
+Message-Id: <1307435086-29877-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 June 2011 03:15, Josh Triplett wrote:
-> Hello,
-> 
-> I found your work in 2010 on using function-sections and data-sections
-> to eliminate unused code in the kernel.  I'd like to make use of this
-> work to try to build an extremely space-constrained kernel.
-> 
-> It looks like a few of your patches made it into the kernel, but most of
-> the linker script changes don't seem to have made it in.  I wanted to
-> find out the status of this work.  Do you still have this working?  Do
-> you have versions of your patches for current Linux?
+Fix the codec_name field of the dai_link to match the actual device name
+of the codec. Otherwise the card won't be instantiated.
 
-parisc uses ^ in some identifiers. Therefore we need something like
-[A-Za-z0-9_$^]* in linker script. This wasn't working with GNU ld -
-^ is not a valid char for pattern. Use of more general [!.]*
-was also impossible - ! is not a valid char too.
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ sound/soc/blackfin/bf5xx-ad1836.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Therefore I asked binutils people to fix this (they agreed) and
-decided to wait for a fixed binutils to be released.
-
-
-> Have you considered re-submitting?
-
-Yes, I need to do this...
-
-
+diff --git a/sound/soc/blackfin/bf5xx-ad1836.c b/sound/soc/blackfin/bf5xx-ad1836.c
+index ea4951c..f79d165 100644
+--- a/sound/soc/blackfin/bf5xx-ad1836.c
++++ b/sound/soc/blackfin/bf5xx-ad1836.c
+@@ -75,7 +75,7 @@ static struct snd_soc_dai_link bf5xx_ad1836_dai[] = {
+ 		.cpu_dai_name = "bfin-tdm.0",
+ 		.codec_dai_name = "ad1836-hifi",
+ 		.platform_name = "bfin-tdm-pcm-audio",
+-		.codec_name = "ad1836.0",
++		.codec_name = "spi0.4",
+ 		.ops = &bf5xx_ad1836_ops,
+ 	},
+ 	{
+@@ -84,7 +84,7 @@ static struct snd_soc_dai_link bf5xx_ad1836_dai[] = {
+ 		.cpu_dai_name = "bfin-tdm.1",
+ 		.codec_dai_name = "ad1836-hifi",
+ 		.platform_name = "bfin-tdm-pcm-audio",
+-		.codec_name = "ad1836.0",
++		.codec_name = "spi0.4",
+ 		.ops = &bf5xx_ad1836_ops,
+ 	},
+ };
 -- 
-vda
+1.7.2.5
 
