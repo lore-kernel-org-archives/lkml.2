@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab1FGEof (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 00:44:35 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:44489 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab1FGEoe (ORCPT
+	id S1752997Ab1FGEo7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 00:44:59 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46967 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab1FGEo6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 00:44:34 -0400
+	Tue, 7 Jun 2011 00:44:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=N6UwEhzNYaK4Pwp30jirOq6WbVbFLzPn+n+1NtMboVoV3syGvXFyYIA03H4Z0HXRMs
-         NIEIKMVIROC9gl7GxKkKdeCkeTH0B8f24zMIDilGT1zrbk1GEjRY7ZQEXdjrHvlRJSB8
-         1WeJTbTRBfaafxp/bbAYXZTzD8rTqMRy45h+4=
-Subject: Re: l2-mtd-2.6.git to linux-next
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-In-Reply-To: <1307345850.3135.24.camel@localhost>
-References: <1307345850.3135.24.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Jun 2011 07:40:15 +0300
-Message-ID: <1307421615.11104.14.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=LeCQcHJ+8qRBn2tjep5jcToDIPCoDRj5y0F4kfJPEubKbO2loOBu1VfzbiNcjkeZur
+         7zTRiNB7Y2MyrdunETLYOyIn6KeXpT9lzPW9xykVc5H7zNpbQRxOAYJryRI/mlioS8xQ
+         DUKbUDTUm31WaJhMqGctXjNH2fV5oFUpqN1dA=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTik84U0p7hf1+ofvPvJ2CO1MmutcWQ@mail.gmail.com>
+References: <BANLkTik84U0p7hf1+ofvPvJ2CO1MmutcWQ@mail.gmail.com>
+Date: Tue, 7 Jun 2011 12:44:57 +0800
+Message-ID: <BANLkTika3VUB6mmY=JLikQYgrFXk2xuP1A@mail.gmail.com>
+Subject: Re: Realtek RTL8192CU Polling FW ready fail!! REG_MCUFWDL:0x00000006
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
+On Sun, Jun 5, 2011 at 10:29 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> Just trying out the PCi GW-USBExtreme USB Wireless adaptor. It's
+> detected as Realtek 2019:ed17 and I'm using the kernel rtl8192cu
+> module.
+>
+> Here's the dmesg ... it seems having problem with the firmware
+> (rtl8192cufw.bin) ... (Polling FW ready fail!!
+> REG_MCUFWDL:0x00000006). I downloaded the firmware from
+> http://git.kernel.org/?p=linux/kernel/git/dwmw2/linux-firmware.git
+>
+> cfg80211: Calling CRDA to update world regulatory domain
+> rtl8192cu: MAC address: 00:22:cf:43:d3:8b
+> rtl8192cu: Board Type 0
+> rtl8192cu: rx_max_size 15360, rx_urb_num 8, in_ep 1
+> ieee80211 phy0: Selected rate control algorithm 'rtl_rc'
+> usbcore: registered new interface driver rtl8192cu
+> rtl8192cu: MAC auto ON okay!
+> rtl8192cu: Tx queue select: 0x05
+> rtl8192c: Loading firmware file rtlwifi/rtl8192cufw.bin
+> rtl8192c_common:_rtl92c_fw_free_to_go():<0-0> Polling FW ready fail!!
+> REG_MCUFWDL:0x00000006 .
+> rtl8192c_common:rtl92c_download_fw():<0-0> Firmware is not ready to run!
+>
+>
+> # Linux Kernel 3.0.0-rc1
+>
+> -rw-rw-r-- 1 root root 16014 Jun �3 22:53
+> /usr/lib/firmware/rtlwifi/rtl8192cufw.bin
 
-On Mon, 2011-06-06 at 10:37 +0300, Artem Bityutskiy wrote:
-> Stephen,
-> 
-> as we've discussed, please, include l2-mtd-2.6.git tree to linux-next:
-> 
-> git://git.infradead.org/users/dedekind/l2-mtd-2.6.git master
 
-although you already asked about this, sfr wanted your deliberate ack.
+Not sure anyone got a chance to look into this. I could get the device
+to work with RTL8192CU_linux_v3.0.1590.20110511.zip (just that
+ifconfig wlan0 froze the whole system).
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+rtw driver version=v3.0.1590.20110511
+CHIP TYPE: RTL8188C_8192C
+MAC Address from efuse= 00:22:cf:43:d3:8b
 
+
+Thanks,
+Jeff
