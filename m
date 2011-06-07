@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab1FGLkB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 07:40:01 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:46841 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531Ab1FGLkA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 07:40:00 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: "Ohad Ben-Cohen" <ohad@wizery.com>
-Subject: Re: [RFC 1/6] omap: iommu: generic iommu api migration
-Date: Tue, 7 Jun 2011 13:40:14 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo-r3; KDE/4.6.2; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Hiroshi.DOYU@nokia.com, arnd@arndb.de, davidb@codeaurora.org,
-        Joerg.Roedel@amd.com
-References: <1307053663-24572-1-git-send-email-ohad@wizery.com> <201106071122.47804.laurent.pinchart@ideasonboard.com> <BANLkTineGVvmph=Om2FGR_+mkiMW6k7UAw@mail.gmail.com>
-In-Reply-To: <BANLkTineGVvmph=Om2FGR_+mkiMW6k7UAw@mail.gmail.com>
+	id S1752882Ab1FGLv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 07:51:56 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:43422 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750964Ab1FGLvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 07:51:55 -0400
+Date: Tue, 7 Jun 2011 13:51:37 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Paul Mundt <lethal@linux-sh.org>, Nick Piggin <npiggin@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH][GIT PULL] slob/lockdep: Fix gfp flags passed to lockdep
+Message-ID: <20110607115137.GA25798@elte.hu>
+References: <1307369665.31814.20.camel@gandalf.stny.rr.com>
+ <alpine.DEB.2.00.1106062106580.22635@chino.kir.corp.google.com>
+ <BANLkTikmp5CFKykBXaPUP0SBZEto1idDsA@mail.gmail.com>
+ <20110607101948.GB21356@elte.hu>
+ <1307445322.31814.23.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106071340.15199.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307445322.31814.23.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
 
-On Tuesday 07 June 2011 13:19:05 Ohad Ben-Cohen wrote:
-> On Tue, Jun 7, 2011 at 12:22 PM, Laurent Pinchart wrote:
-> >> +     BUG_ON(!IS_ALIGNED((long)omap_domain->pgtable, IOPGD_TABLE_SIZE));
+* Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> On Tue, 2011-06-07 at 12:19 +0200, Ingo Molnar wrote:
+> > * Pekka Enberg <penberg@kernel.org> wrote:
+> 
+> > > However, I'm not pulling from a "tip/lockdep/devel" branch to slab.git
+> > > so Steven needs to send this to me in patch format or Ingo picks it up
+> > > in which case consider the patch:
+> > > 
+> > > Acked-by: Pekka Enberg <penberg@kernel.org>
 > > 
-> > Either __get_free_pages() guarantees that the allocated memory will be
-> > aligned on an IOPGD_TABLE_SIZE boundary, in which case the BUG_ON() is
-> > unnecessary, or doesn't offer such guarantee, in which case the BUG_ON()
-> > will oops randomly.
+> > Unless there are some dependencies i missed i think it would be 
+> > better if you pulled this, hm?
 > 
-> Curious, does it oops randomly today ?
-> (i just copied this from omap_iommu_probe, where it always existed).
-
-No that I know of :-)
-
-> It is a bit ugly though, and thinking on it again, 16KB is not that
-> big. We can just use kmalloc here, which does ensure the alignment
-> (or, better yet, kzalloc, and then ditch the memset).
+> Nope, this is my fault. I searched for SLOB in MAINTAINERS and didn't
+> find it. But I should have looked at SLAB.
 > 
-> > In both cases BUG_ON() should probably be avoided.
-> 
-> I disagree; we must check this so user data won't be harmed (hardware
-> requirement), and if a memory allocation API fails to meet its
-> requirements - that's really bad and user data is again at stake (much
-> more will break, not only the iommu driver).
+> I'll resend this as a normal patch for Pekka.
 
-My point is that if the allocator guarantees the alignment (not as a side 
-effect of the implementation, but per its API) there's no need to check it 
-again. As the alignement is required, we need an allocator that guarantees it 
-anyway.
+Pekka could pull it as well, since you've already tested that tree 
+:-)
 
-> > This leaks omap_domain->pgtable.
-> > 
-> > The free_pages() call in omap_iommu_remove() should be removed, as
-> > omap_iommu_probe() doesn't allocate the pages table anymore.
-> 
-> thanks !
-> 
-> > You can also remove the the struct iommu::iopgd field.
-> 
-> No, I can't; it's used when the device is attached to an address space
-> domain.
+I don't think this tree includes any other commits, right?
 
-Right, my bad.
+Thanks,
 
-> > You return 0 in the bogus pte/pgd cases. Is that intentional ?
-> 
-> Yes, that's probably the most (if any) reasonable value to return here
-> (all other iommu implementations are doing so too).
-
--- 
-Regards,
-
-Laurent Pinchart
+	Ingo
