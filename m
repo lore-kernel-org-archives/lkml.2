@@ -1,153 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932608Ab1FGW2I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 18:28:08 -0400
-Received: from d1.icnet.pl ([212.160.220.21]:51417 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932581Ab1FGW2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 18:28:04 -0400
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 3.0-rc1] PM / runtime: fix broken iteration over clock ids
-Date: Wed, 8 Jun 2011 00:27:13 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r5; KDE/4.4.5; i686; ; )
-Cc: linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-References: <201106051531.32878.jkrzyszt@tis.icnet.pl> <201106072129.26063.rjw@sisk.pl> <201106072324.54306.jkrzyszt@tis.icnet.pl>
-In-Reply-To: <201106072324.54306.jkrzyszt@tis.icnet.pl>
+	id S932615Ab1FGWfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 18:35:54 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:44185 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756995Ab1FGWfx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 18:35:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=w7m2zpQEGXGRmf+Bv6puTrtHiq0uNJtJ+zKn/YAVufownxedG9UfwZxVbXmXl4Ql6v
+         UZDbCe+B2VLwyXu1GxPi5yoWIcAE8EdakAgQ/82zYoMHVgLkHbAhrUuhCqmihnE+4Hk5
+         TYkVoKjHagJzvMA2S3G8S83sMtJA0Fg6jqA7g=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106080027.14378.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+In-Reply-To: <1307345414-26872-1-git-send-email-shawn.guo@linaro.org>
+References: <1307345414-26872-1-git-send-email-shawn.guo@linaro.org>
+Date: Tue, 7 Jun 2011 15:35:51 -0700
+X-Google-Sender-Auth: G8jWrZnmU6shkiGEIWNA8UO1quU
+Message-ID: <BANLkTi=-t9HVc6U6QY07su+c3WztsGoq3Q@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] dmaengine: add new dma API for max_segment_number
+From: Dan Williams <dan.j.williams@intel.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org, vinod.koul@intel.com,
+        linux-mmc@vger.kernel.org, cjb@laptop.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 07 Jun 2011 at 23:24:53 Janusz Krzysztofik wrote:
-> On Tue 07 Jun 2011 at 21:29:25 Rafael J. Wysocki wrote:
-> > OK, below is an "official" version.  Can you please double check if
-> > it fixes the problem for you?
-> 
-> Hi,
-> I've tested it successfully, but only the CONFIG_PM_RUNTIME=y case,
-> not the other because of still another McBSP issue, I believe,
-> described elswhere.
+On Mon, Jun 6, 2011 at 12:30 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
+> Like dma_set(get)_max_seg_size for max_segment_size, the patch adds
+> max_segment_number into device_dma_parameters and creates the
+> corresponding dmaengine API dma_set(get)_max_seg_number for it.
+>
+> Here is the user story that tells the need of the new api.  The
+> mxs-mmc is the mmc host controller for Freescale MXS architecture.
+> There are a pair of  mmc host specific parameters max_seg_size and
+> max_segs that mxs-mmc host driver needs to tell mmc core, so that
+> mmc core can know how big each data segment could be and how many
+> segments could be handled one time in a scatter list by host driver.
+>
+> The mxs-mmc driver is one user of dmaengine mxs-dma, and it will call
+> mxs-dma to transfer data in scatter list.  That is to say mxs-mmc has
+> no idea of what max_seg_size and max_segs should be, because they are
+> all mxs-dma capability parameters, and mxs-mmc needs to query them
+> from mxs-dma.
+>
+> Right now, there is well defined dma api (dma_get_max_seg_size) for
+> mmc to query max_seg_size from dma driver, but the one for max_segs
+> is missing.  That's why mxs-mmc driver has to hard-code it.
+>
+> The mxs-mmc is just one example to demonstrate the need of the new
+> api, and there are other mmc host drivers (mxcmmc on imx-dma is
+> another example) and possibly even other dmaengine users need this
+> new api to know the maximum segments that dma driver can handle per
+> dma call.
+>
+> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> ---
+> Changes since v1:
+>  * Update commit message to explain why the new api is needed
+>
+>  include/linux/device.h      |    1 +
+>  include/linux/dma-mapping.h |   15 +++++++++++++++
+>  2 files changed, 16 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index c66111a..44cb2528 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -487,6 +487,7 @@ struct device_dma_parameters {
+>         * sg limitations.
+>         */
 
-With a patch from Kevin, I was able to test the !PM_RUNTIME case 
-successfully as well.
+Given the discussion seems like this patch is missing an update to the
+documentation of the struct to clarify the definition of dma provider.
+ I.e. that this info belongs to the device doing the dma, and that is
+is not necessarily the same as the device that is requesting dma
+service.
 
-Thanks,
-Janusz
-
-> Thanks,
-> Janusz
-> 
-> > Rafael
-> > 
-> > ---
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > Subject: PM / Runtime: Fix loops in pm_runtime_clk_notify()
-> > 
-> > The loops over connection ID strings in pm_runtime_clk_notify()
-> > should actually iterate over the strings and not over the elements
-> > of the first of them, so make those loops behave as appropriate.
-> > 
-> > This fixes a regression introduced by commit 600b776eb39a13a28b090
-> > (OMAP1 / PM: Use generic clock manipulation routines for runtime
-> > PM).
-> > 
-> > Reported-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
-> > 
-> >  drivers/base/power/clock_ops.c |   16 ++++++++--------
-> >  1 file changed, 8 insertions(+), 8 deletions(-)
-> > 
-> > Index: linux-2.6/drivers/base/power/clock_ops.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/base/power/clock_ops.c
-> > +++ linux-2.6/drivers/base/power/clock_ops.c
-> > @@ -291,7 +291,7 @@ static int pm_runtime_clk_notify(struct
-> > 
-> >  {
-> >  
-> >  	struct pm_clk_notifier_block *clknb;
-> >  	struct device *dev = data;
-> > 
-> > -	char *con_id;
-> > +	char **con_id;
-> > 
-> >  	int error;
-> >  	
-> >  	dev_dbg(dev, "%s() %ld\n", __func__, action);
-> > 
-> > @@ -309,8 +309,8 @@ static int pm_runtime_clk_notify(struct
-> > 
-> >  		dev->pwr_domain = clknb->pwr_domain;
-> >  		if (clknb->con_ids[0]) {
-> > 
-> > -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
-> > -				pm_runtime_clk_add(dev, con_id);
-> > +			for (con_id = clknb->con_ids; *con_id; con_id++)
-> > +				pm_runtime_clk_add(dev, *con_id);
-> > 
-> >  		} else {
-> >  		
-> >  			pm_runtime_clk_add(dev, NULL);
-> >  		
-> >  		}
-> > 
-> > @@ -380,7 +380,7 @@ static int pm_runtime_clk_notify(struct
-> > 
-> >  {
-> >  
-> >  	struct pm_clk_notifier_block *clknb;
-> >  	struct device *dev = data;
-> > 
-> > -	char *con_id;
-> > +	char **con_id;
-> > 
-> >  	dev_dbg(dev, "%s() %ld\n", __func__, action);
-> > 
-> > @@ -389,16 +389,16 @@ static int pm_runtime_clk_notify(struct
-> > 
-> >  	switch (action) {
-> >  	
-> >  	case BUS_NOTIFY_ADD_DEVICE:
-> >  		if (clknb->con_ids[0]) {
-> > 
-> > -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
-> > -				enable_clock(dev, con_id);
-> > +			for (con_id = clknb->con_ids; *con_id; con_id++)
-> > +				enable_clock(dev, *con_id);
-> > 
-> >  		} else {
-> >  		
-> >  			enable_clock(dev, NULL);
-> >  		
-> >  		}
-> >  		break;
-> >  	
-> >  	case BUS_NOTIFY_DEL_DEVICE:
-> >  		if (clknb->con_ids[0]) {
-> > 
-> > -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
-> > -				disable_clock(dev, con_id);
-> > +			for (con_id = clknb->con_ids; *con_id; con_id++)
-> > +				disable_clock(dev, *con_id);
-> > 
-> >  		} else {
-> >  		
-> >  			disable_clock(dev, NULL);
-> >  		
-> >  		}
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe
-> > linux-omap" in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Other than that seems like a natural extension of the existing usage
+of device_dma_parameters in drivers/dma/.
