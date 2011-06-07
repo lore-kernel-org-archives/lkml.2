@@ -1,54 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756382Ab1FGXrl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 19:47:41 -0400
-Received: from hofr.at ([212.69.189.236]:35452 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755896Ab1FGXrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 19:47:40 -0400
-Date: Wed, 8 Jun 2011 01:38:09 +0200
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, Remy Bohmer <linux@bohmer.net>,
-        Armin Steinhoff <armin@steinhoff.de>,
-        Johannes Bauer <hannes_bauer@aon.at>,
-        Monica Puig-Pey <puigpeym@unican.es>,
-        Rolando Martins <rolando.martins@gmail.com>,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Changing Kernel thread priorities
-Message-ID: <20110607233809.GB31794@opentech.at>
-References: <17185480.5304.1307435255996.JavaMail.root@WARSBL214.highway.telekom.at> <alpine.LFD.2.02.1106071033350.11814@ionos> <4DEDF1F2.2080204@steinhoff.de> <1307439469.2322.235.camel@twins> <BANLkTi=KPyds_BWYpXHeUkAg000FGSuJOQ@mail.gmail.com> <1307456080.2322.264.camel@twins> <alpine.LFD.2.02.1106071713570.11814@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1106071713570.11814@ionos>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754481Ab1FGXlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 19:41:45 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:58666 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab1FGXlo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 19:41:44 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=jZcTF2nDjefkPOco9vepOnsFFm+mqaeflAYN7B18aH7u0cVHyMrpfCwZJCITCo1g3
+	fTgD6yx5nLTiUAb5HBBkg==
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH] trace: Set __GFP_NORETRY flag for ring buffer allocating process
+Date: Tue,  7 Jun 2011 16:41:28 -0700
+Message-Id: <1307490088-8612-1-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1306519125-19301-1-git-send-email-vnagarnaik@google.com>
+References: <1306519125-19301-1-git-send-email-vnagarnaik@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 07 Jun 2011, Thomas Gleixner wrote:
+The tracing ring buffer is allocated from kernel memory. While
+allocating a large chunk of memory, OOM might happen which destabilizes
+the system. Thus random processes might get killed during the
+allocation.
 
-> On Tue, 7 Jun 2011, Peter Zijlstra wrote:
-> > On Tue, 2011-06-07 at 13:02 +0200, Remy Bohmer wrote:
-> > > Well, I 100% agree that it must be under full userspace control to be
-> > > able to set the priorities. But, the kernel default assumption of
-> > > starting everything at 50 is wrong as well.
-> > > Imagine the following situation:
-> > > * Realtime application is running and has threads active in the range
-> > > of prios 20 - 90.
-> > > * Now bring up a network device, it immediately starts spamming the
-> > > system at prio 50 _before_ you have the chance to set it below 20 by
-> > > means of chrt.
-> > > * RT behaviour is gone!
-> > 
-> > Good point I guess, Thomas should we default to 1 for everything?
-> 
-> No objections.
+This patch adds __GFP_NORETRY flag to the ring buffer allocation calls
+to make it fail more gracefully if the system will not be able to
+complete the allocation request.
 
-I think that splitting the range makes more sense - you are now potentially
-reverting the argument brought up before.
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+---
+ kernel/trace/ring_buffer.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
 
-"My drivers behave properly until I load any RT-task"
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 2780e60..ec817d5 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -1005,7 +1005,8 @@ static int rb_allocate_pages(struct ring_buffer_per_cpu *cpu_buffer,
+ 	for (i = 0; i < nr_pages; i++) {
+ 		struct page *page;
+ 		bpage = kzalloc_node(ALIGN(sizeof(*bpage), cache_line_size()),
+-				    GFP_KERNEL, cpu_to_node(cpu_buffer->cpu));
++				    GFP_KERNEL | __GFP_NORETRY,
++				    cpu_to_node(cpu_buffer->cpu));
+ 		if (!bpage)
+ 			goto free_pages;
+ 
+@@ -1014,7 +1015,7 @@ static int rb_allocate_pages(struct ring_buffer_per_cpu *cpu_buffer,
+ 		list_add(&bpage->list, &pages);
+ 
+ 		page = alloc_pages_node(cpu_to_node(cpu_buffer->cpu),
+-					GFP_KERNEL, 0);
++					GFP_KERNEL | __GFP_NORETRY, 0);
+ 		if (!page)
+ 			goto free_pages;
+ 		bpage->page = page_address(page);
+@@ -1378,11 +1379,13 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size)
+ 			struct page *page;
+ 			bpage = kzalloc_node(ALIGN(sizeof(*bpage),
+ 						  cache_line_size()),
+-					    GFP_KERNEL, cpu_to_node(cpu));
++					    GFP_KERNEL | __GFP_NORETRY,
++					    cpu_to_node(cpu));
+ 			if (!bpage)
+ 				goto free_pages;
+ 			list_add(&bpage->list, &pages);
+-			page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL,
++			page = alloc_pages_node(cpu_to_node(cpu),
++						GFP_KERNEL | __GFP_NORETRY,
+ 						0);
+ 			if (!page)
+ 				goto free_pages;
+@@ -3737,7 +3740,9 @@ void *ring_buffer_alloc_read_page(struct ring_buffer *buffer, int cpu)
+ 	struct buffer_data_page *bpage;
+ 	struct page *page;
+ 
+-	page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL, 0);
++	page = alloc_pages_node(cpu_to_node(cpu),
++				GFP_KERNEL | __GFP_NORETRY,
++				0);
+ 	if (!page)
+ 		return NULL;
+ 
+-- 
+1.7.3.1
 
-hofrat
