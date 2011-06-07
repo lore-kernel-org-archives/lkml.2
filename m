@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097Ab1FGP7m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 11:59:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753934Ab1FGP7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 11:59:40 -0400
-Date: Tue, 7 Jun 2011 18:59:15 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCHv2 RFC 3/4] virtio_net: limit xmit polling
-Message-ID: <20110607155915.GA17581@redhat.com>
-References: <cover.1307029008.git.mst@redhat.com>
- <a80199422de16ae355e56ee1b2abc9b2bf91a7f6.1307029009.git.mst@redhat.com>
+	id S1757176Ab1FGQEO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 12:04:14 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:54308 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753472Ab1FGQEN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 12:04:13 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Colin Cross <ccross@android.com>, linux-omap@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, tarun.kanti@ti.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] ARM: omap4: gpio: fix setting IRQWAKEN bits
+Organization: Texas Instruments, Inc.
+References: <1307392698-21170-1-git-send-email-ccross@android.com>
+	<87boyav99n.fsf@ti.com>
+	<BANLkTik-UK9EPsnUkQeih+Zf_9py-X2Q0A@mail.gmail.com>
+Date: Tue, 07 Jun 2011 09:04:09 -0700
+In-Reply-To: <BANLkTik-UK9EPsnUkQeih+Zf_9py-X2Q0A@mail.gmail.com> (Grant
+	Likely's message of "Mon, 6 Jun 2011 19:06:36 -0600")
+Message-ID: <87hb81r5l2.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a80199422de16ae355e56ee1b2abc9b2bf91a7f6.1307029009.git.mst@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 06:43:17PM +0300, Michael S. Tsirkin wrote:
-> Current code might introduce a lot of latency variation
-> if there are many pending bufs at the time we
-> attempt to transmit a new one. This is bad for
-> real-time applications and can't be good for TCP either.
-> 
-> Free up just enough to both clean up all buffers
-> eventually and to be able to xmit the next packet.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Grant Likely <grant.likely@secretlab.ca> writes:
 
+> On Mon, Jun 6, 2011 at 5:18 PM, Kevin Hilman <khilman@ti.com> wrote:
+>> Hi Colin,
+>>
+>> Colin Cross <ccross@android.com> writes:
+>>
+>>> Setting the IRQWAKEN bit was overwriting previous IRQWAKEN bits,
+>>> causing only the last bit set to take effect, resulting in lost
+>>> wakeups when the GPIO controller is in idle.
+>>>
+>>> Replace direct writes to IRQWAKEN with MOD_REG_BIT calls to
+>>> perform a read-modify-write on the register.
+>>>
+>>> Signed-off-by: Colin Cross <ccross@android.com>
+>>
+>> Thanks, I'll queue these both for Grant for the 3.0-rc fixes along with
+>> another GPIO fix for a section mismatch I have queued.
+>>
+>> Minor: now that this driver has moved to drivers, I changed the subject
+>> prefixes slightly.  They now read:
+>>
+>> GPIO: OMAP: fix setting IRQWAKEN bits for OMAP4
+>> GPIO: OMAP: add locking around calls to _set_gpio_triggering
+>
+> If you're collecting fixes for Linus anyway, go ahead and add my a-b
+> line and include these two to send on to Linus
+>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+>
+> Or, if they are only gpio fixes, then I'd also be happy to get a git
+> pull req for the changes.  :-)
+>
 
-I've been testing this patch and it seems to work fine
-so far. The following fixups are needed to make it
-build though:
+I have a GPIO-only queue, so I'll have a pull req for you today.
 
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index b25db1c..77cdf34 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -529,11 +529,8 @@ static bool free_old_xmit_skb(struct virtnet_info *vi)
-  * virtqueue_add_buf will succeed. */
- static bool free_xmit_capacity(struct virtnet_info *vi)
- {
--	struct sk_buff *skb;
--	unsigned int len;
--
- 	while (virtqueue_min_capacity(vi->svq) < MAX_SKB_FRAGS + 2)
--		if (unlikely(!free_old_xmit_skb))
-+		if (unlikely(!free_old_xmit_skb(vi)))
- 			return false;
- 	return true;
- }
-@@ -628,7 +625,7 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	 * Doing this after kick means there's a chance we'll free
- 	 * the skb we have just sent, which is hot in cache. */
- 	for (i = 0; i < 2; i++)
--		free_old_xmit_skb(v);
-+		free_old_xmit_skb(vi);
- 
- 	if (likely(free_xmit_capacity(vi)))
- 		return NETDEV_TX_OK;
+Kevin
