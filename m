@@ -1,111 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346Ab1FGGXZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 02:23:25 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:36130 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177Ab1FGGXX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 02:23:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=F6ZXhbnxBIy9rHfv0/+nGI9kXrxPPZ/PRWNfcBqzLsfGhEivP015+yfVGXuC/ETdX1
-         XO8s5gyJ1vyeogK43ZN4o46thlSgeKPaLmsvPsr2I0s7AVA8EdjIlfw2RsTXx+ic6N/p
-         ELKWmHo0V+BDPX2uyS0YgmwZtcSv/tK3WLMsU=
+	id S1751333Ab1FGGbr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 02:31:47 -0400
+Received: from demekin.fsr.com ([64.126.133.131]:48199 "EHLO demekin.fsr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751127Ab1FGGbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 02:31:46 -0400
+X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jun 2011 02:31:45 EDT
+From: Nathan Anderson <nathana@fsr.com>
+To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Mon, 6 Jun 2011 23:26:24 -0700
+Subject: PCI BAR address mismatch between kernel and module?
+Thread-Topic: PCI BAR address mismatch between kernel and module?
+Thread-Index: Acwk29rO0OrM1aLNTRypDQh+05i33g==
+Message-ID: <C12CA40900F4E0448A2D4E66DFA6A59B13D1F328E8@Demekin.FSI.local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-In-Reply-To: <20110606223451.GW23047@sequoia.sous-sol.org>
-References: <BANLkTi=q0f8aYc2+fhaY5yFRRfgkOOME-g@mail.gmail.com>
-	<1307398661.5901.14.camel@x201>
-	<20110606223451.GW23047@sequoia.sous-sol.org>
-Date: Tue, 7 Jun 2011 11:53:23 +0530
-Message-ID: <BANLkTintUEWqwhUmR2MYC0jixqEi-wNJpg@mail.gmail.com>
-Subject: Re: Seeing DMAR errors after multiple load/unload with SR-IOV
-From: padmanabh ratnakar <pratnakarlx@gmail.com>
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        iommu <iommu@lists.linux-foundation.org>, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 7, 2011 at 4:04 AM, Chris Wright <chrisw@sous-sol.org> wrote:
-> * Alex Williamson (alex.williamson@redhat.com) wrote:
->> On Mon, 2011-06-06 at 14:39 +0530, padmanabh ratnakar wrote:
->> > Hi,
->> >         I am using linux kernel 2.6.39. I have a IBM x3650 M3 system.
->> > I have used following boot options -
->> > intel_iommu=on iommu=pt
->> >
->> > I was loading/unloading my NIC driver(be2net) with num_vfs=7.
->> >
->> > After some iterations I get following DMAR errors -
->> > Jun  4 03:50:20 rhel6 kernel: Uhhuh. NMI received for unknown reason
->> > 2d on CPU 0.
->> > Jun  4 03:50:20 rhel6 kernel: Do you have a strange power saving mode enabled?
->> > Jun  4 03:50:20 rhel6 kernel: Dazed and confused, but trying to continue
->> > Jun  4 03:50:20 rhel6 kernel: DRHD: handling fault status reg 2
->> > Jun  4 03:50:20 rhel6 kernel: DMAR:[DMA Read] Request device [1a:00.2]
->> > fault addr 78077000
->> > Jun  4 03:50:20 rhel6 kernel: DMAR:[fault reason 02] Present bit in
->> > context entry is clear
->> >
->> > I was trying to debug this. I dont understand iommu code much.
->> > The physical address belongs the printed PCI function and there should
->> > not have been an error.
->> >
->> > I am unable to see pci_dev(pdev) of VFs getting removed from
->> > si_domain->devices list(intel-iommu.c)
->> > when driver gets unloaded calling pci_disable_sriov() freeing VF pdevs.
->> > Looks like issue happens when when freed pdev is allocated again and
->> > as it is already in list,
->> > required initializations dont happen.
->> >
->> > I dont know if my understanding is correct. Can anyone point me to
->> > what the issue may be?
->
-> Yes, that's correct.  The (now replaced) check identity_mapping()
-> will succeed when the pci_dev is recycled (it's freed, but never
-> removed from the list, this is an issue with passtrhough mode and device
-> creation/desctruction).  This false match happens w/ a brand new pci_dev
-> which still has default 32bit DMA mask, so it is removed from pt domain.
-> During removal domain_remove_one_dev_info() test that matches only
-> on bus/devfn (now also segment) will match despite the fact that the
-> info->pdev != pdev->dev.archdata.iommu.  Then...Oops
->
->> Typically devices are removed from the domain via
->> drivers/pci/intel-iommu.c:device_notifier(), which is called as the
->> device is unbound from the driver.  However, this seems to get skipped
->> when running in passthrough mode, so I'm not sure where that's supposed
->> to occur.  Does it happen w/o passthrough?
->
-I had tried without passthrough on RHEL 6.1 GA kernel. Was seeing
-hangs and panics. Will check if non passthrough mode works on latest kernel.
+Hello, everybody,
 
-> If you blacklist the driver then a create/delete may do similar (haven't
-> tested that idea).
->
->> Also note that some
->> intel-iommu fixes have rolled into 3.0.0-rc2, you might want to update
->> and see if anything is better there.  Thanks,
->
-> The change in identity_mapping() means we won't demote to 32-bit DMA
-> (drop out of pt domain), so I don't think we'll see the same issue.
->
-For testing I had made a hack in 2.6.39 kernel which will prevent
-demoting to 32bit DMA mask
-and thereby prevent calling of domain_remove_one_dev_info() for the
-specific VF device I was using
-and it had worked.
-So as you said I may not hit the issue in latest kernel. Will try that.
+If this isn't the right place for me to direct a question like this, please
+accept my apology for the interruption, and feel free to ignore me or point
+me in the direction of a more appropriate venue. :-)  
 
-> thanks,
-> -chris
->
+I need to build a working set of kernel modules (drivers for a PCI-bus disk
+controller) for an embedded system I'm using that is built atop Linux, and
+for which I don't have the .config for.  The idea is that I will replace
+the initramfs archive with one that has the modules + a stripped-down
+busybox, and write a shell script to load the modules before passing
+control off to the original initramfs's 'init' (a binary) via exec. 
+Building a new kernel from scratch for this system is, sadly, not an
+option, and the .config is unobtainable (I checked: CONFIG_IKCONFIG was not
+enabled for the build of this specific kernel).  I'm sure the task is
+hopeless/not recommended/frowned upon, but that hasn't deterred me...yet.  
 
-Thanks for the response and suggestions.
-Padmanabh
+In fact, I feel like I've nearly got it.  I've matched the same kernel
+version that they used (2.6.35.nothing; although, granted, I have no
+knowledge of any patches they might have applied or direct changes to their
+source tree that they might have made).  I have a build toolchain that
+matches the one used to build the original kernel, down to the gcc version
+(4.5.0, x86 arch).  I have even managed to churn out a set of modules for
+the hardware device in question that match the version magic of the running
+kernel, and which neither reference any symbols missing from this kernel,
+nor do they generate OOPSen when insmod'ed (the latter turned out to be
+tricky; after much trial-and-error, I discovered I needed to enable
+CONFIG_UNUSED_SYMBOLS when building the modules in order for this kernel to
+be happy with them).           
+
+Only one problem (seemingly) remains: all of the modules I've built (and
+I've tried building a couple of different ones for a couple of different
+pieces of hardware) appear to have difficulty interacting with the PCI
+subsystem of the kernel.   
+
+Now, this embedded system I'm working with actually comes with two kernels:
+one which is SMP-enabled (CONFIG_SMP + CONFIG_M686), and the other which is
+not (CONFIG_M586).  I have built a separate set of modules for each kernel,
+and both sets fail to work, but they do so in slightly different ways
+between the two kernels.  Since I have a firmer grasp right now on what is
+going on with the SMP kernel than I do with the non-SMP one, I'll
+concentrate on the SMP one for the time being, in the hope that whatever
+solution I find for the SMP kernel will help to shed some light on what
+might be going on with the other one.        
+
+Anyway, the crux of the matter: when the driver for either piece of
+hardware tries to get the starting address of the very first BAR for the
+PCI device in question, the driver gets back a value of 0.  From what I can
+tell, the driver is able to read the correct starting addresses for the
+other BARs; it is *only* the FIRST one that it gets back 0 for.  One driver
+(mptbase + mptscsih + mptspi) appears not to check for this, tries to
+access that memory address, and this causes the kernel to throw out a
+"resource map sanity check conflict" before filling the screen up with what
+looks like a stack trace.  The other driver (BusLogic) apparently checks
+pci_dev.resource[0].flags for the device and if it's not the type of
+resource it is expecting to see for that particular BAR, it 'printk's its
+own error message and quits early.           
+
+Now, the thing is that the kernel DOES know the correct address: if I look
+at bus/pci/devices/blahblahblah/resource under sysfs, I see the right
+starting and ending addresses for all BARs, including the first. 
+Furthermore, all of the hardware works fine, too: if I build a complete
+kernel, boot the system off of that, and try to load the very same module
+binaries, they load up and initialize the hardware just fine.  But for some
+reason, these modules can't when paired with this other kernel.      
+
+A quick glance at pci-sysfs.c to see what it might be doing differently
+than the drivers did reveal that the PCI sysfs code is not using the
+pci_resource_start/end/flags macros, but is instead accessing the resource
+struct directly and then calling pci_resource_to_user to get the values
+(and on the x86 arch., that inline function doesn't look like it is being
+overridden, so it seems to me that the result should be exactly the same). 
+
+I admit that I am very much a novice at this stuff and am probably barking
+up the wrong tree.  My hunch is that there is probably some obscure kernel
+configuration/build option that is mismatched between the modules I'm
+building and the kernel I'm trying to pair them up with, and that if I just
+found the right switch to flip, it would work... I've tried flipping
+various PCI-related switches under "Bus options" in menuconfig, with
+absolutely no change.  (Actually, that's not true.  One time I swear I made
+a build where I tried limiting the PCI access mode to "BIOS", and
+pci_dev.resource[0].start actually had a non-zero value, but it wasn't the
+right one: it matched the address for pci_dev.resource[1].start!  But I
+can't reproduce that again.  Bizarre.  Maybe the kernel is using a
+different definition for either 'struct pci_dev' or 'struct resource' than
+the modules are, and it just happened to hit the "right" area of memory
+That time where the value for the second BAR starting address was stored?)      
+
+I'll spare you guys any more rambling, though, and end it here.  If anyone
+who is intimately familiar with the Linux PCI code has any idea what I
+might be able to do to get this to work, you would have my undying
+gratitide.   
+
+Thanks so much for reading,
+
+-- 
+Nathan Anderson
+First Step Internet, LLC
+nathana@fsr.com
