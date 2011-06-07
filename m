@@ -1,90 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab1FGPeW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 11:34:22 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:36095 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661Ab1FGPeV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 11:34:21 -0400
-X-Greylist: delayed 62707 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jun 2011 11:34:21 EDT
-X-Originating-IP: 217.70.178.131
-X-Originating-IP: 50.43.15.19
-Date: Tue, 7 Jun 2011 08:34:11 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, sam@ravnborg.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/debug] debug: Make CONFIG_EXPERT select
- CONFIG_DEBUG_KERNEL to unhide debug options
-Message-ID: <20110607153411.GA5175@leaf>
-References: <20110606165130.GA1844@leaf>
- <tip-2458073da04571182748aa4289630dca52ba63cc@git.kernel.org>
- <20110606214502.GB17026@somewhere.redhat.com>
- <20110606220905.GB1999@leaf>
- <20110607101851.GA21356@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110607101851.GA21356@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756792Ab1FGPhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 11:37:14 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:36835 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752067Ab1FGPhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 11:37:12 -0400
+From: Richard Weinberger <richard@nod.at>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 1/2] um: Add asm/percpu.h
+Date: Tue,  7 Jun 2011 17:34:29 +0200
+Message-Id: <1307460870-18234-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 12:18:51PM +0200, Ingo Molnar wrote:
-> 
-> * Josh Triplett <josh@joshtriplett.org> wrote:
-> 
-> > On Mon, Jun 06, 2011 at 11:45:04PM +0200, Frederic Weisbecker wrote:
-> > > On Mon, Jun 06, 2011 at 09:39:40PM +0000, tip-bot for Josh Triplett wrote:
-> > > > Commit-ID:  2458073da04571182748aa4289630dca52ba63cc
-> > > > Gitweb:     http://git.kernel.org/tip/2458073da04571182748aa4289630dca52ba63cc
-> > > > Author:     Josh Triplett <josh@joshtriplett.org>
-> > > > AuthorDate: Mon, 6 Jun 2011 09:51:30 -0700
-> > > > Committer:  Ingo Molnar <mingo@elte.hu>
-> > > > CommitDate: Mon, 6 Jun 2011 19:30:01 +0200
-> > > > 
-> > > > debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
-> > > > 
-> > > > Several debugging options currently default to y, such as
-> > > > CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.
-> > > > 
-> > > > Embedded users might want to turn those options off to save space;
-> > > > however, turning them off requires turning on CONFIG_DEBUG_KERNEL to
-> > > > unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
-> > > > unhide debugging options, and CONFIG_EXPERT exists specifically
-> > > > to unhide options potentially needed by experts and/or embedded
-> > > > users, make CONFIG_EXPERT automatically imply CONFIG_DEBUG_KERNEL.
-> > > > 
-> > > > Change various debugging options to only reference DEBUG_KERNEL,
-> > > > not EXPERT.
-> > > > 
-> > > > Note that DEBUG_MEMORY_INIT defaulted to !EXPERT, which seemed
-> > > > wrong, since EXPERT should not directly affect anything except
-> > > > the availability of other options.  (And EXPERT definitely
-> > > > shouldn't mean "implicitly turn off default safety features".)
-> > > > 
-> > > > Change it to default to y, which means that turning on EXPERT
-> > > > does not automatically disable it, but will provide the option
-> > > > to disable it.
-> > > > 
-> > > > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> > > > Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > 
-> > > No, Nacked actually. I'm fine with the v2 that only changed
-> > > the EXPERT config to imply DEBUG_KERNEL. But all the other
-> > > changes here need to be revised, as I outlined in the thread.
-> > 
-> > Fixed in v4; please replace the patch in tip with that.
-> 
-> i applied the much simpler v2 twoliner version instead.
+To make SLUB work on UML we need this_cpu_cmpxchg from
+asm-generic/percpu.h.
 
-OK...
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/um/include/asm/percpu.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+ create mode 100644 arch/um/include/asm/percpu.h
 
-So, should I prepare a separate patch which changes the instances of
-DEBUG_KERNEL && EXPERT, or just leave them?
+diff --git a/arch/um/include/asm/percpu.h b/arch/um/include/asm/percpu.h
+new file mode 100644
+index 0000000..efe7508
+--- /dev/null
++++ b/arch/um/include/asm/percpu.h
+@@ -0,0 +1,6 @@
++#ifndef __UM_PERCPU_H
++#define __UM_PERCPU_H
++
++#include <asm-generic/percpu.h>
++
++#endif /* __UM_PERCPU_H */
+-- 
+1.7.5.3
 
-- Josh Triplett
