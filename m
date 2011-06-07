@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab1FGRJz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 13:09:55 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:56361 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753708Ab1FGRJx (ORCPT
+	id S1755654Ab1FGRLM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 13:11:12 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:46768 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753086Ab1FGRLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 13:09:53 -0400
-Message-ID: <4DEE5B5F.6030606@candelatech.com>
-Date: Tue, 07 Jun 2011 10:09:51 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Tue, 7 Jun 2011 13:11:10 -0400
+X-Sasl-enc: prsgle8vF5T8bcXEkfkrj/NTE5pRSZMztMWvt68Mgm3W 1307466669
+Date: Tue, 7 Jun 2011 10:10:43 -0700
+From: Greg KH <greg@kroah.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@suse.de, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v2 2/2] TTY: ntty, add one more sanity check
+Message-ID: <20110607171043.GA1200@kroah.com>
+References: <BANLkTik5QP7e=+FWSa1kLVpCjZpWEtF1PQ@mail.gmail.com>
+ <1307276177-20957-1-git-send-email-jslaby@suse.cz>
+ <1307276177-20957-2-git-send-email-jslaby@suse.cz>
+ <20110607164423.GA32575@kroah.com>
+ <4DEE588E.1050108@suse.cz>
 MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Keith Packard <keithp@keithp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 3.0.0-rc2 fails to boot on Atom appliance (bisected, drm/i915)
-References: <4DED33DF.8000201@candelatech.com>	<4DED6221.1060806@candelatech.com>	<yunzkluzfw9.fsf@aiko.keithp.com>	<4DED69C6.1090301@candelatech.com> <20110606172402.72ddb29b@jbarnes-desktop> <4DEDA25C.5010405@candelatech.com>
-In-Reply-To: <4DEDA25C.5010405@candelatech.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DEE588E.1050108@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2011 09:00 PM, Ben Greear wrote:
-> On 06/06/2011 05:24 PM, Jesse Barnes wrote:
->> On Mon, 06 Jun 2011 16:59:02 -0700
->> Ben Greear<greearb@candelatech.com> wrote:
->>
->>> On 06/06/2011 04:41 PM, Keith Packard wrote:
->>>> On Mon, 06 Jun 2011 16:26:25 -0700, Ben
->>>> Greear<greearb@candelatech.com> wrote:
->>>>> On 06/06/2011 01:09 PM, Ben Greear wrote:
->>>>>> Anyone seen something like this? For what it's worth, it seems
->>>>>> that -rc1 had the same problem. I'll start bisecting soon if
->>>>>> the problem isn't already resolved somehow...
->>>>>
->>>>> I bisected this problem down to this commit:
->>>>
->>>> This should be fixed by this patch:
->>>>
->>>> -------------------- drivers/gpu/drm/i915/intel_display.c
->>>> ---------------------
->>>> index f553ddf..bb1b59b 100644
->>>> @@ -7675,6 +7675,7 @@ static void intel_init_display(struct
->>>> drm_device *dev)
->>>> dev_priv->display.update_wm = NULL;
->>>> } else
->>>> dev_priv->display.update_wm = pineview_update_wm;
->>>> + dev_priv->display.init_clock_gating = gen3_init_clock_gating;
->>>> } else if (IS_G4X(dev)) {
->>>> dev_priv->display.update_wm = g4x_update_wm;
->>>> dev_priv->display.init_clock_gating = g4x_init_clock_gating;
->>>>
->>>> This hasn't been merged yet, but should be soon.
->>>
->>> I tried adding that, but the problem stays the same.
->>>
->>> Any other patches I should try?
->>
->> Are you sure you booted the right kernel and that it built& installed
->> correctly?
->
-> I double checked, but I tried to cheat a bit and just applied that patch on
-> top of -rc2 instead of on top of the patch that breaks things according to
-> bisect. Maybe there is more than one problem. I'll try tweaking that single
-> patch tomorrow.
->
-> And, I built and booted twice to make sure I didn't screw up..but it had
-> been
-> a long day of bisecting, so maybe I still messed up some how.
+On Tue, Jun 07, 2011 at 06:57:50PM +0200, Jiri Slaby wrote:
+> On 06/07/2011 06:44 PM, Greg KH wrote:
+> > On Sun, Jun 05, 2011 at 02:16:17PM +0200, Jiri Slaby wrote:
+> >> With the previous patch, we fixed another bug where read_buf was freed
+> >> while we still was in n_tty_read. We currently check whether read_buf
+> >> is NULL at the start of the function. Add one more check after we wake
+> >> up from waiting for input.
+> >>
+> >> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> >> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> >> ---
+> >>  drivers/tty/n_tty.c |    1 +
+> >>  1 files changed, 1 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> >> index 95d0a9c..c62c856 100644
+> >> --- a/drivers/tty/n_tty.c
+> >> +++ b/drivers/tty/n_tty.c
+> >> @@ -1785,6 +1785,7 @@ do_it_again:
+> >>  				break;
+> >>  			}
+> >>  			timeout = schedule_timeout(timeout);
+> >> +			BUG_ON(!tty->read_buf);
+> > 
+> > So, if we ever hit this, what are we going to do with this crash?
+> > 
+> > I really don't want to add more BUG_ON() calls to the kernel if at all
+> > possible.  Or is it the case that we will crash if this case is true
+> > soon afterward anyway?
+> 
+> Yeah, it will crash something like 10 lines below. The pointer is
+> dereferenced there.
 
-Ok, building with just your fixup patch on top of the busted patch
-does let it boot.
+Ok, fair enough, thanks.
 
-There must be some other failure that is causing -rc2 to fail.
-
-Think I'll wait for -rc3...
-
-Thanks,
-Ben
-
-
->
->>
->> You could add an:
->> if (dev_priv->display.init_clock_gating)
->> above the call to display.init_clock_gating in intel_init_clock_gating
->> to be sure it's the same problem...
->
-> Ok, can try that too.
->
-> Thanks,
-> Ben
->
->
-
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+greg k-h
