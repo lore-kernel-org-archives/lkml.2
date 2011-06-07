@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab1FGQIb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 12:08:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57907 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750941Ab1FGQI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 12:08:29 -0400
-Date: Tue, 7 Jun 2011 19:08:30 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCHv2 RFC 0/4] virtio and vhost-net capacity handling
-Message-ID: <20110607160830.GB17581@redhat.com>
-References: <cover.1307029008.git.mst@redhat.com>
+	id S1754758Ab1FGQRd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 12:17:33 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:33543 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222Ab1FGQRb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 12:17:31 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-131.messagelabs.com!1307463441!12417087!21
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.180]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@iki.fi>,
+        Vinod Koul <vinod.koul@intel.com>
+Date: Tue, 7 Jun 2011 11:17:26 -0500
+Subject: RE: linux-next: manual merge of the gpio tree with the slave-dma
+ tree
+Thread-Topic: linux-next: manual merge of the gpio tree with the slave-dma
+ tree
+Thread-Index: AcwkvsY7pRLwF4Q0TaWQimkfJHrazgAb1Ugg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3820B7E0F@AUSP01VMBX24.collaborationhost.net>
+References: <20110607125723.8e591e42.sfr@canb.auug.org.au>
+In-Reply-To: <20110607125723.8e591e42.sfr@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1307029008.git.mst@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 06:42:35PM +0300, Michael S. Tsirkin wrote:
-> OK, here's a new attempt to use the new capacity api.  I also added more
-> comments to clarify the logic.  Hope this is more readable.  Let me know
-> pls.
+On Monday, June 06, 2011 7:57 PM, Stephen Rothwell wrote:
+> Hi Grant,
 > 
-> This is on top of the patches applied by Rusty.
+> Today's linux-next merge of the gpio tree got a conflict in
+> arch/arm/mach-ep93xx/Makefile between commit 8e4a93008db7 ("ep93xx:
+> remove the old M2P DMA code") from the slave-dma tree and commit
+> c6b52c13de44 ("gpio/ep93xx: move driver to drivers/gpio") from the gpio
+> tree.
 > 
-> Warning: untested. Posting now to give people chance to
-> comment on the API.
+> I fixed it up (see below) and can carry the fix as necessary.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/arm/mach-ep93xx/Makefile
+> index 21e721a,6b7c41d..0000000
+> --- a/arch/arm/mach-ep93xx/Makefile
+> +++ b/arch/arm/mach-ep93xx/Makefile
+> @@@ -1,7 -1,7 +1,7 @@@
+>   #
+>   # Makefile for the linux kernel.
+>   #
+> - obj-y			:= core.o clock.o gpio.o
+>  -obj-y			:= core.o clock.o dma-m2p.o
+> ++obj-y			:= core.o clock.o
+>   obj-m			:=
+>   obj-n			:=
+>   obj-			:=
 
-OK, this seems to have survived some testing so far,
-after I dropped patch 4 and fixed build for patch 3
-(build fixup patch sent in reply to the original).
+Stephen,
 
-I'll be mostly offline until Sunday, would appreciate
-testing reports.
+This is, of course, the correct fix.  If you want it:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git
-virtio-net-xmit-polling-v2
-git://git.kernel.org/pub/scm/linux/kernel/git/mst/qemu-kvm.git
-virtio-net-event-idx-v3
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
 Thanks!
-
-> Changes from v1:
-> - fix comment in patch 2 to correct confusion noted by Rusty
-> - rewrite patch 3 along the lines suggested by Rusty
->   note: it's not exactly the same but I hope it's close
->   enough, the main difference is that mine does limited
->   polling even in the unlikely xmit failure case.
-> - added a patch to not return capacity from add_buf
->   it always looked like a weird hack
-> 
-> Michael S. Tsirkin (4):
->   virtio_ring: add capacity check API
->   virtio_net: fix tx capacity checks using new API
->   virtio_net: limit xmit polling
->   Revert "virtio: make add_buf return capacity remaining:
-> 
->  drivers/net/virtio_net.c     |  111 ++++++++++++++++++++++++++----------------
->  drivers/virtio/virtio_ring.c |   10 +++-
->  include/linux/virtio.h       |    7 ++-
->  3 files changed, 84 insertions(+), 44 deletions(-)
-> 
-> -- 
-> 1.7.5.53.gc233e
