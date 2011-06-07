@@ -1,35 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758961Ab1FGXII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 19:08:08 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:48801 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756146Ab1FGXIG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 19:08:06 -0400
-Date: Tue, 07 Jun 2011 16:07:47 -0700 (PDT)
-Message-Id: <20110607.160747.1497130458418856130.davem@davemloft.net>
-To: joe@perches.com
-Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH] sparc: Remove unnecessary semicolons
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <6249a3b9b6716eb774d4c7958c259e5e2d43d642.1307148187.git.joe@perches.com>
-References: <6249a3b9b6716eb774d4c7958c259e5e2d43d642.1307148187.git.joe@perches.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 07 Jun 2011 16:08:05 -0700 (PDT)
+	id S1758990Ab1FGXNK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 19:13:10 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:58121 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756086Ab1FGXNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 19:13:08 -0400
+Date: Tue, 7 Jun 2011 16:13:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/5] Fix mismatched variable in rcutree_trace.c
+Message-ID: <20110607231306.GH2286@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1307485593-27196-1-git-send-email-andi@firstfloor.org>
+ <1307485593-27196-2-git-send-email-andi@firstfloor.org>
+ <alpine.LFD.2.02.1106080040320.11814@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1106080040320.11814@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Fri,  3 Jun 2011 17:45:23 -0700
-
-> Semicolons are not necessary after switch/while/for/if braces
-> so remove them.
+On Wed, Jun 08, 2011 at 12:42:17AM +0200, Thomas Gleixner wrote:
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> 
+> On Tue, 7 Jun 2011, Andi Kleen wrote:
+> 
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > rcutree.c defines rcu_cpu_kthread_cpu as int, not unsigned int,
+> > so the extern has to follow that.
+> > 
+> > Cc: paulmck@linux.vnet.ibm.com
+> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> > ---
+> >  kernel/rcutree_trace.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+> > index 9678cc3..91c56e5 100644
+> > --- a/kernel/rcutree_trace.c
+> > +++ b/kernel/rcutree_trace.c
+> > @@ -47,7 +47,7 @@
+> >  #include "rcutree.h"
+> >  
+> >  DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
+> > -DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_cpu);
+> > +DECLARE_PER_CPU(int, rcu_cpu_kthread_cpu);
+> 
+> Can we rather fix the DEFINE to use unsigned int. Signed cpu numbers
+> are pointless in that context, right ?
 
-Applied, thanks Joe.
+Hmmm...  Some arches have signed CPU numbers while others have unsigned
+CPU numbers.  I do use "-1" to mean "no CPU" in some cases (for example,
+in rcu_node_kthread_setaffinity()), so I guess for consistency I should
+be using "int" everywhere.
+
+So, any plans for systems with 2,147,483,648 CPUs?  ;-)
+
+							Thanx, Paul
+
+> >  DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_loops);
+> >  DECLARE_PER_CPU(char, rcu_cpu_has_work);
+> >  
+> > -- 
+> > 1.7.4.4
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
