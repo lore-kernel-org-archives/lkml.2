@@ -1,485 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab1FGPqB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 11:46:01 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:40920 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753790Ab1FGPqA (ORCPT
+	id S1756966Ab1FGPsu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 11:48:50 -0400
+Received: from usindmx01.hds.com ([207.126.252.12]:59967 "EHLO
+	usindmx01.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688Ab1FGPst convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 11:46:00 -0400
-Date: Tue, 7 Jun 2011 21:15:43 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Pavel Emelyanov <xemul@openvz.org>
-Subject: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
- unpinned
-Message-ID: <20110607154542.GA2991@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-References: <20110503092846.022272244@google.com>
+	Tue, 7 Jun 2011 11:48:49 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Matthew Garrett <mjg@redhat.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Matt_Domsch@dell.com" <Matt_Domsch@dell.com>
+Date: Tue, 7 Jun 2011 11:47:38 -0400
+Subject: RE: [PATCH 3/3] efi: Add support for using efivars as a pstore
+ backend
+Thread-Topic: [PATCH 3/3] efi: Add support for using efivars as a pstore
+ backend
+Thread-Index: AcwkgXRl/obUDSELRuiTwDzgoptlwgAqHVIg
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C17497E04@USINDEVS01.corp.hds.com>
+References: <1307389135-8150-1-git-send-email-mjg@redhat.com>
+ <1307389135-8150-3-git-send-email-mjg@redhat.com>
+In-Reply-To: <1307389135-8150-3-git-send-email-mjg@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110503092846.022272244@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Hi,
 
-    In our test environment, while testing the CFS Bandwidth V6 patch set 
-on top of 55922c9d1b84. We observed that the CPU's idle time is seen
-between 30% to 40% while running CPU bound test, with the cgroups tasks 
-not pinned to the CPU's. Whereas in the inverse case, where the cgroups 
-tasks are pinned to the CPU's, the idle time seen is nearly zero.
+Recently, I have suggested similar patches.
+Does your patch satisfy my purpose?
 
-Test Scenario
---------------
-- 5 cgroups are created with each groups assigned 2, 2, 4, 8, 16 tasks respectively.
-- Each of the cgroup, has N sub-cgroups created. Where N is the NR_TASKS the cgroup 
-  is assigned with. i.e., cgroup1, will create two sub-cgroups under it and assigned 
-  one tasks per sub-group.
-				------------
-				| cgroup 1 |
-				------------
-				 /        \
-				/          \
-			  --------------  --------------
-			  |sub-cgroup 1|  |sub-cgroup 2|
-			  | (task 1)   |  | (task 2)   |
-			  --------------  --------------
 
-- Top cgroup is given unlimited quota (cpu.cfs_quota_us = -1) and period of 500ms
-  (cpu.cfs_period_us = 500000). Whereas the sub-cgroups are given 250ms of quota
-  (cpu.cfs_quota_us = 250000) and period of 500ms. i.e. the top cgroups are given
-  unlimited bandwidth, whereas the sub-group are throttled every 250ms.
+[RFC][PATCH] kmsg_dumper for NVRAM
+http://choon.net/forum/read.php?21,84718
 
-- Additional if required the proportional CPU shares can be assigned to cpu.shares 
-  as NR_TASKS * 1024. i.e. cgroup1 has 2 tasks * 1024 = 2048 worth cpu.shares
-  for cgroup1. (In the below test results published all cgroups and sub-cgroups
-  are given the equal share of 1024).
 
-- One CPU bound while(1) task is attached to each sub-cgroup.
+[RFC][PATCH] pstore: EFI Support
+http://choon.net/forum/read.php?21,84718,85162
 
-- sum-exec time for each cgroup/sub-cgroup is captured from /proc/sched_debug after 
-  60 seconds and analyzed for the run time of the tasks a.k.a sub-cgroup.
+Seiji
 
-How is the idle CPU time measured ?
-------------------------------------
-- vmstat stats are logged every 2 seconds, after attaching the last while1 task 
-  to 16th sub-cgroup of cgroup 5 till the 60 sec run is over. After the run idle%
-  of a CPU is calculated by summing idle column from the vmstat log and dividing it 
-  by number of samples collected, of-course after neglecting the first record 
-  from the log.
-
-How are the tasks pinned to the CPU ?
--------------------------------------
-- cgroup is mounted with cpuset,cpu controller and for every 2 sub-cgroups one 
-  physical CPU is allocated. i.e. CPU 1 is allocated between 1/1 and 1/2 (Group 1, 
-  sub-cgroup 1 and sub-cgroup 2). Similarly CPUs 7 to 15 are allocated to 15/1 to 
-  15/16 (Group 15, subgroup 1 to 16). Note that test machine used to test has
-  16 CPUs.
-
-Result for non-pining case
----------------------------
-Only the hierarchy is created as stated above and cpusets are not assigned per cgroup.
-
-Average CPU Idle percentage 34.8% (as explained above in the Idle time measured)
-Bandwidth shared with remaining non-Idle 65.2%
-
-* Note: For the sake of roundoff value the numbers are multiplied by 100.
-
-In the below result for cgroup1 9.2500 corresponds to sum-exec time captured 
-from /proc/sched_debug for cgroup 1 tasks (including sub-cgroup 1 and 2). 
-Which is in-turn 6% of the non-Idle CPU time (which is derived by 9.2500 * 65.2 / 100 )
-
-Bandwidth of Group 1 = 9.2500 i.e = 6.0300% of non-Idle CPU time 65.2%
-|...... subgroup 1/1	= 48.7800	i.e = 2.9400% of 6.0300% Groups non-Idle CPU time
-|...... subgroup 1/2	= 51.2100	i.e = 3.0800% of 6.0300% Groups non-Idle CPU time
- 
- 
-Bandwidth of Group 2 = 9.0400 i.e = 5.8900% of non-Idle CPU time 65.2%
-|...... subgroup 2/1	= 51.0200	i.e = 3.0000% of 5.8900% Groups non-Idle CPU time
-|...... subgroup 2/2	= 48.9700	i.e = 2.8800% of 5.8900% Groups non-Idle CPU time
- 
- 
-Bandwidth of Group 3 = 16.9300 i.e = 11.0300% of non-Idle CPU time 65.2%
-|...... subgroup 3/1	= 26.0300	i.e = 2.8700% of 11.0300% Groups non-Idle CPU time
-|...... subgroup 3/2	= 25.8800	i.e = 2.8500% of 11.0300% Groups non-Idle CPU time
-|...... subgroup 3/3	= 22.7800	i.e = 2.5100% of 11.0300% Groups non-Idle CPU time
-|...... subgroup 3/4	= 25.2900	i.e = 2.7800% of 11.0300% Groups non-Idle CPU time
- 
- 
-Bandwidth of Group 4 = 27.9300 i.e = 18.2100% of non-Idle CPU time 65.2%
-|...... subgroup 4/1	= 16.6000	i.e = 3.0200% of 18.2100% Groups non-Idle CPU time
-|...... subgroup 4/2	= 8.0000	i.e = 1.4500% of 18.2100% Groups non-Idle CPU time
-|...... subgroup 4/3	= 9.0000	i.e = 1.6300% of 18.2100% Groups non-Idle CPU time
-|...... subgroup 4/4	= 7.9600	i.e = 1.4400% of 18.2100% Groups non-Idle CPU time
-|...... subgroup 4/5	= 12.3500	i.e = 2.2400% of 18.2100% Groups non-Idle CPU time
-|...... subgroup 4/6	= 16.2500	i.e = 2.9500% of 18.2100% Groups non-Idle CPU time
-|...... subgroup 4/7	= 12.6100	i.e = 2.2900% of 18.2100% Groups non-Idle CPU time
-|...... subgroup 4/8	= 17.1900	i.e = 3.1300% of 18.2100% Groups non-Idle CPU time
- 
- 
-Bandwidth of Group 5 = 36.8300 i.e = 24.0100% of non-Idle CPU time 65.2%
-|...... subgroup 5/1	= 56.6900	i.e = 13.6100%	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/2	= 8.8600	i.e = 2.1200% 	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/3	= 5.5100	i.e = 1.3200% 	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/4	= 4.5700	i.e = 1.0900%	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/5	= 7.9500	i.e = 1.9000%	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/6	= 2.1600	i.e = .5100%	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/7	= 2.3400	i.e = .5600%	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/8	= 2.1500	i.e = .5100%	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/9	= 9.7200	i.e = 2.3300% 	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/10	= 5.0600	i.e = 1.2100% 	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/11	= 4.6900	i.e = 1.1200% 	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/12	= 8.9700	i.e = 2.1500% 	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/13	= 8.4600	i.e = 2.0300% 	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/14	= 11.8400	i.e = 2.8400% 	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/15	= 6.3400	i.e = 1.5200% 	of 24.0100% Groups non-Idle CPU time
-|...... subgroup 5/16	= 5.1500	i.e = 1.2300% 	of 24.0100% Groups non-Idle CPU time
-
-Pinned case
---------------
-CPU hierarchy is created and cpusets are allocated.
-
-Average CPU Idle percentage 0%
-Bandwidth shared with remaining non-Idle 100%
-
-Bandwidth of Group 1 = 6.3400 i.e = 6.3400% of non-Idle CPU time 100%
-|...... subgroup 1/1	= 50.0400	i.e = 3.1700% of 6.3400% Groups non-Idle CPU time
-|...... subgroup 1/2	= 49.9500	i.e = 3.1600% of 6.3400% Groups non-Idle CPU time
- 
- 
-Bandwidth of Group 2 = 6.3200 i.e = 6.3200% of non-Idle CPU time 100%
-|...... subgroup 2/1	= 50.0400	i.e = 3.1600% of 6.3200% Groups non-Idle CPU time
-|...... subgroup 2/2	= 49.9500	i.e = 3.1500% of 6.3200% Groups non-Idle CPU time
- 
- 
-Bandwidth of Group 3 = 12.6300 i.e = 12.6300% of non-Idle CPU time 100%
-|...... subgroup 3/1	= 25.0300	i.e = 3.1600% of 12.6300% Groups non-Idle CPU time
-|...... subgroup 3/2	= 25.0100	i.e = 3.1500% of 12.6300% Groups non-Idle CPU time
-|...... subgroup 3/3	= 25.0000	i.e = 3.1500% of 12.6300% Groups non-Idle CPU time
-|...... subgroup 3/4	= 24.9400	i.e = 3.1400% of 12.6300% Groups non-Idle CPU time
- 
- 
-Bandwidth of Group 4 = 25.1000 i.e = 25.1000% of non-Idle CPU time 100%
-|...... subgroup 4/1	= 12.5400	i.e = 3.1400% of 25.1000% Groups non-Idle CPU time
-|...... subgroup 4/2	= 12.5100	i.e = 3.1400% of 25.1000% Groups non-Idle CPU time
-|...... subgroup 4/3	= 12.5300	i.e = 3.1400% of 25.1000% Groups non-Idle CPU time
-|...... subgroup 4/4	= 12.5000	i.e = 3.1300% of 25.1000% Groups non-Idle CPU time
-|...... subgroup 4/5	= 12.4900	i.e = 3.1300% of 25.1000% Groups non-Idle CPU time
-|...... subgroup 4/6	= 12.4700	i.e = 3.1200% of 25.1000% Groups non-Idle CPU time
-|...... subgroup 4/7	= 12.4700	i.e = 3.1200% of 25.1000% Groups non-Idle CPU time
-|...... subgroup 4/8	= 12.4500	i.e = 3.1200% of 25.1000% Groups non-Idle CPU time
- 
- 
-Bandwidth of Group 5 = 49.5700 i.e = 49.5700% of non-Idle CPU time 100%
-|...... subgroup 5/1	= 49.8500	i.e = 24.7100% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/2	= 6.2900	i.e = 3.1100% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/3	= 6.2800	i.e = 3.1100% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/4	= 6.2700	i.e = 3.1000% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/5	= 6.2700	i.e = 3.1000% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/6	= 6.2600	i.e = 3.1000% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/7	= 6.2500	i.e = 3.0900% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/8	= 6.2400	i.e = 3.0900% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/9	= 6.2400	i.e = 3.0900% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/10	= 6.2300	i.e = 3.0800% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/11	= 6.2300	i.e = 3.0800% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/12	= 6.2200	i.e = 3.0800% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/13	= 6.2100	i.e = 3.0700% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/14	= 6.2100	i.e = 3.0700% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/15	= 6.2100	i.e = 3.0700% of 49.5700% Groups non-Idle CPU time
-|...... subgroup 5/16	= 6.2100	i.e = 3.0700% of 49.5700% Groups non-Idle CPU time
- 
-with equal cpu shares allocated to all the groups/sub-cgroups and CFS bandwidth configured
-to allow 100% CPU utilization. We see the CPU idle time in the un-pinned case.
-
-Benchmark used to reproduce the issue, is attached. Justing executing the script should
-report similar numbers.
-
-#!/bin/bash
-
-NR_TASKS1=2
-NR_TASKS2=2
-NR_TASKS3=4
-NR_TASKS4=8
-NR_TASKS5=16
-
-BANDWIDTH=1
-SUBGROUP=1
-PRO_SHARES=0
-MOUNT=/cgroup/
-LOAD=/root/while1
-
-usage()
-{
-	echo "Usage $0: [-b 0|1] [-s 0|1] [-p 0|1]"
-	echo "-b 1|0 set/unset  Cgroups bandwidth control (default set)"
-	echo "-s Create sub-groups for every task (default creates sub-group)"
-	echo "-p create propotional shares based on cpus"
-	exit
-}
-while getopts ":b:s:p:" arg
-do
-	case $arg in
-	b)
-		BANDWIDTH=$OPTARG
-		shift
-		if [ $BANDWIDTH -gt 1 ] && [ $BANDWIDTH -lt  0 ]
-		then
-			usage
-		fi
-		;;
-	s)
-		SUBGROUP=$OPTARG
-		shift
-		if [ $SUBGROUP -gt 1 ] && [ $SUBGROUP -lt 0 ]
-		then
-			usage
-		fi
-		;;
-	p)
-		PRO_SHARES=$OPTARG
-		shift
-		if [ $PRO_SHARES -gt 1 ] && [ $PRO_SHARES -lt 0 ]
-		then
-			usage
-		fi
-		;;
-
-	*)
-
-	esac
-done
-if [ ! -d $MOUNT ]
-then
-	mkdir -p $MOUNT
-fi
-test()
-{
-	echo -n "[ "
-	if [ $1 -eq 0 ]
-	then
-		echo -ne '\E[42;40mOk'
-	else
-		echo -ne '\E[31;40mFailed'
-		tput sgr0
-		echo " ]"
-		exit
-	fi
-	tput sgr0
-	echo " ]"
-}
-mount_cgrp()
-{
-	echo -n "Mounting root cgroup "
-	mount -t cgroup -ocpu,cpuset,cpuacct none $MOUNT &> /dev/null
-	test $?
-}
-
-umount_cgrp()
-{
-	echo -n "Unmounting root cgroup "
-	cd /root/
-	umount $MOUNT
-	test $?
-}
-
-create_hierarchy()
-{
-	mount_cgrp
-	cpuset_mem=`cat $MOUNT/cpuset.mems`
-	cpuset_cpu=`cat $MOUNT/cpuset.cpus`
-	echo -n "creating groups/sub-groups ..."
-	for (( i=1; i<=5; i++ ))
-	do
-		mkdir $MOUNT/$i
-		echo $cpuset_mem > $MOUNT/$i/cpuset.mems
-		echo $cpuset_cpu > $MOUNT/$i/cpuset.cpus
-		echo -n ".."
-		if [ $SUBGROUP -eq 1 ]
-		then
-			jj=$(eval echo "\$NR_TASKS$i")
-			for (( j=1; j<=$jj; j++ ))
-			do
-				mkdir -p $MOUNT/$i/$j
-				echo $cpuset_mem > $MOUNT/$i/$j/cpuset.mems
-				echo $cpuset_cpu > $MOUNT/$i/$j/cpuset.cpus
-				echo -n ".."
-			done
-		fi
-	done
-	echo "."
-}
-
-cleanup()
-{
-	pkill -9 while1 &> /dev/null
-	sleep 10
-	echo -n "Umount groups/sub-groups .."
-	for (( i=1; i<=5; i++ ))
-	do
-		if [ $SUBGROUP -eq 1 ]
-		then
-			jj=$(eval echo "\$NR_TASKS$i")
-			for (( j=1; j<=$jj; j++ ))
-			do
-				rmdir $MOUNT/$i/$j
-				echo -n ".."
-			done
-		fi
-		rmdir $MOUNT/$i
-		echo -n ".."
-	done
-	echo " "
-	umount_cgrp
-}
-
-load_tasks()
-{
-	for (( i=1; i<=5; i++ ))
-	do
-		jj=$(eval echo "\$NR_TASKS$i")
-		shares="1024"
-		if [ $PRO_SHARES -eq 1 ]
-		then
-			eval shares=$(echo "$jj * 1024" | bc)
-		fi
-		echo $hares > $MOUNT/$i/cpu.shares
-		for (( j=1; j<=$jj; j++ ))
-		do
-			echo "-1" > $MOUNT/$i/cpu.cfs_quota_us
-			echo "500000" > $MOUNT/$i/cpu.cfs_period_us
-			if [ $SUBGROUP -eq 1 ]
-			then
-
-				$LOAD &
-				echo $! > $MOUNT/$i/$j/tasks
-				echo "1024" > $MOUNT/$i/$j/cpu.shares
-
-				if [ $BANDWIDTH -eq 1 ]
-				then
-					echo "500000" > $MOUNT/$i/$j/cpu.cfs_period_us
-					echo "250000" > $MOUNT/$i/$j/cpu.cfs_quota_us
-				fi
-			else
-				$LOAD & 
-				echo $! > $MOUNT/$i/tasks
-				echo $shares > $MOUNT/$i/cpu.shares
-
-				if [ $BANDWIDTH -eq 1 ]
-				then
-					echo "500000" > $MOUNT/$i/cpu.cfs_period_us
-					echo "250000" > $MOUNT/$i/cpu.cfs_quota_us
-				fi
-			fi
-		done
-	done
-	echo "Captuing idle cpu time with vmstat...."
-	vmstat 2 100 &> vmstat_log &
-}
-
-pin_tasks()
-{
-	cpu=0
-	count=1
-	for (( i=1; i<=5; i++ ))
-	do
-		if [ $SUBGROUP -eq 1 ]
-		then
-			jj=$(eval echo "\$NR_TASKS$i")
-			for (( j=1; j<=$jj; j++ ))
-			do
-				if [ $count -gt 2 ]
-				then
-					cpu=$((cpu+1))
-					count=1
-				fi
-				echo $cpu > $MOUNT/$i/$j/cpuset.cpus
-				count=$((count+1))
-			done
-		else
-			case $i in
-			1)
-				echo 0 > $MOUNT/$i/cpuset.cpus;;
-			2)
-				echo 1 > $MOUNT/$i/cpuset.cpus;;
-			3)
-				echo "2-3" > $MOUNT/$i/cpuset.cpus;;
-			4)
-				echo "4-6" > $MOUNT/$i/cpuset.cpus;;
-			5)
-				echo "7-15" > $MOUNT/$i/cpuset.cpus;;
-			esac
-		fi
-	done
-	
-}
-
-print_results()
-{
-	eval gtot=$(cat sched_log|grep -i while|sed 's/R//g'|awk '{gtot+=$7};END{printf "%f", gtot}')
-	for (( i=1; i<=5; i++ ))	
-	do
-		eval temp=$(cat sched_log_$i|sed 's/R//g'| awk '{gtot+=$7};END{printf "%f",gtot}')
-		eval tavg=$(echo "scale=4;(($temp / $gtot) * $1)/100 " | bc)
-		eval avg=$(echo  "scale=4;($temp / $gtot) * 100" | bc)
-		eval pretty_tavg=$( echo "scale=4; $tavg * 100"| bc) # F0r pretty format
-		echo "Bandwidth of Group $i = $avg i.e = $pretty_tavg% of non-Idle CPU time $1%"
-		if [ $SUBGROUP -eq 1 ]
-		then
-			jj=$(eval echo "\$NR_TASKS$i")
-			for (( j=1; j<=$jj; j++ ))
-			do
-				eval tmp=$(cat sched_log_$i-$j|sed 's/R//g'| awk '{gtot+=$7};END{printf "%f",gtot}')
-				eval stavg=$(echo "scale=4;($tmp / $temp) * 100" | bc)
-				eval pretty_stavg=$(echo "scale=4;(($tmp / $temp) * $tavg) * 100" | bc)
-				echo -n "|"
-				echo -e "...... subgroup $i/$j\t= $stavg\ti.e = $pretty_stavg% of $pretty_tavg% Groups non-Idle CPU time"
-			done
-		fi
-		echo " "
-		echo " "
-	done
-}
-capture_results()
-{
-	cat /proc/sched_debug > sched_log
-	pkill -9 vmstat -c
-	avg=$(cat vmstat_log |grep -iv "system"|grep -iv "swpd"|awk ' { if ( NR != 1) {id+=$15 }}END{print (id/NR)}')
-	
-	rem=$(echo "scale=2; 100 - $avg" |bc)
-	echo "Average CPU Idle percentage $avg%"	
-	echo "Bandwidth shared with remaining non-Idle $rem%" 
-	for (( i=1; i<=5; i++ ))
-	do
-		cat sched_log |grep -i while1|grep -i " \/$i" > sched_log_$i
-		if [ $SUBGROUP -eq 1 ]
-		then
-			jj=$(eval echo "\$NR_TASKS$i")
-			for (( j=1; j<=$jj; j++ ))
-			do
-				cat sched_log |grep -i while1|grep -i " \/$i\/$j" > sched_log_$i-$j
-			done
-		fi
-	done
-	print_results $rem
-}
-create_hierarchy
-pin_tasks
-
-load_tasks
-sleep 60
-capture_results
-cleanup
-exit
-
-Thanks,
-Kamalesh.
+>-----Original Message-----
+>From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Matthew Garrett
+>Sent: Monday, June 06, 2011 3:39 PM
+>To: tony.luck@intel.com
+>Cc: linux-kernel@vger.kernel.org; Matt_Domsch@dell.com; Matthew Garrett
+>Subject: [PATCH 3/3] efi: Add support for using efivars as a pstore backend
+>
+>EFI provides an area of nonvolatile storage managed by the firmware. We
+>can use this as a pstore backend to maintain copies of oopses, aiding
+>diagnosis.
+>
+>Signed-off-by: Matthew Garrett <mjg@redhat.com>
+>---
+> drivers/firmware/efivars.c |  158 +++++++++++++++++++++++++++++++++++++++++++-
+> include/linux/efi.h        |    3 +
+> 2 files changed, 159 insertions(+), 2 deletions(-)
+>
+>diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+>index 5f29aaf..89e6a3a 100644
+>--- a/drivers/firmware/efivars.c
+>+++ b/drivers/firmware/efivars.c
+>@@ -78,6 +78,7 @@
+> #include <linux/kobject.h>
+> #include <linux/device.h>
+> #include <linux/slab.h>
+>+#include <linux/pstore.h>
+>
+> #include <asm/uaccess.h>
+>
+>@@ -89,6 +90,8 @@ MODULE_DESCRIPTION("sysfs interface to EFI Variables");
+> MODULE_LICENSE("GPL");
+> MODULE_VERSION(EFIVARS_VERSION);
+>
+>+#define DUMP_NAME_LEN 52
+>+
+> /*
+>  * The maximum size of VariableName + Data = 1024
+>  * Therefore, it's reasonable to save that much
+>@@ -161,18 +164,28 @@ utf8_strsize(efi_char16_t *data, unsigned long maxlength)
+> }
+>
+> static efi_status_t
+>-get_var_data(struct efivars *efivars, struct efi_variable *var)
+>+get_var_data_locked(struct efivars *efivars, struct efi_variable *var)
+> {
+> 	efi_status_t status;
+>
+>-	spin_lock(&efivars->lock);
+> 	var->DataSize = 1024;
+> 	status = efivars->ops->get_variable(var->VariableName,
+> 					    &var->VendorGuid,
+> 					    &var->Attributes,
+> 					    &var->DataSize,
+> 					    var->Data);
+>+	return status;
+>+}
+>+
+>+static efi_status_t
+>+get_var_data(struct efivars *efivars, struct efi_variable *var)
+>+{
+>+	efi_status_t status;
+>+
+>+	spin_lock(&efivars->lock);
+>+	status = get_var_data_locked(efivars, var);
+> 	spin_unlock(&efivars->lock);
+>+
+> 	if (status != EFI_SUCCESS) {
+> 		printk(KERN_WARNING "efivars: get_variable() failed 0x%lx!\n",
+> 			status);
+>@@ -387,12 +400,145 @@ static struct kobj_type efivar_ktype = {
+> 	.default_attrs = def_attrs,
+> };
+>
+>+static struct efivar_entry *walk_entry;
+>+
+>+static struct pstore_info efi_pstore_info;
+>+
+> static inline void
+> efivar_unregister(struct efivar_entry *var)
+> {
+> 	kobject_put(&var->kobj);
+> }
+>
+>+static int efi_pstore_open(struct pstore_info *psi)
+>+{
+>+	struct efivars *efivars = psi->data;
+>+
+>+	spin_lock(&efivars->lock);
+>+	walk_entry = list_first_entry(&efivars->list, struct efivar_entry,
+>+				      list);
+>+	return 0;
+>+}
+>+
+>+static int efi_pstore_close(struct pstore_info *psi)
+>+{
+>+	struct efivars *efivars = psi->data;
+>+
+>+	spin_unlock(&efivars->lock);
+>+	return 0;
+>+}
+>+
+>+static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+>+			       struct timespec *timespec, struct pstore_info *psi)
+>+{
+>+	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
+>+	struct efivars *efivars = psi->data;
+>+	char name[DUMP_NAME_LEN];
+>+	int i;
+>+	unsigned int part, size;
+>+	unsigned long time;
+>+
+>+	while (&walk_entry->list != &efivars->list) {
+>+		if (!efi_guidcmp(walk_entry->var.VendorGuid, vendor)) {
+>+			for (i = 0; i < DUMP_NAME_LEN; i++) {
+>+				name[i] = walk_entry->var.VariableName[i];
+>+			}
+>+			if (sscanf(name, "dump-type%u-%u-%lu", type, &part, &time) == 3) {
+>+				*id = part;
+>+				timespec->tv_sec = time;
+>+				timespec->tv_nsec = 0;
+>+				get_var_data_locked(efivars, &walk_entry->var);
+>+				size = walk_entry->var.DataSize;
+>+				memcpy(psi->buf, walk_entry->var.Data, size);
+>+				walk_entry = list_entry(walk_entry->list.next,
+>+					           struct efivar_entry, list);
+>+				return size;
+>+			}
+>+		}
+>+		walk_entry = list_entry(walk_entry->list.next,
+>+					struct efivar_entry, list);
+>+	}
+>+	return 0;
+>+}
+>+
+>+static u64 efi_pstore_write(enum pstore_type_id type, int part, size_t size,
+>+			    struct pstore_info *psi)
+>+{
+>+	char name[DUMP_NAME_LEN];
+>+	char stub_name[DUMP_NAME_LEN];
+>+	efi_char16_t efi_name[DUMP_NAME_LEN];
+>+	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
+>+	struct efivars *efivars = psi->data;
+>+	struct efivar_entry *entry, *found = NULL;
+>+	int i;
+>+
+>+	sprintf(stub_name, "dump-type%u-%u-", type, part);
+>+	sprintf(name, "%s%lu", stub_name, get_seconds());
+>+
+>+	spin_lock(&efivars->lock);
+>+
+>+	for (i = 0; i < DUMP_NAME_LEN; i++)
+>+		efi_name[i] = stub_name[i];
+>+
+>+	/*
+>+	 * Clean up any entries with the same name
+>+	 */
+>+
+>+	list_for_each_entry(entry, &efivars->list, list) {
+>+		get_var_data_locked(efivars, &entry->var);
+>+
+>+		for (i = 0; i < DUMP_NAME_LEN; i++) {
+>+			if (efi_name[i] == 0) {
+>+				found = entry;
+>+				efi.set_variable(entry->var.VariableName, &entry->var.VendorGuid,
+>+						 EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS |
+>EFI_VARIABLE_RUNTIME_ACCESS,
+>+						 0, NULL);
+>+				break;
+>+			} else if (efi_name[i] != entry->var.VariableName[i]) {
+>+				break;
+>+			}
+>+		}
+>+	}
+>+
+>+	if (found)
+>+		list_del(&found->list);
+>+
+>+	for (i = 0; i < DUMP_NAME_LEN; i++)
+>+		efi_name[i] = name[i];
+>+
+>+	efi.set_variable(efi_name, &vendor,
+>+			 EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS,
+>+			 size, psi->buf);
+>+
+>+	spin_unlock(&efivars->lock);
+>+
+>+	if (found)
+>+		efivar_unregister(found);
+>+
+>+	if (size)
+>+		efivar_create_sysfs_entry(efivars, utf8_strsize(efi_name, DUMP_NAME_LEN * 2),
+>+					  efi_name, &vendor);
+>+
+>+	return part;
+>+};
+>+
+>+static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+>+			    struct pstore_info *psi)
+>+{
+>+	efi_pstore_write(type, id, 0, psi);
+>+
+>+	return 0;
+>+}
+>+
+>+static struct pstore_info efi_pstore_info = {
+>+	.owner		= THIS_MODULE,
+>+	.name		= "efi",
+>+	.open		= efi_pstore_open,
+>+	.close		= efi_pstore_close,
+>+	.read		= efi_pstore_read,
+>+	.write		= efi_pstore_write,
+>+	.erase		= efi_pstore_erase,
+>+};
+>
+> static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+> 			     struct bin_attribute *bin_attr,
+>@@ -763,6 +909,14 @@ int register_efivars(struct efivars *efivars,
+> 	if (error)
+> 		unregister_efivars(efivars);
+>
+>+	efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
+>+	if (efi_pstore_info.buf) {
+>+		efi_pstore_info.bufsize = 1024;
+>+		efi_pstore_info.data = efivars;
+>+		mutex_init(&efi_pstore_info.buf_mutex);
+>+		pstore_register(&efi_pstore_info);
+>+	}
+>+
+> out:
+> 	kfree(variable_name);
+>
+>diff --git a/include/linux/efi.h b/include/linux/efi.h
+>index ec25726..8dd9a01 100644
+>--- a/include/linux/efi.h
+>+++ b/include/linux/efi.h
+>@@ -232,6 +232,9 @@ typedef efi_status_t efi_query_capsule_caps_t(efi_capsule_header_t **capsules,
+> #define UV_SYSTEM_TABLE_GUID \
+>     EFI_GUID(  0x3b13a7d4, 0x633e, 0x11dd, 0x93, 0xec, 0xda, 0x25, 0x56, 0xd8, 0x95, 0x93 )
+>
+>+#define LINUX_EFI_CRASH_GUID \
+>+    EFI_GUID(  0xcfc8fc79, 0xbe2e, 0x4ddc, 0x97, 0xf0, 0x9f, 0x98, 0xbf, 0xe2, 0x98, 0xa0 )
+>+
+> typedef struct {
+> 	efi_guid_t guid;
+> 	unsigned long table;
+>--
+>1.7.5.2
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
