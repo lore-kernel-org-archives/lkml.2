@@ -1,98 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab1FGATP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 20:19:15 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:57089 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab1FGATM (ORCPT
+	id S1756252Ab1FGATY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 20:19:24 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:58733 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090Ab1FGATT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 20:19:12 -0400
+	Mon, 6 Jun 2011 20:19:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=c1RsIDNmRq3qJcDZ7eUC6RdcjV1ohl23eTDakNDmwSv+HNzJqk9b43h7744wZi+ASP
-         eHaAW0YpPZYm0ioFnMR7SqaYimf85/u5OoOGkg8cKaf5y+atcsf56cO9duUb6RIJ5mkV
-         3iR/n2bXjD8fYvzfeFjQnKcPmNOdAQ3n1EcX0=
-Date: Tue, 7 Jun 2011 02:19:07 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Milton Miller <miltonm@bga.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [1/4] rcu: Detect uses of rcu read side in extended quiescent
- states
-Message-ID: <20110607001905.GE17026@somewhere.redhat.com>
-References: <1307329858-14999-3-git-send-email-fweisbec@gmail.com>
- <rcu-splat-split-printk@mdm.bga.com>
- <20110606181021.GL3066@linux.vnet.ibm.com>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=HRbU03hbNy7edptPT6FDMOPhvoIIc9k+39H3gzLalyZSIHoldm6y3kh4Pq8aE6K7zC
+         oIxv3a7XAYbojCkcC6mE69ipavJoCX32dvEx84xW7QDcXQyI7S2KHrtEM+MK/bW3W7Ve
+         KT5LHQCuaA4HU8fLHha25yL5xMiaXoN6Eo2RQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110606181021.GL3066@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4DED0394.2090000@gmail.com>
+References: <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com>
+	<4CE17098.8090000@xs4all.nl>
+	<AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com>
+	<4CE17C4B.1070305@xs4all.nl>
+	<20101115185848.GI2583@sunsite.ms.mff.cuni.cz>
+	<20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>
+	<AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com>
+	<20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>
+	<4CE1968D.3050706@xs4all.nl>
+	<4DE8DC16.6030308@xs4all.nl>
+	<20110603133351.GA25130@srcf.ucam.org>
+	<4DE8EF13.9030609@xs4all.nl>
+	<BANLkTinWj1LvQLverPTUm9rKEx=+HZUpDA@mail.gmail.com>
+	<4DECFC1C.10801@xs4all.nl>
+	<4DED0394.2090000@gmail.com>
+Date: Mon, 6 Jun 2011 17:19:17 -0700
+X-Google-Sender-Auth: QhNpHCGeBImqgZMfxXoHhO5IR-M
+Message-ID: <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+From: Yinghai Lu <yinghai@kernel.org>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Jim Bos <jim876@xs4all.nl>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 11:10:21AM -0700, Paul E. McKenney wrote:
-> commit c15d76f26712bd5228aa0c6af7a7e7c492a812c9
-> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Date:   Tue May 24 08:31:09 2011 -0700
-> 
->     rcu: Restore checks for blocking in RCU read-side critical sections
->     
->     Long ago, using TREE_RCU with PREEMPT would result in "scheduling
->     while atomic" diagnostics if you blocked in an RCU read-side critical
->     section.  However, PREEMPT now implies TREE_PREEMPT_RCU, which defeats
->     this diagnostic.  This commit therefore adds a replacement diagnostic
->     based on PROVE_RCU.
->     
->     Because rcu_lockdep_assert() and lockdep_rcu_dereference() are now being
->     used for things that have nothing to do with rcu_dereference(), rename
->     lockdep_rcu_dereference() to lockdep_rcu_suspicious() and add a third
->     argument that is a string indicating what is suspicious.  This third
->     argument is passed in from a new third argument to rcu_lockdep_assert().
->     Update all calls to rcu_lockdep_assert() to add an informative third
->     argument.
->     
->     Finally, add a pair of rcu_lockdep_assert() calls from within
->     rcu_note_context_switch(), one complaining if a context switch occurs
->     in an RCU-bh read-side critical section and another complaining if a
->     context switch occurs in an RCU-sched read-side critical section.
->     These are present only if the PROVE_RCU kernel parameter is enabled.
->     
->     Again, you must enable PROVE_RCU to see these new diagnostics.  But you
->     are enabling PROVE_RCU to check out new RCU uses in any case, aren't you?
->     
->     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Mon, Jun 6, 2011 at 9:43 AM, Maarten Lankhorst
+<m.b.lankhorst@gmail.com> wrote:
+> Hi Jim,
+>
+> Op 06-06-11 18:11, Jim Bos schreef:
+>> On 06/06/2011 05:27 PM, Maarten Lankhorst wrote:
+>>> Hi Jim,
+>>>
+>>> 2011/6/3 Jim Bos <jim876@xs4all.nl>:
+>>>> On 06/03/2011 03:33 PM, Matthew Garrett wrote:
+>>>>> On Fri, Jun 03, 2011 at 03:05:26PM +0200, Jim Bos wrote:
+>>>>>> *,
+>>>>>>
+>>>>>> Just applied 2.6.39.1 but my system: 64-bit SLackware, 8GB RAM, MSI mobo
+>>>>>> P67A-C45 bios V1.9. previously happily booting via EFI (nice to see
+>>>>>> Linux and the other OS actually NOT overwriting each others boot
+>>>>>> loaders!) immediately re-booted just after loading the kernel.
+>>>>>>
+>>>>>> Not even a single message is making it on the console, almost immediate
+>>>>>> system reset.  As I noticed there are several EFI related patches, I
+>>>>>> first tried to backout the change to setup.c but that didn't help so
+>>>>>> backing out all the efi changes in the 2.6.39.1 patch, i.e. the files:
+>>>>>>  - arch/x86/kernel/setup.c
+>>>>>>  - arch/x86/platform/efi/efi.c
+>>>>>>  - arch/x86/platform/efi/efi_64.c
+>>>>>> and sure enough system is booting on 2.6.39.1 with these changes removed.
+>>>>> Can you try just reverting
+>>>>>
+>>>>> "x86, efi: Retain boot service code until after switching to virtual mode"
+>>>>>
+>>>>> ? You've got 143 boot services/code regions, which is more than I'd
+>>>>> tested against, so I'm unsure whether we're overflowing something here.
+>>>>>
+>>>> That's seems to be the only EFI patch in 2.6.39.1 and I effectively
+>>>> removed by =not= applying (skipping) the parts of the 2.6.39.1 patch to
+>>>> above 3 files.
+>>>> So yes removing "x86, efi: Retain boot service code until after
+>>>> switching to virtual mode" indeed fixes the problem for me.
+>>> Does manually applying commit 9cd2b07c1 fix things for 2.6.39.1?
+>>> commit is: x86, efi: Consolidate EFI nx control
+>>>
+>>> There will be 1 apply  failure, need to change the call to
+>>> early_mapping_set_exec in early_runtime_code_mapping_set_exec to
+>>> efi_set_executable.
+>>>
+>>> ~Maarten
+>>>
+>> Maarten,
+>>
+>> Yes that boots, but with the "BUG Bad page state .." as well (so would
+>> need you other patch).
 
-A little comment about this patch:
+that is not right fix.
 
-<snip>
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 88547c8..8b4b3da 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -153,6 +153,12 @@ void rcu_bh_qs(int cpu)
->   */
->  void rcu_note_context_switch(int cpu)
->  {
-> +	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map),
-> +			   "Illegal context switch in RCU-bh"
-> +			   " read-side critical section");
-> +	rcu_lockdep_assert(!lock_is_held(&rcu_sched_lock_map),
-> +			   "Illegal context switch in RCU-sched"
-> +			   " read-side critical section");
+>>
+>> Jim
+> So the options are applying that patch + free fix to stable,
+> or revert the change. Also looking at the comments of the
+> original patch, it seems it was changed because of Yinghai's comments:
+>> No, at that point memblock is not used any more. after mm_init()/mem_init()
+>> need to use free_bootmem_late() in free_efi_boot_services
+>
+> But that appears to have been incorrect now, seeing that
+> commit 774ea0bcb27f57b removed that transition
 
-This looks like more a check to make inside might_sleep().
-It's better because might_sleep() triggers the check even if
-we don't actually go to sleep.
+free_bootmem_late() mean free early reserved pages (from memblock or
+bootmem) after slab is available.
 
-In fact I believe might_sleep() already does the job fine:
 
-If !PREEMPT, might_sleep() detects that preemption is disabled
-by rcu_read_lock().
+assume EFI in ram is not page-aligned?
 
-If PREEMPT, might_sleep() checks rcu_preempt_depth().
+
+Thanks
+
+Yinghai Lu
