@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab1FGNGh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 09:06:37 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:37606 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270Ab1FGNGf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 09:06:35 -0400
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 07 Jun 2011 18:29:41 +0530
-Message-Id: <20110607125941.28590.20538.sendpatchset@localhost6.localdomain6>
-In-Reply-To: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v4 3.0-rc2-tip 8/22]  8: x86: architecture specific task information.
+	id S1753590Ab1FGM54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:57:56 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60831 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753328Ab1FGM5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 08:57:54 -0400
+Message-ID: <4DEE20CA.90206@cn.fujitsu.com>
+Date: Tue, 07 Jun 2011 20:59:54 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 03/15] KVM: x86: avoid unnecessarily guest page table walking
+References: <4DEE205E.8000601@cn.fujitsu.com>
+In-Reply-To: <4DEE205E.8000601@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-07 20:57:36,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-07 20:57:36,
+	Serialize complete at 2011-06-07 20:57:36
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We already get the guest physical address, so use it to read guest data
+directly to avoid walking guest page table again
 
-On X86_64, we need to support rip relative instructions.
-Rip relative instructions are handled by saving the scratch register
-on probe hit and then retrieving the previously saved scratch register
-after single-step. This value stored at probe hit is specific to each
-task. Hence this is implemented as part of uprobe_task_arch_info.
-
-Since x86_32 has no support for rip relative instructions, we dont need to
-bother for x86_32.
-
-Signed-off-by: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/include/asm/uprobes.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ arch/x86/kvm/x86.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index 4295ce0..2f3c64d 100644
---- a/arch/x86/include/asm/uprobes.h
-+++ b/arch/x86/include/asm/uprobes.h
-@@ -34,8 +34,13 @@ typedef u8 uprobe_opcode_t;
- struct uprobe_arch_info {
- 	unsigned long rip_rela_target_address;
- };
-+
-+struct uprobe_task_arch_info {
-+	unsigned long saved_scratch_register;
-+};
- #else
- struct uprobe_arch_info {};
-+struct uprobe_task_arch_info {};
- #endif
- struct uprobe;
- extern int analyze_insn(struct task_struct *tsk, struct uprobe *uprobe);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 694538a..8be9ff6 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3930,8 +3930,7 @@ static int emulator_read_emulated(struct x86_emulate_ctxt *ctxt,
+ 	if ((gpa & PAGE_MASK) == APIC_DEFAULT_PHYS_BASE)
+ 		goto mmio;
+ 
+-	if (kvm_read_guest_virt(ctxt, addr, val, bytes, exception)
+-	    == X86EMUL_CONTINUE)
++	if (!kvm_read_guest(vcpu->kvm, gpa, val, bytes))
+ 		return X86EMUL_CONTINUE;
+ 
+ mmio:
+-- 
+1.7.4.4
+
