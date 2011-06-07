@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758108Ab1FGTQf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:16:35 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:55086 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056Ab1FGTQe (ORCPT
+	id S1756376Ab1FGTS2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 15:18:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45648 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756061Ab1FGTS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 15:16:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor management driver
-Date: Tue, 7 Jun 2011 21:16:21 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: linuxppc-dev@lists.ozlabs.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        kumar.gala@freescale.com, linux-kernel@vger.kernel.org,
-        akpm@kernel.org, Deepak Saxena <dsaxena@linaro.org>,
-        linux-console@vger.kernel.org, greg@kroah.com,
-        Timur Tabi <timur@freescale.com>
-References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106070908.16301.arnd@arndb.de> <4DEE567E.7080102@tilera.com>
-In-Reply-To: <4DEE567E.7080102@tilera.com>
+	Tue, 7 Jun 2011 15:18:27 -0400
+Date: Tue, 7 Jun 2011 13:18:24 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Mika Westerberg <mika.westerberg@iki.fi>
+Cc: linux-arm-kernel@lists.infradead.org, hsweeten@visionengravers.com,
+        rmallon@gmail.com, vinod.koul@intel.com, dan.j.williams@intel.com,
+        lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/5] spi/ep93xx: add DMA support
+Message-ID: <20110607191824.GA2035@ponder.secretlab.ca>
+References: <cover.1306662317.git.mika.westerberg@iki.fi>
+ <4b27fc93b7df900943e7c12084a8340cbc5fe1a8.1306662317.git.mika.westerberg@iki.fi>
+ <20110603204400.GH17972@ponder.secretlab.ca>
+ <20110607171403.GA3011@acer>
+ <BANLkTikKOcc2Vg1p3kG4ZSLjJ0RTZWS=2A@mail.gmail.com>
+ <20110607190607.GB3011@acer>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106072116.21469.arnd@arndb.de>
-X-Provags-ID: V02:K0:oRtt+KZLRx/VEnaavSghDv1Ku5KUv7OiKNT+LSHIj1r
- l/3SFDy6tsAG4pZWRz+n3iAAzsn12OIH3wSzFrXI7Q6tBW7kfq
- ayrHPbV88ue/H7Crt2wvyUJtZOfsG3c+7ACgPFVOW7oKkOXJzX
- MizmYHPolUEh2PyXVIWv8uqLwmw7smOs501rH6+iiVlkFkqKDe
- 8EPaDiKK7WankUR7c6kLA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607190607.GB3011@acer>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 07 June 2011 18:49:02 Chris Metcalf wrote:
-> > You can probably argue that the tile drivers do fit in here as long as
-> > they are specific to the hypervisor and not to some SOC specific hardware.
+On Tue, Jun 07, 2011 at 10:06:07PM +0300, Mika Westerberg wrote:
+> On Tue, Jun 07, 2011 at 12:45:26PM -0600, Grant Likely wrote:
+> > On Tue, Jun 7, 2011 at 11:14 AM, Mika Westerberg <mika.westerberg@iki.fi> wrote:
+> > >
+> > > I just realized that once the SPI driver renaming patch (spi: reorganize
+> > > drivers) enters linux-next, this patch (which sits on Vinod's tree) will cause
+> > > a merge conflict. Any ideas how to avoid it beforehand?
+> > 
+> > Yes, put the whole series into a separate branch all by itself.  Merge
+> > that branch into Vinod's tree and I'll also merge it into spi/next,
+> > and I'll fix up the merge conflict when I do.
 > 
-> Can you clarify that?   I think you're contrasting something like an ARM
-> core that was licensed and put in a SoC by some random vendor, and you
-> could have an endless stream of drivers for that case.  The Tilera core
-> isn't being licensed; it's sold more like an Intel chip with a fixed set of
-> interfaces available only from Tilera.  The particular interface in
-> question here is SPI, and the core itself knows how to boot the chip over
-> SPI by finding an SPI ROM and reading the boot stream out of it directly
-> after power-up.
-> 
-> So does that match with your model of "drivers/platform/tile"?  Maybe we
-> have a winner!  :-)
+> More stupid questions: Do you mean that I create a branch in my public
+> repository somewhere? If that is the case, then there is a problem that I
+> don't have any public repository and I doubt that I get such before linux-next
+> is rebuilt.
 
-I'm not really against drivers/platform/tile for this, the only potential
-problem that I see with this is that having more stuff in drivers/platform
-might lead to having even more other stuff in there that should really
-go into another place.
+It doesn't have to be your repo.  Vinod could do it, or I could.
 
-Obviously, if the device is a raw SPI host, the driver should actually go
-into drivers/spi/spi_tile.c rather than drivers/platform/tile/spi.c.
+g.
 
-For the spi flash driver that goes through the hypervisor abstraction,
-I think drivers/virt/tile would be better than driver/platform/tile,
-but we should really have a new "abstract flash character driver" subsystem
-for that.
-
-	Arnd
