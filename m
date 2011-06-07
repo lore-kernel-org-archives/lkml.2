@@ -1,353 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab1FGM61 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:58:27 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49618 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753688Ab1FGM60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:58:26 -0400
-Message-ID: <4DEE20EE.7060000@cn.fujitsu.com>
-Date: Tue, 07 Jun 2011 21:00:30 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH 04/15] KVM: MMU: cache mmio info on page fault path
-References: <4DEE205E.8000601@cn.fujitsu.com>
-In-Reply-To: <4DEE205E.8000601@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-07 20:58:13,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-07 20:58:13,
-	Serialize complete at 2011-06-07 20:58:13
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1754507Ab1FGNHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 09:07:43 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:44329 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab1FGNHc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 09:07:32 -0400
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 07 Jun 2011 18:30:41 +0530
+Message-Id: <20110607130041.28590.93677.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+Subject: [PATCH v4 3.0-rc2-tip 12/22] 12: x86: x86 specific probe handling
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the page fault is caused by mmio, we can cache the mmio info, later, we do
-not need to walk guest page table and quickly know it is a mmio fault while we
-emulate the mmio instruction
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Provides x86 specific implementations for setting the current
+instruction pointer, pre single-step and post-singlestep handling,
+enabling and disabling singlestep.
+
+This patch also introduces TIF_UPROBE which is set by uprobes notifier
+code. TIF_UPROBE indicates that there is pending work that needs to be
+done at do_notify_resume time.
+
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/kvm_host.h |    5 +++
- arch/x86/kvm/mmu.c              |   21 +++++----------
- arch/x86/kvm/mmu.h              |   23 +++++++++++++++++
- arch/x86/kvm/paging_tmpl.h      |   21 ++++++++++-----
- arch/x86/kvm/x86.c              |   52 ++++++++++++++++++++++++++++++--------
- arch/x86/kvm/x86.h              |   36 +++++++++++++++++++++++++++
- 6 files changed, 126 insertions(+), 32 deletions(-)
+ arch/x86/include/asm/thread_info.h |    2 
+ arch/x86/include/asm/uprobes.h     |    3 +
+ arch/x86/kernel/uprobes.c          |  148 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 153 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index d167039..326af42 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -414,6 +414,11 @@ struct kvm_vcpu_arch {
- 	u64 mcg_ctl;
- 	u64 *mce_banks;
- 
-+	/* Cache MMIO info */
-+	u64 mmio_gva;
-+	unsigned access;
-+	gfn_t mmio_gfn;
-+
- 	/* used for guest single stepping over the given code position */
- 	unsigned long singlestep_rip;
- 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 125f78d..415030e 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -217,11 +217,6 @@ void kvm_mmu_set_mask_ptes(u64 user_mask, u64 accessed_mask,
- }
- EXPORT_SYMBOL_GPL(kvm_mmu_set_mask_ptes);
- 
--static bool is_write_protection(struct kvm_vcpu *vcpu)
--{
--	return kvm_read_cr0_bits(vcpu, X86_CR0_WP);
--}
--
- static int is_cpuid_PSE36(void)
- {
- 	return 1;
-@@ -243,11 +238,6 @@ static int is_large_pte(u64 pte)
- 	return pte & PT_PAGE_SIZE_MASK;
- }
- 
--static int is_writable_pte(unsigned long pte)
--{
--	return pte & PT_WRITABLE_MASK;
--}
--
- static int is_dirty_gpte(unsigned long pte)
- {
- 	return pte & PT_DIRTY_MASK;
-@@ -2238,15 +2228,17 @@ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *
- 	send_sig_info(SIGBUS, &info, tsk);
- }
- 
--static int kvm_handle_bad_page(struct kvm *kvm, gfn_t gfn, pfn_t pfn)
-+static int kvm_handle_bad_page(struct kvm_vcpu *vcpu, gva_t gva,
-+			       unsigned access, gfn_t gfn, pfn_t pfn)
- {
- 	kvm_release_pfn_clean(pfn);
- 	if (is_hwpoison_pfn(pfn)) {
--		kvm_send_hwpoison_signal(gfn_to_hva(kvm, gfn), current);
-+		kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
- 		return 0;
- 	} else if (is_fault_pfn(pfn))
- 		return -EFAULT;
- 
-+	vcpu_cache_mmio_info(vcpu, gva, gfn, access);
- 	return 1;
- }
- 
-@@ -2328,7 +2320,7 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn,
- 
- 	/* mmio */
- 	if (is_error_pfn(pfn))
--		return kvm_handle_bad_page(vcpu->kvm, gfn, pfn);
-+		return kvm_handle_bad_page(vcpu, v, ACC_ALL, gfn, pfn);
- 
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	if (mmu_notifier_retry(vcpu, mmu_seq))
-@@ -2555,6 +2547,7 @@ static void mmu_sync_roots(struct kvm_vcpu *vcpu)
- 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
- 		return;
- 
-+	vcpu_clear_mmio_info(vcpu, ~0ull);
- 	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_SYNC);
- 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
- 		hpa_t root = vcpu->arch.mmu.root_hpa;
-@@ -2701,7 +2694,7 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
- 
- 	/* mmio */
- 	if (is_error_pfn(pfn))
--		return kvm_handle_bad_page(vcpu->kvm, gfn, pfn);
-+		return kvm_handle_bad_page(vcpu, 0, 0, gfn, pfn);
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	if (mmu_notifier_retry(vcpu, mmu_seq))
- 		goto out_unlock;
-diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
-index 7086ca8..05310b1 100644
---- a/arch/x86/kvm/mmu.h
-+++ b/arch/x86/kvm/mmu.h
-@@ -76,4 +76,27 @@ static inline int is_present_gpte(unsigned long pte)
- 	return pte & PT_PRESENT_MASK;
- }
- 
-+static inline int is_writable_pte(unsigned long pte)
-+{
-+	return pte & PT_WRITABLE_MASK;
-+}
-+
-+static inline bool is_write_protection(struct kvm_vcpu *vcpu)
-+{
-+	return kvm_read_cr0_bits(vcpu, X86_CR0_WP);
-+}
-+
-+static inline bool check_write_user_access(struct kvm_vcpu *vcpu,
-+					   bool write_fault, bool user_fault,
-+					   unsigned long pte)
-+{
-+	if (unlikely(write_fault && !is_writable_pte(pte)
-+	      && (user_fault || is_write_protection(vcpu))))
-+		return false;
-+
-+	if (unlikely(user_fault && !(pte & PT_USER_MASK)))
-+		return false;
-+
-+	return true;
-+}
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index 1f2e61e..2dc1921 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -84,6 +84,7 @@ struct thread_info {
+ #define TIF_SECCOMP		8	/* secure computing */
+ #define TIF_MCE_NOTIFY		10	/* notify userspace of an MCE */
+ #define TIF_USER_RETURN_NOTIFY	11	/* notify kernel of userspace return */
++#define TIF_UPROBE		12	/* breakpointed or singlestepping */
+ #define TIF_NOTSC		16	/* TSC is not accessible in userland */
+ #define TIF_IA32		17	/* 32bit process */
+ #define TIF_FORK		18	/* ret_from_fork */
+@@ -107,6 +108,7 @@ struct thread_info {
+ #define _TIF_SECCOMP		(1 << TIF_SECCOMP)
+ #define _TIF_MCE_NOTIFY		(1 << TIF_MCE_NOTIFY)
+ #define _TIF_USER_RETURN_NOTIFY	(1 << TIF_USER_RETURN_NOTIFY)
++#define _TIF_UPROBE		(1 << TIF_UPROBE)
+ #define _TIF_NOTSC		(1 << TIF_NOTSC)
+ #define _TIF_IA32		(1 << TIF_IA32)
+ #define _TIF_FORK		(1 << TIF_FORK)
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index 2f3c64d..3a7833c 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -44,4 +44,7 @@ struct uprobe_task_arch_info {};
  #endif
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 6c4dc01..b0c8184 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -201,11 +201,8 @@ walk:
- 			break;
- 		}
+ struct uprobe;
+ extern int analyze_insn(struct task_struct *tsk, struct uprobe *uprobe);
++extern void set_instruction_pointer(struct pt_regs *regs, unsigned long vaddr);
++extern int pre_xol(struct uprobe *uprobe, struct pt_regs *regs);
++extern int post_xol(struct uprobe *uprobe, struct pt_regs *regs);
+ #endif	/* _ASM_UPROBES_H */
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 79f74c5..8d90ff3 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -25,6 +25,7 @@
+ #include <linux/sched.h>
+ #include <linux/ptrace.h>
+ #include <linux/uprobes.h>
++#include <linux/uaccess.h>
  
--		if (unlikely(write_fault && !is_writable_pte(pte)
--			     && (user_fault || is_write_protection(vcpu))))
--			eperm = true;
--
--		if (unlikely(user_fault && !(pte & PT_USER_MASK)))
-+		if (!check_write_user_access(vcpu, write_fault, user_fault,
-+					  pte))
- 			eperm = true;
- 
- #if PTTYPE == 64
-@@ -624,8 +621,16 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 		return 0;
- 
- 	/* mmio */
--	if (is_error_pfn(pfn))
--		return kvm_handle_bad_page(vcpu->kvm, walker.gfn, pfn);
-+	if (is_error_pfn(pfn)) {
-+		unsigned access = walker.pte_access;
-+		bool dirty = is_dirty_gpte(walker.ptes[walker.level - 1]);
-+
-+		if (dirty)
-+			access &= ~ACC_WRITE_MASK;
-+
-+		return kvm_handle_bad_page(vcpu, mmu_is_nested(vcpu) ? 0 :
-+					   addr, access, walker.gfn, pfn);
-+	}
- 
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	if (mmu_notifier_retry(vcpu, mmu_seq))
-@@ -665,6 +670,8 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
- 	u64 *sptep;
- 	int need_flush = 0;
- 
-+	vcpu_clear_mmio_info(vcpu, gva);
-+
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 
- 	for_each_shadow_entry(vcpu, gva, iterator) {
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 8be9ff6..a136181 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3903,6 +3903,38 @@ out:
+ #include <linux/kdebug.h>
+ #include <asm/insn.h>
+@@ -412,3 +413,150 @@ int analyze_insn(struct task_struct *tsk, struct uprobe *uprobe)
+ 	prepare_fixups(uprobe, &insn);
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(kvm_write_guest_virt_system);
- 
-+static int vcpu_gva_to_gpa(struct kvm_vcpu *vcpu, unsigned long gva,
-+			   gpa_t *gpa, struct x86_exception *exception,
-+			   bool write)
++
++/*
++ * @reg: reflects the saved state of the task
++ * @vaddr: the virtual address to jump to.
++ * Return 0 on success or a -ve number on error.
++ */
++void set_instruction_pointer(struct pt_regs *regs, unsigned long vaddr)
 +{
-+	u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
-+
-+	if (vcpu_match_mmio_gva(vcpu, gva) &&
-+	      check_write_user_access(vcpu, write, access,
-+	      vcpu->arch.access)) {
-+		*gpa = vcpu->arch.mmio_gfn << PAGE_SHIFT |
-+					(gva & (PAGE_SIZE - 1));
-+		return 1;
-+	}
-+
-+	if (write)
-+		access |= PFERR_WRITE_MASK;
-+
-+	*gpa = vcpu->arch.walk_mmu->gva_to_gpa(vcpu, gva, access, exception);
-+
-+	if (*gpa == UNMAPPED_GVA)
-+		return -1;
-+
-+	/* For APIC access vmexit */
-+	if ((*gpa & PAGE_MASK) == APIC_DEFAULT_PHYS_BASE)
-+		return 1;
-+
-+	if (vcpu_match_mmio_gpa(vcpu, *gpa))
-+		return 1;
-+
-+	return 0;
-+}
-+
- static int emulator_read_emulated(struct x86_emulate_ctxt *ctxt,
- 				  unsigned long addr,
- 				  void *val,
-@@ -3911,7 +3943,7 @@ static int emulator_read_emulated(struct x86_emulate_ctxt *ctxt,
- {
- 	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
- 	gpa_t                 gpa;
--	int handled;
-+	int handled, ret;
- 
- 	if (vcpu->mmio_read_completed) {
- 		memcpy(val, vcpu->mmio_data, bytes);
-@@ -3921,13 +3953,12 @@ static int emulator_read_emulated(struct x86_emulate_ctxt *ctxt,
- 		return X86EMUL_CONTINUE;
- 	}
- 
--	gpa = kvm_mmu_gva_to_gpa_read(vcpu, addr, exception);
-+	ret = vcpu_gva_to_gpa(vcpu, addr, &gpa, exception, false);
- 
--	if (gpa == UNMAPPED_GVA)
-+	if (ret < 0)
- 		return X86EMUL_PROPAGATE_FAULT;
- 
--	/* For APIC access vmexit */
--	if ((gpa & PAGE_MASK) == APIC_DEFAULT_PHYS_BASE)
-+	if (ret)
- 		goto mmio;
- 
- 	if (!kvm_read_guest(vcpu->kvm, gpa, val, bytes))
-@@ -3977,16 +4008,15 @@ static int emulator_write_emulated_onepage(unsigned long addr,
- 					   struct x86_exception *exception,
- 					   struct kvm_vcpu *vcpu)
- {
--	gpa_t                 gpa;
--	int handled;
-+	gpa_t gpa;
-+	int handled, ret;
- 
--	gpa = kvm_mmu_gva_to_gpa_write(vcpu, addr, exception);
-+	ret = vcpu_gva_to_gpa(vcpu, addr, &gpa, exception, true);
- 
--	if (gpa == UNMAPPED_GVA)
-+	if (ret < 0)
- 		return X86EMUL_PROPAGATE_FAULT;
- 
--	/* For APIC access vmexit */
--	if ((gpa & PAGE_MASK) == APIC_DEFAULT_PHYS_BASE)
-+	if (ret)
- 		goto mmio;
- 
- 	if (emulator_write_phys(vcpu, gpa, val, bytes))
-diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
-index 256da82..d36fe23 100644
---- a/arch/x86/kvm/x86.h
-+++ b/arch/x86/kvm/x86.h
-@@ -75,6 +75,42 @@ static inline u32 bit(int bitno)
- 	return 1 << (bitno & 31);
- }
- 
-+static inline void vcpu_cache_mmio_info(struct kvm_vcpu *vcpu,
-+					gva_t gva, gfn_t gfn, unsigned access)
-+{
-+	vcpu->arch.mmio_gva = gva & PAGE_MASK;
-+	vcpu->arch.access = access;
-+	vcpu->arch.mmio_gfn = gfn;
++	regs->ip = vaddr;
 +}
 +
 +/*
-+ * Clear the mmio cache info for the given gva,
-+ * specially, if gva is ~0ul, we clear all mmio cache info.
++ * pre_xol - prepare to execute out of line.
++ * @uprobe: the probepoint information.
++ * @regs: reflects the saved user state of @tsk.
++ *
++ * If we're emulating a rip-relative instruction, save the contents
++ * of the scratch register and store the target address in that register.
++ *
++ * Returns true if @uprobe->opcode is @bkpt_insn.
 + */
-+static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
++#ifdef CONFIG_X86_64
++int pre_xol(struct uprobe *uprobe, struct pt_regs *regs)
 +{
-+	if (gva != (~0ul) && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
-+		return;
++	struct uprobe_task_arch_info *tskinfo = &current->utask->tskinfo;
 +
-+	vcpu->arch.mmio_gva = 0;
++	regs->ip = current->utask->xol_vaddr;
++	if (uprobe->fixups & UPROBES_FIX_RIP_AX) {
++		tskinfo->saved_scratch_register = regs->ax;
++		regs->ax = current->utask->vaddr;
++		regs->ax += uprobe->arch_info.rip_rela_target_address;
++	} else if (uprobe->fixups & UPROBES_FIX_RIP_CX) {
++		tskinfo->saved_scratch_register = regs->cx;
++		regs->cx = current->utask->vaddr;
++		regs->cx += uprobe->arch_info.rip_rela_target_address;
++	}
++	return 0;
++}
++#else
++int pre_xol(struct uprobe *uprobe, struct pt_regs *regs)
++{
++	regs->ip = current->utask->xol_vaddr;
++	return 0;
++}
++#endif
++
++/*
++ * Called by post_xol() to adjust the return address pushed by a call
++ * instruction executed out of line.
++ */
++static int adjust_ret_addr(unsigned long sp, long correction)
++{
++	int rasize, ncopied;
++	long ra = 0;
++
++	if (is_32bit_app(current))
++		rasize = 4;
++	else
++		rasize = 8;
++	ncopied = copy_from_user(&ra, (void __user *) sp, rasize);
++	if (unlikely(ncopied))
++		goto fail;
++	ra += correction;
++	ncopied = copy_to_user((void __user *) sp, &ra, rasize);
++	if (unlikely(ncopied))
++		goto fail;
++	return 0;
++
++fail:
++	pr_warn_once("uprobes: Failed to adjust return address after"
++		" single-stepping call instruction;"
++		" pid=%d, sp=%#lx\n", current->pid, sp);
++	return -EFAULT;
 +}
 +
-+static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
++#ifdef CONFIG_X86_64
++static bool is_riprel_insn(struct uprobe *uprobe)
 +{
-+	if (vcpu->arch.mmio_gva && vcpu->arch.mmio_gva == (gva & PAGE_MASK))
-+		return true;
-+
-+	return false;
++	return ((uprobe->fixups &
++			(UPROBES_FIX_RIP_AX | UPROBES_FIX_RIP_CX)) != 0);
 +}
 +
-+static inline bool vcpu_match_mmio_gpa(struct kvm_vcpu *vcpu, gpa_t gpa)
++static void handle_riprel_post_xol(struct uprobe *uprobe,
++			struct pt_regs *regs, long *correction)
 +{
-+	if (vcpu->arch.mmio_gfn && vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
-+		return true;
++	if (is_riprel_insn(uprobe)) {
++		struct uprobe_task_arch_info *tskinfo;
++		tskinfo = &current->utask->tskinfo;
 +
-+	return false;
++		if (uprobe->fixups & UPROBES_FIX_RIP_AX)
++			regs->ax = tskinfo->saved_scratch_register;
++		else
++			regs->cx = tskinfo->saved_scratch_register;
++		/*
++		 * The original instruction includes a displacement, and so
++		 * is 4 bytes longer than what we've just single-stepped.
++		 * Fall through to handle stuff like "jmpq *...(%rip)" and
++		 * "callq *...(%rip)".
++		 */
++		*correction += 4;
++	}
 +}
++#else
++static void handle_riprel_post_xol(struct uprobe *uprobe,
++			struct pt_regs *regs, long *correction)
++{
++}
++#endif
 +
- void kvm_before_handle_nmi(struct kvm_vcpu *vcpu);
- void kvm_after_handle_nmi(struct kvm_vcpu *vcpu);
- int kvm_inject_realmode_interrupt(struct kvm_vcpu *vcpu, int irq, int inc_eip);
--- 
-1.7.4.4
-
++/*
++ * Called after single-stepping. To avoid the SMP problems that can
++ * occur when we temporarily put back the original opcode to
++ * single-step, we single-stepped a copy of the instruction.
++ *
++ * This function prepares to resume execution after the single-step.
++ * We have to fix things up as follows:
++ *
++ * Typically, the new ip is relative to the copied instruction.  We need
++ * to make it relative to the original instruction (FIX_IP).  Exceptions
++ * are return instructions and absolute or indirect jump or call instructions.
++ *
++ * If the single-stepped instruction was a call, the return address that
++ * is atop the stack is the address following the copied instruction.  We
++ * need to make it the address following the original instruction (FIX_CALL).
++ *
++ * If the original instruction was a rip-relative instruction such as
++ * "movl %edx,0xnnnn(%rip)", we have instead executed an equivalent
++ * instruction using a scratch register -- e.g., "movl %edx,(%rax)".
++ * We need to restore the contents of the scratch register and adjust
++ * the ip, keeping in mind that the instruction we executed is 4 bytes
++ * shorter than the original instruction (since we squeezed out the offset
++ * field).  (FIX_RIP_AX or FIX_RIP_CX)
++ */
++int post_xol(struct uprobe *uprobe, struct pt_regs *regs)
++{
++	struct uprobe_task *utask = current->utask;
++	int result = 0;
++	long correction;
++
++	correction = (long)(utask->vaddr - utask->xol_vaddr);
++	handle_riprel_post_xol(uprobe, regs, &correction);
++	if (uprobe->fixups & UPROBES_FIX_IP)
++		regs->ip += correction;
++	if (uprobe->fixups & UPROBES_FIX_CALL)
++		result = adjust_ret_addr(regs->sp, correction);
++	return result;
++}
