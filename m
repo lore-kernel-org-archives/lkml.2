@@ -1,124 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390Ab1FGPHd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 11:07:33 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58547 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755588Ab1FGPHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 11:07:12 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Thomas Sattler <tsattler@gmx.de>,
-        Ury Stankevich <urykhy@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] mm: compaction: Abort compaction if too many pages are isolated and caller is asynchronous
-Date: Tue,  7 Jun 2011 16:07:05 +0100
-Message-Id: <1307459225-4481-5-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1307459225-4481-1-git-send-email-mgorman@suse.de>
-References: <1307459225-4481-1-git-send-email-mgorman@suse.de>
+	id S1756546Ab1FGPIW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 11:08:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42354 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756525Ab1FGPIU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 11:08:20 -0400
+X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=XYJHFtupD_QA:10 a=Nfqsw8rmjecA:10 a=5SG0PmZfjMsA:10 a=8nJEP1OIZ-IA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=JfrnYn6hAAAA:8 a=wC7odt5anOTvtjqptcAA:9 a=tdBslllu8H2KfsVTRFgA:7 a=wPNLvfGTeEIA:10 a=3Rfx1nUSh_UA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Tue, 7 Jun 2011 11:08:16 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] sched: correct testing need_resched in
+ mutex_spin_on_owner()
+Message-ID: <20110607150816.GC27245@home.goodmis.org>
+References: <BANLkTimZ8=YYZXZSzauy5ASsP0kwti8uxQ@mail.gmail.com>
+ <1307454439.2322.260.camel@twins>
+ <BANLkTikvFk7pbcw9PEtPGSK=6WCNLYXCuQ@mail.gmail.com>
+ <1307456680.2322.270.camel@twins>
+ <BANLkTim1htraTXtGMcyAuH1Wa-G+J05i_g@mail.gmail.com>
+ <1307457646.2322.273.camel@twins>
+ <BANLkTi=XTpYTZvetOUDgobRa_S4Cb=+syA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=XTpYTZvetOUDgobRa_S4Cb=+syA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Asynchronous compaction is used when promoting to huge pages. This is
-all very nice but if there are a number of processes in compacting
-memory, a large number of pages can be isolated. An "asynchronous"
-process can stall for long periods of time as a result with a user
-reporting that firefox can stall for 10s of seconds. This patch aborts
-asynchronous compaction if too many pages are isolated as it's better to
-fail a hugepage promotion than stall a process.
+On Tue, Jun 07, 2011 at 10:47:21PM +0800, Hillf Danton wrote:
+> On Tue, Jun 7, 2011 at 10:40 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, 2011-06-07 at 22:36 +0800, Hillf Danton wrote:
+> >
+> >> If you are right, the following comment also in __mutex_lock_common()
+> >>
+> >>       for (;;) {
+> >>               struct task_struct *owner;
+> >>
+> >>               /*
+> >>                * If there's an owner, wait for it to either
+> >>                * release the lock or go to sleep.
+> >>                */
+> >>               owner = ACCESS_ONCE(lock->owner);
+> >>               if (owner && !mutex_spin_on_owner(lock, owner))
+> >>                       break;
+> >>
+> >> looks misleading too, but if owner is on this CPU, for what does we wait?
+> >
+> > huh, wtf!? it cannot be on this cpu, if it was we wouldn't be running
+> > the above code but whatever owner was doing.
+> >
+> > So my argument was, it cannot be on this cpu, therefore, by checking it
+> > is on a cpu, we check its on a different cpu.
+> >
+> > And I really don't see how any of that is related to the above.
+> >
+> Oh, it looks you are willing to rethink about testing need_resched?
 
-Reported-and-tested-by: Ury Stankevich <urykhy@gmail.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/compaction.c |   28 +++++++++++++++++++++++-----
- 1 files changed, 23 insertions(+), 5 deletions(-)
+NO!
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 5c744ab..cb28580 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -251,11 +251,18 @@ static bool too_many_isolated(struct zone *zone)
- 	return isolated > (inactive + active) / 2;
- }
- 
-+/* possible outcome of isolate_migratepages */
-+typedef enum {
-+	ISOLATE_ABORT,		/* Abort compaction now */
-+	ISOLATE_NONE,		/* No pages isolated, continue scanning */
-+	ISOLATE_SUCCESS,	/* Pages isolated, migrate */
-+} isolate_migrate_t;
-+
- /*
-  * Isolate all pages that can be migrated from the block pointed to by
-  * the migrate scanner within compact_control.
-  */
--static unsigned long isolate_migratepages(struct zone *zone,
-+static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 					struct compact_control *cc)
- {
- 	unsigned long low_pfn, end_pfn;
-@@ -272,7 +279,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 	/* Do not cross the free scanner or scan within a memory hole */
- 	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
- 		cc->migrate_pfn = end_pfn;
--		return 0;
-+		return ISOLATE_NONE;
- 	}
- 
- 	/*
-@@ -281,10 +288,14 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 	 * delay for some time until fewer pages are isolated
- 	 */
- 	while (unlikely(too_many_isolated(zone))) {
-+		/* async migration should just abort */
-+		if (!cc->sync)
-+			return ISOLATE_ABORT;
-+
- 		congestion_wait(BLK_RW_ASYNC, HZ/10);
- 
- 		if (fatal_signal_pending(current))
--			return 0;
-+			return ISOLATE_ABORT;
- 	}
- 
- 	/* Time to isolate some pages for migration */
-@@ -369,7 +380,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 
- 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
- 
--	return cc->nr_migratepages;
-+	return ISOLATE_SUCCESS;
- }
- 
- /*
-@@ -533,8 +544,14 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		unsigned long nr_migrate, nr_remaining;
- 		int err;
- 
--		if (!isolate_migratepages(zone, cc))
-+		switch (isolate_migratepages(zone, cc)) {
-+		case ISOLATE_ABORT:
-+			goto out;
-+		case ISOLATE_NONE:
- 			continue;
-+		case ISOLATE_SUCCESS:
-+			;
-+		}
- 
- 		nr_migrate = cc->nr_migratepages;
- 		err = migrate_pages(&cc->migratepages, compaction_alloc,
-@@ -558,6 +575,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 
- 	}
- 
-+out:
- 	/* Release free pages and check accounting */
- 	cc->nr_freepages -= release_freepages(&cc->freepages);
- 	VM_BUG_ON(cc->nr_freepages != 0);
--- 
-1.7.3.4
+Hillf, reading this thread I understand that you have no idea of what is
+happening here. You are totally clueless. Let me give you a clue.
+
+The idea of an adaptive mutex is quite simple. If a mutex is held for a
+short period of time, and on another CPU a task tries to grab the same
+mutex, it would be slower to have that task schedule out than to just
+spin waiting for that mutex to be released.
+
+Ideally, this mutex would then act like a spin lock, and things would
+run very efficiently. But, as it is not a spin lock, there's things we
+must also be aware of.
+
+1) If the owner we are waiting for to release the mutex schedules out.
+
+2) If another task wants us to run on the CPU of the waiter that is
+spinning.
+
+3) If the waiter that is spinning runs out of its time quantum and
+should yield to another task.
+
+#1 is checked by the owner_running(). If that fails, then we should not
+spin anymore and its good to schedule. BTW, the answer why
+owner_running() is safe to check owner, is because it grabs rcu_locks()
+to make sure it is safe.
+
+#2 and #3 are checked by testing NEED_RESCHED on the waiter (NOT THE
+OWNER!).  If the waiter that is spinning should be preempted, the waiter
+(not the owner) will have its NEED_RESCHED bit set. That is why the
+waiter's NEED_RESCHED flag is checked and not owners.
+
+And also we don't need to check need_resched() in the above code because
+the loop checks it anyway, or we break out of the loop.
+
+Understand?
+
+-- Steve
 
