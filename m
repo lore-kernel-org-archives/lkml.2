@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669Ab1FGSNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:13:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34804 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481Ab1FGSM7 (ORCPT
+	id S1757631Ab1FGSJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:09:56 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:64816 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab1FGSJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:12:59 -0400
-X-Authority-Analysis: v=1.1 cv=rr9DlE2fnT1UeYFJeFag6ks/js+bHNfqVlaSByoS2d4= c=1 sm=0 a=z-YF9ztHd7oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=AKTDAVoVk6W6lcZpQfgA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 2/3] kprobes/trace: Fix kprobe selftest for gcc 4.6
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-In-Reply-To: <4DEE6903.9010501@gmail.com>
-References: <20110607170740.235441001@goodmis.org>
-	 <20110607170827.295368694@goodmis.org>  <4DEE6903.9010501@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 07 Jun 2011 14:12:57 -0400
-Message-ID: <1307470377.9218.3.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jun 2011 14:09:55 -0400
+X-IronPort-AV: E=Sophos;i="4.65,333,1304294400"; 
+   d="scan'208";a="6147567"
+Date: Tue, 7 Jun 2011 19:13:03 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ingo Molnar <mingo@elte.hu>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 0/3] x86: remove x86_init.mapping.pagetable_reserve
+Message-ID: <alpine.DEB.2.00.1106071849290.12963@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 11:08 -0700, David Daney wrote:
+Currently find_early_table_space calculates an overestimate of how much
+memory the pagetable for 1:1 mapping is going to need. After
+kernel_physical_mapping_init completes we know exactly how much memory
+we used so we memblock reserve only the used memory and "free" the rest.
 
-> > -static int kprobe_trace_selftest_target(int a1, int a2, int a3,
-> > -					int a4, int a5, int a6)
-> > +/*
-> > + * Can't be static, otherwise gcc might optimize this to
-> > + * not be in the kallsyms table.
-> > + */
-> 
-> Could you make it '__used' instead?
-> 
+This patch series modifies find_early_table_space to calculate the exact
+amount of memory we need for the 1:1 mapping, so that we can memblock
+reverve it right away and we don't need to free the unused memory after
+kernel_physical_mapping_init.
 
-I can try, but the problem is not that the function itself is being
-optimized out. It looks like its being turned into anonymous text. That
-is, it optimized out the symbol name, not the code itself.
-
--- Steve
+At this point we can also safely revert "x86,xen: introduce
+x86_init.mapping.pagetable_reserve".
 
 
+The list of patches with diffstat follows:
+
+Stefano Stabellini (3):
+      x86: calculate precisely the memory needed by init_memory_mapping
+      Revert "x86,xen: introduce x86_init.mapping.pagetable_reserve"
+      x86: move memblock_x86_reserve_range PGTABLE to find_early_table_space
+
+ arch/x86/include/asm/pgtable_types.h |    1 -
+ arch/x86/include/asm/x86_init.h      |   12 -----
+ arch/x86/kernel/x86_init.c           |    4 --
+ arch/x86/mm/init.c                   |   87 +++++++++++++++++++---------------
+ arch/x86/xen/mmu.c                   |   15 ------
+ 5 files changed, 49 insertions(+), 70 deletions(-)
+
+
+Many thanks to Konrad that helped me review the patch series and
+performed an impressive amount of tests:
+
+*Configurations
+baremetal Linux 64-bit
+baremetal Linux 32-bit NOHIGHMEM, HIGHMEM4G and HIGHMEM64G
+32-bit and 64-bit Linux on Xen
+32-bit and 64-bit Linux HVM on Xen
+
+
+*Hardware
+AMD development box (Tilapia) - 8GB
+AMD  BIOSTAR Grp N61PB-M2S/N61PB-M2S (Sempron) - 4GB
+Intel DX58SO (Core i7) - 8GB
+Supermicro X7DB8/X7DB8 (Harpertown) - 4GB
+IBM x3850 (Cranford) - 8GB
+MSI MS-7680/H61M-P23 (MS-7680) (SandyBridge, i2500)- 8GB
+
+
+A git branch based on 3.0-rc1 is available here:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 3.0-rc1-rem_pg_reserve-4
+
+- Stefano
