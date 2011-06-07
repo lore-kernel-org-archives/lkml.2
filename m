@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab1FGSLh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:11:37 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:50951 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751425Ab1FGSLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:11:36 -0400
-Date: Tue, 7 Jun 2011 11:11:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: remove rcu_read_lock from wake_affine
-Message-ID: <20110607181131.GD2286@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110607101251.777.34547.stgit@IBM-009124035060.in.ibm.com>
- <1307442411.2322.246.camel@twins>
- <20110607172606.GA2286@linux.vnet.ibm.com>
- <1307467763.2322.282.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307467763.2322.282.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757669Ab1FGSNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:13:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34804 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab1FGSM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 14:12:59 -0400
+X-Authority-Analysis: v=1.1 cv=rr9DlE2fnT1UeYFJeFag6ks/js+bHNfqVlaSByoS2d4= c=1 sm=0 a=z-YF9ztHd7oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=AKTDAVoVk6W6lcZpQfgA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 2/3] kprobes/trace: Fix kprobe selftest for gcc 4.6
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+In-Reply-To: <4DEE6903.9010501@gmail.com>
+References: <20110607170740.235441001@goodmis.org>
+	 <20110607170827.295368694@goodmis.org>  <4DEE6903.9010501@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 07 Jun 2011 14:12:57 -0400
+Message-ID: <1307470377.9218.3.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 07:29:23PM +0200, Peter Zijlstra wrote:
-> On Tue, 2011-06-07 at 10:26 -0700, Paul E. McKenney wrote:
-> > 
-> > Nikunj, one such approach is is "WARN_ON_ONCE(!rcu_read_lock_held())".
-> > 
-> > This will complain if this function is called without an rcu_read_lock()
-> > in effect, but only if CONFIG_PROVE_RCU=y.
+On Tue, 2011-06-07 at 11:08 -0700, David Daney wrote:
+
+> > -static int kprobe_trace_selftest_target(int a1, int a2, int a3,
+> > -					int a4, int a5, int a6)
+> > +/*
+> > + * Can't be static, otherwise gcc might optimize this to
+> > + * not be in the kallsyms table.
+> > + */
 > 
-> rcu_lockdep_assert(rcu_read_lock_held()) would be nicer,
-
-Good point!
-
->                                                          however, since
-> the below:
+> Could you make it '__used' instead?
 > 
-> > > >  static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
-> > > >  {
-> > > >     s64 this_load, load;
-> > > > @@ -1481,7 +1482,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
-> > > >      * effect of the currently running task from the load
-> > > >      * of the current CPU:
-> > > >      */
-> > > > -   rcu_read_lock();
-> > > >     if (sync) {
-> > > >             tg = task_group(current);
-> > > >             weight = current->se.load.weight; 
-> 
-> task_group() has an rcu_dereference_check() in, its really not needed,
-> the thing will yell if we get this wrong.
 
-Fair enough!  The main reason for adding it at this level as well is
-to prevent people from "fixing" splats by adding rcu_read_lock() and
-rcu_read_unlock() at this level.  But you would see any such patch, so
-such a "fix" would not get far.  ;-)
+I can try, but the problem is not that the function itself is being
+optimized out. It looks like its being turned into anonymous text. That
+is, it optimized out the symbol name, not the code itself.
 
-							Thanx, Paul
+-- Steve
+
+
