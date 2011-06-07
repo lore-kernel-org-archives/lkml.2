@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab1FGK1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 06:27:46 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:45498 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750880Ab1FGK1p (ORCPT
+	id S1752116Ab1FGK2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 06:28:01 -0400
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:52015 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab1FGK17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 06:27:45 -0400
-Date: Tue, 7 Jun 2011 13:27:40 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: =?iso-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-Cc: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] musb_host: compare status for negative error values
-Message-ID: <20110607102739.GS12242@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <4DE3E5D6.207@freemail.hu>
+	Tue, 7 Jun 2011 06:27:59 -0400
+Date: Tue, 7 Jun 2011 12:27:48 +0200
+From: Jan Glauber <jang@linux.vnet.ibm.com>
+To: Peter Huewe <peterhuewe@gmx.de>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Frank Blaschka <frank.blaschka@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 2/2] s390/qdio_debug: Use kstrtoul_from_user
+Message-ID: <20110607102748.GA10838@hal>
+References: <1307394474-747-1-git-send-email-peterhuewe@gmx.de>
+ <1307394474-747-2-git-send-email-peterhuewe@gmx.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0blaZc+aUkVqY8MO"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DE3E5D6.207@freemail.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1307394474-747-2-git-send-email-peterhuewe@gmx.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 06, 2011 at 11:07:54PM +0200, Peter Huewe wrote:
+> This patch replaces the code for getting an unsigned long from a
+> userspace buffer by a simple call to kstroul_from_user.
+> This makes it easier to read and less error prone.
+> 
+> Kernel Version: v3.0-rc2
+> 
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 
---0blaZc+aUkVqY8MO
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Jan Glauber <jang@linux.vnet.ibm.com>
 
-On Mon, May 30, 2011 at 08:45:42PM +0200, N=E9meth M=E1rton wrote:
-> From: M=E1rton N=E9meth <nm127@freemail.hu>
->=20
-> Variable d is a struct usb_iso_packet_descriptor. The status filed is usu=
-ally
-> negative when an error happens.
->=20
-> Signed-off-by: M=E1rton N=E9meth <nm127@freemail.hu>
-
-applied to fixes branch. Thanks
-
---=20
-balbi
-
---0blaZc+aUkVqY8MO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN7f0bAAoJEAv8Txj19kN1bacH/1/9e6DJhM92gQX8z52p6vWI
-7hSjxET0YuSHRwwF3nTdEmXq9xnJrDxwESaRm0cm1NizOZperGYgripdePIbexg9
-5RH2kRwx8tCDUpoBPy0smthUvscfesGjFk/2E6maDnbmdw/evdy3cuJ9Apf+G43f
-xBoPW1n2nwLAS4eQj1IiklZtpJhh3TWVKrHw2PqkWsHzJkneKqZOmcLE0YbWWeZo
-oyi0i2MHLfLHrMaeHqebXXUz+4g/2HPEQ4r5zyi+DJ45SENDjfCdtdbcxcbZMIA/
-b3c+kcfh7sjr8CIBfJxxK9riYznWs7Va60uqHrl0XHDf1clAYXbCzeLqurMevtI=
-=cblj
------END PGP SIGNATURE-----
-
---0blaZc+aUkVqY8MO--
+> ---
+>  drivers/s390/cio/qdio_debug.c |   12 +++---------
+>  1 files changed, 3 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/s390/cio/qdio_debug.c b/drivers/s390/cio/qdio_debug.c
+> index f8b03a6..0e615cb 100644
+> --- a/drivers/s390/cio/qdio_debug.c
+> +++ b/drivers/s390/cio/qdio_debug.c
+> @@ -188,19 +188,13 @@ static ssize_t qperf_seq_write(struct file *file, const char __user *ubuf,
+>  	struct qdio_irq *irq_ptr = seq->private;
+>  	struct qdio_q *q;
+>  	unsigned long val;
+> -	char buf[8];
+>  	int ret, i;
+> 
+>  	if (!irq_ptr)
+>  		return 0;
+> -	if (count >= sizeof(buf))
+> -		return -EINVAL;
+> -	if (copy_from_user(&buf, ubuf, count))
+> -		return -EFAULT;
+> -	buf[count] = 0;
+> -
+> -	ret = strict_strtoul(buf, 10, &val);
+> -	if (ret < 0)
+> +
+> +	ret = kstrtoul_from_user(ubuf, count, 10, &val);
+> +	if (ret)
+>  		return ret;
+> 
+>  	switch (val) {
+> -- 
+> 1.7.3.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
