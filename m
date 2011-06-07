@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab1FGKKn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 06:10:43 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:34496 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752744Ab1FGKKm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 06:10:42 -0400
-Message-ID: <4DEDF909.2000608@st.com>
-Date: Tue, 7 Jun 2011 15:40:17 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1751557Ab1FGKNj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 06:13:39 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45381 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815Ab1FGKNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 06:13:37 -0400
+Date: Tue, 7 Jun 2011 12:13:15 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: pageexec@freemail.hu
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to
+ COMPAT_VSYSCALLS
+Message-ID: <20110607101315.GG4133@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>
+ <4DED16C1.24309.139B86C7@pageexec.freemail.hu>
+ <20110606191218.GB20123@elte.hu>
+ <4DED6AAC.12348.14E3578E@pageexec.freemail.hu>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 1/3] drivers/pwm st_pwm: Add support for ST's Pulse
- Width Modulator
-References: <cover.1306831238.git.viresh.kumar@st.com> <20110606173339.268b9f9c.akpm@linux-foundation.org> <4DEDA12D.6080406@st.com> <201106070928.53761.arnd@arndb.de>
-In-Reply-To: <201106070928.53761.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DED6AAC.12348.14E3578E@pageexec.freemail.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2011 12:58 PM, Arnd Bergmann wrote:
-> On Tuesday 07 June 2011 05:55:25 viresh kumar wrote:
->>>> +static int __devinit st_pwm_probe(struct platform_device *pdev)
->>>
->>> And here things get rather odd.
->>>
->>> Most of this file is a generic, non-device specific PWM layer, exported
->>> to other modules.  But then we get into driver bits which are specific
->>> to one paritular type of device.  Confused - this is like putting the
->>> e100 driver inside net/ipv4/tcp.c?
->>>
->>
->> Sorry but i couldn't get this one completely. :(
->> Driver is specific to pwm peripheral by ST. This driver can be used for
->> SPEAr or may be other SoC or Devices, and is not at all dependent on SPEAr.
-> 
-> 
 
-Now i get the question correctly. :)
+* pageexec@freemail.hu <pageexec@freemail.hu> wrote:
 
-> It was my suggestion to start drivers/pwm/ with this driver. We currently
-> have a number of pwm drivers spread over the entire tree, all using slight
-> the same interface header. They all look like this one, and are each used
-> on one SOC, so you have to choose at compile-time which one to use.
+> > You generally seem to assume that security is an absolute goal 
+> > with no costs attached.
 > 
-> There are two problems with this of course:
-> 1. the drivers that export the same interface should be in one directory
-> 2. there should be a common abstraction layer to avoid duplicate code and
->    enable building a kernel with multiple PWM drivers builtin.
-> 
-> Moving this driver to drivers/pwm is the first step to address the
-> problem 1, we will move the other drivers in the 3.1 or 3.2 timeframe.
-> 
-> There is independent by Sascha Hauer to work on the abstraction layer
-> for all the drivers. Once that is in, we will change the individual drivers
-> in drivers/pwm accordingly.
-> 
+> quote me on that back please or admit you made this up. [...]
 
-Above was exactly the reason why i didn't separated framework from device
-specific part. As soon as framework is pushed, i will update my driver to
-work with it.
+Just one quick example of your delusion:
 
--- 
-viresh
+   |
+   | "a page fault is never a fast path"
+   |
+
+   (PageExec, Jun 6, 2011)
+
+   http://lkml.org/lkml/2011/6/6/209
+
+I think that sentence will become a classic quote to chuckle about.
+
+Thanks,
+
+	Ingo
