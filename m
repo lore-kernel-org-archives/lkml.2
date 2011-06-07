@@ -1,121 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab1FGNMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 09:12:38 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51563 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab1FGNMg (ORCPT
+	id S1754667Ab1FGNMr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 09:12:47 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:33988 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137Ab1FGNMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 09:12:36 -0400
-Date: Tue, 7 Jun 2011 15:12:16 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:sched/urgent] sched: Fix cross-cpu clock sync on remote
- wakeups
-Message-ID: <20110607131216.GC27813@aftab>
-References: <tip-f01114cb59d670e9b4f2c335930dd57db96e9360@git.kernel.org>
- <20110531125621.GA24439@gere.osrc.amd.com>
- <1306847516.2353.80.camel@twins>
- <20110601070547.GB3368@liondog.tnic>
- <1306924612.2353.176.camel@twins>
- <20110601155017.GD24028@aftab>
- <BANLkTikT6OT-HDi-DR+_ZWEhfp_CYWJ3Hg@mail.gmail.com>
- <1307019866.2497.675.camel@laptop>
- <20110602142340.GA3356@zhy>
- <1307029711.2497.717.camel@laptop>
+	Tue, 7 Jun 2011 09:12:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=SH6EKn7BD1LqhBRcCs2K4s13r8JQ2AK6i3UXkuh6a7GQ4o0DHgsyXeHUb6Qy0SxqF8
+         LQl+cx/+uL4X49u2gLlNPEXF6LxWy8EkEY4TlVRCkwoJHCypoG6N7qGHK7/3pFU+Sl3X
+         UrJOR5E41vHtdWBxoUJscbVYy8m8eL7FmVUHg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307029711.2497.717.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <BANLkTik+Qi41fTwY8CGtLqKerdotMyjzGw@mail.gmail.com>
+References: <BANLkTi=50UZsPCqmbwO=5iv8TFshCb+vfw@mail.gmail.com>
+	<BANLkTik2=dRf29cN1AmKErbbmzMosFX9PQ@mail.gmail.com>
+	<BANLkTik+Qi41fTwY8CGtLqKerdotMyjzGw@mail.gmail.com>
+Date: Tue, 7 Jun 2011 15:12:44 +0200
+Message-ID: <BANLkTimp51S_QGN9dBs9djGG0ag2CGW-pg@mail.gmail.com>
+Subject: Re: [v3.0-rc2] Creating an archive-tarball from linux-2.6 GIT repository
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: sedat.dilek@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 11:48:31AM -0400, Peter Zijlstra wrote:
-> Crap.. you're right. And I bet other archs don't do that either. With
-> NO_HZ you really need irq_enter() for pretty much all interrupts so I
-> was assuming the resched IPI had it, but its been special and never
-> really needed it. If it would wake an idle cpu the idle loop exit would
-> deal with it, if it interrupted userspace the thing was running and
-> NO_HZ wasn't relevant.
-> 
-> Damn. 
-> 
-> And yes, the only reason I didn't see this on my dev box was because we
-> do indeed set that sched_clock_stable thing on wsm. And I never noticed
-> on my desktop because firefox/X/etc. consuming heaps of CPU isn't weird
-> at all.
-> 
-> Adding it to all resched int handlers is of course a possibility but
-> would slow down the thing, although with the new code, most users are
-> now indeed wakeups (excepting weird and wonderful users like KVM).
+On Tue, Jun 7, 2011 at 3:09 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>
+> I know he is travelling, in my words there is no sarcasm BTW.
+> ...was a nice short trip with git-archive and currently playing with
+> XZs compression-levels and decompression-speed.
+>
 
-FWIW, we could set the sched_clock_stable on AMD too - at least on F10h
-and later. This will take care of the problem at hand and defer the
-issue of slowing down the resched ipi handlers.
-
-I dunno, however, whether we still would need the proper ->tick_gtod
-update for correct ttwu accounting regardless of sched_clock_stable on
-K8 (unstable TSCs) and maybe even other arches.
-
-> 
-> We could of course add it in sched.c since the logic recurses just
-> fine.. its not pretty though.. :/
-> 
-> Thoughts?
-> 
-> ---
->  kernel/sched.c |   18 +++++++++++++++++-
->  1 files changed, 17 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 2fe98ed..365ed6b 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2554,7 +2554,23 @@ static void sched_ttwu_pending(void)
->  
->  void scheduler_ipi(void)
->  {
-> -	sched_ttwu_pending();
-> +	struct rq *rq = this_rq();
-> +	struct task_struct *list = xchg(&rq->wake_list, NULL);
-> +
-> +	if (!list)
-> +		return;
-> +
-> +	irq_enter();
-> +	raw_spin_lock(&rq->lock);
-> +
-> +	while (list) {
-> +		struct task_struct *p = list;
-> +		list = list->wake_entry;
-> +		ttwu_do_activate(rq, p, 0);
-> +	}
-> +
-> +	raw_spin_unlock(&rq->lock);
-> +	irq_exit();
->  }
->  
->  static void ttwu_queue_remote(struct task_struct *p, int cpu)
-> 
-> 
-> 
+Ok, please tell us when you find another nice git command. ;-)
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Thanks,
+//richard
