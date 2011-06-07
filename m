@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757217Ab1FGQ43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 12:56:29 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:56320 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757190Ab1FGQ42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 12:56:28 -0400
-Date: Tue, 7 Jun 2011 18:56:22 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Greg Dietsche <gregory.dietsche@cuw.edu>
-Cc: Gilles.Muller@lip6.fr, npalix.work@gmail.com, cocci@diku.dk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] coccinelle: if(ret)return ret; return ret; semantic
- patch
-In-Reply-To: <4DEE482D.7020505@cuw.edu>
-Message-ID: <Pine.LNX.4.64.1106071855540.4074@ask.diku.dk>
-References: <1307320012-31292-1-git-send-email-Gregory.Dietsche@cuw.edu>
- <Pine.LNX.4.64.1106060651320.7113@ask.diku.dk> <4DEE482D.7020505@cuw.edu>
+	id S1756466Ab1FGQ56 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 12:57:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42084 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753546Ab1FGQ55 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 12:57:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=W6BljX9KDZlgBtb1zXcoRnV18lEnbENnqzxDHQjwQgZVGRzwKaEmEv33GYO/fWcUwU
+         nLBY0p7argieZH8D5foaLS4m28uc20uVAfGF4e5yghkKittvzCyKwcP+22M8WDo5qlWO
+         c9LDqI7TGpVj4UrBxsJTh2/9d0OFaOPjb4WWQ=
+Message-ID: <4DEE588E.1050108@suse.cz>
+Date: Tue, 07 Jun 2011 18:57:50 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110531 Thunderbird/5.0b1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg KH <greg@kroah.com>
+CC: gregkh@suse.de, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v2 2/2] TTY: ntty, add one more sanity check
+References: <BANLkTik5QP7e=+FWSa1kLVpCjZpWEtF1PQ@mail.gmail.com> <1307276177-20957-1-git-send-email-jslaby@suse.cz> <1307276177-20957-2-git-send-email-jslaby@suse.cz> <20110607164423.GA32575@kroah.com>
+In-Reply-To: <20110607164423.GA32575@kroah.com>
+X-Enigmail-Version: 1.2a2pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Jun 2011, Greg Dietsche wrote:
-
-> Hi Julia,
+On 06/07/2011 06:44 PM, Greg KH wrote:
+> On Sun, Jun 05, 2011 at 02:16:17PM +0200, Jiri Slaby wrote:
+>> With the previous patch, we fixed another bug where read_buf was freed
+>> while we still was in n_tty_read. We currently check whether read_buf
+>> is NULL at the start of the function. Add one more check after we wake
+>> up from waiting for input.
+>>
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+>> ---
+>>  drivers/tty/n_tty.c |    1 +
+>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+>> index 95d0a9c..c62c856 100644
+>> --- a/drivers/tty/n_tty.c
+>> +++ b/drivers/tty/n_tty.c
+>> @@ -1785,6 +1785,7 @@ do_it_again:
+>>  				break;
+>>  			}
+>>  			timeout = schedule_timeout(timeout);
+>> +			BUG_ON(!tty->read_buf);
 > 
-> On 06/05/2011 11:55 PM, Julia Lawall wrote:
-> > Thanks.  I tried this too, but I wasn't sure about the results.  The
-> > question is why stop here.
-> very interesting! Honestly I hadn't thought much further than what you see in
-> my semantic patch. I'd noticed piece of code in the iwlegacy driver and
-> wondered what'd happen if I taught myself a little bit about cocci :)
-> >    For example, there are IS_ERR calls that one
-> > could consider as well.  Or ret<  0.  Or why not just:
-> >
-> > @@
-> > expression ret;
-> > @@
-> >
-> > - if (...) return ret;
-> >    return ret;
-> >
-> > Although there might be function calls that one doesn't want to touch, so:
-> >
-> > @@
-> > identifier f != IS_ERR;
-> > expression ret;
-> > statement S;
-> > @@
-> >
-> > (
-> > if (<+...f(...)...+>) S
-> > |
-> > - if (...) return ret;
-> >    return ret;
-> > )
-> >
-> > julia
-> >
-> >
-> >    
-> There seem to be many variations on the theme to consider... though hopefully
-> the compiler optimizes most of these out... For example, in
-> sound/soc/codecs/wm8940.c, Jonathan Cameron pointed some code out to me that
-> looks like this:
+> So, if we ever hit this, what are we going to do with this crash?
 > 
->         if (ret)
->                 goto error_ret;
-> 
-> error_ret:
->         return ret;
+> I really don't want to add more BUG_ON() calls to the kernel if at all
+> possible.  Or is it the case that we will crash if this case is true
+> soon afterward anyway?
 
-Good one :)
+Yeah, it will crash something like 10 lines below. The pointer is
+dereferenced there.
 
-> As an aside, I added a feature to the script for myself so that I can for
-> example write 'make coccicheck M=drivers/net/wireless/' for example to focus
-> in on that directory and just run the checks there... I can submit a patch for
-> this... though I was wondering if there is already a way to do this and I just
-> missed it. The thought was to make it work the same way you'd build a module.
-
-I think it is possible, but Nicolas would know better.
-
-julia
+thanks,
+-- 
+js
+suse labs
