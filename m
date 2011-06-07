@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab1FGVGy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 17:06:54 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:51598 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756837Ab1FGVGv (ORCPT
+	id S1757403Ab1FGVIC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:08:02 -0400
+Received: from jaguar.mail.utk.edu ([160.36.0.84]:33366 "EHLO
+	jaguar.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754259Ab1FGVIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 17:06:51 -0400
-Subject: Re: [PATCH 4/5] clocksource: Replace vread and fsys_mmio with
- generic arch data
-From: john stultz <johnstul@us.ibm.com>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Clemens Ladisch <clemens@ladisch.de>, linux-ia64@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <BANLkTimU75BNGxTSDicAf5uJdaxqDUu57Q@mail.gmail.com>
-References: <cover.1307474707.git.luto@mit.edu>
-	 <4a233d5b7421ef8f7805139e3eba68c52c2d0d57.1307474707.git.luto@mit.edu>
-	 <1307478514.3163.49.camel@work-vm>
-	 <BANLkTimU75BNGxTSDicAf5uJdaxqDUu57Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Jun 2011 14:06:20 -0700
-Message-ID: <1307480780.3163.68.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jun 2011 17:08:00 -0400
+Date: Tue, 7 Jun 2011 17:07:48 -0400 (EDT)
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: linux-kernel@vger.kernel.org
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [patch] perf_events: even more wrong events for AMD fam10h
+In-Reply-To: <alpine.DEB.2.00.1106071532250.21714@cl320.eecs.utk.edu>
+Message-ID: <alpine.DEB.2.00.1106071701560.21714@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1106071532250.21714@cl320.eecs.utk.edu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 16:35 -0400, Andrew Lutomirski wrote:
-> On Tue, Jun 7, 2011 at 4:28 PM, john stultz <johnstul@us.ibm.com> wrote:
-> >
-> > While having the ifdefs in the clocksource structure wasn't great, I'm
-> > not super excited about pushing all of this back into arch-specific
-> > code. The hope was that folks like ppc and ia64 would convert over from
-> > their own implementations to using more generic vread() implementations,
-> > or atleast new arches with vdso implementations would make use of it
-> > (possibly even allowing for a generic vdso gettime implementation).
-> >
-> > Are there at least some hard numbers that help justify this? Or maybe
-> > could you provide some thoughts on your future plans?
-> 
-> No numbers because there's no speedup (yet).  Although I do want to
-> inline at least the TSC implementation eventually.
-> 
-> The real reason is security.  Having vread be a function pointer
-> implies that userspace code can find that function at a fixed address,
-> which is a bad idea from a security POV (and I hope it's not even true
-> on any architecture except x86-64).
 
-Something to this effect should go into the change-log then.
+Here are two more problems I found with the superlative "generalized" 
+events on AMD fam10h.
 
->   The x86-64 vsyscall is finally
-> cleaned up to the point that the vread functions are the only pieces
-> user-executable code left at a fixed address, and I want to get rid of
-> them as well.
-> 
-> The followup change (patch 5) changes vread on x86-64 to specify TSC,
+The "l1-dcache-loads" event measures loads *and* stores.
+    This might be as close as you can get on AMD, but it's still wrong
+      as it's not what Intel measures.  
+    My patch removes it.  Better might be to add a proper
+    "l1-dcache-access" event.
 
-Oh, sorry, I didn't see the rest of the patchset. Apologies. :)
+The "l1-dcache-load-miss" event is an invalid event. (0x141).
+    From what I can tell that event (DATA_CACHE_MISSES) does not
+    take a mask.  It should be 0x41.  And it's actually measuring
+    all misses, not just load misses, see above.
+
+The "l1-dcache-stores" event does not work.  See the
+     ./validation/l1-dcache-stores test found in 
+     http://web.eecs.utk.edu/~vweaver1/projects/perf-events/validation.html
+   So remove it until we figure out why.
 
 
-> HPET, or fallback to syscall, and the vDSO reads it and acts
-> accordingly.  This is unfortunate in that it hardcodes assumptions
-> about the clocksources.
+Also, is the value for "no such event" 0 or -1?  The perf_event_amd.c
+file seems to use them interchangably from what I can tell.
 
-Yea, that is unfortunate. Hmm.
+Thanks,
 
-> The only other way I can think of to do it is to make the pointer
-> point into the vDSO.  That would involve making it relative to
-> something in the vDSO, which would IMO be messier both in terms of
-> computing the pointer and in terms of calling whatever it points to.
+Vince
 
-Hrm. I'm not super familiar with how the vDSO randomization works, so I
-can't really provide any informed insight here.
+Signed-off-by: Vince Weaver <vweaver1@eecs.utk.edu>
 
-But I'd def like to someday get the vDSO stuff to be as generic as
-possible. I already have some timekeeping changes I'd like to do which
-affect the update_vsyscall path. And that is a total pain to do, since I
-have to sync changes with x86, powerpc and ia64 (and the ia64 asm isn't
-something I'm likely to touch :) and get those changes in all at once,
-or introduce some redundant call or have lots of ifdef magic to keep
-compatibility while each arch adapts to the changes.
-
-So yea, I guess the fixed pointer removal is a priority, but I suspect
-these changes will cause some maintenance pain in the future.
-
-thanks
--john
-
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index fe29c1d..71987d5 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -7,11 +7,11 @@ static __initconst const u64 amd_hw_cache_event_ids
+ {
+  [ C(L1D) ] = {
+ 	[ C(OP_READ) ] = {
+-		[ C(RESULT_ACCESS) ] = 0x0040, /* Data Cache Accesses        */
+-		[ C(RESULT_MISS)   ] = 0x0141, /* Data Cache Misses          */
++		[ C(RESULT_ACCESS) ] = 0,      /* Not available on AMD       */
++		[ C(RESULT_MISS)   ] = 0x0041, /* Data Cache Misses          */
+ 	},
+ 	[ C(OP_WRITE) ] = {
+-		[ C(RESULT_ACCESS) ] = 0x0142, /* Data Cache Refills :system */
++		[ C(RESULT_ACCESS) ] = 0,      /* Data Cache Refills :system doesn't work */
+ 		[ C(RESULT_MISS)   ] = 0,
+ 	},
+ 	[ C(OP_PREFETCH) ] = {
 
