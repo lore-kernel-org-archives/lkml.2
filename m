@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751283Ab1FGGGz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 02:06:55 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33975 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab1FGGGy convert rfc822-to-8bit (ORCPT
+	id S1751382Ab1FGGZX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 02:25:23 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38653 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab1FGGZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 02:06:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=r8/i2x2vnbXLMSftNETq2rNvax3GcelxCxjMqAnk23QcUjk5Um3/OECBjItxcS2C0y
-         3C3vMbIrUIo1/+Jjxf9cCXmZXlW8mz1YXmK1Q7dXkZFsm+oClG9PJ5TOEOTIXNgJMEwV
-         0XUCik32E4oiOXeY8azxAXRA9OfQMm2nLqkFY=
+	Tue, 7 Jun 2011 02:25:22 -0400
+References: <BANLkTinrbh7Xi27an3uY7pDWrNKhJRYmEA@mail.gmail.com> <BANLkTik-xtEnf8Bxz3PmP6H+YYSDXe1adw@mail.gmail.com> <BANLkTim1ms9ND6evpDVPFRrJBNffMr4KNg@mail.gmail.com> <alpine.DEB.2.02.1106061308590.25491@asgard.lang.hm>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <alpine.DEB.2.02.1106061308590.25491@asgard.lang.hm>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1106062106580.22635@chino.kir.corp.google.com>
-References: <1307369665.31814.20.camel@gandalf.stny.rr.com>
-	<alpine.DEB.2.00.1106062106580.22635@chino.kir.corp.google.com>
-Date: Tue, 7 Jun 2011 09:06:53 +0300
-X-Google-Sender-Auth: xHtwyvdD8I2VgeA9LIYqjUyMUgo
-Message-ID: <BANLkTikmp5CFKykBXaPUP0SBZEto1idDsA@mail.gmail.com>
-Subject: Re: [PATCH][GIT PULL] slob/lockdep: Fix gfp flags passed to lockdep
-From: Pekka Enberg <penberg@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Matt Mackall <mpm@selenic.com>,
-        Paul Mundt <lethal@linux-sh.org>, Nick Piggin <npiggin@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: Linux 3.0-rc2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 07 Jun 2011 15:22:42 +0900
+To: david@lang.hm
+CC: Alessandro Suardi <alessandro.suardi@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <81e5df54-4987-40ba-9333-79665efda719@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 7, 2011 at 7:09 AM, David Rientjes <rientjes@google.com> wrote:
->> Please pull the latest tip/lockdep/devel tree, which can be found at:
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
->> tip/lockdep/devel
->>
->>
->> Steven Rostedt (1):
->>       slob/lockdep: Fix gfp flags passed to lockdep
+
+
+david@lang.hm wrote:
 >
-> Shouldn't this be going into Pekka's slab tree?
+>hmm, at this point would it make sense to have kernel.org generate the 
+>tarball when it sees a new tag appear?
 
-That's what I'd expect, sure. :-)
+It's actually more of a "silly Linus scripts and workflow" issue. I have some trivial scripts that generate the tarballs and patches, and I'm just so used to running them at my own machine and then uploading them to the kernel.org machines.
 
-However, I'm not pulling from a "tip/lockdep/devel" branch to slab.git
-so Steven needs to send this to me in patch format or Ingo picks it up
-in which case consider the patch:
+I should just get used to doing the work directly on kernel.org, but normally it's faster and more convenient to just do it on my own machine. And I think this is the first time I've had an internet connection that was good enough to work with, but too flaky to actually upload things with.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+I'll be home in another too many hours, will fix things up then..
 
-                          Pekka
+I suspect not a lot of people actually use the tarballs these days. It's just much more convenient to get the tree with git.
+
+        Linus
+
