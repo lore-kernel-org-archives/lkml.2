@@ -1,42 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab1FGLzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 07:55:54 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:50958 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab1FGLzx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 07:55:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=pqMcDYdTe1TVZZ+OwTeb4rVsYhuozMRaYiZsApgexFwkIcT5nrcDs+h7jD3l2QG2D9
-         5XB4jp/Qf4ked4cFNAwiuvUtSyDicG/0XB/Q2RMIKohSAZGH+/6CZELkac8Mb4TbdfQf
-         vGmSwXisA2kmnM1DSjcMRFgiv+VSOTi6bcyuY=
+	id S1751984Ab1FGH6g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 03:58:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33642 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751647Ab1FGH6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 03:58:35 -0400
+Message-ID: <4DEDDA10.1080603@redhat.com>
+Date: Tue, 07 Jun 2011 10:58:08 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <201106070943.21004@zmi.at>
-References: <BANLkTinX_BO94CdQsdmj=atFc-typqr0xg@mail.gmail.com>
- <BANLkTi=y2V4ZUyP02p_r_scqdSbprjbLsQ@mail.gmail.com> <201106070943.21004@zmi.at>
-From: Drunkard Zhang <gongfan193@gmail.com>
-Date: Tue, 7 Jun 2011 15:56:30 +0800
-Message-ID: <BANLkTikrmbe9X3Weyb8ikhn1RX_Tn_NuAg@mail.gmail.com>
-Subject: Re: bug in xfs: can't recovery metadata log
-To: Michael Monnerie <michael.monnerie@is.it-management.at>
-Cc: xfs@oss.sgi.com, Alex Elder <aelder@sgi.com>, xfs-masters@oss.sgi.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@alien8.de>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Subject: Re: [PATCH] kvm: Fix build warnings
+References: <20110530124600.GB494@eferding.osrc.amd.com> <1306786278-12219-1-git-send-email-bp@alien8.de> <20110531073824.GA17999@elte.hu> <4DE4A4E7.80503@redhat.com> <20110531102655.GC24172@elte.hu> <20110607072813.GC21263@liondog.tnic>
+In-Reply-To: <20110607072813.GC21263@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/7 Michael Monnerie <michael.monnerie@is.it-management.at>:
-> On Dienstag, 7. Juni 2011 Drunkard Zhang wrote:
->> With 2.6.39.1 too, output not the same thing.
+On 06/07/2011 10:28 AM, Borislav Petkov wrote:
+> So, any progress on this front? Warning is still there in -rc2.
 >
-> I'm not a developer, but have you tries xfs_repair -n ? As you crashed,
-> probably the xfs log is damaged, needing a "xfs_repair -L", but wait for
-> a more competent answer before you do this.
->
-Oops, I already did "xfs_repair -L", successed. It's in production
-environment, didn't have too much time to figure out why :-(
+
+Thanks for the reminder, applied and queued.
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
