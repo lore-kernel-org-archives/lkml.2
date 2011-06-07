@@ -1,50 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab1FGTU5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:20:57 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:2201
-	"EHLO CH1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754212Ab1FGTU4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 15:20:56 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4DEE7A12.80302@freescale.com>
-Date: Tue, 7 Jun 2011 14:20:50 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	id S1758177Ab1FGTXK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 15:23:10 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:47345 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754394Ab1FGTXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 15:23:08 -0400
+Date: Tue, 7 Jun 2011 12:22:25 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Milton Miller <miltonm@bga.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [1/4] rcu: Detect uses of rcu read side in extended quiescent
+ states
+Message-ID: <20110607192225.GG2286@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1307329858-14999-3-git-send-email-fweisbec@gmail.com>
+ <rcu-splat-split-printk@mdm.bga.com>
+ <20110606181021.GL3066@linux.vnet.ibm.com>
+ <20110607001905.GE17026@somewhere.redhat.com>
+ <20110607004250.GZ3066@linux.vnet.ibm.com>
+ <20110607013630.GF17026@somewhere.redhat.com>
+ <20110607044005.GB2292@linux.vnet.ibm.com>
+ <20110607125809.GA23214@somewhere>
+ <20110607183414.GF2286@linux.vnet.ibm.com>
+ <20110607184857.GC23214@somewhere>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Chris Metcalf <cmetcalf@tilera.com>, <linuxppc-dev@lists.ozlabs.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <kumar.gala@freescale.com>, <linux-kernel@vger.kernel.org>,
-        <akpm@kernel.org>, Deepak Saxena <dsaxena@linaro.org>,
-        <linux-console@vger.kernel.org>, <greg@kroah.com>
-Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
- management driver
-References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106070908.16301.arnd@arndb.de> <4DEE567E.7080102@tilera.com> <201106072116.21469.arnd@arndb.de>
-In-Reply-To: <201106072116.21469.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607184857.GC23214@somewhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> For the spi flash driver that goes through the hypervisor abstraction,
-> I think drivers/virt/tile would be better than driver/platform/tile,
-> but we should really have a new "abstract flash character driver" subsystem
-> for that.
+On Tue, Jun 07, 2011 at 08:49:01PM +0200, Frederic Weisbecker wrote:
+> On Tue, Jun 07, 2011 at 11:34:14AM -0700, Paul E. McKenney wrote:
+> > On Tue, Jun 07, 2011 at 02:58:13PM +0200, Frederic Weisbecker wrote:
+> > > On Mon, Jun 06, 2011 at 09:40:05PM -0700, Paul E. McKenney wrote:> 
+> > > > The bit I am missing is how to distinguish between spinlocks (where
+> > > > sleeping is illegal) and mutexes (where sleeping is perfectly fine).
+> > > > We could teach lockdep the difference, I suppose, but it is not clear
+> > > > to me that it is worth it.
+> > > 
+> > > Ah, in fact it doesn't pass through any lockdep check.
+> > > 
+> > > It's only a function called might_sleep() that is placed in functions
+> > > that can sleep. And inside might_sleep() it checks whether it is in a preemptible
+> > > area. So it's actually locking-agnostic, it only relies on the preempt_count
+> > > and some more for the preempt rcu cases.
+> > > 
+> > > I think it is called CONFIG_DEBUG_SPINLOCK_SLEEP because it was first used
+> > > for spinlock debugging purposes. But then it has a broader use now: sleep
+> > > inside preemptible section, sleep inside interrupts, sleep inside rcu.
+> > 
+> > But the __might_sleep() function can only differentiate between
+> > spinlocks and sleeplocks if CONFIG_PREEMPT=y.
+> 
+> It doesn't differentiate between locks but checks on the lowest level
+> by looking at the preempt count. But yeah it only works if CONFIG_PREEMPT,
+> which is why I proposed to inc/dec the preempt count also when we have
+> that DEBUG_SPINLOCK_SLEEP.
 
-Why should it matter that the SPI flash driver goes through the hypervisor
-abstration?  One of the patches in this patchset is a TTY driver that goes
-through the Freescale hypervisor.  I put the drivers in drivers/tty.
+Ah, I missed your proposal to inc/dec preempt_count for PREEMPT=n
+and DEBUG_SPINLOCK_SLEEP=y.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+> > > It certainly deserves a rename, like CONFIG_DEBUG_ILLEGAL_SLEEP.
+> > 
+> > Hmmm...  It already checks for sleeping in the middle of a
+> > preempt_disable() as well as in a spinlock critical section.
+> > So the need for a rename is independent of any RCU checking.
+> 
+> Sure, rcu just adds itself to the pile of users of might_sleep(), thus
+> it would be a nice cleanup to rename the option to something more
+> generic. But that rename is not necessary to improve RCU checking.
 
+Agreed!
+
+> > > > In contrast, with RCU, this is straightforward -- check for rcu_sched
+> > > > and rcu_bh, but not SRCU.
+> > 
+> > Actually it makes sense to keep the checks in rcu_note_context_switch(),
+> > as there are places that call schedule() directly without a might_sleep().
+> > Perhaps having checks in both places is the correct approach?
+> 
+> In this case it makes more sense to add your checks in schedule_debug(),
+> so that we don't wait for a context switch to detect the bug.
+
+You might well be right -- looking at it.
+
+							Thanx, Paul
