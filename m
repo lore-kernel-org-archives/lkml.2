@@ -1,91 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab1FGMZh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:25:37 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:57685
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753053Ab1FGMZg (ORCPT
+	id S1753213Ab1FGM2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:28:18 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43015 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753034Ab1FGM2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:25:36 -0400
-Date: Tue, 7 Jun 2011 08:25:19 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
-Message-ID: <20110607122519.GA18571@infradead.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
+	Tue, 7 Jun 2011 08:28:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Originating-IP: [109.186.65.238]
+In-Reply-To: <201106071340.15199.laurent.pinchart@ideasonboard.com>
+References: <1307053663-24572-1-git-send-email-ohad@wizery.com>
+ <201106071122.47804.laurent.pinchart@ideasonboard.com> <BANLkTineGVvmph=Om2FGR_+mkiMW6k7UAw@mail.gmail.com>
+ <201106071340.15199.laurent.pinchart@ideasonboard.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 7 Jun 2011 15:27:55 +0300
+Message-ID: <BANLkTikGvCDhOev02=n3H1pQvF69fn1uuw@mail.gmail.com>
+Subject: Re: [RFC 1/6] omap: iommu: generic iommu api migration
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Hiroshi.DOYU@nokia.com, arnd@arndb.de, davidb@codeaurora.org,
+        Joerg.Roedel@amd.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few small nitpicks:
+On Tue, Jun 7, 2011 at 2:40 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> My point is that if the allocator guarantees the alignment (not as a side
+> effect of the implementation, but per its API) there's no need to check it
+> again. As the alignement is required, we need an allocator that guarantees it
+> anyway.
 
-> +struct mem_cgroup *mem_cgroup_hierarchy_walk(struct mem_cgroup *root,
-> +					     struct mem_cgroup *prev)
-> +{
-> +	struct mem_cgroup *mem;
-> +
-> +	if (mem_cgroup_disabled())
-> +		return NULL;
-> +
-> +	if (!root)
-> +		root = root_mem_cgroup;
-> +	/*
-> +	 * Even without hierarchy explicitely enabled in the root
-> +	 * memcg, it is the ultimate parent of all memcgs.
-> +	 */
-> +	if (!(root == root_mem_cgroup || root->use_hierarchy))
-> +		return root;
+I understand, but I'd still prefer to have an explicit check that the
+hardware alignment requirement is met.
 
-The logic here reads a bit weird, why not simply:
+There's no cost in doing that (it's a cold path), and even if it would
+only fail once and with an extremely broken kernel - it's worth it.
+Will save huge amount of debugging pain (think of the poor guy that
+will have to debug this...).
 
-	 /*
-	  * Even without hierarchy explicitely enabled in the root
-	  * memcg, it is the ultimate parent of all memcgs.
-	  */
-	if (!root || root == root_mem_cgroup)
-		return root_mem_cgroup;
-	if (root->use_hierarchy)
-		return root;
-
-
->  /*
->   * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
->   */
-> -static void shrink_zone(int priority, struct zone *zone,
-> -				struct scan_control *sc)
-> +static void do_shrink_zone(int priority, struct zone *zone,
-> +			   struct scan_control *sc)
-
-It actually is the per-memcg shrinker now, and thus should be called
-shrink_memcg.
-
-> +		sc->mem_cgroup = mem;
-> +		do_shrink_zone(priority, zone, sc);
-
-Any passing the mem_cgroup explicitly instead of hiding it in the
-scan_control would make that much more obvious.  If there's a good
-reason to pass it in the structure the same probably applies to the
-zone and priority, too.
-
-Shouldn't we also have a non-cgroups stub of shrink_zone to directly
-call do_shrink_zone/shrink_memcg with a NULL memcg and thus optimize
-the whole loop away for it?
-
+Thanks,
+Ohad.
