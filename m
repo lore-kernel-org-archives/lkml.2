@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932654Ab1FGXDc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 19:03:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44944 "EHLO
+	id S1756195Ab1FGXEY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 19:04:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55886 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932640Ab1FGXDa (ORCPT
+	by vger.kernel.org with ESMTP id S1753522Ab1FGXEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 19:03:30 -0400
-Date: Tue, 7 Jun 2011 16:02:45 -0700
+	Tue, 7 Jun 2011 19:04:23 -0400
+Date: Tue, 7 Jun 2011 16:03:13 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
 To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+Cc: Jan Kara <jack@suse.cz>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Chinner <david@fromorbit.com>,
         Christoph Hellwig <hch@infradead.org>, <linux-fsdevel@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/15] writeback: update dirtied_when for synced inode
- to prevent livelock
-Message-Id: <20110607160245.9270aa27.akpm@linux-foundation.org>
-In-Reply-To: <20110607213853.635444678@intel.com>
+Subject: Re: [PATCH 03/15] writeback: introduce
+ writeback_control.inodes_cleaned
+Message-Id: <20110607160313.86fb31df.akpm@linux-foundation.org>
+In-Reply-To: <20110607213853.757201783@intel.com>
 References: <20110607213236.634026193@intel.com>
-	<20110607213853.635444678@intel.com>
+	<20110607213853.757201783@intel.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -27,26 +28,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Jun 2011 05:32:38 +0800
+On Wed, 08 Jun 2011 05:32:39 +0800
 Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-> Explicitly update .dirtied_when on synced inodes, so that they are no
-> longer considered for writeback in the next round.
-
-It sounds like this somewhat answers my questions for [1/15].
-
-But I'm not seeing a description of exactly what caused the livelock.
-
-> We'll do more aggressive "keep writeback as long as we wrote something"
-> logic in wb_writeback(). The "use LONG_MAX .nr_to_write" trick in commit
-> b9543dac5bbc ("writeback: avoid livelocking WB_SYNC_ALL writeback") will
-> no longer be enough to stop sync livelock.
+> The flusher works on dirty inodes in batches, and may quit prematurely
+> if the batch of inodes happen to be metadata-only dirtied: in this case
+> wbc->nr_to_write won't be decreased at all, which stands for "no pages
+> written" but also mis-interpreted as "no progress".
 > 
-> It can prevent both of the following livelock schemes:
-> 
-> - while true; do echo data >> f; done
-> - while true; do touch f;        done
+> So introduce writeback_control.inodes_cleaned to count the inodes get
+> cleaned.  A non-zero value means there are some progress on writeback,
+> in which case more writeback can be tried.
 
-You're kidding.  This livelocks sync(1)?  When did we break this?
+Yes, that makes sense.  I had a workload which demonstrated/exploited
+this nine years ago but I never got around to fixing it, never told
+anyone and nobody noticed ;)
 
-Why is this?  Because the inode keeps on getting rotated to head-of-list?
+> +	long inodes_cleaned;		/* # of inodes cleaned */
+
+nanonit: I'd call this inodes_written, because they may not actually be
+clean.
