@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab1FGRLM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 13:11:12 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:46768 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753086Ab1FGRLK (ORCPT
+	id S1756527Ab1FGRQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 13:16:28 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41045 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab1FGRQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 13:11:10 -0400
-X-Sasl-enc: prsgle8vF5T8bcXEkfkrj/NTE5pRSZMztMWvt68Mgm3W 1307466669
-Date: Tue, 7 Jun 2011 10:10:43 -0700
-From: Greg KH <greg@kroah.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@suse.de, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH v2 2/2] TTY: ntty, add one more sanity check
-Message-ID: <20110607171043.GA1200@kroah.com>
-References: <BANLkTik5QP7e=+FWSa1kLVpCjZpWEtF1PQ@mail.gmail.com>
- <1307276177-20957-1-git-send-email-jslaby@suse.cz>
- <1307276177-20957-2-git-send-email-jslaby@suse.cz>
- <20110607164423.GA32575@kroah.com>
- <4DEE588E.1050108@suse.cz>
+	Tue, 7 Jun 2011 13:16:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SV4XO4JK07r4weqpP8I3LhZfVKQx/TtRbMl57ELUekfGla7/UhaFPHto+WfXaREasN
+         Nh+jOfWP6mJVDFmZ7ySqd5c896oi0yF6iGz4fNnjBzgoh4gUL3iNDjnIaELmGd6hjG8b
+         Y2BBCVf2nfuG6CHbHCUV4oQ9e3cPeTS6shv2Q=
+Date: Tue, 7 Jun 2011 20:14:04 +0300
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-arm-kernel@lists.infradead.org, hsweeten@visionengravers.com,
+        rmallon@gmail.com, vinod.koul@intel.com, dan.j.williams@intel.com,
+        lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/5] spi/ep93xx: add DMA support
+Message-ID: <20110607171403.GA3011@acer>
+References: <cover.1306662317.git.mika.westerberg@iki.fi>
+ <4b27fc93b7df900943e7c12084a8340cbc5fe1a8.1306662317.git.mika.westerberg@iki.fi>
+ <20110603204400.GH17972@ponder.secretlab.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DEE588E.1050108@suse.cz>
+In-Reply-To: <20110603204400.GH17972@ponder.secretlab.ca>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 06:57:50PM +0200, Jiri Slaby wrote:
-> On 06/07/2011 06:44 PM, Greg KH wrote:
-> > On Sun, Jun 05, 2011 at 02:16:17PM +0200, Jiri Slaby wrote:
-> >> With the previous patch, we fixed another bug where read_buf was freed
-> >> while we still was in n_tty_read. We currently check whether read_buf
-> >> is NULL at the start of the function. Add one more check after we wake
-> >> up from waiting for input.
-> >>
-> >> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> >> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> >> ---
-> >>  drivers/tty/n_tty.c |    1 +
-> >>  1 files changed, 1 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-> >> index 95d0a9c..c62c856 100644
-> >> --- a/drivers/tty/n_tty.c
-> >> +++ b/drivers/tty/n_tty.c
-> >> @@ -1785,6 +1785,7 @@ do_it_again:
-> >>  				break;
-> >>  			}
-> >>  			timeout = schedule_timeout(timeout);
-> >> +			BUG_ON(!tty->read_buf);
+On Fri, Jun 03, 2011 at 02:44:00PM -0600, Grant Likely wrote:
+> On Sun, May 29, 2011 at 01:10:06PM +0300, Mika Westerberg wrote:
+> > This patch adds DMA support for the EP93xx SPI driver. By default the DMA is
+> > not enabled but it can be enabled by setting ep93xx_spi_info.use_dma to true
+> > in board configuration file.
 > > 
-> > So, if we ever hit this, what are we going to do with this crash?
+> > Note that the SPI driver still uses PIO for small transfers (<= 8 bytes) for
+> > performance reasons.
 > > 
-> > I really don't want to add more BUG_ON() calls to the kernel if at all
-> > possible.  Or is it the case that we will crash if this case is true
-> > soon afterward anyway?
+> > Signed-off-by: Mika Westerberg <mika.westerberg@iki.fi>
+> > Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> > Cc: Grant Likely <grant.likely@secretlab.ca>
 > 
-> Yeah, it will crash something like 10 lines below. The pointer is
-> dereferenced there.
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> 
+> Since this depends on the DMA patches, it can go in via the same tree.
 
-Ok, fair enough, thanks.
-
-greg k-h
+I just realized that once the SPI driver renaming patch (spi: reorganize
+drivers) enters linux-next, this patch (which sits on Vinod's tree) will cause
+a merge conflict. Any ideas how to avoid it beforehand?
