@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab1FGMOo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:14:44 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43253 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab1FGMOn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:14:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:content-type;
-        b=b4Jl3dW5lkZVdnkt/juozdyDwft0MOCBpDeQIpLgKJ5mFCUxDsMUGhbtc8gKXOY2yI
-         vFzuwvz8etdO8/YAzPD3euJRExw9piKQc738R8lVht6jaSYm226gd5SH3JInRyJEkrlC
-         +oHLD0k5IaQlQ3DnV4R/Zui2auiC9GcCVVL/o=
+	id S1753122Ab1FGMTm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:19:42 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:47171 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752761Ab1FGMTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 08:19:41 -0400
+Message-ID: <4DEE1753.2060307@free.fr>
+Date: Tue, 07 Jun 2011 14:19:31 +0200
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Tue, 7 Jun 2011 14:14:40 +0200
-Message-ID: <BANLkTi=50UZsPCqmbwO=5iv8TFshCb+vfw@mail.gmail.com>
-Subject: [v3.0-rc2] Creating an archive-tarball from linux-2.6 GIT repository
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <menage@google.com>
+Subject: Re: [Patch] doc: remove ns_cgroup from feature-removal-schedule.txt
+References: <20110607120630.GA3550@cr0>
+In-Reply-To: <20110607120630.GA3550@cr0>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/07/2011 02:06 PM, Américo Wang wrote:
+> In the following commit Daniel removed ns_cgroup
+>
+> 	commit a77aea92010acf54ad785047234418d5d68772e2
+> 	Author: Daniel Lezcano<daniel.lezcano@free.fr>
+> 	Date:   Thu May 26 16:25:23 2011 -0700
+>
+> 	    cgroup: remove the ns_cgroup
+>
+> but Daniel forgot to remove the related doc in feature-removal-schedule.txt.
+> This patch removes that too.
 
-as the official tarballs still missing, here some instructions to
-archive a tarball from GIT repository.
-
-[ Checkout linux-2.6 (aka linux-3.0) ]
-
-git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-
-( NOTE: Users from EU zone: Use <git.us.kernel.org>... it's faster for
-checkouts. )
-
-cd linux-2.6
-
-[ gzip ]
-
-git archive --format=tar --prefix=linux-3.0-rc2/ v3.0-rc2 | gzip -9c >
-../linux-3.0-rc2.tar.gz
-
-[ bzip2 ]
-
-git archive --format=tar --prefix=linux-3.0-rc2/ v3.0-rc2 | bzip2 -9c
-> ../linux-3.0-rc2.tar.bz2
-
-[ xz ]
-
-git archive --format=tar --prefix=linux-3.0-rc2/ v3.0-rc2 | xz -9c >
-../linux-3.0-rc2.tar.xz
-
-A good compromise between decompression-speed and file-size is:
-
-[ xz -2e ]
-
-git archive --format=tar --prefix=linux-3.0-rc2/ v3.0-rc2 | xz -2ec >
-../linux-3.0-rc2.tar.xz-2e
-
-[ Filesizes ]
-
-$ du -h linux-3.0-rc2.tar.*
-74M     linux-3.0-rc2.tar.bz2
-93M     linux-3.0-rc2.tar.gz
-61M     linux-3.0-rc2.tar.xz
-65M     linux-3.0-rc2.tar.xz-2e
-
-Thanks to friends from #quassel.de (git archive) and #mirbsd (xz -2e)
-for the hints.
-Thanks to Linus for not providing tarballs...
-As I used to say... Still learning from git usecase to git usecase.
-
-- Sedat -
+Well, I am not sure we should remove this entry from the documentation.
+I let this in the doc because people may want to follow what was removed 
+and from what kernel version.
+Looking at the doc, there are a lot of old entries.
