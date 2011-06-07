@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758090Ab1FGTMb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:12:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:12353 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758077Ab1FGTM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 15:12:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,333,1304319600"; 
-   d="scan'208";a="8702119"
-Subject: Re: [patch 1/2] stop_machine: enable __stop_machine() to be called
- from the cpu online path
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "trenn@novell.com" <trenn@novell.com>,
-        "prarit@redhat.com" <prarit@redhat.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Song, Youquan" <youquan.song@intel.com>,
-        "stable@kernel.org" <stable@kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <4DEE712F.3080800@zytor.com>
-References: <20110606231655.824641917@sbsiddha-MOBL3.sc.intel.com>
-	 <20110606231752.023885847@sbsiddha-MOBL3.sc.intel.com>
-	 <20110607180244.GA27552@elte.hu>
-	 <1307471902.21608.4476.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <4DEE712F.3080800@zytor.com>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Tue, 07 Jun 2011 12:12:37 -0700
-Message-Id: <1307473957.21608.4480.camel@sbsiddha-MOBL3.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	id S1758108Ab1FGTQf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 15:16:35 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55086 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756056Ab1FGTQe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 15:16:34 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor management driver
+Date: Tue, 7 Jun 2011 21:16:21 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: linuxppc-dev@lists.ozlabs.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        kumar.gala@freescale.com, linux-kernel@vger.kernel.org,
+        akpm@kernel.org, Deepak Saxena <dsaxena@linaro.org>,
+        linux-console@vger.kernel.org, greg@kroah.com,
+        Timur Tabi <timur@freescale.com>
+References: <1306953337-15698-1-git-send-email-timur@freescale.com> <201106070908.16301.arnd@arndb.de> <4DEE567E.7080102@tilera.com>
+In-Reply-To: <4DEE567E.7080102@tilera.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106072116.21469.arnd@arndb.de>
+X-Provags-ID: V02:K0:oRtt+KZLRx/VEnaavSghDv1Ku5KUv7OiKNT+LSHIj1r
+ l/3SFDy6tsAG4pZWRz+n3iAAzsn12OIH3wSzFrXI7Q6tBW7kfq
+ ayrHPbV88ue/H7Crt2wvyUJtZOfsG3c+7ACgPFVOW7oKkOXJzX
+ MizmYHPolUEh2PyXVIWv8uqLwmw7smOs501rH6+iiVlkFkqKDe
+ 8EPaDiKK7WankUR7c6kLA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 11:42 -0700, H. Peter Anvin wrote:
-> On 06/07/2011 11:38 AM, Suresh Siddha wrote:
-> > 
-> > This is kind of a false positive. We are just checking if the calling
-> > cpu is online/offline (and there is no possible process migration
-> > between an online and offline cpu).
-> > 
+On Tuesday 07 June 2011 18:49:02 Chris Metcalf wrote:
+> > You can probably argue that the tile drivers do fit in here as long as
+> > they are specific to the hypervisor and not to some SOC specific hardware.
 > 
-> Is the state not available in a percpu variable of some sort?  If not,
-> shouldn't it be rather than indirecting via a CPU number?
+> Can you clarify that?   I think you're contrasting something like an ARM
+> core that was licensed and put in a SoC by some random vendor, and you
+> could have an endless stream of drivers for that case.  The Tilera core
+> isn't being licensed; it's sold more like an Intel chip with a fixed set of
+> interfaces available only from Tilera.  The particular interface in
+> question here is SPI, and the core itself knows how to boot the chip over
+> SPI by finding an SPI ROM and reading the boot stream out of it directly
+> after power-up.
+> 
+> So does that match with your model of "drivers/platform/tile"?  Maybe we
+> have a winner!  :-)
 
-This is what I first thought about but the current percpu cpu_state is
-arch specific and not all architectures define it.
+I'm not really against drivers/platform/tile for this, the only potential
+problem that I see with this is that having more stuff in drivers/platform
+might lead to having even more other stuff in there that should really
+go into another place.
 
-Thinking a bit more, I should be able to use the stop machine's percpu
-thread state and use it here. Something like the appended. I am testing
-and will send the modified patches shortly.
+Obviously, if the device is a raw SPI host, the driver should actually go
+into drivers/spi/spi_tile.c rather than drivers/platform/tile/spi.c.
 
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index c78b0c2..97a1770 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -153,7 +153,7 @@ static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
-  */
- int __stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
- {
--	int online = cpu_online(smp_processor_id());
-+	int online = percpu_read(cpu_stopper.enabled);
- 	int include_this_offline = 0;
- 	struct cpu_stop_work *work;
- 	struct cpu_stop_done done;
-@@ -513,13 +513,13 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
- 					    .active_cpus = cpus };
- 
- 	/* Include the calling cpu that might not be online yet. */
--	if (!cpu_online(smp_processor_id()))
-+	if (!percpu_read(cpu_stopper.enabled))
- 		smdata.num_threads++;
- 
- 	/* Set the initial state and stop all online cpus. */
- 	set_state(&smdata, STOPMACHINE_PREPARE);
- 
--	if (cpu_online(smp_processor_id()))
-+	if (percpu_read(cpu_stopper.enabled))
- 		return stop_cpus(cpu_online_mask, stop_machine_cpu_stop,
- 				 &smdata);
- 	else
+For the spi flash driver that goes through the hypervisor abstraction,
+I think drivers/virt/tile would be better than driver/platform/tile,
+but we should really have a new "abstract flash character driver" subsystem
+for that.
 
-
+	Arnd
