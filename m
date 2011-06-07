@@ -1,196 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757820Ab1FGShS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:37:18 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18993 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757822Ab1FGSgz (ORCPT
+	id S1757088Ab1FGSgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:36:53 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:54786 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab1FGSgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:36:55 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, thomas@shipmail.org,
-        dri-devel@lists.freedesktop.org, Jerome Glisse <j.glisse@redhat.com>,
-        Dave Airlie <airlied@redhat.com>, David Airlie <airlied@linux.ie>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] ttm: Fix spelling mistakes and remove unused #ifdef
-Date: Tue,  7 Jun 2011 14:35:52 -0400
-Message-Id: <1307471752-1248-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1307471752-1248-1-git-send-email-konrad.wilk@oracle.com>
-References: <1307471752-1248-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4DEE6F9C.0222:SCFMA922111,ss=1,fgs=0
+	Tue, 7 Jun 2011 14:36:52 -0400
+X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzJuK2UEy0=
+X-RZG-CLASS-ID: mo00
+Message-ID: <4DEE6FC6.9040308@hartkopp.net>
+Date: Tue, 07 Jun 2011 20:36:54 +0200
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Icedove/3.1.10
+MIME-Version: 1.0
+To: Chris Ball <cjb@laptop.org>
+CC: "S\, Venkatraman" <svenkatr@ti.com>, linux-mmc <linux-mmc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: sdhci-pci fails on 3.0.0-rc1 on Dell E6510
+References: <4DEBCA3F.8050205@hartkopp.net>	<BANLkTin_WHuy5MExNBHdeLiDmdmn7SZYkg@mail.gmail.com>	<4DED05C4.7050903@hartkopp.net> <m3hb82wx6m.fsf@pullcord.laptop.org>
+In-Reply-To: <m3hb82wx6m.fsf@pullcord.laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-. and some comments to make it easier to understand.
+On 06.06.2011 21:56, Chris Ball wrote:
+> Hi Oliver,
+> 
+> On Mon, Jun 06 2011, Oliver Hartkopp wrote:
+>>>> dmesg is a bit more detailed:
+>>>> [    6.242510] sdhci-pci 0000:03:00.1: SDHCI controller found [1180:e822] (rev 3)
+>>>> [    6.244168] sdhci-pci 0000:03:00.1: PCI INT B -> GSI 19 (level, low) -> IRQ 19
+>>>> [    6.245788] sdhci-pci 0000:03:00.1: BAR 0 is not iomem. Aborting.
+>>>> [    6.247609] sdhci-pci 0000:03:00.1: PCI INT B disabled
+> 
+> If you get a chance to do some bisecting, that would be extremely
+> helpful -- even just building 3.0 from *before* the MMC tree was
+> merged would help a lot, since if the problem still happens before
+> the MMC merge we might be looking at some kind of generic PCI bug.
+> 
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/gpu/drm/ttm/ttm_page_alloc.c |   14 +++++++-------
- include/drm/ttm/ttm_bo_api.h         |    3 ---
- include/drm/ttm/ttm_bo_driver.h      |    6 +++---
- include/drm/ttm/ttm_memory.h         |    2 +-
- include/drm/ttm/ttm_object.h         |    4 ++--
- include/drm/ttm/ttm_page_alloc.h     |    2 +-
- 6 files changed, 14 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index 9d9d929..3277965 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -355,7 +355,7 @@ restart:
- 			if (nr_free)
- 				goto restart;
- 
--			/* Not allowed to fall tough or break because
-+			/* Not allowed to fall through or break because
- 			 * following context is inside spinlock while we are
- 			 * outside here.
- 			 */
-@@ -554,7 +554,7 @@ out:
- }
- 
- /**
-- * Fill the given pool if there isn't enough pages and requested number of
-+ * Fill the given pool if there isn't enough pages and the requested number of
-  * pages is small.
-  */
- static void ttm_page_pool_fill_locked(struct ttm_page_pool *pool,
-@@ -575,7 +575,7 @@ static void ttm_page_pool_fill_locked(struct ttm_page_pool *pool,
- 	pool->fill_lock = true;
- 
- 	/* If allocation request is small and there is not enough
--	 * pages in pool we fill the pool first */
-+	 * pages in a pool we fill the pool up first. */
- 	if (count < _manager->options.small
- 		&& count > pool->npages) {
- 		struct list_head new_pages;
-@@ -612,9 +612,9 @@ static void ttm_page_pool_fill_locked(struct ttm_page_pool *pool,
- }
- 
- /**
-- * Cut count nubmer of pages from the pool and put them to return list
-+ * Cut out a number of pages from the pool and put them on the return list.
-  *
-- * @return count of pages still to allocate to fill the request.
-+ * @return count of pages still required to fulfill the request.
-  */
- static unsigned ttm_page_pool_get_pages(struct ttm_page_pool *pool,
- 		struct list_head *pages, int ttm_flags,
-@@ -635,7 +635,7 @@ static unsigned ttm_page_pool_get_pages(struct ttm_page_pool *pool,
- 		goto out;
- 	}
- 	/* find the last pages to include for requested number of pages. Split
--	 * pool to begin and halves to reduce search space. */
-+	 * pool to begin and halve it to reduce search space. */
- 	if (count <= pool->npages/2) {
- 		i = 0;
- 		list_for_each(p, &pool->list) {
-@@ -649,7 +649,7 @@ static unsigned ttm_page_pool_get_pages(struct ttm_page_pool *pool,
- 				break;
- 		}
- 	}
--	/* Cut count number of pages from pool */
-+	/* Cut the count number of pages from the pool */
- 	list_cut_position(pages, &pool->list, p);
- 	pool->npages -= count;
- 	count = 0;
-diff --git a/include/drm/ttm/ttm_bo_api.h b/include/drm/ttm/ttm_bo_api.h
-index 62a0e4c..42e3469 100644
---- a/include/drm/ttm/ttm_bo_api.h
-+++ b/include/drm/ttm/ttm_bo_api.h
-@@ -662,9 +662,6 @@ extern int ttm_bo_kmap(struct ttm_buffer_object *bo, unsigned long start_page,
- 
- extern void ttm_bo_kunmap(struct ttm_bo_kmap_obj *map);
- 
--#if 0
--#endif
--
- /**
-  * ttm_fbdev_mmap - mmap fbdev memory backed by a ttm buffer object.
-  *
-diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
-index 09af2d7..94eb143 100644
---- a/include/drm/ttm/ttm_bo_driver.h
-+++ b/include/drm/ttm/ttm_bo_driver.h
-@@ -78,7 +78,7 @@ struct ttm_backend_func {
- 	 *
- 	 * Bind the backend pages into the aperture in the location
- 	 * indicated by @bo_mem. This function should be able to handle
--	 * differences between aperture- and system page sizes.
-+	 * differences between aperture and system page sizes.
- 	 */
- 	int (*bind) (struct ttm_backend *backend, struct ttm_mem_reg *bo_mem);
- 
-@@ -88,7 +88,7 @@ struct ttm_backend_func {
- 	 * @backend: Pointer to a struct ttm_backend.
- 	 *
- 	 * Unbind previously bound backend pages. This function should be
--	 * able to handle differences between aperture- and system page sizes.
-+	 * able to handle differences between aperture and system page sizes.
- 	 */
- 	int (*unbind) (struct ttm_backend *backend);
- 
-@@ -786,7 +786,7 @@ extern int ttm_bo_device_release(struct ttm_bo_device *bdev);
-  * ttm_bo_device_init
-  *
-  * @bdev: A pointer to a struct ttm_bo_device to initialize.
-- * @mem_global: A pointer to an initialized struct ttm_mem_global.
-+ * @glob: A pointer to an initialized struct ttm_bo_global.
-  * @driver: A pointer to a struct ttm_bo_driver set up by the caller.
-  * @file_page_offset: Offset into the device address space that is available
-  * for buffer data. This ensures compatibility with other users of the
-diff --git a/include/drm/ttm/ttm_memory.h b/include/drm/ttm/ttm_memory.h
-index b199170..26c1f78 100644
---- a/include/drm/ttm/ttm_memory.h
-+++ b/include/drm/ttm/ttm_memory.h
-@@ -41,7 +41,7 @@
-  * @do_shrink: The callback function.
-  *
-  * Arguments to the do_shrink functions are intended to be passed using
-- * inheritance. That is, the argument class derives from struct ttm_mem_srink,
-+ * inheritance. That is, the argument class derives from struct ttm_mem_shrink,
-  * and can be accessed using container_of().
-  */
- 
-diff --git a/include/drm/ttm/ttm_object.h b/include/drm/ttm/ttm_object.h
-index 0d9db09..e46054e 100644
---- a/include/drm/ttm/ttm_object.h
-+++ b/include/drm/ttm/ttm_object.h
-@@ -111,7 +111,7 @@ struct ttm_object_device;
-  *
-  * @ref_obj_release: A function to be called when a reference object
-  * with another ttm_ref_type than TTM_REF_USAGE is deleted.
-- * this function may, for example, release a lock held by a user-space
-+ * This function may, for example, release a lock held by a user-space
-  * process.
-  *
-  * This struct is intended to be used as a base struct for objects that
-@@ -172,7 +172,7 @@ extern struct ttm_base_object *ttm_base_object_lookup(struct ttm_object_file
- /**
-  * ttm_base_object_unref
-  *
-- * @p_base: Pointer to a pointer referncing a struct ttm_base_object.
-+ * @p_base: Pointer to a pointer referencing a struct ttm_base_object.
-  *
-  * Decrements the base object refcount and clears the pointer pointed to by
-  * p_base.
-diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
-index 8062890..129de12 100644
---- a/include/drm/ttm/ttm_page_alloc.h
-+++ b/include/drm/ttm/ttm_page_alloc.h
-@@ -32,7 +32,7 @@
- /**
-  * Get count number of pages from pool to pages list.
-  *
-- * @pages: heado of empty linked list where pages are filled.
-+ * @pages: head of empty linked list where pages are filled.
-  * @flags: ttm flags for page allocation.
-  * @cstate: ttm caching state for the page.
-  * @count: number of pages to allocate.
--- 
-1.7.4.1
+Hi Chris,
 
+i just reverted this pull of your merge window patches in my 3.0.0-rc2 tree:
+
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=8c1c77ff9be27137fa7cbbf51efedef1a2ae915b;hp=f3ae1c75203535f65448517e46c8dd70a56b6c71
+
+And you were right: The problem still exists. So it might be from the PCI subsystem :-(
+
+[    6.167106] sdhci: Secure Digital Host Controller Interface driver
+[    6.167108] sdhci: Copyright(c) Pierre Ossman
+[    6.194731] ehci_hcd 0000:00:1a.0: cache line size of 64 is not supported
+[    6.195140] ehci_hcd 0000:00:1a.0: irq 16, io mem 0xf6970000
+[    6.196423] sdhci-pci 0000:03:00.1: SDHCI controller found [1180:e822] (rev 3)
+[    6.196429] sdhci-pci 0000:03:00.1: found 1 slot(s)
+[    6.196447] sdhci-pci 0000:03:00.1: PCI INT B -> GSI 19 (level, low) -> IRQ 19
+[    6.196451] sdhci-pci 0000:03:00.1: BAR 0 is not iomem. Aborting.
+[    6.196459] sdhci-pci 0000:03:00.1: PCI INT B disabled
+
+Well then, i'll reset my tree and look for differences in the PCI boot messages.
+
+Thanks,
+Oliver
