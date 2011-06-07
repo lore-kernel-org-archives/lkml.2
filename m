@@ -1,116 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab1FGVHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 17:07:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11879 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756837Ab1FGVHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 17:07:01 -0400
-Date: Tue, 7 Jun 2011 17:05:40 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v8 11/12] writeback: make background writeback cgroup
- aware
-Message-ID: <20110607210540.GB30919@redhat.com>
-References: <1307117538-14317-1-git-send-email-gthelen@google.com>
- <1307117538-14317-12-git-send-email-gthelen@google.com>
- <20110607193835.GD26965@redhat.com>
- <xr93lixdv0df.fsf@gthelen.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xr93lixdv0df.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757334Ab1FGVGy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:06:54 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:51598 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756837Ab1FGVGv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 17:06:51 -0400
+Subject: Re: [PATCH 4/5] clocksource: Replace vread and fsys_mmio with
+ generic arch data
+From: john stultz <johnstul@us.ibm.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Clemens Ladisch <clemens@ladisch.de>, linux-ia64@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <BANLkTimU75BNGxTSDicAf5uJdaxqDUu57Q@mail.gmail.com>
+References: <cover.1307474707.git.luto@mit.edu>
+	 <4a233d5b7421ef8f7805139e3eba68c52c2d0d57.1307474707.git.luto@mit.edu>
+	 <1307478514.3163.49.camel@work-vm>
+	 <BANLkTimU75BNGxTSDicAf5uJdaxqDUu57Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Jun 2011 14:06:20 -0700
+Message-ID: <1307480780.3163.68.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 01:43:08PM -0700, Greg Thelen wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
-> 
-> > On Fri, Jun 03, 2011 at 09:12:17AM -0700, Greg Thelen wrote:
-> >> When the system is under background dirty memory threshold but a cgroup
-> >> is over its background dirty memory threshold, then only writeback
-> >> inodes associated with the over-limit cgroup(s).
-> >> 
+On Tue, 2011-06-07 at 16:35 -0400, Andrew Lutomirski wrote:
+> On Tue, Jun 7, 2011 at 4:28 PM, john stultz <johnstul@us.ibm.com> wrote:
 > >
-> > [..]
-> >> -static inline bool over_bground_thresh(void)
-> >> +static inline bool over_bground_thresh(struct bdi_writeback *wb,
-> >> +				       struct writeback_control *wbc)
-> >>  {
-> >>  	unsigned long background_thresh, dirty_thresh;
-> >>  
-> >>  	global_dirty_limits(&background_thresh, &dirty_thresh);
-> >>  
-> >> -	return (global_page_state(NR_FILE_DIRTY) +
-> >> -		global_page_state(NR_UNSTABLE_NFS) > background_thresh);
-> >> +	if (global_page_state(NR_FILE_DIRTY) +
-> >> +	    global_page_state(NR_UNSTABLE_NFS) > background_thresh) {
-> >> +		wbc->for_cgroup = 0;
-> >> +		return true;
-> >> +	}
-> >> +
-> >> +	wbc->for_cgroup = 1;
-> >> +	wbc->shared_inodes = 1;
-> >> +	return mem_cgroups_over_bground_dirty_thresh();
-> >>  }
+> > While having the ifdefs in the clocksource structure wasn't great, I'm
+> > not super excited about pushing all of this back into arch-specific
+> > code. The hope was that folks like ppc and ia64 would convert over from
+> > their own implementations to using more generic vread() implementations,
+> > or atleast new arches with vdso implementations would make use of it
+> > (possibly even allowing for a generic vdso gettime implementation).
 > >
-> > Hi Greg,
-> >
-> > So all the logic of writeout from mem cgroup works only if system is
-> > below background limit. The moment we cross background limit, looks
-> > like we will fall back to existing way of writting inodes?
+> > Are there at least some hard numbers that help justify this? Or maybe
+> > could you provide some thoughts on your future plans?
 > 
-> Correct.  If the system is over its background limit then the previous
-> cgroup-unaware background writeback occurs.  I think of the system
-> limits as those of the root cgroup.  If the system is over the global
-> limit than all cgroups are eligible for writeback.  In this situation
-> the current code does not distinguish between cgroups over or under
-> their dirty background limit.
+> No numbers because there's no speedup (yet).  Although I do want to
+> inline at least the TSC implementation eventually.
 > 
-> Vivek Goyal <vgoyal@redhat.com> writes:
-> > If yes, then from design point of view it is little odd that as long
-> > as we are below background limit, we share the bdi between different
-> > cgroups. The moment we are above background limit, we fall back to
-> > algorithm of sharing the disk among individual inodes and forget
-> > about memory cgroups. Kind of awkward.
-> >
-> > This kind of cgroup writeback I think will atleast not solve the problem
-> > for CFQ IO controller, as we fall back to old ways of writting back inodes
-> > the moment we cross dirty ratio.
+> The real reason is security.  Having vread be a function pointer
+> implies that userspace code can find that function at a fixed address,
+> which is a bad idea from a security POV (and I hope it's not even true
+> on any architecture except x86-64).
+
+Something to this effect should go into the change-log then.
+
+>   The x86-64 vsyscall is finally
+> cleaned up to the point that the vread functions are the only pieces
+> user-executable code left at a fixed address, and I want to get rid of
+> them as well.
 > 
-> It might make more sense to reverse the order of the checks in the
-> proposed over_bground_thresh(): the new version would first check if any
-> memcg are over limit; assuming none are over limit, then check global
-> limits.  Assuming that the system is over its background limit and some
-> cgroups are also over their limits, then the over limit cgroups would
-> first be written possibly getting the system below its limit.  Does this
-> address your concern?
+> The followup change (patch 5) changes vread on x86-64 to specify TSC,
 
-Do you treat root group also as any other cgroup? If no, then above logic
-can lead to issue of starvation of root group inode. Or unfair writeback.
-So I guess it will be important to treat root group same as other groups.
+Oh, sorry, I didn't see the rest of the patchset. Apologies. :)
 
-> 
-> Note: mem_cgroup_balance_dirty_pages() (patch 10/12) will perform
-> foreground writeback when a memcg is above its dirty limit.  This would
-> offer CFQ multiple tasks issuing IO.
 
-I guess we can't rely on this as this will go away once IO less dirty
-throttling is merged.
+> HPET, or fallback to syscall, and the vDSO reads it and acts
+> accordingly.  This is unfortunate in that it hardcodes assumptions
+> about the clocksources.
 
-Thanks
-Vivek
+Yea, that is unfortunate. Hmm.
+
+> The only other way I can think of to do it is to make the pointer
+> point into the vDSO.  That would involve making it relative to
+> something in the vDSO, which would IMO be messier both in terms of
+> computing the pointer and in terms of calling whatever it points to.
+
+Hrm. I'm not super familiar with how the vDSO randomization works, so I
+can't really provide any informed insight here.
+
+But I'd def like to someday get the vDSO stuff to be as generic as
+possible. I already have some timekeeping changes I'd like to do which
+affect the update_vsyscall path. And that is a total pain to do, since I
+have to sync changes with x86, powerpc and ia64 (and the ia64 asm isn't
+something I'm likely to touch :) and get those changes in all at once,
+or introduce some redundant call or have lots of ifdef magic to keep
+compatibility while each arch adapts to the changes.
+
+So yea, I guess the fixed pointer removal is a priority, but I suspect
+these changes will cause some maintenance pain in the future.
+
+thanks
+-john
+
+
