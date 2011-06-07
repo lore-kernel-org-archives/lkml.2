@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab1FGRfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 13:35:31 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34984 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754660Ab1FGRfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 13:35:30 -0400
-Date: Tue, 7 Jun 2011 10:35:06 -0700
-From: Greg KH <gregkh@suse.de>
-To: "Stefan (metze) Metzmacher" <metze@samba.org>
-Cc: David Miller <davem@davemloft.net>, oliver@neukum.name,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usbnet/cdc_ncm: add missing .reset_resume hook
-Message-ID: <20110607173506.GA27559@suse.de>
-References: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E568@EXDCVYMBSTM006.EQ1STM.local>
- <1306929701-22861-1-git-send-email-metze@samba.org>
- <1306929701-22861-2-git-send-email-metze@samba.org>
- <20110601.211142.557328157396419857.davem@davemloft.net>
- <4DECC6B4.5020108@samba.org>
- <20110606150655.GB3732@suse.de>
- <4DEDD564.7050308@samba.org>
- <20110607144348.GB19246@suse.de>
- <4DEE5AEE.8070901@samba.org>
+	id S932128Ab1FGRh6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 13:37:58 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:58119 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755789Ab1FGRh5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 13:37:57 -0400
+X-Sasl-enc: fWCOAcjSGMpoT13U6bG1frkw+FFcszYp0QcEjes6Ku8w 1307468276
+Date: Tue, 7 Jun 2011 10:37:51 -0700
+From: Greg KH <greg@kroah.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@suse.de, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: TTY: ntty, add one more sanity check
+Message-ID: <20110607173751.GA28192@kroah.com>
+References: <BANLkTik5QP7e=+FWSa1kLVpCjZpWEtF1PQ@mail.gmail.com>
+ <1307276177-20957-1-git-send-email-jslaby@suse.cz>
+ <1307276177-20957-2-git-send-email-jslaby@suse.cz>
+ <20110607172014.GA13661@kroah.com>
+ <4DEE6037.1020400@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DEE5AEE.8070901@samba.org>
+In-Reply-To: <4DEE6037.1020400@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 07:07:58PM +0200, Stefan (metze) Metzmacher wrote:
-> Am 07.06.2011 16:43, schrieb Greg KH:
-> > On Tue, Jun 07, 2011 at 09:38:12AM +0200, Stefan (metze) Metzmacher wrote:
-> >> Am 06.06.2011 17:06, schrieb Greg KH:
-> >>> On Mon, Jun 06, 2011 at 02:23:16PM +0200, Stefan (metze) Metzmacher wrote:
-> >>>> Hi David,
-> >>>>
-> >>>>> From: Stefan Metzmacher <metze@samba.org>
-> >>>>> Date: Wed,  1 Jun 2011 14:01:41 +0200
-> >>>>>
-> >>>>>> This avoids messages like this after suspend:
-> >>>>>>
-> >>>>>>    cdc_ncm 2-1.4:1.6: no reset_resume for driver cdc_ncm?
-> >>>>>>    cdc_ncm 2-1.4:1.7: no reset_resume for driver cdc_ncm?
-> >>>>>>    cdc_ncm 2-1.4:1.6: usb0: unregister 'cdc_ncm' usb-0000:00:1d.0-1.4, CDC NCM
-> >>>>>>
-> >>>>>> This is important for the Ericsson F5521gw GSM/UMTS modem.
-> >>>>>> Otherwise modemmanager looses the fact that the cdc_ncm and cdc_acm devices
-> >>>>>> belong together.
-> >>>>>>
-> >>>>>> The cdc_ether module does the same.
-> >>>>>>
-> >>>>>> Signed-off-by: Stefan Metzmacher <metze@samba.org>
-> >>>>>
-> >>>>> Applied and queued up for -stable, thanks.
-> >>>>
-> >>>> It seems to be part of 3.0-rc2, but I'm not seeing it in any stable tree
-> >>>> yet...
-> >>>>
-> >>>> When can I expect it in stable trees like 2.6.38.y?
-> >>>
-> >>> The .38.y tree is closed and will not have new releases, so you will
-> >>> never see it there, sorry.
+On Tue, Jun 07, 2011 at 07:30:31PM +0200, Jiri Slaby wrote:
+> On 06/07/2011 07:20 PM, Greg KH wrote:
+> > On Sun, Jun 05, 2011 at 02:16:17PM +0200, Jiri Slaby wrote:
+> >> With the previous patch, we fixed another bug where read_buf was freed
+> >> while we still was in n_tty_read. We currently check whether read_buf
+> >> is NULL at the start of the function. Add one more check after we wake
+> >> up from waiting for input.
 > >>
-> >> Ok, are there chances for .39.y?
+> >> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> >> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> >> ---
+> >>  drivers/tty/n_tty.c |    1 +
+> >>  1 files changed, 1 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> >> index 95d0a9c..c62c856 100644
+> >> --- a/drivers/tty/n_tty.c
+> >> +++ b/drivers/tty/n_tty.c
+> >> @@ -1785,6 +1785,7 @@ do_it_again:
+> >>  				break;
+> >>  			}
+> >>  			timeout = schedule_timeout(timeout);
+> >> +			BUG_ON(!tty->read_buf);
+> >>  			continue;
+> >>  		}
+> >>  		__set_current_state(TASK_RUNNING);
 > > 
-> > There are, it requires the patch to be in Linus's tree first,
+> > This doesn't apply anymore without some fuzz as stuff has changed in
+> > this area in Linus's tree.
+> > 
+> > Can you refresh it and resend it so that I know it's correct?
+> > 
+> > Or, just verify that the diff below is correct, and I'll take that one.
 > 
-> It's already there:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=85e3c65fa3a1d0542c181510a950a2be7733ff29
-> 
-> > please see Documentation/stable_kernel_rules.txt for the details.
-> 
-> Thanks for the pointer. It seems I've missed the Cc: <stable@kernel.org>
-> line(s).
-> 
-> Would this be the correct syntax in order to get it into 2.6.38.x and
-> 2.6.39.x?
-> (2.6.38 wasn't closed at the time I submitted the patch)
-> 
-> Cc: <stable@kernel.org> # .38.x
-> Cc: <stable@kernel.org> # .39.x
-> 
-> Should I resubmit the patch, or can you just cherry pick
-> 85e3c65fa3a1d0542c181510a950a2be7733ff29
-> from Linus's tree?
+> Yes, it's correct.
 
-I've queued it up now, thanks.
+Thanks for confirming, now applied.
 
 greg k-h
