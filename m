@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab1FGMLE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:11:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40260 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751596Ab1FGMLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:11:02 -0400
-Date: Tue, 7 Jun 2011 14:10:50 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulus@samba.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-        oleg@redhat.com
-Subject: Re: [PATCH] perf, core: Fix initial task_ctx/event installation
-Message-ID: <20110607121050.GB3233@jolsa.brq.redhat.com>
-References: <1307371095-10141-1-git-send-email-jolsa@redhat.com>
- <1307382026.2322.226.camel@twins>
- <1307384837.2497.738.camel@laptop>
- <1307399008.2497.971.camel@laptop>
- <20110606222856.GA2280@jolsa.Belkin>
+	id S1753090Ab1FGMN6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:13:58 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38050
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753034Ab1FGMN4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 08:13:56 -0400
+Date: Tue, 7 Jun 2011 08:13:36 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org
+Subject: writeback merge status, was Re: [PATCH 00/18] writeback fixes and
+ cleanups for 2.6.40 (v3)
+Message-ID: <20110607121335.GA14080@infradead.org>
+References: <20110519214530.939830917@intel.com>
+ <20110523090739.GA27894@infradead.org>
+ <20110523092838.GA25829@localhost>
+ <20110524032859.GA17429@localhost>
+ <20110601153142.0bf83332.akpm@linux-foundation.org>
+ <20110602022919.GB6015@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110606222856.GA2280@jolsa.Belkin>
+In-Reply-To: <20110602022919.GB6015@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 12:28:56AM +0200, Jiri Olsa wrote:
-> On Tue, Jun 07, 2011 at 12:23:28AM +0200, Peter Zijlstra wrote:
-> > This works for me..
-> > 
-> > ---
-> >  kernel/events/core.c |   28 +++++++++++++++++-----------
-> >  1 files changed, 17 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > index ba89f40..5e8c7b1 100644
-> > --- a/kernel/events/core.c
-> > +++ b/kernel/events/core.c
-> > @@ -1505,25 +1505,31 @@ static int  __perf_install_in_context(void *info)
-> >  	struct perf_event_context *task_ctx = cpuctx->task_ctx;
-> >  	struct task_struct *task = current;
-> >  
-> > -	perf_ctx_lock(cpuctx, cpuctx->task_ctx);
-> > +	perf_ctx_lock(cpuctx, task_ctx);
-> >  	perf_pmu_disable(cpuctx->ctx.pmu);
-> >  
-> >  	/*
-> >  	 * If there was an active task_ctx schedule it out.
-> >  	 */
-> > -	if (task_ctx) {
-> > +	if (task_ctx)
-> >  		task_ctx_sched_out(task_ctx);
-> > -		/*
-> > -		 * If the context we're installing events in is not the
-> > -		 * active task_ctx, flip them.
-> > -		 */
-> > -		if (ctx->task && task_ctx != ctx) {
-> > -			raw_spin_unlock(&cpuctx->ctx.lock);
-> > -			raw_spin_lock(&ctx->lock);
-> > -			cpuctx->task_ctx = task_ctx = ctx;
-> > -		}
-> > +
-> > +	/*
-> > +	 * If the context we're installing events in is not the
-> > +	 * active task_ctx, flip them.
-> > +	 */
-> > +	if (ctx->task && task_ctx != ctx) {
-> > +		if (task_ctx)
-> > +			raw_spin_unlock(&task_ctx->lock);
-> > +		raw_spin_lock(&ctx->lock);
-> > +		task_ctx = ctx;
-> > +	}
-> > +
-> > +	if (task_ctx) {
-> > +		cpuctx->task_ctx = task_ctx;
-> >  		task = task_ctx->task;
-> >  	}
-> > +
-> >  	cpu_ctx_sched_out(cpuctx, EVENT_ALL);
-> >  
-> >  	update_context_time(ctx);
-> > 
-> > 
-> 
-> just came back :) seems ok.. I'll test tomorow and let you know
-works ok for me
+It looks like we once again got no writeback fixes merged for $NEXT,
+even with Wu having a very nice, well reviewed and tested series of 
+fairly trivial patches.
 
-thanks,
-jirka
+I'm getting really frustrated about this.  We need a lot of work to
+make writeback not suck with todays hardware and workloads, nevermind
+tomorrows, and we're getting stalled for completely untransparent
+reasons.  Basically people doing the work move ahead, then it gets stuck
+in -mm which doesn't even get into linux-next and gets completely
+stalled there.  So my vote is to have a proper peer-reviewed writeback
+git tree, handled like all the other git trees we have, that is
+maintained e.g. by Wu and make progress with that.
+
+After fixing all those basic issues we have other big items like
+I/O-less balance_dirty_pages and the memcg integration on our plate,
+and with the current rate of progress we won't get there before Linux
+4.0.
+
