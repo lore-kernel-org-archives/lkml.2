@@ -1,119 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab1FGOTt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 10:19:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38149 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755746Ab1FGOTa (ORCPT
+	id S1755849Ab1FGOUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 10:20:39 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57948 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755069Ab1FGOUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 10:19:30 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: [PATCH v2 12/12] OMAP4: SDP4430: Add twl6040 vibrator platform support
-Date: Tue, 7 Jun 2011 17:18:17 +0300
-Message-ID: <1307456297-15010-13-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.5.3
-In-Reply-To: <1307456297-15010-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1307456297-15010-1-git-send-email-peter.ujfalusi@ti.com>
+	Tue, 7 Jun 2011 10:20:36 -0400
+Date: Tue, 7 Jun 2011 08:20:32 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Mika Westerberg <mika.westerberg@iki.fi>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: Re: linux-next: manual merge of the gpio tree with the slave-dma tree
+Message-ID: <20110607142032.GB13072@ponder.secretlab.ca>
+References: <20110607125723.8e591e42.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607125723.8e591e42.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add twl4030_vibra platform data, and the needed regulators
-for twl6040 vibrator.
+On Tue, Jun 07, 2011 at 12:57:23PM +1000, Stephen Rothwell wrote:
+> Hi Grant,
+> 
+> Today's linux-next merge of the gpio tree got a conflict in
+> arch/arm/mach-ep93xx/Makefile between commit 8e4a93008db7 ("ep93xx:
+> remove the old M2P DMA code") from the slave-dma tree and commit
+> c6b52c13de44 ("gpio/ep93xx: move driver to drivers/gpio") from the gpio
+> tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- arch/arm/mach-omap2/board-4430sdp.c |   48 +++++++++++++++++++++++++++++++++++
- 1 files changed, 48 insertions(+), 0 deletions(-)
+Okay, thanks Stephen.  Obviously that is the correct fixup.
 
-diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
-index 88d9ae5..174528a 100644
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -22,6 +22,7 @@
- #include <linux/i2c/twl.h>
- #include <linux/gpio_keys.h>
- #include <linux/regulator/machine.h>
-+#include <linux/regulator/fixed.h>
- #include <linux/leds.h>
- #include <linux/leds_pwm.h>
- 
-@@ -276,11 +277,40 @@ static struct platform_device sdp4430_lcd_device = {
- 	.id		= -1,
- };
- 
-+static struct regulator_consumer_supply sdp4430_vbat_supply[] = {
-+	REGULATOR_SUPPLY("vddvibl", "twl6040-vibra"),
-+	REGULATOR_SUPPLY("vddvibr", "twl6040-vibra"),
-+};
-+
-+static struct regulator_init_data sdp4430_vbat_data = {
-+	.constraints = {
-+		.always_on	= 1,
-+	},
-+	.num_consumer_supplies	= ARRAY_SIZE(sdp4430_vbat_supply),
-+	.consumer_supplies	= sdp4430_vbat_supply,
-+};
-+
-+static struct fixed_voltage_config sdp4430_vbat_pdata = {
-+	.supply_name	= "VBAT",
-+	.microvolts	= 3750000,
-+	.init_data	= &sdp4430_vbat_data,
-+	.gpio		= -EINVAL,
-+};
-+
-+static struct platform_device sdp4430_vbat = {
-+	.name		= "reg-fixed-voltage",
-+	.id		= -1,
-+	.dev = {
-+		.platform_data = &sdp4430_vbat_pdata,
-+	},
-+};
-+
- static struct platform_device *sdp4430_devices[] __initdata = {
- 	&sdp4430_lcd_device,
- 	&sdp4430_gpio_keys_device,
- 	&sdp4430_leds_gpio,
- 	&sdp4430_leds_pwm,
-+	&sdp4430_vbat,
- };
- 
- static struct omap_lcd_config sdp4430_lcd_config __initdata = {
-@@ -402,7 +432,25 @@ static struct regulator_init_data sdp4430_vusim = {
- 	},
- };
- 
-+static struct twl4030_vibra_data twl6040_vibra = {
-+	.vibldrv_res = 8,
-+	.vibrdrv_res = 3,
-+	.viblmotor_res = 10,
-+	.vibrmotor_res = 10,
-+	.vddvibl_uV = 0,	/* fixed volt supply - VBAT */
-+	.vddvibr_uV = 0,	/* fixed volt supply - VBAT */
-+};
-+
-+static struct twl4030_audio_data twl6040_audio = {
-+	.codec		= NULL,
-+	.vibra		= &twl6040_vibra,
-+	.audpwron_gpio	= 127,
-+	.naudint_irq	= OMAP44XX_IRQ_SYS_2N,
-+	.irq_base	= TWL6040_CODEC_IRQ_BASE,
-+};
-+
- static struct twl4030_platform_data sdp4430_twldata = {
-+	.audio		= &twl6040_audio,
- 	/* Regulators */
- 	.vusim		= &sdp4430_vusim,
- 	.vaux1		= &sdp4430_vaux1,
--- 
-1.7.5.3
+g.
 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/arm/mach-ep93xx/Makefile
+> index 21e721a,6b7c41d..0000000
+> --- a/arch/arm/mach-ep93xx/Makefile
+> +++ b/arch/arm/mach-ep93xx/Makefile
+> @@@ -1,7 -1,7 +1,7 @@@
+>   #
+>   # Makefile for the linux kernel.
+>   #
+> - obj-y			:= core.o clock.o gpio.o
+>  -obj-y			:= core.o clock.o dma-m2p.o
+> ++obj-y			:= core.o clock.o
+>   obj-m			:=
+>   obj-n			:=
+>   obj-			:=
