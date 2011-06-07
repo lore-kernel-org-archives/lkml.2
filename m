@@ -1,120 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085Ab1FGIkW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 04:40:22 -0400
-Received: from ccserver2.unican.es ([130.206.5.101]:41977 "EHLO
-	ccserver2.unican.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab1FGIkT (ORCPT
+	id S1752092Ab1FGIlc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 04:41:32 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39234 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab1FGIla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 04:40:19 -0400
-Message-ID: <4DEDE411.6010807@unican.es>
-Date: Tue, 7 Jun 2011 10:40:49 +0200
-From: Monica Puig-Pey <puigpeym@unican.es>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) 
-	Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: <markh@compro.net>
-CC: Rolando Martins <rolando.martins@gmail.com>,
-        <linux-rt-users@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+	Tue, 7 Jun 2011 04:41:30 -0400
+Date: Tue, 7 Jun 2011 10:41:24 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Johannes Bauer <hannes_bauer@aon.at>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Monica Puig-Pey <puigpeym@unican.es>,
+        Rolando Martins <rolando.martins@gmail.com>,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: Re: Changing Kernel thread priorities
-References: <4DEA1BA9.7020303@unican.es><4DEA1F22.6000603@unican.es><4DEA255
-				B.2050503@unican.es><4DECBE44.2070803@unican.es> 
-			<BANLkTi=xSJOgY735PE44YtkQmrdhgetGdQ@mail.gmail.com> 
-		<4DECC0DF.8070209@unican.es> <4DED051A.6020702@compro.net>
-In-Reply-To: <4DED051A.6020702@compro.net>
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [193.144.198.131]
-X-imss-version: 2.054
-X-imss-result: Passed
-X-imss-scanInfo: M:P L:E SM:0
-X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18184.005)
-X-imss-scores: Clean:99.90000 C:2 M:3 S:5 R:5
-X-imss-settings: Baseline:1 C:1 M:2 S:2 R:2 (0.0000 0.0000)
+In-Reply-To: <17185480.5304.1307435255996.JavaMail.root@WARSBL214.highway.telekom.at>
+Message-ID: <alpine.LFD.2.02.1106071033350.11814@ionos>
+References: <17185480.5304.1307435255996.JavaMail.root@WARSBL214.highway.telekom.at>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El 06/06/11 18:49, Mark Hounschell escribió:
-> On 06/06/2011 07:58 AM, Monica Puig-Pey wrote:
->> El 06/06/11 13:54, Rolando Martins escribió:
->>> Hi,
->>> I use the following:
->>>
->>> PIDs=$(ps -eLo pid,cls,rtprio,pri,nice,cmd | grep -i "irq" | awk '{
->>> print $1; }' | xargs echo)
->>> for i in $PIDs
->>> do
->>> ret=$(chrt -f -p 99 $i)
->>> done
->>>
->>> This will change the kernel thread associated with an irq handler to
->>> RT FIFO prio 99.
->>> Just change the script to your specific interrupt.
->>>
->>> Hope it helps,
->>> Rolando
->>>
->>> On Mon, Jun 6, 2011 at 12:47 PM, Monica Puig-Pey<puigpeym@unican.es>
->>> wrote:
->>>> I am writing a driver which has one kernel thread associated with it.
->>>> I want to change the priority of this thread, so that I can specify the
->>>> order in which it is scheduled following an interrupt.
->>>> I'm using:
->>>>
->>>> sched_setscheduler(struct task_struct *, int, struct sched_param *);
->>>>
->>>> but it doesn't work. I tried to change the priority from the
->>>> init_module,
->>>> and also from the Kernel Thread, but there is no way.
->>>>
->>>> Kernel version is 2.6.31-11-rt
->>>>
->>>> What do I call to change a kernel thread priority?
->>>>
->>>> Thanks you very much
->>>>
->>>> Mónica
->>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe
->>>> linux-rt-users" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
->>>>
->>
->> I need to change the priority from inside the driver, when creating the
->> kernel thread.
->> Your script is useful but it is done in user context,
->> Any other help please?
->
-> What I do is record the PID of the thread in the driver, then create an
-> IOCTL for your driver that user land can call that either returns the
-> PID so you can do it in user land, or cause the IOCTL code to do it in
-> the driver.
->
-> The same can be done with the affinity of the IRQ if you record the IRQ
-> number.
->
-> Mark
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
+On Tue, 7 Jun 2011, Johannes Bauer wrote:
 
-But I don't have de PID of my Kthread, I only have the task_struc * that 
-gives me the function:
+Please stop top-posting and use proper line breaks at 78
 
-  struct task_struct *kthread_create(int (*threadfn)(void *data),
-                    void *data,
-                    const char namefmt[], ...)
+> > Peter Zijlstra wrote:
+> > > "Monica Puig-Pey" wrote:
 
-How could I get the PID, and which function should I use in the IOCTL 
-(kernel context) for changing its priority?
+> > > I need to change the priority from inside the driver, when creating the 
+> > > kernel thread.
+> >
+> > No you don't. How does you driver know about what priority is correct
+> > wrt all the other running RT tasks on the system?
+> > 
+> > Determining the right priority in a fixed priority scheduling system is
+> > a system wide problem, nobody but the administrator can possibly even
+> > begin to solve it.
+> > 
+> > There's a reason all RT irq threads are started at 50, its plain
+> > impossible to do better.
 
-Thank you so much for your help
+> Absolutly correct!
+> 
+> However, if you are running the system on an embedded platform,
+> where the _WHOLE_ system (including priorities) is preconfigured and
+> never touched, starting a irq thread with the right prio from start
+> is a more straightforward method than having to invoke a script that
+> changes it using userspace chrt tool.
 
-Mónica
+Feel free to do that for your embedded system and carry the patch for
+yourself if you think it's worth to avoid the extra init script.
+
+But we do _not_ add stuff like this to the mainline simply because
+there is no way to find a prio setting which is appropriate for all
+users of a particular driver.
+
+Aside of that the extra init script is definitely less annoying to
+maintain than the crap you need to hack into random drivers.
+
+Thanks,
+
+	tglx
