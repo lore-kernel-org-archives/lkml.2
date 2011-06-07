@@ -1,128 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab1FGAgW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 20:36:22 -0400
-Received: from r00tworld.com ([212.85.137.150]:53058 "EHLO r00tworld.com"
+	id S1756204Ab1FGAmy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 20:42:54 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:51862 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754901Ab1FGAgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 20:36:21 -0400
-From: pageexec@freemail.hu
-To: Ingo Molnar <mingo@elte.hu>
-Date: Tue, 07 Jun 2011 02:34:42 +0200
+	id S1754948Ab1FGAmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 20:42:54 -0400
+Date: Mon, 6 Jun 2011 17:42:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Milton Miller <miltonm@bga.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [1/4] rcu: Detect uses of rcu read side in extended quiescent
+ states
+Message-ID: <20110607004250.GZ3066@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1307329858-14999-3-git-send-email-fweisbec@gmail.com>
+ <rcu-splat-split-printk@mdm.bga.com>
+ <20110606181021.GL3066@linux.vnet.ibm.com>
+ <20110607001905.GE17026@somewhere.redhat.com>
 MIME-Version: 1.0
-Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
-Reply-to: pageexec@freemail.hu
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@mit.edu>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Message-ID: <4DED7222.28864.150079CE@pageexec.freemail.hu>
-In-reply-to: <20110606192544.GA28947@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>, <4DED239B.8177.13CDBA86@pageexec.freemail.hu>, <20110606192544.GA28947@elte.hu>
-X-mailer: Pegasus Mail for Windows (4.61)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Tue, 07 Jun 2011 02:35:16 +0200 (CEST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607001905.GE17026@somewhere.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 Jun 2011 at 21:25, Ingo Molnar wrote:
-
-> * pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+On Tue, Jun 07, 2011 at 02:19:07AM +0200, Frederic Weisbecker wrote:
+> On Mon, Jun 06, 2011 at 11:10:21AM -0700, Paul E. McKenney wrote:
+> > commit c15d76f26712bd5228aa0c6af7a7e7c492a812c9
+> > Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Date:   Tue May 24 08:31:09 2011 -0700
+> > 
+> >     rcu: Restore checks for blocking in RCU read-side critical sections
+> >     
+> >     Long ago, using TREE_RCU with PREEMPT would result in "scheduling
+> >     while atomic" diagnostics if you blocked in an RCU read-side critical
+> >     section.  However, PREEMPT now implies TREE_PREEMPT_RCU, which defeats
+> >     this diagnostic.  This commit therefore adds a replacement diagnostic
+> >     based on PROVE_RCU.
+> >     
+> >     Because rcu_lockdep_assert() and lockdep_rcu_dereference() are now being
+> >     used for things that have nothing to do with rcu_dereference(), rename
+> >     lockdep_rcu_dereference() to lockdep_rcu_suspicious() and add a third
+> >     argument that is a string indicating what is suspicious.  This third
+> >     argument is passed in from a new third argument to rcu_lockdep_assert().
+> >     Update all calls to rcu_lockdep_assert() to add an informative third
+> >     argument.
+> >     
+> >     Finally, add a pair of rcu_lockdep_assert() calls from within
+> >     rcu_note_context_switch(), one complaining if a context switch occurs
+> >     in an RCU-bh read-side critical section and another complaining if a
+> >     context switch occurs in an RCU-sched read-side critical section.
+> >     These are present only if the PROVE_RCU kernel parameter is enabled.
+> >     
+> >     Again, you must enable PROVE_RCU to see these new diagnostics.  But you
+> >     are enabling PROVE_RCU to check out new RCU uses in any case, aren't you?
+> >     
+> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> > [...] it goes like 'I am not willing to do A because it would help 
-> > script kiddies but I'd rather do B that would help script kiddies'. 
-> > with A = 'disclose security bugs' and B = 'keep the last roadblock 
-> > that prevents full ASLR'.
+> A little comment about this patch:
 > 
-> No, that's wrong, the logic goes like this:
+> <snip>
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index 88547c8..8b4b3da 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -153,6 +153,12 @@ void rcu_bh_qs(int cpu)
+> >   */
+> >  void rcu_note_context_switch(int cpu)
+> >  {
+> > +	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map),
+> > +			   "Illegal context switch in RCU-bh"
+> > +			   " read-side critical section");
+> > +	rcu_lockdep_assert(!lock_is_held(&rcu_sched_lock_map),
+> > +			   "Illegal context switch in RCU-sched"
+> > +			   " read-side critical section");
 > 
->   if i do A then it has X1 advantages and Y1 disadvantages.
->   if i do B then it has X2 advantages and Y2 disadvantages.
+> This looks like more a check to make inside might_sleep().
+> It's better because might_sleep() triggers the check even if
+> we don't actually go to sleep.
+
+This does make quite a bit of sense.
+
+> In fact I believe might_sleep() already does the job fine:
 > 
-> The Y1 and Y2 set of disadvantages can both include "making it easier 
-> for script kiddies" but the sets of advantages and disadvantages can 
-> also include MANY OTHER considerations, making the decision unique in 
-> each case.
+> If !PREEMPT, might_sleep() detects that preemption is disabled
+> by rcu_read_lock().
 
-sure, i was only reflecting on what Linus himself kept insisting on in
-the past.
+If !PREEMPT, isn't the preempt_disable() called by rcu_read_lock()
+implemented as follows?
 
-> To translate it to this specific case (extremely simplifed, so please 
-> don't nit-pick that my descriptions of advantages and disadvantages 
-> are not precise nor complete):
+#define preempt_disable()               do { } while (0)
 
-i don't even need to get there, you already failed right in the very
-first sentence, very impressive. no. 'not precise' is an understatement.
+Unless I am missing something, __might_sleep() won't detect that.
 
->  A) "i put a zero day exploit and a CVE code into a changelog"
-> 
->      Advantages: - it describes the problem more fully
-> 
->   Disadvantages: - it makes it easier for people (including script kiddies) do harm faster
->                  - creates a false, misleading category for "security bugs"
-> 
+> If PREEMPT, might_sleep() checks rcu_preempt_depth().
 
-you try to set things up to serve your argument but it's not the things
-we've ever talked about (IOW, this is a strawman).
+Agreed, for CONFIG_TREE_PREEMPT_RCU and CONFIG_TINY_PREEMPT_RCU,
+the existing might_sleep() checks do cover it.
 
-in particular, i've never ever requested exploits in commit logs (and i
-don't remember anyone else who has, do you?). why do you keep thinking in
-only extremes? is it so impossible to simply state a CVE and the generic
-bug class (CWE) that the commit fixes? what Linus has insisted on is 'no
-greppable words', that's diametrically opposite to 'full disclosure' that
-you guys say you're supposedly doing.
+So I could export an rcu_might_sleep() or some such that contained
+the above two rcu_lockdep_assert()s, but only if !PREEMPT_RCU.
+If PREEMPT_RCU, rcu_might_sleep() would be a no-op.
 
-so if you omit the exploits that noone really requested (and i don't even
-know why they'd be useful in a commit) then suddenly the script kiddies
-are no longer helped.
+Seem reasonable, or am I missing something?
 
-and you have yet to explain what is false and misleading about the security
-bug category. you used these words yourself several times today, how do you
-explain that? why does the CVE exist? why does bugtraq exist? are all those
-people discussing 'false and misleading' things? why does your employer
-release security errata? etc, etc.
-
->  B) "i obfuscate the vsyscall page"
-> 
->      Advantages: - it makes it statistically harder for people (including script kiddies) to do harm
-> 
->   Disadvantages: - it reduces the incentive to fix *real* security bugs
-
-as i pointed out in an earlier mail, this supposed disadvantage doesn't
-exist so come up with something better, preferably real.
-
->                  - complicates the code
-
-removing code simplifies things. next try? ;)
-
-> Do you see how A) and B) are not equivalent at all? Different cases, 
-> different attributes, different probabilities and different 
-> considerations.
-
-i only see a strawman that you thought would help your cause but since
-it's just that, a strawman, something you made up for the sake of argument,
-i don't think there's much more to see about it.
-
-> > but it's very simple logic Ingo.
-> 
-> Please drop the condescending tone, i think it should be clear to you 
-> by now that i have a good basis to disagree with you.
-
-i'm a firm believer of instant karma, it seems to work on people like yourself
-or Linus really well. in somewhat profane but simple english: if you behave as
-an asshole i will treat you as one, if you believe i treated you as an asshole
-it's because i think you acted as one, and if you don't understand why then you're
-welcome to 1. look into yourself and figure it out yourself, 2. ask me. what is
-not going to get you anywhere is if you talk to me and others from the high horse,
-you must be a lot better than your current self for anyone to tolerate it.
-
+							Thanx, Paul
