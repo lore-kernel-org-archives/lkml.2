@@ -1,67 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab1FGPnt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 11:43:49 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51259 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754478Ab1FGPns (ORCPT
+	id S1753721Ab1FGP6P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 11:58:15 -0400
+Received: from mail-pz0-f66.google.com ([209.85.210.66]:55209 "EHLO
+	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab1FGP6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 11:43:48 -0400
+	Tue, 7 Jun 2011 11:58:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=akshayjoshi.com; s=google;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=EIUqrcOYHTkYnTlFnp95RzNs0xK71mVSk0ocppHGYKDRAuscvk+S0nFCS4F4sg6m+w
-         Xa1UNnb6UKGjpJ30394B1lJxh0MO9mDTble0093EzweTfbnUaoRpbXxXoR6Cam/2nlwM
-         D8o07vmhPY7t7k5jfJe89/ogvt0rUG8ndA5pY=
+        b=A31VEiEqH2KZcREdvs2fT2N7tYch9rOP4krmC9i6x3N0PZtKPxwbMx3yMLfsANUlmR
+         6diyA2PDNN6sFjsD9Ii7jOYbF/CtM4rI3aUto1L6wjJDbX7WZehJuoTQthNhJcFVdq4G
+         72im+Ez/fLG1mzT1FejhoQkqzFSxMkQ7YjMaI=
 From: Akshay Joshi <me@akshayjoshi.com>
-Cc: Akshay Joshi <me@akshayjoshi.com>,
+Cc: Akshay Joshi <me@akshayjoshi.com>, Jiri Slaby <jslaby@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/7] Kernel: convert leading spaces to tabs in uid16.c.
-Date: Tue,  7 Jun 2011 11:43:14 -0400
-Message-Id: <1307461395-23186-1-git-send-email-me@akshayjoshi.com>
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 6/7] Kernel: fix spaces with respect to the coding style in sys.c.
+Date: Tue,  7 Jun 2011 11:44:32 -0400
+Message-Id: <1307461473-23231-1-git-send-email-me@akshayjoshi.com>
 X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1307443181-22278-4-git-send-email-me@akshayjoshi.com>
-References: <1307443181-22278-4-git-send-email-me@akshayjoshi.com>
+In-Reply-To: <23758.1307453446@redhat.com>
+References: <23758.1307453446@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the leading indentations for long function declarations to use
-tabs.
+Fixed trailing spaces, spaces around the ternary operators and in the
+pre-processor function declarations with the help of the checkpatch.pl
+tool.
 
 Signed-off-by: Akshay Joshi <me@akshayjoshi.com>
 Acked-by: David Howells <dhowells@redhat.com>
 ---
- kernel/uid16.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/sys.c |   40 ++++++++++++++++++++--------------------
+ 1 files changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/uid16.c b/kernel/uid16.c
-index 51c6e89..8c3fbfc 100644
---- a/kernel/uid16.c
-+++ b/kernel/uid16.c
-@@ -132,7 +132,7 @@ SYSCALL_DEFINE1(setfsgid16, old_gid_t, gid)
+diff --git a/kernel/sys.c b/kernel/sys.c
+index e4128b2..94f02f5 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -51,28 +51,28 @@
+ #include <asm/unistd.h>
+ 
+ #ifndef SET_UNALIGN_CTL
+-# define SET_UNALIGN_CTL(a,b)	(-EINVAL)
++# define SET_UNALIGN_CTL(a, b)	(-EINVAL)
+ #endif
+ #ifndef GET_UNALIGN_CTL
+-# define GET_UNALIGN_CTL(a,b)	(-EINVAL)
++# define GET_UNALIGN_CTL(a, b)	(-EINVAL)
+ #endif
+ #ifndef SET_FPEMU_CTL
+-# define SET_FPEMU_CTL(a,b)	(-EINVAL)
++# define SET_FPEMU_CTL(a, b)	(-EINVAL)
+ #endif
+ #ifndef GET_FPEMU_CTL
+-# define GET_FPEMU_CTL(a,b)	(-EINVAL)
++# define GET_FPEMU_CTL(a, b)	(-EINVAL)
+ #endif
+ #ifndef SET_FPEXC_CTL
+-# define SET_FPEXC_CTL(a,b)	(-EINVAL)
++# define SET_FPEXC_CTL(a, b)	(-EINVAL)
+ #endif
+ #ifndef GET_FPEXC_CTL
+-# define GET_FPEXC_CTL(a,b)	(-EINVAL)
++# define GET_FPEXC_CTL(a, b)	(-EINVAL)
+ #endif
+ #ifndef GET_ENDIAN
+-# define GET_ENDIAN(a,b)	(-EINVAL)
++# define GET_ENDIAN(a, b)	(-EINVAL)
+ #endif
+ #ifndef SET_ENDIAN
+-# define SET_ENDIAN(a,b)	(-EINVAL)
++# define SET_ENDIAN(a, b)	(-EINVAL)
+ #endif
+ #ifndef GET_TSC_CTL
+ # define GET_TSC_CTL(a)		(-EINVAL)
+@@ -342,7 +342,7 @@ EXPORT_SYMBOL_GPL(kernel_restart);
+ static void kernel_shutdown_prepare(enum system_states state)
+ {
+ 	blocking_notifier_call_chain(&reboot_notifier_list,
+-		(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
++		(state == SYSTEM_HALT) ? SYS_HALT : SYS_POWER_OFF, NULL);
+ 	system_state = state;
+ 	usermodehelper_disable();
+ 	device_shutdown();
+@@ -488,7 +488,7 @@ void ctrl_alt_del(void)
+ 	else
+ 		kill_cad_pid(SIGINT, 1);
+ }
+-	
++
+ /*
+  * Unprivileged users may change the real gid to the effective gid
+  * or vice versa.  (BSD-style)
+@@ -502,7 +502,7 @@ void ctrl_alt_del(void)
+  *
+  * The general idea is that a program which uses just setregid() will be
+  * 100% compatible with BSD.  A program which uses just setgid() will be
+- * 100% compatible with POSIX with saved IDs. 
++ * 100% compatible with POSIX with saved IDs.
+  *
+  * SMP: There are not races, the GIDs are checked only by filesystem
+  *      operations (as far as semantic preservation is concerned).
+@@ -550,7 +550,7 @@ error:
  }
  
- static int groups16_to_user(old_gid_t __user *grouplist,
--    struct group_info *group_info)
-+	struct group_info *group_info)
+ /*
+- * setgid() is implemented like SysV w/ SAVED_IDS 
++ * setgid() is implemented like SysV w/ SAVED_IDS
+  *
+  * SMP: Same implicit races as above.
+  */
+@@ -615,7 +615,7 @@ static int set_user(struct cred *new)
+  *
+  * The general idea is that a program which uses just setreuid() will be
+  * 100% compatible with BSD.  A program which uses just setuid() will be
+- * 100% compatible with POSIX with saved IDs. 
++ * 100% compatible with POSIX with saved IDs.
+  */
+ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
  {
- 	int i;
- 	old_gid_t group;
-@@ -147,7 +147,7 @@ static int groups16_to_user(old_gid_t __user *grouplist,
+@@ -666,17 +666,17 @@ error:
+ 	abort_creds(new);
+ 	return retval;
+ }
+-		
++
+ /*
+- * setuid() is implemented like SysV with SAVED_IDS 
+- * 
++ * setuid() is implemented like SysV with SAVED_IDS
++ *
+  * Note that SAVED_ID's is deficient in that a setuid root program
+- * like sendmail, for example, cannot set its uid to be a normal 
++ * like sendmail, for example, cannot set its uid to be a normal
+  * user and then switch back, because if you're root, setuid() sets
+  * the saved uid too.  If you don't like this, blame the bright people
+  * in the POSIX committee and/or USG.  Note that the BSD-style setreuid()
+  * will allow a root program to temporarily drop privileges and be able to
+- * regain them by swapping the real and effective uid.  
++ * regain them by swapping the real and effective uid.
+  */
+ SYSCALL_DEFINE1(setuid, uid_t, uid)
+ {
+@@ -1282,7 +1282,7 @@ SYSCALL_DEFINE2(getrlimit, unsigned int, resource, struct rlimit __user *, rlim)
+ /*
+  *	Back compatibility for getrlimit. Needed for some apps.
+  */
+- 
++
+ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
+ 		struct rlimit __user *, rlim)
+ {
+@@ -1297,7 +1297,7 @@ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
+ 		x.rlim_cur = 0x7FFFFFFF;
+ 	if (x.rlim_max > 0x7FFFFFFF)
+ 		x.rlim_max = 0x7FFFFFFF;
+-	return copy_to_user(rlim, &x, sizeof(x))?-EFAULT:0;
++	return copy_to_user(rlim, &x, sizeof(x)) ? -EFAULT : 0;
  }
  
- static int groups16_from_user(struct group_info *group_info,
--    old_gid_t __user *grouplist)
-+	old_gid_t __user *grouplist)
- {
- 	int i;
- 	old_gid_t group;
+ #endif
 -- 
 1.7.4.4
 
