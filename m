@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328Ab1FGW0d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 18:26:33 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41082 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932304Ab1FGW0c convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 18:26:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTi=uQmePFOJUx=bdTsnFuFa+ZaYqVw@mail.gmail.com>
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
- <1307373819.3098.40.camel@edumazet-laptop> <1307376672.2322.167.camel@twins>
- <1307376989.2322.171.camel@twins> <1307377349.3098.65.camel@edumazet-laptop>
- <1307377782.2322.183.camel@twins> <1307378564.3098.67.camel@edumazet-laptop>
- <4DED1421.5000300@linux.intel.com> <1307383898.3098.90.camel@edumazet-laptop>
- <4DED976C.90009@linux.intel.com> <4DEE3944.5020005@mit.edu>
- <1307462300.3091.39.camel@edumazet-laptop> <BANLkTinyuHUGXACJYUT241g8rzg6AzPBiA@mail.gmail.com>
- <BANLkTinHEyRnnJqB=GTwBOAb6aRaHnjQLQ@mail.gmail.com> <BANLkTi=uQmePFOJUx=bdTsnFuFa+ZaYqVw@mail.gmail.com>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Tue, 7 Jun 2011 18:26:10 -0400
-Message-ID: <BANLkTi=vwJBgkKSY_Cq_jQS-71gH6uOPaw@mail.gmail.com>
-Subject: Re: Change in functionality of futex() system call.
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: David Oliver <david@rgmadvisors.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Zachary Vonler <zvonler@rgmadvisors.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932559Ab1FGW1o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 18:27:44 -0400
+Received: from mga03.intel.com ([143.182.124.21]:5292 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757005Ab1FGW1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 18:27:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,335,1304319600"; 
+   d="scan'208";a="8810281"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andi Kleen <ak@linux.intel.com>, lethal@linux-sh.org
+Subject: [PATCH 1/5] SH: drop const from io port variiable
+Date: Tue,  7 Jun 2011 15:26:29 -0700
+Message-Id: <1307485593-27196-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 7, 2011 at 15:19, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Tue, Jun 7, 2011 at 3:10 PM, David Oliver <david@rgmadvisors.com> wrote:
->> I have software which currently uses shared files for a one way
->> transfer of information, which is modeled precisely by the futex (as
->> contrasted to the mutex) model. In this case, the number of receivers
->> is undetermined, so the number of wakeups is set to maxint.
->>
->> The receivers are minimally trusted: they have read access to the
->> files, so they cannot accidentally affect other processes use of the
->> data. Requiring my files to be writeable by all clients would require
->> a serious increase in the amount of software needing to be trusted.
->
-> What's wrong with adding a FUTEX_WAIT_NOCONSUME flag then?  Your
-> program can use it to get exactly the semantics it wants and my
-> program can use it or not depending on which semantics it wants.
->
-> Then we can document in the man page that, on kernels newer than
-> whichever version introduced the regression, read-only mappings of a
-> file cannot be used to interfere with futexes on that file.
+From: Andi Kleen <ak@linux.intel.com>
 
-Hmm, I would actually call it "FUTEX_POLL", since that better reflects the
-operation being performed.
+The variable is modified elsewhere, so it should not be const.
+If it was really const it would need to be __read_mostly_const.
 
-Certainly you would want to avoid allowing FUTEX_POLL to "steal"
-limited wakeups from FUTEX_CMP_REQUEUE or whatever, so you
-also need a new "FUTEX_NOTIFY".  Alternatively I guess you could just
-special-case the FUTEX_WAKE && wakeups == INTMAX combination to
-also notify FUTEX_POLL processes.
+Cc: lethal@linux-sh.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/sh/kernel/ioport.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I almost wonder if long-term there might possibly be some decent way
-to integrate this with eventfds to allow a thread to wait for notifications from
-any number of memory addresses as well as other event sources.  This
-would be a similar extension to signalfd, only for futexes.
+diff --git a/arch/sh/kernel/ioport.c b/arch/sh/kernel/ioport.c
+index e3ad610..cca14ba 100644
+--- a/arch/sh/kernel/ioport.c
++++ b/arch/sh/kernel/ioport.c
+@@ -11,7 +11,7 @@
+ #include <linux/module.h>
+ #include <linux/io.h>
+ 
+-const unsigned long sh_io_port_base __read_mostly = -1;
++unsigned long sh_io_port_base __read_mostly = -1;
+ EXPORT_SYMBOL(sh_io_port_base);
+ 
+ void __iomem *__ioport_map(unsigned long addr, unsigned int size)
+-- 
+1.7.4.4
 
-Cheers,
-Kyle Moffett
