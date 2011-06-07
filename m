@@ -1,127 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab1FGNI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 09:08:58 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:36333 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553Ab1FGNI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 09:08:56 -0400
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 07 Jun 2011 18:32:01 +0530
-Message-Id: <20110607130201.28590.89367.sendpatchset@localhost6.localdomain6>
-In-Reply-To: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v4 3.0-rc2-tip 19/22] 19: perf: rename target_module to target
+	id S1753881Ab1FGNAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 09:00:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54513 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753614Ab1FGNAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 09:00:07 -0400
+Message-ID: <4DEE214E.2080103@cn.fujitsu.com>
+Date: Tue, 07 Jun 2011 21:02:06 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 07/15] KVM: MMU: rename 'pt_write' to 'emulate'
+References: <4DEE205E.8000601@cn.fujitsu.com>
+In-Reply-To: <4DEE205E.8000601@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-07 20:59:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-07 20:59:49,
+	Serialize complete at 2011-06-07 20:59:49
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If 'pt_write' is true, we need to emulate the fault. And in later patch, we
+need to emulate the fault even though it is not a pt_write event, so rename
+it to better fit the meaning
 
-This is a precursor patch that modifies names that refer to kernel/module
-to also refer to user space names.
-
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- tools/perf/builtin-probe.c    |   12 ++++++------
- tools/perf/util/probe-event.c |    6 +++---
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ arch/x86/kvm/mmu.c         |   10 +++++-----
+ arch/x86/kvm/paging_tmpl.h |   16 ++++++++--------
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 2c0e64d..98db08f 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -61,7 +61,7 @@ static struct {
- 	struct perf_probe_event events[MAX_PROBES];
- 	struct strlist *dellist;
- 	struct line_range line_range;
--	const char *target_module;
-+	const char *target;
- 	int max_probe_points;
- 	struct strfilter *filter;
- } params;
-@@ -241,7 +241,7 @@ static const struct option options[] = {
- 		   "file", "vmlinux pathname"),
- 	OPT_STRING('s', "source", &symbol_conf.source_prefix,
- 		   "directory", "path to kernel source"),
--	OPT_STRING('m', "module", &params.target_module,
-+	OPT_STRING('m', "module", &params.target,
- 		   "modname", "target module name"),
- #endif
- 	OPT__DRY_RUN(&probe_event_dry_run),
-@@ -327,7 +327,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 		if (!params.filter)
- 			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
- 						       NULL);
--		ret = show_available_funcs(params.target_module,
-+		ret = show_available_funcs(params.target,
- 					   params.filter);
- 		strfilter__delete(params.filter);
- 		if (ret < 0)
-@@ -348,7 +348,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 			usage_with_options(probe_usage, options);
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index a10afd4..05e604d 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2014,7 +2014,7 @@ done:
+ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 			 unsigned pt_access, unsigned pte_access,
+ 			 int user_fault, int write_fault,
+-			 int *ptwrite, int level, gfn_t gfn,
++			 int *emulate, int level, gfn_t gfn,
+ 			 pfn_t pfn, bool speculative,
+ 			 bool host_writable)
+ {
+@@ -2052,7 +2052,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		      level, gfn, pfn, speculative, true,
+ 		      host_writable)) {
+ 		if (write_fault)
+-			*ptwrite = 1;
++			*emulate = 1;
+ 		kvm_mmu_flush_tlb(vcpu);
+ 	}
+ 
+@@ -2175,7 +2175,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ {
+ 	struct kvm_shadow_walk_iterator iterator;
+ 	struct kvm_mmu_page *sp;
+-	int pt_write = 0;
++	int emulate = 0;
+ 	gfn_t pseudo_gfn;
+ 
+ 	for_each_shadow_entry(vcpu, (u64)gfn << PAGE_SHIFT, iterator) {
+@@ -2183,7 +2183,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 			unsigned pte_access = ACC_ALL;
+ 
+ 			mmu_set_spte(vcpu, iterator.sptep, ACC_ALL, pte_access,
+-				     0, write, &pt_write,
++				     0, write, &emulate,
+ 				     level, gfn, pfn, prefault, map_writable);
+ 			direct_pte_prefetch(vcpu, iterator.sptep);
+ 			++vcpu->stat.pf_fixed;
+@@ -2211,7 +2211,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 				   | shadow_accessed_mask);
  		}
- 
--		ret = show_line_range(&params.line_range, params.target_module);
-+		ret = show_line_range(&params.line_range, params.target);
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show lines. (%d)\n", ret);
- 		return ret;
-@@ -365,7 +365,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 
- 		ret = show_available_vars(params.events, params.nevents,
- 					  params.max_probe_points,
--					  params.target_module,
-+					  params.target,
- 					  params.filter,
- 					  params.show_ext_vars);
- 		strfilter__delete(params.filter);
-@@ -387,7 +387,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 	if (params.nevents) {
- 		ret = add_perf_probe_events(params.events, params.nevents,
- 					    params.max_probe_points,
--					    params.target_module,
-+					    params.target,
- 					    params.force_add);
- 		if (ret < 0) {
- 			pr_err("  Error: Failed to add events. (%d)\n", ret);
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index f022316..153e860 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1976,7 +1976,7 @@ static int filter_available_functions(struct map *map __unused,
- 	return 1;
+ 	}
+-	return pt_write;
++	return emulate;
  }
  
--int show_available_funcs(const char *module, struct strfilter *_filter)
-+int show_available_funcs(const char *elfobject, struct strfilter *_filter)
+ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *tsk)
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 95da29e..8353b69 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -465,7 +465,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 			 struct guest_walker *gw,
+ 			 int user_fault, int write_fault, int hlevel,
+-			 int *ptwrite, pfn_t pfn, bool map_writable,
++			 int *emulate, pfn_t pfn, bool map_writable,
+ 			 bool prefault)
  {
- 	struct map *map;
- 	int ret;
-@@ -1987,9 +1987,9 @@ int show_available_funcs(const char *module, struct strfilter *_filter)
- 	if (ret < 0)
- 		return ret;
- 
--	map = kernel_get_module_map(module);
-+	map = kernel_get_module_map(elfobject);
- 	if (!map) {
--		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
-+		pr_err("Failed to find %s map.\n", (elfobject) ? : "kernel");
- 		return -EINVAL;
+ 	unsigned access = gw->pt_access;
+@@ -536,7 +536,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
  	}
- 	available_func_filter = _filter;
+ 
+ 	mmu_set_spte(vcpu, it.sptep, access, gw->pte_access,
+-		     user_fault, write_fault, ptwrite, it.level,
++		     user_fault, write_fault, emulate, it.level,
+ 		     gw->gfn, pfn, prefault, map_writable);
+ 	FNAME(pte_prefetch)(vcpu, gw, it.sptep);
+ 
+@@ -570,7 +570,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 	int user_fault = error_code & PFERR_USER_MASK;
+ 	struct guest_walker walker;
+ 	u64 *sptep;
+-	int write_pt = 0;
++	int emulate = 0;
+ 	int r;
+ 	pfn_t pfn;
+ 	int level = PT_PAGE_TABLE_LEVEL;
+@@ -631,19 +631,19 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 	if (!force_pt_level)
+ 		transparent_hugepage_adjust(vcpu, &walker.gfn, &pfn, &level);
+ 	sptep = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
+-			     level, &write_pt, pfn, map_writable, prefault);
++			     level, &emulate, pfn, map_writable, prefault);
+ 	(void)sptep;
+-	pgprintk("%s: shadow pte %p %llx ptwrite %d\n", __func__,
+-		 sptep, *sptep, write_pt);
++	pgprintk("%s: shadow pte %p %llx emulate %d\n", __func__,
++		 sptep, *sptep, emulate);
+ 
+-	if (!write_pt)
++	if (!emulate)
+ 		vcpu->arch.last_pt_write_count = 0; /* reset fork detector */
+ 
+ 	++vcpu->stat.pf_fixed;
+ 	trace_kvm_mmu_audit(vcpu, AUDIT_POST_PAGE_FAULT);
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+ 
+-	return write_pt;
++	return emulate;
+ 
+ out_unlock:
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+-- 
+1.7.4.4
+
