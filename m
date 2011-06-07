@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758880Ab1FGW4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 18:56:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21388 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752770Ab1FGW4h convert rfc822-to-8bit (ORCPT
+	id S1754616Ab1FGW5R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 18:57:17 -0400
+Received: from stinky.trash.net ([213.144.137.162]:63095 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273Ab1FGW5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 18:56:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,335,1304319600"; 
-   d="scan'208";a="10410157"
-From: "Rose, Gregory V" <gregory.v.rose@intel.com>
-To: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Andi Kleen <ak@linux.intel.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
-Date: Tue, 7 Jun 2011 15:56:34 -0700
-Subject: RE: [PATCH 4/5] ixgbe: Fix incorrect declaration of ixgbevf_mbx_ops
-Thread-Topic: [PATCH 4/5] ixgbe: Fix incorrect declaration of ixgbevf_mbx_ops
-Thread-Index: AcwlYh7EkTtJKb7JTfGoOJOCVlOzdgAA6Z7Q
-Message-ID: <43F901BD926A4E43B106BF17856F0755018E536956@orsmsx508.amr.corp.intel.com>
-References: <1307485593-27196-1-git-send-email-andi@firstfloor.org>
- <1307485593-27196-4-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1307485593-27196-4-git-send-email-andi@firstfloor.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Jun 2011 18:57:15 -0400
+Message-ID: <4DEEACC3.3030509@trash.net>
+Date: Wed, 08 Jun 2011 00:57:07 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
 MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Brad Campbell <brad@fnarfbargle.com>,
+        Bart De Schuymer <bdschuym@pandora.be>, kvm@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+References: <20110601011527.GN19505@random.random>	 <alpine.LSU.2.00.1105312120530.22808@sister.anvils>	 <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com>	 <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com>	 <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com>	 <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com>	 <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com>	 <isavsg$3or$1@dough.gmane.org> <4DE906C0.6060901@fnarfbargle.com>	 <4DED344D.7000005@pandora.be> <4DED9C23.2030408@fnarfbargle.com>	 <4DEE27DE.7060004@trash.net> <4DEE3859.6070808@fnarfbargle.com>	 <4DEE4538.1020404@trash.net> <1307471484.3091.43.camel@edumazet-laptop>
+In-Reply-To: <1307471484.3091.43.camel@edumazet-laptop>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Andi Kleen [mailto:andi@firstfloor.org]
-> Sent: Tuesday, June 07, 2011 3:27 PM
-> To: linux-kernel@vger.kernel.org
-> Cc: Andi Kleen; Kirsher, Jeffrey T; Brandeburg, Jesse; Rose, Gregory V
-> Subject: [PATCH 4/5] ixgbe: Fix incorrect declaration of ixgbevf_mbx_ops
+On 07.06.2011 20:31, Eric Dumazet wrote:
+> Le mardi 07 juin 2011 à 17:35 +0200, Patrick McHardy a écrit :
 > 
-> From: Andi Kleen <ak@linux.intel.com>
+>> The main suspects would be NAT and TCPMSS. Did you also try whether
+>> the crash occurs with only one of these these rules?
+>>
+>>> I've just compiled out CONFIG_BRIDGE_NETFILTER and can no longer access
+>>> the address the way I was doing it, so that's a no-go for me.
+>>
+>> That's really weird since you're apparently not using any bridge
+>> netfilter features. It shouldn't have any effect besides changing
+>> at which point ip_tables is invoked. How are your network devices
+>> configured (specifically any bridges)?
 > 
-> The header extern type of ixgbevf_mbx_ops disagreed with
-> the actual declaration. Fix this here.
+> Something in the kernel does 
 > 
-> This is rather scary. I haven't tested it. Did this
-> ever work?
+> u16 *ptr = addr (given by kmalloc())
 > 
-> Cc: jeffrey.t.kirsher@intel.com
-> Cc: jesse.brandeburg@intel.com
-> Cc: gregory.v.rose@intel.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  drivers/net/ixgbevf/ixgbevf.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> ptr[-1] = 0;
 > 
-> diff --git a/drivers/net/ixgbevf/ixgbevf.h b/drivers/net/ixgbevf/ixgbevf.h
-> index b703f60..a2bbbb3 100644
-> --- a/drivers/net/ixgbevf/ixgbevf.h
-> +++ b/drivers/net/ixgbevf/ixgbevf.h
-> @@ -279,7 +279,7 @@ enum ixgbevf_boards {
+> Could be an off-one error in a memmove()/memcopy() or loop...
 > 
->  extern struct ixgbevf_info ixgbevf_82599_vf_info;
->  extern struct ixgbevf_info ixgbevf_X540_vf_info;
-> -extern struct ixgbe_mac_operations ixgbevf_mbx_ops;
-> +extern struct ixgbe_mbx_operations ixgbevf_mbx_ops;
-> 
->  /* needed by ethtool.c */
->  extern char ixgbevf_driver_name[];
-> --
-> 1.7.4.4
+> I cant see a network issue here.
 
-[Greg Rose] 
-Huh.
+So far me neither, but netfilter appears to trigger the bug.
 
-Well, mbx ops is a table of 8 pointers and mac ops is a table of 11 pointers, so the copy would have over written 3 * pointer-size words of some other memory.  But the 8 ops copied would have been correct so to the extent that we called them they worked.
+> I checked arch/x86/lib/memmove_64.S and it seems fine.
 
-Now that I look at it you missed a another spot where the copy is done that uses the ixgbe_mac_operations instead of the ixgbe_mbx_operations.
-
-I'll fix that up.
-
-Nice catch!
-
-- Greg
+I was thinking it might be a missing skb_make_writable() combined
+with vhost_net specifics in the netfilter code (TCPMSS and NAT are
+both suspect), but was unable to find something. I also went
+through the dst_metrics() conversion to see whether anything could
+cause problems with the bridge fake_rttable, but also nothing
+so far.
