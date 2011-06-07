@@ -1,133 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab1FGQ1R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 12:27:17 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33151 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754181Ab1FGQ1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 12:27:16 -0400
-Date: Tue, 7 Jun 2011 17:27:11 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Sattler <tsattler@gmx.de>, Ury Stankevich <urykhy@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] mm: compaction: Abort compaction if too many pages are
- isolated and caller is asynchronous V2
-Message-ID: <20110607162711.GO5247@suse.de>
-References: <1307459225-4481-1-git-send-email-mgorman@suse.de>
- <1307459225-4481-5-git-send-email-mgorman@suse.de>
- <20110607155029.GL1686@barrios-laptop>
+	id S1755911Ab1FGQ3V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 12:29:21 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:53110 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754868Ab1FGQ3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 12:29:20 -0400
+From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Subject: [RFC PATCH V1 0/7] cpuidle: (POWER) cpuidle driver for pSeries
+To: linux-pm@lists.linux-foundation.org, linuxppc-dev@ozlabs.org
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 07 Jun 2011 21:59:15 +0530
+Message-ID: <20110607162847.6848.44707.stgit@tringupt.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110607155029.GL1686@barrios-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog since V1
-  o Return COMPACT_PARTIAL when aborting due to too many isolated
-    pages. As pointed out by Minchan, this is better for consistency
+This patch series ports the cpuidle framework for ppc64 platform and
+implements a cpuidle back-end driver for ppc64 (pSeries) platform.
+Currently idle states are managed by pseries_{dedicated,shared}_idle_sleep() 
+routines in arch/powerpc/platforms/pseries/setup.c.  There are
+generally two idle states (snooze and cede) that are exploited by
+these routines based on simple heuristics.
 
-Asynchronous compaction is used when promoting to huge pages. This is
-all very nice but if there are a number of processes in compacting
-memory, a large number of pages can be isolated. An "asynchronous"
-process can stall for long periods of time as a result with a user
-reporting that firefox can stall for 10s of seconds. This patch aborts
-asynchronous compaction if too many pages are isolated as it's better to
-fail a hugepage promotion than stall a process.
+Moving the idle states over to cpuidle framework can take advantage of
+the advanced heuristics, tunables, and features provided by cpuidle
+framework. Additional idle states like extended cede with hints would be
+included and exploited using the cpuidle framework. The statistics and 
+tracing infrastructure provided by the cpuidle framework also helps in 
+enabling power management related tools and help tune the system and 
+applications.
 
-[minchan.kim@gmail.com: Return COMPACT_PARTIAL for abort]
-Reported-and-tested-by: Ury Stankevich <urykhy@gmail.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/compaction.c |   29 ++++++++++++++++++++++++-----
- 1 files changed, 24 insertions(+), 5 deletions(-)
+This series aims to maintain compatibility and functionality to
+existing pSeries idle cpu management code.  There are no new functions
+or idle states added as part of this series. The first three patch
+in the series are taken from "idle cleanup - v3" posted by 
+Len Brown (https://lkml.org/lkml/2011/4/2/8). These are required to
+eliminate usage of pm_idle.
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 5c744ab..e4e0166 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -251,11 +251,18 @@ static bool too_many_isolated(struct zone *zone)
- 	return isolated > (inactive + active) / 2;
- }
- 
-+/* possible outcome of isolate_migratepages */
-+typedef enum {
-+	ISOLATE_ABORT,		/* Abort compaction now */
-+	ISOLATE_NONE,		/* No pages isolated, continue scanning */
-+	ISOLATE_SUCCESS,	/* Pages isolated, migrate */
-+} isolate_migrate_t;
-+
- /*
-  * Isolate all pages that can be migrated from the block pointed to by
-  * the migrate scanner within compact_control.
-  */
--static unsigned long isolate_migratepages(struct zone *zone,
-+static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 					struct compact_control *cc)
- {
- 	unsigned long low_pfn, end_pfn;
-@@ -272,7 +279,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 	/* Do not cross the free scanner or scan within a memory hole */
- 	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
- 		cc->migrate_pfn = end_pfn;
--		return 0;
-+		return ISOLATE_NONE;
- 	}
- 
- 	/*
-@@ -281,10 +288,14 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 	 * delay for some time until fewer pages are isolated
- 	 */
- 	while (unlikely(too_many_isolated(zone))) {
-+		/* async migration should just abort */
-+		if (!cc->sync)
-+			return ISOLATE_ABORT;
-+
- 		congestion_wait(BLK_RW_ASYNC, HZ/10);
- 
- 		if (fatal_signal_pending(current))
--			return 0;
-+			return ISOLATE_ABORT;
- 	}
- 
- 	/* Time to isolate some pages for migration */
-@@ -369,7 +380,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 
- 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
- 
--	return cc->nr_migratepages;
-+	return ISOLATE_SUCCESS;
- }
- 
- /*
-@@ -533,8 +544,15 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		unsigned long nr_migrate, nr_remaining;
- 		int err;
- 
--		if (!isolate_migratepages(zone, cc))
-+		switch (isolate_migratepages(zone, cc)) {
-+		case ISOLATE_ABORT:
-+			ret = COMPACT_PARTIAL;
-+			goto out;
-+		case ISOLATE_NONE:
- 			continue;
-+		case ISOLATE_SUCCESS:
-+			;
-+		}
- 
- 		nr_migrate = cc->nr_migratepages;
- 		err = migrate_pages(&cc->migratepages, compaction_alloc,
-@@ -558,6 +576,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 
- 	}
- 
-+out:
- 	/* Release free pages and check accounting */
- 	cc->nr_freepages -= release_freepages(&cc->freepages);
- 	VM_BUG_ON(cc->nr_freepages != 0);
+[1/7] cpuidle: create bootparam "cpuidle.off=1"
+[2/7] cpuidle: replace xen access to x86 pm_idle and default_idle
+[3/7] cpuidle: stop using pm_idle
+[4/7] - Provides arch specific cpu_idle_wait() function required by cpuidle
+  subsystem.
+[5/7] - pseries_idle cpuidle driver
+[6/7] - Enables cpuidle for pSeries and directly calls cpuidle_idle_call()
+[7/7] - Handles powersave=off kernel boot parameter and disables registration
+  of pseries_idle cpuidle driver.
+
+This patch series has the following dependencies:
+
+(1) Base kernel tree: 3.0.0-rc2
+(2) Patch: cpuidle: global registration patch 
+        https://lkml.org/lkml/2011/6/6/259
+
+This series is tested on ppc64 pSeries POWER7 system with the snooze
+and cede states.
+
+Thanks,
+-Trinabh
