@@ -1,89 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926Ab1FGSyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:54:31 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:55979 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750978Ab1FGSy3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:54:29 -0400
-Date: Tue, 7 Jun 2011 21:54:22 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Tanya Brokhman <tlinder@codeaurora.org>
-Cc: "'Alan Stern'" <stern@rowland.harvard.edu>, greg@kroah.com,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
-        ablay@codeaurora.org, "'open list'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v15 10/10] usb:dummy_hcd: Force FS device connection
- according to module parameter
-Message-ID: <20110607185415.GD12242@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <016d01cc2541$0bfa5980$23ef0c80$@org>
- <Pine.LNX.4.44L0.1106071436020.1972-100000@iolanthe.rowland.org>
- <018a01cc2543$7273a5c0$575af140$@org>
+	id S1757947Ab1FGSzV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:55:21 -0400
+Received: from mx2.compro.net ([12.186.155.4]:2922 "EHLO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978Ab1FGSzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 14:55:19 -0400
+X-IronPort-AV: E=Sophos;i="4.65,333,1304308800"; 
+   d="scan'208";a="6676637"
+Message-ID: <4DEE7415.8000606@compro.net>
+Date: Tue, 07 Jun 2011 14:55:17 -0400
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4JxvUTD846AMAZAS"
-Content-Disposition: inline
-In-Reply-To: <018a01cc2543$7273a5c0$575af140$@org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Monica Puig-Pey <puigpeym@unican.es>
+CC: dmarkh@cfl.rr.com, Rolando Martins <rolando.martins@gmail.com>,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Changing Kernel thread priorities
+References: <4DEA1BA9.7020303@unican.es><4DEA1F22.6000603@unican.es><4DEA255						B.2050503@unican.es><4DECBE44.2070803@unican.es> 					<BANLkTi=xSJOgY735PE44YtkQmrdhgetGdQ@mail.gmail.com> 				<4DECC0DF.8070209@unican.es> <4DED051A.6020702@compro.net> 		<4DEDE411.6010807@unican.es> <4DEDEBFF.10907@cfl.rr.com> 	<4DEDF366.6000706@cfl.rr.com> <4DEE6F4E.1030107@unican.es>
+In-Reply-To: <4DEE6F4E.1030107@unican.es>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/07/2011 02:34 PM, Monica Puig-Pey wrote:
+> El 07/06/11 11:46, Mark Hounschell escribió:
+>> On 06/07/2011 05:14 AM, Mark Hounschell wrote:
+>>> On 06/07/2011 04:40 AM, Monica Puig-Pey wrote:
+>>>> El 06/06/11 18:49, Mark Hounschell escribió:
+>>>>> On 06/06/2011 07:58 AM, Monica Puig-Pey wrote:
+>>>>>> El 06/06/11 13:54, Rolando Martins escribió:
+>>>>>>> Hi,
+>>>>>>> I use the following:
+>>>>>>>
+>>>>>>> PIDs=$(ps -eLo pid,cls,rtprio,pri,nice,cmd | grep -i "irq" | awk '{
+>>>>>>> print $1; }' | xargs echo)
+>>>>>>> for i in $PIDs
+>>>>>>> do
+>>>>>>> ret=$(chrt -f -p 99 $i)
+>>>>>>> done
+>>>>>>>
+>>>>>>> This will change the kernel thread associated with an irq handler to
+>>>>>>> RT FIFO prio 99.
+>>>>>>> Just change the script to your specific interrupt.
+>>>>>>>
+>>>>>>> Hope it helps,
+>>>>>>> Rolando
+>>>>>>>
+>>>>>>> On Mon, Jun 6, 2011 at 12:47 PM, Monica Puig-Pey
+>>>>>>> wrote:
+>>>>>>>> I am writing a driver which has one kernel thread associated with
+>>>>>>>> it.
+>>>>>>>> I want to change the priority of this thread, so that I can
+>>>>>>>> specify the
+>>>>>>>> order in which it is scheduled following an interrupt.
+>>>>>>>> I'm using:
+>>>>>>>>
+>>>>>>>> sched_setscheduler(struct task_struct *, int, struct sched_param
+>>>>>>>> *);
+>>>>>>>>
+>>>>>>>> but it doesn't work. I tried to change the priority from the
+>>>>>>>> init_module,
+>>>>>>>> and also from the Kernel Thread, but there is no way.
+>>>>>>>>
+>>>>>>>> Kernel version is 2.6.31-11-rt
+>>>>>>>>
+>>>>>>>> What do I call to change a kernel thread priority?
+>>>>>>>>
+>>>>>>>> Thanks you very much
+>>>>>>>>
+>>>>>>>> Mónica
+>>>>>>>>
+>>>>>>>> --
+>>>>>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>>>>>> linux-rt-users" in
+>>>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>>>>>>
+>>>>>>
+>>>>>> I need to change the priority from inside the driver, when creating
+>>>>>> the
+>>>>>> kernel thread.
+>>>>>> Your script is useful but it is done in user context,
+>>>>>> Any other help please?
+>>>>>
+>>>>> What I do is record the PID of the thread in the driver, then
+>>>>> create an
+>>>>> IOCTL for your driver that user land can call that either returns the
+>>>>> PID so you can do it in user land, or cause the IOCTL code to do it in
+>>>>> the driver.
+>>>>>
+>>>>> The same can be done with the affinity of the IRQ if you record the
+>>>>> IRQ
+>>>>> number.
+>>>>>
+>>>>> Mark
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>>> linux-rt-users" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>>
+>>>> But I don't have de PID of my Kthread, I only have the task_struc *
+>>>> that
+>>>> gives me the function:
+>>>>
+>>>> struct task_struct *kthread_create(int (*threadfn)(void *data),
+>>>> void *data,
+>>>> const char namefmt[], ...)
+>>>>
+>>>> How could I get the PID, and which function should I use in the IOCTL
+>>>> (kernel context) for changing its priority?
+>>>>
+>>>
+>>> The PID can be obtained from within the interrupt handler its self via
+>>> current->pid.
+>>> Obviously an interrupt has to occur first but after one interrupt you
+>>> have it.
+>>>
+>>> Actually I had forgot how I handled this. Where I change the RT priority
+>>> and cpu affinity is in what used to be called the Bottom Half and the
+>>> IOCTL
+>>> referred to above simply tells the BH to do it and with what values.
+>>>
+>>
+>> In interrupt handler code snippet:
+>>
+>> struct task_struct *TSK;
+>> struct sched_param PARAM = {.sched_priority = MAX_RT_PRIO };
+>>
+>> TSK = current;
+>>
+>> Code snippet from BH:
+>>
+>> if (((rtom_rtprio != 0) &&
+>> (rtom_rtprio != PARAM.sched_priority)) ||
+>> (my_rtom_rtprio[BOARD] != rtom_rtprio)) {
+>>
+>> PARAM.sched_priority = rtom_rtprio;
+>> my_rtom_rtprio[COUNT] = rtom_rtprio;
+>> sched_setscheduler(TSK, SCHED_FIFO, &PARAM);
+>>
+>> set_cpus_allowed(TSK, rtom_devices[BOARD].irq_cpu_mask);
+>> rtom_devices[BOARD].irq_task_pid = TSK->pid;
+>> }
+>>
+>> rtom_rtprio and irq_cpu_mask are set by userland via an IOCTL. An
+>> interrupt must occur for this to happen and my BOARD never shares IRQs.
+>>
+>> Mark
+>>
+>
+> Thanks, your idea seems to be very useful to me. I was doing it very
+> similar, but I didn't use the "current" variable to know the task_struct *.
+>
+> I have tried your suggestion on an easy example, but it didn't work.
+> Insmod returns through the kernel
+>
+> [11334.895499] kthread: Unknown symbol sched_setscheduler
+>
+> Code shown below:
+>
+> #include <linux/module.h>
+> #include <linux/kernel.h>
+> #include <linux/ioport.h>
+>
+> #include <linux/wait.h>
+> #include <linux/kthread.h>
+> #include <asm/io.h>
+> #include <linux/sched.h>
+>
+>
+> struct task_struct *ts;
+>
+> int thread(void *data)
+> {
+> struct task_struct *TSK;
+> struct sched_param PARAM = {.sched_priority = MAX_RT_PRIO };
+> TSK = current;
+>
+> PARAM.sched_priority = 50;
+> sched_setscheduler(TSK, SCHED_FIFO, &PARAM); // <-- unknown symbol??
+>
+> while(1){
+> printk("Hi I am kernel thread!\n");
+> msleep(100);
+> if (kthread_should_stop())
+> break;
+> }
+> return 0;
+> }
+>
+>
+> int init_module(void)
+> {
+> printk(KERN_INFO "init_module() called\n");
+> ts=kthread_run(thread,NULL,"kthread");
+> return 0;
+> }
+>
+> void cleanup_module(void)
+> {
+> printk(KERN_INFO "cleanup_module() called\n");
+> kthread_stop(ts);
+> }
+> .
+>
 
---4JxvUTD846AMAZAS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In kernel/sched.c
 
-Hi,
+EXPORT_SYMBOL_GPL(sched_setscheduler);
 
-On Tue, Jun 07, 2011 at 09:47:59PM +0300, Tanya Brokhman wrote:
-> > > I'm not talking about dummy_hcd. It was a general comment about the
-> > gadget
-> > > code. I can't give you an example from the top of my head...
-> >=20
-> > Oh.  Well, if you're writing new code and you come across a place where
-> > an error message really is needed, you should add the error message.
->=20
-> Ok, I'll take that into consideration. Since I'm new here I was "afraid" =
-to
-> add any changes that are not really required :)
+If your driver is not GPL, you can't use it.
 
-just remember to put unrelated changes on separate patches ;-)
-
-> > But if the parameters are contradictory, you don't know _how_ to fix
-> > it.  If is_super_speed is True and is_high_speed is False, did the user
-> > want to add SuperSpeed support or to remove high-speed support?
-> >=20
-> > Besides, the best (i.e., easiest and most likely to be correct) way of
-> > fixing the error is for the user to issue the modprobe command again,
-> > with the correct parameters this time.  Therefore the driver should
-> > fail to load, so that the modprobe can be reissued with no need to do
-> > rmmod first.
-> >=20
->=20
-> Ok, agreed. I'll update the patch.
-
-Cool, I'll wait for a revised series.
-
---=20
-balbi
-
---4JxvUTD846AMAZAS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN7nPXAAoJEAv8Txj19kN1NgYH/2eXbABjv598Ik8Vwl6dScT6
-yUJp9dBqxnUCffWRS59Vv92JvW0wiXiueWq8TzZmBiNmwPzn1rb/KgJvNeJkS1wo
-T1vxwN7Q5WE0zcdIhYGsNx5b8pVpo0YTc2t0mLAfyEwM+85QCU8g+hg0gzQpAXIt
-FdXJiCw1ja07uNvZZkTEtdnDwC0HFUBom6/EcQrAM6S6CmXFX8gBNFnSbxM9tIrv
-gZiUBhaX3XzLTSkSLBaVLwx80QmkY/A7QilE7KSEa7YEHnY0kHHQpDG+Hvsxgf7t
-Pz7eTbUFztLykT8u+YMk1kg+yO0vb/ku8uBeXDwK459EToPRI4vh4I2YgCg05tg=
-=kJbm
------END PGP SIGNATURE-----
-
---4JxvUTD846AMAZAS--
+Mark
