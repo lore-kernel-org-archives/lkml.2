@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab1FGJ1x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 05:27:53 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:56848 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab1FGJ1v (ORCPT
+	id S1752661Ab1FGJh5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 05:37:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38008 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab1FGJh4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 05:27:51 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DEDF0F8.7030601@cam.ac.uk>
-Date: Tue, 07 Jun 2011 10:35:52 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Greg KH <gregkh@suse.de>, anish <anish198519851985@gmail.com>,
-        devel@driverdev.osuosl.org, arnd@arndb.de,
-        lucas.demarchi@profusion.mobi, linux-kernel@vger.kernel.org,
-        manuel.stahl@iis.fraunhofer.de
-Subject: Re: [PATCH 1/2] staging: iio replaced kmalloc with local variables.
-References: <1307387257.4327.12.camel@anish-desktop>	 <20110606215549.GA7543@suse.de> <1307398257.4994.30.camel@Joe-Laptop>
-In-Reply-To: <1307398257.4994.30.camel@Joe-Laptop>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jun 2011 05:37:56 -0400
+Subject: Re: Changing Kernel thread priorities
+From: Peter Zijlstra <peterz@infradead.org>
+To: Armin Steinhoff <armin@steinhoff.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Johannes Bauer <hannes_bauer@aon.at>,
+        Monica Puig-Pey <puigpeym@unican.es>,
+        Rolando Martins <rolando.martins@gmail.com>,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4DEDF1F2.2080204@steinhoff.de>
+References: <17185480.5304.1307435255996.JavaMail.root@WARSBL214.highway.telekom.at>
+	 <alpine.LFD.2.02.1106071033350.11814@ionos> <4DEDF1F2.2080204@steinhoff.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 07 Jun 2011 11:37:49 +0200
+Message-ID: <1307439469.2322.235.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/11 23:10, Joe Perches wrote:
-> On Mon, 2011-06-06 at 14:55 -0700, Greg KH wrote:
->> On Tue, Jun 07, 2011 at 12:37:37AM +0530, anish wrote:
->>> From: anish kumar <anish198519851985@gmail.com>
->>> Replace kmalloc with local variables as it was un-necessary and
->>> also removed the redudant code after this change.
->> SPI data, like USB data, has to come from kmalloced data, not from the
->> stack, or bad things can, and will, happen.
+On Tue, 2011-06-07 at 11:40 +0200, Armin Steinhoff wrote:
+> Hi,
 > 
-> Perhaps just add a comment like:
+> when I read all these confusing statements here ( in german it looks 
+> like an "Eiertanz")  ... I can only say:
 > 
-> +       u8 *tx = kmalloc(2, GFP_KERNEL);	/* can't be on stack */
-> 
-> It might be better to do a single kmalloc(4)
-> than 2 separate kmalloc(2)'s.
-Actually, this little corner of the driver is the only place it isn't
-using the buffers allocated with the chip state.  After I send our
-latest clean up series in these are all explicitly marked
-____cacheline_aligned anyway which should make it clear something
-a little unusual is going on.
+> - do the basic stuff in a minimal kernel driver
+> - use UIO (or VFIO for PCI devices)
 
-I'll clean up this function and credit it to Anish (if Anish doesn't
-mind of course!)
+I see no requirement for any of those horrid things to be used. You can
+write a full on proper kernel driver, it just cannot set kernel thread
+priorities to a sane value (let them all default to 50 or so).
 
-Jonathan
+Then have a user space script or whatever set the kthread priorities.
+
+> and you get clean control about your real-time priorities.
+> 
+> I think changing the priorities of "interrupt threads" inside the kernel 
+> could lead to strange race conditions in the kernel.
+
+No, changing the priority in the kernel is a perfectly sound operation,
+it just doesn't make any sense to do so since its impossible to
+determine a proper priority.
+
+Therefore setting a priority is a pure user policy and should not be
+done by the driver itself -- it simply cannot do it right so why bother
+doing it.
+
+
+
