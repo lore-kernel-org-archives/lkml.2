@@ -1,121 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757958Ab1FGX4U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 19:56:20 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:57956 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753628Ab1FGX4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 19:56:17 -0400
-Date: Tue, 7 Jun 2011 16:56:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
-        rostedt@goodmis.org, jmorris@namei.org
-Subject: Re: [PATCH v4 04/13] seccomp_filter: add process state reporting
-Message-ID: <20110607235613.GA21645@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1307133252-23259-1-git-send-email-wad@chromium.org>
- <1307133252-23259-4-git-send-email-wad@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307133252-23259-4-git-send-email-wad@chromium.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757983Ab1FGX40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 19:56:26 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:61697 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628Ab1FGX4X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 19:56:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=tKc5GoglWeKSIejNqxocnGAL4LfLtKZwXnyWpplVy7UXjoOpAPMEaV0Y+ryBcvp75b
+         mC9vvYhOWIcHegbBf1ZvSNwWSif8h8ui7xvqpfvVOixJSEBFWnOw1gCoD82G3njibMwd
+         hO5cEvZ9Ltwnz0f7VvSnNsTwNljZNl9E30gFA=
+From: David Ahern <dsahern@gmail.com>
+To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 5/6] perf script: pass trace event to print_trace_event
+Date: Tue,  7 Jun 2011 17:56:19 -0600
+Message-Id: <1307490979-24754-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.5.2
+In-Reply-To: <1307490806-24548-1-git-send-email-dsahern@gmail.com>
+References: <1307490806-24548-1-git-send-email-dsahern@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 03, 2011 at 03:34:03PM -0500, Will Drewry wrote:
-> Adds seccomp and seccomp_filter status reporting to proc.
-> /proc/<pid>/seccomp_filter provides the current seccomp mode
-> and the list of allowed or dynamically filtered system calls.
-> 
-> v4: move from rcu guard to mutex guard
+Next patch needs parsed trace event in perf-script. No since
+extracting it twice.
 
-Just in case the mutex guard turns into a bottleneck...  Replacing
-your earlier racy rcu_assign_pointer() with xchg() would allow
-the "winner" to free up the "loser"'s structure.
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/builtin-script.c         |   16 ++++++++++++++--
+ tools/perf/util/trace-event-parse.c |   12 +-----------
+ tools/perf/util/trace-event.h       |    2 +-
+ 3 files changed, 16 insertions(+), 14 deletions(-)
 
-Of course, if the mutex guard works well for you, why bother?
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 3056b45..c61ae26 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -362,14 +362,26 @@ static void process_event(union perf_event *event __unused,
+ 			  struct thread *thread)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
++	struct event *tr_event = NULL;
+ 
+ 	if (output[attr->type].fields == 0)
+ 		return;
+ 
++	if (attr->type == PERF_TYPE_TRACEPOINT) {
++		int type;
++
++		type = trace_parse_common_type(sample->raw_data);
++		tr_event = trace_find_event(type);
++		if (!tr_event) {
++			warning("ug! no event found for type %d", type);
++			return;
++		}
++	}
++
+ 	print_sample_start(sample, thread, attr);
+ 
+-	if (PRINT_FIELD(TRACE))
+-		print_trace_event(sample->cpu, sample->raw_data,
++	if ((attr->type == PERF_TYPE_TRACEPOINT) && PRINT_FIELD(TRACE))
++		print_trace_event(tr_event, sample->cpu, sample->raw_data,
+ 				  sample->raw_size);
+ 
+ 	if (PRINT_FIELD(ADDR))
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 1e88485..1f4dccd 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -2912,20 +2912,10 @@ pretty_print_func_graph(void *data, int size, struct event *event,
+ 	printf("\n");
+ }
+ 
+-void print_trace_event(int cpu, void *data, int size)
++void print_trace_event(struct event *event, int cpu, void *data, int size)
+ {
+-	struct event *event;
+-	int type;
+ 	int pid;
+ 
+-	type = trace_parse_common_type(data);
+-
+-	event = trace_find_event(type);
+-	if (!event) {
+-		warning("ug! no event found for type %d", type);
+-		return;
+-	}
+-
+ 	pid = trace_parse_common_pid(data);
+ 
+ 	if (event->flags & (EVENT_FL_ISFUNCENT | EVENT_FL_ISFUNCRET))
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index f674dda..34ec9f3 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -177,7 +177,7 @@ void print_printk(void);
+ 
+ int parse_ftrace_file(char *buf, unsigned long size);
+ int parse_event_file(char *buf, unsigned long size, char *sys);
+-void print_trace_event(int cpu, void *data, int size);
++void print_trace_event(struct event *event, int cpu, void *data, int size);
+ 
+ extern int file_bigendian;
+ extern int host_bigendian;
+-- 
+1.7.5.2
 
-							Thanx, Paul
-
-> v3: changed to using filters directly.
-> v2: removed status entry, added seccomp file.
->     (requested by kosaki.motohiro@jp.fujitsu.com)
->     allowed S_IRUGO reading of entries
->     (requested by viro@zeniv.linux.org.uk)
->     added flags
->     got rid of the seccomp_t type
->     dropped seccomp file
-> 
-> Signed-off-by: Will Drewry <wad@chromium.org>
-> ---
->  fs/proc/base.c |   29 +++++++++++++++++++++++++++++
->  1 files changed, 29 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index dfa5327..6dc4df8 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -73,6 +73,7 @@
->  #include <linux/security.h>
->  #include <linux/ptrace.h>
->  #include <linux/tracehook.h>
-> +#include <linux/seccomp.h>
->  #include <linux/cgroup.h>
->  #include <linux/cpuset.h>
->  #include <linux/audit.h>
-> @@ -579,6 +580,28 @@ static int proc_pid_syscall(struct task_struct *task, char *buffer)
->  }
->  #endif /* CONFIG_HAVE_ARCH_TRACEHOOK */
-> 
-> +/*
-> + * Print out the current seccomp filter set for the task.
-> + */
-> +#ifdef CONFIG_SECCOMP_FILTER
-> +int proc_pid_seccomp_filter_show(struct seq_file *m, struct pid_namespace *ns,
-> +				 struct pid *pid, struct task_struct *task)
-> +{
-> +	struct seccomp_filters *filters;
-> +	/* Avoid allowing other processes to incur too much added contention by
-> +	 * only acquiring a reference under the task-wide mutex.
-> +	 */
-> +	if (mutex_lock_killable(&task->seccomp.filters_guard))
-> +		return -1;
-> +	filters = get_seccomp_filter(task->seccomp.filters);
-> +	mutex_unlock(&task->seccomp.filters_guard);
-> +
-> +	seccomp_show_filters(filters, m);
-> +	put_seccomp_filter(filters);
-> +	return 0;
-> +}
-> +#endif /* CONFIG_SECCOMP_FILTER */
-> +
->  /************************************************************************/
->  /*                       Here the fs part begins                        */
->  /************************************************************************/
-> @@ -2838,6 +2861,9 @@ static const struct pid_entry tgid_base_stuff[] = {
->  #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
->  	INF("syscall",    S_IRUGO, proc_pid_syscall),
->  #endif
-> +#ifdef CONFIG_SECCOMP_FILTER
-> +	ONE("seccomp_filter",     S_IRUGO, proc_pid_seccomp_filter_show),
-> +#endif
->  	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
->  	ONE("stat",       S_IRUGO, proc_tgid_stat),
->  	ONE("statm",      S_IRUGO, proc_pid_statm),
-> @@ -3180,6 +3206,9 @@ static const struct pid_entry tid_base_stuff[] = {
->  #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
->  	INF("syscall",   S_IRUGO, proc_pid_syscall),
->  #endif
-> +#ifdef CONFIG_SECCOMP_FILTER
-> +	ONE("seccomp_filter",     S_IRUGO, proc_pid_seccomp_filter_show),
-> +#endif
->  	INF("cmdline",   S_IRUGO, proc_pid_cmdline),
->  	ONE("stat",      S_IRUGO, proc_tid_stat),
->  	ONE("statm",     S_IRUGO, proc_pid_statm),
-> -- 
-> 1.7.0.4
-> 
