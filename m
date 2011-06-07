@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab1FGSlr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:41:47 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50357 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750899Ab1FGSlq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:41:46 -0400
-Date: Tue, 7 Jun 2011 14:41:43 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tanya Brokhman <tlinder@codeaurora.org>
-cc: greg@kroah.com, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <balbi@ti.com>,
-        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v15 10/10] usb:dummy_hcd: Force FS device connection
- according to module parameter
-In-Reply-To: <016d01cc2541$0bfa5980$23ef0c80$@org>
-Message-ID: <Pine.LNX.4.44L0.1106071436020.1972-100000@iolanthe.rowland.org>
+	id S1753957Ab1FGSnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:43:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44574 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751029Ab1FGSnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 14:43:42 -0400
+Message-ID: <4DEE712F.3080800@zytor.com>
+Date: Tue, 07 Jun 2011 11:42:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "trenn@novell.com" <trenn@novell.com>,
+        "prarit@redhat.com" <prarit@redhat.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Song, Youquan" <youquan.song@intel.com>,
+        "stable@kernel.org" <stable@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [patch 1/2] stop_machine: enable __stop_machine() to be called
+ from the cpu online path
+References: <20110606231655.824641917@sbsiddha-MOBL3.sc.intel.com>	 <20110606231752.023885847@sbsiddha-MOBL3.sc.intel.com>	 <20110607180244.GA27552@elte.hu> <1307471902.21608.4476.camel@sbsiddha-MOBL3.sc.intel.com>
+In-Reply-To: <1307471902.21608.4476.camel@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Jun 2011, Tanya Brokhman wrote:
-
-> > > I thought about that as well. Even added it but removed at the last
-> > minute
-> > > :) I encountered quite a few places in the code where some error
-> > message to
-> > > the user is really needed but is missing
-> > 
-> > What other places?  There is very little the user has to do with
-> > dummy-hcd -- really nothing more than setting the module parameters.
+On 06/07/2011 11:38 AM, Suresh Siddha wrote:
 > 
-> I'm not talking about dummy_hcd. It was a general comment about the gadget
-> code. I can't give you an example from the top of my head...
-
-Oh.  Well, if you're writing new code and you come across a place where 
-an error message really is needed, you should add the error message.
-
-> > IMO the driver should print an error message and fail to load if there
-> > are contradictory module parameters.
-> > 
+> This is kind of a false positive. We are just checking if the calling
+> cpu is online/offline (and there is no possible process migration
+> between an online and offline cpu).
 > 
-> Well, I can add the error message but I think that as far as dummy_hcd is
-> concerned failing it's loading is a bit harsh, isn't it? I mean, this is a
-> type of user error that can be fixed so why not fix it and just notify the
-> user of what was done?
 
-But if the parameters are contradictory, you don't know _how_ to fix 
-it.  If is_super_speed is True and is_high_speed is False, did the user 
-want to add SuperSpeed support or to remove high-speed support?
+Is the state not available in a percpu variable of some sort?  If not,
+shouldn't it be rather than indirecting via a CPU number?
 
-Besides, the best (i.e., easiest and most likely to be correct) way of
-fixing the error is for the user to issue the modprobe command again,
-with the correct parameters this time.  Therefore the driver should
-fail to load, so that the modprobe can be reissued with no need to do
-rmmod first.
-
-Alan Stern
-
+	-hpa
