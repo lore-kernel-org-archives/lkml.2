@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172Ab1FGInt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 04:43:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39258 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab1FGInr (ORCPT
+	id S1752272Ab1FGIn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 04:43:57 -0400
+Received: from slow3-v.mail.gandi.net ([217.70.178.89]:37378 "EHLO
+	slow3-v.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab1FGIny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 04:43:47 -0400
-Date: Tue, 7 Jun 2011 10:43:43 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Monica Puig-Pey <puigpeym@unican.es>
-cc: hannes_bauer@aon.at, Peter Zijlstra <peterz@infradead.org>,
-        Rolando Martins <rolando.martins@gmail.com>,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Changing Kernel thread priorities
-In-Reply-To: <4DEDE232.4090007@unican.es>
-Message-ID: <alpine.LFD.2.02.1106071041550.11814@ionos>
-References: <17185480.5304.1307435255996.JavaMail.root@WARSBL214.highway.tel ekom.at> <4DEDE232.4090007@unican.es>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 7 Jun 2011 04:43:54 -0400
+X-WhiteListed: mail was accepted with no delay
+X-WhiteListed: mail was accepted with no delay
+X-WhiteListed: mail was accepted with no delay
+X-WhiteListed: mail was accepted with no delay
+X-Originating-IP: 50.43.15.19
+Date: Tue, 7 Jun 2011 01:43:49 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Status of function-sections work?
+Message-ID: <20110607084349.GC4599@leaf>
+References: <20110606011531.GA1887@leaf>
+ <201106071011.15114.vda.linux@googlemail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1939963718-1307436224=:11814"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106071011.15114.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-1939963718-1307436224=:11814
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Tue, 7 Jun 2011, Monica Puig-Pey wrote:
-> El 07/06/11 10:27, Johannes Bauer escribió:
-> > There's a reason all RT irq threads are started at 50, its plain
-> > impossible to do better.
+On Tue, Jun 07, 2011 at 10:11:15AM +0200, Denys Vlasenko wrote:
+> On Monday 06 June 2011 03:15, Josh Triplett wrote:
+> > Hello,
 > > 
+> > I found your work in 2010 on using function-sections and data-sections
+> > to eliminate unused code in the kernel.  I'd like to make use of this
+> > work to try to build an extremely space-constrained kernel.
+> > 
+> > It looks like a few of your patches made it into the kernel, but most of
+> > the linker script changes don't seem to have made it in.  I wanted to
+> > find out the status of this work.  Do you still have this working?  Do
+> > you have versions of your patches for current Linux?
 > 
-> That's it!
-> If I work with embedded system where I know all my tasks running and there is
-> not a user how could I do it?
+> parisc uses ^ in some identifiers. Therefore we need something like
+> [A-Za-z0-9_$^]* in linker script. This wasn't working with GNU ld -
+> ^ is not a valid char for pattern. Use of more general [!.]*
+> was also impossible - ! is not a valid char too.
+> 
+> Therefore I asked binutils people to fix this (they agreed) and
+> decided to wait for a fixed binutils to be released.
 
-init scripts run from user space and you can adjust the priority there.
- 
-> What I tried is create the kernel thread in my init_module using:
-> 
-> 	#include <linux/kthread.h>
-> 
-> 	struct task_struct *kthread_create(int (*threadfn)(void *data),
-> 				   void *data,
-> 				   const char namefmt[], ...)
-> and then running it with:
-> 
-> 	#include <linux/sched.h>
-> 	
-> 	extern int wake_up_process(struct task_struct *tsk);
-> 
-> These functions stars a Kthread which has a NON RT priority. I can see this
-> using the ps command from user space.
-> Because it's not a real time thread is why I want, better need, to change its
-> priority, to have only real time threads running in my driver. I want to use
-> the Kthread as a bottom half for the interrupts.
+Makes sense.  Thanks for the explanation and status.
 
-Use threaded interrupt handlers. That's what they are made for.
+Do you know if the fix has gone into binutils, either in a release or
+the latest snapshot from version control?  If not, does a patch exist?
 
-Thanks,
-
-	tglx
---8323328-1939963718-1307436224=:11814--
+- Josh Triplett
