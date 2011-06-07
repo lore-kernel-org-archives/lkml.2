@@ -1,99 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab1FGUgP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 16:36:15 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41891 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756593Ab1FGUgM (ORCPT
+	id S1756668Ab1FGUga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 16:36:30 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:50652 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756634Ab1FGUg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 16:36:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=mxNR7PgvWR4hNyk+FpM7rQkhK54igkwSYTCIzWwI0j4wgQhqCPT9ZaSFDlfo7nM51R
-         cCB3IbTx6jmfVW5PRdIxjghWEewBNZ7OX0xaP12VUZbPEdvljAQcRPgA8mzeo3h9QB1J
-         LV5WR0tFWr/N3onRxKS3bYnnA/bEiNYZh7y9I=
-MIME-Version: 1.0
-In-Reply-To: <1307478514.3163.49.camel@work-vm>
-References: <cover.1307474707.git.luto@mit.edu> <4a233d5b7421ef8f7805139e3eba68c52c2d0d57.1307474707.git.luto@mit.edu>
- <1307478514.3163.49.camel@work-vm>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 7 Jun 2011 16:35:52 -0400
-X-Google-Sender-Auth: v_cxVd_A1_7FiJDaJoIdMYWUSG0
-Message-ID: <BANLkTimU75BNGxTSDicAf5uJdaxqDUu57Q@mail.gmail.com>
-Subject: Re: [PATCH 4/5] clocksource: Replace vread and fsys_mmio with generic
- arch data
-To: john stultz <johnstul@us.ibm.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Clemens Ladisch <clemens@ladisch.de>, linux-ia64@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Jun 2011 16:36:27 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/7Z40dR9z7L+TjDd111XqKET+dfpY+4Yd60pt0hS
+	FbKbfgxpinv+Jt
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH] net/mac80211/debugfs: Convert to kstrou8_from_user
+Date: Tue,  7 Jun 2011 22:36:14 +0200
+Message-Id: <1307478974-32727-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.3.4
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 7, 2011 at 4:28 PM, john stultz <johnstul@us.ibm.com> wrote:
-> On Tue, 2011-06-07 at 15:32 -0400, Andy Lutomirski wrote:
->> The vread field was bloating struct clocksource everywhere except
->> x86_64, and I want to change the way this works on x86_64, so let's
->> split it out into per-arch data.
-> [snip]
->> diff --git a/arch/ia64/include/asm/clocksource.h b/arch/ia64/include/asm/clocksource.h
->> new file mode 100644
->> index 0000000..453f363
->> --- /dev/null
->> +++ b/arch/ia64/include/asm/clocksource.h
->> @@ -0,0 +1,16 @@
->> +/* x86-specific clocksource additions */
->> +
->> +#ifndef _ASM_X86_CLOCKSOURCE_H
->> +#define _ASM_X86_CLOCKSOURCE_H
->> +
->> +#ifdef CONFIG_X86_64
->
-> Why do we want X86_64 ifdefs in the ia64 clocksource.h?
->
+This patch replaces the code for getting an number from a
+userspace buffer by a simple call to kstrou8_from_user.
+This makes it easier to read and less error prone.
 
-We don't.  That was a copy-and-paste-o.
+Since the old buffer was only 10 bytes long and the value is masked by a
+nibble-mask anyway, we don't need to use kstrtoul but rather kstrtou8.
 
->
-> Overall this sort of feels a little messy to me.
->
-> While having the ifdefs in the clocksource structure wasn't great, I'm
-> not super excited about pushing all of this back into arch-specific
-> code. The hope was that folks like ppc and ia64 would convert over from
-> their own implementations to using more generic vread() implementations,
-> or atleast new arches with vdso implementations would make use of it
-> (possibly even allowing for a generic vdso gettime implementation).
->
-> Are there at least some hard numbers that help justify this? Or maybe
-> could you provide some thoughts on your future plans?
+Kernel Version: v3.0-rc2
 
-No numbers because there's no speedup (yet).  Although I do want to
-inline at least the TSC implementation eventually.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ net/mac80211/debugfs.c |   14 +++-----------
+ 1 files changed, 3 insertions(+), 11 deletions(-)
 
-The real reason is security.  Having vread be a function pointer
-implies that userspace code can find that function at a fixed address,
-which is a bad idea from a security POV (and I hope it's not even true
-on any architecture except x86-64).  The x86-64 vsyscall is finally
-cleaned up to the point that the vread functions are the only pieces
-user-executable code left at a fixed address, and I want to get rid of
-them as well.
+diff --git a/net/mac80211/debugfs.c b/net/mac80211/debugfs.c
+index 186e02f..267ed45 100644
+--- a/net/mac80211/debugfs.c
++++ b/net/mac80211/debugfs.c
+@@ -195,20 +195,12 @@ static ssize_t uapsd_queues_write(struct file *file,
+ 				  size_t count, loff_t *ppos)
+ {
+ 	struct ieee80211_local *local = file->private_data;
+-	unsigned long val;
+-	char buf[10];
+-	size_t len;
++	u8 val;
+ 	int ret;
+ 
+-	len = min(count, sizeof(buf) - 1);
+-	if (copy_from_user(buf, user_buf, len))
+-		return -EFAULT;
+-	buf[len] = '\0';
+-
+-	ret = strict_strtoul(buf, 0, &val);
+-
++	ret = kstrtou8_from_user(user_buf, count, 0, &val);
+ 	if (ret)
+-		return -EINVAL;
++		return ret;
+ 
+ 	if (val & ~IEEE80211_WMM_IE_STA_QOSINFO_AC_MASK)
+ 		return -ERANGE;
+-- 
+1.7.3.4
 
-The followup change (patch 5) changes vread on x86-64 to specify TSC,
-HPET, or fallback to syscall, and the vDSO reads it and acts
-accordingly.  This is unfortunate in that it hardcodes assumptions
-about the clocksources.
-
-The only other way I can think of to do it is to make the pointer
-point into the vDSO.  That would involve making it relative to
-something in the vDSO, which would IMO be messier both in terms of
-computing the pointer and in terms of calling whatever it points to.
-
-
-Note that the vsyscall_fn hack is rather x86-64-specific as is.
-
-
---Andy
