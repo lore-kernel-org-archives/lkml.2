@@ -1,145 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab1FGNiD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 09:38:03 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42879 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754002Ab1FGNiA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 09:38:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=VrTYuBMVlqEZr88DvpZs4aP84lEp/BJ7k3tispYrMRPCEd96s30CGFPBf1wRY4+d3f
-         mCAbTM4GYuJan8Pb71dMhk5eStkie+vSJhXjehEQ3hsP/CrGfwTSDOYu0v2Q/TA2G5u4
-         jKxhUr8L4traSGtq54N5dVW16VWXxTzSp7iVw=
-Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Brad Campbell <lists2009@fnarfbargle.com>
-Cc: Avi Kivity <avi@redhat.com>, CaT <cat@zip.com.au>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, netdev <netdev@vger.kernel.org>
-In-Reply-To: <4DEE273F.7090402@fnarfbargle.com>
-References: <20110601011527.GN19505@random.random>
-	 <alpine.LSU.2.00.1105312120530.22808@sister.anvils>
-	 <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com>
-	 <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com>
-	 <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com>
-	 <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com>
-	 <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com>
-	 <4DEB3AE4.8040700@redhat.com>  <4DEB8872.2060801@fnarfbargle.com>
-	 <1307391746.2642.11.camel@edumazet-laptop>
-	 <4DEE273F.7090402@fnarfbargle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Jun 2011 15:37:54 +0200
-Message-ID: <1307453874.3091.14.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1754892Ab1FGNiX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 09:38:23 -0400
+Received: from sous-sol.org ([216.99.217.87]:34910 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753640Ab1FGNiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 09:38:19 -0400
+Date: Tue, 7 Jun 2011 06:38:04 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: padmanabh ratnakar <pratnakarlx@gmail.com>
+Cc: Chris Wright <chrisw@sous-sol.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        iommu <iommu@lists.linux-foundation.org>, dwmw2@infradead.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: Seeing DMAR errors after multiple load/unload with SR-IOV
+Message-ID: <20110607133804.GX23047@sequoia.sous-sol.org>
+References: <BANLkTi=q0f8aYc2+fhaY5yFRRfgkOOME-g@mail.gmail.com>
+ <1307398661.5901.14.camel@x201>
+ <20110606223451.GW23047@sequoia.sous-sol.org>
+ <BANLkTintUEWqwhUmR2MYC0jixqEi-wNJpg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTintUEWqwhUmR2MYC0jixqEi-wNJpg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 07 juin 2011 Ã  21:27 +0800, Brad Campbell a Ã©crit :
-> On 07/06/11 04:22, Eric Dumazet wrote:
-> 
-> > Could you please try latest linux-2.6 tree ?
+* padmanabh ratnakar (pratnakarlx@gmail.com) wrote:
+> On Tue, Jun 7, 2011 at 4:04 AM, Chris Wright <chrisw@sous-sol.org> wrote:
+> > * Alex Williamson (alex.williamson@redhat.com) wrote:
+> >> On Mon, 2011-06-06 at 14:39 +0530, padmanabh ratnakar wrote:
+> >> > Hi,
+> >> >         I am using linux kernel 2.6.39. I have a IBM x3650 M3 system.
+> >> > I have used following boot options -
+> >> > intel_iommu=on iommu=pt
+> >> >
+> >> > I was loading/unloading my NIC driver(be2net) with num_vfs=7.
+> >> >
+> >> > After some iterations I get following DMAR errors -
+> >> > Jun  4 03:50:20 rhel6 kernel: Uhhuh. NMI received for unknown reason
+> >> > 2d on CPU 0.
+> >> > Jun  4 03:50:20 rhel6 kernel: Do you have a strange power saving mode enabled?
+> >> > Jun  4 03:50:20 rhel6 kernel: Dazed and confused, but trying to continue
+> >> > Jun  4 03:50:20 rhel6 kernel: DRHD: handling fault status reg 2
+> >> > Jun  4 03:50:20 rhel6 kernel: DMAR:[DMA Read] Request device [1a:00.2]
+> >> > fault addr 78077000
+> >> > Jun  4 03:50:20 rhel6 kernel: DMAR:[fault reason 02] Present bit in
+> >> > context entry is clear
+> >> >
+> >> > I was trying to debug this. I dont understand iommu code much.
+> >> > The physical address belongs the printed PCI function and there should
+> >> > not have been an error.
+> >> >
+> >> > I am unable to see pci_dev(pdev) of VFs getting removed from
+> >> > si_domain->devices list(intel-iommu.c)
+> >> > when driver gets unloaded calling pci_disable_sriov() freeing VF pdevs.
+> >> > Looks like issue happens when when freed pdev is allocated again and
+> >> > as it is already in list,
+> >> > required initializations dont happen.
+> >> >
+> >> > I dont know if my understanding is correct. Can anyone point me to
+> >> > what the issue may be?
 > >
-> > We fixed many networking bugs that could explain your crash.
+> > Yes, that's correct.  The (now replaced) check identity_mapping()
+> > will succeed when the pci_dev is recycled (it's freed, but never
+> > removed from the list, this is an issue with passtrhough mode and device
+> > creation/desctruction).  This false match happens w/ a brand new pci_dev
+> > which still has default 32bit DMA mask, so it is removed from pt domain.
+> > During removal domain_remove_one_dev_info() test that matches only
+> > on bus/devfn (now also segment) will match despite the fact that the
+> > info->pdev != pdev->dev.archdata.iommu.  Then...Oops
 > >
+> >> Typically devices are removed from the domain via
+> >> drivers/pci/intel-iommu.c:device_notifier(), which is called as the
+> >> device is unbound from the driver.  However, this seems to get skipped
+> >> when running in passthrough mode, so I'm not sure where that's supposed
+> >> to occur.  Does it happen w/o passthrough?
 > >
+> I had tried without passthrough on RHEL 6.1 GA kernel. Was seeing
+> hangs and panics. Will check if non passthrough mode works on latest kernel.
+> 
+> > If you blacklist the driver then a create/delete may do similar (haven't
+> > tested that idea).
 > >
+> >> Also note that some
+> >> intel-iommu fixes have rolled into 3.0.0-rc2, you might want to update
+> >> and see if anything is better there.  Thanks,
 > >
-> 
-> No good I'm afraid.
-> 
-> [  543.040056] 
-> =============================================================================
-> [  543.040136] BUG ip_dst_cache: Padding overwritten. 
-> 0xffff8803e4217ffe-0xffff8803e4217fff
-> [  543.040194] 
+> > The change in identity_mapping() means we won't demote to 32-bit DMA
+> > (drop out of pt domain), so I don't think we'll see the same issue.
+> >
+> For testing I had made a hack in 2.6.39 kernel which will prevent
+> demoting to 32bit DMA mask
+> and thereby prevent calling of domain_remove_one_dev_info() for the
+> specific VF device I was using
+> and it had worked.
+> So as you said I may not hit the issue in latest kernel. Will try that.
 
-Thats pretty strange : These are the last two bytes of a page, set to
-0x0000 (a 16 bit value)
+I think we still leak the list entry though.  Bottom line is that we
+need to handle hotplug ADD_DEVICE and DEL_DEVICE notifications.  We
+happen to pick up ADD_DEVICE by accident, but it's all pretty sloppy.
 
-There is no way a dst field could actually sit on this location (its a
-padding), since a dst is a bit less than 256 bytes (0xe8), and each
-entry is aligned on a 64byte address.
-
-grep dst /proc/slabinfo 
-
-ip_dst_cache       32823  62944    256   32    2 : tunables    0    0
-0 : slabdata   1967   1967      0
-
-sizeof(struct rtable)=0xe8
-
-
-> -----------------------------------------------------------------------------
-> [  543.040198]
-> [  543.040298] INFO: Slab 0xffffea000d9e74d0 objects=25 used=25 fp=0x 
->         (null) flags=0x8000000000004081
-> [  543.040364] Pid: 4576, comm: kworker/1:2 Not tainted 3.0.0-rc2 #1
-> [  543.040415] Call Trace:
-> [  543.040472]  [<ffffffff810b9c1d>] ? slab_err+0xad/0xd0
-> [  543.040528]  [<ffffffff8102e034>] ? check_preempt_wakeup+0xa4/0x160
-> [  543.040595]  [<ffffffff810ba206>] ? slab_pad_check+0x126/0x170
-> [  543.040650]  [<ffffffff8133045b>] ? dst_destroy+0x8b/0x110
-> [  543.040701]  [<ffffffff810ba29a>] ? check_slab+0x4a/0xc0
-> [  543.040753]  [<ffffffff810baf2d>] ? free_debug_processing+0x2d/0x250
-> [  543.040808]  [<ffffffff810bb27b>] ? __slab_free+0x12b/0x140
-> [  543.040862]  [<ffffffff810bbe99>] ? kmem_cache_free+0x99/0xa0
-> [  543.040915]  [<ffffffff8133045b>] ? dst_destroy+0x8b/0x110
-> [  543.040967]  [<ffffffff813307f6>] ? dst_gc_task+0x196/0x1f0
-> [  543.041021]  [<ffffffff8104e954>] ? queue_delayed_work_on+0x154/0x160
-> [  543.041081]  [<ffffffff813066fe>] ? do_dbs_timer+0x20e/0x3d0
-> [  543.041133]  [<ffffffff81330660>] ? dst_alloc+0x180/0x180
-> [  543.041187]  [<ffffffff8104f28b>] ? process_one_work+0xfb/0x3b0
-> [  543.041242]  [<ffffffff8104f964>] ? worker_thread+0x144/0x3d0
-> [  543.041296]  [<ffffffff8102cc10>] ? __wake_up_common+0x50/0x80
-> [  543.041678]  [<ffffffff8104f820>] ? rescuer_thread+0x2e0/0x2e0
-> [  543.041729]  [<ffffffff8104f820>] ? rescuer_thread+0x2e0/0x2e0
-> [  543.041782]  [<ffffffff81053436>] ? kthread+0x96/0xa0
-> [  543.041835]  [<ffffffff813e1d14>] ? kernel_thread_helper+0x4/0x10
-> [  543.041890]  [<ffffffff810533a0>] ? kthread_worker_fn+0x120/0x120
-> [  543.041944]  [<ffffffff813e1d10>] ? gs_change+0xb/0xb
-> [  543.041993]  Padding 0xffff8803e4217f40:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-> 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-> [  543.042718]  Padding 0xffff8803e4217f50:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-> 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-> [  543.043433]  Padding 0xffff8803e4217f60:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-> 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-> [  543.044155]  Padding 0xffff8803e4217f70:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-> 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-> [  543.044866]  Padding 0xffff8803e4217f80:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-> 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-> [  543.045590]  Padding 0xffff8803e4217f90:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-> 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-> [  543.046311]  Padding 0xffff8803e4217fa0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-> 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-> [  543.047034]  Padding 0xffff8803e4217fb0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-> 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-> [  543.047755]  Padding 0xffff8803e4217fc0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-> 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-> [  543.048474]  Padding 0xffff8803e4217fd0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-> 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-> [  543.049203]  Padding 0xffff8803e4217fe0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-> 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
-> [  543.049909]  Padding 0xffff8803e4217ff0:  5a 5a 5a 5a 5a 5a 5a 5a 5a 
-> 5a 5a 5a 5a 5a 00 00 ZZZZZZZZZZZZZZ..
-> [  543.050021] FIX ip_dst_cache: Restoring 
-> 0xffff8803e4217f40-0xffff8803e4217fff=0x5a
-> [  543.050021]
-> 
-> Dropped -mm, Hugh and Andrea from CC as this does not appear to be mm or 
-> ksm related.
-> 
-> I'll pare down the firewall and see if I can make it break easier with a 
-> smaller test set.
-
-Hmm, not sure now :(
-
-Could you reproduce another bug please ?
-
-
-
+thanks,
+-chris
