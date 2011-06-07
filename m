@@ -1,126 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333Ab1FGGbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 02:31:47 -0400
-Received: from demekin.fsr.com ([64.126.133.131]:48199 "EHLO demekin.fsr.com"
+	id S1751398Ab1FGGgB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 02:36:01 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:46159 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751127Ab1FGGbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 02:31:46 -0400
-X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jun 2011 02:31:45 EDT
-From: Nathan Anderson <nathana@fsr.com>
-To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Mon, 6 Jun 2011 23:26:24 -0700
-Subject: PCI BAR address mismatch between kernel and module?
-Thread-Topic: PCI BAR address mismatch between kernel and module?
-Thread-Index: Acwk29rO0OrM1aLNTRypDQh+05i33g==
-Message-ID: <C12CA40900F4E0448A2D4E66DFA6A59B13D1F328E8@Demekin.FSI.local>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	id S1750910Ab1FGGgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 02:36:00 -0400
+Message-ID: <4DEDC6CE.7080100@msgid.tls.msk.ru>
+Date: Tue, 07 Jun 2011 10:35:58 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20110506 Icedove/3.0.11
 MIME-Version: 1.0
+To: =?UTF-8?B?UGF3ZcWCIERyb2Jlaw==?= <pawel.drobek@gmail.com>
+CC: Greg KH <greg@kroah.com>, Linux USB list <linux-usb@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: Re: option driver, ZTE MF_330 matches linux usb 2.0 root hub
+References: <4DDEC269.30808@msgid.tls.msk.ru>	 <4DDEC606.4020504@msgid.tls.msk.ru> <20110527012022.GF24630@kroah.com>	 <BANLkTikcjXTczV2FmGcQ7BY=m_t7ep54Sw@mail.gmail.com>	 <4DDF427E.1030109@msgid.tls.msk.ru>	 <BANLkTikodJ4cnjJ9Lxx=zsHd-dAgPzfDrA@mail.gmail.com>	 <4DDF6917.9060004@msgid.tls.msk.ru>	 <BANLkTi==1WyJNACmoOxcrS6RiJ3w8Ow1zw@mail.gmail.com>	 <20110527100215.GC9272@kroah.com> <4DDFA4F5.8060502@msgid.tls.msk.ru>	 <BANLkTinAip5BswLBjxyJ1O_XPnUFq=FUjw@mail.gmail.com>	 <4DECD457.60101@msgid.tls.msk.ru>	 <BANLkTimLfkGjFtk_GJ87_+f7fswkdmSe3Q@mail.gmail.com> <1307422131.5615.3.camel@one.pl>
+In-Reply-To: <1307422131.5615.3.camel@one.pl>
+X-Enigmail-Version: 1.0.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, everybody,
+07.06.2011 08:48, Paweł Drobek wrote:
 
-If this isn't the right place for me to direct a question like this, please
-accept my apology for the interruption, and feel free to ignore me or point
-me in the direction of a more appropriate venue. :-)  
+> Bus 003 Device 002: ID 19d2:0001 ONDA Communication S.p.A.
+> Device Descriptor:
+>   bLength                18
+>   bDescriptorType         1
+>   bcdUSB               1.10
+>   bDeviceClass            0 (Defined at Interface level)
+>   bDeviceSubClass         0
+>   bDeviceProtocol         0
+>   bMaxPacketSize0        64
+>   idVendor           0x19d2 ONDA Communication S.p.A.
+>   idProduct          0x0001
+>   bcdDevice            0.00
+>   iManufacturer           1 Qualcomm, Incorporated
+>   iProduct                2 ZTE CDMA Technologies MSM
+>   iSerial                 0
+>   bNumConfigurations      1
+>   Configuration Descriptor:
+>     bLength                 9
+>     bDescriptorType         2
+>     wTotalLength           85
+>     bNumInterfaces          3
+>     bConfigurationValue     1
+>     iConfiguration          0
+>     bmAttributes         0xa0
+>       (Bus Powered)
+>       Remote Wakeup
+>     MaxPower              500mA
+>     Interface Descriptor:
+>       bLength                 9
+>       bDescriptorType         4
+>       bInterfaceNumber        0
+>       bAlternateSetting       0
+>       bNumEndpoints           3
+>       bInterfaceClass       255 Vendor Specific Class
+>       bInterfaceSubClass    255 Vendor Specific Subclass
+>       bInterfaceProtocol    255 Vendor Specific Protocol
+>       iInterface              3 Data Interface
 
-I need to build a working set of kernel modules (drivers for a PCI-bus disk
-controller) for an embedded system I'm using that is built atop Linux, and
-for which I don't have the .config for.  The idea is that I will replace
-the initramfs archive with one that has the modules + a stripped-down
-busybox, and write a shell script to load the modules before passing
-control off to the original initramfs's 'init' (a binary) via exec. 
-Building a new kernel from scratch for this system is, sadly, not an
-option, and the .config is unobtainable (I checked: CONFIG_IKCONFIG was not
-enabled for the build of this specific kernel).  I'm sure the task is
-hopeless/not recommended/frowned upon, but that hasn't deterred me...yet.  
+So, as far as I can see, this is covered by
 
-In fact, I feel like I've nearly got it.  I've matched the same kernel
-version that they used (2.6.35.nothing; although, granted, I have no
-knowledge of any patches they might have applied or direct changes to their
-source tree that they might have made).  I have a build toolchain that
-matches the one used to build the original kernel, down to the gcc version
-(4.5.0, x86 arch).  I have even managed to churn out a set of modules for
-the hardware device in question that match the version magic of the running
-kernel, and which neither reference any symbols missing from this kernel,
-nor do they generate OOPSen when insmod'ed (the latter turned out to be
-tricky; after much trial-and-error, I discovered I needed to enable
-CONFIG_UNUSED_SYMBOLS when building the modules in order for this kernel to
-be happy with them).           
+#define ZTE_VENDOR_ID                           0x19d2
+#define ZTE_PRODUCT_MF622                       0x0001
 
-Only one problem (seemingly) remains: all of the modules I've built (and
-I've tried building a couple of different ones for a couple of different
-pieces of hardware) appear to have difficulty interacting with the PCI
-subsystem of the kernel.   
+{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
 
-Now, this embedded system I'm working with actually comes with two kernels:
-one which is SMP-enabled (CONFIG_SMP + CONFIG_M686), and the other which is
-not (CONFIG_M586).  I have built a separate set of modules for each kernel,
-and both sets fail to work, but they do so in slightly different ways
-between the two kernels.  Since I have a firmer grasp right now on what is
-going on with the SMP kernel than I do with the non-SMP one, I'll
-concentrate on the SMP one for the time being, in the hope that whatever
-solution I find for the SMP kernel will help to shed some light on what
-might be going on with the other one.        
+and it should Just Work aftere reverting a559d2c8c1bf652ea2d0ecd6ab4a250fcdb37db8
+"USB: option: add ID for ZTE MF 330".  But I'm not sure this really
+is MF330, since the device ID says it's MF622.
 
-Anyway, the crux of the matter: when the driver for either piece of
-hardware tries to get the starting address of the very first BAR for the
-PCI device in question, the driver gets back a value of 0.  From what I can
-tell, the driver is able to read the correct starting addresses for the
-other BARs; it is *only* the FIRST one that it gets back 0 for.  One driver
-(mptbase + mptscsih + mptspi) appears not to check for this, tries to
-access that memory address, and this causes the kernel to throw out a
-"resource map sanity check conflict" before filling the screen up with what
-looks like a stack trace.  The other driver (BusLogic) apparently checks
-pci_dev.resource[0].flags for the device and if it's not the type of
-resource it is expecting to see for that particular BAR, it 'printk's its
-own error message and quits early.           
+Are we talking about the same device?
 
-Now, the thing is that the kernel DOES know the correct address: if I look
-at bus/pci/devices/blahblahblah/resource under sysfs, I see the right
-starting and ending addresses for all BARs, including the first. 
-Furthermore, all of the hardware works fine, too: if I build a complete
-kernel, boot the system off of that, and try to load the very same module
-binaries, they load up and initialize the hardware just fine.  But for some
-reason, these modules can't when paired with this other kernel.      
+Besides, why in linux it's identified as ZTE, while
+lsusb lists it as "ONDA Comm." ?
 
-A quick glance at pci-sysfs.c to see what it might be doing differently
-than the drivers did reveal that the PCI sysfs code is not using the
-pci_resource_start/end/flags macros, but is instead accessing the resource
-struct directly and then calling pci_resource_to_user to get the values
-(and on the x86 arch., that inline function doesn't look like it is being
-overridden, so it seems to me that the result should be exactly the same). 
+Thanks,
 
-I admit that I am very much a novice at this stuff and am probably barking
-up the wrong tree.  My hunch is that there is probably some obscure kernel
-configuration/build option that is mismatched between the modules I'm
-building and the kernel I'm trying to pair them up with, and that if I just
-found the right switch to flip, it would work... I've tried flipping
-various PCI-related switches under "Bus options" in menuconfig, with
-absolutely no change.  (Actually, that's not true.  One time I swear I made
-a build where I tried limiting the PCI access mode to "BIOS", and
-pci_dev.resource[0].start actually had a non-zero value, but it wasn't the
-right one: it matched the address for pci_dev.resource[1].start!  But I
-can't reproduce that again.  Bizarre.  Maybe the kernel is using a
-different definition for either 'struct pci_dev' or 'struct resource' than
-the modules are, and it just happened to hit the "right" area of memory
-That time where the value for the second BAR starting address was stored?)      
-
-I'll spare you guys any more rambling, though, and end it here.  If anyone
-who is intimately familiar with the Linux PCI code has any idea what I
-might be able to do to get this to work, you would have my undying
-gratitide.   
-
-Thanks so much for reading,
-
--- 
-Nathan Anderson
-First Step Internet, LLC
-nathana@fsr.com
+/mjt
