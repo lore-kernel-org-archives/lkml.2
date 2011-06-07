@@ -1,290 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932136Ab1FGSBD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:01:03 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60751 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab1FGSBB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:01:01 -0400
-Date: Tue, 7 Jun 2011 13:59:56 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org, JBeulich@novell.com,
-        kurt.hackel@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
-        riel@redhat.com, hannes@cmpxchg.org, matthew@wil.cx,
-        chris.mason@oracle.com
-Subject: Re: [PATCH V4 3/4] mm: frontswap: add hooks in swap subsystem and
- extend
-Message-ID: <20110607175956.GB32207@dumpdata.com>
-References: <20110527194905.GA27185@ca-server1.us.oracle.com>
+	id S1757490Ab1FGSBu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:01:50 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:55219 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754070Ab1FGSBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 14:01:49 -0400
+Date: Tue, 7 Jun 2011 20:01:41 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] scheduler fixes
+Message-ID: <20110607180141.GA27156@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110527194905.GA27185@ca-server1.us.oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090208.4DEE6731.01D2:SCFSTAT5015188,ss=1,fgs=0
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 12:49:05PM -0700, Dan Magenheimer wrote:
-> [PATCH V4 3/4] mm: frontswap: add hooks in swap subsystem and extend
-> try_to_unuse so that frontswap_shrink can do a "partial swapoff"
-> 
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> 
-> Diffstat:
->  page_io.c                                |   12 ++++
->  swapfile.c                               |   58 +++++++++++++++++----
->  2 files changed, 61 insertions(+), 9 deletions(-)
-> 
-> --- linux-2.6.39/mm/swapfile.c	2011-05-18 22:06:34.000000000 -0600
-> +++ linux-2.6.39-frontswap/mm/swapfile.c	2011-05-26 15:48:09.665832190 -0600
-> @@ -31,6 +31,8 @@
->  #include <linux/syscalls.h>
->  #include <linux/memcontrol.h>
->  #include <linux/poll.h>
-> +#include <linux/frontswap.h>
-> +#include <linux/swapfile.h>
->  
->  #include <asm/pgtable.h>
->  #include <asm/tlbflush.h>
-> @@ -42,7 +44,7 @@ static bool swap_count_continued(struct 
->  static void free_swap_count_continuations(struct swap_info_struct *);
->  static sector_t map_swap_entry(swp_entry_t, struct block_device**);
->  
-> -static DEFINE_SPINLOCK(swap_lock);
-> +DEFINE_SPINLOCK(swap_lock);
->  static unsigned int nr_swapfiles;
->  long nr_swap_pages;
->  long total_swap_pages;
-> @@ -53,9 +55,9 @@ static const char Unused_file[] = "Unuse
->  static const char Bad_offset[] = "Bad swap offset entry ";
->  static const char Unused_offset[] = "Unused swap offset entry ";
->  
-> -static struct swap_list_t swap_list = {-1, -1};
-> +struct swap_list_t swap_list = {-1, -1};
->  
-> -static struct swap_info_struct *swap_info[MAX_SWAPFILES];
-> +struct swap_info_struct *swap_info[MAX_SWAPFILES];
->  
->  static DEFINE_MUTEX(swapon_mutex);
->  
-> @@ -556,6 +558,7 @@ static unsigned char swap_entry_free(str
->  			swap_list.next = p->type;
->  		nr_swap_pages++;
->  		p->inuse_pages--;
-> +		frontswap_flush_page(p->type, offset);
->  		if ((p->flags & SWP_BLKDEV) &&
->  				disk->fops->swap_slot_free_notify)
->  			disk->fops->swap_slot_free_notify(p->bdev, offset);
-> @@ -1021,7 +1024,7 @@ static int unuse_mm(struct mm_struct *mm
->   * Recycle to start on reaching the end, returning 0 when empty.
->   */
->  static unsigned int find_next_to_unuse(struct swap_info_struct *si,
-> -					unsigned int prev)
-> +					unsigned int prev, bool frontswap)
->  {
->  	unsigned int max = si->max;
->  	unsigned int i = prev;
-> @@ -1047,6 +1050,12 @@ static unsigned int find_next_to_unuse(s
->  			prev = 0;
->  			i = 1;
->  		}
-> +		if (frontswap) {
-> +			if (frontswap_test(si, i))
-> +				break;
-> +			else
-> +				continue;
-> +		}
->  		count = si->swap_map[i];
->  		if (count && swap_count(count) != SWAP_MAP_BAD)
->  			break;
-> @@ -1058,8 +1067,12 @@ static unsigned int find_next_to_unuse(s
->   * We completely avoid races by reading each swap page in advance,
->   * and then search for the process using it.  All the necessary
->   * page table adjustments can then be made atomically.
-> + *
-> + * if the boolean frontswap is true, only unuse pages_to_unuse pages;
-> + * pages_to_unuse==0 means all pages
->   */
-> -static int try_to_unuse(unsigned int type)
-> +int try_to_unuse(unsigned int type, bool frontswap,
-> +		 unsigned long pages_to_unuse)
->  {
->  	struct swap_info_struct *si = swap_info[type];
->  	struct mm_struct *start_mm;
-> @@ -1092,7 +1105,7 @@ static int try_to_unuse(unsigned int typ
->  	 * one pass through swap_map is enough, but not necessarily:
->  	 * there are races when an instance of an entry might be missed.
->  	 */
-> -	while ((i = find_next_to_unuse(si, i)) != 0) {
-> +	while ((i = find_next_to_unuse(si, i, frontswap)) != 0) {
->  		if (signal_pending(current)) {
->  			retval = -EINTR;
->  			break;
-> @@ -1259,6 +1272,10 @@ static int try_to_unuse(unsigned int typ
->  		 * interactive performance.
->  		 */
->  		cond_resched();
-> +		if (frontswap && pages_to_unuse > 0) {
-> +			if (!--pages_to_unuse)
-> +				break;
-> +		}
->  	}
->  
->  	mmput(start_mm);
-> @@ -1528,6 +1545,7 @@ static void enable_swap_info(struct swap
->  	else
->  		p->prio = --least_priority;
->  	p->swap_map = swap_map;
-> +	p->frontswap_map = frontswap_map;
->  	p->flags |= SWP_WRITEOK;
->  	nr_swap_pages += p->pages;
->  	total_swap_pages += p->pages;
-> @@ -1544,6 +1562,7 @@ static void enable_swap_info(struct swap
->  		swap_list.head = swap_list.next = p->type;
->  	else
->  		swap_info[prev]->next = p->type;
-> +	frontswap_init(p->type);
->  	spin_unlock(&swap_lock);
->  }
->  
-> @@ -1614,7 +1633,7 @@ SYSCALL_DEFINE1(swapoff, const char __us
->  	spin_unlock(&swap_lock);
->  
->  	current->flags |= PF_OOM_ORIGIN;
-> -	err = try_to_unuse(type);
-> +	err = try_to_unuse(type, false, 0);
+Linus,
 
-You should add a comment right after 0 saying "/* everything */" or
-something like that.
+Please pull the latest sched-urgent-for-linus git tree from:
 
->  	current->flags &= ~PF_OOM_ORIGIN;
->  
->  	if (err) {
-> @@ -1651,9 +1670,12 @@ SYSCALL_DEFINE1(swapoff, const char __us
->  	swap_map = p->swap_map;
->  	p->swap_map = NULL;
->  	p->flags = 0;
-> +	frontswap_flush_area(type);
->  	spin_unlock(&swap_lock);
->  	mutex_unlock(&swapon_mutex);
->  	vfree(swap_map);
-> +	if (p->frontswap_map)
-> +		vfree(p->frontswap_map);
->  	/* Destroy swap account informatin */
->  	swap_cgroup_swapoff(type);
->  
-> @@ -2026,6 +2048,7 @@ SYSCALL_DEFINE2(swapon, const char __use
->  	sector_t span;
->  	unsigned long maxpages;
->  	unsigned char *swap_map = NULL;
-> +	unsigned long *frontswap_map = NULL;
->  	struct page *page = NULL;
->  	struct inode *inode = NULL;
->  
-> @@ -2106,6 +2129,12 @@ SYSCALL_DEFINE2(swapon, const char __use
->  		error = nr_extents;
->  		goto bad_swap;
->  	}
-> +	/* frontswap enabled? set up bit-per-page map for frontswap */
-> +	if (frontswap_enabled) {
-> +		frontswap_map = vmalloc(maxpages / sizeof(long));
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git sched-urgent-for-linus
 
-Shouldn't we use p->max instead? You are using that value in
-__frontswap_flush_area and while it seems that maxpages == p->max
-from uniformity standpoint it looks better.
-> +		if (frontswap_map)
-> +			memset(frontswap_map, 0, maxpages / sizeof(long));
+ Thanks,
 
-If we failed to allocate the frontswap_map should we turn frontswap_enabled off?
+	Ingo
 
-> +	}
->  
->  	if (p->bdev) {
->  		if (blk_queue_nonrot(bdev_get_queue(p->bdev))) {
-> @@ -2124,11 +2153,12 @@ SYSCALL_DEFINE2(swapon, const char __use
->  	enable_swap_info(p, prio, swap_map);
->  
->  	printk(KERN_INFO "Adding %uk swap on %s.  "
-> -			"Priority:%d extents:%d across:%lluk %s%s\n",
-> +			"Priority:%d extents:%d across:%lluk %s%s%s\n",
->  		p->pages<<(PAGE_SHIFT-10), name, p->prio,
->  		nr_extents, (unsigned long long)span<<(PAGE_SHIFT-10),
->  		(p->flags & SWP_SOLIDSTATE) ? "SS" : "",
-> -		(p->flags & SWP_DISCARDABLE) ? "D" : "");
-> +		(p->flags & SWP_DISCARDABLE) ? "D" : "",
-> +		(p->frontswap_map) ? "FS" : "");
->  
->  	mutex_unlock(&swapon_mutex);
->  	atomic_inc(&proc_poll_event);
-> @@ -2319,6 +2349,10 @@ int valid_swaphandles(swp_entry_t entry,
->  		base++;
->  
->  	spin_lock(&swap_lock);
-> +	if (frontswap_test(si, target)) {
-> +		spin_unlock(&swap_lock);
-> +		return 0;
-> +	}
->  	if (end > si->max)	/* don't go beyond end of map */
->  		end = si->max;
->  
-> @@ -2329,6 +2363,9 @@ int valid_swaphandles(swp_entry_t entry,
->  			break;
->  		if (swap_count(si->swap_map[toff]) == SWAP_MAP_BAD)
->  			break;
-> +		/* Don't read in frontswap pages */
-> +		if (frontswap_test(si, toff))
-> +			break;
->  	}
->  	/* Count contiguous allocated slots below our target */
->  	for (toff = target; --toff >= base; nr_pages++) {
-> @@ -2337,6 +2374,9 @@ int valid_swaphandles(swp_entry_t entry,
->  			break;
->  		if (swap_count(si->swap_map[toff]) == SWAP_MAP_BAD)
->  			break;
-> +		/* Don't read in frontswap pages */
-> +		if (frontswap_test(si, toff))
-> +			break;
->  	}
->  	spin_unlock(&swap_lock);
->  
-> --- linux-2.6.39/mm/page_io.c	2011-05-18 22:06:34.000000000 -0600
-> +++ linux-2.6.39-frontswap/mm/page_io.c	2011-05-26 15:37:25.272870914 -0600
-> @@ -18,6 +18,7 @@
->  #include <linux/bio.h>
->  #include <linux/swapops.h>
->  #include <linux/writeback.h>
-> +#include <linux/frontswap.h>
->  #include <asm/pgtable.h>
->  
->  static struct bio *get_swap_bio(gfp_t gfp_flags,
-> @@ -98,6 +99,12 @@ int swap_writepage(struct page *page, st
->  		unlock_page(page);
->  		goto out;
->  	}
-> +	if (frontswap_put_page(page) == 0) {
-> +		set_page_writeback(page);
-> +		unlock_page(page);
-> +		end_page_writeback(page);
-> +		goto out;
-> +	}
->  	bio = get_swap_bio(GFP_NOIO, page, end_swap_bio_write);
->  	if (bio == NULL) {
->  		set_page_dirty(page);
-> @@ -122,6 +129,11 @@ int swap_readpage(struct page *page)
->  
->  	VM_BUG_ON(!PageLocked(page));
->  	VM_BUG_ON(PageUptodate(page));
-> +	if (frontswap_get_page(page) == 0) {
-> +		SetPageUptodate(page);
-> +		unlock_page(page);
-> +		goto out;
-> +	}
->  	bio = get_swap_bio(GFP_KERNEL, page, end_swap_bio_read);
->  	if (bio == NULL) {
->  		unlock_page(page);
+------------------>
+Peter Zijlstra (4):
+      sched: Fix cross-cpu clock sync on remote wakeups
+      sched: Fix schedstat.nr_wakeups_migrate
+      lockdep: Fix lock_is_held() on recursion
+      sched: Fix/clarify set_task_cpu() locking rules
+
+
+ include/linux/sched.h |    1 +
+ kernel/lockdep.c      |    2 +-
+ kernel/sched.c        |   33 ++++++++++++++++++++++++---------
+ 3 files changed, 26 insertions(+), 10 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8da84b7..483c1ed 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1063,6 +1063,7 @@ struct sched_domain;
+  */
+ #define WF_SYNC		0x01		/* waker goes to sleep after wakup */
+ #define WF_FORK		0x02		/* child wakeup after fork */
++#define WF_MIGRATED	0x04		/* internal use, task got migrated */
+ 
+ #define ENQUEUE_WAKEUP		1
+ #define ENQUEUE_HEAD		2
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 63437d0..298c927 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -3426,7 +3426,7 @@ int lock_is_held(struct lockdep_map *lock)
+ 	int ret = 0;
+ 
+ 	if (unlikely(current->lockdep_recursion))
+-		return ret;
++		return 1; /* avoid false negative lockdep_assert_held() */
+ 
+ 	raw_local_irq_save(flags);
+ 	check_flags(flags);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index cbb3a0e..3f2e502 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -605,10 +605,10 @@ static inline int cpu_of(struct rq *rq)
+ /*
+  * Return the group to which this tasks belongs.
+  *
+- * We use task_subsys_state_check() and extend the RCU verification
+- * with lockdep_is_held(&p->pi_lock) because cpu_cgroup_attach()
+- * holds that lock for each task it moves into the cgroup. Therefore
+- * by holding that lock, we pin the task to the current cgroup.
++ * We use task_subsys_state_check() and extend the RCU verification with
++ * pi->lock and rq->lock because cpu_cgroup_attach() holds those locks for each
++ * task it moves into the cgroup. Therefore by holding either of those locks,
++ * we pin the task to the current cgroup.
+  */
+ static inline struct task_group *task_group(struct task_struct *p)
+ {
+@@ -616,7 +616,8 @@ static inline struct task_group *task_group(struct task_struct *p)
+ 	struct cgroup_subsys_state *css;
+ 
+ 	css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
+-			lockdep_is_held(&p->pi_lock));
++			lockdep_is_held(&p->pi_lock) ||
++			lockdep_is_held(&task_rq(p)->lock));
+ 	tg = container_of(css, struct task_group, css);
+ 
+ 	return autogroup_task_group(p, tg);
+@@ -2200,6 +2201,16 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+ 			!(task_thread_info(p)->preempt_count & PREEMPT_ACTIVE));
+ 
+ #ifdef CONFIG_LOCKDEP
++	/*
++	 * The caller should hold either p->pi_lock or rq->lock, when changing
++	 * a task's CPU. ->pi_lock for waking tasks, rq->lock for runnable tasks.
++	 *
++	 * sched_move_task() holds both and thus holding either pins the cgroup,
++	 * see set_task_rq().
++	 *
++	 * Furthermore, all task_rq users should acquire both locks, see
++	 * task_rq_lock().
++	 */
+ 	WARN_ON_ONCE(debug_locks && !(lockdep_is_held(&p->pi_lock) ||
+ 				      lockdep_is_held(&task_rq(p)->lock)));
+ #endif
+@@ -2447,6 +2458,10 @@ ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
+ 		}
+ 		rcu_read_unlock();
+ 	}
++
++	if (wake_flags & WF_MIGRATED)
++		schedstat_inc(p, se.statistics.nr_wakeups_migrate);
++
+ #endif /* CONFIG_SMP */
+ 
+ 	schedstat_inc(rq, ttwu_count);
+@@ -2455,9 +2470,6 @@ ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
+ 	if (wake_flags & WF_SYNC)
+ 		schedstat_inc(p, se.statistics.nr_wakeups_sync);
+ 
+-	if (cpu != task_cpu(p))
+-		schedstat_inc(p, se.statistics.nr_wakeups_migrate);
+-
+ #endif /* CONFIG_SCHEDSTATS */
+ }
+ 
+@@ -2600,6 +2612,7 @@ static void ttwu_queue(struct task_struct *p, int cpu)
+ 
+ #if defined(CONFIG_SMP)
+ 	if (sched_feat(TTWU_QUEUE) && cpu != smp_processor_id()) {
++		sched_clock_cpu(cpu); /* sync clocks x-cpu */
+ 		ttwu_queue_remote(p, cpu);
+ 		return;
+ 	}
+@@ -2674,8 +2687,10 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 		p->sched_class->task_waking(p);
+ 
+ 	cpu = select_task_rq(p, SD_BALANCE_WAKE, wake_flags);
+-	if (task_cpu(p) != cpu)
++	if (task_cpu(p) != cpu) {
++		wake_flags |= WF_MIGRATED;
+ 		set_task_cpu(p, cpu);
++	}
+ #endif /* CONFIG_SMP */
+ 
+ 	ttwu_queue(p, cpu);
