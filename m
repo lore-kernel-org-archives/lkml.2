@@ -1,210 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757166Ab1FGQDE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 12:03:04 -0400
-Received: from nm27-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.227]:34615
-	"HELO nm27-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753189Ab1FGQDD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 12:03:03 -0400
-X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jun 2011 12:03:03 EDT
-X-Yahoo-Newman-Id: 328926.74983.bm@omp1001.access.mail.mud.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: zwtb.24VM1kPrm9HlYWNcDf7MK6ZKX1wY8fmmds95hpU7u2
- aYnTevhLm5YGNn.0ub0zgjpgfPfGL8KLRrHsvIqB.FpetKMGIpLdj_oj6V7M
- wONHT1VZgz4ZIT5xCTrgr8hx.SR03bOjxsz4HKUPEEEq3sZnam1yevJGebpU
- 6Qr_JTL2jTPU3a5KQVgRKVMTRL2DW_XKqfnLjnD58Se76BBADNbKnusPq2qa
- 3TrGZ2mBjSWUzGtZ_VyfZQ_LeYrZyBwHqWVscA8QmZHi7ZF.xCeleOSzT.cr
- X2hn0hdXiTDYVDg6OvDNbadnUA2mupoiEnlc1TIt2wFnM3hFeDEfDqXos1s5
- lZsFFTphRfQ7Dos.d2cii8C7mCPqbmsvD1k9XJgZqFkrwWYdY1wN7aOy_.28
- 4oVXr4x.YrKwip3lHNbHDj5fQGDc214XCbCYteBbDQ44Cxck-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <4DEE4A39.9010003@schaufler-ca.com>
-Date: Tue, 07 Jun 2011 08:56:41 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1753242Ab1FGP5B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 11:57:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7129 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752495Ab1FGP47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 11:56:59 -0400
+Date: Tue, 7 Jun 2011 17:56:47 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: amir73il@users.sourceforge.net
+cc: linux-ext4@vger.kernel.org, tytso@mit.edu, lczerner@redhat.com,
+        linux-kernel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: [PATCH v1 00/30] Ext4 snapshots
+In-Reply-To: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net>
+Message-ID: <alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com>
+References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: Dave Chinner <david@fromorbit.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>,
-        Mimi Zohar <zohar@us.ibm.com>,
-        Sunil Mushran <sunil.mushran@oracle.com>,
-        Tiger Yang <tiger.yang@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        David Howells <dhowells@yahoo-wildcard.a05.yahoodns.net>
-Subject: Re: [PATCH v6 08/20] evm: evm_inode_post_init
-References: <1307017423-15093-1-git-send-email-zohar@linux.vnet.ibm.com>	 <1307017423-15093-9-git-send-email-zohar@linux.vnet.ibm.com>	 <20110603022100.GA561@dastard>	 <1307077592.3124.65.camel@localhost.localdomain>	 <20110604235058.GN32466@dastard> <1307241985.3189.71.camel@localhost.localdomain>
-In-Reply-To: <1307241985.3189.71.camel@localhost.localdomain>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sun, 2011-06-05 at 09:50 +1000, Dave Chinner wrote:
->> On Fri, Jun 03, 2011 at 01:06:32AM -0400, Mimi Zohar wrote:
->>> On Fri, 2011-06-03 at 12:21 +1000, Dave Chinner wrote:
->>>> On Thu, Jun 02, 2011 at 08:23:31AM -0400, Mimi Zohar wrote:
->>>>> Initialize 'security.evm' for new files. Reduce number of arguments
->>>>> by defining 'struct xattr'.
->>>> why does this need a new security callout from every filesystem?
->>>> Once the security xattr is initialised, the name, len and value is
->>>> not going to change so surely the evm xattr can be initialised at
->>>> the same time the lsm xattr is initialised.
->>> Steve Whitehouse asked a similar question, suggesting that
->>> security_inode_init_security() return a vector of xattrs to minimize the
->>> number of xattr writes.  Casey pointed out the "stacking" of LSMs will
->>> result in multiple calls to security_inode_init_security(), once for
->>> each LSM. The conclusion (http://lkml.org/lkml/2011/5/19/125) was:
->>>
->>> Moving evm_inode_init_security() into security_inode_init_security()
->>> only works for the single LSM and EVM case, but not for the multiple
->>> LSMs and EVM case, as the 'stacker' would call each LSM's
->>> security_inode_iint_security().  Having the 'stacker' return an array of
->>> xattrs would make sense and, at the same time, resolve the EVM issue. In
->>> evm_inode_post_init_security(), EVM could then walk the list of xattrs.
->> But that does not change the fact that ther eis a _single external
->> call_ from the filesystem to security_inode_init_security(), and the
->> attribute (array) that it returns is only read by
->> evm_inode_post_init_security() to calculate a new attribute.
->>
->> If evm_inode_post_init_security() only needs to read the security
->> attributes, then why does it need to be calculated _after_ the
->> security attributes are written to the filesystem inode?
->>
->> i.e, your current code is:
->>
->> 	security_inode_init_security(&lsm_xattr)
->> 	set_xattr(&lsm_xattr)
->> 	evm_inode_post_init_security(&lsm_xattr, &evm_xattr)
->> 	set_xattr(&evm_xattr)
->>
->> and I'm asking why you can't do it like this:
->>
->>
->> 	security_inode_init_security(&lsm_xattr, &evm_xattr)
->> 	set_xattr(&lsm_xattr)
->> 	set_xattr(&evm_xattr)
->>
->> where security_inode_init_security() calls:
->>
->> 	evm_inode_post_init_security(&lsm_xattr, &evm_xattr)
->>
->> before returning to calculate the evm xattr?
-> Steve was suggesting to optimize set_xattr(), by passing an array of
-> xattrs, but this would work in the single LSM case.
->
->> Indeed, if we are stacking LSMs, the iteration must occur internally
->> to security_inode_init_security(), and so that would mean the entire
->> stacking/multiple attr thing could be handled simply by passing an
->> array and having the EVM xattr always be the last in the array.
-> EVM would need access to the entire array of xattrs in order to
-> calculate the single security.evm value.
->
->> i.e.:
->>
->> XXXfs_init_security()
->> {
->> 	xattr_count = security_inode_init_security(&xattr_array)
->>
->> 	for (i = 0; i < xattr_count; i++)
->> 		set_xattr(&xattr_array[i])
->>
->> 	security_free_xattr(&xattr_array);
->> }
-> I might be missing something, but this doesn't look right.
-> security_inode_init_security() needs to be called for each LSM that
-> registers this hook.  Then after all the security_inode_init_security()
-> calls are made, for performance, a single call to set_xattr(), with the
-> array of xattrs, could be made.
+Hi Amir,
 
-This would require that the individual LSMs know if they are being
-"stacked". If the LSM is not part of a "stack" it needs to call
-set_xattr() where if it is part of a "stack" it mustn't. It's actually
-worse than that, because if an LSM has a mumble_inode_init_security()
-hook it might require a call to set_xattr(), but it might not if it
-does not use xattrs, and now the "stacker" needs to know about which
-LSMs have hooks that it cares about, as opposed to just which ones
-have hooks. I suggest that you will likely lose any performance gained
-within an individual LSM to the additional overhead of checking to
-see what environment it is in.
+thanks very much for the resend. I'll take a look at the whole patch
+series, but first I want to bring up one important thing.
 
-Conceptually, a "stacker" should be as dumb as possible, leaving all
-interactions with other subsystems to the underlying LSMs. Also, as
-others have pointed out on multiple occasions, if you've got "stacked"
-LSMs you are likely to have performance issues well in excess of
-what this particular optimization is going to address.
+While this being a huge feature for ext4 (regardless on how
+intrusive it is for the usual code paths) and while we already have
+patches in the list with people interesting in looking into them, you
+should clearly clarify what is the gain of it, what is the use case (and
+I know you have one), and why it is better than other approaches. You
+know, advertise it a bit in the marketing way :).
 
-> Could evm_inode_post_init_security() be called before the set_xattr()?
-> That would depend on the "stacker" implementation.  David? Casey?
+There is some confusion among developers on what actually are benefits
+of ext4 snapshots in comparison to btrfs, or in comparison to the new
+dm_multisnap code. I know that you have done quite a lot of testing to
+assure that it does not actually change old ext4 behavior when snapshot
+disabled, and that it works well when enabled, but have you done any
+performance related benchmarks ? Do you have any expectations on how it
+should behave in different work loads ?
 
-It also depends on the integrity implementation, which is NOT an LSM.
- 
+It would be great to see and be able to confirm that ext4 snapshots are
+really a win, not only on the feature side, but on the performance side
+as well. I know that there are people out there still undecided or
+having a strange feeling about your snapshot work. But who can blame
+them, when we have not seen any hard data on this matter ?
 
->> And then the filesystems need to know _nothing at all_ about the
->> internals of the security subsystem or how it uses xattrs or even
->> whether EVM is enabled or active or neither. This is far cleaner
->> than spewing security-flavour-of-the-month junk widely across the
->> tree...
-> Agreed, it would be a lot cleaner.
->
->> This also makes it possible for the filesystems to atomically set or
->> fail to set all the security attributes in one
->> operation/transaction, which will help guarantee the integrity of
->> the system in the face of externally induced failures.
->>
->>>> Then all you need to do in each filesystem is add the evm_xattr
->>>> structure to the existing security init call and a:
->>>>
->>>> #ifdef CONFIG_EVM
->>>> 	/* set evm.xattr */
->>>> #endif
->>>>
->>>> to avoid adding code that is never executed when EVM is not
->>>> configured into the kernel.
->>>>
->>>> That way you don't create the lsm_xattr at all if the evm_xattr is
->>>> not created, and then the file creation should fail in an atomic
->>>> manner, right?  i.e. you don't leave files with unverified security
->>>> attributes around when interesting failure corner cases occur (e.g.
->>>> ENOSPC).
->>> That would imply EVM must be enabled for all LSMs that define a security
->>> xattr.  That's definitely a good goal, but probably not a good idea for
->>> right now.
->>>
->>>> And while you are there, it's probably also be a good idea to add
->>>> support for all filesystems that support xattrs, not just a random
->>>> subset of them...
->>>>
->>>> Cheers,
->>>>
->>>> Dave.
->>> The EVM xattr is initialized based on the LSM xattr.  At this point, as
->>> far as I'm aware, the only remaining filesystems that call
->>> security_inode_init_security() to initialize the LSM xattr, are ocfs2
->>> and reiserfs.  Both of which might have memory leaks.  Tiger Yang is
->>> addressing the memory leak for ocfs2.
->> I don't follow you - I didn't see any patches that remove
->> security_inode_init_security() from any of the filesystems, so they
->> all still call that function....
->>
->> Cheers,
->>
->> Dave.
-> Sorry, it should have read the only remaining filesystems that call
-> security_inode_init_security() to initialize the LSM xattr, that don't
-> call evm_inode_post_init_security() afterwards, are ocfs2 and reiserfs.
->
-> The point being it's not "just a random subset of them ..."
->
-> thanks,
->
-> Mimi
->
->
+So I, for myself, and I believe there are others, would like to see some
+benchmark numbers and comparison (both, features and performance) with at
+least new dm-multisnap code and probably btrfs and plain ext4 as well.
 
+Thanks!
+-Lukas
+
+
+On Tue, 7 Jun 2011, amir73il@users.sourceforge.net wrote:
+
+> Hi All,
+> 
+> I am resending the snapshots patch series as per Lukas's request.
+> This time, the snapshot*.c files have not been omitted, as in
+> the previous posting.
+> 
+> The series is still based on ext4 dev branch sometime in the preparation
+> for 3.0 merge window. It was not yet rebased on 3.0-rc1, so punch holes
+> changes have not been addressed yet.
+> 
+> As always, I advocate online review of the patches at:
+> https://github.com/amir73il/ext4-snapshots/commits/for-ext4-v1
+> but if you insist on doing it the old way, I won't complain.
+> 
+> Thanks,
+> Amir.
+> 
+> [PATCH v1 01/36] ext4: EXT4 snapshots (Experimental)
+> [PATCH v1 02/36] ext4: snapshot debugging support
+> [PATCH v1 03/36] ext4: snapshot hooks - inside JBD hooks
+> [PATCH v1 04/36] ext4: snapshot hooks - block bitmap access
+> [PATCH v1 05/36] ext4: snapshot hooks - delete blocks
+> [PATCH v1 06/36] ext4: snapshot hooks - move data blocks
+> [PATCH v1 07/36] ext4: snapshot hooks - direct I/O
+> [PATCH v1 08/36] ext4: snapshot hooks - move extent file data blocks
+> [PATCH v1 09/36] ext4: snapshot file
+> [PATCH v1 10/36] ext4: snapshot file - read through to block device
+> [PATCH v1 11/36] ext4: snapshot file - permissions
+> [PATCH v1 12/36] ext4: snapshot file - store on disk
+> [PATCH v1 13/36] ext4: snapshot file - increase maximum file size limit to 16TB
+> [PATCH v1 14/36] ext4: snapshot block operations
+> [PATCH v1 15/36] ext4: snapshot block operation - copy blocks to snapshot
+> [PATCH v1 16/36] ext4: snapshot block operation - move blocks to snapshot
+> [PATCH v1 17/36] ext4: snapshot block operation - copy block bitmap to snapshot
+> [PATCH v1 18/36] ext4: snapshot control
+> [PATCH v1 19/36] ext4: snapshot control - init new snapshot
+> [PATCH v1 20/36] ext4: snapshot control - fix new snapshot
+> [PATCH v1 21/36] ext4: snapshot control - reserve disk space for snapshot
+> [PATCH v1 22/36] ext4: snapshot journaled - increase transaction credits
+> [PATCH v1 23/36] ext4: snapshot journaled - implement journal_release_buffer()
+> [PATCH v1 24/36] ext4: snapshot journaled - bypass to save credits
+> [PATCH v1 25/36] ext4: snapshot journaled - cache last COW tid in journal_head
+> [PATCH v1 26/36] ext4: snapshot journaled - trace COW/buffer credits
+> [PATCH v1 27/36] ext4: snapshot list support
+> [PATCH v1 28/36] ext4: snapshot list - read through to previous snapshot
+> [PATCH v1 29/36] ext4: snapshot race conditions - concurrent COW bitmap operations
+> [PATCH v1 30/36] ext4: snapshot race conditions - concurrent COW operations
+> [PATCH v1 31/36] ext4: snapshot race conditions - tracked reads
+> [PATCH v1 32/36] ext4: snapshot exclude - the exclude bitmap
+> [PATCH v1 33/36] ext4: snapshot cleanup
+> [PATCH v1 34/36] ext4: snapshot cleanup - shrink deleted snapshots
+> [PATCH v1 35/36] ext4: snapshot cleanup - merge shrunk snapshots
+> [PATCH v1 36/36] ext4: snapshot rocompat - enable rw mount
+> 
+>  fs/ext4/Kconfig           |   11 +
+>  fs/ext4/Makefile          |    3 +
+>  fs/ext4/balloc.c          |  132 +++
+>  fs/ext4/ext4.h            |  188 ++++-
+>  fs/ext4/ext4_jbd2.c       |  162 ++++-
+>  fs/ext4/ext4_jbd2.h       |  266 ++++++-
+>  fs/ext4/extents.c         |  157 ++++-
+>  fs/ext4/file.c            |   11 +-
+>  fs/ext4/ialloc.c          |   19 +-
+>  fs/ext4/inode.c           |  668 +++++++++++++--
+>  fs/ext4/ioctl.c           |  120 +++
+>  fs/ext4/mballoc.c         |  161 ++++-
+>  fs/ext4/move_extent.c     |    3 +-
+>  fs/ext4/namei.c           |    9 +
+>  fs/ext4/resize.c          |   19 +-
+>  fs/ext4/snapshot.c        | 1000 ++++++++++++++++++++++
+>  fs/ext4/snapshot.h        |  690 ++++++++++++++++
+>  fs/ext4/snapshot_buffer.c |  393 +++++++++
+>  fs/ext4/snapshot_ctl.c    | 2002 +++++++++++++++++++++++++++++++++++++++++++++
+>  fs/ext4/snapshot_debug.c  |  107 +++
+>  fs/ext4/snapshot_debug.h  |  105 +++
+>  fs/ext4/snapshot_inode.c  |  960 ++++++++++++++++++++++
+>  fs/ext4/super.c           |  157 ++++-
+>  fs/ext4/xattr.c           |    4 +-
+>  24 files changed, 7182 insertions(+), 165 deletions(-)
+> 
+> 
+
+-- 
