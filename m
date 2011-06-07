@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967Ab1FGSzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:55:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49210 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141Ab1FGSzp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:55:45 -0400
-From: Steffen Sledz <sledz@dresearch-fe.de>
-To: linux-usb@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Steffen Sledz <sledz@dresearch-fe.de>
-Subject: [PATCH] usb/serial: add another 4N-GALAXY.DE PID to ftdi_sio driver
-Date: Tue,  7 Jun 2011 14:01:56 +0200
-Message-Id: <1307448116-22606-1-git-send-email-sledz@dresearch-fe.de>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752851Ab1FGMDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:03:18 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52942 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751147Ab1FGMDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 08:03:17 -0400
+Date: Tue, 7 Jun 2011 12:02:29 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-f2513cde93f0957d5dc6c09bc24b0cccd27d8e1d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        lists@die-jansens.de, stable@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: lists@die-jansens.de, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, stable@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1307398759.2497.966.camel@laptop>
+References: <1307398759.2497.966.camel@laptop>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] lockdep: Fix lock_is_held() on recursion
+Git-Commit-ID: f2513cde93f0957d5dc6c09bc24b0cccd27d8e1d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Jun 2011 12:02:32 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-E.g. newer CAN 2.0 A/B <=> USB 2.0 converters report idProduct=f3c2.
+Commit-ID:  f2513cde93f0957d5dc6c09bc24b0cccd27d8e1d
+Gitweb:     http://git.kernel.org/tip/f2513cde93f0957d5dc6c09bc24b0cccd27d8e1d
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Mon, 6 Jun 2011 12:32:43 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 7 Jun 2011 12:25:50 +0200
 
-Signed-off-by: Steffen Sledz <sledz@dresearch-fe.de>
+lockdep: Fix lock_is_held() on recursion
+
+The main lock_is_held() user is lockdep_assert_held(), avoid false
+assertions in lockdep_off() sections by unconditionally reporting the
+lock is taken.
+
+[ the reason this is important is a lockdep_assert_held() in ttwu()
+  which triggers a warning under lockdep_off() as in printk() which
+  can trigger another wakeup and lock up due to spinlock
+  recursion, as reported and heroically debugged by Arne Jansen ]
+
+Reported-and-tested-by: Arne Jansen <lists@die-jansens.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/1307398759.2497.966.camel@laptop
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+ kernel/lockdep.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index e8dbde5..1627289 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -647,6 +647,7 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, EVER_ECO_PRO_CDS) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_1_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_2_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_3_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_0_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_1_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_2_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 1d946cd..ab1fcdf 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -351,6 +351,7 @@
-  */
- #define FTDI_4N_GALAXY_DE_1_PID	0xF3C0
- #define FTDI_4N_GALAXY_DE_2_PID	0xF3C1
-+#define FTDI_4N_GALAXY_DE_3_PID	0xF3C2
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 63437d0..298c927 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -3426,7 +3426,7 @@ int lock_is_held(struct lockdep_map *lock)
+ 	int ret = 0;
  
- /*
-  * Linx Technologies product ids
--- 
-1.7.5.4
-
+ 	if (unlikely(current->lockdep_recursion))
+-		return ret;
++		return 1; /* avoid false negative lockdep_assert_held() */
+ 
+ 	raw_local_irq_save(flags);
+ 	check_flags(flags);
