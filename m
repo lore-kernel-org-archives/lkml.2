@@ -1,79 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab1FGRIb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 13:08:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48597 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757264Ab1FGRI2 (ORCPT
+	id S1757257Ab1FGRII (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 13:08:08 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:55988 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755882Ab1FGRIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 13:08:28 -0400
-X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=jbiHSLWd0S0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=qrFUQHepZ-ABwXDrkuMA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20110607170827.629849682@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Tue, 07 Jun 2011 13:07:43 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Richard W.M. Jones" <rjones@redhat.com>
-Subject: [PATCH 3/3] ftrace: Revert 8ab2b7efd ftrace: Remove unnecessary disabling of
-References: <20110607170740.235441001@goodmis.org>
-Content-Disposition: inline; filename=0003-ftrace-Revert-8ab2b7efd-ftrace-Remove-unnecessary-di.patch
- irqs
+	Tue, 7 Jun 2011 13:08:06 -0400
+X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h8JiYXs/HrEl2yUn8V3w==
+X-RZG-CLASS-ID: mo05
+Message-ID: <4DEE5AEE.8070901@samba.org>
+Date: Tue, 07 Jun 2011 19:07:58 +0200
+From: "Stefan (metze) Metzmacher" <metze@samba.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: David Miller <davem@davemloft.net>, oliver@neukum.name,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usbnet/cdc_ncm: add missing .reset_resume hook
+References: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E568@EXDCVYMBSTM006.EQ1STM.local> <1306929701-22861-1-git-send-email-metze@samba.org> <1306929701-22861-2-git-send-email-metze@samba.org> <20110601.211142.557328157396419857.davem@davemloft.net> <4DECC6B4.5020108@samba.org> <20110606150655.GB3732@suse.de> <4DEDD564.7050308@samba.org> <20110607144348.GB19246@suse.de>
+In-Reply-To: <20110607144348.GB19246@suse.de>
+X-Enigmail-Version: 1.1.2
+OpenPGP: id=0E53083F
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig66E2683F29591A504CE31BA7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig66E2683F29591A504CE31BA7
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Revert the commit that removed the disabling of interrupts around
-the initial modifying of mcount callers to nops, and update the comment.
+Am 07.06.2011 16:43, schrieb Greg KH:
+> On Tue, Jun 07, 2011 at 09:38:12AM +0200, Stefan (metze) Metzmacher wro=
+te:
+>> Am 06.06.2011 17:06, schrieb Greg KH:
+>>> On Mon, Jun 06, 2011 at 02:23:16PM +0200, Stefan (metze) Metzmacher w=
+rote:
+>>>> Hi David,
+>>>>
+>>>>> From: Stefan Metzmacher <metze@samba.org>
+>>>>> Date: Wed,  1 Jun 2011 14:01:41 +0200
+>>>>>
+>>>>>> This avoids messages like this after suspend:
+>>>>>>
+>>>>>>    cdc_ncm 2-1.4:1.6: no reset_resume for driver cdc_ncm?
+>>>>>>    cdc_ncm 2-1.4:1.7: no reset_resume for driver cdc_ncm?
+>>>>>>    cdc_ncm 2-1.4:1.6: usb0: unregister 'cdc_ncm' usb-0000:00:1d.0-=
+1.4, CDC NCM
+>>>>>>
+>>>>>> This is important for the Ericsson F5521gw GSM/UMTS modem.
+>>>>>> Otherwise modemmanager looses the fact that the cdc_ncm and cdc_ac=
+m devices
+>>>>>> belong together.
+>>>>>>
+>>>>>> The cdc_ether module does the same.
+>>>>>>
+>>>>>> Signed-off-by: Stefan Metzmacher <metze@samba.org>
+>>>>>
+>>>>> Applied and queued up for -stable, thanks.
+>>>>
+>>>> It seems to be part of 3.0-rc2, but I'm not seeing it in any stable =
+tree
+>>>> yet...
+>>>>
+>>>> When can I expect it in stable trees like 2.6.38.y?
+>>>
+>>> The .38.y tree is closed and will not have new releases, so you will
+>>> never see it there, sorry.
+>>
+>> Ok, are there chances for .39.y?
+>=20
+> There are, it requires the patch to be in Linus's tree first,
 
-The original comment was outdated and stated that the interrupts were
-being disabled to prevent kstop machine, which was required with the
-old ftrace daemon, but was no longer the case.
+It's already there:
 
-What the comment failed to mention was that interrupts needed to be
-disabled to keep interrupts from preempting the modifying of the code
-and then executing the code that was partially modified.
+http://git.kernel.org/?p=3Dlinux/kernel/git/torvalds/linux-2.6.git;a=3Dco=
+mmitdiff;h=3D85e3c65fa3a1d0542c181510a950a2be7733ff29
 
-Revert the commint and update the comment.
+> please see Documentation/stable_kernel_rules.txt for the details.
 
-Reported-by: Richard W.M. Jones <rjones@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/ftrace.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Thanks for the pointer. It seems I've missed the Cc: <stable@kernel.org>
+line(s).
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 204b3eb..908038f 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3330,6 +3330,7 @@ static int ftrace_process_locs(struct module *mod,
- {
- 	unsigned long *p;
- 	unsigned long addr;
-+	unsigned long flags;
- 
- 	mutex_lock(&ftrace_lock);
- 	p = start;
-@@ -3346,7 +3347,13 @@ static int ftrace_process_locs(struct module *mod,
- 		ftrace_record_ip(addr);
- 	}
- 
-+	/*
-+	 * Disable interrupts to prevent interrupts from executing
-+	 * code that is being modified.
-+	 */
-+	local_irq_save(flags);
- 	ftrace_update_code(mod);
-+	local_irq_restore(flags);
- 	mutex_unlock(&ftrace_lock);
- 
- 	return 0;
--- 
-1.7.4.4
+Would this be the correct syntax in order to get it into 2.6.38.x and
+2.6.39.x?
+(2.6.38 wasn't closed at the time I submitted the patch)
+
+Cc: <stable@kernel.org> # .38.x
+Cc: <stable@kernel.org> # .39.x
+
+Should I resubmit the patch, or can you just cherry pick
+85e3c65fa3a1d0542c181510a950a2be7733ff29
+from Linus's tree?
+
+metze
 
 
+--------------enig66E2683F29591A504CE31BA7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk3uWu4ACgkQm70gjA5TCD/LHwCgqm3MlghKro9RVV83WwScvWmP
+XTsAninON6umtcUw8U9QiPLRuJ6/x67M
+=NvDw
+-----END PGP SIGNATURE-----
+
+--------------enig66E2683F29591A504CE31BA7--
