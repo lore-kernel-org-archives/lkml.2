@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab1FGM2S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:28:18 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43015 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753034Ab1FGM2Q (ORCPT
+	id S1753417Ab1FGMj3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:39:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42171 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221Ab1FGMj1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:28:16 -0400
-MIME-Version: 1.0
-X-Originating-IP: [109.186.65.238]
-In-Reply-To: <201106071340.15199.laurent.pinchart@ideasonboard.com>
-References: <1307053663-24572-1-git-send-email-ohad@wizery.com>
- <201106071122.47804.laurent.pinchart@ideasonboard.com> <BANLkTineGVvmph=Om2FGR_+mkiMW6k7UAw@mail.gmail.com>
- <201106071340.15199.laurent.pinchart@ideasonboard.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 7 Jun 2011 15:27:55 +0300
-Message-ID: <BANLkTikGvCDhOev02=n3H1pQvF69fn1uuw@mail.gmail.com>
-Subject: Re: [RFC 1/6] omap: iommu: generic iommu api migration
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Hiroshi.DOYU@nokia.com, arnd@arndb.de, davidb@codeaurora.org,
-        Joerg.Roedel@amd.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Jun 2011 08:39:27 -0400
+Subject: Re: [tip:sched/urgent] lockdep: Fix lock_is_held() on recursion
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: lists@die-jansens.de, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        stable@kernel.org, tglx@linutronix.de, mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-f2513cde93f0957d5dc6c09bc24b0cccd27d8e1d@git.kernel.org>
+References: <1307398759.2497.966.camel@laptop>
+	 <tip-f2513cde93f0957d5dc6c09bc24b0cccd27d8e1d@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 07 Jun 2011 14:39:03 +0200
+Message-ID: <1307450343.2322.250.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 7, 2011 at 2:40 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> My point is that if the allocator guarantees the alignment (not as a side
-> effect of the implementation, but per its API) there's no need to check it
-> again. As the alignement is required, we need an allocator that guarantees it
-> anyway.
+On Tue, 2011-06-07 at 12:02 +0000, tip-bot for Peter Zijlstra wrote:
+> Commit-ID:  f2513cde93f0957d5dc6c09bc24b0cccd27d8e1d
+> Gitweb:     http://git.kernel.org/tip/f2513cde93f0957d5dc6c09bc24b0cccd27d8e1d
+> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> AuthorDate: Mon, 6 Jun 2011 12:32:43 +0200
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Tue, 7 Jun 2011 12:25:50 +0200
+> 
+> lockdep: Fix lock_is_held() on recursion
+> 
+> The main lock_is_held() user is lockdep_assert_held(), avoid false
+> assertions in lockdep_off() sections by unconditionally reporting the
+> lock is taken.
+> 
+> [ the reason this is important is a lockdep_assert_held() in ttwu()
+>   which triggers a warning under lockdep_off() as in printk() which
+>   can trigger another wakeup and lock up due to spinlock
+>   recursion, as reported and heroically debugged by Arne Jansen ]
+> 
+> Reported-and-tested-by: Arne Jansen <lists@die-jansens.de>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: <stable@kernel.org>
 
-I understand, but I'd still prefer to have an explicit check that the
-hardware alignment requirement is met.
+Not _that_ critical for stable since the offending lockdep_assert_held()
+doesn't exist in .39, still definitely won't hurt.
 
-There's no cost in doing that (it's a cold path), and even if it would
-only fail once and with an extremely broken kernel - it's worth it.
-Will save huge amount of debugging pain (think of the poor guy that
-will have to debug this...).
-
-Thanks,
-Ohad.
