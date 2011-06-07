@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab1FGW7o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 18:59:44 -0400
-Received: from mta31.charter.net ([216.33.127.82]:47577 "EHLO
-	mta31.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab1FGW7n (ORCPT
+	id S932631Ab1FGXDV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 19:03:21 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56682 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753982Ab1FGXDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 18:59:43 -0400
-X-Authority-Analysis: v=1.1 cv=vT9vkN3vVXssH3Ov7r/wQUs/sfIFjNPEFFf4aeKIi4A=
- c=1 sm=1 a=p9YancsnzTcA:10 a=N2sXiA72-zoA:10 a=IkcTkHD0fZMA:10
- a=xzrYXqw+0zwiO4gHSXHcAg==:17 a=iZxAJj__Qu_uhmRvLdQA:9 a=QEXdDO2ut3YA:10
- a=xzrYXqw+0zwiO4gHSXHcAg==:117
-Message-ID: <4DEEAD5D.2090406@cuw.edu>
-Date: Tue, 07 Jun 2011 17:59:41 -0500
-From: Greg Dietsche <gregory.dietsche@cuw.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110505 Icedove/3.0.11
-MIME-Version: 1.0
-To: Nicolas Palix <Nicolas.Palix@inria.fr>
-CC: Julia Lawall <julia@diku.dk>, Gilles.Muller@lip6.fr, cocci@diku.dk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] coccinelle: if(ret)return ret; return ret; semantic patch
-References: <1307320012-31292-1-git-send-email-Gregory.Dietsche@cuw.edu>	<Pine.LNX.4.64.1106060651320.7113@ask.diku.dk>	<4DEE482D.7020505@cuw.edu>	<Pine.LNX.4.64.1106071855540.4074@ask.diku.dk> <BANLkTimMvG332_c4TUPefOJDDE8obowVdQ@mail.gmail.com>
-In-Reply-To: <BANLkTimMvG332_c4TUPefOJDDE8obowVdQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 7 Jun 2011 19:03:19 -0400
+Date: Tue, 7 Jun 2011 16:02:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/15] writeback: introduce .tagged_writepages for the
+ WB_SYNC_NONE sync stage
+Message-Id: <20110607160234.53de9f93.akpm@linux-foundation.org>
+In-Reply-To: <20110607213853.513366237@intel.com>
+References: <20110607213236.634026193@intel.com>
+	<20110607213853.513366237@intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2011 04:54 PM, Nicolas Palix wrote:
-> I remember me having worked on that but I cannot find any patch
-> about it so your patch is more that welcome. Some users have requested it
-> some months ago.
->
-> As far as I can remember, with "M=" you can not use $srctree only but still
-> need it for the -I for instance. I think I then run into a situation where I
-> have an ambiguity about how to setup the flags for coccinelle, but I am sure
-> about the reason I dropped my patch. Maybe I don't know well enough the build
-> system and options...
->
-> So, don't hesitate to submit your patch.
->    
-I'll submit what I have done as a new thread / patch series. I've not 
-done much testing with it and am certainly not any kind of build system 
-expert, but it has worked well for me so far :) A few more people trying 
-it out / testing it would be a great idea.
-> Does it also update the Documentation/coccinelle.txt accordingly ?
->    
-It will :)
+On Wed, 08 Jun 2011 05:32:37 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-Greg
+> sync(2) is performed in two stages: the WB_SYNC_NONE sync and the
+> WB_SYNC_ALL sync. Identify the first stage with .tagged_writepages and
+> do livelock prevention for it, too.
+> 
+> Note that writeback_inodes_sb() is called by not only sync(), they are
+> treated the same because the other callers also need livelock prevention.
+> 
+> Impact:  It changes the order in which pages/inodes are synced to disk.
+> Now in the WB_SYNC_NONE stage, it won't proceed to write the next inode
+> until finished with the current inode.
 
+What problem is this patch actually fixing?  It sounds like there's
+some livelock scenario in the WB_SYNC_NONE phase.  otoh the final
+paragraph implies that the WB_SYNC_NONE phase is failing to write some
+pages under some situations.
+
+Suggest that the changelog be fleshed out to cover all of this.
