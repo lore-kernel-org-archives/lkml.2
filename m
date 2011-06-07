@@ -1,88 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab1FGNHZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 09:07:25 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48052 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239Ab1FGNHU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 09:07:20 -0400
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jonathan Corbet <corbet@lwn.net>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 07 Jun 2011 18:30:26 +0530
-Message-Id: <20110607130026.28590.37383.sendpatchset@localhost6.localdomain6>
-In-Reply-To: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v4 3.0-rc2-tip 11/22] 11: uprobes: get the breakpoint address.
+	id S1753722Ab1FGM61 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:58:27 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49618 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753688Ab1FGM60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 08:58:26 -0400
+Message-ID: <4DEE20EE.7060000@cn.fujitsu.com>
+Date: Tue, 07 Jun 2011 21:00:30 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 04/15] KVM: MMU: cache mmio info on page fault path
+References: <4DEE205E.8000601@cn.fujitsu.com>
+In-Reply-To: <4DEE205E.8000601@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-07 20:58:13,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-07 20:58:13,
+	Serialize complete at 2011-06-07 20:58:13
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If the page fault is caused by mmio, we can cache the mmio info, later, we do
+not need to walk guest page table and quickly know it is a mmio fault while we
+emulate the mmio instruction
 
-On a breakpoint hit, return the address where the breakpoint was hit.
-
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- include/linux/uprobes.h |    5 +++++
- kernel/uprobes.c        |   11 +++++++++++
- 2 files changed, 16 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    5 +++
+ arch/x86/kvm/mmu.c              |   21 +++++----------
+ arch/x86/kvm/mmu.h              |   23 +++++++++++++++++
+ arch/x86/kvm/paging_tmpl.h      |   21 ++++++++++-----
+ arch/x86/kvm/x86.c              |   52 ++++++++++++++++++++++++++++++--------
+ arch/x86/kvm/x86.h              |   36 +++++++++++++++++++++++++++
+ 6 files changed, 126 insertions(+), 32 deletions(-)
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 4590e9a..838fbaa 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -161,6 +161,7 @@ struct vm_area_struct;
- extern int mmap_uprobe(struct vm_area_struct *vma);
- extern void dup_mmap_uprobe(struct mm_struct *old_mm, struct mm_struct *mm);
- extern void free_uprobes_xol_area(struct mm_struct *mm);
-+extern unsigned long __weak get_uprobe_bkpt_addr(struct pt_regs *regs);
- #else /* CONFIG_UPROBES is not defined */
- static inline int register_uprobe(struct inode *inode, loff_t offset,
- 				struct uprobe_consumer *consumer)
-@@ -181,5 +182,9 @@ static inline int mmap_uprobe(struct vm_area_struct *vma)
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index d167039..326af42 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -414,6 +414,11 @@ struct kvm_vcpu_arch {
+ 	u64 mcg_ctl;
+ 	u64 *mce_banks;
+ 
++	/* Cache MMIO info */
++	u64 mmio_gva;
++	unsigned access;
++	gfn_t mmio_gfn;
++
+ 	/* used for guest single stepping over the given code position */
+ 	unsigned long singlestep_rip;
+ 
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 125f78d..415030e 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -217,11 +217,6 @@ void kvm_mmu_set_mask_ptes(u64 user_mask, u64 accessed_mask,
  }
- static inline void free_uprobe_utask(struct task_struct *tsk) {}
- static inline void free_uprobes_xol_area(struct mm_struct *mm) {}
-+static inline unsigned long get_uprobe_bkpt_addr(struct pt_regs *regs)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_UPROBES */
- #endif	/* _LINUX_UPROBES_H */
-diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index d19c3b0..fa9e9ba 100644
---- a/kernel/uprobes.c
-+++ b/kernel/uprobes.c
-@@ -1263,6 +1263,17 @@ static void xol_free_insn_slot(struct task_struct *tsk)
- 						__func__, slot_addr);
+ EXPORT_SYMBOL_GPL(kvm_mmu_set_mask_ptes);
+ 
+-static bool is_write_protection(struct kvm_vcpu *vcpu)
+-{
+-	return kvm_read_cr0_bits(vcpu, X86_CR0_WP);
+-}
+-
+ static int is_cpuid_PSE36(void)
+ {
+ 	return 1;
+@@ -243,11 +238,6 @@ static int is_large_pte(u64 pte)
+ 	return pte & PT_PAGE_SIZE_MASK;
  }
  
-+/**
-+ * get_uprobe_bkpt_addr - compute address of bkpt given post-bkpt regs
-+ * @regs: Reflects the saved state of the task after it has hit a breakpoint
-+ * instruction.
-+ * Return the address of the breakpoint instruction.
-+ */
-+unsigned long __weak get_uprobe_bkpt_addr(struct pt_regs *regs)
+-static int is_writable_pte(unsigned long pte)
+-{
+-	return pte & PT_WRITABLE_MASK;
+-}
+-
+ static int is_dirty_gpte(unsigned long pte)
+ {
+ 	return pte & PT_DIRTY_MASK;
+@@ -2238,15 +2228,17 @@ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *
+ 	send_sig_info(SIGBUS, &info, tsk);
+ }
+ 
+-static int kvm_handle_bad_page(struct kvm *kvm, gfn_t gfn, pfn_t pfn)
++static int kvm_handle_bad_page(struct kvm_vcpu *vcpu, gva_t gva,
++			       unsigned access, gfn_t gfn, pfn_t pfn)
+ {
+ 	kvm_release_pfn_clean(pfn);
+ 	if (is_hwpoison_pfn(pfn)) {
+-		kvm_send_hwpoison_signal(gfn_to_hva(kvm, gfn), current);
++		kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
+ 		return 0;
+ 	} else if (is_fault_pfn(pfn))
+ 		return -EFAULT;
+ 
++	vcpu_cache_mmio_info(vcpu, gva, gfn, access);
+ 	return 1;
+ }
+ 
+@@ -2328,7 +2320,7 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn,
+ 
+ 	/* mmio */
+ 	if (is_error_pfn(pfn))
+-		return kvm_handle_bad_page(vcpu->kvm, gfn, pfn);
++		return kvm_handle_bad_page(vcpu, v, ACC_ALL, gfn, pfn);
+ 
+ 	spin_lock(&vcpu->kvm->mmu_lock);
+ 	if (mmu_notifier_retry(vcpu, mmu_seq))
+@@ -2555,6 +2547,7 @@ static void mmu_sync_roots(struct kvm_vcpu *vcpu)
+ 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
+ 		return;
+ 
++	vcpu_clear_mmio_info(vcpu, ~0ull);
+ 	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_SYNC);
+ 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
+ 		hpa_t root = vcpu->arch.mmu.root_hpa;
+@@ -2701,7 +2694,7 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+ 
+ 	/* mmio */
+ 	if (is_error_pfn(pfn))
+-		return kvm_handle_bad_page(vcpu->kvm, gfn, pfn);
++		return kvm_handle_bad_page(vcpu, 0, 0, gfn, pfn);
+ 	spin_lock(&vcpu->kvm->mmu_lock);
+ 	if (mmu_notifier_retry(vcpu, mmu_seq))
+ 		goto out_unlock;
+diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+index 7086ca8..05310b1 100644
+--- a/arch/x86/kvm/mmu.h
++++ b/arch/x86/kvm/mmu.h
+@@ -76,4 +76,27 @@ static inline int is_present_gpte(unsigned long pte)
+ 	return pte & PT_PRESENT_MASK;
+ }
+ 
++static inline int is_writable_pte(unsigned long pte)
 +{
-+	return instruction_pointer(regs) - UPROBES_BKPT_INSN_SIZE;
++	return pte & PT_WRITABLE_MASK;
 +}
 +
- /*
-  * Called with no locks held.
-  * Called in context of a exiting or a exec-ing thread.
++static inline bool is_write_protection(struct kvm_vcpu *vcpu)
++{
++	return kvm_read_cr0_bits(vcpu, X86_CR0_WP);
++}
++
++static inline bool check_write_user_access(struct kvm_vcpu *vcpu,
++					   bool write_fault, bool user_fault,
++					   unsigned long pte)
++{
++	if (unlikely(write_fault && !is_writable_pte(pte)
++	      && (user_fault || is_write_protection(vcpu))))
++		return false;
++
++	if (unlikely(user_fault && !(pte & PT_USER_MASK)))
++		return false;
++
++	return true;
++}
+ #endif
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 6c4dc01..b0c8184 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -201,11 +201,8 @@ walk:
+ 			break;
+ 		}
+ 
+-		if (unlikely(write_fault && !is_writable_pte(pte)
+-			     && (user_fault || is_write_protection(vcpu))))
+-			eperm = true;
+-
+-		if (unlikely(user_fault && !(pte & PT_USER_MASK)))
++		if (!check_write_user_access(vcpu, write_fault, user_fault,
++					  pte))
+ 			eperm = true;
+ 
+ #if PTTYPE == 64
+@@ -624,8 +621,16 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 		return 0;
+ 
+ 	/* mmio */
+-	if (is_error_pfn(pfn))
+-		return kvm_handle_bad_page(vcpu->kvm, walker.gfn, pfn);
++	if (is_error_pfn(pfn)) {
++		unsigned access = walker.pte_access;
++		bool dirty = is_dirty_gpte(walker.ptes[walker.level - 1]);
++
++		if (dirty)
++			access &= ~ACC_WRITE_MASK;
++
++		return kvm_handle_bad_page(vcpu, mmu_is_nested(vcpu) ? 0 :
++					   addr, access, walker.gfn, pfn);
++	}
+ 
+ 	spin_lock(&vcpu->kvm->mmu_lock);
+ 	if (mmu_notifier_retry(vcpu, mmu_seq))
+@@ -665,6 +670,8 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
+ 	u64 *sptep;
+ 	int need_flush = 0;
+ 
++	vcpu_clear_mmio_info(vcpu, gva);
++
+ 	spin_lock(&vcpu->kvm->mmu_lock);
+ 
+ 	for_each_shadow_entry(vcpu, gva, iterator) {
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 8be9ff6..a136181 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3903,6 +3903,38 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(kvm_write_guest_virt_system);
+ 
++static int vcpu_gva_to_gpa(struct kvm_vcpu *vcpu, unsigned long gva,
++			   gpa_t *gpa, struct x86_exception *exception,
++			   bool write)
++{
++	u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
++
++	if (vcpu_match_mmio_gva(vcpu, gva) &&
++	      check_write_user_access(vcpu, write, access,
++	      vcpu->arch.access)) {
++		*gpa = vcpu->arch.mmio_gfn << PAGE_SHIFT |
++					(gva & (PAGE_SIZE - 1));
++		return 1;
++	}
++
++	if (write)
++		access |= PFERR_WRITE_MASK;
++
++	*gpa = vcpu->arch.walk_mmu->gva_to_gpa(vcpu, gva, access, exception);
++
++	if (*gpa == UNMAPPED_GVA)
++		return -1;
++
++	/* For APIC access vmexit */
++	if ((*gpa & PAGE_MASK) == APIC_DEFAULT_PHYS_BASE)
++		return 1;
++
++	if (vcpu_match_mmio_gpa(vcpu, *gpa))
++		return 1;
++
++	return 0;
++}
++
+ static int emulator_read_emulated(struct x86_emulate_ctxt *ctxt,
+ 				  unsigned long addr,
+ 				  void *val,
+@@ -3911,7 +3943,7 @@ static int emulator_read_emulated(struct x86_emulate_ctxt *ctxt,
+ {
+ 	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
+ 	gpa_t                 gpa;
+-	int handled;
++	int handled, ret;
+ 
+ 	if (vcpu->mmio_read_completed) {
+ 		memcpy(val, vcpu->mmio_data, bytes);
+@@ -3921,13 +3953,12 @@ static int emulator_read_emulated(struct x86_emulate_ctxt *ctxt,
+ 		return X86EMUL_CONTINUE;
+ 	}
+ 
+-	gpa = kvm_mmu_gva_to_gpa_read(vcpu, addr, exception);
++	ret = vcpu_gva_to_gpa(vcpu, addr, &gpa, exception, false);
+ 
+-	if (gpa == UNMAPPED_GVA)
++	if (ret < 0)
+ 		return X86EMUL_PROPAGATE_FAULT;
+ 
+-	/* For APIC access vmexit */
+-	if ((gpa & PAGE_MASK) == APIC_DEFAULT_PHYS_BASE)
++	if (ret)
+ 		goto mmio;
+ 
+ 	if (!kvm_read_guest(vcpu->kvm, gpa, val, bytes))
+@@ -3977,16 +4008,15 @@ static int emulator_write_emulated_onepage(unsigned long addr,
+ 					   struct x86_exception *exception,
+ 					   struct kvm_vcpu *vcpu)
+ {
+-	gpa_t                 gpa;
+-	int handled;
++	gpa_t gpa;
++	int handled, ret;
+ 
+-	gpa = kvm_mmu_gva_to_gpa_write(vcpu, addr, exception);
++	ret = vcpu_gva_to_gpa(vcpu, addr, &gpa, exception, true);
+ 
+-	if (gpa == UNMAPPED_GVA)
++	if (ret < 0)
+ 		return X86EMUL_PROPAGATE_FAULT;
+ 
+-	/* For APIC access vmexit */
+-	if ((gpa & PAGE_MASK) == APIC_DEFAULT_PHYS_BASE)
++	if (ret)
+ 		goto mmio;
+ 
+ 	if (emulator_write_phys(vcpu, gpa, val, bytes))
+diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
+index 256da82..d36fe23 100644
+--- a/arch/x86/kvm/x86.h
++++ b/arch/x86/kvm/x86.h
+@@ -75,6 +75,42 @@ static inline u32 bit(int bitno)
+ 	return 1 << (bitno & 31);
+ }
+ 
++static inline void vcpu_cache_mmio_info(struct kvm_vcpu *vcpu,
++					gva_t gva, gfn_t gfn, unsigned access)
++{
++	vcpu->arch.mmio_gva = gva & PAGE_MASK;
++	vcpu->arch.access = access;
++	vcpu->arch.mmio_gfn = gfn;
++}
++
++/*
++ * Clear the mmio cache info for the given gva,
++ * specially, if gva is ~0ul, we clear all mmio cache info.
++ */
++static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
++{
++	if (gva != (~0ul) && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
++		return;
++
++	vcpu->arch.mmio_gva = 0;
++}
++
++static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
++{
++	if (vcpu->arch.mmio_gva && vcpu->arch.mmio_gva == (gva & PAGE_MASK))
++		return true;
++
++	return false;
++}
++
++static inline bool vcpu_match_mmio_gpa(struct kvm_vcpu *vcpu, gpa_t gpa)
++{
++	if (vcpu->arch.mmio_gfn && vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
++		return true;
++
++	return false;
++}
++
+ void kvm_before_handle_nmi(struct kvm_vcpu *vcpu);
+ void kvm_after_handle_nmi(struct kvm_vcpu *vcpu);
+ int kvm_inject_realmode_interrupt(struct kvm_vcpu *vcpu, int irq, int inc_eip);
+-- 
+1.7.4.4
+
