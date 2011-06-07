@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab1FGOjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 10:39:12 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:62519 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755910Ab1FGOjJ (ORCPT
+	id S1755966Ab1FGOjQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 10:39:16 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59363 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264Ab1FGOjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 10:39:09 -0400
+	Tue, 7 Jun 2011 10:39:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=UtvAfn2c3WBHRNeseWF0oy6n3LCtFoRWglO+o23Mmf6J5LWrs41lj2bHGfgDDHteY+
-         okkH8qJM2ej8Ik7txzx2C8K/ymYqUmdGpn34sFi3fSLOcEH8zGvuvHJX4bcPtAfgqUOY
-         BzkazfEKx1ijS0B9eGsE2dhwi7MjHXE019YKU=
+        b=vEbqWAduI7B7dmkNH85ARHt/bSNHHyzdIg649jQL2qLEExzudT9CHtN1HjusYyHPx7
+         s7m7hN5Qn1bYaHog8X3wXbzofoSPddE+b1ZFiZCantzXzmpr9u9+OzGVoUin1FkQftS6
+         qjh+xsF67LkAbr10PKqBG2hWYIAymDHotnmwo=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
@@ -21,9 +21,9 @@ Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH v3 04/10] compaction: make isolate_lru_page with filter aware
-Date: Tue,  7 Jun 2011 23:38:17 +0900
-Message-Id: <10ad16e14fdbe47ac36f7e55ae72ed59ae73ed0c.1307455422.git.minchan.kim@gmail.com>
+Subject: [PATCH v3 05/10] vmscan: make isolate_lru_page with filter aware
+Date: Tue,  7 Jun 2011 23:38:18 +0900
+Message-Id: <f101a50f11ffac79eff441c58eafbb5eceac0b47.1307455422.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <cover.1307455422.git.minchan.kim@gmail.com>
 References: <cover.1307455422.git.minchan.kim@gmail.com>
@@ -33,54 +33,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In async mode, compaction doesn't migrate dirty or writeback pages.
-So, it's meaningless to pick the page and re-add it to lru list.
+In __zone_reclaim case, we don't want to shrink mapped page.
+Nonetheless, we have isolated mapped page and re-add it into
+LRU's head. It's unnecessary CPU overhead and makes LRU churning.
 
-Of course, when we isolate the page in compaction, the page might
-be dirty or writeback but when we try to migrate the page, the page
-would be not dirty, writeback. So it could be migrated. But it's
-very unlikely as isolate and migration cycle is much faster than
-writeout.
+Of course, when we isolate the page, the page might be mapped but
+when we try to migrate the page, the page would be not mapped.
+So it could be migrated. But race is rare and although it happens,
+it's no big deal.
 
-So, this patch helps cpu and prevent unnecessary LRU churning.
-
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 ---
- mm/compaction.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ mm/vmscan.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index f0d75e9..8079346 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -243,6 +243,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 	unsigned long last_pageblock_nr = 0, pageblock_nr;
- 	unsigned long nr_scanned = 0, nr_isolated = 0;
- 	struct list_head *migratelist = &cc->migratepages;
-+	enum ISOLATE_MODE mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 26aa627..c08911d 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1408,6 +1408,12 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+ 		reclaim_mode |= ISOLATE_ACTIVE;
  
- 	/* Do not scan outside zone boundaries */
- 	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
-@@ -326,9 +327,11 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 			continue;
- 		}
+ 	lru_add_drain();
++
++	if (!sc->may_unmap)
++		reclaim_mode |= ISOLATE_UNMAPPED;
++	if (!sc->may_writepage)
++		reclaim_mode |= ISOLATE_CLEAN;
++
+ 	spin_lock_irq(&zone->lru_lock);
  
-+		if (!cc->sync)
-+			mode |= ISOLATE_CLEAN;
-+ 
- 		/* Try isolate the page */
--		if (__isolate_lru_page(page,
--				ISOLATE_ACTIVE|ISOLATE_INACTIVE, 0) != 0)
-+		if (__isolate_lru_page(page, mode, 0) != 0)
- 			continue;
+ 	if (scanning_global_lru(sc)) {
+@@ -1525,19 +1531,26 @@ static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
+ 	struct page *page;
+ 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+ 	unsigned long nr_rotated = 0;
++	enum ISOLATE_MODE reclaim_mode = ISOLATE_ACTIVE;
  
- 		VM_BUG_ON(PageTransCompound(page));
+ 	lru_add_drain();
++
++	if (!sc->may_unmap)
++		reclaim_mode |= ISOLATE_UNMAPPED;
++	if (!sc->may_writepage)
++		reclaim_mode |= ISOLATE_CLEAN;
++
+ 	spin_lock_irq(&zone->lru_lock);
+ 	if (scanning_global_lru(sc)) {
+ 		nr_taken = isolate_pages_global(nr_pages, &l_hold,
+ 						&pgscanned, sc->order,
+-						ISOLATE_ACTIVE, zone,
++						reclaim_mode, zone,
+ 						1, file);
+ 		zone->pages_scanned += pgscanned;
+ 	} else {
+ 		nr_taken = mem_cgroup_isolate_pages(nr_pages, &l_hold,
+ 						&pgscanned, sc->order,
+-						ISOLATE_ACTIVE, zone,
++						reclaim_mode, zone,
+ 						sc->mem_cgroup, 1, file);
+ 		/*
+ 		 * mem_cgroup_isolate_pages() keeps track of
 -- 
 1.7.0.4
 
