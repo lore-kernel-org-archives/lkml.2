@@ -1,118 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab1FGRII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 13:08:08 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:55988 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755882Ab1FGRIG (ORCPT
+	id S1755281Ab1FGRJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 13:09:55 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:56361 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab1FGRJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 13:08:06 -0400
-X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h8JiYXs/HrEl2yUn8V3w==
-X-RZG-CLASS-ID: mo05
-Message-ID: <4DEE5AEE.8070901@samba.org>
-Date: Tue, 07 Jun 2011 19:07:58 +0200
-From: "Stefan (metze) Metzmacher" <metze@samba.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Tue, 7 Jun 2011 13:09:53 -0400
+Message-ID: <4DEE5B5F.6030606@candelatech.com>
+Date: Tue, 07 Jun 2011 10:09:51 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: David Miller <davem@davemloft.net>, oliver@neukum.name,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usbnet/cdc_ncm: add missing .reset_resume hook
-References: <2AC7D4AD8BA1C640B4C60C61C8E520153E3C07E568@EXDCVYMBSTM006.EQ1STM.local> <1306929701-22861-1-git-send-email-metze@samba.org> <1306929701-22861-2-git-send-email-metze@samba.org> <20110601.211142.557328157396419857.davem@davemloft.net> <4DECC6B4.5020108@samba.org> <20110606150655.GB3732@suse.de> <4DEDD564.7050308@samba.org> <20110607144348.GB19246@suse.de>
-In-Reply-To: <20110607144348.GB19246@suse.de>
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=0E53083F
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig66E2683F29591A504CE31BA7"
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Keith Packard <keithp@keithp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: 3.0.0-rc2 fails to boot on Atom appliance (bisected, drm/i915)
+References: <4DED33DF.8000201@candelatech.com>	<4DED6221.1060806@candelatech.com>	<yunzkluzfw9.fsf@aiko.keithp.com>	<4DED69C6.1090301@candelatech.com> <20110606172402.72ddb29b@jbarnes-desktop> <4DEDA25C.5010405@candelatech.com>
+In-Reply-To: <4DEDA25C.5010405@candelatech.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig66E2683F29591A504CE31BA7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-Am 07.06.2011 16:43, schrieb Greg KH:
-> On Tue, Jun 07, 2011 at 09:38:12AM +0200, Stefan (metze) Metzmacher wro=
-te:
->> Am 06.06.2011 17:06, schrieb Greg KH:
->>> On Mon, Jun 06, 2011 at 02:23:16PM +0200, Stefan (metze) Metzmacher w=
-rote:
->>>> Hi David,
->>>>
->>>>> From: Stefan Metzmacher <metze@samba.org>
->>>>> Date: Wed,  1 Jun 2011 14:01:41 +0200
->>>>>
->>>>>> This avoids messages like this after suspend:
->>>>>>
->>>>>>    cdc_ncm 2-1.4:1.6: no reset_resume for driver cdc_ncm?
->>>>>>    cdc_ncm 2-1.4:1.7: no reset_resume for driver cdc_ncm?
->>>>>>    cdc_ncm 2-1.4:1.6: usb0: unregister 'cdc_ncm' usb-0000:00:1d.0-=
-1.4, CDC NCM
->>>>>>
->>>>>> This is important for the Ericsson F5521gw GSM/UMTS modem.
->>>>>> Otherwise modemmanager looses the fact that the cdc_ncm and cdc_ac=
-m devices
->>>>>> belong together.
->>>>>>
->>>>>> The cdc_ether module does the same.
->>>>>>
->>>>>> Signed-off-by: Stefan Metzmacher <metze@samba.org>
->>>>>
->>>>> Applied and queued up for -stable, thanks.
->>>>
->>>> It seems to be part of 3.0-rc2, but I'm not seeing it in any stable =
-tree
->>>> yet...
->>>>
->>>> When can I expect it in stable trees like 2.6.38.y?
->>>
->>> The .38.y tree is closed and will not have new releases, so you will
->>> never see it there, sorry.
+On 06/06/2011 09:00 PM, Ben Greear wrote:
+> On 06/06/2011 05:24 PM, Jesse Barnes wrote:
+>> On Mon, 06 Jun 2011 16:59:02 -0700
+>> Ben Greear<greearb@candelatech.com> wrote:
 >>
->> Ok, are there chances for .39.y?
->=20
-> There are, it requires the patch to be in Linus's tree first,
+>>> On 06/06/2011 04:41 PM, Keith Packard wrote:
+>>>> On Mon, 06 Jun 2011 16:26:25 -0700, Ben
+>>>> Greear<greearb@candelatech.com> wrote:
+>>>>> On 06/06/2011 01:09 PM, Ben Greear wrote:
+>>>>>> Anyone seen something like this? For what it's worth, it seems
+>>>>>> that -rc1 had the same problem. I'll start bisecting soon if
+>>>>>> the problem isn't already resolved somehow...
+>>>>>
+>>>>> I bisected this problem down to this commit:
+>>>>
+>>>> This should be fixed by this patch:
+>>>>
+>>>> -------------------- drivers/gpu/drm/i915/intel_display.c
+>>>> ---------------------
+>>>> index f553ddf..bb1b59b 100644
+>>>> @@ -7675,6 +7675,7 @@ static void intel_init_display(struct
+>>>> drm_device *dev)
+>>>> dev_priv->display.update_wm = NULL;
+>>>> } else
+>>>> dev_priv->display.update_wm = pineview_update_wm;
+>>>> + dev_priv->display.init_clock_gating = gen3_init_clock_gating;
+>>>> } else if (IS_G4X(dev)) {
+>>>> dev_priv->display.update_wm = g4x_update_wm;
+>>>> dev_priv->display.init_clock_gating = g4x_init_clock_gating;
+>>>>
+>>>> This hasn't been merged yet, but should be soon.
+>>>
+>>> I tried adding that, but the problem stays the same.
+>>>
+>>> Any other patches I should try?
+>>
+>> Are you sure you booted the right kernel and that it built& installed
+>> correctly?
+>
+> I double checked, but I tried to cheat a bit and just applied that patch on
+> top of -rc2 instead of on top of the patch that breaks things according to
+> bisect. Maybe there is more than one problem. I'll try tweaking that single
+> patch tomorrow.
+>
+> And, I built and booted twice to make sure I didn't screw up..but it had
+> been
+> a long day of bisecting, so maybe I still messed up some how.
 
-It's already there:
+Ok, building with just your fixup patch on top of the busted patch
+does let it boot.
 
-http://git.kernel.org/?p=3Dlinux/kernel/git/torvalds/linux-2.6.git;a=3Dco=
-mmitdiff;h=3D85e3c65fa3a1d0542c181510a950a2be7733ff29
+There must be some other failure that is causing -rc2 to fail.
 
-> please see Documentation/stable_kernel_rules.txt for the details.
+Think I'll wait for -rc3...
 
-Thanks for the pointer. It seems I've missed the Cc: <stable@kernel.org>
-line(s).
-
-Would this be the correct syntax in order to get it into 2.6.38.x and
-2.6.39.x?
-(2.6.38 wasn't closed at the time I submitted the patch)
-
-Cc: <stable@kernel.org> # .38.x
-Cc: <stable@kernel.org> # .39.x
-
-Should I resubmit the patch, or can you just cherry pick
-85e3c65fa3a1d0542c181510a950a2be7733ff29
-from Linus's tree?
-
-metze
+Thanks,
+Ben
 
 
---------------enig66E2683F29591A504CE31BA7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+>
+>>
+>> You could add an:
+>> if (dev_priv->display.init_clock_gating)
+>> above the call to display.init_clock_gating in intel_init_clock_gating
+>> to be sure it's the same problem...
+>
+> Ok, can try that too.
+>
+> Thanks,
+> Ben
+>
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-iEYEARECAAYFAk3uWu4ACgkQm70gjA5TCD/LHwCgqm3MlghKro9RVV83WwScvWmP
-XTsAninON6umtcUw8U9QiPLRuJ6/x67M
-=NvDw
------END PGP SIGNATURE-----
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
---------------enig66E2683F29591A504CE31BA7--
