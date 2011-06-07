@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab1FGSEL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:04:11 -0400
-Received: from brigitte.telenet-ops.be ([195.130.137.66]:56418 "EHLO
-	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab1FGSEJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:04:09 -0400
-Message-ID: <4DEE6815.7040504@pandora.be>
-Date: Tue, 07 Jun 2011 20:04:05 +0200
-From: Bart De Schuymer <bdschuym@pandora.be>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; nl; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1757563Ab1FGSEs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:04:48 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:33706 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755961Ab1FGSEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 14:04:45 -0400
+Date: Tue, 7 Jun 2011 20:04:27 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, sam@ravnborg.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/debug] debug: Make CONFIG_EXPERT select
+ CONFIG_DEBUG_KERNEL to unhide debug options
+Message-ID: <20110607180427.GA22523@elte.hu>
+References: <20110606165130.GA1844@leaf>
+ <tip-2458073da04571182748aa4289630dca52ba63cc@git.kernel.org>
+ <20110606214502.GB17026@somewhere.redhat.com>
+ <20110606220905.GB1999@leaf>
+ <20110607101851.GA21356@elte.hu>
+ <20110607153411.GA5175@leaf>
 MIME-Version: 1.0
-To: Brad Campbell <brad@fnarfbargle.com>
-CC: Patrick McHardy <kaber@trash.net>, kvm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
-References: <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com> <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com> <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com> <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com> <isavsg$3or$1@dough.gmane.org> <4DE906C0.6060901@fnarfbargle.com> <4DED344D.7000005@pandora.be> <4DED9C23.2030408@fnarfbargle.com> <4DEE27DE.7060004@trash.net> <4DEE3859.6070808@fnarfbargle.com>
-In-Reply-To: <4DEE3859.6070808@fnarfbargle.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Antivirus: avast! (VPS 110607-0, 07/06/2011), Outbound message
-X-Antivirus-Status: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607153411.GA5175@leaf>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 7/06/2011 16:40, Brad Campbell schreef:
-> On 07/06/11 21:30, Patrick McHardy wrote:
->> On 07.06.2011 05:33, Brad Campbell wrote:
->>> On 07/06/11 04:10, Bart De Schuymer wrote:
->>>> Hi Brad,
->>>>
->>>> This has probably nothing to do with ebtables, so please rmmod in case
->>>> it's loaded.
->>>> A few questions I didn't directly see an answer to in the threads I
->>>> scanned...
->>>> I'm assuming you actually use the bridging firewall functionality. So,
->>>> what iptables modules do you use? Can you reduce your iptables 
->>>> rules to
->>>> a core that triggers the bug?
->>>> Or does it get triggered even with an empty set of firewall rules?
->>>> Are you using a stock .35 kernel or is it patched?
->>>> Is this something I can trigger on a poor guy's laptop or does it
->>>> require specialized hardware (I'm catching up on qemu/kvm...)?
->>>
->>> Not specialised hardware as such, I've just not been able to reproduce
->>> it outside of this specific operating scenario.
->>
->> The last similar problem we've had was related to the 32/64 bit compat
->> code. Are you running 32 bit userspace on a 64 bit kernel?
->
-> No, 32 bit Guest OS, but a completely 64 bit userspace on a 64 bit 
-> kernel.
->
-> Userspace is current Debian Stable. Kernel is Vanilla and qemu-kvm is 
-> current git
->
-If the bug is easily triggered with your guest os, then you could try to 
-capture the traffic with wireshark (or something else) in a 
-configuration that doesn't crash your system. Save the traffic in a pcap 
-file. Then you can see if resending that traffic in the vulnerable 
-configuration triggers the bug (I don't know if something in Windows 
-exists, but tcpreplay should work for Linux). Once you have such a 
-capture , chances are the bug is even easily reproducible by us (unless 
-it's hardware-specific). Success isn't guaranteed, but I think it's 
-worth a shot...
 
-cheers,
-Bart
+* Josh Triplett <josh@joshtriplett.org> wrote:
 
+> On Tue, Jun 07, 2011 at 12:18:51PM +0200, Ingo Molnar wrote:
+> > 
+> > * Josh Triplett <josh@joshtriplett.org> wrote:
+> > 
+> > > On Mon, Jun 06, 2011 at 11:45:04PM +0200, Frederic Weisbecker wrote:
+> > > > On Mon, Jun 06, 2011 at 09:39:40PM +0000, tip-bot for Josh Triplett wrote:
+> > > > > Commit-ID:  2458073da04571182748aa4289630dca52ba63cc
+> > > > > Gitweb:     http://git.kernel.org/tip/2458073da04571182748aa4289630dca52ba63cc
+> > > > > Author:     Josh Triplett <josh@joshtriplett.org>
+> > > > > AuthorDate: Mon, 6 Jun 2011 09:51:30 -0700
+> > > > > Committer:  Ingo Molnar <mingo@elte.hu>
+> > > > > CommitDate: Mon, 6 Jun 2011 19:30:01 +0200
+> > > > > 
+> > > > > debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
+> > > > > 
+> > > > > Several debugging options currently default to y, such as
+> > > > > CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.
+> > > > > 
+> > > > > Embedded users might want to turn those options off to save space;
+> > > > > however, turning them off requires turning on CONFIG_DEBUG_KERNEL to
+> > > > > unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
+> > > > > unhide debugging options, and CONFIG_EXPERT exists specifically
+> > > > > to unhide options potentially needed by experts and/or embedded
+> > > > > users, make CONFIG_EXPERT automatically imply CONFIG_DEBUG_KERNEL.
+> > > > > 
+> > > > > Change various debugging options to only reference DEBUG_KERNEL,
+> > > > > not EXPERT.
+> > > > > 
+> > > > > Note that DEBUG_MEMORY_INIT defaulted to !EXPERT, which seemed
+> > > > > wrong, since EXPERT should not directly affect anything except
+> > > > > the availability of other options.  (And EXPERT definitely
+> > > > > shouldn't mean "implicitly turn off default safety features".)
+> > > > > 
+> > > > > Change it to default to y, which means that turning on EXPERT
+> > > > > does not automatically disable it, but will provide the option
+> > > > > to disable it.
+> > > > > 
+> > > > > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> > > > > Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > 
+> > > > No, Nacked actually. I'm fine with the v2 that only changed
+> > > > the EXPERT config to imply DEBUG_KERNEL. But all the other
+> > > > changes here need to be revised, as I outlined in the thread.
+> > > 
+> > > Fixed in v4; please replace the patch in tip with that.
+> > 
+> > i applied the much simpler v2 twoliner version instead.
+> 
+> OK...
+> 
+> So, should I prepare a separate patch which changes the instances 
+> of DEBUG_KERNEL && EXPERT, or just leave them?
 
--- 
-Bart De Schuymer
-www.artinalgorithms.be
+Yeah, would be nice to send a separate patch for that - 'DEBUG_KERNEL 
+&& EXPERT' is equivalent to EXPERT now, right?
 
+Thanks,
+
+	Ingo
