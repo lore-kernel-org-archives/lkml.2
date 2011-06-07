@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751459Ab1FGKUE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 06:20:04 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:36750 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874Ab1FGKUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 06:20:03 -0400
-Date: Tue, 7 Jun 2011 12:19:48 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Paul Mundt <lethal@linux-sh.org>, Nick Piggin <npiggin@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH][GIT PULL] slob/lockdep: Fix gfp flags passed to lockdep
-Message-ID: <20110607101948.GB21356@elte.hu>
-References: <1307369665.31814.20.camel@gandalf.stny.rr.com>
- <alpine.DEB.2.00.1106062106580.22635@chino.kir.corp.google.com>
- <BANLkTikmp5CFKykBXaPUP0SBZEto1idDsA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTikmp5CFKykBXaPUP0SBZEto1idDsA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751819Ab1FGKUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 06:20:52 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:37782 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750990Ab1FGKUv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 06:20:51 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/2lrV7FLb20hdg3s1U2Sj8xdSfY78xNOo7re56y2
+	TZiHIxeSZ6/7yf
+Subject: Re: [PATCH] sched: remove redundant check in select_task_rq_fair
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+In-Reply-To: <1307441361.2322.239.camel@twins>
+References: <20110607094821.29969.50197.stgit@IBM-009124035060.in.ibm.com>
+	 <1307440414.2322.236.camel@twins>
+	 <m3hb82aren.fsf@IBM-009124035060.in.ibm.com>
+	 <1307441361.2322.239.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Jun 2011 12:20:43 +0200
+Message-ID: <1307442043.3625.6.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Pekka Enberg <penberg@kernel.org> wrote:
-
-> On Tue, Jun 7, 2011 at 7:09 AM, David Rientjes <rientjes@google.com> wrote:
-> >> Please pull the latest tip/lockdep/devel tree, which can be found at:
-> >>
-> >>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> >> tip/lockdep/devel
-> >>
-> >>
-> >> Steven Rostedt (1):
-> >>       slob/lockdep: Fix gfp flags passed to lockdep
-> >
-> > Shouldn't this be going into Pekka's slab tree?
+On Tue, 2011-06-07 at 12:09 +0200, Peter Zijlstra wrote:
+> On Tue, 2011-06-07 at 15:34 +0530, Nikunj A. Dadhania wrote:
+> > On Tue, 07 Jun 2011 11:53:34 +0200, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > On Tue, 2011-06-07 at 15:18 +0530, Nikunj A. Dadhania wrote:
+> > > > When balancing for wakeup affinity, a redundant check can removed.
+> > > 
+> > > Yes, tempting, but no, now you've got an extra call to wake_affine(),
+> > > which is more expensive.
 > 
-> That's what I'd expect, sure. :-)
+> > Ah, got that. How about this, it is more readable. Other options would
+> > be to add a comment.
 > 
-> However, I'm not pulling from a "tip/lockdep/devel" branch to slab.git
-> so Steven needs to send this to me in patch format or Ingo picks it up
-> in which case consider the patch:
+> > -		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
+> > +		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
+> >  			prev_cpu = cpu;
 > 
-> Acked-by: Pekka Enberg <penberg@kernel.org>
+> I guess that depends on which way your head is wired and how strong your
+> boolean algebra is.. Suresh, Mike any preference? I don't much care
+> either way.
 
-Unless there are some dependencies i missed i think it would be 
-better if you pulled this, hm?
+Me either.
 
-Thanks,
+	-Mike
 
-	Ingo
+
