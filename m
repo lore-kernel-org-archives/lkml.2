@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab1FGMWs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:22:48 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:56085 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048Ab1FGMWr (ORCPT
+	id S1753205Ab1FGMZh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:25:37 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:57685
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753053Ab1FGMZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:22:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=uqIvK9+nZpiqd2d0aKzoqWjqIzQG1EtAHowez0byjnr3f2SXBQdr/RjjPcRhuWMD1i
-         1h0CgoB4ZnoopEvZrf8aTnaLfPOI57GKs33wUo/ALt26qJzgeu6ixJ3gNxoHAsnf9LL9
-         JyiOLQ8Wb9ZdXFm+PLeExg4wKiH8AIEk9ZtJk=
-Date: Tue, 7 Jun 2011 20:22:33 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+	Tue, 7 Jun 2011 08:25:36 -0400
+Date: Tue, 7 Jun 2011 08:25:19 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <menage@google.com>
-Subject: Re: [Patch] doc: remove ns_cgroup from feature-removal-schedule.txt
-Message-ID: <20110607122233.GB3550@cr0>
-References: <20110607120630.GA3550@cr0>
- <4DEE1753.2060307@free.fr>
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
+Message-ID: <20110607122519.GA18571@infradead.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DEE1753.2060307@free.fr>
+In-Reply-To: <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 02:19:31PM +0200, Daniel Lezcano wrote:
->On 06/07/2011 02:06 PM, Américo Wang wrote:
->>In the following commit Daniel removed ns_cgroup
->>
->>	commit a77aea92010acf54ad785047234418d5d68772e2
->>	Author: Daniel Lezcano<daniel.lezcano@free.fr>
->>	Date:   Thu May 26 16:25:23 2011 -0700
->>
->>	    cgroup: remove the ns_cgroup
->>
->>but Daniel forgot to remove the related doc in feature-removal-schedule.txt.
->>This patch removes that too.
->
->Well, I am not sure we should remove this entry from the documentation.
+A few small nitpicks:
 
-That is a list of features which will be removed,
-not for features that was in the kernel.
+> +struct mem_cgroup *mem_cgroup_hierarchy_walk(struct mem_cgroup *root,
+> +					     struct mem_cgroup *prev)
+> +{
+> +	struct mem_cgroup *mem;
+> +
+> +	if (mem_cgroup_disabled())
+> +		return NULL;
+> +
+> +	if (!root)
+> +		root = root_mem_cgroup;
+> +	/*
+> +	 * Even without hierarchy explicitely enabled in the root
+> +	 * memcg, it is the ultimate parent of all memcgs.
+> +	 */
+> +	if (!(root == root_mem_cgroup || root->use_hierarchy))
+> +		return root;
 
->I let this in the doc because people may want to follow what was
->removed and from what kernel version.
+The logic here reads a bit weird, why not simply:
 
-We have changelogs or git logs, right? :)
+	 /*
+	  * Even without hierarchy explicitely enabled in the root
+	  * memcg, it is the ultimate parent of all memcgs.
+	  */
+	if (!root || root == root_mem_cgroup)
+		return root_mem_cgroup;
+	if (root->use_hierarchy)
+		return root;
 
->Looking at the doc, there are a lot of old entries.
 
-Such as?
+>  /*
+>   * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
+>   */
+> -static void shrink_zone(int priority, struct zone *zone,
+> -				struct scan_control *sc)
+> +static void do_shrink_zone(int priority, struct zone *zone,
+> +			   struct scan_control *sc)
+
+It actually is the per-memcg shrinker now, and thus should be called
+shrink_memcg.
+
+> +		sc->mem_cgroup = mem;
+> +		do_shrink_zone(priority, zone, sc);
+
+Any passing the mem_cgroup explicitly instead of hiding it in the
+scan_control would make that much more obvious.  If there's a good
+reason to pass it in the structure the same probably applies to the
+zone and priority, too.
+
+Shouldn't we also have a non-cgroups stub of shrink_zone to directly
+call do_shrink_zone/shrink_memcg with a NULL memcg and thus optimize
+the whole loop away for it?
+
