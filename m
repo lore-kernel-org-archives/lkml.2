@@ -1,53 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab1FGIg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 04:36:29 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:55055 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752148Ab1FGIg1 (ORCPT
+	id S1752085Ab1FGIkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 04:40:22 -0400
+Received: from ccserver2.unican.es ([130.206.5.101]:41977 "EHLO
+	ccserver2.unican.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab1FGIkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 04:36:27 -0400
-Message-ID: <4DEDE2D7.6030100@st.com>
-Date: Tue, 7 Jun 2011 14:05:35 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	Tue, 7 Jun 2011 04:40:19 -0400
+Message-ID: <4DEDE411.6010807@unican.es>
+Date: Tue, 7 Jun 2011 10:40:49 +0200
+From: Monica Puig-Pey <puigpeym@unican.es>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) 
+	Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] gpio/spear-plgpio: Add plgpio driver for SPEAr platform
-References: <cover.1306737135.git.viresh.kumar@st.com> <385c65f02831af2a16bcd4ea56c22ce6d8747ef0.1306737135.git.viresh.kumar@st.com> <20110603175020.GD15616@ponder.secretlab.ca>
-In-Reply-To: <20110603175020.GD15616@ponder.secretlab.ca>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: <markh@compro.net>
+CC: Rolando Martins <rolando.martins@gmail.com>,
+        <linux-rt-users@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Changing Kernel thread priorities
+References: <4DEA1BA9.7020303@unican.es><4DEA1F22.6000603@unican.es><4DEA255
+				B.2050503@unican.es><4DECBE44.2070803@unican.es> 
+			<BANLkTi=xSJOgY735PE44YtkQmrdhgetGdQ@mail.gmail.com> 
+		<4DECC0DF.8070209@unican.es> <4DED051A.6020702@compro.net>
+In-Reply-To: <4DED051A.6020702@compro.net>
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [193.144.198.131]
+X-imss-version: 2.054
+X-imss-result: Passed
+X-imss-scanInfo: M:P L:E SM:0
+X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18184.005)
+X-imss-scores: Clean:99.90000 C:2 M:3 S:5 R:5
+X-imss-settings: Baseline:1 C:1 M:2 S:2 R:2 (0.0000 0.0000)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2011 11:20 PM, Grant Likely wrote:
-> On Mon, May 30, 2011 at 12:09:02PM +0530, Viresh Kumar wrote:
->> > Plgpio pads on few spear machines can be configured as gpios. This patch adds
->> > support for configuring these PLGPIOs.
->> >
->> > This was earlier posted & reviewed as part of arch/arm/plat-spear/ code.
->> >
->> > Reviewed-by: Stanley Miao <stanley.miao@windriver.com>
->> > Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> 
-> This ends up being yet-another-mmio-gpio implementation.  Please look
-> at bgpio_init() in drivers/basic_mmio_gpio.c.  This driver should be
-> refactored to use that.
+El 06/06/11 18:49, Mark Hounschell escribió:
+> On 06/06/2011 07:58 AM, Monica Puig-Pey wrote:
+>> El 06/06/11 13:54, Rolando Martins escribió:
+>>> Hi,
+>>> I use the following:
+>>>
+>>> PIDs=$(ps -eLo pid,cls,rtprio,pri,nice,cmd | grep -i "irq" | awk '{
+>>> print $1; }' | xargs echo)
+>>> for i in $PIDs
+>>> do
+>>> ret=$(chrt -f -p 99 $i)
+>>> done
+>>>
+>>> This will change the kernel thread associated with an irq handler to
+>>> RT FIFO prio 99.
+>>> Just change the script to your specific interrupt.
+>>>
+>>> Hope it helps,
+>>> Rolando
+>>>
+>>> On Mon, Jun 6, 2011 at 12:47 PM, Monica Puig-Pey<puigpeym@unican.es>
+>>> wrote:
+>>>> I am writing a driver which has one kernel thread associated with it.
+>>>> I want to change the priority of this thread, so that I can specify the
+>>>> order in which it is scheduled following an interrupt.
+>>>> I'm using:
+>>>>
+>>>> sched_setscheduler(struct task_struct *, int, struct sched_param *);
+>>>>
+>>>> but it doesn't work. I tried to change the priority from the
+>>>> init_module,
+>>>> and also from the Kernel Thread, but there is no way.
+>>>>
+>>>> Kernel version is 2.6.31-11-rt
+>>>>
+>>>> What do I call to change a kernel thread priority?
+>>>>
+>>>> Thanks you very much
+>>>>
+>>>> Mónica
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>> linux-rt-users" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>>
+>>
+>> I need to change the priority from inside the driver, when creating the
+>> kernel thread.
+>> Your script is useful but it is done in user context,
+>> Any other help please?
+>
+> What I do is record the PID of the thread in the driver, then create an
+> IOCTL for your driver that user land can call that either returns the
+> PID so you can do it in user land, or cause the IOCTL code to do it in
+> the driver.
+>
+> The same can be done with the affinity of the IRQ if you record the IRQ
+> number.
+>
+> Mark
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at http://vger.kernel.org/majordomo-info.html
 
-Ok. Will check that.
+But I don't have de PID of my Kthread, I only have the task_struc * that 
+gives me the function:
 
--- 
-viresh
+  struct task_struct *kthread_create(int (*threadfn)(void *data),
+                    void *data,
+                    const char namefmt[], ...)
+
+How could I get the PID, and which function should I use in the IOCTL 
+(kernel context) for changing its priority?
+
+Thank you so much for your help
+
+Mónica
