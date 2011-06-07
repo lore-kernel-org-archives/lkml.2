@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab1FGL0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 07:26:39 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:42945 "EHLO
+	id S1752911Ab1FGLkB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 07:40:01 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:46841 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913Ab1FGL0i (ORCPT
+	with ESMTP id S1752531Ab1FGLkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 07:26:38 -0400
+	Tue, 7 Jun 2011 07:40:00 -0400
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: "Ohad Ben-Cohen" <ohad@wizery.com>
-Subject: Re: [RFC 2/6] omap: iovmm: generic iommu api migration
-Date: Tue, 7 Jun 2011 13:26:52 +0200
+Subject: Re: [RFC 1/6] omap: iommu: generic iommu api migration
+Date: Tue, 7 Jun 2011 13:40:14 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo-r3; KDE/4.6.2; x86_64; ; )
 Cc: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Hiroshi.DOYU@nokia.com, arnd@arndb.de, davidb@codeaurora.org,
         Joerg.Roedel@amd.com
-References: <1307053663-24572-1-git-send-email-ohad@wizery.com> <201106071105.16262.laurent.pinchart@ideasonboard.com> <BANLkTi=nJXSEfWRXqwnHys1b5i5rgLcYpw@mail.gmail.com>
-In-Reply-To: <BANLkTi=nJXSEfWRXqwnHys1b5i5rgLcYpw@mail.gmail.com>
+References: <1307053663-24572-1-git-send-email-ohad@wizery.com> <201106071122.47804.laurent.pinchart@ideasonboard.com> <BANLkTineGVvmph=Om2FGR_+mkiMW6k7UAw@mail.gmail.com>
+In-Reply-To: <BANLkTineGVvmph=Om2FGR_+mkiMW6k7UAw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106071326.53106.laurent.pinchart@ideasonboard.com>
+Message-Id: <201106071340.15199.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Ohad,
 
-On Tuesday 07 June 2011 12:28:53 Ohad Ben-Cohen wrote:
-> On Tue, Jun 7, 2011 at 12:05 PM, Laurent Pinchart wrote:
-> > pgsz isn't used anymore, you can remove it.
-> 
-> Ok.
-> 
-> >> +             order = get_order(bytes);
+On Tuesday 07 June 2011 13:19:05 Ohad Ben-Cohen wrote:
+> On Tue, Jun 7, 2011 at 12:22 PM, Laurent Pinchart wrote:
+> >> +     BUG_ON(!IS_ALIGNED((long)omap_domain->pgtable, IOPGD_TABLE_SIZE));
 > > 
-> > Does iommu_map() handle offsets correctly, or does it expect pa to be
-> > aligned to an order (or other) boundary ?
+> > Either __get_free_pages() guarantees that the allocated memory will be
+> > aligned on an IOPGD_TABLE_SIZE boundary, in which case the BUG_ON() is
+> > unnecessary, or doesn't offer such guarantee, in which case the BUG_ON()
+> > will oops randomly.
 > 
-> Right now we have a BUG_ON if pa is unaligned, but that can be changed
-> if needed (do we want it to handle offsets ?).
+> Curious, does it oops randomly today ?
+> (i just copied this from omap_iommu_probe, where it always existed).
 
-At least for the OMAP3 ISP we need to, as video buffers don't necessarily 
-start on page boundaries.
+No that I know of :-)
 
-> > As Russell pointed out, we should use sg->length instead of
-> > sg_dma_length(sg). sg_dma_length(sg) is only valid after the scatter
-> > list has been DMA-mapped, which doesn't happen in the iovmm driver. This
-> > applies to all sg_dma_len(sg) calls.
+> It is a bit ugly though, and thinking on it again, 16KB is not that
+> big. We can just use kmalloc here, which does ensure the alignment
+> (or, better yet, kzalloc, and then ditch the memset).
 > 
-> I'll make sure I don't introduce such calls, but it sounds like a
-> separate patch should take care of the existing ones; pls tell me if
-> you want me to send one.
+> > In both cases BUG_ON() should probably be avoided.
+> 
+> I disagree; we must check this so user data won't be harmed (hardware
+> requirement), and if a memory allocation API fails to meet its
+> requirements - that's really bad and user data is again at stake (much
+> more will break, not only the iommu driver).
 
-A separate patch is indeed needed, yes. As you're already working on iommu it 
-might be simpler if you add it to your tree. Otherwise I can send it.
+My point is that if the allocator guarantees the alignment (not as a side 
+effect of the implementation, but per its API) there's no need to check it 
+again. As the alignement is required, we need an allocator that guarantees it 
+anyway.
+
+> > This leaks omap_domain->pgtable.
+> > 
+> > The free_pages() call in omap_iommu_remove() should be removed, as
+> > omap_iommu_probe() doesn't allocate the pages table anymore.
+> 
+> thanks !
+> 
+> > You can also remove the the struct iommu::iopgd field.
+> 
+> No, I can't; it's used when the device is attached to an address space
+> domain.
+
+Right, my bad.
+
+> > You return 0 in the bogus pte/pgd cases. Is that intentional ?
+> 
+> Yes, that's probably the most (if any) reasonable value to return here
+> (all other iommu implementations are doing so too).
 
 -- 
 Regards,
