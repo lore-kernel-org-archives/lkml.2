@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab1FGVUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 17:20:19 -0400
-Received: from mail3.microsoft.com ([131.107.115.214]:8225 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab1FGVUR convert rfc822-to-8bit (ORCPT
+	id S1757503Ab1FGVW6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:22:58 -0400
+Received: from diomedes.noc.ntua.gr ([147.102.222.220]:62175 "EHLO
+	diomedes.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756899Ab1FGVW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 17:20:17 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>
-Subject: RE: [PATCH 49/49] Staging: hv: vmbus: Increase the timeout value in
- vmbus_request_offers()
-Thread-Topic: [PATCH 49/49] Staging: hv: vmbus: Increase the timeout value
- in vmbus_request_offers()
-Thread-Index: AQHMJJo9r2uLXlggOECLS9ST8ZfGt5Sy074A//+RXpA=
-Date: Tue, 7 Jun 2011 21:20:16 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0480813DC6F@TK5EX14MBXC122.redmond.corp.microsoft.com>
-References: <1307400540-13193-1-git-send-email-kys@microsoft.com>
- <1307400613-13234-1-git-send-email-kys@microsoft.com>
- <1307400613-13234-49-git-send-email-kys@microsoft.com>
- <20110607204514.GB16429@kroah.com>
-In-Reply-To: <20110607204514.GB16429@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Jun 2011 17:22:57 -0400
+Message-ID: <4DEE9695.7060805@ece.ntua.gr>
+Date: Wed, 08 Jun 2011 00:22:29 +0300
+From: Stratos Psomadakis <psomas@ece.ntua.gr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110603 Lightning/1.0b3pre Lanikai/3.1.10
 MIME-Version: 1.0
+To: Matt Mackall <mpm@selenic.com>
+CC: david@lang.hm, linux-kernel@vger.kernel.org,
+        Frank Kingswood <frank@kingswood-consulting.co.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: ketchup script and 3.0
+References: <4DEDD5F4.1070602@kingswood-consulting.co.uk>	 <1307451186.4204.953.camel@calx>  <4DEE808D.6020405@ece.ntua.gr>	 <1307477435.4204.968.camel@calx>  <4DEE8AD9.3050508@ece.ntua.gr>	 <1307479572.4204.977.camel@calx>	 <alpine.DEB.2.02.1106071349000.28905@asgard.lang.hm> <1307480372.4204.987.camel@calx>
+In-Reply-To: <1307480372.4204.987.camel@calx>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (diomedes.noc.ntua.gr [147.102.222.220]); Wed, 08 Jun 2011 00:22:31 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/07/2011 11:59 PM, Matt Mackall wrote:
+> On Tue, 2011-06-07 at 13:50 -0700, david@lang.hm wrote:
+>> On Tue, 7 Jun 2011, Matt Mackall wrote:
+>>
+>>> But my point is that if we have adhoc transitions, we will encounter the
+>>> "fix all the scripts and websites" pain at every transition. And tools
+>>> that are managed via distros and the like can literally take years to
+>>> get into the hands of users. It'd be nice if the copy of ketchup shipped
+>>> in <enterprise distro> just worked 3 years from now because 4.0 wasn't a
+>>> surprise.
+>> if you special case 2.4->2.6, and make the default that 4.0 > 3.x, 5.0 > 
+>> 4.x, etc won't things 'just work' for the forseeable future?
+> No, because you sometimes want to know what 2.6.39++ is and what 3.0--
+> is.
+>
+> For instance, to upgrade from 2.6.37.2 to 3.1.2, ketchup will want to
+> download, cache, and apply:
+>
+> patch-2.6.37.2 (reversed!)
+> patch-2.6.38
+> patch-2.6.39
+> patch-3.0 ?? <- hopefully Linus will make a delta against 2.6.39!
+> patch-3.1
+> patch-3.1.2
+Well, if this is a ketchup-only issue (and there's no other need for
+defining at which point major numbers are going to inc), we could find a
+solution/workaround (to future-proof it, without the need of constant
+updating of the code with every major release), but it'll probably be
+uglier, and I think that what Matt proposed is better.
 
+Anyway, when this issue is clarified, I'll try to fix the code, in order
+to handle next major releases, without requiring code changes.
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Tuesday, June 07, 2011 4:45 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
-> Abhishek Kane (Mindtree Consulting PVT LTD)
-> Subject: Re: [PATCH 49/49] Staging: hv: vmbus: Increase the timeout value in
-> vmbus_request_offers()
-> 
-> On Mon, Jun 06, 2011 at 03:50:13PM -0700, K. Y. Srinivasan wrote:
-> > Increase the timeout value in vmbus_request_offers().
-> 
-> Why?  What does this solve/fix/prevent?
+Thanks,
 
-On some very loaded systems, when we tested the 1 second timeout that
-we had prior to this patch was insufficient. So I bumped it to 5 seconds.
+-- 
+Stratos Psomadakis
+<psomas@ece.ntua.gr>
 
-Regards,
-
-K. Y
