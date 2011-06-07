@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab1FGQRd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 12:17:33 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:33543 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222Ab1FGQRb convert rfc822-to-8bit (ORCPT
+	id S1755375Ab1FGQTp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 12:19:45 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:59016 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754993Ab1FGQTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 12:17:31 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-131.messagelabs.com!1307463441!12417087!21
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.180]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        Vinod Koul <vinod.koul@intel.com>
-Date: Tue, 7 Jun 2011 11:17:26 -0500
-Subject: RE: linux-next: manual merge of the gpio tree with the slave-dma
- tree
-Thread-Topic: linux-next: manual merge of the gpio tree with the slave-dma
- tree
-Thread-Index: AcwkvsY7pRLwF4Q0TaWQimkfJHrazgAb1Ugg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3820B7E0F@AUSP01VMBX24.collaborationhost.net>
-References: <20110607125723.8e591e42.sfr@canb.auug.org.au>
-In-Reply-To: <20110607125723.8e591e42.sfr@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Jun 2011 12:19:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=ITtsj/PZVefe9VmI6YmOoqjVDnduSLPatg3ppz+vN/1nDYeMYCafAHP/sT7E/sfz1d
+         ZEKV4coYMgocuwl1ulkQ==
+Date: Tue, 7 Jun 2011 18:19:36 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, acme@redhat.com
+Subject: [PATCH] perf: fix missing event name init for default event (v2)
+Message-ID: <20110607161936.GA8163@quad>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 06, 2011 7:57 PM, Stephen Rothwell wrote:
-> Hi Grant,
-> 
-> Today's linux-next merge of the gpio tree got a conflict in
-> arch/arm/mach-ep93xx/Makefile between commit 8e4a93008db7 ("ep93xx:
-> remove the old M2P DMA code") from the slave-dma tree and commit
-> c6b52c13de44 ("gpio/ep93xx: move driver to drivers/gpio") from the gpio
-> tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/arm/mach-ep93xx/Makefile
-> index 21e721a,6b7c41d..0000000
-> --- a/arch/arm/mach-ep93xx/Makefile
-> +++ b/arch/arm/mach-ep93xx/Makefile
-> @@@ -1,7 -1,7 +1,7 @@@
->   #
->   # Makefile for the linux kernel.
->   #
-> - obj-y			:= core.o clock.o gpio.o
->  -obj-y			:= core.o clock.o dma-m2p.o
-> ++obj-y			:= core.o clock.o
->   obj-m			:=
->   obj-n			:=
->   obj-			:=
 
-Stephen,
+When no event is given to perf record, perf top, a default
+event is initialized (cycles). However, perf_evlist__add_default()
+was not setting the symbolic name for the event. Perf top
+worked simply because it was reconstructing the name from the event
+code. But it should not have to do this. This patch initializes the
+evsel->name field properly.
 
-This is, of course, the correct fix.  If you want it:
+This second version improves the code flow on the non error path.
 
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
 
-Thanks!
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index b021ea9..9a98c28 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -85,10 +85,19 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
+ 	struct perf_evsel *evsel = perf_evsel__new(&attr, 0);
+ 
+ 	if (evsel == NULL)
+-		return -ENOMEM;
++		goto error;
++
++	/* use strdup() because free(evsel) assumes name is allocated */
++	evsel->name = strdup("cycles");
++	if (!evsel->name)
++		goto error_free;
+ 
+ 	perf_evlist__add(evlist, evsel);
+ 	return 0;
++error_free:
++	free(evsel);
++error:
++	return -ENOMEM;
+ }
+ 
+ int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
