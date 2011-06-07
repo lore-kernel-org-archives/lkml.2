@@ -1,68 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab1FGVW6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 17:22:58 -0400
-Received: from diomedes.noc.ntua.gr ([147.102.222.220]:62175 "EHLO
-	diomedes.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756899Ab1FGVW5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 17:22:57 -0400
-Message-ID: <4DEE9695.7060805@ece.ntua.gr>
-Date: Wed, 08 Jun 2011 00:22:29 +0300
-From: Stratos Psomadakis <psomas@ece.ntua.gr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110603 Lightning/1.0b3pre Lanikai/3.1.10
+	id S1757550Ab1FGVZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:25:58 -0400
+Received: from d1.icnet.pl ([212.160.220.21]:44041 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757523Ab1FGVZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 17:25:57 -0400
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH 3.0-rc1] PM / runtime: fix broken iteration over clock ids
+Date: Tue, 7 Jun 2011 23:24:53 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r5; KDE/4.4.5; i686; ; )
+Cc: linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+References: <201106051531.32878.jkrzyszt@tis.icnet.pl> <201106062118.18734.jkrzyszt@tis.icnet.pl> <201106072129.26063.rjw@sisk.pl>
+In-Reply-To: <201106072129.26063.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Matt Mackall <mpm@selenic.com>
-CC: david@lang.hm, linux-kernel@vger.kernel.org,
-        Frank Kingswood <frank@kingswood-consulting.co.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ketchup script and 3.0
-References: <4DEDD5F4.1070602@kingswood-consulting.co.uk>	 <1307451186.4204.953.camel@calx>  <4DEE808D.6020405@ece.ntua.gr>	 <1307477435.4204.968.camel@calx>  <4DEE8AD9.3050508@ece.ntua.gr>	 <1307479572.4204.977.camel@calx>	 <alpine.DEB.2.02.1106071349000.28905@asgard.lang.hm> <1307480372.4204.987.camel@calx>
-In-Reply-To: <1307480372.4204.987.camel@calx>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (diomedes.noc.ntua.gr [147.102.222.220]); Wed, 08 Jun 2011 00:22:31 +0300 (EEST)
+Message-Id: <201106072324.54306.jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2011 11:59 PM, Matt Mackall wrote:
-> On Tue, 2011-06-07 at 13:50 -0700, david@lang.hm wrote:
->> On Tue, 7 Jun 2011, Matt Mackall wrote:
->>
->>> But my point is that if we have adhoc transitions, we will encounter the
->>> "fix all the scripts and websites" pain at every transition. And tools
->>> that are managed via distros and the like can literally take years to
->>> get into the hands of users. It'd be nice if the copy of ketchup shipped
->>> in <enterprise distro> just worked 3 years from now because 4.0 wasn't a
->>> surprise.
->> if you special case 2.4->2.6, and make the default that 4.0 > 3.x, 5.0 > 
->> 4.x, etc won't things 'just work' for the forseeable future?
-> No, because you sometimes want to know what 2.6.39++ is and what 3.0--
-> is.
->
-> For instance, to upgrade from 2.6.37.2 to 3.1.2, ketchup will want to
-> download, cache, and apply:
->
-> patch-2.6.37.2 (reversed!)
-> patch-2.6.38
-> patch-2.6.39
-> patch-3.0 ?? <- hopefully Linus will make a delta against 2.6.39!
-> patch-3.1
-> patch-3.1.2
-Well, if this is a ketchup-only issue (and there's no other need for
-defining at which point major numbers are going to inc), we could find a
-solution/workaround (to future-proof it, without the need of constant
-updating of the code with every major release), but it'll probably be
-uglier, and I think that what Matt proposed is better.
+On Tue 07 Jun 2011 at 21:29:25 Rafael J. Wysocki wrote:
+> 
+> OK, below is an "official" version.  Can you please double check if
+> it fixes the problem for you?
 
-Anyway, when this issue is clarified, I'll try to fix the code, in order
-to handle next major releases, without requiring code changes.
+Hi,
+I've tested it successfully, but only the CONFIG_PM_RUNTIME=y case, not 
+the other because of still another McBSP issue, I believe, described 
+elswhere.
 
 Thanks,
+Janusz
 
--- 
-Stratos Psomadakis
-<psomas@ece.ntua.gr>
 
+> 
+> Rafael
+> 
+> ---
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM / Runtime: Fix loops in pm_runtime_clk_notify()
+> 
+> The loops over connection ID strings in pm_runtime_clk_notify()
+> should actually iterate over the strings and not over the elements
+> of the first of them, so make those loops behave as appropriate.
+> 
+> This fixes a regression introduced by commit 600b776eb39a13a28b090
+> (OMAP1 / PM: Use generic clock manipulation routines for runtime PM).
+> 
+> Reported-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  drivers/base/power/clock_ops.c |   16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
+> 
+> Index: linux-2.6/drivers/base/power/clock_ops.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/base/power/clock_ops.c
+> +++ linux-2.6/drivers/base/power/clock_ops.c
+> @@ -291,7 +291,7 @@ static int pm_runtime_clk_notify(struct
+>  {
+>  	struct pm_clk_notifier_block *clknb;
+>  	struct device *dev = data;
+> -	char *con_id;
+> +	char **con_id;
+>  	int error;
+> 
+>  	dev_dbg(dev, "%s() %ld\n", __func__, action);
+> @@ -309,8 +309,8 @@ static int pm_runtime_clk_notify(struct
+> 
+>  		dev->pwr_domain = clknb->pwr_domain;
+>  		if (clknb->con_ids[0]) {
+> -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
+> -				pm_runtime_clk_add(dev, con_id);
+> +			for (con_id = clknb->con_ids; *con_id; con_id++)
+> +				pm_runtime_clk_add(dev, *con_id);
+>  		} else {
+>  			pm_runtime_clk_add(dev, NULL);
+>  		}
+> @@ -380,7 +380,7 @@ static int pm_runtime_clk_notify(struct
+>  {
+>  	struct pm_clk_notifier_block *clknb;
+>  	struct device *dev = data;
+> -	char *con_id;
+> +	char **con_id;
+> 
+>  	dev_dbg(dev, "%s() %ld\n", __func__, action);
+> 
+> @@ -389,16 +389,16 @@ static int pm_runtime_clk_notify(struct
+>  	switch (action) {
+>  	case BUS_NOTIFY_ADD_DEVICE:
+>  		if (clknb->con_ids[0]) {
+> -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
+> -				enable_clock(dev, con_id);
+> +			for (con_id = clknb->con_ids; *con_id; con_id++)
+> +				enable_clock(dev, *con_id);
+>  		} else {
+>  			enable_clock(dev, NULL);
+>  		}
+>  		break;
+>  	case BUS_NOTIFY_DEL_DEVICE:
+>  		if (clknb->con_ids[0]) {
+> -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
+> -				disable_clock(dev, con_id);
+> +			for (con_id = clknb->con_ids; *con_id; con_id++)
+> +				disable_clock(dev, *con_id);
+>  		} else {
+>  			disable_clock(dev, NULL);
+>  		}
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap"
+> in the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
