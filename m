@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab1FGMjY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:39:24 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45399 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221Ab1FGMjW (ORCPT
+	id S1753374Ab1FGMkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:40:35 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55356 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221Ab1FGMke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:39:22 -0400
+	Tue, 7 Jun 2011 08:40:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=OPp0HpV6JvCAl5j7tD9/b3aqnw+Hg4gaPXTEjMJEAR2ssTmRw/vcd4pLi95JNEFngT
-         nprEB0ucLy/zxRCoeIQiF86itocLipqDO5hbyzbRa0ZlfXo6r/9G1H009LX3xUiNy24F
-         e9KFOLRemB/wo1RipCc2mno2wPPzTRUZIg1+E=
-Subject: [PATCH] staging iio: Replace kmalloc with local variable
-From: anish <anish198519851985@gmail.com>
-To: gregkh@suse.de, jic23@cam.ac.uk, manuel.stahl@iis.fraunhofer.de,
-        lucas.demarchi@profusion.mobi
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Jun 2011 18:09:14 +0530
-Message-ID: <1307450354.1516.23.camel@anish-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=l/VzPYrxB2rffNBydzD33h+uRk8ojybXn01CwhmtqysYgmmDdKHXPpNaAcPuN0Ccsi
+         AxOHkrpEzhL95oWfsGdnve2o6YpQwpv1pZk8V8jd7x8vzcgbRH9HLqMh9z3eyisFjniV
+         /uQ15UEMEtJfcY3QpcGk69A1k7JbJ81SpVNMY=
+Message-ID: <4DEE1C3F.4070407@lwfinger.net>
+Date: Tue, 07 Jun 2011 07:40:31 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Realtek RTL8192CU Polling FW ready fail!! REG_MCUFWDL:0x00000006
+References: <BANLkTik84U0p7hf1+ofvPvJ2CO1MmutcWQ@mail.gmail.com> <BANLkTika3VUB6mmY=JLikQYgrFXk2xuP1A@mail.gmail.com>
+In-Reply-To: <BANLkTika3VUB6mmY=JLikQYgrFXk2xuP1A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: anish kumar <anish198519851985@gmail.com>
+On 06/06/2011 11:44 PM, Jeff Chua wrote:
+>
+>
+> Not sure anyone got a chance to look into this. I could get the device
+> to work with RTL8192CU_linux_v3.0.1590.20110511.zip (just that
+> ifconfig wlan0 froze the whole system).
+>
+> rtw driver version=v3.0.1590.20110511
+> CHIP TYPE: RTL8188C_8192C
+> MAC Address from efuse= 00:22:cf:43:d3:8b
 
-replaced kmalloc with local variable as I2C(in this case) doesn't require
-kmalloc memory it can do with stack memory.
+I have not yet had an opportunity to check on this. My recollection is that the 
+error message from the firmware did not affect the operation of the chip, but I 
+have not yet proved that.
 
-Signed-off-by: anish kumar <anish198519851985@gmail.com>
----
- drivers/staging/iio/adc/max1363_core.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+I cannot vouch for the operation of any drivers downloaded from the Realtek web 
+site. Many of them will not work with 64-bit systems.
 
-diff --git a/drivers/staging/iio/adc/max1363_core.c b/drivers/staging/iio/adc/max1363_core.c
-index 1037087..9462230 100644
---- a/drivers/staging/iio/adc/max1363_core.c
-+++ b/drivers/staging/iio/adc/max1363_core.c
-@@ -207,15 +207,12 @@ static int max1363_write_basic_config(struct i2c_client *client,
- 				      unsigned char d2)
- {
- 	int ret;
--	u8 *tx_buf = kmalloc(2, GFP_KERNEL);
-+	u8 tx_buf[2];
- 
--	if (!tx_buf)
--		return -ENOMEM;
- 	tx_buf[0] = d1;
- 	tx_buf[1] = d2;
- 
- 	ret = i2c_master_send(client, tx_buf, 2);
--	kfree(tx_buf);
- 
- 	return (ret > 0) ? 0 : ret;
- }
--- 
-1.7.0.4
-
-
+Larry
