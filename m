@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab1FGHx7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 03:53:59 -0400
-Received: from mailsrv1.zmi.at ([212.69.164.54]:54132 "EHLO mailsrv14.zmi.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751937Ab1FGHx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 03:53:56 -0400
-X-Greylist: delayed 631 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jun 2011 03:53:56 EDT
-From: Michael Monnerie <michael.monnerie@is.it-management.at>
-Organization: it-management http://it-management.at
-To: xfs@oss.sgi.com
-Subject: Re: bug in xfs: can't recovery metadata log
-Date: Tue, 7 Jun 2011 09:43:18 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38.6-zmi; KDE/4.6.0; x86_64; ; )
-Cc: Drunkard Zhang <gongfan193@gmail.com>, Alex Elder <aelder@sgi.com>,
-        xfs-masters@oss.sgi.com, linux-kernel@vger.kernel.org
-References: <BANLkTinX_BO94CdQsdmj=atFc-typqr0xg@mail.gmail.com> <BANLkTi=y2V4ZUyP02p_r_scqdSbprjbLsQ@mail.gmail.com>
-In-Reply-To: <BANLkTi=y2V4ZUyP02p_r_scqdSbprjbLsQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1653724.kM9ukQj4WN";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1751928Ab1FGHvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 03:51:12 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53505 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab1FGHvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 03:51:10 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 7 Jun 2011 16:44:08 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH v8 08/12] memcg: dirty page accounting support routines
+Message-Id: <20110607164408.f4e92ff8.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1307117538-14317-9-git-send-email-gthelen@google.com>
+References: <1307117538-14317-1-git-send-email-gthelen@google.com>
+	<1307117538-14317-9-git-send-email-gthelen@google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106070943.21004@zmi.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1653724.kM9ukQj4WN
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri,  3 Jun 2011 09:12:14 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-On Dienstag, 7. Juni 2011 Drunkard Zhang wrote:
-> With 2.6.39.1 too, output not the same thing.
+> Added memcg dirty page accounting support routines.  These routines are
+> used by later changes to provide memcg aware writeback and dirty page
+> limiting.  A mem_cgroup_dirty_info() tracepoint is is also included to
+> allow for easier understanding of memcg writeback operation.
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
 
-I'm not a developer, but have you tries xfs_repair -n ? As you crashed,=20
-probably the xfs log is damaged, needing a "xfs_repair -L", but wait for=20
-a more competent answer before you do this.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-=2D-=20
-mit freundlichen Gr=C3=BCssen,
-Michael Monnerie, Ing. BSc
-
-it-management Internet Services: Prot=C3=A9ger
-http://proteger.at [gesprochen: Prot-e-schee]
-Tel: +43 660 / 415 6531
-
-// Haus zu verkaufen: http://zmi.at/langegg/
-
---nextPart1653724.kM9ukQj4WN
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEABECAAYFAk3t1pgACgkQzhSR9xwSCbR3LQCggGekCvYKvSgMEnA7QXCP5bm7
-q1QAoOOrZUa70PS2oeE7ZRTxGG9z4LIu
-=Tkyj
------END PGP SIGNATURE-----
-
---nextPart1653724.kM9ukQj4WN--
