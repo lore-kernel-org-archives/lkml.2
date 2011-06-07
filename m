@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab1FGHwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 03:52:07 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:1190 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab1FGHwE (ORCPT
+	id S1752907Ab1FGLzy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 07:55:54 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:50958 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab1FGLzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 03:52:04 -0400
-X-SpamScore: -16
-X-BigFish: VPS-16(z1039oz9371M1432N98dKzz1202hzz15d4R8275bhz32i668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LMETUN-01-9HV-02
-X-M-MSG: 
-Date: Tue, 7 Jun 2011 09:52:21 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "laurent.pinchart@ideasonboard.com" 
-	<laurent.pinchart@ideasonboard.com>,
-        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "davidb@codeaurora.org" <davidb@codeaurora.org>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Subject: Re: [RFC 0/6] iommu: generic api migration and grouping
-Message-ID: <20110607075221.GB4407@amd.com>
-References: <1307053663-24572-1-git-send-email-ohad@wizery.com>
- <20110606100950.GC30762@amd.com>
- <BANLkTi=i2s-Ujiy4qn_XQv+9dMjUC9R66A@mail.gmail.com>
- <20110606153557.GE1953@amd.com>
- <BANLkTinwwVO4TmsxuTfSBf6jqYrEVV3b_A@mail.gmail.com>
- <20110606192030.GA4356@amd.com>
- <BANLkTinx21-E3DRe9D7LRB8e1aeOwv=-9A@mail.gmail.com>
+	Tue, 7 Jun 2011 07:55:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=pqMcDYdTe1TVZZ+OwTeb4rVsYhuozMRaYiZsApgexFwkIcT5nrcDs+h7jD3l2QG2D9
+         5XB4jp/Qf4ked4cFNAwiuvUtSyDicG/0XB/Q2RMIKohSAZGH+/6CZELkac8Mb4TbdfQf
+         vGmSwXisA2kmnM1DSjcMRFgiv+VSOTi6bcyuY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <BANLkTinx21-E3DRe9D7LRB8e1aeOwv=-9A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <201106070943.21004@zmi.at>
+References: <BANLkTinX_BO94CdQsdmj=atFc-typqr0xg@mail.gmail.com>
+ <BANLkTi=y2V4ZUyP02p_r_scqdSbprjbLsQ@mail.gmail.com> <201106070943.21004@zmi.at>
+From: Drunkard Zhang <gongfan193@gmail.com>
+Date: Tue, 7 Jun 2011 15:56:30 +0800
+Message-ID: <BANLkTikrmbe9X3Weyb8ikhn1RX_Tn_NuAg@mail.gmail.com>
+Subject: Re: bug in xfs: can't recovery metadata log
+To: Michael Monnerie <michael.monnerie@is.it-management.at>
+Cc: xfs@oss.sgi.com, Alex Elder <aelder@sgi.com>, xfs-masters@oss.sgi.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 04:09:33PM -0400, Ohad Ben-Cohen wrote:
-> On Mon, Jun 6, 2011 at 10:20 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
-> > Well, it certainly makes sense to have a single implementation for this.
-> > But I want to hide this complexity to the user of the IOMMU-API. The
-> > best choice is to put this into the layer between the IOMMU-API and the
-> > backend implementation.
-> 
-> I agree.
-> 
-> The IOMMU API should take physically contiguous regions from the user,
-> split them up according to page-sizes (/alignment requirements)
-> supported by the hardware, and then tell the underlying implementation
-> what to map where.
-
-Yup. Btw, is there any IOMMU hardware which supports non-natural
-alignment? In this case we need to expose these requirements somehow.
-
-Regards,
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+2011/6/7 Michael Monnerie <michael.monnerie@is.it-management.at>:
+> On Dienstag, 7. Juni 2011 Drunkard Zhang wrote:
+>> With 2.6.39.1 too, output not the same thing.
+>
+> I'm not a developer, but have you tries xfs_repair -n ? As you crashed,
+> probably the xfs log is damaged, needing a "xfs_repair -L", but wait for
+> a more competent answer before you do this.
+>
+Oops, I already did "xfs_repair -L", successed. It's in production
+environment, didn't have too much time to figure out why :-(
