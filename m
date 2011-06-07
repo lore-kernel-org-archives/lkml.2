@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab1FGJ5z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 05:57:55 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:49202 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab1FGJ5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 05:57:54 -0400
-Date: Tue, 7 Jun 2011 10:57:49 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: fix ENOSPC returned by handle_mm_fault()
-Message-ID: <20110607095749.GD4372@csn.ul.ie>
-References: <20110605134317.GF11521@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1106051141570.5792@sister.anvils>
- <20110605195025.GH11521@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1106051339001.8317@sister.anvils>
- <20110605221344.GJ11521@ZenIV.linux.org.uk>
- <alpine.LSU.2.00.1106052145370.17285@sister.anvils>
+	id S1752782Ab1FGKEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 06:04:01 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:34541
+	"EHLO CH1EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752484Ab1FGKD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 06:03:59 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(z1039oz9371M1432N98dKzz1202hzz15d4R8275bhz32i668h839h65h)
+X-Spam-TCS-SCL: 4:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LMEZP2-01-GGD-02
+X-M-MSG: 
+Date: Tue, 7 Jun 2011 11:58:29 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "laurent.pinchart@ideasonboard.com" 
+	<laurent.pinchart@ideasonboard.com>,
+        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "davidb@codeaurora.org" <davidb@codeaurora.org>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>
+Subject: Re: [RFC 0/6] iommu: generic api migration and grouping
+Message-ID: <20110607095829.GD4407@amd.com>
+References: <1307053663-24572-1-git-send-email-ohad@wizery.com>
+ <20110606100950.GC30762@amd.com>
+ <BANLkTi=i2s-Ujiy4qn_XQv+9dMjUC9R66A@mail.gmail.com>
+ <20110606153557.GE1953@amd.com>
+ <BANLkTinwwVO4TmsxuTfSBf6jqYrEVV3b_A@mail.gmail.com>
+ <20110606192030.GA4356@amd.com>
+ <BANLkTinx21-E3DRe9D7LRB8e1aeOwv=-9A@mail.gmail.com>
+ <20110607075221.GB4407@amd.com>
+ <BANLkTimR3KofKA3LSKXdX8k1FGR0XUxu=Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1106052145370.17285@sister.anvils>
+In-Reply-To: <BANLkTimR3KofKA3LSKXdX8k1FGR0XUxu=Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 05, 2011 at 10:03:13PM -0700, Hugh Dickins wrote:
-> Al Viro observes that in the hugetlb case, handle_mm_fault() may return
-> a value of the kind ENOSPC when its caller is expecting a value of the
-> kind VM_FAULT_SIGBUS: fix alloc_huge_page()'s failure returns.
+On Tue, Jun 07, 2011 at 05:22:11AM -0400, Ohad Ben-Cohen wrote:
+> On Tue, Jun 7, 2011 at 10:52 AM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> > Yup. Btw, is there any IOMMU hardware which supports non-natural
+> > alignment? In this case we need to expose these requirements somehow.
 > 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Acked-by: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: stable@kernel.org
+> Not sure there are. Let's start with natural alignment, and extend it
+> only if someone with additional requirements shows up.
 
-Nicely spotted!
+Btw, mind to split out your changes which move the iommu-api into
+drivers/iommu? I can merge them meanwhile into my iommu tree and start
+working on a proposal for the generic large page-size support.
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+	Joerg
 
 -- 
-Mel Gorman
-SUSE Labs
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
