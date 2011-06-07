@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab1FGSfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:35:44 -0400
-Received: from mail.perches.com ([173.55.12.10]:2599 "EHLO mail.perches.com"
+	id S1757863Ab1FGSiR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:38:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62057 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754546Ab1FGSfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:35:43 -0400
-Subject: RE: [PATCH] treewide: Convert uses of struct resource * to
- resource_size(ptr)
-From: Joe Perches <joe@perches.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F3820B7EB4@AUSP01VMBX24.collaborationhost.net>
-References: <201106061349.00474.hartleys@visionengravers.com>
-	 <1307397174.4994.26.camel@Joe-Laptop>
-	 <ADE657CA350FB648AAC2C43247A983F001F3820B7C78@AUSP01VMBX24.collaborationhost.net>
-	 <1307408678.4994.46.camel@Joe-Laptop>
-	 <ADE657CA350FB648AAC2C43247A983F001F3820B7EB4@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Jun 2011 11:35:41 -0700
-Message-ID: <1307471741.22272.24.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751762Ab1FGSiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 14:38:16 -0400
+Date: Tue, 7 Jun 2011 20:35:42 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <andi@firstfloor.org>,
+        Xiaotian Feng <dfeng@redhat.com>, Neil Horman <nhorman@tuxdriver.com>
+Subject: [PATCH] do_coredump: fix the "ispipe" error check
+Message-ID: <20110607183542.GA5559@redhat.com>
+References: <1307457010-7241-1-git-send-email-jslaby@suse.cz> <20110607181607.GA3732@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607181607.GA3732@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 13:27 -0500, H Hartley Sweeten wrote:
-> On Monday, June 06, 2011 6:05 PM, Joe Perches wrote:
-> > There are quite a few left...
-> FWIW, your patch missed a couple...
+do_coredump() assumes that if format_corename() fails it should
+return -ENOMEM. This is not true, for example cn_print_exe_file()
+can propagate the error from d_path. Even if it was true, this is
+too fragile. Change the code to check "ispipe < 0".
 
-Yup.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
 
-There are also several uses of struct resource var;
-var.end - var.start with or without +1.
+ fs/exec.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-I'm going through them now and will resubmit.
-
+--- ptrace/fs/exec.c~corename_errcode	2011-06-07 19:44:30.000000000 +0200
++++ ptrace/fs/exec.c	2011-06-07 20:20:48.000000000 +0200
+@@ -2092,16 +2092,16 @@ void do_coredump(long signr, int exit_co
+ 
+ 	ispipe = format_corename(&cn, signr);
+ 
+-	if (ispipe == -ENOMEM) {
+-		printk(KERN_WARNING "format_corename failed\n");
+-		printk(KERN_WARNING "Aborting core\n");
+-		goto fail_corename;
+-	}
+-
+  	if (ispipe) {
+ 		int dump_count;
+ 		char **helper_argv;
+ 
++		if (ispipe < 0) {
++			printk(KERN_WARNING "format_corename failed\n");
++			printk(KERN_WARNING "Aborting core\n");
++			goto fail_corename;
++		}
++
+ 		if (cprm.limit == 1) {
+ 			/*
+ 			 * Normally core limits are irrelevant to pipes, since
 
