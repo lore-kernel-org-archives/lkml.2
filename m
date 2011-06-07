@@ -1,105 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757913Ab1FGSyX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:54:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1513 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab1FGSyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:54:20 -0400
-Subject: Re: [PATCH -v2] Audit: push audit success and retcode into arch
- ptrace.h
-From: Eric Paris <eparis@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, fenghua.yu@intel.com,
-        monstr@monstr.eu, ralf@linux-mips.org, benh@kernel.crashing.org,
-        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        linux390@de.ibm.com, lethal@linux-sh.org, davem@davemloft.net,
-        jdike@addtoit.com, richard@nod.at, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        linux-ia64@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        sparclinux@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net
-Date: Tue, 07 Jun 2011 14:53:11 -0400
-In-Reply-To: <20110607171952.GA25729@redhat.com>
-References: <20110603220451.23134.47368.stgit@paris.rdu.redhat.com>
-	 <20110607171952.GA25729@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1307472796.2052.12.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S1757926Ab1FGSyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:54:31 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:55979 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750978Ab1FGSy3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 14:54:29 -0400
+Date: Tue, 7 Jun 2011 21:54:22 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tanya Brokhman <tlinder@codeaurora.org>
+Cc: "'Alan Stern'" <stern@rowland.harvard.edu>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        ablay@codeaurora.org, "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v15 10/10] usb:dummy_hcd: Force FS device connection
+ according to module parameter
+Message-ID: <20110607185415.GD12242@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <016d01cc2541$0bfa5980$23ef0c80$@org>
+ <Pine.LNX.4.44L0.1106071436020.1972-100000@iolanthe.rowland.org>
+ <018a01cc2543$7273a5c0$575af140$@org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4JxvUTD846AMAZAS"
+Content-Disposition: inline
+In-Reply-To: <018a01cc2543$7273a5c0$575af140$@org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 19:19 +0200, Oleg Nesterov wrote:
-> On 06/03, Eric Paris wrote:
-> >
-> > The audit system previously expected arches calling to audit_syscall_exit to
-> > supply as arguments if the syscall was a success and what the return code was.
-> > Audit also provides a helper AUDITSC_RESULT which was supposed to simplify things
-> > by converting from negative retcodes to an audit internal magic value stating
-> > success or failure.  This helper was wrong and could indicate that a valid
-> > pointer returned to userspace was a failed syscall.  The fix is to fix the
-> > layering foolishness.  We now pass audit_syscall_exit a struct pt_reg and it
-> > in turns calls back into arch code to collect the return value and to
-> > determine if the syscall was a success or failure.  We also define a generic
-> > is_syscall_success() macro which determines success/failure based on if the
-> > value is < -MAX_ERRNO.  This works for arches like x86 which do not use a
-> > separate mechanism to indicate syscall failure.
-> 
-> I know nothing about audit, but the patch looks fine to me.
-> 
-> 
-> But I have a bit off-topic question,
-> 
-> > diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> > index 8a445a0..b7b1f88 100644
-> > --- a/arch/x86/kernel/entry_64.S
-> > +++ b/arch/x86/kernel/entry_64.S
-> > @@ -53,6 +53,7 @@
-> >  #include <asm/paravirt.h>
-> >  #include <asm/ftrace.h>
-> >  #include <asm/percpu.h>
-> > +#include <linux/err.h>
-> >
-> >  /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
-> >  #include <linux/elf-em.h>
-> > @@ -564,17 +565,16 @@ auditsys:
-> >  	jmp system_call_fastpath
-> >
-> >  	/*
-> > -	 * Return fast path for syscall audit.  Call audit_syscall_exit()
-> > +	 * Return fast path for syscall audit.  Call __audit_syscall_exit()
-> >  	 * directly and then jump back to the fast path with TIF_SYSCALL_AUDIT
-> >  	 * masked off.
-> >  	 */
-> >  sysret_audit:
-> >  	movq RAX-ARGOFFSET(%rsp),%rsi	/* second arg, syscall return value */
-> > -	cmpq $0,%rsi		/* is it < 0? */
-> > -	setl %al		/* 1 if so, 0 if not */
-> > +	cmpq $-MAX_ERRNO,%rsi	/* is it < -MAX_ERRNO? */
-> > +	setbe %al		/* 1 if so, 0 if not */
-> >  	movzbl %al,%edi		/* zero-extend that into %edi */
-> > -	inc %edi /* first arg, 0->1(AUDITSC_SUCCESS), 1->2(AUDITSC_FAILURE) */
-> > -	call audit_syscall_exit
-> > +	call __audit_syscall_exit
-> 
-> With or without this patch, can't we call audit_syscall_exit() twice
-> if there is something else in _TIF_WORK_SYSCALL_EXIT mask apart from
-> SYSCALL_AUDIT ? First time it is called from asm, then from
-> syscall_trace_leave(), no?
-> 
-> For example. The task has TIF_SYSCALL_AUDIT and nothing else, it does
-> system_call->auditsys->system_call_fastpath. What if it gets, say,
-> TIF_SYSCALL_TRACE before ret_from_sys_call?
 
-No harm is done calling twice.  The first call will do the real work and
-cleanup.  It will set a flag in the audit data that the work has been
-done (in_syscall == 0) thus the second call will then not do any real
-work and won't have anything to clean up.
+--4JxvUTD846AMAZAS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--Eric
+Hi,
 
+On Tue, Jun 07, 2011 at 09:47:59PM +0300, Tanya Brokhman wrote:
+> > > I'm not talking about dummy_hcd. It was a general comment about the
+> > gadget
+> > > code. I can't give you an example from the top of my head...
+> >=20
+> > Oh.  Well, if you're writing new code and you come across a place where
+> > an error message really is needed, you should add the error message.
+>=20
+> Ok, I'll take that into consideration. Since I'm new here I was "afraid" =
+to
+> add any changes that are not really required :)
+
+just remember to put unrelated changes on separate patches ;-)
+
+> > But if the parameters are contradictory, you don't know _how_ to fix
+> > it.  If is_super_speed is True and is_high_speed is False, did the user
+> > want to add SuperSpeed support or to remove high-speed support?
+> >=20
+> > Besides, the best (i.e., easiest and most likely to be correct) way of
+> > fixing the error is for the user to issue the modprobe command again,
+> > with the correct parameters this time.  Therefore the driver should
+> > fail to load, so that the modprobe can be reissued with no need to do
+> > rmmod first.
+> >=20
+>=20
+> Ok, agreed. I'll update the patch.
+
+Cool, I'll wait for a revised series.
+
+--=20
+balbi
+
+--4JxvUTD846AMAZAS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN7nPXAAoJEAv8Txj19kN1NgYH/2eXbABjv598Ik8Vwl6dScT6
+yUJp9dBqxnUCffWRS59Vv92JvW0wiXiueWq8TzZmBiNmwPzn1rb/KgJvNeJkS1wo
+T1vxwN7Q5WE0zcdIhYGsNx5b8pVpo0YTc2t0mLAfyEwM+85QCU8g+hg0gzQpAXIt
+FdXJiCw1ja07uNvZZkTEtdnDwC0HFUBom6/EcQrAM6S6CmXFX8gBNFnSbxM9tIrv
+gZiUBhaX3XzLTSkSLBaVLwx80QmkY/A7QilE7KSEa7YEHnY0kHHQpDG+Hvsxgf7t
+Pz7eTbUFztLykT8u+YMk1kg+yO0vb/ku8uBeXDwK459EToPRI4vh4I2YgCg05tg=
+=kJbm
+-----END PGP SIGNATURE-----
+
+--4JxvUTD846AMAZAS--
