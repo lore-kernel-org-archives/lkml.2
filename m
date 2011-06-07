@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab1FGKze (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 06:55:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47329 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab1FGKzd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 06:55:33 -0400
-Subject: Re: l2-mtd-2.6.git to linux-next
-From: David Woodhouse <dwmw2@infradead.org>
-To: dedekind1@gmail.com
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 07 Jun 2011 11:55:28 +0100
-In-Reply-To: <1307421615.11104.14.camel@localhost>
-References: <1307345850.3135.24.camel@localhost>
-	 <1307421615.11104.14.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1307444129.24181.33.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1752450Ab1FGLBL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 07:01:11 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60211 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750990Ab1FGLBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 07:01:10 -0400
+Date: Tue, 7 Jun 2011 13:01:02 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: random hangs during boot in 3.0-rc
+Message-ID: <20110607110102.GE21356@elte.hu>
+References: <20110607034617.GA27980@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607034617.GA27980@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 07:40 +0300, Artem Bityutskiy wrote:
-> David,
-> 
-> On Mon, 2011-06-06 at 10:37 +0300, Artem Bityutskiy wrote:
-> > Stephen,
-> > 
-> > as we've discussed, please, include l2-mtd-2.6.git tree to linux-next:
-> > 
-> > git://git.infradead.org/users/dedekind/l2-mtd-2.6.git master
-> 
-> although you already asked about this, sfr wanted your deliberate ack.
 
-Ack.
+* Dave Jones <davej@redhat.com> wrote:
 
-Thanks.
+> I have two machines that occasionally (like 1 in 10 boots or so) 
+> hang solid during boot-up.  Happens in different places, but 
+> usually either when loading the microcode driver, or while doing a 
+> fsck.
 
--- 
-dwmw2
+I think this commit in tip:sched/urgent will fix it:
 
+  f2513cde93f0: lockdep: Fix lock_is_held() on recursion
+
+Will send it to Linus later today.
+
+Thanks,
+
+	Ingo
