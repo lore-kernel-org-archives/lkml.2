@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab1FGBG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 21:06:59 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:47751 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755802Ab1FGBG6 convert rfc822-to-8bit (ORCPT
+	id S1756425Ab1FGBKs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 21:10:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44676 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755942Ab1FGBKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 21:06:58 -0400
+	Mon, 6 Jun 2011 21:10:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=Ku8hSiq4v64f6pY1+pPq7b0HcK+3lW/j8/LXlnztucC9lwy68KNrXTKQtUvcUT4qhf
+         cE0AAGVjnJyBP26S6r7hSdXZ8UjUxplQVcH1Z40H2BKN4RtRAmRM6Y8o2EItZC0oASCD
+         UhRexMqrGy+hmG05g08T++jHxH0a1m50AeS7w=
+Date: Tue, 7 Jun 2011 09:10:14 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH] MAINTAINERS: Saying goodbye to David Brownell
+Message-ID: <20110607011012.GB8892@gmail.com>
+Mail-Followup-To: Grant Likely <grant.likely@secretlab.ca>,
+	linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+	torvalds@linux-foundation.org
+References: <20110606064021.9196.98018.stgit@ponder>
 MIME-Version: 1.0
-In-Reply-To: <87boyav99n.fsf@ti.com>
-References: <1307392698-21170-1-git-send-email-ccross@android.com> <87boyav99n.fsf@ti.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 6 Jun 2011 19:06:36 -0600
-X-Google-Sender-Auth: RiUK6JUOuyFaQlGRmujeKH-Gcv4
-Message-ID: <BANLkTik-UK9EPsnUkQeih+Zf_9py-X2Q0A@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] ARM: omap4: gpio: fix setting IRQWAKEN bits
-To: Kevin Hilman <khilman@ti.com>
-Cc: Colin Cross <ccross@android.com>, linux-omap@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, tarun.kanti@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=gb2312
+Content-Disposition: inline
+In-Reply-To: <20110606064021.9196.98018.stgit@ponder>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 6, 2011 at 5:18 PM, Kevin Hilman <khilman@ti.com> wrote:
-> Hi Colin,
->
-> Colin Cross <ccross@android.com> writes:
->
->> Setting the IRQWAKEN bit was overwriting previous IRQWAKEN bits,
->> causing only the last bit set to take effect, resulting in lost
->> wakeups when the GPIO controller is in idle.
->>
->> Replace direct writes to IRQWAKEN with MOD_REG_BIT calls to
->> perform a read-modify-write on the register.
->>
->> Signed-off-by: Colin Cross <ccross@android.com>
->
-> Thanks, I'll queue these both for Grant for the 3.0-rc fixes along with
-> another GPIO fix for a section mismatch I have queued.
->
-> Minor: now that this driver has moved to drivers, I changed the subject
-> prefixes slightly.  They now read:
->
-> GPIO: OMAP: fix setting IRQWAKEN bits for OMAP4
-> GPIO: OMAP: add locking around calls to _set_gpio_triggering
-
-If you're collecting fixes for Linus anyway, go ahead and add my a-b
-line and include these two to send on to Linus
-
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
-Or, if they are only gpio fixes, then I'd also be happy to get a git
-pull req for the changes.  :-)
-
-g.
+On Mon, Jun 06, 2011 at 12:40:48AM -0600, Grant Likely wrote:
+> We had to say goodbye when David passed away recently.  David had a
+> huge impact on our community, both personally in the lives of the
+> people he worked with, and technically in the design and maintenance
+> of several subsystems.  He is greatly missed.
+> 
+> He also leaves behind a number of much loved subsystems now orphaned.
+> This patch updates the MAINTAINERS file for the areas that David was
+> responsible for and adds an entry for him to the CREDITS file.
+> 
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Acked-by: Harry Wei <harryxiyou@gmail.com>
