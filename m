@@ -1,290 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab1FGT6h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:58:37 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:39302 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753546Ab1FGT6g (ORCPT
+	id S1754809Ab1FGT6y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 15:58:54 -0400
+Received: from mailc.microsoft.com ([131.107.115.214]:46450 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753546Ab1FGT6w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 15:58:36 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+OhGs6nNKOVFzTGgC1z0EdE9zpunspHVkELqS44k
-	ntKhm7i6PIJGuG
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] kernel/trace: Convert to kstrtoul_from_user
-Date: Tue,  7 Jun 2011 21:58:27 +0200
-Message-Id: <1307476707-14762-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-X-Y-GMX-Trusted: 0
+	Tue, 7 Jun 2011 15:58:52 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: Christoph Hellwig <hch@infradead.org>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>
+Subject: RE: [PATCH 24/49] Staging: hv: vmbus: Get rid of the unused wrapper
+ - vmbus_onchannel_event()
+Thread-Topic: [PATCH 24/49] Staging: hv: vmbus: Get rid of the unused
+ wrapper - vmbus_onchannel_event()
+Thread-Index: AQHMJJn4ISreyP2GakKrULlRcoq1mpSxa0+AgACRG+CAALmOAP//muEA
+Date: Tue, 7 Jun 2011 19:58:50 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480813DAF6@TK5EX14MBXC122.redmond.corp.microsoft.com>
+References: <1307400540-13193-1-git-send-email-kys@microsoft.com>
+ <1307400613-13234-1-git-send-email-kys@microsoft.com>
+ <1307400613-13234-24-git-send-email-kys@microsoft.com>
+ <20110606231511.GB18222@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0480813D861@TK5EX14MBXC122.redmond.corp.microsoft.com>
+ <20110607185840.GB3531@kroah.com>
+In-Reply-To: <20110607185840.GB3531@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces the code for getting an unsigned long from a
-userspace buffer by a simple call to kstroul_from_user.
-This makes it easier to read and less error prone.
 
-Kernel Version: v3.0-rc2
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- kernel/trace/ftrace.c       |   13 +-------
- kernel/trace/ring_buffer.c  |   13 +-------
- kernel/trace/trace.c        |   65 ++++++------------------------------------
- kernel/trace/trace_events.c |   26 ++--------------
- kernel/trace/trace_stack.c  |   13 +-------
- 5 files changed, 20 insertions(+), 110 deletions(-)
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Tuesday, June 07, 2011 2:59 PM
+> To: KY Srinivasan
+> Cc: Christoph Hellwig; gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
+> Abhishek Kane (Mindtree Consulting PVT LTD)
+> Subject: Re: [PATCH 24/49] Staging: hv: vmbus: Get rid of the unused wrapper -
+> vmbus_onchannel_event()
+> 
+> On Tue, Jun 07, 2011 at 02:59:32PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Christoph Hellwig [mailto:hch@infradead.org]
+> > > Sent: Monday, June 06, 2011 7:15 PM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
+> > > Abhishek Kane (Mindtree Consulting PVT LTD)
+> > > Subject: Re: [PATCH 24/49] Staging: hv: vmbus: Get rid of the unused wrapper
+> -
+> > > vmbus_onchannel_event()
+> > >
+> > > On Mon, Jun 06, 2011 at 03:49:48PM -0700, K. Y. Srinivasan wrote:
+> > > > Now, get rid of the unused wrapper - vmbus_onchannel_event().
+> > >
+> > > I'd merge this into the previous patch.  In general your patch split
+> > > seem a little too fine grained to me in general.  When you remove a
+> > > wrapper you can inline it into the callsite directly, if you clean up a
+> > > function directly inlining it into the helper is fine, etc.
+> > >
+> > I agree with you that some of these patches are too fine grained; but
+> > I thought that was what was expected - "one change per patch".
+> 
+> Yes, but don't take it to an extreme, like you have done here :)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 1ee417f..508dcb4 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -806,19 +806,10 @@ ftrace_profile_write(struct file *filp, const char __user *ubuf,
- 		     size_t cnt, loff_t *ppos)
- {
- 	unsigned long val;
--	char buf[64];		/* big enough to hold a number */
- 	int ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	val = !!val;
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index b0c7aa4..6c59dd9 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -3978,20 +3978,11 @@ rb_simple_write(struct file *filp, const char __user *ubuf,
- 		size_t cnt, loff_t *ppos)
- {
- 	unsigned long *p = filp->private_data;
--	char buf[64];
- 	unsigned long val;
- 	int ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	if (val)
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index ee9c921..2bdc019 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2701,20 +2701,11 @@ tracing_ctrl_write(struct file *filp, const char __user *ubuf,
- 		   size_t cnt, loff_t *ppos)
- {
- 	struct trace_array *tr = filp->private_data;
--	char buf[64];
- 	unsigned long val;
- 	int ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	val = !!val;
-@@ -2966,20 +2957,11 @@ tracing_max_lat_write(struct file *filp, const char __user *ubuf,
- 		      size_t cnt, loff_t *ppos)
- {
- 	unsigned long *ptr = filp->private_data;
--	char buf[64];
- 	unsigned long val;
- 	int ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	*ptr = val * 1000;
-@@ -3434,19 +3416,10 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 		      size_t cnt, loff_t *ppos)
- {
- 	unsigned long val;
--	char buf[64];
- 	int ret, cpu;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	/* must have at least 1 entry */
-@@ -4099,19 +4072,10 @@ trace_options_write(struct file *filp, const char __user *ubuf, size_t cnt,
- {
- 	struct trace_option_dentry *topt = filp->private_data;
- 	unsigned long val;
--	char buf[64];
- 	int ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	if (val != 0 && val != 1)
-@@ -4159,20 +4123,11 @@ trace_options_core_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 			 loff_t *ppos)
- {
- 	long index = (long)filp->private_data;
--	char buf[64];
- 	unsigned long val;
- 	int ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	if (val != 0 && val != 1)
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 686ec39..4d7e149 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -486,20 +486,11 @@ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 		   loff_t *ppos)
- {
- 	struct ftrace_event_call *call = filp->private_data;
--	char buf[64];
- 	unsigned long val;
- 	int ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	ret = tracing_update_buffers();
-@@ -571,19 +562,10 @@ system_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
- {
- 	const char *system = filp->private_data;
- 	unsigned long val;
--	char buf[64];
- 	ssize_t ret;
- 
--	if (cnt >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, cnt))
--		return -EFAULT;
--
--	buf[cnt] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	ret = tracing_update_buffers();
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index b0b53b8..77575b3 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -156,20 +156,11 @@ stack_max_size_write(struct file *filp, const char __user *ubuf,
- {
- 	long *ptr = filp->private_data;
- 	unsigned long val, flags;
--	char buf[64];
- 	int ret;
- 	int cpu;
- 
--	if (count >= sizeof(buf))
--		return -EINVAL;
--
--	if (copy_from_user(&buf, ubuf, count))
--		return -EFAULT;
--
--	buf[count] = 0;
--
--	ret = strict_strtoul(buf, 10, &val);
--	if (ret < 0)
-+	ret = kstrtoul_from_user(ubuf, count, 10, &val);
-+	if (ret)
- 		return ret;
- 
- 	local_irq_save(flags);
--- 
-1.7.3.4
+Will do in the future. Should I re-spin any of the patches in this set to make them less
+"fine-grained".
+
+Regards,
+
+K. Y 
 
