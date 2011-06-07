@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab1FGN7H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 09:59:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35854 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898Ab1FGN7F convert rfc822-to-8bit (ORCPT
+	id S1754175Ab1FGOCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 10:02:31 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:44278 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab1FGOC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 09:59:05 -0400
-Subject: Re: [PATCH] sched: correct testing need_resched in
- mutex_spin_on_owner()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1307454439.2322.260.camel@twins>
-References: <BANLkTimZ8=YYZXZSzauy5ASsP0kwti8uxQ@mail.gmail.com>
-	 <1307454439.2322.260.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 07 Jun 2011 15:59:00 +0200
-Message-ID: <1307455140.2322.262.camel@twins>
+	Tue, 7 Jun 2011 10:02:29 -0400
+Date: Tue, 7 Jun 2011 16:02:06 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Ben Dooks <ben-i2c@fluff.org>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, anish <anish198519851985@gmail.com>,
+        gregkh@suse.de, manuel.stahl@iis.fraunhofer.de,
+        lucas.demarchi@profusion.mobi, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Linux I2C <linux-i2c@vger.kernel.org>
+Subject: Re: [PATCH] staging iio: Replace kmalloc with local variable
+Message-ID: <20110607160206.6cb3168d@endymion.delvare>
+In-Reply-To: <20110607134135.GD15795@trinity.fluff.org>
+References: <1307450354.1516.23.camel@anish-desktop>
+	<4DEE20E7.4020008@cam.ac.uk>
+	<20110607134135.GD15795@trinity.fluff.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 15:47 +0200, Peter Zijlstra wrote:
-> On Tue, 2011-06-07 at 21:41 +0800, Hillf Danton wrote:
-> > It is suppose to check the owner task that is not absolutly running on the
-> > local CPU, 
+On Tue, 7 Jun 2011 14:41:35 +0100, Ben Dooks wrote:
+> On Tue, Jun 07, 2011 at 02:00:23PM +0100, Jonathan Cameron wrote:
+> > On 06/07/11 13:39, anish wrote:
+> > > From: anish kumar <anish198519851985@gmail.com>
+> > > 
+> > > replaced kmalloc with local variable as I2C(in this case) doesn't require
+> > > kmalloc memory it can do with stack memory.
+> > I've cc'd linux-i2c just to check I'm right about the whole i2c doesn't need
+> > dma safe buffers bit...
 > 
-> Oh, why do you think so?
-> 
-> > and if NEED_RESCHED is happenly set on the current task of local
-> > CPU, we get incorrect result.
-> 
-> Only if your above assumption holds, which it doesn't. It explicitly
-> checks to see if _this_ cpu needs a resched while spinning, if so it
-> bails the spinning and calls schedule in the lock slow path.
-> 
-> If the owner cpu reschedules, owner will leave the rq and
-> owner_running() will return false, also breaking the loop.
-> 
-> > 
-> > Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> > ---
-> >  kernel/sched.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/kernel/sched.c b/kernel/sched.c
-> > index fd18f39..3ea64fe 100644
-> > --- a/kernel/sched.c
-> > +++ b/kernel/sched.c
-> > @@ -4326,7 +4326,7 @@ int mutex_spin_on_owner(struct mutex *lock,
-> > struct task_struct *owner)
-> >  		return 0;
-> > 
-> >  	while (owner_running(lock, owner)) {
-> > -		if (need_resched())
-> > +		if (test_tsk_need_resched(owner))
-> >  			return 0;
-> > 
+> No, it is down to the i2c driver, and from recollection dma from stack is
+> not recommended, due to things like cache line alignment. Please do not
+> do this.
 
-Furthermore, that can crash the machine, as there's no guarantee owner
-is a sane pointer at this point.
+To be clearer, it is down to the i2c BUS (adapter) driver, NOT the i2c
+device driver. So the patch is correct.
+
+Keep in mind that not all I2C/SMBus controllers care about DMA. In fact,
+most don't (at least in the set I am maintaining - might be different
+an embedded.) So calling kmalloc for every transfer in every I2C device
+driver "just in case" is very much counterproductive.
+
+And, if a controller does DMA and needs well-aligned, dynamically
+allocated buffer, its driver would hopefully allocate the buffer ONCE
+and keep it around, rather than reallocating it for every transfer.
+
+-- 
+Jean Delvare
