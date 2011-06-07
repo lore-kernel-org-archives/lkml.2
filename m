@@ -1,105 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab1FGPIW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 11:08:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42354 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756525Ab1FGPIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 11:08:20 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=XYJHFtupD_QA:10 a=Nfqsw8rmjecA:10 a=5SG0PmZfjMsA:10 a=8nJEP1OIZ-IA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=JfrnYn6hAAAA:8 a=wC7odt5anOTvtjqptcAA:9 a=tdBslllu8H2KfsVTRFgA:7 a=wPNLvfGTeEIA:10 a=3Rfx1nUSh_UA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Tue, 7 Jun 2011 11:08:16 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] sched: correct testing need_resched in
- mutex_spin_on_owner()
-Message-ID: <20110607150816.GC27245@home.goodmis.org>
-References: <BANLkTimZ8=YYZXZSzauy5ASsP0kwti8uxQ@mail.gmail.com>
- <1307454439.2322.260.camel@twins>
- <BANLkTikvFk7pbcw9PEtPGSK=6WCNLYXCuQ@mail.gmail.com>
- <1307456680.2322.270.camel@twins>
- <BANLkTim1htraTXtGMcyAuH1Wa-G+J05i_g@mail.gmail.com>
- <1307457646.2322.273.camel@twins>
- <BANLkTi=XTpYTZvetOUDgobRa_S4Cb=+syA@mail.gmail.com>
+	id S1755148Ab1FGP0y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 11:26:54 -0400
+Received: from comu.ring0.de ([46.4.151.82]:34115 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753350Ab1FGP0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 11:26:53 -0400
+X-Greylist: delayed 1053 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jun 2011 11:26:52 EDT
+X-Spam-Report: * -2.6 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	*  0.1 RDNS_NONE Delivered to trusted network by a host with no rDNS
+	*  0.1 AWL AWL: From: address is in the auto white-list
+Date: Tue, 7 Jun 2011 17:09:10 +0200
+From: Sebastian Reichel <sre@debian.org>
+To: Carlos Chinea <carlos.chinea@nokia.com>
+Cc: ext Linus Walleij <linus.walleij@linaro.org>,
+        Govindraj <govindraj.ti@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        pawel.szyszuk@stericsson.com
+Subject: Re: [RFC PATCHv4 0/7] HSI framework and drivers
+Message-ID: <20110607150910.GA3780@earth.universe>
+References: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
+ <AANLkTimTfOyhDR6BsHD_1VvzOPGbYqo6L784wPkQMi_8@mail.gmail.com>
+ <1300787404.8008.116.camel@groo>
+ <BANLkTincpt8ojK8icvXz4XfkWL9z87VmUA@mail.gmail.com>
+ <BANLkTikrXb7h_iG+xOvFPozT6w5Nj8nJKw@mail.gmail.com>
+ <1305621553.24348.5009.camel@groo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="/9DWx/yDrRhgMJTb"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=XTpYTZvetOUDgobRa_S4Cb=+syA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1305621553.24348.5009.camel@groo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 10:47:21PM +0800, Hillf Danton wrote:
-> On Tue, Jun 7, 2011 at 10:40 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, 2011-06-07 at 22:36 +0800, Hillf Danton wrote:
-> >
-> >> If you are right, the following comment also in __mutex_lock_common()
-> >>
-> >>       for (;;) {
-> >>               struct task_struct *owner;
-> >>
-> >>               /*
-> >>                * If there's an owner, wait for it to either
-> >>                * release the lock or go to sleep.
-> >>                */
-> >>               owner = ACCESS_ONCE(lock->owner);
-> >>               if (owner && !mutex_spin_on_owner(lock, owner))
-> >>                       break;
-> >>
-> >> looks misleading too, but if owner is on this CPU, for what does we wait?
-> >
-> > huh, wtf!? it cannot be on this cpu, if it was we wouldn't be running
-> > the above code but whatever owner was doing.
-> >
-> > So my argument was, it cannot be on this cpu, therefore, by checking it
-> > is on a cpu, we check its on a different cpu.
-> >
-> > And I really don't see how any of that is related to the above.
-> >
-> Oh, it looks you are willing to rethink about testing need_resched?
 
-NO!
+--/9DWx/yDrRhgMJTb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hillf, reading this thread I understand that you have no idea of what is
-happening here. You are totally clueless. Let me give you a clue.
+On Tue, May 17, 2011 at 11:39:13AM +0300, Carlos Chinea wrote:
+> We are still committed to these patches. We are aiming to release a new
+> version in 3 weeks max, sooner if we can.
+>=20
+> I am very sorry for the delay and I agree that starting to have several
+> out-of-tree drivers is not acceptable. I'll try my best to fix this
+> asap.
 
-The idea of an adaptive mutex is quite simple. If a mutex is held for a
-short period of time, and on another CPU a task tries to grab the same
-mutex, it would be slower to have that task schedule out than to just
-spin waiting for that mutex to be released.
+Do you also plan to add the platform code for rx51 to the mainline
+kernel?
 
-Ideally, this mutex would then act like a spin lock, and things would
-run very efficiently. But, as it is not a spin lock, there's things we
-must also be aware of.
+P.S.: 3 weeks are over today :)
 
-1) If the owner we are waiting for to release the mutex schedules out.
+-- Sebastian
 
-2) If another task wants us to run on the CPU of the waiter that is
-spinning.
+--/9DWx/yDrRhgMJTb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-3) If the waiter that is spinning runs out of its time quantum and
-should yield to another task.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-#1 is checked by the owner_running(). If that fails, then we should not
-spin anymore and its good to schedule. BTW, the answer why
-owner_running() is safe to check owner, is because it grabs rcu_locks()
-to make sure it is safe.
+iQIcBAEBCAAGBQJN7j8WAAoJENju1/PIO/qa/3MP/iWMCzyefZ+owutnptxNaUet
+9iKGI71//7VFCsIJofAq4zIpWTBvXI+/mjQmvS/ciI9qspL0/2aRIg9dfFkDdQk/
+L8d8KkeYFz8Nu7Hrh9DHG5f2Dkqti6FRUFrRY4e5xKQ8IaVcg9BXTcsU0pUC0F+O
+Y2IAVkCkjAWGPFn7kwj9hvzg3MfztMRo9zGemfXv4tqevd8mhNDJttZjdJuoiaWT
+O+F3tvMDFlv/fZBHI5su+E2rcZXxqh4XU8cw4+osDXEmVulPshMMtN6+Ywj14IHG
+sy89c9jI5jYQpWDyynGYpu7N1CZby56eYH0Xl3tHixdn+PGI5e2+IIy0FukqXiMl
+eoPZC2IzgnC+Pl2LehGpNC4nzXSwaO/AkxBUA4jE+DF46cyo74/qdWm+8wb6p2VX
+Asb6QwXXJ/XwibI019a1thkMtn/VhoiEdNWII3bKYuJQQEz86BCKD/vOKj81FG09
++9yTHnnUGF2T0hI/lK2hTtheFWA3fpLb3umM473YZbTb5l+vLbFzKltC0joDs7mr
+cf1MC8lqVmkQ5eUsef6i448OtrQFAs/62I8yHmoBSUStE35I/gAA8BAdLv/EZELA
+FDSUv9kZ+mytHypVsXhQ42XyaUYBt0oLs4d4Mio9gdPqZYF1CMy0qYKpOFSFkuDm
+8VJbr4LhfznME3vQV5Xh
+=UNag
+-----END PGP SIGNATURE-----
 
-#2 and #3 are checked by testing NEED_RESCHED on the waiter (NOT THE
-OWNER!).  If the waiter that is spinning should be preempted, the waiter
-(not the owner) will have its NEED_RESCHED bit set. That is why the
-waiter's NEED_RESCHED flag is checked and not owners.
-
-And also we don't need to check need_resched() in the above code because
-the loop checks it anyway, or we break out of the loop.
-
-Understand?
-
--- Steve
-
+--/9DWx/yDrRhgMJTb--
