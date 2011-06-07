@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab1FGPLT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 11:11:19 -0400
-Received: from sous-sol.org ([216.99.217.87]:44456 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755431Ab1FGPLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 11:11:17 -0400
-Date: Tue, 7 Jun 2011 08:10:32 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Chris Wright <chrisw@sous-sol.org>,
-        padmanabh ratnakar <pratnakarlx@gmail.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        iommu <iommu@lists.linux-foundation.org>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: Seeing DMAR errors after multiple load/unload with SR-IOV
-Message-ID: <20110607151032.GZ23047@sequoia.sous-sol.org>
-References: <BANLkTi=q0f8aYc2+fhaY5yFRRfgkOOME-g@mail.gmail.com>
- <1307398661.5901.14.camel@x201>
- <20110606223451.GW23047@sequoia.sous-sol.org>
- <BANLkTintUEWqwhUmR2MYC0jixqEi-wNJpg@mail.gmail.com>
- <20110607133804.GX23047@sequoia.sous-sol.org>
- <1307454415.24181.46.camel@i7.infradead.org>
+	id S1755913Ab1FGPMw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 11:12:52 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54609 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab1FGPMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 11:12:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=P9m4BMOEu7ect4A2q3xdlyqoH1Wb4PfF/NEftVHpBUlJ+0SnC9j91NKllT4c6kTN5b
+         hixZGBCrMQEZx0BhpGavKkIGWdcgPMIoYnJlrXO3IGjecQyv8Ni+NDq7T3rOrxCrjUNR
+         xS62tf8UEVdW1n9KqJobFOWe6fu4769jgRqA8=
+Date: Wed, 8 Jun 2011 00:12:42 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Sattler <tsattler@gmx.de>, Ury Stankevich <urykhy@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] mm: vmscan: Do not use page_count without a page
+ pin
+Message-ID: <20110607151242.GI1686@barrios-laptop>
+References: <1307459225-4481-1-git-send-email-mgorman@suse.de>
+ <1307459225-4481-3-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307454415.24181.46.camel@i7.infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1307459225-4481-3-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Woodhouse (dwmw2@infradead.org) wrote:
-> On Tue, 2011-06-07 at 06:38 -0700, Chris Wright wrote:
-> > I think we still leak the list entry though.  Bottom line is that we
-> > need to handle hotplug ADD_DEVICE and DEL_DEVICE notifications.  We
-> > happen to pick up ADD_DEVICE by accident, but it's all pretty sloppy. 
+On Tue, Jun 07, 2011 at 04:07:03PM +0100, Mel Gorman wrote:
+> From: Andrea Arcangeli <aarcange@redhat.com>
 > 
-> Yeah, keeping a list of possible stale 'pci_dev' pointers is stupid. We
-> should figure out the matching DMAR unit directly from the ACPI table at
-> ADD_DEVICE time, and store it in pdev->archdata.iommu.
+> From: Andrea Arcangeli <aarcange@redhat.com>
 > 
-> I saw patches which were going in that direction...
+> It is unsafe to run page_count during the physical pfn scan because
+> compound_head could trip on a dangling pointer when reading
+> page->first_page if the compound page is being freed by another CPU.
+> 
+> [mgorman@suse.de: Split out patch]
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-Cool, where are they?  I'm working on something similar, and missed them.
-
-thanks,
--chris
+-- 
+Kind regards
+Minchan Kim
