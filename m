@@ -1,198 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab1FGAeE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 20:34:04 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48129 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752448Ab1FGAeD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 20:34:03 -0400
-Date: Mon, 6 Jun 2011 17:33:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: <linux-arm-kernel@lists.infradead.org>, <arnd@arndb.de>,
-        <armando.visconti@st.com>, <shiraz.hashim@st.com>,
-        <vipin.kumar@st.com>, <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
-        <vipulkumar.samar@st.com>, <amit.virdi@st.com>,
-        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
-        <viresh.linux@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 1/3] drivers/pwm st_pwm: Add support for ST's Pulse
- Width Modulator
-Message-Id: <20110606173339.268b9f9c.akpm@linux-foundation.org>
-In-Reply-To: <af3d50b271b17e404d236e19196adfd4618e2501.1306831238.git.viresh.kumar@st.com>
-References: <cover.1306831238.git.viresh.kumar@st.com>
-	<af3d50b271b17e404d236e19196adfd4618e2501.1306831238.git.viresh.kumar@st.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756132Ab1FGAgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 20:36:22 -0400
+Received: from r00tworld.com ([212.85.137.150]:53058 "EHLO r00tworld.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754901Ab1FGAgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 20:36:21 -0400
+From: pageexec@freemail.hu
+To: Ingo Molnar <mingo@elte.hu>
+Date: Tue, 07 Jun 2011 02:34:42 +0200
+MIME-Version: 1.0
+Subject: Re: [PATCH v5 9/9] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+Reply-to: pageexec@freemail.hu
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@mit.edu>,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Message-ID: <4DED7222.28864.150079CE@pageexec.freemail.hu>
+In-reply-to: <20110606192544.GA28947@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>, <4DED239B.8177.13CDBA86@pageexec.freemail.hu>, <20110606192544.GA28947@elte.hu>
+X-mailer: Pegasus Mail for Windows (4.61)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Tue, 07 Jun 2011 02:35:16 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 May 2011 14:21:51 +0530
-Viresh Kumar <viresh.kumar@st.com> wrote:
+On 6 Jun 2011 at 21:25, Ingo Molnar wrote:
 
-> This patch adds support for ST Microelectronics Pulse Width Modulator. This is
-> currently used by ST's SPEAr platform and tested on the same.
+> * pageexec@freemail.hu <pageexec@freemail.hu> wrote:
 > 
-> This patch also adds drivers/pwm directory as suggested by Arnd Bergmann in
-> following discussion:
+> > [...] it goes like 'I am not willing to do A because it would help 
+> > script kiddies but I'd rather do B that would help script kiddies'. 
+> > with A = 'disclose security bugs' and B = 'keep the last roadblock 
+> > that prevents full ASLR'.
 > 
-> http://comments.gmane.org/gmane.linux.ports.arm.kernel/118651
+> No, that's wrong, the logic goes like this:
 > 
->
-> ...
->
-> +/**
-> + * struct pwm_device: struct representing pwm device/channel
-> + *
-> + * pwmd_id: id of pwm device
-> + * pwm: pointer to parent pwm ip
-> + * label: used for storing label passed in pwm_request
-> + * offset: base address offset from parent pwm mmio_base
-> + * busy: represents usage status of a pwm device
-> + * lock: lock specific to a pwm device
+>   if i do A then it has X1 advantages and Y1 disadvantages.
+>   if i do B then it has X2 advantages and Y2 disadvantages.
+> 
+> The Y1 and Y2 set of disadvantages can both include "making it easier 
+> for script kiddies" but the sets of advantages and disadvantages can 
+> also include MANY OTHER considerations, making the decision unique in 
+> each case.
 
-More specificity here would be helpful.  Precisely which data does the
-lock protect?
+sure, i was only reflecting on what Linus himself kept insisting on in
+the past.
 
-> + * node: node for adding device to parent pwm's devices list
-> + *
-> + * Each pwm IP contains four independent pwm device/channels. Some or all of
-> + * which may be present in our configuration.
-> + */
-> +struct pwm_device {
-> +	unsigned pwmd_id;
-> +	struct pwm *pwm;
-> +	const char *label;
-> +	unsigned offset;
-> +	unsigned busy;
-> +	spinlock_t lock;
-> +	struct list_head node;
-> +};
-> +
-> +/**
-> + * struct pwm: struct representing pwm ip
-> + *
-> + * id: id of pwm ip
-> + * mmio_base: base address of pwm
-> + * clk: pointer to clk structure of pwm ip
-> + * clk_enabled: clock enable status
-> + * pdev: pointer to pdev structure of pwm
-> + * lock: lock specific to current pwm ip
+> To translate it to this specific case (extremely simplifed, so please 
+> don't nit-pick that my descriptions of advantages and disadvantages 
+> are not precise nor complete):
 
-Ditto.
+i don't even need to get there, you already failed right in the very
+first sentence, very impressive. no. 'not precise' is an understatement.
 
-> + * devices: list of devices/childrens of pwm ip
-> + * node: node for adding pwm to global list of all pwm ips
-> + */
-> +struct pwm {
-> +	unsigned id;
-> +	void __iomem *mmio_base;
-> +	struct clk *clk;
-> +	int clk_enabled;
-> +	struct platform_device *pdev;
-> +	spinlock_t lock;
-> +	struct list_head devices;
-> +	struct list_head node;
-> +};
-> +
-> +/*
-> + * period_ns = 10^9 * (PRESCALE + 1) * PV / PWM_CLK_RATE
-> + * duty_ns = 10^9 * (PRESCALE + 1) * DC / PWM_CLK_RATE
-> + *
-> + * PV = (PWM_CLK_RATE * period_ns)/ (10^9 * (PRESCALE + 1))
-> + * DC = (PWM_CLK_RATE * duty_ns)/ (10^9 * (PRESCALE + 1))
-> + */
-> +int pwm_config(struct pwm_device *pwmd, int duty_ns, int period_ns)
-> +{
-> +	u64 val, div, clk_rate;
-> +	unsigned long prescale = MIN_PRESCALE, pv, dc;
-> +	int ret = 0;
-> +
-> +	if (!pwmd) {
-> +		pr_err("pwm: config - NULL pwm device pointer\n");
-> +		return -EFAULT;
-> +	}
-> +
-> +	if (period_ns == 0 || duty_ns > period_ns) {
-> +		ret = -EINVAL;
-> +		goto err;
-> +	}
-> +
-> +	/* TODO: Need to optimize this loop */
-> +	while (1) {
-> +		div = 1000000000;
-> +		div *= 1 + prescale;
-> +		clk_rate = clk_get_rate(pwmd->pwm->clk);
-> +		val = clk_rate * period_ns;
-> +		pv = div64_u64(val, div);
-> +		val = clk_rate * duty_ns;
-> +		dc = div64_u64(val, div);
-> +
-> +		if ((pv == 0) || (dc == 0)) {
-> +			ret = -EINVAL;
-> +			goto err;
-> +		}
-> +		if ((pv > MAX_PERIOD) || (dc > MAX_DUTY)) {
-> +			prescale++;
-> +			if (prescale > MAX_PRESCALE) {
-> +				ret = -EINVAL;
-> +				goto err;
-> +			}
-> +			continue;
-> +		}
-> +		if ((pv < MIN_PERIOD) || (dc < MIN_DUTY)) {
-> +			ret = -EINVAL;
-> +			goto err;
-> +		}
-> +		break;
-> +	}
+>  A) "i put a zero day exploit and a CVE code into a changelog"
+> 
+>      Advantages: - it describes the problem more fully
+> 
+>   Disadvantages: - it makes it easier for people (including script kiddies) do harm faster
+>                  - creates a false, misleading category for "security bugs"
+> 
 
-gee, is this some sort of puzzle?  So human-readable description of
-what this code is doing would be an improvement.
+you try to set things up to serve your argument but it's not the things
+we've ever talked about (IOW, this is a strawman).
 
+in particular, i've never ever requested exploits in commit logs (and i
+don't remember anyone else who has, do you?). why do you keep thinking in
+only extremes? is it so impossible to simply state a CVE and the generic
+bug class (CWE) that the commit fixes? what Linus has insisted on is 'no
+greppable words', that's diametrically opposite to 'full disclosure' that
+you guys say you're supposedly doing.
 
-> +	/*
-> +	 * NOTE: the clock to PWM has to be enabled first
-> +	 * before writing to the registers
-> +	 */
-> +	spin_lock(&pwmd->pwm->lock);
-> +	ret = clk_enable(pwmd->pwm->clk);
-> +	if (ret) {
-> +		spin_unlock(&pwmd->pwm->lock);
-> +		goto err;
-> +	}
-> +
-> +	spin_lock(&pwmd->lock);
-> +	writel(prescale << PRESCALE_SHIFT, pwmd->pwm->mmio_base +
-> +			pwmd->offset + PWMCR);
-> +	writel(dc, pwmd->pwm->mmio_base + pwmd->offset + PWMDCR);
-> +	writel(pv, pwmd->pwm->mmio_base + pwmd->offset + PWMPCR);
-> +	spin_unlock(&pwmd->lock);
-> +	clk_disable(pwmd->pwm->clk);
-> +	spin_unlock(&pwmd->pwm->lock);
+so if you omit the exploits that noone really requested (and i don't even
+know why they'd be useful in a commit) then suddenly the script kiddies
+are no longer helped.
 
-The nesting rules for these two locks seems sensible and obvious, but I
-guess documenting the rule wouldn't hurt.
+and you have yet to explain what is false and misleading about the security
+bug category. you used these words yourself several times today, how do you
+explain that? why does the CVE exist? why does bugtraq exist? are all those
+people discussing 'false and misleading' things? why does your employer
+release security errata? etc, etc.
 
-> +	return 0;
-> +err:
-> +	dev_err(&pwmd->pwm->pdev->dev, "pwm config fail\n");
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(pwm_config);
-> +
->
-> ...
->
-> +static int __devinit st_pwm_probe(struct platform_device *pdev)
+>  B) "i obfuscate the vsyscall page"
+> 
+>      Advantages: - it makes it statistically harder for people (including script kiddies) to do harm
+> 
+>   Disadvantages: - it reduces the incentive to fix *real* security bugs
 
-And here things get rather odd.
+as i pointed out in an earlier mail, this supposed disadvantage doesn't
+exist so come up with something better, preferably real.
 
-Most of this file is a generic, non-device specific PWM layer, exported
-to other modules.  But then we get into driver bits which are specific
-to one paritular type of device.  Confused - this is like putting the
-e100 driver inside net/ipv4/tcp.c?
+>                  - complicates the code
+
+removing code simplifies things. next try? ;)
+
+> Do you see how A) and B) are not equivalent at all? Different cases, 
+> different attributes, different probabilities and different 
+> considerations.
+
+i only see a strawman that you thought would help your cause but since
+it's just that, a strawman, something you made up for the sake of argument,
+i don't think there's much more to see about it.
+
+> > but it's very simple logic Ingo.
+> 
+> Please drop the condescending tone, i think it should be clear to you 
+> by now that i have a good basis to disagree with you.
+
+i'm a firm believer of instant karma, it seems to work on people like yourself
+or Linus really well. in somewhat profane but simple english: if you behave as
+an asshole i will treat you as one, if you believe i treated you as an asshole
+it's because i think you acted as one, and if you don't understand why then you're
+welcome to 1. look into yourself and figure it out yourself, 2. ask me. what is
+not going to get you anywhere is if you talk to me and others from the high horse,
+you must be a lot better than your current self for anyone to tolerate it.
 
