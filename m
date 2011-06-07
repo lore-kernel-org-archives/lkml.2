@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940Ab1FGQye (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 12:54:34 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:51596
-	"EHLO CH1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756836Ab1FGQyc (ORCPT
+	id S1755152Ab1FGQtM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 12:49:12 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:9010 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200Ab1FGQtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 12:54:32 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bh8275dhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LMFISR-01-1XX-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Robert Richter <robert.richter@amd.com>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        <stable@kernel.org>
-Subject: [PATCH] oprofile, x86: Fix race in nmi handler while starting
-Date: Tue, 7 Jun 2011 18:47:29 +0200
-Message-ID: <1307465249-20055-1-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.5.rc3
+	Tue, 7 Jun 2011 12:49:09 -0400
+Message-ID: <4DEE567E.7080102@tilera.com>
+Date: Tue, 7 Jun 2011 12:49:02 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linuxppc-dev@lists.ozlabs.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <kumar.gala@freescale.com>, <linux-kernel@vger.kernel.org>,
+        <akpm@kernel.org>, Deepak Saxena <dsaxena@linaro.org>,
+        <linux-console@vger.kernel.org>, <greg@kroah.com>,
+        Timur Tabi <timur@freescale.com>
+Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor
+ management driver
+References: <1306953337-15698-1-git-send-email-timur@freescale.com> <20110606212356.GA20112@dumpdata.com> <4DED5D08.3070704@tilera.com> <201106070908.16301.arnd@arndb.de>
+In-Reply-To: <201106070908.16301.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some rare cases, nmis are generated immediately after the nmi
-handler of the cpu was started. This causes the counter not to be
-enabled. Before enabling the nmi handlers we need to set variable
-ctr_running first and make sure its value is written to memory.
+On 6/7/2011 3:08 AM, Arnd Bergmann wrote:
+> On Tuesday 07 June 2011 01:04:40 Chris Metcalf wrote:
+>> There is certainly precedent for drivers that don't fit cleanly into an
+>> existing category to go in drivers/<arch>, e.g. drivers/s390,
+>> drivers/parisc, etc.  There is also drivers/platform/x86, though that seems
+>> to be for the bus "platform drivers" rather than just a random character
+>> driver like the one in question.
+> The drivers/s390 and drivers/parisc directories are from a distant past,
+> we should not add new ones like them. drivers/platform is controversial,
+> but I think it's ok for stuff that manages platform specific quirks.
+> The main problem with that is that it doesn't work for embedded systems,
+> by extension every ARM specific driver could go into drivers/platform/...
+> and we don't want that.
+>
+> You can probably argue that the tile drivers do fit in here as long as
+> they are specific to the hypervisor and not to some SOC specific hardware.
 
-Also, the patch makes all existing barriers a memory barrier instead
-of a compiler barrier only.
+Can you clarify that?   I think you're contrasting something like an ARM
+core that was licensed and put in a SoC by some random vendor, and you
+could have an endless stream of drivers for that case.  The Tilera core
+isn't being licensed; it's sold more like an Intel chip with a fixed set of
+interfaces available only from Tilera.  The particular interface in
+question here is SPI, and the core itself knows how to boot the chip over
+SPI by finding an SPI ROM and reading the boot stream out of it directly
+after power-up.
 
-Reported-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Cc: <stable@kernel.org> # .35+
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/oprofile/nmi_int.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+So does that match with your model of "drivers/platform/tile"?  Maybe we
+have a winner!  :-)
 
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index cf97500..68894fd 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -112,8 +112,10 @@ static void nmi_cpu_start(void *dummy)
- static int nmi_start(void)
- {
- 	get_online_cpus();
--	on_each_cpu(nmi_cpu_start, NULL, 1);
- 	ctr_running = 1;
-+	/* make ctr_running visible to the nmi handler: */
-+	smp_mb();
-+	on_each_cpu(nmi_cpu_start, NULL, 1);
- 	put_online_cpus();
- 	return 0;
- }
-@@ -504,15 +506,18 @@ static int nmi_setup(void)
- 
- 	nmi_enabled = 0;
- 	ctr_running = 0;
--	barrier();
-+	/* make variables visible to the nmi handler: */
-+	smp_mb();
- 	err = register_die_notifier(&profile_exceptions_nb);
- 	if (err)
- 		goto fail;
- 
- 	get_online_cpus();
- 	register_cpu_notifier(&oprofile_cpu_nb);
--	on_each_cpu(nmi_cpu_setup, NULL, 1);
- 	nmi_enabled = 1;
-+	/* make nmi_enabled visible to the nmi handler: */
-+	smp_mb();
-+	on_each_cpu(nmi_cpu_setup, NULL, 1);
- 	put_online_cpus();
- 
- 	return 0;
-@@ -531,7 +536,8 @@ static void nmi_shutdown(void)
- 	nmi_enabled = 0;
- 	ctr_running = 0;
- 	put_online_cpus();
--	barrier();
-+	/* make variables visible to the nmi handler: */
-+	smp_mb();
- 	unregister_die_notifier(&profile_exceptions_nb);
- 	msrs = &get_cpu_var(cpu_msrs);
- 	model->shutdown(msrs);
 -- 
-1.7.5.rc3
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
 
