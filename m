@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab1FGEzY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 00:55:24 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:40020 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab1FGEzW (ORCPT
+	id S1753666Ab1FGFDu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 01:03:50 -0400
+Received: from smtp-out-002.synserver.de ([212.40.185.2]:1174 "HELO
+	smtp-out-002.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751952Ab1FGFDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 00:55:22 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6369"; a="95852648"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: "'Alan Stern'" <stern@rowland.harvard.edu>
-Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <balbi@ti.com>,
-        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
-References: <1307360469-29120-10-git-send-email-tlinder@codeaurora.org> <Pine.LNX.4.44L0.1106061138060.1953-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1106061138060.1953-100000@iolanthe.rowland.org>
-Subject: RE: [PATCH v15 10/10] usb:dummy_hcd: Force FS device connection according to module parameter
-Date: Tue, 7 Jun 2011 07:55:14 +0300
-Message-ID: <014201cc24cf$1b3414d0$519c3e70$@org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-thread-index: AcwkX9kd1M8KIopuS8C+SDnBSCoHzwAbizyw
-Content-Language: en-us
+	Tue, 7 Jun 2011 01:03:49 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 24556
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: alsa-devel@alsa-project.org, device-drivers-devel@blackfin.uclinux.org,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] ASoC: AD1836: Fix build error
+Date: Tue,  7 Jun 2011 07:02:59 +0200
+Message-Id: <1307422979-14160-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <20110607115505.71c9a330.sfr@canb.auug.org.au>
+References: <20110607115505.71c9a330.sfr@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> You might want to print out some kind of error message if the user
-> specifies is_super_speed = True and is_high_speed = False.
-> 
+Commit f97d0c6d5f94 ("ASoC: AD1836: Add input gain control for ADC2") contained
+a typo in the register name, causing a build error. This patch fixes it.
 
-I thought about that as well. Even added it but removed at the last minute
-:) I encountered quite a few places in the code where some error message to
-the user is really needed but is missing so my impression was that it's best
-to keep the printks to a minimum. Isn't that the general approach? IMO, in
-this particular case informing the user isn't a "must". If you feel strongly
-about it I can add the message.
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
-Thanks,
-Tanya Brokhman
 ---
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+ sound/soc/codecs/ad1836.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
-
+diff --git a/sound/soc/codecs/ad1836.c b/sound/soc/codecs/ad1836.c
+index 1e9a801..e3a9493 100644
+--- a/sound/soc/codecs/ad1836.c
++++ b/sound/soc/codecs/ad1836.c
+@@ -127,7 +127,7 @@ static const struct snd_soc_dapm_route ad183x_dapm_routes[] = {
+ static const DECLARE_TLV_DB_SCALE(ad1836_in_tlv, 0, 300, 0);
+ 
+ static const struct snd_kcontrol_new ad1836_controls[] = {
+-	SOC_DOUBLE_TLV("ADC2 Capture Volume", AD183X_ADC_CTRL1, 3, 0, 4, 0,
++	SOC_DOUBLE_TLV("ADC2 Capture Volume", AD1836_ADC_CTRL1, 3, 0, 4, 0,
+ 	    ad1836_in_tlv),
+ };
+ 
+-- 
+1.7.2.5
 
