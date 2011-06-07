@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab1FGKn7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 06:43:59 -0400
-Received: from mail.bbaw.de ([194.95.188.6]:45957 "EHLO mail.bbaw.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752572Ab1FGKn5 convert rfc822-to-8bit (ORCPT
+	id S1752608Ab1FGKqe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 06:46:34 -0400
+Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:40362 "EHLO
+	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751261Ab1FGKqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 06:43:57 -0400
-Date: Tue, 7 Jun 2011 12:43:54 +0200
-From: Lars =?UTF-8?B?VMOkdWJlcg==?= <taeuber@bbaw.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PROBLEM] reproduceable storage errors on high IO load
-Message-Id: <20110607124354.06ed074e.taeuber@bbaw.de>
-In-Reply-To: <20110606155610.69a0d17a.taeuber@bbaw.de>
-References: <20110606095127.21d23a70.taeuber@bbaw.de>
-	<201106060559.03131.gene.heskett@gmail.com>
-	<20110606130628.e86f0c67.taeuber@bbaw.de>
-	<201106060920.32257.gene.heskett@gmail.com>
-	<20110606155610.69a0d17a.taeuber@bbaw.de>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+	Tue, 7 Jun 2011 06:46:33 -0400
+Subject: btrfs: remove 64bit alignment padding to allow extent_buffer to fit
+ into one fewer cacheline
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: "chris.mason" <chris.mason@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Date: Tue, 07 Jun 2011 11:46:32 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1307443592.2076.7.camel@castor.rsk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-AntiVirus: checked by Avira MailGate (version: 2.1.4-7; AVE: 7.9.5.12; VDF: 7.11.9.67; host: mailhub); id=25431-wIesty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Reorder extent_buffer to remove 8 bytes of alignment padding on 64 bit
+builds. This shrinks its size to 128 bytes allowing it to fit into one
+fewer cache lines and allows more objects per slab in its kmem_cache.
+    
+slabinfo extent_buffer reports :-
+    
+ before:-
+    Sizes (bytes)     Slabs
+    ----------------------------------
+    Object :     136  Total  :     123
+    SlabObj:     136  Full   :     121
+    SlabSiz:    4096  Partial:       0
+    Loss   :       0  CpuSlab:       2
+    Align  :       8  Objects:      30
+    
+ after :-
+    Object :     128  Total  :       4
+    SlabObj:     128  Full   :       2
+    SlabSiz:    4096  Partial:       0
+    Loss   :       0  CpuSlab:       2
+    Align  :       8  Objects:      32
+    
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+---
+patch against v3.0-rc2
+compiled & tested on x86_64
 
-Am Mon, 6 Jun 2011 15:56:10 +0200
-Lars Täuber <taeuber@bbaw.de> schrieb:
-> I sent an email to the WD support.
+This has only had a little light testing on a scratch volume but it
+still seems to work.
 
-WD told me that the firmware versions I use are the newest available for the
-models. Here is a list of models in the array:
-Model          		Serial #    		Firmware
-WDC WD2002FYPS-01U1B1   WD-WCAVY4757773         04.05G05
-
-WDC WD2002FYPS-02W3B0   WD-WCAVY5361793         04.01G01
-WDC WD2002FYPS-02W3B0   WD-WCAVY6201161         04.01G01
-WDC WD2002FYPS-02W3B0   WD-WCAVY6252449         04.01G01
-WDC WD2002FYPS-02W3B0   WD-WCAVY6408178         04.01G01
-
-WDC WD2003FYYS-02W0B0   WD-WMAY01123610         01.01D01
-WDC WD2003FYYS-02W0B0   WD-WMAY01800979         01.01D01
-WDC WD2003FYYS-02W0B0   WD-WMAY02037927         01.01D01
+regards
+Richard
 
 
-I think it really is a kernel problem because I had the same problem also
-with seagate drives for which also no newer firmware seems to be available.
+diff --git a/fs/btrfs/extent_io.h b/fs/btrfs/extent_io.h
+index 4e8445a..a11a92e 100644
+--- a/fs/btrfs/extent_io.h
++++ b/fs/btrfs/extent_io.h
+@@ -126,9 +126,9 @@ struct extent_buffer {
+ 	unsigned long map_len;
+ 	struct page *first_page;
+ 	unsigned long bflags;
+-	atomic_t refs;
+ 	struct list_head leak_list;
+ 	struct rcu_head rcu_head;
++	atomic_t refs;
+ 
+ 	/* the spinlock is used to protect most operations */
+ 	spinlock_t lock;
 
-What can I do to track this down?
 
-Is there someone that can confirm this problem on different hardware? It
-really is simple to test if you have six drives and a (relatively fast)
-running system.
-
-Thanks
-Lars
