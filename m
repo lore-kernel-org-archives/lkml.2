@@ -1,81 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab1FGOol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 10:44:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56829 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753437Ab1FGOoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 10:44:39 -0400
-Message-ID: <4DEE394F.9070404@redhat.com>
-Date: Tue, 07 Jun 2011 11:44:31 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1756258Ab1FGOpx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 10:45:53 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:10236 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab1FGOpu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 10:45:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=qpr0BPjluMkSachHPNbjPmLQL4nRBwZmb/1Da57aGkGQt3Able5/ZzwaNPLyGXsGdx
+         5z/fsS6wosOVgG+vSZIw==
+Date: Tue, 7 Jun 2011 16:45:29 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, acme@redhat.com
+Subject: [PATCH] perf: bug fixes and cleanups for perf sched
+Message-ID: <20110607144528.GA7342@quad>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for 3.0-rc3] media fixes
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 55922c9d1b84b89cb946c777fddccb3247e7df2c:
 
-  Linux 3.0-rc1 (2011-05-29 17:43:36 -0700)
+perf sched latency was printing garbage because it was using
+stale pointers from a deleted session structure. This patches
+fixes the problem.
 
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
+The patch also cleans up the data structure definitions for all
+the arrays used to store the processor name (comm).
 
-Antti Palosaari (1):
-      [media] anysee: return EOPNOTSUPP for unsupported I2C messages
+Finally, the patch updates the man page and help text to reflect
+the actual options of the command. perf sched trace does not
+exist anymore, AFAICT. Without this change, users get an error
+when invoking perf sched trace but they have no idea why.
 
-Hans Petter Selasky (1):
-      [media] Make nchg variable signed because the code compares this variable against negative values
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
 
-Ian Armstrong (3):
-      [media] ivtv: Make two ivtv_msleep_timeout calls uninterruptable
-      [media] ivtvfb: Add sanity check to ivtvfb_pan_display()
-      [media] ivtv: Internally separate encoder & decoder standard setting
-
-Jean-FranÃ§ois Moine (5):
-      [media] gspca - ov519: Fix a regression for ovfx2 webcams
-      [media] gspca - ov519: Change the ovfx2 bulk transfer size
-      [media] gspca: Remove coarse_expo_autogain.h
-      [media] gspca - stv06xx: Set a lower default value of gain for hdcs sensors
-      [media] gspca - ov519: Set the default frame rate to 15 fps
-
-Laurent Pinchart (3):
-      [media] ivtvfb: use display information in info not in var for panning
-      [media] v4l: Fix media_entity_to_video_device macro argument name
-      [media] media: Fix media device minor registration
-
-Mauro Carvalho Chehab (2):
-      [media] uvc_entity: initialize return value
-      [media] soc_camera: preserve const attribute
-
-Sanjeev Premi (1):
-      [media] omap3isp: fix compiler warning
-
- drivers/media/dvb/dvb-usb/anysee.c               |   17 ++-
- drivers/media/media-devnode.c                    |    4 +-
- drivers/media/video/gspca/coarse_expo_autogain.h |  116 -------------------
- drivers/media/video/gspca/ov519.c                |    8 +-
- drivers/media/video/gspca/sonixj.c               |    2 +-
- drivers/media/video/gspca/stv06xx/stv06xx_hdcs.h |    2 +-
- drivers/media/video/ivtv/ivtv-driver.c           |   10 +-
- drivers/media/video/ivtv/ivtv-firmware.c         |   11 +-
- drivers/media/video/ivtv/ivtv-ioctl.c            |  129 ++++++++++++----------
- drivers/media/video/ivtv/ivtv-ioctl.h            |    3 +-
- drivers/media/video/ivtv/ivtv-streams.c          |    4 +-
- drivers/media/video/ivtv/ivtv-vbi.c              |    2 +-
- drivers/media/video/ivtv/ivtvfb.c                |   33 ++++--
- drivers/media/video/omap3isp/isp.c               |    2 +-
- drivers/media/video/soc_camera.c                 |    2 +-
- drivers/media/video/uvc/uvc_entity.c             |    2 +-
- include/media/v4l2-dev.h                         |    4 +-
- 17 files changed, 131 insertions(+), 220 deletions(-)
- delete mode 100644 drivers/media/video/gspca/coarse_expo_autogain.h
-
+diff --git a/tools/perf/Documentation/perf-sched.txt b/tools/perf/Documentation/perf-sched.txt
+index 46822d5..ad764cc 100644
+--- a/tools/perf/Documentation/perf-sched.txt
++++ b/tools/perf/Documentation/perf-sched.txt
+@@ -8,7 +8,7 @@ perf-sched - Tool to trace/measure scheduler properties (latencies)
+ SYNOPSIS
+ --------
+ [verse]
+-'perf sched' {record|latency|map|replay|trace}
++'perf sched' {record|latency|map|replay|script}
+ 
+ DESCRIPTION
+ -----------
+@@ -20,7 +20,7 @@ There are five variants of perf sched:
+   'perf sched latency' to report the per task scheduling latencies
+   and other scheduling properties of the workload.
+ 
+-  'perf sched trace' to see a detailed trace of the workload that
++  'perf sched script' to see a detailed trace of the workload that
+   was recorded.
+ 
+   'perf sched replay' to simulate the workload that was recorded
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index dcfe887..d5a9d9e 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -649,11 +649,11 @@ struct trace_switch_event {
+ 	u32 common_pid;
+ 	u32 common_tgid;
+ 
+-	char prev_comm[16];
++	char prev_comm[COMM_LEN];
+ 	u32 prev_pid;
+ 	u32 prev_prio;
+ 	u64 prev_state;
+-	char next_comm[16];
++	char next_comm[COMM_LEN];
+ 	u32 next_pid;
+ 	u32 next_prio;
+ };
+@@ -667,7 +667,7 @@ struct trace_runtime_event {
+ 	u32 common_pid;
+ 	u32 common_tgid;
+ 
+-	char comm[16];
++	char comm[COMM_LEN];
+ 	u32 pid;
+ 	u64 runtime;
+ 	u64 vruntime;
+@@ -682,7 +682,7 @@ struct trace_wakeup_event {
+ 	u32 common_pid;
+ 	u32 common_tgid;
+ 
+-	char comm[16];
++	char comm[COMM_LEN];
+ 	u32 pid;
+ 
+ 	u32 prio;
+@@ -699,9 +699,9 @@ struct trace_fork_event {
+ 	u32 common_pid;
+ 	u32 common_tgid;
+ 
+-	char parent_comm[16];
++	char parent_comm[COMM_LEN];
+ 	u32 parent_pid;
+-	char child_comm[16];
++	char child_comm[COMM_LEN];
+ 	u32 child_pid;
+ };
+ 
+@@ -714,7 +714,7 @@ struct trace_migrate_task_event {
+ 	u32 common_pid;
+ 	u32 common_tgid;
+ 
+-	char comm[16];
++	char comm[COMM_LEN];
+ 	u32 pid;
+ 
+ 	u32 prio;
+@@ -1651,8 +1651,12 @@ static int read_events(void)
+ 		nr_lost_events = session->hists.stats.total_lost;
+ 		nr_lost_chunks = session->hists.stats.nr_events[PERF_RECORD_LOST];
+ 	}
+-
+-	perf_session__delete(session);
++	/*
++	 * cannot delete session because cmd_lat() is relying on work_atoms
++	 * which point to fields (e.g., thread) which are part of the session.
++	 *
++	 * perf_session__delete(session);
++	 */
+ 	return err;
+ }
+ 
+@@ -1769,7 +1773,7 @@ static void __cmd_replay(void)
+ 
+ 
+ static const char * const sched_usage[] = {
+-	"perf sched [<options>] {record|latency|map|replay|trace}",
++	"perf sched [<options>] {record|latency|map|replay|script}",
+ 	NULL
+ };
+ 
