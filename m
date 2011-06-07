@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751250Ab1FGKN3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 06:13:29 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:49320 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815Ab1FGKN2 (ORCPT
+	id S1751523Ab1FGKQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 06:16:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46394 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab1FGKQH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 06:13:28 -0400
-Subject: [PATCH] sched: remove rcu_read_lock from wake_affine
-To: peterz@infradead.org, mingo@elte.hu
-From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 07 Jun 2011 15:43:22 +0530
-Message-ID: <20110607101251.777.34547.stgit@IBM-009124035060.in.ibm.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jun 2011 06:16:07 -0400
+Subject: Re: [tip:perf/urgent] perf: Fix SIGIO handling
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <alpine.DEB.2.00.1106011516480.5384@cl320.eecs.utk.edu>
+References: <tip-2euus3f3x3dyvdk52cjxw8zu@git.kernel.org>
+	 <alpine.DEB.2.00.1106011516480.5384@cl320.eecs.utk.edu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 07 Jun 2011 12:15:57 +0200
+Message-ID: <1307441757.2322.244.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wake_affine is called from one path: select_task_rq_fair, which already has
-rcu read lock held.
+On Wed, 2011-06-01 at 15:41 -0400, Vince Weaver wrote:
+> On Sat, 28 May 2011, tip-bot for Peter Zijlstra wrote:
+> 
+> > Commit-ID:  f506b3dc0ec454a16d40cab9ee5d75435b39dc50
+> > Gitweb:     http://git.kernel.org/tip/f506b3dc0ec454a16d40cab9ee5d75435b39dc50
+> > Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > AuthorDate: Thu, 26 May 2011 17:02:53 +0200
+> > Committer:  Ingo Molnar <mingo@elte.hu>
+> > CommitDate: Sat, 28 May 2011 17:04:59 +0200
+> > 
+> > perf: Fix SIGIO handling
+> > 
+> > Vince noticed that unless we mmap() a buffer, SIGIO gets lost. So
+> > explicitly push the wakeup (including signals) when requested.
+> > 
+> > Reported-by: Vince Weaver <vweaver1@eecs.utk.edu>
+> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: <stable@kernel.org>
+> > Link: http://lkml.kernel.org/n/tip-2euus3f3x3dyvdk52cjxw8zu@git.kernel.org
+> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> > ---
+> >  kernel/events/core.c |    8 ++++++++
+> >  1 files changed, 8 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/events/core.c b/kernel/events/core.c
+> > index c09767f..d863b3c 100644
+> > --- a/kernel/events/core.c
+> > +++ b/kernel/events/core.c
+> > @@ -5028,6 +5028,14 @@ static int __perf_event_overflow(struct perf_event *event, int nmi,
+> >  	else
+> >  		perf_event_output(event, nmi, data, regs);
+> >  
+> > +	if (event->fasync && event->pending_kill) {
+> > +		if (nmi) {
+> > +			event->pending_wakeup = 1;
+> > +			irq_work_queue(&event->pending);
+> > +		} else
+> > +			perf_event_wakeup(event);
+> > +	}
+> > +
+> >  	return ret;
+> >  }
+> 
+> there is something strange about this commit.  
+> 
+> With it I get many more overflows than expected (on the order of 40x more)
+> when I am using PERF_IOC_REFRESH,1 to restart the sampled counter
+> from the end of the signal handler.
+> 
+> Also if you use PERF_IOC_REFRESH with a value other than 1, the value
+> seems to be ignored and all of the counts are POLL_IN rather than
+> POLL_HUP as I'd expect.
 
-Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
----
- kernel/sched_fair.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+OK, so what semantics do we expect?
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 354e26b..0bfec93 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1461,6 +1461,7 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
- 
- #endif
- 
-+/* Assumes rcu_read_lock is held */
- static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- {
- 	s64 this_load, load;
-@@ -1481,7 +1482,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	 * effect of the currently running task from the load
- 	 * of the current CPU:
- 	 */
--	rcu_read_lock();
- 	if (sync) {
- 		tg = task_group(current);
- 		weight = current->se.load.weight;
-@@ -1517,7 +1517,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 		balanced = this_eff_load <= prev_eff_load;
- 	} else
- 		balanced = true;
--	rcu_read_unlock();
- 
- 	/*
- 	 * If the currently running task will sleep within
+Currently (with this patch) when a SIGIO is registered, every event
+overflow (sample) generates a POLL_IN SIGIO, except when event_limit
+disables the counter, in which case its a POLL_HUP.
+
+Without the patch, we used to send POLL_IN on every wakeup that would
+wake poll() and POLL_HUP every time event_limit was reached.
+
+event_limit is incremented using IOC_REFRESH, when its non-zero its
+decremented on every overflow, and when it reaches 0 again it fires
+SIGIO-POLL_HUP and disables the event.
+
 
