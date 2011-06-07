@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab1FGXbL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 19:31:11 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:37068 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab1FGXbK (ORCPT
+	id S1753992Ab1FGXi4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 19:38:56 -0400
+Received: from r00tworld.com ([212.85.137.150]:51263 "EHLO r00tworld.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753522Ab1FGXiz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 19:31:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=u5Zgl0QTpFmC6vygFFIxLnISVJXf3l083ktYPe5B26jTBQ5XB9P3h26qD59cG1qQsr
-         vbMoDRJit35EM6+VQJhQ==
+	Tue, 7 Jun 2011 19:38:55 -0400
+From: pageexec@freemail.hu
+To: Brian Gerst <brgerst@gmail.com>
+Date: Wed, 08 Jun 2011 01:32:38 +0200
 MIME-Version: 1.0
-In-Reply-To: <1307488061.9218.16.camel@gandalf.stny.rr.com>
-References: <1306439537-23706-1-git-send-email-vnagarnaik@google.com>
- <1306519125-19301-1-git-send-email-vnagarnaik@google.com> <alpine.DEB.2.00.1105271618470.9445@chino.kir.corp.google.com>
- <BANLkTimfdkpY=9pgEmBZwE3ezCmooEtQTA@mail.gmail.com> <1306547453.3857.44.camel@gandalf.stny.rr.com>
- <BANLkTik5yUMVpdPmELMZfmGE=JZRQCQQ2Q@mail.gmail.com> <1307488061.9218.16.camel@gandalf.stny.rr.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Tue, 7 Jun 2011 16:30:11 -0700
-Message-ID: <BANLkTinnWe57njB6XE2CaLQB_r1h13V+3E0eW91Dxer=0DL4-w@mail.gmail.com>
-Subject: Re: [PATCH] trace: Set oom_score_adj to maximum for ring buffer
- allocating process
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
+Reply-to: pageexec@freemail.hu
+CC: Andrew Lutomirski <luto@mit.edu>, Ingo Molnar <mingo@elte.hu>,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Message-ID: <4DEEB516.4681.19EE05CD@pageexec.freemail.hu>
+In-reply-to: <BANLkTim4sN-bymGPPDU_f9V3FYCWP=PhNA@mail.gmail.com>
+References: <cover.1307292171.git.luto@mit.edu>, <4DECDD14.5845.12BA3C18@pageexec.freemail.hu>, <BANLkTim4sN-bymGPPDU_f9V3FYCWP=PhNA@mail.gmail.com>
+X-mailer: Pegasus Mail for Windows (4.61)
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 8BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Wed, 08 Jun 2011 01:33:15 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 7, 2011 at 4:07 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> Hi Vaibhav,
->
-> I'm going though patches for v3.1 now. Where are we on this issue. I
-> still don't really like the ideal of having the kernel set the oom
-> policy by default. But I'm totally fine with changing the allocations
-> for NORETRY.
->
-> If you switch it to NORETRY, do you still have the issues you were
-> seeing? You could also add userspace helpers that would set the oom
-> policy of things accessing the ring buffer.
->
-> Either have a script that updates the ring buffer size and sets the oom
-> policy, or have a library with a helper routine.
->
-> Would those be fine for you?
->
-> -- Steve
->
-I understand your hesitation to change the kernel oom policy for
-allocating the ring buffer. I am fine with just using __GFP_NORETRY for
-allocation calls to fail more gracefully. It works for most of the use
-cases I encounter.
+On 6 Jun 2011 at 10:07, Brian Gerst wrote:
 
-We will make changes to our internal tools to make sure that
-oom_score_adj is changed to pick the allocating process for oom-killing.
+> > do you know what that mucking looks like? ;) prepare for the most complex code
+> > you've ever seen (it's in __bad_area_nosemaphore):
+> >
+> >  779 #ifdef CONFIG_X86_64
+> >  780 »·······if (mm && (error_code & PF_INSTR) && mm->context.vdso) {
+> >  781 »·······»·······if (regs->ip == (unsigned long)vgettimeofday) {
+> >  782 »·······»·······»·······regs->ip = (unsigned long)VDSO64_SYMBOL(mm->context.vdso, gettimeofday);
+> >  783 »·······»·······»·······return;
+> >  784 »·······»·······} else if (regs->ip == (unsigned long)vtime) {
+> >  785 »·······»·······»·······regs->ip = (unsigned long)VDSO64_SYMBOL(mm->context.vdso, clock_gettime);
+> >  786 »·······»·······»·······return;
+> >  787 »·······»·······} else if (regs->ip == (unsigned long)vgetcpu) {
+> >  788 »·······»·······»·······regs->ip = (unsigned long)VDSO64_SYMBOL(mm->context.vdso, getcpu);
+> >  789 »·······»·······»·······return;
+> >  790 »·······»·······}
+> >  791 »·······}
+> >  792 #endif
+> 
+> I like this approach, however since we're already in the kernel it
+> makes sense just to run the normal syscall instead of redirecting to
+> the vdso.
 
-I will send the updated patch.
+it's not that simple as the page fault occurs not at the actual syscall
+insn but at the first insn of the given vsyscall function, so you'd have
+to emulate it carefully to be able to return back the original caller in
+userland.
 
-
-Thanks
-
-Vaibhav Nagarnaik
