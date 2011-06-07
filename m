@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757631Ab1FGSJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:09:56 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:64816 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433Ab1FGSJz (ORCPT
+	id S1757690Ab1FGSNL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:13:11 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55637 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757675Ab1FGSNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:09:55 -0400
-X-IronPort-AV: E=Sophos;i="4.65,333,1304294400"; 
-   d="scan'208";a="6147567"
-Date: Tue, 7 Jun 2011 19:13:03 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@elte.hu>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 0/3] x86: remove x86_init.mapping.pagetable_reserve
-Message-ID: <alpine.DEB.2.00.1106071849290.12963@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 7 Jun 2011 14:13:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=NElqZn/ZHR4zJE5IbCGzC2NsIDaaHurus7HW2lleSceB7hHox0o9Tc2HhJuCcjZO/j
+         KheKe3L5Q1caIuLbglkjii+I2JXSLdeie1kHuTagHg5AqAhn5HFzmjiRxODe0sYTVrAT
+         eXYi/cEnE1EBIjusxtaLLPJmYOlHeQB72nOUE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <4DEDCCFF.10801@turknetserver.com>
+References: <BANLkTinrbh7Xi27an3uY7pDWrNKhJRYmEA@mail.gmail.com>
+	<BANLkTik-xtEnf8Bxz3PmP6H+YYSDXe1adw@mail.gmail.com>
+	<BANLkTim1ms9ND6evpDVPFRrJBNffMr4KNg@mail.gmail.com>
+	<alpine.DEB.2.02.1106061308590.25491@asgard.lang.hm>
+	<81e5df54-4987-40ba-9333-79665efda719@email.android.com>
+	<4DEDCCFF.10801@turknetserver.com>
+Date: Tue, 7 Jun 2011 11:13:06 -0700
+Message-ID: <BANLkTinpYYGvgnfbfpa9Kt4nUjhZ4Y+Y3A@mail.gmail.com>
+Subject: Re: Linux 3.0-rc2
+From: Tony Luck <tony.luck@gmail.com>
+To: Tarkan Erimer <tarkan@turknetserver.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
+        Alessandro Suardi <alessandro.suardi@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently find_early_table_space calculates an overestimate of how much
-memory the pagetable for 1:1 mapping is going to need. After
-kernel_physical_mapping_init completes we know exactly how much memory
-we used so we memblock reserve only the used memory and "free" the rest.
+On Tue, Jun 7, 2011 at 12:02 AM, Tarkan Erimer <tarkan@turknetserver.com> wrote:
+> I always use tarballs instead of git. Because; I have several Linux boxes
+> and just one time I download the kernel tarball then spreading it with scp
+> to other Linux boxes easily. Otherwise, I have to prepare a tarball by
+> myself to distribute it which is a time waste and unpractical. Also, getting
+> the whole 700-800 MB of kernel tree with git is not very Internet bandwidth
+> (Consider that in some ISPs and countries, Internet usage is limited by
+> monthly quotas.) friendly.
 
-This patch series modifies find_early_table_space to calculate the exact
-amount of memory we need for the 1:1 mapping, so that we can memblock
-reverve it right away and we don't need to free the unused memory after
-kernel_physical_mapping_init.
+If you maintain a git tree, then at each release you will only need to pull a
+small amount (the git delta from the last time you pulled).  It is then quite
+simple to make your own tarball to copy around your machines with:
 
-At this point we can also safely revert "x86,xen: introduce
-x86_init.mapping.pagetable_reserve".
+$ git archive --format=tar --prefix=linux/ v3.0-rc2 | gzip > v3.0-rc2.tgz
 
+So you have a one time large bandwidth investment to do the initial
+git clone, and then much less traffic for each update.
 
-The list of patches with diffstat follows:
-
-Stefano Stabellini (3):
-      x86: calculate precisely the memory needed by init_memory_mapping
-      Revert "x86,xen: introduce x86_init.mapping.pagetable_reserve"
-      x86: move memblock_x86_reserve_range PGTABLE to find_early_table_space
-
- arch/x86/include/asm/pgtable_types.h |    1 -
- arch/x86/include/asm/x86_init.h      |   12 -----
- arch/x86/kernel/x86_init.c           |    4 --
- arch/x86/mm/init.c                   |   87 +++++++++++++++++++---------------
- arch/x86/xen/mmu.c                   |   15 ------
- 5 files changed, 49 insertions(+), 70 deletions(-)
-
-
-Many thanks to Konrad that helped me review the patch series and
-performed an impressive amount of tests:
-
-*Configurations
-baremetal Linux 64-bit
-baremetal Linux 32-bit NOHIGHMEM, HIGHMEM4G and HIGHMEM64G
-32-bit and 64-bit Linux on Xen
-32-bit and 64-bit Linux HVM on Xen
-
-
-*Hardware
-AMD development box (Tilapia) - 8GB
-AMD  BIOSTAR Grp N61PB-M2S/N61PB-M2S (Sempron) - 4GB
-Intel DX58SO (Core i7) - 8GB
-Supermicro X7DB8/X7DB8 (Harpertown) - 4GB
-IBM x3850 (Cranford) - 8GB
-MSI MS-7680/H61M-P23 (MS-7680) (SandyBridge, i2500)- 8GB
-
-
-A git branch based on 3.0-rc1 is available here:
-
-git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 3.0-rc1-rem_pg_reserve-4
-
-- Stefano
+-Tony
