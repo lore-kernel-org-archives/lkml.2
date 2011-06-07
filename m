@@ -1,112 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab1FGSn1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:43:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49954 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261Ab1FGSn0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:43:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=mU/F3CB6XjbG9tLM2s0bSzJG8bs0n7iDwwiCTZJAp86LYdpc8qwgAOdwFJ2fUTiS0i
-         j1cefjY6x8hreQshP/XR4qVRGTF1kjJVyidQJeGnwJ37EgyaujsMwaOKEfcxqnLARcvU
-         Z4iOXRyVwsWOwQnUJzQKf1+lk1VULaJLd5wnI=
+	id S1754882Ab1FGSoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:44:14 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42761 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753307Ab1FGSoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 14:44:13 -0400
+Date: Tue, 7 Jun 2011 20:44:01 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20110607184401.GA28225@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <1307462300.3091.39.camel@edumazet-laptop>
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
- <1307373819.3098.40.camel@edumazet-laptop> <1307376672.2322.167.camel@twins>
- <1307376989.2322.171.camel@twins> <1307377349.3098.65.camel@edumazet-laptop>
- <1307377782.2322.183.camel@twins> <1307378564.3098.67.camel@edumazet-laptop>
- <4DED1421.5000300@linux.intel.com> <1307383898.3098.90.camel@edumazet-laptop>
- <4DED976C.90009@linux.intel.com> <4DEE3944.5020005@mit.edu> <1307462300.3091.39.camel@edumazet-laptop>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 7 Jun 2011 14:43:06 -0400
-X-Google-Sender-Auth: NxDQzIO7YlL5snSLGKnSnL4sBd4
-Message-ID: <BANLkTinyuHUGXACJYUT241g8rzg6AzPBiA@mail.gmail.com>
-Subject: Re: Change in functionality of futex() system call.
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Zachary Vonler <zvonler@rgmadvisors.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 7, 2011 at 11:58 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le mardi 07 juin 2011 à 10:44 -0400, Andy Lutomirski a écrit :
->> On 06/06/2011 11:13 PM, Darren Hart wrote:
->> >
->> >
->> > On 06/06/2011 11:11 AM, Eric Dumazet wrote:
->> >> Le lundi 06 juin 2011 à 10:53 -0700, Darren Hart a écrit :
->> >>>
->> >>
->> >>> If I understand the problem correctly, RO private mapping really doesn't
->> >>> make any sense and we should probably explicitly not support it, while
->> >>> special casing the RO shared mapping in support of David's scenario.
->> >>>
->> >>
->> >> We supported them in 2.6.18 kernels, apparently. This might sounds
->> >> stupid but who knows ?
->> >
->> >
->> > I guess this is actually the key point we need to agree on to provide a
->> > solution. This particular case "worked" in 2.6.18 kernels, but that
->> > doesn't necessarily mean it was supported, or even intentional.
->> >
->> > It sounds to me that we agree that we should support RO shared mappings.
->> > The question remains about whether we should introduce deliberate
->> > support of RO private mappings, and if so, if the forced COW approach is
->> > appropriate or not.
->> >
->>
->> I disagree.
->>
->> FUTEX_WAIT has side-effects.  Specifically, it eats one wakeup sent by
->> FUTEX_WAKE.  So if something uses futexes on a file mapping, then a
->> process with only read access could (if the semantics were changed) DoS
->> the other processes by spawning a bunch of threads and FUTEX_WAITing
->> from each of them.
->>
->> If there were a FUTEX_WAIT_NOCONSUME that did not consume a wakeup and
->> worked on RO mappings, I would drop my objection.
->
-> If a group of cooperating processes uses a memory segment to exchange
-> critical information, do you really think this memory segment will be
-> readable by other unrelated processes on the machine ?
+Linus,
 
-Depends on the design.
+Please pull the latest x86-urgent-for-linus git tree from:
 
-I have some software I'm working on that uses shared files and could
-easily use futexes.  I don't want random read-only processes to
-interfere with the futex protocol.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-urgent-for-linus
 
->
-> How is this related to futex code ?
+ Thanks,
 
-Because this usage is currently safe and would become unsafe with the
-proposed change.
+	Ingo
 
->
-> Same problem for legacy IPC (shm, msg, sem) : Appropriate protections
-> are needed, obviously.
->
-> BTW, kernel/futex.c uses a global hash table (futex_queues[256]) and a
-> very predictable hash_futex(), so its easy to slow down futex users...
+------------------>
+Joerg Roedel (3):
+      x86/amd-iommu: Fix 3 possible endless loops
+      x86/amd-iommu: Use only per-device dma_ops
+      x86/amd-iommu: Fix boot crash with hidden PCI devices
 
-There's a difference between slowing down users by abusing a kernel
-hash and deadlocking users by eating a wakeup.  (If you eat a wakeup
-the wakeup won't magically come back later.  It's gone.)
 
---Andy
+ arch/x86/kernel/amd_iommu.c      |   48 +++++++++++++++++++++++++++++++++++--
+ arch/x86/kernel/amd_iommu_init.c |    8 +++---
+ 2 files changed, 49 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
+index cd8cbeb..7c3a95e 100644
+--- a/arch/x86/kernel/amd_iommu.c
++++ b/arch/x86/kernel/amd_iommu.c
+@@ -30,6 +30,7 @@
+ #include <asm/proto.h>
+ #include <asm/iommu.h>
+ #include <asm/gart.h>
++#include <asm/dma.h>
+ #include <asm/amd_iommu_proto.h>
+ #include <asm/amd_iommu_types.h>
+ #include <asm/amd_iommu.h>
+@@ -154,6 +155,10 @@ static int iommu_init_device(struct device *dev)
+ 	pdev = pci_get_bus_and_slot(PCI_BUS(alias), alias & 0xff);
+ 	if (pdev)
+ 		dev_data->alias = &pdev->dev;
++	else {
++		kfree(dev_data);
++		return -ENOTSUPP;
++	}
+ 
+ 	atomic_set(&dev_data->bind, 0);
+ 
+@@ -163,6 +168,20 @@ static int iommu_init_device(struct device *dev)
+ 	return 0;
+ }
+ 
++static void iommu_ignore_device(struct device *dev)
++{
++	u16 devid, alias;
++
++	devid = get_device_id(dev);
++	alias = amd_iommu_alias_table[devid];
++
++	memset(&amd_iommu_dev_table[devid], 0, sizeof(struct dev_table_entry));
++	memset(&amd_iommu_dev_table[alias], 0, sizeof(struct dev_table_entry));
++
++	amd_iommu_rlookup_table[devid] = NULL;
++	amd_iommu_rlookup_table[alias] = NULL;
++}
++
+ static void iommu_uninit_device(struct device *dev)
+ {
+ 	kfree(dev->archdata.iommu);
+@@ -192,7 +211,9 @@ int __init amd_iommu_init_devices(void)
+ 			continue;
+ 
+ 		ret = iommu_init_device(&pdev->dev);
+-		if (ret)
++		if (ret == -ENOTSUPP)
++			iommu_ignore_device(&pdev->dev);
++		else if (ret)
+ 			goto out_free;
+ 	}
+ 
+@@ -2383,6 +2404,23 @@ static struct dma_map_ops amd_iommu_dma_ops = {
+ 	.dma_supported = amd_iommu_dma_supported,
+ };
+ 
++static unsigned device_dma_ops_init(void)
++{
++	struct pci_dev *pdev = NULL;
++	unsigned unhandled = 0;
++
++	for_each_pci_dev(pdev) {
++		if (!check_device(&pdev->dev)) {
++			unhandled += 1;
++			continue;
++		}
++
++		pdev->dev.archdata.dma_ops = &amd_iommu_dma_ops;
++	}
++
++	return unhandled;
++}
++
+ /*
+  * The function which clues the AMD IOMMU driver into dma_ops.
+  */
+@@ -2395,7 +2433,7 @@ void __init amd_iommu_init_api(void)
+ int __init amd_iommu_init_dma_ops(void)
+ {
+ 	struct amd_iommu *iommu;
+-	int ret;
++	int ret, unhandled;
+ 
+ 	/*
+ 	 * first allocate a default protection domain for every IOMMU we
+@@ -2421,7 +2459,11 @@ int __init amd_iommu_init_dma_ops(void)
+ 	swiotlb = 0;
+ 
+ 	/* Make the driver finally visible to the drivers */
+-	dma_ops = &amd_iommu_dma_ops;
++	unhandled = device_dma_ops_init();
++	if (unhandled && max_pfn > MAX_DMA32_PFN) {
++		/* There are unhandled devices - initialize swiotlb for them */
++		swiotlb = 1;
++	}
+ 
+ 	amd_iommu_stats_init();
+ 
+diff --git a/arch/x86/kernel/amd_iommu_init.c b/arch/x86/kernel/amd_iommu_init.c
+index 9179c21..bfc8453 100644
+--- a/arch/x86/kernel/amd_iommu_init.c
++++ b/arch/x86/kernel/amd_iommu_init.c
+@@ -731,8 +731,8 @@ static void __init init_iommu_from_acpi(struct amd_iommu *iommu,
+ {
+ 	u8 *p = (u8 *)h;
+ 	u8 *end = p, flags = 0;
+-	u16 dev_i, devid = 0, devid_start = 0, devid_to = 0;
+-	u32 ext_flags = 0;
++	u16 devid = 0, devid_start = 0, devid_to = 0;
++	u32 dev_i, ext_flags = 0;
+ 	bool alias = false;
+ 	struct ivhd_entry *e;
+ 
+@@ -887,7 +887,7 @@ static void __init init_iommu_from_acpi(struct amd_iommu *iommu,
+ /* Initializes the device->iommu mapping for the driver */
+ static int __init init_iommu_devices(struct amd_iommu *iommu)
+ {
+-	u16 i;
++	u32 i;
+ 
+ 	for (i = iommu->first_device; i <= iommu->last_device; ++i)
+ 		set_iommu_for_device(iommu, i);
+@@ -1177,7 +1177,7 @@ static int __init init_memory_definitions(struct acpi_table_header *table)
+  */
+ static void init_device_table(void)
+ {
+-	u16 devid;
++	u32 devid;
+ 
+ 	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid) {
+ 		set_dev_entry_bit(devid, DEV_ENTRY_VALID);
