@@ -1,56 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab1FGK3R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 06:29:17 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52791 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880Ab1FGK3P convert rfc822-to-8bit (ORCPT
+	id S1752207Ab1FGK3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 06:29:30 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:41038 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab1FGK32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 06:29:15 -0400
+	Tue, 7 Jun 2011 06:29:28 -0400
+X-IronPort-AV: E=Sophos;i="4.65,331,1304294400"; 
+   d="scan'208";a="6136124"
+Subject: Re: kexec/kdump for Xen - implementation question
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Daniel Kiper <dkiper@net-space.pl>
+CC: "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110606160434.GA26021@router-fw-old.local.net-space.pl>
+References: <20110606160434.GA26021@router-fw-old.local.net-space.pl>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Tue, 7 Jun 2011 11:29:26 +0100
+Message-ID: <1307442566.775.555.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-X-Originating-IP: [109.186.65.238]
-In-Reply-To: <201106071105.16262.laurent.pinchart@ideasonboard.com>
-References: <1307053663-24572-1-git-send-email-ohad@wizery.com>
- <1307053663-24572-3-git-send-email-ohad@wizery.com> <201106071105.16262.laurent.pinchart@ideasonboard.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 7 Jun 2011 13:28:53 +0300
-Message-ID: <BANLkTi=nJXSEfWRXqwnHys1b5i5rgLcYpw@mail.gmail.com>
-Subject: Re: [RFC 2/6] omap: iovmm: generic iommu api migration
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Hiroshi.DOYU@nokia.com, arnd@arndb.de, davidb@codeaurora.org,
-        Joerg.Roedel@amd.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+On Mon, 2011-06-06 at 17:04 +0100, Daniel Kiper wrote:
+> Hi,
+> 
+> Currently, I am working on kexec/kdump for Xen with emphasis on dom0
+> implementation issues. After reviewing relevant Xen Linux Kernel
+> Ver. 2.6.18 code I realized (as I expected) that original kexec/kdump
+> in mainline kernel should be extensively amended. Further, after some
+> discussion with Konrad Rzeszutek Wilk and Ian Campbell it was clear
+> for me that it could be done in a few diffrent ways. Due to this facts
+> I decided to establish general implementation details with LKML and
+> Xen-devel community to avoid extensive code rewrite in case my own
+> proposal would not be accepted.
+> 
+> Now I think about four solutions. I will present them in order of my
+> preference. However, if you have another soultions to that problem
+> please drop me a line.
+> 
+> 1) Currently existing kexec/kdump implementation should be amended
+>    by adding Xen specific code mainly in arch/i386. It should look
+>    like:
+> 
+>    void machine_kexec(struct kimage *image)
+>    {
+>    #ifdef CONFIG_XEN
+>       if (xen_initial_domain()) {
+>         ...
+> 	Xen specific code
+> 	...
+>       }
+>    #endif
+> 
+>      ...
+>      generic kexec/kdump code
+>      ...
+>    }
 
-On Tue, Jun 7, 2011 at 12:05 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> pgsz isn't used anymore, you can remove it.
+This is about the ugliest way to do things and should be avoided.
 
-Ok.
+Perhaps the actual kexec op (as opposed to any setup or control ops)
+would make a reasonable addition to the existing machine_ops?
 
->> +             order = get_order(bytes);
->
-> Does iommu_map() handle offsets correctly, or does it expect pa to be aligned
-> to an order (or other) boundary ?
+A lot of the other #ifdef ...XEN in the out of tree 2.6.18 code
+(actually I'm looking at a 2.6.32 Novell fwd port) seem like they would
+go away through the use of existing pvops (e.g. those for manipulating
+page tables since the Xen implementations of those already incorporate
+the necessary p2m translation).
 
-Right now we have a BUG_ON if pa is unaligned, but that can be changed
-if needed (do we want it to handle offsets ?).
+> 2) Information about architecture depended kexec/kdump code should
+>    be stored in struct machine_kexec_ops. It should contain
+>    references to machine specific functions:
+> 
+>    struct machine_kexec_ops {
+>      void (*machine_kexec)(struct kimage *image);
+>      ...
+>    }
+> 
+>    This structure should be initialized properly at system startup.
 
-> As Russell pointed out, we should use sg->length instead of sg_dma_length(sg).
-> sg_dma_length(sg) is only valid after the scatter list has been DMA-mapped,
-> which doesn't happen in the iovmm driver. This applies to all sg_dma_len(sg)
-> calls.
+I think this approach would generally be much preferable to 1, 3, and 4.
+We should be careful to ensure that any such hooks are actually needed
+though and that they don't belong anywhere else -- I expect mostly
+things will be covered by existing *_ops.
 
-I'll make sure I don't introduce such calls, but it sounds like a
-separate patch should take care of the existing ones; pls tell me if
-you want me to send one.
+> 
+> 3) kexec-tools should be able to detect current machine type. If it
+>    detects Xen hypervisor it should call relevant (Xen specific)
+>    ioctl() to perform kexec (Xen specific) instead of standard
+>    kexec syscall.
+> 
+> 4) kexec-tools should be able to detect current machine type. If it
+>    detects Xen hypervisor it should call newly established Xen specific
+>    kexec syscall (lets call it sys_kexec_load_xen()) to perform kexec
+>    (Xen specific) instead of standard kexec syscall.
+> 
+> I am looking forward for your comments, suggestions, etc.
+> 
+> Daniel
 
-Thanks,
-Ohad.
+
