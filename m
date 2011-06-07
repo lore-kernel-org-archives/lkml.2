@@ -1,74 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab1FGAY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 20:24:26 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:48196 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753090Ab1FGAYZ (ORCPT
+	id S1756035Ab1FGAeE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 20:34:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48129 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752448Ab1FGAeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 20:24:25 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=LwIVMExC3fOnslLH2waxaUZbitXFtVpSH45P8gVPrrwJn2oLqYMrAJYv9z5rW9hYvP9RxkfrgJ9B1dMBF7uxxy3ZFBoDLSJTHGo1VuPifID22/rGYJeT2sj7/2zKo+lR;
-Date: Mon, 6 Jun 2011 17:24:02 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Ben Greear <greearb@candelatech.com>
-Cc: Keith Packard <keithp@keithp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 3.0.0-rc2 fails to boot on Atom appliance (bisected, drm/i915)
-Message-ID: <20110606172402.72ddb29b@jbarnes-desktop>
-In-Reply-To: <4DED69C6.1090301@candelatech.com>
-References: <4DED33DF.8000201@candelatech.com>
-	<4DED6221.1060806@candelatech.com>
-	<yunzkluzfw9.fsf@aiko.keithp.com>
-	<4DED69C6.1090301@candelatech.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	Mon, 6 Jun 2011 20:34:03 -0400
+Date: Mon, 6 Jun 2011 17:33:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: <linux-arm-kernel@lists.infradead.org>, <arnd@arndb.de>,
+        <armando.visconti@st.com>, <shiraz.hashim@st.com>,
+        <vipin.kumar@st.com>, <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
+        <vipulkumar.samar@st.com>, <amit.virdi@st.com>,
+        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
+        <viresh.linux@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/3] drivers/pwm st_pwm: Add support for ST's Pulse
+ Width Modulator
+Message-Id: <20110606173339.268b9f9c.akpm@linux-foundation.org>
+In-Reply-To: <af3d50b271b17e404d236e19196adfd4618e2501.1306831238.git.viresh.kumar@st.com>
+References: <cover.1306831238.git.viresh.kumar@st.com>
+	<af3d50b271b17e404d236e19196adfd4618e2501.1306831238.git.viresh.kumar@st.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 Jun 2011 16:59:02 -0700
-Ben Greear <greearb@candelatech.com> wrote:
+On Tue, 31 May 2011 14:21:51 +0530
+Viresh Kumar <viresh.kumar@st.com> wrote:
 
-> On 06/06/2011 04:41 PM, Keith Packard wrote:
-> > On Mon, 06 Jun 2011 16:26:25 -0700, Ben Greear<greearb@candelatech.com>  wrote:
-> >> On 06/06/2011 01:09 PM, Ben Greear wrote:
-> >>> Anyone seen something like this?  For what it's worth, it seems
-> >>> that -rc1 had the same problem. I'll start bisecting soon if
-> >>> the problem isn't already resolved somehow...
-> >>
-> >> I bisected this problem down to this commit:
-> >
-> > This should be fixed by this patch:
-> >
-> > -------------------- drivers/gpu/drm/i915/intel_display.c ---------------------
-> > index f553ddf..bb1b59b 100644
-> > @@ -7675,6 +7675,7 @@ static void intel_init_display(struct drm_device *dev)
-> >   			dev_priv->display.update_wm = NULL;
-> >   		} else
-> >   			dev_priv->display.update_wm = pineview_update_wm;
-> > +		dev_priv->display.init_clock_gating = gen3_init_clock_gating;
-> >   	} else if (IS_G4X(dev)) {
-> >   		dev_priv->display.update_wm = g4x_update_wm;
-> >   		dev_priv->display.init_clock_gating = g4x_init_clock_gating;
-> >
-> > This hasn't been merged yet, but should be soon.
+> This patch adds support for ST Microelectronics Pulse Width Modulator. This is
+> currently used by ST's SPEAr platform and tested on the same.
 > 
-> I tried adding that, but the problem stays the same.
+> This patch also adds drivers/pwm directory as suggested by Arnd Bergmann in
+> following discussion:
 > 
-> Any other patches I should try?
+> http://comments.gmane.org/gmane.linux.ports.arm.kernel/118651
+> 
+>
+> ...
+>
+> +/**
+> + * struct pwm_device: struct representing pwm device/channel
+> + *
+> + * pwmd_id: id of pwm device
+> + * pwm: pointer to parent pwm ip
+> + * label: used for storing label passed in pwm_request
+> + * offset: base address offset from parent pwm mmio_base
+> + * busy: represents usage status of a pwm device
+> + * lock: lock specific to a pwm device
 
-Are you sure you booted the right kernel and that it built & installed
-correctly?
+More specificity here would be helpful.  Precisely which data does the
+lock protect?
 
-You could add an:
-  if (dev_priv->display.init_clock_gating)
-above the call to display.init_clock_gating in intel_init_clock_gating
-to be sure it's the same problem...
+> + * node: node for adding device to parent pwm's devices list
+> + *
+> + * Each pwm IP contains four independent pwm device/channels. Some or all of
+> + * which may be present in our configuration.
+> + */
+> +struct pwm_device {
+> +	unsigned pwmd_id;
+> +	struct pwm *pwm;
+> +	const char *label;
+> +	unsigned offset;
+> +	unsigned busy;
+> +	spinlock_t lock;
+> +	struct list_head node;
+> +};
+> +
+> +/**
+> + * struct pwm: struct representing pwm ip
+> + *
+> + * id: id of pwm ip
+> + * mmio_base: base address of pwm
+> + * clk: pointer to clk structure of pwm ip
+> + * clk_enabled: clock enable status
+> + * pdev: pointer to pdev structure of pwm
+> + * lock: lock specific to current pwm ip
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Ditto.
+
+> + * devices: list of devices/childrens of pwm ip
+> + * node: node for adding pwm to global list of all pwm ips
+> + */
+> +struct pwm {
+> +	unsigned id;
+> +	void __iomem *mmio_base;
+> +	struct clk *clk;
+> +	int clk_enabled;
+> +	struct platform_device *pdev;
+> +	spinlock_t lock;
+> +	struct list_head devices;
+> +	struct list_head node;
+> +};
+> +
+> +/*
+> + * period_ns = 10^9 * (PRESCALE + 1) * PV / PWM_CLK_RATE
+> + * duty_ns = 10^9 * (PRESCALE + 1) * DC / PWM_CLK_RATE
+> + *
+> + * PV = (PWM_CLK_RATE * period_ns)/ (10^9 * (PRESCALE + 1))
+> + * DC = (PWM_CLK_RATE * duty_ns)/ (10^9 * (PRESCALE + 1))
+> + */
+> +int pwm_config(struct pwm_device *pwmd, int duty_ns, int period_ns)
+> +{
+> +	u64 val, div, clk_rate;
+> +	unsigned long prescale = MIN_PRESCALE, pv, dc;
+> +	int ret = 0;
+> +
+> +	if (!pwmd) {
+> +		pr_err("pwm: config - NULL pwm device pointer\n");
+> +		return -EFAULT;
+> +	}
+> +
+> +	if (period_ns == 0 || duty_ns > period_ns) {
+> +		ret = -EINVAL;
+> +		goto err;
+> +	}
+> +
+> +	/* TODO: Need to optimize this loop */
+> +	while (1) {
+> +		div = 1000000000;
+> +		div *= 1 + prescale;
+> +		clk_rate = clk_get_rate(pwmd->pwm->clk);
+> +		val = clk_rate * period_ns;
+> +		pv = div64_u64(val, div);
+> +		val = clk_rate * duty_ns;
+> +		dc = div64_u64(val, div);
+> +
+> +		if ((pv == 0) || (dc == 0)) {
+> +			ret = -EINVAL;
+> +			goto err;
+> +		}
+> +		if ((pv > MAX_PERIOD) || (dc > MAX_DUTY)) {
+> +			prescale++;
+> +			if (prescale > MAX_PRESCALE) {
+> +				ret = -EINVAL;
+> +				goto err;
+> +			}
+> +			continue;
+> +		}
+> +		if ((pv < MIN_PERIOD) || (dc < MIN_DUTY)) {
+> +			ret = -EINVAL;
+> +			goto err;
+> +		}
+> +		break;
+> +	}
+
+gee, is this some sort of puzzle?  So human-readable description of
+what this code is doing would be an improvement.
+
+
+> +	/*
+> +	 * NOTE: the clock to PWM has to be enabled first
+> +	 * before writing to the registers
+> +	 */
+> +	spin_lock(&pwmd->pwm->lock);
+> +	ret = clk_enable(pwmd->pwm->clk);
+> +	if (ret) {
+> +		spin_unlock(&pwmd->pwm->lock);
+> +		goto err;
+> +	}
+> +
+> +	spin_lock(&pwmd->lock);
+> +	writel(prescale << PRESCALE_SHIFT, pwmd->pwm->mmio_base +
+> +			pwmd->offset + PWMCR);
+> +	writel(dc, pwmd->pwm->mmio_base + pwmd->offset + PWMDCR);
+> +	writel(pv, pwmd->pwm->mmio_base + pwmd->offset + PWMPCR);
+> +	spin_unlock(&pwmd->lock);
+> +	clk_disable(pwmd->pwm->clk);
+> +	spin_unlock(&pwmd->pwm->lock);
+
+The nesting rules for these two locks seems sensible and obvious, but I
+guess documenting the rule wouldn't hurt.
+
+> +	return 0;
+> +err:
+> +	dev_err(&pwmd->pwm->pdev->dev, "pwm config fail\n");
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(pwm_config);
+> +
+>
+> ...
+>
+> +static int __devinit st_pwm_probe(struct platform_device *pdev)
+
+And here things get rather odd.
+
+Most of this file is a generic, non-device specific PWM layer, exported
+to other modules.  But then we get into driver bits which are specific
+to one paritular type of device.  Confused - this is like putting the
+e100 driver inside net/ipv4/tcp.c?
+
