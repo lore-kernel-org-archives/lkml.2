@@ -1,94 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758177Ab1FGTXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:23:10 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:47345 "EHLO e8.ny.us.ibm.com"
+	id S1758193Ab1FGT2m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 15:28:42 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:35914 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754394Ab1FGTXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 15:23:08 -0400
-Date: Tue, 7 Jun 2011 12:22:25 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Milton Miller <miltonm@bga.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [1/4] rcu: Detect uses of rcu read side in extended quiescent
- states
-Message-ID: <20110607192225.GG2286@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1307329858-14999-3-git-send-email-fweisbec@gmail.com>
- <rcu-splat-split-printk@mdm.bga.com>
- <20110606181021.GL3066@linux.vnet.ibm.com>
- <20110607001905.GE17026@somewhere.redhat.com>
- <20110607004250.GZ3066@linux.vnet.ibm.com>
- <20110607013630.GF17026@somewhere.redhat.com>
- <20110607044005.GB2292@linux.vnet.ibm.com>
- <20110607125809.GA23214@somewhere>
- <20110607183414.GF2286@linux.vnet.ibm.com>
- <20110607184857.GC23214@somewhere>
+	id S1754409Ab1FGT2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 15:28:40 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Subject: Re: [PATCH 3.0-rc1] PM / runtime: fix broken iteration over clock ids
+Date: Tue, 7 Jun 2011 21:29:25 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+References: <201106051531.32878.jkrzyszt@tis.icnet.pl> <201106061947.36238.rjw@sisk.pl> <201106062118.18734.jkrzyszt@tis.icnet.pl>
+In-Reply-To: <201106062118.18734.jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110607184857.GC23214@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106072129.26063.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 08:49:01PM +0200, Frederic Weisbecker wrote:
-> On Tue, Jun 07, 2011 at 11:34:14AM -0700, Paul E. McKenney wrote:
-> > On Tue, Jun 07, 2011 at 02:58:13PM +0200, Frederic Weisbecker wrote:
-> > > On Mon, Jun 06, 2011 at 09:40:05PM -0700, Paul E. McKenney wrote:> 
-> > > > The bit I am missing is how to distinguish between spinlocks (where
-> > > > sleeping is illegal) and mutexes (where sleeping is perfectly fine).
-> > > > We could teach lockdep the difference, I suppose, but it is not clear
-> > > > to me that it is worth it.
-> > > 
-> > > Ah, in fact it doesn't pass through any lockdep check.
-> > > 
-> > > It's only a function called might_sleep() that is placed in functions
-> > > that can sleep. And inside might_sleep() it checks whether it is in a preemptible
-> > > area. So it's actually locking-agnostic, it only relies on the preempt_count
-> > > and some more for the preempt rcu cases.
-> > > 
-> > > I think it is called CONFIG_DEBUG_SPINLOCK_SLEEP because it was first used
-> > > for spinlock debugging purposes. But then it has a broader use now: sleep
-> > > inside preemptible section, sleep inside interrupts, sleep inside rcu.
+On Monday, June 06, 2011, Janusz Krzysztofik wrote:
+> On Mon 06 Jun 2011 at 19:47:36 Rafael J. Wysocki wrote:
+> > Hi,
 > > 
-> > But the __might_sleep() function can only differentiate between
-> > spinlocks and sleeplocks if CONFIG_PREEMPT=y.
-> 
-> It doesn't differentiate between locks but checks on the lowest level
-> by looking at the preempt count. But yeah it only works if CONFIG_PREEMPT,
-> which is why I proposed to inc/dec the preempt count also when we have
-> that DEBUG_SPINLOCK_SLEEP.
-
-Ah, I missed your proposal to inc/dec preempt_count for PREEMPT=n
-and DEBUG_SPINLOCK_SLEEP=y.
-
-> > > It certainly deserves a rename, like CONFIG_DEBUG_ILLEGAL_SLEEP.
+> > On Sunday, June 05, 2011, Janusz Krzysztofik wrote:
+> > > In its current form, pm_runtime_clk_notify() iterates through sub-
+> > > strings of pm_clk_notifier_block.con_ids[0] rather than consecutive
+> > > pm_clk_notifier_block.con_ids[] elements. As a noticeable result,
+> > > McBSP1 port no longer worked for me on updated
+> > > arch/arm/mach-omap1/pm_bus.c (commit
+> > > 600b776eb39a13a28b090ba9efceb0c69d4508aa, "OMAP1 / PM: Use generic
+> > > clock manipulation routines for runtime PM"), not being able to
+> > > activate "fck" when required.
+> > > 
+> > > Tested on Amstrad Delta.
+> > > 
+> > > Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+> > > ---
+> > > 
+> > >  drivers/base/power/clock_ops.c |    6 +++---
+> > >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > > 
+> > > --- git/drivers/base/power/clock_ops.c.orig	2011-05-30
+> > > 22:16:35.000000000 +0200 +++
+> > > git/drivers/base/power/clock_ops.c	2011-06-05 15:19:55.000000000
+> > > +0200 @@ -291,7 +291,7 @@ static int pm_runtime_clk_notify(struct
+> > > 
+> > >  {
+> > >  
+> > >  	struct pm_clk_notifier_block *clknb;
+> > >  	struct device *dev = data;
+> > > 
+> > > -	char *con_id;
+> > > +	char **con_id;
+> > > 
+> > >  	int error;
+> > >  	
+> > >  	dev_dbg(dev, "%s() %ld\n", __func__, action);
+> > > 
+> > > @@ -309,8 +309,8 @@ static int pm_runtime_clk_notify(struct
+> > > 
+> > >  		dev->pwr_domain = clknb->pwr_domain;
+> > >  		if (clknb->con_ids[0]) {
+> > > 
+> > > -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
+> > > -				pm_runtime_clk_add(dev, con_id);
+> > > +			for (con_id = &clknb->con_ids[0]; *con_id; con_id++)
+> > > +				pm_runtime_clk_add(dev, *con_id);
+> > > 
+> > >  		} else {
+> > >  		
+> > >  			pm_runtime_clk_add(dev, NULL);
+> > >  		
+> > >  		}
 > > 
-> > Hmmm...  It already checks for sleeping in the middle of a
-> > preempt_disable() as well as in a spinlock critical section.
-> > So the need for a rename is independent of any RCU checking.
+> > First off, sorry for the breakage.  Second, while the patch is
+> > correct in the part is covered, it is incomplete (it also should
+> > cover the !CONFIG_PM_RUNTIME case.  So, I think the appended patch
+> > would be better.
 > 
-> Sure, rcu just adds itself to the pile of users of might_sleep(), thus
-> it would be a nice cleanup to rename the option to something more
-> generic. But that rename is not necessary to improve RCU checking.
+> That's right, please take it over.
 
-Agreed!
+OK, below is an "official" version.  Can you please double check if it fixes
+the problem for you?
 
-> > > > In contrast, with RCU, this is straightforward -- check for rcu_sched
-> > > > and rcu_bh, but not SRCU.
-> > 
-> > Actually it makes sense to keep the checks in rcu_note_context_switch(),
-> > as there are places that call schedule() directly without a might_sleep().
-> > Perhaps having checks in both places is the correct approach?
-> 
-> In this case it makes more sense to add your checks in schedule_debug(),
-> so that we don't wait for a context switch to detect the bug.
+Rafael
 
-You might well be right -- looking at it.
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM / Runtime: Fix loops in pm_runtime_clk_notify()
 
-							Thanx, Paul
+The loops over connection ID strings in pm_runtime_clk_notify()
+should actually iterate over the strings and not over the elements
+of the first of them, so make those loops behave as appropriate.
+
+This fixes a regression introduced by commit 600b776eb39a13a28b090
+(OMAP1 / PM: Use generic clock manipulation routines for runtime PM).
+
+Reported-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/clock_ops.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+Index: linux-2.6/drivers/base/power/clock_ops.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/clock_ops.c
++++ linux-2.6/drivers/base/power/clock_ops.c
+@@ -291,7 +291,7 @@ static int pm_runtime_clk_notify(struct
+ {
+ 	struct pm_clk_notifier_block *clknb;
+ 	struct device *dev = data;
+-	char *con_id;
++	char **con_id;
+ 	int error;
+ 
+ 	dev_dbg(dev, "%s() %ld\n", __func__, action);
+@@ -309,8 +309,8 @@ static int pm_runtime_clk_notify(struct
+ 
+ 		dev->pwr_domain = clknb->pwr_domain;
+ 		if (clknb->con_ids[0]) {
+-			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
+-				pm_runtime_clk_add(dev, con_id);
++			for (con_id = clknb->con_ids; *con_id; con_id++)
++				pm_runtime_clk_add(dev, *con_id);
+ 		} else {
+ 			pm_runtime_clk_add(dev, NULL);
+ 		}
+@@ -380,7 +380,7 @@ static int pm_runtime_clk_notify(struct
+ {
+ 	struct pm_clk_notifier_block *clknb;
+ 	struct device *dev = data;
+-	char *con_id;
++	char **con_id;
+ 
+ 	dev_dbg(dev, "%s() %ld\n", __func__, action);
+ 
+@@ -389,16 +389,16 @@ static int pm_runtime_clk_notify(struct
+ 	switch (action) {
+ 	case BUS_NOTIFY_ADD_DEVICE:
+ 		if (clknb->con_ids[0]) {
+-			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
+-				enable_clock(dev, con_id);
++			for (con_id = clknb->con_ids; *con_id; con_id++)
++				enable_clock(dev, *con_id);
+ 		} else {
+ 			enable_clock(dev, NULL);
+ 		}
+ 		break;
+ 	case BUS_NOTIFY_DEL_DEVICE:
+ 		if (clknb->con_ids[0]) {
+-			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
+-				disable_clock(dev, con_id);
++			for (con_id = clknb->con_ids; *con_id; con_id++)
++				disable_clock(dev, *con_id);
+ 		} else {
+ 			disable_clock(dev, NULL);
+ 		}
