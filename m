@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932559Ab1FGW1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 18:27:44 -0400
-Received: from mga03.intel.com ([143.182.124.21]:5292 "EHLO mga03.intel.com"
+	id S932586Ab1FGW1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 18:27:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16433 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757005Ab1FGW1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 18:27:41 -0400
+	id S1757005Ab1FGW1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 18:27:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,335,1304319600"; 
-   d="scan'208";a="8810281"
+   d="scan'208";a="15212962"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>, lethal@linux-sh.org
-Subject: [PATCH 1/5] SH: drop const from io port variiable
-Date: Tue,  7 Jun 2011 15:26:29 -0700
-Message-Id: <1307485593-27196-1-git-send-email-andi@firstfloor.org>
+Cc: Andi Kleen <ak@linux.intel.com>, paulmck@linux.vnet.ibm.com
+Subject: [PATCH 2/5] Fix mismatched variable in rcutree_trace.c
+Date: Tue,  7 Jun 2011 15:26:30 -0700
+Message-Id: <1307485593-27196-2-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1307485593-27196-1-git-send-email-andi@firstfloor.org>
+References: <1307485593-27196-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-The variable is modified elsewhere, so it should not be const.
-If it was really const it would need to be __read_mostly_const.
+rcutree.c defines rcu_cpu_kthread_cpu as int, not unsigned int,
+so the extern has to follow that.
 
-Cc: lethal@linux-sh.org
+Cc: paulmck@linux.vnet.ibm.com
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/sh/kernel/ioport.c |    2 +-
+ kernel/rcutree_trace.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/sh/kernel/ioport.c b/arch/sh/kernel/ioport.c
-index e3ad610..cca14ba 100644
---- a/arch/sh/kernel/ioport.c
-+++ b/arch/sh/kernel/ioport.c
-@@ -11,7 +11,7 @@
- #include <linux/module.h>
- #include <linux/io.h>
+diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+index 9678cc3..91c56e5 100644
+--- a/kernel/rcutree_trace.c
++++ b/kernel/rcutree_trace.c
+@@ -47,7 +47,7 @@
+ #include "rcutree.h"
  
--const unsigned long sh_io_port_base __read_mostly = -1;
-+unsigned long sh_io_port_base __read_mostly = -1;
- EXPORT_SYMBOL(sh_io_port_base);
+ DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
+-DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_cpu);
++DECLARE_PER_CPU(int, rcu_cpu_kthread_cpu);
+ DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_loops);
+ DECLARE_PER_CPU(char, rcu_cpu_has_work);
  
- void __iomem *__ioport_map(unsigned long addr, unsigned int size)
 -- 
 1.7.4.4
 
