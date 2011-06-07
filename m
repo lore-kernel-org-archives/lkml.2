@@ -1,144 +1,454 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab1FGP5B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 11:57:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7129 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752495Ab1FGP47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 11:56:59 -0400
-Date: Tue, 7 Jun 2011 17:56:47 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: amir73il@users.sourceforge.net
-cc: linux-ext4@vger.kernel.org, tytso@mit.edu, lczerner@redhat.com,
-        linux-kernel@vger.kernel.org, sandeen@redhat.com
-Subject: Re: [PATCH v1 00/30] Ext4 snapshots
-In-Reply-To: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net>
-Message-ID: <alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com>
-References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757133Ab1FGP75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 11:59:57 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:52876 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757110Ab1FGP7y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 11:59:54 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type;
+	b=S1dC5tzOKzQpdUWbM6qaySIoVRbemNXm1xLizhjCdOa/oV1QbLb64hvhb3B63FhtQ
+	3zAp1kkEsXKkSRTWnnI9Q==
+From: Greg Thelen <gthelen@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH v8 10/12] memcg: create support routines for page-writeback
+References: <1307117538-14317-1-git-send-email-gthelen@google.com>
+	<1307117538-14317-11-git-send-email-gthelen@google.com>
+	<20110607175056.83619c5f.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 07 Jun 2011 08:58:16 -0700
+In-Reply-To: <20110607175056.83619c5f.kamezawa.hiroyu@jp.fujitsu.com>
+	(KAMEZAWA Hiroyuki's message of "Tue, 7 Jun 2011 17:50:56 +0900")
+Message-ID: <xr93tyc1ws4n.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Amir,
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-thanks very much for the resend. I'll take a look at the whole patch
-series, but first I want to bring up one important thing.
-
-While this being a huge feature for ext4 (regardless on how
-intrusive it is for the usual code paths) and while we already have
-patches in the list with people interesting in looking into them, you
-should clearly clarify what is the gain of it, what is the use case (and
-I know you have one), and why it is better than other approaches. You
-know, advertise it a bit in the marketing way :).
-
-There is some confusion among developers on what actually are benefits
-of ext4 snapshots in comparison to btrfs, or in comparison to the new
-dm_multisnap code. I know that you have done quite a lot of testing to
-assure that it does not actually change old ext4 behavior when snapshot
-disabled, and that it works well when enabled, but have you done any
-performance related benchmarks ? Do you have any expectations on how it
-should behave in different work loads ?
-
-It would be great to see and be able to confirm that ext4 snapshots are
-really a win, not only on the feature side, but on the performance side
-as well. I know that there are people out there still undecided or
-having a strange feeling about your snapshot work. But who can blame
-them, when we have not seen any hard data on this matter ?
-
-So I, for myself, and I believe there are others, would like to see some
-benchmark numbers and comparison (both, features and performance) with at
-least new dm-multisnap code and probably btrfs and plain ext4 as well.
-
-Thanks!
--Lukas
-
-
-On Tue, 7 Jun 2011, amir73il@users.sourceforge.net wrote:
-
-> Hi All,
-> 
-> I am resending the snapshots patch series as per Lukas's request.
-> This time, the snapshot*.c files have not been omitted, as in
-> the previous posting.
-> 
-> The series is still based on ext4 dev branch sometime in the preparation
-> for 3.0 merge window. It was not yet rebased on 3.0-rc1, so punch holes
-> changes have not been addressed yet.
-> 
-> As always, I advocate online review of the patches at:
-> https://github.com/amir73il/ext4-snapshots/commits/for-ext4-v1
-> but if you insist on doing it the old way, I won't complain.
-> 
+> On Fri,  3 Jun 2011 09:12:16 -0700
+> Greg Thelen <gthelen@google.com> wrote:
+>
+>> Introduce memcg routines to assist in per-memcg dirty page management:
+>> 
+>> - mem_cgroup_balance_dirty_pages() walks a memcg hierarchy comparing
+>>   dirty memory usage against memcg foreground and background thresholds.
+>>   If an over-background-threshold memcg is found, then per-memcg
+>>   background writeback is queued.  Per-memcg writeback differs from
+>>   classic, non-memcg, per bdi writeback by setting the new
+>>   writeback_control.for_cgroup bit.
+>> 
+>>   If an over-foreground-threshold memcg is found, then foreground
+>>   writeout occurs.  When performing foreground writeout, first consider
+>>   inodes exclusive to the memcg.  If unable to make enough progress,
+>>   then consider inodes shared between memcg.  Such cross-memcg inode
+>>   sharing likely to be rare in situations that use per-cgroup memory
+>>   isolation.  The approach tries to handle the common (non-shared)
+>>   case well without punishing well behaved (non-sharing) cgroups.
+>>   As a last resort writeback shared inodes.
+>> 
+>>   This routine is used by balance_dirty_pages() in a later change.
+>> 
+>> - mem_cgroup_hierarchical_dirty_info() returns the dirty memory usage
+>>   and limits of the memcg closest to (or over) its dirty limit.  This
+>>   will be used by throttle_vm_writeout() in a latter change.
+>> 
+>> Signed-off-by: Greg Thelen <gthelen@google.com>
+>> ---
+>> Changelog since v7:
+>> - Add more detail to commit description.
+>> 
+>> - Declare the new writeback_control for_cgroup bit in this change, the
+>>   first patch that uses the new field is first used.  In -v7 the field
+>>   was declared in a separate patch.
+>> 
+>>  include/linux/memcontrol.h        |   18 +++++
+>>  include/linux/writeback.h         |    1 +
+>>  include/trace/events/memcontrol.h |   83 ++++++++++++++++++++
+>>  mm/memcontrol.c                   |  150 +++++++++++++++++++++++++++++++++++++
+>>  4 files changed, 252 insertions(+), 0 deletions(-)
+>> 
+>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> index 3d72e09..0d0363e 100644
+>> --- a/include/linux/memcontrol.h
+>> +++ b/include/linux/memcontrol.h
+>> @@ -167,6 +167,11 @@ bool should_writeback_mem_cgroup_inode(struct inode *inode,
+>>  				       struct writeback_control *wbc);
+>>  bool mem_cgroups_over_bground_dirty_thresh(void);
+>>  void mem_cgroup_writeback_done(void);
+>> +bool mem_cgroup_hierarchical_dirty_info(unsigned long sys_available_mem,
+>> +					struct mem_cgroup *mem,
+>> +					struct dirty_info *info);
+>> +void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
+>> +				    unsigned long write_chunk);
+>>  
+>>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>>  						gfp_t gfp_mask,
+>> @@ -383,6 +388,19 @@ static inline void mem_cgroup_writeback_done(void)
+>>  {
+>>  }
+>>  
+>> +static inline void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
+>> +						  unsigned long write_chunk)
+>> +{
+>> +}
+>> +
+>> +static inline bool
+>> +mem_cgroup_hierarchical_dirty_info(unsigned long sys_available_mem,
+>> +				   struct mem_cgroup *mem,
+>> +				   struct dirty_info *info)
+>> +{
+>> +	return false;
+>> +}
+>> +
+>>  static inline
+>>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>>  					    gfp_t gfp_mask,
+>> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+>> index 66ec339..4f5c0d2 100644
+>> --- a/include/linux/writeback.h
+>> +++ b/include/linux/writeback.h
+>> @@ -47,6 +47,7 @@ struct writeback_control {
+>>  	unsigned for_reclaim:1;		/* Invoked from the page allocator */
+>>  	unsigned range_cyclic:1;	/* range_start is cyclic */
+>>  	unsigned more_io:1;		/* more io to be dispatched */
+>> +	unsigned for_cgroup:1;		/* enable cgroup writeback */
+>>  	unsigned shared_inodes:1;	/* write inodes spanning cgroups */
+>>  };
+>>  
+>> diff --git a/include/trace/events/memcontrol.h b/include/trace/events/memcontrol.h
+>> index 326a66b..b42dae1 100644
+>> --- a/include/trace/events/memcontrol.h
+>> +++ b/include/trace/events/memcontrol.h
+>> @@ -109,6 +109,89 @@ TRACE_EVENT(mem_cgroups_over_bground_dirty_thresh,
+>>  		  __entry->first_id)
+>>  )
+>>  
+>> +DECLARE_EVENT_CLASS(mem_cgroup_consider_writeback,
+>> +	TP_PROTO(unsigned short css_id,
+>> +		 struct backing_dev_info *bdi,
+>> +		 unsigned long nr_reclaimable,
+>> +		 unsigned long thresh,
+>> +		 bool over_limit),
+>> +
+>> +	TP_ARGS(css_id, bdi, nr_reclaimable, thresh, over_limit),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(unsigned short, css_id)
+>> +		__field(struct backing_dev_info *, bdi)
+>> +		__field(unsigned long, nr_reclaimable)
+>> +		__field(unsigned long, thresh)
+>> +		__field(bool, over_limit)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->css_id = css_id;
+>> +		__entry->bdi = bdi;
+>> +		__entry->nr_reclaimable = nr_reclaimable;
+>> +		__entry->thresh = thresh;
+>> +		__entry->over_limit = over_limit;
+>> +	),
+>> +
+>> +	TP_printk("css_id=%d bdi=%p nr_reclaimable=%ld thresh=%ld "
+>> +		  "over_limit=%d", __entry->css_id, __entry->bdi,
+>> +		  __entry->nr_reclaimable, __entry->thresh, __entry->over_limit)
+>> +)
+>> +
+>> +#define DEFINE_MEM_CGROUP_CONSIDER_WRITEBACK_EVENT(name) \
+>> +DEFINE_EVENT(mem_cgroup_consider_writeback, name, \
+>> +	TP_PROTO(unsigned short id, \
+>> +		 struct backing_dev_info *bdi, \
+>> +		 unsigned long nr_reclaimable, \
+>> +		 unsigned long thresh, \
+>> +		 bool over_limit), \
+>> +	TP_ARGS(id, bdi, nr_reclaimable, thresh, over_limit) \
+>> +)
+>> +
+>> +DEFINE_MEM_CGROUP_CONSIDER_WRITEBACK_EVENT(mem_cgroup_consider_bg_writeback);
+>> +DEFINE_MEM_CGROUP_CONSIDER_WRITEBACK_EVENT(mem_cgroup_consider_fg_writeback);
+>> +
+>> +TRACE_EVENT(mem_cgroup_fg_writeback,
+>> +	TP_PROTO(unsigned long write_chunk,
+>> +		 struct writeback_control *wbc),
+>> +
+>> +	TP_ARGS(write_chunk, wbc),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(unsigned long, write_chunk)
+>> +		__field(long, wbc_to_write)
+>> +		__field(bool, shared_inodes)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->write_chunk = write_chunk;
+>> +		__entry->wbc_to_write = wbc->nr_to_write;
+>> +		__entry->shared_inodes = wbc->shared_inodes;
+>> +	),
+>> +
+>> +	TP_printk("write_chunk=%ld nr_to_write=%ld shared_inodes=%d",
+>> +		  __entry->write_chunk,
+>> +		  __entry->wbc_to_write,
+>> +		  __entry->shared_inodes)
+>> +)
+>> +
+>> +TRACE_EVENT(mem_cgroup_enable_shared_writeback,
+>> +	TP_PROTO(unsigned short css_id),
+>> +
+>> +	TP_ARGS(css_id),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(unsigned short, css_id)
+>> +		),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->css_id = css_id;
+>> +		),
+>> +
+>> +	TP_printk("enabling shared writeback for memcg %d", __entry->css_id)
+>> +)
+>> +
+>>  #endif /* _TRACE_MEMCONTROL_H */
+>>  
+>>  /* This part must be outside protection */
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index a5b1794..17cb888 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -1622,6 +1622,156 @@ void mem_cgroup_writeback_done(void)
+>>  	}
+>>  }
+>>  
+>> +/*
+>> + * This routine must be called by processes which are generating dirty pages.
+>> + * It considers the dirty pages usage and thresholds of the current cgroup and
+>> + * (depending if hierarchical accounting is enabled) ancestral memcg.  If any of
+>> + * the considered memcg are over their background dirty limit, then background
+>> + * writeback is queued.  If any are over the foreground dirty limit then
+>> + * throttle the dirtying task while writing dirty data.  The per-memcg dirty
+>> + * limits check by this routine are distinct from either the per-system,
+>> + * per-bdi, or per-task limits considered by balance_dirty_pages().
+>> + */
+>> +void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
+>> +				    unsigned long write_chunk)
+>> +{
+>> +	struct backing_dev_info *bdi = mapping->backing_dev_info;
+>> +	struct mem_cgroup *mem;
+>> +	struct mem_cgroup *ref_mem;
+>> +	struct dirty_info info;
+>> +	unsigned long nr_reclaimable;
+>> +	unsigned long sys_available_mem;
+>> +	unsigned long pause = 1;
+>> +	unsigned short id;
+>> +	bool over;
+>> +	bool shared_inodes;
+>> +
+>> +	if (mem_cgroup_disabled())
+>> +		return;
+>> +
+>> +	sys_available_mem = determine_dirtyable_memory();
+>> +
+>> +	/* reference the memcg so it is not deleted during this routine */
+>> +	rcu_read_lock();
+>> +	mem = mem_cgroup_from_task(current);
+>> +	if (mem && mem_cgroup_is_root(mem))
+>> +		mem = NULL;
+>> +	if (mem)
+>> +		css_get(&mem->css);
+>> +	rcu_read_unlock();
+>> +	ref_mem = mem;
+>> +
+>> +	/* balance entire ancestry of current's mem. */
+>> +	for (; mem_cgroup_has_dirty_limit(mem); mem = parent_mem_cgroup(mem)) {
+>> +		id = css_id(&mem->css);
+>> +
+>
+> Hmm, this sounds natural...but...don't we need to restart checking from ref_mem's
+> dirty_ratio once we find an ancestor is over dirty_ratio and we slept ?
+>
+> Even if parent's dirty ratio comes to be clean state, children's may not.
+> So, I think some "restart loop" jump after io_schedule_timeout().
+>
 > Thanks,
-> Amir.
-> 
-> [PATCH v1 01/36] ext4: EXT4 snapshots (Experimental)
-> [PATCH v1 02/36] ext4: snapshot debugging support
-> [PATCH v1 03/36] ext4: snapshot hooks - inside JBD hooks
-> [PATCH v1 04/36] ext4: snapshot hooks - block bitmap access
-> [PATCH v1 05/36] ext4: snapshot hooks - delete blocks
-> [PATCH v1 06/36] ext4: snapshot hooks - move data blocks
-> [PATCH v1 07/36] ext4: snapshot hooks - direct I/O
-> [PATCH v1 08/36] ext4: snapshot hooks - move extent file data blocks
-> [PATCH v1 09/36] ext4: snapshot file
-> [PATCH v1 10/36] ext4: snapshot file - read through to block device
-> [PATCH v1 11/36] ext4: snapshot file - permissions
-> [PATCH v1 12/36] ext4: snapshot file - store on disk
-> [PATCH v1 13/36] ext4: snapshot file - increase maximum file size limit to 16TB
-> [PATCH v1 14/36] ext4: snapshot block operations
-> [PATCH v1 15/36] ext4: snapshot block operation - copy blocks to snapshot
-> [PATCH v1 16/36] ext4: snapshot block operation - move blocks to snapshot
-> [PATCH v1 17/36] ext4: snapshot block operation - copy block bitmap to snapshot
-> [PATCH v1 18/36] ext4: snapshot control
-> [PATCH v1 19/36] ext4: snapshot control - init new snapshot
-> [PATCH v1 20/36] ext4: snapshot control - fix new snapshot
-> [PATCH v1 21/36] ext4: snapshot control - reserve disk space for snapshot
-> [PATCH v1 22/36] ext4: snapshot journaled - increase transaction credits
-> [PATCH v1 23/36] ext4: snapshot journaled - implement journal_release_buffer()
-> [PATCH v1 24/36] ext4: snapshot journaled - bypass to save credits
-> [PATCH v1 25/36] ext4: snapshot journaled - cache last COW tid in journal_head
-> [PATCH v1 26/36] ext4: snapshot journaled - trace COW/buffer credits
-> [PATCH v1 27/36] ext4: snapshot list support
-> [PATCH v1 28/36] ext4: snapshot list - read through to previous snapshot
-> [PATCH v1 29/36] ext4: snapshot race conditions - concurrent COW bitmap operations
-> [PATCH v1 30/36] ext4: snapshot race conditions - concurrent COW operations
-> [PATCH v1 31/36] ext4: snapshot race conditions - tracked reads
-> [PATCH v1 32/36] ext4: snapshot exclude - the exclude bitmap
-> [PATCH v1 33/36] ext4: snapshot cleanup
-> [PATCH v1 34/36] ext4: snapshot cleanup - shrink deleted snapshots
-> [PATCH v1 35/36] ext4: snapshot cleanup - merge shrunk snapshots
-> [PATCH v1 36/36] ext4: snapshot rocompat - enable rw mount
-> 
->  fs/ext4/Kconfig           |   11 +
->  fs/ext4/Makefile          |    3 +
->  fs/ext4/balloc.c          |  132 +++
->  fs/ext4/ext4.h            |  188 ++++-
->  fs/ext4/ext4_jbd2.c       |  162 ++++-
->  fs/ext4/ext4_jbd2.h       |  266 ++++++-
->  fs/ext4/extents.c         |  157 ++++-
->  fs/ext4/file.c            |   11 +-
->  fs/ext4/ialloc.c          |   19 +-
->  fs/ext4/inode.c           |  668 +++++++++++++--
->  fs/ext4/ioctl.c           |  120 +++
->  fs/ext4/mballoc.c         |  161 ++++-
->  fs/ext4/move_extent.c     |    3 +-
->  fs/ext4/namei.c           |    9 +
->  fs/ext4/resize.c          |   19 +-
->  fs/ext4/snapshot.c        | 1000 ++++++++++++++++++++++
->  fs/ext4/snapshot.h        |  690 ++++++++++++++++
->  fs/ext4/snapshot_buffer.c |  393 +++++++++
->  fs/ext4/snapshot_ctl.c    | 2002 +++++++++++++++++++++++++++++++++++++++++++++
->  fs/ext4/snapshot_debug.c  |  107 +++
->  fs/ext4/snapshot_debug.h  |  105 +++
->  fs/ext4/snapshot_inode.c  |  960 ++++++++++++++++++++++
->  fs/ext4/super.c           |  157 ++++-
->  fs/ext4/xattr.c           |    4 +-
->  24 files changed, 7182 insertions(+), 165 deletions(-)
-> 
-> 
+> -Kame
 
--- 
+I do not think that we need to restart, but maybe you have a case in
+mind that I am not considering.
+
+Example hierarchy:
+              root
+         A            B
+     A1      A2
+  A11 A12  A21 A22
+
+Assume that mem_cgroup_balance_dirty_pages(A11), so ref_mem=A11.
+
+We start at A11 and walk up towards the root.  If A11 is over limit,
+then write A11 until under limit.  Next check A1, if over limit then
+write A1,A11,A12.  Then check A.  If A is over A limit, then we invoke
+writeback on A* until A is under A limit.  Are you concerned that while
+performing writeback on A* that other tasks may push A1 over the A1
+limit?  Such other task writers would also be calling
+mem_cgroup_balance_dirty_pages() later.
+
+>> +		/*
+>> +		 * keep throttling and writing inode data so long as mem is over
+>> +		 * its dirty limit.
+>> +		 */
+>> +		for (shared_inodes = false; ; ) {
+>> +			struct writeback_control wbc = {
+>> +				.sync_mode	= WB_SYNC_NONE,
+>> +				.older_than_this = NULL,
+>> +				.range_cyclic	= 1,
+>> +				.for_cgroup	= 1,
+>> +				.nr_to_write	= write_chunk,
+>> +				.shared_inodes	= shared_inodes,
+>> +			};
+>> +
+>> +			/*
+>> +			 * if mem is under dirty limit, then break from
+>> +			 * throttling loop.
+>> +			 */
+>> +			mem_cgroup_dirty_info(sys_available_mem, mem, &info);
+>> +			nr_reclaimable = dirty_info_reclaimable(&info);
+>> +			over = nr_reclaimable > info.dirty_thresh;
+>> +			trace_mem_cgroup_consider_fg_writeback(
+>> +				id, bdi, nr_reclaimable, info.dirty_thresh,
+>> +				over);
+>> +			if (!over)
+>> +				break;
+>> +
+>> +			mem_cgroup_mark_over_bg_thresh(mem);
+>> +			writeback_inodes_wb(&bdi->wb, &wbc);
+>> +			trace_mem_cgroup_fg_writeback(write_chunk, &wbc);
+>> +			/* if no progress, then consider shared inodes */
+>> +			if ((wbc.nr_to_write == write_chunk) &&
+>> +			    !shared_inodes) {
+>> +				trace_mem_cgroup_enable_shared_writeback(id);
+>> +				shared_inodes = true;
+>> +			}
+>> +
+>> +			/*
+>> +			 * Sleep up to 100ms to throttle writer and wait for
+>> +			 * queued background I/O to complete.
+>> +			 */
+>> +			__set_current_state(TASK_UNINTERRUPTIBLE);
+>> +			io_schedule_timeout(pause);
+>> +			pause <<= 1;
+>> +			if (pause > HZ / 10)
+>> +				pause = HZ / 10;
+>
+> Hmm, is this exponential back off "pause" is from mm/page-writeback.c ?
+
+Yes.  This is from mm/page-writeback.c:balance_dirty_pages().
+
+> I'm happy if we can have a shared code. (But ok if it adds some messy.)
+
+Sounds good (will include in -v9).  The refactored the shared code will
+look like:
+
+/*
+ * Sleep up to 100ms to throttle writer and wait for queued background
+ * I/O to complete.
+ */
+unsigned long balance_dirty_pages_pause(unsigned long pause)
+{
+	__set_current_state(TASK_UNINTERRUPTIBLE);
+	io_schedule_timeout(pause);
+	pause <<= 1;
+	if (pause > HZ / 10)
+		pause = HZ / 10;
+	return pause;
+}
+
+void [mem_cgroup_]balance_dirty_pages(...)
+{
+	unsigned long pause = 1;
+	for (;;) {
+		...
+		pause = balance_dirty_pages_pause(pause)
+	}
+}
+
+>> +		}
+>> +
+>> +		/* if mem is over background limit, then queue bg writeback */
+>> +		over = nr_reclaimable >= info.background_thresh;
+>> +		trace_mem_cgroup_consider_bg_writeback(
+>> +			id, bdi, nr_reclaimable, info.background_thresh,
+>> +			over);
+>> +		if (over)
+>> +			mem_cgroup_queue_bg_writeback(mem, bdi);
+>> +	}
+>> +
+>> +	if (ref_mem)
+>> +		css_put(&ref_mem->css);
+>> +}
+>> +
+>> +/*
+>> + * Return the dirty thresholds and usage for the mem (within the ancestral chain
+>> + * of @mem) closest to its dirty limit or the first memcg over its limit.
+>> + *
+>> + * The check is not stable because the usage and limits can change asynchronous
+>> + * to this routine.
+>> + */
+>> +bool mem_cgroup_hierarchical_dirty_info(unsigned long sys_available_mem,
+>> +					struct mem_cgroup *mem,
+>> +					struct dirty_info *info)
+>> +{
+>> +	unsigned long usage;
+>> +	struct dirty_info uninitialized_var(cur_info);
+>> +
+>> +	if (mem_cgroup_disabled())
+>> +		return false;
+>> +
+>> +	info->nr_writeback = ULONG_MAX;  /* invalid initial value */
+>> +
+>> +	/* walk up hierarchy enabled parents */
+>> +	for (; mem_cgroup_has_dirty_limit(mem); mem = parent_mem_cgroup(mem)) {
+>> +		mem_cgroup_dirty_info(sys_available_mem, mem, &cur_info);
+>> +		usage = dirty_info_reclaimable(&cur_info) +
+>> +			cur_info.nr_writeback;
+>> +
+>> +		/* if over limit, stop searching */
+>> +		if (usage >= cur_info.dirty_thresh) {
+>> +			*info = cur_info;
+>> +			break;
+>> +		}
+>> +
+>> +		/*
+>> +		 * Save dirty usage of mem closest to its limit if either:
+>> +		 *     - mem is the first mem considered
+>> +		 *     - mem dirty margin is smaller than last recorded one
+>> +		 */
+>> +		if ((info->nr_writeback == ULONG_MAX) ||
+>> +		    (cur_info.dirty_thresh - usage) <
+>> +		    (info->dirty_thresh -
+>> +		     (dirty_info_reclaimable(info) + info->nr_writeback)))
+>> +			*info = cur_info;
+>> +	}
+>> +
+>> +	return info->nr_writeback != ULONG_MAX;
+>> +}
+>> +
+>>  static void mem_cgroup_start_move(struct mem_cgroup *mem)
+>>  {
+>>  	int cpu;
+>> -- 
+>> 1.7.3.1
+>> 
