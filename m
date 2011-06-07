@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab1FGEpI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 00:45:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29501 "EHLO mga01.intel.com"
+	id S1753517Ab1FGEwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 00:52:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35032 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753126Ab1FGEpB convert rfc822-to-8bit (ORCPT
+	id S1750988Ab1FGEwo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 00:45:01 -0400
+	Tue, 7 Jun 2011 00:52:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,330,1304319600"; 
-   d="scan'208";a="12796373"
-Date: Tue, 7 Jun 2011 12:48:54 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>
+   d="scan'208";a="12798514"
+From: "Du, Alek" <alek.du@intel.com>
+To: "Tang, Feng" <feng.tang@intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
 CC: Dirk Brandewie <dirk.brandewie@gmail.com>,
         "spi-devel-general@lists.sourceforge.net" 
 	<spi-devel-general@lists.sourceforge.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Frysinger <vapier.adi@gmail.com>, <alek.du@intel.com>,
-        <alan@linux.intel.com>, <jean-hugues.deschenes@octasic.com>
-Subject: Re: [PATCH v2] spi: reorganize drivers
-Message-ID: <20110607124854.0e96813c@feng-i7>
-In-Reply-To: <BANLkTim927Ld28JmVfALscThef02XQJDWw@mail.gmail.com>
+        Mike Frysinger <vapier.adi@gmail.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "jean-hugues.deschenes@octasic.com" 
+	<jean-hugues.deschenes@octasic.com>
+Date: Tue, 7 Jun 2011 12:52:36 +0800
+Subject: RE: [PATCH v2] spi: reorganize drivers
+Thread-Topic: [PATCH v2] spi: reorganize drivers
+Thread-Index: AcwkzYHEnGvuxub8QF6co6WZopC1QAAAHa9g
+Message-ID: <1865303E0DED764181A9D882DEF65FB697F73BFC1C@shsmsx502.ccr.corp.intel.com>
 References: <20110606071829.10334.90865.stgit@ponder>
 	<BANLkTinqVf+uK+5T_X-EkXw-YE67DJL1Pg@mail.gmail.com>
 	<BANLkTinmfufSkSnmiKWWEgpaR-usbiV5tA@mail.gmail.com>
-	<4DED0510.1030600@gmail.com>
-	<20110607102829.01392e7e@feng-i7>
+	<4DED0510.1030600@gmail.com>	<20110607102829.01392e7e@feng-i7>
 	<BANLkTim927Ld28JmVfALscThef02XQJDWw@mail.gmail.com>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
+ <20110607124854.0e96813c@feng-i7>
+In-Reply-To: <20110607124854.0e96813c@feng-i7>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Hi Grant,
+
+After the latest patches that Feng Tang sent out for SPI were merged, I don't see any good reason to do big change. It just works perfectly.
+
+Thanks,
+Alek
+-----Original Message-----
+From: Tang, Feng 
+Sent: Tuesday, June 07, 2011 12:49 PM
+To: Grant Likely
+Cc: Dirk Brandewie; spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org; Mike Frysinger; Du, Alek; alan@linux.intel.com; jean-hugues.deschenes@octasic.com
+Subject: Re: [PATCH v2] spi: reorganize drivers
 
 Hi Grant,
 
