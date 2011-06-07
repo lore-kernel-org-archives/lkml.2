@@ -1,50 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab1FGSXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:23:00 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:11889 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240Ab1FGSW7 (ORCPT
+	id S932240Ab1FGS1p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:27:45 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:22879 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797Ab1FGS1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:22:59 -0400
-Message-ID: <4DEE6C82.4000901@caviumnetworks.com>
-Date: Tue, 07 Jun 2011 11:22:58 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Tue, 7 Jun 2011 14:27:44 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-160.messagelabs.com!1307471261!25054232!16
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.31]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Joe Perches <joe@perches.com>, Jiri Kosina <trivial@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 7 Jun 2011 13:27:32 -0500
+Subject: RE: [PATCH] treewide: Convert uses of struct resource * to
+ resource_size(ptr)
+Thread-Topic: [PATCH] treewide: Convert uses of struct resource * to
+ resource_size(ptr)
+Thread-Index: AcwkruaoVkwNIxP2QoSFuSpqo2cYswAgtvSw
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3820B7EB4@AUSP01VMBX24.collaborationhost.net>
+References: <201106061349.00474.hartleys@visionengravers.com>
+	 <1307397174.4994.26.camel@Joe-Laptop>
+	 <ADE657CA350FB648AAC2C43247A983F001F3820B7C78@AUSP01VMBX24.collaborationhost.net>
+ <1307408678.4994.46.camel@Joe-Laptop>
+In-Reply-To: <1307408678.4994.46.camel@Joe-Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: David Daney <ddaney.cavm@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [PATCH 2/3] kprobes/trace: Fix kprobe selftest for gcc 4.6
-References: <20110607170740.235441001@goodmis.org>	 <20110607170827.295368694@goodmis.org>  <4DEE6903.9010501@gmail.com> <1307470377.9218.3.camel@gandalf.stny.rr.com>
-In-Reply-To: <1307470377.9218.3.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Jun 2011 18:22:58.0343 (UTC) FILETIME=[ED6D4370:01CC253F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p57IRoAS015170
 
-On 06/07/2011 11:12 AM, Steven Rostedt wrote:
-> On Tue, 2011-06-07 at 11:08 -0700, David Daney wrote:
->
->>> -static int kprobe_trace_selftest_target(int a1, int a2, int a3,
->>> -					int a4, int a5, int a6)
->>> +/*
->>> + * Can't be static, otherwise gcc might optimize this to
->>> + * not be in the kallsyms table.
->>> + */
->>
->> Could you make it '__used' instead?
->>
->
-> I can try, but the problem is not that the function itself is being
-> optimized out. It looks like its being turned into anonymous text. That
-> is, it optimized out the symbol name, not the code itself.
->
+On Monday, June 06, 2011 6:05 PM, Joe Perches wrote:
+> Done via coccinelle script:
+> 
+> struct resource *ptr;
+> @@
+> 
+> - ptr->end - ptr->start + 1
+> + resource_size(ptr)
+> 
+> Mostly uncompiled, not enough cross-compilers.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> 
+>> I think most of the offenders were caught back in late 2009.
+> 
+> There are quite a few left...
 
-Really it is no big deal either way.  Just a thought I had.
+FWIW, your patch missed a couple...
 
-David Daney
+
+>  arch/arm/plat-s5p/sysmmu.c                 |    2 +-
+
+	((res->end) - (res->start)) + 1
+
+arch/arm/plat-samsung/pm-check.c
+
+	(u32)(res->end - res->start)+1
+
+arch/mips/pci/ops-tx3927.c
+
+	channel->io_resource->end - channel->io_resource->start;
+	channel->mem_resource->end - channel->mem_resource->start;
+
+These two look like they are missing the + 1.
+
+> arch/powerpc/sysdev/ppc4xx_pci.c           |    6 +++---
+
+	res->end + 1 - res->start
+
+drivers/acpi/apei/apei-base.c
+
+	res->end - res->start
+
+There are a couple of these, they look like they are missing the + 1.
+
+drivers/gpio/gpio-u300.c
+
+	memres->end - memres->start
+
+Missing + 1.
+
+drivers/message/i2o/iop.c
+
+	1 + res->end - res->start
+
+drivers/mtd/maps/ixp2000.c
+
+	dev->resource->end - dev->resource->start + 1
+
+drivers/mtd/maps/sa1100-flash.c
+
+	phys = res->start;
+	size = res->end - phys + 1;
+
+drivers/rtc/rtc-cmos.c
+
+	ports->end + 1 - ports->start
+
+drivers/rtc/rtc-mrst.c
+
+	iomem->end + 1 - iomem->start
+
+drivers/video/mb862xx/mb862xxfbdrv.c
+
+	1 + par->res->end - par->res->start
+
+drivers/video/mbx/mbxfb.c
+
+	#define res_size(_r) (((_r)->end - (_r)->start) + 1)
+
+drivers/video/msm/mdp.c
+
+	resource->end - resource->start
+
+Missing + 1.
+
+drivers/video/msm/msm_fb.c
+
+	resource->end - resource->start
+
+Missing + 1.
+
+
+There are also a number that look like:
+
+	res.end - res.start + 1
+and
+	res.end + 1 - res.start
+
+
+Regards,
+Hartley
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
