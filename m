@@ -1,51 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab1FGMkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:40:35 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55356 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221Ab1FGMke (ORCPT
+	id S1753090Ab1FGMmb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:42:31 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:43111
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751898Ab1FGMma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:40:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=l/VzPYrxB2rffNBydzD33h+uRk8ojybXn01CwhmtqysYgmmDdKHXPpNaAcPuN0Ccsi
-         AxOHkrpEzhL95oWfsGdnve2o6YpQwpv1pZk8V8jd7x8vzcgbRH9HLqMh9z3eyisFjniV
-         /uQ15UEMEtJfcY3QpcGk69A1k7JbJ81SpVNMY=
-Message-ID: <4DEE1C3F.4070407@lwfinger.net>
-Date: Tue, 07 Jun 2011 07:40:31 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Tue, 7 Jun 2011 08:42:30 -0400
+Date: Tue, 7 Jun 2011 08:42:13 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 8/8] mm: make per-memcg lru lists exclusive
+Message-ID: <20110607124213.GB18571@infradead.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-9-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Realtek RTL8192CU Polling FW ready fail!! REG_MCUFWDL:0x00000006
-References: <BANLkTik84U0p7hf1+ofvPvJ2CO1MmutcWQ@mail.gmail.com> <BANLkTika3VUB6mmY=JLikQYgrFXk2xuP1A@mail.gmail.com>
-In-Reply-To: <BANLkTika3VUB6mmY=JLikQYgrFXk2xuP1A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306909519-7286-9-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2011 11:44 PM, Jeff Chua wrote:
->
->
-> Not sure anyone got a chance to look into this. I could get the device
-> to work with RTL8192CU_linux_v3.0.1590.20110511.zip (just that
-> ifconfig wlan0 froze the whole system).
->
-> rtw driver version=v3.0.1590.20110511
-> CHIP TYPE: RTL8188C_8192C
-> MAC Address from efuse= 00:22:cf:43:d3:8b
+On Wed, Jun 01, 2011 at 08:25:19AM +0200, Johannes Weiner wrote:
+> All lru list walkers have been converted to operate on per-memcg
+> lists, the global per-zone lists are no longer required.
+> 
+> This patch makes the per-memcg lists exclusive and removes the global
+> lists from memcg-enabled kernels.
+> 
+> The per-memcg lists now string up page descriptors directly, which
+> unifies/simplifies the list isolation code of page reclaim as well as
+> it saves a full double-linked list head for each page in the system.
+> 
+> At the core of this change is the introduction of the lruvec
+> structure, an array of all lru list heads.  It exists for each zone
+> globally, and for each zone per memcg.  All lru list operations are
+> now done in generic code against lruvecs, with the memcg lru list
+> primitives only doing accounting and returning the proper lruvec for
+> the currently scanned memcg on isolation, or for the respective page
+> on putback.
 
-I have not yet had an opportunity to check on this. My recollection is that the 
-error message from the firmware did not affect the operation of the chip, but I 
-have not yet proved that.
+Wouldn't it be simpler if we always have a stub mem_cgroup_per_zone
+structure even for non-memcg kernels, and always operate on a
+single instance per node of those for non-memcg kernels?  In effect the
+lruvec almost is something like that, just adding another layer of
+abstraction.
 
-I cannot vouch for the operation of any drivers downloaded from the Realtek web 
-site. Many of them will not work with 64-bit systems.
+>  static inline struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+> diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
+> index 8f7d247..43d5d9f 100644
+> --- a/include/linux/mm_inline.h
+> +++ b/include/linux/mm_inline.h
+> @@ -25,23 +25,27 @@ static inline void
+>  __add_page_to_lru_list(struct zone *zone, struct page *page, enum lru_list l,
+>  		       struct list_head *head)
+>  {
+> +	/* NOTE: Caller must ensure @head is on the right lruvec! */
+> +	mem_cgroup_lru_add_list(zone, page, l);
+>  	list_add(&page->lru, head);
+>
+>  	__mod_zone_page_state(zone, NR_LRU_BASE + l, hpage_nr_pages(page));
+> -	mem_cgroup_add_lru_list(page, l);
+>  }
 
-Larry
+This already has been a borderline-useful function before, but with the
+new changes it's not a useful helper.  Either add the code surrounding
+it includeing the PageLRU check and the normal add_page_to_lru_list
+into a new page_update_lru_pos or similar helper, or just opencode these
+bits in the only caller with a comment documenting why we are doing it.
+
+I would tend towards the opencoding variant.
+
