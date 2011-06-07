@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759164Ab1FGX0p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 19:26:45 -0400
-Received: from r00tworld.com ([212.85.137.150]:50290 "EHLO r00tworld.com"
+	id S1759035Ab1FGXZA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 19:25:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52049 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759051Ab1FGXZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 19:25:52 -0400
-From: pageexec@freemail.hu
-To: Ingo Molnar <mingo@elte.hu>
-Date: Wed, 08 Jun 2011 01:24:11 +0200
+	id S1758907Ab1FGXY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 19:24:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,335,1304319600"; 
+   d="scan'208";a="10857724"
+Date: Wed, 8 Jun 2011 07:24:56 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/15] writeback: introduce .tagged_writepages for the
+ WB_SYNC_NONE sync stage
+Message-ID: <20110607232456.GA19547@localhost>
+References: <20110607213236.634026193@intel.com>
+ <20110607213853.513366237@intel.com>
+ <20110607160234.53de9f93.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Subject: Re: [PATCH] x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to COMPAT_VSYSCALLS
-Reply-to: pageexec@freemail.hu
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@mit.edu>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <4DEEB31B.19443.19E64A01@pageexec.freemail.hu>
-In-reply-to: <20110607101315.GG4133@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>, <4DED6AAC.12348.14E3578E@pageexec.freemail.hu>, <20110607101315.GG4133@elte.hu>
-X-mailer: Pegasus Mail for Windows (4.61)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Wed, 08 Jun 2011 01:24:50 +0200 (CEST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607160234.53de9f93.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 Jun 2011 at 12:13, Ingo Molnar wrote:
-
-> * pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+On Wed, Jun 08, 2011 at 07:02:34AM +0800, Andrew Morton wrote:
+> On Wed, 08 Jun 2011 05:32:37 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
 > 
-> > > You generally seem to assume that security is an absolute goal 
-          ^^^^^^^^^
-> > > with no costs attached.
+> > sync(2) is performed in two stages: the WB_SYNC_NONE sync and the
+> > WB_SYNC_ALL sync. Identify the first stage with .tagged_writepages and
+> > do livelock prevention for it, too.
 > > 
-> > quote me on that back please or admit you made this up. [...]
+> > Note that writeback_inodes_sb() is called by not only sync(), they are
+> > treated the same because the other callers also need livelock prevention.
+> > 
+> > Impact:  It changes the order in which pages/inodes are synced to disk.
+> > Now in the WB_SYNC_NONE stage, it won't proceed to write the next inode
+> > until finished with the current inode.
 > 
-> Just one quick example of your delusion:
-> 
->    |
->    | "a page fault is never a fast path"
->    |
+> What problem is this patch actually fixing?  It sounds like there's
+> some livelock scenario in the WB_SYNC_NONE phase.  otoh the final
+> paragraph implies that the WB_SYNC_NONE phase is failing to write some
+> pages under some situations.
 
-i don't see 'security', 'absolute', 'goal' and 'cost' in the above, do you?
-(btw, nice try to extract a single sentence out of context, looks like you're
-running out of steam if you have to descend this low ;)
+Problem is: the WB_SYNC_NONE phase has no livelock prevention _at all_.
 
-but more importantly, did you see 'generally' above? do you think a single
-sample would justify it? i think even you're not that dumb. or maybe that's
-how you cook up your performance measurements too?
+Jan's commit f446daaea9 ("mm: implement writeback livelock avoidance
+using page tagging") is a partial fix in that it only fixed the
+WB_SYNC_ALL phase livelock.
 
-so try harder. say, find all the PaX features i implemented over the years,
-see what kind of decisions i made, determine which one was for or against
-performance (vs. security, usability, etc) and then let's see if you can
-draw your conclusion or not. until then, you stay in the hole you dug
-yourself into ;).
+Although ext4 is tested to no longer livelock with commit f446daaea9,
+it may due to some "redirty_tail() after pages_skipped" effect which
+is by no means a guarantee for _all_ the file systems.
 
->    (PageExec, Jun 6, 2011)
-> 
->    http://lkml.org/lkml/2011/6/6/209
-> 
-> I think that sentence will become a classic quote to chuckle about.
+> Suggest that the changelog be fleshed out to cover all of this.
 
-heh, if Ingo 'single cycle' Molnar says so... i'm still ROTFL whenever
-i think about it, it was really priceless, thank you! ;)))))
+OK, I'll add the above two paragraphs to the changelog.
 
+Thanks,
+Fengguang
