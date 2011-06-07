@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab1FGXzd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 19:55:33 -0400
+	id S1757693Ab1FGXzx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 19:55:53 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:61209 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757283Ab1FGXzc (ORCPT
+	with ESMTP id S1757283Ab1FGXzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 19:55:32 -0400
+	Tue, 7 Jun 2011 19:55:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=PKRMUuHDJLwMV6e4YTibsfDFW8Hbch9NEXWzA8ZHSQmImYggLaYMO0H+pUnGnLFGQy
-         /ux6ylR9JrhaDRfGn1GYtrA8UOndgcHjhgnzvb3SDT3Y8U8J2rzht+FGx8tkoezQV7n3
-         i2P9FWKRB6ke38QmghrWoKCg/vdIBJNqx8e6I=
+        b=B4hjirEi1Z7GAQQwvO+z1iBZ1TJ9xcR3nsRQU5ScqOZ6jt0mHyWKXuH/DKAXITR59G
+         5BbAn4B8GojJgI9mWRcwJT0zD7vIBxx3NdR2Uw4je2nQE9xXqmyDeCQzJfGZUv8Q1TPR
+         XmCCWDR9NRs0LVg067F+QC1oUbLWyVxQ/BTZM=
 From: David Ahern <dsahern@gmail.com>
 To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
         fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 2/6] perf utils: export parse_single_tracepoint_event
-Date: Tue,  7 Jun 2011 17:55:26 -0600
-Message-Id: <1307490926-24639-1-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 3/6] perf: add reference time event
+Date: Tue,  7 Jun 2011 17:55:46 -0600
+Message-Id: <1307490946-24673-1-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.5.2
 In-Reply-To: <1307490806-24548-1-git-send-email-dsahern@gmail.com>
 References: <1307490806-24548-1-git-send-email-dsahern@gmail.com>
@@ -28,83 +28,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For use by perf-record in later patch. Allow strp arg to be NULL
-as well.
+For initial perf_clock to time-of-day correlation.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/util/parse-events.c |   13 ++++---------
- tools/perf/util/parse-events.h |   12 ++++++++++++
- 2 files changed, 16 insertions(+), 9 deletions(-)
+ tools/perf/util/event.c   |    1 +
+ tools/perf/util/event.h   |    8 ++++++++
+ tools/perf/util/session.c |    4 ++++
+ tools/perf/util/session.h |    3 ++-
+ 4 files changed, 15 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 41982c3..c15a701 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -19,12 +19,6 @@ struct event_symbol {
- 	const char	*alias;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 3c1b8a6..1a89a04 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -24,6 +24,7 @@ static const char *perf_event__names[] = {
+ 	[PERF_RECORD_HEADER_TRACING_DATA]	= "TRACING_DATA",
+ 	[PERF_RECORD_HEADER_BUILD_ID]		= "BUILD_ID",
+ 	[PERF_RECORD_FINISHED_ROUND]		= "FINISHED_ROUND",
++	[PERF_RECORD_REFTIME]			= "REF_TIME",
  };
  
--enum event_result {
--	EVT_FAILED,
--	EVT_HANDLED,
--	EVT_HANDLED_ALL
--};
--
- char debugfs_path[MAXPATHLEN];
- 
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
-@@ -432,8 +426,8 @@ parse_generic_hw_event(const char **str, struct perf_event_attr *attr)
- 	return EVT_HANDLED;
- }
- 
--static enum event_result
--parse_single_tracepoint_event(char *sys_name,
-+enum event_result
-+parse_single_tracepoint_event(const char *sys_name,
- 			      const char *evt_name,
- 			      unsigned int evt_length,
- 			      struct perf_event_attr *attr,
-@@ -460,7 +454,8 @@ parse_single_tracepoint_event(char *sys_name,
- 	id = atoll(id_buf);
- 	attr->config = id;
- 	attr->type = PERF_TYPE_TRACEPOINT;
--	*strp += strlen(sys_name) + evt_length + 1; /* + 1 for the ':' */
-+	if (strp)
-+		*strp += strlen(sys_name) + evt_length + 1; /* + 1 for the ':' */
- 
- 	attr->sample_type |= PERF_SAMPLE_RAW;
- 	attr->sample_type |= PERF_SAMPLE_TIME;
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 746d3fc..e65f724 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -17,6 +17,12 @@ struct tracepoint_path {
- 	struct tracepoint_path *next;
+ const char *perf_event__name(unsigned int id)
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 1d7f664..f481f90 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -98,6 +98,7 @@ enum perf_user_event_type { /* above any possible kernel type */
+ 	PERF_RECORD_HEADER_TRACING_DATA		= 66,
+ 	PERF_RECORD_HEADER_BUILD_ID		= 67,
+ 	PERF_RECORD_FINISHED_ROUND		= 68,
++	PERF_RECORD_REFTIME			= 69,
+ 	PERF_RECORD_HEADER_MAX
  };
  
-+enum event_result {
-+	EVT_FAILED,
-+	EVT_HANDLED,
-+	EVT_HANDLED_ALL
+@@ -124,6 +125,12 @@ struct tracing_data_event {
+ 	u32 size;
+ };
+ 
++struct reftime_event {
++	struct perf_event_header header;
++	struct timeval tv;
++	u64 nsec;
 +};
 +
- extern struct tracepoint_path *tracepoint_id_to_path(u64 config);
- extern bool have_tracepoints(struct list_head *evlist);
+ union perf_event {
+ 	struct perf_event_header	header;
+ 	struct ip_event			ip;
+@@ -137,6 +144,7 @@ union perf_event {
+ 	struct event_type_event		event_type;
+ 	struct tracing_data_event	tracing_data;
+ 	struct build_id_event		build_id;
++	struct reftime_event		reftime;
+ };
  
-@@ -26,6 +32,12 @@ extern const char *__event_name(int type, u64 config);
- 
- extern int parse_events(const struct option *opt, const char *str, int unset);
- extern int parse_filter(const struct option *opt, const char *str, int unset);
-+extern enum event_result
-+parse_single_tracepoint_event(const char *sys_name,
-+			      const char *evt_name,
-+			      unsigned int evt_length,
-+			      struct perf_event_attr *attr,
-+			      const char **strp);
- 
- #define EVENTS_HELP_MAX (128*1024)
- 
+ void perf_event__print_totals(void);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index b723f21..322632c 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -792,6 +792,10 @@ static int perf_session__process_user_event(struct perf_session *session, union
+ 		return ops->build_id(event, session);
+ 	case PERF_RECORD_FINISHED_ROUND:
+ 		return ops->finished_round(event, session, ops);
++	case PERF_RECORD_REFTIME:
++		if (ops->reftime)
++			return ops->reftime(event, session);
++		return -EINVAL;
+ 	default:
+ 		return -EINVAL;
+ 	}
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index de4178d..9728701 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -81,7 +81,8 @@ struct perf_event_ops {
+ 	event_synth_op	attr,
+ 			event_type,
+ 			tracing_data,
+-			build_id;
++			build_id,
++			reftime;
+ 	event_op2	finished_round;
+ 	bool		ordered_samples;
+ 	bool		ordering_requires_timestamps;
 -- 
 1.7.5.2
 
