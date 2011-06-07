@@ -1,73 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756668Ab1FGUga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 16:36:30 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:50652 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756634Ab1FGUg1 (ORCPT
+	id S1756723Ab1FGUnx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 16:43:53 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60422 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab1FGUnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 16:36:27 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/7Z40dR9z7L+TjDd111XqKET+dfpY+4Yd60pt0hS
-	FbKbfgxpinv+Jt
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] net/mac80211/debugfs: Convert to kstrou8_from_user
-Date: Tue,  7 Jun 2011 22:36:14 +0200
-Message-Id: <1307478974-32727-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-X-Y-GMX-Trusted: 0
+	Tue, 7 Jun 2011 16:43:51 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type;
+	b=N6k3CI8hLGylbEwl5VMssimSeUCBRJqaoHyaTmAhYDyxVqs8VJ2726UGzR874ewbq
+	wwy8XuQrKNfwief9VSy9A==
+From: Greg Thelen <gthelen@google.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH v8 11/12] writeback: make background writeback cgroup aware
+References: <1307117538-14317-1-git-send-email-gthelen@google.com>
+	<1307117538-14317-12-git-send-email-gthelen@google.com>
+	<20110607193835.GD26965@redhat.com>
+Date: Tue, 07 Jun 2011 13:43:08 -0700
+In-Reply-To: <20110607193835.GD26965@redhat.com> (Vivek Goyal's message of
+	"Tue, 7 Jun 2011 15:38:35 -0400")
+Message-ID: <xr93lixdv0df.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces the code for getting an number from a
-userspace buffer by a simple call to kstrou8_from_user.
-This makes it easier to read and less error prone.
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-Since the old buffer was only 10 bytes long and the value is masked by a
-nibble-mask anyway, we don't need to use kstrtoul but rather kstrtou8.
+> On Fri, Jun 03, 2011 at 09:12:17AM -0700, Greg Thelen wrote:
+>> When the system is under background dirty memory threshold but a cgroup
+>> is over its background dirty memory threshold, then only writeback
+>> inodes associated with the over-limit cgroup(s).
+>> 
+>
+> [..]
+>> -static inline bool over_bground_thresh(void)
+>> +static inline bool over_bground_thresh(struct bdi_writeback *wb,
+>> +				       struct writeback_control *wbc)
+>>  {
+>>  	unsigned long background_thresh, dirty_thresh;
+>>  
+>>  	global_dirty_limits(&background_thresh, &dirty_thresh);
+>>  
+>> -	return (global_page_state(NR_FILE_DIRTY) +
+>> -		global_page_state(NR_UNSTABLE_NFS) > background_thresh);
+>> +	if (global_page_state(NR_FILE_DIRTY) +
+>> +	    global_page_state(NR_UNSTABLE_NFS) > background_thresh) {
+>> +		wbc->for_cgroup = 0;
+>> +		return true;
+>> +	}
+>> +
+>> +	wbc->for_cgroup = 1;
+>> +	wbc->shared_inodes = 1;
+>> +	return mem_cgroups_over_bground_dirty_thresh();
+>>  }
+>
+> Hi Greg,
+>
+> So all the logic of writeout from mem cgroup works only if system is
+> below background limit. The moment we cross background limit, looks
+> like we will fall back to existing way of writting inodes?
 
-Kernel Version: v3.0-rc2
+Correct.  If the system is over its background limit then the previous
+cgroup-unaware background writeback occurs.  I think of the system
+limits as those of the root cgroup.  If the system is over the global
+limit than all cgroups are eligible for writeback.  In this situation
+the current code does not distinguish between cgroups over or under
+their dirty background limit.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- net/mac80211/debugfs.c |   14 +++-----------
- 1 files changed, 3 insertions(+), 11 deletions(-)
+Vivek Goyal <vgoyal@redhat.com> writes:
+> If yes, then from design point of view it is little odd that as long
+> as we are below background limit, we share the bdi between different
+> cgroups. The moment we are above background limit, we fall back to
+> algorithm of sharing the disk among individual inodes and forget
+> about memory cgroups. Kind of awkward.
+>
+> This kind of cgroup writeback I think will atleast not solve the problem
+> for CFQ IO controller, as we fall back to old ways of writting back inodes
+> the moment we cross dirty ratio.
 
-diff --git a/net/mac80211/debugfs.c b/net/mac80211/debugfs.c
-index 186e02f..267ed45 100644
---- a/net/mac80211/debugfs.c
-+++ b/net/mac80211/debugfs.c
-@@ -195,20 +195,12 @@ static ssize_t uapsd_queues_write(struct file *file,
- 				  size_t count, loff_t *ppos)
- {
- 	struct ieee80211_local *local = file->private_data;
--	unsigned long val;
--	char buf[10];
--	size_t len;
-+	u8 val;
- 	int ret;
- 
--	len = min(count, sizeof(buf) - 1);
--	if (copy_from_user(buf, user_buf, len))
--		return -EFAULT;
--	buf[len] = '\0';
--
--	ret = strict_strtoul(buf, 0, &val);
--
-+	ret = kstrtou8_from_user(user_buf, count, 0, &val);
- 	if (ret)
--		return -EINVAL;
-+		return ret;
- 
- 	if (val & ~IEEE80211_WMM_IE_STA_QOSINFO_AC_MASK)
- 		return -ERANGE;
--- 
-1.7.3.4
+It might make more sense to reverse the order of the checks in the
+proposed over_bground_thresh(): the new version would first check if any
+memcg are over limit; assuming none are over limit, then check global
+limits.  Assuming that the system is over its background limit and some
+cgroups are also over their limits, then the over limit cgroups would
+first be written possibly getting the system below its limit.  Does this
+address your concern?
 
+Note: mem_cgroup_balance_dirty_pages() (patch 10/12) will perform
+foreground writeback when a memcg is above its dirty limit.  This would
+offer CFQ multiple tasks issuing IO.
+
+> Also have you done any benchmarking regarding what's the overhead of
+> going through say thousands of inodes to find the inode which is eligible
+> for writeback from a cgroup? I think Dave Chinner had raised this concern
+> in the past.
+>
+> Thanks
+> Vivek
+
+I will collect some performance data measuring the cost of scanning.
