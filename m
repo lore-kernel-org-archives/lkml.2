@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590Ab1FGHIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 03:08:32 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:50128 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431Ab1FGHIa (ORCPT
+	id S1751617Ab1FGHJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 03:09:50 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38962 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801Ab1FGHJr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 03:08:30 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 7/7] [v2] drivers/misc: introduce Freescale hypervisor management driver
-Date: Tue, 7 Jun 2011 09:08:16 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        kumar.gala@freescale.com, linux-kernel@vger.kernel.org,
-        akpm@kernel.org, Deepak Saxena <dsaxena@linaro.org>,
-        linux-console@vger.kernel.org, greg@kroah.com,
-        Timur Tabi <timur@freescale.com>
-References: <1306953337-15698-1-git-send-email-timur@freescale.com> <20110606212356.GA20112@dumpdata.com> <4DED5D08.3070704@tilera.com>
-In-Reply-To: <4DED5D08.3070704@tilera.com>
+	Tue, 7 Jun 2011 03:09:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Ni/oIyAiN/q/x+g1KyrxgH85jx88M/iEkw9GK4qKWQODspSBhSkOHTw8O+F+yvVskK
+         q+P/3eJXoAlpJ2xrGnLfv4+Qd4nopzG2De0WSHUz6610eqYbHcErocb77DLU8mEbvam3
+         6orowqTjl1SpZhvoEj9rqulBeaiKQI3TtyjBI=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106070908.16301.arnd@arndb.de>
-X-Provags-ID: V02:K0:/Y1VHH8AsagYE1u+wYtgWVxFoRNThz6OWRL2D513FJz
- 9Tx03yi+mu2FlqXhYpl8yg6leSSYswXR+Cpg4wUdPdwYp05oEc
- cJCrIUyT0suON3DEhS1FKL3Qn840ecLeZKf4HXBs1A9+XD9Lo7
- mHnp4nA0dh48LhgqCjZOQDCBhsIVepPogqSuOxJuBWj5AoCuUy
- rbJL6C86Fo5sluBe69R5Q==
+In-Reply-To: <201106062211.15247.arnd@arndb.de>
+References: <1307390873-29687-1-git-send-email-geert@linux-m68k.org>
+	<201106062211.15247.arnd@arndb.de>
+Date: Tue, 7 Jun 2011 09:09:45 +0200
+X-Google-Sender-Auth: u-NazQI5fogJUsnxvLnSYJBKopI
+Message-ID: <BANLkTin8XNA+ocdjUhtzVOQNxOGFsYa1mA@mail.gmail.com>
+Subject: Re: [PATCH/RFC] m68k/bitops: Make bitmap data pointer of atomic ops volatile
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-m68k@vger.kernel.org, Akinobu Mita <akinobu.mita@gmail.com>,
+        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        linux-ide@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 07 June 2011 01:04:40 Chris Metcalf wrote:
-> For context, the most recent patch for the tile driver in question is here:
-> 
-> https://patchwork.kernel.org/patch/843892/
-> 
-> On 6/6/2011 5:23 PM, Konrad Rzeszutek Wilk wrote:
-> > On Mon, Jun 06, 2011 at 05:01:36PM -0400, Chris Metcalf wrote:
+On Mon, Jun 6, 2011 at 22:11, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 06 June 2011 22:07:53 Geert Uytterhoeven wrote:
+>>
+>> This fixes a.o.
+>>
+>> drivers/ide/ide-io.c: In function ‘ide_lock_host’:
+>> drivers/ide/ide-io.c:415: warning: passing argument 2 of ‘__constant_test_and_set_bit’ discards qualifiers from pointer target type
+>> drivers/ide/ide-io.c:415: warning: passing argument 2 of ‘__generic_test_and_set_bit’ discards qualifiers from pointer target type
+>>
+>> Suggested-by: Ben Hutchings <ben@decadent.org.uk>
+>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 >
-> >> a hypervisor for any reason, then the Tilera paravirtualized drivers fit in
-> >> well.  If it's intended more for drivers that guests running under a
-> >> hypervisor can use to talk to the hypervisor itself (e.g. managing
-> > I believe that the code that deals with specific subsystem (so block API
-> > for example) would reside in subsystem directory (so drivers/block would have
-> > your virtualization block driver). This allows the maintainer of block
-> > to make sure your driver is OK.
-> 
-> Sure, makes sense.  The new push (as I understand it) is to group primarily
-> by function, not by bus or architecture.
+> I think the correct fix would be to mark the variable not volatile, as it
+> clearly has no business be marked as such. That doesn't mean your patch
 
-Yes.
+You mean the host_busy variable in the IDE code?
+That would also apply to context_flag in the DRM code:
 
-> >> notifications that a hypervisor delivers to a guest to cause it to shut
-> >> down or take other actions), then it doesn't seem like the Tilera
-> > That looks to be arch/<x>/tilera/virt/ candidate?
-> 
-> Arnd, among others, has suggested that all drivers live in "drivers"
-> somewhere, so "arch/tile" may not be the best place.  (To be fair, I
-> originally had this driver in arch/tile/drivers/, so your idea is certainly
-> reasonable!)
-> 
-> >> paravirtualized device drivers belong there, since they're just using the
-> >> Tilera hypervisor synchronously to do I/O or get/set device and driver state.
-> > Well, I/O sounds like block API or network API. But then you are also
-> > doing management ioctl - which implies "drivers". "drivers/tilera" does not
-> > work?
-> 
-> There is certainly precedent for drivers that don't fit cleanly into an
-> existing category to go in drivers/<arch>, e.g. drivers/s390,
-> drivers/parisc, etc.  There is also drivers/platform/x86, though that seems
-> to be for the bus "platform drivers" rather than just a random character
-> driver like the one in question.
-> 
-> I don't have a particular opinion here; I'm just hoping to develop enough
-> consensus that I can ask Linus to pull the driver without generating
-> controversy :-)
+drivers/gpu/drm/drm_context.c:233: warning: passing argument 2 of
+‘__constant_test_and_set_bit’ discards qualifiers from pointer target
+type
+drivers/gpu/drm/drm_context.c:233: warning: passing argument 2 of
+‘__generic_test_and_set_bit’ discards qualifiers from pointer target
+type
 
-The drivers/s390 and drivers/parisc directories are from a distant past,
-we should not add new ones like them. drivers/platform is controversial,
-but I think it's ok for stuff that manages platform specific quirks.
-The main problem with that is that it doesn't work for embedded systems,
-by extension every ARM specific driver could go into drivers/platform/...
-and we don't want that.
+> is wrong, though. It probably doesn't hurt to do both.
 
-You can probably argue that the tile drivers do fit in here as long as
-they are specific to the hypervisor and not to some SOC specific hardware.
+asm-generic/bitops/atomic.h has the volatiles everywhere. That's why
+I'm wondering.
 
-	Arnd
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
