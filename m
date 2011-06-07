@@ -1,81 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab1FGNBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 09:01:38 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50029 "EHLO song.cn.fujitsu.com"
+	id S1754007Ab1FGNCa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 09:02:30 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50838 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753944Ab1FGNBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 09:01:36 -0400
-Message-ID: <4DEE21AE.9050703@cn.fujitsu.com>
-Date: Tue, 07 Jun 2011 21:03:42 +0800
+	id S1753835Ab1FGNC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 09:02:28 -0400
+Message-ID: <4DEE21E2.8000301@cn.fujitsu.com>
+Date: Tue, 07 Jun 2011 21:04:34 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH 09/15] KVM: MMU: split kvm_mmu_free_page
+Subject: [PATCH 10/15] KVM: MMU: lockless walking shadow page table
 References: <4DEE205E.8000601@cn.fujitsu.com>
 In-Reply-To: <4DEE205E.8000601@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-07 21:01:25,
+ 2011-06-07 21:02:17,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-07 21:01:25,
-	Serialize complete at 2011-06-07 21:01:25
+ 2011-06-07 21:02:17,
+	Serialize complete at 2011-06-07 21:02:17
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split kvm_mmu_free_page to kvm_mmu_free_lock_parts and
-kvm_mmu_free_unlock_parts
-
-One is used to free the parts which is under mmu lock and the other is
-used to free the parts which can allow be freed out of mmu lock
-
-It is used by later patch
+Using rcu to protect shadow pages table to be freed, so we can safely walk it,
+it should run fast and is needed by mmio page fault
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/mmu.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    4 ++
+ arch/x86/kvm/mmu.c              |   79 ++++++++++++++++++++++++++++++---------
+ arch/x86/kvm/mmu.h              |    4 +-
+ arch/x86/kvm/vmx.c              |    2 +-
+ 4 files changed, 69 insertions(+), 20 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 326af42..260582b 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -232,6 +232,8 @@ struct kvm_mmu_page {
+ 	unsigned int unsync_children;
+ 	unsigned long parent_ptes;	/* Reverse mapping for parent_pte */
+ 	DECLARE_BITMAP(unsync_child_bitmap, 512);
++
++	struct rcu_head rcu;
+ };
+ 
+ struct kvm_pv_mmu_op_buffer {
+@@ -478,6 +480,8 @@ struct kvm_arch {
+ 	u64 hv_guest_os_id;
+ 	u64 hv_hypercall;
+ 
++	atomic_t reader_counter;
++
+ 	#ifdef CONFIG_KVM_MMU_AUDIT
+ 	int audit_point;
+ 	#endif
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 43e7ca1..9f3a746 100644
+index 9f3a746..52d4682 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1039,17 +1039,27 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
- 	percpu_counter_add(&kvm_total_used_mmu_pages, nr);
+@@ -1675,6 +1675,30 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+ 	return ret;
  }
  
--static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
-+static void kvm_mmu_free_lock_parts(struct kvm_mmu_page *sp)
- {
- 	ASSERT(is_empty_shadow_page(sp->spt));
- 	hlist_del(&sp->hash_link);
--	list_del(&sp->link);
--	free_page((unsigned long)sp->spt);
- 	if (!sp->role.direct)
- 		free_page((unsigned long)sp->gfns);
++static void free_mmu_pages_unlock_parts(struct list_head *invalid_list)
++{
++	struct kvm_mmu_page *sp;
++
++	list_for_each_entry(sp, invalid_list, link)
++		kvm_mmu_free_lock_parts(sp);
 +}
 +
-+static void kvm_mmu_free_unlock_parts(struct kvm_mmu_page *sp)
++static void free_invalid_pages_rcu(struct rcu_head *head)
 +{
-+	list_del(&sp->link);
-+	free_page((unsigned long)sp->spt);
- 	kmem_cache_free(mmu_page_header_cache, sp);
++	struct kvm_mmu_page *next, *sp;
++
++	sp = container_of(head, struct kvm_mmu_page, rcu);
++	while (sp) {
++		if (!list_empty(&sp->link))
++			next = list_first_entry(&sp->link,
++				      struct kvm_mmu_page, link);
++		else
++			next = NULL;
++		kvm_mmu_free_unlock_parts(sp);
++		sp = next;
++	}
++}
++
+ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+ 				    struct list_head *invalid_list)
+ {
+@@ -1685,6 +1709,14 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+ 
+ 	kvm_flush_remote_tlbs(kvm);
+ 
++	if (atomic_read(&kvm->arch.reader_counter)) {
++		free_mmu_pages_unlock_parts(invalid_list);
++		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
++		list_del_init(invalid_list);
++		call_rcu(&sp->rcu, free_invalid_pages_rcu);
++		return;
++	}
++
+ 	do {
+ 		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
+ 		WARN_ON(!sp->role.invalid || sp->root_count);
+@@ -2601,6 +2633,35 @@ static gpa_t nonpaging_gva_to_gpa_nested(struct kvm_vcpu *vcpu, gva_t vaddr,
+ 	return vcpu->arch.nested_mmu.translate_gpa(vcpu, vaddr, access);
  }
  
-+static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
++int kvm_mmu_walk_shadow_page_lockless(struct kvm_vcpu *vcpu, u64 addr,
++				      u64 sptes[4])
 +{
-+	kvm_mmu_free_lock_parts(sp);
-+	kvm_mmu_free_unlock_parts(sp);
-+}
++	struct kvm_shadow_walk_iterator iterator;
++	int nr_sptes = 0;
 +
- static unsigned kvm_page_table_hashfn(gfn_t gfn)
++	rcu_read_lock();
++
++	atomic_inc(&vcpu->kvm->arch.reader_counter);
++	/* Increase the counter before walking shadow page table */
++	smp_mb__after_atomic_inc();
++
++	for_each_shadow_entry(vcpu, addr, iterator) {
++		sptes[iterator.level-1] = *iterator.sptep;
++		nr_sptes++;
++		if (!is_shadow_present_pte(*iterator.sptep))
++			break;
++	}
++
++	/* Decrease the counter after walking shadow page table finished */
++	smp_mb__before_atomic_dec();
++	atomic_dec(&vcpu->kvm->arch.reader_counter);
++
++	rcu_read_unlock();
++
++	return nr_sptes;
++}
++EXPORT_SYMBOL_GPL(kvm_mmu_walk_shadow_page_lockless);
++
+ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+ 				u32 error_code, bool prefault)
  {
- 	return gfn & ((1 << KVM_MMU_HASH_SHIFT) - 1);
+@@ -3684,24 +3745,6 @@ out:
+ 	return r;
+ }
+ 
+-int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4])
+-{
+-	struct kvm_shadow_walk_iterator iterator;
+-	int nr_sptes = 0;
+-
+-	spin_lock(&vcpu->kvm->mmu_lock);
+-	for_each_shadow_entry(vcpu, addr, iterator) {
+-		sptes[iterator.level-1] = *iterator.sptep;
+-		nr_sptes++;
+-		if (!is_shadow_present_pte(*iterator.sptep))
+-			break;
+-	}
+-	spin_unlock(&vcpu->kvm->mmu_lock);
+-
+-	return nr_sptes;
+-}
+-EXPORT_SYMBOL_GPL(kvm_mmu_get_spte_hierarchy);
+-
+ void kvm_mmu_destroy(struct kvm_vcpu *vcpu)
+ {
+ 	ASSERT(vcpu);
+diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+index 05310b1..e7725c4 100644
+--- a/arch/x86/kvm/mmu.h
++++ b/arch/x86/kvm/mmu.h
+@@ -48,7 +48,9 @@
+ #define PFERR_RSVD_MASK (1U << 3)
+ #define PFERR_FETCH_MASK (1U << 4)
+ 
+-int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4]);
++int kvm_mmu_walk_shadow_page_lockless(struct kvm_vcpu *vcpu, u64 addr,
++				      u64 sptes[4]);
++
+ int kvm_init_shadow_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context);
+ 
+ static inline unsigned int kvm_mmu_available_pages(struct kvm *kvm)
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index b54c186..20dbf7f 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4681,7 +4681,7 @@ static int handle_ept_misconfig(struct kvm_vcpu *vcpu)
+ 	printk(KERN_ERR "EPT: Misconfiguration.\n");
+ 	printk(KERN_ERR "EPT: GPA: 0x%llx\n", gpa);
+ 
+-	nr_sptes = kvm_mmu_get_spte_hierarchy(vcpu, gpa, sptes);
++	nr_sptes = kvm_mmu_walk_shadow_page_lockless(vcpu, gpa, sptes);
+ 
+ 	for (i = PT64_ROOT_LEVEL; i > PT64_ROOT_LEVEL - nr_sptes; --i)
+ 		ept_misconfig_inspect_spte(vcpu, sptes[i-1], i);
 -- 
 1.7.4.4
 
