@@ -1,114 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937Ab1FGIEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 04:04:36 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58542 "EHLO mx2.mail.elte.hu"
+	id S1752004Ab1FGIF3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 04:05:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39269 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751135Ab1FGIE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 04:04:29 -0400
-Date: Tue, 7 Jun 2011 10:03:56 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>,
-        Brian Gerst <brgerst@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Arjan van de Ven <arjan@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        x86@kernel.org, pageexec@freemail.hu,
-        Thomas Gleixner <tglx@linutronix.de>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Mikael Pettersson <mikpe@it.uu.se>, Jan Beulich <JBeulich@novell.com>
-Subject: [PATCH, v6] x86-64: Emulate legacy vsyscalls
-Message-ID: <20110607080356.GA1900@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>
- <4DECAE68.16683.1203EBBB@pageexec.freemail.hu>
- <BANLkTin5jEmUUxWUUkYn9pKzGRwcA-zRLw@mail.gmail.com>
- <4DED206E.20356.13C155EA@pageexec.freemail.hu>
- <BANLkTi=choqfXPYmnivznYBbEFeg2UfbuA@mail.gmail.com>
- <20110606214545.GA6492@elte.hu>
- <BANLkTi==uw_h78oaep1cCOCzwY0edLUU_Q@mail.gmail.com>
+	id S1751647Ab1FGIF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 04:05:27 -0400
+Date: Tue, 7 Jun 2011 08:03:58 GMT
+From: tip-bot for Andy Lutomirski <luto@MIT.EDU>
+Message-ID: <tip-5cec93c216db77c45f7ce970d46283bcb1933884@git.kernel.org>
+Cc: mingo@redhat.com, brgerst@gmail.com, torvalds@linux-foundation.org,
+        mikpe@it.uu.se, richard.weinberger@gmail.com, jj@chaosbits.net,
+        JBeulich@novell.com, tglx@linutronix.de, Louis.Rilling@kerlabs.com,
+        luto@MIT.EDU, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        luto@MIT.EDU, andi@firstfloor.org, bp@alien8.de, arjan@infradead.org,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, torvalds@linux-foundation.org, brgerst@gmail.com,
+        mikpe@it.uu.se, richard.weinberger@gmail.com, jj@chaosbits.net,
+        JBeulich@novell.com, tglx@linutronix.de, luto@MIT.EDU,
+        Louis.Rilling@kerlabs.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        luto@MIT.EDU, andi@firstfloor.org, bp@alien8.de, arjan@infradead.org,
+        mingo@elte.hu
+In-Reply-To: <e64e1b3c64858820d12c48fa739efbd1485e79d5.1307292171.git.luto@mit.edu>
+References: <e64e1b3c64858820d12c48fa739efbd1485e79d5.1307292171.git.luto@mit.edu>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86-64: Emulate legacy vsyscalls
+Git-Commit-ID: 5cec93c216db77c45f7ce970d46283bcb1933884
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <BANLkTi==uw_h78oaep1cCOCzwY0edLUU_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Jun 2011 08:04:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  5cec93c216db77c45f7ce970d46283bcb1933884
+Gitweb:     http://git.kernel.org/tip/5cec93c216db77c45f7ce970d46283bcb1933884
+Author:     Andy Lutomirski <luto@MIT.EDU>
+AuthorDate: Sun, 5 Jun 2011 13:50:24 -0400
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 7 Jun 2011 10:02:35 +0200
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Jun 7, 2011 6:46 AM, "Ingo Molnar" <mingo@elte.hu> wrote:
-> >
-> > Do you think x86/vdso is worth rebasing at this stage? Right now 
-> > it has:
-> 
-> Yes, I'd rebase it. By now, much of what the initial patches are 
-> adding is then removed in the final result, so the patch series 
-> ends up first adding things, then changing the things it adds, and 
-> then removing three quarters of it all.
-
-Ok - the rebase was easy and kept much of the existing commits:
-
-64b0e3256b8a: x86-64: Emulate legacy vsyscalls
-5dfcea629a08: x86-64: Fill unused parts of the vsyscall page with 0xcc
-bb5fe2f78ead: x86-64: Remove vsyscall number 3 (venosys)
-d319bb79afa4: x86-64: Map the HPET NX
-0d7b8547fb67: x86-64: Remove kernel.vsyscall64 sysctl
-9fd67b4ed071: x86-64: Give vvars their own page
-8b4777a4b50c: x86-64: Document some of entry_64.S
-6879eb2deed7: x86-64: Fix alignment of jiffies variable
-
-The 64b0e3256b8a commit (attached below) is the only rebased one - it 
-merges all these commits:
-
-d1a70649f49b: x86-64: Remove LEGACY_VTIME
-feba7e97df8c: x86-64: Rename COMPAT_VSYSCALLS to LEGACY_VTIME and clarify documentation
-7dc0452808b7: x86-64: Clean up vsyscall emulation and remove fixed-address ret
-8d6316596441: x86-64: Fix outdated comments in vsyscall_64.c
-1593843e2ada: x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to COMPAT_VSYSCALLS
-764611c8dfb5: x86-64, vdso, seccomp: Fix !CONFIG_SECCOMP build
-38172403a978: x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
-d55ed1d30b82: x86-64: Emulate legacy vsyscalls
-
-and does a few obvious cleanups to the code.
-
-I've added your Acked-by to this commit because you seemed to agree 
-with the commit.
-
-I removed this portion:
-
-+	if (__ratelimit(&rs)) {
-+		printk(KERN_INFO "%s[%d] emulated legacy vsyscall %s(); "
-+		       "upgrade your code to avoid a performance hit. "
-+		       "ip:%lx sp:%lx caller:%lx",
-+		       tsk->comm, task_pid_nr(tsk), vsyscall_name,
-+		       regs->ip - 2, regs->sp, caller);
-+		if (caller)
-+			print_vma_addr(" in ", caller);
-+		printk("\n");
-+	}
-
-as it would now needlessly annoy everyone.
-
-Thanks,
-
-	Ingo
-
------------------------------>
->From 5cec93c216db77c45f7ce970d46283bcb1933884 Mon Sep 17 00:00:00 2001
-From: Andy Lutomirski <luto@MIT.EDU>
-Date: Sun, 5 Jun 2011 13:50:24 -0400
-Subject: [PATCH] x86-64: Emulate legacy vsyscalls
+x86-64: Emulate legacy vsyscalls
 
 There's a fair amount of code in the vsyscall page.  It contains
 a syscall instruction (in the gettimeofday fallback) and who
