@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab1FGQGY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 12:06:24 -0400
-Received: from oproxy2-pub.bluehost.com ([67.222.39.55]:60243 "HELO
-	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752287Ab1FGQGW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 12:06:22 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=nxSi6yRBwEoNbOlb+Fyf+snVdoW4x8n64EeDCnTgjn34MVwONp3fqOpynqygmZgf9N1w5dMCBhDD6hzLJ/G2hEY2GmgV6SDKwIE0aL6cevpZCUS6mZBnbhgrVAW9jr+Q;
-Date: Tue, 7 Jun 2011 09:05:59 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, bheglaas@google.com, monstr@monstr.eu,
-        tglx@linutronix.de, bigeasy@linutronix.de, linux-pci@vger.kernel.org
-Subject: Re: [PATCHES v3] pci/of: Generic PCI <-> OF matching
-Message-ID: <20110607090559.149f611b@jbarnes-desktop>
-In-Reply-To: <1307426323.2874.157.camel@pasglop>
-References: <1302495170-973-1-git-send-email-benh@kernel.crashing.org>
-	<1307426323.2874.157.camel@pasglop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S1754774Ab1FGQN2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 12:13:28 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:48840 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753645Ab1FGQN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 12:13:26 -0400
+Date: Tue, 7 Jun 2011 21:36:12 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jonathan Corbet <corbet@lwn.net>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 20/22] 20: perf: perf interface for
+ uprobes
+Message-ID: <20110607160612.GB8876@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607130216.28590.5724.sendpatchset@localhost6.localdomain6>
+ <20110607133039.GA4929@infradead.org>
+ <20110607133853.GC9949@in.ibm.com>
+ <20110607142116.GA8311@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110607142116.GA8311@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 07 Jun 2011 15:58:43 +1000
-Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+* Arnaldo Carvalho de Melo <acme@infradead.org> [2011-06-07 11:21:16]:
 
-> On Mon, 2011-04-11 at 14:12 +1000, Benjamin Herrenschmidt wrote:
-> > Here's a new batch. This time, I'm reasonably confident I build-tested the
-> > right commit-id's on sparc :-)
-> > 
-> > To sort out the sparc problem I took a slightly different approach than
-> > discussed. I made the new code be of_pci.c (which I enabled on sparc)
-> > and put the old stuff into of_pci_irq.c (which should still be disabled
-> > there).
-> > 
-> > I've also consolidated pci_bus_to_OF_node() while at it.
+> Em Tue, Jun 07, 2011 at 07:08:53PM +0530, Ananth N Mavinakayanahalli escreveu:
+> > On Tue, Jun 07, 2011 at 09:30:39AM -0400, Christoph Hellwig wrote:
+> > > On Tue, Jun 07, 2011 at 06:32:16PM +0530, Srikar Dronamraju wrote:
+> > > > Enhances perf probe to user space executables and libraries.
+> > > > Provides very basic support for uprobes.
 > 
-> Hi Jesse !
+> > > Nice.  Does this require full debug info for symbolic probes,
+> > > or can it also work with simple symbolc information?
 > 
-> No significant changes (other than a rebase) nor new feedback since last
-> time, I've also added a few acks I got. But not worth spamming the list
-> with a re-post.
+> > It works only with symbol information for now.
+> > It doesn't (yet) know how to use debuginfo :-)
 > 
-> I'd like this to go into -next now so it can hit the next merge window,
-> unless somebody objects.
+> 'perf probe' uses perf symbol library, so it really don't have to know
+> from where symbol resolution information is obtained, only if it needs
+> things that are _just_ on debuginfo, such as line information, etc.
 > 
-> I've put the series in a branch "of-pci" of my powerpc.git repo at:
+> But then that is also already supported in 'perf probe'.
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git of-pci
+> Or is there something else in particular you're thinking?
 > 
-> Please let me know if you're ok (and maybe give me Ack's) and I'll ask
-> Stephen to add it to next.
 
-Yeah, the generic bits look good to me, you can add my
-  Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+What Ananth was saying was that perf probe for uprobes still has to take
+advantage of tracing using line number; Also it is still restricted to
+showing only register contents and we still have to add support for variables. I know that perf symbol library has support for that
+just that we have to enable it for uprobes.
 
-Thanks,
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Thanks and Regards
+Srikar
