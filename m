@@ -1,21 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab1FGTBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:01:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17219 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755868Ab1FGTBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 15:01:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,333,1304319600"; 
-   d="scan'208";a="10318789"
-Message-ID: <4DEE758F.8060002@linux.intel.com>
-Date: Tue, 07 Jun 2011 12:01:35 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1756348Ab1FGTEY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 15:04:24 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:61875 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756141Ab1FGTEX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 15:04:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=LHpqpMCp2o9GjAnkLUR7bqCELhLWjhXnzD3N5P9cHtdcBjk6zBc7m0Is8GLcXYvxC8
+         EW3z028bD6A2lCSijHwjqYs/VVxUQdtF79sUNdFkLBuvnh/npfLq4mbKOjfuSfwW2yjA
+         jxBwbEvRY33k6jUqPwIHO3PkFX5UKG/U7MJak=
 MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
+In-Reply-To: <4DEE758F.8060002@linux.intel.com>
+References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>
+ <1307373819.3098.40.camel@edumazet-laptop> <1307376672.2322.167.camel@twins>
+ <1307376989.2322.171.camel@twins> <1307377349.3098.65.camel@edumazet-laptop>
+ <1307377782.2322.183.camel@twins> <1307378564.3098.67.camel@edumazet-laptop>
+ <4DED1421.5000300@linux.intel.com> <1307383898.3098.90.camel@edumazet-laptop>
+ <4DED976C.90009@linux.intel.com> <4DEE3944.5020005@mit.edu>
+ <1307462300.3091.39.camel@edumazet-laptop> <BANLkTinyuHUGXACJYUT241g8rzg6AzPBiA@mail.gmail.com>
+ <4DEE758F.8060002@linux.intel.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 7 Jun 2011 15:04:03 -0400
+X-Google-Sender-Auth: UwKUgf2DtVptT99dKGCp5WttUJU
+Message-ID: <BANLkTi=fJ6dY04uz9O0WaNb+f+wg-528Sg@mail.gmail.com>
+Subject: Re: Change in functionality of futex() system call.
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
         Shawn Bohrer <sbohrer@rgmadvisors.com>,
@@ -23,92 +39,57 @@ CC: Eric Dumazet <eric.dumazet@gmail.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@elte.hu>
-Subject: Re: Change in functionality of futex() system call.
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com> <1307373819.3098.40.camel@edumazet-laptop> <1307376672.2322.167.camel@twins> <1307376989.2322.171.camel@twins> <1307377349.3098.65.camel@edumazet-laptop> <1307377782.2322.183.camel@twins> <1307378564.3098.67.camel@edumazet-laptop> <4DED1421.5000300@linux.intel.com> <1307383898.3098.90.camel@edumazet-laptop> <4DED976C.90009@linux.intel.com> <4DEE3944.5020005@mit.edu> <1307462300.3091.39.camel@edumazet-laptop> <BANLkTinyuHUGXACJYUT241g8rzg6AzPBiA@mail.gmail.com>
-In-Reply-To: <BANLkTinyuHUGXACJYUT241g8rzg6AzPBiA@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 7, 2011 at 3:01 PM, Darren Hart <dvhart@linux.intel.com> wrote:
+>>> If a group of cooperating processes uses a memory segment to exchange
+>>> critical information, do you really think this memory segment will be
+>>> readable by other unrelated processes on the machine ?
+>>
+>> Depends on the design.
+>>
+>> I have some software I'm working on that uses shared files and could
+>> easily use futexes.  I don't want random read-only processes to
+>> interfere with the futex protocol.
+>
+>
+> So don't use world readable files.
 
+...which prevents people from *reading* them, which was the whole point.
 
-On 06/07/2011 11:43 AM, Andrew Lutomirski wrote:
-> On Tue, Jun 7, 2011 at 11:58 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> Le mardi 07 juin 2011 à 10:44 -0400, Andy Lutomirski a écrit :
->>> On 06/06/2011 11:13 PM, Darren Hart wrote:
->>>>
->>>>
->>>> On 06/06/2011 11:11 AM, Eric Dumazet wrote:
->>>>> Le lundi 06 juin 2011 à 10:53 -0700, Darren Hart a écrit :
->>>>>>
->>>>>
->>>>>> If I understand the problem correctly, RO private mapping really doesn't
->>>>>> make any sense and we should probably explicitly not support it, while
->>>>>> special casing the RO shared mapping in support of David's scenario.
->>>>>>
->>>>>
->>>>> We supported them in 2.6.18 kernels, apparently. This might sounds
->>>>> stupid but who knows ?
->>>>
->>>>
->>>> I guess this is actually the key point we need to agree on to provide a
->>>> solution. This particular case "worked" in 2.6.18 kernels, but that
->>>> doesn't necessarily mean it was supported, or even intentional.
->>>>
->>>> It sounds to me that we agree that we should support RO shared mappings.
->>>> The question remains about whether we should introduce deliberate
->>>> support of RO private mappings, and if so, if the forced COW approach is
->>>> appropriate or not.
->>>>
+>
+>
 >>>
->>> I disagree.
+>>> How is this related to futex code ?
+>>
+>> Because this usage is currently safe and would become unsafe with the
+>> proposed change.
+>>
 >>>
->>> FUTEX_WAIT has side-effects.  Specifically, it eats one wakeup sent by
->>> FUTEX_WAKE.  So if something uses futexes on a file mapping, then a
->>> process with only read access could (if the semantics were changed) DoS
->>> the other processes by spawning a bunch of threads and FUTEX_WAITing
->>> from each of them.
+>>> Same problem for legacy IPC (shm, msg, sem) : Appropriate protections
+>>> are needed, obviously.
 >>>
->>> If there were a FUTEX_WAIT_NOCONSUME that did not consume a wakeup and
->>> worked on RO mappings, I would drop my objection.
+>>> BTW, kernel/futex.c uses a global hash table (futex_queues[256]) and a
+>>> very predictable hash_futex(), so its easy to slow down futex users...
 >>
->> If a group of cooperating processes uses a memory segment to exchange
->> critical information, do you really think this memory segment will be
->> readable by other unrelated processes on the machine ?
-> 
-> Depends on the design.
-> 
-> I have some software I'm working on that uses shared files and could
-> easily use futexes.  I don't want random read-only processes to
-> interfere with the futex protocol.
+>> There's a difference between slowing down users by abusing a kernel
+>> hash and deadlocking users by eating a wakeup.  (If you eat a wakeup
+>> the wakeup won't magically come back later.  It's gone.)
+>
+> That's the nature of SHARED, you have to protect the mapping independent
+> of the futex mechanism.
 
+Well... it used to mean you have to protect from untrusted RW users.
+Now it will mean you have to protect from untrusted RO users.
 
-So don't use world readable files.
+AFAICT sys_futex will become the only way that a user with RO access
+to a file can actually interfere with the owner of the file (as
+opposed to just learning information).
 
+Why do we need this change again?
 
->>
->> How is this related to futex code ?
-> 
-> Because this usage is currently safe and would become unsafe with the
-> proposed change.
-> 
->>
->> Same problem for legacy IPC (shm, msg, sem) : Appropriate protections
->> are needed, obviously.
->>
->> BTW, kernel/futex.c uses a global hash table (futex_queues[256]) and a
->> very predictable hash_futex(), so its easy to slow down futex users...
-> 
-> There's a difference between slowing down users by abusing a kernel
-> hash and deadlocking users by eating a wakeup.  (If you eat a wakeup
-> the wakeup won't magically come back later.  It's gone.)
-
-That's the nature of SHARED, you have to protect the mapping independent
-of the futex mechanism.
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+--Andy
