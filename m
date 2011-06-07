@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab1FGURm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 16:17:42 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39633 "EHLO mx1.suse.de"
+	id S1755502Ab1FGUKk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 16:10:40 -0400
+Received: from waste.org ([173.11.57.241]:48985 "EHLO waste.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756334Ab1FGURl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 16:17:41 -0400
-Date: Tue, 7 Jun 2011 13:09:52 -0700
-From: Greg KH <gregkh@suse.de>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Greg KH <greg@kroah.com>, Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>
-Subject: Re: [PATCH 24/49] Staging: hv: vmbus: Get rid of the unused wrapper
- - vmbus_onchannel_event()
-Message-ID: <20110607200952.GA3243@suse.de>
-References: <1307400540-13193-1-git-send-email-kys@microsoft.com>
- <1307400613-13234-1-git-send-email-kys@microsoft.com>
- <1307400613-13234-24-git-send-email-kys@microsoft.com>
- <20110606231511.GB18222@infradead.org>
- <6E21E5352C11B742B20C142EB499E0480813D861@TK5EX14MBXC122.redmond.corp.microsoft.com>
- <20110607185840.GB3531@kroah.com>
- <6E21E5352C11B742B20C142EB499E0480813DAF6@TK5EX14MBXC122.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0480813DAF6@TK5EX14MBXC122.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755385Ab1FGUKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 16:10:38 -0400
+Subject: Re: ketchup script and 3.0
+From: Matt Mackall <mpm@selenic.com>
+To: Stratos Psomadakis <psomas@ece.ntua.gr>
+Cc: linux-kernel@vger.kernel.org,
+        Frank Kingswood <frank@kingswood-consulting.co.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <4DEE808D.6020405@ece.ntua.gr>
+References: <4DEDD5F4.1070602@kingswood-consulting.co.uk>
+	 <1307451186.4204.953.camel@calx>  <4DEE808D.6020405@ece.ntua.gr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Jun 2011 15:10:35 -0500
+Message-ID: <1307477435.4204.968.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 07:58:50PM +0000, KY Srinivasan wrote:
+On Tue, 2011-06-07 at 22:48 +0300, Stratos Psomadakis wrote:
+> On 06/07/2011 03:53 PM, Matt Mackall wrote:
+> > On Tue, 2011-06-07 at 08:40 +0100, Frank Kingswood wrote:
+> >> Hi!
+> >>
+> >> With Linux 3.0 approaching rapidly, is the ketchup script known to work?
+> >> It has this tempting <ver> parameter but I've always passed in "2.6" there.
+> > It's on its third maintainer now and I've already forgotten the name of
+> > the new guy.
+> It's me :P
 > 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:greg@kroah.com]
-> > Sent: Tuesday, June 07, 2011 2:59 PM
-> > To: KY Srinivasan
-> > Cc: Christoph Hellwig; gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
-> > Abhishek Kane (Mindtree Consulting PVT LTD)
-> > Subject: Re: [PATCH 24/49] Staging: hv: vmbus: Get rid of the unused wrapper -
-> > vmbus_onchannel_event()
-> > 
-> > On Tue, Jun 07, 2011 at 02:59:32PM +0000, KY Srinivasan wrote:
-> > >
-> > >
-> > > > -----Original Message-----
-> > > > From: Christoph Hellwig [mailto:hch@infradead.org]
-> > > > Sent: Monday, June 06, 2011 7:15 PM
-> > > > To: KY Srinivasan
-> > > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > > > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
-> > > > Abhishek Kane (Mindtree Consulting PVT LTD)
-> > > > Subject: Re: [PATCH 24/49] Staging: hv: vmbus: Get rid of the unused wrapper
-> > -
-> > > > vmbus_onchannel_event()
-> > > >
-> > > > On Mon, Jun 06, 2011 at 03:49:48PM -0700, K. Y. Srinivasan wrote:
-> > > > > Now, get rid of the unused wrapper - vmbus_onchannel_event().
-> > > >
-> > > > I'd merge this into the previous patch.  In general your patch split
-> > > > seem a little too fine grained to me in general.  When you remove a
-> > > > wrapper you can inline it into the callsite directly, if you clean up a
-> > > > function directly inlining it into the helper is fine, etc.
-> > > >
-> > > I agree with you that some of these patches are too fine grained; but
-> > > I thought that was what was expected - "one change per patch".
-> > 
-> > Yes, but don't take it to an extreme, like you have done here :)
-> 
-> Will do in the future. Should I re-spin any of the patches in this set to make them less
-> "fine-grained".
+> I uploaded the ketchup code at github, and added some code to handle 3.x
+> versions, but I've not tested it very much, so it's still in a separate
+> branch. [1]
+> You can check it out/test it, if you want. If it works without problems,
+> when linux-3.0 gets released, I'll tag a new version of ketchup and
+> notify distro maintainers to upgrade their packages.
 
-No, they are fine as-is.
+I took a brief glance at your changes. You'll probably want to teach it
+that 2.6.39++ == 3.0 so that people can seamlessly move back and forth
+between the two ranges. This wasn't something that made sense across the
+2.4/2.6 transition.
+
+Oh, wait, maybe I've spotted the code for this.
+
+Thinking ahead just a bit, it'd be nice if we could just declare in
+advance that 3.9++ == 4.0. If we're going to bump the major number at
+arbitrary points, that's the most obvious one. It's approximately 3
+years out at the current rate which seems like a good pace. Then tools
+like ketchup and other tools that handle these version numbers could
+just do all this once.
+
+Linus?
+
+-- 
+Mathematics is the supreme nostalgia of our time.
+
+
