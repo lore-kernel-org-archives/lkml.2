@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab1FGKkh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 06:40:37 -0400
+	id S1752857Ab1FGKkm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 06:40:42 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:44697 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab1FGKkc (ORCPT
+	with ESMTP id S1752085Ab1FGKkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 06:40:32 -0400
+	Tue, 7 Jun 2011 06:40:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=akshayjoshi.com; s=google;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Bxlt4xEDibaZZwInehYhbN6FVoZEdN/F4QSIW+UrK4jery5N8YIXjHJ9ioFphLXqJL
-         PrcERBKw0cNsAUXWj1EQR9R667XqsiZd4ZCgOfxt6jC7Vt9JS4Jy1EqNmWJzIKIXYFcs
-         kNJ0+kuOe4x3g0XRlrcssnm9IZHbJCAUVrpIY=
+        b=S3yv4SVTq3twaz7iGzzyk05J0Otb20EUtaNPqvCBAl8xyANN7KxcHBIXM/AtJEJf/z
+         2vMf5QWhvS+uL93WJTf+wPWNM1tAGDD28wO8Hc4fDZfZeET/8FXNGxPvLYF0IwU38nJY
+         sKTaPGtfnoQ9FaPYO27MiRWor4xeBVe7yQDMI=
 From: Akshay Joshi <me@akshayjoshi.com>
-Cc: Akshay Joshi <me@akshayjoshi.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] Kernel: add spaces where required by the coding style in acct.c.
-Date: Tue,  7 Jun 2011 06:39:38 -0400
-Message-Id: <1307443181-22278-5-git-send-email-me@akshayjoshi.com>
+Cc: Akshay Joshi <me@akshayjoshi.com>, Jiri Slaby <jslaby@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 6/7] Kernel: fix spaces with respect to the coding style in sys.c.
+Date: Tue,  7 Jun 2011 06:39:39 -0400
+Message-Id: <1307443181-22278-6-git-send-email-me@akshayjoshi.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1307443181-22278-2-git-send-email-me@akshayjoshi.com>
 References: <1307443181-22278-2-git-send-email-me@akshayjoshi.com>
@@ -27,92 +30,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds spaces where required by the kernel coding style. Most
-of these changes are for precompiler statements.
+Fixed trailing spaces, spaces around the ternary operators and in the
+pre-processor function declarations with the help of the checkpatch.pl
+tool.
 
 Signed-off-by: Akshay Joshi <me@akshayjoshi.com>
 ---
- kernel/acct.c |   21 +++++++++++----------
- 1 files changed, 11 insertions(+), 10 deletions(-)
+ kernel/sys.c |   40 ++++++++++++++++++++--------------------
+ 1 files changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/acct.c b/kernel/acct.c
-index fa7eb3d..c946fdc 100644
---- a/kernel/acct.c
-+++ b/kernel/acct.c
-@@ -144,7 +144,7 @@ static int check_free_space(struct bsd_acct_struct *acct, struct file *file)
- 	spin_lock(&acct_lock);
- 	if (file != acct->file) {
- 		if (act)
--			res = act>0;
-+			res = act > 0;
- 		goto out;
- 	}
+diff --git a/kernel/sys.c b/kernel/sys.c
+index e4128b2..94f02f5 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -51,28 +51,28 @@
+ #include <asm/unistd.h>
  
-@@ -396,7 +396,7 @@ static comp_t encode_comp_t(unsigned long value)
- 	return exp;
+ #ifndef SET_UNALIGN_CTL
+-# define SET_UNALIGN_CTL(a,b)	(-EINVAL)
++# define SET_UNALIGN_CTL(a, b)	(-EINVAL)
+ #endif
+ #ifndef GET_UNALIGN_CTL
+-# define GET_UNALIGN_CTL(a,b)	(-EINVAL)
++# define GET_UNALIGN_CTL(a, b)	(-EINVAL)
+ #endif
+ #ifndef SET_FPEMU_CTL
+-# define SET_FPEMU_CTL(a,b)	(-EINVAL)
++# define SET_FPEMU_CTL(a, b)	(-EINVAL)
+ #endif
+ #ifndef GET_FPEMU_CTL
+-# define GET_FPEMU_CTL(a,b)	(-EINVAL)
++# define GET_FPEMU_CTL(a, b)	(-EINVAL)
+ #endif
+ #ifndef SET_FPEXC_CTL
+-# define SET_FPEXC_CTL(a,b)	(-EINVAL)
++# define SET_FPEXC_CTL(a, b)	(-EINVAL)
+ #endif
+ #ifndef GET_FPEXC_CTL
+-# define GET_FPEXC_CTL(a,b)	(-EINVAL)
++# define GET_FPEXC_CTL(a, b)	(-EINVAL)
+ #endif
+ #ifndef GET_ENDIAN
+-# define GET_ENDIAN(a,b)	(-EINVAL)
++# define GET_ENDIAN(a, b)	(-EINVAL)
+ #endif
+ #ifndef SET_ENDIAN
+-# define SET_ENDIAN(a,b)	(-EINVAL)
++# define SET_ENDIAN(a, b)	(-EINVAL)
+ #endif
+ #ifndef GET_TSC_CTL
+ # define GET_TSC_CTL(a)		(-EINVAL)
+@@ -342,7 +342,7 @@ EXPORT_SYMBOL_GPL(kernel_restart);
+ static void kernel_shutdown_prepare(enum system_states state)
+ {
+ 	blocking_notifier_call_chain(&reboot_notifier_list,
+-		(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
++		(state == SYSTEM_HALT) ? SYS_HALT : SYS_POWER_OFF, NULL);
+ 	system_state = state;
+ 	usermodehelper_disable();
+ 	device_shutdown();
+@@ -488,7 +488,7 @@ void ctrl_alt_del(void)
+ 	else
+ 		kill_cad_pid(SIGINT, 1);
  }
- 
--#if ACCT_VERSION==1 || ACCT_VERSION==2
-+#if ACCT_VERSION == 1 || ACCT_VERSION == 2
+-	
++
  /*
-  * encode an u64 into a comp2_t (24 bits)
+  * Unprivileged users may change the real gid to the effective gid
+  * or vice versa.  (BSD-style)
+@@ -502,7 +502,7 @@ void ctrl_alt_del(void)
   *
-@@ -440,7 +440,7 @@ static comp2_t encode_comp2_t(u64 value)
+  * The general idea is that a program which uses just setregid() will be
+  * 100% compatible with BSD.  A program which uses just setgid() will be
+- * 100% compatible with POSIX with saved IDs. 
++ * 100% compatible with POSIX with saved IDs.
+  *
+  * SMP: There are not races, the GIDs are checked only by filesystem
+  *      operations (as far as semantic preservation is concerned).
+@@ -550,7 +550,7 @@ error:
  }
- #endif
  
--#if ACCT_VERSION==3
-+#if ACCT_VERSION == 3
  /*
-  * encode an u64 into a 32 bit IEEE float
+- * setgid() is implemented like SysV w/ SAVED_IDS 
++ * setgid() is implemented like SysV w/ SAVED_IDS
+  *
+  * SMP: Same implicit races as above.
   */
-@@ -449,8 +449,9 @@ static u32 encode_float(u64 value)
- 	unsigned exp = 190;
- 	unsigned u;
+@@ -615,7 +615,7 @@ static int set_user(struct cred *new)
+  *
+  * The general idea is that a program which uses just setreuid() will be
+  * 100% compatible with BSD.  A program which uses just setuid() will be
+- * 100% compatible with POSIX with saved IDs. 
++ * 100% compatible with POSIX with saved IDs.
+  */
+ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
+ {
+@@ -666,17 +666,17 @@ error:
+ 	abort_creds(new);
+ 	return retval;
+ }
+-		
++
+ /*
+- * setuid() is implemented like SysV with SAVED_IDS 
+- * 
++ * setuid() is implemented like SysV with SAVED_IDS
++ *
+  * Note that SAVED_ID's is deficient in that a setuid root program
+- * like sendmail, for example, cannot set its uid to be a normal 
++ * like sendmail, for example, cannot set its uid to be a normal
+  * user and then switch back, because if you're root, setuid() sets
+  * the saved uid too.  If you don't like this, blame the bright people
+  * in the POSIX committee and/or USG.  Note that the BSD-style setreuid()
+  * will allow a root program to temporarily drop privileges and be able to
+- * regain them by swapping the real and effective uid.  
++ * regain them by swapping the real and effective uid.
+  */
+ SYSCALL_DEFINE1(setuid, uid_t, uid)
+ {
+@@ -1282,7 +1282,7 @@ SYSCALL_DEFINE2(getrlimit, unsigned int, resource, struct rlimit __user *, rlim)
+ /*
+  *	Back compatibility for getrlimit. Needed for some apps.
+  */
+- 
++
+ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
+ 		struct rlimit __user *, rlim)
+ {
+@@ -1297,7 +1297,7 @@ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
+ 		x.rlim_cur = 0x7FFFFFFF;
+ 	if (x.rlim_max > 0x7FFFFFFF)
+ 		x.rlim_max = 0x7FFFFFFF;
+-	return copy_to_user(rlim, &x, sizeof(x))?-EFAULT:0;
++	return copy_to_user(rlim, &x, sizeof(x)) ? -EFAULT : 0;
+ }
  
--	if (value==0) return 0;
--	while ((s64)value > 0){
-+	if (value == 0)
-+		return 0;
-+	while ((s64)value > 0) {
- 		value <<= 1;
- 		exp--;
- 	}
-@@ -510,13 +511,13 @@ static void do_acct_process(struct bsd_acct_struct *acct,
- 		       + current->group_leader->start_time.tv_nsec;
- 	/* convert nsec -> AHZ */
- 	elapsed = nsec_to_AHZ(run_time);
--#if ACCT_VERSION==3
-+#if ACCT_VERSION == 3
- 	ac.ac_etime = encode_float(elapsed);
- #else
- 	ac.ac_etime = encode_comp_t(elapsed < (unsigned long) -1l ?
- 	                       (unsigned long) elapsed : (unsigned long) -1l);
  #endif
--#if ACCT_VERSION==1 || ACCT_VERSION==2
-+#if ACCT_VERSION == 1 || ACCT_VERSION == 2
- 	{
- 		/* new enlarged etime field */
- 		comp2_t etime = encode_comp2_t(elapsed);
-@@ -529,15 +530,15 @@ static void do_acct_process(struct bsd_acct_struct *acct,
- 	/* we really need to bite the bullet and change layout */
- 	ac.ac_uid = orig_cred->uid;
- 	ac.ac_gid = orig_cred->gid;
--#if ACCT_VERSION==2
-+#if ACCT_VERSION == 2
- 	ac.ac_ahz = AHZ;
- #endif
--#if ACCT_VERSION==1 || ACCT_VERSION==2
-+#if ACCT_VERSION == 1 || ACCT_VERSION == 2
- 	/* backward-compatible 16 bit fields */
- 	ac.ac_uid16 = ac.ac_uid;
- 	ac.ac_gid16 = ac.ac_gid;
- #endif
--#if ACCT_VERSION==3
-+#if ACCT_VERSION == 3
- 	ac.ac_pid = task_tgid_nr_ns(current, ns);
- 	rcu_read_lock();
- 	ac.ac_ppid = task_tgid_nr_ns(rcu_dereference(current->real_parent), ns);
 -- 
 1.7.4.4
 
