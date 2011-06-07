@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab1FGMwW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:52:22 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:39682 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753163Ab1FGMwU (ORCPT
+	id S1754471Ab1FGNHZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 09:07:25 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48052 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754239Ab1FGNHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:52:20 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DEE20E7.4020008@cam.ac.uk>
-Date: Tue, 07 Jun 2011 14:00:23 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: anish <anish198519851985@gmail.com>
-CC: gregkh@suse.de, manuel.stahl@iis.fraunhofer.de,
-        lucas.demarchi@profusion.mobi, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Linux I2C <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH] staging iio: Replace kmalloc with local variable
-References: <1307450354.1516.23.camel@anish-desktop>
-In-Reply-To: <1307450354.1516.23.camel@anish-desktop>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jun 2011 09:07:20 -0400
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Jonathan Corbet <corbet@lwn.net>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 07 Jun 2011 18:30:26 +0530
+Message-Id: <20110607130026.28590.37383.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+Subject: [PATCH v4 3.0-rc2-tip 11/22] 11: uprobes: get the breakpoint address.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/11 13:39, anish wrote:
-> From: anish kumar <anish198519851985@gmail.com>
-> 
-> replaced kmalloc with local variable as I2C(in this case) doesn't require
-> kmalloc memory it can do with stack memory.
-I've cc'd linux-i2c just to check I'm right about the whole i2c doesn't need
-dma safe buffers bit...
-> 
-> Signed-off-by: anish kumar <anish198519851985@gmail.com>
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
-> ---
->  drivers/staging/iio/adc/max1363_core.c |    5 +----
->  1 files changed, 1 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/adc/max1363_core.c b/drivers/staging/iio/adc/max1363_core.c
-> index 1037087..9462230 100644
-> --- a/drivers/staging/iio/adc/max1363_core.c
-> +++ b/drivers/staging/iio/adc/max1363_core.c
-> @@ -207,15 +207,12 @@ static int max1363_write_basic_config(struct i2c_client *client,
->  				      unsigned char d2)
->  {
->  	int ret;
-> -	u8 *tx_buf = kmalloc(2, GFP_KERNEL);
-> +	u8 tx_buf[2];
->  
-> -	if (!tx_buf)
-> -		return -ENOMEM;
->  	tx_buf[0] = d1;
->  	tx_buf[1] = d2;
->  
->  	ret = i2c_master_send(client, tx_buf, 2);
-> -	kfree(tx_buf);
->  
->  	return (ret > 0) ? 0 : ret;
->  }
 
+On a breakpoint hit, return the address where the breakpoint was hit.
+
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
+---
+ include/linux/uprobes.h |    5 +++++
+ kernel/uprobes.c        |   11 +++++++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 4590e9a..838fbaa 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -161,6 +161,7 @@ struct vm_area_struct;
+ extern int mmap_uprobe(struct vm_area_struct *vma);
+ extern void dup_mmap_uprobe(struct mm_struct *old_mm, struct mm_struct *mm);
+ extern void free_uprobes_xol_area(struct mm_struct *mm);
++extern unsigned long __weak get_uprobe_bkpt_addr(struct pt_regs *regs);
+ #else /* CONFIG_UPROBES is not defined */
+ static inline int register_uprobe(struct inode *inode, loff_t offset,
+ 				struct uprobe_consumer *consumer)
+@@ -181,5 +182,9 @@ static inline int mmap_uprobe(struct vm_area_struct *vma)
+ }
+ static inline void free_uprobe_utask(struct task_struct *tsk) {}
+ static inline void free_uprobes_xol_area(struct mm_struct *mm) {}
++static inline unsigned long get_uprobe_bkpt_addr(struct pt_regs *regs)
++{
++	return 0;
++}
+ #endif /* CONFIG_UPROBES */
+ #endif	/* _LINUX_UPROBES_H */
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index d19c3b0..fa9e9ba 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -1263,6 +1263,17 @@ static void xol_free_insn_slot(struct task_struct *tsk)
+ 						__func__, slot_addr);
+ }
+ 
++/**
++ * get_uprobe_bkpt_addr - compute address of bkpt given post-bkpt regs
++ * @regs: Reflects the saved state of the task after it has hit a breakpoint
++ * instruction.
++ * Return the address of the breakpoint instruction.
++ */
++unsigned long __weak get_uprobe_bkpt_addr(struct pt_regs *regs)
++{
++	return instruction_pointer(regs) - UPROBES_BKPT_INSN_SIZE;
++}
++
+ /*
+  * Called with no locks held.
+  * Called in context of a exiting or a exec-ing thread.
