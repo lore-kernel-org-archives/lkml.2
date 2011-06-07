@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab1FGOoc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 10:44:32 -0400
-Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:54281 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753764Ab1FGOoa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 10:44:30 -0400
-X-AuditID: 1209190d-b7bdeae0000004f8-a8-4dee3909b342
-Message-ID: <4DEE3944.5020005@mit.edu>
-Date: Tue, 07 Jun 2011 10:44:20 -0400
-From: Andy Lutomirski <luto@MIT.EDU>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1756205Ab1FGOol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 10:44:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56829 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753437Ab1FGOoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 10:44:39 -0400
+Message-ID: <4DEE394F.9070404@redhat.com>
+Date: Tue, 07 Jun 2011 11:44:31 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Darren Hart <dvhart@linux.intel.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Zachary Vonler <zvonler@rgmadvisors.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: Change in functionality of futex() system call.
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>	 <1307373819.3098.40.camel@edumazet-laptop>	 <1307376672.2322.167.camel@twins>  <1307376989.2322.171.camel@twins>	 <1307377349.3098.65.camel@edumazet-laptop>	 <1307377782.2322.183.camel@twins>	 <1307378564.3098.67.camel@edumazet-laptop>	 <4DED1421.5000300@linux.intel.com> <1307383898.3098.90.camel@edumazet-laptop> <4DED976C.90009@linux.intel.com>
-In-Reply-To: <4DED976C.90009@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for 3.0-rc3] media fixes
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCKsWRmVeSWpSXmKPExsUixCmqrMtp+c7X4PR+bYttp7czW9w5rGGx
-	7/1ZNounn/pYLNqO/WOxuLxrDpvFlkvNrBbHew8wWZybJmWxedNUZou2+X2sDtwet9r+MHvs
-	nHWX3WPBplKPzSu0PE48ucTm8e7cOXaPeScDPZ5+PcTs8XmTXABnFJdNSmpOZllqkb5dAlfG
-	qr3f2AvmcFf8XvmCtYHxM0cXIyeHhICJxLRZK9ghbDGJC/fWs3UxcnEICexjlNjwayYLhLOe
-	UWLFs89gVUIC55kkrjfrgNi8AmoSy1b+YAKxWQRUJW7tmswGYrMJqEh0LH0AFhcVqJSY9HMH
-	K0S9oMTJmU9YQGwRAQ2J5ilzGEEWMAvsZpZ4/+QuWIOwgI1E57duRojNc5klFnS/YwZJcAro
-	Shy9tRRsErOAmUTX1i5GCFteonnrbOYJjIKzkCyZhaRsFpKyBYzMqxhlU3KrdHMTM3OKU5N1
-	i5MT8/JSi3SN9HIzS/RSU0o3MYIjS5J3B+O7g0qHGAU4GJV4eE2/v/EVYk0sK67MPcQoycGk
-	JMrLbPbOV4gvKT+lMiOxOCO+qDQntfgQowQHs5II74zrb32FeFMSK6tSi/JhUtIcLErivDMl
-	1X2FBNITS1KzU1MLUotgsjIcHEoSvNoWQEMFi1LTUyvSMnNKENJMHJwgw3mAhr80B6rhLS5I
-	zC3OTIfIn2JUlBLnNQNpFgBJZJTmwfXCEt8rRnGgV4R5J4NU8QCTJlz3K6DBTECDT58Fubq4
-	JBEhJdXAeNGuxvmMW9mZi50yOQy7NK9+ebrg2eE081wbjqW3Ty29nJTTY3yn8eis3wnVvOWZ
-	Xf5Jcz72HPDJjVUOfNP2zkKmTqan67rEpyLOlXeeLshw3993cMO6SNdZyzcobBW6wrWTUzXu
-	PuMr98y+OQJs87lmTq75+2nJjeki8k4fvAwY3DLjAq78UmIpzkg01GIuKk4EACDlykpXAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2011 11:13 PM, Darren Hart wrote:
->
->
-> On 06/06/2011 11:11 AM, Eric Dumazet wrote:
->> Le lundi 06 juin 2011 à 10:53 -0700, Darren Hart a écrit :
->>>
->>
->>> If I understand the problem correctly, RO private mapping really doesn't
->>> make any sense and we should probably explicitly not support it, while
->>> special casing the RO shared mapping in support of David's scenario.
->>>
->>
->> We supported them in 2.6.18 kernels, apparently. This might sounds
->> stupid but who knows ?
->
->
-> I guess this is actually the key point we need to agree on to provide a
-> solution. This particular case "worked" in 2.6.18 kernels, but that
-> doesn't necessarily mean it was supported, or even intentional.
->
-> It sounds to me that we agree that we should support RO shared mappings.
-> The question remains about whether we should introduce deliberate
-> support of RO private mappings, and if so, if the forced COW approach is
-> appropriate or not.
->
+The following changes since commit 55922c9d1b84b89cb946c777fddccb3247e7df2c:
 
-I disagree.
+  Linux 3.0-rc1 (2011-05-29 17:43:36 -0700)
 
-FUTEX_WAIT has side-effects.  Specifically, it eats one wakeup sent by 
-FUTEX_WAKE.  So if something uses futexes on a file mapping, then a 
-process with only read access could (if the semantics were changed) DoS 
-the other processes by spawning a bunch of threads and FUTEX_WAITing 
-from each of them.
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
 
-If there were a FUTEX_WAIT_NOCONSUME that did not consume a wakeup and 
-worked on RO mappings, I would drop my objection.
+Antti Palosaari (1):
+      [media] anysee: return EOPNOTSUPP for unsupported I2C messages
 
---Andy
+Hans Petter Selasky (1):
+      [media] Make nchg variable signed because the code compares this variable against negative values
+
+Ian Armstrong (3):
+      [media] ivtv: Make two ivtv_msleep_timeout calls uninterruptable
+      [media] ivtvfb: Add sanity check to ivtvfb_pan_display()
+      [media] ivtv: Internally separate encoder & decoder standard setting
+
+Jean-FranÃ§ois Moine (5):
+      [media] gspca - ov519: Fix a regression for ovfx2 webcams
+      [media] gspca - ov519: Change the ovfx2 bulk transfer size
+      [media] gspca: Remove coarse_expo_autogain.h
+      [media] gspca - stv06xx: Set a lower default value of gain for hdcs sensors
+      [media] gspca - ov519: Set the default frame rate to 15 fps
+
+Laurent Pinchart (3):
+      [media] ivtvfb: use display information in info not in var for panning
+      [media] v4l: Fix media_entity_to_video_device macro argument name
+      [media] media: Fix media device minor registration
+
+Mauro Carvalho Chehab (2):
+      [media] uvc_entity: initialize return value
+      [media] soc_camera: preserve const attribute
+
+Sanjeev Premi (1):
+      [media] omap3isp: fix compiler warning
+
+ drivers/media/dvb/dvb-usb/anysee.c               |   17 ++-
+ drivers/media/media-devnode.c                    |    4 +-
+ drivers/media/video/gspca/coarse_expo_autogain.h |  116 -------------------
+ drivers/media/video/gspca/ov519.c                |    8 +-
+ drivers/media/video/gspca/sonixj.c               |    2 +-
+ drivers/media/video/gspca/stv06xx/stv06xx_hdcs.h |    2 +-
+ drivers/media/video/ivtv/ivtv-driver.c           |   10 +-
+ drivers/media/video/ivtv/ivtv-firmware.c         |   11 +-
+ drivers/media/video/ivtv/ivtv-ioctl.c            |  129 ++++++++++++----------
+ drivers/media/video/ivtv/ivtv-ioctl.h            |    3 +-
+ drivers/media/video/ivtv/ivtv-streams.c          |    4 +-
+ drivers/media/video/ivtv/ivtv-vbi.c              |    2 +-
+ drivers/media/video/ivtv/ivtvfb.c                |   33 ++++--
+ drivers/media/video/omap3isp/isp.c               |    2 +-
+ drivers/media/video/soc_camera.c                 |    2 +-
+ drivers/media/video/uvc/uvc_entity.c             |    2 +-
+ include/media/v4l2-dev.h                         |    4 +-
+ 17 files changed, 131 insertions(+), 220 deletions(-)
+ delete mode 100644 drivers/media/video/gspca/coarse_expo_autogain.h
+
