@@ -1,105 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883Ab1FGPzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 11:55:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30620 "EHLO mx1.redhat.com"
+	id S1752198Ab1FGP4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 11:56:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45754 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750919Ab1FGPzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 11:55:45 -0400
-Date: Tue, 7 Jun 2011 18:54:57 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
-        habanero@linux.vnet.ibm.com
-Subject: Re: [PATCHv2 RFC 4/4] Revert "virtio: make add_buf return capacity
- remaining:
-Message-ID: <20110607155457.GA17436@redhat.com>
-References: <cover.1307029008.git.mst@redhat.com>
- <7572d6fb81181e349af4a8b203ea0977f6e91ae1.1307029009.git.mst@redhat.com>
+	id S1751540Ab1FGP4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 11:56:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,333,1304319600"; 
+   d="scan'208";a="10242119"
+Message-ID: <4DEE4A32.2080501@linux.intel.com>
+Date: Tue, 07 Jun 2011 08:56:34 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7572d6fb81181e349af4a8b203ea0977f6e91ae1.1307029009.git.mst@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andy Lutomirski <luto@MIT.EDU>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Zachary Vonler <zvonler@rgmadvisors.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: Change in functionality of futex() system call.
+References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>	 <1307373819.3098.40.camel@edumazet-laptop>	 <1307376672.2322.167.camel@twins>  <1307376989.2322.171.camel@twins>	 <1307377349.3098.65.camel@edumazet-laptop>	 <1307377782.2322.183.camel@twins>	 <1307378564.3098.67.camel@edumazet-laptop>	 <4DED1421.5000300@linux.intel.com> <1307383898.3098.90.camel@edumazet-laptop> <4DED976C.90009@linux.intel.com> <4DEE3944.5020005@mit.edu>
+In-Reply-To: <4DEE3944.5020005@mit.edu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 02, 2011 at 06:43:25PM +0300, Michael S. Tsirkin wrote:
-> This reverts commit 3c1b27d5043086a485f8526353ae9fe37bfa1065.
-> The only user was virtio_net, and it switched to
-> min_capacity instead.
+
+
+On 06/07/2011 07:44 AM, Andy Lutomirski wrote:
+> On 06/06/2011 11:13 PM, Darren Hart wrote:
+>>
+>>
+>> On 06/06/2011 11:11 AM, Eric Dumazet wrote:
+>>> Le lundi 06 juin 2011 à 10:53 -0700, Darren Hart a écrit :
+>>>>
+>>>
+>>>> If I understand the problem correctly, RO private mapping really doesn't
+>>>> make any sense and we should probably explicitly not support it, while
+>>>> special casing the RO shared mapping in support of David's scenario.
+>>>>
+>>>
+>>> We supported them in 2.6.18 kernels, apparently. This might sounds
+>>> stupid but who knows ?
+>>
+>>
+>> I guess this is actually the key point we need to agree on to provide a
+>> solution. This particular case "worked" in 2.6.18 kernels, but that
+>> doesn't necessarily mean it was supported, or even intentional.
+>>
+>> It sounds to me that we agree that we should support RO shared mappings.
+>> The question remains about whether we should introduce deliberate
+>> support of RO private mappings, and if so, if the forced COW approach is
+>> appropriate or not.
+>>
 > 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
-It turns out another place in virtio_net: receive
-buf processing - relies on the old behaviour:
-
-try_fill_recv:
-	do {
-		if (vi->mergeable_rx_bufs)
-			err = add_recvbuf_mergeable(vi, gfp);
-		else if (vi->big_packets)
-			err = add_recvbuf_big(vi, gfp);
-		else
-			err = add_recvbuf_small(vi, gfp);
-
-		oom = err == -ENOMEM;
-		if (err < 0)
-			break;
-		++vi->num;
-	} while (err > 0);
-
-The point is to avoid allocating a buf if
-the ring is out of space and we are sure
-add_buf will fail.
-
-It works well for mergeable buffers and for big
-packets if we are not OOM. small packets and
-oom will do extra get_page/put_page calls
-(but maybe we don't care).
-
-So this is RX, I intend to drop it from this patchset and focus on the
-TX side for starters.
-
-> ---
->  drivers/virtio/virtio_ring.c |    2 +-
->  include/linux/virtio.h       |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
+> I disagree.
 > 
-> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-> index 23422f1..a6c21eb 100644
-> --- a/drivers/virtio/virtio_ring.c
-> +++ b/drivers/virtio/virtio_ring.c
-> @@ -233,7 +233,7 @@ add_head:
->  	pr_debug("Added buffer head %i to %p\n", head, vq);
->  	END_USE(vq);
->  
-> -	return vq->num_free;
-> +	return 0;
->  }
->  EXPORT_SYMBOL_GPL(virtqueue_add_buf_gfp);
->  
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> index 209220d..63c4908 100644
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -34,7 +34,7 @@ struct virtqueue {
->   *	in_num: the number of sg which are writable (after readable ones)
->   *	data: the token identifying the buffer.
->   *	gfp: how to do memory allocations (if necessary).
-> - *      Returns remaining capacity of queue (sg segments) or a negative error.
-> + *      Returns 0 on success or a negative error.
->   * virtqueue_kick: update after add_buf
->   *	vq: the struct virtqueue
->   *	After one or more add_buf calls, invoke this to kick the other side.
-> -- 
-> 1.7.5.53.gc233e
+> FUTEX_WAIT has side-effects.  Specifically, it eats one wakeup sent by 
+> FUTEX_WAKE.  So if something uses futexes on a file mapping, then a 
+> process with only read access could (if the semantics were changed) DoS 
+> the other processes by spawning a bunch of threads and FUTEX_WAITing 
+> from each of them.
+> 
+> If there were a FUTEX_WAIT_NOCONSUME that did not consume a wakeup and 
+> worked on RO mappings, I would drop my objection.
+
+
+This sounds like an argument for properly managing file permissions and
+carefully selecting the mapping backing your futex word - but I don't
+see this as compelling rationale to disable RO support entirely and
+certainly not to add yet another futex op code.
+
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
