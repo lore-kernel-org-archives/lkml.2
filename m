@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557Ab1FGKNj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 06:13:39 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:45381 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750815Ab1FGKNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 06:13:37 -0400
-Date: Tue, 7 Jun 2011 12:13:15 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: pageexec@freemail.hu
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@mit.edu>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to
- COMPAT_VSYSCALLS
-Message-ID: <20110607101315.GG4133@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>
- <4DED16C1.24309.139B86C7@pageexec.freemail.hu>
- <20110606191218.GB20123@elte.hu>
- <4DED6AAC.12348.14E3578E@pageexec.freemail.hu>
+	id S1751250Ab1FGKN3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 06:13:29 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:49320 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab1FGKN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 06:13:28 -0400
+Subject: [PATCH] sched: remove rcu_read_lock from wake_affine
+To: peterz@infradead.org, mingo@elte.hu
+From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 07 Jun 2011 15:43:22 +0530
+Message-ID: <20110607101251.777.34547.stgit@IBM-009124035060.in.ibm.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DED6AAC.12348.14E3578E@pageexec.freemail.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+wake_affine is called from one path: select_task_rq_fair, which already has
+rcu read lock held.
 
-* pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+---
+ kernel/sched_fair.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-> > You generally seem to assume that security is an absolute goal 
-> > with no costs attached.
-> 
-> quote me on that back please or admit you made this up. [...]
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 354e26b..0bfec93 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1461,6 +1461,7 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
+ 
+ #endif
+ 
++/* Assumes rcu_read_lock is held */
+ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ {
+ 	s64 this_load, load;
+@@ -1481,7 +1482,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 	 * effect of the currently running task from the load
+ 	 * of the current CPU:
+ 	 */
+-	rcu_read_lock();
+ 	if (sync) {
+ 		tg = task_group(current);
+ 		weight = current->se.load.weight;
+@@ -1517,7 +1517,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 		balanced = this_eff_load <= prev_eff_load;
+ 	} else
+ 		balanced = true;
+-	rcu_read_unlock();
+ 
+ 	/*
+ 	 * If the currently running task will sleep within
 
-Just one quick example of your delusion:
-
-   |
-   | "a page fault is never a fast path"
-   |
-
-   (PageExec, Jun 6, 2011)
-
-   http://lkml.org/lkml/2011/6/6/209
-
-I think that sentence will become a classic quote to chuckle about.
-
-Thanks,
-
-	Ingo
