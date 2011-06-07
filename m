@@ -1,64 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab1FGVLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 17:11:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47009 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757262Ab1FGVLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 17:11:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,334,1304319600"; 
-   d="scan'208";a="10370433"
-Date: Wed, 8 Jun 2011 05:11:16 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
-Subject: Re: writeback merge status, was Re: [PATCH 00/18] writeback fixes
- and cleanups for 2.6.40 (v3)
-Message-ID: <20110607211116.GA4793@localhost>
-References: <20110519214530.939830917@intel.com>
- <20110523090739.GA27894@infradead.org>
- <20110523092838.GA25829@localhost>
- <20110524032859.GA17429@localhost>
- <20110601153142.0bf83332.akpm@linux-foundation.org>
- <20110602022919.GB6015@localhost>
- <20110607121335.GA14080@infradead.org>
- <20110607131512.bf27eb68.akpm@linux-foundation.org>
+	id S1757456Ab1FGVSj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:18:39 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52722 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754428Ab1FGVSg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 17:18:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=lIXrtPA+kZ9fYtePGHSG1JjmoIOHxZ3i1K2liVgceS8f134DwIPsEm7l1kbK4yWN8F
+         Rk5QY0tW0fP7ksW190UctyY6L9XBy1ogr/gQn/vGWsXnhSOmSG6LmZK+ODhEigoMEMkW
+         AmHTdEu4d5/YwGF1+I3Z9a9hoa5/SNTDQR/vg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110607131512.bf27eb68.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1307480780.3163.68.camel@work-vm>
+References: <cover.1307474707.git.luto@mit.edu> <4a233d5b7421ef8f7805139e3eba68c52c2d0d57.1307474707.git.luto@mit.edu>
+ <1307478514.3163.49.camel@work-vm> <BANLkTimU75BNGxTSDicAf5uJdaxqDUu57Q@mail.gmail.com>
+ <1307480780.3163.68.camel@work-vm>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 7 Jun 2011 17:18:16 -0400
+X-Google-Sender-Auth: 0gVNeuuwpSdIchCLeu6oTsGE-tE
+Message-ID: <BANLkTimfnCJgv-YKGx3rR=F3qKT4uqjjjg@mail.gmail.com>
+Subject: Re: [PATCH 4/5] clocksource: Replace vread and fsys_mmio with generic
+ arch data
+To: john stultz <johnstul@us.ibm.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Clemens Ladisch <clemens@ladisch.de>, linux-ia64@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 04:15:12AM +0800, Andrew Morton wrote:
-> On Tue, 7 Jun 2011 08:13:36 -0400
-> Christoph Hellwig <hch@infradead.org> wrote:
-> 
-> > It looks like we once again got no writeback fixes merged for $NEXT,
-> > even with Wu having a very nice, well reviewed and tested series of 
-> > fairly trivial patches.
-> 
-> We're waiting for the v4 series:
- 
-The v4 series was posted here:
+[cc: linux-arch]
 
-https://lkml.org/lkml/2011/5/24/20
+On Tue, Jun 7, 2011 at 5:06 PM, john stultz <johnstul@us.ibm.com> wrote:
+> On Tue, 2011-06-07 at 16:35 -0400, Andrew Lutomirski wrote:
+>> On Tue, Jun 7, 2011 at 4:28 PM, john stultz <johnstul@us.ibm.com> wrote:
+>> >
+>> > While having the ifdefs in the clocksource structure wasn't great, I'm
+>> > not super excited about pushing all of this back into arch-specific
+>> > code. The hope was that folks like ppc and ia64 would convert over from
+>> > their own implementations to using more generic vread() implementations,
+>> > or atleast new arches with vdso implementations would make use of it
+>> > (possibly even allowing for a generic vdso gettime implementation).
+>> >
+>> > Are there at least some hard numbers that help justify this? Or maybe
+>> > could you provide some thoughts on your future plans?
+>>
+>> No numbers because there's no speedup (yet).  Although I do want to
+>> inline at least the TSC implementation eventually.
+>>
+>> The real reason is security.  Having vread be a function pointer
+>> implies that userspace code can find that function at a fixed address,
+>> which is a bad idea from a security POV (and I hope it's not even true
+>> on any architecture except x86-64).
+>
+> Something to this effect should go into the change-log then.
 
-> : I'll rearrange the series and move patch 14 to the end, so that the
-> : patches come in order
-> :
-> : - 10 (updated) patches in -mm
-> : - 6 more trivial patches that is safe to go upstream after -rc1 
-> : - the current patch 14 and patch 16 (that depends on 14)
+Will do.
 
-Anyway, I'll make the series straight and resubmit.
+>> The followup change (patch 5) changes vread on x86-64 to specify TSC,
+>
+> Oh, sorry, I didn't see the rest of the patchset. Apologies. :)
 
-Thanks,
-Fengguang
+No problem.  I guess I should have cc'd you on at least the interesting one.
+
+>
+>
+>> HPET, or fallback to syscall, and the vDSO reads it and acts
+>> accordingly.  This is unfortunate in that it hardcodes assumptions
+>> about the clocksources.
+>
+> Yea, that is unfortunate. Hmm.
+>
+>> The only other way I can think of to do it is to make the pointer
+>> point into the vDSO.  That would involve making it relative to
+>> something in the vDSO, which would IMO be messier both in terms of
+>> computing the pointer and in terms of calling whatever it points to.
+>
+> Hrm. I'm not super familiar with how the vDSO randomization works, so I
+> can't really provide any informed insight here.
+>
+> But I'd def like to someday get the vDSO stuff to be as generic as
+> possible. I already have some timekeeping changes I'd like to do which
+> affect the update_vsyscall path. And that is a total pain to do, since I
+> have to sync changes with x86, powerpc and ia64 (and the ia64 asm isn't
+> something I'm likely to touch :) and get those changes in all at once,
+> or introduce some redundant call or have lots of ifdef magic to keep
+> compatibility while each arch adapts to the changes.
+
+The vDSO is just like a regular DSO.  It's a bunch of code that's the
+same in every process, but it's mapped in a different place for each
+process.  The kernel knows how to find it if needed.
+
+One idea: Add a directory linux/vDSO (i.e. a vDSO directory in the
+root of the tree) that contains files that get compiled into the
+vDSO).  Then generic timekeeping code can go in there.  That could
+replace the duplicate clock_gettime implementation that currently
+lives in the x86_64 vDSO, for example.
+
+There could be a generic (or at least common) mechanism to compute a
+"pointer" (i.e. some pointer-sized blob) to a vDSO function from the
+kernel and another mechanism to resolve the pointer from the vDSO.
+That pointer could go into vread.
+
+
+Simpler idea: Make the clock_gettime implementation common (stick it
+in a header, for example), but require the arch to supply functions to
+check whether vread is available and to actually call vread.
+
+--Andy
