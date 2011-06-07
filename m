@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab1FGOPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 10:15:40 -0400
-Received: from smtp204.alice.it ([82.57.200.100]:36761 "EHLO smtp204.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754756Ab1FGOPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 10:15:39 -0400
-Date: Tue, 7 Jun 2011 16:12:21 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Simon Wood <simon@mungewell.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Marcin Tolysz <tolysz@gmail.com>
-Subject: Re: [PATCH 1/2] sony_ff_hid_descriptor
-Message-Id: <20110607161221.3334dcdd.ospite@studenti.unina.it>
-In-Reply-To: <alpine.LNX.2.00.1106071531330.22872@pobox.suse.cz>
-References: <80b32cfd7dc9e8afee2c4d9e21d1a7e3.squirrel@host171.canaca.com>
-	<1306145999-15643-1-git-send-email-simon@mungewell.org>
-	<20110601214924.36ec42ad.ospite@studenti.unina.it>
-	<alpine.LNX.2.00.1106071531330.22872@pobox.suse.cz>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+	id S1754729Ab1FGOPA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 10:15:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56186 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab1FGOO7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 10:14:59 -0400
+Subject: Re: Changing Kernel thread priorities
+From: Peter Zijlstra <peterz@infradead.org>
+To: Remy Bohmer <linux@bohmer.net>
+Cc: Armin Steinhoff <armin@steinhoff.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Bauer <hannes_bauer@aon.at>,
+        Monica Puig-Pey <puigpeym@unican.es>,
+        Rolando Martins <rolando.martins@gmail.com>,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTi=KPyds_BWYpXHeUkAg000FGSuJOQ@mail.gmail.com>
+References: <17185480.5304.1307435255996.JavaMail.root@WARSBL214.highway.telekom.at>
+	 <alpine.LFD.2.02.1106071033350.11814@ionos> <4DEDF1F2.2080204@steinhoff.de>
+	 <1307439469.2322.235.camel@twins>
+	 <BANLkTi=KPyds_BWYpXHeUkAg000FGSuJOQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 07 Jun 2011 16:14:40 +0200
+Message-ID: <1307456080.2322.264.camel@twins>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__7_Jun_2011_16_12_21_+0200_uo6GxaFJs1W+LCCS"
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__7_Jun_2011_16_12_21_+0200_uo6GxaFJs1W+LCCS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2011-06-07 at 13:02 +0200, Remy Bohmer wrote:
+> Hi All,
+> 
+> 2011/6/7 Peter Zijlstra <peterz@infradead.org>:
+> > On Tue, 2011-06-07 at 11:40 +0200, Armin Steinhoff wrote:
+> >> Hi,
+> >>
+> >> when I read all these confusing statements here ( in german it looks
+> >> like an "Eiertanz")  ... I can only say:
+> >>
+> >> - do the basic stuff in a minimal kernel driver
+> >> - use UIO (or VFIO for PCI devices)
+> >
+> > I see no requirement for any of those horrid things to be used. You can
+> > write a full on proper kernel driver, it just cannot set kernel thread
+> > priorities to a sane value (let them all default to 50 or so).
+> >
+> > Then have a user space script or whatever set the kthread priorities.
+> >> and you get clean control about your real-time priorities.
+> >> I think changing the priorities of "interrupt threads" inside the kernel
+> >> could lead to strange race conditions in the kernel.
+> 
+> Well, I 100% agree that it must be under full userspace control to be
+> able to set the priorities. But, the kernel default assumption of
+> starting everything at 50 is wrong as well.
+> Imagine the following situation:
+> * Realtime application is running and has threads active in the range
+> of prios 20 - 90.
+> * Now bring up a network device, it immediately starts spamming the
+> system at prio 50 _before_ you have the chance to set it below 20 by
+> means of chrt.
+> * RT behaviour is gone!
 
-On Tue, 7 Jun 2011 15:32:15 +0200 (CEST)
-Jiri Kosina <jkosina@suse.cz> wrote:
+Good point I guess, Thomas should we default to 1 for everything?
 
-> On Wed, 1 Jun 2011, Antonio Ospite wrote:
->=20
-> > On Mon, 23 May 2011 03:19:58 -0700
-> > Simon Wood <simon@mungewell.org> wrote:
-> >=20
-> > > This patch modifies the HID descriptor to allow the reporting of
-> > > the accelerometers and gyro via a joystick axis.
-> >=20
-> > I am going to test it tomorrow, but for now I notice that the
-> > Signed-off-by is missing. Wait for the test before resending tho.
-> >=20
-> > Plus, the short commit message can be improved a little bit, and the
-> > long commit message could use the classic imperative form used in kernel
-> > commit messages: "Modify the HID descriptor to...", but these are just
-> > suggestions.
-[...]
-
-> What was the result of your testing of the patches, please?
->=20
-
-There has been an off-list discussion and I think Simon is going to send
-the patches once again in a form which amends the HID descriptor even
-when the Sixaxis is connected via Bluetooth.
-
-I will retest and add the Tested-by on those.
-
-Regards,
-   Antonio
-
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-
---Signature=_Tue__7_Jun_2011_16_12_21_+0200_uo6GxaFJs1W+LCCS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk3uMcUACgkQ5xr2akVTsAFG7wCgi0pOMpxNh+ocY3F+LQ10kuAv
-ZR4AoIXmkdlRcsCsq6YQlaabXgnDQEQc
-=UxKT
------END PGP SIGNATURE-----
-
---Signature=_Tue__7_Jun_2011_16_12_21_+0200_uo6GxaFJs1W+LCCS--
