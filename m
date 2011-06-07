@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab1FGU4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 16:56:54 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:48994 "EHLO smtp.gentoo.org"
+	id S1757292Ab1FGU7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 16:59:38 -0400
+Received: from waste.org ([173.11.57.241]:45246 "EHLO waste.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753023Ab1FGU4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 16:56:53 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH -mm] ptrace-unify-show_regs-prototype-fix
-Date: Tue, 7 Jun 2011 16:56:52 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.39; KDE/4.6.3; x86_64; ; )
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, tj@kernel.org
-References: <201106062124.p56LO6Hn023286@imap1.linux-foundation.org> <20110607175142.GA29525@redhat.com>
-In-Reply-To: <20110607175142.GA29525@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart10923838.mZAkv3G6IS";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1757273Ab1FGU7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 16:59:37 -0400
+Subject: Re: ketchup script and 3.0
+From: Matt Mackall <mpm@selenic.com>
+To: david@lang.hm
+Cc: Stratos Psomadakis <psomas@ece.ntua.gr>, linux-kernel@vger.kernel.org,
+        Frank Kingswood <frank@kingswood-consulting.co.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1106071349000.28905@asgard.lang.hm>
+References: <4DEDD5F4.1070602@kingswood-consulting.co.uk>
+	 <1307451186.4204.953.camel@calx>  <4DEE808D.6020405@ece.ntua.gr>
+	 <1307477435.4204.968.camel@calx>  <4DEE8AD9.3050508@ece.ntua.gr>
+	 <1307479572.4204.977.camel@calx>
+	 <alpine.DEB.2.02.1106071349000.28905@asgard.lang.hm>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Jun 2011 15:59:32 -0500
+Message-ID: <1307480372.4204.987.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106071656.53725.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart10923838.mZAkv3G6IS
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2011-06-07 at 13:50 -0700, david@lang.hm wrote:
+> On Tue, 7 Jun 2011, Matt Mackall wrote:
+> 
+> > But my point is that if we have adhoc transitions, we will encounter the
+> > "fix all the scripts and websites" pain at every transition. And tools
+> > that are managed via distros and the like can literally take years to
+> > get into the hands of users. It'd be nice if the copy of ketchup shipped
+> > in <enterprise distro> just worked 3 years from now because 4.0 wasn't a
+> > surprise.
+> 
+> if you special case 2.4->2.6, and make the default that 4.0 > 3.x, 5.0 > 
+> 4.x, etc won't things 'just work' for the forseeable future?
 
-On Tuesday, June 07, 2011 13:51:42 Oleg Nesterov wrote:
-> (to fold into ptrace-unify-show_regs-prototype.patch)
->=20
-> No need to declare show_regs() in ptrace.h, sched.h does this.
+No, because you sometimes want to know what 2.6.39++ is and what 3.0--
+is.
 
-thanks for getting to this in spite of my laziness in not doing it sooner
-=2Dmike
+For instance, to upgrade from 2.6.37.2 to 3.1.2, ketchup will want to
+download, cache, and apply:
 
---nextPart10923838.mZAkv3G6IS
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+patch-2.6.37.2 (reversed!)
+patch-2.6.38
+patch-2.6.39
+patch-3.0 ?? <- hopefully Linus will make a delta against 2.6.39!
+patch-3.1
+patch-3.1.2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
 
-iQIcBAABAgAGBQJN7pCVAAoJEEFjO5/oN/WBN+gP/jvCrylM/vmbW4zNdHIkIopY
-z95Df9ZeWnKL2VbhGyKzGsUuQQImSxpj8fZPyDTbtJbG0r2Qh/EXnE9yqgPj/ZpO
-yF73qhk/AnKhLfTA7RRMANtfMpXfuqsE+7RRysITJcnWKTZLVj3smVNVJmdmtJTS
-F7OQtQ0eA6EjQ49BcakN1LW8SzI7yZlhtgRuxPaX/3qm8NKunSdFhpFqkFDgvIuP
-1ArVW3D3FvDXQpabflGhXoVUuiDkGVOkhIyucU1pDlstB5+Q3clxpOghQUWKyH1P
-zYRl4cWfpHjvnk+PUPC6kjkFiHkAHDa/4Lo6xoegh8uR0PduFqYl5+pC3HlzoXCn
-EMcbDMQgX7O1NIxySdjaQwQVG7ScpuQZEdYvQwpc9vOCj80OtwXbMJorfjU03fli
-Ij6eTgKCqCeCs0NqVj59Cd64ZENwtmiE9IVnVZosikx5I4KmEh4nQj5WU3s/YiKV
-UPjfrTTKigMbYdUA2KyG+tN72ftT5FPjxkylGZf4Sy/Z7qZCFtM307X1vPuo++vv
-bE07Duw4qTf3cLXBDabc7IDNKXQHgWGoiJP+ZTS32P8gCJZo6RyEVIs1OB2We3Jj
-4kRVrCnPRiKID5SdYxsnSQOuDXrXcAetkfAMeeT/dGLgHUOYuuz+ilBHi/i91/Al
-XlmEsiQgXNYh9NH4AxSN
-=Mm8v
------END PGP SIGNATURE-----
+-- 
+Mathematics is the supreme nostalgia of our time.
 
---nextPart10923838.mZAkv3G6IS--
+
