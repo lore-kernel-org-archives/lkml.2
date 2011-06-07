@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002Ab1FGTCU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:02:20 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:34505 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756141Ab1FGTCM (ORCPT
+	id S1755444Ab1FGTAc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 15:00:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39397 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222Ab1FGTAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 15:02:12 -0400
-X-Sasl-enc: dNX3fsVEIk0nbrAlwtjbTkboiJEJNFVmNPPURHMOVFVA 1307473332
-Date: Tue, 7 Jun 2011 11:58:40 -0700
-From: Greg KH <greg@kroah.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Christoph Hellwig <hch@infradead.org>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>
-Subject: Re: [PATCH 24/49] Staging: hv: vmbus: Get rid of the unused wrapper
- - vmbus_onchannel_event()
-Message-ID: <20110607185840.GB3531@kroah.com>
-References: <1307400540-13193-1-git-send-email-kys@microsoft.com>
- <1307400613-13234-1-git-send-email-kys@microsoft.com>
- <1307400613-13234-24-git-send-email-kys@microsoft.com>
- <20110606231511.GB18222@infradead.org>
- <6E21E5352C11B742B20C142EB499E0480813D861@TK5EX14MBXC122.redmond.corp.microsoft.com>
+	Tue, 7 Jun 2011 15:00:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=WEAz1kwG6Cx7uKHCCwZmeN92TjGRh8MKuUfWQRhJJgsik7j+FvR7mvzO9Y2o0ExKV2
+         fLf8cnMR18n5SLaRufXLoUND8ZOGkmhjmnx2VP71HzfYwTUIbjCCHkGnINJiJK4MH61J
+         kS4l5cDd1nu9gBV8/tVk3cRDy0nL0AO9UE9qg=
+Message-ID: <4DEE754B.1020706@suse.cz>
+Date: Tue, 07 Jun 2011 21:00:27 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110531 Thunderbird/5.0b1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0480813D861@TK5EX14MBXC122.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andi Kleen <andi@firstfloor.org>, Xiaotian Feng <dfeng@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [PATCH] do_coredump: fix the "ispipe" error check
+References: <1307457010-7241-1-git-send-email-jslaby@suse.cz> <20110607181607.GA3732@redhat.com> <20110607183542.GA5559@redhat.com>
+In-Reply-To: <20110607183542.GA5559@redhat.com>
+X-Enigmail-Version: 1.2a2pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 02:59:32PM +0000, KY Srinivasan wrote:
+On 06/07/2011 08:35 PM, Oleg Nesterov wrote:
+> do_coredump() assumes that if format_corename() fails it should
+> return -ENOMEM. This is not true, for example cn_print_exe_file()
+> can propagate the error from d_path. Even if it was true, this is
+> too fragile. Change the code to check "ispipe < 0".
 > 
-> 
-> > -----Original Message-----
-> > From: Christoph Hellwig [mailto:hch@infradead.org]
-> > Sent: Monday, June 06, 2011 7:15 PM
-> > To: KY Srinivasan
-> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
-> > Abhishek Kane (Mindtree Consulting PVT LTD)
-> > Subject: Re: [PATCH 24/49] Staging: hv: vmbus: Get rid of the unused wrapper -
-> > vmbus_onchannel_event()
-> > 
-> > On Mon, Jun 06, 2011 at 03:49:48PM -0700, K. Y. Srinivasan wrote:
-> > > Now, get rid of the unused wrapper - vmbus_onchannel_event().
-> > 
-> > I'd merge this into the previous patch.  In general your patch split
-> > seem a little too fine grained to me in general.  When you remove a
-> > wrapper you can inline it into the callsite directly, if you clean up a
-> > function directly inlining it into the helper is fine, etc.
-> > 
-> I agree with you that some of these patches are too fine grained; but 
-> I thought that was what was expected - "one change per patch".
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Yes, but don't take it to an extreme, like you have done here :)
+Acked-by: Jiri Slaby <jslaby@suse.cz>
+
+> ---
+> 
+>  fs/exec.c |   12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+> 
+> --- ptrace/fs/exec.c~corename_errcode	2011-06-07 19:44:30.000000000 +0200
+> +++ ptrace/fs/exec.c	2011-06-07 20:20:48.000000000 +0200
+> @@ -2092,16 +2092,16 @@ void do_coredump(long signr, int exit_co
+>  
+>  	ispipe = format_corename(&cn, signr);
+>  
+> -	if (ispipe == -ENOMEM) {
+> -		printk(KERN_WARNING "format_corename failed\n");
+> -		printk(KERN_WARNING "Aborting core\n");
+> -		goto fail_corename;
+> -	}
+> -
+>   	if (ispipe) {
+>  		int dump_count;
+>  		char **helper_argv;
+>  
+> +		if (ispipe < 0) {
+> +			printk(KERN_WARNING "format_corename failed\n");
+> +			printk(KERN_WARNING "Aborting core\n");
+> +			goto fail_corename;
+> +		}
+> +
+>  		if (cprm.limit == 1) {
+>  			/*
+>  			 * Normally core limits are irrelevant to pipes, since
+> 
 
 thanks,
-
-greg k-h
+-- 
+js
+suse labs
