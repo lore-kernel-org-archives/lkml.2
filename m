@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661Ab1FGJh5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 05:37:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38008 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752482Ab1FGJh4 convert rfc822-to-8bit (ORCPT
+	id S1752671Ab1FGJjl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 05:39:41 -0400
+Received: from forward15.mail.yandex.net ([95.108.130.119]:43802 "EHLO
+	forward15.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab1FGJjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 05:37:56 -0400
-Subject: Re: Changing Kernel thread priorities
-From: Peter Zijlstra <peterz@infradead.org>
-To: Armin Steinhoff <armin@steinhoff.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Johannes Bauer <hannes_bauer@aon.at>,
-        Monica Puig-Pey <puigpeym@unican.es>,
-        Rolando Martins <rolando.martins@gmail.com>,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4DEDF1F2.2080204@steinhoff.de>
-References: <17185480.5304.1307435255996.JavaMail.root@WARSBL214.highway.telekom.at>
-	 <alpine.LFD.2.02.1106071033350.11814@ionos> <4DEDF1F2.2080204@steinhoff.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 07 Jun 2011 11:37:49 +0200
-Message-ID: <1307439469.2322.235.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 7 Jun 2011 05:39:40 -0400
+X-Yandex-Spam: 1
+From: Dmitry Dmitriev <dimondmm@yandex.ru>
+To: linux-kernel@vger.kernel.org
+Subject: [PROBLEM]: x86-32: Corrupted real-time signal frame when VDSO is disabled.
+MIME-Version: 1.0
+Message-Id: <419131307439578@web128.yandex.ru>
+Date: Tue, 07 Jun 2011 13:39:38 +0400
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 11:40 +0200, Armin Steinhoff wrote:
-> Hi,
-> 
-> when I read all these confusing statements here ( in german it looks 
-> like an "Eiertanz")  ... I can only say:
-> 
-> - do the basic stuff in a minimal kernel driver
-> - use UIO (or VFIO for PCI devices)
+Hello,
 
-I see no requirement for any of those horrid things to be used. You can
-write a full on proper kernel driver, it just cannot set kernel thread
-priorities to a sane value (let them all default to 50 or so).
+On x86 32 bit system, real-time signal frame become corrupted when VDSO is disabled. 
+If we do following:
+1) Disable VDSO( write 0 to the /proc/sys/vm/vdso_enabled )
+2) Create new process
+3) Setup handler for real-time signal in new process
+4) Send real-time signal to new process.
 
-Then have a user space script or whatever set the kthread priorities.
+Then new process will handle this signal and crash, because it signal frame is corrupted. This problem was observed on 2.6.35 kernel, but it seems that it still exist in 2.6.39 kernel( after examing of source code ).
 
-> and you get clean control about your real-time priorities.
-> 
-> I think changing the priorities of "interrupt threads" inside the kernel 
-> could lead to strange race conditions in the kernel.
+The problem in __setup_rt_frame function( arch/x86/kernel/signal.c module, 2.6.39 kernel source ):
+ 347static int __setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 348                            sigset_t *set, struct pt_regs *regs)
+ 349{
+......
+ 380                /* Set up to return from userspace.  */
+ 381                restorer = VDSO32_SYMBOL(current->mm->context.vdso, rt_sigreturn);
+......
+ 411        return 0;
+ 412}
 
-No, changing the priority in the kernel is a perfectly sound operation,
-it just doesn't make any sense to do so since its impossible to
-determine a proper priority.
+__setup_rt_frame set up return from userspace without checking of vdso( lines 380-381 ), i.e. if vdso is disabled, then process will not have VDSO context.
 
-Therefore setting a priority is a pure user policy and should not be
-done by the driver itself -- it simply cannot do it right so why bother
-doing it.
+For non real-time signals similar action is performed in following way( __setup_frame function, arch/x86/kernel/signal.c module, 2.6.39 kernel source ):
+ 284static int
+ 285__setup_frame(int sig, struct k_sigaction *ka, sigset_t *set,
+ 286              struct pt_regs *regs)
+ 287{
+.......
+ 310        if (current->mm->context.vdso)
+ 311                restorer = VDSO32_SYMBOL(current->mm->context.vdso, sigreturn);
+ 312        else
+ 313                restorer = &frame->retcode;
+.......
+ 344        return 0;
+ 345}
 
+I think that similar construction must be add to the __setup_rt_frame function.
 
+Regards,
+Dmitry
 
