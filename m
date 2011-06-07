@@ -1,99 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab1FGJfW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 05:35:22 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:49546 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab1FGJfV (ORCPT
+	id S1752572Ab1FGJqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 05:46:17 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:58022 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab1FGJqQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 05:35:21 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DEDF2B8.5020502@cam.ac.uk>
-Date: Tue, 07 Jun 2011 10:43:20 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+	Tue, 7 Jun 2011 05:46:16 -0400
+X-Authority-Analysis: v=1.1 cv=aeMH4JcVOnVr0LmJAzqEvfnmJyuaZufWdlng4HTRGCk= c=1 sm=0 a=ibALSIuKlhcA:10 a=YEABEG9IpdAA:10 a=8nJEP1OIZ-IA:10 a=YPDeGStqRoQnMAluW+pq4Q==:17 a=VwQbUJbxAAAA:8 a=ydqP8W__9wnuymg417MA:9 a=c6gBGoy-PWwAxwNkrh4A:7 a=wPNLvfGTeEIA:10 a=x8gzFH9gYPwA:10 a=YPDeGStqRoQnMAluW+pq4Q==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 50.89.247.146
+Message-ID: <4DEDF366.6000706@cfl.rr.com>
+Date: Tue, 07 Jun 2011 05:46:14 -0400
+From: Mark Hounschell <dmarkh@cfl.rr.com>
+Reply-To: dmarkh@cfl.rr.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: anish singh <anish198519851985@gmail.com>
-CC: Greg KH <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-        devel@driverdev.osuosl.org, arnd@arndb.de,
-        lucas.demarchi@profusion.mobi, linux-kernel@vger.kernel.org,
-        manuel.stahl@iis.fraunhofer.de
-Subject: Re: [PATCH 1/2] staging: iio replaced kmalloc with local variables.
-References: <1307387257.4327.12.camel@anish-desktop>	<20110606215549.GA7543@suse.de>	<1307398257.4994.30.camel@Joe-Laptop>	<20110606222118.GA29883@suse.de>	<1307399309.4994.34.camel@Joe-Laptop>	<20110606224126.GA2668@suse.de> <BANLkTimZP1=tOdsn9eNiERr0Up0xHrr=3g@mail.gmail.com>
-In-Reply-To: <BANLkTimZP1=tOdsn9eNiERr0Up0xHrr=3g@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Monica Puig-Pey <puigpeym@unican.es>
+CC: dmarkh@cfl.rr.com, markh@compro.net,
+        Rolando Martins <rolando.martins@gmail.com>,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Changing Kernel thread priorities
+References: <4DEA1BA9.7020303@unican.es><4DEA1F22.6000603@unican.es><4DEA255				B.2050503@unican.es><4DECBE44.2070803@unican.es> 			<BANLkTi=xSJOgY735PE44YtkQmrdhgetGdQ@mail.gmail.com> 		<4DECC0DF.8070209@unican.es> <4DED051A.6020702@compro.net> <4DEDE411.6010807@unican.es> <4DEDEBFF.10907@cfl.rr.com>
+In-Reply-To: <4DEDEBFF.10907@cfl.rr.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/11 05:56, anish singh wrote:
-> 
-> 
-> On Tue, Jun 7, 2011 at 4:11 AM, Greg KH <gregkh@suse.de <mailto:gregkh@suse.de>> wrote:
-> 
->     On Mon, Jun 06, 2011 at 03:28:29PM -0700, Joe Perches wrote:
->     > On Mon, 2011-06-06 at 15:21 -0700, Greg KH wrote:
->     > > On Mon, Jun 06, 2011 at 03:10:57PM -0700, Joe Perches wrote:
->     > > > On Mon, 2011-06-06 at 14:55 -0700, Greg KH wrote:
->     > > > > On Tue, Jun 07, 2011 at 12:37:37AM +0530, anish wrote:
->     > > > > > From: anish kumar <anish198519851985@gmail.com <mailto:anish198519851985@gmail.com>>
->     > > > > > Replace kmalloc with local variables as it was un-necessary and
->     > > > > > also removed the redudant code after this change.
->     > > > > SPI data, like USB data, has to come from kmalloced data, not from the
->     > > > > stack, or bad things can, and will, happen.
->     > > > Perhaps just add a comment like:
->     > > > +       u8 *tx = kmalloc(2, GFP_KERNEL);  /* can't be on stack */
->     > > You really want to do to that for _EVERY_ SPI and USB driver?  I don't
->     > > think so.
->     >
->     > Nope, only the ones that look especially odd because
->     >       kmalloc(sizeof(struct foo), ...)
->     > or
->     >       kmalloc(sizeof("type), ...)
->     > is not used.
->     >
->     > It might be better to just declare a 2 byte struct.
-> 
->     No, this is a very common thing for all USB and SPI drivers.  It's so
->     obvious that once I saw the Subject: line, I knew this patch was going
->     to be wrong.
-> 
->     This is something that the USB and SPI developers know all about, it's
->     the way things work, and this driver works, so why are people trying to
->     "clean" it up in ways that will break it, or cause extra work with
->     structures where they are not needed at all?
-> 
-> Sorry for noise as i didn't the SPI requirements,thought it is similar to I2C and
-> in cleaning up below part i wrongly cleaned SPI part also.Below was also part
-> of patch.
-Not to worry, you are far from the first person to fall into this issue!
-Also, you have highlighted a weird corner in that driver, that could do with
-tidying up (just not quite the fix you had in mind!).
-> static int max1363_write_basic_config(struct i2c_client *client,
->                                      unsigned char d2)
->  {
->        int ret;
-> -       u8 *tx_buf = kmalloc(2, GFP_KERNEL);
-> +       u8 tx_buf[2];
->        if (!tx_buf)
->                return -ENOMEM;
-> @@ -215,7 +215,6 @@ static int max1363_write_basic_config(struct i2c_client *client,
->        tx_buf[1] = d2;
->        ret = i2c_master_send(client, tx_buf, 2);
-> -       kfree(tx_buf);
->        return (ret > 0) ? 0 : ret;
->  }
-> I think above patch is ok as it is I2C and I2C doesn't have that requirement.
-Yes.  I2C bus drivers that do dma do the copy into dma safe memory internally.
-Makes for more bouncing around of data, but i2c is slow anyway so it doesn't matter.
-Also, based on a quick look this morning, the dma buffers tend to require various
-headers to be in place etc which isn't typically the case for spi (a much more 'raw'
-bus).
+On 06/07/2011 05:14 AM, Mark Hounschell wrote:
+> On 06/07/2011 04:40 AM, Monica Puig-Pey wrote:
+>> El 06/06/11 18:49, Mark Hounschell escribió:
+>>> On 06/06/2011 07:58 AM, Monica Puig-Pey wrote:
+>>>> El 06/06/11 13:54, Rolando Martins escribió:
+>>>>> Hi,
+>>>>> I use the following:
+>>>>>
+>>>>> PIDs=$(ps -eLo pid,cls,rtprio,pri,nice,cmd | grep -i "irq" | awk '{
+>>>>> print $1; }' | xargs echo)
+>>>>> for i in $PIDs
+>>>>> do
+>>>>> ret=$(chrt -f -p 99 $i)
+>>>>> done
+>>>>>
+>>>>> This will change the kernel thread associated with an irq handler to
+>>>>> RT FIFO prio 99.
+>>>>> Just change the script to your specific interrupt.
+>>>>>
+>>>>> Hope it helps,
+>>>>> Rolando
+>>>>>
+>>>>> On Mon, Jun 6, 2011 at 12:47 PM, Monica Puig-Pey<puigpeym@unican.es>
+>>>>> wrote:
+>>>>>> I am writing a driver which has one kernel thread associated with it.
+>>>>>> I want to change the priority of this thread, so that I can specify the
+>>>>>> order in which it is scheduled following an interrupt.
+>>>>>> I'm using:
+>>>>>>
+>>>>>> sched_setscheduler(struct task_struct *, int, struct sched_param *);
+>>>>>>
+>>>>>> but it doesn't work. I tried to change the priority from the
+>>>>>> init_module,
+>>>>>> and also from the Kernel Thread, but there is no way.
+>>>>>>
+>>>>>> Kernel version is 2.6.31-11-rt
+>>>>>>
+>>>>>> What do I call to change a kernel thread priority?
+>>>>>>
+>>>>>> Thanks you very much
+>>>>>>
+>>>>>> Mónica
+>>>>>>
+>>>>>> --
+>>>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>>>> linux-rt-users" in
+>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>>>>
+>>>>
+>>>> I need to change the priority from inside the driver, when creating the
+>>>> kernel thread.
+>>>> Your script is useful but it is done in user context,
+>>>> Any other help please?
+>>>
+>>> What I do is record the PID of the thread in the driver, then create an
+>>> IOCTL for your driver that user land can call that either returns the
+>>> PID so you can do it in user land, or cause the IOCTL code to do it in
+>>> the driver.
+>>>
+>>> The same can be done with the affinity of the IRQ if you record the IRQ
+>>> number.
+>>>
+>>> Mark
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe
+>>> linux-rt-users" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>
+>> But I don't have de PID of my Kthread, I only have the task_struc * that
+>> gives me the function:
+>>
+>> struct task_struct *kthread_create(int (*threadfn)(void *data),
+>> void *data,
+>> const char namefmt[], ...)
+>>
+>> How could I get the PID, and which function should I use in the IOCTL
+>> (kernel context) for changing its priority?
+>>
+>
+> The PID can be obtained from within the interrupt handler its self via
+> current->pid.
+> Obviously an interrupt has to occur first but after one interrupt you have it.
+>
+> Actually I had forgot how I handled this. Where I change the RT priority
+> and cpu affinity is in what used to be called the Bottom Half and the IOCTL
+> referred to above simply tells the BH to do it and with what values.
+>
 
-Can you cc linux-iio@vger.kernel.org on that patch when you send it out please.
+In interrupt handler code snippet:
 
-Jonathan
+struct task_struct *TSK;
+struct sched_param PARAM = {.sched_priority = MAX_RT_PRIO };
+
+         TSK = current;
+
+Code snippet from BH:
+
+         if (((rtom_rtprio != 0) &&
+              (rtom_rtprio != PARAM.sched_priority)) ||
+              (my_rtom_rtprio[BOARD] != rtom_rtprio)) {
+
+                 PARAM.sched_priority = rtom_rtprio;
+                 my_rtom_rtprio[COUNT] = rtom_rtprio;
+                 sched_setscheduler(TSK, SCHED_FIFO, &PARAM);
+
+                 set_cpus_allowed(TSK, rtom_devices[BOARD].irq_cpu_mask);
+                 rtom_devices[BOARD].irq_task_pid = TSK->pid;
+        }
+
+rtom_rtprio and irq_cpu_mask are set by userland via an IOCTL. An interrupt 
+must occur for this to happen and my BOARD never shares IRQs.
+
+Mark
+
