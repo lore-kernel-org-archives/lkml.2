@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab1FGMNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:13:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64872 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032Ab1FGMNm (ORCPT
+	id S1753114Ab1FGMOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:14:44 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:43253 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755Ab1FGMOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:13:42 -0400
-X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=auj7d2cZCtoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=t52j4xFPsvk137C7FXEA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH][GIT PULL] slob/lockdep: Fix gfp flags passed to lockdep
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Paul Mundt <lethal@linux-sh.org>, Nick Piggin <npiggin@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110607115137.GA25798@elte.hu>
-References: <1307369665.31814.20.camel@gandalf.stny.rr.com>
-	 <alpine.DEB.2.00.1106062106580.22635@chino.kir.corp.google.com>
-	 <BANLkTikmp5CFKykBXaPUP0SBZEto1idDsA@mail.gmail.com>
-	 <20110607101948.GB21356@elte.hu>
-	 <1307445322.31814.23.camel@gandalf.stny.rr.com>
-	 <20110607115137.GA25798@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 07 Jun 2011 08:13:40 -0400
-Message-ID: <1307448820.9218.1.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jun 2011 08:14:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:content-type;
+        b=b4Jl3dW5lkZVdnkt/juozdyDwft0MOCBpDeQIpLgKJ5mFCUxDsMUGhbtc8gKXOY2yI
+         vFzuwvz8etdO8/YAzPD3euJRExw9piKQc738R8lVht6jaSYm226gd5SH3JInRyJEkrlC
+         +oHLD0k5IaQlQ3DnV4R/Zui2auiC9GcCVVL/o=
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+Date: Tue, 7 Jun 2011 14:14:40 +0200
+Message-ID: <BANLkTi=50UZsPCqmbwO=5iv8TFshCb+vfw@mail.gmail.com>
+Subject: [v3.0-rc2] Creating an archive-tarball from linux-2.6 GIT repository
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 13:51 +0200, Ingo Molnar wrote:
+Hi,
 
-> Pekka could pull it as well, since you've already tested that tree 
-> :-)
-> 
-> I don't think this tree includes any other commits, right?
-> 
+as the official tarballs still missing, here some instructions to
+archive a tarball from GIT repository.
 
-Nope, it was based off of commit:
+[ Checkout linux-2.6 (aka linux-3.0) ]
 
-5db1256a5131d3b133946fa02ac9770a784e6eb2
+git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
 
-which is already in Linus's tree, and has just this one commit.
+( NOTE: Users from EU zone: Use <git.us.kernel.org>... it's faster for
+checkouts. )
 
--- Steve
+cd linux-2.6
 
+[ gzip ]
 
+git archive --format=tar --prefix=linux-3.0-rc2/ v3.0-rc2 | gzip -9c >
+../linux-3.0-rc2.tar.gz
+
+[ bzip2 ]
+
+git archive --format=tar --prefix=linux-3.0-rc2/ v3.0-rc2 | bzip2 -9c
+> ../linux-3.0-rc2.tar.bz2
+
+[ xz ]
+
+git archive --format=tar --prefix=linux-3.0-rc2/ v3.0-rc2 | xz -9c >
+../linux-3.0-rc2.tar.xz
+
+A good compromise between decompression-speed and file-size is:
+
+[ xz -2e ]
+
+git archive --format=tar --prefix=linux-3.0-rc2/ v3.0-rc2 | xz -2ec >
+../linux-3.0-rc2.tar.xz-2e
+
+[ Filesizes ]
+
+$ du -h linux-3.0-rc2.tar.*
+74M     linux-3.0-rc2.tar.bz2
+93M     linux-3.0-rc2.tar.gz
+61M     linux-3.0-rc2.tar.xz
+65M     linux-3.0-rc2.tar.xz-2e
+
+Thanks to friends from #quassel.de (git archive) and #mirbsd (xz -2e)
+for the hints.
+Thanks to Linus for not providing tarballs...
+As I used to say... Still learning from git usecase to git usecase.
+
+- Sedat -
