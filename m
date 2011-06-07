@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758042Ab1FGTJG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:09:06 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:57321 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032Ab1FGTJF (ORCPT
+	id S1758054Ab1FGTJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 15:09:27 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:22676 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754303Ab1FGTJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 15:09:05 -0400
-Date: Tue, 7 Jun 2011 15:07:42 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andi Kleen <andi@firstfloor.org>, Xiaotian Feng <dfeng@redhat.com>
-Subject: Re: [PATCH] do_coredump: fix the "ispipe" error check
-Message-ID: <20110607190742.GA16974@hmsreliant.think-freely.org>
-References: <1307457010-7241-1-git-send-email-jslaby@suse.cz>
- <20110607181607.GA3732@redhat.com>
- <20110607183542.GA5559@redhat.com>
+	Tue, 7 Jun 2011 15:09:25 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6370"; a="96018881"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: <balbi@ti.com>
+Cc: "'Alan Stern'" <stern@rowland.harvard.edu>, <greg@kroah.com>,
+        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
+References: <016d01cc2541$0bfa5980$23ef0c80$@org> <Pine.LNX.4.44L0.1106071436020.1972-100000@iolanthe.rowland.org> <018a01cc2543$7273a5c0$575af140$@org> <20110607185415.GD12242@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110607185415.GD12242@legolas.emea.dhcp.ti.com>
+Subject: RE: [PATCH v15 10/10] usb:dummy_hcd: Force FS device connection according to module parameter
+Date: Tue, 7 Jun 2011 22:09:01 +0300
+Message-ID: <019601cc2546$6359cdf0$2a0d69d0$@org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110607183542.GA5559@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.6 (--)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: AcwlRFPAZAen1kfeTWqizHkpUHprQgAAZwVQ
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 08:35:42PM +0200, Oleg Nesterov wrote:
-> do_coredump() assumes that if format_corename() fails it should
-> return -ENOMEM. This is not true, for example cn_print_exe_file()
-> can propagate the error from d_path. Even if it was true, this is
-> too fragile. Change the code to check "ispipe < 0".
+> > Ok, I'll take that into consideration. Since I'm new here I was
+> > "afraid" to add any changes that are not really required :)
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
+> just remember to put unrelated changes on separate patches ;-)
+
+Yes, already learned that lesson :)
+
+> > >
+> >
+> > Ok, agreed. I'll update the patch.
 > 
->  fs/exec.c |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+> Cool, I'll wait for a revised series.
 > 
-> --- ptrace/fs/exec.c~corename_errcode	2011-06-07 19:44:30.000000000 +0200
-> +++ ptrace/fs/exec.c	2011-06-07 20:20:48.000000000 +0200
-> @@ -2092,16 +2092,16 @@ void do_coredump(long signr, int exit_co
->  
->  	ispipe = format_corename(&cn, signr);
->  
-> -	if (ispipe == -ENOMEM) {
-> -		printk(KERN_WARNING "format_corename failed\n");
-> -		printk(KERN_WARNING "Aborting core\n");
-> -		goto fail_corename;
-> -	}
-> -
->   	if (ispipe) {
->  		int dump_count;
->  		char **helper_argv;
->  
-> +		if (ispipe < 0) {
-> +			printk(KERN_WARNING "format_corename failed\n");
-> +			printk(KERN_WARNING "Aborting core\n");
-> +			goto fail_corename;
-> +		}
-> +
->  		if (cprm.limit == 1) {
->  			/*
->  			 * Normally core limits are irrelevant to pipes, since
-> 
-> 
-Looks good. Thanks!
-Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
+
+Actually, the only patch that will be updated is this one and it's not
+really related to the SS support patches, it's just based on them.
+I'm telling you this because unfortunately I won't be able to post new
+version until Thursday...
+
+
+Thanks,
+Tanya Brokhman
+---
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+
+
+
