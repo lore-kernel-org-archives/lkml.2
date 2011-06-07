@@ -1,99 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450Ab1FGVfm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 17:35:42 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:48923 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932408Ab1FGVfJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 17:35:09 -0400
-X-Sasl-enc: dfDG69PYrA06qa/kdxOZvdu7NmuvpCzsajJYntXsHoYj 1307482508
-Date: Tue, 7 Jun 2011 14:34:18 -0700
-From: Greg KH <greg@kroah.com>
-To: =?iso-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
-        Kulikov Vasiliy <segooon@gmail.com>, Endre Kollar <taxy443@gmail.com>,
-        Arjan Mels <arjan.mels@gmx.net>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        David Chang <dchang@novell.com>,
-        Himanshu Chauhan <hschauhan@nulltrace.org>,
-        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
-        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usbip: handle length at sysfs show() functions
-Message-ID: <20110607213418.GB11102@kroah.com>
-References: <4DE5CA9F.6010303@freemail.hu>
+	id S1758489Ab1FGVeT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:34:19 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36190 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755961Ab1FGVeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 17:34:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Subject: Re: [PATCH 3.0-rc1] PM / runtime: fix broken iteration over clock ids
+Date: Tue, 7 Jun 2011 23:35:09 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+References: <201106051531.32878.jkrzyszt@tis.icnet.pl> <201106072129.26063.rjw@sisk.pl> <201106072324.54306.jkrzyszt@tis.icnet.pl>
+In-Reply-To: <201106072324.54306.jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DE5CA9F.6010303@freemail.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106072335.09519.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 01, 2011 at 07:14:07AM +0200, Németh Márton wrote:
-> From: Márton Németh <nm127@freemail.hu>
+On Tuesday, June 07, 2011, Janusz Krzysztofik wrote:
+> On Tue 07 Jun 2011 at 21:29:25 Rafael J. Wysocki wrote:
+> > 
+> > OK, below is an "official" version.  Can you please double check if
+> > it fixes the problem for you?
 > 
-> The sysfs show() functions shall return the actual content length of
-> the result buffer. According to Documentation/filesystems/sysfs.txt:215
-> the scnprintf() function is preferred.
+> Hi,
+> I've tested it successfully, but only the CONFIG_PM_RUNTIME=y case, not 
+> the other because of still another McBSP issue, I believe, described 
+> elswhere.
+
+OK, thanks!
+
+If the other case turns out to cause more problems, they'll need separate
+fixes anyway.
+
+Rafael
+
+ 
+> > ---
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Subject: PM / Runtime: Fix loops in pm_runtime_clk_notify()
+> > 
+> > The loops over connection ID strings in pm_runtime_clk_notify()
+> > should actually iterate over the strings and not over the elements
+> > of the first of them, so make those loops behave as appropriate.
+> > 
+> > This fixes a regression introduced by commit 600b776eb39a13a28b090
+> > (OMAP1 / PM: Use generic clock manipulation routines for runtime PM).
+> > 
+> > Reported-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> >  drivers/base/power/clock_ops.c |   16 ++++++++--------
+> >  1 file changed, 8 insertions(+), 8 deletions(-)
+> > 
+> > Index: linux-2.6/drivers/base/power/clock_ops.c
+> > ===================================================================
+> > --- linux-2.6.orig/drivers/base/power/clock_ops.c
+> > +++ linux-2.6/drivers/base/power/clock_ops.c
+> > @@ -291,7 +291,7 @@ static int pm_runtime_clk_notify(struct
+> >  {
+> >  	struct pm_clk_notifier_block *clknb;
+> >  	struct device *dev = data;
+> > -	char *con_id;
+> > +	char **con_id;
+> >  	int error;
+> > 
+> >  	dev_dbg(dev, "%s() %ld\n", __func__, action);
+> > @@ -309,8 +309,8 @@ static int pm_runtime_clk_notify(struct
+> > 
+> >  		dev->pwr_domain = clknb->pwr_domain;
+> >  		if (clknb->con_ids[0]) {
+> > -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
+> > -				pm_runtime_clk_add(dev, con_id);
+> > +			for (con_id = clknb->con_ids; *con_id; con_id++)
+> > +				pm_runtime_clk_add(dev, *con_id);
+> >  		} else {
+> >  			pm_runtime_clk_add(dev, NULL);
+> >  		}
+> > @@ -380,7 +380,7 @@ static int pm_runtime_clk_notify(struct
+> >  {
+> >  	struct pm_clk_notifier_block *clknb;
+> >  	struct device *dev = data;
+> > -	char *con_id;
+> > +	char **con_id;
+> > 
+> >  	dev_dbg(dev, "%s() %ld\n", __func__, action);
+> > 
+> > @@ -389,16 +389,16 @@ static int pm_runtime_clk_notify(struct
+> >  	switch (action) {
+> >  	case BUS_NOTIFY_ADD_DEVICE:
+> >  		if (clknb->con_ids[0]) {
+> > -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
+> > -				enable_clock(dev, con_id);
+> > +			for (con_id = clknb->con_ids; *con_id; con_id++)
+> > +				enable_clock(dev, *con_id);
+> >  		} else {
+> >  			enable_clock(dev, NULL);
+> >  		}
+> >  		break;
+> >  	case BUS_NOTIFY_DEL_DEVICE:
+> >  		if (clknb->con_ids[0]) {
+> > -			for (con_id = clknb->con_ids[0]; *con_id; con_id++)
+> > -				disable_clock(dev, con_id);
+> > +			for (con_id = clknb->con_ids; *con_id; con_id++)
+> > +				disable_clock(dev, *con_id);
+> >  		} else {
+> >  			disable_clock(dev, NULL);
+> >  		}
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-omap"
+> > in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> See also the article titled "snprintf() confusion" at
-> http://lwn.net/Articles/69419/ .
 > 
-> Signed-off-by: Márton Németh <nm127@freemail.hu>
-> ---
-> diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-> index 6e99ec8..af5f107 100644
-> --- a/drivers/staging/usbip/stub_dev.c
-> +++ b/drivers/staging/usbip/stub_dev.c
-> @@ -80,7 +80,7 @@ static ssize_t show_status(struct device *dev, struct device_attribute *attr,
->  	status = sdev->ud.status;
->  	spin_unlock(&sdev->ud.lock);
-> 
-> -	return snprintf(buf, PAGE_SIZE, "%d\n", status);
-> +	return scnprintf(buf, PAGE_SIZE, "%d\n", status);
 
-Actually, this can be changed to just be:
-	return sprintf(buf, "%d\n", status);
-as obviously an integer will never be bigger than the sysfs buffer.
-
-Good rule of thumb, if you care about the size of the sysfs buffer, you
-are doing something wrong.
-
-Case in point:
-
-> --- a/drivers/staging/usbip/stub_main.c
-> +++ b/drivers/staging/usbip/stub_main.c
-> @@ -79,18 +79,22 @@ static ssize_t show_match_busid(struct device_driver *drv, char *buf)
->  {
->  	int i;
->  	char *out = buf;
-> +	int count = 0;
-> 
->  	spin_lock(&busid_table_lock);
-> 
->  	for (i = 0; i < MAX_BUSID; i++)
-> -		if (busid_table[i].name[0])
-> -			out += sprintf(out, "%s ", busid_table[i].name);
-> +		if (busid_table[i].name[0]) {
-> +			count += scnprintf(out, PAGE_SIZE - count,
-> +					"%s ", busid_table[i].name);
-> +			out = buf + count;
-> +		}
-
-Here we are doing lots of work to try to put more than one value in the
-sysfs file, and return the proper data to the kernel about how big the
-buffer we used.
-
-That's wrong, and violates the "one value per file" sysfs rule, so that
-should be fixed instead of trying to change the sprintf() call.
-
-Same goes for other places in this patch.
-
-Care to redo that instead?
-
-thanks,
-
-greg k-h
