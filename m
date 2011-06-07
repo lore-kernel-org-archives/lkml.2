@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab1FGKQJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 06:16:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46394 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab1FGKQH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 06:16:07 -0400
-Subject: Re: [tip:perf/urgent] perf: Fix SIGIO handling
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <alpine.DEB.2.00.1106011516480.5384@cl320.eecs.utk.edu>
-References: <tip-2euus3f3x3dyvdk52cjxw8zu@git.kernel.org>
-	 <alpine.DEB.2.00.1106011516480.5384@cl320.eecs.utk.edu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 07 Jun 2011 12:15:57 +0200
-Message-ID: <1307441757.2322.244.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751901Ab1FGKTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 06:19:06 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35998 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881Ab1FGKTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 06:19:04 -0400
+Date: Tue, 7 Jun 2011 12:18:51 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, sam@ravnborg.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/debug] debug: Make CONFIG_EXPERT select
+ CONFIG_DEBUG_KERNEL to unhide debug options
+Message-ID: <20110607101851.GA21356@elte.hu>
+References: <20110606165130.GA1844@leaf>
+ <tip-2458073da04571182748aa4289630dca52ba63cc@git.kernel.org>
+ <20110606214502.GB17026@somewhere.redhat.com>
+ <20110606220905.GB1999@leaf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110606220905.GB1999@leaf>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-01 at 15:41 -0400, Vince Weaver wrote:
-> On Sat, 28 May 2011, tip-bot for Peter Zijlstra wrote:
-> 
-> > Commit-ID:  f506b3dc0ec454a16d40cab9ee5d75435b39dc50
-> > Gitweb:     http://git.kernel.org/tip/f506b3dc0ec454a16d40cab9ee5d75435b39dc50
-> > Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > AuthorDate: Thu, 26 May 2011 17:02:53 +0200
-> > Committer:  Ingo Molnar <mingo@elte.hu>
-> > CommitDate: Sat, 28 May 2011 17:04:59 +0200
+
+* Josh Triplett <josh@joshtriplett.org> wrote:
+
+> On Mon, Jun 06, 2011 at 11:45:04PM +0200, Frederic Weisbecker wrote:
+> > On Mon, Jun 06, 2011 at 09:39:40PM +0000, tip-bot for Josh Triplett wrote:
+> > > Commit-ID:  2458073da04571182748aa4289630dca52ba63cc
+> > > Gitweb:     http://git.kernel.org/tip/2458073da04571182748aa4289630dca52ba63cc
+> > > Author:     Josh Triplett <josh@joshtriplett.org>
+> > > AuthorDate: Mon, 6 Jun 2011 09:51:30 -0700
+> > > Committer:  Ingo Molnar <mingo@elte.hu>
+> > > CommitDate: Mon, 6 Jun 2011 19:30:01 +0200
+> > > 
+> > > debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options
+> > > 
+> > > Several debugging options currently default to y, such as
+> > > CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.
+> > > 
+> > > Embedded users might want to turn those options off to save space;
+> > > however, turning them off requires turning on CONFIG_DEBUG_KERNEL to
+> > > unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
+> > > unhide debugging options, and CONFIG_EXPERT exists specifically
+> > > to unhide options potentially needed by experts and/or embedded
+> > > users, make CONFIG_EXPERT automatically imply CONFIG_DEBUG_KERNEL.
+> > > 
+> > > Change various debugging options to only reference DEBUG_KERNEL,
+> > > not EXPERT.
+> > > 
+> > > Note that DEBUG_MEMORY_INIT defaulted to !EXPERT, which seemed
+> > > wrong, since EXPERT should not directly affect anything except
+> > > the availability of other options.  (And EXPERT definitely
+> > > shouldn't mean "implicitly turn off default safety features".)
+> > > 
+> > > Change it to default to y, which means that turning on EXPERT
+> > > does not automatically disable it, but will provide the option
+> > > to disable it.
+> > > 
+> > > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> > > Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 > > 
-> > perf: Fix SIGIO handling
-> > 
-> > Vince noticed that unless we mmap() a buffer, SIGIO gets lost. So
-> > explicitly push the wakeup (including signals) when requested.
-> > 
-> > Reported-by: Vince Weaver <vweaver1@eecs.utk.edu>
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: <stable@kernel.org>
-> > Link: http://lkml.kernel.org/n/tip-2euus3f3x3dyvdk52cjxw8zu@git.kernel.org
-> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> > ---
-> >  kernel/events/core.c |    8 ++++++++
-> >  1 files changed, 8 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > index c09767f..d863b3c 100644
-> > --- a/kernel/events/core.c
-> > +++ b/kernel/events/core.c
-> > @@ -5028,6 +5028,14 @@ static int __perf_event_overflow(struct perf_event *event, int nmi,
-> >  	else
-> >  		perf_event_output(event, nmi, data, regs);
-> >  
-> > +	if (event->fasync && event->pending_kill) {
-> > +		if (nmi) {
-> > +			event->pending_wakeup = 1;
-> > +			irq_work_queue(&event->pending);
-> > +		} else
-> > +			perf_event_wakeup(event);
-> > +	}
-> > +
-> >  	return ret;
-> >  }
+> > No, Nacked actually. I'm fine with the v2 that only changed
+> > the EXPERT config to imply DEBUG_KERNEL. But all the other
+> > changes here need to be revised, as I outlined in the thread.
 > 
-> there is something strange about this commit.  
-> 
-> With it I get many more overflows than expected (on the order of 40x more)
-> when I am using PERF_IOC_REFRESH,1 to restart the sampled counter
-> from the end of the signal handler.
-> 
-> Also if you use PERF_IOC_REFRESH with a value other than 1, the value
-> seems to be ignored and all of the counts are POLL_IN rather than
-> POLL_HUP as I'd expect.
+> Fixed in v4; please replace the patch in tip with that.
 
-OK, so what semantics do we expect?
+i applied the much simpler v2 twoliner version instead.
 
-Currently (with this patch) when a SIGIO is registered, every event
-overflow (sample) generates a POLL_IN SIGIO, except when event_limit
-disables the counter, in which case its a POLL_HUP.
+Thanks,
 
-Without the patch, we used to send POLL_IN on every wakeup that would
-wake poll() and POLL_HUP every time event_limit was reached.
-
-event_limit is incremented using IOC_REFRESH, when its non-zero its
-decremented on every overflow, and when it reaches 0 again it fires
-SIGIO-POLL_HUP and disables the event.
-
-
+	Ingo
