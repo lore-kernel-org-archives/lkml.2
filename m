@@ -1,406 +1,652 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab1FGI6E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 04:58:04 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36405 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148Ab1FGI6A (ORCPT
+	id S1752334Ab1FGIwT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 04:52:19 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:53735 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab1FGIwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 04:58:00 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 7 Jun 2011 17:50:56 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v8 10/12] memcg: create support routines for
- page-writeback
-Message-Id: <20110607175056.83619c5f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1307117538-14317-11-git-send-email-gthelen@google.com>
-References: <1307117538-14317-1-git-send-email-gthelen@google.com>
-	<1307117538-14317-11-git-send-email-gthelen@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jun 2011 04:52:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=akshayjoshi.com; s=google;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=AAD5N0kyRdoIvI6pAbPwMnWwC92N0TBTyn14apxcKVPB1KJXKrXa9RTcpOXPuHbz7f
+         PN/FAUU/PhB6JkEOkdCAeFAQchkr0hDObtSfFdjM1+1i3KnpFukiiGBaQeKlQgs4fsXc
+         JcODNb9euxa/IGBO2t6R+ntDX82BydcN/DOUw=
+From: Akshay Joshi <me@akshayjoshi.com>
+To: gregkh@suse.de, pavel@ucw.cz
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Akshay Joshi <me@akshayjoshi.com>
+Subject: [PATCH] Staging: Winbond: Fix assorted spacing issues.
+Date: Tue,  7 Jun 2011 04:51:55 -0400
+Message-Id: <1307436715-20108-1-git-send-email-me@akshayjoshi.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  3 Jun 2011 09:12:16 -0700
-Greg Thelen <gthelen@google.com> wrote:
+Fix the phy_calibration.c file's spacing issues and convert the spaces
+to tabs. This reduces the number of errors and warnings returned by
+checkpatch.pl.
 
-> Introduce memcg routines to assist in per-memcg dirty page management:
-> 
-> - mem_cgroup_balance_dirty_pages() walks a memcg hierarchy comparing
->   dirty memory usage against memcg foreground and background thresholds.
->   If an over-background-threshold memcg is found, then per-memcg
->   background writeback is queued.  Per-memcg writeback differs from
->   classic, non-memcg, per bdi writeback by setting the new
->   writeback_control.for_cgroup bit.
-> 
->   If an over-foreground-threshold memcg is found, then foreground
->   writeout occurs.  When performing foreground writeout, first consider
->   inodes exclusive to the memcg.  If unable to make enough progress,
->   then consider inodes shared between memcg.  Such cross-memcg inode
->   sharing likely to be rare in situations that use per-cgroup memory
->   isolation.  The approach tries to handle the common (non-shared)
->   case well without punishing well behaved (non-sharing) cgroups.
->   As a last resort writeback shared inodes.
-> 
->   This routine is used by balance_dirty_pages() in a later change.
-> 
-> - mem_cgroup_hierarchical_dirty_info() returns the dirty memory usage
->   and limits of the memcg closest to (or over) its dirty limit.  This
->   will be used by throttle_vm_writeout() in a latter change.
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> ---
-> Changelog since v7:
-> - Add more detail to commit description.
-> 
-> - Declare the new writeback_control for_cgroup bit in this change, the
->   first patch that uses the new field is first used.  In -v7 the field
->   was declared in a separate patch.
-> 
->  include/linux/memcontrol.h        |   18 +++++
->  include/linux/writeback.h         |    1 +
->  include/trace/events/memcontrol.h |   83 ++++++++++++++++++++
->  mm/memcontrol.c                   |  150 +++++++++++++++++++++++++++++++++++++
->  4 files changed, 252 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 3d72e09..0d0363e 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -167,6 +167,11 @@ bool should_writeback_mem_cgroup_inode(struct inode *inode,
->  				       struct writeback_control *wbc);
->  bool mem_cgroups_over_bground_dirty_thresh(void);
->  void mem_cgroup_writeback_done(void);
-> +bool mem_cgroup_hierarchical_dirty_info(unsigned long sys_available_mem,
-> +					struct mem_cgroup *mem,
-> +					struct dirty_info *info);
-> +void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
-> +				    unsigned long write_chunk);
->  
->  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->  						gfp_t gfp_mask,
-> @@ -383,6 +388,19 @@ static inline void mem_cgroup_writeback_done(void)
->  {
->  }
->  
-> +static inline void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
-> +						  unsigned long write_chunk)
-> +{
-> +}
-> +
-> +static inline bool
-> +mem_cgroup_hierarchical_dirty_info(unsigned long sys_available_mem,
-> +				   struct mem_cgroup *mem,
-> +				   struct dirty_info *info)
-> +{
-> +	return false;
-> +}
-> +
->  static inline
->  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->  					    gfp_t gfp_mask,
-> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-> index 66ec339..4f5c0d2 100644
-> --- a/include/linux/writeback.h
-> +++ b/include/linux/writeback.h
-> @@ -47,6 +47,7 @@ struct writeback_control {
->  	unsigned for_reclaim:1;		/* Invoked from the page allocator */
->  	unsigned range_cyclic:1;	/* range_start is cyclic */
->  	unsigned more_io:1;		/* more io to be dispatched */
-> +	unsigned for_cgroup:1;		/* enable cgroup writeback */
->  	unsigned shared_inodes:1;	/* write inodes spanning cgroups */
->  };
->  
-> diff --git a/include/trace/events/memcontrol.h b/include/trace/events/memcontrol.h
-> index 326a66b..b42dae1 100644
-> --- a/include/trace/events/memcontrol.h
-> +++ b/include/trace/events/memcontrol.h
-> @@ -109,6 +109,89 @@ TRACE_EVENT(mem_cgroups_over_bground_dirty_thresh,
->  		  __entry->first_id)
->  )
->  
-> +DECLARE_EVENT_CLASS(mem_cgroup_consider_writeback,
-> +	TP_PROTO(unsigned short css_id,
-> +		 struct backing_dev_info *bdi,
-> +		 unsigned long nr_reclaimable,
-> +		 unsigned long thresh,
-> +		 bool over_limit),
-> +
-> +	TP_ARGS(css_id, bdi, nr_reclaimable, thresh, over_limit),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(unsigned short, css_id)
-> +		__field(struct backing_dev_info *, bdi)
-> +		__field(unsigned long, nr_reclaimable)
-> +		__field(unsigned long, thresh)
-> +		__field(bool, over_limit)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->css_id = css_id;
-> +		__entry->bdi = bdi;
-> +		__entry->nr_reclaimable = nr_reclaimable;
-> +		__entry->thresh = thresh;
-> +		__entry->over_limit = over_limit;
-> +	),
-> +
-> +	TP_printk("css_id=%d bdi=%p nr_reclaimable=%ld thresh=%ld "
-> +		  "over_limit=%d", __entry->css_id, __entry->bdi,
-> +		  __entry->nr_reclaimable, __entry->thresh, __entry->over_limit)
-> +)
-> +
-> +#define DEFINE_MEM_CGROUP_CONSIDER_WRITEBACK_EVENT(name) \
-> +DEFINE_EVENT(mem_cgroup_consider_writeback, name, \
-> +	TP_PROTO(unsigned short id, \
-> +		 struct backing_dev_info *bdi, \
-> +		 unsigned long nr_reclaimable, \
-> +		 unsigned long thresh, \
-> +		 bool over_limit), \
-> +	TP_ARGS(id, bdi, nr_reclaimable, thresh, over_limit) \
-> +)
-> +
-> +DEFINE_MEM_CGROUP_CONSIDER_WRITEBACK_EVENT(mem_cgroup_consider_bg_writeback);
-> +DEFINE_MEM_CGROUP_CONSIDER_WRITEBACK_EVENT(mem_cgroup_consider_fg_writeback);
-> +
-> +TRACE_EVENT(mem_cgroup_fg_writeback,
-> +	TP_PROTO(unsigned long write_chunk,
-> +		 struct writeback_control *wbc),
-> +
-> +	TP_ARGS(write_chunk, wbc),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(unsigned long, write_chunk)
-> +		__field(long, wbc_to_write)
-> +		__field(bool, shared_inodes)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->write_chunk = write_chunk;
-> +		__entry->wbc_to_write = wbc->nr_to_write;
-> +		__entry->shared_inodes = wbc->shared_inodes;
-> +	),
-> +
-> +	TP_printk("write_chunk=%ld nr_to_write=%ld shared_inodes=%d",
-> +		  __entry->write_chunk,
-> +		  __entry->wbc_to_write,
-> +		  __entry->shared_inodes)
-> +)
-> +
-> +TRACE_EVENT(mem_cgroup_enable_shared_writeback,
-> +	TP_PROTO(unsigned short css_id),
-> +
-> +	TP_ARGS(css_id),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(unsigned short, css_id)
-> +		),
-> +
-> +	TP_fast_assign(
-> +		__entry->css_id = css_id;
-> +		),
-> +
-> +	TP_printk("enabling shared writeback for memcg %d", __entry->css_id)
-> +)
-> +
->  #endif /* _TRACE_MEMCONTROL_H */
->  
->  /* This part must be outside protection */
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index a5b1794..17cb888 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1622,6 +1622,156 @@ void mem_cgroup_writeback_done(void)
->  	}
->  }
->  
-> +/*
-> + * This routine must be called by processes which are generating dirty pages.
-> + * It considers the dirty pages usage and thresholds of the current cgroup and
-> + * (depending if hierarchical accounting is enabled) ancestral memcg.  If any of
-> + * the considered memcg are over their background dirty limit, then background
-> + * writeback is queued.  If any are over the foreground dirty limit then
-> + * throttle the dirtying task while writing dirty data.  The per-memcg dirty
-> + * limits check by this routine are distinct from either the per-system,
-> + * per-bdi, or per-task limits considered by balance_dirty_pages().
-> + */
-> +void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
-> +				    unsigned long write_chunk)
-> +{
-> +	struct backing_dev_info *bdi = mapping->backing_dev_info;
-> +	struct mem_cgroup *mem;
-> +	struct mem_cgroup *ref_mem;
-> +	struct dirty_info info;
-> +	unsigned long nr_reclaimable;
-> +	unsigned long sys_available_mem;
-> +	unsigned long pause = 1;
-> +	unsigned short id;
-> +	bool over;
-> +	bool shared_inodes;
-> +
-> +	if (mem_cgroup_disabled())
-> +		return;
-> +
-> +	sys_available_mem = determine_dirtyable_memory();
-> +
-> +	/* reference the memcg so it is not deleted during this routine */
-> +	rcu_read_lock();
-> +	mem = mem_cgroup_from_task(current);
-> +	if (mem && mem_cgroup_is_root(mem))
-> +		mem = NULL;
-> +	if (mem)
-> +		css_get(&mem->css);
-> +	rcu_read_unlock();
-> +	ref_mem = mem;
-> +
-> +	/* balance entire ancestry of current's mem. */
-> +	for (; mem_cgroup_has_dirty_limit(mem); mem = parent_mem_cgroup(mem)) {
-> +		id = css_id(&mem->css);
-> +
+Signed-off-by: Akshay Joshi <me@akshayjoshi.com>
+---
+ drivers/staging/winbond/phy_calibration.c |  462 ++++++++++++++--------------
+ 1 files changed, 231 insertions(+), 231 deletions(-)
 
-Hmm, this sounds natural...but...don't we need to restart checking from ref_mem's
-dirty_ratio once we find an ancestor is over dirty_ratio and we slept ?
-
-Even if parent's dirty ratio comes to be clean state, children's may not.
-So, I think some "restart loop" jump after io_schedule_timeout().
-
-
-Thanks,
--Kame
-
-
-> +		/*
-> +		 * keep throttling and writing inode data so long as mem is over
-> +		 * its dirty limit.
-> +		 */
-> +		for (shared_inodes = false; ; ) {
-> +			struct writeback_control wbc = {
-> +				.sync_mode	= WB_SYNC_NONE,
-> +				.older_than_this = NULL,
-> +				.range_cyclic	= 1,
-> +				.for_cgroup	= 1,
-> +				.nr_to_write	= write_chunk,
-> +				.shared_inodes	= shared_inodes,
-> +			};
-> +
-> +			/*
-> +			 * if mem is under dirty limit, then break from
-> +			 * throttling loop.
-> +			 */
-> +			mem_cgroup_dirty_info(sys_available_mem, mem, &info);
-> +			nr_reclaimable = dirty_info_reclaimable(&info);
-> +			over = nr_reclaimable > info.dirty_thresh;
-> +			trace_mem_cgroup_consider_fg_writeback(
-> +				id, bdi, nr_reclaimable, info.dirty_thresh,
-> +				over);
-> +			if (!over)
-> +				break;
-> +
-> +			mem_cgroup_mark_over_bg_thresh(mem);
-> +			writeback_inodes_wb(&bdi->wb, &wbc);
-> +			trace_mem_cgroup_fg_writeback(write_chunk, &wbc);
-> +			/* if no progress, then consider shared inodes */
-> +			if ((wbc.nr_to_write == write_chunk) &&
-> +			    !shared_inodes) {
-> +				trace_mem_cgroup_enable_shared_writeback(id);
-> +				shared_inodes = true;
-> +			}
-> +
-> +			/*
-> +			 * Sleep up to 100ms to throttle writer and wait for
-> +			 * queued background I/O to complete.
-> +			 */
-> +			__set_current_state(TASK_UNINTERRUPTIBLE);
-> +			io_schedule_timeout(pause);
-> +			pause <<= 1;
-> +			if (pause > HZ / 10)
-> +				pause = HZ / 10;
-
-Hmm, is this exponential back off "pause" is from mm/page-writeback.c ?
-I'm happy if we can have a shared code. (But ok if it adds some messy.)
-
-
-
-> +		}
-> +
-> +		/* if mem is over background limit, then queue bg writeback */
-> +		over = nr_reclaimable >= info.background_thresh;
-> +		trace_mem_cgroup_consider_bg_writeback(
-> +			id, bdi, nr_reclaimable, info.background_thresh,
-> +			over);
-> +		if (over)
-> +			mem_cgroup_queue_bg_writeback(mem, bdi);
-> +	}
-> +
-> +	if (ref_mem)
-> +		css_put(&ref_mem->css);
-> +}
-> +
-> +/*
-> + * Return the dirty thresholds and usage for the mem (within the ancestral chain
-> + * of @mem) closest to its dirty limit or the first memcg over its limit.
-> + *
-> + * The check is not stable because the usage and limits can change asynchronous
-> + * to this routine.
-> + */
-> +bool mem_cgroup_hierarchical_dirty_info(unsigned long sys_available_mem,
-> +					struct mem_cgroup *mem,
-> +					struct dirty_info *info)
-> +{
-> +	unsigned long usage;
-> +	struct dirty_info uninitialized_var(cur_info);
-> +
-> +	if (mem_cgroup_disabled())
-> +		return false;
-> +
-> +	info->nr_writeback = ULONG_MAX;  /* invalid initial value */
-> +
-> +	/* walk up hierarchy enabled parents */
-> +	for (; mem_cgroup_has_dirty_limit(mem); mem = parent_mem_cgroup(mem)) {
-> +		mem_cgroup_dirty_info(sys_available_mem, mem, &cur_info);
-> +		usage = dirty_info_reclaimable(&cur_info) +
-> +			cur_info.nr_writeback;
-> +
-> +		/* if over limit, stop searching */
-> +		if (usage >= cur_info.dirty_thresh) {
-> +			*info = cur_info;
-> +			break;
-> +		}
-> +
-> +		/*
-> +		 * Save dirty usage of mem closest to its limit if either:
-> +		 *     - mem is the first mem considered
-> +		 *     - mem dirty margin is smaller than last recorded one
-> +		 */
-> +		if ((info->nr_writeback == ULONG_MAX) ||
-> +		    (cur_info.dirty_thresh - usage) <
-> +		    (info->dirty_thresh -
-> +		     (dirty_info_reclaimable(info) + info->nr_writeback)))
-> +			*info = cur_info;
-> +	}
-> +
-> +	return info->nr_writeback != ULONG_MAX;
-> +}
-> +
->  static void mem_cgroup_start_move(struct mem_cgroup *mem)
->  {
->  	int cpu;
-> -- 
-> 1.7.3.1
-> 
+diff --git a/drivers/staging/winbond/phy_calibration.c b/drivers/staging/winbond/phy_calibration.c
+index 79e53e4..c5a07fb 100644
+--- a/drivers/staging/winbond/phy_calibration.c
++++ b/drivers/staging/winbond/phy_calibration.c
+@@ -44,147 +44,147 @@ static const s32 Angles[] = {
+ 
+ s32 _s13_to_s32(u32 data)
+ {
+-    u32     val;
++	u32     val;
+ 
+-    val = (data & 0x0FFF);
++	val = (data & 0x0FFF);
+ 
+-    if ((data & BIT(12)) != 0)
+-        val |= 0xFFFFF000;
++	if ((data & BIT(12)) != 0)
++		val |= 0xFFFFF000;
+ 
+-    return ((s32) val);
++	return ((s32) val);
+ }
+ 
+ u32 _s32_to_s13(s32 data)
+ {
+-    u32     val;
++	u32     val;
+ 
+-    if (data > 4095)
+-        data = 4095;
+-    else if (data < -4096)
+-        data = -4096;
++	if (data > 4095)
++		data = 4095;
++	else if (data < -4096)
++		data = -4096;
+ 
+-    val = data & 0x1FFF;
++	val = data & 0x1FFF;
+ 
+-    return val;
++	return val;
+ }
+ 
+ /****************************************************************************/
+ s32 _s4_to_s32(u32 data)
+ {
+-    s32     val;
++	s32     val;
+ 
+-    val = (data & 0x0007);
++	val = (data & 0x0007);
+ 
+-    if ((data & BIT(3)) != 0)
+-        val |= 0xFFFFFFF8;
++	if ((data & BIT(3)) != 0)
++		val |= 0xFFFFFFF8;
+ 
+-    return val;
++	return val;
+ }
+ 
+ u32 _s32_to_s4(s32 data)
+ {
+-    u32     val;
++	u32     val;
+ 
+-    if (data > 7)
+-        data = 7;
+-    else if (data < -8)
+-        data = -8;
++	if (data > 7)
++		data = 7;
++	else if (data < -8)
++		data = -8;
+ 
+-    val = data & 0x000F;
++	val = data & 0x000F;
+ 
+-    return val;
++	return val;
+ }
+ 
+ /****************************************************************************/
+ s32 _s5_to_s32(u32 data)
+ {
+-    s32     val;
++	s32     val;
+ 
+-    val = (data & 0x000F);
++	val = (data & 0x000F);
+ 
+-    if ((data & BIT(4)) != 0)
+-        val |= 0xFFFFFFF0;
++	if ((data & BIT(4)) != 0)
++		val |= 0xFFFFFFF0;
+ 
+-    return val;
++	return val;
+ }
+ 
+ u32 _s32_to_s5(s32 data)
+ {
+-    u32     val;
++	u32     val;
+ 
+-    if (data > 15)
+-        data = 15;
+-    else if (data < -16)
+-        data = -16;
++	if (data > 15)
++		data = 15;
++	else if (data < -16)
++		data = -16;
+ 
+-    val = data & 0x001F;
++	val = data & 0x001F;
+ 
+-    return val;
++	return val;
+ }
+ 
+ /****************************************************************************/
+ s32 _s6_to_s32(u32 data)
+ {
+-    s32     val;
++	s32     val;
+ 
+-    val = (data & 0x001F);
++	val = (data & 0x001F);
+ 
+-    if ((data & BIT(5)) != 0)
+-        val |= 0xFFFFFFE0;
++	if ((data & BIT(5)) != 0)
++		val |= 0xFFFFFFE0;
+ 
+-    return val;
++	return val;
+ }
+ 
+ u32 _s32_to_s6(s32 data)
+ {
+-    u32     val;
++	u32     val;
+ 
+-    if (data > 31)
+-        data = 31;
+-    else if (data < -32)
+-        data = -32;
++	if (data > 31)
++		data = 31;
++	else if (data < -32)
++		data = -32;
+ 
+-    val = data & 0x003F;
++	val = data & 0x003F;
+ 
+-    return val;
++	return val;
+ }
+ 
+ /****************************************************************************/
+ s32 _s9_to_s32(u32 data)
+ {
+-    s32     val;
++	s32     val;
+ 
+-    val = data & 0x00FF;
++	val = data & 0x00FF;
+ 
+-    if ((data & BIT(8)) != 0)
+-        val |= 0xFFFFFF00;
++	if ((data & BIT(8)) != 0)
++		val |= 0xFFFFFF00;
+ 
+-    return val;
++	return val;
+ }
+ 
+ u32 _s32_to_s9(s32 data)
+ {
+-    u32     val;
++	u32     val;
+ 
+-    if (data > 255)
+-        data = 255;
+-    else if (data < -256)
+-        data = -256;
++	if (data > 255)
++		data = 255;
++	else if (data < -256)
++		data = -256;
+ 
+-    val = data & 0x01FF;
++	val = data & 0x01FF;
+ 
+-    return val;
++	return val;
+ }
+ 
+ /****************************************************************************/
+ s32 _floor(s32 n)
+ {
+-    if (n > 0)
+-	n += 5;
+-    else
+-        n -= 5;
++	if (n > 0)
++		n += 5;
++	else
++		n -= 5;
+ 
+-    return (n/10);
++	return (n/10);
+ }
+ 
+ /****************************************************************************/
+@@ -195,105 +195,105 @@ s32 _floor(s32 n)
+  */
+ u32 _sqrt(u32 sqsum)
+ {
+-    u32     sq_rt;
+-
+-    int     g0, g1, g2, g3, g4;
+-    int     seed;
+-    int     next;
+-    int     step;
+-
+-    g4 =  sqsum / 100000000;
+-    g3 = (sqsum - g4*100000000) / 1000000;
+-    g2 = (sqsum - g4*100000000 - g3*1000000) / 10000;
+-    g1 = (sqsum - g4*100000000 - g3*1000000 - g2*10000) / 100;
+-    g0 = (sqsum - g4*100000000 - g3*1000000 - g2*10000 - g1*100);
+-
+-    next = g4;
+-    step = 0;
+-    seed = 0;
+-    while (((seed+1)*(step+1)) <= next) {
+-        step++;
+-        seed++;
+-    }
+-
+-    sq_rt = seed * 10000;
+-    next = (next-(seed*step))*100 + g3;
+-
+-    step = 0;
+-    seed = 2 * seed * 10;
+-    while (((seed+1)*(step+1)) <= next) {
+-        step++;
+-        seed++;
+-    }
+-
+-    sq_rt = sq_rt + step * 1000;
+-    next = (next - seed * step) * 100 + g2;
+-    seed = (seed + step) * 10;
+-    step = 0;
+-    while (((seed+1)*(step+1)) <= next) {
+-        step++;
+-        seed++;
+-    }
+-
+-    sq_rt = sq_rt + step * 100;
+-    next = (next - seed * step) * 100 + g1;
+-    seed = (seed + step) * 10;
+-    step = 0;
+-
+-    while (((seed+1)*(step+1)) <= next) {
+-        step++;
+-        seed++;
+-    }
+-
+-    sq_rt = sq_rt + step * 10;
+-    next = (next - seed * step) * 100 + g0;
+-    seed = (seed + step) * 10;
+-    step = 0;
+-
+-    while (((seed+1)*(step+1)) <= next) {
+-        step++;
+-        seed++;
+-    }
+-
+-    sq_rt = sq_rt + step;
+-
+-    return sq_rt;
++	u32     sq_rt;
++
++	int     g0, g1, g2, g3, g4;
++	int     seed;
++	int     next;
++	int     step;
++
++	g4 =  sqsum / 100000000;
++	g3 = (sqsum - g4*100000000) / 1000000;
++	g2 = (sqsum - g4*100000000 - g3*1000000) / 10000;
++	g1 = (sqsum - g4*100000000 - g3*1000000 - g2*10000) / 100;
++	g0 = (sqsum - g4*100000000 - g3*1000000 - g2*10000 - g1*100);
++
++	next = g4;
++	step = 0;
++	seed = 0;
++	while (((seed+1)*(step+1)) <= next) {
++		step++;
++		seed++;
++	}
++
++	sq_rt = seed * 10000;
++	next = (next-(seed*step))*100 + g3;
++
++	step = 0;
++	seed = 2 * seed * 10;
++	while (((seed+1)*(step+1)) <= next) {
++		step++;
++		seed++;
++	}
++
++	sq_rt = sq_rt + step * 1000;
++	next = (next - seed * step) * 100 + g2;
++	seed = (seed + step) * 10;
++	step = 0;
++	while (((seed+1)*(step+1)) <= next) {
++		step++;
++		seed++;
++	}
++
++	sq_rt = sq_rt + step * 100;
++	next = (next - seed * step) * 100 + g1;
++	seed = (seed + step) * 10;
++	step = 0;
++
++	while (((seed+1)*(step+1)) <= next) {
++		step++;
++		seed++;
++	}
++
++	sq_rt = sq_rt + step * 10;
++	next = (next - seed * step) * 100 + g0;
++	seed = (seed + step) * 10;
++	step = 0;
++
++	while (((seed+1)*(step+1)) <= next) {
++		step++;
++		seed++;
++	}
++
++	sq_rt = sq_rt + step;
++
++	return sq_rt;
+ }
+ 
+ /****************************************************************************/
+ void _sin_cos(s32 angle, s32 *sin, s32 *cos)
+ {
+-    s32 X, Y, TargetAngle, CurrAngle;
+-    unsigned    Step;
+-
+-    X = FIXED(AG_CONST);      /* AG_CONST * cos(0) */
+-    Y = 0;                    /* AG_CONST * sin(0) */
+-    TargetAngle = abs(angle);
+-    CurrAngle = 0;
+-
+-    for (Step = 0; Step < 12; Step++) {
+-	s32 NewX;
+-
+-        if (TargetAngle > CurrAngle) {
+-            NewX = X - (Y >> Step);
+-            Y = (X >> Step) + Y;
+-            X = NewX;
+-            CurrAngle += Angles[Step];
+-        } else {
+-            NewX = X + (Y >> Step);
+-            Y = -(X >> Step) + Y;
+-            X = NewX;
+-            CurrAngle -= Angles[Step];
+-        }
+-    }
+-
+-    if (angle > 0) {
+-        *cos = X;
+-        *sin = Y;
+-    } else {
+-        *cos = X;
+-        *sin = -Y;
+-    }
++	s32 X, Y, TargetAngle, CurrAngle;
++	unsigned    Step;
++
++	X = FIXED(AG_CONST);      /* AG_CONST * cos(0) */
++	Y = 0;                    /* AG_CONST * sin(0) */
++	TargetAngle = abs(angle);
++	CurrAngle = 0;
++
++	for (Step = 0; Step < 12; Step++) {
++		s32 NewX;
++
++		if (TargetAngle > CurrAngle) {
++			NewX = X - (Y >> Step);
++			Y = (X >> Step) + Y;
++			X = NewX;
++			CurrAngle += Angles[Step];
++		} else {
++			NewX = X + (Y >> Step);
++			Y = -(X >> Step) + Y;
++			X = NewX;
++			CurrAngle -= Angles[Step];
++		}
++	}
++
++	if (angle > 0) {
++		*cos = X;
++		*sin = Y;
++	} else {
++		*cos = X;
++		*sin = -Y;
++	}
+ }
+ 
+ static unsigned char hal_get_dxx_reg(struct hw_data *pHwData, u16 number, u32 * pValue)
+@@ -338,24 +338,24 @@ void _reset_rx_cal(struct hw_data *phw_data)
+ /**********************************************/
+ void _rxadc_dc_offset_cancellation_winbond(struct hw_data *phw_data, u32 frequency)
+ {
+-    u32     reg_agc_ctrl3;
+-    u32     reg_a_acq_ctrl;
+-    u32     reg_b_acq_ctrl;
+-    u32     val;
++	u32     reg_agc_ctrl3;
++	u32     reg_a_acq_ctrl;
++	u32     reg_b_acq_ctrl;
++	u32     val;
+ 
+-    PHY_DEBUG(("[CAL] -> [1]_rxadc_dc_offset_cancellation()\n"));
+-    phy_init_rf(phw_data);
++	PHY_DEBUG(("[CAL] -> [1]_rxadc_dc_offset_cancellation()\n"));
++	phy_init_rf(phw_data);
+ 
+-    /* set calibration channel */
+-    if ((RF_WB_242 == phw_data->phy_type) ||
++	/* set calibration channel */
++	if ((RF_WB_242 == phw_data->phy_type) ||
+ 		(RF_WB_242_1 == phw_data->phy_type)) /* 20060619.5 Add */{
+-        if ((frequency >= 2412) && (frequency <= 2484)) {
+-            /* w89rf242 change frequency to 2390Mhz */
+-            PHY_DEBUG(("[CAL] W89RF242/11G/Channel=2390Mhz\n"));
++		if ((frequency >= 2412) && (frequency <= 2484)) {
++			/* w89rf242 change frequency to 2390Mhz */
++			PHY_DEBUG(("[CAL] W89RF242/11G/Channel=2390Mhz\n"));
+ 			phy_set_rf_data(phw_data, 3, (3<<24)|0x025586);
+ 
+-        }
+-    } else {
++		}
++	} else {
+ 
+ 	}
+ 
+@@ -542,7 +542,7 @@ void _txidac_dc_offset_cancellation_winbond(struct hw_data *phw_data)
+ 	}
+ 
+ 	if (loop >= 19)
+-	   fix_cancel_dc_i = 0;
++		fix_cancel_dc_i = 0;
+ 
+ 	reg_dc_cancel &= ~(0x03FF);
+ 	reg_dc_cancel |= (_s32_to_s5(fix_cancel_dc_i) << CANCEL_DC_I_SHIFT);
+@@ -657,7 +657,7 @@ void _txqdac_dc_offset_cacellation_winbond(struct hw_data *phw_data)
+ 	}
+ 
+ 	if (loop >= 19)
+-	   fix_cancel_dc_q = 0;
++		fix_cancel_dc_q = 0;
+ 
+ 	reg_dc_cancel &= ~(0x001F);
+ 	reg_dc_cancel |= (_s32_to_s5(fix_cancel_dc_q) << CANCEL_DC_Q_SHIFT);
+@@ -1154,33 +1154,33 @@ u8 _rx_iq_calibration_loop_winbond(struct hw_data *phw_data, u16 factor, u32 fre
+ 		capture_time = 0;
+ 
+ 		for (capture_time = 0; capture_time < 10; capture_time++) {
+-		/* i. Set "calib_start" to 0x0 */
+-		reg_mode_ctrl &= ~MASK_CALIB_START;
+-		if (!hw_set_dxx_reg(phw_data, REG_MODE_CTRL, reg_mode_ctrl))/*20060718.1 modify */
+-			return 0;
+-		PHY_DEBUG(("[CAL]    MODE_CTRL (write) = 0x%08X\n", reg_mode_ctrl));
++			/* i. Set "calib_start" to 0x0 */
++			reg_mode_ctrl &= ~MASK_CALIB_START;
++			if (!hw_set_dxx_reg(phw_data, REG_MODE_CTRL, reg_mode_ctrl))/*20060718.1 modify */
++				return 0;
++			PHY_DEBUG(("[CAL]    MODE_CTRL (write) = 0x%08X\n", reg_mode_ctrl));
+ 
+-		reg_mode_ctrl &= ~MASK_IQCAL_MODE;
+-		reg_mode_ctrl |= (MASK_CALIB_START|0x1);
+-		hw_set_dxx_reg(phw_data, REG_MODE_CTRL, reg_mode_ctrl);
+-		PHY_DEBUG(("[CAL]    MODE_CTRL (write) = 0x%08X\n", reg_mode_ctrl));
++			reg_mode_ctrl &= ~MASK_IQCAL_MODE;
++			reg_mode_ctrl |= (MASK_CALIB_START|0x1);
++			hw_set_dxx_reg(phw_data, REG_MODE_CTRL, reg_mode_ctrl);
++			PHY_DEBUG(("[CAL]    MODE_CTRL (write) = 0x%08X\n", reg_mode_ctrl));
+ 
+-		/* c. */
+-		hw_get_dxx_reg(phw_data, REG_CALIB_READ1, &val);
+-		PHY_DEBUG(("[CAL]    CALIB_READ1 = 0x%08X\n", val));
++			/* c. */
++			hw_get_dxx_reg(phw_data, REG_CALIB_READ1, &val);
++			PHY_DEBUG(("[CAL]    CALIB_READ1 = 0x%08X\n", val));
+ 
+-		iqcal_tone_i = _s13_to_s32(val & 0x00001FFF);
+-		iqcal_tone_q = _s13_to_s32((val & 0x03FFE000) >> 13);
+-		PHY_DEBUG(("[CAL]    ** iqcal_tone_i = %d, iqcal_tone_q = %d\n",
+-				   iqcal_tone_i, iqcal_tone_q));
++			iqcal_tone_i = _s13_to_s32(val & 0x00001FFF);
++			iqcal_tone_q = _s13_to_s32((val & 0x03FFE000) >> 13);
++			PHY_DEBUG(("[CAL]    ** iqcal_tone_i = %d, iqcal_tone_q = %d\n",
++				iqcal_tone_i, iqcal_tone_q));
+ 
+-		hw_get_dxx_reg(phw_data, REG_CALIB_READ2, &val);
+-		PHY_DEBUG(("[CAL]    CALIB_READ2 = 0x%08X\n", val));
++			hw_get_dxx_reg(phw_data, REG_CALIB_READ2, &val);
++			PHY_DEBUG(("[CAL]    CALIB_READ2 = 0x%08X\n", val));
+ 
+-		iqcal_image_i = _s13_to_s32(val & 0x00001FFF);
+-		iqcal_image_q = _s13_to_s32((val & 0x03FFE000) >> 13);
+-		PHY_DEBUG(("[CAL]    ** iqcal_image_i = %d, iqcal_image_q = %d\n",
+-				   iqcal_image_i, iqcal_image_q));
++			iqcal_image_i = _s13_to_s32(val & 0x00001FFF);
++			iqcal_image_q = _s13_to_s32((val & 0x03FFE000) >> 13);
++			PHY_DEBUG(("[CAL]    ** iqcal_image_i = %d, iqcal_image_q = %d\n",
++				iqcal_image_i, iqcal_image_q));
+ 			if (capture_time == 0)
+ 				continue;
+ 			else {
+@@ -1358,7 +1358,7 @@ u8 _rx_iq_calibration_loop_winbond(struct hw_data *phw_data, u16 factor, u32 fre
+ 			hw_set_dxx_reg(phw_data, 0x54, val);
+ 
+ 			if (loop == 3)
+-			return 0;
++				return 0;
+ 		}
+ 		PHY_DEBUG(("[CAL]    ** CALIB_DATA = 0x%08X\n", val));
+ 
+@@ -1476,40 +1476,40 @@ void phy_calibration_winbond(struct hw_data *phw_data, u32 frequency)
+ /******************/
+ void phy_set_rf_data(struct hw_data *pHwData, u32 index, u32 value)
+ {
+-   u32 ltmp = 0;
+-
+-    switch (pHwData->phy_type) {
+-    case RF_MAXIM_2825:
+-    case RF_MAXIM_V1: /* 11g Winbond 2nd BB(with Phy board (v1) + Maxim 331) */
+-            ltmp = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(value, 18);
+-            break;
+-
+-    case RF_MAXIM_2827:
+-            ltmp = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(value, 18);
+-	    break;
+-
+-    case RF_MAXIM_2828:
+-	    ltmp = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(value, 18);
+-	    break;
+-
+-    case RF_MAXIM_2829:
+-	    ltmp = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(value, 18);
+-	    break;
+-
+-    case RF_AIROHA_2230:
+-    case RF_AIROHA_2230S: /* 20060420 Add this */
+-	    ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse(value, 20);
+-	    break;
+-
+-    case RF_AIROHA_7230:
+-	    ltmp = (1 << 31) | (0 << 30) | (24 << 24) | (value&0xffffff);
+-	    break;
+-
+-    case RF_WB_242:
+-    case RF_WB_242_1:/* 20060619.5 Add */
+-	    ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse(value, 24);
+-	    break;
+-    }
++	u32 ltmp = 0;
++
++	switch (pHwData->phy_type) {
++	case RF_MAXIM_2825:
++	case RF_MAXIM_V1: /* 11g Winbond 2nd BB(with Phy board (v1) + Maxim 331) */
++		ltmp = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(value, 18);
++		break;
++
++	case RF_MAXIM_2827:
++		ltmp = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(value, 18);
++		break;
++
++	case RF_MAXIM_2828:
++		ltmp = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(value, 18);
++		break;
++
++	case RF_MAXIM_2829:
++		ltmp = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(value, 18);
++		break;
++
++	case RF_AIROHA_2230:
++	case RF_AIROHA_2230S: /* 20060420 Add this */
++		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse(value, 20);
++		break;
++
++	case RF_AIROHA_7230:
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | (value&0xffffff);
++		break;
++
++	case RF_WB_242:
++	case RF_WB_242_1:/* 20060619.5 Add */
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse(value, 24);
++		break;
++	}
+ 
+ 	Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ }
+-- 
+1.7.4.4
 
