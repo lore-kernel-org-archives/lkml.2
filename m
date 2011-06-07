@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758661Ab1FGVqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 17:46:09 -0400
+	id S1758730Ab1FGVrd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:47:33 -0400
 Received: from mga11.intel.com ([192.55.52.93]:11556 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758572Ab1FGVoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758558Ab1FGVoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Jun 2011 17:44:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,334,1304319600"; 
-   d="scan'208";a="15195938"
-Message-Id: <20110607213854.519920424@intel.com>
+   d="scan'208";a="15195931"
+Message-Id: <20110607213854.641684929@intel.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 08 Jun 2011 05:32:45 +0800
+Date: Wed, 08 Jun 2011 05:32:46 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
+cc: Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Wu Fengguang <fengguang.wu@intel.com>
 cc: Dave Chinner <david@fromorbit.com>
 cc: Christoph Hellwig <hch@infradead.org>
 cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/15] writeback: avoid extra sync work at enqueue time
+Subject: [PATCH 10/15] writeback: add bdi_dirty_limit() kernel-doc
 References: <20110607213236.634026193@intel.com>
-Content-Disposition: inline; filename=writeback-kill-wb_start.patch
+Content-Disposition: inline; filename=writeback-task_dirty_limit-comment.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes writeback_control.wb_start and does more straightforward
-sync livelock prevention by setting .older_than_this to prevent extra
-inodes from being enqueued in the first place.
+Clarify the bdi_dirty_limit() comment.
 
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Acked-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/fs-writeback.c         |   16 +++-------------
- include/linux/writeback.h |    3 ---
- 2 files changed, 3 insertions(+), 16 deletions(-)
+ mm/page-writeback.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- linux-next.orig/fs/fs-writeback.c	2011-05-24 11:17:21.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-05-24 11:17:22.000000000 +0800
-@@ -544,15 +544,6 @@ static int writeback_sb_inodes(struct su
- 			continue;
- 		}
+--- linux-next.orig/mm/page-writeback.c	2011-05-24 11:17:14.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-05-24 11:17:23.000000000 +0800
+@@ -437,10 +437,17 @@ void global_dirty_limits(unsigned long *
+ 	*pdirty = dirty;
+ }
  
--		/*
--		 * Was this inode dirtied after sync_sb_inodes was called?
--		 * This keeps sync from extra jobs and livelock.
--		 */
--		if (inode_dirtied_after(inode, wbc->wb_start)) {
--			spin_unlock(&inode->i_lock);
--			return 1;
--		}
--
- 		__iget(inode);
- 
- 		pages_skipped = wbc->pages_skipped;
-@@ -585,9 +576,6 @@ static void __writeback_inodes_wb(struct
- {
- 	int ret = 0;
- 
--	if (!wbc->wb_start)
--		wbc->wb_start = jiffies; /* livelock avoidance */
--
- 	while (!list_empty(&wb->b_io)) {
- 		struct inode *inode = wb_inode(wb->b_io.prev);
- 		struct super_block *sb = inode->i_sb;
-@@ -686,7 +674,9 @@ static long wb_writeback(struct bdi_writ
- 	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_writepages)
- 		write_chunk = LONG_MAX;
- 
--	wbc.wb_start = jiffies; /* livelock avoidance */
-+	oldest_jif = jiffies;
-+	wbc.older_than_this = &oldest_jif;
-+
- 	spin_lock(&wb->list_lock);
- 	for (;;) {
- 		/*
---- linux-next.orig/include/linux/writeback.h	2011-05-24 11:17:20.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-05-24 11:17:22.000000000 +0800
-@@ -26,9 +26,6 @@ struct writeback_control {
- 	enum writeback_sync_modes sync_mode;
- 	unsigned long *older_than_this;	/* If !NULL, only write back inodes
- 					   older than this */
--	unsigned long wb_start;         /* Time writeback_inodes_wb was
--					   called. This is needed to avoid
--					   extra jobs and livelock */
- 	long nr_to_write;		/* Write this many pages, and decrement
- 					   this for each page written */
- 	long pages_skipped;		/* Pages which were not written */
+-/*
++/**
+  * bdi_dirty_limit - @bdi's share of dirty throttling threshold
++ * @bdi: the backing_dev_info to query
++ * @dirty: global dirty limit in pages
++ *
++ * Returns @bdi's dirty limit in pages. The term "dirty" in the context of
++ * dirty balancing includes all PG_dirty, PG_writeback and NFS unstable pages.
++ * And the "limit" in the name is not seriously taken as hard limit in
++ * balance_dirty_pages().
+  *
+- * Allocate high/low dirty limits to fast/slow devices, in order to prevent
++ * It allocates high/low dirty limits to fast/slow devices, in order to prevent
+  * - starving fast devices
+  * - piling up dirty pages (that will take long time to sync) on slow devices
+  *
 
 
