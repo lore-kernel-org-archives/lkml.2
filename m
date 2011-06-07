@@ -1,140 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab1FGSru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:47:50 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:38378 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754875Ab1FGSrt (ORCPT
+	id S1757098Ab1FGSsV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:48:21 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:41897 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650Ab1FGSsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:47:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=MwR1Y1UtBxnE35F7se1aPiysptLIPGRTaqw6cjR3VL79Q6olR0jXlIunda1c1sIa/A
-         3zf5t9jn8n5Vqh2UtHGYcPC27vB473KRQ38dmyX3dl0tJ9+hgT62awVfEEia5FZKgMwZ
-         ioxwknrvzij8ytunReFpdStApmC70oiX8PBpo=
-From: Eric Van Hensbergen <ericvh@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org, bg-linux@lists.anl-external.org,
-        Eric Van Hensbergen <ericvh@gmail.com>
-Subject: [PATCH] [RFC][V3] bluegene: add entry to cpu table
-Date: Tue,  7 Jun 2011 13:47:27 -0500
-Message-Id: <1307472447-1656-1-git-send-email-ericvh@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 7 Jun 2011 14:48:19 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6370"; a="96013411"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>
+Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <balbi@ti.com>,
+        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
+References: <016d01cc2541$0bfa5980$23ef0c80$@org> <Pine.LNX.4.44L0.1106071436020.1972-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1106071436020.1972-100000@iolanthe.rowland.org>
+Subject: RE: [PATCH v15 10/10] usb:dummy_hcd: Force FS device connection according to module parameter
+Date: Tue, 7 Jun 2011 21:47:59 +0300
+Message-ID: <018a01cc2543$7273a5c0$575af140$@org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: AcwlQoz3SrQGk3XiTQuUhRt6pW2zFgAAJlOA
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create an entry for the BG/P chips, include bits to accomodate
-the double fp2 fpu and the special MMU considerations like L1
-writethrough.
+> > I'm not talking about dummy_hcd. It was a general comment about the
+> gadget
+> > code. I can't give you an example from the top of my head...
+> 
+> Oh.  Well, if you're writing new code and you come across a place where
+> an error message really is needed, you should add the error message.
 
-RFC Note: this patch fails scripts/checkpatch.pl because I
-matched coding style of the surrounding existing code.  Would
-you rather have something checkpatch.pl clean or something
-which is consistent with the surrounding code style?
+Ok, I'll take that into consideration. Since I'm new here I was "afraid" to
+add any changes that are not really required :)
 
-The three I got were:
-ERROR: Macros with complex values should be enclosed in parenthesis
-ERROR: "foo* bar" should be "foo *bar"
-WARNING: externs should be avoided in .c files
-and I got these by copying other code as an example.
+ 
+> But if the parameters are contradictory, you don't know _how_ to fix
+> it.  If is_super_speed is True and is_high_speed is False, did the user
+> want to add SuperSpeed support or to remove high-speed support?
+> 
+> Besides, the best (i.e., easiest and most likely to be correct) way of
+> fixing the error is for the user to issue the modprobe command again,
+> with the correct parameters this time.  Therefore the driver should
+> fail to load, so that the modprobe can be reissued with no need to do
+> rmmod first.
+> 
 
-Thanks for any feedback.
+Ok, agreed. I'll update the patch.
 
-Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
+
+Thanks,
+Tanya Brokhman
 ---
- arch/powerpc/include/asm/cputable.h |    1 +
- arch/powerpc/include/asm/mmu.h      |    9 +++++++++
- arch/powerpc/kernel/cpu_setup_44x.S |    1 +
- arch/powerpc/kernel/cputable.c      |   16 ++++++++++++++++
- 4 files changed, 27 insertions(+), 0 deletions(-)
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-diff --git a/arch/powerpc/include/asm/cputable.h b/arch/powerpc/include/asm/cputable.h
-index c0d842c..ce709b5 100644
---- a/arch/powerpc/include/asm/cputable.h
-+++ b/arch/powerpc/include/asm/cputable.h
-@@ -26,6 +26,7 @@
- #define PPC_FEATURE_POWER6_EXT		0x00000200
- #define PPC_FEATURE_ARCH_2_06		0x00000100
- #define PPC_FEATURE_HAS_VSX		0x00000080
-+#define PPC_FEATURE_HAS_FPU_FP2		0x00000040
- 
- #define PPC_FEATURE_PSERIES_PERFMON_COMPAT \
- 					0x00000040
-diff --git a/arch/powerpc/include/asm/mmu.h b/arch/powerpc/include/asm/mmu.h
-index 4138b21..97f9502 100644
---- a/arch/powerpc/include/asm/mmu.h
-+++ b/arch/powerpc/include/asm/mmu.h
-@@ -56,6 +56,13 @@
-  */
- #define MMU_FTR_NEED_DTLB_SW_LRU	ASM_CONST(0x00200000)
- 
-+/* This indicates that the processor must using writethrough with
-+ * the L1 in order to maintain SMP coherence on systems like the
-+ * IBM BlueGene/L and IBM BlueGene/P.
-+ */
-+
-+#define MMU_FTR_NEED_L1_WRITETHROUGH	ASM_CONST(0x00400000)
-+
- /* Enable use of TLB reservation.  Processor should support tlbsrx.
-  * instruction and MAS0[WQ].
-  */
-@@ -112,6 +119,8 @@
- 				MMU_FTR_USE_PAIRED_MAS | \
- 				MMU_FTR_TLBIEL | \
- 				MMU_FTR_16M_PAGE
-+#define MMU_FTRS_BGP		MMU_FTR_TYPE_44x | MMU_FTR_16M_PAGE | \
-+				MMU_FTR_NEED_L1_WRITETHROUGH
- #ifndef __ASSEMBLY__
- #include <asm/cputable.h>
- 
-diff --git a/arch/powerpc/kernel/cpu_setup_44x.S b/arch/powerpc/kernel/cpu_setup_44x.S
-index e32b4a9..920aed6 100644
---- a/arch/powerpc/kernel/cpu_setup_44x.S
-+++ b/arch/powerpc/kernel/cpu_setup_44x.S
-@@ -35,6 +35,7 @@ _GLOBAL(__setup_cpu_440grx)
- _GLOBAL(__setup_cpu_460ex)
- _GLOBAL(__setup_cpu_460gt)
- _GLOBAL(__setup_cpu_460sx)
-+_GLOBAL(__setup_cpu_bgp)
- _GLOBAL(__setup_cpu_apm821xx)
- 	mflr	r4
- 	bl	__init_fpu_44x
-diff --git a/arch/powerpc/kernel/cputable.c b/arch/powerpc/kernel/cputable.c
-index 34d2722..550a078 100644
---- a/arch/powerpc/kernel/cputable.c
-+++ b/arch/powerpc/kernel/cputable.c
-@@ -57,6 +57,7 @@ extern void __setup_cpu_750fx(unsigned long offset, struct cpu_spec* spec);
- extern void __setup_cpu_7400(unsigned long offset, struct cpu_spec* spec);
- extern void __setup_cpu_7410(unsigned long offset, struct cpu_spec* spec);
- extern void __setup_cpu_745x(unsigned long offset, struct cpu_spec* spec);
-+extern void __setup_cpu_bgp(unsigned long offset, struct cpu_spec* spec);
- #endif /* CONFIG_PPC32 */
- #ifdef CONFIG_PPC64
- extern void __setup_cpu_ppc970(unsigned long offset, struct cpu_spec* spec);
-@@ -1737,6 +1738,21 @@ static struct cpu_spec __initdata cpu_specs[] = {
- 		.machine_check		= machine_check_440A,
- 		.platform		= "ppc440",
- 	},
-+	{ /* Blue Gene/P */
-+		.pvr_mask		= 0xfffffff0,
-+		.pvr_value		= 0x52131880,
-+		.cpu_name		= "450 Blue Gene/P",
-+		.cpu_features		= CPU_FTRS_440x6,
-+		.cpu_user_features	= COMMON_USER_BOOKE |
-+						PPC_FEATURE_HAS_FPU |
-+						PPC_FEATURE_HAS_FPU_FP2,
-+		.mmu_features		= MMU_FTRS_BGP,
-+		.icache_bsize		= 32,
-+		.dcache_bsize		= 32,
-+		.cpu_setup		= __setup_cpu_bgp,
-+		.machine_check		= machine_check_440A,
-+		.platform		= "ppc440",
-+	},
- 	{ /* 460EX */
- 		.pvr_mask		= 0xffff0006,
- 		.pvr_value		= 0x13020002,
--- 
-1.7.4.1
+
+
 
