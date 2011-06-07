@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab1FGVkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 17:40:35 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:33470 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753472Ab1FGVkd (ORCPT
+	id S932450Ab1FGVfm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:35:42 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:48923 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932408Ab1FGVfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 17:40:33 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jun 2011 17:40:33 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Message-ID:In-Reply-To:References:Date:Subject:From:To:Cc:User-Agent:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Priority:Importance:X-Identified-User;
-	b=nPT4hJKvs9zrz6Im3uVz0UUvGqxUwrsRiv/QB430ugJKYM9u249p+da5hHykDqIEB0LszibDzrQTdlSs+Y0amRQ3bkf3RFqpXAkz9mMWArpHl3wPno2nJ3THezcLnspY;
-Message-ID: <05cba294449b86a9aa22cec4abc7e98f.squirrel@xenotime.net>
-In-Reply-To: <4DEE9695.7060805@ece.ntua.gr>
-References: <4DEDD5F4.1070602@kingswood-consulting.co.uk>
-    <1307451186.4204.953.camel@calx> <4DEE808D.6020405@ece.ntua.gr>
-    <1307477435.4204.968.camel@calx> <4DEE8AD9.3050508@ece.ntua.gr>
-    <1307479572.4204.977.camel@calx>
-    <alpine.DEB.2.02.1106071349000.28905@asgard.lang.hm>
-    <1307480372.4204.987.camel@calx> <4DEE9695.7060805@ece.ntua.gr>
-Date: Tue, 7 Jun 2011 14:33:53 -0700
-Subject: Re: ketchup script and 3.0
-From: "Randy Dunlap" <rdunlap@xenotime.net>
-To: "Stratos Psomadakis" <psomas@ece.ntua.gr>
-Cc: "Matt Mackall" <mpm@selenic.com>, david@lang.hm,
-        linux-kernel@vger.kernel.org,
-        "Frank Kingswood" <frank@kingswood-consulting.co.uk>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
-User-Agent: SquirrelMail/1.4.21
+	Tue, 7 Jun 2011 17:35:09 -0400
+X-Sasl-enc: dfDG69PYrA06qa/kdxOZvdu7NmuvpCzsajJYntXsHoYj 1307482508
+Date: Tue, 7 Jun 2011 14:34:18 -0700
+From: Greg KH <greg@kroah.com>
+To: =?iso-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
+        Kulikov Vasiliy <segooon@gmail.com>, Endre Kollar <taxy443@gmail.com>,
+        Arjan Mels <arjan.mels@gmx.net>, Ilia Mirkin <imirkin@alum.mit.edu>,
+        David Chang <dchang@novell.com>,
+        Himanshu Chauhan <hschauhan@nulltrace.org>,
+        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
+        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usbip: handle length at sysfs show() functions
+Message-ID: <20110607213418.GB11102@kroah.com>
+References: <4DE5CA9F.6010303@freemail.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:program running on server}
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4DE5CA9F.6010303@freemail.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 01, 2011 at 07:14:07AM +0200, Németh Márton wrote:
+> From: Márton Németh <nm127@freemail.hu>
+> 
+> The sysfs show() functions shall return the actual content length of
+> the result buffer. According to Documentation/filesystems/sysfs.txt:215
+> the scnprintf() function is preferred.
+> 
+> See also the article titled "snprintf() confusion" at
+> http://lwn.net/Articles/69419/ .
+> 
+> Signed-off-by: Márton Németh <nm127@freemail.hu>
+> ---
+> diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
+> index 6e99ec8..af5f107 100644
+> --- a/drivers/staging/usbip/stub_dev.c
+> +++ b/drivers/staging/usbip/stub_dev.c
+> @@ -80,7 +80,7 @@ static ssize_t show_status(struct device *dev, struct device_attribute *attr,
+>  	status = sdev->ud.status;
+>  	spin_unlock(&sdev->ud.lock);
+> 
+> -	return snprintf(buf, PAGE_SIZE, "%d\n", status);
+> +	return scnprintf(buf, PAGE_SIZE, "%d\n", status);
 
-On Tue, June 7, 2011 2:22 pm, Stratos Psomadakis wrote:
-> On 06/07/2011 11:59 PM, Matt Mackall wrote:
->> On Tue, 2011-06-07 at 13:50 -0700, david@lang.hm wrote:
->>> On Tue, 7 Jun 2011, Matt Mackall wrote:
->>>
->>>> But my point is that if we have adhoc transitions, we will encounter
->>>> the
->>>> "fix all the scripts and websites" pain at every transition. And tools
->>>> that are managed via distros and the like can literally take years to
->>>> get into the hands of users. It'd be nice if the copy of ketchup
->>>> shipped
->>>> in <enterprise distro> just worked 3 years from now because 4.0 wasn't
->>>> a
->>>> surprise.
->>> if you special case 2.4->2.6, and make the default that 4.0 > 3.x, 5.0
->>> >
->>> 4.x, etc won't things 'just work' for the forseeable future?
->> No, because you sometimes want to know what 2.6.39++ is and what 3.0--
->> is.
->>
->> For instance, to upgrade from 2.6.37.2 to 3.1.2, ketchup will want to
->> download, cache, and apply:
->>
->> patch-2.6.37.2 (reversed!)
->> patch-2.6.38
->> patch-2.6.39
->> patch-3.0 ?? <- hopefully Linus will make a delta against 2.6.39!
->> patch-3.1
->> patch-3.1.2
-> Well, if this is a ketchup-only issue (and there's no other need for
-> defining at which point major numbers are going to inc), we could find a
-> solution/workaround (to future-proof it, without the need of constant
-> updating of the code with every major release), but it'll probably be
-> uglier, and I think that what Matt proposed is better.
+Actually, this can be changed to just be:
+	return sprintf(buf, "%d\n", status);
+as obviously an integer will never be bigger than the sysfs buffer.
 
-It's also an issue for scripts/patch-kernel, unless I decide
-to just kill (drop) it.
+Good rule of thumb, if you care about the size of the sysfs buffer, you
+are doing something wrong.
 
-> Anyway, when this issue is clarified, I'll try to fix the code, in order
-> to handle next major releases, without requiring code changes.
+Case in point:
 
+> --- a/drivers/staging/usbip/stub_main.c
+> +++ b/drivers/staging/usbip/stub_main.c
+> @@ -79,18 +79,22 @@ static ssize_t show_match_busid(struct device_driver *drv, char *buf)
+>  {
+>  	int i;
+>  	char *out = buf;
+> +	int count = 0;
+> 
+>  	spin_lock(&busid_table_lock);
+> 
+>  	for (i = 0; i < MAX_BUSID; i++)
+> -		if (busid_table[i].name[0])
+> -			out += sprintf(out, "%s ", busid_table[i].name);
+> +		if (busid_table[i].name[0]) {
+> +			count += scnprintf(out, PAGE_SIZE - count,
+> +					"%s ", busid_table[i].name);
+> +			out = buf + count;
+> +		}
 
+Here we are doing lots of work to try to put more than one value in the
+sysfs file, and return the proper data to the kernel about how big the
+buffer we used.
 
--- 
-~Randy
+That's wrong, and violates the "one value per file" sysfs rule, so that
+should be fixed instead of trying to change the sprintf() call.
 
+Same goes for other places in this patch.
+
+Care to redo that instead?
+
+thanks,
+
+greg k-h
