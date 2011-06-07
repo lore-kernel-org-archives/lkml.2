@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab1FGOO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 10:14:56 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:61275 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048Ab1FGOOz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 10:14:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=L2vzHD0PDBVB1YocFkynvpsnpPsaLd1Z67PNOL3yY3aLqDY1d3Qizkbz/emtCOfqli
-         No6+pDyfziIPkIWH2V3Igdfq64mf0Kcuc7nd0J6kzs5IXjBMle6BcvS9Ew87vPflYdBB
-         1VbVGTLw7HB+g98fU7fzzaxTIBo4TH2MS+mSo=
+	id S1755359Ab1FGOQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 10:16:25 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:35860 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753864Ab1FGOQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 10:16:24 -0400
+Message-ID: <4DEE32B4.509@msgid.tls.msk.ru>
+Date: Tue, 07 Jun 2011 18:16:20 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20110506 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <1307455140.2322.262.camel@twins>
-References: <BANLkTimZ8=YYZXZSzauy5ASsP0kwti8uxQ@mail.gmail.com>
-	<1307454439.2322.260.camel@twins>
-	<1307455140.2322.262.camel@twins>
-Date: Tue, 7 Jun 2011 22:14:53 +0800
-Message-ID: <BANLkTimZzpUZe3vFe4aQdQBZBOS1a4=9rQ@mail.gmail.com>
-Subject: Re: [PATCH] sched: correct testing need_resched in mutex_spin_on_owner()
-From: Hillf Danton <dhillf@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Theodore Ts'o" <tytso@mit.edu>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@ZenIV.linux.org.uk
+Subject: Re: [PATCH -v3] vfs: make unlink() and rmdir() return ENOENT in preference
+ to EROFS
+References: <4DED5926.80504@msgid.tls.msk.ru> <1307402380-14166-1-git-send-email-tytso@mit.edu>
+In-Reply-To: <1307402380-14166-1-git-send-email-tytso@mit.edu>
+X-Enigmail-Version: 1.0.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 7, 2011 at 9:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2011-06-07 at 15:47 +0200, Peter Zijlstra wrote:
->> On Tue, 2011-06-07 at 21:41 +0800, Hillf Danton wrote:
->> > It is suppose to check the owner task that is not absolutly running on the
->> > local CPU,
->>
->> Oh, why do you think so?
->>
->> > and if NEED_RESCHED is happenly set on the current task of local
->> > CPU, we get incorrect result.
->>
->> Only if your above assumption holds, which it doesn't. It explicitly
->> checks to see if _this_ cpu needs a resched while spinning, if so it
->> bails the spinning and calls schedule in the lock slow path.
->>
->> If the owner cpu reschedules, owner will leave the rq and
->> owner_running() will return false, also breaking the loop.
->>
->> >
->> > Signed-off-by: Hillf Danton <dhillf@gmail.com>
->> > ---
->> >  kernel/sched.c |    2 +-
->> >  1 files changed, 1 insertions(+), 1 deletions(-)
->> >
->> > diff --git a/kernel/sched.c b/kernel/sched.c
->> > index fd18f39..3ea64fe 100644
->> > --- a/kernel/sched.c
->> > +++ b/kernel/sched.c
->> > @@ -4326,7 +4326,7 @@ int mutex_spin_on_owner(struct mutex *lock,
->> > struct task_struct *owner)
->> >             return 0;
->> >
->> >     while (owner_running(lock, owner)) {
->> > -           if (need_resched())
->> > +           if (test_tsk_need_resched(owner))
->> >                     return 0;
->> >
->
-> Furthermore, that can crash the machine, as there's no guarantee owner
-> is a sane pointer at this point.
->
+07.06.2011 03:19, Theodore Ts'o wrote:
+> If user space attempts to remove a non-existent file or directory, and
+> the file system is mounted read-only, return ENOENT instead of EROFS.
+> Either error code is arguably valid/correct, but ENOENT is a more
+> specific error message.
+> 
+> Reported-by: Michael Tokarev <mjt@tls.msk.ru>
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 
-Well, why is owner_running looped safely?
+Thank you very much for this patch.  I had no chance to test it before,
+now I've tested it and it works as expected - now both rm(1) and rmdir(1)
+behave correctly, and git rm works too.
 
-thanks
-           Hillf
+It's interesting to note that it's been this way for several years
+(when the change occured?), and there has been no complains so far... ;)
+
+Thanks!
+
+/mjt
