@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab1FGSQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:16:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52044 "EHLO mx1.redhat.com"
+	id S1757754Ab1FGSQc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:16:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32352 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757717Ab1FGSQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:16:28 -0400
+	id S1757733Ab1FGSQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 14:16:30 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: tony.luck@intel.com
 Cc: linux-kernel@vger.kernel.org, Matt_Domsch@dell.com,
         Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH v2 1/3] pstore: Extend API
-Date: Tue,  7 Jun 2011 14:16:00 -0400
-Message-Id: <1307470562-15633-2-git-send-email-mjg@redhat.com>
+Subject: [PATCH v2 2/3] pstore: Add extra context for writes and erases
+Date: Tue,  7 Jun 2011 14:16:01 -0400
+Message-Id: <1307470562-15633-3-git-send-email-mjg@redhat.com>
 In-Reply-To: <1307470562-15633-1-git-send-email-mjg@redhat.com>
 References: <1307470562-15633-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
@@ -23,192 +23,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some pstore implementations may not have a static context, so extend the
-API to pass the pstore_info struct to all calls and allow for a context
-pointer.
+EFI only provides small amounts of individual storage, and conventionally
+puts metadata in the storage variable name. Rather than add a metadata
+header to the (already limited) variable storage, it's easier for us to
+modify pstore to pass all the information we need to construct a unique
+variable name to the appropriate functions.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- drivers/acpi/apei/erst.c |   18 +++++++++++++-----
- fs/pstore/inode.c        |   10 +++++-----
- fs/pstore/internal.h     |    2 +-
- fs/pstore/platform.c     |   13 +++++++------
- include/linux/pstore.h   |    8 +++++---
- 5 files changed, 31 insertions(+), 20 deletions(-)
+ drivers/acpi/apei/erst.c |   10 ++++++----
+ fs/pstore/inode.c        |    6 ++++--
+ fs/pstore/platform.c     |    9 +++++----
+ include/linux/pstore.h   |    5 +++--
+ 4 files changed, 18 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index e6cef8e..de3ae92 100644
+index de3ae92..d842ac4 100644
 --- a/drivers/acpi/apei/erst.c
 +++ b/drivers/acpi/apei/erst.c
-@@ -932,8 +932,10 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
- static int erst_open_pstore(struct pstore_info *psi);
+@@ -933,9 +933,10 @@ static int erst_open_pstore(struct pstore_info *psi);
  static int erst_close_pstore(struct pstore_info *psi);
  static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
--		       struct timespec *time);
--static u64 erst_writer(enum pstore_type_id type, size_t size);
-+			   struct timespec *time, struct pstore_info *psi);
-+static u64 erst_writer(enum pstore_type_id type, size_t size,
-+		       struct pstore_info *psi);
-+static int erst_clearer(u64 id, struct pstore_info *psi);
+ 			   struct timespec *time, struct pstore_info *psi);
+-static u64 erst_writer(enum pstore_type_id type, size_t size,
++static u64 erst_writer(enum pstore_type_id type, int part, size_t size,
+ 		       struct pstore_info *psi);
+-static int erst_clearer(u64 id, struct pstore_info *psi);
++static int erst_clearer(enum pstore_type_id type, u64 id,
++			struct pstore_info *psi);
  
  static struct pstore_info erst_info = {
  	.owner		= THIS_MODULE,
-@@ -942,7 +944,7 @@ static struct pstore_info erst_info = {
- 	.close		= erst_close_pstore,
- 	.read		= erst_reader,
- 	.write		= erst_writer,
--	.erase		= erst_clear
-+	.erase		= erst_clearer
- };
- 
- #define CPER_CREATOR_PSTORE						\
-@@ -983,7 +985,7 @@ static int erst_close_pstore(struct pstore_info *psi)
- }
- 
- static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
--		       struct timespec *time)
-+			   struct timespec *time, struct pstore_info *psi)
- {
- 	int rc;
- 	ssize_t len = 0;
-@@ -1037,7 +1039,8 @@ out:
+@@ -1039,7 +1040,7 @@ out:
  	return (rc < 0) ? rc : (len - sizeof(*rcd));
  }
  
--static u64 erst_writer(enum pstore_type_id type, size_t size)
-+static u64 erst_writer(enum pstore_type_id type, size_t size,
-+		       struct pstore_info *psi)
+-static u64 erst_writer(enum pstore_type_id type, size_t size,
++static u64 erst_writer(enum pstore_type_id type, int part, size_t size,
+ 		       struct pstore_info *psi)
  {
  	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
- 					(erst_info.buf - sizeof(*rcd));
-@@ -1080,6 +1083,11 @@ static u64 erst_writer(enum pstore_type_id type, size_t size)
+@@ -1083,7 +1084,8 @@ static u64 erst_writer(enum pstore_type_id type, size_t size,
  	return rcd->hdr.record_id;
  }
  
-+static int erst_clearer(u64 id, struct pstore_info *psi)
-+{
-+	return erst_clear(id);
-+}
-+
- static int __init erst_init(void)
+-static int erst_clearer(u64 id, struct pstore_info *psi)
++static int erst_clearer(enum pstore_type_id type, u64 id,
++			struct pstore_info *psi)
  {
- 	int rc = 0;
+ 	return erst_clear(id);
+ }
 diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index 977ed27..b19884a 100644
+index b19884a..893b961 100644
 --- a/fs/pstore/inode.c
 +++ b/fs/pstore/inode.c
-@@ -40,7 +40,7 @@
+@@ -39,8 +39,9 @@
+ #define	PSTORE_NAMELEN	64
  
  struct pstore_private {
- 	u64	id;
--	int	(*erase)(u64);
-+	struct pstore_info *psi;
+-	u64	id;
+ 	struct pstore_info *psi;
++	enum pstore_type_id type;
++	u64	id;
  	ssize_t	size;
  	char	data[];
  };
-@@ -73,7 +73,7 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
+@@ -73,7 +74,7 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
  {
  	struct pstore_private *p = dentry->d_inode->i_private;
  
--	p->erase(p->id);
-+	p->psi->erase(p->id, p->psi);
+-	p->psi->erase(p->id, p->psi);
++	p->psi->erase(p->type, p->id, p->psi);
  
  	return simple_unlink(dir, dentry);
  }
-@@ -175,8 +175,8 @@ int pstore_is_mounted(void)
-  * Set the mtime & ctime to the date that this record was originally stored.
-  */
- int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
--			      char *data, size_t size,
--			      struct timespec time, int (*erase)(u64))
-+		  char *data, size_t size, struct timespec time,
-+		  struct pstore_info *psi)
- {
- 	struct dentry		*root = pstore_sb->s_root;
- 	struct dentry		*dentry;
-@@ -193,7 +193,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+@@ -192,6 +193,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+ 	private = kmalloc(sizeof *private + size, GFP_KERNEL);
  	if (!private)
  		goto fail_alloc;
++	private->type = type;
  	private->id = id;
--	private->erase = erase;
-+	private->psi = psi;
+ 	private->psi = psi;
  
- 	switch (type) {
- 	case PSTORE_TYPE_DMESG:
-diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
-index 8c9f23e..611c1b3 100644
---- a/fs/pstore/internal.h
-+++ b/fs/pstore/internal.h
-@@ -2,5 +2,5 @@ extern void	pstore_set_kmsg_bytes(int);
- extern void	pstore_get_records(void);
- extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
- 			      char *data, size_t size,
--			      struct timespec time, int (*erase)(u64));
-+			      struct timespec time, struct pstore_info *psi);
- extern int	pstore_is_mounted(void);
 diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index f2c3ff2..221c04e 100644
+index 221c04e..163bb40 100644
 --- a/fs/pstore/platform.c
 +++ b/fs/pstore/platform.c
-@@ -94,11 +94,12 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+@@ -78,7 +78,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 	oopscount++;
+ 	while (total < kmsg_bytes) {
+ 		dst = psinfo->buf;
+-		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part++);
++		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part);
+ 		size = psinfo->bufsize - hsize;
+ 		dst += hsize;
+ 
+@@ -94,8 +94,8 @@ static void pstore_dump(struct kmsg_dumper *dumper,
  		memcpy(dst, s1 + s1_start, l1_cpy);
  		memcpy(dst + l1_cpy, s2 + s2_start, l2_cpy);
  
--		id = psinfo->write(PSTORE_TYPE_DMESG, hsize + l1_cpy + l2_cpy);
-+		id = psinfo->write(PSTORE_TYPE_DMESG, hsize + l1_cpy + l2_cpy,
-+				   psinfo);
+-		id = psinfo->write(PSTORE_TYPE_DMESG, hsize + l1_cpy + l2_cpy,
+-				   psinfo);
++		id = psinfo->write(PSTORE_TYPE_DMESG, part,
++				   hsize + l1_cpy + l2_cpy, psinfo);
  		if (reason == KMSG_DUMP_OOPS && pstore_is_mounted())
  			pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id,
  				      psinfo->buf, hsize + l1_cpy + l2_cpy,
--				      CURRENT_TIME, psinfo->erase);
-+				      CURRENT_TIME, psinfo);
+@@ -103,6 +103,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
  		l1 -= l1_cpy;
  		l2 -= l2_cpy;
  		total += l1_cpy + l2_cpy;
-@@ -166,9 +167,9 @@ void pstore_get_records(void)
- 	if (rc)
- 		goto out;
- 
--	while ((size = psi->read(&id, &type, &time)) > 0) {
-+	while ((size = psi->read(&id, &type, &time, psi)) > 0) {
- 		if (pstore_mkfile(type, psi->name, id, psi->buf, (size_t)size,
--				  time, psi->erase))
-+				  time, psi))
- 			failed++;
++		part++;
  	}
- 	psi->close(psi);
-@@ -196,10 +197,10 @@ int pstore_write(enum pstore_type_id type, char *buf, size_t size)
+ 	mutex_unlock(&psinfo->buf_mutex);
+ }
+@@ -197,7 +198,7 @@ int pstore_write(enum pstore_type_id type, char *buf, size_t size)
  
  	mutex_lock(&psinfo->buf_mutex);
  	memcpy(psinfo->buf, buf, size);
--	id = psinfo->write(type, size);
-+	id = psinfo->write(type, size, psinfo);
+-	id = psinfo->write(type, size, psinfo);
++	id = psinfo->write(type, 0, size, psinfo);
  	if (pstore_is_mounted())
  		pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id, psinfo->buf,
--			      size, CURRENT_TIME, psinfo->erase);
-+			      size, CURRENT_TIME, psinfo);
- 	mutex_unlock(&psinfo->buf_mutex);
- 
- 	return 0;
+ 			      size, CURRENT_TIME, psinfo);
 diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index 2455ef2..b2f1d97 100644
+index b2f1d97..12be8f1 100644
 --- a/include/linux/pstore.h
 +++ b/include/linux/pstore.h
-@@ -38,9 +38,11 @@ struct pstore_info {
- 	int		(*open)(struct pstore_info *psi);
+@@ -39,9 +39,10 @@ struct pstore_info {
  	int		(*close)(struct pstore_info *psi);
  	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
--			struct timespec *time);
--	u64		(*write)(enum pstore_type_id type, size_t size);
--	int		(*erase)(u64 id);
-+			struct timespec *time, struct pstore_info *psi);
-+	u64		(*write)(enum pstore_type_id type, size_t size,
-+			struct pstore_info *psi);
-+	int		(*erase)(u64 id, struct pstore_info *psi);
-+	void		*data;
+ 			struct timespec *time, struct pstore_info *psi);
+-	u64		(*write)(enum pstore_type_id type, size_t size,
++	u64		(*write)(enum pstore_type_id type, int part,
++			size_t size, struct pstore_info *psi);
++	int		(*erase)(enum pstore_type_id type, u64 id,
+ 			struct pstore_info *psi);
+-	int		(*erase)(u64 id, struct pstore_info *psi);
+ 	void		*data;
  };
  
- #ifdef CONFIG_PSTORE
 -- 
 1.7.5.2
 
