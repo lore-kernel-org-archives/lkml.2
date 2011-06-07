@@ -1,92 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab1FGStJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 14:49:09 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:46218 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757886Ab1FGStH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 14:49:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sTjjFsaFNWiHajhKaVG4XkpBqW1yPKMKuZc7d2cNuyKBYh3QtwVq7M/iOQMhbjnebY
-         UwNHO3BhE0eyZm3M55Volc+IzyQmUidH+nVPLdzpoFb7B6WrYF5OOSfc6xG0woz2TYAR
-         0RNXqXdwfJjZZbDF9kTs2JhWs6R6MQtbeAp3E=
-Date: Tue, 7 Jun 2011 20:49:01 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Milton Miller <miltonm@bga.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [1/4] rcu: Detect uses of rcu read side in extended quiescent
- states
-Message-ID: <20110607184857.GC23214@somewhere>
-References: <1307329858-14999-3-git-send-email-fweisbec@gmail.com>
- <rcu-splat-split-printk@mdm.bga.com>
- <20110606181021.GL3066@linux.vnet.ibm.com>
- <20110607001905.GE17026@somewhere.redhat.com>
- <20110607004250.GZ3066@linux.vnet.ibm.com>
- <20110607013630.GF17026@somewhere.redhat.com>
- <20110607044005.GB2292@linux.vnet.ibm.com>
- <20110607125809.GA23214@somewhere>
- <20110607183414.GF2286@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110607183414.GF2286@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757913Ab1FGSyX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 14:54:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1513 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978Ab1FGSyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 14:54:20 -0400
+Subject: Re: [PATCH -v2] Audit: push audit success and retcode into arch
+ ptrace.h
+From: Eric Paris <eparis@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, fenghua.yu@intel.com,
+        monstr@monstr.eu, ralf@linux-mips.org, benh@kernel.crashing.org,
+        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        linux390@de.ibm.com, lethal@linux-sh.org, davem@davemloft.net,
+        jdike@addtoit.com, richard@nod.at, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        linux-ia64@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net
+Date: Tue, 07 Jun 2011 14:53:11 -0400
+In-Reply-To: <20110607171952.GA25729@redhat.com>
+References: <20110603220451.23134.47368.stgit@paris.rdu.redhat.com>
+	 <20110607171952.GA25729@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1307472796.2052.12.camel@localhost.localdomain>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 11:34:14AM -0700, Paul E. McKenney wrote:
-> On Tue, Jun 07, 2011 at 02:58:13PM +0200, Frederic Weisbecker wrote:
-> > On Mon, Jun 06, 2011 at 09:40:05PM -0700, Paul E. McKenney wrote:> 
-> > > The bit I am missing is how to distinguish between spinlocks (where
-> > > sleeping is illegal) and mutexes (where sleeping is perfectly fine).
-> > > We could teach lockdep the difference, I suppose, but it is not clear
-> > > to me that it is worth it.
-> > 
-> > Ah, in fact it doesn't pass through any lockdep check.
-> > 
-> > It's only a function called might_sleep() that is placed in functions
-> > that can sleep. And inside might_sleep() it checks whether it is in a preemptible
-> > area. So it's actually locking-agnostic, it only relies on the preempt_count
-> > and some more for the preempt rcu cases.
-> > 
-> > I think it is called CONFIG_DEBUG_SPINLOCK_SLEEP because it was first used
-> > for spinlock debugging purposes. But then it has a broader use now: sleep
-> > inside preemptible section, sleep inside interrupts, sleep inside rcu.
+On Tue, 2011-06-07 at 19:19 +0200, Oleg Nesterov wrote:
+> On 06/03, Eric Paris wrote:
+> >
+> > The audit system previously expected arches calling to audit_syscall_exit to
+> > supply as arguments if the syscall was a success and what the return code was.
+> > Audit also provides a helper AUDITSC_RESULT which was supposed to simplify things
+> > by converting from negative retcodes to an audit internal magic value stating
+> > success or failure.  This helper was wrong and could indicate that a valid
+> > pointer returned to userspace was a failed syscall.  The fix is to fix the
+> > layering foolishness.  We now pass audit_syscall_exit a struct pt_reg and it
+> > in turns calls back into arch code to collect the return value and to
+> > determine if the syscall was a success or failure.  We also define a generic
+> > is_syscall_success() macro which determines success/failure based on if the
+> > value is < -MAX_ERRNO.  This works for arches like x86 which do not use a
+> > separate mechanism to indicate syscall failure.
 > 
-> But the __might_sleep() function can only differentiate between
-> spinlocks and sleeplocks if CONFIG_PREEMPT=y.
-
-It doesn't differentiate between locks but checks on the lowest level
-by looking at the preempt count. But yeah it only works if CONFIG_PREEMPT,
-which is why I proposed to inc/dec the preempt count also when we have
-that DEBUG_SPINLOCK_SLEEP.
-
+> I know nothing about audit, but the patch looks fine to me.
 > 
-> > It certainly deserves a rename, like CONFIG_DEBUG_ILLEGAL_SLEEP.
 > 
-> Hmmm...  It already checks for sleeping in the middle of a
-> preempt_disable() as well as in a spinlock critical section.
-> So the need for a rename is independent of any RCU checking.
-
-Sure, rcu just adds itself to the pile of users of might_sleep(), thus
-it would be a nice cleanup to rename the option to something more
-generic. But that rename is not necessary to improve RCU checking.
-
+> But I have a bit off-topic question,
 > 
-> > > In contrast, with RCU, this is straightforward -- check for rcu_sched
-> > > and rcu_bh, but not SRCU.
+> > diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> > index 8a445a0..b7b1f88 100644
+> > --- a/arch/x86/kernel/entry_64.S
+> > +++ b/arch/x86/kernel/entry_64.S
+> > @@ -53,6 +53,7 @@
+> >  #include <asm/paravirt.h>
+> >  #include <asm/ftrace.h>
+> >  #include <asm/percpu.h>
+> > +#include <linux/err.h>
+> >
+> >  /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
+> >  #include <linux/elf-em.h>
+> > @@ -564,17 +565,16 @@ auditsys:
+> >  	jmp system_call_fastpath
+> >
+> >  	/*
+> > -	 * Return fast path for syscall audit.  Call audit_syscall_exit()
+> > +	 * Return fast path for syscall audit.  Call __audit_syscall_exit()
+> >  	 * directly and then jump back to the fast path with TIF_SYSCALL_AUDIT
+> >  	 * masked off.
+> >  	 */
+> >  sysret_audit:
+> >  	movq RAX-ARGOFFSET(%rsp),%rsi	/* second arg, syscall return value */
+> > -	cmpq $0,%rsi		/* is it < 0? */
+> > -	setl %al		/* 1 if so, 0 if not */
+> > +	cmpq $-MAX_ERRNO,%rsi	/* is it < -MAX_ERRNO? */
+> > +	setbe %al		/* 1 if so, 0 if not */
+> >  	movzbl %al,%edi		/* zero-extend that into %edi */
+> > -	inc %edi /* first arg, 0->1(AUDITSC_SUCCESS), 1->2(AUDITSC_FAILURE) */
+> > -	call audit_syscall_exit
+> > +	call __audit_syscall_exit
 > 
-> Actually it makes sense to keep the checks in rcu_note_context_switch(),
-> as there are places that call schedule() directly without a might_sleep().
-> Perhaps having checks in both places is the correct approach?
+> With or without this patch, can't we call audit_syscall_exit() twice
+> if there is something else in _TIF_WORK_SYSCALL_EXIT mask apart from
+> SYSCALL_AUDIT ? First time it is called from asm, then from
+> syscall_trace_leave(), no?
+> 
+> For example. The task has TIF_SYSCALL_AUDIT and nothing else, it does
+> system_call->auditsys->system_call_fastpath. What if it gets, say,
+> TIF_SYSCALL_TRACE before ret_from_sys_call?
 
-In this case it makes more sense to add your checks in schedule_debug(),
-so that we don't wait for a context switch to detect the bug.
+No harm is done calling twice.  The first call will do the real work and
+cleanup.  It will set a flag in the audit data that the work has been
+done (in_syscall == 0) thus the second call will then not do any real
+work and won't have anything to clean up.
+
+-Eric
+
