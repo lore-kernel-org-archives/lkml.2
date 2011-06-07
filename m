@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab1FGTAc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:00:32 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39397 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222Ab1FGTAb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 15:00:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=WEAz1kwG6Cx7uKHCCwZmeN92TjGRh8MKuUfWQRhJJgsik7j+FvR7mvzO9Y2o0ExKV2
-         fLf8cnMR18n5SLaRufXLoUND8ZOGkmhjmnx2VP71HzfYwTUIbjCCHkGnINJiJK4MH61J
-         kS4l5cDd1nu9gBV8/tVk3cRDy0nL0AO9UE9qg=
-Message-ID: <4DEE754B.1020706@suse.cz>
-Date: Tue, 07 Jun 2011 21:00:27 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110531 Thunderbird/5.0b1
+	id S1757977Ab1FGTBi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 15:01:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17219 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755868Ab1FGTBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 15:01:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,333,1304319600"; 
+   d="scan'208";a="10318789"
+Message-ID: <4DEE758F.8060002@linux.intel.com>
+Date: Tue, 07 Jun 2011 12:01:35 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andi Kleen <andi@firstfloor.org>, Xiaotian Feng <dfeng@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH] do_coredump: fix the "ispipe" error check
-References: <1307457010-7241-1-git-send-email-jslaby@suse.cz> <20110607181607.GA3732@redhat.com> <20110607183542.GA5559@redhat.com>
-In-Reply-To: <20110607183542.GA5559@redhat.com>
-X-Enigmail-Version: 1.2a2pre
+To: Andrew Lutomirski <luto@mit.edu>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Zachary Vonler <zvonler@rgmadvisors.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: Change in functionality of futex() system call.
+References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com> <1307373819.3098.40.camel@edumazet-laptop> <1307376672.2322.167.camel@twins> <1307376989.2322.171.camel@twins> <1307377349.3098.65.camel@edumazet-laptop> <1307377782.2322.183.camel@twins> <1307378564.3098.67.camel@edumazet-laptop> <4DED1421.5000300@linux.intel.com> <1307383898.3098.90.camel@edumazet-laptop> <4DED976C.90009@linux.intel.com> <4DEE3944.5020005@mit.edu> <1307462300.3091.39.camel@edumazet-laptop> <BANLkTinyuHUGXACJYUT241g8rzg6AzPBiA@mail.gmail.com>
+In-Reply-To: <BANLkTinyuHUGXACJYUT241g8rzg6AzPBiA@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2011 08:35 PM, Oleg Nesterov wrote:
-> do_coredump() assumes that if format_corename() fails it should
-> return -ENOMEM. This is not true, for example cn_print_exe_file()
-> can propagate the error from d_path. Even if it was true, this is
-> too fragile. Change the code to check "ispipe < 0".
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Acked-by: Jiri Slaby <jslaby@suse.cz>
 
-> ---
+On 06/07/2011 11:43 AM, Andrew Lutomirski wrote:
+> On Tue, Jun 7, 2011 at 11:58 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> Le mardi 07 juin 2011 à 10:44 -0400, Andy Lutomirski a écrit :
+>>> On 06/06/2011 11:13 PM, Darren Hart wrote:
+>>>>
+>>>>
+>>>> On 06/06/2011 11:11 AM, Eric Dumazet wrote:
+>>>>> Le lundi 06 juin 2011 à 10:53 -0700, Darren Hart a écrit :
+>>>>>>
+>>>>>
+>>>>>> If I understand the problem correctly, RO private mapping really doesn't
+>>>>>> make any sense and we should probably explicitly not support it, while
+>>>>>> special casing the RO shared mapping in support of David's scenario.
+>>>>>>
+>>>>>
+>>>>> We supported them in 2.6.18 kernels, apparently. This might sounds
+>>>>> stupid but who knows ?
+>>>>
+>>>>
+>>>> I guess this is actually the key point we need to agree on to provide a
+>>>> solution. This particular case "worked" in 2.6.18 kernels, but that
+>>>> doesn't necessarily mean it was supported, or even intentional.
+>>>>
+>>>> It sounds to me that we agree that we should support RO shared mappings.
+>>>> The question remains about whether we should introduce deliberate
+>>>> support of RO private mappings, and if so, if the forced COW approach is
+>>>> appropriate or not.
+>>>>
+>>>
+>>> I disagree.
+>>>
+>>> FUTEX_WAIT has side-effects.  Specifically, it eats one wakeup sent by
+>>> FUTEX_WAKE.  So if something uses futexes on a file mapping, then a
+>>> process with only read access could (if the semantics were changed) DoS
+>>> the other processes by spawning a bunch of threads and FUTEX_WAITing
+>>> from each of them.
+>>>
+>>> If there were a FUTEX_WAIT_NOCONSUME that did not consume a wakeup and
+>>> worked on RO mappings, I would drop my objection.
+>>
+>> If a group of cooperating processes uses a memory segment to exchange
+>> critical information, do you really think this memory segment will be
+>> readable by other unrelated processes on the machine ?
 > 
->  fs/exec.c |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+> Depends on the design.
 > 
-> --- ptrace/fs/exec.c~corename_errcode	2011-06-07 19:44:30.000000000 +0200
-> +++ ptrace/fs/exec.c	2011-06-07 20:20:48.000000000 +0200
-> @@ -2092,16 +2092,16 @@ void do_coredump(long signr, int exit_co
->  
->  	ispipe = format_corename(&cn, signr);
->  
-> -	if (ispipe == -ENOMEM) {
-> -		printk(KERN_WARNING "format_corename failed\n");
-> -		printk(KERN_WARNING "Aborting core\n");
-> -		goto fail_corename;
-> -	}
-> -
->   	if (ispipe) {
->  		int dump_count;
->  		char **helper_argv;
->  
-> +		if (ispipe < 0) {
-> +			printk(KERN_WARNING "format_corename failed\n");
-> +			printk(KERN_WARNING "Aborting core\n");
-> +			goto fail_corename;
-> +		}
-> +
->  		if (cprm.limit == 1) {
->  			/*
->  			 * Normally core limits are irrelevant to pipes, since
-> 
+> I have some software I'm working on that uses shared files and could
+> easily use futexes.  I don't want random read-only processes to
+> interfere with the futex protocol.
 
-thanks,
+
+So don't use world readable files.
+
+
+>>
+>> How is this related to futex code ?
+> 
+> Because this usage is currently safe and would become unsafe with the
+> proposed change.
+> 
+>>
+>> Same problem for legacy IPC (shm, msg, sem) : Appropriate protections
+>> are needed, obviously.
+>>
+>> BTW, kernel/futex.c uses a global hash table (futex_queues[256]) and a
+>> very predictable hash_futex(), so its easy to slow down futex users...
+> 
+> There's a difference between slowing down users by abusing a kernel
+> hash and deadlocking users by eating a wakeup.  (If you eat a wakeup
+> the wakeup won't magically come back later.  It's gone.)
+
+That's the nature of SHARED, you have to protect the mapping independent
+of the futex mechanism.
+
 -- 
-js
-suse labs
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
