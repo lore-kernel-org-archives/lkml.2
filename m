@@ -1,72 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab1FGNQq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 09:16:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39792 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898Ab1FGNQp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 09:16:45 -0400
-Subject: Re: [tip:sched/urgent] sched: Fix cross-cpu clock sync on remote
- wakeups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-In-Reply-To: <20110607131216.GC27813@aftab>
-References: <tip-f01114cb59d670e9b4f2c335930dd57db96e9360@git.kernel.org>
-	 <20110531125621.GA24439@gere.osrc.amd.com> <1306847516.2353.80.camel@twins>
-	 <20110601070547.GB3368@liondog.tnic> <1306924612.2353.176.camel@twins>
-	 <20110601155017.GD24028@aftab>
-	 <BANLkTikT6OT-HDi-DR+_ZWEhfp_CYWJ3Hg@mail.gmail.com>
-	 <1307019866.2497.675.camel@laptop> <20110602142340.GA3356@zhy>
-	 <1307029711.2497.717.camel@laptop>  <20110607131216.GC27813@aftab>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 07 Jun 2011 15:16:20 +0200
-Message-ID: <1307452580.2322.252.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753531Ab1FGN0b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 09:26:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7039 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752882Ab1FGN0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 09:26:30 -0400
+Message-ID: <4DEE26E7.2060201@redhat.com>
+Date: Tue, 07 Jun 2011 15:25:59 +0200
+From: Igor Mammedov <imammedo@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+CC: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, balbir@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node
+ to world
+References: <1306925044-2828-1-git-send-email-imammedo@redhat.com>	<20110601123913.GC4266@tiehlicka.suse.cz>	<4DE6399C.8070802@redhat.com>	<20110601134149.GD4266@tiehlicka.suse.cz>	<4DE64F0C.3050203@redhat.com>	<20110601152039.GG4266@tiehlicka.suse.cz>	<4DE66BEB.7040502@redhat.com>	<BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>	<4DE8D50F.1090406@redhat.com> <BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
+In-Reply-To: <BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 15:12 +0200, Borislav Petkov wrote:
-> On Thu, Jun 02, 2011 at 11:48:31AM -0400, Peter Zijlstra wrote:
-> > Crap.. you're right. And I bet other archs don't do that either. With
-> > NO_HZ you really need irq_enter() for pretty much all interrupts so I
-> > was assuming the resched IPI had it, but its been special and never
-> > really needed it. If it would wake an idle cpu the idle loop exit would
-> > deal with it, if it interrupted userspace the thing was running and
-> > NO_HZ wasn't relevant.
-> > 
-> > Damn. 
-> > 
-> > And yes, the only reason I didn't see this on my dev box was because we
-> > do indeed set that sched_clock_stable thing on wsm. And I never noticed
-> > on my desktop because firefox/X/etc. consuming heaps of CPU isn't weird
-> > at all.
-> > 
-> > Adding it to all resched int handlers is of course a possibility but
-> > would slow down the thing, although with the new code, most users are
-> > now indeed wakeups (excepting weird and wonderful users like KVM).
-> 
-> FWIW, we could set the sched_clock_stable on AMD too - at least on F10h
-> and later. This will take care of the problem at hand and defer the
-> issue of slowing down the resched ipi handlers.
-> 
-> I dunno, however, whether we still would need the proper ->tick_gtod
-> update for correct ttwu accounting regardless of sched_clock_stable on
-> K8 (unstable TSCs) and maybe even other arches.
+Sorry for late reply,
 
-Yeah, I think I'm going to commit this extra irq_enter() thing for now,
-and then slowly go through all the arches again and remove this one here
-once all archs are sorted.
+On 06/03/2011 03:00 PM, Hiroyuki Kamezawa wrote:
+> 2011/6/3 Igor Mammedov<imammedo@redhat.com>:
+>> On 06/02/2011 01:10 AM, Hiroyuki Kamezawa wrote:
+>>>> pc = list_entry(list->prev, struct page_cgroup, lru);
+>>> Hmm, I disagree your patch is a fix for mainline. At least, a cgroup
+>>> before completion of
+>>> create() is not populated to userland and you never be able to rmdir()
+>>> it because you can't
+>>> find it.
+>>>
+>>>
+>>>   >26:   e8 7d 12 30 00          call   0x3012a8
+>>>   >2b:*  8b 73 08                mov    0x8(%ebx),%esi<-- trapping
+>>> instruction
+>>>   >2e:   8b 7c 24 24             mov    0x24(%esp),%edi
+>>>   >32:   8b 07                   mov    (%edi),%eax
+>>>
+>>> Hm, what is the call 0x3012a8 ?
+>>>
+>>                 pc = list_entry(list->prev, struct page_cgroup, lru);
+>>                 if (busy == pc) {
+>>                         list_move(&pc->lru, list);
+>>                         busy = 0;
+>>                         spin_unlock_irqrestore(&zone->lru_lock, flags);
+>>                         continue;
+>>                 }
+>>                 spin_unlock_irqrestore(&zone->lru_lock, flags);<---- is
+>>   call 0x3012a8
+>>                 ret = mem_cgroup_move_parent(pc, mem, GFP_KERNEL);
+>>
+>> and  mov 0x8(%ebx),%esi
+>> is dereferencing of 'pc' in inlined mem_cgroup_move_parent
+>>
+> Ah, thank you for input..then panicd at accessing pc->page and "pc"
+> was 0xfffffff4.
+> it means list->prev was NULL.
+>
+yes, that's the case.
+>> I've looked at vmcore once more and indeed there isn't any parallel task
+>> that touches cgroups code path.
+>> Will investigate if it is xen to blame for incorrect data in place.
+>>
+>> Thanks very much for your opinion.
+> What curious to me is that the fact "list->prev" is NULL.
+> I can see why you doubt the initialization code ....the list pointer never
+> contains NULL once it's used....
+> it smells like memory corruption or some to me. If you have vmcore,
+> what the problematic mem_cgroup_per_zone(node) contains ?
 
+it has all zeros except for last field:
+
+crash> rd f3446a00 62
+f3446a00:  00000000 00000000 00000000 00000000   ................
+f3446a10:  00000000 00000000 00000000 00000000   ................
+f3446a20:  00000000 00000000 00000000 00000000   ................
+f3446a30:  00000000 00000000 00000000 00000000   ................
+f3446a40:  00000000 00000000 00000000 00000000   ................
+f3446a50:  00000000 00000000 00000000 00000000   ................
+f3446a60:  00000000 00000000 00000000 00000000   ................
+f3446a70:  00000000 00000000 f36ef800 f3446a7c   ..........n.|jD.
+f3446a80:  f3446a7c f3446a84 f3446a84 f3446a8c   |jD..jD..jD..jD.
+f3446a90:  f3446a8c f3446a94 f3446a94 f3446a9c   .jD..jD..jD..jD.
+f3446aa0:  f3446a9c 00000000 00000000 00000000   .jD.............
+f3446ab0:  00000000 00000000 00000000 00000000   ................
+f3446ac0:  00000000 00000000 00000000 00000000   ................
+f3446ad0:  00000000 00000000 00000000 00000000   ................
+f3446ae0:  00000000 00000000 00000000 00000000   ................
+f3446af0:  00000000 f36ef800
+
+crash> struct mem_cgroup f36ef800
+struct mem_cgroup {
+...
+info = {
+     nodeinfo = {0xf3446a00}
+   },
+...
+
+It looks like a very targeted corruption of the first zone except of
+the last field, while the second zone and the rest are perfectly
+normal (i.e. have empty initialized lists).
+
+
+PS:
+It most easily reproduced only on xen hvm 32bit guest under heavy
+vcpus contention for real cpus resources (i.e. I had to overcommit
+cpus and run several cpu hog tasks on host to make guest crash on
+reboot cycle).
+And from last experiments, crash happens only on on hosts that
+doesn't have hap feature or if hap is disabled in hypervisor.
+
+> Thanks,
+> -Kame
 
