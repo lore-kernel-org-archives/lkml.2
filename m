@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab1FGOUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 10:20:39 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57948 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755069Ab1FGOUg (ORCPT
+	id S1754396Ab1FGOVn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 10:21:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35781 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752799Ab1FGOVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 10:20:36 -0400
-Date: Tue, 7 Jun 2011 08:20:32 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: Re: linux-next: manual merge of the gpio tree with the slave-dma tree
-Message-ID: <20110607142032.GB13072@ponder.secretlab.ca>
-References: <20110607125723.8e591e42.sfr@canb.auug.org.au>
+	Tue, 7 Jun 2011 10:21:41 -0400
+Date: Tue, 7 Jun 2011 11:21:16 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jonathan Corbet <corbet@lwn.net>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 20/22] 20: perf: perf interface for uprobes
+Message-ID: <20110607142116.GA8311@ghostprotocols.net>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607130216.28590.5724.sendpatchset@localhost6.localdomain6>
+ <20110607133039.GA4929@infradead.org>
+ <20110607133853.GC9949@in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110607125723.8e591e42.sfr@canb.auug.org.au>
+In-Reply-To: <20110607133853.GC9949@in.ibm.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 12:57:23PM +1000, Stephen Rothwell wrote:
-> Hi Grant,
-> 
-> Today's linux-next merge of the gpio tree got a conflict in
-> arch/arm/mach-ep93xx/Makefile between commit 8e4a93008db7 ("ep93xx:
-> remove the old M2P DMA code") from the slave-dma tree and commit
-> c6b52c13de44 ("gpio/ep93xx: move driver to drivers/gpio") from the gpio
-> tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
+Em Tue, Jun 07, 2011 at 07:08:53PM +0530, Ananth N Mavinakayanahalli escreveu:
+> On Tue, Jun 07, 2011 at 09:30:39AM -0400, Christoph Hellwig wrote:
+> > On Tue, Jun 07, 2011 at 06:32:16PM +0530, Srikar Dronamraju wrote:
+> > > Enhances perf probe to user space executables and libraries.
+> > > Provides very basic support for uprobes.
 
-Okay, thanks Stephen.  Obviously that is the correct fixup.
+> > Nice.  Does this require full debug info for symbolic probes,
+> > or can it also work with simple symbolc information?
+ 
+> It works only with symbol information for now.
+> It doesn't (yet) know how to use debuginfo :-)
 
-g.
+'perf probe' uses perf symbol library, so it really don't have to know
+from where symbol resolution information is obtained, only if it needs
+things that are _just_ on debuginfo, such as line information, etc.
 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/arm/mach-ep93xx/Makefile
-> index 21e721a,6b7c41d..0000000
-> --- a/arch/arm/mach-ep93xx/Makefile
-> +++ b/arch/arm/mach-ep93xx/Makefile
-> @@@ -1,7 -1,7 +1,7 @@@
->   #
->   # Makefile for the linux kernel.
->   #
-> - obj-y			:= core.o clock.o gpio.o
->  -obj-y			:= core.o clock.o dma-m2p.o
-> ++obj-y			:= core.o clock.o
->   obj-m			:=
->   obj-n			:=
->   obj-			:=
+But then that is also already supported in 'perf probe'.
+
+Or is there something else in particular you're thinking?
+
+- Arnaldo
