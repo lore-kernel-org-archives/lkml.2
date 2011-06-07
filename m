@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab1FGUvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 16:51:07 -0400
-Received: from mail.lang.hm ([64.81.33.126]:52665 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756495Ab1FGUvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 16:51:06 -0400
-Date: Tue, 7 Jun 2011 13:50:37 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Matt Mackall <mpm@selenic.com>
-cc: Stratos Psomadakis <psomas@ece.ntua.gr>, linux-kernel@vger.kernel.org,
-        Frank Kingswood <frank@kingswood-consulting.co.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ketchup script and 3.0
-In-Reply-To: <1307479572.4204.977.camel@calx>
-Message-ID: <alpine.DEB.2.02.1106071349000.28905@asgard.lang.hm>
-References: <4DEDD5F4.1070602@kingswood-consulting.co.uk>  <1307451186.4204.953.camel@calx>  <4DEE808D.6020405@ece.ntua.gr>  <1307477435.4204.968.camel@calx>  <4DEE8AD9.3050508@ece.ntua.gr> <1307479572.4204.977.camel@calx>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757073Ab1FGUwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 16:52:38 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:22784 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755498Ab1FGUwg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 16:52:36 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-15.tower-131.messagelabs.com!1307479951!26910372!18
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.32]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] gpio-ep93xx: fix pr_fmt output
+Date: Tue, 7 Jun 2011 13:52:01 -0700
+User-Agent: KMail/1.9.9
+CC: <grant.likely@secretlab.ca>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201106071352.02183.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Jun 2011, Matt Mackall wrote:
+With this driver now being moved from arch/arm/mach-ep93xx/gpio.c to
+drivers/gpio/gpio-ep93xx.c the prefix "ep93xx" is now redundant in the
+pr_* output. Using KBUILD_MODNAME is sufficient.
 
-> But my point is that if we have adhoc transitions, we will encounter the
-> "fix all the scripts and websites" pain at every transition. And tools
-> that are managed via distros and the like can literally take years to
-> get into the hands of users. It'd be nice if the copy of ketchup shipped
-> in <enterprise distro> just worked 3 years from now because 4.0 wasn't a
-> surprise.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
 
-if you special case 2.4->2.6, and make the default that 4.0 > 3.x, 5.0 > 
-4.x, etc won't things 'just work' for the forseeable future?
+---
 
-David Lang
+diff --git a/drivers/gpio/gpio-ep93xx.c b/drivers/gpio/gpio-ep93xx.c
+index c33c9a8..3d427b9 100644
+--- a/drivers/gpio/gpio-ep93xx.c
++++ b/drivers/gpio/gpio-ep93xx.c
+@@ -11,7 +11,7 @@
+  *  published by the Free Software Foundation.
+  */
+ 
+-#define pr_fmt(fmt) "ep93xx " KBUILD_MODNAME ": " fmt
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/init.h>
+ #include <linux/module.h>
