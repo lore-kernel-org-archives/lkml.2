@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab1FGTdE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 15:33:04 -0400
-Received: from DMZ-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.34]:53955 "EHLO
-	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755430Ab1FGTdC (ORCPT
+	id S1758247Ab1FGTdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 15:33:08 -0400
+Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:62968 "EHLO
+	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755430Ab1FGTdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 15:33:02 -0400
-X-AuditID: 12074422-b7b0eae000007f48-a0-4dee7cf3d88e
+	Tue, 7 Jun 2011 15:33:05 -0400
+X-AuditID: 1209190e-b7c39ae000000a8c-08-4dee7ce20474
 From: Andy Lutomirski <luto@MIT.EDU>
 To: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
         Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH 2/5] x86-64: Allow alternative patching in the vDSO
-Date: Tue,  7 Jun 2011 15:32:39 -0400
-Message-Id: <9f34abb8ee488207e6b1cc2972eee81a4e612a0d.1307474707.git.luto@mit.edu>
+Subject: [PATCH 3/5] x86-64: Add --no-undefined to vDSO build
+Date: Tue,  7 Jun 2011 15:32:40 -0400
+Message-Id: <720f2afeac4ceb7cf01ed65d0405101e3ef62f1a.1307474707.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.5.2
 In-Reply-To: <cover.1307474707.git.luto@mit.edu>
 References: <cover.1307474707.git.luto@mit.edu>
 In-Reply-To: <cover.1307474707.git.luto@mit.edu>
 References: <cover.1307474707.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsUixCmqrPu55p2vwdzr0hZ9V46yW1zeNYfN
-	YsulZlaLHxseszqweNxq+8PssXPWXXaPTas62Tw+b5ILYInisklJzcksSy3St0vgypg78zpz
-	wVWeisUfJzM1MM7j6mLk5JAQMJGY/HgbE4QtJnHh3nq2LkYuDiGBfYwSi+buZ4Zw1jNKHOhf
-	wArhHGKSmLFlLxtIC5uAikTH0gdA7RwcIgJCEkvv1oGEmQXSJOZe/8UCYgsLOEs0zjjECGKz
-	CKhKNOzvZAWxeQWCJBp2L2QEaZUQUJA4vyofxOQUMJD4d7sWxBQS0JfY8EUQu+gERoEFjAyr
-	GGVTcqt0cxMzc4pTk3WLkxPz8lKLdE31cjNL9FJTSjcxgoKP3UVpB+PPg0qHGAU4GJV4eBNC
-	3vkKsSaWFVfmHmKU5GBSEuU1rAYK8SXlp1RmJBZnxBeV5qQWH2KU4GBWEuGdcf2trxBvSmJl
-	VWpRPkxKmoNFSZx3jqS6r5BAemJJanZqakFqEUxWhoNDSYJXAxhlQoJFqempFWmZOSUIaSYO
-	TpDhPEDDX4Ms5i0uSMwtzkyHyJ9i1OXYeuLtQUYhlrz8vFQpcV4+kEECIEUZpXlwc2BJ4xWj
-	ONBbwrxzQKp4gAkHbtIroCVMQEtOnwX5oLgkESEl1cAYN02UzWbia32XzEO3H+96t1jj4lT2
-	DRW9uaW+QXw3QpasdVINnLq2beUqv3zu88+TeFRup28xd4gsqvw/VV/3x7dfvruCrrw/dnXB
-	8lsBy922f5R/oMesvZNN9vT0qsiytxdZ5r8ujn0wMflHrA3z85qbIm/kbmY4b3k0K/jUw8zJ
-	P1VcHtgmKLEUZyQaajEXFScCAFPuPv31AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsUixCmqrPuo5p2vwYLlyhZ9V46yW1zeNYfN
+	YsulZlaLHxseszqweNxq+8PssXPWXXaPTas62Tw+b5ILYInisklJzcksSy3St0vgytj6cS9r
+	wWPWim/nNrA1MD5m6WLk5JAQMJHYfP4kG4QtJnHh3nogm4tDSGAfo0TvoqNgRUIC6xklZp8L
+	hLAPMUmsvm4CYrMJqEh0LH3A1MXIwSEiICSx9G4dSJhZIE1i7vVfYK3CArYSi1Z/YgexWQRU
+	Jb7tPgO2i1cgSOLbo6PsIK0SAgoS51flg5icAgYS/27XgphCAvoSG74IYhedwCiwgJFhFaNs
+	Sm6Vbm5iZk5xarJucXJiXl5qka6xXm5miV5qSukmRnDgSfLtYPx6UOkQowAHoxIPb0HIO18h
+	1sSy4srcQ4ySHExKoryG1UAhvqT8lMqMxOKM+KLSnNTiQ4wSHMxKIrwzrr/1FeJNSaysSi3K
+	h0lJc7AoifPOlFT3FRJITyxJzU5NLUgtgsnKcHAoSfCmAiNMSLAoNT21Ii0zpwQhzcTBCTKc
+	B2j4a5DFvMUFibnFmekQ+VOMuhxbT7w9yCjEkpeflyolzssHMkgApCijNA9uDixhvGIUB3pL
+	mDcRpIoHmGzgJr0CWsIEtOT0WZAPiksSEVJSDYz1a7tWnTqytFqC9dKH5IOLolZOct1rwVKv
+	WGZdUfDFYI1xw/oj8m/m7ZVN4NxWHlzp2DC9vrb6fHn5bKNV5/SuTJj6UMbwstBiR/EtK3q8
+	VgZ9DfNe0bWlwNbVOFSda5c33ywGhiP/jZPEa/NZ/Xt4nJw/Gl3J4o29OOXVPO0TPiccn69Y
+	0anEUpyRaKjFXFScCAADezZl8wIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code is short enough and different enough from the module
-loader that it's not worth trying to share anything.
+This gives much nicer diagnostics when something goes wrong.  It's
+supported at least as far back as binutils 2.15.
 
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/vdso/vma.c |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
+ arch/x86/vdso/Makefile |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 7abd2be..b8b074c1 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -23,11 +23,43 @@ extern unsigned short vdso_sync_cpuid;
- static struct page **vdso_pages;
- static unsigned vdso_size;
+diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+index bef0bc9..5d17950 100644
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -26,6 +26,7 @@ targets += vdso.so vdso.so.dbg vdso.lds $(vobjs-y)
+ export CPPFLAGS_vdso.lds += -P -C
  
-+static void patch_vdso(void *vdso, size_t len)
-+{
-+	Elf64_Ehdr *hdr = vdso;
-+	Elf64_Shdr *sechdrs, *alt_sec = 0;
-+	char *secstrings;
-+	void *alt_data;
-+	int i;
-+
-+	BUG_ON(len < sizeof(Elf64_Ehdr));
-+	BUG_ON(memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0);
-+
-+	sechdrs = (void *)hdr + hdr->e_shoff;
-+	secstrings = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
-+
-+	for (i = 1; i < hdr->e_shnum; i++) {
-+		Elf64_Shdr *shdr = &sechdrs[i];
-+		if (!strcmp(secstrings + shdr->sh_name, ".altinstructions")) {
-+			alt_sec = shdr;
-+			break;
-+		}
-+	}
-+
-+	if (!alt_sec)
-+		return;  /* nothing to patch */
-+
-+	alt_data = (void *)hdr + alt_sec->sh_offset;
-+
-+	apply_alternatives(alt_data, alt_data + alt_sec->sh_size);
-+}
-+
- static int __init init_vdso_vars(void)
- {
- 	int npages = (vdso_end - vdso_start + PAGE_SIZE - 1) / PAGE_SIZE;
- 	int i;
+ VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
++			-Wl,--no-undefined \
+ 		      	-Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096
  
-+	patch_vdso(vdso_start, vdso_end - vdso_start);
-+
- 	vdso_size = npages << PAGE_SHIFT;
- 	vdso_pages = kmalloc(sizeof(struct page *) * npages, GFP_KERNEL);
- 	if (!vdso_pages)
+ $(obj)/vdso.o: $(src)/vdso.S $(obj)/vdso.so
 -- 
 1.7.5.2
 
