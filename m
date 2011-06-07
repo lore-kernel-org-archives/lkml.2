@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab1FGQhH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 12:37:07 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55272 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231Ab1FGQhF (ORCPT
+	id S1756506Ab1FGQhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 12:37:55 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:63523 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292Ab1FGQhx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 12:37:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xkFWK5NWgIeBt7VA6QLItKPsukLicuPRS08/CIlihC607G6jisWWXYA0hZZ+om44Ie
-         zgK6EGLCn4c9ZYLmFGkFU6FRlOqFw+soCfjj6HxQ6thGO5zYUkMJJNKFDdmVWcrsPp6t
-         5LOvMMCzlhp1PaXl0XQS1u+NFvytPt1dUHKzk=
-Date: Wed, 8 Jun 2011 01:36:57 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Sattler <tsattler@gmx.de>, Ury Stankevich <urykhy@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] mm: compaction: Abort compaction if too many pages
- are isolated and caller is asynchronous V2
-Message-ID: <20110607163657.GM1686@barrios-laptop>
-References: <1307459225-4481-1-git-send-email-mgorman@suse.de>
- <1307459225-4481-5-git-send-email-mgorman@suse.de>
- <20110607155029.GL1686@barrios-laptop>
- <20110607162711.GO5247@suse.de>
+	Tue, 7 Jun 2011 12:37:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110607162711.GO5247@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87hb81r5l2.fsf@ti.com>
+References: <1307392698-21170-1-git-send-email-ccross@android.com>
+ <87boyav99n.fsf@ti.com> <BANLkTik-UK9EPsnUkQeih+Zf_9py-X2Q0A@mail.gmail.com> <87hb81r5l2.fsf@ti.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 7 Jun 2011 10:37:33 -0600
+X-Google-Sender-Auth: C_GyYO-xUbpSoIAvf3ctmm4dgFQ
+Message-ID: <BANLkTikRiHQWkfCt3ica-+aFy+JJte5g8A@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] ARM: omap4: gpio: fix setting IRQWAKEN bits
+To: Kevin Hilman <khilman@ti.com>
+Cc: Colin Cross <ccross@android.com>, linux-omap@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, tarun.kanti@ti.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 05:27:11PM +0100, Mel Gorman wrote:
-> Changelog since V1
->   o Return COMPACT_PARTIAL when aborting due to too many isolated
->     pages. As pointed out by Minchan, this is better for consistency
-> 
-> Asynchronous compaction is used when promoting to huge pages. This is
-> all very nice but if there are a number of processes in compacting
-> memory, a large number of pages can be isolated. An "asynchronous"
-> process can stall for long periods of time as a result with a user
-> reporting that firefox can stall for 10s of seconds. This patch aborts
-> asynchronous compaction if too many pages are isolated as it's better to
-> fail a hugepage promotion than stall a process.
-> 
-> [minchan.kim@gmail.com: Return COMPACT_PARTIAL for abort]
-> Reported-and-tested-by: Ury Stankevich <urykhy@gmail.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Tue, Jun 7, 2011 at 10:04 AM, Kevin Hilman <khilman@ti.com> wrote:
+> Grant Likely <grant.likely@secretlab.ca> writes:
+>
+>> On Mon, Jun 6, 2011 at 5:18 PM, Kevin Hilman <khilman@ti.com> wrote:
+>>> Hi Colin,
+>>>
+>>> Colin Cross <ccross@android.com> writes:
+>>>
+>>>> Setting the IRQWAKEN bit was overwriting previous IRQWAKEN bits,
+>>>> causing only the last bit set to take effect, resulting in lost
+>>>> wakeups when the GPIO controller is in idle.
+>>>>
+>>>> Replace direct writes to IRQWAKEN with MOD_REG_BIT calls to
+>>>> perform a read-modify-write on the register.
+>>>>
+>>>> Signed-off-by: Colin Cross <ccross@android.com>
+>>>
+>>> Thanks, I'll queue these both for Grant for the 3.0-rc fixes along with
+>>> another GPIO fix for a section mismatch I have queued.
+>>>
+>>> Minor: now that this driver has moved to drivers, I changed the subject
+>>> prefixes slightly.  They now read:
+>>>
+>>> GPIO: OMAP: fix setting IRQWAKEN bits for OMAP4
+>>> GPIO: OMAP: add locking around calls to _set_gpio_triggering
+>>
+>> If you're collecting fixes for Linus anyway, go ahead and add my a-b
+>> line and include these two to send on to Linus
+>>
+>> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+>>
+>> Or, if they are only gpio fixes, then I'd also be happy to get a git
+>> pull req for the changes.  :-)
+>>
+>
+> I have a GPIO-only queue, so I'll have a pull req for you today.
 
--- 
-Kind regards
-Minchan Kim
+thx.
+
+g.
