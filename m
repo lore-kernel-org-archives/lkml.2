@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab1FGMGv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 08:06:51 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:50866 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab1FGMGu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 08:06:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=PV6sWkHO++0vr9YZZgq6S0RXgYvjHbANTUf/nnU2XZRllStI7qa4GjcVQalKmedwzk
-         LcxrP+ZVQgQv49PP4n8qYqoOIixGTmRS8ceJJMkyDXHx6CwndLhN1BU8Zn+dNEkjcWJj
-         iq46qXwLo6NLvRGFy5GDeix+qSW+XsuYF5z8c=
-Date: Tue, 7 Jun 2011 20:06:30 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <menage@google.com>
-Subject: [Patch] doc: remove ns_cgroup from feature-removal-schedule.txt
-Message-ID: <20110607120630.GA3550@cr0>
+	id S1752953Ab1FGMLE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 08:11:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40260 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751596Ab1FGMLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 08:11:02 -0400
+Date: Tue, 7 Jun 2011 14:10:50 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: paulus@samba.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
+        oleg@redhat.com
+Subject: Re: [PATCH] perf, core: Fix initial task_ctx/event installation
+Message-ID: <20110607121050.GB3233@jolsa.brq.redhat.com>
+References: <1307371095-10141-1-git-send-email-jolsa@redhat.com>
+ <1307382026.2322.226.camel@twins>
+ <1307384837.2497.738.camel@laptop>
+ <1307399008.2497.971.camel@laptop>
+ <20110606222856.GA2280@jolsa.Belkin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110606222856.GA2280@jolsa.Belkin>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the following commit Daniel removed ns_cgroup
+On Tue, Jun 07, 2011 at 12:28:56AM +0200, Jiri Olsa wrote:
+> On Tue, Jun 07, 2011 at 12:23:28AM +0200, Peter Zijlstra wrote:
+> > This works for me..
+> > 
+> > ---
+> >  kernel/events/core.c |   28 +++++++++++++++++-----------
+> >  1 files changed, 17 insertions(+), 11 deletions(-)
+> > 
+> > diff --git a/kernel/events/core.c b/kernel/events/core.c
+> > index ba89f40..5e8c7b1 100644
+> > --- a/kernel/events/core.c
+> > +++ b/kernel/events/core.c
+> > @@ -1505,25 +1505,31 @@ static int  __perf_install_in_context(void *info)
+> >  	struct perf_event_context *task_ctx = cpuctx->task_ctx;
+> >  	struct task_struct *task = current;
+> >  
+> > -	perf_ctx_lock(cpuctx, cpuctx->task_ctx);
+> > +	perf_ctx_lock(cpuctx, task_ctx);
+> >  	perf_pmu_disable(cpuctx->ctx.pmu);
+> >  
+> >  	/*
+> >  	 * If there was an active task_ctx schedule it out.
+> >  	 */
+> > -	if (task_ctx) {
+> > +	if (task_ctx)
+> >  		task_ctx_sched_out(task_ctx);
+> > -		/*
+> > -		 * If the context we're installing events in is not the
+> > -		 * active task_ctx, flip them.
+> > -		 */
+> > -		if (ctx->task && task_ctx != ctx) {
+> > -			raw_spin_unlock(&cpuctx->ctx.lock);
+> > -			raw_spin_lock(&ctx->lock);
+> > -			cpuctx->task_ctx = task_ctx = ctx;
+> > -		}
+> > +
+> > +	/*
+> > +	 * If the context we're installing events in is not the
+> > +	 * active task_ctx, flip them.
+> > +	 */
+> > +	if (ctx->task && task_ctx != ctx) {
+> > +		if (task_ctx)
+> > +			raw_spin_unlock(&task_ctx->lock);
+> > +		raw_spin_lock(&ctx->lock);
+> > +		task_ctx = ctx;
+> > +	}
+> > +
+> > +	if (task_ctx) {
+> > +		cpuctx->task_ctx = task_ctx;
+> >  		task = task_ctx->task;
+> >  	}
+> > +
+> >  	cpu_ctx_sched_out(cpuctx, EVENT_ALL);
+> >  
+> >  	update_context_time(ctx);
+> > 
+> > 
+> 
+> just came back :) seems ok.. I'll test tomorow and let you know
+works ok for me
 
-	commit a77aea92010acf54ad785047234418d5d68772e2
-	Author: Daniel Lezcano <daniel.lezcano@free.fr>
-	Date:   Thu May 26 16:25:23 2011 -0700
-
-	    cgroup: remove the ns_cgroup
-
-but Daniel forgot to remove the related doc in feature-removal-schedule.txt.
-This patch removes that too.
-
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-
----
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 1a9446b..72e2384 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -481,23 +481,6 @@ Who:	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
- 
- ----------------------------
- 
--What:   namespace cgroup (ns_cgroup)
--When:   2.6.38
--Why:    The ns_cgroup leads to some problems:
--	* cgroup creation is out-of-control
--	* cgroup name can conflict when pids are looping
--	* it is not possible to have a single process handling
--	a lot of namespaces without falling in a exponential creation time
--	* we may want to create a namespace without creating a cgroup
--
--	The ns_cgroup is replaced by a compatibility flag 'clone_children',
--	where a newly created cgroup will copy the parent cgroup values.
--	The userspace has to manually create a cgroup and add a task to
--	the 'tasks' file.
--Who:    Daniel Lezcano <daniel.lezcano@free.fr>
--
------------------------------
--
- What:	iwlwifi disable_hw_scan module parameters
- When:	2.6.40
- Why:	Hareware scan is the prefer method for iwlwifi devices for
+thanks,
+jirka
