@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806Ab1FGKty (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 06:49:54 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49913 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab1FGKtx (ORCPT
+	id S1752269Ab1FGKvR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 06:51:17 -0400
+Received: from mail.kernelconcepts.de ([212.60.202.196]:47814 "EHLO
+	mail.kernelconcepts.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab1FGKvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 06:49:53 -0400
-Date: Tue, 7 Jun 2011 12:49:56 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: x86: 3.0-rc2 link failure in APM
-Message-ID: <20110607104956.GA29447@gere.osrc.amd.com>
-References: <alpine.SOC.1.00.1106070853520.18451@math.ut.ee>
+	Tue, 7 Jun 2011 06:51:15 -0400
+Message-ID: <4DEE02A0.7030702@kernelconcepts.de>
+Date: Tue, 07 Jun 2011 12:51:12 +0200
+From: Simon Budig <simon.budig@kernelconcepts.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.SOC.1.00.1106070853520.18451@math.ut.ee>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-input@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Patch to add guarding parentheses to some macros in linux/input.h
+References: <4DE6AD3B.4000600@kernelconcepts.de>
+In-Reply-To: <4DE6AD3B.4000600@kernelconcepts.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 01:39:38PM +0300, Meelis Roos wrote:
-> ERROR: "pm_idle" [arch/x86/kernel/apm.ko] undefined!
-> ERROR: "default_idle" [arch/x86/kernel/apm.ko] undefined!
-> 
-> Seems that apm module has 2 unresolved symbols with this configuration 
-> (made incrementally with make oldconfig over time).
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-By looking at 06ae40ce073daf233607a3c54a489f2c1e44683e,
-CONFIG_APM should depend on or select both CONFIG_APM_MODULE and
-CONFIG_APM_CPU_IDLE.
+On 06/01/2011 11:20 PM, Simon Budig wrote:
+> The attached patch adds parentheses to ensure correct operator precedence.
 
-Adding some more people to Cc.
+Seems this patch did not draw any attention to it. Is this because it is
+somewhat pointless? Or is it too uncontroversial?  :-)
 
--- 
-Regards/Gruss,
-Boris.
+I'd appreciate any hints on how to proceed from here.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Thanks,
+        Simon
+
+- -- 
+       Simon Budig                        kernel concepts GbR
+       simon.budig@kernelconcepts.de      Sieghuetter Hauptweg 48
+       +49-271-771091-17                  D-57072 Siegen
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk3uAqAACgkQO2O/RXesiHD8bwCfZz10ADGqx0yUbPJCSlmvNthL
+JZsAn2Mc+gj1UQ5nSAWGonf46s6Xg/Uq
+=Ug6H
+-----END PGP SIGNATURE-----
