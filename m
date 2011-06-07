@@ -1,133 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758684Ab1FGVqt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 17:46:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56719 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758556Ab1FGVoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 17:44:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,334,1304319600"; 
-   d="scan'208";a="10383320"
-Message-Id: <20110607213855.261359191@intel.com>
-User-Agent: quilt/0.48-1
-Date: Wed, 08 Jun 2011 05:32:51 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
-cc: Dave Chinner <david@fromorbit.com>
-cc: Christoph Hellwig <hch@infradead.org>
-cc: <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 15/15] writeback: trace event writeback_queue_io
-References: <20110607213236.634026193@intel.com>
-Content-Disposition: inline; filename=writeback-trace-queue_io.patch
+	id S932508Ab1FGVkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:40:35 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:33470 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753472Ab1FGVkd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 17:40:33 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jun 2011 17:40:33 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Message-ID:In-Reply-To:References:Date:Subject:From:To:Cc:User-Agent:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Priority:Importance:X-Identified-User;
+	b=nPT4hJKvs9zrz6Im3uVz0UUvGqxUwrsRiv/QB430ugJKYM9u249p+da5hHykDqIEB0LszibDzrQTdlSs+Y0amRQ3bkf3RFqpXAkz9mMWArpHl3wPno2nJ3THezcLnspY;
+Message-ID: <05cba294449b86a9aa22cec4abc7e98f.squirrel@xenotime.net>
+In-Reply-To: <4DEE9695.7060805@ece.ntua.gr>
+References: <4DEDD5F4.1070602@kingswood-consulting.co.uk>
+    <1307451186.4204.953.camel@calx> <4DEE808D.6020405@ece.ntua.gr>
+    <1307477435.4204.968.camel@calx> <4DEE8AD9.3050508@ece.ntua.gr>
+    <1307479572.4204.977.camel@calx>
+    <alpine.DEB.2.02.1106071349000.28905@asgard.lang.hm>
+    <1307480372.4204.987.camel@calx> <4DEE9695.7060805@ece.ntua.gr>
+Date: Tue, 7 Jun 2011 14:33:53 -0700
+Subject: Re: ketchup script and 3.0
+From: "Randy Dunlap" <rdunlap@xenotime.net>
+To: "Stratos Psomadakis" <psomas@ece.ntua.gr>
+Cc: "Matt Mackall" <mpm@selenic.com>, david@lang.hm,
+        linux-kernel@vger.kernel.org,
+        "Frank Kingswood" <frank@kingswood-consulting.co.uk>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
+User-Agent: SquirrelMail/1.4.21
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:program running on server}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note that it adds a little overheads to account the moved/enqueued
-inodes from b_dirty to b_io. The "moved" accounting may be later used to
-limit the number of inodes that can be moved in one shot, in order to
-keep spinlock hold time under control.
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/fs-writeback.c                |   14 ++++++++++----
- include/trace/events/writeback.h |   25 +++++++++++++++++++++++++
- 2 files changed, 35 insertions(+), 4 deletions(-)
+On Tue, June 7, 2011 2:22 pm, Stratos Psomadakis wrote:
+> On 06/07/2011 11:59 PM, Matt Mackall wrote:
+>> On Tue, 2011-06-07 at 13:50 -0700, david@lang.hm wrote:
+>>> On Tue, 7 Jun 2011, Matt Mackall wrote:
+>>>
+>>>> But my point is that if we have adhoc transitions, we will encounter
+>>>> the
+>>>> "fix all the scripts and websites" pain at every transition. And tools
+>>>> that are managed via distros and the like can literally take years to
+>>>> get into the hands of users. It'd be nice if the copy of ketchup
+>>>> shipped
+>>>> in <enterprise distro> just worked 3 years from now because 4.0 wasn't
+>>>> a
+>>>> surprise.
+>>> if you special case 2.4->2.6, and make the default that 4.0 > 3.x, 5.0
+>>> >
+>>> 4.x, etc won't things 'just work' for the forseeable future?
+>> No, because you sometimes want to know what 2.6.39++ is and what 3.0--
+>> is.
+>>
+>> For instance, to upgrade from 2.6.37.2 to 3.1.2, ketchup will want to
+>> download, cache, and apply:
+>>
+>> patch-2.6.37.2 (reversed!)
+>> patch-2.6.38
+>> patch-2.6.39
+>> patch-3.0 ?? <- hopefully Linus will make a delta against 2.6.39!
+>> patch-3.1
+>> patch-3.1.2
+> Well, if this is a ketchup-only issue (and there's no other need for
+> defining at which point major numbers are going to inc), we could find a
+> solution/workaround (to future-proof it, without the need of constant
+> updating of the code with every major release), but it'll probably be
+> uglier, and I think that what Matt proposed is better.
 
---- linux-next.orig/fs/fs-writeback.c	2011-05-24 11:17:26.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-05-24 11:17:27.000000000 +0800
-@@ -248,15 +248,16 @@ static bool inode_dirtied_after(struct i
- /*
-  * Move expired dirty inodes from @delaying_queue to @dispatch_queue.
-  */
--static void move_expired_inodes(struct list_head *delaying_queue,
-+static int move_expired_inodes(struct list_head *delaying_queue,
- 			       struct list_head *dispatch_queue,
--				unsigned long *older_than_this)
-+			       unsigned long *older_than_this)
- {
- 	LIST_HEAD(tmp);
- 	struct list_head *pos, *node;
- 	struct super_block *sb = NULL;
- 	struct inode *inode;
- 	int do_sb_sort = 0;
-+	int moved = 0;
- 
- 	while (!list_empty(delaying_queue)) {
- 		inode = wb_inode(delaying_queue->prev);
-@@ -267,12 +268,13 @@ static void move_expired_inodes(struct l
- 			do_sb_sort = 1;
- 		sb = inode->i_sb;
- 		list_move(&inode->i_wb_list, &tmp);
-+		moved++;
- 	}
- 
- 	/* just one sb in list, splice to dispatch_queue and we're done */
- 	if (!do_sb_sort) {
- 		list_splice(&tmp, dispatch_queue);
--		return;
-+		goto out;
- 	}
- 
- 	/* Move inodes from one superblock together */
-@@ -284,6 +286,8 @@ static void move_expired_inodes(struct l
- 				list_move(&inode->i_wb_list, dispatch_queue);
- 		}
- 	}
-+out:
-+	return moved;
- }
- 
- /*
-@@ -299,9 +303,11 @@ static void move_expired_inodes(struct l
-  */
- static void queue_io(struct bdi_writeback *wb, unsigned long *older_than_this)
- {
-+	int moved;
- 	assert_spin_locked(&wb->list_lock);
- 	list_splice_init(&wb->b_more_io, &wb->b_io);
--	move_expired_inodes(&wb->b_dirty, &wb->b_io, older_than_this);
-+	moved = move_expired_inodes(&wb->b_dirty, &wb->b_io, older_than_this);
-+	trace_writeback_queue_io(wb, older_than_this, moved);
- }
- 
- static int write_inode(struct inode *inode, struct writeback_control *wbc)
---- linux-next.orig/include/trace/events/writeback.h	2011-05-24 11:17:26.000000000 +0800
-+++ linux-next/include/trace/events/writeback.h	2011-05-24 11:17:27.000000000 +0800
-@@ -162,6 +162,31 @@ DEFINE_WBC_EVENT(wbc_balance_dirty_writt
- DEFINE_WBC_EVENT(wbc_balance_dirty_wait);
- DEFINE_WBC_EVENT(wbc_writepage);
- 
-+TRACE_EVENT(writeback_queue_io,
-+	TP_PROTO(struct bdi_writeback *wb,
-+		 unsigned long *older_than_this,
-+		 int moved),
-+	TP_ARGS(wb, older_than_this, moved),
-+	TP_STRUCT__entry(
-+		__array(char,		name, 32)
-+		__field(unsigned long,	older)
-+		__field(long,		age)
-+		__field(int,		moved)
-+	),
-+	TP_fast_assign(
-+		strncpy(__entry->name, dev_name(wb->bdi->dev), 32);
-+		__entry->older	= older_than_this ?  *older_than_this : 0;
-+		__entry->age	= older_than_this ?
-+				  (jiffies - *older_than_this) * 1000 / HZ : -1;
-+		__entry->moved	= moved;
-+	),
-+	TP_printk("bdi %s: older=%lu age=%ld enqueue=%d",
-+		__entry->name,
-+		__entry->older,	/* older_than_this in jiffies */
-+		__entry->age,	/* older_than_this in relative milliseconds */
-+		__entry->moved)
-+);
-+
- DECLARE_EVENT_CLASS(writeback_congest_waited_template,
- 
- 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
+It's also an issue for scripts/patch-kernel, unless I decide
+to just kill (drop) it.
 
+> Anyway, when this issue is clarified, I'll try to fix the code, in order
+> to handle next major releases, without requiring code changes.
+
+
+
+-- 
+~Randy
 
