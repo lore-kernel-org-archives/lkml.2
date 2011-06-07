@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758448Ab1FGVaO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 17:30:14 -0400
+	id S932255Ab1FGVa7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:30:59 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44977 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757576Ab1FGVaJ (ORCPT
+	with ESMTP id S1754167Ab1FGVaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 17:30:09 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=vhdKIqpQuCYA:10 a=3Yp08V7tlJQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=enOvQawGAAAA:8 a=3nbZYyFuAAAA:8 a=meVymXHHAAAA:8 a=uYu6aynSuKuM8678MIoA:9 a=x2s00ahUVQyVQlg42cwA:7 a=jEp0ucaQiEUA:10 a=bkT6KWdcy0IA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Tue, 7 Jun 2011 17:30:10 -0400
+X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=vhdKIqpQuCYA:10 a=SYPlwkI5uy8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=qrFUQHepZ-ABwXDrkuMA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110607213007.312394187@goodmis.org>
+Message-Id: <20110607213007.577456514@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 07 Jun 2011 17:29:39 -0400
+Date: Tue, 07 Jun 2011 17:29:40 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        David Daney <ddaney@caviumnetworks.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH 2/3 v2] kprobes/trace: Fix kprobe selftest for gcc 4.6
+        "Richard W.M. Jones" <rjones@redhat.com>
+Subject: [PATCH 3/3 v2] ftrace: Revert 8ab2b7efd ftrace: Remove unnecessary disabling of
 References: <20110607212937.662660421@goodmis.org>
-Content-Disposition: inline; filename=0002-kprobes-trace-Fix-kprobe-selftest-for-gcc-4.6.patch
+Content-Disposition: inline; filename=0003-ftrace-Revert-8ab2b7efd-ftrace-Remove-unnecessary-di.patch
+ irqs
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-With gcc 4.6, the self test kprobe function:
+Revert the commit that removed the disabling of interrupts around
+the initial modifying of mcount callers to nops, and update the comment.
 
- kprobe_trace_selftest_target()
+The original comment was outdated and stated that the interrupts were
+being disabled to prevent kstop machine, which was required with the
+old ftrace daemon, but was no longer the case.
 
-is optimized such that kallsyms does not list it. The kprobes
-test uses this function to insert a probe and test it. But
-it will fail the test if the function is not listed in kallsyms.
+What the comment failed to mention was that interrupts needed to be
+disabled to keep interrupts from preempting the modifying of the code
+and then executing the code that was partially modified.
 
-Adding a __used annotation keeps the symbol in the kallsyms table.
+Revert the commit and update the comment.
 
-Suggested-by: David Daney <ddaney@caviumnetworks.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reported-by: Richard W.M. Jones <rjones@redhat.com>
+Tested-by: Richard W.M. Jones <rjones@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_kprobe.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+ kernel/trace/ftrace.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index f925c45..27d13b3 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1870,8 +1870,12 @@ fs_initcall(init_kprobe_trace);
- 
- #ifdef CONFIG_FTRACE_STARTUP_TEST
- 
--static int kprobe_trace_selftest_target(int a1, int a2, int a3,
--					int a4, int a5, int a6)
-+/*
-+ * The "__used" keeps gcc from removing the function symbol
-+ * from the kallsyms table.
-+ */
-+static __used int kprobe_trace_selftest_target(int a1, int a2, int a3,
-+					       int a4, int a5, int a6)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 204b3eb..908038f 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3330,6 +3330,7 @@ static int ftrace_process_locs(struct module *mod,
  {
- 	return a1 + a2 + a3 + a4 + a5 + a6;
- }
+ 	unsigned long *p;
+ 	unsigned long addr;
++	unsigned long flags;
+ 
+ 	mutex_lock(&ftrace_lock);
+ 	p = start;
+@@ -3346,7 +3347,13 @@ static int ftrace_process_locs(struct module *mod,
+ 		ftrace_record_ip(addr);
+ 	}
+ 
++	/*
++	 * Disable interrupts to prevent interrupts from executing
++	 * code that is being modified.
++	 */
++	local_irq_save(flags);
+ 	ftrace_update_code(mod);
++	local_irq_restore(flags);
+ 	mutex_unlock(&ftrace_lock);
+ 
+ 	return 0;
 -- 
 1.7.4.4
 
