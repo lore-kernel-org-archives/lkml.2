@@ -1,113 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab1FGAmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jun 2011 20:42:54 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:51862 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754948Ab1FGAmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jun 2011 20:42:54 -0400
-Date: Mon, 6 Jun 2011 17:42:50 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Milton Miller <miltonm@bga.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [1/4] rcu: Detect uses of rcu read side in extended quiescent
- states
-Message-ID: <20110607004250.GZ3066@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1307329858-14999-3-git-send-email-fweisbec@gmail.com>
- <rcu-splat-split-printk@mdm.bga.com>
- <20110606181021.GL3066@linux.vnet.ibm.com>
- <20110607001905.GE17026@somewhere.redhat.com>
+	id S1755982Ab1FGBEA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jun 2011 21:04:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49519 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754737Ab1FGBD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jun 2011 21:03:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=wNVF1wxy7P3YtupjL2rJOFI1+yNQQ+iG3mpfDafH2dXatouobi9s3/eS2/mkqR3cmB
+         9wLeTMZpSyLrQh0Vlc3+Hxd5qd4uRU7xW02ths8iC0XU8jjju2hD8iEEnAJ2Dvqz0HFv
+         py1yK3QQTqMZiezoA2btI2wnrbJRqx8sLIZ4Q=
+Date: Tue, 7 Jun 2011 09:03:46 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [Oops]RFC:include/trace/events/btrfs.h
+Message-ID: <20110607010344.GA8892@gmail.com>
+Mail-Followup-To: Randy Dunlap <randy.dunlap@oracle.com>,
+	linux-kernel@vger.kernel.org
+References: <20110605034111.GA7215@gmail.com>
+ <20110606134719.b24ecc07.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=gb2312
 Content-Disposition: inline
-In-Reply-To: <20110607001905.GE17026@somewhere.redhat.com>
+In-Reply-To: <20110606134719.b24ecc07.randy.dunlap@oracle.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 02:19:07AM +0200, Frederic Weisbecker wrote:
-> On Mon, Jun 06, 2011 at 11:10:21AM -0700, Paul E. McKenney wrote:
-> > commit c15d76f26712bd5228aa0c6af7a7e7c492a812c9
-> > Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Date:   Tue May 24 08:31:09 2011 -0700
+On Mon, Jun 06, 2011 at 01:47:19PM -0700, Randy Dunlap wrote:
+> On Sun, 5 Jun 2011 11:41:14 +0800 Harry Wei wrote:
+> 
+> > From: Harry Wei <harryxiyou@gmail.com>
 > > 
-> >     rcu: Restore checks for blocking in RCU read-side critical sections
-> >     
-> >     Long ago, using TREE_RCU with PREEMPT would result in "scheduling
-> >     while atomic" diagnostics if you blocked in an RCU read-side critical
-> >     section.  However, PREEMPT now implies TREE_PREEMPT_RCU, which defeats
-> >     this diagnostic.  This commit therefore adds a replacement diagnostic
-> >     based on PROVE_RCU.
-> >     
-> >     Because rcu_lockdep_assert() and lockdep_rcu_dereference() are now being
-> >     used for things that have nothing to do with rcu_dereference(), rename
-> >     lockdep_rcu_dereference() to lockdep_rcu_suspicious() and add a third
-> >     argument that is a string indicating what is suspicious.  This third
-> >     argument is passed in from a new third argument to rcu_lockdep_assert().
-> >     Update all calls to rcu_lockdep_assert() to add an informative third
-> >     argument.
-> >     
-> >     Finally, add a pair of rcu_lockdep_assert() calls from within
-> >     rcu_note_context_switch(), one complaining if a context switch occurs
-> >     in an RCU-bh read-side critical section and another complaining if a
-> >     context switch occurs in an RCU-sched read-side critical section.
-> >     These are present only if the PROVE_RCU kernel parameter is enabled.
-> >     
-> >     Again, you must enable PROVE_RCU to see these new diagnostics.  But you
-> >     are enabling PROVE_RCU to check out new RCU uses in any case, aren't you?
-> >     
-> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > When i compile 2.6.39.1, it shows something wrong
+> > like below. When i open the file include/trace/events/btrfs.h
+> > i don't know how to fix these oops. They just give the entry
+> > of the function. So i can't get the exact line of the warnings.
+> > Can anyone give me some suggestions?
 > 
-> A little comment about this patch:
+> Yeah, those line numbers (below) don't help very much.
 > 
-> <snip>
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index 88547c8..8b4b3da 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -153,6 +153,12 @@ void rcu_bh_qs(int cpu)
-> >   */
-> >  void rcu_note_context_switch(int cpu)
-> >  {
-> > +	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map),
-> > +			   "Illegal context switch in RCU-bh"
-> > +			   " read-side critical section");
-> > +	rcu_lockdep_assert(!lock_is_held(&rcu_sched_lock_map),
-> > +			   "Illegal context switch in RCU-sched"
-> > +			   " read-side critical section");
-> 
-> This looks like more a check to make inside might_sleep().
-> It's better because might_sleep() triggers the check even if
-> we don't actually go to sleep.
+> There is a patch pending to fix these warnings.  It's from
+> liubo <liubo2009@cn.fujitsu.com>, posted on 2011-APR-19,
+> subject: [PATCH 1/2] tracing: add __print_symbolic_u64 to avoid warnings on 32bit machine
+>
+Yup, it is well for me.
 
-This does make quite a bit of sense.
-
-> In fact I believe might_sleep() already does the job fine:
-> 
-> If !PREEMPT, might_sleep() detects that preemption is disabled
-> by rcu_read_lock().
-
-If !PREEMPT, isn't the preempt_disable() called by rcu_read_lock()
-implemented as follows?
-
-#define preempt_disable()               do { } while (0)
-
-Unless I am missing something, __might_sleep() won't detect that.
-
-> If PREEMPT, might_sleep() checks rcu_preempt_depth().
-
-Agreed, for CONFIG_TREE_PREEMPT_RCU and CONFIG_TINY_PREEMPT_RCU,
-the existing might_sleep() checks do cover it.
-
-So I could export an rcu_might_sleep() or some such that contained
-the above two rcu_lockdep_assert()s, but only if !PREEMPT_RCU.
-If PREEMPT_RCU, rcu_might_sleep() would be a no-op.
-
-Seem reasonable, or am I missing something?
-
-							Thanx, Paul
+Thanks.
+Harry Wei.
