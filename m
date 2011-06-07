@@ -1,86 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab1FGQar (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 12:30:47 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:46311 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756297Ab1FGQao (ORCPT
+	id S1756397Ab1FGQbN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 12:31:13 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:19577 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756368Ab1FGQbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 12:30:44 -0400
-From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-Subject: [RFC PATCH V1 7/7] cpuidle: (POWER) Handle power_save=off
-To: linux-pm@lists.linux-foundation.org, linuxppc-dev@ozlabs.org
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 07 Jun 2011 22:00:38 +0530
-Message-ID: <20110607163033.6848.70719.stgit@tringupt.in.ibm.com>
-In-Reply-To: <20110607162847.6848.44707.stgit@tringupt.in.ibm.com>
-References: <20110607162847.6848.44707.stgit@tringupt.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
+	Tue, 7 Jun 2011 12:31:09 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-7.tower-160.messagelabs.com!1307464267!25009065!7
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.98]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Joe Perches <joe@perches.com>, Jiri Kosina <trivial@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 7 Jun 2011 11:31:06 -0500
+Subject: RE: [PATCH] treewide: Convert uses of struct resource * to
+ resource_size(ptr)
+Thread-Topic: [PATCH] treewide: Convert uses of struct resource * to
+ resource_size(ptr)
+Thread-Index: AcwkruaoVkwNIxP2QoSFuSpqo2cYswAgFAEg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3820B7E27@AUSP01VMBX24.collaborationhost.net>
+References: <201106061349.00474.hartleys@visionengravers.com>
+	 <1307397174.4994.26.camel@Joe-Laptop>
+	 <ADE657CA350FB648AAC2C43247A983F001F3820B7C78@AUSP01VMBX24.collaborationhost.net>
+ <1307408678.4994.46.camel@Joe-Laptop>
+In-Reply-To: <1307408678.4994.46.camel@Joe-Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p57GVKvr014707
 
-This patch makes pseries_idle_driver to be not registered when
-power_save=off kernel boot option is specified. For this
-boot_option_idle_override is used similar to how it is used for x86.
+On Monday, June 06, 2011 6:05 PM, Joe Perches wrote:
+> 
+> Done via coccinelle script:
+> 
+> struct resource *ptr;
+> @@
+> 
+> - ptr->end - ptr->start + 1
+> + resource_size(ptr)
+> 
+> Mostly uncompiled, not enough cross-compilers.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> 
+>> I think most of the offenders were caught back in late 2009.
+> 
+> There are quite a few left...
 
-Signed-off-by: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-Signed-off-by: Arun R Bharadwaj <arun@linux.vnet.ibm.com>
----
+[...]
 
- arch/powerpc/include/asm/processor.h            |    3 +++
- arch/powerpc/kernel/idle.c                      |    4 ++++
- arch/powerpc/platforms/pseries/processor_idle.c |    4 ++++
- 3 files changed, 11 insertions(+), 0 deletions(-)
+>  arch/arm/plat-mxc/pwm.c                    |    8 ++++----
 
-diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
-index d50c2b6..0ce167e 100644
---- a/arch/powerpc/include/asm/processor.h
-+++ b/arch/powerpc/include/asm/processor.h
-@@ -377,6 +377,9 @@ static inline unsigned long get_clean_sp(struct pt_regs *regs, int is_32)
- }
- #endif
- 
-+extern unsigned long  boot_option_idle_override;
-+enum idle_boot_override {IDLE_NO_OVERRIDE = 0, IDLE_POWERSAVE_OFF};
-+
- #endif /* __KERNEL__ */
- #endif /* __ASSEMBLY__ */
- #endif /* _ASM_POWERPC_PROCESSOR_H */
-diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
-index 932392b..61515f4 100644
---- a/arch/powerpc/kernel/idle.c
-+++ b/arch/powerpc/kernel/idle.c
-@@ -39,9 +39,13 @@
- #define cpu_should_die()	0
- #endif
- 
-+unsigned long boot_option_idle_override = IDLE_NO_OVERRIDE;
-+EXPORT_SYMBOL(boot_option_idle_override);
-+
- static int __init powersave_off(char *arg)
- {
- 	ppc_md.power_save = NULL;
-+	boot_option_idle_override = IDLE_POWERSAVE_OFF;
- 	return 0;
- }
- __setup("powersave=off", powersave_off);
-diff --git a/arch/powerpc/platforms/pseries/processor_idle.c b/arch/powerpc/platforms/pseries/processor_idle.c
-index ff44b49..c4c3383 100644
---- a/arch/powerpc/platforms/pseries/processor_idle.c
-+++ b/arch/powerpc/platforms/pseries/processor_idle.c
-@@ -288,6 +288,10 @@ static int pseries_idle_probe(void)
- 		return -EPERM;
- 	}
- 
-+	if (boot_option_idle_override != IDLE_NO_OVERRIDE) {
-+		return -ENODEV;
-+	}
-+
- 	if (!firmware_has_feature(FW_FEATURE_SPLPAR)) {
- 		printk(KERN_DEBUG "Using default idle\n");
- 		return -ENODEV;
+No reply on my patch for this one.
 
+>  drivers/char/hw_random/timeriomem-rng.c    |    2 +-
+
+Matt Mackall already acked my patch for this one.  Not sure if anyone
+picked it up and applied it.
+
+[...]
+
+>  drivers/dma/at_hdmac.c                     |    4 ++--
+>  drivers/dma/ipu/ipu_idmac.c                |    6 ++----
+
+I think Vinod Koul already applied my patches for these two.
+
+>  drivers/dma/mv_xor.c                       |    5 ++---
+>  drivers/gpio/vr41xx_giu.c                  |    2 +-
+
+No reply on my patches for these.
+
+[...]
+
+>  drivers/misc/atmel_pwm.c                   |    2 +-
+
+And no reply on my patch for this one.
+
+Your treewide patch can be used instead of my individual patches if it's
+easier/cleaner.
+
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
