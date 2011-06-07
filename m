@@ -1,61 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab1FGU7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 16:59:38 -0400
-Received: from waste.org ([173.11.57.241]:45246 "EHLO waste.org"
+	id S1757372Ab1FGVHG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 17:07:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11879 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757273Ab1FGU7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 16:59:37 -0400
-Subject: Re: ketchup script and 3.0
-From: Matt Mackall <mpm@selenic.com>
-To: david@lang.hm
-Cc: Stratos Psomadakis <psomas@ece.ntua.gr>, linux-kernel@vger.kernel.org,
-        Frank Kingswood <frank@kingswood-consulting.co.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1106071349000.28905@asgard.lang.hm>
-References: <4DEDD5F4.1070602@kingswood-consulting.co.uk>
-	 <1307451186.4204.953.camel@calx>  <4DEE808D.6020405@ece.ntua.gr>
-	 <1307477435.4204.968.camel@calx>  <4DEE8AD9.3050508@ece.ntua.gr>
-	 <1307479572.4204.977.camel@calx>
-	 <alpine.DEB.2.02.1106071349000.28905@asgard.lang.hm>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Jun 2011 15:59:32 -0500
-Message-ID: <1307480372.4204.987.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1756837Ab1FGVHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 17:07:01 -0400
+Date: Tue, 7 Jun 2011 17:05:40 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH v8 11/12] writeback: make background writeback cgroup
+ aware
+Message-ID: <20110607210540.GB30919@redhat.com>
+References: <1307117538-14317-1-git-send-email-gthelen@google.com>
+ <1307117538-14317-12-git-send-email-gthelen@google.com>
+ <20110607193835.GD26965@redhat.com>
+ <xr93lixdv0df.fsf@gthelen.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <xr93lixdv0df.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 13:50 -0700, david@lang.hm wrote:
-> On Tue, 7 Jun 2011, Matt Mackall wrote:
+On Tue, Jun 07, 2011 at 01:43:08PM -0700, Greg Thelen wrote:
+> Vivek Goyal <vgoyal@redhat.com> writes:
 > 
-> > But my point is that if we have adhoc transitions, we will encounter the
-> > "fix all the scripts and websites" pain at every transition. And tools
-> > that are managed via distros and the like can literally take years to
-> > get into the hands of users. It'd be nice if the copy of ketchup shipped
-> > in <enterprise distro> just worked 3 years from now because 4.0 wasn't a
-> > surprise.
+> > On Fri, Jun 03, 2011 at 09:12:17AM -0700, Greg Thelen wrote:
+> >> When the system is under background dirty memory threshold but a cgroup
+> >> is over its background dirty memory threshold, then only writeback
+> >> inodes associated with the over-limit cgroup(s).
+> >> 
+> >
+> > [..]
+> >> -static inline bool over_bground_thresh(void)
+> >> +static inline bool over_bground_thresh(struct bdi_writeback *wb,
+> >> +				       struct writeback_control *wbc)
+> >>  {
+> >>  	unsigned long background_thresh, dirty_thresh;
+> >>  
+> >>  	global_dirty_limits(&background_thresh, &dirty_thresh);
+> >>  
+> >> -	return (global_page_state(NR_FILE_DIRTY) +
+> >> -		global_page_state(NR_UNSTABLE_NFS) > background_thresh);
+> >> +	if (global_page_state(NR_FILE_DIRTY) +
+> >> +	    global_page_state(NR_UNSTABLE_NFS) > background_thresh) {
+> >> +		wbc->for_cgroup = 0;
+> >> +		return true;
+> >> +	}
+> >> +
+> >> +	wbc->for_cgroup = 1;
+> >> +	wbc->shared_inodes = 1;
+> >> +	return mem_cgroups_over_bground_dirty_thresh();
+> >>  }
+> >
+> > Hi Greg,
+> >
+> > So all the logic of writeout from mem cgroup works only if system is
+> > below background limit. The moment we cross background limit, looks
+> > like we will fall back to existing way of writting inodes?
 > 
-> if you special case 2.4->2.6, and make the default that 4.0 > 3.x, 5.0 > 
-> 4.x, etc won't things 'just work' for the forseeable future?
+> Correct.  If the system is over its background limit then the previous
+> cgroup-unaware background writeback occurs.  I think of the system
+> limits as those of the root cgroup.  If the system is over the global
+> limit than all cgroups are eligible for writeback.  In this situation
+> the current code does not distinguish between cgroups over or under
+> their dirty background limit.
+> 
+> Vivek Goyal <vgoyal@redhat.com> writes:
+> > If yes, then from design point of view it is little odd that as long
+> > as we are below background limit, we share the bdi between different
+> > cgroups. The moment we are above background limit, we fall back to
+> > algorithm of sharing the disk among individual inodes and forget
+> > about memory cgroups. Kind of awkward.
+> >
+> > This kind of cgroup writeback I think will atleast not solve the problem
+> > for CFQ IO controller, as we fall back to old ways of writting back inodes
+> > the moment we cross dirty ratio.
+> 
+> It might make more sense to reverse the order of the checks in the
+> proposed over_bground_thresh(): the new version would first check if any
+> memcg are over limit; assuming none are over limit, then check global
+> limits.  Assuming that the system is over its background limit and some
+> cgroups are also over their limits, then the over limit cgroups would
+> first be written possibly getting the system below its limit.  Does this
+> address your concern?
 
-No, because you sometimes want to know what 2.6.39++ is and what 3.0--
-is.
+Do you treat root group also as any other cgroup? If no, then above logic
+can lead to issue of starvation of root group inode. Or unfair writeback.
+So I guess it will be important to treat root group same as other groups.
 
-For instance, to upgrade from 2.6.37.2 to 3.1.2, ketchup will want to
-download, cache, and apply:
+> 
+> Note: mem_cgroup_balance_dirty_pages() (patch 10/12) will perform
+> foreground writeback when a memcg is above its dirty limit.  This would
+> offer CFQ multiple tasks issuing IO.
 
-patch-2.6.37.2 (reversed!)
-patch-2.6.38
-patch-2.6.39
-patch-3.0 ?? <- hopefully Linus will make a delta against 2.6.39!
-patch-3.1
-patch-3.1.2
+I guess we can't rely on this as this will go away once IO less dirty
+throttling is merged.
 
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
-
+Thanks
+Vivek
