@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100Ab1FGNpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 09:45:31 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:46067 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754290Ab1FGNp3 (ORCPT
+	id S1755167Ab1FGNqt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 09:46:49 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45575 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754245Ab1FGNqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 09:45:29 -0400
-Date: Tue, 7 Jun 2011 09:45:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tanya Brokhman <tlinder@codeaurora.org>
-cc: greg@kroah.com, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <balbi@ti.com>,
-        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v15 10/10] usb:dummy_hcd: Force FS device connection
- according to module parameter
-In-Reply-To: <014201cc24cf$1b3414d0$519c3e70$@org>
-Message-ID: <Pine.LNX.4.44L0.1106070941580.1972-100000@iolanthe.rowland.org>
+	Tue, 7 Jun 2011 09:46:47 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [109.186.65.238]
+In-Reply-To: <201106071326.53106.laurent.pinchart@ideasonboard.com>
+References: <1307053663-24572-1-git-send-email-ohad@wizery.com>
+ <201106071105.16262.laurent.pinchart@ideasonboard.com> <BANLkTi=nJXSEfWRXqwnHys1b5i5rgLcYpw@mail.gmail.com>
+ <201106071326.53106.laurent.pinchart@ideasonboard.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 7 Jun 2011 16:46:26 +0300
+Message-ID: <BANLkTimqt=yMGHcqEH5u-4GkMX9=+BuB6A@mail.gmail.com>
+Subject: Re: [RFC 2/6] omap: iovmm: generic iommu api migration
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Hiroshi.DOYU@nokia.com, arnd@arndb.de, davidb@codeaurora.org,
+        Joerg.Roedel@amd.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Jun 2011, Tanya Brokhman wrote:
+Hi Laurent,
 
-> > You might want to print out some kind of error message if the user
-> > specifies is_super_speed = True and is_high_speed = False.
-> > 
-> 
-> I thought about that as well. Even added it but removed at the last minute
-> :) I encountered quite a few places in the code where some error message to
-> the user is really needed but is missing
+On Tue, Jun 7, 2011 at 2:26 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+>> Right now we have a BUG_ON if pa is unaligned, but that can be changed
+>> if needed (do we want it to handle offsets ?).
+>
+> At least for the OMAP3 ISP we need to, as video buffers don't necessarily
+> start on page boundaries.
 
-What other places?  There is very little the user has to do with 
-dummy-hcd -- really nothing more than setting the module parameters.
+Where do you take care of those potential offsets today ? Or do you
+simply ignore the offsets and map the entire page ?
 
->  so my impression was that it's best
-> to keep the printks to a minimum. Isn't that the general approach? IMO, in
-> this particular case informing the user isn't a "must". If you feel strongly
-> about it I can add the message.
+Seems like omap's iommu (mostly) rejects unaligned pa addresses, see:
 
-IMO the driver should print an error message and fail to load if there 
-are contradictory module parameters.
+4abb761749abfb4ec403e4054f9dae2ee604e54f "omap iommu: Reject unaligned
+addresses at setting page table entry"
 
-Alan Stern
+(this doesn't seem to cover 4KB entries though, only large pages,
+sections and super sections)
 
+> A separate patch is indeed needed, yes. As you're already working on iommu it
+> might be simpler if you add it to your tree.
+
+Sure, i'll send it.
+
+Thanks,
+Ohad.
