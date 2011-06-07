@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab1FGQ3V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 12:29:21 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:53110 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab1FGQ3U (ORCPT
+	id S1756020Ab1FGQ3e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 12:29:34 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:43173 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab1FGQ3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 12:29:20 -0400
+	Tue, 7 Jun 2011 12:29:32 -0400
 From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-Subject: [RFC PATCH V1 0/7] cpuidle: (POWER) cpuidle driver for pSeries
+Subject: [RFC PATCH V1 1/7] cpuidle: create bootparam "cpuidle.off=1"
 To: linux-pm@lists.linux-foundation.org, linuxppc-dev@ozlabs.org
 Cc: linux-kernel@vger.kernel.org
-Date: Tue, 07 Jun 2011 21:59:15 +0530
-Message-ID: <20110607162847.6848.44707.stgit@tringupt.in.ibm.com>
+Date: Tue, 07 Jun 2011 21:59:26 +0530
+Message-ID: <20110607162922.6848.71783.stgit@tringupt.in.ibm.com>
+In-Reply-To: <20110607162847.6848.44707.stgit@tringupt.in.ibm.com>
+References: <20110607162847.6848.44707.stgit@tringupt.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,46 +23,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series ports the cpuidle framework for ppc64 platform and
-implements a cpuidle back-end driver for ppc64 (pSeries) platform.
-Currently idle states are managed by pseries_{dedicated,shared}_idle_sleep() 
-routines in arch/powerpc/platforms/pseries/setup.c.  There are
-generally two idle states (snooze and cede) that are exploited by
-these routines based on simple heuristics.
+From: Len Brown <len.brown@intel.com>
 
-Moving the idle states over to cpuidle framework can take advantage of
-the advanced heuristics, tunables, and features provided by cpuidle
-framework. Additional idle states like extended cede with hints would be
-included and exploited using the cpuidle framework. The statistics and 
-tracing infrastructure provided by the cpuidle framework also helps in 
-enabling power management related tools and help tune the system and 
-applications.
+useful for disabling cpuidle to fall back
+to architecture-default idle loop
 
-This series aims to maintain compatibility and functionality to
-existing pSeries idle cpu management code.  There are no new functions
-or idle states added as part of this series. The first three patch
-in the series are taken from "idle cleanup - v3" posted by 
-Len Brown (https://lkml.org/lkml/2011/4/2/8). These are required to
-eliminate usage of pm_idle.
+cpuidle drivers and governors will fail to register.
+on x86 they'll say so:
 
-[1/7] cpuidle: create bootparam "cpuidle.off=1"
-[2/7] cpuidle: replace xen access to x86 pm_idle and default_idle
-[3/7] cpuidle: stop using pm_idle
-[4/7] - Provides arch specific cpu_idle_wait() function required by cpuidle
-  subsystem.
-[5/7] - pseries_idle cpuidle driver
-[6/7] - Enables cpuidle for pSeries and directly calls cpuidle_idle_call()
-[7/7] - Handles powersave=off kernel boot parameter and disables registration
-  of pseries_idle cpuidle driver.
+intel_idle: intel_idle yielding to (null)
+ACPI: acpi_idle yielding to (null)
 
-This patch series has the following dependencies:
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
 
-(1) Base kernel tree: 3.0.0-rc2
-(2) Patch: cpuidle: global registration patch 
-        https://lkml.org/lkml/2011/6/6/259
+ Documentation/kernel-parameters.txt |    3 +++
+ drivers/cpuidle/cpuidle.c           |   10 ++++++++++
+ drivers/cpuidle/cpuidle.h           |    1 +
+ drivers/cpuidle/driver.c            |    3 +++
+ drivers/cpuidle/governor.c          |    3 +++
+ 5 files changed, 20 insertions(+), 0 deletions(-)
 
-This series is tested on ppc64 pSeries POWER7 system with the snooze
-and cede states.
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index d9a203b..5697faf 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -546,6 +546,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			/proc/<pid>/coredump_filter.
+ 			See also Documentation/filesystems/proc.txt.
+ 
++	cpuidle.off=1	[CPU_IDLE]
++			disable the cpuidle sub-system
++
+ 	cpcihp_generic=	[HW,PCI] Generic port I/O CompactPCI driver
+ 			Format:
+ 			<first_slot>,<last_slot>,<port>,<enum_bit>[,<debug>]
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 406be83..a171b9e 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -28,6 +28,12 @@ LIST_HEAD(cpuidle_detected_devices);
+ static void (*pm_idle_old)(void);
+ 
+ static int enabled_devices;
++static int off __read_mostly;
++
++int cpuidle_disabled(void)
++{
++	return off;
++}
+ 
+ #if defined(CONFIG_ARCH_HAS_CPU_IDLE_WAIT)
+ static void cpuidle_kick_cpus(void)
+@@ -397,6 +403,9 @@ static int __init cpuidle_init(void)
+ {
+ 	int ret;
+ 
++	if (cpuidle_disabled())
++		return -ENODEV;
++
+ 	pm_idle_old = pm_idle;
+ 
+ 	ret = cpuidle_add_class_sysfs(&cpu_sysdev_class);
+@@ -408,4 +417,5 @@ static int __init cpuidle_init(void)
+ 	return 0;
+ }
+ 
++module_param(off, int, 0444);
+ core_initcall(cpuidle_init);
+diff --git a/drivers/cpuidle/cpuidle.h b/drivers/cpuidle/cpuidle.h
+index 33e50d5..38c3fd8 100644
+--- a/drivers/cpuidle/cpuidle.h
++++ b/drivers/cpuidle/cpuidle.h
+@@ -13,6 +13,7 @@ extern struct list_head cpuidle_governors;
+ extern struct list_head cpuidle_detected_devices;
+ extern struct mutex cpuidle_lock;
+ extern spinlock_t cpuidle_driver_lock;
++extern int cpuidle_disabled(void);
+ 
+ /* idle loop */
+ extern void cpuidle_install_idle_handler(void);
+diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+index 33e3189..284d7af 100644
+--- a/drivers/cpuidle/driver.c
++++ b/drivers/cpuidle/driver.c
+@@ -50,6 +50,9 @@ int cpuidle_register_driver(struct cpuidle_driver *drv)
+ 	if (!drv)
+ 		return -EINVAL;
+ 
++	if (cpuidle_disabled())
++		return -ENODEV;
++
+ 	spin_lock(&cpuidle_driver_lock);
+ 	if (cpuidle_curr_driver) {
+ 		spin_unlock(&cpuidle_driver_lock);
+diff --git a/drivers/cpuidle/governor.c b/drivers/cpuidle/governor.c
+index 724c164..ea2f8e7 100644
+--- a/drivers/cpuidle/governor.c
++++ b/drivers/cpuidle/governor.c
+@@ -81,6 +81,9 @@ int cpuidle_register_governor(struct cpuidle_governor *gov)
+ 	if (!gov || !gov->select)
+ 		return -EINVAL;
+ 
++	if (cpuidle_disabled())
++		return -ENODEV;
++
+ 	mutex_lock(&cpuidle_lock);
+ 	if (__cpuidle_find_governor(gov->name) == NULL) {
+ 		ret = 0;
 
-Thanks,
--Trinabh
