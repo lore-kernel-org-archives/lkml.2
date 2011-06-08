@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab1FHUOX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 16:14:23 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60252 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab1FHUOU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 16:14:20 -0400
-From: Phil Oester <kernel@linuxace.com>
-To: linux-kernel@vger.kernel.org
-Cc: Narendra_K@Dell.com, jordan_hargrave@Dell.com, jbarnes@virtuousgeek.org
-Subject: [PATCH] Fix embedded nic order on Dell PowerEdge systems
-Date: Wed,  8 Jun 2011 13:14:13 -0700
-Message-Id: <1307564053-2996-1-git-send-email-kernel@linuxace.com>
-X-Mailer: git-send-email 1.7.5.2
-Author: Phil Oester <kernel@linuxace.com>
+	id S1752041Ab1FHURc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 16:17:32 -0400
+Received: from waste.org ([173.11.57.241]:53792 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751230Ab1FHURb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 16:17:31 -0400
+Subject: Re: 3.0.0-rc2-git1 -- BUG: sleeping function called from invalid
+ context at mm/slub.c:847
+From: Matt Mackall <mpm@selenic.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        John Johansen <john.johansen@canonical.com>
+In-Reply-To: <alpine.DEB.2.00.1106081305430.10320@chino.kir.corp.google.com>
+References: <BANLkTimq+h+WyboMbPGVH1uJuj64YuRLdw@mail.gmail.com>
+	 <alpine.DEB.2.00.1106081305430.10320@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Jun 2011 15:17:28 -0500
+Message-ID: <1307564248.4204.1013.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    In commit 6e8af08dfa40b747002207d3ce8e8b43a050d99f ("PCI: enable pci=bfsort
-    by default on future Dell systems"), the callback added was placed at the
-    top of the list, before the specific PowerEdge models.  This ends up
-    breaking the more specific models listed, since the new callback handles
-    all Dell systems but the older systems don't have the new 0xB1 smbios
-    entry.
-    
-    Fix this by placing the new check _after_ the more specific PowerEdge
-    sytems.
-    
-    Phil Oester
-    
-    Signed-off-by: Phil Oester <kernel@linuxace.com>
+On Wed, 2011-06-08 at 13:09 -0700, David Rientjes wrote:
+> On Wed, 8 Jun 2011, Miles Lane wrote:
+> 
+> > BUG: sleeping function called from invalid context at mm/slub.c:847
+> >  in_atomic(): 1, irqs_disabled(): 0, pid: 1583, name: cupsd
+> >  2 locks held by cupsd/1583:
+> >   #0:  (tasklist_lock){.+.+.+}, at: [<ffffffff8104dafa>] do_prlimit+0x61/0x189
+> >   #1:  (&(&p->alloc_lock)->rlock){+.+.+.}, at: [<ffffffff8104db2d>]
+> > do_prlimit+0x94/0x189
+> >  Pid: 1583, comm: cupsd Not tainted 3.0.0-rc2-git1 #7
+> >  Call Trace:
+> >   [<ffffffff8102ebf2>] __might_sleep+0x10d/0x112
+> >   [<ffffffff810e6f46>] slab_pre_alloc_hook.isra.49+0x2d/0x33
+> >   [<ffffffff810e7bc4>] kmem_cache_alloc+0x22/0x132
+> >   [<ffffffff8105b6e6>] prepare_creds+0x35/0xe4
+> >   [<ffffffff811c0675>] aa_replace_current_profile+0x35/0xb2
+> >   [<ffffffff811c4d2d>] aa_current_profile+0x45/0x4c
+> >   [<ffffffff811c4d4d>] apparmor_task_setrlimit+0x19/0x3a
+> >   [<ffffffff811beaa5>] security_task_setrlimit+0x11/0x13
+> >   [<ffffffff8104db6b>] do_prlimit+0xd2/0x189
+> >   [<ffffffff8104dea9>] sys_setrlimit+0x3b/0x48
+> >   [<ffffffff814062bb>] system_call_fastpath+0x16/0x1b
+> > 
+> 
+> Not sure why this ever actually worked with apparmor if prepare_creds() 
+> does an unconditional GFP_KERNEL allocation since this codepath hasn't 
+> changed in at least a year and we're holding a spinlock from setrlimit.  
+> John?
 
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index 5fe7502..92df322 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -247,13 +247,6 @@ static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
- 	},
- #endif		/* __i386__ */
- 	{
--		.callback = find_sort_method,
--		.ident = "Dell System",
--		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
--		},
--	},
--	{
- 		.callback = set_bf_sort,
- 		.ident = "Dell PowerEdge 1950",
- 		.matches = {
-@@ -294,6 +287,13 @@ static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
- 		},
- 	},
- 	{
-+		.callback = find_sort_method,
-+		.ident = "Dell System",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
-+		},
-+	},
-+	{
- 		.callback = set_bf_sort,
- 		.ident = "HP ProLiant BL20p G3",
- 		.matches = {
+Probably a lack of people enabling (and using!) both apparmor and
+might_sleep. I don't this would be caught by a randconfig boot test.
+
+-- 
+Mathematics is the supreme nostalgia of our time.
+
+
