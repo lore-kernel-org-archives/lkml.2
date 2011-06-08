@@ -1,94 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab1FHORV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 10:17:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57702 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754916Ab1FHORU convert rfc822-to-8bit (ORCPT
+	id S1756124Ab1FHOUK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 10:20:10 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35225 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754573Ab1FHOUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 10:17:20 -0400
+	Wed, 8 Jun 2011 10:20:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:content-type
-         :content-transfer-encoding;
-        b=RO+DXk2aCl0Gx0eiYhbH9b07Kxfjyp/Jli0moHWOo0zxOHb3wpjtMBwO6QO5ibyARN
-         RHPhpjHMrDVZmenvq1nwzvIFfKQ8z9fBx26tUMqAqwhwCKVFRq0BHumqfmXDXRMw4Djk
-         HwJSFiv+AC8Ik1+8zH1EO3xiAxcOvi64Uei+c=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=AlsKLR/PBiRTfFb7IivvJOM85++MyNEkWu7d9wjfgS9l1GaXB6HkxSPxOLBP60+kaI
+         sNjwnbgy+Am8G+wwVEpTRKBQKBmGdZM8JoY8GdP9DWo5LwCx+Vp5+2/g9G3r1dd0BEG5
+         MJK22V7ibrFl93+l1RWjv5TkZD/TTf/Ss3zr8=
+Message-ID: <4DEF8515.5060004@gmail.com>
+Date: Wed, 08 Jun 2011 09:20:05 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110608133833.GD30037@thunk.org>
-References: <4DEE1D96.6020208@profihost.ag> <6D8DA3D2-D90B-4D82-BDC9-C3F0264A68BF@mit.edu>
- <4DEE2C70.8060301@profihost.ag> <alpine.DEB.2.02.1106071239530.28905@asgard.lang.hm>
- <4DEE9EDA.90001@profihost.ag> <C4F797E7-3B2F-4BAD-BF69-2182DEA775A5@mit.edu>
- <BANLkTim3GuppJ4=VHa0BgNV1d4nQjWUcbg@mail.gmail.com> <20110608133833.GD30037@thunk.org>
-From: Mike Snitzer <snitzer@redhat.com>
-Date: Wed, 8 Jun 2011 10:16:59 -0400
-X-Google-Sender-Auth: xo8cPgKSQ3u6Wh1nIkJoWW4SxS0
-Message-ID: <BANLkTimMhZWhUN3w_9Qapsqcic2_VCP0sg@mail.gmail.com>
-Subject: Re: XFS problem in 2.6.32
-To: "Ted Ts'o" <tytso@mit.edu>, John Kacur <jkacur@redhat.com>,
-        Stefan Priebe - Profihost AG <s.priebe@profihost.ag>, david@lang.hm,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/5] dt: add of_platform_populate() for creating device
+ from the device tree
+References: <20110316083046.1154.89723.stgit@localhost6.localdomain6> <20110316083348.1154.4764.stgit@localhost6.localdomain6>
+In-Reply-To: <20110316083348.1154.4764.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ted,
+Grant,
 
-On Wed, Jun 8, 2011 at 9:38 AM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Wed, Jun 08, 2011 at 10:00:39AM +0200, John Kacur wrote:
+This is a bit old, but my testing has uncovered a few issues.
+
+On 03/16/2011 03:33 AM, Grant Likely wrote:
+> of_platform_populate() is similar to of_platform_bus_probe() except
+> that it strictly enforces that all device nodes must have a compatible
+> property, and it can be used to register devices (not buses) which are
+> children of the root node.
 >
->> Ok, I don't speak for my company, and your point about not expecting
->> people to do this work for you is valid, however I don't see why you
->> need to take potshots at Red Hat
+> This patch also modifies MPC5200 support to use the new function.
 >
-> It wasn't a potshot; if it is true, it is a completely rational
-> economic argument that is completely within the bounds of the
-> requirements of the GPL, and with LKML community standards.
+> Signed-off-by: Grant Likely<grant.likely@secretlab.ca>
+> ---
+>   arch/powerpc/platforms/52xx/mpc52xx_common.c |   10 ++---
+>   drivers/of/platform.c                        |   54 ++++++++++++++++++++++++--
+>   include/linux/of_platform.h                  |    3 +
+>   3 files changed, 57 insertions(+), 10 deletions(-)
 >
-> The reason why I say it is because of (a) http://lwn.net/Articles/430098/,
-> and (b) a few months ago, when I quietly floated starting a new
-> long-term stable kernel series that a number of companies would
-> maintain cooperatively, I was told, privately, that such a proposal
-> would not likely be received positively by Red Hat management because
-> of the reasons behind the policy instituted by (a).
-
-OK, you seem to think you have it all figured out and that your Red
-Hat contact knows everything there is to the Red Hat kernel
-engineering development process.
-
-However, it doesn't jive with what I know or how I (and my coworkers)
-work on a daily basis.
-
-Since we're referencing lwn.net articles please have a look at these
-comments that I previously made on this subject of RHEL and stable@:
-http://lwn.net/Articles/431317/
-http://lwn.net/Articles/431420/
-
-<snip irrelevant tangent about GPL>
-
->> I'm not even claiming that these are typical stats, but as just a
->> quick check on your statement, the contributions for one stable
->> release are in the same ballpark as everyone else.
+> diff --git a/arch/powerpc/platforms/52xx/mpc52xx_common.c b/arch/powerpc/platforms/52xx/mpc52xx_common.c
+> index 41f3a7e..5767a8a 100644
+> --- a/arch/powerpc/platforms/52xx/mpc52xx_common.c
+> +++ b/arch/powerpc/platforms/52xx/mpc52xx_common.c
+> @@ -97,13 +97,11 @@ struct mpc52xx_gpio_wkup __iomem *wkup_gpio;
+>    *					of the localplus bus to the of_platform
+>    *					bus.
+>    */
+> -void __init
+> -mpc52xx_declare_of_platform_devices(void)
+> +void __init mpc52xx_declare_of_platform_devices(void)
+>   {
+> -	/* Find every child of the SOC node and add it to of_platform */
+> -	if (of_platform_bus_probe(NULL, mpc52xx_bus_ids, NULL))
+> -		printk(KERN_ERR __FILE__ ": "
+> -			"Error while probing of_platform bus\n");
+> +	/* Find all the 'platform' devices and register them. */
+> +	if (of_platform_populate(NULL, mpc52xx_bus_ids, NULL))
+> +		pr_err(__FILE__ ": Error while populating devices from DT\n");
+>   }
 >
-> Nah, that just means that commits which are labelled with "CC:
-> stable@vger.kernel.org" are automatically accepted into stable kernel
-> series.
+>   /*
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index 63d3cb7..9b785be 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -221,19 +221,26 @@ EXPORT_SYMBOL(of_platform_device_create);
+>    */
+>   static int of_platform_bus_create(struct device_node *bus,
+>   				  const struct of_device_id *matches,
+> -				  struct device *parent)
+> +				  struct device *parent, bool strict)
+>   {
+>   	struct device_node *child;
+>   	struct platform_device *dev;
+>   	int rc = 0;
 >
-> If you can point efforts where painful backports of ext4 and xfs bug
-> fixes into RHEL 6.x are making it back into 2.6.32.y, even though in
-> some cases it takes tens of hours of engineering and QA efforts, we
-> can talk.  But please note that I wasn't calling out Red Hat as being
-> bad or evil by doing what they are doing; it is completely
-> economically rational and allowed by the GPL rules for them to be
-> doing what they are doing.  (Just as what Android has been doing with
-> their constant forward porting of the Wakelocks API is completely
-> within the GPL rules.)
+> +	/* Make sure it has a compatible property */
+> +	if (strict&&  (!of_get_property(bus, "compatible", NULL))) {
+> +		pr_debug("%s() - skipping %s, no compatible prop\n",
+> +			 __func__, bus->full_name);
+> +		return 0;
+> +	}
+> +
+>   	dev = of_platform_device_create(bus, NULL, parent);
+>   	if (!dev || !of_match_node(matches, bus))
+>   		return 0;
+>
+>   	for_each_child_of_node(bus, child) {
+>   		pr_debug("   create child: %s\n", child->full_name);
+> -		rc = of_platform_bus_create(child, matches,&dev->dev);
+> +		rc = of_platform_bus_create(child, matches,&dev->dev, strict);
+>   		if (rc) {
+>   			of_node_put(child);
+>   			break;
+> @@ -267,11 +274,11 @@ int of_platform_bus_probe(struct device_node *root,
+>
+>   	/* Do a self check of bus type, if there's a match, create children */
+>   	if (of_match_node(matches, root)) {
+> -		rc = of_platform_bus_create(root, matches, parent);
+> +		rc = of_platform_bus_create(root, matches, parent, false);
+>   	} else for_each_child_of_node(root, child) {
+>   		if (!of_match_node(matches, child))
+>   			continue;
+> -		rc = of_platform_bus_create(child, matches, parent);
+> +		rc = of_platform_bus_create(child, matches, parent, false);
+>   		if (rc)
+>   			break;
+>   	}
+> @@ -280,4 +287,43 @@ int of_platform_bus_probe(struct device_node *root,
+>   	return rc;
+>   }
+>   EXPORT_SYMBOL(of_platform_bus_probe);
+> +
+> +/**
+> + * of_platform_populate() - Populate platform_devices from device tree data
+> + * @root: parent of the first level to probe or NULL for the root of the tree
+> + * @matches: match table, NULL to use the default
+> + * @parent: parent to hook devices from, NULL for toplevel
+> + *
+> + * Similar to of_platform_bus_probe(), this function walks the device tree
+> + * and creates devices from nodes.  It differs in that it follows the modern
+> + * convention of requiring all device nodes to have a 'compatible' property,
+> + * and it is suitable for creating devices which are children of the root
+> + * node (of_platform_bus_probe will only create children of the root which
+> + * are selected by the @matches argument).
+> + *
+> + * New board support should be using this function instead of
+> + * of_platform_bus_probe().
+> + *
+> + * Returns 0 on success,<  0 on failure.
+> + */
+> +int of_platform_populate(struct device_node *root,
+> +			const struct of_device_id *matches,
+> +			struct device *parent)
+> +{
+> +	struct device_node *child;
+> +	int rc = 0;
+> +
+> +	root = root ? of_node_get(root) : of_find_node_by_path("/");
+> +	if (!root)
+> +		return -EINVAL;
+> +
+> +	for_each_child_of_node(root, child) {
 
-And what _exactly_ is Red Hat (not) doing?  Red Hat isn't going crazy
-backporting its upstream > 2.6.32 fixes to 2.6.32.y even when Red Hat
-doesn't consume 2.6.32.y?  *gasp*
+This needs a check of of_match_node. Otherwise, a device is created for 
+all top level nodes, not just the matching node.
 
-Mike
+		if (!of_match_node(matches, child))
+			continue;
+
+> +		rc = of_platform_bus_create(child, matches, parent, true);
+> +		if (rc)
+> +			break;
+> +	}
+> +
+> +	of_node_put(root);
+> +	return rc;
+> +}
+
+Missing EXPORT_SYMBOL.
+
+Since this is only in next, do you want to fix it or I can submit a patch.
+
+Rob
