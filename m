@@ -1,157 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab1FHAtw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 20:49:52 -0400
-Received: from gate.crashing.org ([63.228.1.57]:41421 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755722Ab1FHAtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 20:49:51 -0400
-Subject: Re: [PATCH] [RFC][V3] bluegene: add entry to cpu table
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        bg-linux@lists.anl-external.org
-In-Reply-To: <1307472447-1656-1-git-send-email-ericvh@gmail.com>
-References: <1307472447-1656-1-git-send-email-ericvh@gmail.com>
+	id S932700Ab1FHBEJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 21:04:09 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:55327 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932342Ab1FHBEH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 21:04:07 -0400
+Subject: Re: /proc/stat btime accuracy problem
+From: john stultz <johnstul@us.ibm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>
+In-Reply-To: <1307469017.3163.37.camel@work-vm>
+References: <BANLkTiniq6GVMJPO_-efKrWHQg9V9Dod9g@mail.gmail.com>
+	 <1306967733.11492.11.camel@work-vm>
+	 <BANLkTi=yEMDLEo99WZm2Bt4pi_pog5igww@mail.gmail.com>
+	 <1306972711.11492.23.camel@work-vm>
+	 <BANLkTimuPrqN1euyOqAGm2m4Ea1PdbrzDQ@mail.gmail.com>
+	 <1306975745.11492.30.camel@work-vm>
+	 <BANLkTikR4HNnFsYm2ymm1+FTbeeXtvH51g@mail.gmail.com>
+	 <BANLkTimGfwqvhOKXCGqJUvMU7jozqQT8=g@mail.gmail.com>
+	 <1307469017.3163.37.camel@work-vm>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Jun 2011 10:49:41 +1000
-Message-ID: <1307494181.2874.214.camel@pasglop>
+Date: Tue, 07 Jun 2011 18:03:57 -0700
+Message-ID: <1307495037.3163.76.camel@work-vm>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 13:47 -0500, Eric Van Hensbergen wrote:
-> Create an entry for the BG/P chips, include bits to accomodate
-> the double fp2 fpu and the special MMU considerations like L1
-> writethrough.
+On Tue, 2011-06-07 at 10:50 -0700, john stultz wrote:
+> Maybe to get this back on coarse, could you provide some additional
+> details about the machine where you're seeing this? Is there one
+> specific driver that is putting out tons of output over the serial
+> console? Or is there anything unique about the serial port or its
+> settings (is it configured at 300 baud :)? What is the /proc/interrupts
+> count after boot on one of these systems?
+
+Sorry, I just remembered you already provided some of these details
+below:
+
+On Thu, 2011-06-02 at 00:34 -0600, Bjorn Helgaas wrote: 
+> Linux version 3.0.0-smp-DEV ...
+>   BH now   rtc 1306992452 (start_kernel, before setup_arch)
+>       Printk 230K of numa=fake debug stuff (more than seems strictly
+>       necessary to me, but there it is).  All this data goes into the log
+>       buffer, not to the UART, because the console hasn't been
+>       initialized yet.
+[snip]
+> console [ttyS0] enabled
+>       Now ttyS0 is enabled, so we dump the log buffer to the UART.  I think
+>       this happens in console_unlock(), with interrupts disabled for the whole
+>       buffer.
 > 
-> RFC Note: this patch fails scripts/checkpatch.pl because I
-> matched coding style of the surrounding existing code.  Would
-> you rather have something checkpatch.pl clean or something
-> which is consistent with the surrounding code style?
+>   BH now   rtc 1306992481 xt 1306992459 wtm -1306992457
+>   clocksource_register jiffies
+>       This RTC read is in clocksource_register(); note that xtime is now
+>       22 seconds behind the RTC.  The UART is running at 115200 baud,
+>       and 230K/(115200/10) = about 20 seconds, so this sort of matches
+>       the time I expect it to take to dump the buffer.
 
-Stay consistent. You're welcome to my next checkpatch burning
-ceremony :-)
 
-> The three I got were:
-> ERROR: Macros with complex values should be enclosed in parenthesis
-> ERROR: "foo* bar" should be "foo *bar"
-> WARNING: externs should be avoided in .c files
-> and I got these by copying other code as an example.
-> 
-> Thanks for any feedback.
-> 
-> Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
-> ---
->  arch/powerpc/include/asm/cputable.h |    1 +
->  arch/powerpc/include/asm/mmu.h      |    9 +++++++++
->  arch/powerpc/kernel/cpu_setup_44x.S |    1 +
->  arch/powerpc/kernel/cputable.c      |   16 ++++++++++++++++
->  4 files changed, 27 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/cputable.h b/arch/powerpc/include/asm/cputable.h
-> index c0d842c..ce709b5 100644
-> --- a/arch/powerpc/include/asm/cputable.h
-> +++ b/arch/powerpc/include/asm/cputable.h
-> @@ -26,6 +26,7 @@
->  #define PPC_FEATURE_POWER6_EXT		0x00000200
->  #define PPC_FEATURE_ARCH_2_06		0x00000100
->  #define PPC_FEATURE_HAS_VSX		0x00000080
-> +#define PPC_FEATURE_HAS_FPU_FP2		0x00000040
+Ok. So having the 230k data backlog at console_unlock() seems to be part of the issue.
 
-Any chance for a better name ?
+Maybe something like the following could help? By only holding irqs off for 1k chunks?
 
->  #define PPC_FEATURE_PSERIES_PERFMON_COMPAT \
->  					0x00000040
-> diff --git a/arch/powerpc/include/asm/mmu.h b/arch/powerpc/include/asm/mmu.h
-> index 4138b21..97f9502 100644
-> --- a/arch/powerpc/include/asm/mmu.h
-> +++ b/arch/powerpc/include/asm/mmu.h
-> @@ -56,6 +56,13 @@
->   */
->  #define MMU_FTR_NEED_DTLB_SW_LRU	ASM_CONST(0x00200000)
->  
-> +/* This indicates that the processor must using writethrough with
-> + * the L1 in order to maintain SMP coherence on systems like the
-> + * IBM BlueGene/L and IBM BlueGene/P.
-> + */
-> +
-> +#define MMU_FTR_NEED_L1_WRITETHROUGH	ASM_CONST(0x00400000)
-> +
->  /* Enable use of TLB reservation.  Processor should support tlbsrx.
->   * instruction and MAS0[WQ].
->   */
-> @@ -112,6 +119,8 @@
->  				MMU_FTR_USE_PAIRED_MAS | \
->  				MMU_FTR_TLBIEL | \
->  				MMU_FTR_16M_PAGE
-> +#define MMU_FTRS_BGP		MMU_FTR_TYPE_44x | MMU_FTR_16M_PAGE | \
-> +				MMU_FTR_NEED_L1_WRITETHROUGH
+thanks
+-john
 
-Time to add the ALWAYS/NEVER trick to mmu features like CPU feature has
 
->  #ifndef __ASSEMBLY__
->  #include <asm/cputable.h>
->  
-> diff --git a/arch/powerpc/kernel/cpu_setup_44x.S b/arch/powerpc/kernel/cpu_setup_44x.S
-> index e32b4a9..920aed6 100644
-> --- a/arch/powerpc/kernel/cpu_setup_44x.S
-> +++ b/arch/powerpc/kernel/cpu_setup_44x.S
-> @@ -35,6 +35,7 @@ _GLOBAL(__setup_cpu_440grx)
->  _GLOBAL(__setup_cpu_460ex)
->  _GLOBAL(__setup_cpu_460gt)
->  _GLOBAL(__setup_cpu_460sx)
-> +_GLOBAL(__setup_cpu_bgp)
->  _GLOBAL(__setup_cpu_apm821xx)
->  	mflr	r4
->  	bl	__init_fpu_44x
-> diff --git a/arch/powerpc/kernel/cputable.c b/arch/powerpc/kernel/cputable.c
-> index 34d2722..550a078 100644
-> --- a/arch/powerpc/kernel/cputable.c
-> +++ b/arch/powerpc/kernel/cputable.c
-> @@ -57,6 +57,7 @@ extern void __setup_cpu_750fx(unsigned long offset, struct cpu_spec* spec);
->  extern void __setup_cpu_7400(unsigned long offset, struct cpu_spec* spec);
->  extern void __setup_cpu_7410(unsigned long offset, struct cpu_spec* spec);
->  extern void __setup_cpu_745x(unsigned long offset, struct cpu_spec* spec);
-> +extern void __setup_cpu_bgp(unsigned long offset, struct cpu_spec* spec);
->  #endif /* CONFIG_PPC32 */
->  #ifdef CONFIG_PPC64
->  extern void __setup_cpu_ppc970(unsigned long offset, struct cpu_spec* spec);
-> @@ -1737,6 +1738,21 @@ static struct cpu_spec __initdata cpu_specs[] = {
->  		.machine_check		= machine_check_440A,
->  		.platform		= "ppc440",
->  	},
-> +	{ /* Blue Gene/P */
-> +		.pvr_mask		= 0xfffffff0,
-> +		.pvr_value		= 0x52131880,
-> +		.cpu_name		= "450 Blue Gene/P",
-> +		.cpu_features		= CPU_FTRS_440x6,
-> +		.cpu_user_features	= COMMON_USER_BOOKE |
-> +						PPC_FEATURE_HAS_FPU |
-> +						PPC_FEATURE_HAS_FPU_FP2,
-> +		.mmu_features		= MMU_FTRS_BGP,
-> +		.icache_bsize		= 32,
-> +		.dcache_bsize		= 32,
-> +		.cpu_setup		= __setup_cpu_bgp,
-> +		.machine_check		= machine_check_440A,
-> +		.platform		= "ppc440",
-> +	},
->  	{ /* 460EX */
->  		.pvr_mask		= 0xffff0006,
->  		.pvr_value		= 0x13020002,
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 3518539..9703b22 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1243,6 +1243,7 @@ void console_unlock(void)
+ 	unsigned long flags;
+ 	unsigned _con_start, _log_end;
+ 	unsigned wake_klogd = 0;
++	unsigned chunk_size, length;
+ 
+ 	if (console_suspended) {
+ 		up(&console_sem);
+@@ -1251,14 +1252,18 @@ void console_unlock(void)
+ 
+ 	console_may_schedule = 0;
+ 
++	chunk_size = min(LOG_BUF_MASK, 1024); /* 1k chunks */
++
+ 	for ( ; ; ) {
+ 		spin_lock_irqsave(&logbuf_lock, flags);
+ 		wake_klogd |= log_start - log_end;
+ 		if (con_start == log_end)
+ 			break;			/* Nothing to print */
++		length = (log_end - con_start) & LOG_BUF_MASK;
++		length = min(length , chunk_size);
+ 		_con_start = con_start;
+-		_log_end = log_end;
+-		con_start = log_end;		/* Flush */
++		_log_end = (con_start + length) & LOG_BUF_MASK;
++		con_start = _log_end;		/* Flush */
+ 		spin_unlock(&logbuf_lock);
+ 		stop_critical_timings();	/* don't trace print latency */
+ 		call_console_drivers(_con_start, _log_end);
 
-Cheers,
-Ben.
 
-> -- 
-> 1.7.4.1
-> 
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
 
 
