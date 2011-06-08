@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab1FHKYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:24:39 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:33813 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754667Ab1FHKYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:24:38 -0400
-Date: Wed, 8 Jun 2011 11:24:00 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+	id S1755551Ab1FHK0t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:26:49 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:34876 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755108Ab1FHK0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 06:26:47 -0400
+Date: Wed, 8 Jun 2011 12:26:43 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>,
+        Marek =?utf-8?B?T2zFocOhaw==?= <maraeo@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm radeon urgent fixes
-In-Reply-To: <alpine.DEB.2.00.1106081117370.5955@skynet.skynet.ie>
-Message-ID: <alpine.DEB.2.00.1106081123090.5955@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1106081117370.5955@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Subject: Re: Latest merge of 'drm-radeon-fixes' breaks my setup
+Message-ID: <20110608102643.GA1711@x4.trippels.de>
+References: <20110608054002.GA1717@x4.trippels.de>
+ <20110608054354.GA1717@x4.trippels.de>
+ <BANLkTinfn82C3TjPxzZuD+v=F+uCx8pmyg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTinfn82C3TjPxzZuD+v=F+uCx8pmyg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+On 2011.06.08 at 20:09 +1000, Dave Airlie wrote:
+> On Wed, Jun 8, 2011 at 3:43 PM, Markus Trippelsdorf
+> <markus@trippelsdorf.de> wrote:
+> > On 2011.06.08 at 07:40 +0200, Markus Trippelsdorf wrote:
+> >> The merge of the 'drm-radeon' branch by Linus yesterday breaks my setup
+> >> (RS780). The mouse cursor is just a black block suddenly and I see an
+> >> endless stream of:
+> >>  radeon 0000:01:05.0: r600_check_texture_resource:1338 texture invalid format 26
+> >>  [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
 > 
-> Hi Linus,
-> 
-> I'm blaming 3.0 for me not seeing this breakage, I'm having trouble 
-> persuading my USB disk to boot 3.0, on an F15 userspace looks like LVM or 
-> something systemd related.
-> 
-> 1 is really urgent but the other two fixes some machines + blank screens.
+> This is wierd, can you try the attached patch, it appears this
+> uncovered another bug.
 
-correctly attributed patches and changelog below (lost Daniel's author 
-line).
-> 
-> Dave.
-> 
-The following changes since commit cb0a02ecf95e5f47d92e7d4c513cc1f7aeb40cda:
+Yes, your patch fixes the problem. Thanks Dave.
 
-  Merge branch 'irq-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2011-06-07 19:21:11 -0700)
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-radeon-urgent
-
-Alex Deucher (1):
-      drm/radeon/kms: disable hdmi audio by default
-
-Daniel Haid (1):
-      drm/radeon/kms: fix for radeon on systems >4GB without hardware iommu
-
-Dave Airlie (1):
-      drm/radeon/kms: set family for use in parser.
-
- drivers/gpu/drm/radeon/radeon_cs.c     |    1 +
- drivers/gpu/drm/radeon/radeon_device.c |    1 +
- drivers/gpu/drm/radeon/radeon_drv.c    |    4 ++--
- 3 files changed, 4 insertions(+), 2 deletions(-)
+-- 
+Markus
