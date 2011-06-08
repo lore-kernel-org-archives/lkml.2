@@ -1,54 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab1FHSWK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 14:22:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751863Ab1FHSWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 14:22:08 -0400
-Date: Wed, 8 Jun 2011 20:20:32 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] make former thread ID available via PTRACE_GETEVENTMSG
-	after PTRACE_EVENT_EXEC stop
-Message-ID: <20110608182032.GA16264@redhat.com>
-References: <BANLkTin6CmO+PfyGkUL3fg3REGXU=7DS7g@mail.gmail.com>
+	id S1752171Ab1FHS0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 14:26:16 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62125 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943Ab1FHS0N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 14:26:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type:content-transfer-encoding;
+        b=O+AvnERBeaYOQIbDTELntSqfX7Y8bqQQiTfee1ZCfpwjy/HGKtVufRszBkkEQk5WOG
+         3x5Z5uxLnENVtnIXyUoRnNWEhcN2ZkuhIX26uqOUA6DnqEJTJoMN3+l8MyW486gZUW4F
+         bGmpGumh00Aa3M1wOXAsd+OPiWuGY/1o2mCBM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTin6CmO+PfyGkUL3fg3REGXU=7DS7g@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Wed, 8 Jun 2011 21:26:11 +0300
+X-Google-Sender-Auth: dvzyyh7JSU9eaXJQgxCWNVr4SXc
+Message-ID: <BANLkTimyBGfg4+ovGsiGqpCz345qVmU_7A@mail.gmail.com>
+Subject: LVM vs. Ext4 snapshots (was: [PATCH v1 00/30] Ext4 snapshots)
+From: "Amir G." <amir73il@users.sourceforge.net>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
+        tytso@mit.edu, linux-kernel@vger.kernel.org, sandeen@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08, Denys Vlasenko wrote:
+On Wed, Jun 8, 2011 at 7:19 PM, Mike Snitzer <snitzer@redhat.com> wrote:
+> On Wed, Jun 8, 2011 at 11:59 AM, Amir G. <amir73il@users.sourceforge.net> wrote:
+>> On Wed, Jun 8, 2011 at 6:38 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+>>> Amir said:
 >
-> Not sure what kind of locking, if any, I need to put around
-> current->parent...
+>>>> The question of whether the world needs ext4 snapshots is
+>>>> perfectly valid, but going back to the food analogy, I think it's
+>>>> a case of "the proof of the pudding is in the eating".
+>>>> I have no doubt that if ext4 snapshots are merged, many people will use it.
+>>>
+>>> Well, I would like to have your confidence. Why do you think so ? They
+>>> will use it for what ? Doing backups ? We can do this easily with LVM
+>>> without any risk of compromising existing filesystem at all. On desktop
+>>
+>> LVM snapshots are not meant to be long lived snapshots.
+>> As temporary snapshots they are fine, but with ext4 snapshots
+>> you can easily retain monthly/weekly snapshots without the
+>> need to allocate the space for it in advance and without the
+>> 'vanish' quality of LVM snapshots.
+>
+> In that old sf.net wiki you say:
+> Why use Next3 snapshots and not LVM snapshots?
+> * Performance: only small overhead to write performance with snapshots
+>
+> Fair claim against current LVM snapshot (but not multisnap).
+>
+> In this thread you're being very terse on the performance hit you
+> assert multisnap has that ext4 snapshots does not.  Can you please be
+> more specific?
+>
+> In your most recent post it seems you're focusing on "LVM snapshots"
+> and attributing the deficiencies of old-style LVM snapshots
+> (non-shared exception store causing N-way copy-out) to dm-multisnap?
+>
+> Again, nobody will dispute that the existing dm-snapshot target has
+> poor performance that requires snapshots be short-lived.  But
+> multisnap does _not_ suffer from those performance problems.
+>
+> Mike
+>
 
-Yes ;)
+Hi Mike,
 
-> @@ -1383,8 +1383,10 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
->  			 */
->  			bprm->recursion_depth = depth;
->  			if (retval >= 0) {
-> -				if (depth == 0)
-> -					tracehook_report_exec(fmt, bprm, regs);
-> +				if (depth == 0) {
-> +					pid_t pid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
+I am glad that you joined the debate and I am going to start a fresh
+thread for that occasion, to give your question the proper attention.
 
-It is not safe to use ->parent. At least you need rcu lock around.
+In my old next3.sf.net wiki, which I do update from time to time,
+I listed 4 advantages of Ext4 (then next3) snapshots over LVM:
+* Performance: only small overhead to write performance with snapshots
+* Scalability: no extra overhead per snapshot
+* Maintenance: no need to pre-allocate disk space for snapshots
+* Persistence: snapshots don't vanish when disk is full
 
-Also. At this point current has already changed its pid, you should
-record pid_t before ->load_binary().
+As far as I know, the only thing that has changed from dm-snap
+to dm-multisnap is the Scalability.
 
-And. We have the coding style police, please use scripts/checkpatch.pl
+Did you resolve the Maintenance and Persistence issues?
 
+With Regards to Performance, Ext4 snapshots are inherently different
+then LVM snapshots and have near zero overhead to write performance
+as the following benchmark, which I presented on LSF, demonstrates:
+http://global.phoronix-test-suite.com/index.php?k=profile&u=amir73il-4632-11284-26560
 
+There are several reasons for the near zero overhead:
 
-Just in case, I'll be off-line till Monday.
+1. Metadata buffers are always in cache when performing COW,
+so there is no extra read I/O and write I/O of the copied pages is handled
+by the journal (when flushing the snapshot file dirty pages).
 
-Oleg.
+2. Data blocks are never copied
+The move-on-write technique is used to re-allocate data blocks on rewrite
+instead of copying them.
+This is not something that can be done when the snapshot is stored on
+external storage, but it can done when the snapshot file lives in the fs.
 
+3. New (= after last snapshot take) allocated blocks are never copied
+nor reallocated on rewrite.
+Ext4 snapshots uses the fs block bitmap, to know which blocks were allocated
+at the time the last snapshot was taken, so new blocks are just out of the game.
+For example, in the workload of a fresh kernel build and daily snapshots,
+the creation and deletion of temp files causes no extra I/O overhead whatsoever.
+
+So, yes, I know. I need to run a benchmark of Ext4 snapshots vs. LVM multisnap
+and post the results. When I'll get around to it I'll do it.
+But I really don't think that performance is how the 2 solutions
+should be compared.
+
+The way I see it, LVM snapshots are a complementary solution and they
+have several advantages over Ext4 snapshots, like:
+* Work with any FS
+* Writable snapshots and snapshots of snapshots
+* Merge a snapshot back to the main vol
+
+We actually have one Google summer of code project that is going to export
+an Ext4 snapshot to an LVM snapshot, in order to implement the "revert
+to snapshot"
+functionality, which Ext4 snapshots is lacking.
+
+I'll be happy to answer more question regarding Ext4 snapshots.
+
+Thanks,
+Amir.
