@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab1FHUYo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 16:24:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59091 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab1FHUYk (ORCPT
+	id S1752668Ab1FHUYi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 16:24:38 -0400
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:50682 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750846Ab1FHUYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 16:24:40 -0400
-Message-ID: <4DEFDA4A.9080500@kernel.org>
-Date: Wed, 08 Jun 2011 13:23:38 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Wed, 8 Jun 2011 16:24:36 -0400
+Date: Wed, 8 Jun 2011 16:24:08 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        anish singh <anish198519851985@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch: Validate signature styles and To: and Cc:
+ lines
+Message-ID: <20110608202408.GA20393@elliptictech.com>
+References: <BANLkTi=AFbSXzjRHuY=uBFz=64C6vWLwNA@mail.gmail.com>
+ <100617f66cdceab04a87514d47929a4ec3aebc19.1307561278.git.joe@perches.com>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <4DEFA6E3.6090809@xs4all.nl> <4DEFCAE0.6050700@kernel.org> <20110608192321.GA28865@srcf.ucam.org> <4DEFCD07.5020505@kernel.org> <20110608192950.GA29235@srcf.ucam.org> <4DEFCF1A.9030400@kernel.org> <20110608193833.GA29855@srcf.ucam.org> <4DEFD220.5040507@kernel.org> <20110608195250.GB30256@srcf.ucam.org> <4DEFD58D.5060402@kernel.org> <20110608200903.GA30694@srcf.ucam.org>
-In-Reply-To: <20110608200903.GA30694@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090204.4DEFDA54.0079,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <100617f66cdceab04a87514d47929a4ec3aebc19.1307561278.git.joe@perches.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2011 01:09 PM, Matthew Garrett wrote:
-> On Wed, Jun 08, 2011 at 01:03:25PM -0700, Yinghai Lu wrote:
->> On 06/08/2011 12:52 PM, Matthew Garrett wrote:
->>> On Wed, Jun 08, 2011 at 12:48:48PM -0700, Yinghai Lu wrote:
->>>> On 06/08/2011 12:38 PM, Matthew Garrett wrote:
->>>>> On Wed, Jun 08, 2011 at 12:35:54PM -0700, Yinghai Lu wrote:
->>>>>> On 06/08/2011 12:29 PM, Matthew Garrett wrote:
->>>>>>>> what former? you can not fix some corner case by breaking most other cases.
->>>>>>>
->>>>>>> All Dell laptops, all new Apples, some Lenovos, various Intel server 
->>>>>>> platforms. That I've found so far.
->>>>>>
->>>>>> do you mean before that patch, all those machine will not boot linux kernel with UEFI support?
->>>>>
->>>>> Correct.
->>>>
->>>> with or without EFI runtime services?
->>>
->>> They'll boot with noefi, but that's useless because there's then no way 
->>> to configure a bootloader.
->>
->> efibootmgr will need boot services in addition to run-time services?
+On 2011-06-08 12:34 -0700, Joe Perches wrote:
+> Signatures have many forms and can sometimes cause problems
+> if not in the correct format when using git send-email or quilt.
 > 
-> No, SetVirtualAddressMap() calls into boot services. This is code, not 
-> data. We have no control over what it does.
+> Try to verify the signature tags and email addresses to use
+> the generally accepted "Signed-off-by: Full Name <email@domain.tld>"
+> form.
+[...]
+> +			my $suggested_email = format_email(parse_email($email));
+> +			if ($suggested_email eq "") {
+> +				ERROR("email address '$email' is unrecognizable\n" . $herecurr);
+> +			} elsif ($suggested_email ne $email) {
+> +				WARN("email address '$email' might be better as '$suggested_email'\n" . $herecurr);
 
-Maybe you can parse efimeminfo in arch/x86/boot/compressed/head_64.S to find right decompress position for kernel.
+If you're going to make suggestions, you should at the very least ensure
+that the suggestions are actually valid email addresses.  Otherwise,
+this script will suggest replacing valid addresses with invalid ones!
 
-Yinghai
+In particular, angle brackets inside "quotes" or (comments) will
+seriously trip up this script.  For example:
+
+  WARNING: email address '"Foo Bar <x124>" <fbar@example.org>' might be
+  better as 'Foo Bar <x124>"<fbar@example.org>' #8: 
+  Signed-off-by: "Foo Bar <x124>" <fbar@example.org>
+
+Even more amusing is that we can actually follow the bogus suggestion
+and checkpatch.pl won't complain about the resulting invalid email
+address (at least it's consistent, I guess):
+
+  Signed-off-by: Foo Bar <x124>"<fbar@example.org>
+
+  patch has no obvious style problems and is ready for submission.
+
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
