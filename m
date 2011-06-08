@@ -1,100 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab1FHTE7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:04:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62555 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912Ab1FHTE6 convert rfc822-to-8bit (ORCPT
+	id S1754280Ab1FHTQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:16:48 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63595 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753952Ab1FHTQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:04:58 -0400
+	Wed, 8 Jun 2011 15:16:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=n9EoFSjWgniCeOMTZ/ju8xhXAY08M/zigV0k68ZIKxyZ+78j/EWEN3sI860ERpuInJ
-         1jbqEA96gp2D39h0ciB+rAWSwqygdGn2Rs80c9mOnc7LZ9EKExZ649ZEy8QHQtSw7V8g
-         lDmP72qcBe5GKFMKKeRjnpGqbTF5LxAVg2pCc=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=bu7ogWbFs0DFxrGMfxiauS36i9Y+/rZRB5bzRiRmGID0tY1TB5acRmJJkPf9toAQ/u
+         cpAPzjEnJuQWDJ/QNniYywUz4jZM/vbApnYKOud751mux7eYLRNITm8z+7SDFN25vqtS
+         2hpNXop8X3NVc0QxbOTzU/7bHj8XWTOo8MGVY=
+Message-ID: <4DEFC885.2080202@gmail.com>
+Date: Wed, 08 Jun 2011 21:07:49 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <43F901BD926A4E43B106BF17856F0755018E536956@orsmsx508.amr.corp.intel.com>
-References: <1307485593-27196-1-git-send-email-andi@firstfloor.org>
-	<1307485593-27196-4-git-send-email-andi@firstfloor.org>
-	<43F901BD926A4E43B106BF17856F0755018E536956@orsmsx508.amr.corp.intel.com>
-Date: Wed, 8 Jun 2011 12:04:56 -0700
-X-Google-Sender-Auth: ZP_q-98S6eODZirG6s7z7a_iWcE
-Message-ID: <BANLkTikB7uWHf+6fuqm+2YiR_atv1vVA5w@mail.gmail.com>
-Subject: Re: [PATCH 4/5] ixgbe: Fix incorrect declaration of ixgbevf_mbx_ops
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: "Rose, Gregory V" <gregory.v.rose@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        netdev <netdev@vger.kernel.org>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Joe Perches <joe@perches.com>, xiyou.wangcong@gmail.com,
+        stevie.trujillo@gmail.com, kyungmin.park@samsung.com
+Subject: [PATCH 2/2 v2] ramoops: add new line to each print
+References: <4DE10B58.1010005@gmail.com>  <4DEE5737.9060404@gmail.com> <1307550164.16453.2.camel@Joe-Laptop>
+In-Reply-To: <1307550164.16453.2.camel@Joe-Laptop>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 7, 2011 at 15:56, Rose, Gregory V <gregory.v.rose@intel.com> wrote:
->> -----Original Message-----
->> From: Andi Kleen [mailto:andi@firstfloor.org]
->> Sent: Tuesday, June 07, 2011 3:27 PM
->> To: linux-kernel@vger.kernel.org
->> Cc: Andi Kleen; Kirsher, Jeffrey T; Brandeburg, Jesse; Rose, Gregory V
->> Subject: [PATCH 4/5] ixgbe: Fix incorrect declaration of ixgbevf_mbx_ops
->>
->> From: Andi Kleen <ak@linux.intel.com>
->>
->> The header extern type of ixgbevf_mbx_ops disagreed with
->> the actual declaration. Fix this here.
->>
->> This is rather scary. I haven't tested it. Did this
->> ever work?
->>
->> Cc: jeffrey.t.kirsher@intel.com
->> Cc: jesse.brandeburg@intel.com
->> Cc: gregory.v.rose@intel.com
->> Signed-off-by: Andi Kleen <ak@linux.intel.com>
->> ---
->>  drivers/net/ixgbevf/ixgbevf.h |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/net/ixgbevf/ixgbevf.h b/drivers/net/ixgbevf/ixgbevf.h
->> index b703f60..a2bbbb3 100644
->> --- a/drivers/net/ixgbevf/ixgbevf.h
->> +++ b/drivers/net/ixgbevf/ixgbevf.h
->> @@ -279,7 +279,7 @@ enum ixgbevf_boards {
->>
->>  extern struct ixgbevf_info ixgbevf_82599_vf_info;
->>  extern struct ixgbevf_info ixgbevf_X540_vf_info;
->> -extern struct ixgbe_mac_operations ixgbevf_mbx_ops;
->> +extern struct ixgbe_mbx_operations ixgbevf_mbx_ops;
->>
->>  /* needed by ethtool.c */
->>  extern char ixgbevf_driver_name[];
->> --
->> 1.7.4.4
->
-> [Greg Rose]
-> Huh.
->
-> Well, mbx ops is a table of 8 pointers and mac ops is a table of 11 pointers, so the copy would have over written 3 * pointer-size words of some other memory.  But the 8 ops copied would have been correct so to the extent that we called them they worked.
->
-> Now that I look at it you missed a another spot where the copy is done that uses the ixgbe_mac_operations instead of the ixgbe_mbx_operations.
->
-> I'll fix that up.
->
-> Nice catch!
->
-> - Greg
-> --
+From: Marco Stornelli <marco.stornelli@gmail.com>
 
-I have an updated patch by Greg in my queue, which I will be
-submitting through David Miller's networking tree.  Thanks Andi and
-Greg!
+Add new line to each print.
 
--- 
-Cheers,
-Jeff
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+CC: Kyungmin Park <kyungmin.park@samsung.com>
+CC: Américo Wang <xiyou.wangcong@gmail.com>
+CC: Joe Perches <joe@perches.com>
+Reported-by: Stevie Trujillo <stevie.trujillo@gmail.com>
+---
+ChangeLog:
+- v2: used pr_<level> instead of printk
+
+diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
+index df092e1..c3bf9b5 100644
+--- a/drivers/char/ramoops.c
++++ b/drivers/char/ramoops.c
+@@ -19,6 +19,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/kmsg_dump.h>
+@@ -111,14 +113,14 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	int err = -EINVAL;
+ 
+ 	if (!pdata->mem_size) {
+-		printk(KERN_ERR "ramoops: invalid size specification");
++		pr_err("invalid size specification\n");
+ 		goto fail3;
+ 	}
+ 
+ 	rounddown_pow_of_two(pdata->mem_size);
+ 
+ 	if (pdata->mem_size < RECORD_SIZE) {
+-		printk(KERN_ERR "ramoops: size too small");
++		pr_err("size too small\n");
+ 		goto fail3;
+ 	}
+ 
+@@ -128,21 +130,21 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	cxt->phys_addr = pdata->mem_address;
+ 
+ 	if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
+-		printk(KERN_ERR "ramoops: request mem region failed");
++		pr_err("request mem region failed\n");
+ 		err = -EINVAL;
+ 		goto fail3;
+ 	}
+ 
+ 	cxt->virt_addr = ioremap(cxt->phys_addr,  cxt->size);
+ 	if (!cxt->virt_addr) {
+-		printk(KERN_ERR "ramoops: ioremap failed");
++		pr_err("ioremap failed\n");
+ 		goto fail2;
+ 	}
+ 
+ 	cxt->dump.dump = ramoops_do_dump;
+ 	err = kmsg_dump_register(&cxt->dump);
+ 	if (err) {
+-		printk(KERN_ERR "ramoops: registering kmsg dumper failed");
++		pr_err("registering kmsg dumper failed\n");
+ 		goto fail1;
+ 	}
+ 
+@@ -161,7 +163,7 @@ static int __exit ramoops_remove(struct platform_device *pdev)
+ 	struct ramoops_context *cxt = &oops_cxt;
+ 
+ 	if (kmsg_dump_unregister(&cxt->dump) < 0)
+-		printk(KERN_WARNING "ramoops: could not unregister kmsg_dumper");
++		pr_warn("could not unregister kmsg_dumper\n");
+ 
+ 	iounmap(cxt->virt_addr);
+ 	release_mem_region(cxt->phys_addr, cxt->size);
+@@ -186,6 +188,8 @@ static int __init ramoops_init(void)
+ 		 * if we didn't find a platform device, we use module parameters
+ 		 * building platform data on the fly.
+ 		 */
++		pr_info("platform device not found, "
++			"using module parameters\n");
+ 		dummy_data = kzalloc(sizeof(struct ramoops_platform_data),
+ 				     GFP_KERNEL);
+ 		if (!dummy_data)
+
