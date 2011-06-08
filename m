@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab1FHTac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:30:32 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:52745 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755466Ab1FHTa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:30:29 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 10/28] rcu: Fix RCU's NMI documentation
-Date: Wed,  8 Jun 2011 12:29:49 -0700
-Message-Id: <1307561407-13809-10-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <20110608192943.GA13211@linux.vnet.ibm.com>
-References: <20110608192943.GA13211@linux.vnet.ibm.com>
+	id S1755422Ab1FHTaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:30:19 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:43108 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754903Ab1FHTaQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 15:30:16 -0400
+Date: Wed, 8 Jun 2011 20:29:50 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+Message-ID: <20110608192950.GA29235@srcf.ucam.org>
+References: <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com>
+ <20110607014127.GA8450@srcf.ucam.org>
+ <4DED8752.5070005@kernel.org>
+ <4DEDEA73.7010900@gmail.com>
+ <4DEE17F9.6020503@gmail.com>
+ <4DEEA548.5020405@kernel.org>
+ <4DEFA6E3.6090809@xs4all.nl>
+ <4DEFCAE0.6050700@kernel.org>
+ <20110608192321.GA28865@srcf.ucam.org>
+ <4DEFCD07.5020505@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DEFCD07.5020505@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has long been the case that the architecture must call nmi_enter()
-and nmi_exit() rather than irq_enter() and irq_exit() in order to
-permit RCU read-side critical sections in NMIs.  Catch the documentation
-up with reality.
+On Wed, Jun 08, 2011 at 12:27:03PM -0700, Yinghai Lu wrote:
+> On 06/08/2011 12:23 PM, Matthew Garrett wrote:
+> > On Wed, Jun 08, 2011 at 12:17:52PM -0700, Yinghai Lu wrote:
+> >> we need to revert patch from mjg.
+> >>
+> >> From 916f676f8dc016103f983c7ec54c18ecdbb6e349 Mon Sep 17 00:00:00 2001
+> >> From: Matthew Garrett <mjg@redhat.com>
+> >> Date: Wed, 25 May 2011 09:53:13 -0400
+> >> Subject: [PATCH] x86, efi: Retain boot service code until after switching to
+> >>  virtual mode
+> > 
+> > That's not a long-term option, since we have no way to distinguish 
+> > between a machine that requires boot services code to be mapped and a 
+> > machine that doesn't. Reverting just breaks the former set again. 
+> 
+> what former? you can not fix some corner case by breaking most other cases.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- Documentation/RCU/NMI-RCU.txt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+All Dell laptops, all new Apples, some Lenovos, various Intel server 
+platforms. That I've found so far.
 
-diff --git a/Documentation/RCU/NMI-RCU.txt b/Documentation/RCU/NMI-RCU.txt
-index a8536cb..84e4f9c 100644
---- a/Documentation/RCU/NMI-RCU.txt
-+++ b/Documentation/RCU/NMI-RCU.txt
-@@ -95,7 +95,7 @@ not to return until all ongoing NMI handlers exit.  It is therefore safe
- to free up the handler's data as soon as synchronize_sched() returns.
- 
- Important note: for this to work, the architecture in question must
--invoke irq_enter() and irq_exit() on NMI entry and exit, respectively.
-+invoke nmi_enter() and nmi_exit() on NMI entry and exit, respectively.
- 
- 
- Answer to Quick Quiz
+> > We need to ensure that the kernel isn't overlapping boot services code.
+> 
+> bootloader will put kernel from 16M, and boot services are on those area already.
+
+And we need to be able to map the boot services code, so we can't put 
+the kernel on top of it.
 -- 
-1.7.3.2
-
+Matthew Garrett | mjg59@srcf.ucam.org
