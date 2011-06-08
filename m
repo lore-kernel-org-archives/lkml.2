@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab1FHKXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:23:31 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60859 "EHLO
+	id S1755309Ab1FHKXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:23:48 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60865 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754903Ab1FHKX3 (ORCPT
+	with ESMTP id S1754429Ab1FHKXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:23:29 -0400
+	Wed, 8 Jun 2011 06:23:47 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 01/15] gma500: fix warnings
+Subject: [PATCH 02/15] gma500: Skip bogus LVDS VBT mode and check for LVDS
+ before adding backlight
 To: greg@kroah.com, linux-kernel@vger.kernel.org,
         dri-devel@lists.freedesktop.org
-Date: Wed, 08 Jun 2011 11:11:10 +0100
-Message-ID: <20110608101106.9478.87451.stgit@localhost.localdomain>
+Date: Wed, 08 Jun 2011 11:11:28 +0100
+Message-ID: <20110608101121.9478.64934.stgit@localhost.localdomain>
 In-Reply-To: <20110608100411.9478.86672.stgit@localhost.localdomain>
 References: <20110608100411.9478.86672.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -23,33 +24,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 
+On the Fit-PC2 the VBT reports an invalid fixed panel mode for LVDS, this gets
+in the way for SDVO. This patch makes VBT parsing skip the invalid mode. When
+there is no LVDS output the backlight support crashes so the patch also checks
+for this before enabling it.
+
+Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/psb_gtt.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/staging/gma500/psb_drv.c        |   15 ++++++++++++++-
+ drivers/staging/gma500/psb_intel_bios.c |   13 +++++++++----
+ 2 files changed, 23 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
-index 74c5a65..1d0e242 100644
---- a/drivers/staging/gma500/psb_gtt.c
-+++ b/drivers/staging/gma500/psb_gtt.c
-@@ -78,7 +78,6 @@ u32 *psb_gtt_entry(struct drm_device *dev, struct gtt_range *r)
-  */
- static int psb_gtt_insert(struct drm_device *dev, struct gtt_range *r)
- {
--        struct drm_psb_private *dev_priv = dev->dev_private;
- 	u32 *gtt_slot, pte;
- 	int numpages = (r->resource.end + 1 - r->resource.start) >> PAGE_SHIFT;
- 	struct page **pages;
-@@ -490,7 +489,7 @@ int psb_gtt_init(struct drm_device *dev, int resume)
- 		goto out_err;
+diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
+index 1c45c11..aa87b1b 100644
+--- a/drivers/staging/gma500/psb_drv.c
++++ b/drivers/staging/gma500/psb_drv.c
+@@ -542,6 +542,8 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
+ 	unsigned long irqflags;
+ 	int ret = -ENOMEM;
+ 	uint32_t tt_pages;
++	struct drm_connector *connector;
++	struct psb_intel_output *psb_intel_output;
+ 
+ 	dev_priv = kzalloc(sizeof(*dev_priv), GFP_KERNEL);
+ 	if (dev_priv == NULL)
+@@ -663,7 +665,18 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
+ 		drm_kms_helper_poll_init(dev);
  	}
  
--	DRM_DEBUG("%s: vram kernel virtual address %p\n", dev_priv->vram_addr);
-+	DRM_DEBUG("gma500: vram kernel virtual address %p\n", dev_priv->vram_addr);
+-	ret = psb_backlight_init(dev);
++	/* Only add backlight support if we have LVDS output */
++	list_for_each_entry(connector, &dev->mode_config.connector_list,
++			    head) {
++		psb_intel_output = to_psb_intel_output(connector);
++
++		switch (psb_intel_output->type) {
++		case INTEL_OUTPUT_LVDS:
++			ret = psb_backlight_init(dev);
++			break;
++		}
++	}
++
+ 	if (ret)
+ 		return ret;
+ #if 0
+diff --git a/drivers/staging/gma500/psb_intel_bios.c b/drivers/staging/gma500/psb_intel_bios.c
+index 48ac8ba..417965d 100644
+--- a/drivers/staging/gma500/psb_intel_bios.c
++++ b/drivers/staging/gma500/psb_intel_bios.c
+@@ -154,10 +154,15 @@ static void parse_lfp_panel_data(struct drm_psb_private *dev_priv,
  
- 	tt_pages = (pg->gatt_pages < PSB_TT_PRIV0_PLIMIT) ?
- 		(pg->gatt_pages) : PSB_TT_PRIV0_PLIMIT;
+ 	fill_detail_timing_data(panel_fixed_mode, dvo_timing);
+ 
+-	dev_priv->lfp_lvds_vbt_mode = panel_fixed_mode;
+-
+-	DRM_DEBUG("Found panel mode in BIOS VBT tables:\n");
+-	drm_mode_debug_printmodeline(panel_fixed_mode);
++	if (panel_fixed_mode->htotal > 0 && panel_fixed_mode->vtotal > 0) {
++		dev_priv->lfp_lvds_vbt_mode = panel_fixed_mode;
++		DRM_DEBUG("Found panel mode in BIOS VBT tables:\n");
++		drm_mode_debug_printmodeline(panel_fixed_mode);
++	} else {
++		DRM_DEBUG("Ignoring bogus LVDS VBT mode.\n");
++		dev_priv->lvds_vbt = 0;
++		kfree(panel_fixed_mode);
++	}
+ 
+ 	return;
+ }
 
