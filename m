@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab1FHTxF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:53:05 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:45763 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab1FHTxD (ORCPT
+	id S1753417Ab1FHTxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:53:12 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:43138 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752214Ab1FHTxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:53:03 -0400
-Date: Wed, 8 Jun 2011 12:52:43 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: linux-next: Tree for June 8 (docbook/media)
-Message-Id: <20110608125243.e63a07fc.randy.dunlap@oracle.com>
-In-Reply-To: <20110608161046.4ad95776.sfr@canb.auug.org.au>
-References: <20110608161046.4ad95776.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090207.4DEFD317.0043:SCFSTAT5015188,ss=1,fgs=0
+	Wed, 8 Jun 2011 15:53:10 -0400
+Date: Wed, 8 Jun 2011 20:52:50 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+Message-ID: <20110608195250.GB30256@srcf.ucam.org>
+References: <4DEE17F9.6020503@gmail.com>
+ <4DEEA548.5020405@kernel.org>
+ <4DEFA6E3.6090809@xs4all.nl>
+ <4DEFCAE0.6050700@kernel.org>
+ <20110608192321.GA28865@srcf.ucam.org>
+ <4DEFCD07.5020505@kernel.org>
+ <20110608192950.GA29235@srcf.ucam.org>
+ <4DEFCF1A.9030400@kernel.org>
+ <20110608193833.GA29855@srcf.ucam.org>
+ <4DEFD220.5040507@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DEFD220.5040507@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jun 2011 16:10:46 +1000 Stephen Rothwell wrote:
-
-> Hi all,
+On Wed, Jun 08, 2011 at 12:48:48PM -0700, Yinghai Lu wrote:
+> On 06/08/2011 12:38 PM, Matthew Garrett wrote:
+> > On Wed, Jun 08, 2011 at 12:35:54PM -0700, Yinghai Lu wrote:
+> >> On 06/08/2011 12:29 PM, Matthew Garrett wrote:
+> >>>> what former? you can not fix some corner case by breaking most other cases.
+> >>>
+> >>> All Dell laptops, all new Apples, some Lenovos, various Intel server 
+> >>> platforms. That I've found so far.
+> >>
+> >> do you mean before that patch, all those machine will not boot linux kernel with UEFI support?
+> > 
+> > Correct.
 > 
-> Changes since 20110607:
+> with or without EFI runtime services?
 
+They'll boot with noefi, but that's useless because there's then no way 
+to configure a bootloader.
 
-Hi Mauro,
-
-The DocBook/media/Makefile seems to be causing too much noise:
-
-ls: cannot access linux-next-20110608/Documentation/DocBook/media/*/*.gif: No such file or directory
-ls: cannot access linux-next-20110608/Documentation/DocBook/media/*/*.png: No such file or directory
-
-
-Maybe the cleanmediadocs target could be made silent?
-
-also, where is the mediaindexdocs target defined?
-
-
-thanks,
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
