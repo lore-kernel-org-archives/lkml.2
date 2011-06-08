@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab1FHHYX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 03:24:23 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55211 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754287Ab1FHHYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 03:24:22 -0400
-Date: Wed, 8 Jun 2011 09:24:16 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Nicolas Palix <Nicolas.Palix@inria.fr>
-Cc: Greg Dietsche <gregory.dietsche@cuw.edu>, Gilles.Muller@lip6.fr,
-        cocci@diku.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] coccinelle: if(ret)return ret; return ret; semantic
- patch
-In-Reply-To: <BANLkTim-x02kkpcRpPhZEKoJv3YMmQRNOg@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1106080923060.10548@ask.diku.dk>
-References: <1307320012-31292-1-git-send-email-Gregory.Dietsche@cuw.edu>
- <Pine.LNX.4.64.1106060651320.7113@ask.diku.dk> <4DEE482D.7020505@cuw.edu>
- <Pine.LNX.4.64.1106071855540.4074@ask.diku.dk> <BANLkTimMvG332_c4TUPefOJDDE8obowVdQ@mail.gmail.com>
- <4DEEAD5D.2090406@cuw.edu> <BANLkTim-x02kkpcRpPhZEKoJv3YMmQRNOg@mail.gmail.com>
+	id S1754931Ab1FHHvA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 03:51:00 -0400
+Received: from wp123.webpack.hosteurope.de ([80.237.132.130]:58703 "EHLO
+	wp123.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754632Ab1FHHu6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 03:50:58 -0400
+X-Greylist: delayed 1482 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Jun 2011 03:50:58 EDT
+Message-ID: <4DEF2412.3040707@stefankriwanek.de>
+Date: Wed, 08 Jun 2011 09:26:10 +0200
+From: Stefan Kriwanek <mail@stefankriwanek.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Jiri Kosina <jikos@jikos.cz>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the hid tree
+References: <20110608130334.58c62a7d.sfr@canb.auug.org.au>
+In-Reply-To: <20110608130334.58c62a7d.sfr@canb.auug.org.au>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-bounce-key: webpack.hosteurope.de;mail@stefankriwanek.de;1307519458;c867b11a;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jun 2011, Nicolas Palix wrote:
+Hi Jiri,
 
-> Hi,
-> 
-> On Wed, Jun 8, 2011 at 12:59 AM, Greg Dietsche <gregory.dietsche@cuw.edu> wrote:
-> > On 06/07/2011 04:54 PM, Nicolas Palix wrote:
-> >>
-> >> I remember me having worked on that but I cannot find any patch
-> >> about it so your patch is more that welcome. Some users have requested it
-> >> some months ago.
-> >>
-> >> As far as I can remember, with "M=" you can not use $srctree only but
-> >> still
-> >> need it for the -I for instance. I think I then run into a situation where
-> >> I
-> >> have an ambiguity about how to setup the flags for coccinelle, but I am
-> >> sure
-> >> about the reason I dropped my patch. Maybe I don't know well enough the
-> >> build
-> >> system and options...
-> >>
-> >> So, don't hesitate to submit your patch.
-> >>
-> >
-> > I'll submit what I have done as a new thread / patch series. I've not done
-> > much testing with it and am certainly not any kind of build system expert,
-> > but it has worked well for me so far :) A few more people trying it out /
-> > testing it would be a great idea.
-> 
-> I finally found the thread where we discuss this feature.
-> http://lkml.org/lkml/2010/7/2/279
-> 
-> I haven't the time to test your patch right now but at the time
-> the problem was in the patch mode which produces erroneous file names
-> (in the lines with ---/+++).
-> As far as I can remember, using the -dir and -patch options of
-> coccinelle doesn't work with external modules.
+I can only guess that this has to do with my patch not made by `git --diff` but simply `diff -up /dev/null/linux-2.6.39-speedlink/drivers/hid/hid-speedlink.c`
 
-Can you give a concrete example?  -patch is supposed to address the 
-problem of undesired path elements, but perhaps it is not sufficient in 
-this case.  There could be a problem of knowing what the argument to 
--patch should be?
+--- /dev/null	2011-05-27 13:53:55.863652998 +0200
++++ linux-2.6.39-speedlink/drivers/hid/hid-speedlink.c	2011-05-27 18:00:34.719863577 +0200
 
-julia 
+I am sorry if I caused the disturbance. However, after reading Documentation/SubmittitingPatches etc. I didn't know of any special measure to undertake when adding new files - If so, maybe one should consider updating the documention?.
+
+Regards,
+Stefan
+
+Am 08.06.2011 05:03, schrieb Stephen Rothwell:
+> Hi Jiri,
+> 
+> After merging the hid tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> make[3]: *** No rule to make target `drivers/hid/hid-speedlink.c', needed by `drivers/hid/hid-speedlink.o'.  Stop.
+> 
+> Caused by commit b5eb65d64f91 ("HID: Add driver to fix Speedlink VAD
+> Cezanne support").
+> 
+> I have used the hid tree from next-20110607 for today.
+
