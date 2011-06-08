@@ -1,80 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab1FHDaL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 23:30:11 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55544 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753286Ab1FHDaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 23:30:08 -0400
-Message-ID: <4DEEED3C.3070302@cn.fujitsu.com>
-Date: Wed, 08 Jun 2011 11:32:12 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 0/15] KVM: optimize for MMIO handled
-References: <4DEE205E.8000601@cn.fujitsu.com> <20110608121128.2caecdb3.yoshikawa.takuya@oss.ntt.co.jp> <4DEEEBB6.5090805@cn.fujitsu.com>
-In-Reply-To: <4DEEEBB6.5090805@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-08 11:29:56,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-08 11:29:56,
-	Serialize complete at 2011-06-08 11:29:56
+	id S1753840Ab1FHDm3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 23:42:29 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49544 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752710Ab1FHDm2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 23:42:28 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 8 Jun 2011 12:35:27 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        balbir@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        linux-mm@kvack.org, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
+Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node
+ to world
+Message-Id: <20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4DEE26E7.2060201@redhat.com>
+References: <1306925044-2828-1-git-send-email-imammedo@redhat.com>
+	<20110601123913.GC4266@tiehlicka.suse.cz>
+	<4DE6399C.8070802@redhat.com>
+	<20110601134149.GD4266@tiehlicka.suse.cz>
+	<4DE64F0C.3050203@redhat.com>
+	<20110601152039.GG4266@tiehlicka.suse.cz>
+	<4DE66BEB.7040502@redhat.com>
+	<BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
+	<4DE8D50F.1090406@redhat.com>
+	<BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
+	<4DEE26E7.2060201@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2011 11:25 AM, Xiao Guangrong wrote:
-> On 06/08/2011 11:11 AM, Takuya Yoshikawa wrote:
->> On Tue, 07 Jun 2011 20:58:06 +0800
->> Xiao Guangrong <xiaoguangrong@cn.fujitsu.com> wrote:
->>
->>> The performance test result:
->>>
->>> Netperf (TCP_RR):
->>> ===========================
->>> ept is enabled:
->>>
->>>       Before         After
->>> 1st   709.58         734.60
->>> 2nd   715.40         723.75
->>> 3rd   713.45         724.22
->>>
->>> ept=0 bypass_guest_pf=0:
->>>
->>>       Before         After
->>> 1st   706.10         709.63
->>> 2nd   709.38         715.80
->>> 3rd   695.90         710.70
->>>
->>
->> In what condition, does TCP_RR perform so bad?
->>
->> On 1Gbps network, directly connecting two Intel servers,
->> I got 20 times better result before.
->>
->> Even when I used a KVM guest as the netperf client,
->> I got more than 10 times better result.
->>
+On Tue, 07 Jun 2011 15:25:59 +0200
+Igor Mammedov <imammedo@redhat.com> wrote:
+
+> Sorry for late reply,
 > 
-> Um, which case did you test? ept = 1 or ept=0 bypass_guest_pf=0 or both?
+> On 06/03/2011 03:00 PM, Hiroyuki Kamezawa wrote:
+> > 2011/6/3 Igor Mammedov<imammedo@redhat.com>:
+> >> On 06/02/2011 01:10 AM, Hiroyuki Kamezawa wrote:
+> >>>> pc = list_entry(list->prev, struct page_cgroup, lru);
+> >>> Hmm, I disagree your patch is a fix for mainline. At least, a cgroup
+> >>> before completion of
+> >>> create() is not populated to userland and you never be able to rmdir()
+> >>> it because you can't
+> >>> find it.
+> >>>
+> >>>
+> >>>   >26:   e8 7d 12 30 00          call   0x3012a8
+> >>>   >2b:*  8b 73 08                mov    0x8(%ebx),%esi<-- trapping
+> >>> instruction
+> >>>   >2e:   8b 7c 24 24             mov    0x24(%esp),%edi
+> >>>   >32:   8b 07                   mov    (%edi),%eax
+> >>>
+> >>> Hm, what is the call 0x3012a8 ?
+> >>>
+> >>                 pc = list_entry(list->prev, struct page_cgroup, lru);
+> >>                 if (busy == pc) {
+> >>                         list_move(&pc->lru, list);
+> >>                         busy = 0;
+> >>                         spin_unlock_irqrestore(&zone->lru_lock, flags);
+> >>                         continue;
+> >>                 }
+> >>                 spin_unlock_irqrestore(&zone->lru_lock, flags);<---- is
+> >>   call 0x3012a8
+> >>                 ret = mem_cgroup_move_parent(pc, mem, GFP_KERNEL);
+> >>
+> >> and  mov 0x8(%ebx),%esi
+> >> is dereferencing of 'pc' in inlined mem_cgroup_move_parent
+> >>
+> > Ah, thank you for input..then panicd at accessing pc->page and "pc"
+> > was 0xfffffff4.
+> > it means list->prev was NULL.
+> >
+> yes, that's the case.
+> >> I've looked at vmcore once more and indeed there isn't any parallel task
+> >> that touches cgroups code path.
+> >> Will investigate if it is xen to blame for incorrect data in place.
+> >>
+> >> Thanks very much for your opinion.
+> > What curious to me is that the fact "list->prev" is NULL.
+> > I can see why you doubt the initialization code ....the list pointer never
+> > contains NULL once it's used....
+> > it smells like memory corruption or some to me. If you have vmcore,
+> > what the problematic mem_cgroup_per_zone(node) contains ?
 > 
->> Could you tell me a bit more details of your test?
->>
+> it has all zeros except for last field:
 > 
-> Sure, KVM guest is the client, and it uses e1000 NIC, and uses NAT
-> network connect to the netperf server, the bandwidth of our network
-> is 100M.
+> crash> rd f3446a00 62
+> f3446a00:  00000000 00000000 00000000 00000000   ................
+> f3446a10:  00000000 00000000 00000000 00000000   ................
+> f3446a20:  00000000 00000000 00000000 00000000   ................
+> f3446a30:  00000000 00000000 00000000 00000000   ................
+> f3446a40:  00000000 00000000 00000000 00000000   ................
+> f3446a50:  00000000 00000000 00000000 00000000   ................
+> f3446a60:  00000000 00000000 00000000 00000000   ................
+> f3446a70:  00000000 00000000 f36ef800 f3446a7c   ..........n.|jD.
+> f3446a80:  f3446a7c f3446a84 f3446a84 f3446a8c   |jD..jD..jD..jD.
+> f3446a90:  f3446a8c f3446a94 f3446a94 f3446a9c   .jD..jD..jD..jD.
+> f3446aa0:  f3446a9c 00000000 00000000 00000000   .jD.............
+> f3446ab0:  00000000 00000000 00000000 00000000   ................
+> f3446ac0:  00000000 00000000 00000000 00000000   ................
+> f3446ad0:  00000000 00000000 00000000 00000000   ................
+> f3446ae0:  00000000 00000000 00000000 00000000   ................
+> f3446af0:  00000000 f36ef800
+> 
+> crash> struct mem_cgroup f36ef800
+> struct mem_cgroup {
+> ...
+> info = {
+>      nodeinfo = {0xf3446a00}
+>    },
+> ...
+> 
+> It looks like a very targeted corruption of the first zone except of
+> the last field, while the second zone and the rest are perfectly
+> normal (i.e. have empty initialized lists).
 > 
 
-And this is my test script:
+Hmm, ok, thank you. Then, mem_cgroup_pre_zone[] was initialized once.
+In this kind of case, I tend to check slab header of memory object f3446a00,
+or check whether f3446a00 is an alive slab object or not.
 
-#!/bin/sh
-
-echo 3 > /proc/sys/vm/drop_caches
-./netperf -H $HOST_NAME -p $PORT -t TCP_RR -l 60
+Thanks,
+-Kame
+> 
+> PS:
+> It most easily reproduced only on xen hvm 32bit guest under heavy
+> vcpus contention for real cpus resources (i.e. I had to overcommit
+> cpus and run several cpu hog tasks on host to make guest crash on
+> reboot cycle).
+> And from last experiments, crash happens only on on hosts that
+> doesn't have hap feature or if hap is disabled in hypervisor.
+> 
+> > Thanks,
+> > -Kame
+> 
+> 
 
