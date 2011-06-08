@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab1FHVg3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 17:36:29 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:43844 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab1FHVg1 (ORCPT
+	id S1754721Ab1FHVil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 17:38:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58933 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751660Ab1FHVik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 17:36:27 -0400
-Date: Wed, 8 Jun 2011 22:36:03 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-Message-ID: <20110608213603.GA630@srcf.ucam.org>
-References: <20110608195250.GB30256@srcf.ucam.org>
- <4DEFD58D.5060402@kernel.org>
- <20110608200903.GA30694@srcf.ucam.org>
- <4DEFDA4A.9080500@kernel.org>
- <20110608203037.GA31052@srcf.ucam.org>
- <4DEFDD69.7010000@kernel.org>
- <20110608204244.GA31484@srcf.ucam.org>
- <BANLkTikfbSsgGgNEQ3GVD=HOPn1Dz_xh+g@mail.gmail.com>
- <20110608212813.GB32056@srcf.ucam.org>
- <4DEFEA3A.5050604@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DEFEA3A.5050604@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 8 Jun 2011 17:38:40 -0400
+Date: Wed, 8 Jun 2011 14:38:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nils Carlson <nils.carlson@ericsson.com>
+Cc: <clemens@ladisch.de>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Fix periodic-emulation in HPET for delayed interrupts
+Message-Id: <20110608143801.f494fa3e.akpm@linux-foundation.org>
+In-Reply-To: <1306929530-23771-1-git-send-email-nils.carlson@ericsson.com>
+References: <1306929530-23771-1-git-send-email-nils.carlson@ericsson.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 02:31:38PM -0700, H. Peter Anvin wrote:
-> On 06/08/2011 02:28 PM, Matthew Garrett wrote:
-> > 
-> > E820 limits us to 128 ranges, and systems I'm looking at right now are 
-> > already using over 140 boot services regions. Some of them are 
-> > contiguous and we could just merge them for e820, but that leaves us at 
-> > the whim of whoever wrote the allocator for the firmware. And do you 
-> > want to bet on them having done this sanely?
-> > 
+On Wed, 1 Jun 2011 13:58:50 +0200
+Nils Carlson <nils.carlson@ericsson.com> wrote:
+
+> When interrupts are delayed due to interrupt masking or due
+> to other interrupts being serviced the HPET periodic-emuation
+> would fail. This happened because given an interval t and
+> a time for the current interrupt m we would compute the next
+> time as t + m. This works until we are delayed for > t, in
+> which case we would be writing a new value which is in fact
+> in the past.
 > 
-> No, we're not limited to 128.  We're limited to 128 in the boot
-> structure, but more can be passed via the linked list.
+> This can be solved by computing the next time instead as
+> (k * t) + m where k is large enough to be in the future.
+> The exact computation of k is described in a comment to
+> the code.
+>
+> ...
+>
+> +		/* The time for the next interrupt would logically be t + m,
+> +		 * however, if we are very unlucky and the interrupt is delayed
+> +		 * for longer than t then we will completely miss the next
+> +		 * interrupt if we set t + m and an application will hang.
 
-Oh, ok, that's not as bad as I thought. We're still potentially losing a 
-pile of memory, but...
+Strange.  Normally when hardware generates an interrupt it doesn't get
+"missed".  It just sits there pending until the CPU accepts it.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+What exactly causes this interrupt to be "delayed"?  Are you referring
+to the CPU disabling local interrupts for too long, or something else?
+
+And why does this delay cause the interrupt to be completely missed?
+
+IOW, is the hpet hardware as busted as it sounds? ;)
+
+And how serious is this bug?  Can the fix be delayed until 3.1, or is it
+needed in 3.0?  2.6.x.y?
