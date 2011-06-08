@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab1FHOGm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 10:06:42 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38525 "EHLO mx2.mail.elte.hu"
+	id S1756006Ab1FHOIo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 10:08:44 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:49012 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755959Ab1FHOGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 10:06:41 -0400
-Date: Wed, 8 Jun 2011 16:06:31 +0200
+	id S1754974Ab1FHOIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 10:08:43 -0400
+Date: Wed, 8 Jun 2011 16:08:30 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>
-Subject: Re: [GIT PULL] oprofile fixes for v3.0
-Message-ID: <20110608140631.GA30752@elte.hu>
-References: <1306860406-6094-1-git-send-email-robert.richter@amd.com>
- <20110608125346.GL20052@erda.amd.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 0/3 v2] [GIT PULL][v3.0] tracing: fixes
+Message-ID: <20110608140830.GB30752@elte.hu>
+References: <20110607212937.662660421@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110608125346.GL20052@erda.amd.com>
+In-Reply-To: <20110607212937.662660421@goodmis.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -33,38 +31,30 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Robert Richter <robert.richter@amd.com> wrote:
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
 > Ingo,
 > 
-> please pull oprofile fixes for v3.0 (tip/perf/urgent):
+> Please pull the latest tip/perf/urgent-2 tree, which can be found at:
 > 
->  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
-> 
-> Thanks,
-> 
-> -Robert
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> tip/perf/urgent-2
 > 
 > 
-> The following changes since commit d7ebe75b065a7c2d58ffc12f9d2e00d5ea4e71eb:
+> GuoWen Li (1):
+>       ftrace: Fix possible undefined return code
 > 
->   perf: Fix comments in include/linux/perf_event.h (2011-06-04 12:31:14 +0200)
+> Steven Rostedt (2):
+>       kprobes/trace: Fix kprobe selftest for gcc 4.6
+>       ftrace: Revert 8ab2b7efd ftrace: Remove unnecessary disabling of irqs
 > 
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
-> 
-> Robert Richter (4):
->       oprofile, x86: Add comments to IBS LVT offset initialization
->       oprofile: Free potentially owned tasks in case of errors
->       oprofile: Fix locking dependency in sync_start()
->       oprofile, dcookies: Fix possible circular locking dependency
-> 
->  arch/x86/kernel/apic/apic.c      |    3 ++-
->  arch/x86/oprofile/op_model_amd.c |   13 +++++++++----
->  drivers/oprofile/buffer_sync.c   |   21 +++++++++++----------
->  fs/dcookies.c                    |    3 +++
->  4 files changed, 25 insertions(+), 15 deletions(-)
+> ----
+>  kernel/trace/ftrace.c       |    9 ++++++++-
+>  kernel/trace/trace_kprobe.c |    8 ++++++--
+>  2 files changed, 14 insertions(+), 3 deletions(-)
 
-Pulled, thanks a lot Robert!
+Pulled, thanks a lot Steve!
+
+Thanks,
 
 	Ingo
