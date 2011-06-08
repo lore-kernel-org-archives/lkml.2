@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab1FHHks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 03:40:48 -0400
-Received: from eastrmfepi104.cox.net ([68.230.241.200]:47118 "EHLO
-	eastrmfepi104.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab1FHHkr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 03:40:47 -0400
-X-Greylist: delayed 417 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Jun 2011 03:40:47 EDT
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020202.4DEF25DD.0063,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=yFHAE0zmTawA24Oq7y6/6YtGf/lGoQYA0C3uw5xHDzk=
- c=1 sm=1 a=G8Uczd0VNMoA:10 a=wqegIsk4r6oA:10 a=IkcTkHD0fZMA:10
- a=L06mKs7M3QIxvc7CsnsVhw==:17 a=aSRvjw2BAAAA:8 a=t2mhEGc5iJsk_MTu9poA:9
- a=y7FlT3sfh3Exiwb6Z08A:7 a=QEXdDO2ut3YA:10 a=KcoyU98-Au4A:10
- a=kGkssosrQecCleAd:21 a=z5CWm3bcyg6Ei2u3:21 a=L06mKs7M3QIxvc7CsnsVhw==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20110608033350.ZY7EF.709376.imail@eastrmwml35>
-Date: Wed, 8 Jun 2011 3:33:50 -0400
-From: BBC/AWARD <ww2221@cox.net>
-Reply-To: bbc001@qatar.io
-Subject: BBC AWARD LUCKY WINNER
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+	id S1754667Ab1FHHpl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 03:45:41 -0400
+Received: from smtp206.alice.it ([82.57.200.102]:59357 "EHLO smtp206.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754345Ab1FHHpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 03:45:39 -0400
+Date: Wed, 8 Jun 2011 09:45:23 +0200
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: Simon Wood <simon@mungewell.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, Michael Bauer <michael@m-bauer.org>,
+        Marcin Tolysz <tolysz@gmail.com>
+Subject: Re: [PATCHv4 1/3] sony_ff_hid_descriptor
+Message-Id: <20110608094523.c7232556.ospite@studenti.unina.it>
+In-Reply-To: <1307179957-24458-1-git-send-email-simon@mungewell.org>
+References: <1307179957-24458-1-git-send-email-simon@mungewell.org>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__8_Jun_2011_09_45_23_+0200_Vpzg/rSywJnD5wiS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__8_Jun_2011_09_45_23_+0200_Vpzg/rSywJnD5wiS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Dear Winner.Your e-mail has just won you
+On Sat,  4 Jun 2011 02:32:35 -0700
+Simon Wood <simon@mungewell.org> wrote:
 
-1,000,000.00GBP from the BBC LOTTERY on our 2010/2011
+> This patch modifies the HID descriptor of the Sixaxis controller
+> to allow the reporting of the accelerometers and gyro via
+> a joystick axis.
+>=20
+> rewrite section from offset 148
 
-charity bonanza.Tuesday June 07th
-draw no. 83051315253949 BONUS 04
-brought out your
+=46rom offset 83? Below I see rdesc[83] =3D=3D 0x75
 
-e-mail address from a Data Base of Internet Email Users
+> --
+> 0x75, 0x08,         /*          Report Size (8),            */
+> 0x95, 0x27,         /*          Report Count (39),          */ /* all the=
+ other data
+> lumped together */
 
-and qualified you a bonafied winner of the stated
+I'd keep commit messages wrapped to 72/80 chars as well if possible.
 
-winning amount.For claims,
-contact : Mr Ben Morris
-Via Email: bbc001@qatar.io
+[...]
+> @@ -43,6 +49,11 @@ static __u8 *sony_report_fixup(struct hid_device *hdev=
+, __u8 *rdesc,
+>  		hid_info(hdev, "Fixing up Sony Vaio VGX report descriptor\n");
+>  		rdesc[55] =3D 0x06;
+>  	}
+> +	if ((sc->quirks & SIXAXIS_CONTROLLER_USB) &&
+> +			*rsize =3D=3D 148 && rdesc[83] =3D=3D 0x75) {
+> +		hid_info(hdev, "Fixing up Sony Sixaxis report descriptor\n");
+> +		memcpy((void *)&rdesc[83], (void *) &sixaxis_rdesc_fixup, sizeof(sixax=
+is_rdesc_fixup));
+> +	}
+>  	return rdesc;
+>  }
+> =20
 
-1.Your Full Names:..
-2. Address:...
-3. Country/State:....
-4. Mobile No:.....
-5. Sex:....
-6. Age:...
-7. Occupation:....
-8. Email:....For confirmation of your winning
- numbers,
+Thanks,
+   Antonio
 
-please ensure your check your winning details on our
+--=20
+Antonio Ospite
+http://ao2.it
 
-site given below
+PGP public key ID: 0x4553B001
 
-http://www.bbc.co.uk/lottery
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
+
+--Signature=_Wed__8_Jun_2011_09_45_23_+0200_Vpzg/rSywJnD5wiS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk3vKJQACgkQ5xr2akVTsAE3GACfZ9QAoMgTkLH7kwAy50y7TShl
+xnsAnA/nO45oIhloSaV6SzClycP/I6p/
+=adkr
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__8_Jun_2011_09_45_23_+0200_Vpzg/rSywJnD5wiS--
