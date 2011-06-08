@@ -1,146 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365Ab1FHPd1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 11:33:27 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53188 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854Ab1FHPdZ convert rfc822-to-8bit (ORCPT
+	id S1756369Ab1FHPgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 11:36:51 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:47344 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754318Ab1FHPgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 11:33:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Wx4UlAd+UaVTcrchacZAaSycanSblogOB+Vf1HAN/n4IvJmv/jsPBBIudxVl+AuwyE
-         gVAE7AvKNSdyvekuIilR1h39e8IwRzQOauywu3qZyO4VjbfK30TgPNFF+k+DfhrJQ6kf
-         gTKubaGetfS8aroSGn5JgEQaJiyjj2Jv8BNzI=
+	Wed, 8 Jun 2011 11:36:50 -0400
+Message-ID: <4DEF9705.4070502@canonical.com>
+Date: Wed, 08 Jun 2011 08:36:37 -0700
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4DEF93CB.60507@redhat.com>
-References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net>
-	<alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com>
-	<BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com>
-	<alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com>
-	<BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com>
-	<4DEF8A1D.2080707@redhat.com>
-	<BANLkTi=CUs=bwcQa2YFgCfS3qYaY+T+S9w@mail.gmail.com>
-	<4DEF93CB.60507@redhat.com>
-Date: Wed, 8 Jun 2011 18:33:21 +0300
-X-Google-Sender-Auth: e667qCCXBdwIAa1Fc4EJKcybHKg
-Message-ID: <BANLkTi=Amx25i63RB6L24C5_BmHsiivsvg@mail.gmail.com>
-Subject: Re: [PATCH v1 00/30] Ext4 snapshots
-From: "Amir G." <amir73il@users.sourceforge.net>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
-        tytso@mit.edu, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Ed Tomlinson <edt@aei.ca>
+CC: Greg KH <gregkh@suse.de>, Jiri Kosina <jkosina@suse.cz>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Linux 2.6.39.1
+References: <20110603003835.GA20381@kroah.com> <201106032236.41294.edt@aei.ca> <4DED20C6.1020701@canonical.com> <201106061926.14661.edt@aei.ca>
+In-Reply-To: <201106061926.14661.edt@aei.ca>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 8, 2011 at 6:22 PM, Eric Sandeen <sandeen@redhat.com> wrote:
-> On 6/8/11 10:01 AM, Amir G. wrote:
->> On Wed, Jun 8, 2011 at 5:41 PM, Eric Sandeen <sandeen@redhat.com> wrote:
->>> On 6/8/11 9:04 AM, Amir G. wrote:
->>>>> And one last note, I also think that the snapshot format change in the
->>>>>> future, when we'll have snpashots with 64bit feature compatible seems
->>>>>> just wrong to me. Adding some features or changing the implementation a
->>>>>> bit is ok, but format change is different. When the code is upstream and
->>>>>> stable it is just wrong.
->>>> What can I say, I understand why it looks bad, but is 64bit code
->>>> upstream and stable? Hell no! e2fsprogs 64bit is not out yet!
->>>> There is no reason to call it 'format change'.
->>>> It's going to be a new format used only for 64bit fs, which are not
->>>> even out there yet. And when they are finally out there, they won't
->>>> have
->>>> snapshots until the new format is implemented.
+On 06/06/2011 04:26 PM, Ed Tomlinson wrote:
+> On Monday 06 June 2011 14:47:34 Chase Douglas wrote:
+>> On 06/03/2011 07:36 PM, Ed Tomlinson wrote:
+>>> On Thursday 02 June 2011 20:38:35 you wrote:
+>>>> I'm announcing the release of the 2.6.39.1 kernel.
+>>>>
+>>>> All users of the 2.6.39 kernel series must upgrade.
+>>>>
+>>>> The updated 2.6.39.y git tree can be found at:
+>>>>         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.39.y.git
+>>>> and can be browsed at the normal kernel.org git web browser:
+>>>>         http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.39.y.git;a=summary
+>>>>
 >>>
->>> Well, the on-disk format for 64-bit (48-bit?) ext4 is there & fixed; it's
->>> just that there is no released userspace which can properly handle it, right?
+>>> Greg,
+>>>
+>>> Just updated to 39.1 and it breaks my magicmouse
+>>>
+>>> [  107.360715] input: Apple Wireless Mouse as /devices/pci0000:00/0000:00:13.2/usb2/2-4/2-4.4/2-4.4:1.0/bluetooth/hci0/hci0:21/input8
+>>> [  107.376797] magicmouse 0005:05AC:030D.0005: input,hidraw3: BLUETOOTH HID v0.84 Mouse [Apple Wireless Mouse] on 00:02:72:20:20:1D
+>>> [  107.423387] magicmouse 0005:05AC:030D.0005: unable to request touch data (2)
+>>> [  107.451216] magicmouse: probe of 0005:05AC:030D.0005 failed with error 2
+>>>
+>>> and the magicmouse is dead.
+>>>
+>>> reverting 23746a66d7d9e73402c68ef00d708796b97ebd72
+>>>
+>>> makes it work as before.
 >>
->> I don't know, you tell me.
->> Are there many users out there using 64bit feature, without the proper
->> user space tools?
->
-> No, but that doesn't mean the disk format has to change when the tools
-> come out... I just don't want to confuse "there are no tools" with
-> "the disk format is unstable" - Andreas et. al. have been using
-> that format for years.
->
+>> Hi Ed,
 >>>
->>> I don't anticipate ext4 format changes for >16T, or am I missing something?
->>>
->>> -Eric
->>>
+>> Thanks!
 >>
->> Argh! I wish I hadn't missed the Monday call (it's
->> not in a good time for me).
->> This whole 'format change' has gone out of control
->> and I find it hard to present my case properly on scattered emails.
->
-> Sorry; I may have just misunderstood...
->
->> The message I am trying to get through is:
->> There is 32bit snapshot file format, which is implemented and well tested.
->> There is 64bit snapshot file format, which is not implemented yet, so
->> 64bit and snapshot feature are mutually exclusive.
->> If and when 64bit snapshot file format will be implemented, it will be
->> a new type of extent mapped file (v2) with 48bit logical addresses.
->> Is this a 'format change'? Call it what you will, but it shouldn't
->> affect anything on existing structures. It should only affect the
->> non-existing structure of 64bit snapshot file.
+>> -- Chase
 >>
->> Does this answer your question?
->
-> Yes, I guess I had misunderstood your point; I thought you were
-> implying that ext4's format had to change to support 64-bit, so why
-> not change snapshots along with it....
->
-> But you're just saying that you wish to push 32-bit snapshots which only
-> work with certain sizes of ext4 filesystems now, and later you will
-> release a new snapshot format which works with the larger filesystems.
-> Right?
+>>
+>> We pushed this commit to fix the regression you reported where the mouse
+>> failed to work in 2.6.39. With the commit, the mouse should be working
+>> properly.
+> 
+> Chase,
+> 
+> The patch that fixed .39 here was
+> 
+> (From: Ville Tervo <ville.tervo@nokia.com>)
+> 
+> I also played a bit with 1.1 CSR dongle and couldn't find any mask that would
+> be accepted. I think this command can be left out for older than 1.2 devices.
+> 
+> Following patch should do it. Could you verify it. I don't have access to old
+> hw ATM.
+> 
+> diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+> index 19cd4af..86d1e26 100644
+> --- a/net/bluetooth/hci_event.c
+> +++ b/net/bluetooth/hci_event.c
+> @@ -477,14 +477,16 @@ static void hci_setup_event_mask(struct hci_dev *hdev)
+>          * command otherwise */
+>         u8 events[8] = { 0xff, 0xff, 0xfb, 0xff, 0x00, 0x00, 0x00, 0x00 };
+>  
+> -       /* Events for 1.2 and newer controllers */
+> -       if (hdev->lmp_ver > 1) {
+> -               events[4] |= 0x01; /* Flow Specification Complete */
+> -               events[4] |= 0x02; /* Inquiry Result with RSSI */
+> -               events[4] |= 0x04; /* Read Remote Extended Features Complete */
+> -               events[5] |= 0x08; /* Synchronous Connection Complete */
+> -               events[5] |= 0x10; /* Synchronous Connection Changed */
+> -       }
+> +       /* CSR 1.1 dongles does not accept any bitfield so don't try to set
+> +        * any event mask for pre 1.2 devices */
+> +       if (hdev->lmp_ver <= 1)
+> +               return;
+> +
+> +       events[4] |= 0x01; /* Flow Specification Complete */
+> +       events[4] |= 0x02; /* Inquiry Result with RSSI */
+> +       events[4] |= 0x04; /* Read Remote Extended Features Complete */
+> +       events[5] |= 0x08; /* Synchronous Connection Complete */
+> +       events[5] |= 0x10; /* Synchronous Connection Changed */
+>  
+>         if (hdev->features[3] & LMP_RSSI_INQ)
+>                 events[4] |= 0x04; /* Inquiry Result with RSSI */
 
-Right. Where 'Larger filesystems' := 64bit block addresses.
+Where did this patch come from? I don't see it in Linus' tree. If this
+patch is merged, I can test the a new kernel out to see if we should
+back out the commit from Jiri. However, right now my magic trackpad
+(which has the same issue as the magic mouse) works fine on plain 2.6.39.1.
 
->
-> (I don't actually know if we'll ever have 64-bit ext4, though, there
-> are still so many scaling issues beyond just being able to mkfs,
-> mount, growfs etc ... it's a serious game of catch-up with xfs
-> in that space, IMHO, which has been doing it well for years now...)
-
-More of a good reason to push a snapshot file format that work well
-with 32bit ext4.
-
->
-> Still, pushing snapshots upstream which will have an on-disk format
-> more limited than the rest of the filesystem's on-disk format
-> does strike me as suboptimal from a pure technical design POV.
->
-> What if we proposed, say, xattr code that could only apply xattrs
-> to files located in the first 16T?  I don't think it'd be accepted.
-
-That is not a correct analogy. The correct analogy is not supporting
-xattrs on 64-bit ext4. Whether it makes sense or not for snapshots
-depends IMHO on whether people find snapshot on 32bit ext4 only
-useful or not.
-
-I naturally think that people will find it useful.
-Anyone can add snapshots to his existing 32-bit ext4,
-No one can migrate the same fs to 64-bit...
-
->
-> I understand that you have a history and a format and a business case,
-> but that really should not change whether we do it right the first time,
-> upstream, IMHO...  But I'm just the peanut gallery, here....  ;)
->
-> -Eric
->
->> Amir.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+-- Chase
