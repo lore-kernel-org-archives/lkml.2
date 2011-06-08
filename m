@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab1FHTwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:52:41 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:43114 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab1FHTwj (ORCPT
+	id S1753350Ab1FHT6X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:58:23 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:37970 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab1FHT6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:52:39 -0400
-Date: Wed, 8 Jun 2011 20:52:15 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-Message-ID: <20110608195215.GA30256@srcf.ucam.org>
-References: <4DEE17F9.6020503@gmail.com>
- <4DEEA548.5020405@kernel.org>
- <4DEFA6E3.6090809@xs4all.nl>
- <4DEFCAE0.6050700@kernel.org>
- <20110608192321.GA28865@srcf.ucam.org>
- <4DEFCD07.5020505@kernel.org>
- <20110608192950.GA29235@srcf.ucam.org>
- <4DEFCF1A.9030400@kernel.org>
- <20110608193833.GA29855@srcf.ucam.org>
- <4DEFD17C.8000001@kernel.org>
+	Wed, 8 Jun 2011 15:58:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Et/yiz3A9swEY5MCXmWPiJTexMsYbKdUMq2zVb79DYzsKrgDiwh1xrhB48Vut0PuqA
+         0CTJY+SoHe/Zgyxobu1YEG9mLRTcv0sLd8gyeaCA80f3vupenjTP+5dET4p4FKqESdag
+         259I9vDXx7Wh2yyRSt/jSr5B65aT1Xx5XAH3o=
+Message-ID: <4DEFD2F4.5000403@gmail.com>
+Date: Wed, 08 Jun 2011 21:52:21 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DEFD17C.8000001@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, kyungmin.park@samsung.com,
+        stevie.trujillo@gmail.com, xiyou.wangcong@gmail.com
+Subject: Re: [PATCH 1/2 v3] ramoops: use module parameters instead of platform
+ data if not available
+References: <4DE0B9D8.3020405@gmail.com> <4DE10B4D.50501@gmail.com> <4DEE56AF.1040601@gmail.com>
+In-Reply-To: <4DEE56AF.1040601@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 12:46:04PM -0700, Yinghai Lu wrote:
-> On 06/08/2011 12:38 PM, Matthew Garrett wrote:
-> >>> All Dell laptops, all new Apples, some Lenovos, various Intel server 
-> >>> platforms. That I've found so far.
-> >>
-> >> do you mean before that patch, all those machine will not boot linux kernel with UEFI support?
-> > 
-> > Correct.
-> 
-> good, they never test that. just let them to use bootcamp.
+Il 07/06/2011 18:49, Marco Stornelli ha scritto:
+> From: Marco Stornelli<marco.stornelli@gmail.com>
+>
+> Use generic module parameters instead of platform data, if platform
+> data are not available. This limitation has been introduced with
+> commit c3b92ce9e75f6353104fc7f8e32fb9fdb2550ad0.
+>
+> Signed-off-by: Marco Stornelli<marco.stornelli@gmail.com>
+> CC: Kyungmin Park<kyungmin.park@samsung.com>
+> CC: Américo Wang<xiyou.wangcong@gmail.com>
+> Reported-by: Stevie Trujillo<stevie.trujillo@gmail.com>
+> ---
 
-If you'd like to tell Intel to stop filing bugs about Intel SDVs that 
-won't boot via EFI, be my guest. These are systems that have no problem 
-booting Windows because SetVirtualAddressMap() is called in the Windows 
-bootloader rather than in the Windows kernel.
+Stephen,
 
-> >> after bootloader, those area should be free already.
-> > 
-> > That's what the spec says. Reality says differently. We need those 
-> > ranges to be available to the kernel until after SetVirtualAddressMap() 
-> > has been called, which means we need to avoid putting the kernel on top 
-> > of them.
-> 
-> bootloader will load kernel (bzImage) high, and it will decompressed to 16M ram position.
+can you add this patch and "[PATCH 2/2 v3] ramoops: add a new line for 
+each print" to the linux-next? Thanks.
 
-Well that's a problem.
+Regards,
 
-> can you call SetVirtualAddressMap before you exit bootloader instead?
-
-No. We don't know where the kernel will map the runtime regions.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Marco
