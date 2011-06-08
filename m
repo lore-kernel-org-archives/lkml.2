@@ -1,265 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab1FHHqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 03:46:53 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:48634 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575Ab1FHHqv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 03:46:51 -0400
-Message-Id: <20110608074648.287491002@de.ibm.com>
-User-Agent: quilt/0.48-1
-Date: Wed, 08 Jun 2011 09:45:24 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Slaby <jslaby@suse.cz>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [patch 1/1] [PATCH] include storage keys in hibernation image.
-References: <20110608074523.211912903@de.ibm.com>
-Content-Disposition: inline; filename=201-hibernate-storage-keys.diff
+	id S1754902Ab1FHHrX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 03:47:23 -0400
+Received: from smtp209.alice.it ([82.57.200.105]:43641 "EHLO smtp209.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754840Ab1FHHrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 03:47:21 -0400
+Date: Wed, 8 Jun 2011 09:47:14 +0200
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: Simon Wood <simon@mungewell.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, Michael Bauer <michael@m-bauer.org>,
+        Marcin Tolysz <tolysz@gmail.com>
+Subject: Re: [PATCHv4 3/3] sony_ff_bluetooth
+Message-Id: <20110608094714.9291d5e8.ospite@studenti.unina.it>
+In-Reply-To: <1307179957-24458-3-git-send-email-simon@mungewell.org>
+References: <1307179957-24458-1-git-send-email-simon@mungewell.org>
+	<1307179957-24458-3-git-send-email-simon@mungewell.org>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__8_Jun_2011_09_47_14_+0200_9Cktdaz7TIgWW7cW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+--Signature=_Wed__8_Jun_2011_09_47_14_+0200_9Cktdaz7TIgWW7cW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For s390 there is one additional byte associated with each page,
-the storage key. This byte contains the referenced and changed
-bits and needs to be included into the hibernation image.
-If the storage keys are not restored to their previous state all
-original pages would appear to be dirty. This can cause
-inconsistencies e.g. with read-only filesystems.
+On Sat,  4 Jun 2011 02:32:37 -0700
+Simon Wood <simon@mungewell.org> wrote:
 
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-s390@vger.kernel.org
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
----
+> Add support for patching the HID descriptor when Sixaxis is connect
+> via Bluetooth. In this mode the desciptor contains a trailing '0x00'.
+>=20
+> Patch suggested by Antonio
+>
 
- arch/s390/kernel/swsusp_asm64.S |    3 
- kernel/power/snapshot.c         |  148 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 151 insertions(+)
+Simon I think this one can be split and the first hunk can be merged
+with 1/2 and the second hunk with 2/2.
 
-diff -urpN linux-2.6/arch/s390/kernel/swsusp_asm64.S linux-2.6-patched/arch/s390/kernel/swsusp_asm64.S
---- linux-2.6/arch/s390/kernel/swsusp_asm64.S	2011-05-19 06:06:34.000000000 +0200
-+++ linux-2.6-patched/arch/s390/kernel/swsusp_asm64.S	2011-06-06 11:14:43.000000000 +0200
-@@ -138,11 +138,14 @@ swsusp_arch_resume:
- 0:
- 	lg	%r2,8(%r1)
- 	lg	%r4,0(%r1)
-+	iske	%r0,%r4
- 	lghi	%r3,PAGE_SIZE
- 	lghi	%r5,PAGE_SIZE
- 1:
- 	mvcle	%r2,%r4,0
- 	jo	1b
-+	lg	%r2,8(%r1)
-+	sske	%r0,%r2
- 	lg	%r1,16(%r1)
- 	ltgr	%r1,%r1
- 	jnz	0b
-diff -urpN linux-2.6/kernel/power/snapshot.c linux-2.6-patched/kernel/power/snapshot.c
---- linux-2.6/kernel/power/snapshot.c	2011-06-06 11:14:39.000000000 +0200
-+++ linux-2.6-patched/kernel/power/snapshot.c	2011-06-06 11:14:43.000000000 +0200
-@@ -1022,6 +1022,137 @@ static inline void copy_data_page(unsign
- }
- #endif /* CONFIG_HIGHMEM */
- 
-+#ifdef CONFIG_S390
-+/*
-+ * For s390 there is one additional byte associated with each page,
-+ * the storage key. The key consists of the access-control bits
-+ * (alias the key), the fetch-protection bit, the referenced bit
-+ * and the change bit (alias dirty bit). Linux uses only the
-+ * referenced bit and the change bit for pages in the page cache.
-+ * Any modification of a page will set the change bit, any access
-+ * sets the referenced bit. Overindication of the referenced bits
-+ * after a hibernation cycle does not cause any harm but the
-+ * overindication of the change bits would cause trouble.
-+ * Therefore it is necessary to include the storage keys in the
-+ * hibernation image. The storage keys are saved to the most
-+ * significant byte of each page frame number in the list of pfns
-+ * in the hibernation image.
-+ */
-+
-+/*
-+ * Key storage is allocated as a linked list of pages.
-+ * The size of the keys array is (PAGE_SIZE - sizeof(long))
-+ */
-+struct page_key_data {
-+	struct page_key_data *next;
-+	unsigned char data[];
-+};
-+
-+#define PAGE_KEY_DATA_SIZE	(PAGE_SIZE - sizeof(struct page_key_data *))
-+
-+static struct page_key_data *page_key_data;
-+static struct page_key_data *page_key_rp, *page_key_wp;
-+static unsigned long page_key_rx, page_key_wx;
-+
-+/*
-+ * For each page in the hibernation image one additional byte is
-+ * stored in the most significant byte of the page frame number.
-+ * On suspend no additional memory is required but on resume the
-+ * keys need to be memorized until the page data has been restored.
-+ * Only then can the storage keys be set to their old state.
-+ */
-+static inline unsigned long page_key_additional_pages(unsigned long pages)
-+{
-+	return DIV_ROUND_UP(pages, PAGE_KEY_DATA_SIZE);
-+}
-+
-+/*
-+ * Free page_key_data list of arrays.
-+ */
-+static void page_key_free(void)
-+{
-+	struct page_key_data *pkd;
-+
-+	while (page_key_data) {
-+		pkd = page_key_data;
-+		page_key_data = pkd->next;
-+		free_page((unsigned long) pkd);
-+	}
-+}
-+
-+/*
-+ * Allocate page_key_data list of arrays with enough room to store
-+ * one byte for each page in the hibernation image.
-+ */
-+static int page_key_alloc(unsigned long pages)
-+{
-+	struct page_key_data *pk;
-+	unsigned long size;
-+
-+	size = DIV_ROUND_UP(pages, PAGE_KEY_DATA_SIZE);
-+	while (size--) {
-+		pk = (struct page_key_data *) get_zeroed_page(GFP_KERNEL);
-+		if (!pk) {
-+			page_key_free();
-+			return -ENOMEM;
-+		}
-+		pk->next = page_key_data;
-+		page_key_data = pk;
-+	}
-+	page_key_rp = page_key_wp = page_key_data;
-+	page_key_rx = page_key_wx = 0;
-+	return 0;
-+}
-+
-+/*
-+ * Save the storage key into the upper 8 bits of the page frame number.
-+ */
-+static inline void page_key_read(unsigned long *pfn)
-+{
-+	unsigned long addr;
-+
-+	addr = (unsigned long) page_address(pfn_to_page(*pfn));
-+	*(unsigned char *) pfn = (unsigned char) page_get_storage_key(addr);
-+}
-+
-+/*
-+ * Extract the storage key from the upper 8 bits of the page frame number
-+ * and store it in the page_key_data list of arrays.
-+ */
-+static inline void page_key_memorize(unsigned long *pfn)
-+{
-+	page_key_wp->data[page_key_wx] = *(unsigned char *) pfn;
-+	*(unsigned char *) pfn = 0;
-+	if (++page_key_wx < PAGE_KEY_DATA_SIZE)
-+		return;
-+	page_key_wp = page_key_wp->next;
-+	page_key_wx = 0;
-+}
-+
-+/*
-+ * Get the next key from the page_key_data list of arrays and set the
-+ * storage key of the page referred by @address. If @address refers to
-+ * a "safe" page the swsusp_arch_resume code will transfer the storage
-+ * key from the buffer page to the original page.
-+ */
-+static void page_key_write(void *address)
-+{
-+	page_set_storage_key((unsigned long) address,
-+			     page_key_rp->data[page_key_rx], 0);
-+	if (++page_key_rx >= PAGE_KEY_DATA_SIZE)
-+		return;
-+	page_key_rp = page_key_rp->next;
-+	page_key_rx = 0;
-+}
-+#else
-+static unsigned long page_key_additional_pages(unsigned long pages) { return 0; }
-+static inline int  page_key_alloc(unsigned long pages) { return 0; }
-+static inline void page_key_free(void) { }
-+static inline void page_key_read(unsigned long *pfn) { }
-+static inline void page_key_memorize(unsigned long *pfn) { }
-+static inline void page_key_write(void *address) { }
-+#endif
-+
- static void
- copy_data_pages(struct memory_bitmap *copy_bm, struct memory_bitmap *orig_bm)
- {
-@@ -1335,6 +1466,9 @@ int hibernate_preallocate_memory(void)
- 	count += highmem;
- 	count -= totalreserve_pages;
- 
-+	/* Add number of pages required for storage keys (s390 only). */
-+	size += page_key_additional_pages(saveable);
-+
- 	/* Compute the maximum number of saveable pages to leave in memory. */
- 	max_size = (count - (size + PAGES_FOR_IO)) / 2
- 			- 2 * DIV_ROUND_UP(reserved_size, PAGE_SIZE);
-@@ -1658,6 +1792,8 @@ pack_pfns(unsigned long *buf, struct mem
- 		buf[j] = memory_bm_next_pfn(bm);
- 		if (unlikely(buf[j] == BM_END_OF_MAP))
- 			break;
-+		/* Save storage key for data page (s390 only). */
-+		page_key_read(buf + j);
- 	}
- }
- 
-@@ -1817,6 +1953,9 @@ static int unpack_orig_pfns(unsigned lon
- 		if (unlikely(buf[j] == BM_END_OF_MAP))
- 			break;
- 
-+		/* Extract and buffer storage key for data page (s390 only). */
-+		page_key_memorize(buf + j);
-+
- 		if (memory_bm_pfn_present(bm, buf[j]))
- 			memory_bm_set_bit(bm, buf[j]);
- 		else
-@@ -2219,6 +2358,10 @@ int snapshot_write_next(struct snapshot_
- 		if (error)
- 			return error;
- 
-+		error = page_key_alloc(nr_copy_pages);
-+		if (error)
-+			return error;
-+
- 	} else if (handle->cur <= nr_meta_pages + 1) {
- 		error = unpack_orig_pfns(buffer, &copy_bm);
- 		if (error)
-@@ -2239,6 +2382,8 @@ int snapshot_write_next(struct snapshot_
- 		}
- 	} else {
- 		copy_last_highmem_page();
-+		/* Restore storage key for data page (s390 only). */
-+		page_key_write(handle->buffer);
- 		handle->buffer = get_buffer(&orig_bm, &ca);
- 		if (IS_ERR(handle->buffer))
- 			return PTR_ERR(handle->buffer);
-@@ -2260,6 +2405,9 @@ int snapshot_write_next(struct snapshot_
- void snapshot_write_finalize(struct snapshot_handle *handle)
- {
- 	copy_last_highmem_page();
-+	/* Restore storage key for data page (s390 only). */
-+	page_key_write(handle->buffer);
-+	page_key_free();
- 	/* Free only if we have loaded the image entirely */
- 	if (handle->cur > 1 && handle->cur > nr_meta_pages + nr_copy_pages) {
- 		memory_bm_free(&orig_bm, PG_UNSAFE_CLEAR);
+Also the short commit messages still need to be fixed for all the
+patches to be more descriptive, if you don't want to spend any more
+time on that just tell and I'll do it :)
 
+Thanks,
+   Antonio
+
+> Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+> Signed-off-by: Simon Wood <simon@mungewell.org>
+> ---
+>  drivers/hid/hid-sony.c |    9 ++++++---
+>  1 files changed, 6 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
+> index f219746..5d37f97 100644
+> --- a/drivers/hid/hid-sony.c
+> +++ b/drivers/hid/hid-sony.c
+> @@ -49,8 +49,11 @@ static __u8 *sony_report_fixup(struct hid_device *hdev=
+, __u8 *rdesc,
+>  		hid_info(hdev, "Fixing up Sony Vaio VGX report descriptor\n");
+>  		rdesc[55] =3D 0x06;
+>  	}
+> -	if ((sc->quirks & SIXAXIS_CONTROLLER_USB) &&
+> -			*rsize =3D=3D 148 && rdesc[83] =3D=3D 0x75) {
+> +
+> +	/* The HID descriptor exposed over BT has a trailing zero byte */
+> +	if ((((sc->quirks & SIXAXIS_CONTROLLER_USB) && *rsize =3D=3D 148) ||
+> +			((sc->quirks & SIXAXIS_CONTROLLER_BT)  && *rsize =3D=3D 149 )) &&
+> +			rdesc[83] =3D=3D 0x75) {
+>  		hid_info(hdev, "Fixing up Sony Sixaxis report descriptor\n");
+>  		memcpy((void *)&rdesc[83], (void *) &sixaxis_rdesc_fixup, sizeof(sixax=
+is_rdesc_fixup));
+>  	}
+> @@ -64,7 +67,7 @@ static int sony_raw_event(struct hid_device *hdev, stru=
+ct hid_report *report, __
+>  {
+>  	struct sony_sc *sc =3D hid_get_drvdata(hdev);
+> =20
+> -	if ((sc->quirks & SIXAXIS_CONTROLLER_USB) &&
+> +	if ((sc->quirks & (SIXAXIS_CONTROLLER_USB | SIXAXIS_CONTROLLER_BT)) &&
+>  			rd[0] =3D=3D 0x01 && size =3D=3D 49) {
+>  		swap(rd[41], rd[42]);
+>  		swap(rd[43], rd[44]);
+> --=20
+
+--=20
+Antonio Ospite
+http://ao2.it
+
+PGP public key ID: 0x4553B001
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
+
+--Signature=_Wed__8_Jun_2011_09_47_14_+0200_9Cktdaz7TIgWW7cW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk3vKQIACgkQ5xr2akVTsAFiLwCglJHHPFg6uU4hfzcMsrSgBEFE
+mVAAn1H9dR0xymD57CLYFdwQF5Nt2K/2
+=HhSW
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__8_Jun_2011_09_47_14_+0200_9Cktdaz7TIgWW7cW--
