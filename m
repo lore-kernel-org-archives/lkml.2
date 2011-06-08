@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774Ab1FHX5P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 19:57:15 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:23778 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754011Ab1FHX5N (ORCPT
+	id S1756792Ab1FHX5a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 19:57:30 -0400
+Received: from host171.canaca.com ([67.55.55.225]:38431 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763Ab1FHX52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 19:57:13 -0400
-Message-ID: <4DF00C57.2080406@dsn.okisemi.com>
-Date: Thu, 09 Jun 2011 08:57:11 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Wed, 8 Jun 2011 19:57:28 -0400
+Message-ID: <1b0af21baa09ca623bbe62ee253f5d36.squirrel@host171.canaca.com>
+In-Reply-To: <20110608094714.9291d5e8.ospite@studenti.unina.it>
+References: <1307179957-24458-1-git-send-email-simon@mungewell.org>
+    <1307179957-24458-3-git-send-email-simon@mungewell.org>
+    <20110608094714.9291d5e8.ospite@studenti.unina.it>
+Date: Wed, 8 Jun 2011 19:57:25 -0400
+Subject: Re: [PATCHv4 3/3] sony_ff_bluetooth
+From: simon@mungewell.org
+To: "Antonio Ospite" <ospite@studenti.unina.it>
+Cc: "Simon Wood" <simon@mungewell.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Jiri Kosina" <jkosina@suse.cz>,
+        "Michael Bauer" <michael@m-bauer.org>,
+        "Marcin Tolysz" <tolysz@gmail.com>
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: "Clark, Joel" <joel.clark@intel.com>, "Cox, Alan" <alan.cox@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
-        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>,
-        "Liu, Bing Wei" <bing.wei.liu@intel.com>,
-        "Skarpness, Mark" <mark.skarpness@intel.com>
-Subject: Re: FW: [PATCH v5] 8250_pci: add -ENODEV code for Intel EG20T PCH
-References: <667A27282ACF7941B0F557DAD3491E16010A9E12CB@rrsmsx504.amr.corp.intel.com> <20110608162613.GA7005@suse.de>
-In-Reply-To: <20110608162613.GA7005@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
 
-(2011/06/09 1:26), Greg KH wrote:
- >> We would like to add this fix as soon as it is acceptable.
- >Add it to what?
-I think Joel means MeeGo team want to add this patch.
+>
+> Simon I think this one can be split and the first hunk can be merged
+> with 1/2 and the second hunk with 2/2.
+>
+> Also the short commit messages still need to be fixed for all the
+> patches to be more descriptive, if you don't want to spend any more
+> time on that just tell and I'll do it :)
+
+I'm traveling for the rest of the week and don't have access to the
+Sixaxis hardware to test, so if you have the time/motivation to spin a new
+patch that would be great.... if not I can try again over the weekend.
+
+> rewrite section from offset 148
+.... er, yes I am an idiot. ;-)
+
+Simon
 
 
-Hi Joel,
-As Greg saying, This patch have already accepted and applied by Greg.
-
--- 
-tomoya
-OKI SEMICONDUCTOR CO., LTD.
