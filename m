@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab1FHN3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 09:29:04 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36849 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755439Ab1FHN3B (ORCPT
+	id S1755785Ab1FHNam (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 09:30:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60394 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755373Ab1FHNak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 09:29:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=SM6oyAG38IakIlqh9yckXkg/Bi0pfbyr8j5PqigBab9XT2eLfAmXYC0Wi55crlt3mi
-         mb+alUoazNokmY++emPzzSLd1+5NOLI2C7K/cnGKEzyLUQxlhnx8JWTDJIaX2wIc+9ET
-         kJRD1qTwyh2Mmjai9J9aeJ9zgDMmgwAEXdh40=
+	Wed, 8 Jun 2011 09:30:40 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=XYJHFtupD_QA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=SZqOXIthU9N7Ez_25wQA:9 a=0oz2n8WfHEC9MGw72IcA:7 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Wed, 8 Jun 2011 09:30:37 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>, david@lang.hm,
+        linux-kernel@vger.kernel.org
+Subject: Re: XFS problem in 2.6.32
+Message-ID: <20110608133037.GF27245@home.goodmis.org>
+References: <4DEE1D96.6020208@profihost.ag>
+ <6D8DA3D2-D90B-4D82-BDC9-C3F0264A68BF@mit.edu>
+ <4DEE2C70.8060301@profihost.ag>
+ <alpine.DEB.2.02.1106071239530.28905@asgard.lang.hm>
+ <4DEE9EDA.90001@profihost.ag>
+ <C4F797E7-3B2F-4BAD-BF69-2182DEA775A5@mit.edu>
 MIME-Version: 1.0
-In-Reply-To: <20110608125855.GE27245@home.goodmis.org>
-References: <BANLkTim9cr6H9fTik8-yQ4E0j1yFAOt-7g@mail.gmail.com>
-	<20110608125855.GE27245@home.goodmis.org>
-Date: Wed, 8 Jun 2011 21:28:59 +0800
-Message-ID: <BANLkTi=0hmKeg_dj-x4osX3N_b-cKjyqcw@mail.gmail.com>
-Subject: Re: [PATCH] sched: remove unreliable pointer in mutex_spin_on_owner()
-From: Hillf Danton <dhillf@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C4F797E7-3B2F-4BAD-BF69-2182DEA775A5@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 8, 2011 at 8:58 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, Jun 08, 2011 at 08:49:53PM +0800, Hillf Danton wrote:
->> The dereference of unreliable owner pointer is unnecessary in owner_running(),
->> though under RCU protection, because the true result is only determined by
->> checking the validity of lock owner, as the comment says, due to likely heavy
->> lock contention, which has little to do with whether owner->on_cpu is false.
->>
->> If owner->on_cpu is really false, only the owner_running loop is shortened,
->> but also returns incorrect result, since the lock owner is not changed, though
->> maybe changed soon.
->>
->
-> Hillf, have you read anything that I posted before?
->
+On Tue, Jun 07, 2011 at 11:28:59PM -0400, Theodore Tso wrote:
 
-I have, but
+Ted, you need a new MUA, as it reads horribly in mutt.
 
-> We don't want to spin if the owner of the lock sleeps. If it sleeps,
-> then the owner's on_cpu will be zero. That's the point of checking it.
->
-not understand the point of checking owner->on_cpu, and the code's
-icy beauty blows me down again.
+> 
+> Not all distributions will participate in the maintenance stable tree.  Red Hat for example is probably worried about people  (specifically, Oracle) taking their kernel expertise "for free" and bidding it against them.  So it doesn't surprise me that they aren't submitting patches to the stable tree.  After all, they would like you to purchase a support contract if you want to get high quality, supported kernel.   Why should they give that work away for free?  After all, their salaried developers have to get paid somehow.  Others will contribute work in the hopes that other people will also contribute fixes back, but of course nothing forces Red Hat to do this.
+> 
 
-Please thaw another hard to understand in rt_mutex_setprio(),
+As a Red Hat employee, I must speak against this. I have *never* been
+told to keep something from stable. In fact, I've always been encouraged
+to push to stable. But it is usually the individual engineer's
+responsibility to get a patch into stable. If something was missed, it
+was more the fault of that individual engineer that made the fix than
+Red Hat.
 
+Ask Greg, I'm constantly sending stable patches to him.
 
-	if (running)
-		p->sched_class->set_curr_task(rq);
-	if (on_rq)
--		enqueue_task(rq, p, oldprio < prio ? ENQUEUE_HEAD : 0);
-+		enqueue_task(rq, p, oldprio > prio ? ENQUEUE_HEAD : 0);
+-- Steve
 
-	check_class_changed(rq, p, prev_class, oldprio);
-
-
-thanks
-            Hillf
-
-> The patch you just added would devastate the performance of the system.
-> Now if we have contention on a lock, and the owner sleeps, we continue
-> to spin. If the spinner is an RT task, this could also cause a deadlock,
-> especially if the owner is bound to the same CPU that the RT task is on.
->
-> -- Steve
