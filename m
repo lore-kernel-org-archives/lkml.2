@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab1FHOCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 10:02:55 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:53993 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755208Ab1FHOCx (ORCPT
+	id S1755982Ab1FHODt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 10:03:49 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35624 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754974Ab1FHODs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 10:02:53 -0400
-Subject: Re: [PATCH] atmel_serial: keep the platform_device unchanged
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice Vilchez <patrice.vilchez@atmel.com>,
-        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-In-Reply-To: <20110608134730.GA17584@game.jcrosoft.org>
-References: <1302724038-26236-1-git-send-email-plagnioj@jcrosoft.com>
-	 <1307522703.10626.9.camel@hcegtvedt.norway.atmel.com>
-	 <20110608134730.GA17584@game.jcrosoft.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Wed, 08 Jun 2011 16:02:20 +0200
-Message-ID: <1307541740.10626.15.camel@hcegtvedt.norway.atmel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Jun 2011 14:02:23.0730 (UTC) FILETIME=[B0E26520:01CC25E4]
+	Wed, 8 Jun 2011 10:03:48 -0400
+Date: Wed, 8 Jun 2011 15:03:41 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Chris Zankel <chris@zankel.net>
+Subject: Re: [PATCH] init: use KERNEL_DS when trying to start init process
+Message-ID: <20110608140340.GU11521@ZenIV.linux.org.uk>
+References: <1306772228-1603-1-git-send-email-minipli@googlemail.com>
+ <20110606161254.5f02d855.akpm@linux-foundation.org>
+ <BANLkTinwMyVsR-pvimeVkcqQrCuNDK4zKw@mail.gmail.com>
+ <20110608104727.GT11521@ZenIV.linux.org.uk>
+ <BANLkTi=qBx0Mk=b2wsA3RZVKk0RUckeN6g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=qBx0Mk=b2wsA3RZVKk0RUckeN6g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-08 at 15:47 +0200, Jean-Christophe PLAGNIOL-VILLARD
-wrote:
-> On 10:45 Wed 08 Jun     , Hans-Christian Egtvedt wrote:
-> > On Wed, 2011-04-13 at 21:47 +0200, Jean-Christophe PLAGNIOL-VILLARD
-> > wrote:
+On Wed, Jun 08, 2011 at 02:14:56PM +0200, Mathias Krause wrote:
 
-<snipp>
+> SPARC, TILE and Xtensa don't call set_fs(USER_DS), albeit have
+> different definitions for USER_DS and KERNEL_DS. So those might need
+> fixing. I'm not familiar with those architectures, so someone else has
+> to answer this.
+ 
+sparc (both sparc32 and sparc64) does that in flush_thread() (i.e. triggered
+by flush_old_exec()); the only difference is that sparc64 is trying to avoid
+writing to %asi if we already had USER_DS.  Any failure exit past the call
+of flush_old_exec() will send us a SIGKILL (and will not return -ENOEXEC,
+so no further handlers will be called anyway).
 
-> > > diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
-> > > index bfc9d07..aa677e2 100644
-> > > --- a/arch/avr32/mach-at32ap/at32ap700x.c
-> > > +++ b/arch/avr32/mach-at32ap/at32ap700x.c
-> > > @@ -1014,6 +1014,7 @@ static struct platform_device *__initdata at32_usarts[4];
-> > >  void __init at32_map_usart(unsigned int hw_id, unsigned int line, int flags)
-> > >  {
-> > >  	struct platform_device *pdev;
-> > > +	struct atmel_uart_data *pdata;
-> > >  
-> > >  	switch (hw_id) {
-> > >  	case 0:
-> > > @@ -1042,7 +1043,8 @@ void __init at32_map_usart(unsigned int hw_id, unsigned int line, int flags)
-> > >  		data->regs = (void __iomem *)pdev->resource[0].start;
-> > >  	}
-> > >  
-> > > -	pdev->id = line;
-> > 
-> > AVR32 needs this to be present to work independent of which USART
-> > peripheral the user chooses to use for console.
-> > 
-> > > +	pdata = pdev->dev.platform_data;
-> > > +	pdata->num = portnr;
-> here supposed to be
-> 	pdata->num = line;
+No idea about tile and xtensa - asking on linux-arch might be a good idea.
 
-I know, but that doesn't fix the problem about not able to find a
-console, the platform data id must also be 0 (if console is on ttyS0)
-AFAICT.
-
--- 
-Hans-Christian Egtvedt
-
+FWIW, looking at the ->load_binary() instances...  binfmt_som does not
+bother with SIGKILL, which is Not Nice(tm) - there's nowhere to return
+from sys_execve() at that point.  binfmt_elf_fdpic.c has a couple of
+bogosities - it sends SIGSEGV instead of SIGKILL (which is probably OK,
+since signal handlers are already switched to default, and SIGSEGV would
+kill just as well as SIGKILL; the only question is whether the state of
+process is suitable for coredump at that point) *and* we have one case
+where both SIGKILL and SIGSEGV are sent (setup_arg_pages() failure).
+And binfmt_flat looks just plain weird wrt failure exits...
