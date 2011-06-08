@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab1FHShm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 14:37:42 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:43887 "EHLO e4.ny.us.ibm.com"
+	id S1752161Ab1FHSjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 14:39:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23970 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943Ab1FHShl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 14:37:41 -0400
-Date: Wed, 8 Jun 2011 11:37:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] CFQ: use proper locking for cache of last hit cic
-Message-ID: <20110608183719.GD2324@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1307291201.8545.46.camel@t41.thuisdomein>
- <4DEC441C.9030009@kernel.dk>
- <1307557130.2783.5.camel@t41.thuisdomein>
+	id S1750943Ab1FHSjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 14:39:52 -0400
+Date: Wed, 8 Jun 2011 20:37:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, fenghua.yu@intel.com,
+        monstr@monstr.eu, ralf@linux-mips.org, benh@kernel.crashing.org,
+        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        linux390@de.ibm.com, lethal@linux-sh.org, davem@davemloft.net,
+        jdike@addtoit.com, richard@nod.at, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        linux-ia64@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH -v2] Audit: push audit success and retcode into arch
+	ptrace.h
+Message-ID: <20110608183720.GA16883@redhat.com>
+References: <20110603220451.23134.47368.stgit@paris.rdu.redhat.com> <20110607171952.GA25729@redhat.com> <1307472796.2052.12.camel@localhost.localdomain> <20110608163653.GA9592@redhat.com> <1307556823.2577.5.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307557130.2783.5.camel@t41.thuisdomein>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1307556823.2577.5.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 08:18:44PM +0200, Paul Bolle wrote:
-> On Mon, 2011-06-06 at 05:06 +0200, Jens Axboe wrote:
-> > On 2011-06-05 18:26, Paul Bolle wrote:
-> > > @@ -2704,8 +2706,13 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
-> > >  	smp_wmb();
-> > >  	cic->key = cfqd_dead_key(cfqd);
-> > >  
-> > > -	if (ioc->last_cic == cic)
-> > > +	spin_lock_irqsave(&ioc->lock, flags);
-> > > +	rcu_read_lock();
-> > > +	last_cic = rcu_dereference(ioc->last_cic);
-> > > +	rcu_read_unlock();
-> > > +	if (last_cic == cic)
-> > >  		rcu_assign_pointer(ioc->last_cic, NULL);
-> > > +	spin_unlock_irqrestore(&ioc->lock, flags);
-> > 
-> > We don't need the ioc->lock for checking the cache, it would in fact
-> > defeat the purpose of using RCU.
-> 
-> Just to show that I'm RCU-challenged, is that because:
-> 1) my use of locking on ioc->lock defends for a race that is not
-> actually possible; or
-> 2) the worst thing that could happen is that some new and correct value
-> of ioc->last_cic will be replaced with NULL, which is simply not a big
-> deal?
+On 06/08, Eric Paris wrote:
+>
+> On Wed, 2011-06-08 at 18:36 +0200, Oleg Nesterov wrote:
+> > And I guess, all CONFIG_AUDITSYSCALL code in entry.S is only needed to
+> > microoptimize the case when TIF_SYSCALL_AUDIT is the only reason for the
+> > slow path. I wonder if it really makes the measureble difference...
+>
+> All I know is what Roland put in the changelog:
+>
+> Avoiding the iret return path when syscall audit is enabled helps
+> performance a lot.
+>
+> I believe this was a result of Fedora starting auditd by default and
+> then Linus bitching about how slow a null syscall in a tight loop was.
+> It was an optimization for a microbenchmark.  How much it affects things
+> on a real syscall that does real work is probably going to be determined
+> by how much work is done in the syscall.
 
-My likely incorrect guess is that acquiring the lock excludes any
-updates, so that there is no point in the RCU read-side critical
-section.  But I don't claim to understand this code.
+and probably by how much work is done in audit_syscall_entry/exit.
 
-> > But this hunk will clash with the
-> > merged part anyway.
-> 
-> Looking at Paul's feedback I do have a feeling that in your commit
-> (9b50902db5eb8a220160fb89e95aa11967998d12, "cfq-iosched: fix locking
-> around ioc->ioc_data assignment") the line:
-> 	if (rcu_dereference(ioc->ioc_data) == cic) {
-> 
-> could actually be replaced with:
-> 	if (rcu_access_pointer(ioc->ioc_data) == cic) {
-> 
-> Is that correct?
+OK. Thanks a lot Eric for your explanations.
 
-If you are not actually dereferencing the pointer, then yes, you
-can use rcu_access_pointer() instead of rcu_dereference().  In
-this case, the pointer is being compared against, not dereferenced,
-so rcu_access_pointer() should do it.
+Oleg.
 
-							Thanx, Paul
-
-> > [...]
-> > See Pauls comment on this part.
-> 
-> You seem to be offline right now. When you're back online, could you
-> please say whether or not you accept the two renaming patches that you
-> have rejected a few days ago (and for which I gave some follow up
-> arguments)? After that I'll send an update to this patch (and its commit
-> message) to reflect Paul's review and your review.
-> 
-> 
-> Paul Bolle
-> 
