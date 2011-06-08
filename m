@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674Ab1FIOPM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 10:15:12 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:36382 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556Ab1FIOPI (ORCPT
+	id S1751326Ab1FHQSb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 12:18:31 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:53942 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751001Ab1FHQS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 10:15:08 -0400
-Date: Wed, 8 Jun 2011 18:04:45 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Ian Campbell <Ian.Campbell@eu.citrix.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: kexec/kdump for Xen - implementation question
-Message-ID: <20110608160445.GA6091@router-fw-old.local.net-space.pl>
-References: <20110606160434.GA26021@router-fw-old.local.net-space.pl> <1307442566.775.555.camel@zakaz.uk.xensource.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 8 Jun 2011 12:18:29 -0400
+X-Sasl-enc: fLSd7toXdTH8weKt2/glAcmECptztfjC1To91NCcomhN 1307549907
+Date: Wed, 8 Jun 2011 09:09:31 -0700
+From: Greg KH <greg@kroah.com>
+To: =?iso-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
+        Kulikov Vasiliy <segooon@gmail.com>, Endre Kollar <taxy443@gmail.com>,
+        Arjan Mels <arjan.mels@gmx.net>, Ilia Mirkin <imirkin@alum.mit.edu>,
+        David Chang <dchang@novell.com>,
+        Himanshu Chauhan <hschauhan@nulltrace.org>,
+        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
+        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usbip: handle length at sysfs show() functions
+Message-ID: <20110608160931.GB21645@kroah.com>
+References: <4DE5CA9F.6010303@freemail.hu>
+ <20110607213418.GB11102@kroah.com>
+ <4DEF0822.7070500@freemail.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1307442566.775.555.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.3.28i
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4DEF0822.7070500@freemail.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 11:29:26AM +0100, Ian Campbell wrote:
-> On Mon, 2011-06-06 at 17:04 +0100, Daniel Kiper wrote:
-> > Hi,
+On Wed, Jun 08, 2011 at 07:26:58AM +0200, Németh Márton wrote:
+> Greg KH wrote:
+> > On Wed, Jun 01, 2011 at 07:14:07AM +0200, Németh Márton wrote:
+> >> The sysfs show() functions shall return the actual content length of
+> >> the result buffer. According to Documentation/filesystems/sysfs.txt:215
+> >> the scnprintf() function is preferred.
+> >>
+> >> See also the article titled "snprintf() confusion" at
+> >> http://lwn.net/Articles/69419/ .
 > >
-> > Currently, I am working on kexec/kdump for Xen with emphasis on dom0
-> > implementation issues. After reviewing relevant Xen Linux Kernel
-> > Ver. 2.6.18 code I realized (as I expected) that original kexec/kdump
-> > in mainline kernel should be extensively amended. Further, after some
-> > discussion with Konrad Rzeszutek Wilk and Ian Campbell it was clear
-> > for me that it could be done in a few diffrent ways. Due to this facts
-> > I decided to establish general implementation details with LKML and
-> > Xen-devel community to avoid extensive code rewrite in case my own
-> > proposal would not be accepted.
+> > [...]
 > >
-> > Now I think about four solutions. I will present them in order of my
-> > preference. However, if you have another soultions to that problem
-> > please drop me a line.
-> >
-> > 1) Currently existing kexec/kdump implementation should be amended
-> >    by adding Xen specific code mainly in arch/i386. It should look
-> >    like:
-> >
-> >    void machine_kexec(struct kimage *image)
-> >    {
-> >    #ifdef CONFIG_XEN
-> >       if (xen_initial_domain()) {
-> >         ...
-> > 	Xen specific code
-> > 	...
-> >       }
-> >    #endif
-> >
-> >      ...
-> >      generic kexec/kdump code
-> >      ...
-> >    }
->
-> This is about the ugliest way to do things and should be avoided.
+> > Here we are doing lots of work to try to put more than one value in the
+> > sysfs file, and return the proper data to the kernel about how big the
+> > buffer we used.
+> > 
+> > That's wrong, and violates the "one value per file" sysfs rule, so that
+> > should be fixed instead of trying to change the sprintf() call.
+> 
+> As I understand there is a need to change the design here. Currently I
+> get the following content when vhci-hcd is loaded but not yet used:
+> 
+> $ cat /sys/devices/platform/vhci_hcd/status
+> prt sta spd bus dev socket           local_busid
+> 000 004 000 000 000 0000000000000000 0-0
+> 001 004 000 000 000 0000000000000000 0-0
+> 002 004 000 000 000 0000000000000000 0-0
+> 003 004 000 000 000 0000000000000000 0-0
+> 004 004 000 000 000 0000000000000000 0-0
+> 005 004 000 000 000 0000000000000000 0-0
+> 006 004 000 000 000 0000000000000000 0-0
+> 007 004 000 000 000 0000000000000000 0-0
+> 
+> The fields are: port, status, speed, device ID, socket pointer and
+> local busid name. This is too complex for sysfs. Maybe we could extend
+> the devices file of usbfs with some new rows?
 
-I think that in this case it is to some extent. I decided put
-this solution before struct machine_kexec_ops solution because
-this (let say conditional solution) touches only x86 code (and
-if it be required IA-64). struct machine_kexec_ops proposal
-require changes for 8 archs. I am not sure it could be accepted
-by kexec/kdump and relevant archs maintainers quickly. However,
-I think that struct machine_kexec_ops is better as longterm
-solution.
+Ick, I doubt it as there are lots of tools that parse that file already.
 
-Daniel
+But yes, you are correct, this should not be in sysfs at all.
+
+What's the use for this file?  Who uses it?  Is it just debugging
+output?  Information for people to gaze at if they feel like it?
+Something else?
+
+Once we figure that out, then we can determine where it should go
+(debugfs, sysfs in a different file format, usbfs, etc.)
+
+thanks,
+
+greg k-h
