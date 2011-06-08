@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326Ab1FHQSb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 12:18:31 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:53942 "EHLO
+	id S1751500Ab1FHQSd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 12:18:33 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:34441 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751001Ab1FHQS3 (ORCPT
+	by vger.kernel.org with ESMTP id S1751313Ab1FHQSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 12:18:29 -0400
-X-Sasl-enc: fLSd7toXdTH8weKt2/glAcmECptztfjC1To91NCcomhN 1307549907
-Date: Wed, 8 Jun 2011 09:09:31 -0700
+	Wed, 8 Jun 2011 12:18:31 -0400
+X-Sasl-enc: 2NaS8qt78Q94YDPeyPDCY5MD0P3hqUhgYD0/nJeLrGH5 1307549910
+Date: Wed, 8 Jun 2011 09:11:27 -0700
 From: Greg KH <greg@kroah.com>
-To: =?iso-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
-        Kulikov Vasiliy <segooon@gmail.com>, Endre Kollar <taxy443@gmail.com>,
-        Arjan Mels <arjan.mels@gmx.net>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        David Chang <dchang@novell.com>,
-        Himanshu Chauhan <hschauhan@nulltrace.org>,
-        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
-        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usbip: handle length at sysfs show() functions
-Message-ID: <20110608160931.GB21645@kroah.com>
-References: <4DE5CA9F.6010303@freemail.hu>
- <20110607213418.GB11102@kroah.com>
- <4DEF0822.7070500@freemail.hu>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "Igor M. Liplianin" <liplianin@netup.ru>
+Subject: Re: linux-next: build failure after merge of the staging.current tree
+Message-ID: <20110608161127.GD21645@kroah.com>
+References: <20110608114130.444a7f99.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4DEF0822.7070500@freemail.hu>
+In-Reply-To: <20110608114130.444a7f99.sfr@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 07:26:58AM +0200, Németh Márton wrote:
-> Greg KH wrote:
-> > On Wed, Jun 01, 2011 at 07:14:07AM +0200, Németh Márton wrote:
-> >> The sysfs show() functions shall return the actual content length of
-> >> the result buffer. According to Documentation/filesystems/sysfs.txt:215
-> >> the scnprintf() function is preferred.
-> >>
-> >> See also the article titled "snprintf() confusion" at
-> >> http://lwn.net/Articles/69419/ .
-> >
-> > [...]
-> >
-> > Here we are doing lots of work to try to put more than one value in the
-> > sysfs file, and return the proper data to the kernel about how big the
-> > buffer we used.
-> > 
-> > That's wrong, and violates the "one value per file" sysfs rule, so that
-> > should be fixed instead of trying to change the sprintf() call.
+On Wed, Jun 08, 2011 at 11:41:30AM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> As I understand there is a need to change the design here. Currently I
-> get the following content when vhci-hcd is loaded but not yet used:
+> After merging the staging.current tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 > 
-> $ cat /sys/devices/platform/vhci_hcd/status
-> prt sta spd bus dev socket           local_busid
-> 000 004 000 000 000 0000000000000000 0-0
-> 001 004 000 000 000 0000000000000000 0-0
-> 002 004 000 000 000 0000000000000000 0-0
-> 003 004 000 000 000 0000000000000000 0-0
-> 004 004 000 000 000 0000000000000000 0-0
-> 005 004 000 000 000 0000000000000000 0-0
-> 006 004 000 000 000 0000000000000000 0-0
-> 007 004 000 000 000 0000000000000000 0-0
+> drivers/media/video/cx23885/cx23885-cards.c:28:28: fatal error: staging/altera.h: No such file or directory
 > 
-> The fields are: port, status, speed, device ID, socket pointer and
-> local busid name. This is too complex for sysfs. Maybe we could extend
-> the devices file of usbfs with some new rows?
+> Caused by commit 85ab9ee946da ("Staging: altera: move .h file to proper
+> place").
+> 
+> I have used the staging.current tree from next-20110607 for today.
 
-Ick, I doubt it as there are lots of tools that parse that file already.
+Ok, sorry about that.
 
-But yes, you are correct, this should not be in sysfs at all.
+Mauro, Igor, why would another driver need to reference a .h file of a
+staging driver?  I'll patch it right now to point to the proper place
+(down in the staging tree), but it would be good to resolve this
+"properly" somehow.
 
-What's the use for this file?  Who uses it?  Is it just debugging
-output?  Information for people to gaze at if they feel like it?
-Something else?
-
-Once we figure that out, then we can determine where it should go
-(debugfs, sysfs in a different file format, usbfs, etc.)
+Next time, please never include a staging driver that isn't
+self-contained, and don't create include/staging/ that's not acceptable.
 
 thanks,
 
