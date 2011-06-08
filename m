@@ -1,80 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab1FHUGB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 16:06:01 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:33398 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614Ab1FHUF7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 16:05:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=E3QKdPEvR75QqHNp0qsV6H8N1WQLbYKjJcXc1+mz9MK4C2u2hzirJwt9qwyIuLQ/Dt
-         oVBRi6efEEG1iI1FZ6j8GnZl510deu0YKlao0U0E59TEUjiGQBJBd/SsDAzMdVcmCazo
-         tkltwFo047LDT8gVMrUKlnv2GJsHMoW2xeL7c=
+	id S1753628Ab1FHUHa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 16:07:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38463 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753285Ab1FHUH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 16:07:28 -0400
+Date: Wed, 8 Jun 2011 16:07:17 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] CFQ: use proper locking for cache of last hit cic
+Message-ID: <20110608200717.GE1150@redhat.com>
+References: <1307291201.8545.46.camel@t41.thuisdomein>
+ <4DEC441C.9030009@kernel.dk>
+ <1307557130.2783.5.camel@t41.thuisdomein>
+ <20110608184254.GD1150@redhat.com>
+ <1307561578.2783.23.camel@t41.thuisdomein>
 MIME-Version: 1.0
-In-Reply-To: <20110608160844E.fujita.tomonori@lab.ntt.co.jp>
-References: <BANLkTin7mqqTsosPHbztaPfL7s_TUGT1qg@mail.gmail.com>
-	<20110608142121T.fujita.tomonori@lab.ntt.co.jp>
-	<BANLkTi=FcNncT_6HpvB_6OnQ94f0_sz7Gw@mail.gmail.com>
-	<20110608160844E.fujita.tomonori@lab.ntt.co.jp>
-Date: Wed, 8 Jun 2011 13:05:57 -0700
-X-Google-Sender-Auth: vucRMibKx0njDzS2eSjzyJEM12s
-Message-ID: <BANLkTikFKr+3Qph+CR40SUV-DCir1v=KBg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] dmaengine: add new dma API for max_segment_number
-From: Dan Williams <dan.j.williams@intel.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: cjb@laptop.org, linux@arm.linux.org.uk, patches@linaro.org,
-        vinod.koul@intel.com, gregkh@suse.de, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shawn.guo@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307561578.2783.23.camel@t41.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 8, 2011 at 12:10 AM, FUJITA Tomonori
-<fujita.tomonori@lab.ntt.co.jp> wrote:
-> On Tue, 7 Jun 2011 23:56:21 -0700
-> Dan Williams <dan.j.williams@intel.com> wrote:
->
->> > The dma parameter restriction could be due to software (HBA drivers,
->> > or subsystem). The value should be whatever the dma device driver says
->> > it is in such case?
->>
->> I'm assuming that the dma driver is taking responsibility for setting
->> this correctly.  How would this work otherwise... HBA driver or
->> subsystem queries the dmaengine device and then sets this parameter on
->> its behalf?  In other words dmanengine *is* the subsystem, if I am
->> understanding your definition.
->
-> Oops, I meant that the subsystem is software layer above
-> dmaengine. For example, SCSI subsystem sets the limit of max number of
-> sglist entries. That is, it is possible that software layer above
-> dmaengine could set dma limit, which is smaller than the limit of
-> dmaengine?
->
+On Wed, Jun 08, 2011 at 09:32:52PM +0200, Paul Bolle wrote:
+> On Wed, 2011-06-08 at 14:42 -0400, Vivek Goyal wrote:
+> > On Wed, Jun 08, 2011 at 08:18:44PM +0200, Paul Bolle wrote:
+> > > On Mon, 2011-06-06 at 05:06 +0200, Jens Axboe wrote:
+> > > > On 2011-06-05 18:26, Paul Bolle wrote:
+> > > > > @@ -2704,8 +2706,13 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
+> > > > >  	smp_wmb();
+> > > > >  	cic->key = cfqd_dead_key(cfqd);
+> > > > >  
+> > > > > -	if (ioc->last_cic == cic)
+> > > > > +	spin_lock_irqsave(&ioc->lock, flags);
+> > > > > +	rcu_read_lock();
+> > > > > +	last_cic = rcu_dereference(ioc->last_cic);
+> > > > > +	rcu_read_unlock();
+> > > > > +	if (last_cic == cic)
+> > > > >  		rcu_assign_pointer(ioc->last_cic, NULL);
+> > > > > +	spin_unlock_irqrestore(&ioc->lock, flags);
+> > > > 
+> > > > We don't need the ioc->lock for checking the cache, it would in fact
+> > > > defeat the purpose of using RCU.
+> > > 
+> > > Just to show that I'm RCU-challenged, is that because:
+> > > 1) my use of locking on ioc->lock defends for a race that is not
+> > > actually possible; or
+> > > 2) the worst thing that could happen is that some new and correct value
+> > > of ioc->last_cic will be replaced with NULL, which is simply not a big
+> > > deal?
+> > 
+> > I don't understand this point.
+> 
+> That could be because I don't really get all the RCU voodoo, nor how
+> this all interacts with the io_contect->lock here, so I probably asked
+> an impossible question.
+> 
+> > All ioc->ioc_data updates are under
+> > ioc->lock except the one __cfq_exit_single_io_context() and that's what
+> > jens patch fixed. So clearly there was atleast one race where we were
+> > doing a value update without taking appropriate lock. 
+> > 
+> > Why do you think that some new and correct value will be replaced
+> > by NULL?
+> 
+> Jens updated the code to
+> 	if (rcu_dereference(ioc->ioc_data) == cic) {
+> 		spin_lock(&ioc->lock);
+> 		rcu_assign_pointer(ioc->ioc_data, NULL);
+> 		spin_unlock(&ioc->lock);
+> 	}
+> 
+> I basically suggested (except for an apparently useless
+> rcu_read_lock() / rcu_read_unlock() pair and using spin_lock_irqsave()
+> etc.):
+> 	spin_lock(&ioc->lock);
+> 	if (rcu_dereference(ioc->ioc_data) == cic)
+> 		rcu_assign_pointer(ioc->ioc_data, NULL);
+> 	spin_unlock(&ioc->lock);
+> 
+> Ie, I thought that reads of and updates to ioc->ioc_data should be done
+> with ioc->lock held. My reasoning was that in Jens code ioc->ioc_data
+> might already be updated (by another thread, or whatever) and thus not
+> be equal to cic by the time it's updated to NULL. See, in my
+> understanding ioc->ioc_data could be equal to cic when it's
+> rcu_dereference()'d, but unequal to cic by the time it's
+> rcu_assign_pointer()'d to NULL.
 
-Perhaps, but this sounds like the reverse of what happens today where
-scsi device drivers with knowledge of their own hardware will tell the
-midlayer/subsystem the restriction.  The change with regard to this
-patch is that the scsi device driver (for example) will recognize that
-the device it is driving will not be a bus master and will arrange to
-allocate a dma channel from dmaengine.  When said scsi driver reports
-the dma restrictions to the subsystem it will borrow the parameters
-from the dma channel, not the scsi device.  So yes, I still think it
-should be whatever the dma channel says.
+Ok, I see it now. Yep theoritically this race is present. Jens must have
+checked the value without taking lock so that if we cic is not the cached
+one, we don't take ioc lock.
 
-Although, you've been doing scsi work longer than I, so maybe I'm
-overlooking something...?
+I would not worry too much about it as the side effect of this race is
+only trashing the cache which will soon be filled again upon next
+request.
 
-Are there any cases today where the subsystem imposes tighter
-restrictions on the dma geometry than what the device reports?  Even
-if that were the case it would be same situation that the scsi device
-driver reports maximum parameters, but the subsystem opts for
-something tighter.  Whether the maximal parameters come from the scsi
-device or the dma channel is moot.
+Thanks
+Vivek
