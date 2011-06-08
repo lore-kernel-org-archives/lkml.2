@@ -1,56 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab1FHSu3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 14:50:29 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:42427 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753309Ab1FHSuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 14:50:23 -0400
-Date: Wed, 8 Jun 2011 14:50:16 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: John Kacur <jkacur@redhat.com>,
-        Stefan Priebe - Profihost AG <s.priebe@profihost.ag>, david@lang.hm,
-        linux-kernel@vger.kernel.org
-Subject: Re: XFS problem in 2.6.32
-Message-ID: <20110608185016.GI30037@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Mike Snitzer <snitzer@redhat.com>, John Kacur <jkacur@redhat.com>,
-	Stefan Priebe - Profihost AG <s.priebe@profihost.ag>, david@lang.hm,
-	linux-kernel@vger.kernel.org
-References: <4DEE1D96.6020208@profihost.ag>
- <6D8DA3D2-D90B-4D82-BDC9-C3F0264A68BF@mit.edu>
- <4DEE2C70.8060301@profihost.ag>
- <alpine.DEB.2.02.1106071239530.28905@asgard.lang.hm>
- <4DEE9EDA.90001@profihost.ag>
- <C4F797E7-3B2F-4BAD-BF69-2182DEA775A5@mit.edu>
- <BANLkTim3GuppJ4=VHa0BgNV1d4nQjWUcbg@mail.gmail.com>
- <20110608133833.GD30037@thunk.org>
- <BANLkTimMhZWhUN3w_9Qapsqcic2_VCP0sg@mail.gmail.com>
+	id S1753343Ab1FHSx0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 14:53:26 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51692 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab1FHSxY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 14:53:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=o5qy3tI/9rVy/k3cn/y1Hg/ZlNBe8KK3F2HKejpH/UihOPbfYCuS1VsB6DbGETUmja
+         PWKRakxG5PQemAvK5i41PZSQxP1Zb0KiOwuc6pXtnp7nS7GPjQ9soACXaPIznV41GEnX
+         L4B4/dgBfggNA4wXKyBrAr9NhN87i9n2HOQQE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimMhZWhUN3w_9Qapsqcic2_VCP0sg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <201105240059.p4O0xPfN009516@hera.kernel.org>
+References: <201105240059.p4O0xPfN009516@hera.kernel.org>
+Date: Wed, 8 Jun 2011 20:53:23 +0200
+X-Google-Sender-Auth: gKUiLkd9phkAGdwO0-IUO4hlBgg
+Message-ID: <BANLkTim1=DBd1AvPw1VuPfGi_Z5ktAhyPg@mail.gmail.com>
+Subject: Re: ARM: 6910/1: MTD: physmap: let set_vpp() pass a platform_device
+ instead of a map_info
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Marc Zyngier <Marc.Zyngier@arm.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 10:16:59AM -0400, Mike Snitzer wrote:
-> 
-> And what _exactly_ is Red Hat (not) doing?  Red Hat isn't going crazy
-> backporting its upstream > 2.6.32 fixes to 2.6.32.y even when Red Hat
-> doesn't consume 2.6.32.y?  *gasp*
+On Tue, May 24, 2011 at 02:59, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+>    ARM: 6910/1: MTD: physmap: let set_vpp() pass a platform_device instead of a map_info
+>
+>    The set_vpp() method provided by physmap passes a map_info back to
+>    the platform code, which has little relevance as far as the platform
+>    is concerned (this parameter is completely unused).
+>
+>    Instead, pass the platform_device, which can be used in the pismo
+>    driver to retrieve some important information in a nicer way, instead
+>    of the hack that was in place.
+>
+>    The empty set_vpp function in board-at572d940hf_ek.c is left untouched,
+>    as the board/SoC is scheduled for removal.
+>
+>    Cc: Andrew Victor <linux@maxim.org.za>
+>    Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+>    Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>    Cc: Philipp Zabel <philipp.zabel@gmail.com>
+>    Cc: Eric Miao <eric.y.miao@gmail.com>
+>    Cc: Ben Dooks <ben-linux@fluff.org>
+>    Acked-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+>    Acked-by: David Woodhouse <dwmw2@infradead.org>
+>    Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+>    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
-Well, the original poster was expecting that (unspecified people)
-would be doing this regularly (in fact he was complaining about how an
-XFS bug fixed in RHEL wasn't fixed in 2.6.32.y).  I was explaining how
-it wasn't happening, and it was perfectly acceptable for that to be
-the case.
+> --- a/include/linux/mtd/physmap.h
+> +++ b/include/linux/mtd/physmap.h
+> @@ -24,7 +24,7 @@ struct physmap_flash_data {
+>        unsigned int            width;
+>        int                     (*init)(struct platform_device *);
+>        void                    (*exit)(struct platform_device *);
+> -       void                    (*set_vpp)(struct map_info *, int);
+> +       void                    (*set_vpp)(struct platform_device *, int);
+>        unsigned int            nr_parts;
+>        unsigned int            pfow_base;
+>        char                    *probe_type;
 
-So I was actually *defending* Red Hat....
+You forgot to update the set_vpp parameter of physmap_configure():
 
-							- Ted
+void physmap_configure(unsigned long addr, unsigned long size,
+                int bankwidth, void (*set_vpp)(struct map_info *, int) );
+
+causing
+
+drivers/mtd/maps/physmap.c: In function ‘physmap_configure’:
+drivers/mtd/maps/physmap.c:255: warning: assignment from incompatible
+pointer type
+
+Interestingly, there are no (in-tree) users of physmap_configure()?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
