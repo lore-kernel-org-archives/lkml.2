@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab1FHC35 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 22:29:57 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:45487 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751055Ab1FHC34 (ORCPT
+	id S1752000Ab1FHCav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 22:30:51 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:53613 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab1FHCau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 22:29:56 -0400
-Message-ID: <4DEEDEA1.6070200@dsn.okisemi.com>
-Date: Wed, 08 Jun 2011 11:29:53 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Tue, 7 Jun 2011 22:30:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=Sgn3ws6DKpAFcAxWNWnwl8w5DARgR7fnOWXv7Qxr6uOoZ53g7rCkxNjGt/84nQVh/b
+         Qvukm8roND5BbHLmaNXA==
+Date: Tue, 7 Jun 2011 19:30:40 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] trace: Set __GFP_NORETRY flag for ring buffer allocating
+ process
+In-Reply-To: <1307491302-9236-1-git-send-email-vnagarnaik@google.com>
+Message-ID: <alpine.DEB.2.00.1106071929570.15402@chino.kir.corp.google.com>
+References: <1307490088-8612-1-git-send-email-vnagarnaik@google.com> <1307491302-9236-1-git-send-email-vnagarnaik@google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
-        qi.wang@intel.com, yong.y.wang@intel.com,
-        toshiharu-linux@dsn.okisemi.com, kok.howg.ewe@intel.com,
-        joel.clark@intel.com
-Subject: Re: [RESEND]: RE: [PATCH v2 3/3] pch_gpio: support interrupt function
-References: <4DEDBE90.3090305@dsn.okisemi.com> <20110607172211.GF17754@ponder.secretlab.ca>
-In-Reply-To: <20110607172211.GF17754@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/08 2:22), Grant Likely wrote:
-> No, I'm saying that you don't need to implement new irq_chip
-> operations if you use the new irq_chip_generic implementation.
+On Tue, 7 Jun 2011, Vaibhav Nagarnaik wrote:
 
-I understand your saying. It seems "new irq_chip_generic" was 
-implemented in linux-3.0.
-However "irq_chip_generic" is not implemented in stable kernel version. 
-Right ?
-So, first of all, could you accept this patch ?
-After the kernel version becomes stable, I will resubmit a patch for 
-"new irq_chip_generic".
+> The tracing ring buffer is allocated from kernel memory. While
+> allocating a large chunk of memory, OOM might happen which destabilizes
+> the system. Thus random processes might get killed during the
+> allocation.
+> 
+> This patch adds __GFP_NORETRY flag to the ring buffer allocation calls
+> to make it fail more gracefully if the system will not be able to
+> complete the allocation request.
+> 
+> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
 
--- 
-tomoya
-OKI SEMICONDUCTOR CO., LTD.
+Acked-by: David Rientjes <rientjes@google.com>
