@@ -1,38 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab1FHIh6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 04:37:58 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:60789 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155Ab1FHIh4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 04:37:56 -0400
-Date: Wed, 8 Jun 2011 10:37:50 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/3] x86: Readd asmregparm
-Message-ID: <20110608083750.GH27166@one.firstfloor.org>
-References: <1307495401-2631-1-git-send-email-andi@firstfloor.org> <20110608081957.GA14966@elte.hu>
+	id S1754573Ab1FHIpe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 04:45:34 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:6946 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752429Ab1FHIpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 04:45:32 -0400
+Subject: Re: [PATCH] atmel_serial: keep the platform_device unchanged
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Patrice Vilchez <patrice.vilchez@atmel.com>,
+        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+In-Reply-To: <1302724038-26236-1-git-send-email-plagnioj@jcrosoft.com>
+References: <1302724038-26236-1-git-send-email-plagnioj@jcrosoft.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Atmel Corporation
+Date: Wed, 08 Jun 2011 10:45:03 +0200
+Message-ID: <1307522703.10626.9.camel@hcegtvedt.norway.atmel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110608081957.GA14966@elte.hu>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Jun 2011 08:45:06.0035 (UTC) FILETIME=[5D88AC30:01CC25B8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That's a totally useless changelog (you are deliberately hiding 
-> information again) so the series is obviously not acceptable.
-> Please fix and resend.
+On Wed, 2011-04-13 at 21:47 +0200, Jean-Christophe PLAGNIOL-VILLARD
+wrote:
+> specify the port num via platform_data this will allow to match the clock
+> with the plaform_dev staticly
 
-I reread it and it seems complete to me. Please be more specific.
+Sure this works as intended, now the platform device id is off, and at
+least for my 3.0 testing it is no longer able to open the console,
+unless I explicit set the id field again.
 
-If you refer to the followon patchkit - it's not ready for posting
-yet. However I believe these changes are reasonable cleanups that are useful
-on their own. That's why I posted them now.
+Example on NGW100 mkII I use USART instance 1 as serial console, if not
+setting the platform device id to 0 (re-mapping), then I get a warning
+about unable to open console.
 
--Andi
+Is you clock optimization an additional patch?
+
+<snipp AT91 changes)
+
+> diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
+> index bfc9d07..aa677e2 100644
+> --- a/arch/avr32/mach-at32ap/at32ap700x.c
+> +++ b/arch/avr32/mach-at32ap/at32ap700x.c
+> @@ -1014,6 +1014,7 @@ static struct platform_device *__initdata at32_usarts[4];
+>  void __init at32_map_usart(unsigned int hw_id, unsigned int line, int flags)
+>  {
+>  	struct platform_device *pdev;
+> +	struct atmel_uart_data *pdata;
+>  
+>  	switch (hw_id) {
+>  	case 0:
+> @@ -1042,7 +1043,8 @@ void __init at32_map_usart(unsigned int hw_id, unsigned int line, int flags)
+>  		data->regs = (void __iomem *)pdev->resource[0].start;
+>  	}
+>  
+> -	pdev->id = line;
+
+AVR32 needs this to be present to work independent of which USART
+peripheral the user chooses to use for console.
+
+> +	pdata = pdev->dev.platform_data;
+> +	pdata->num = portnr;
+>  	at32_usarts[line] = pdev;
+>  }
+>  
+
+<snipp>
+
+-- 
+Hans-Christian Egtvedt
+
