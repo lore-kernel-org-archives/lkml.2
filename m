@@ -1,97 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab1FHKqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:46:21 -0400
-Received: from relay.parallels.com ([195.214.232.42]:32782 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928Ab1FHKqT (ORCPT
+	id S1755686Ab1FHKqh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:46:37 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:61859 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755628Ab1FHKqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:46:19 -0400
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned
-	vs unpinned
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-CC: Paul Turner <pjt@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Pavel Emelianov <xemul@parallels.com>
-In-Reply-To: <20110607154542.GA2991@linux.vnet.ibm.com>
-References: <20110503092846.022272244@google.com>
-	 <20110607154542.GA2991@linux.vnet.ibm.com>
-Content-Type: text/plain
-Date: Wed, 8 Jun 2011 14:46:06 +0400
-Message-ID: <1307529966.4928.8.camel@dhcp-10-30-22-158.sw.ru>
+	Wed, 8 Jun 2011 06:46:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=xuSbJ1Bhp6xFhlHUcZifIJmFE3d3+ILza5K0zvijNiFzjfjj53NCT5VDHkLc/zBUZ2
+         f9E1aAgAGxkfNNhAZoUtigDtXABF/P23YGk0rEIbAvN5ixqiMfwBH697RtiLbP8HOz0A
+         TAD468QhH9lErymR1m4ON/QaorvR6IE1/X5+M=
 MIME-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <3838457.LEWxWdrTRM@donald.sf-tec.de>
+References: <20110602142242.GA4115@maxin>
+	<BANLkTimYw-WAK3Hd21XQWrjBn_1+wRMzUQ@mail.gmail.com>
+	<3838457.LEWxWdrTRM@donald.sf-tec.de>
+Date: Wed, 8 Jun 2011 11:46:34 +0100
+Message-ID: <BANLkTi=LcCiy=wroAuDdcfe3QnfXxke0ww@mail.gmail.com>
+Subject: Re: [PATCH] mm: dmapool: fix possible use after free in dmam_pool_destroy()
+From: Maxin B John <maxin.john@gmail.com>
+To: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, dima@android.com, willy@linux.intel.com,
+        segooon@gmail.com, tj@kernel.org, jkosina@suse.cz, tglx@linutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 19:45 +0400, Kamalesh Babulal wrote:
-> Hi All,
-> 
->     In our test environment, while testing the CFS Bandwidth V6 patch set
-> on top of 55922c9d1b84. We observed that the CPU's idle time is seen
-> between 30% to 40% while running CPU bound test, with the cgroups tasks
-> not pinned to the CPU's. Whereas in the inverse case, where the cgroups
-> tasks are pinned to the CPU's, the idle time seen is nearly zero.
+Hi,
 
-(snip)
+On Tue, Jun 7, 2011 at 7:05 PM, Rolf Eike Beer <eike-kernel@sf-tec.de> wrote:
+> Maxin B John wrote:
+>
+>> Could you please let me know your thoughts on this patch ?
+>
+> Makes absolute sense to me.
+>
+> Reviewed-by: Rolf Eike Beer <eike-kernel@sf-tec.de>
 
-> load_tasks()
-> {
->         for (( i=1; i<=5; i++ ))
->         do
->                 jj=$(eval echo "\$NR_TASKS$i")
->                 shares="1024"
->                 if [ $PRO_SHARES -eq 1 ]
->                 then
->                         eval shares=$(echo "$jj * 1024" | bc)
->                 fi
->                 echo $hares > $MOUNT/$i/cpu.shares
-                        ^^^^^
-                        a fatal misprint? must be shares, I guess
+Thanks a lot for reviewing the patch. Should I merge these two patches
+and re-send it as a single one ?
 
-(Setting cpu.shares to "", i.e. to the minimal possible value, will
-definitely confuse the load balancer)
+Please let me know your opinion.
 
->                 for (( j=1; j<=$jj; j++ ))
->                 do
->                         echo "-1" > $MOUNT/$i/cpu.cfs_quota_us
->                         echo "500000" > $MOUNT/$i/cpu.cfs_period_us
->                         if [ $SUBGROUP -eq 1 ]
->                         then
-> 
->                                 $LOAD &
->                                 echo $! > $MOUNT/$i/$j/tasks
->                                 echo "1024" > $MOUNT/$i/$j/cpu.shares
-> 
->                                 if [ $BANDWIDTH -eq 1 ]
->                                 then
->                                         echo "500000" > $MOUNT/$i/$j/cpu.cfs_period_us
->                                         echo "250000" > $MOUNT/$i/$j/cpu.cfs_quota_us
->                                 fi
->                         else
->                                 $LOAD &
->                                 echo $! > $MOUNT/$i/tasks
->                                 echo $shares > $MOUNT/$i/cpu.shares
-> 
->                                 if [ $BANDWIDTH -eq 1 ]
->                                 then
->                                         echo "500000" > $MOUNT/$i/cpu.cfs_period_us
->                                         echo "250000" > $MOUNT/$i/cpu.cfs_quota_us
->                                 fi
->                         fi
->                 done
->         done
->         echo "Captuing idle cpu time with vmstat...."
->         vmstat 2 100 &> vmstat_log &
-> }
-
-
+Warm Regards,
+Maxin
