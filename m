@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab1FHUJX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 16:09:23 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:57538 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab1FHUJW (ORCPT
+	id S1753427Ab1FHUFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 16:05:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52530 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab1FHUFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 16:09:22 -0400
-Date: Wed, 8 Jun 2011 21:09:03 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-Message-ID: <20110608200903.GA30694@srcf.ucam.org>
-References: <4DEFA6E3.6090809@xs4all.nl>
- <4DEFCAE0.6050700@kernel.org>
- <20110608192321.GA28865@srcf.ucam.org>
- <4DEFCD07.5020505@kernel.org>
- <20110608192950.GA29235@srcf.ucam.org>
- <4DEFCF1A.9030400@kernel.org>
- <20110608193833.GA29855@srcf.ucam.org>
- <4DEFD220.5040507@kernel.org>
- <20110608195250.GB30256@srcf.ucam.org>
- <4DEFD58D.5060402@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DEFD58D.5060402@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 8 Jun 2011 16:05:40 -0400
+Subject: Re: [PATCH 2/4] sched: Isolate preempt counting in its own config
+ option
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: paulmck@linux.vnet.ibm.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20110608195816.GJ2324@linux.vnet.ibm.com>
+References: <1307555315-30989-1-git-send-email-fweisbec@gmail.com>
+	 <1307555315-30989-3-git-send-email-fweisbec@gmail.com>
+	 <1307562434.3941.22.camel@twins> <20110608195816.GJ2324@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Jun 2011 22:09:14 +0200
+Message-ID: <1307563754.2497.999.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 01:03:25PM -0700, Yinghai Lu wrote:
-> On 06/08/2011 12:52 PM, Matthew Garrett wrote:
-> > On Wed, Jun 08, 2011 at 12:48:48PM -0700, Yinghai Lu wrote:
-> >> On 06/08/2011 12:38 PM, Matthew Garrett wrote:
-> >>> On Wed, Jun 08, 2011 at 12:35:54PM -0700, Yinghai Lu wrote:
-> >>>> On 06/08/2011 12:29 PM, Matthew Garrett wrote:
-> >>>>>> what former? you can not fix some corner case by breaking most other cases.
-> >>>>>
-> >>>>> All Dell laptops, all new Apples, some Lenovos, various Intel server 
-> >>>>> platforms. That I've found so far.
-> >>>>
-> >>>> do you mean before that patch, all those machine will not boot linux kernel with UEFI support?
-> >>>
-> >>> Correct.
-> >>
-> >> with or without EFI runtime services?
-> > 
-> > They'll boot with noefi, but that's useless because there's then no way 
-> > to configure a bootloader.
+On Wed, 2011-06-08 at 12:58 -0700, Paul E. McKenney wrote:
 > 
-> efibootmgr will need boot services in addition to run-time services?
+> On Wed, Jun 08, 2011 at 09:47:14PM +0200, Peter Zijlstra wrote:
+> > On Wed, 2011-06-08 at 19:48 +0200, Frederic Weisbecker wrote:
+> > > 
+> > > Create a new CONFIG_PREEMPT_COUNT that handles the inc/dec
+> > > of preempt count offset independently. So that the offset
+> > > can be updated by preempt_disable() and preempt_enable()
+> > > even without the need for CONFIG_PREEMPT beeing set.
+> > > 
+> > > This prepares to make CONFIG_DEBUG_SPINLOCK_SLEEP working
+> > > with !CONFIG_PREEMPT where it currently doesn't detect
+> > > code that sleeps inside explicit preemption disabled
+> > > sections. 
+> > 
+> > The last time this got proposed it got shot down due to the extra
+> > inc/dec stuff all over the place increasing overhead significantly.
+> 
+> Even given that the extra inc/dec stuff only happens in kernels built
+> with DEBUG_SPINLOCK_SLEEP=y (DEBUG_ATOMIC_SLEEP=y after patch 4/4)? 
 
-No, SetVirtualAddressMap() calls into boot services. This is code, not 
-data. We have no control over what it does.
+Ah, no that might be ok. That's what I get for trying to read email in
+no time.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+
