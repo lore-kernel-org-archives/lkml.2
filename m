@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab1FHJg7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 05:36:59 -0400
-Received: from r00tworld.com ([212.85.137.150]:38553 "EHLO r00tworld.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752955Ab1FHJg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 05:36:58 -0400
-From: pageexec@freemail.hu
-To: Andi Kleen <andi@firstfloor.org>
-Date: Wed, 08 Jun 2011 11:35:11 +0200
+	id S1753326Ab1FHJfc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 05:35:32 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:42590
+	"EHLO CH1EHSOBE017.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751289Ab1FHJf3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 05:35:29 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LMGTB0-01-5FX-02
+X-M-MSG: 
+Date: Wed, 8 Jun 2011 11:35:46 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, David Brown <davidb@codeaurora.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 0/4] drivers/iommu/ relocations
+Message-ID: <20110608093546.GG4407@amd.com>
+References: <1307522062-19273-1-git-send-email-ohad@wizery.com>
 MIME-Version: 1.0
-Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
-Reply-to: pageexec@freemail.hu
-CC: Ingo Molnar <mingo@elte.hu>, Andrew Lutomirski <luto@mit.edu>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Message-ID: <4DEF424F.2351.1C15AD40@pageexec.freemail.hu>
-In-reply-to: <20110608091120.GI27166@one.firstfloor.org>
-References: <20110608064857.GA6747@elte.hu>, <4DEF3A93.8871.1BF773E2@pageexec.freemail.hu>, <20110608091120.GI27166@one.firstfloor.org>
-X-mailer: Pegasus Mail for Windows (4.61)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Wed, 08 Jun 2011 11:35:49 +0200 (CEST)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1307522062-19273-1-git-send-email-ohad@wizery.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 Jun 2011 at 11:11, Andi Kleen wrote:
+(Cc'ing Ingo)
 
-> There's clear evidence that any kind of exception in gettimeofday()/time()
-> is too slow. A few years ago gtod() had CPUID which lead to intercepts
-> with many hypervisors. This turned out to be a unacceptable slowdown,
-> so it was fixed,
+On Wed, Jun 08, 2011 at 04:34:18AM -0400, Ohad Ben-Cohen wrote:
+> Create a dedicated iommu drivers folder, put the base iommu code there,
+> and move the existing IOMMU API users as well (msm-iommu, amd_iommu and
+> intel-iommu).
+> 
+> Putting all iommu drivers together will ease finding similarities
+> between different platforms, with the intention of solving problems once,
+> in a generic framework, which everyone can use.
+> 
+> OMAP's iommu will be moved too as soon as it's migrated.
 
-yes, i don't think anyone claimed any performance improvements from moving
-away from the vsyscall page into taking exceptions ;). i think everyone
-considers this as a stop-gap compatibility measure only that will be less
-and less relevant and eventually may even go away as time progresses and
-linux systems begin to fully rely on the vdso instead.
+Great, thanks. I'll apply the patches as soon as the relevant ACKs come
+in. Looking at the MAINTAINERS file David Brown needs to ACK the MSM
+patch and David Woodhouse the VT-d patch.
+
+David B., David W., is this direction ok for both of you?
+
+A more important question is how we handle the IOMMU tree. Currently the
+situation is as follows:
+
+	* The AMD IOMMU changes go upstream through Ingo
+	* David Woohouse has his own tree which he sents directly to
+	  Linus
+	* Not sure about the ARM IOMMU code
+	* And to comlicate things further there is the upcoming ARM
+	  integration tree which may contain code that depends on IOMMU
+	  changes
+
+My suggestion is that the ARM tree pulls in the necessary changes from
+the IOMMU tree and the IOMMU code goes upstream through Ingo or directly
+to Linus (with some time in linux-next, of course). Thoughts?
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
