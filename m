@@ -1,109 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab1FHJa5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 05:30:57 -0400
-Received: from r00tworld.com ([212.85.137.150]:48219 "EHLO r00tworld.com"
+	id S1753065Ab1FHJbL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 05:31:11 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50604 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125Ab1FHJaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 05:30:55 -0400
-From: pageexec@freemail.hu
-To: Ingo Molnar <mingo@elte.hu>
-Date: Wed, 08 Jun 2011 11:29:37 +0200
-MIME-Version: 1.0
-Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
-Reply-to: pageexec@freemail.hu
-CC: Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1752812Ab1FHJbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 05:31:08 -0400
+Date: Wed, 8 Jun 2011 11:30:46 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Message-ID: <4DEF4101.17745.1C109461@pageexec.freemail.hu>
-In-reply-to: <20110608071620.GB6747@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>, <4DEEB31B.3353.19E649C2@pageexec.freemail.hu>, <20110608071620.GB6747@elte.hu>
-X-mailer: Pegasus Mail for Windows (4.61)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Wed, 08 Jun 2011 11:30:16 +0200 (CEST)
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
+Message-ID: <20110608093046.GB17886@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
+ <20110607122519.GA18571@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607122519.GA18571@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 Jun 2011 at 9:16, Ingo Molnar wrote:
-
-> The thing is, as i explained it before, your claim:
+On Tue, Jun 07, 2011 at 08:25:19AM -0400, Christoph Hellwig wrote:
+> A few small nitpicks:
 > 
->   > a page fault is never a fast path
+> > +struct mem_cgroup *mem_cgroup_hierarchy_walk(struct mem_cgroup *root,
+> > +					     struct mem_cgroup *prev)
+> > +{
+> > +	struct mem_cgroup *mem;
+> > +
+> > +	if (mem_cgroup_disabled())
+> > +		return NULL;
+> > +
+> > +	if (!root)
+> > +		root = root_mem_cgroup;
+> > +	/*
+> > +	 * Even without hierarchy explicitely enabled in the root
+> > +	 * memcg, it is the ultimate parent of all memcgs.
+> > +	 */
+> > +	if (!(root == root_mem_cgroup || root->use_hierarchy))
+> > +		return root;
 > 
-> is simply ridiculous on its face and crazy talk.
+> The logic here reads a bit weird, why not simply:
+> 
+> 	 /*
+> 	  * Even without hierarchy explicitely enabled in the root
+> 	  * memcg, it is the ultimate parent of all memcgs.
+> 	  */
+> 	if (!root || root == root_mem_cgroup)
+> 		return root_mem_cgroup;
+> 	if (root->use_hierarchy)
+> 		return root;
 
-you didn't *explain* a thing. you *claimed* something but offered *no*
-proof. where's your measurement showing the single cycle improvement?
-how many times do i get to ask you for it before you're willing to provide
-it? does it even exist? you see, i'm beginning to think that you simply
-just made up that claim, or in plain english, you lied about it. is that
-really the case?
+What you are proposing is not equivalent, so... case in point!  It's
+meant to do the hierarchy walk for when foo->use_hierarchy, obviously,
+but ALSO for root_mem_cgroup, which is parent to everyone else even
+without use_hierarchy set.  I changed it to read like this:
 
-> Beyond all the reasons why we don't want to touch the page fault path 
-> we have a working, implemented, tested IDT based alternative approach 
-> here that is faster
+	if (!root)
+		root = root_mem_cgroup;
+	if (!root->use_hierarchy && root != root_mem_cgroup)
+		return root;
+	/* actually iterate hierarchy */
 
-btw, the pf based approach can be made as fast as well since the necessary
-checks can be moved up early. but then we'll face the single cycle brigade ;).
+Does that make more sense?
 
-> and more compartmented 
+Another alternative would be
 
-what does that even mean here? the pf based approach is less code btw.
+	if (root->use_hierarchy || root == root_mem_cgroup) {
+		/* most of the function body */
+	}
 
-> Even if you do not take my word for it, several prominent kernel 
-> developers told you already that you are wrong,
+but that quickly ends up with ugly linewraps...
 
-you must have been reading a different thread or i wasn't cc'd on those
-claims. care to quote them back (i only remember Pekka's mail and he has
-yet to back up his claim about single/low cycle counts being important
-for the bootup case)?
+> >  /*
+> >   * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
+> >   */
+> > -static void shrink_zone(int priority, struct zone *zone,
+> > -				struct scan_control *sc)
+> > +static void do_shrink_zone(int priority, struct zone *zone,
+> > +			   struct scan_control *sc)
+> 
+> It actually is the per-memcg shrinker now, and thus should be called
+> shrink_memcg.
 
-also claiming something and proving something are different things. as
-i told you already, ex cathedra statements don't work here.
+Per-zone per-memcg, actually.  shrink_zone_memcg?
 
-> and i also showed you  the commits that prove you wrong.
+> > +		sc->mem_cgroup = mem;
+> > +		do_shrink_zone(priority, zone, sc);
+> 
+> Any passing the mem_cgroup explicitly instead of hiding it in the
+> scan_control would make that much more obvious.  If there's a good
+> reason to pass it in the structure the same probably applies to the
+> zone and priority, too.
 
-unfounded single cycle improvement claims don't a proof make. show your
-measurements instead. provided they exist that is.
+Stack frame size, I guess.  But unreadable code can't be the answer to
+this problem.  I'll try to pass it explicitely and see what the damage
+is.
 
-> Your reply to that was to try to change the topic,
+> Shouldn't we also have a non-cgroups stub of shrink_zone to directly
+> call do_shrink_zone/shrink_memcg with a NULL memcg and thus optimize
+> the whole loop away for it?
 
-what change are you talking about? you insisted on calling the pf path
-fast and your single cycle improvements relevant, you get to prove it.
+On !CONFIG_MEMCG, the code in shrink_zone() looks effectively like
+this:
 
-> laced with frequent insults thrown at me. You called me an 'asshole' yet
-> the only thing i did was that i argued with you patiently.
+	first = mem = NULL;
+	for (;;) {
+		sc->mem_cgroup = mem;
+		do_shrink_zone()
+		if (reclaimed enough)
+			break;
+		mem = NULL;
+		if (first == mem)
+			break;
+	}
 
-i wish you had argued (i.e., presented well thought out, true and releavant
-statements) but instead you only threw out completely baseless accusations,
-insinuations, or even outright lies, never mind the several ad hominem
-statements that i generously overlooked since unlike you, i can handle
-the heat of a discussion ;). IOW, stop pretending to be the hurt angel
-here, you're very far from it.
+I have gcc version 4.6.0 20110530 (Red Hat 4.6.0-9) (GCC) on this
+machine, and it manages to optimize the loop away completely.
 
-> Is there *any* point where you are willing to admit that you are 
-> wrong or should i just start filtering out your emails to save me all 
-> this trouble?
-
-sure, just prove me wrong on a claim and i'll admit it ;).
-
-> When you comment on technical details you generally 
-> make very good suggestions so i'd hate to stop listening to your 
-> feedback, but there's a S/N ratio threshold under which i will need 
-> to do it ...
-
-you sound like i care about who you listen to. if you're a mature person
-you might as well act as one. like start answering the questions i posed
-you in the last round of emails then we'll see about that S/N ratio.
-
+The only increase in code size I could see was from all callers having
+to do the extra sc->mem_cgroup = NULL.  But I guess there is no way
+around this.
