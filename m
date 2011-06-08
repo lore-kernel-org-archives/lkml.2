@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab1FHURc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 16:17:32 -0400
-Received: from waste.org ([173.11.57.241]:53792 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751230Ab1FHURb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 16:17:31 -0400
-Subject: Re: 3.0.0-rc2-git1 -- BUG: sleeping function called from invalid
- context at mm/slub.c:847
-From: Matt Mackall <mpm@selenic.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        John Johansen <john.johansen@canonical.com>
-In-Reply-To: <alpine.DEB.2.00.1106081305430.10320@chino.kir.corp.google.com>
-References: <BANLkTimq+h+WyboMbPGVH1uJuj64YuRLdw@mail.gmail.com>
-	 <alpine.DEB.2.00.1106081305430.10320@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Jun 2011 15:17:28 -0500
-Message-ID: <1307564248.4204.1013.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	id S1752455Ab1FHUUS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 16:20:18 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:52401 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab1FHUUO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 16:20:14 -0400
+Message-ID: <4DEFD979.50405@tilera.com>
+Date: Wed, 8 Jun 2011 16:20:09 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Mathias Krause <minipli@googlemail.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <stable@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Zankel <chris@zankel.net>
+Subject: Re: [PATCH] init: use KERNEL_DS when trying to start init process
+References: <1306772228-1603-1-git-send-email-minipli@googlemail.com>	<20110606161254.5f02d855.akpm@linux-foundation.org>	<BANLkTinwMyVsR-pvimeVkcqQrCuNDK4zKw@mail.gmail.com>	<20110608104727.GT11521@ZenIV.linux.org.uk> <BANLkTi=qBx0Mk=b2wsA3RZVKk0RUckeN6g@mail.gmail.com>
+In-Reply-To: <BANLkTi=qBx0Mk=b2wsA3RZVKk0RUckeN6g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-08 at 13:09 -0700, David Rientjes wrote:
-> On Wed, 8 Jun 2011, Miles Lane wrote:
-> 
-> > BUG: sleeping function called from invalid context at mm/slub.c:847
-> >  in_atomic(): 1, irqs_disabled(): 0, pid: 1583, name: cupsd
-> >  2 locks held by cupsd/1583:
-> >   #0:  (tasklist_lock){.+.+.+}, at: [<ffffffff8104dafa>] do_prlimit+0x61/0x189
-> >   #1:  (&(&p->alloc_lock)->rlock){+.+.+.}, at: [<ffffffff8104db2d>]
-> > do_prlimit+0x94/0x189
-> >  Pid: 1583, comm: cupsd Not tainted 3.0.0-rc2-git1 #7
-> >  Call Trace:
-> >   [<ffffffff8102ebf2>] __might_sleep+0x10d/0x112
-> >   [<ffffffff810e6f46>] slab_pre_alloc_hook.isra.49+0x2d/0x33
-> >   [<ffffffff810e7bc4>] kmem_cache_alloc+0x22/0x132
-> >   [<ffffffff8105b6e6>] prepare_creds+0x35/0xe4
-> >   [<ffffffff811c0675>] aa_replace_current_profile+0x35/0xb2
-> >   [<ffffffff811c4d2d>] aa_current_profile+0x45/0x4c
-> >   [<ffffffff811c4d4d>] apparmor_task_setrlimit+0x19/0x3a
-> >   [<ffffffff811beaa5>] security_task_setrlimit+0x11/0x13
-> >   [<ffffffff8104db6b>] do_prlimit+0xd2/0x189
-> >   [<ffffffff8104dea9>] sys_setrlimit+0x3b/0x48
-> >   [<ffffffff814062bb>] system_call_fastpath+0x16/0x1b
-> > 
-> 
-> Not sure why this ever actually worked with apparmor if prepare_creds() 
-> does an unconditional GFP_KERNEL allocation since this codepath hasn't 
-> changed in at least a year and we're holding a spinlock from setrlimit.  
-> John?
+On 6/8/2011 8:14 AM, Mathias Krause wrote:
+> On Wed, Jun 8, 2011 at 12:47 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> On Tue, Jun 07, 2011 at 07:00:24PM -0700, Linus Torvalds wrote:
+>>> That said, that commit (it's commit ID 4095b99c09e3d in tglx's tree)
+>>> predates the "real" BK history too: it's part of the (limited) 2.4.x
+>>> history that was imported from the release patches into BK at the
+>>> beginning of the use of BK. So at that point we didn't do indivual
+>>> commits, it's just the import of the v2.4.3.7 -> v2.4.3.8 patch.
+>>>
+>>> But yeah, it's old and crufty. And I agree that usually the correct
+>>> fix is to remove the set_fs() calls entirely.
+>> I think these days its job is done by start_thread(), which is where we
+>> switch to USER_DS; it's called by ->load_binary() when it decides it's past
+>> the point of no return.  However, it would be a good idea to verify that
+>> all architectures do it there properly and we are not exposing a hole by
+>> removal of this set_fs()...
+> I've checked all implementations of start_thread() and found some candidates:
+>
+> SPARC, TILE and Xtensa don't call set_fs(USER_DS), albeit have
+> different definitions for USER_DS and KERNEL_DS. So those might need
+> fixing. I'm not familiar with those architectures, so someone else has
+> to answer this.
 
-Probably a lack of people enabling (and using!) both apparmor and
-might_sleep. I don't this would be caught by a randconfig boot test.
+TILE relies on the set_fs() in search_binary_handler(), but adding
+set_fs(USER_DS) in in start_thread() should be a valid change if the
+set_fs() is removed from search_binary_handler().  I'm happy to ack the
+obvious change for tile, or I can put the change to tile's start_thread()
+in my tree for inclusion in 3.1, either way.
 
 -- 
-Mathematics is the supreme nostalgia of our time.
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
 
