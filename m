@@ -1,88 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab1FHOdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 10:33:09 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42464 "EHLO mx2.mail.elte.hu"
+	id S1756237Ab1FHOlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 10:41:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5595 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753628Ab1FHOdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 10:33:07 -0400
-Date: Wed, 8 Jun 2011 16:32:45 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, David Brown <davidb@codeaurora.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 0/4] drivers/iommu/ relocations
-Message-ID: <20110608143245.GI30752@elte.hu>
-References: <1307522062-19273-1-git-send-email-ohad@wizery.com>
- <20110608093546.GG4407@amd.com>
+	id S1756084Ab1FHOlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 10:41:45 -0400
+Message-ID: <4DEF8A1D.2080707@redhat.com>
+Date: Wed, 08 Jun 2011 09:41:33 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110608093546.GG4407@amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: "Amir G." <amir73il@users.sourceforge.net>
+CC: Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
+        tytso@mit.edu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 00/30] Ext4 snapshots
+References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net>	<alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com>	<BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com>	<alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com> <BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com>
+In-Reply-To: <BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 6/8/11 9:04 AM, Amir G. wrote:
+>> And one last note, I also think that the snapshot format change in the
+>> > future, when we'll have snpashots with 64bit feature compatible seems
+>> > just wrong to me. Adding some features or changing the implementation a
+>> > bit is ok, but format change is different. When the code is upstream and
+>> > stable it is just wrong.
+> What can I say, I understand why it looks bad, but is 64bit code
+> upstream and stable? Hell no! e2fsprogs 64bit is not out yet!
+> There is no reason to call it 'format change'.
+> It's going to be a new format used only for 64bit fs, which are not
+> even out there yet. And when they are finally out there, they won't
+> have
+> snapshots until the new format is implemented.
 
-* Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+Well, the on-disk format for 64-bit (48-bit?) ext4 is there & fixed; it's
+just that there is no released userspace which can properly handle it, right?
 
-> (Cc'ing Ingo)
-> 
-> On Wed, Jun 08, 2011 at 04:34:18AM -0400, Ohad Ben-Cohen wrote:
-> > Create a dedicated iommu drivers folder, put the base iommu code there,
-> > and move the existing IOMMU API users as well (msm-iommu, amd_iommu and
-> > intel-iommu).
-> > 
-> > Putting all iommu drivers together will ease finding similarities
-> > between different platforms, with the intention of solving problems once,
-> > in a generic framework, which everyone can use.
-> > 
-> > OMAP's iommu will be moved too as soon as it's migrated.
-> 
-> Great, thanks. I'll apply the patches as soon as the relevant ACKs come
-> in. Looking at the MAINTAINERS file David Brown needs to ACK the MSM
-> patch and David Woodhouse the VT-d patch.
-> 
-> David B., David W., is this direction ok for both of you?
-> 
-> A more important question is how we handle the IOMMU tree. Currently the
-> situation is as follows:
-> 
-> 	* The AMD IOMMU changes go upstream through Ingo
-> 	* David Woohouse has his own tree which he sents directly to
-> 	  Linus
-> 	* Not sure about the ARM IOMMU code
-> 	* And to comlicate things further there is the upcoming ARM
-> 	  integration tree which may contain code that depends on IOMMU
-> 	  changes
-> 
-> My suggestion is that the ARM tree pulls in the necessary changes from
-> the IOMMU tree and the IOMMU code goes upstream through Ingo or directly
-> to Linus (with some time in linux-next, of course). Thoughts?
+I don't anticipate ext4 format changes for >16T, or am I missing something?
 
-I can certainly pull from you trees you pull from elsewhere.
-
-David could help keep things tidier by sending the Intel IOMMU bits 
-to me as well.
-
-In any case the tip:core/iommu tree is in linux-next so whatever you 
-send me shows up there on the next day or so.
-
-Thanks,
-
-	Ingo
+-Eric
