@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab1FHXtH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 19:49:07 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59658 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754763Ab1FHXtD (ORCPT
+	id S1756768Ab1FHXyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 19:54:47 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53531 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763Ab1FHXyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 19:49:03 -0400
+	Wed, 8 Jun 2011 19:54:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=K19d3Y/Y25UyS1olImS8vkZUUkD7IJwMLHza1rAvFHxUUbTLLTtAssEoOVJ7m3miIb
-         RxbNqdCh/udh0Y77hp/Gr7WrM7BPrCHXg9dEAa4R1lEYQgCfrnoNx9kt7Qs7TSupVdKq
-         bQmvC/tYEe4m/YprOf5duPnteuhQJSwZYYtG8=
-Date: Thu, 9 Jun 2011 01:48:57 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 04/28] rcu: Restore checks for blocking in
- RCU read-side critical sections
-Message-ID: <20110608234855.GE25771@somewhere.redhat.com>
-References: <20110608192943.GA13211@linux.vnet.ibm.com>
- <1307561407-13809-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20110608232833.GD25771@somewhere.redhat.com>
- <20110608234622.GM2324@linux.vnet.ibm.com>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=mR72Y0PAM9On7PbcY2ePijPcueXGICyucMx3G7QdFmxMunv2lIhTJvCKezSRqurKYS
+         zX2wJj/FLnMSScBcY7moRYLIxeYAvTmuUjsEnC+v2RuA9ZOVyUexk1NdiI/nXowxrvZh
+         y3md8MQ3Rn8zIvRSRULFFCNut1/0yEzKugFps=
+Message-ID: <4DF00BC1.1040007@gmail.com>
+Date: Thu, 09 Jun 2011 01:54:41 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110608234622.GM2324@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jim Bos <jim876@xs4all.nl>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+References: <20110608193833.GA29855@srcf.ucam.org> <4DEFD220.5040507@kernel.org> <20110608195250.GB30256@srcf.ucam.org> <4DEFD58D.5060402@kernel.org> <20110608200903.GA30694@srcf.ucam.org> <4DEFDA4A.9080500@kernel.org> <20110608203037.GA31052@srcf.ucam.org> <4DEFDD69.7010000@kernel.org> <20110608204244.GA31484@srcf.ucam.org> <BANLkTikfbSsgGgNEQ3GVD=HOPn1Dz_xh+g@mail.gmail.com> <20110608212813.GB32056@srcf.ucam.org> <BANLkTikbx6xm+NY34ATN7YkJyjPp9CSXTw@mail.gmail.com> <4DEFEEE7.1030703@linux.intel.com> <BANLkTi=0NyXLRpxnP=dmSgeStNtxYMKPuA@mail.gmail.com>
+In-Reply-To: <BANLkTi=0NyXLRpxnP=dmSgeStNtxYMKPuA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 04:46:22PM -0700, Paul E. McKenney wrote:
-> On Thu, Jun 09, 2011 at 01:28:35AM +0200, Frederic Weisbecker wrote:
-> > On Wed, Jun 08, 2011 at 12:29:43PM -0700, Paul E. McKenney wrote:
-> > > Long ago, using TREE_RCU with PREEMPT would result in "scheduling
-> > > while atomic" diagnostics if you blocked in an RCU read-side critical
-> > > section.  However, PREEMPT now implies TREE_PREEMPT_RCU, which defeats
-> > > this diagnostic.  This commit therefore adds a replacement diagnostic
-> > > based on PROVE_RCU.
-> > > 
-> > > Because rcu_lockdep_assert() and lockdep_rcu_dereference() are now being
-> > > used for things that have nothing to do with rcu_dereference(), rename
-> > > lockdep_rcu_dereference() to lockdep_rcu_suspicious() and add a third
-> > > argument that is a string indicating what is suspicious.  This third
-> > > argument is passed in from a new third argument to rcu_lockdep_assert().
-> > > Update all calls to rcu_lockdep_assert() to add an informative third
-> > > argument.
-> > > 
-> > > Finally, add a pair of rcu_lockdep_assert() calls from within
-> > > rcu_note_context_switch(), one complaining if a context switch occurs
-> > > in an RCU-bh read-side critical section and another complaining if a
-> > > context switch occurs in an RCU-sched read-side critical section.
-> > > These are present only if the PROVE_RCU kernel parameter is enabled.
-> > > 
-> > > Again, you must enable PROVE_RCU to see these new diagnostics.  But you
-> > > are enabling PROVE_RCU to check out new RCU uses in any case, aren't you?
-> > > 
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > So, do you think we can get rid of this patch now that we are going to have CONFIG_ATOMIC_SLEEP
-> > working everywhere?
-> > 
-> > The last remaining piece we need is to check rcu_preempt_depth() from schedule_debug(),
-> > which does a kind of lightweight might_sleep() check alike.
-> 
-> I believe that we need them both.  Your patch provides a lightweight
-> check.  Mine is way heavier weight (CONFIG_PROVE_RCU is required), but
-> tells you in what function the offending RCU read-side critical section
-> was entered.
+Hey,
 
-Well, that can be found easily in the stacktrace. But ok.
+Op 09-06-11 00:57, Linus Torvalds schreef:
+> On Wed, Jun 8, 2011 at 2:51 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>> However, I suspect that what we *should* do is carry an kernel EFI stub
+>> to go along with the BIOS stub... otherwise we're forever at mercy of
+>> getting all the boot loader authors to change in lockstep, and there are
+>> specific ones which are notoriously hard to work with.
+> Yes, that would probably be a good approach. We obviously have some
+> low-level asm code for the BIOS case that is technically linked into
+> the kernel, but is running before the kernel boots and not really
+> "part" of the kernel. Doing something similar for EFI support sounds
+> entirely sane to me.
+I agree that's a long term solution, meanwhile can we just hope
+that not too much boot memory is reserved and not free
+that memory so it at least boots for more people?
+
+Maybe add a printk of 'X amount of boot memory will not freed',
+so at least people can quantify and judge for themselves whether
+it's worth disabling kernel efi support or not.
+
+~Maarten
