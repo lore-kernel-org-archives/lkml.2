@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab1FHV3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 17:29:23 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:44616 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab1FHV3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 17:29:21 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6371"; a="96298744"
-From: Laura Abbott <lauraa@codeaurora.org>
-To: iommu@lists.linux-foundation.org, Tom Lyon <pugs@cisco.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Cc: Laura Abbott <lauraa@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] iommu-api: Add missing header file
-Date: Wed,  8 Jun 2011 14:29:11 -0700
-Message-Id: <1307568552-9239-1-git-send-email-lauraa@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.3
+	id S1755274Ab1FHVbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 17:31:41 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56294 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752090Ab1FHVbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 17:31:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,339,1304319600"; 
+   d="scan'208";a="9486448"
+Message-ID: <4DEFEA3A.5050604@linux.intel.com>
+Date: Wed, 08 Jun 2011 14:31:38 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+References: <20110608193833.GA29855@srcf.ucam.org> <4DEFD220.5040507@kernel.org> <20110608195250.GB30256@srcf.ucam.org> <4DEFD58D.5060402@kernel.org> <20110608200903.GA30694@srcf.ucam.org> <4DEFDA4A.9080500@kernel.org> <20110608203037.GA31052@srcf.ucam.org> <4DEFDD69.7010000@kernel.org> <20110608204244.GA31484@srcf.ucam.org> <BANLkTikfbSsgGgNEQ3GVD=HOPn1Dz_xh+g@mail.gmail.com> <20110608212813.GB32056@srcf.ucam.org>
+In-Reply-To: <20110608212813.GB32056@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_IOMMU_API is not defined some functions will just
-return -ENODEV. Add errno.h for the definition of ENODEV.
+On 06/08/2011 02:28 PM, Matthew Garrett wrote:
+> 
+> E820 limits us to 128 ranges, and systems I'm looking at right now are 
+> already using over 140 boot services regions. Some of them are 
+> contiguous and we could just merge them for e820, but that leaves us at 
+> the whim of whoever wrote the allocator for the firmware. And do you 
+> want to bet on them having done this sanely?
+> 
 
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
----
- include/linux/iommu.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+No, we're not limited to 128.  We're limited to 128 in the boot
+structure, but more can be passed via the linked list.
 
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 0a2ba40..9940319 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -19,6 +19,8 @@
- #ifndef __LINUX_IOMMU_H
- #define __LINUX_IOMMU_H
-
-+#include <linux/errno.h>
-+
- #define IOMMU_READ	(1)
- #define IOMMU_WRITE	(2)
- #define IOMMU_CACHE	(4) /* DMA cache coherency */
---
-1.7.3.3
-
+	-hpa
