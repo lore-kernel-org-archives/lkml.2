@@ -1,90 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab1FHJTE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 05:19:04 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56743 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510Ab1FHJTB convert rfc822-to-8bit (ORCPT
+	id S1752545Ab1FHJ1B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 05:27:01 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56096 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab1FHJ1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 05:19:01 -0400
-Subject: Re: [PATCH 04/15] KVM: MMU: cache mmio info on page fault path
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <4DEF39CB.4020109@cn.fujitsu.com>
-Date: Wed, 8 Jun 2011 11:18:57 +0200
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3CA39806-D840-414B-816E-99DAB6F8FEBD@suse.de>
-References: <4DEE205E.8000601@cn.fujitsu.com> <4DEE20EE.7060000@cn.fujitsu.com> <4FA0E9B8-FBB6-49BD-916C-239599136604@suse.de> <4DEF39CB.4020109@cn.fujitsu.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-X-Mailer: Apple Mail (2.1084)
+	Wed, 8 Jun 2011 05:27:00 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 8 Jun 2011 18:20:03 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [BUGFIX][PATCH] memcg: fix behavior of per cpu charge cache
+ draining.
+Message-Id: <20110608182003.1ca11db0.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110608091510.GB6742@tiehlicka.suse.cz>
+References: <20110608140518.0cd9f791.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110608144934.b5944a64.nishimura@mxp.nes.nec.co.jp>
+	<20110608152901.f16b3e59.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110608091510.GB6742@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 8 Jun 2011 11:15:11 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-On 08.06.2011, at 10:58, Xiao Guangrong wrote:
+> On Wed 08-06-11 15:29:01, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 8 Jun 2011 14:49:34 +0900
+> > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> > 
+> > > I have a few minor comments.
+> > > 
+> > > On Wed, 8 Jun 2011 14:05:18 +0900
+> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > 
+> > > > This patch is made against mainline git tree.
+> > > > ==
+> > > > From d1372da4d3c6f8051b5b1cf7b5e8b45a8094b388 Mon Sep 17 00:00:00 2001
+> > > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > > Date: Wed, 8 Jun 2011 13:51:11 +0900
+> > > > Subject: [BUGFIX][PATCH] memcg: fix behavior of per cpu charge cache draining.
+> > > > 
+> > > > For performance, memory cgroup caches some "charge" from res_counter
+> > > > into per cpu cache. This works well but because it's cache,
+> > > > it needs to be flushed in some cases. Typical cases are
+> > > > 	1. when someone hit limit.
+> > > > 	2. when rmdir() is called and need to charges to be 0.
+> > > > 
+> > > > But "1" has problem.
+> > > > 
+> > > > Recently, with large SMP machines, we see many kworker/%d:%d when
+> > > > memcg hit limit. It is because of flushing memcg's percpu cache. 
+> > > > Bad things in implementation are
+> > > > 
+> > > > a) it's called before calling try_to_free_mem_cgroup_pages()
+> > > >    so, it's called immidiately when a task hit limit.
+> > > >    (I thought it was better to avoid to run into memory reclaim.
+> > > >     But it was wrong decision.)
+> > > > 
+> > > > b) Even if a cpu contains a cache for memcg not related to
+> > > >    a memcg which hits limit, drain code is called.
+> > > > 
+> > > > This patch fixes a) and b) by
+> > > > 
+> > > > A) delay calling of flushing until one run of try_to_free...
+> > > >    Then, the number of calling is much decreased.
+> > > > B) check percpu cache contains a useful data or not.
+> > > > plus
+> > > > C) check asynchronous percpu draining doesn't run on the cpu.
+> > > > 
+> > > > Reported-by: Ying Han <yinghan@google.com>
+> > > > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Looks good to me.
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> 
+> One minor note though. 
+> AFAICS we can end up having CHARGE_BATCH * (NR_ONLINE_CPU) pages pre-charged
+> for a group which would be freed by drain_all_stock_async so we could get
+> under the limit and so we could omit direct reclaim, or?
 
-> On 06/08/2011 04:22 PM, Alexander Graf wrote:
-> 
->>> +static int vcpu_gva_to_gpa(struct kvm_vcpu *vcpu, unsigned long gva,
->>> +			   gpa_t *gpa, struct x86_exception *exception,
->>> +			   bool write)
->>> +{
->>> +	u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
->>> +
->>> +	if (vcpu_match_mmio_gva(vcpu, gva) &&
->>> +	      check_write_user_access(vcpu, write, access,
->>> +	      vcpu->arch.access)) {
->>> +		*gpa = vcpu->arch.mmio_gfn << PAGE_SHIFT |
->>> +					(gva & (PAGE_SIZE - 1));
->>> +		return 1;
->> 
-> 
-> Hi Alexander,
-> 
-> Thanks for your review!
-> 
->> Hrm. Let me try to understand what you're doing.
->> 
->> Whenever a guest issues an MMIO, it triggers an #NPF or #PF and then we walk either the NPT or the guest PT to resolve the GPA to the fault and send off an MMIO.
->> Within that path, you remember the GVA->GPA mapping for the last MMIO request. If the next MMIO request is on the same GVA and kernel/user permissions still apply, you simply bypass the resolution. So far so good.
->> 
-> 
-> In this patch, we also introduced vcpu_clear_mmio_info() that clears mmio cache info on the vcpu,
-> and it is called when guest flush tlb (reload CR3 or INVLPG). 
+If drain_all_stock_async flushes charges, we go under limit and skip
+direct reclaim. yes. It was my initial thought. But in recent test while
+we do for keep-margin or some other, we saw too much kworkers/%d:%d.
 
-Ah, that one solved the SPT case then of course.
+Then, What I think now is....
 
-> 
->> Now, what happens when the GVA is not identical to the GVA it was before? It's probably a purely theoretic case, but imagine the following:
->> 
->>  1) guest issues MMIO on GVA 0x1000 (GPA 0x1000)
->>  2) guest remaps page 0x1000 to GPA 0x2000
->>  3) guest issues MMIO on GVA 0x1000
->> 
-> 
-> If guest modify the page structure, base on x86 tlb rules, we should flush tlb to ensure the cpu use
-> the new mapping.
-> 
-> When you remap GVA 0x1000 to 0x2000, you should flush tlb, then mmio cache info is cleared, so the later
-> access is right.
-> 
->> That would break with your current implementation, right? It sounds pretty theoretic, but imagine the following:
->> 
->>  1) guest user space 1 maps MMIO region A to 0x1000
->>  2) guest user space 2 maps MMIO region B to 0x1000
->>  3) guest user space 1 issues MMIO on 0x1000
->>  4) context switch; going to user space 2
->>  5) user space 2 issues MMIO on 0x1000
->> 
-> 
-> Also, when context switched, CR3 is reloaded, mmio cache info can be cleared too. right? :-)
+ 1. if memory can be reclaimed easily, the cost of calling kworker is very bad.
+ 2. if memory reclaim cost is too high, the benefit of flushing per-cpu
+    cache is very low.
 
-Only when using SPT. In the NPT case, you will never see cr3 getting reloaded or INVLPG :).
+In future, situation will be much better.
+
+ a. Our test shows async shrinker for keep-margin will reduce memory
+    effectively and process will not dive into direct reclaim because of limit
+    in not-very-havy workload.
+ b. dirty-ratio will stop very-heavy-workload before reclaim is troublesome.
+
+Hmm,
+-Kame
 
 
-Alex
+
 
