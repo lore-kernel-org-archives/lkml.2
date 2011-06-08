@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab1FHHBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 03:01:00 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:63341 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839Ab1FHHA7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 03:00:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=rfZeHSuSua/nhc9iUJ2XXsBHzmOQlgjeTuKAmCwYKIK+3wP7W+xi20Luv4tOvKGYuO
-         B9WR5faKC0iIT9OBkjU4STjV1bTxxl3DS3asVJqpi1K3nt6J3+NytNpGxbyNm9HN9gsW
-         2h3vrzGlL3f2cr0KSKmIYMaib7EQR4WO1o/co=
-From: Connor Hansen <cmdkhh@gmail.com>
-To: petr@vandrovec.name
-Cc: npiggin@kernel.dk, viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        Connor Hansen <cmdkhh@gmail.com>
-Subject: [PATCH] fs/ncpfs/dir.c unused variable sb
-Date: Wed,  8 Jun 2011 00:00:37 -0700
-Message-Id: <1307516437-27496-1-git-send-email-cmdkhh@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1754238Ab1FHHGO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 03:06:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34236 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752429Ab1FHHGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 03:06:13 -0400
+Message-ID: <4DEF1F07.4000400@redhat.com>
+Date: Wed, 08 Jun 2011 00:04:39 -0700
+From: Josh Stone <jistone@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Stephen Wilson <wilsons@start.ca>
+CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 3/22]  3: uprobes: Adding and remove a
+ uprobe in a rb tree.
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6> <20110607125850.28590.10861.sendpatchset@localhost6.localdomain6> <20110608041217.GA4879@wicker.gateway.2wire.net>
+In-Reply-To: <20110608041217.GA4879@wicker.gateway.2wire.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-during randconfig testing,
+On 06/07/2011 09:12 PM, Stephen Wilson wrote:
+> Also, changing the argument order seems to solve the issue reported by
+> Josh Stone where only the uprobe with the lowest address was responding
+> (thou I did not test with perf, just lightly with the trace_event
+> interface).
 
-fs/ncpfs/dir.c: in function ncp_hash_dentry:
-fs/nspfs/dir.c:128:23: warning: unused variable sb
+Makes sense, and indeed after swapping the arguments to both calls, the
+perf test I gave now works as expected.  Thanks!
 
-pass dentry->d_sb instead of first creating an
-unnecessary pointer to it.
-
-Signed-off-by: Connor Hansen <cmdkhh@gmail.com>
----
- fs/ncpfs/dir.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ncpfs/dir.c b/fs/ncpfs/dir.c
-index 9c51f62..a8d42af 100644
---- a/fs/ncpfs/dir.c
-+++ b/fs/ncpfs/dir.c
-@@ -125,12 +125,11 @@ ncp_hash_dentry(const struct dentry *dentry, const struct inode *inode,
- 		struct qstr *this)
- {
- 	if (!ncp_case_sensitive(inode)) {
--		struct super_block *sb = dentry->d_sb;
- 		struct nls_table *t;
- 		unsigned long hash;
- 		int i;
- 
--		t = NCP_IO_TABLE(sb);
-+		t = NCP_IO_TABLE(dentry->d_sb);
- 		hash = init_name_hash();
- 		for (i=0; i<this->len ; i++)
- 			hash = partial_name_hash(ncp_tolower(t, this->name[i]),
--- 
-1.7.4.4
-
+Josh
