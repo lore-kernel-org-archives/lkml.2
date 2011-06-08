@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705Ab1FHTpt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:45:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44704 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab1FHTpq convert rfc822-to-8bit (ORCPT
+	id S1751998Ab1FHTrF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:47:05 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50198 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab1FHTrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:45:46 -0400
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-In-Reply-To: <20110608191758.GA12457@elte.hu>
-References: <20110606155236.GA7374@elte.hu>
-	 <1307376039.2322.164.camel@twins> <20110606160810.GA16636@elte.hu>
-	 <1307376771.2322.168.camel@twins> <20110606161749.GA22157@elte.hu>
-	 <4DED0292.1040605@die-jansens.de> <4DED0423.4050904@die-jansens.de>
-	 <20110606170725.GD2391@elte.hu> <1307380311.2322.223.camel@twins>
-	 <1307548218.3941.6.camel@twins>  <20110608191758.GA12457@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 08 Jun 2011 21:45:29 +0200
-Message-ID: <1307562329.3941.21.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 8 Jun 2011 15:47:02 -0400
+Message-ID: <4DEFD17C.8000001@kernel.org>
+Date: Wed, 08 Jun 2011 12:46:04 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+References: <4DED8752.5070005@kernel.org> <4DEDEA73.7010900@gmail.com> <4DEE17F9.6020503@gmail.com> <4DEEA548.5020405@kernel.org> <4DEFA6E3.6090809@xs4all.nl> <4DEFCAE0.6050700@kernel.org> <20110608192321.GA28865@srcf.ucam.org> <4DEFCD07.5020505@kernel.org> <20110608192950.GA29235@srcf.ucam.org> <4DEFCF1A.9030400@kernel.org> <20110608193833.GA29855@srcf.ucam.org>
+In-Reply-To: <20110608193833.GA29855@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4DEFD183.00A5,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-08 at 21:17 +0200, Ingo Molnar wrote:
-> Hm, the no-wakeup aspect seems rather useful.
+On 06/08/2011 12:38 PM, Matthew Garrett wrote:
+> On Wed, Jun 08, 2011 at 12:35:54PM -0700, Yinghai Lu wrote:
+>> On 06/08/2011 12:29 PM, Matthew Garrett wrote:
+>>>> what former? you can not fix some corner case by breaking most other cases.
+>>>
+>>> All Dell laptops, all new Apples, some Lenovos, various Intel server 
+>>> platforms. That I've found so far.
+>>
+>> do you mean before that patch, all those machine will not boot linux kernel with UEFI support?
 > 
-> Could we perhaps remove console_sem and replace it with a mutex and 
-> do something like this with a mutex and its ->wait_lock?
-> 
-> We'd have two happy side effects:
-> 
->  - we'd thus remove one of the last core kernel semaphore users
->  - we'd gain lockdep coverage for console locking as a bonus ... 
+> Correct.
 
-The mutex thing is more complex due to the mutex fast path, the
-advantage of the semaphore is its simple implementation that always
-takes the internal lock.
+good, they never test that. just let them to use bootcamp.
 
-I guess I can make it happen, but its a tad more tricky.
+> 
+>>> And we need to be able to map the boot services code, so we can't put 
+>>> the kernel on top of it.
+>>
+>> after bootloader, those area should be free already.
+> 
+> That's what the spec says. Reality says differently. We need those 
+> ranges to be available to the kernel until after SetVirtualAddressMap() 
+> has been called, which means we need to avoid putting the kernel on top 
+> of them.
+
+bootloader will load kernel (bzImage) high, and it will decompressed to 16M ram position.
+
+can you call SetVirtualAddressMap before you exit bootloader instead?
+
+Yinghai
