@@ -1,164 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587Ab1FHTeh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:34:37 -0400
-Received: from mail.perches.com ([173.55.12.10]:2641 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756389Ab1FHTee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:34:34 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: anish singh <anish198519851985@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] checkpatch: Validate signature styles and To: and Cc: lines
-Date: Wed,  8 Jun 2011 12:34:33 -0700
-Message-Id: <100617f66cdceab04a87514d47929a4ec3aebc19.1307561278.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.rc0
-In-Reply-To: <BANLkTi=AFbSXzjRHuY=uBFz=64C6vWLwNA@mail.gmail.com>
-References: <BANLkTi=AFbSXzjRHuY=uBFz=64C6vWLwNA@mail.gmail.com>
+	id S1756349Ab1FHTex (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:34:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43140 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755120Ab1FHTes convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 15:34:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=Aip2qaarz+zOSwX8/YZ7kV959gOSbWInE2Nc7MUo6PIgqw37WVhWsp8F7EKAJ8jIKE
+         Jg986UxnZcz1D00TpnDnAmAk41KMyXxKR7QOigY3y9T/ZklQ63EtrOJDxRnEkiVK6TS5
+         rfwSJdGtXSgZgUl3Av3GJopHbzxeeLaHrWahQ=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Helge Hafting <helge.hafting@hist.no>
+Subject: Re: [2.6.39] CIFS write failures where 2.6.38 works
+Date: Wed, 8 Jun 2011 21:34:42 +0200
+User-Agent: KMail/1.13.5 (Linux/3.0.0-rc1; KDE/4.4.5; i686; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <4DE6103E.6010100@hist.no>
+In-Reply-To: <4DE6103E.6010100@hist.no>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201106082134.42506.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signatures have many forms and can sometimes cause problems
-if not in the correct format when using git send-email or quilt.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=36952
+for your bug report, please add your address to the CC list in there, thanks!
 
-Try to verify the signature tags and email addresses to use
-the generally accepted "Signed-off-by: Full Name <email@domain.tld>"
-form.
+On środa, 1 czerwca 2011 o 12:11:10 Helge Hafting wrote:
+> At work I use cifs for accessing a windows server. This has worked fine
+> for a long time, up to and including Debian's 2.6.38-2.
+> 
+> I just installed Debians's 2.6.39-1, and had to give up on it.
+> Mounting CIFS works, and I can see the files. But if I
+> try to make a new file (with cp), I get a long delay.
+> 
+> In this time, anything accessing CIFS will pause, including "ls".
+> CIFS eventually becomes unstuck, and I will find that my "ls" succeeded,
+> but the file copy did not. The file was created, but
+> with 0 size.
+> 
+> Trying to copy the file again results in another stall, and so on.
+> 
+> 
+> When I mount CIFS, I get this message:
+> CIFS VFS: Unexpected SMB signature
+> 
+> This happens with 2.6.38 as well as 2.6.39.
+> 
+> When writes fail in 2.6.39, I also get:
+> CIFS VFS: Send error in Close = -512
+> 
+> Followed by:
+> CIFS VFS: Server servername has not responded in 300 seconds.
+> Reconnecting...
+> 
+> I have also seen
+> CIFS VFS: Send error in Close = -512
+> and
+> CIFS VFS: Send error in read = -13
+> 
+> Helge Hafting
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Original-idea-by: anish kumar <anish198519851985@gmail.com>
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl |   96 ++++++++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 88 insertions(+), 8 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 8657f99..c8bde02 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -216,6 +216,16 @@ our $logFunctions = qr{(?x:
- 	MODULE_[A-Z_]+
- )};
- 
-+our $signature_tags = qr{(?xi:
-+	Signed-off-by:|
-+	Acked-by:|
-+	Tested-by:|
-+	Reviewed-by:|
-+	Reported-by:|
-+	To:|
-+	Cc:
-+)};
-+
- our @typeList = (
- 	qr{void},
- 	qr{(?:unsigned\s+)?char},
-@@ -341,6 +351,60 @@ sub top_of_kernel_tree {
- 	return 1;
- }
- 
-+sub parse_email {
-+	my ($formatted_email) = @_;
-+
-+	my $name = "";
-+	my $address = "";
-+
-+	if ($formatted_email =~ /^([^<]+)<(.+\@.*)>.*$/) {
-+		$name = $1;
-+		$address = $2;
-+	} elsif ($formatted_email =~ /^\s*<(\S+\@\S+)>.*$/) {
-+		$address = $1;
-+	} elsif ($formatted_email =~ /(\S+\@\S+)$/) {
-+		$address = $1;
-+		$formatted_email =~ s/$address.*$//;
-+		$name = $formatted_email;
-+	}
-+
-+	$name =~ s/^\s+|\s+$//g;
-+	$name =~ s/^\"|\"$//g;
-+	$address =~ s/^\s+|\s+$//g;
-+	$address =~ s/^\<|\>$//g;
-+	$address =~ s/\s//g;
-+
-+	if ($name =~ /[^\w \-]/i) { ##has "must quote" chars
-+		$name =~ s/(?<!\\)"/\\"/g; ##escape quotes
-+		$name = "\"$name\"";
-+	}
-+
-+	return ($name, $address);
-+}
-+
-+sub format_email {
-+	my ($name, $address) = @_;
-+
-+	my $formatted_email;
-+
-+	$name =~ s/^\s+|\s+$//g;
-+	$name =~ s/^\"|\"$//g;
-+	$address =~ s/^\s+|\s+$//g;
-+
-+	if ($name =~ /[^\w \-]/i) { ##has "must quote" chars
-+		$name =~ s/(?<!\\)"/\\"/g; ##escape quotes
-+		$name = "\"$name\"";
-+	}
-+
-+	if ("$name" eq "") {
-+		$formatted_email = "$address";
-+	} else {
-+		$formatted_email = "$name <$address>";
-+	}
-+
-+	return $formatted_email;
-+}
-+
- sub expand_tabs {
- 	my ($str) = @_;
- 
-@@ -1365,17 +1429,33 @@ sub process {
- 			}
- 		}
- 
--#check the patch for a signoff:
-+# Check the patch for a signoff:
- 		if ($line =~ /^\s*signed-off-by:/i) {
--			# This is a signoff, if ugly, so do not double report.
- 			$signoff++;
--			if (!($line =~ /^\s*Signed-off-by:/)) {
--				WARN("Signed-off-by: is the preferred form\n" .
--					$herecurr);
-+		}
-+
-+# Check signature styles
-+		if ($line =~ /^(\s*)($signature_tags)(\s*)(.*)/) {
-+			my $space_before = $1;
-+			my $sign_off = $2;
-+			my $space_after = $3;
-+			my $email = $4;
-+			my $ucfirst_sign_off = ucfirst(lc($sign_off));
-+
-+			if (defined $space_before && $space_before ne "") {
-+				WARN("Do not use whitespace before $ucfirst_sign_off\n" . $herecurr);
- 			}
--			if ($line =~ /^\s*signed-off-by:\S/i) {
--				WARN("space required after Signed-off-by:\n" .
--					$herecurr);
-+			if ($sign_off ne $ucfirst_sign_off) {
-+				WARN("'$ucfirst_sign_off' is the preferred signature form\n" . $herecurr);
-+			}
-+			if (!defined $space_after || $space_after ne " ") {
-+				WARN("Use a single space after $ucfirst_sign_off\n" . $herecurr);
-+			}
-+			my $suggested_email = format_email(parse_email($email));
-+			if ($suggested_email eq "") {
-+				ERROR("email address '$email' is unrecognizable\n" . $herecurr);
-+			} elsif ($suggested_email ne $email) {
-+				WARN("email address '$email' might be better as '$suggested_email'\n" . $herecurr);
- 			}
- 		}
- 
 -- 
-1.7.6.rc0
-
+Maciej Rutecki
+http://www.maciek.unixy.pl
