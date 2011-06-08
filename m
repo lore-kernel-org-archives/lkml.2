@@ -1,39 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab1FHVjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 17:39:18 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58248 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab1FHVjP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 17:39:15 -0400
-Message-ID: <4DEFEBE0.9080208@kernel.org>
-Date: Wed, 08 Jun 2011 14:38:40 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1756222Ab1FHWBS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 18:01:18 -0400
+Received: from earth.ccil.org ([192.190.237.11]:33598 "EHLO earth.ccil.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753937Ab1FHWBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 18:01:16 -0400
+X-Greylist: delayed 1352 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Jun 2011 18:01:15 EDT
+Date: Wed, 8 Jun 2011 17:38:42 -0400 (EDT)
+From: Eric Reischer <emr@ccil.org>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Oops in 2.6.39 on auditd restart
+Message-ID: <alpine.DEB.1.10.1106081736540.4368@earth.ccil.org>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, Jim Bos <jim876@xs4all.nl>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <20110608193833.GA29855@srcf.ucam.org> <4DEFD220.5040507@kernel.org> <20110608195250.GB30256@srcf.ucam.org> <4DEFD58D.5060402@kernel.org> <20110608200903.GA30694@srcf.ucam.org> <4DEFDA4A.9080500@kernel.org> <20110608203037.GA31052@srcf.ucam.org> <4DEFDD69.7010000@kernel.org> <20110608204244.GA31484@srcf.ucam.org> <BANLkTikfbSsgGgNEQ3GVD=HOPn1Dz_xh+g@mail.gmail.com> <20110608212813.GB32056@srcf.ucam.org>
-In-Reply-To: <20110608212813.GB32056@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090203.4DEFEBE8.0042,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2011 02:28 PM, Matthew Garrett wrote:
-> E820 limits us to 128 ranges, and systems I'm looking at right now are 
-> already using over 140 boot services regions.
+Upon restarting auditd:
 
-parse_setup_data() is used to handle entries above 128.
+BUG: unable to handle kernel paging request at 00030007
+IP: [<c10d478a>] fsnotify_mark_destroy+0x7a/0x120
+*pdpt = 000000002e1d0001 *pde = 000000002f617067 *pte = 0000000000000000
+Oops: 0002 [#1] SMP
+last sysfs file: /sys/devices/pci0000:00/0000:00:1c.5/0000:04:00.0/irq
+Modules linked in: nvidia(P)
 
-Yinghai
+Pid: 442, comm: fsnotify_mark Tainted: P        2.6.39 #4 Dell Inc. 
+Precision WorkStation T3400  /0TP412
+EIP: 0060:[<c10d478a>] EFLAGS: 00010293 CPU: 3
+EIP is at fsnotify_mark_destroy+0x7a/0x120
+EAS: 00030003 EBX: ea308f48 ECX: ea308f84 EDX: f4493fa8
+ESI: 0002ffc7 EDI: f4493fa8 EBP: 00000000 ESP: f4493f94
+  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+Process fsnotify_mark (pid: 442, ti=f4492000 task=f4ebc8b0 task.ti=f4492000)
+Stack:
+  00000000 f4ebc8b0 c1049eb0 f4493fa0 f4493fa0 ea308f84 ef108e84 f4c57f78
+  00000000 c10d4710 00000000 c1049b34 00000000 00000000 00000000 00000000
+  f4493fd4 f4493fd4 00000000 c1049ac0 f4c57f68 c13b8636 00000000 00000000
+Call Trace:
+  [<c1049eb0>] ? wake_up_bit+0x30/0x30
+  [<c10d4710>] ? fsnotify_clear_marks_by_group+0x10/0x10
+  [<c1049b34>] ? kthread+0x74/0x80
+  [<c1049ac0>] ? kthread_stop+0x60/0x60
+  [<c13b8636>] ? kernel_thread_helper+0x6/0xd
+Code: 2c e2 5f c1 e8 b8 98 f7 ff 8b 5c 24 14 83 eb 3c 8d 4b 3c 8b 43 3c 39 f9 74 32 8d 70 c4 eb 06 66 90 89 d6 89 c1 8b 43 3c 8b 51 04
+  50 04 89 02 89 49 04 89 d8 89 4b 3c 89 f3 e8 a2 fc ff ff 8b
+EIP: [<c10d478a>] fsnotify_mark_destroy+0x7a/0x120 SS:ESP 0068:f4493f94
+CR2: 0000000000030007
+---[ end trace 0551d93bb67d683a ]---
+
+
+Device at 00:1c.0 is: 8086:2940 (PCI Express Port 6)
+Device at 04:00.0 is: 14e4:167a (BCM5754)
+
+Last dmesg entry before oops was:
+
+type=1305 audit(....): auid=1001 ses=1 op="remove rule" key="creation" list=4 res=1
