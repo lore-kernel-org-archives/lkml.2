@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab1FHVGp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 17:06:45 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:41971 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab1FHVGo (ORCPT
+	id S1754019Ab1FHVKp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 17:10:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56357 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753417Ab1FHVKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 17:06:44 -0400
-Date: Wed, 8 Jun 2011 22:06:23 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-Message-ID: <20110608210623.GA32056@srcf.ucam.org>
-References: <20110608193833.GA29855@srcf.ucam.org>
- <4DEFD220.5040507@kernel.org>
- <20110608195250.GB30256@srcf.ucam.org>
- <4DEFD58D.5060402@kernel.org>
- <20110608200903.GA30694@srcf.ucam.org>
- <4DEFDA4A.9080500@kernel.org>
- <20110608203037.GA31052@srcf.ucam.org>
- <4DEFDD69.7010000@kernel.org>
- <20110608204244.GA31484@srcf.ucam.org>
- <4DEFDFB5.3030706@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DEFDFB5.3030706@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 8 Jun 2011 17:10:44 -0400
+Date: Wed, 8 Jun 2011 14:09:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Igor Mammedov <imammedo@redhat.com>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        balbir@linux.vnet.ibm.com, linux-mm@kvack.org,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node
+ to world
+Message-Id: <20110608140951.115ab1dd.akpm@linux-foundation.org>
+In-Reply-To: <20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1306925044-2828-1-git-send-email-imammedo@redhat.com>
+	<20110601123913.GC4266@tiehlicka.suse.cz>
+	<4DE6399C.8070802@redhat.com>
+	<20110601134149.GD4266@tiehlicka.suse.cz>
+	<4DE64F0C.3050203@redhat.com>
+	<20110601152039.GG4266@tiehlicka.suse.cz>
+	<4DE66BEB.7040502@redhat.com>
+	<BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
+	<4DE8D50F.1090406@redhat.com>
+	<BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
+	<4DEE26E7.2060201@redhat.com>
+	<20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 01:46:45PM -0700, Yinghai Lu wrote:
-> On 06/08/2011 01:42 PM, Matthew Garrett wrote:
-> > On Wed, Jun 08, 2011 at 01:36:57PM -0700, Yinghai Lu wrote:
-> > 
-> >> or just let bootloader to mark those boot services just like run-time services in e820 table or setupdata?
-> > 
-> > That was my original approach, but if there's boot services code at the 
-> > top of RAM it means that max_pfn is wrong and it's difficult to recover 
-> > the memory.
-> 
-> not all boot services ram.  just those are called by run-time services code.
 
-We have no way of telling which regions those are until they've been 
-called.
+The original patch:
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4707,7 +4707,6 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
+ 	if (!pn)
+ 		return 1;
+ 
+-	mem->info.nodeinfo[node] = pn;
+ 	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
+ 		mz = &pn->zoneinfo[zone];
+ 		for_each_lru(l)
+@@ -4716,6 +4715,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
+ 		mz->on_tree = false;
+ 		mz->mem = mem;
+ 	}
++	mem->info.nodeinfo[node] = pn;
+ 	return 0;
+ }
+
+looks like a really good idea.  But it needs a new changelog and I'd be
+a bit reluctant to merge it as it appears that the aptch removes our
+only known way of reproducing a bug.
+
+So for now I think I'll queue the patch up unchangelogged so the issue
+doesn't get forgotten about.
+
