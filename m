@@ -1,128 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab1FHFzp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 01:55:45 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34787 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab1FHFzo (ORCPT
+	id S1753221Ab1FHFz2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 01:55:28 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:38616 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab1FHFz1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 01:55:44 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DEF0EB5.1090703@jp.fujitsu.com>
-Date: Wed, 08 Jun 2011 14:55:01 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Wed, 8 Jun 2011 01:55:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=p5v6NUzm8M8DNdMlfRyZMnveKO4duHE3p9Qgh0YuiyvKJCeyxLw6zSFt5hitLPQ3dw
+         8QH+NNMYnd2bnpv0f0JoDBcdaeSQ/UsBNmCUsS7srQXW9p700dfF932ZcQ3fuho1JxHG
+         jdTlmo1HHR8eNsmC456KBUFp7q99fatCLxlzE=
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: Test for CFS Bandwidth Control V6
-References: <20110323030326.789836913@google.com> <4DD5CE05.3030500@cn.fujitsu.com> <4DDB0199.6030805@jp.fujitsu.com> <BANLkTikPrs7b-QVoZZwerbHnCHpStgKj9w@mail.gmail.com>
-In-Reply-To: <BANLkTikPrs7b-QVoZZwerbHnCHpStgKj9w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4DEEB31B.3353.19E649C2@pageexec.freemail.hu>
+References: <cover.1307292171.git.luto@mit.edu>
+	<4DED5985.542.14A05486@pageexec.freemail.hu>
+	<20110607083059.GB4133@elte.hu>
+	<4DEEB31B.3353.19E649C2@pageexec.freemail.hu>
+Date: Wed, 8 Jun 2011 08:55:26 +0300
+X-Google-Sender-Auth: jb_u-6Fxm39ZYHaWGQki_h0NOzg
+Message-ID: <BANLkTikNuPg4nfXMqpffpt+5zZwLM_nSzw@mail.gmail.com>
+Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
+From: Pekka Enberg <penberg@kernel.org>
+To: pageexec@freemail.hu
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Lutomirski <luto@mit.edu>,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/08 11:54), Paul Turner wrote:
-> On Mon, May 23, 2011 at 5:53 PM, Hidetoshi Seto
-> <seto.hidetoshi@jp.fujitsu.com> wrote:
->
->> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
->> index 3936393..544072f 100644
->> --- a/kernel/sched_fair.c
->> +++ b/kernel/sched_fair.c
->> @@ -1537,7 +1537,7 @@ static void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
->>        walk_tg_tree_from(cfs_rq->tg, tg_unthrottle_down, tg_nop,
->>                          (void *)&udd);
->>
->> -       if (!cfs_rq->load.weight)
->> +       if (!cfs_rq->h_nr_running)
->>                return;
->>
-> 
-> Why change here?
+On Wed, Jun 8, 2011 at 2:24 AM,  <pageexec@freemail.hu> wrote:
+> to give you an idea:
+> - if a code path executes in 1M or 1K cycles once every hour, then
+>  it's not a fast path, it doesn't matter to anyone whether it runs
+>  1 or 10 cycles faster or not,
 
-I've confused a bit - just curious if by any chance there is throttled
-cfs_rq that have (load.weight, h_nr_running) = (0, >0).
+I'm pretty sure people who try to optimize kernel boot times, for
+example, don't agree with you.
 
-
->>        task_delta = cfs_rq->h_nr_running;
->> @@ -1843,10 +1843,9 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
->>                cfs_rq->h_nr_running++;
->>
->>                /* end evaluation on throttled cfs_rq */
->> -               if (cfs_rq_throttled(cfs_rq)) {
->> -                       se = NULL;
-> 
-> Hmm..  yeah this is a casualty of moving the h_nr_running computations
-> in-line as a part of the previous refactoring within the last
-> releases.  This optimization (setting se = NULL to skip the second
-> half) obviously won't work properly with detecting whether we made it
-> to the end of the tree.
-> 
-(snip)
-> 
-> How about instead something like the following.  We can actually take
-> advantage of the second loop always executing by deferring the
-> accounting update on a throttle entity.  This keeps the control flow
-> within dequeue_task_fair linear.
-> 
-> What do you think of (untested):
-> 
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -1744,13 +1744,12 @@ enqueue_task_fair(struct rq *rq, struct
-> task_struct *p, int flags)
->                         break;
->                 cfs_rq = cfs_rq_of(se);
->                 enqueue_entity(cfs_rq, se, flags);
-> -               cfs_rq->h_nr_running++;
-> 
-> -               /* end evaluation on throttled cfs_rq */
-> -               if (cfs_rq_throttled(cfs_rq)) {
-> -                       se = NULL;
-> +               /* note: ordering with throttle check to perform
-> h_nr_running accounting on throttled entity below */
-> +               if (cfs_rq_throttled(cfs_rq))
->                         break;
-> -               }
-> +
-> +               cfs_rq->h_nr_running++;
->                 flags = ENQUEUE_WAKEUP;
->         }
-> 
-> @@ -1786,13 +1785,12 @@ static void dequeue_task_fair(struct rq *rq,
-> struct task_struct *p, int flags)
->         for_each_sched_entity(se) {
->                 cfs_rq = cfs_rq_of(se);
->                 dequeue_entity(cfs_rq, se, flags);
-> -               cfs_rq->h_nr_running--;
-> 
-> -               /* end evaluation on throttled cfs_rq */
-> -               if (cfs_rq_throttled(cfs_rq)) {
-> -                       se = NULL;
-> +               /* note: ordering with throttle check to perform
-> h_nr_running accounting on throttled entity below */
-> +               if (cfs_rq_throttled(cfs_rq))
->                         break;
-> -               }
-> +
-> +               cfs_rq->h_nr_running--;
->                 /* Don't dequeue parent if it has other entities besides
-
-Looks good if it abides by the nature of scheduler codes ;-)
-
-
-Thanks,
-H.Seto
-
+                                        Pekka
