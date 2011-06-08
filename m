@@ -1,277 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660Ab1FHSg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 14:36:58 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55481 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab1FHSg5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 14:36:57 -0400
-Date: Wed, 8 Jun 2011 12:36:55 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Margarita Olaya <magi@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, "Girdwood, Liam" <lrg@ti.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: [PATCHv4 3/4][RESEND] tps65912: gpio: add gpio driver
-Message-ID: <20110608183655.GN8499@ponder.secretlab.ca>
-References: <BANLkTim=dbL5pC41whONhT=O9_K8L-V4og@mail.gmail.com>
+	id S1752090Ab1FHShm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 14:37:42 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:43887 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750943Ab1FHShl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 14:37:41 -0400
+Date: Wed, 8 Jun 2011 11:37:19 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] CFQ: use proper locking for cache of last hit cic
+Message-ID: <20110608183719.GD2324@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1307291201.8545.46.camel@t41.thuisdomein>
+ <4DEC441C.9030009@kernel.dk>
+ <1307557130.2783.5.camel@t41.thuisdomein>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTim=dbL5pC41whONhT=O9_K8L-V4og@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1307557130.2783.5.camel@t41.thuisdomein>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 12:42:47PM -0500, Margarita Olaya wrote:
-> TPS65912 has five GPIOs that can be configured for different
-> purposes.
+On Wed, Jun 08, 2011 at 08:18:44PM +0200, Paul Bolle wrote:
+> On Mon, 2011-06-06 at 05:06 +0200, Jens Axboe wrote:
+> > On 2011-06-05 18:26, Paul Bolle wrote:
+> > > @@ -2704,8 +2706,13 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
+> > >  	smp_wmb();
+> > >  	cic->key = cfqd_dead_key(cfqd);
+> > >  
+> > > -	if (ioc->last_cic == cic)
+> > > +	spin_lock_irqsave(&ioc->lock, flags);
+> > > +	rcu_read_lock();
+> > > +	last_cic = rcu_dereference(ioc->last_cic);
+> > > +	rcu_read_unlock();
+> > > +	if (last_cic == cic)
+> > >  		rcu_assign_pointer(ioc->last_cic, NULL);
+> > > +	spin_unlock_irqrestore(&ioc->lock, flags);
+> > 
+> > We don't need the ioc->lock for checking the cache, it would in fact
+> > defeat the purpose of using RCU.
 > 
-> Signed-off-by: Margarita Olaya Cabrera <magi@slimlogic.co.uk>
+> Just to show that I'm RCU-challenged, is that because:
+> 1) my use of locking on ioc->lock defends for a race that is not
+> actually possible; or
+> 2) the worst thing that could happen is that some new and correct value
+> of ioc->last_cic will be replaced with NULL, which is simply not a big
+> deal?
 
-Looks like a good driver.  A few minor comments below, but you can add
-my acked by when they are fixed.
+My likely incorrect guess is that acquiring the lock excludes any
+updates, so that there is no point in the RCU read-side critical
+section.  But I don't claim to understand this code.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
-Since this depends on the earlier patches in the series, it should be
-merged via the mfd tree.
-
-g.
-
-> ---
->  drivers/gpio/Kconfig         |    6 ++
->  drivers/gpio/Makefile        |    1 +
->  drivers/gpio/tps65912-gpio.c |  159 ++++++++++++++++++++++++++++++++++++++++++
-
-drivers/gpio/gpio-tps65912.c
-
->  include/linux/mfd/tps65912.h |    1 +
->  4 files changed, 167 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/gpio/tps65912-gpio.c
+> > But this hunk will clash with the
+> > merged part anyway.
 > 
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index d3b2953..7d79b7d 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -247,6 +247,12 @@ config GPIO_TWL4030
->  	  Say yes here to access the GPIO signals of various multi-function
->  	  power management chips from Texas Instruments.
+> Looking at Paul's feedback I do have a feeling that in your commit
+> (9b50902db5eb8a220160fb89e95aa11967998d12, "cfq-iosched: fix locking
+> around ioc->ioc_data assignment") the line:
+> 	if (rcu_dereference(ioc->ioc_data) == cic) {
 > 
-> +config GPIO_TPS65912
-> +	tristate "TI TPS65912 GPIO"
-> +	depends on (MFD_TPS65912_I2C || MFD_TPS65912_SPI)
-> +	help
-> +	  This driver supports TPS65912 gpio chip
-> +
-
-Nit: keep this file list sorted alphabetically please.
-
->  config GPIO_WM831X
->  	tristate "WM831x GPIOs"
->  	depends on MFD_WM831X
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index becef59..f03ccc4 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -27,6 +27,7 @@ obj-$(CONFIG_GPIO_STMPE)	+= stmpe-gpio.o
->  obj-$(CONFIG_GPIO_TC3589X)	+= tc3589x-gpio.o
->  obj-$(CONFIG_GPIO_TIMBERDALE)	+= timbgpio.o
->  obj-$(CONFIG_GPIO_TWL4030)	+= twl4030-gpio.o
-> +obj-$(CONFIG_GPIO_TPS65912)	+= tps65912-gpio.o
->  obj-$(CONFIG_GPIO_UCB1400)	+= ucb1400_gpio.o
->  obj-$(CONFIG_GPIO_XILINX)	+= xilinx_gpio.o
->  obj-$(CONFIG_GPIO_CS5535)	+= cs5535-gpio.o
-> diff --git a/drivers/gpio/tps65912-gpio.c b/drivers/gpio/tps65912-gpio.c
-> new file mode 100644
-> index 0000000..2be15a2
-> --- /dev/null
-> +++ b/drivers/gpio/tps65912-gpio.c
-> @@ -0,0 +1,159 @@
-> +/*
-> + * tps65912-gpio.c  --	TI TPS6591x
-
-Nit: No need to put the file name in the header block.  A description
-of /what/ the driver is for is generally more useful here.
-
-> + *
-> + * Copyright 2011 Texas Instruments Inc.
-> + *
-> + * Author: Margarita Olaya <magi@slimlogic.co.uk>
-> + *
-> + *  This program is free software; you can redistribute it and/or modify it
-> + *  under  the terms of the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the License, or (at your
-> + *  option) any later version.
-> + *
-> + * This driver is based on wm8350 implementation.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/errno.h>
-> +#include <linux/gpio.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/seq_file.h>
-> +#include <linux/slab.h>
-> +#include <linux/mfd/tps65912.h>
-> +
-> +struct tps65912_gpio_data {
-> +	struct tps65912 *tps65912;
-> +	struct gpio_chip gpio_chip;
-> +};
-> +
-> +static int tps65912_gpio_get(struct gpio_chip *gc, unsigned offset)
-> +{
-> +	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
-> +	int val;
-> +
-> +	val = tps65912_reg_read(tps65912, TPS65912_GPIO1 + offset);
-> +
-> +	if (val & GPIO_STS_MASK)
-> +		return 1;
-> +
-> +	return 0;
-> +}
-> +
-> +static void tps65912_gpio_set(struct gpio_chip *gc, unsigned offset,
-> +			      int value)
-> +{
-> +	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
-> +
-> +	if (value)
-> +		tps65912_set_bits(tps65912, TPS65912_GPIO1 + offset,
-> +							GPIO_SET_MASK);
-> +	else
-> +		tps65912_clear_bits(tps65912, TPS65912_GPIO1 + offset,
-> +								GPIO_SET_MASK);
-> +}
-> +
-> +static int tps65912_gpio_output(struct gpio_chip *gc, unsigned offset,
-> +				int value)
-> +{
-> +	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
-> +
-> +	/* Set the initial value */
-> +	tps65912_gpio_set(gc, offset, value);
-> +
-> +	return tps65912_set_bits(tps65912, TPS65912_GPIO1 + offset,
-> +								GPIO_CFG_MASK);
-> +}
-> +
-> +static int tps65912_gpio_input(struct gpio_chip *gc, unsigned offset)
-> +{
-> +	struct tps65912 *tps65912 = container_of(gc, struct tps65912, gpio);
-> +
-> +	return tps65912_clear_bits(tps65912, TPS65912_GPIO1 + offset,
-> +								GPIO_CFG_MASK);
-> +
-> +}
-> +
-> +static struct gpio_chip template_chip = {
-
-const?
-
-> +	.label			= "tps65912",
-> +	.owner			= THIS_MODULE,
-> +	.direction_input	= tps65912_gpio_input,
-> +	.direction_output	= tps65912_gpio_output,
-> +	.get			= tps65912_gpio_get,
-> +	.set			= tps65912_gpio_set,
-> +	.can_sleep		= 1,
-> +};
-> +
-> +static int __devinit tps65912_gpio_probe(struct platform_device *pdev)
-> +{
-> +	struct tps65912 *tps65912 = dev_get_drvdata(pdev->dev.parent);
-> +	struct tps65912_board *pdata = tps65912->dev->platform_data;
-> +	struct tps65912_gpio_data *tps65912_gpio;
-> +	int ret;
-> +
-> +	tps65912_gpio = kzalloc(sizeof(*tps65912_gpio), GFP_KERNEL);
-> +	if (tps65912_gpio == NULL)
-> +		return -ENOMEM;
-> +
-> +	tps65912_gpio->tps65912 = tps65912;
-> +	tps65912_gpio->gpio_chip = template_chip;
-> +	tps65912_gpio->gpio_chip.ngpio = 5;
-
-Should gpio_chip.ngpio also be in the template chip?
-
-> +	tps65912_gpio->gpio_chip.dev = &pdev->dev;
-> +	if (pdata && pdata->gpio_base)
-> +		tps65912_gpio->gpio_chip.base = pdata->gpio_base;
-> +	else
-> +		tps65912_gpio->gpio_chip.base = -1;
-
-Ditto for the default value of gpio_chip.base.
-
-> +
-> +	ret = gpiochip_add(&tps65912_gpio->gpio_chip);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "Failed to register gpiochip, %d\n", ret);
-> +		goto err;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, tps65912_gpio);
-> +
-> +	return ret;
-> +
-> +err:
-> +	kfree(tps65912_gpio);
-> +	return ret;
-> +}
-> +
-> +static int __devexit tps65912_gpio_remove(struct platform_device *pdev)
-> +{
-> +	struct tps65912_gpio_data  *tps65912_gpio = platform_get_drvdata(pdev);
-> +	int ret;
-> +
-> +	ret = gpiochip_remove(&tps65912_gpio->gpio_chip);
-> +	if (ret == 0)
-> +		kfree(tps65912_gpio);
-> +
-> +	return ret;
-> +}
-> +
-> +static struct platform_driver tps65912_gpio_driver = {
-> +	.driver = {
-> +		.name = "tps65912-gpio",
-> +		.owner = THIS_MODULE,
-> +	},
-> +	.probe = tps65912_gpio_probe,
-> +	.remove = __devexit_p(tps65912_gpio_remove),
-> +};
-> +
-> +static int __init tps65912_gpio_init(void)
-> +{
-> +	return platform_driver_register(&tps65912_gpio_driver);
-> +}
-> +subsys_initcall(tps65912_gpio_init);
-> +
-> +static void __exit tps65912_gpio_exit(void)
-> +{
-> +	platform_driver_unregister(&tps65912_gpio_driver);
-> +}
-> +module_exit(tps65912_gpio_exit);
-> +
-> +MODULE_AUTHOR("Margarita Olaya Cabrera <magi@slimlogic.co.uk>");
-> +MODULE_DESCRIPTION("GPIO interface for TPS65912 PMICs");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:tps65912-gpio");
-> diff --git a/include/linux/mfd/tps65912.h b/include/linux/mfd/tps65912.h
-> index be60fb2..aaceab4 100644
-> --- a/include/linux/mfd/tps65912.h
-> +++ b/include/linux/mfd/tps65912.h
-> @@ -275,6 +275,7 @@ struct tps65912_board {
->  	int is_dcdc4_avs;
->  	int irq;
->  	int irq_base;
-> +	int gpio_base;
->  	struct regulator_init_data *tps65912_pmic_init_data;
->  };
+> could actually be replaced with:
+> 	if (rcu_access_pointer(ioc->ioc_data) == cic) {
 > 
-> -- 
-> 1.7.0.4
+> Is that correct?
+
+If you are not actually dereferencing the pointer, then yes, you
+can use rcu_access_pointer() instead of rcu_dereference().  In
+this case, the pointer is being compared against, not dereferenced,
+so rcu_access_pointer() should do it.
+
+							Thanx, Paul
+
+> > [...]
+> > See Pauls comment on this part.
+> 
+> You seem to be offline right now. When you're back online, could you
+> please say whether or not you accept the two renaming patches that you
+> have rejected a few days ago (and for which I gave some follow up
+> arguments)? After that I'll send an update to this patch (and its commit
+> message) to reflect Paul's review and your review.
+> 
+> 
+> Paul Bolle
+> 
