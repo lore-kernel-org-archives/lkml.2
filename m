@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab1FHK0t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:26:49 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:34876 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755108Ab1FHK0r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:26:47 -0400
-Date: Wed, 8 Jun 2011 12:26:43 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Dave Airlie <airlied@redhat.com>,
-        Marek =?utf-8?B?T2zFocOhaw==?= <maraeo@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Latest merge of 'drm-radeon-fixes' breaks my setup
-Message-ID: <20110608102643.GA1711@x4.trippels.de>
-References: <20110608054002.GA1717@x4.trippels.de>
- <20110608054354.GA1717@x4.trippels.de>
- <BANLkTinfn82C3TjPxzZuD+v=F+uCx8pmyg@mail.gmail.com>
+	id S1755466Ab1FHK2i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:28:38 -0400
+Received: from r00tworld.com ([212.85.137.150]:40304 "EHLO r00tworld.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754179Ab1FHK2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 06:28:37 -0400
+From: pageexec@freemail.hu
+To: Andi Kleen <andi@firstfloor.org>
+Date: Wed, 08 Jun 2011 12:26:49 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTinfn82C3TjPxzZuD+v=F+uCx8pmyg@mail.gmail.com>
+Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
+Reply-to: pageexec@freemail.hu
+CC: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Message-ID: <4DEF4E69.14274.1C44F04F@pageexec.freemail.hu>
+In-reply-to: <20110608100612.GJ27166@one.firstfloor.org>
+References: <20110608091120.GI27166@one.firstfloor.org>, <4DEF424F.2351.1C15AD40@pageexec.freemail.hu>, <20110608100612.GJ27166@one.firstfloor.org>
+X-mailer: Pegasus Mail for Windows (4.61)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Wed, 08 Jun 2011 12:27:27 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.06.08 at 20:09 +1000, Dave Airlie wrote:
-> On Wed, Jun 8, 2011 at 3:43 PM, Markus Trippelsdorf
-> <markus@trippelsdorf.de> wrote:
-> > On 2011.06.08 at 07:40 +0200, Markus Trippelsdorf wrote:
-> >> The merge of the 'drm-radeon' branch by Linus yesterday breaks my setup
-> >> (RS780). The mouse cursor is just a black block suddenly and I see an
-> >> endless stream of:
-> >>  radeon 0000:01:05.0: r600_check_texture_resource:1338 texture invalid format 26
-> >>  [drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
+On 8 Jun 2011 at 12:06, Andi Kleen wrote:
+
+> > eventually may even go away as time progresses and
+> > linux systems begin to fully rely on the vdso instead.
 > 
-> This is wierd, can you try the attached patch, it appears this
-> uncovered another bug.
+> That assumes that everyone uses glibc and also updates their userland. 
+> As pointed out many times that's a deeply flawed assumption.
 
-Yes, your patch fixes the problem. Thanks Dave.
+i think the assumption is not that everyone uses glibc but that everyone
+else (as in, every other libc) can simply take the necessary changes from
+glibc, provided they need such changes at all (i.e., they're using the
+vsyscall entry points over the vdso ones).
 
--- 
-Markus
+i frankly didn't check any of the alternatives myself (uclibc/klibc/bionic/etc)
+but i can't imagine that it'd be that much harder to patch them than glibc.
+
+as i said, this was a compromise solution but then i think you already made
+it clear that you didn't even think there was a problem here to solve, so i
+guess we should work that out first, if you want to ;).
+
