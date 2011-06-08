@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940Ab1FHUpk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 16:45:40 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:39064 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754127Ab1FHUpi (ORCPT
+	id S1755100Ab1FHUrm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 16:47:42 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27040 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754417Ab1FHUrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 16:45:38 -0400
-X-Authenticated: #1226656
-X-Provags-ID: V01U2FsdGVkX19jI2JdD2JjA53SQmBALmIYVCRjo65lzZzHSOxjlN
-	0cMyPRG8uqkFXm
-Date: Wed, 8 Jun 2011 22:45:27 +0200
-From: Marc Giger <gigerstyle@gmx.ch>
-To: linux-kernel@vger.kernel.org
-Subject: Disabling SATA Link Power Management (LPM) in GRUB
-Message-ID: <20110608224527.21d2d911@mgi.gigerstyle.ch>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 8 Jun 2011 16:47:41 -0400
+Message-ID: <4DEFDFB5.3030706@kernel.org>
+Date: Wed, 08 Jun 2011 13:46:45 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+References: <20110608192950.GA29235@srcf.ucam.org> <4DEFCF1A.9030400@kernel.org> <20110608193833.GA29855@srcf.ucam.org> <4DEFD220.5040507@kernel.org> <20110608195250.GB30256@srcf.ucam.org> <4DEFD58D.5060402@kernel.org> <20110608200903.GA30694@srcf.ucam.org> <4DEFDA4A.9080500@kernel.org> <20110608203037.GA31052@srcf.ucam.org> <4DEFDD69.7010000@kernel.org> <20110608204244.GA31484@srcf.ucam.org>
+In-Reply-To: <20110608204244.GA31484@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4DEFDFBC.0072,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Kernel Devs,
+On 06/08/2011 01:42 PM, Matthew Garrett wrote:
+> On Wed, Jun 08, 2011 at 01:36:57PM -0700, Yinghai Lu wrote:
+> 
+>> or just let bootloader to mark those boot services just like run-time services in e820 table or setupdata?
+> 
+> That was my original approach, but if there's boot services code at the 
+> top of RAM it means that max_pfn is wrong and it's difficult to recover 
+> the memory.
 
-I spent my Samsung RF511 Notebook a OCZ Vertex III SSD. Unfortunately
-there seems to be an incompatibility between these. Samsung is not
-willing to help me, because they won't support foreign Hard- (OCZ SSD)
-and Software (Linux).
+not all boot services ram.  just those are called by run-time services code.
 
-I've found the following forum entries which I think is the problem.
- 
-http://www.ocztechnologyforum.com/forum/showthread.php?88340-Vertex-3-Windows-install-in-AHCI-mode-on-Intel-6-series-Chipset-platforms
-
-http://www.ocztechnologyforum.com/forum/showthread.php?88630-Vertex-3-problem-booting-windows-7-with-HM65-Sandybride-chips-%28Laptops%29/page3
-
-It seems because of this GRUB has problem loading the stages from the
-disk in my case.
-
-So my question are:
-
-1. Does this make sense to you? Is it possible that it could be the
-reason?
-2. Can the problem be solved when I implement a hack into GRUB to
-disable the LPM before the stages are loaded from disk?
-3. What are the implementation steps which must be done? When I
-understand the code in the kernel correctly, the registers are
-written over memory mapped areas. Can it be done without mmio?
-
-Thanks a lot!
-
-Kind Regards
-
-Marc
-
-
--- 
-Lesson 1: Cryptographic protocols should not be developed by a
-committee. -- Niels Ferguson and Bruce Schneier --
+Yinghai
