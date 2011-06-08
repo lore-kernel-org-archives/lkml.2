@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660Ab1FHQWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 12:22:19 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:33220 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751230Ab1FHQWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 12:22:17 -0400
-Date: Wed, 8 Jun 2011 18:21:52 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Stratos Psomadakis <psomas@ece.ntua.gr>
-Cc: Matt Mackall <mpm@selenic.com>, david@lang.hm,
-        linux-kernel@vger.kernel.org,
-        Frank Kingswood <frank@kingswood-consulting.co.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ketchup script and 3.0
-Message-ID: <20110608182152.0cbbc74c@schatten.dmk.lab>
-In-Reply-To: <4DEE9695.7060805@ece.ntua.gr>
-References: <4DEDD5F4.1070602@kingswood-consulting.co.uk>
-	<1307451186.4204.953.camel@calx>
-	<4DEE808D.6020405@ece.ntua.gr>
-	<1307477435.4204.968.camel@calx>
-	<4DEE8AD9.3050508@ece.ntua.gr>
-	<1307479572.4204.977.camel@calx>
-	<alpine.DEB.2.02.1106071349000.28905@asgard.lang.hm>
-	<1307480372.4204.987.camel@calx>
-	<4DEE9695.7060805@ece.ntua.gr>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752106Ab1FHQc6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 12:32:58 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:52548 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751741Ab1FHQcy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 12:32:54 -0400
+X-Sasl-enc: FBpceo/h1UTo5JxqegItgXVlN4M69WAmZoaoj5A4WlxI 1307550773
+Date: Wed, 8 Jun 2011 09:22:22 -0700
+From: Greg KH <greg@kroah.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>
+Subject: Re: [PATCH 12/49] Staging: hv: storvsc: Add a DMI signature to
+ support auto-loading
+Message-ID: <20110608162222.GF21645@kroah.com>
+References: <1307400540-13193-1-git-send-email-kys@microsoft.com>
+ <1307400613-13234-1-git-send-email-kys@microsoft.com>
+ <1307400613-13234-12-git-send-email-kys@microsoft.com>
+ <20110606231259.GA18222@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0480813D84D@TK5EX14MBXC122.redmond.corp.microsoft.com>
+ <20110607185813.GA3531@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0480813DD09@TK5EX14MBXC122.redmond.corp.microsoft.com>
+ <20110607222444.GA26968@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0480813DFC1@TK5EX14MBXC122.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0480813DFC1@TK5EX14MBXC122.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Jun 2011 00:22:29 +0300
-Stratos Psomadakis <psomas@ece.ntua.gr> wrote:
-
-> On 06/07/2011 11:59 PM, Matt Mackall wrote:
-> > On Tue, 2011-06-07 at 13:50 -0700, david@lang.hm wrote:
-> >> On Tue, 7 Jun 2011, Matt Mackall wrote:
-> >>
-> >>> But my point is that if we have adhoc transitions, we will encounter the
-> >>> "fix all the scripts and websites" pain at every transition. And tools
-> >>> that are managed via distros and the like can literally take years to
-> >>> get into the hands of users. It'd be nice if the copy of ketchup shipped
-> >>> in <enterprise distro> just worked 3 years from now because 4.0 wasn't a
-> >>> surprise.
-> >> if you special case 2.4->2.6, and make the default that 4.0 > 3.x, 5.0 > 
-> >> 4.x, etc won't things 'just work' for the forseeable future?
-> > No, because you sometimes want to know what 2.6.39++ is and what 3.0--
-> > is.
-> >
-> > For instance, to upgrade from 2.6.37.2 to 3.1.2, ketchup will want to
-> > download, cache, and apply:
-> >
-> > patch-2.6.37.2 (reversed!)
-> > patch-2.6.38
-> > patch-2.6.39
-> > patch-3.0 ?? <- hopefully Linus will make a delta against 2.6.39!
-> > patch-3.1
-> > patch-3.1.2
-> Well, if this is a ketchup-only issue (and there's no other need for
-> defining at which point major numbers are going to inc), we could find a
-> solution/workaround (to future-proof it, without the need of constant
-> updating of the code with every major release), but it'll probably be
-> uglier, and I think that what Matt proposed is better.
+On Wed, Jun 08, 2011 at 02:44:35AM +0000, KY Srinivasan wrote:
+> > On Tue, Jun 07, 2011 at 10:19:06PM +0000, KY Srinivasan wrote:
+> > > Thanks Greg. Can you give me some pointers here as to what needs to be
+> > > done here. Looking at the code for virtio, it looks like I would need to add stuff
+> > > to scripts/mod/file2alias.c as well as to include/linux/mod_devicetable.h. Will
+> > you
+> > > accept patches for these files to support an ID space for Hyper-V vmbus drivers.
+> > 
+> > Yes, I will take patches for those files to implement this.
+> > 
+> > Along with those files, you also need a way to tell userspace that new
+> > UIDS are found before the individual drivers are loaded.  Hopefully you
+> > can do that now, but if not, it will need to be implemented.
 > 
-> Anyway, when this issue is clarified, I'll try to fix the code, in order
-> to handle next major releases, without requiring code changes.
-> 
-> Thanks,
-> 
+> Could you elaborate on what user level changes I will have to do.
 
-Well, what I would do is to somehow get kernel.org to generate a
-tag-list from git, append '-release' to the tag names which do not end
-in '-rc[0-9]+' and then sort this list alphanumerical and just let
-that be the first thing ketchup downloads. 
+It's all kernel code, but you need to be emiting "device found" messages
+to userspace through the hotplug bus event when you find the devices.
+Just fill in the correct fields in your hotplug callback and you should
+be fine.
 
-Regards,
-Flo
+Look at the PCI bus hotplug callback as an example of what is needed if
+you need an example.
+
+hope this helps,
+
+greg k-h
