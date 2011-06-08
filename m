@@ -1,124 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758181Ab1FHAZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 20:25:21 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55170 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab1FHAZQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 20:25:16 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 8 Jun 2011 09:18:15 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v8 11/12] writeback: make background writeback cgroup
- aware
-Message-Id: <20110608091815.fdef924d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110607210540.GB30919@redhat.com>
-References: <1307117538-14317-1-git-send-email-gthelen@google.com>
-	<1307117538-14317-12-git-send-email-gthelen@google.com>
-	<20110607193835.GD26965@redhat.com>
-	<xr93lixdv0df.fsf@gthelen.mtv.corp.google.com>
-	<20110607210540.GB30919@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755280Ab1FHAqE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 20:46:04 -0400
+Received: from ozlabs.org ([203.10.76.45]:54925 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754013Ab1FHAqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 20:46:01 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
+Cc: Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shirley Ma <xma@us.ibm.com>, lguest@lists.ozlabs.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-s390@vger.kernel.org, kvm@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        Tom Lendacky <tahm@linux.vnet.ibm.com>, steved@us.ibm.com,
+        habanero@linux.vnet.ibm.com
+Subject: Re: [PATCHv2 RFC 4/4] Revert "virtio: make add_buf return capacity remaining:
+In-Reply-To: <20110607155457.GA17436@redhat.com>
+References: <cover.1307029008.git.mst@redhat.com> <7572d6fb81181e349af4a8b203ea0977f6e91ae1.1307029009.git.mst@redhat.com> <20110607155457.GA17436@redhat.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Wed, 08 Jun 2011 09:49:56 +0930
+Message-ID: <877h8xgonn.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Jun 2011 17:05:40 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
-
-> On Tue, Jun 07, 2011 at 01:43:08PM -0700, Greg Thelen wrote:
-> > Vivek Goyal <vgoyal@redhat.com> writes:
+On Tue, 7 Jun 2011 18:54:57 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Thu, Jun 02, 2011 at 06:43:25PM +0300, Michael S. Tsirkin wrote:
+> > This reverts commit 3c1b27d5043086a485f8526353ae9fe37bfa1065.
+> > The only user was virtio_net, and it switched to
+> > min_capacity instead.
 > > 
-> > > On Fri, Jun 03, 2011 at 09:12:17AM -0700, Greg Thelen wrote:
-> > >> When the system is under background dirty memory threshold but a cgroup
-> > >> is over its background dirty memory threshold, then only writeback
-> > >> inodes associated with the over-limit cgroup(s).
-> > >> 
-> > >
-> > > [..]
-> > >> -static inline bool over_bground_thresh(void)
-> > >> +static inline bool over_bground_thresh(struct bdi_writeback *wb,
-> > >> +				       struct writeback_control *wbc)
-> > >>  {
-> > >>  	unsigned long background_thresh, dirty_thresh;
-> > >>  
-> > >>  	global_dirty_limits(&background_thresh, &dirty_thresh);
-> > >>  
-> > >> -	return (global_page_state(NR_FILE_DIRTY) +
-> > >> -		global_page_state(NR_UNSTABLE_NFS) > background_thresh);
-> > >> +	if (global_page_state(NR_FILE_DIRTY) +
-> > >> +	    global_page_state(NR_UNSTABLE_NFS) > background_thresh) {
-> > >> +		wbc->for_cgroup = 0;
-> > >> +		return true;
-> > >> +	}
-> > >> +
-> > >> +	wbc->for_cgroup = 1;
-> > >> +	wbc->shared_inodes = 1;
-> > >> +	return mem_cgroups_over_bground_dirty_thresh();
-> > >>  }
-> > >
-> > > Hi Greg,
-> > >
-> > > So all the logic of writeout from mem cgroup works only if system is
-> > > below background limit. The moment we cross background limit, looks
-> > > like we will fall back to existing way of writting inodes?
-> > 
-> > Correct.  If the system is over its background limit then the previous
-> > cgroup-unaware background writeback occurs.  I think of the system
-> > limits as those of the root cgroup.  If the system is over the global
-> > limit than all cgroups are eligible for writeback.  In this situation
-> > the current code does not distinguish between cgroups over or under
-> > their dirty background limit.
-> > 
-> > Vivek Goyal <vgoyal@redhat.com> writes:
-> > > If yes, then from design point of view it is little odd that as long
-> > > as we are below background limit, we share the bdi between different
-> > > cgroups. The moment we are above background limit, we fall back to
-> > > algorithm of sharing the disk among individual inodes and forget
-> > > about memory cgroups. Kind of awkward.
-> > >
-> > > This kind of cgroup writeback I think will atleast not solve the problem
-> > > for CFQ IO controller, as we fall back to old ways of writting back inodes
-> > > the moment we cross dirty ratio.
-> > 
-> > It might make more sense to reverse the order of the checks in the
-> > proposed over_bground_thresh(): the new version would first check if any
-> > memcg are over limit; assuming none are over limit, then check global
-> > limits.  Assuming that the system is over its background limit and some
-> > cgroups are also over their limits, then the over limit cgroups would
-> > first be written possibly getting the system below its limit.  Does this
-> > address your concern?
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 > 
-> Do you treat root group also as any other cgroup? If no, then above logic
-> can lead to issue of starvation of root group inode. Or unfair writeback.
-> So I guess it will be important to treat root group same as other groups.
+> It turns out another place in virtio_net: receive
+> buf processing - relies on the old behaviour:
 > 
+> try_fill_recv:
+> 	do {
+> 		if (vi->mergeable_rx_bufs)
+> 			err = add_recvbuf_mergeable(vi, gfp);
+> 		else if (vi->big_packets)
+> 			err = add_recvbuf_big(vi, gfp);
+> 		else
+> 			err = add_recvbuf_small(vi, gfp);
+> 
+> 		oom = err == -ENOMEM;
+> 		if (err < 0)
+> 			break;
+> 		++vi->num;
+> 	} while (err > 0);
+> 
+> The point is to avoid allocating a buf if
+> the ring is out of space and we are sure
+> add_buf will fail.
+> 
+> It works well for mergeable buffers and for big
+> packets if we are not OOM. small packets and
+> oom will do extra get_page/put_page calls
+> (but maybe we don't care).
+> 
+> So this is RX, I intend to drop it from this patchset and focus on the
+> TX side for starters.
 
-As far as I can say, you should not place programs onto ROOT cgroups if you need
-performance isolation. 
+We could do some hack where we get the capacity, and estimate how many
+packets we need to fill it, then try to do that many.
 
->From the code, I think if the system hits dirty_ratio, "1" bit of bitmap should be
-set and background writeback can work for ROOT cgroup seamlessly.
+I say hack, because knowing whether we're doing indirect buffers is a
+layering violation.  But that's life when you're trying to do
+microoptimizations.
 
-Thanks,
--Kame
-
+Cheers,
+Rusty.
