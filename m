@@ -1,116 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab1FHMdc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 08:33:32 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:37998 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab1FHMdb (ORCPT
+	id S1753323Ab1FHMho (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 08:37:44 -0400
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:8356
+	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751992Ab1FHMhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 08:33:31 -0400
-Date: Wed, 8 Jun 2011 14:33:35 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Andy Lutomirski <luto@MIT.EDU>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 2/5] x86-64: Allow alternative patching in the vDSO
-Message-ID: <20110608123335.GA21548@gere.osrc.amd.com>
-References: <cover.1307474707.git.luto@mit.edu>
- <9f34abb8ee488207e6b1cc2972eee81a4e612a0d.1307474707.git.luto@mit.edu>
+	Wed, 8 Jun 2011 08:37:43 -0400
+X-SpamScore: -21
+X-BigFish: VPS-21(zz936eK1432N98dKzz1202hzz15d4R8275bhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LMH1QM-01-5B4-02
+X-M-MSG: 
+Date: Wed, 8 Jun 2011 14:37:58 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] dma-debug: print some unfreed allocations
+Message-ID: <20110608123758.GB21591@amd.com>
+References: <1305052944.3544.8.camel@jlt3.sipsolutions.net>
+ <1305118077.3416.5.camel@jlt3.sipsolutions.net>
+ <20110516110029.GC31309@amd.com>
+ <1305758908.8827.3.camel@jlt3.sipsolutions.net>
+ <20110519081931.GM31309@amd.com>
+ <1305909418.4640.13.camel@jlt3.sipsolutions.net>
+ <20110523123508.GC27867@amd.com>
+ <1307531016.3961.5.camel@jlt3.sipsolutions.net>
+ <20110608121608.GA21591@amd.com>
+ <1307536007.30277.0.camel@jlt3.sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <9f34abb8ee488207e6b1cc2972eee81a4e612a0d.1307474707.git.luto@mit.edu>
+In-Reply-To: <1307536007.30277.0.camel@jlt3.sipsolutions.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 07, 2011 at 03:32:39PM -0400, Andy Lutomirski wrote:
-> This code is short enough and different enough from the module
-> loader that it's not worth trying to share anything.
+On Wed, Jun 08, 2011 at 08:26:47AM -0400, Johannes Berg wrote:
+> On Wed, 2011-06-08 at 14:16 +0200, Roedel, Joerg wrote:
 > 
-> Signed-off-by: Andy Lutomirski <luto@mit.edu>
-> ---
->  arch/x86/vdso/vma.c |   32 ++++++++++++++++++++++++++++++++
->  1 files changed, 32 insertions(+), 0 deletions(-)
+> > > I see something similar was merged printing just the first one (and
+> > > without stack trace it seems?). Are you still interested in this?
+> > 
+> > Sure, still interested. The code which prints out the first entry has
+> > been around for some time, its nothing new afaik.
 > 
-> diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-> index 7abd2be..b8b074c1 100644
-> --- a/arch/x86/vdso/vma.c
-> +++ b/arch/x86/vdso/vma.c
-> @@ -23,11 +23,43 @@ extern unsigned short vdso_sync_cpuid;
->  static struct page **vdso_pages;
->  static unsigned vdso_size;
->  
-> +static void patch_vdso(void *vdso, size_t len)
-> +{
-> +	Elf64_Ehdr *hdr = vdso;
-> +	Elf64_Shdr *sechdrs, *alt_sec = 0;
-> +	char *secstrings;
-> +	void *alt_data;
-> +	int i;
-> +
-> +	BUG_ON(len < sizeof(Elf64_Ehdr));
-> +	BUG_ON(memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0);
-> +
-> +	sechdrs = (void *)hdr + hdr->e_shoff;
-> +	secstrings = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
-> +
-> +	for (i = 1; i < hdr->e_shnum; i++) {
-> +		Elf64_Shdr *shdr = &sechdrs[i];
-> +		if (!strcmp(secstrings + shdr->sh_name, ".altinstructions")) {
-> +			alt_sec = shdr;
-> +			break;
-> +		}
-> +	}
-> +
-> +	if (!alt_sec)
-> +		return;  /* nothing to patch */
+> Ok. I was thinking of 
+> commit ba4b87ad5497cba555954885db99c99627f93748
+> Author: Stanislaw Gruszka <sgruszka@redhat.com>
+> Date:   Thu Mar 31 08:08:09 2011 -0400
+> 
+>     dma-debug: print information about leaked entry
+> 
+> which is fairly recent, recent enough that my original patch no longer
+> applied anyway :-)
 
-Just a minor nitpick:
+Ah, okay. I thought this change was older :-)
 
-Maybe do
-
-	for (.. ) {
-
-		if (!strcmp(...)) {
-			alt_sec = shdr;
-			goto apply;
-		}
-	}
-	return;
-
-apply:
-
-to save yourself the if (!alt_sec) test and the alt_sec = 0 aka NULL
-assignment above.
-
-> +
-> +	alt_data = (void *)hdr + alt_sec->sh_offset;
-> +
-> +	apply_alternatives(alt_data, alt_data + alt_sec->sh_size);
-> +}
-> +
->  static int __init init_vdso_vars(void)
->  {
->  	int npages = (vdso_end - vdso_start + PAGE_SIZE - 1) / PAGE_SIZE;
->  	int i;
->  
-> +	patch_vdso(vdso_start, vdso_end - vdso_start);
-> +
->  	vdso_size = npages << PAGE_SHIFT;
->  	vdso_pages = kmalloc(sizeof(struct page *) * npages, GFP_KERNEL);
->  	if (!vdso_pages)
-> -- 
-> 1.7.5.2
-
-Thanks.
+	Joerg
 
 -- 
-Regards/Gruss,
-Boris.
+AMD Operating System Research Center
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
 General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
