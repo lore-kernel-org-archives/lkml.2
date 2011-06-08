@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448Ab1FHQUS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 12:20:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35519 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab1FHQUP (ORCPT
+	id S1751983Ab1FHQcy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 12:32:54 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:54263 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750885Ab1FHQcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 12:20:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=uWglpkYGcYKvXdnVhoFf5mFWx6MgysN5BRXizrfYXyPax/5U2mAgSZnnBI7ASw+MWu
-         NKX5I9Lk67PGBwCU+WLKld57Jit8yoz4cXjp5l5VcMOJ/1AyJf274xoGJ8XWyLj/jVRo
-         Pl1HlB2TwTwGmpDdqh5t7w3bzvk4lkp2kOudI=
+	Wed, 8 Jun 2011 12:32:52 -0400
+X-Sasl-enc: wDxnHt55vEY0vmIq6URQRc7B+4AkUIDVy1tGWZhuKY3g 1307550771
+Date: Wed, 8 Jun 2011 09:21:05 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "Igor M. Liplianin" <liplianin@netup.ru>
+Subject: Re: linux-next: build failure after merge of the staging.current tree
+Message-ID: <20110608162105.GE21645@kroah.com>
+References: <20110608114130.444a7f99.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikfMJP70pWO5RQ1qyf=SU6WUwDUQw@mail.gmail.com>
-References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net>
- <alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com>
- <BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com> <alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com>
- <BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com> <alpine.LFD.2.00.1106081716200.6609@dhcp-27-109.brq.redhat.com>
- <BANLkTikfMJP70pWO5RQ1qyf=SU6WUwDUQw@mail.gmail.com>
-From: Mike Snitzer <snitzer@redhat.com>
-Date: Wed, 8 Jun 2011 12:19:53 -0400
-X-Google-Sender-Auth: UFEcR3LbLAXxYyBoIqGkUopnMpo
-Message-ID: <BANLkTikZh5W3YBinhern54VtwUsu7aT91g@mail.gmail.com>
-Subject: Re: [PATCH v1 00/30] Ext4 snapshots
-To: "Amir G." <amir73il@users.sourceforge.net>
-Cc: Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
-        tytso@mit.edu, linux-kernel@vger.kernel.org, sandeen@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110608114130.444a7f99.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 8, 2011 at 11:59 AM, Amir G. <amir73il@users.sourceforge.net> wrote:
-> On Wed, Jun 8, 2011 at 6:38 PM, Lukas Czerner <lczerner@redhat.com> wrote:
->> Amir said:
+On Wed, Jun 08, 2011 at 11:41:30AM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the staging.current tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/media/video/cx23885/cx23885-cards.c:28:28: fatal error: staging/altera.h: No such file or directory
+> 
+> Caused by commit 85ab9ee946da ("Staging: altera: move .h file to proper
+> place").
 
->>> The question of whether the world needs ext4 snapshots is
->>> perfectly valid, but going back to the food analogy, I think it's
->>> a case of "the proof of the pudding is in the eating".
->>> I have no doubt that if ext4 snapshots are merged, many people will use it.
->>
->> Well, I would like to have your confidence. Why do you think so ? They
->> will use it for what ? Doing backups ? We can do this easily with LVM
->> without any risk of compromising existing filesystem at all. On desktop
->
-> LVM snapshots are not meant to be long lived snapshots.
-> As temporary snapshots they are fine, but with ext4 snapshots
-> you can easily retain monthly/weekly snapshots without the
-> need to allocate the space for it in advance and without the
-> 'vanish' quality of LVM snapshots.
+Now resolved, it should be fine for you to pull from for the next
+linux-next release.
 
-In that old sf.net wiki you say:
-Why use Next3 snapshots and not LVM snapshots?
-* Performance: only small overhead to write performance with snapshots
-
-Fair claim against current LVM snapshot (but not multisnap).
-
-In this thread you're being very terse on the performance hit you
-assert multisnap has that ext4 snapshots does not.  Can you please be
-more specific?
-
-In your most recent post it seems you're focusing on "LVM snapshots"
-and attributing the deficiencies of old-style LVM snapshots
-(non-shared exception store causing N-way copy-out) to dm-multisnap?
-
-Again, nobody will dispute that the existing dm-snapshot target has
-poor performance that requires snapshots be short-lived.  But
-multisnap does _not_ suffer from those performance problems.
-
-Mike
+greg k-h
