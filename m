@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab1FHHQp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 03:16:45 -0400
-Received: from smtp.nokia.com ([147.243.1.48]:24449 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751815Ab1FHHQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 03:16:43 -0400
-Subject: Re: [RFC PATCHv4 0/7] HSI framework and drivers
-From: Carlos Chinea <carlos.chinea@nokia.com>
-To: ext Sebastian Reichel <sre@debian.org>
-Cc: ext Linus Walleij <linus.walleij@linaro.org>,
-        Govindraj <govindraj.ti@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        pawel.szyszuk@stericsson.com
-In-Reply-To: <20110607150910.GA3780@earth.universe>
-References: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
-	 <AANLkTimTfOyhDR6BsHD_1VvzOPGbYqo6L784wPkQMi_8@mail.gmail.com>
-	 <1300787404.8008.116.camel@groo>
-	 <BANLkTincpt8ojK8icvXz4XfkWL9z87VmUA@mail.gmail.com>
-	 <BANLkTikrXb7h_iG+xOvFPozT6w5Nj8nJKw@mail.gmail.com>
-	 <1305621553.24348.5009.camel@groo>  <20110607150910.GA3780@earth.universe>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Jun 2011 10:12:45 +0300
-Message-ID: <1307517165.2819.33110.camel@groo>
+	id S1754358Ab1FHHSW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 03:18:22 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38412 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751839Ab1FHHSV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 03:18:21 -0400
+Date: Wed, 08 Jun 2011 00:16:12 -0700 (PDT)
+Message-Id: <20110608.001612.225121497206099693.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, adobriyan@gmail.com
+Subject: Re: linux-next: build failure after merge of the final tree (net
+ tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110608155411.c3a2aa09.sfr@canb.auug.org.au>
+References: <20110608155411.c3a2aa09.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 08 Jun 2011 00:16:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 8 Jun 2011 15:54:11 +1000
 
-On Tue, 2011-06-07 at 17:09 +0200, ext Sebastian Reichel wrote:
-> On Tue, May 17, 2011 at 11:39:13AM +0300, Carlos Chinea wrote:
-> > We are still committed to these patches. We are aiming to release a new
-> > version in 3 weeks max, sooner if we can.
-> > 
-> > I am very sorry for the delay and I agree that starting to have several
-> > out-of-tree drivers is not acceptable. I'll try my best to fix this
-> > asap.
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
 > 
-> Do you also plan to add the platform code for rx51 to the mainline
-> kernel?
+> drivers/net/ll_temac_main.c: In function 'temac_open':
+> drivers/net/ll_temac_main.c:859:2: error: implicit declaration of function 'request_irq'
+> drivers/net/ll_temac_main.c:870:2: error: implicit declaration of function 'free_irq'
+> drivers/net/ll_temac_main.c: In function 'temac_poll_controller':
+> drivers/net/ll_temac_main.c:903:2: error: implicit declaration of function 'disable_irq'
+> drivers/net/ll_temac_main.c:909:2: error: implicit declaration of function 'enable_irq'
 
-Not yet in this patch set. If the HSI framework makes it into the
-kernel, then I will try to push a couple of new HSI clients needed for
-rx51 and the platform related code.
+Oh well, I hit all the drivers I could with x86 and sparc64 builds.
 
+> Probably caused by commit a6b7a407865a ("net: remove interrupt.h
+> inclusion from netdevice.h").
 > 
-> P.S.: 3 weeks are over today :)
+> I have added this patch for today:
 > 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 8 Jun 2011 15:49:33 +1000
+> Subject: [PATCH] net: add needed interrupt.h
 
-Yep, we are almost there with the patches :P A small problem in a last
-minute test is keeping us from releasing the patches already.
-
-Br,
--- 
-Carlos Chinea <carlos.chinea@nokia.com>
-
+Applied, thanks Stephen.
