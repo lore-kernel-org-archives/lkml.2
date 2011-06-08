@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab1FHNcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 09:32:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59806 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755373Ab1FHNck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 09:32:40 -0400
-Date: Wed, 8 Jun 2011 15:32:29 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: =?ISO-8859-2?Q?Pawe=B3_Drobek?= <pawel.drobek@gmail.com>,
-        Greg KH <greg@kroah.com>, Linux USB list <linux-usb@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: Re: option driver, ZTE MF_330 matches linux usb 2.0 root hub
-In-Reply-To: <4DEDC6CE.7080100@msgid.tls.msk.ru>
-Message-ID: <alpine.LRH.2.00.1106081531340.8510@twin.jikos.cz>
-References: <4DDEC269.30808@msgid.tls.msk.ru>  <4DDEC606.4020504@msgid.tls.msk.ru> <20110527012022.GF24630@kroah.com>  <BANLkTikcjXTczV2FmGcQ7BY=m_t7ep54Sw@mail.gmail.com>  <4DDF427E.1030109@msgid.tls.msk.ru>  <BANLkTikodJ4cnjJ9Lxx=zsHd-dAgPzfDrA@mail.gmail.com>
-  <4DDF6917.9060004@msgid.tls.msk.ru>  <BANLkTi==1WyJNACmoOxcrS6RiJ3w8Ow1zw@mail.gmail.com>  <20110527100215.GC9272@kroah.com> <4DDFA4F5.8060502@msgid.tls.msk.ru>  <BANLkTinAip5BswLBjxyJ1O_XPnUFq=FUjw@mail.gmail.com>  <4DECD457.60101@msgid.tls.msk.ru> 
- <BANLkTimLfkGjFtk_GJ87_+f7fswkdmSe3Q@mail.gmail.com> <1307422131.5615.3.camel@one.pl> <4DEDC6CE.7080100@msgid.tls.msk.ru>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1755873Ab1FHNfn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 09:35:43 -0400
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:5106
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754902Ab1FHNfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 09:35:41 -0400
+X-SpamScore: -28
+X-BigFish: VPS-28(zz9371M1418M1432N98dKzz1202hzz15d4Rz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LMH4F7-01-9CK-02
+X-M-MSG: 
+Date: Wed, 8 Jun 2011 15:35:55 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Matthew Wilcox <matthew@wil.cx>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, David Brown <davidb@codeaurora.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 0/4] drivers/iommu/ relocations
+Message-ID: <20110608133555.GC21591@amd.com>
+References: <1307522062-19273-1-git-send-email-ohad@wizery.com>
+ <20110608130522.GC29089@parisc-linux.org>
+ <BANLkTin5JYt4=gru181N_BuvnHB7kUTUeQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <BANLkTin5JYt4=gru181N_BuvnHB7kUTUeQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Jun 2011, Michael Tokarev wrote:
+On Wed, Jun 08, 2011 at 09:11:16AM -0400, Ohad Ben-Cohen wrote:
+> On Wed, Jun 8, 2011 at 4:05 PM, Matthew Wilcox <matthew@wil.cx> wrote:
+> > You've missed at least parisc, ia64, alpha, sparc, powerpc and sh which
+> > have IOMMUs.
+> 
+> None of these seem to call register_iommu.
+> 
+> > Not that they necessarily all need to be moved across in
+> > one patchset, but saying "all iommu drivers" is clearly false.
+> 
+> I've moved only the existing IOMMU API users.
 
-> > Bus 003 Device 002: ID 19d2:0001 ONDA Communication S.p.A.
-> > Device Descriptor:
-> >   bLength                18
-> >   bDescriptorType         1
-> >   bcdUSB               1.10
-> >   bDeviceClass            0 (Defined at Interface level)
-> >   bDeviceSubClass         0
-> >   bDeviceProtocol         0
-> >   bMaxPacketSize0        64
-> >   idVendor           0x19d2 ONDA Communication S.p.A.
-> >   idProduct          0x0001
-> >   bcdDevice            0.00
-> >   iManufacturer           1 Qualcomm, Incorporated
-> >   iProduct                2 ZTE CDMA Technologies MSM
-> >   iSerial                 0
-> >   bNumConfigurations      1
-> >   Configuration Descriptor:
-> >     bLength                 9
-> >     bDescriptorType         2
-> >     wTotalLength           85
-> >     bNumInterfaces          3
-> >     bConfigurationValue     1
-> >     iConfiguration          0
-> >     bmAttributes         0xa0
-> >       (Bus Powered)
-> >       Remote Wakeup
-> >     MaxPower              500mA
-> >     Interface Descriptor:
-> >       bLength                 9
-> >       bDescriptorType         4
-> >       bInterfaceNumber        0
-> >       bAlternateSetting       0
-> >       bNumEndpoints           3
-> >       bInterfaceClass       255 Vendor Specific Class
-> >       bInterfaceSubClass    255 Vendor Specific Subclass
-> >       bInterfaceProtocol    255 Vendor Specific Protocol
-> >       iInterface              3 Data Interface
-> 
-> So, as far as I can see, this is covered by
-> 
-> #define ZTE_VENDOR_ID                           0x19d2
-> #define ZTE_PRODUCT_MF622                       0x0001
-> 
-> { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
-> 
-> and it should Just Work aftere reverting a559d2c8c1bf652ea2d0ecd6ab4a250fcdb37db8
-> "USB: option: add ID for ZTE MF 330".  But I'm not sure this really
-> is MF330, since the device ID says it's MF622.
-> 
-> Are we talking about the same device?
-> 
-> Besides, why in linux it's identified as ZTE, while
-> lsusb lists it as "ONDA Comm." ?
+And I think that is good for now. The iommu-api needs to be extended to
+cover all kinds of iommus (like the iommus available on other
+architectures). It is definitly the plan to do that and have a common
+dma_ops implementation for all of them. But lets start small by now and
+move forward step by step :-)
 
-ONDA and ZTE are usually the very same chip.
-
-Also please note that USB ID of these devices usually changes after 
-'usb_modeswtich' triggers in userspace (and many distros ship udev rule 
-for this as a default nowadays), which might contribute to the overall 
-confusion a little bit more.
+	Joerg
 
 -- 
-Jiri Kosina
-SUSE Labs
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
