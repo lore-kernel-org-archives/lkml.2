@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab1FHUEY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 16:04:24 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:45660 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614Ab1FHUEX (ORCPT
+	id S1753573Ab1FHUGB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 16:06:01 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:33398 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab1FHUF7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 16:04:23 -0400
-Message-ID: <4DEFD58D.5060402@kernel.org>
-Date: Wed, 08 Jun 2011 13:03:25 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Wed, 8 Jun 2011 16:05:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=E3QKdPEvR75QqHNp0qsV6H8N1WQLbYKjJcXc1+mz9MK4C2u2hzirJwt9qwyIuLQ/Dt
+         oVBRi6efEEG1iI1FZ6j8GnZl510deu0YKlao0U0E59TEUjiGQBJBd/SsDAzMdVcmCazo
+         tkltwFo047LDT8gVMrUKlnv2GJsHMoW2xeL7c=
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <4DEE17F9.6020503@gmail.com> <4DEEA548.5020405@kernel.org> <4DEFA6E3.6090809@xs4all.nl> <4DEFCAE0.6050700@kernel.org> <20110608192321.GA28865@srcf.ucam.org> <4DEFCD07.5020505@kernel.org> <20110608192950.GA29235@srcf.ucam.org> <4DEFCF1A.9030400@kernel.org> <20110608193833.GA29855@srcf.ucam.org> <4DEFD220.5040507@kernel.org> <20110608195250.GB30256@srcf.ucam.org>
-In-Reply-To: <20110608195250.GB30256@srcf.ucam.org>
+In-Reply-To: <20110608160844E.fujita.tomonori@lab.ntt.co.jp>
+References: <BANLkTin7mqqTsosPHbztaPfL7s_TUGT1qg@mail.gmail.com>
+	<20110608142121T.fujita.tomonori@lab.ntt.co.jp>
+	<BANLkTi=FcNncT_6HpvB_6OnQ94f0_sz7Gw@mail.gmail.com>
+	<20110608160844E.fujita.tomonori@lab.ntt.co.jp>
+Date: Wed, 8 Jun 2011 13:05:57 -0700
+X-Google-Sender-Auth: vucRMibKx0njDzS2eSjzyJEM12s
+Message-ID: <BANLkTikFKr+3Qph+CR40SUV-DCir1v=KBg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] dmaengine: add new dma API for max_segment_number
+From: Dan Williams <dan.j.williams@intel.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: cjb@laptop.org, linux@arm.linux.org.uk, patches@linaro.org,
+        vinod.koul@intel.com, gregkh@suse.de, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shawn.guo@linaro.org,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090207.4DEFD598.01F0,ss=1,fgs=0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2011 12:52 PM, Matthew Garrett wrote:
-> On Wed, Jun 08, 2011 at 12:48:48PM -0700, Yinghai Lu wrote:
->> On 06/08/2011 12:38 PM, Matthew Garrett wrote:
->>> On Wed, Jun 08, 2011 at 12:35:54PM -0700, Yinghai Lu wrote:
->>>> On 06/08/2011 12:29 PM, Matthew Garrett wrote:
->>>>>> what former? you can not fix some corner case by breaking most other cases.
->>>>>
->>>>> All Dell laptops, all new Apples, some Lenovos, various Intel server 
->>>>> platforms. That I've found so far.
->>>>
->>>> do you mean before that patch, all those machine will not boot linux kernel with UEFI support?
->>>
->>> Correct.
+On Wed, Jun 8, 2011 at 12:10 AM, FUJITA Tomonori
+<fujita.tomonori@lab.ntt.co.jp> wrote:
+> On Tue, 7 Jun 2011 23:56:21 -0700
+> Dan Williams <dan.j.williams@intel.com> wrote:
+>
+>> > The dma parameter restriction could be due to software (HBA drivers,
+>> > or subsystem). The value should be whatever the dma device driver says
+>> > it is in such case?
 >>
->> with or without EFI runtime services?
-> 
-> They'll boot with noefi, but that's useless because there's then no way 
-> to configure a bootloader.
+>> I'm assuming that the dma driver is taking responsibility for setting
+>> this correctly.  How would this work otherwise... HBA driver or
+>> subsystem queries the dmaengine device and then sets this parameter on
+>> its behalf?  In other words dmanengine *is* the subsystem, if I am
+>> understanding your definition.
+>
+> Oops, I meant that the subsystem is software layer above
+> dmaengine. For example, SCSI subsystem sets the limit of max number of
+> sglist entries. That is, it is possible that software layer above
+> dmaengine could set dma limit, which is smaller than the limit of
+> dmaengine?
+>
 
-efibootmgr will need boot services in addition to run-time services?
+Perhaps, but this sounds like the reverse of what happens today where
+scsi device drivers with knowledge of their own hardware will tell the
+midlayer/subsystem the restriction.  The change with regard to this
+patch is that the scsi device driver (for example) will recognize that
+the device it is driving will not be a bus master and will arrange to
+allocate a dma channel from dmaengine.  When said scsi driver reports
+the dma restrictions to the subsystem it will borrow the parameters
+from the dma channel, not the scsi device.  So yes, I still think it
+should be whatever the dma channel says.
 
-if really need some info from boot services, could let bootloader to get them and pass them to kernel.
+Although, you've been doing scsi work longer than I, so maybe I'm
+overlooking something...?
 
-Yinghai
+Are there any cases today where the subsystem imposes tighter
+restrictions on the dma geometry than what the device reports?  Even
+if that were the case it would be same situation that the scsi device
+driver reports maximum parameters, but the subsystem opts for
+something tighter.  Whether the maximal parameters come from the scsi
+device or the dma channel is moot.
