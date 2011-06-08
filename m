@@ -1,129 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab1FHVWi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 17:22:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52832 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960Ab1FHVWf (ORCPT
+	id S1754828Ab1FHVZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 17:25:29 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:43436 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751960Ab1FHVZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 17:22:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=GuItxQiuoY0T81felcpyNWDQI2N4IKyh59tEv1zGSF/ztnUsePMtCDgAb9KSnHIALp
-         WSnNQgETpLlqptTDNACx5r4Mzdr4t+HHY8RGyQgZtGy5rjIKP0FgY3Yxbzwg12k+UBZh
-         sR5lEYAB0N9Dj2KXXBTKsfyLY4b/I8fNpAV6Q=
-Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Brad Campbell <brad@fnarfbargle.com>
-Cc: Patrick McHardy <kaber@trash.net>, Bart De Schuymer <bdschuym@pandora.be>,
-        kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
-In-Reply-To: <4DEFAB15.2060905@fnarfbargle.com>
-References: <20110601011527.GN19505@random.random>
-	 <alpine.LSU.2.00.1105312120530.22808@sister.anvils>
-	 <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com>
-	 <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com>
-	 <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com>
-	 <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com>
-	 <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com>
-	 <isavsg$3or$1@dough.gmane.org> <4DE906C0.6060901@fnarfbargle.com>
-	 <4DED344D.7000005@pandora.be> <4DED9C23.2030408@fnarfbargle.com>
-	 <4DEE27DE.7060004@trash.net> <4DEE3859.6070808@fnarfbargle.com>
-	 <4DEE4538.1020404@trash.net> <1307471484.3091.43.camel@edumazet-laptop>
-	 <4DEEACC3.3030509@trash.net>  <4DEEBFC2.4060102@fnarfbargle.com>
-	 <1307505541.3102.12.camel@edumazet-laptop>
-	 <4DEFAB15.2060905@fnarfbargle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Jun 2011 23:22:29 +0200
-Message-ID: <1307568149.3980.3.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 8 Jun 2011 17:25:28 -0400
+X-Sasl-enc: C8jq5WMLA0nOEJViDNhovhuOqdL1bhMGV9bNFh/2xYfx 1307568327
+Date: Wed, 8 Jun 2011 14:25:22 -0700
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for 3.0
+Message-ID: <20110608212522.GA20217@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 09 juin 2011 à 01:02 +0800, Brad Campbell a écrit :
-> On 08/06/11 11:59, Eric Dumazet wrote:
-> 
-> > Well, a bisection definitely should help, but needs a lot of time in
-> > your case.
-> 
-> Yes. compile, test, crash, walk out to the other building to press 
-> reset, lather, rinse, repeat.
-> 
-> I need a reset button on the end of a 50M wire, or a hardware watchdog!
-> 
-> Actually it's not so bad. If I turn off slub debugging the kernel panics 
-> and reboots itself.
-> 
-> This.. :
-> [    2.913034] netconsole: remote ethernet address 00:16:cb:a7:dd:d1
-> [    2.913066] netconsole: device eth0 not up yet, forcing it
-> [    3.660062] Refined TSC clocksource calibration: 3213.422 MHz.
-> [    3.660118] Switching to clocksource tsc
-> [   63.200273] r8169 0000:03:00.0: eth0: unable to load firmware patch 
-> rtl_nic/rtl8168e-1.fw (-2)
-> [   63.223513] r8169 0000:03:00.0: eth0: link down
-> [   63.223556] r8169 0000:03:00.0: eth0: link down
-> 
-> ..is slowing down reboots considerably. 3.0-rc does _not_ like some 
-> timing hardware in my machine. Having said that, at least it does not 
-> randomly panic on SCSI like 2.6.39 does.
-> 
-> Ok, I've ruled out TCPMSS. Found out where it was being set and neutered 
-> it. I've replicated it with only the single DNAT rule.
-> 
-> 
-> > Could you try following patch, because this is the 'usual suspect' I had
-> > yesterday :
-> >
-> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> > index 46cbd28..9f548f9 100644
-> > --- a/net/core/skbuff.c
-> > +++ b/net/core/skbuff.c
-> > @@ -792,6 +792,7 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
-> >   		fastpath = atomic_read(&skb_shinfo(skb)->dataref) == delta;
-> >   	}
-> >
-> > +#if 0
-> >   	if (fastpath&&
-> >   	size + sizeof(struct skb_shared_info)<= ksize(skb->head)) {
-> >   		memmove(skb->head + size, skb_shinfo(skb),
-> > @@ -802,7 +803,7 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
-> >   		off = nhead;
-> >   		goto adjust_others;
-> >   	}
-> > -
-> > +#endif
-> >   	data = kmalloc(size + sizeof(struct skb_shared_info), gfp_mask);
-> >   	if (!data)
-> >   		goto nodata;
-> >
-> >
-> >
-> 
-> Nope.. that's not it. <sigh> That might have changed the characteristic 
-> of the fault slightly, but unfortunately I got caught with a couple of 
-> fsck's, so I only got to test it 3 times tonight.
-> 
-> It's unfortunate that this is a production system, so I can only take it 
-> down between about 9pm and 1am. That would normally be pretty 
-> productive, except that an fsck of a 14TB ext4 can take 30 minutes if it 
-> panics at the wrong time.
-> 
-> I'm out of time tonight, but I'll have a crack at some bisection 
-> tomorrow night. Now I just have to go back far enough that it works, and 
-> be near enough not to have to futz around with /proc /sys or drivers.
-> 
-> I really, really, really appreciate you guys helping me with this. It 
-> has been driving me absolutely bonkers. If I'm ever in the same town as 
-> any of you, dinner and drinks are on me.
+Here's some small fixes for your 3.0 tree.
 
-Hmm, I wonder if kmemcheck could help you, but its slow as hell, so not
-appropriate for production :(
+Nothing major, just some small fixes for things that have been reported,
+and lots of new device ids added to drivers.
 
+Please pull from:
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
 
+All of these have been in the linux-next tree for a while.
+
+The full patches will be sent to the linux-usb mailing list, if anyone
+wants to see them.
+
+thanks,
+
+greg k-h
+
+------------
+
+ Documentation/kernel-parameters.txt    |    2 +
+ MAINTAINERS                            |    4 ++-
+ drivers/usb/class/cdc-acm.c            |    2 +
+ drivers/usb/core/hub.c                 |    6 +++-
+ drivers/usb/gadget/Kconfig             |    5 +---
+ drivers/usb/gadget/amd5536udc.c        |    1 +
+ drivers/usb/gadget/at91_udc.c          |    1 +
+ drivers/usb/gadget/dummy_hcd.c         |    1 +
+ drivers/usb/gadget/inode.c             |    4 ++-
+ drivers/usb/gadget/mv_udc_core.c       |    8 +++---
+ drivers/usb/gadget/net2280.c           |    1 +
+ drivers/usb/gadget/pxa25x_udc.c        |    5 +--
+ drivers/usb/gadget/s3c-hsotg.c         |   22 +++++++++++---------
+ drivers/usb/gadget/s3c-hsudc.c         |    7 ++++-
+ drivers/usb/gadget/s3c2410_udc.c       |    1 +
+ drivers/usb/host/ohci-pxa27x.c         |    7 ++++-
+ drivers/usb/host/xhci-dbg.c            |    8 +++---
+ drivers/usb/host/xhci-mem.c            |   14 +++++++++++-
+ drivers/usb/host/xhci-pci.c            |   14 +++++++++++-
+ drivers/usb/host/xhci-ring.c           |    2 +-
+ drivers/usb/host/xhci.c                |   18 +++++++++++++++-
+ drivers/usb/host/xhci.h                |    6 +++++
+ drivers/usb/musb/musb_core.c           |    1 +
+ drivers/usb/renesas_usbhs/mod_gadget.c |    1 +
+ drivers/usb/serial/ftdi_sio.c          |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h      |    1 +
+ drivers/usb/serial/option.c            |   34 ++++++++++++++++++++++++-------
+ drivers/usb/storage/transport.c        |   29 +++++++++++++++++++++++++++
+ drivers/usb/storage/unusual_devs.h     |   19 +++++++++++++++++
+ drivers/usb/storage/usb.c              |   13 +++++++++++-
+ drivers/usb/storage/usb.h              |    2 +
+ include/linux/usb_usual.h              |    4 ++-
+ 32 files changed, 194 insertions(+), 50 deletions(-)
+
+---------------
+
+Alan Stern (3):
+      usb-storage: redo incorrect reads
+      USB: dummy-hcd needs the has_tt flag
+      USB: CONFIG_USB_GADGET_DUALSPEED is not user-configurable
+
+Alexey Khoroshilov (1):
+      usb-gadget: unlock data->lock mutex on error path in ep_write()
+
+Bryan Wu (1):
+      usb: gadget: include <linux/prefetch.h> to fix compiling error
+
+Dan Williams (3):
+      option: add Zoom 4597 modem USB IDs
+      option: add Alcatel X200 to sendsetup blacklist
+      option: add Prolink PH300 modem IDs
+
+Dmitry Torokhov (1):
+      USB: xhci - fix interval calculation for FS isoc endpoints
+
+Felipe Balbi (1):
+      MAINTAINERS: add a maintainer to Gadget Framework
+
+Greg Kroah-Hartman (1):
+      Revert "USB: option: add ID for ZTE MF 330"
+
+Julia Lawall (1):
+      drivers/usb/host/ohci-pxa27x.c: add missing clk_put
+
+Libor Pechacek (1):
+      USB: core: Tolerate protocol stall during hub and port status read
+
+Maarten Lankhorst (2):
+      xhci: Add defines for hardcoded slot states
+      xhci: Do not issue device reset when device is not setup
+
+Mark Brown (1):
+      USB: s3c-hsotg: Tone down debugging
+
+Matt Evans (2):
+      xhci: Bigendian fix for skip_isoc_td()
+      xhci: Bigendian fix for xhci_check_bandwidth()
+
+Mike Frysinger (1):
+      musb: fix prefetch build failure
+
+Sage Weil (1):
+      usb: remove bad dput after dentry_unhash
+
+Sarah Sharp (1):
+      xhci: Disable MSI for some Fresco Logic hosts.
+
+Sebastian Andrzej Siewior (4):
+      usb/mv_udc_core: fix compile
+      usb/pxa25x_udc: cleanup the LUBBOCK err path
+      usb/s3c-hsudc: fix error path
+      usb/renesas_usbhs: free uep on removal
+
+Steffen Sledz (1):
+      USB: serial: add another 4N-GALAXY.DE PID to ftdi_sio driver
+
+Toby Gray (1):
+      USB: cdc-acm: Adding second ACM channel support for Nokia E7 and C7
+
+Torsten Hilbrich (1):
+      USB: option Add blacklist for ZTE K3765-Z (19d2:2002)
 
