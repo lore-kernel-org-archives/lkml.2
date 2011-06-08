@@ -1,46 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100Ab1FHUrm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 16:47:42 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27040 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754417Ab1FHUrl (ORCPT
+	id S1756758Ab1FHXxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 19:53:00 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:34325 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763Ab1FHXw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 16:47:41 -0400
-Message-ID: <4DEFDFB5.3030706@kernel.org>
-Date: Wed, 08 Jun 2011 13:46:45 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <20110608192950.GA29235@srcf.ucam.org> <4DEFCF1A.9030400@kernel.org> <20110608193833.GA29855@srcf.ucam.org> <4DEFD220.5040507@kernel.org> <20110608195250.GB30256@srcf.ucam.org> <4DEFD58D.5060402@kernel.org> <20110608200903.GA30694@srcf.ucam.org> <4DEFDA4A.9080500@kernel.org> <20110608203037.GA31052@srcf.ucam.org> <4DEFDD69.7010000@kernel.org> <20110608204244.GA31484@srcf.ucam.org>
-In-Reply-To: <20110608204244.GA31484@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 8 Jun 2011 19:52:58 -0400
+Subject: Re: [PATCH] Add debugging boundary check to pfn_to_page
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: arnd@arndb.de, akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        mingo@elte.hu, randy.dunlap@oracle.com, josh@joshtriplett.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mgorman@suse.de, linux-mm@kvack.org
+In-Reply-To: <1307560734-3915-1-git-send-email-emunson@mgebm.net>
+References: <1307560734-3915-1-git-send-email-emunson@mgebm.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Jun 2011 13:49:28 -0700
+Message-ID: <1307566168.3048.137.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4DEFDFBC.0072,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2011 01:42 PM, Matthew Garrett wrote:
-> On Wed, Jun 08, 2011 at 01:36:57PM -0700, Yinghai Lu wrote:
-> 
->> or just let bootloader to mark those boot services just like run-time services in e820 table or setupdata?
-> 
-> That was my original approach, but if there's boot services code at the 
-> top of RAM it means that max_pfn is wrong and it's difficult to recover 
-> the memory.
+On Wed, 2011-06-08 at 15:18 -0400, Eric B Munson wrote:
+> -#define __pfn_to_page(pfn)                             \
+> -({     unsigned long __pfn = (pfn);                    \
+> -       struct mem_section *__sec = __pfn_to_section(__pfn);    \
+> -       __section_mem_map_addr(__sec) + __pfn;          \
+> +#ifdef CONFIG_DEBUG_MEMORY_MODEL
+> +#define __pfn_to_page(pfn)                                             \
+> +({     unsigned long __pfn = (pfn);                                    \
+> +       struct mem_section *__sec = __pfn_to_section(__pfn);            \
+> +       struct page *__page = __section_mem_map_addr(__sec) + __pfn;    \
+> +       WARN_ON(__page->flags == 0);                                    \
+> +       __page;                                                         \
 
-not all boot services ram.  just those are called by run-time services code.
+What was the scenario you're trying to catch here?  If you give a really
+crummy __pfn, you'll probably go off the end of one of the mem_section[]
+arrays, and get garbage back for __sec.  You might also get a NULL back
+from __section_mem_map_addr() if the section is possibly valid, but just
+not present on this particular system.
 
-Yinghai
+I _think_ the only kind of bug this will catch is if you have a valid
+section, with a valid section_mem_map[] but still manage to find
+yourself with an 'struct page' unclaimed by any zone and thus
+uninitialized.
+
+You could catch a lot more cases by being a bit more paranoid:
+
+void check_pfn(unsigned long pfn)
+{
+	int nid;
+	
+	// hacked in from pfn_to_nid:
+	// Don't actually do this, add a new helper near pfn_to_nid()
+	// Can this even fit in the physnode_map?
+	if (pfn / PAGES_PER_ELEMENT > ARRAY_SIZE(physnode_map))
+		WARN();
+
+	// Is there a valid nid there?
+	nid = pfn_to_nid(pfn);
+	if (nid == -1)
+		WARN();
+	
+	// check against NODE_DATA(nid)->node_start_pfn;
+	// check against NODE_DATA(nid)->node_spanned_pages;
+}
+>  })
+> +#else
+> +#define __pfn_to_page(pfn)                                             \
+> +({     unsigned long __pfn = (pfn);                                    \
+> +       struct mem_section *__sec = __pfn_to_section(__pfn);            \
+> +       __section_mem_map_addr(__sec) + __pfn;  \
+> +})
+> +#endif /* CONFIG_DEBUG_MEMORY_MODEL */ 
+
+Instead of making a completely new __pfn_to_page() in the debugging
+case, I'd probably do something like this:
+
+#ifdef CONFIG_DEBUG_MEMORY_MODEL
+#define check_foo(foo) {\
+	some_check_here(foo);\
+	WARN_ON(foo->flags);\
+}
+#else
+#define check_foo(foo) do{}while(0)
+#endif;
+
+#define __pfn_to_page(pfn)                                             \
+({     unsigned long __pfn = (pfn);                                    \
+       struct mem_section *__sec = __pfn_to_section(__pfn);            \
+       struct page *__page = __section_mem_map_addr(__sec) + __pfn;    \
+       check_foo(page)							\
+       __page;                                                         \
+ })
+
+That'll make sure that the two copies of __pfn_to_page() don't
+accidentally diverge.  It also makes it a lot easier to read, I think.
+
+-- Dave
+
