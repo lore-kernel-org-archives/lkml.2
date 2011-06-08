@@ -1,146 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab1FHVZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 17:25:29 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:43436 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751960Ab1FHVZ2 (ORCPT
+	id S1755984Ab1FHV1t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 17:27:49 -0400
+Received: from relay01.digicable.hu ([92.249.128.189]:50398 "EHLO
+	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755381Ab1FHV1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 17:25:28 -0400
-X-Sasl-enc: C8jq5WMLA0nOEJViDNhovhuOqdL1bhMGV9bNFh/2xYfx 1307568327
-Date: Wed, 8 Jun 2011 14:25:22 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB fixes for 3.0
-Message-ID: <20110608212522.GA20217@kroah.com>
+	Wed, 8 Jun 2011 17:27:47 -0400
+Message-ID: <4DEFE938.70408@freemail.hu>
+Date: Wed, 08 Jun 2011 23:27:20 +0200
+From: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <greg@kroah.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
+        Kulikov Vasiliy <segooon@gmail.com>, Endre Kollar <taxy443@gmail.com>,
+        Arjan Mels <arjan.mels@gmx.net>, Ilia Mirkin <imirkin@alum.mit.edu>,
+        David Chang <dchang@novell.com>,
+        Himanshu Chauhan <hschauhan@nulltrace.org>,
+        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
+        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usbip: handle length at sysfs show() functions
+References: <4DE5CA9F.6010303@freemail.hu> <20110607213418.GB11102@kroah.com> <4DEF0822.7070500@freemail.hu> <20110608160931.GB21645@kroah.com>
+In-Reply-To: <20110608160931.GB21645@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Original: 94.21.203.101
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's some small fixes for your 3.0 tree.
+Greg KH wrote:
+> On Wed, Jun 08, 2011 at 07:26:58AM +0200, Németh Márton wrote:
+>> Greg KH wrote:
+>>> On Wed, Jun 01, 2011 at 07:14:07AM +0200, Németh Márton wrote:
+>>>> The sysfs show() functions shall return the actual content length of
+>>>> the result buffer. According to Documentation/filesystems/sysfs.txt:215
+>>>> the scnprintf() function is preferred.
+>>>>
+>>>> See also the article titled "snprintf() confusion" at
+>>>> http://lwn.net/Articles/69419/ .
+>>> [...]
+>>>
+>>> Here we are doing lots of work to try to put more than one value in the
+>>> sysfs file, and return the proper data to the kernel about how big the
+>>> buffer we used.
+>>>
+>>> That's wrong, and violates the "one value per file" sysfs rule, so that
+>>> should be fixed instead of trying to change the sprintf() call.
+>> As I understand there is a need to change the design here. Currently I
+>> get the following content when vhci-hcd is loaded but not yet used:
+>>
+>> $ cat /sys/devices/platform/vhci_hcd/status
+>> prt sta spd bus dev socket           local_busid
+>> 000 004 000 000 000 0000000000000000 0-0
+>> 001 004 000 000 000 0000000000000000 0-0
+>> 002 004 000 000 000 0000000000000000 0-0
+>> 003 004 000 000 000 0000000000000000 0-0
+>> 004 004 000 000 000 0000000000000000 0-0
+>> 005 004 000 000 000 0000000000000000 0-0
+>> 006 004 000 000 000 0000000000000000 0-0
+>> 007 004 000 000 000 0000000000000000 0-0
+>>
+>> The fields are: port, status, speed, device ID, socket pointer and
+>> local busid name. This is too complex for sysfs. Maybe we could extend
+>> the devices file of usbfs with some new rows?
+> 
+> Ick, I doubt it as there are lots of tools that parse that file already.
 
-Nothing major, just some small fixes for things that have been reported,
-and lots of new device ids added to drivers.
+usbip is still part of the staging directory. In dmesg the following appear:
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
+| usbip_common_mod: module is from the staging directory, the quality is unknown, you have been warned.
+| usbip_common_mod: usbip common driver1.0
+| vhci_hcd: module is from the staging directory, the quality is unknown, you have been warned.
 
-All of these have been in the linux-next tree for a while.
+so this means that usbip is a work-in-progress, it might be changed anytime. On
+the other hand we can do this nice way: a new entry in  Documentation/feature-removal-schedule.txt
+for /sys/devices/platform/vhci_hcd/status file removal, let's say it will be
+removed before the usbip goes to mainline. In parallel the new interface
+can be developed.
 
-The full patches will be sent to the linux-usb mailing list, if anyone
-wants to see them.
+> But yes, you are correct, this should not be in sysfs at all.
+> 
+> What's the use for this file?  Who uses it?  Is it just debugging
+> output?  Information for people to gaze at if they feel like it?
+> Something else?
 
-thanks,
+Based on the user space source code at drivers/staging/usbip/userspace/
+I can identify the following usages:
 
-greg k-h
+libsrc/vhci_driver.c::get_nports():
+ - finding out how many ports the VHCI has
 
-------------
+libsrc/vhci_driver.c::parse_status():
+ - VHCI port number to identify virtual ports
+ - fetching the status of each VHCI ports whether it is
+     - vdev does not connect a remote device: (status = VDEV_ST_NULL = 4):
+       "Port Available"
+     - vdev is used, but the USB address is not assigned yet (status =
+       VDEV_ST_NOTASSIGNED = 5): "Port Initializing"
+     - used (status = VDEV_ST_USED = 6): "Port in Use"
+     - error (VDEV_ST_ERROR = 7): "Port Error"
+ - the speed can be unknown/low/full/high/variable
+ - it looks like the bus column was merged with the device column but I
+   currently cannot find when
+ - the device ID is splited to the upper 16bits: bus number, and lower
+   16bits: device number
+ - based on local_busid the usb device file can be found in /sys using
+   sysfs_open_device()
 
- Documentation/kernel-parameters.txt    |    2 +
- MAINTAINERS                            |    4 ++-
- drivers/usb/class/cdc-acm.c            |    2 +
- drivers/usb/core/hub.c                 |    6 +++-
- drivers/usb/gadget/Kconfig             |    5 +---
- drivers/usb/gadget/amd5536udc.c        |    1 +
- drivers/usb/gadget/at91_udc.c          |    1 +
- drivers/usb/gadget/dummy_hcd.c         |    1 +
- drivers/usb/gadget/inode.c             |    4 ++-
- drivers/usb/gadget/mv_udc_core.c       |    8 +++---
- drivers/usb/gadget/net2280.c           |    1 +
- drivers/usb/gadget/pxa25x_udc.c        |    5 +--
- drivers/usb/gadget/s3c-hsotg.c         |   22 +++++++++++---------
- drivers/usb/gadget/s3c-hsudc.c         |    7 ++++-
- drivers/usb/gadget/s3c2410_udc.c       |    1 +
- drivers/usb/host/ohci-pxa27x.c         |    7 ++++-
- drivers/usb/host/xhci-dbg.c            |    8 +++---
- drivers/usb/host/xhci-mem.c            |   14 +++++++++++-
- drivers/usb/host/xhci-pci.c            |   14 +++++++++++-
- drivers/usb/host/xhci-ring.c           |    2 +-
- drivers/usb/host/xhci.c                |   18 +++++++++++++++-
- drivers/usb/host/xhci.h                |    6 +++++
- drivers/usb/musb/musb_core.c           |    1 +
- drivers/usb/renesas_usbhs/mod_gadget.c |    1 +
- drivers/usb/serial/ftdi_sio.c          |    1 +
- drivers/usb/serial/ftdi_sio_ids.h      |    1 +
- drivers/usb/serial/option.c            |   34 ++++++++++++++++++++++++-------
- drivers/usb/storage/transport.c        |   29 +++++++++++++++++++++++++++
- drivers/usb/storage/unusual_devs.h     |   19 +++++++++++++++++
- drivers/usb/storage/usb.c              |   13 +++++++++++-
- drivers/usb/storage/usb.h              |    2 +
- include/linux/usb_usual.h              |    4 ++-
- 32 files changed, 194 insertions(+), 50 deletions(-)
+Note that the socket parameter is only printed out as a debug information: it
+is not used anywhere.
 
----------------
+Maybe most of the file content is redundant, because:
 
-Alan Stern (3):
-      usb-storage: redo incorrect reads
-      USB: dummy-hcd needs the has_tt flag
-      USB: CONFIG_USB_GADGET_DUALSPEED is not user-configurable
+ - we have /sys/bus/usb/devices/usb*/maxchild which is "number of ports if hub"
+   according to linux/usb.h:410 ;
+ - we have /sys/bus/usb/devices/*-*/speed to identify the device speed;
+ - We have already bus number at /sys/bus/usb/devices/usb*/busnum or at
+   /sys/bus/usb/devices/*-*/busnum ;
+ - we also have /sys/bus/usb/devices/*-*/devnum ;
+ - it is possbile to collect all the devices from /sys/bus/usb/devices/*-*
+   filtering to the first number to /sys/bus/usb/devices/usb*/busnum .
 
-Alexey Khoroshilov (1):
-      usb-gadget: unlock data->lock mutex on error path in ep_write()
+The only thing which is special for VHCI is the status for each port:
+DEV_ST_NULL/VDEV_ST_NOTASSIGNED/VDEV_ST_USED/VDEV_ST_ERROR .
 
-Bryan Wu (1):
-      usb: gadget: include <linux/prefetch.h> to fix compiling error
+> Once we figure that out, then we can determine where it should go
+> (debugfs, sysfs in a different file format, usbfs, etc.)
 
-Dan Williams (3):
-      option: add Zoom 4597 modem USB IDs
-      option: add Alcatel X200 to sendsetup blacklist
-      option: add Prolink PH300 modem IDs
+Maybe the status could fit under /sys/devices/platform/vhci_hcd/*-*/status .
+This file could contain only one number showing the status of that single
+device.
 
-Dmitry Torokhov (1):
-      USB: xhci - fix interval calculation for FS isoc endpoints
+Regards,
 
-Felipe Balbi (1):
-      MAINTAINERS: add a maintainer to Gadget Framework
-
-Greg Kroah-Hartman (1):
-      Revert "USB: option: add ID for ZTE MF 330"
-
-Julia Lawall (1):
-      drivers/usb/host/ohci-pxa27x.c: add missing clk_put
-
-Libor Pechacek (1):
-      USB: core: Tolerate protocol stall during hub and port status read
-
-Maarten Lankhorst (2):
-      xhci: Add defines for hardcoded slot states
-      xhci: Do not issue device reset when device is not setup
-
-Mark Brown (1):
-      USB: s3c-hsotg: Tone down debugging
-
-Matt Evans (2):
-      xhci: Bigendian fix for skip_isoc_td()
-      xhci: Bigendian fix for xhci_check_bandwidth()
-
-Mike Frysinger (1):
-      musb: fix prefetch build failure
-
-Sage Weil (1):
-      usb: remove bad dput after dentry_unhash
-
-Sarah Sharp (1):
-      xhci: Disable MSI for some Fresco Logic hosts.
-
-Sebastian Andrzej Siewior (4):
-      usb/mv_udc_core: fix compile
-      usb/pxa25x_udc: cleanup the LUBBOCK err path
-      usb/s3c-hsudc: fix error path
-      usb/renesas_usbhs: free uep on removal
-
-Steffen Sledz (1):
-      USB: serial: add another 4N-GALAXY.DE PID to ftdi_sio driver
-
-Toby Gray (1):
-      USB: cdc-acm: Adding second ACM channel support for Nokia E7 and C7
-
-Torsten Hilbrich (1):
-      USB: option Add blacklist for ZTE K3765-Z (19d2:2002)
+	Márton Németh
 
