@@ -1,32 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab1FHThm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:37:42 -0400
-Received: from lnksmtp.cgmh.org.tw ([60.250.255.94]:34330 "EHLO
-	lnksmtp.cgmh.org.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756415Ab1FHThj (ORCPT
+	id S1756084Ab1FHTi7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:38:59 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54214 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053Ab1FHTi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:37:39 -0400
-From: "Ecowas Donations" <info@mail.com>
-Reply-To: ecwd_1@hotmail.com
-Subject: File For Your Claim
-Date: Thu, 9 Jun 2011 03:36:21 +0800
-Message-Id: <20110608193630.M80010@mail.com>
-X-Mailer: Open WebMail 2.51 20050512
-X-OriginatingIP: 92.99.141.103 (amy1123)
+	Wed, 8 Jun 2011 15:38:58 -0400
+Date: Wed, 8 Jun 2011 20:38:33 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+Message-ID: <20110608193833.GA29855@srcf.ucam.org>
+References: <4DED8752.5070005@kernel.org>
+ <4DEDEA73.7010900@gmail.com>
+ <4DEE17F9.6020503@gmail.com>
+ <4DEEA548.5020405@kernel.org>
+ <4DEFA6E3.6090809@xs4all.nl>
+ <4DEFCAE0.6050700@kernel.org>
+ <20110608192321.GA28865@srcf.ucam.org>
+ <4DEFCD07.5020505@kernel.org>
+ <20110608192950.GA29235@srcf.ucam.org>
+ <4DEFCF1A.9030400@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=big5
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DEFCF1A.9030400@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-YOU HAVE JUST WON 1 MILLION US DOLLARS FROM THE NEW YEAR 2011 ECOWAS DONATION 
-DESK.THIS MAIL IS TO OFFICIALLY INFORM YOU AND BE ADVISED TO FILE IN YOUR 
-CLAIM BY CONTACTING THE BELOW CLAIMS AGENT WITH THE FOLLOWING WINNING 
-IDENTITIES FOR VERIFICATION.Batch number:ECW 09102XN,Reff 
-number:ECW35447XN,Winning number:ECW09788
-Name:Mr.David Mbeki
-Tel: +234-052-878-346
-E-mail:ecwd_1@hotmail.com
+On Wed, Jun 08, 2011 at 12:35:54PM -0700, Yinghai Lu wrote:
+> On 06/08/2011 12:29 PM, Matthew Garrett wrote:
+> >> what former? you can not fix some corner case by breaking most other cases.
+> > 
+> > All Dell laptops, all new Apples, some Lenovos, various Intel server 
+> > platforms. That I've found so far.
+> 
+> do you mean before that patch, all those machine will not boot linux kernel with UEFI support?
+
+Correct.
+
+> > And we need to be able to map the boot services code, so we can't put 
+> > the kernel on top of it.
+> 
+> after bootloader, those area should be free already.
+
+That's what the spec says. Reality says differently. We need those 
+ranges to be available to the kernel until after SetVirtualAddressMap() 
+has been called, which means we need to avoid putting the kernel on top 
+of them.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
