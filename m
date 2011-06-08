@@ -1,238 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423Ab1FHPir (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 11:38:47 -0400
-Received: from realvnc.com ([146.101.152.142]:47420 "EHLO realvnc.com"
+	id S1756565Ab1FHPjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 11:39:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13237 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755890Ab1FHPip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 11:38:45 -0400
-From: Toby Gray <toby.gray@realvnc.com>
-To: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Toby Gray <toby.gray@realvnc.com>
-Subject: [PATCH] USB: cdc-acm: Prevent loss of data when filling tty buffer
-Date: Wed,  8 Jun 2011 16:38:39 +0100
-Message-Id: <1307547519-29246-1-git-send-email-toby.gray@realvnc.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756420Ab1FHPjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 11:39:09 -0400
+Date: Wed, 8 Jun 2011 17:38:55 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: "Amir G." <amir73il@users.sourceforge.net>
+cc: Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
+        tytso@mit.edu, linux-kernel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: [PATCH v1 00/30] Ext4 snapshots
+In-Reply-To: <BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1106081716200.6609@dhcp-27-109.brq.redhat.com>
+References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net> <alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com> <BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com> <alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com>
+ <BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When sending large quantities of data through a CDC ACM channel it is possible
-for data to be lost when attempting to copy the data to the tty buffer. This
-occurs due to the return value from tty_insert_flip_string not being checked.
+On Wed, 8 Jun 2011, Amir G. wrote:
 
-This patch adds checking for how many bytes have been inserted into the tty
-buffer and places data which hasn't been inserted into a pending buffer list.
-The pending buffer list is pushed to the tty buffer when the tty unthrottles
+> On Wed, Jun 8, 2011 at 1:09 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> > On Tue, 7 Jun 2011, Amir G. wrote:
+> >
+> >> On Tue, Jun 7, 2011 at 6:56 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> >> > Hi Amir,
+> >> >
+> >> > thanks very much for the resend. I'll take a look at the whole patch
+> >> > series, but first I want to bring up one important thing.
+> >> >
+> >> > While this being a huge feature for ext4 (regardless on how
+> >> > intrusive it is for the usual code paths) and while we already have
+> >> > patches in the list with people interesting in looking into them, you
+> >> > should clearly clarify what is the gain of it, what is the use case (and
+> >> > I know you have one), and why it is better than other approaches. You
+> >> > know, advertise it a bit in the marketing way :).
+> >>
+> >> Hi Lukas,
+> >>
+> >> Thank you for pointing out the marketing aspect.
+> >>
+> >> I must admit that my user-case rather speaks for itself.
+> >> CTERA develops a NAS device which is specialized for
+> >> backing up local networks and snapshots gives the NAS a time
+> >> dimension without paying for it in disk space and performance.
+> >>
+> >> The reason for not going with btrfs 3 years ago is clear.
+> >> So why not go with it now instead of moving forward to
+> >> ext4 with snapshots?
+> >> Part of the answer lies in the possibility to run fsck -x,
+> >> which gets rid of the snapshots in the case of fs corruption
+> >> and gets you back to good old stable and consistent ext4.
+> >
+> > But that is not even a real reason, is it ? When you need snapshots,
+> > well, then you just need it and do no want to get rid of it. When fs
+> > corruption appears, then it's bad in any case and the fsck should be
+> > able to more or less fix it.
+> >
+> > So you're saying that when corruption appears, then you *have to* blast
+> > all snapshots ? I am not sure how btrfs is going to deal with it, but it
+> > does seem like an advantage at all, why are you presenting it as such ?
+> >
+> 
+> Hi Lukas,
+> 
+> First of all, thank you for being strict with me.
+> I admit to having lousy marketing skills...
+> 
+> The market I am targeting are the sys admins who
+> are very cautious about their 'data' and are reluctant
+> therefor to migrate from ext3 to ext4, not to speak of
+> btrfs.
 
-Signed-off-by: Toby Gray <toby.gray@realvnc.com>
----
- drivers/usb/class/cdc-acm.c |   95 ++++++++++++++++++++++++++++++++++++------
- drivers/usb/class/cdc-acm.h |    6 ++-
- 2 files changed, 85 insertions(+), 16 deletions(-)
+Well, that's why I am concerned with merging the ext4 snapshots. This is
+exactly the reason why people will get nervous when you try to push a
+huge change like ext4 snapshots into the stable code base. Yes, when you
+do not compile it in, it does not affect the fs very much, but try to
+tell people that ext4 is not the old-good-stable-ext4 when you enable
+this feature. And I do not believe that snapshot code does not interfere
+with the old ext4 code paths, so there is a place for horrible bugs
+waiting for us.
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 395a347..9f1d3ff 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -361,23 +361,65 @@ static int acm_submit_read_urbs(struct acm *acm, gfp_t mem_flags)
- 	return 0;
- }
- 
--static void acm_process_read_urb(struct acm *acm, struct urb *urb)
-+static void acm_process_read_buf(struct acm *acm, struct acm_rb *rb)
- {
- 	struct tty_struct *tty;
-+	int copied;
- 
--	if (!urb->actual_length)
-+	if (!rb->size)
- 		return;
- 
- 	tty = tty_port_tty_get(&acm->port);
--	if (!tty)
-+	if (!tty) {
-+		/* drop all data */
-+		rb->size = 0;
- 		return;
-+	}
- 
--	tty_insert_flip_string(tty, urb->transfer_buffer, urb->actual_length);
-+	copied = tty_insert_flip_string(tty, rb->head, rb->size);
- 	tty_flip_buffer_push(tty);
- 
-+	rb->head += copied;
-+	rb->size -= copied;
-+
- 	tty_kref_put(tty);
- }
- 
-+static void acm_process_pending_read_bufs(struct acm *acm)
-+{
-+	unsigned long flags;
-+	struct acm_rb *buf;
-+
-+	spin_lock_irqsave(&acm->read_lock, flags);
-+	while (!list_empty(&acm->pending_read_bufs)) {
-+		buf = list_entry(acm->pending_read_bufs.next,
-+				 struct acm_rb, list);
-+		list_del(&buf->list);
-+		spin_unlock_irqrestore(&acm->read_lock, flags);
-+
-+		acm_process_read_buf(acm, buf);
-+
-+		spin_lock_irqsave(&acm->read_lock, flags);
-+		if (buf->size > 0) {
-+			/* Managed to fill tty buffer again, so readd to
-+			 * the head before giving up. */
-+			list_add(&buf->list, &acm->pending_read_bufs);
-+			spin_unlock_irqrestore(&acm->read_lock, flags);
-+			return;
-+		}
-+
-+		set_bit(buf->index, &acm->read_urbs_free);
-+	}
-+	/* Submit any free urbs if not throttled */
-+	if (!acm->throttled && !acm->susp_count) {
-+		spin_unlock_irqrestore(&acm->read_lock, flags);
-+		acm_submit_read_urbs(acm, GFP_KERNEL);
-+	} else {
-+		spin_unlock_irqrestore(&acm->read_lock, flags);
-+	}
-+	return;
-+}
-+
- static void acm_read_bulk_callback(struct urb *urb)
- {
- 	struct acm_rb *rb = urb->context;
-@@ -386,24 +428,52 @@ static void acm_read_bulk_callback(struct urb *urb)
- 
- 	dev_vdbg(&acm->data->dev, "%s - urb %d, len %d\n", __func__,
- 					rb->index, urb->actual_length);
--	set_bit(rb->index, &acm->read_urbs_free);
- 
- 	if (!acm->dev) {
-+		set_bit(rb->index, &acm->read_urbs_free);
- 		dev_dbg(&acm->data->dev, "%s - disconnected\n", __func__);
- 		return;
- 	}
- 	usb_mark_last_busy(acm->dev);
- 
- 	if (urb->status) {
-+		set_bit(rb->index, &acm->read_urbs_free);
- 		dev_dbg(&acm->data->dev, "%s - non-zero urb status: %d\n",
- 							__func__, urb->status);
- 		return;
- 	}
--	acm_process_read_urb(acm, urb);
-+	rb->head = urb->transfer_buffer;
-+	rb->size = urb->actual_length;
- 
--	/* throttle device if requested by tty */
- 	spin_lock_irqsave(&acm->read_lock, flags);
--	acm->throttled = acm->throttle_req;
-+
-+	if (!list_empty(&acm->pending_read_bufs)) {
-+		/* Data from previous reads is still pending, so
-+		 * add to the end of that. */
-+		list_add_tail(&rb->list, &acm->pending_read_bufs);
-+	} else {
-+		spin_unlock_irqrestore(&acm->read_lock, flags);
-+
-+		acm_process_read_buf(acm, rb);
-+
-+		spin_lock_irqsave(&acm->read_lock, flags);
-+		/* Bulk endpoints are recommended by the ACM specification
-+		 * to be used for hardware flow control. If bulk endpoints
-+		 * are being used then check that all data was passed to
-+		 * the tty.
-+		 */
-+		if (!acm->is_int_ep && rb->size > 0) {
-+			/* acm->throttled might not yet be true as throttling is
-+			 * detect by the ldisc handler, however it will be
-+			 * detected eventually and therefore unthrottled.
-+			 */
-+			list_add_tail(&rb->list, &acm->pending_read_bufs);
-+		} else {
-+			set_bit(rb->index, &acm->read_urbs_free);
-+		}
-+	}
-+
-+	/* throttle device if requested by tty */
- 	if (!acm->throttled && !acm->susp_count) {
- 		spin_unlock_irqrestore(&acm->read_lock, flags);
- 		acm_submit_read_urb(acm, rb->index, GFP_ATOMIC);
-@@ -651,26 +721,22 @@ static void acm_tty_throttle(struct tty_struct *tty)
- 		return;
- 
- 	spin_lock_irq(&acm->read_lock);
--	acm->throttle_req = 1;
-+	acm->throttled = 1;
- 	spin_unlock_irq(&acm->read_lock);
- }
- 
- static void acm_tty_unthrottle(struct tty_struct *tty)
- {
- 	struct acm *acm = tty->driver_data;
--	unsigned int was_throttled;
- 
- 	if (!ACM_READY(acm))
- 		return;
- 
- 	spin_lock_irq(&acm->read_lock);
--	was_throttled = acm->throttled;
- 	acm->throttled = 0;
--	acm->throttle_req = 0;
- 	spin_unlock_irq(&acm->read_lock);
- 
--	if (was_throttled)
--		acm_submit_read_urbs(acm, GFP_KERNEL);
-+	acm_process_pending_read_bufs(acm);
- }
- 
- static int acm_tty_break_ctl(struct tty_struct *tty, int state)
-@@ -1078,6 +1144,7 @@ made_compressed_probe:
- 	spin_lock_init(&acm->read_lock);
- 	mutex_init(&acm->mutex);
- 	acm->rx_endpoint = usb_rcvbulkpipe(usb_dev, epread->bEndpointAddress);
-+	INIT_LIST_HEAD(&acm->pending_read_bufs);
- 	acm->is_int_ep = usb_endpoint_xfer_int(epread);
- 	if (acm->is_int_ep)
- 		acm->bInterval = epread->bInterval;
-diff --git a/drivers/usb/class/cdc-acm.h b/drivers/usb/class/cdc-acm.h
-index ca7937f..995333b 100644
---- a/drivers/usb/class/cdc-acm.h
-+++ b/drivers/usb/class/cdc-acm.h
-@@ -72,8 +72,10 @@ struct acm_wb {
- };
- 
- struct acm_rb {
-+	struct list_head	list;
- 	int			size;
- 	unsigned char		*base;
-+	unsigned char		*head;
- 	dma_addr_t		dma;
- 	int			index;
- 	struct acm		*instance;
-@@ -96,6 +98,7 @@ struct acm {
- 	struct acm_rb read_buffers[ACM_NR];
- 	int rx_buflimit;
- 	int rx_endpoint;
-+	struct list_head pending_read_bufs;
- 	spinlock_t read_lock;
- 	int write_used;					/* number of non-empty write buffers */
- 	int transmitting;
-@@ -113,8 +116,7 @@ struct acm {
- 	unsigned int susp_count;			/* number of suspended interfaces */
- 	unsigned int combined_interfaces:1;		/* control and data collapsed */
- 	unsigned int is_int_ep:1;			/* interrupt endpoints contrary to spec used */
--	unsigned int throttled:1;			/* actually throttled */
--	unsigned int throttle_req:1;			/* throttle requested */
-+	unsigned int throttled:1;			/* tty is throttling */
- 	u8 bInterval;
- 	struct acm_wb *delayed_wb;			/* write queued for a device about to be woken */
- };
--- 
-1.7.0.4
+> 
+> To this market I say, you can have snapshots of your
+> 'data' on ext4 without risking the proven stability of ext4.
+> The snapshots of the 'data' are not guarantied to be as
+> stable (being a new feature), but because the snapshots
+> are second to 'data' in ext4 snapshots, corrupted snapshots
+> will not risk the 'data'.
+> 
+> During 1 year of next3 in production systems, we found bugs.
+> But none of the bugs corrupted 'data'. All of the bugs which
+> caused file system to contain errors, the errors were restricted
+> to snapshot files and in those worst cases, we could always
+> go to emergency plan B (plan A being fsck -p) and run fsck -x
+> which always solved the problem.
 
+It does not matter that much how long or how much your embedded
+production systems are out there. The fact is that it is really very
+limited work load variation, hence very limited testing.
+
+> 
+> The customer was always consulted before resorting to 'plan B'
+> and was given the chance to copy out 'data' from the snapshots
+> (it was always possible) before we discard them.
+
+So it is true, when you have an fs problem (corruption) you have to
+blast off all your snapshots ?
+
+> 
+> Needless to say, the said bugs were fixed and ext4 snapshots
+> will enjoy the stability of next3 and the 'fail safe' nature of the
+> solution, which was proven several times on the field.
+> 
+> 
+> >>
+> >> >
+> >> > There is some confusion among developers on what actually are benefits
+> >> > of ext4 snapshots in comparison to btrfs, or in comparison to the new
+> >> > dm_multisnap code. I know that you have done quite a lot of testing to
+> >> > assure that it does not actually change old ext4 behavior when snapshot
+> >> > disabled, and that it works well when enabled, but have you done any
+> >> > performance related benchmarks ? Do you have any expectations on how it
+> >> > should behave in different work loads ?
+> >> >
+> >> > It would be great to see and be able to confirm that ext4 snapshots are
+> >> > really a win, not only on the feature side, but on the performance side
+> >> > as well. I know that there are people out there still undecided or
+> >> > having a strange feeling about your snapshot work. But who can blame
+> >> > them, when we have not seen any hard data on this matter ?
+> >>
+> >> Ehm.. I did present this benchmark on LSF:
+> >> http://global.phoronix-test-suite.com/index.php?k=profile&u=amir73il-4632-11284-26560
+> >>
+> >> unless you snoozed ;-)
+> >> it shows performance vs. ext4 w/o snapshots and with snapshots
+> >> and while taking snapshots.
+> >
+> > I believe that you just missed the fact that not everyone has attended LSF
+> > and your lightning talk, but that's ok.
+> 
+> That's not really OK. I should have posted the results
+> and analysis on my wiki (the results are there).
+> 
+> >
+> > It seems to me that random writes are usually faster with you snapshot
+> > code regardless whether you use snapshots or not. Is that because of
+> > non snapshot related changes you've made ?
+> 
+> Not that I know of.
+> I can explain why random write onesnap is faster than nosnap
+> and why 1snappermin is faster than onesnap, but I am not
+> sure about nosnap vs. plain ext4.
+> 
+> >
+> > Also random reads seems to be slower with snapshots, is suspect that
+> > this is because of read through, so the reason for the slowdown that it
+> > was CPU bound ? I do not see any CPU utilization data.
+> >
+> 
+> Only the 1snappermin is slower.
+> I suspect it has to do with the fs freezes, but I admin I have not
+> looked into it.
+> 
+> > The postmark results seems quite odd, it is actually a lot faster with
+> > one snapshot and a lot slower with multiple snapshots, do you have an
+> > idea what is going on ?
+> >
+> 
+> The name onesnap is misleading. It should have been
+> existingsnaps.
+> The important factor is whether or not snapshots are taken during the test.
+> In the 1snappermin case, postmark is the only test that exposes the
+> weak spot of ext4 snapshots performance - deletes/truncates.
+> create file+delete file with existing snapshots has no overhead (no COW).
+> create file+take snapshot+delete file has the overhead of moving the
+> deleted blocks to snapshot.
+> With regards to speed up of onesnap, postmark is randomizing the file
+> creates/write so it may be a similar effect to random write.
+> I did not investigate this.
+> 
+> >> I did not compare with btrfs, but I bet there are ext4 vs. btrfs
+> >> benchmarks out there.
+> >> dm-multisnap is better than dm-snap only when it comes to overhead
+> >> per snapshot. it still copies every written block, which is far from
+> >> being the case in ext4 snapshots.
+> >
+> > Nevertheless, I still have not seen any comparison with other
+> > snapshotting possibilities we have. Note that ext4 to btrfs comparison
+> > is not enough, because we do not know what is the difference between
+> > the difference of ext4 with/without snapshots and btrfs with/without
+> > snapshots. The reason for this is that btrfs performance is very likely
+> > to scale up, but ext4 is pretty much done in that matter and I do not
+> > expect any huge performance leaps in the future.
+> >
+> > Also, rejecting dm-multisnap based on this statement is not enough, show
+> > us some numbers.
+> 
+> Well, if you come to understand the difference between fs level an dm
+> level snapshots, you will see why i am rejecting dm-multisnap
+> (performance wise only!).
+
+But I do understand the difference. And also, when it comes to fs level
+snapshotting I would suspect that it would do something we can not do
+with the current solutions, for example per-file or per-directory snapshots,
+cat ext4 snapshots do that ?
+
+> 
+> Anyway #1: I have already answered this questions 2 years ago and I
+> think the answers are still valid both for LVM and btrfs:
+> http://sourceforge.net/apps/mediawiki/next3/index.php?title=FAQ#Why_use_Next3_snapshots_and_not_LVM_snapshots.3F
+
+But again, it was two years ago and even back then you have not had any
+numbers proving your statements.
+
+> 
+> Anyway #2: I need to give you some numbers ;-)
+
+That would be great. Thanks!
+
+> 
+> >
+> > I believe that it is not very convenient for you, because this feature
+> > support your business case and you do not necessarily want to find out
+> > that there might be a better way, especially after the work you have
+> > done already.
+> 
+> Your analysis of my motives is correct :-)
+> The use of the term 'better way' I reject.
+> I think that ext4/btrfs/LVM snapshots are apples and oranges and hamburgers.
+
+But they are really not, because otherwise it would complement each
+other, but they are all trying to do the same thing, except btrfs has
+it for free.
+
+> The question of whether the world needs ext4 snapshots is
+> perfectly valid, but going back to the food analogy, I think it's
+> a case of "the proof of the pudding is in the eating".
+> I have no doubt that if ext4 snapshots are merged, many people will use it.
+
+Well, I would like to have your confidence. Why do you think so ? They
+will use it for what ? Doing backups ? We can do this easily with LVM
+without any risk of compromising existing filesystem at all. On desktop
+? I very much doubt that since you can not do per directory (or per
+file) snapshots, can you ?
+
+> And I think that is a good enough (if not the best)
+> reason for inclusion.
+
+It would be of course, except you're the only one saying that.
+
+Thanks!
+-Lukas
