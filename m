@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab1FHAN4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 20:13:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46631 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753055Ab1FHANy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 20:13:54 -0400
-Date: Tue, 7 Jun 2011 17:13:47 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: lkml@pengaru.com, linux-kernel@vger.kernel.org,
-        Wu Fengguang <fengguang.wu@intel.com>, miklos <miklos@szeredi.hu>
-Subject: Re: bdi_min_ratio never shrinks, ultimately preventing valid
- setting of min_ratio
-Message-Id: <20110607171347.a0bbdfd8.akpm@linux-foundation.org>
-In-Reply-To: <1307049958.2497.726.camel@laptop>
-References: <20110601002854.GV5753@shells.gnugeneration.com>
-	<1307015011.2497.633.camel@laptop>
-	<20110602183244.GB5753@shells.gnugeneration.com>
-	<1307049958.2497.726.camel@laptop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1759209Ab1FHAPU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 20:15:20 -0400
+Received: from fnarfbargle.com ([93.93.131.224]:52570 "EHLO fnarfbargle.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754303Ab1FHAPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 20:15:18 -0400
+Message-ID: <4DEEBF0F.1070902@fnarfbargle.com>
+Date: Wed, 08 Jun 2011 08:15:11 +0800
+From: Brad Campbell <brad@fnarfbargle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Bart De Schuymer <bdschuym@pandora.be>
+CC: Patrick McHardy <kaber@trash.net>, kvm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org
+Subject: Re: KVM induced panic on 2.6.38[2367] & 2.6.39
+References: <20110601011527.GN19505@random.random> <alpine.LSU.2.00.1105312120530.22808@sister.anvils> <4DE5DCA8.7070704@fnarfbargle.com> <4DE5E29E.7080009@redhat.com> <4DE60669.9050606@fnarfbargle.com> <4DE60918.3010008@redhat.com> <4DE60940.1070107@redhat.com> <4DE61A2B.7000008@fnarfbargle.com> <20110601111841.GB3956@zip.com.au> <4DE62801.9080804@fnarfbargle.com> <20110601230342.GC3956@zip.com.au> <4DE8E3ED.7080004@fnarfbargle.com> <isavsg$3or$1@dough.gmane.org> <4DE906C0.6060901@fnarfbargle.com> <4DED344D.7000005@pandora.be> <4DED9C23.2030408@fnarfbargle.com> <4DEE27DE.7060004@trash.net> <4DEE3859.6070808@fnarfbargle.com> <4DEE6815.7040504@pandora.be>
+In-Reply-To: <4DEE6815.7040504@pandora.be>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 02 Jun 2011 23:25:58 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+On 08/06/11 02:04, Bart De Schuymer wrote:
 
-> On Thu, 2011-06-02 at 13:32 -0500, lkml@pengaru.com wrote:
-> > > > There is no place in this listing where the value is decremented by the
-> > > > respective bdi's min_ratio when a bdi is torn down. 
-> > > 
-> > > There is, adding a negative number is equal to a subtraction.
-> > > 
-> > >                 min_ratio -= bdi->min_ratio;
-> > >                 if (bdi_min_ratio + min_ratio < 100) {
-> > >                         bdi_min_ratio += min_ratio;
-> > >                         bdi->min_ratio += min_ratio;
-> > >                 }
-> > > 
-> > > is the relevant piece, note that bdi->min_ratio is the current setting,
-> > > this makes min_ratio the difference between the new and old setting, and
-> > > adding this to both bdi_min_ratio (the global sum) and bdi->min_ratio
-> > > dtrt regardless if the new value is larger or smaller than the old
-> > > value.
-> > 
-> > This accounts for the repeated setting of min_ratio on the same bdi.  But
-> > does bdi_set_min_ratio() get entered with a min_ratio of 0 on bdi removal?
-> > If not, we leak the non-zero min_ratio of a removed bdi.
-> 
-> That does not appear to be the case, good catch. Would you be bitten by
-> that particular scenario? If so, does the below cure things for you?
-> 
-> ---
->  mm/backing-dev.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> index f032e6e..e56fe35 100644
-> --- a/mm/backing-dev.c
-> +++ b/mm/backing-dev.c
-> @@ -606,6 +606,7 @@ static void bdi_prune_sb(struct backing_dev_info *bdi)
->  void bdi_unregister(struct backing_dev_info *bdi)
->  {
->  	if (bdi->dev) {
-> +		bdi_set_min_ratio(bdi, 0);
->  		trace_writeback_bdi_unregister(bdi);
->  		bdi_prune_sb(bdi);
->  		del_timer_sync(&bdi->wb.wakeup_timer);
+> If the bug is easily triggered with your guest os, then you could try to
+> capture the traffic with wireshark (or something else) in a
+> configuration that doesn't crash your system. Save the traffic in a pcap
+> file. Then you can see if resending that traffic in the vulnerable
+> configuration triggers the bug (I don't know if something in Windows
+> exists, but tcpreplay should work for Linux). Once you have such a
+> capture , chances are the bug is even easily reproducible by us (unless
+> it's hardware-specific). Success isn't guaranteed, but I think it's
+> worth a shot...
 
-I grabbed this, wrote a changelog and stuck your signed-off-by on it. 
-Vito, it would be great if you are able to test this please.
+The issue with this is I don't have a configuration that does not crash 
+the system. This only happens under the specific circumstance that 
+traffic from VM A is being DNAT'd to VM B. If I disable 
+CONFIG_BRIDGE_NETFILTER, or I leave out the DNAT then I can't replicate 
+the problem as I don't seem to be able to get the packets to go where I 
+want them to go.
 
-I also added a cc:stable but I didn't work out how far back in time it
-goes.  A long way, I think?
+Let me try and explain it a little more clearly with made up IP 
+addresses to illustrate the problem.
 
+I have VM A (1.1.1.2) and VM B (1.1.1.3) on br1 (1.1.1.1)
+I have public IP on ppp0 (2.2.2.2).
+
+VM B can talk to VM A using its host address (1.1.1.2) and there is no 
+problem.
+
+The DNAT says anything destined for PPP0 that is on port 443 and coming 
+from anywhere other than PPP0 (ie inside the network) is to be DNAT'd to 
+1.1.1.3.
+
+So VM B (1.1.1.3) tries to connect to ppp0 (2.2.2.2) on port 443, and 
+this is redirected to VM B on 1.1.1.2.
+
+Only under this specific circumstance does the problem occur. I can get 
+VM B (1.1.1.3) to talk directly to VM A (1.1.1.2) all day long and there 
+is no problem, it's only when VM B tries to talk to ppp0 that there is 
+an issue (and it happens within seconds of the initial connection).
+
+All these tests have been performed with VM B being a Windows XP guest. 
+Tonight I'll try it with a Linux guest and see if I can make it happen. 
+If that works I might be able to come up with some reproducible test 
+case for you. I have a desktop machine that has Intel VT extensions, so 
+I'll work toward making a portable test case.
