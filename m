@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab1FHOIo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 10:08:44 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49012 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754974Ab1FHOIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 10:08:43 -0400
-Date: Wed, 8 Jun 2011 16:08:30 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 0/3 v2] [GIT PULL][v3.0] tracing: fixes
-Message-ID: <20110608140830.GB30752@elte.hu>
-References: <20110607212937.662660421@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110607212937.662660421@goodmis.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1756141Ab1FHOPF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 10:15:05 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:31798 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755061Ab1FHOPD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 10:15:03 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Wed, 08 Jun 2011 10:15:02 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: Dynamic patching in discarded sections
+In-reply-to: <201106081123.59414.arnd@arndb.de>
+Message-id: <alpine.LFD.2.00.1106080946000.2142@xanadu.home>
+References: <201106081123.59414.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 8 Jun 2011, Arnd Bergmann wrote:
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+> I've been playing with randconfig builds and found an interesting problem
+> with the combination of:
+> 
+> CONFIG_ARM_PATCH_PHYS_VIRT=y
+> CONFIG_HOTPLUG=n
+> CONFIG_DMABOUNCE=n
+> CONFIG_MMC_SPI=y
+> 
+> The problem is shown with this code:
+> 
+> static int __devexit mmc_spi_remove(struct spi_device *spi)
+> {
+> 	...   
+>                         dma_unmap_single(host->dma_dev, host->ones_dma,
+>                                 MMC_SPI_BLOCKSIZE, DMA_TO_DEVICE);
+>                         dma_unmap_single(host->dma_dev, host->data_dma,
+>                                 sizeof(*host->data), DMA_BIDIRECTIONAL);
+> 	...
+> }
+> 
+> and the error message (in case someone looks for this using google) is
+> 
+> `.devexit.text' referenced in section `.pv_table' of drivers/built-in.o: defined in discarded section `.devexit.text' of drivers/built-in.o
+> `.devexit.text' referenced in section `.pv_table' of drivers/built-in.o: defined in discarded section `.devexit.text' of drivers/built-in.o
+> 
+> What happens is that dma_unmap_single() calls
+>  __dma_single_dev_to_cpu(dma_to_virt(dev, handle), size, dir), which requires
+> patching in the caller. However, due to CONFIG_HOTPLUG being disabled, the
+> __devexit section gets discarded, and the linker cannot create an entry in the
+> .pvtable section for the mmc_spi_remove function.
 
-> Ingo,
-> 
-> Please pull the latest tip/perf/urgent-2 tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/urgent-2
-> 
-> 
-> GuoWen Li (1):
->       ftrace: Fix possible undefined return code
-> 
-> Steven Rostedt (2):
->       kprobes/trace: Fix kprobe selftest for gcc 4.6
->       ftrace: Revert 8ab2b7efd ftrace: Remove unnecessary disabling of irqs
-> 
-> ----
->  kernel/trace/ftrace.c       |    9 ++++++++-
->  kernel/trace/trace_kprobe.c |    8 ++++++--
->  2 files changed, 14 insertions(+), 3 deletions(-)
+We really need to push for better toolchain support here.  This could 
+easily be solved with some way to query the currently active section 
+from the assembler and use that to construct the argument to the
+.pushsection directive.  This way, the .pvtable section could become 
+.pvtable.__devexit when the reference is made from a __devexit section, 
+and that could be discarded altogether at link time if unneeded.
 
-Pulled, thanks a lot Steve!
+Dave Martin proposed an extension to gas here (also sent to 
+binutils@sourceware.org):
 
-Thanks,
+http://article.gmane.org/gmane.linux.linaro.toolchain/701
 
-	Ingo
+But as far as I know, nothing further happened. And this is not an ARM 
+specific issue either as the X86 alternates have the same problem.
+
+> I don't know if the same problem exists in other places in the code, but it's
+> entirely possible. I also couldn't think of a good solution for this, short of
+> moving the definition of dma_unmap_single() to out of line code.
+
+Probably the best interim solution would be:
+
+diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+index dfbb377..f231c92 100644
+--- a/arch/arm/kernel/vmlinux.lds.S
++++ b/arch/arm/kernel/vmlinux.lds.S
+@@ -21,7 +21,8 @@
+ #define ARM_CPU_KEEP(x)
+ #endif
+ 
+-#if defined(CONFIG_SMP_ON_UP) && !defined(CONFIG_DEBUG_SPINLOCK)
++#if (defined(CONFIG_SMP_ON_UP) && !defined(CONFIG_DEBUG_SPINLOCK)) || \
++    defined(CONFIG_ARM_PATCH_PHYS_VIRT)
+ #define ARM_EXIT_KEEP(x)	x
+ #else
+ #define ARM_EXIT_KEEP(x)
+
+But clearly the toolchain should be more accommodating instead.
+
+
+Nicolas
