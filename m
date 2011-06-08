@@ -1,94 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab1FHHpl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 03:45:41 -0400
-Received: from smtp206.alice.it ([82.57.200.102]:59357 "EHLO smtp206.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754345Ab1FHHpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 03:45:39 -0400
-Date: Wed, 8 Jun 2011 09:45:23 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Simon Wood <simon@mungewell.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, Michael Bauer <michael@m-bauer.org>,
-        Marcin Tolysz <tolysz@gmail.com>
-Subject: Re: [PATCHv4 1/3] sony_ff_hid_descriptor
-Message-Id: <20110608094523.c7232556.ospite@studenti.unina.it>
-In-Reply-To: <1307179957-24458-1-git-send-email-simon@mungewell.org>
-References: <1307179957-24458-1-git-send-email-simon@mungewell.org>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__8_Jun_2011_09_45_23_+0200_Vpzg/rSywJnD5wiS"
+	id S1754825Ab1FHHq6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 03:46:58 -0400
+Received: from mtagate4.uk.ibm.com ([194.196.100.164]:34794 "EHLO
+	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754575Ab1FHHqz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 03:46:55 -0400
+Message-Id: <20110608074523.211912903@de.ibm.com>
+User-Agent: quilt/0.48-1
+Date: Wed, 08 Jun 2011 09:45:23 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Slaby <jslaby@suse.cz>
+Subject: [patch 0/1] [RFC] include storage keys in hibernation image
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__8_Jun_2011_09_45_23_+0200_Vpzg/rSywJnD5wiS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Greetings,
 
-On Sat,  4 Jun 2011 02:32:35 -0700
-Simon Wood <simon@mungewell.org> wrote:
+we have discovered a shortcoming of the s390 support for supend to disk.
+The problem is that we currently do not save and restore the storage
+keys - the one additional byte associated with each 4K page, a unique
+property of s390. The resume from disk will read the hibernation image
+from disk and restore the original pages. The I/O or the memory move for
+safe pages will set the referenced and the dirty bit in the storage key
+for every restored page. Without a reset to the state before the
+hibernation cycle the pages will appear to be dirty which causes
+problems for e.g. read-only filesystems. 
 
-> This patch modifies the HID descriptor of the Sixaxis controller
-> to allow the reporting of the accelerometers and gyro via
-> a joystick axis.
->=20
-> rewrite section from offset 148
+The solution implemented with this patch saves the storage key in the
+upper 8 bits of the page-frame-numbers. The code adds 6 new function
+in kernel/power/snapshot.c which are conditionally defined with
+CONFIG_S390. The call sites of these functions are scattered in the
+snapshot code which makes it hard to find a better abstraction for the
+interface. The comments should make clear what the functions do.
 
-=46rom offset 83? Below I see rdesc[83] =3D=3D 0x75
+-- 
+blue skies,
+   Martin.
 
-> --
-> 0x75, 0x08,         /*          Report Size (8),            */
-> 0x95, 0x27,         /*          Report Count (39),          */ /* all the=
- other data
-> lumped together */
-
-I'd keep commit messages wrapped to 72/80 chars as well if possible.
-
-[...]
-> @@ -43,6 +49,11 @@ static __u8 *sony_report_fixup(struct hid_device *hdev=
-, __u8 *rdesc,
->  		hid_info(hdev, "Fixing up Sony Vaio VGX report descriptor\n");
->  		rdesc[55] =3D 0x06;
->  	}
-> +	if ((sc->quirks & SIXAXIS_CONTROLLER_USB) &&
-> +			*rsize =3D=3D 148 && rdesc[83] =3D=3D 0x75) {
-> +		hid_info(hdev, "Fixing up Sony Sixaxis report descriptor\n");
-> +		memcpy((void *)&rdesc[83], (void *) &sixaxis_rdesc_fixup, sizeof(sixax=
-is_rdesc_fixup));
-> +	}
->  	return rdesc;
->  }
-> =20
-
-Thanks,
-   Antonio
-
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-
---Signature=_Wed__8_Jun_2011_09_45_23_+0200_Vpzg/rSywJnD5wiS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk3vKJQACgkQ5xr2akVTsAE3GACfZ9QAoMgTkLH7kwAy50y7TShl
-xnsAnA/nO45oIhloSaV6SzClycP/I6p/
-=adkr
------END PGP SIGNATURE-----
-
---Signature=_Wed__8_Jun_2011_09_45_23_+0200_Vpzg/rSywJnD5wiS--
+"Reality continues to ruin my life." - Calvin.
