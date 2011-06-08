@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab1FHVcv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 17:32:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39626 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752090Ab1FHVct (ORCPT
+	id S1755956Ab1FHVeh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 17:34:37 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:62867 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524Ab1FHVef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 17:32:49 -0400
+	Wed, 8 Jun 2011 17:34:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=P/IIhDDJzaDTYDJBV/Vg3CT6kv23xuiNM2kxGJIK35miMgCY2+JILOoqnnQWoJ9JGu
+         wzzZW2ghTNcSfKNwzUwQ==
+Date: Wed, 8 Jun 2011 14:34:29 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Matt Mackall <mpm@selenic.com>, David Howells <dhowells@redhat.com>
+cc: Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        John Johansen <john.johansen@canonical.com>
+Subject: Re: 3.0.0-rc2-git1 -- BUG: sleeping function called from invalid
+ context at mm/slub.c:847
+In-Reply-To: <1307564248.4204.1013.camel@calx>
+Message-ID: <alpine.DEB.2.00.1106081407440.10320@chino.kir.corp.google.com>
+References: <BANLkTimq+h+WyboMbPGVH1uJuj64YuRLdw@mail.gmail.com> <alpine.DEB.2.00.1106081305430.10320@chino.kir.corp.google.com> <1307564248.4204.1013.camel@calx>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110608212813.GB32056@srcf.ucam.org>
-References: <20110608193833.GA29855@srcf.ucam.org> <4DEFD220.5040507@kernel.org>
- <20110608195250.GB30256@srcf.ucam.org> <4DEFD58D.5060402@kernel.org>
- <20110608200903.GA30694@srcf.ucam.org> <4DEFDA4A.9080500@kernel.org>
- <20110608203037.GA31052@srcf.ucam.org> <4DEFDD69.7010000@kernel.org>
- <20110608204244.GA31484@srcf.ucam.org> <BANLkTikfbSsgGgNEQ3GVD=HOPn1Dz_xh+g@mail.gmail.com>
- <20110608212813.GB32056@srcf.ucam.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 8 Jun 2011 14:31:55 -0700
-Message-ID: <BANLkTikbx6xm+NY34ATN7YkJyjPp9CSXTw@mail.gmail.com>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 8, 2011 at 2:28 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->
-> Boot services data includes everything that was allocated by the EFI
-> memory allocator. Depending on what the system decided to do before
-> deigning to run our code, that might be a meg - or it might be several
-> hundred. And in the process it's probably fragmented RAM into god knows
-> how many small chunks.
+On Wed, 8 Jun 2011, Matt Mackall wrote:
 
-In reality?
+> > Not sure why this ever actually worked with apparmor if prepare_creds() 
+> > does an unconditional GFP_KERNEL allocation since this codepath hasn't 
+> > changed in at least a year and we're holding a spinlock from setrlimit.  
+> > John?
+> 
+> Probably a lack of people enabling (and using!) both apparmor and
+> might_sleep. I don't this would be caught by a randconfig boot test.
+> 
 
-Whatever. I really think our EFI support is just fundamnetally broken.
-We should do *everything* in the bootloader, and nothing at all in the
-kernel. IOW, I think doing the whole "SetVirtualAddrMap()" (or
-whatever) in the boot loader too, and just promise to neve rever call
-any EFI routines from the kernel.
+Right, CONFIG_DEBUG_SPINLOCK_SLEEP isn't enabled by default even though 
+CONFIG_DEBUG_KERNEL is.  We should probably just allow prepare_creds() to 
+take a gfp_t argument just like security_prepare_creds() and change 
+existing callers to use GFP_KERNEL with the exception of those using 
+setrlimit where we're always holding the spinlock.  
 
-IOW, a sane EFI boot loader should just make things look like a
-regular BIOS, and not bother the kernel with the EFI crap.
+Documentation/security/credentials.txt says this:
 
-EFI was misdesigned. That doesn't mean that _we_ should then
-mis-design our support for it.
+	To alter the current process's credentials, a function should first prepare a
+	new set of credentials by calling:
 
-                          Linus
+        	struct cred *prepare_creds(void);   
+
+	this locks current->cred_replace_mutex and then allocates and constructs a
+	duplicate of the current process's credentials, returning with the mutex still
+	held if successful.  It returns NULL if not successful (out of memory).
+
+although that mutex doesn't exist.  David, any downsides to passing the 
+gfp_t into prepare_creds()?
