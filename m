@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab1FHPlJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 11:41:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35990 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754910Ab1FHPlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 11:41:05 -0400
-Date: Wed, 8 Jun 2011 17:41:03 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Ed Tomlinson <edt@aei.ca>, Greg KH <gregkh@suse.de>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Linux 2.6.39.1
-In-Reply-To: <4DEF9705.4070502@canonical.com>
-Message-ID: <alpine.LNX.2.00.1106081740040.22872@pobox.suse.cz>
-References: <20110603003835.GA20381@kroah.com> <201106032236.41294.edt@aei.ca> <4DED20C6.1020701@canonical.com> <201106061926.14661.edt@aei.ca> <4DEF9705.4070502@canonical.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756532Ab1FHPod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 11:44:33 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60569 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756421Ab1FHPoc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 11:44:32 -0400
+Date: Wed, 8 Jun 2011 16:46:26 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Toby Gray <toby.gray@realvnc.com>
+Cc: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: cdc-acm: Prevent loss of data when filling tty
+ buffer
+Message-ID: <20110608164626.22bc893c@lxorguk.ukuu.org.uk>
+In-Reply-To: <1307547519-29246-1-git-send-email-toby.gray@realvnc.com>
+References: <1307547519-29246-1-git-send-email-toby.gray@realvnc.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jun 2011, Chase Douglas wrote:
+> This patch adds checking for how many bytes have been inserted into the tty
+> buffer and places data which hasn't been inserted into a pending buffer list.
+> The pending buffer list is pushed to the tty buffer when the tty unthrottles
 
-> > I also played a bit with 1.1 CSR dongle and couldn't find any mask that would
-> > be accepted. I think this command can be left out for older than 1.2 devices.
-> > 
-> > Following patch should do it. Could you verify it. I don't have access to old
-> > hw ATM.
-> > 
-> > diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-> > index 19cd4af..86d1e26 100644
-> > --- a/net/bluetooth/hci_event.c
-> > +++ b/net/bluetooth/hci_event.c
-> > @@ -477,14 +477,16 @@ static void hci_setup_event_mask(struct hci_dev *hdev)
-> >          * command otherwise */
-> >         u8 events[8] = { 0xff, 0xff, 0xfb, 0xff, 0x00, 0x00, 0x00, 0x00 };
-> >  
-> > -       /* Events for 1.2 and newer controllers */
-> > -       if (hdev->lmp_ver > 1) {
-> > -               events[4] |= 0x01; /* Flow Specification Complete */
-> > -               events[4] |= 0x02; /* Inquiry Result with RSSI */
-> > -               events[4] |= 0x04; /* Read Remote Extended Features Complete */
-> > -               events[5] |= 0x08; /* Synchronous Connection Complete */
-> > -               events[5] |= 0x10; /* Synchronous Connection Changed */
-> > -       }
-> > +       /* CSR 1.1 dongles does not accept any bitfield so don't try to set
-> > +        * any event mask for pre 1.2 devices */
-> > +       if (hdev->lmp_ver <= 1)
-> > +               return;
-> > +
-> > +       events[4] |= 0x01; /* Flow Specification Complete */
-> > +       events[4] |= 0x02; /* Inquiry Result with RSSI */
-> > +       events[4] |= 0x04; /* Read Remote Extended Features Complete */
-> > +       events[5] |= 0x08; /* Synchronous Connection Complete */
-> > +       events[5] |= 0x10; /* Synchronous Connection Changed */
-> >  
-> >         if (hdev->features[3] & LMP_RSSI_INQ)
-> >                 events[4] |= 0x04; /* Inquiry Result with RSSI */
-> 
-> Where did this patch come from? I don't see it in Linus' tree. If this
-> patch is merged, I can test the a new kernel out to see if we should
-> back out the commit from Jiri. However, right now my magic trackpad
-> (which has the same issue as the magic mouse) works fine on plain 2.6.39.1.
+I don't think this is the way to tackle it.
 
-It might be because of different versions of CSR dongles you guys might 
-have.
+If the kernel tty buffer code is shedding data then not only have we
+asserted a throttle but 64K has been accumulated or the system is out of
+memory.
 
-I am still a bit lost here -- Ed, do you say that with the patch above, 
-and with my patch reverted, your device is working properly?
+So the questions to me are:
 
-Chase, could you please try the same on your side? Thanks,
+a) Why is your setup filling 64K in the time it takes the throttle
+response to occur
 
--- 
-Jiri Kosina
-SUSE Labs
+b) Do we care (is the right thing to do to lose bits anyway at that point)
+
+c) What should we do about it in the *general* case
+
+
+It seems to me either its a cdc-acm specific problem with throttle
+response behaviour, or its a general case at very high speed (which seems
+more likely). In neither case is adding an extra queue to paper over it
+the right solution.
+
+
