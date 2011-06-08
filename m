@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab1FHQeD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 12:34:03 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50871 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab1FHQeA (ORCPT
+	id S1752041Ab1FHQgh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 12:36:37 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:52559 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751253Ab1FHQgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 12:34:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=J/qZZ3cpCvah1X8GZEP4Jb5UChcEMFA6uIIeOLGIJ8p9XVt28+oT1Pg9RfCyn/xhSV
-         YG1jMyyF9JwC6CFzhk4FN9r5tiCBgVOh9Esh0+/lRR1MV9CmbdagDbuYIXVxGCVaxg0w
-         wi/KY1ZQBP45BDR/IefCEr9XhI8dy+JpJkTkQ=
+	Wed, 8 Jun 2011 12:36:36 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Lee Jones <lee.jones@linaro.org>, Jonas Aberg <jonas.aberg@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] fs/fat: fix build warning
+Date: Wed, 8 Jun 2011 18:36:03 +0200
+Message-ID: <1307550963-26352-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Wed, 8 Jun 2011 18:33:39 +0200
-Message-ID: <BANLkTin6CmO+PfyGkUL3fg3REGXU=7DS7g@mail.gmail.com>
-Subject: [PATCH] make former thread ID available via PTRACE_GETEVENTMSG after
- PTRACE_EVENT_EXEC stop
-To: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=0016e6de04444c181d04a535e747
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6de04444c181d04a535e747
-Content-Type: text/plain; charset=ISO-8859-1
+From: Jonas Aberg <jonas.aberg@stericsson.com>
 
-Hi Oleg,
+This fixes a compile warning (unititialized variable) in
+the fat filesystem code.
 
-As discussed, the attached patch allows tracer to figure out
-which of its potentially many tracees performed an execve,
-and what was its former tid.
+Signed-off-by: Jonas Aberg <jonas.aberg@stericsson.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+v2: use uninitialized_var() macro, this is verified to work with
+static code-checking tools.
+---
+ fs/fat/dir.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Not sure what kind of locking, if any, I need to put around
-current->parent...
-
-The patch is on top of Tejun's patches.
-
+diff --git a/fs/fat/dir.c b/fs/fat/dir.c
+index 4ad6473..5efbd5d 100644
+--- a/fs/fat/dir.c
++++ b/fs/fat/dir.c
+@@ -1231,7 +1231,7 @@ int fat_add_entries(struct inode *dir, void *slots, int nr_slots,
+ 	struct super_block *sb = dir->i_sb;
+ 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+ 	struct buffer_head *bh, *prev, *bhs[3]; /* 32*slots (672bytes) */
+-	struct msdos_dir_entry *de;
++	struct msdos_dir_entry *uninitialized_var(de);
+ 	int err, free_slots, i, nr_bhs;
+ 	loff_t pos, i_pos;
+ 
 -- 
-vda
+1.7.3.2
 
---0016e6de04444c181d04a535e747
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="pass_old_pid_on_PTRACE_EVENT_EXEC.patch"
-Content-Disposition: attachment; 
-	filename="pass_old_pid_on_PTRACE_EVENT_EXEC.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_goohnxzq0
-
-ZGlmZiAtLWdpdCBhL2ZzL2V4ZWMuYyBiL2ZzL2V4ZWMuYwppbmRleCBhOWYyYjM2Li4wOGIxMTcy
-IDEwMDY0NAotLS0gYS9mcy9leGVjLmMKKysrIGIvZnMvZXhlYy5jCkBAIC0xMzgzLDggKzEzODMs
-MTAgQEAgaW50IHNlYXJjaF9iaW5hcnlfaGFuZGxlcihzdHJ1Y3QgbGludXhfYmlucHJtICpicHJt
-LHN0cnVjdCBwdF9yZWdzICpyZWdzKQogCQkJICovCiAJCQlicHJtLT5yZWN1cnNpb25fZGVwdGgg
-PSBkZXB0aDsKIAkJCWlmIChyZXR2YWwgPj0gMCkgewotCQkJCWlmIChkZXB0aCA9PSAwKQotCQkJ
-CQl0cmFjZWhvb2tfcmVwb3J0X2V4ZWMoZm10LCBicHJtLCByZWdzKTsKKwkJCQlpZiAoZGVwdGgg
-PT0gMCkgeworCQkJCQlwaWRfdCBwaWQgPSB0YXNrX3BpZF9ucl9ucyhjdXJyZW50LCB0YXNrX2Fj
-dGl2ZV9waWRfbnMoY3VycmVudC0+cGFyZW50KSk7CisJCQkJCXRyYWNlaG9va19yZXBvcnRfZXhl
-YyhmbXQsIGJwcm0sIHJlZ3MsIHBpZCk7CisJCQkJfQogCQkJCXB1dF9iaW5mbXQoZm10KTsKIAkJ
-CQlhbGxvd193cml0ZV9hY2Nlc3MoYnBybS0+ZmlsZSk7CiAJCQkJaWYgKGJwcm0tPmZpbGUpCmRp
-ZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L3RyYWNlaG9vay5oIGIvaW5jbHVkZS9saW51eC90cmFj
-ZWhvb2suaAppbmRleCAxNTc0NWNkLi4zZjY1MDA1IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4
-L3RyYWNlaG9vay5oCisrKyBiL2luY2x1ZGUvbGludXgvdHJhY2Vob29rLmgKQEAgLTE5OSw5ICsx
-OTksMTAgQEAgc3RhdGljIGlubGluZSBzdHJ1Y3QgdGFza19zdHJ1Y3QgKnRyYWNlaG9va190cmFj
-ZXJfdGFzayhzdHJ1Y3QgdGFza19zdHJ1Y3QgKnRzaykKICAqLwogc3RhdGljIGlubGluZSB2b2lk
-IHRyYWNlaG9va19yZXBvcnRfZXhlYyhzdHJ1Y3QgbGludXhfYmluZm10ICpmbXQsCiAJCQkJCSBz
-dHJ1Y3QgbGludXhfYmlucHJtICpicHJtLAotCQkJCQkgc3RydWN0IHB0X3JlZ3MgKnJlZ3MpCisJ
-CQkJCSBzdHJ1Y3QgcHRfcmVncyAqcmVncywKKwkJCQkJIHBpZF90IHBpZCkKIHsKLQlpZiAoIXB0
-cmFjZV9ldmVudChQVF9UUkFDRV9FWEVDLCBQVFJBQ0VfRVZFTlRfRVhFQywgMCkgJiYKKwlpZiAo
-IXB0cmFjZV9ldmVudChQVF9UUkFDRV9FWEVDLCBQVFJBQ0VfRVZFTlRfRVhFQywgcGlkKSAmJgog
-CSAgICB1bmxpa2VseSh0YXNrX3B0cmFjZShjdXJyZW50KSAmIFBUX1BUUkFDRUQpKQogCQlzZW5k
-X3NpZyhTSUdUUkFQLCBjdXJyZW50LCAwKTsKIH0K
---0016e6de04444c181d04a535e747--
