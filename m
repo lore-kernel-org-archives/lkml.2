@@ -1,198 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab1FHRHg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 13:07:36 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55390 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605Ab1FHRH2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 13:07:28 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        airlied@redhat.com, thomas@shipmail.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] ttm: Fix spelling mistakes and remove unused #ifdef
-Date: Wed,  8 Jun 2011 13:06:15 -0400
-Message-Id: <1307552775-3185-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1307552775-3185-1-git-send-email-konrad.wilk@oracle.com>
-References: <1307552775-3185-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090206.4DEFAC2B.0125:SCFSTAT5015188,ss=1,fgs=0
+	id S1752668Ab1FHRIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 13:08:46 -0400
+Received: from realvnc.com ([146.101.152.142]:45235 "EHLO realvnc.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751899Ab1FHRIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 13:08:44 -0400
+Message-ID: <4DEFAC9A.9030106@realvnc.com>
+Date: Wed, 08 Jun 2011 18:08:42 +0100
+From: Toby Gray <toby.gray@realvnc.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: cdc-acm: Prevent loss of data when filling tty buffer
+References: <1307547519-29246-1-git-send-email-toby.gray@realvnc.com> <20110608164626.22bc893c@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110608164626.22bc893c@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-. and some comments to make it easier to understand.
+On 08/06/2011 16:46, Alan Cox wrote:
+>> This patch adds checking for how many bytes have been inserted into the tty
+>> buffer and places data which hasn't been inserted into a pending buffer list.
+>> The pending buffer list is pushed to the tty buffer when the tty unthrottles
+> I don't think this is the way to tackle it.
+Fair enough. I wasn't 100% sure that adding what is really an extra 
+layer of buffering in the driver was the best solution.
+> If the kernel tty buffer code is shedding data then not only have we
+> asserted a throttle but 64K has been accumulated or the system is out of
+> memory.
+>
+> So the questions to me are:
+>
+> a) Why is your setup filling 64K in the time it takes the throttle
+> response to occur
+The setup is a Nokia mobile phone sending some application data over a 
+USB connection. Applications running on Nokia's Symbian based mobile 
+phones which wish to communicate with a PC over USB are offered a 
+virtual COM port on the mobile phone side. This COM port appears as a 
+second cdc-acm device to the PC.
 
-Ackedby: Randy Dunlap <randy.dunlap@oracle.com>
-[v2: Added some more updates from Randy Dunlap]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/gpu/drm/ttm/ttm_page_alloc.c |   16 ++++++++--------
- include/drm/ttm/ttm_bo_api.h         |    3 ---
- include/drm/ttm/ttm_bo_driver.h      |    6 +++---
- include/drm/ttm/ttm_memory.h         |    2 +-
- include/drm/ttm/ttm_object.h         |    4 ++--
- include/drm/ttm/ttm_page_alloc.h     |    2 +-
- 6 files changed, 15 insertions(+), 18 deletions(-)
+In this particular instance the device is sending a large quantity of 
+data (about 1MB) down the COM port. This communication is one way, so 
+the device keeps sending the data as fast as the PC requests more USB 
+bulk transfers.
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index 9d9d929..4db6fc7 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -355,7 +355,7 @@ restart:
- 			if (nr_free)
- 				goto restart;
- 
--			/* Not allowed to fall tough or break because
-+			/* Not allowed to fall through or break because
- 			 * following context is inside spinlock while we are
- 			 * outside here.
- 			 */
-@@ -554,7 +554,7 @@ out:
- }
- 
- /**
-- * Fill the given pool if there isn't enough pages and requested number of
-+ * Fill the given pool if there aren't enough pages and the requested number of
-  * pages is small.
-  */
- static void ttm_page_pool_fill_locked(struct ttm_page_pool *pool,
-@@ -574,8 +574,8 @@ static void ttm_page_pool_fill_locked(struct ttm_page_pool *pool,
- 
- 	pool->fill_lock = true;
- 
--	/* If allocation request is small and there is not enough
--	 * pages in pool we fill the pool first */
-+	/* If allocation request is small and there are not enough
-+	 * pages in a pool we fill the pool up first. */
- 	if (count < _manager->options.small
- 		&& count > pool->npages) {
- 		struct list_head new_pages;
-@@ -612,9 +612,9 @@ static void ttm_page_pool_fill_locked(struct ttm_page_pool *pool,
- }
- 
- /**
-- * Cut count nubmer of pages from the pool and put them to return list
-+ * Cut 'count' number of pages from the pool and put them on the return list.
-  *
-- * @return count of pages still to allocate to fill the request.
-+ * @return count of pages still required to fulfill the request.
-  */
- static unsigned ttm_page_pool_get_pages(struct ttm_page_pool *pool,
- 		struct list_head *pages, int ttm_flags,
-@@ -635,7 +635,7 @@ static unsigned ttm_page_pool_get_pages(struct ttm_page_pool *pool,
- 		goto out;
- 	}
- 	/* find the last pages to include for requested number of pages. Split
--	 * pool to begin and halves to reduce search space. */
-+	 * pool to begin and halve it to reduce search space. */
- 	if (count <= pool->npages/2) {
- 		i = 0;
- 		list_for_each(p, &pool->list) {
-@@ -649,7 +649,7 @@ static unsigned ttm_page_pool_get_pages(struct ttm_page_pool *pool,
- 				break;
- 		}
- 	}
--	/* Cut count number of pages from pool */
-+	/* Cut 'count' number of pages from the pool */
- 	list_cut_position(pages, &pool->list, p);
- 	pool->npages -= count;
- 	count = 0;
-diff --git a/include/drm/ttm/ttm_bo_api.h b/include/drm/ttm/ttm_bo_api.h
-index 62a0e4c..42e3469 100644
---- a/include/drm/ttm/ttm_bo_api.h
-+++ b/include/drm/ttm/ttm_bo_api.h
-@@ -662,9 +662,6 @@ extern int ttm_bo_kmap(struct ttm_buffer_object *bo, unsigned long start_page,
- 
- extern void ttm_bo_kunmap(struct ttm_bo_kmap_obj *map);
- 
--#if 0
--#endif
--
- /**
-  * ttm_fbdev_mmap - mmap fbdev memory backed by a ttm buffer object.
-  *
-diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
-index 09af2d7..94eb143 100644
---- a/include/drm/ttm/ttm_bo_driver.h
-+++ b/include/drm/ttm/ttm_bo_driver.h
-@@ -78,7 +78,7 @@ struct ttm_backend_func {
- 	 *
- 	 * Bind the backend pages into the aperture in the location
- 	 * indicated by @bo_mem. This function should be able to handle
--	 * differences between aperture- and system page sizes.
-+	 * differences between aperture and system page sizes.
- 	 */
- 	int (*bind) (struct ttm_backend *backend, struct ttm_mem_reg *bo_mem);
- 
-@@ -88,7 +88,7 @@ struct ttm_backend_func {
- 	 * @backend: Pointer to a struct ttm_backend.
- 	 *
- 	 * Unbind previously bound backend pages. This function should be
--	 * able to handle differences between aperture- and system page sizes.
-+	 * able to handle differences between aperture and system page sizes.
- 	 */
- 	int (*unbind) (struct ttm_backend *backend);
- 
-@@ -786,7 +786,7 @@ extern int ttm_bo_device_release(struct ttm_bo_device *bdev);
-  * ttm_bo_device_init
-  *
-  * @bdev: A pointer to a struct ttm_bo_device to initialize.
-- * @mem_global: A pointer to an initialized struct ttm_mem_global.
-+ * @glob: A pointer to an initialized struct ttm_bo_global.
-  * @driver: A pointer to a struct ttm_bo_driver set up by the caller.
-  * @file_page_offset: Offset into the device address space that is available
-  * for buffer data. This ensures compatibility with other users of the
-diff --git a/include/drm/ttm/ttm_memory.h b/include/drm/ttm/ttm_memory.h
-index b199170..26c1f78 100644
---- a/include/drm/ttm/ttm_memory.h
-+++ b/include/drm/ttm/ttm_memory.h
-@@ -41,7 +41,7 @@
-  * @do_shrink: The callback function.
-  *
-  * Arguments to the do_shrink functions are intended to be passed using
-- * inheritance. That is, the argument class derives from struct ttm_mem_srink,
-+ * inheritance. That is, the argument class derives from struct ttm_mem_shrink,
-  * and can be accessed using container_of().
-  */
- 
-diff --git a/include/drm/ttm/ttm_object.h b/include/drm/ttm/ttm_object.h
-index 0d9db09..e46054e 100644
---- a/include/drm/ttm/ttm_object.h
-+++ b/include/drm/ttm/ttm_object.h
-@@ -111,7 +111,7 @@ struct ttm_object_device;
-  *
-  * @ref_obj_release: A function to be called when a reference object
-  * with another ttm_ref_type than TTM_REF_USAGE is deleted.
-- * this function may, for example, release a lock held by a user-space
-+ * This function may, for example, release a lock held by a user-space
-  * process.
-  *
-  * This struct is intended to be used as a base struct for objects that
-@@ -172,7 +172,7 @@ extern struct ttm_base_object *ttm_base_object_lookup(struct ttm_object_file
- /**
-  * ttm_base_object_unref
-  *
-- * @p_base: Pointer to a pointer referncing a struct ttm_base_object.
-+ * @p_base: Pointer to a pointer referencing a struct ttm_base_object.
-  *
-  * Decrements the base object refcount and clears the pointer pointed to by
-  * p_base.
-diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
-index 8062890..129de12 100644
---- a/include/drm/ttm/ttm_page_alloc.h
-+++ b/include/drm/ttm/ttm_page_alloc.h
-@@ -32,7 +32,7 @@
- /**
-  * Get count number of pages from pool to pages list.
-  *
-- * @pages: heado of empty linked list where pages are filled.
-+ * @pages: head of empty linked list where pages are filled.
-  * @flags: ttm flags for page allocation.
-  * @cstate: ttm caching state for the page.
-  * @count: number of pages to allocate.
--- 
-1.7.4.1
+If it hasn't been told to throttle then the cdc-acm code will issue more 
+bulk reads as soon as the last one has completed. This means that it's 
+possible for the tty to not have a chance to be throttle by 
+flush_to_ldisc before too much data has been received over USB.
+> b) Do we care (is the right thing to do to lose bits anyway at that point)
+The cdc-acm driver which Nokia provide for Windows doesn't drop data 
+when transferring large volumes of data, so most application making use 
+of the mobile phone to PC USB connection won't have implemented any form 
+of error correction or retransmission. If we don't care about data loss 
+on Linux then it will force the application layer to implement some way 
+of detecting these losses and to then retransmit the data.
+
+> c) What should we do about it in the *general* case
+> It seems to me either its a cdc-acm specific problem with throttle
+> response behaviour, or its a general case at very high speed (which seems
+> more likely). In neither case is adding an extra queue to paper over it
+> the right solution.
+Agreed. I'm not sure about how specific to cdc-acm it is though. I think 
+the reason that I'm seeing this problem is due to the high data rate of 
+USB combined with the protocol that is being used over the cdc-acm 
+channel not having any flow control or acknowledgements. I have no idea 
+how specialist this situation is though.
+
+I think a possible alternative solution for the cdc-acm would be for it 
+to make sure that tty_buffer_request_room returns enough space for any 
+pending URB requests. However I think I originally dismissed this as a 
+possibility as I couldn't think of an easy way for the cdc-acm driver to 
+be told that more buffer room has been made available.
+
+Regards,
+
+Toby
 
