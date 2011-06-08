@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab1FHTSU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:18:20 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44753 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753952Ab1FHTSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:18:18 -0400
-Date: Wed, 8 Jun 2011 21:17:58 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-Message-ID: <20110608191758.GA12457@elte.hu>
-References: <20110606155236.GA7374@elte.hu>
- <1307376039.2322.164.camel@twins>
- <20110606160810.GA16636@elte.hu>
- <1307376771.2322.168.camel@twins>
- <20110606161749.GA22157@elte.hu>
- <4DED0292.1040605@die-jansens.de>
- <4DED0423.4050904@die-jansens.de>
- <20110606170725.GD2391@elte.hu>
- <1307380311.2322.223.camel@twins>
- <1307548218.3941.6.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307548218.3941.6.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754628Ab1FHTTM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:19:12 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:53008 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753952Ab1FHTTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 15:19:08 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: arnd@arndb.de
+Cc: akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, mingo@elte.hu,
+        randy.dunlap@oracle.com, josh@joshtriplett.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mgorman@suse.de, linux-mm@kvack.org, Eric B Munson <emunson@mgebm.net>
+Subject: [PATCH] Add debugging boundary check to pfn_to_page
+Date: Wed,  8 Jun 2011 15:18:54 -0400
+Message-Id: <1307560734-3915-1-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Bugzilla 36192 showed a problem where pages were being accessed outside of
+a node boundary.  It would be helpful in diagnosing this kind of problem to
+have pfn_to_page complain when a page is accessed outside of the node boundary.
+This patch adds a new debug config option which adds a WARN_ON in pfn_to_page
+that will complain when pages are accessed outside of the node boundary.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Signed-of-by: Eric B Munson <emunson@mgebm.net>
+---
+ include/asm-generic/memory_model.h |   19 +++++++++++++++----
+ lib/Kconfig.debug                  |   10 ++++++++++
+ 2 files changed, 25 insertions(+), 4 deletions(-)
 
-> I came up with the below hackery, seems to actually boot and such 
-> on a lockdep enabled kernel (although Ingo did report lockups with 
-> a partial version of the patch, still need to look at that).
-> 
-> The idea is to use the console_sem.lock instead of the semaphore 
-> itself, we flush the console when console_sem.count > 0, which 
-> means its uncontended. Its more or less equivalent to 
-> down_trylock() + up(), except it never releases the sem internal 
-> lock, and optimizes the count fiddling away.
-> 
-> It doesn't require a wakeup because any real semaphore contention 
-> will still be spinning on the spinlock instead of enqueueing itself 
-> on the waitlist.
-> 
-> Its rather ugly, exposes semaphore internals in places it 
-> shouldn't, although we could of course expose some primitives for 
-> this, but then people might thing it'd be okay to use them etc..
-> 
-> /me puts on the asbestos underwear
+diff --git a/include/asm-generic/memory_model.h b/include/asm-generic/memory_model.h
+index fb2d63f..a0f1d19 100644
+--- a/include/asm-generic/memory_model.h
++++ b/include/asm-generic/memory_model.h
+@@ -62,11 +62,22 @@
+ 	(unsigned long)(__pg - __section_mem_map_addr(__nr_to_section(__sec)));	\
+ })
+ 
+-#define __pfn_to_page(pfn)				\
+-({	unsigned long __pfn = (pfn);			\
+-	struct mem_section *__sec = __pfn_to_section(__pfn);	\
+-	__section_mem_map_addr(__sec) + __pfn;		\
++#ifdef CONFIG_DEBUG_MEMORY_MODEL
++#define __pfn_to_page(pfn)						\
++({	unsigned long __pfn = (pfn);					\
++	struct mem_section *__sec = __pfn_to_section(__pfn);		\
++	struct page *__page = __section_mem_map_addr(__sec) + __pfn;	\
++	WARN_ON(__page->flags == 0);					\
++	__page;								\
+ })
++#else
++#define __pfn_to_page(pfn)						\
++({	unsigned long __pfn = (pfn);					\
++	struct mem_section *__sec = __pfn_to_section(__pfn);		\
++	__section_mem_map_addr(__sec) + __pfn;	\
++})
++#endif /* CONFIG_DEBUG_MEMORY_MODEL */
++
+ #endif /* CONFIG_FLATMEM/DISCONTIGMEM/SPARSEMEM */
+ 
+ #define page_to_pfn __page_to_pfn
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index dd373c8..d932cbf 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -777,6 +777,16 @@ config DEBUG_MEMORY_INIT
+ 
+ 	  If unsure, say Y
+ 
++config DEBUG_MEMORY_MODEL
++	bool "Debug memory model" if SPARSEMEM || DISCONTIGMEM
++	depends on SPARSEMEM || DISCONTIGMEM
++	help
++	  Enable this to check that page accesses are done within node
++	  boundaries.  The check will warn each time a page is requested
++	  outside node boundaries.
++
++	  If unsure, say N
++
+ config DEBUG_LIST
+ 	bool "Debug linked list manipulation"
+ 	depends on DEBUG_KERNEL
+-- 
+1.7.4.1
 
-Hm, the no-wakeup aspect seems rather useful.
-
-Could we perhaps remove console_sem and replace it with a mutex and 
-do something like this with a mutex and its ->wait_lock?
-
-We'd have two happy side effects:
-
- - we'd thus remove one of the last core kernel semaphore users
- - we'd gain lockdep coverage for console locking as a bonus ...
-
-Thanks,
-
-	Ingo
