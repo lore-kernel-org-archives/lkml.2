@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab1FHDpg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 23:45:36 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:51144 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab1FHDpf (ORCPT
+	id S1753915Ab1FHDo4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 23:44:56 -0400
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:50727 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753610Ab1FHDoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 23:45:35 -0400
-X-AuditID: b753bd60-a1479ba0000050a4-e0-4deef05d419e
-X-AuditID: b753bd60-a1479ba0000050a4-e0-4deef05d419e
-Message-ID: <4DEEF05A.3010007@hitachi.com>
-Date: Wed, 08 Jun 2011 12:45:30 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Daney <ddaney@caviumnetworks.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 2/3 v2] kprobes/trace: Fix kprobe selftest for gcc 4.6
-References: <20110607212937.662660421@goodmis.org> <20110607213007.312394187@goodmis.org>
-In-Reply-To: <20110607213007.312394187@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Tue, 7 Jun 2011 23:44:54 -0400
+Date: Wed, 8 Jun 2011 12:47:40 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 0/15] KVM: optimize for MMIO handled
+Message-Id: <20110608124740.14c807f7.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <4DEEED3C.3070302@cn.fujitsu.com>
+References: <4DEE205E.8000601@cn.fujitsu.com>
+	<20110608121128.2caecdb3.yoshikawa.takuya@oss.ntt.co.jp>
+	<4DEEEBB6.5090805@cn.fujitsu.com>
+	<4DEEED3C.3070302@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/08 6:29), Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> With gcc 4.6, the self test kprobe function:
-> 
->  kprobe_trace_selftest_target()
-> 
-> is optimized such that kallsyms does not list it. The kprobes
-> test uses this function to insert a probe and test it. But
-> it will fail the test if the function is not listed in kallsyms.
-> 
-> Adding a __used annotation keeps the symbol in the kallsyms table.
+On Wed, 08 Jun 2011 11:32:12 +0800
+Xiao Guangrong <xiaoguangrong@cn.fujitsu.com> wrote:
 
-Thanks Steven and David,
+> On 06/08/2011 11:25 AM, Xiao Guangrong wrote:
+> > On 06/08/2011 11:11 AM, Takuya Yoshikawa wrote:
+> >> On Tue, 07 Jun 2011 20:58:06 +0800
+> >> Xiao Guangrong <xiaoguangrong@cn.fujitsu.com> wrote:
+> >>
+> >>> The performance test result:
+> >>>
+> >>> Netperf (TCP_RR):
+> >>> ===========================
+> >>> ept is enabled:
+> >>>
+> >>>       Before         After
+> >>> 1st   709.58         734.60
+> >>> 2nd   715.40         723.75
+> >>> 3rd   713.45         724.22
+> >>>
+> >>> ept=0 bypass_guest_pf=0:
+> >>>
+> >>>       Before         After
+> >>> 1st   706.10         709.63
+> >>> 2nd   709.38         715.80
+> >>> 3rd   695.90         710.70
+> >>>
+> >>
+> >> In what condition, does TCP_RR perform so bad?
+> >>
+> >> On 1Gbps network, directly connecting two Intel servers,
+> >> I got 20 times better result before.
+> >>
+> >> Even when I used a KVM guest as the netperf client,
+> >> I got more than 10 times better result.
+> >>
+> > 
+> > Um, which case did you test? ept = 1 or ept=0 bypass_guest_pf=0 or both?
+> > 
 
-That's good to me!
+ept = 1 only.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> >> Could you tell me a bit more details of your test?
+> >>
+> > 
+> > Sure, KVM guest is the client, and it uses e1000 NIC, and uses NAT
+> > network connect to the netperf server, the bandwidth of our network
+> > is 100M.
+> > 
+
+I see the reason, thank you!
+
+I used virtio-net and you used e1000.
+You are using e1000 to see the MMIO performance change, right?
+
+  Takuya
 
 > 
-> Suggested-by: David Daney <ddaney@caviumnetworks.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/trace/trace_kprobe.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
+> And this is my test script:
 > 
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index f925c45..27d13b3 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -1870,8 +1870,12 @@ fs_initcall(init_kprobe_trace);
->  
->  #ifdef CONFIG_FTRACE_STARTUP_TEST
->  
-> -static int kprobe_trace_selftest_target(int a1, int a2, int a3,
-> -					int a4, int a5, int a6)
-> +/*
-> + * The "__used" keeps gcc from removing the function symbol
-> + * from the kallsyms table.
-> + */
-> +static __used int kprobe_trace_selftest_target(int a1, int a2, int a3,
-> +					       int a4, int a5, int a6)
->  {
->  	return a1 + a2 + a3 + a4 + a5 + a6;
->  }
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+> #!/bin/sh
+> 
+> echo 3 > /proc/sys/vm/drop_caches
+> ./netperf -H $HOST_NAME -p $PORT -t TCP_RR -l 60
+> 
