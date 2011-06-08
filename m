@@ -1,69 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab1FHKHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:07:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53910 "EHLO mx2.suse.de"
+	id S1754277Ab1FHKJe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:09:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32270 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752821Ab1FHKHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:07:23 -0400
-Date: Wed, 8 Jun 2011 12:07:20 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Thomas Sattler <tsattler@gmx.de>,
-        Ury Stankevich <urykhy@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] mm: memory-failure: Fix isolated page count during
- memory failure
-Message-ID: <20110608100720.GF6742@tiehlicka.suse.cz>
-References: <1307459225-4481-1-git-send-email-mgorman@suse.de>
- <1307459225-4481-4-git-send-email-mgorman@suse.de>
+	id S1753864Ab1FHKJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 06:09:33 -0400
+Date: Wed, 8 Jun 2011 12:09:18 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: "Amir G." <amir73il@users.sourceforge.net>
+cc: Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
+        tytso@mit.edu, linux-kernel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: [PATCH v1 00/30] Ext4 snapshots
+In-Reply-To: <BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com>
+References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net> <alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com> <BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307459225-4481-4-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 07-06-11 16:07:04, Mel Gorman wrote:
-> From: Minchan Kim <minchan.kim@gmail.com>
-> 
-> From: Minchan Kim <minchan.kim@gmail.com>
-> 
-> Pages isolated for migration are accounted with the vmstat counters
-> NR_ISOLATE_[ANON|FILE]. Callers of migrate_pages() are expected to
-> increment these counters when pages are isolated from the LRU. Once
-> the pages have been migrated, they are put back on the LRU or freed
-> and the isolated count is decremented.
+On Tue, 7 Jun 2011, Amir G. wrote:
 
-Aren't we missing this in compact_zone as well? AFAICS there is no
-accounting done after we isolate pages from LRU? Or am I missing
-something?
+> On Tue, Jun 7, 2011 at 6:56 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> > Hi Amir,
+> >
+> > thanks very much for the resend. I'll take a look at the whole patch
+> > series, but first I want to bring up one important thing.
+> >
+> > While this being a huge feature for ext4 (regardless on how
+> > intrusive it is for the usual code paths) and while we already have
+> > patches in the list with people interesting in looking into them, you
+> > should clearly clarify what is the gain of it, what is the use case (and
+> > I know you have one), and why it is better than other approaches. You
+> > know, advertise it a bit in the marketing way :).
+> 
+> Hi Lukas,
+> 
+> Thank you for pointing out the marketing aspect.
+> 
+> I must admit that my user-case rather speaks for itself.
+> CTERA develops a NAS device which is specialized for
+> backing up local networks and snapshots gives the NAS a time
+> dimension without paying for it in disk space and performance.
+> 
+> The reason for not going with btrfs 3 years ago is clear.
+> So why not go with it now instead of moving forward to
+> ext4 with snapshots?
+> Part of the answer lies in the possibility to run fsck -x,
+> which gets rid of the snapshots in the case of fs corruption
+> and gets you back to good old stable and consistent ext4.
+
+But that is not even a real reason, is it ? When you need snapshots,
+well, then you just need it and do no want to get rid of it. When fs
+corruption appears, then it's bad in any case and the fsck should be
+able to more or less fix it.
+
+So you're saying that when corruption appears, then you *have to* blast
+all snapshots ? I am not sure how btrfs is going to deal with it, but it
+does seem like an advantage at all, why are you presenting it as such ?
 
 > 
-> Memory failure is not properly accounting for pages it isolates
-> causing the NR_ISOLATED counters to be negative. On SMP builds,
-> this goes unnoticed as negative counters are treated as 0 due to
-> expected per-cpu drift. On UP builds, the counter is treated by
-> too_many_isolated() as a large value causing processes to enter D
-> state during page reclaim or compaction. This patch accounts for
-> pages isolated by memory failure correctly.
+> >
+> > There is some confusion among developers on what actually are benefits
+> > of ext4 snapshots in comparison to btrfs, or in comparison to the new
+> > dm_multisnap code. I know that you have done quite a lot of testing to
+> > assure that it does not actually change old ext4 behavior when snapshot
+> > disabled, and that it works well when enabled, but have you done any
+> > performance related benchmarks ? Do you have any expectations on how it
+> > should behave in different work loads ?
+> >
+> > It would be great to see and be able to confirm that ext4 snapshots are
+> > really a win, not only on the feature side, but on the performance side
+> > as well. I know that there are people out there still undecided or
+> > having a strange feeling about your snapshot work. But who can blame
+> > them, when we have not seen any hard data on this matter ?
 > 
-> [mgorman@suse.de: Updated changelog]
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+> Ehm.. I did present this benchmark on LSF:
+> http://global.phoronix-test-suite.com/index.php?k=profile&u=amir73il-4632-11284-26560
+> 
+> unless you snoozed ;-)
+> it shows performance vs. ext4 w/o snapshots and with snapshots
+> and while taking snapshots.
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+I believe that you just missed the fact that not everyone has attended LSF
+and your lightning talk, but that's ok.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+It seems to me that random writes are usually faster with you snapshot
+code regardless whether you use snapshots or not. Is that because of
+non snapshot related changes you've made ?
+
+Also random reads seems to be slower with snapshots, is suspect that
+this is because of read through, so the reason for the slowdown that it
+was CPU bound ? I do not see any CPU utilization data.
+
+The postmark results seems quite odd, it is actually a lot faster with
+one snapshot and a lot slower with multiple snapshots, do you have an
+idea what is going on ?
+
+> I did not compare with btrfs, but I bet there are ext4 vs. btrfs
+> benchmarks out there.
+> dm-multisnap is better than dm-snap only when it comes to overhead
+> per snapshot. it still copies every written block, which is far from
+> being the case in ext4 snapshots.
+
+Nevertheless, I still have not seen any comparison with other
+snapshotting possibilities we have. Note that ext4 to btrfs comparison
+is not enough, because we do not know what is the difference between
+the difference of ext4 with/without snapshots and btrfs with/without
+snapshots. The reason for this is that btrfs performance is very likely
+to scale up, but ext4 is pretty much done in that matter and I do not
+expect any huge performance leaps in the future.
+
+Also, rejecting dm-multisnap based on this statement is not enough, show
+us some numbers.
+
+I believe that it is not very convenient for you, because this feature
+support your business case and you do not necessarily want to find out
+that there might be a better way, especially after the work you have
+done already.
+
+So it might be unpleasant for you that people ask questions and delaying
+the inclusion of ext4 snapshots. But what you see as obstacles people
+are throwing at you is really just caution, especially when it comes to
+ext4 which is seen as a simple, stable, reliable and predictable linux
+filesystem, but I bet you understand.
+
+And one last note, I also think that the snapshot format change in the
+future, when we'll have snpashots with 64bit feature compatible seems
+just wrong to me. Adding some features or changing the implementation a
+bit is ok, but format change is different. When the code is upstream and
+stable it is just wrong.
+
+Thanks!
+-Lukas
+
+> 
+> >
+> > So I, for myself, and I believe there are others, would like to see some
+> > benchmark numbers and comparison (both, features and performance) with at
+> > least new dm-multisnap code and probably btrfs and plain ext4 as well.
+> >
+> > Thanks!
+> > -Lukas
+> >
