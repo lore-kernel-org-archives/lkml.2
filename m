@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab1FHTkY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:40:24 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:57400 "EHLO e2.ny.us.ibm.com"
+	id S1756269Ab1FHTkr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:40:47 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:50796 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755053Ab1FHTkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:40:22 -0400
-Date: Wed, 8 Jun 2011 12:40:17 -0700
+	id S1755053Ab1FHTko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 15:40:44 -0400
+Date: Wed, 8 Jun 2011 12:40:40 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 2/4] sched: Isolate preempt counting in its own config
- option
-Message-ID: <20110608194017.GE2324@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/4] sched: Make sleeping inside spinlock detection
+ working in !CONFIG_PREEMPT
+Message-ID: <20110608194040.GF2324@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <1307555315-30989-1-git-send-email-fweisbec@gmail.com>
- <1307555315-30989-3-git-send-email-fweisbec@gmail.com>
+ <1307555315-30989-4-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307555315-30989-3-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1307555315-30989-4-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 07:48:33PM +0200, Frederic Weisbecker wrote:
-> Create a new CONFIG_PREEMPT_COUNT that handles the inc/dec
-> of preempt count offset independently. So that the offset
-> can be updated by preempt_disable() and preempt_enable()
-> even without the need for CONFIG_PREEMPT beeing set.
+On Wed, Jun 08, 2011 at 07:48:34PM +0200, Frederic Weisbecker wrote:
+> Select CONFIG_PREEMPT_COUNT when we enable the sleeping inside
+> spinlock detection, so that the preempt offset gets correctly
+> incremented/decremented from preempt_disable()/preempt_enable().
 > 
-> This prepares to make CONFIG_DEBUG_SPINLOCK_SLEEP working
-> with !CONFIG_PREEMPT where it currently doesn't detect
-> code that sleeps inside explicit preemption disabled
-> sections.
+> This makes the preempt count eventually working in !CONFIG_PREEMPT
+> when that debug option is set and thus fixes the detection of explicit
+> preemption disabled sections under such config. Code that sleeps
+> in explicitly preempt disabled section can be finally spotted
+> in non-preemptible kernels.
 > 
 > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
@@ -45,227 +45,21 @@ Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > Cc: Ingo Molnar <mingo@elte.hu>
 > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 > ---
->  include/linux/bit_spinlock.h |    2 +-
->  include/linux/hardirq.h      |    4 ++--
->  include/linux/pagemap.h      |    4 ++--
->  include/linux/preempt.h      |   26 +++++++++++++++++---------
->  include/linux/rcupdate.h     |   12 ++++++------
->  include/linux/sched.h        |    2 +-
->  kernel/Kconfig.preempt       |    3 +++
->  kernel/sched.c               |    2 +-
->  8 files changed, 33 insertions(+), 22 deletions(-)
+>  lib/Kconfig.debug |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> diff --git a/include/linux/bit_spinlock.h b/include/linux/bit_spinlock.h
-> index b4326bf..564d997 100644
-> --- a/include/linux/bit_spinlock.h
-> +++ b/include/linux/bit_spinlock.h
-> @@ -88,7 +88,7 @@ static inline int bit_spin_is_locked(int bitnum, unsigned long *addr)
->  {
->  #if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
->  	return test_bit(bitnum, addr);
-> -#elif defined CONFIG_PREEMPT
-> +#elif defined CONFIG_PREEMPT_COUNT
->  	return preempt_count();
->  #else
->  	return 1;
-> diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-> index ba36217..f743883f 100644
-> --- a/include/linux/hardirq.h
-> +++ b/include/linux/hardirq.h
-> @@ -93,7 +93,7 @@
->   */
->  #define in_nmi()	(preempt_count() & NMI_MASK)
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index 28afa4c..a7dd7b5 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -650,6 +650,7 @@ config TRACE_IRQFLAGS
 > 
-> -#if defined(CONFIG_PREEMPT)
-> +#if defined(CONFIG_PREEMPT_COUNT)
->  # define PREEMPT_CHECK_OFFSET 1
->  #else
->  # define PREEMPT_CHECK_OFFSET 0
-> @@ -115,7 +115,7 @@
->  #define in_atomic_preempt_off() \
->  		((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_CHECK_OFFSET)
-> 
-> -#ifdef CONFIG_PREEMPT
-> +#ifdef CONFIG_PREEMPT_COUNT
->  # define preemptible()	(preempt_count() == 0 && !irqs_disabled())
->  # define IRQ_EXIT_OFFSET (HARDIRQ_OFFSET-1)
->  #else
-> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-> index 716875e..8e38d4c 100644
-> --- a/include/linux/pagemap.h
-> +++ b/include/linux/pagemap.h
-> @@ -134,7 +134,7 @@ static inline int page_cache_get_speculative(struct page *page)
->  	VM_BUG_ON(in_interrupt());
-> 
->  #if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
-> -# ifdef CONFIG_PREEMPT
-> +# ifdef CONFIG_PREEMPT_COUNT
->  	VM_BUG_ON(!in_atomic());
->  # endif
->  	/*
-> @@ -172,7 +172,7 @@ static inline int page_cache_add_speculative(struct page *page, int count)
->  	VM_BUG_ON(in_interrupt());
-> 
->  #if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
-> -# ifdef CONFIG_PREEMPT
-> +# ifdef CONFIG_PREEMPT_COUNT
->  	VM_BUG_ON(!in_atomic());
->  # endif
->  	VM_BUG_ON(page_count(page) == 0);
-> diff --git a/include/linux/preempt.h b/include/linux/preempt.h
-> index 2e681d9..58969b2 100644
-> --- a/include/linux/preempt.h
-> +++ b/include/linux/preempt.h
-> @@ -27,6 +27,21 @@
-> 
->  asmlinkage void preempt_schedule(void);
-> 
-> +#define preempt_check_resched() \
-> +do { \
-> +	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
-> +		preempt_schedule(); \
-> +} while (0)
-> +
-> +#else /* !CONFIG_PREEMPT */
-> +
-> +#define preempt_check_resched()		do { } while (0)
-> +
-> +#endif /* CONFIG_PREEMPT */
-> +
-> +
-> +#ifdef CONFIG_PREEMPT_COUNT
-> +
->  #define preempt_disable() \
->  do { \
->  	inc_preempt_count(); \
-> @@ -39,12 +54,6 @@ do { \
->  	dec_preempt_count(); \
->  } while (0)
-> 
-> -#define preempt_check_resched() \
-> -do { \
-> -	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
-> -		preempt_schedule(); \
-> -} while (0)
-> -
->  #define preempt_enable() \
->  do { \
->  	preempt_enable_no_resched(); \
-> @@ -80,18 +89,17 @@ do { \
->  	preempt_check_resched(); \
->  } while (0)
-> 
-> -#else
-> +#else /* !CONFIG_PREEMPT_COUNT */
-> 
->  #define preempt_disable()		do { } while (0)
->  #define preempt_enable_no_resched()	do { } while (0)
->  #define preempt_enable()		do { } while (0)
-> -#define preempt_check_resched()		do { } while (0)
-> 
->  #define preempt_disable_notrace()		do { } while (0)
->  #define preempt_enable_no_resched_notrace()	do { } while (0)
->  #define preempt_enable_notrace()		do { } while (0)
-> 
-> -#endif
-> +#endif /* CONFIG_PREEMPT_COUNT */
-> 
->  #ifdef CONFIG_PREEMPT_NOTIFIERS
-> 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 99f9aa7..8f4f881 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -239,7 +239,7 @@ extern int rcu_read_lock_bh_held(void);
->   * Check debug_lockdep_rcu_enabled() to prevent false positives during boot
->   * and while lockdep is disabled.
->   */
-> -#ifdef CONFIG_PREEMPT
-> +#ifdef CONFIG_PREEMPT_COUNT
->  static inline int rcu_read_lock_sched_held(void)
->  {
->  	int lockdep_opinion = 0;
-> @@ -250,12 +250,12 @@ static inline int rcu_read_lock_sched_held(void)
->  		lockdep_opinion = lock_is_held(&rcu_sched_lock_map);
->  	return lockdep_opinion || preempt_count() != 0 || irqs_disabled();
->  }
-> -#else /* #ifdef CONFIG_PREEMPT */
-> +#else /* #ifdef CONFIG_PREEMPT_COUNT */
->  static inline int rcu_read_lock_sched_held(void)
->  {
->  	return 1;
->  }
-> -#endif /* #else #ifdef CONFIG_PREEMPT */
-> +#endif /* #else #ifdef CONFIG_PREEMPT_COUNT */
-> 
->  #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-> 
-> @@ -276,17 +276,17 @@ static inline int rcu_read_lock_bh_held(void)
->  	return 1;
->  }
-> 
-> -#ifdef CONFIG_PREEMPT
-> +#ifdef CONFIG_PREEMPT_COUNT
->  static inline int rcu_read_lock_sched_held(void)
->  {
->  	return preempt_count() != 0 || irqs_disabled();
->  }
-> -#else /* #ifdef CONFIG_PREEMPT */
-> +#else /* #ifdef CONFIG_PREEMPT_COUNT */
->  static inline int rcu_read_lock_sched_held(void)
->  {
->  	return 1;
->  }
-> -#endif /* #else #ifdef CONFIG_PREEMPT */
-> +#endif /* #else #ifdef CONFIG_PREEMPT_COUNT */
-> 
->  #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 483c1ed..4ecd5cb 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -2502,7 +2502,7 @@ extern int _cond_resched(void);
-> 
->  extern int __cond_resched_lock(spinlock_t *lock);
-> 
-> -#ifdef CONFIG_PREEMPT
-> +#ifdef CONFIG_PREEMPT_COUNT
->  #define PREEMPT_LOCK_OFFSET	PREEMPT_OFFSET
->  #else
->  #define PREEMPT_LOCK_OFFSET	0
-> diff --git a/kernel/Kconfig.preempt b/kernel/Kconfig.preempt
-> index bf987b9..24e7cb0 100644
-> --- a/kernel/Kconfig.preempt
-> +++ b/kernel/Kconfig.preempt
-> @@ -35,6 +35,7 @@ config PREEMPT_VOLUNTARY
-> 
->  config PREEMPT
->  	bool "Preemptible Kernel (Low-Latency Desktop)"
+>  config DEBUG_SPINLOCK_SLEEP
+>  	bool "Spinlock debugging: sleep-inside-spinlock checking"
 > +	select PREEMPT_COUNT
+>  	depends on DEBUG_KERNEL
 >  	help
->  	  This option reduces the latency of the kernel by making
->  	  all kernel code (that is not executing in a critical section)
-> @@ -52,3 +53,5 @@ config PREEMPT
-> 
->  endchoice
-> 
-> +config PREEMPT_COUNT
-> +       bool
-> \ No newline at end of file
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 01d9536..90ad7cf 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2843,7 +2843,7 @@ void sched_fork(struct task_struct *p)
->  #if defined(CONFIG_SMP)
->  	p->on_cpu = 0;
->  #endif
-> -#ifdef CONFIG_PREEMPT
-> +#ifdef CONFIG_PREEMPT_COUNT
->  	/* Want to start with kernel preemption disabled. */
->  	task_thread_info(p)->preempt_count = 1;
->  #endif
+>  	  If you say Y here, various routines which may sleep will become very
 > -- 
 > 1.7.5.4
 > 
