@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719Ab1FHSPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 14:15:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4069 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846Ab1FHSPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 14:15:03 -0400
-Subject: Re: [PATCH -v2] Audit: push audit success and retcode into arch
- ptrace.h
-From: Eric Paris <eparis@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, fenghua.yu@intel.com,
-        monstr@monstr.eu, ralf@linux-mips.org, benh@kernel.crashing.org,
-        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        linux390@de.ibm.com, lethal@linux-sh.org, davem@davemloft.net,
-        jdike@addtoit.com, richard@nod.at, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        linux-ia64@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        sparclinux@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net
-Date: Wed, 08 Jun 2011 14:13:36 -0400
-In-Reply-To: <20110608163653.GA9592@redhat.com>
-References: <20110603220451.23134.47368.stgit@paris.rdu.redhat.com>
-	 <20110607171952.GA25729@redhat.com>
-	 <1307472796.2052.12.camel@localhost.localdomain>
-	 <20110608163653.GA9592@redhat.com>
+	id S1751396Ab1FHSSw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 14:18:52 -0400
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:38458 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab1FHSSv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 14:18:51 -0400
+Subject: Re: [PATCH 5/5] CFQ: use proper locking for cache of last hit cic
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
+Date: Wed, 08 Jun 2011 20:18:44 +0200
+In-Reply-To: <4DEC441C.9030009@kernel.dk>
+References: <1307291201.8545.46.camel@t41.thuisdomein>
+	 <4DEC441C.9030009@kernel.dk>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.1 (3.1.1-3.fc16) 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1307556823.2577.5.camel@localhost.localdomain>
+Message-ID: <1307557130.2783.5.camel@t41.thuisdomein>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-08 at 18:36 +0200, Oleg Nesterov wrote:
-> On 06/07, Eric Paris wrote:
-> >
-> > On Tue, 2011-06-07 at 19:19 +0200, Oleg Nesterov wrote:
-> > >
-> > > With or without this patch, can't we call audit_syscall_exit() twice
-> > > if there is something else in _TIF_WORK_SYSCALL_EXIT mask apart from
-> > > SYSCALL_AUDIT ? First time it is called from asm, then from
-> > > syscall_trace_leave(), no?
-> > >
-> > > For example. The task has TIF_SYSCALL_AUDIT and nothing else, it does
-> > > system_call->auditsys->system_call_fastpath. What if it gets, say,
-> > > TIF_SYSCALL_TRACE before ret_from_sys_call?
-> >
-> > No harm is done calling twice.  The first call will do the real work and
-> > cleanup.  It will set a flag in the audit data that the work has been
-> > done (in_syscall == 0) thus the second call will then not do any real
-> > work and won't have anything to clean up.
+On Mon, 2011-06-06 at 05:06 +0200, Jens Axboe wrote:
+> On 2011-06-05 18:26, Paul Bolle wrote:
+> > @@ -2704,8 +2706,13 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
+> >  	smp_wmb();
+> >  	cic->key = cfqd_dead_key(cfqd);
+> >  
+> > -	if (ioc->last_cic == cic)
+> > +	spin_lock_irqsave(&ioc->lock, flags);
+> > +	rcu_read_lock();
+> > +	last_cic = rcu_dereference(ioc->last_cic);
+> > +	rcu_read_unlock();
+> > +	if (last_cic == cic)
+> >  		rcu_assign_pointer(ioc->last_cic, NULL);
+> > +	spin_unlock_irqrestore(&ioc->lock, flags);
 > 
-> Hmm... and I assume context->previous != NULL is not possible on x86_64.
-> OK, thanks.
-> 
-> And I guess, all CONFIG_AUDITSYSCALL code in entry.S is only needed to
-> microoptimize the case when TIF_SYSCALL_AUDIT is the only reason for the
-> slow path. I wonder if it really makes the measureble difference...
+> We don't need the ioc->lock for checking the cache, it would in fact
+> defeat the purpose of using RCU.
 
-All I know is what Roland put in the changelog:
+Just to show that I'm RCU-challenged, is that because:
+1) my use of locking on ioc->lock defends for a race that is not
+actually possible; or
+2) the worst thing that could happen is that some new and correct value
+of ioc->last_cic will be replaced with NULL, which is simply not a big
+deal?
 
-Avoiding the iret return path when syscall audit is enabled helps
-performance a lot.
+> But this hunk will clash with the
+> merged part anyway.
 
-I believe this was a result of Fedora starting auditd by default and
-then Linus bitching about how slow a null syscall in a tight loop was.
-It was an optimization for a microbenchmark.  How much it affects things
-on a real syscall that does real work is probably going to be determined
-by how much work is done in the syscall.  (or just disable auditd in
-userspace)
+Looking at Paul's feedback I do have a feeling that in your commit
+(9b50902db5eb8a220160fb89e95aa11967998d12, "cfq-iosched: fix locking
+around ioc->ioc_data assignment") the line:
+	if (rcu_dereference(ioc->ioc_data) == cic) {
 
--Eric
+could actually be replaced with:
+	if (rcu_access_pointer(ioc->ioc_data) == cic) {
+
+Is that correct?
+
+> [...]
+> See Pauls comment on this part.
+
+You seem to be offline right now. When you're back online, could you
+please say whether or not you accept the two renaming patches that you
+have rejected a few days ago (and for which I gave some follow up
+arguments)? After that I'll send an update to this patch (and its commit
+message) to reflect Paul's review and your review.
+
+
+Paul Bolle
 
