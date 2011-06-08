@@ -1,60 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab1FHCwL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 22:52:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37852 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752728Ab1FHCwJ (ORCPT
+	id S1753086Ab1FHCzL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 22:55:11 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:10564 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab1FHCzJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 22:52:09 -0400
+	Tue, 7 Jun 2011 22:55:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=BduNz6sbRL/dlXQDhx0gnzkdFmmI0wx6LszaY16232JGRul4qvd+tMUJWFlBfhgIeZ
+         iE/bABE1vo7fGDmErd5Q==
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=fX8dwfZ53O7E4HX-RsL6bQ=hqWQ@mail.gmail.com>
-References: <1306999045.29297.55.camel@pasglop> <1307003821.29297.77.camel@pasglop>
- <20110602110727.7343782b@lxorguk.ukuu.org.uk> <1307062574.29297.204.camel@pasglop>
- <1307081874.23876.14.camel@pasglop> <1307084189.23876.19.camel@pasglop>
- <BANLkTim6VsynZHLagcu9Xo3EjsUz=54dYA@mail.gmail.com> <BANLkTikJJfyo-eExZYN4iZUO+RrkgPmX4A@mail.gmail.com>
- <BANLkTi=fX8dwfZ53O7E4HX-RsL6bQ=hqWQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 7 Jun 2011 19:44:48 -0700
-Message-ID: <BANLkTikt1ZZNC1YffT_bRAX6GwjWDk_T3Q@mail.gmail.com>
-Subject: Re: tty breakage in X (Was: tty vs workqueue oddities)
-To: Guillaume Chazarain <guichaz@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, gregkh@suse.de,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4DDB0199.6030805@jp.fujitsu.com>
+References: <20110323030326.789836913@google.com> <4DD5CE05.3030500@cn.fujitsu.com>
+ <4DDB0199.6030805@jp.fujitsu.com>
+From: Paul Turner <pjt@google.com>
+Date: Tue, 7 Jun 2011 19:54:34 -0700
+Message-ID: <BANLkTikPrs7b-QVoZZwerbHnCHpStgKj9w@mail.gmail.com>
+Subject: Re: Test for CFS Bandwidth Control V6
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 6, 2011 at 7:24 AM, Guillaume Chazarain <guichaz@gmail.com> wrote:
+[ Sorry for the delayed response, I was out on vacation for the second
+half of May until last week -- I've now caught up on email and am
+preparing the next posting ]
+
+On Mon, May 23, 2011 at 5:53 PM, Hidetoshi Seto
+<seto.hidetoshi@jp.fujitsu.com> wrote:
+> Hi Paul and Xiao,
 >
-> After reverting http://git.kernel.org/linus/a5660b4 "tty: fix endless
-> work loop when the buffer fills up" I cannot reproduce the hangs on
-> SMP anymore but it brings back the busy loop on UP.
+> Please check/test a fix at the foot of this mail.
+>
+> (2011/05/20 11:12), Xiao Guangrong wrote:
+>> Hi Paul,
+>>
+>> I'm so sorry for sending this mail in the new thread, since i didn't
+>> receive your V6 patchset from LKML.
+>>
+>> It seams the patchset can not be applied, since it's conflict between
+>> patch 3 and patch 5:
+>>
+>> ========Quote========
+> (snip)
+>> ========End quote========
+>
+> Maybe I've fixed it by hand, or git-am is so wonderful.
+>
+> I believe Paul will do it right for next time.
+>
+>>
+>> I downloaded the patchset from Internet, i missed the newer version?
+>>
+>> I have done some test after fixed the conflict by handle, below test can cause
+>> box crash:
+>>
+>> ========Quote　cpu_hotlpug.sh ========
+> (snip)
+>> ======== End quote　cpu_hotlpug.sh ========
+>>
+>> Sorry to disturb you if the bug is know.
+>>
+>> Thanks!
+>
+> Thank you for reporting it, Xiao!
+>
+> I confirmed that running your test cause hung-up on my box.
+> And after some investigation, I found that this is an infinite loop
+> in migrate_task() due to miscalculation of rq->nr_running; when a
+> task is queued to throttled entity the nr_running is incremented at
+> the queuing and also the unthrottling.
+>
+> I made a fix for this bug and it seems works well for me.
+> Could you try this patch and give us your feedback, Xiao?
+>
+> Thanks,
+> H.Seto
+>
+> ---
+>  kernel/sched_fair.c |   28 +++++++++++++---------------
+>  1 files changed, 13 insertions(+), 15 deletions(-)
+>
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 3936393..544072f 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1537,7 +1537,7 @@ static void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
+>        walk_tg_tree_from(cfs_rq->tg, tg_unthrottle_down, tg_nop,
+>                          (void *)&udd);
+>
+> -       if (!cfs_rq->load.weight)
+> +       if (!cfs_rq->h_nr_running)
+>                return;
+>
 
-Hmm. The n_tty layer has some rather distressing locking, and doesn't
-lock "tty->receive_room" changes at all, for example (and uses
-multiple locks for some other things).
+Why change here?
 
-It may well be that there is some SMP race there. The n_tty line
-discipline has its own locking for its counts, and the tty buffer code
-has its own locking, and "receive_room" kind o fends up being in the
-middle between them.
+>        task_delta = cfs_rq->h_nr_running;
+> @@ -1843,10 +1843,9 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>                cfs_rq->h_nr_running++;
+>
+>                /* end evaluation on throttled cfs_rq */
+> -               if (cfs_rq_throttled(cfs_rq)) {
+> -                       se = NULL;
 
-The sad part is that the patch that made receive_buf() return the
-amout of bytes received was actually trying to do the right thing, it
-just did it entirely in the wrong way (re-introducing the crazy
-re-arming of the workqueue from within itself, and using all the wrong
-sign issues).
+Hmm..  yeah this is a casualty of moving the h_nr_running computations
+in-line as a part of the previous refactoring within the last
+releases.  This optimization (setting se = NULL to skip the second
+half) obviously won't work properly with detecting whether we made it
+to the end of the tree.
 
-I'd love to get rid of receive_room entirely - and just letting the
-tty line discipline handler say how much it actually received. in
-other words, having receive_buf() just tell us how much it used, and
-not looking at receive_room in the caller is absolutely the right
-thing.
+> -                       break;
+> -               }
+> +               if (cfs_rq_throttled(cfs_rq))
+> +                       goto done;
+> +
+>                flags = ENQUEUE_WAKEUP;
+>        }
+>
+> @@ -1855,14 +1854,14 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>                cfs_rq->h_nr_running++;
+>
+>                if (cfs_rq_throttled(cfs_rq))
+> -                       break;
+> +                       goto done;
+>
+>                update_cfs_load(cfs_rq, 0);
+>                update_cfs_shares(cfs_rq);
+>        }
+>
+> -       if (!se)
+> -               inc_nr_running(rq);
+> +       inc_nr_running(rq);
+> +done:
+>        hrtick_update(rq);
+>  }
+>
+> @@ -1885,10 +1884,9 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>                cfs_rq->h_nr_running--;
+>
+>                /* end evaluation on throttled cfs_rq */
+> -               if (cfs_rq_throttled(cfs_rq)) {
+> -                       se = NULL;
+> -                       break;
+> -               }
+> +               if (cfs_rq_throttled(cfs_rq))
+> +                       goto done;
+> +
+>                /* Don't dequeue parent if it has other entities besides us */
+>                if (cfs_rq->load.weight) {
+>                         /* Avoid double update below. */
+> @@ -1910,14 +1908,14 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>                cfs_rq->h_nr_running--;
+>
+>                if (cfs_rq_throttled(cfs_rq))
+> -                       break;
+> +                       goto done;
+>
+>                update_cfs_load(cfs_rq, 0);
+>                update_cfs_shares(cfs_rq);
+>        }
+>
+> -       if (!se)
+> -               dec_nr_running(rq);
+> +       dec_nr_running(rq);
+> +done:
+>        hrtick_update(rq);
+>  }
+>
+> --
+> 1.7.4.4
+>
+>
+>
 
-It just needs to be done properly.
+How about instead something like the following.  We can actually take
+advantage of the second loop always executing by deferring the
+accounting update on a throttle entity.  This keeps the control flow
+within dequeue_task_fair linear.
 
-                                  Linus
+What do you think of (untested):
+
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1744,13 +1744,12 @@ enqueue_task_fair(struct rq *rq, struct
+task_struct *p, int flags)
+                        break;
+                cfs_rq = cfs_rq_of(se);
+                enqueue_entity(cfs_rq, se, flags);
+-               cfs_rq->h_nr_running++;
+
+-               /* end evaluation on throttled cfs_rq */
+-               if (cfs_rq_throttled(cfs_rq)) {
+-                       se = NULL;
++               /* note: ordering with throttle check to perform
+h_nr_running accounting on throttled entity below */
++               if (cfs_rq_throttled(cfs_rq))
+                        break;
+-               }
++
++               cfs_rq->h_nr_running++;
+                flags = ENQUEUE_WAKEUP;
+        }
+
+@@ -1786,13 +1785,12 @@ static void dequeue_task_fair(struct rq *rq,
+struct task_struct *p, int flags)
+        for_each_sched_entity(se) {
+                cfs_rq = cfs_rq_of(se);
+                dequeue_entity(cfs_rq, se, flags);
+-               cfs_rq->h_nr_running--;
+
+-               /* end evaluation on throttled cfs_rq */
+-               if (cfs_rq_throttled(cfs_rq)) {
+-                       se = NULL;
++               /* note: ordering with throttle check to perform
+h_nr_running accounting on throttled entity below */
++               if (cfs_rq_throttled(cfs_rq))
+                        break;
+-               }
++
++               cfs_rq->h_nr_running--;
+                /* Don't dequeue parent if it has other entities besides
