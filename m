@@ -1,87 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756409Ab1FHTds (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:33:48 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:55041 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755650Ab1FHTaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:30:35 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [PATCH tip/core/rcu 28/28] net,rcu: Convert call_rcu(sk_filter_release_rcu) to kfree_rcu
-Date: Wed,  8 Jun 2011 12:30:07 -0700
-Message-Id: <1307561407-13809-28-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <20110608192943.GA13211@linux.vnet.ibm.com>
-References: <20110608192943.GA13211@linux.vnet.ibm.com>
+	id S1755880Ab1FHTbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:31:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59452 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755413Ab1FHTbg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 15:31:36 -0400
+Message-ID: <4DEFCDFB.5070703@oracle.com>
+Date: Wed, 08 Jun 2011 12:31:07 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Eric B Munson <emunson@mgebm.net>
+CC: arnd@arndb.de, akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        mingo@elte.hu, josh@joshtriplett.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, linux-mm@kvack.org
+Subject: Re: [PATCH] Add debugging boundary check to pfn_to_page
+References: <1307560734-3915-1-git-send-email-emunson@mgebm.net>
+In-Reply-To: <1307560734-3915-1-git-send-email-emunson@mgebm.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4DEFCE08.00B4:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RCU callback sk_filter_release_rcu just calls kfree(), so we use
-kfree_rcu() instead of call_rcu().
+On 06/08/11 12:18, Eric B Munson wrote:
+> Bugzilla 36192 showed a problem where pages were being accessed outside of
+> a node boundary.  It would be helpful in diagnosing this kind of problem to
+> have pfn_to_page complain when a page is accessed outside of the node boundary.
+> This patch adds a new debug config option which adds a WARN_ON in pfn_to_page
+> that will complain when pages are accessed outside of the node boundary.
+> 
+> Signed-of-by: Eric B Munson <emunson@mgebm.net>
+> ---
+>  include/asm-generic/memory_model.h |   19 +++++++++++++++----
+>  lib/Kconfig.debug                  |   10 ++++++++++
+>  2 files changed, 25 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/asm-generic/memory_model.h b/include/asm-generic/memory_model.h
+> index fb2d63f..a0f1d19 100644
+> --- a/include/asm-generic/memory_model.h
+> +++ b/include/asm-generic/memory_model.h
+> @@ -62,11 +62,22 @@
+>  	(unsigned long)(__pg - __section_mem_map_addr(__nr_to_section(__sec)));	\
+>  })
+>  
+> -#define __pfn_to_page(pfn)				\
+> -({	unsigned long __pfn = (pfn);			\
+> -	struct mem_section *__sec = __pfn_to_section(__pfn);	\
+> -	__section_mem_map_addr(__sec) + __pfn;		\
+> +#ifdef CONFIG_DEBUG_MEMORY_MODEL
+> +#define __pfn_to_page(pfn)						\
+> +({	unsigned long __pfn = (pfn);					\
+> +	struct mem_section *__sec = __pfn_to_section(__pfn);		\
+> +	struct page *__page = __section_mem_map_addr(__sec) + __pfn;	\
+> +	WARN_ON(__page->flags == 0);					\
+> +	__page;								\
+>  })
+> +#else
+> +#define __pfn_to_page(pfn)						\
+> +({	unsigned long __pfn = (pfn);					\
+> +	struct mem_section *__sec = __pfn_to_section(__pfn);		\
+> +	__section_mem_map_addr(__sec) + __pfn;	\
+> +})
+> +#endif /* CONFIG_DEBUG_MEMORY_MODEL */
+> +
+>  #endif /* CONFIG_FLATMEM/DISCONTIGMEM/SPARSEMEM */
+>  
+>  #define page_to_pfn __page_to_pfn
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index dd373c8..d932cbf 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -777,6 +777,16 @@ config DEBUG_MEMORY_INIT
+>  
+>  	  If unsure, say Y
+>  
+> +config DEBUG_MEMORY_MODEL
+> +	bool "Debug memory model" if SPARSEMEM || DISCONTIGMEM
+> +	depends on SPARSEMEM || DISCONTIGMEM
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Acked-by: David S. Miller <davem@davemloft.net>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- include/net/sock.h |    4 +---
- net/core/filter.c  |   12 ------------
- 2 files changed, 1 insertions(+), 15 deletions(-)
+	bool <prompt> <expr>
+creates the dependency, so the "depends on" line is not needed.
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 01810a3..60caa06 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1179,8 +1179,6 @@ extern void sk_common_release(struct sock *sk);
- /* Initialise core socket variables */
- extern void sock_init_data(struct socket *sock, struct sock *sk);
- 
--extern void sk_filter_release_rcu(struct rcu_head *rcu);
--
- /**
-  *	sk_filter_release - release a socket filter
-  *	@fp: filter to remove
-@@ -1191,7 +1189,7 @@ extern void sk_filter_release_rcu(struct rcu_head *rcu);
- static inline void sk_filter_release(struct sk_filter *fp)
- {
- 	if (atomic_dec_and_test(&fp->refcnt))
--		call_rcu(&fp->rcu, sk_filter_release_rcu);
-+		kfree_rcu(fp, rcu);
- }
- 
- static inline void sk_filter_uncharge(struct sock *sk, struct sk_filter *fp)
-diff --git a/net/core/filter.c b/net/core/filter.c
-index afb8afb..7195ce0 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -631,18 +631,6 @@ int sk_chk_filter(struct sock_filter *filter, int flen)
- EXPORT_SYMBOL(sk_chk_filter);
- 
- /**
-- * 	sk_filter_release_rcu - Release a socket filter by rcu_head
-- *	@rcu: rcu_head that contains the sk_filter to free
-- */
--void sk_filter_release_rcu(struct rcu_head *rcu)
--{
--	struct sk_filter *fp = container_of(rcu, struct sk_filter, rcu);
--
--	kfree(fp);
--}
--EXPORT_SYMBOL(sk_filter_release_rcu);
--
--/**
-  *	sk_attach_filter - attach a socket filter
-  *	@fprog: the filter program
-  *	@sk: the socket to use
+> +	help
+> +	  Enable this to check that page accesses are done within node
+> +	  boundaries.  The check will warn each time a page is requested
+> +	  outside node boundaries.
+> +
+> +	  If unsure, say N
+> +
+>  config DEBUG_LIST
+>  	bool "Debug linked list manipulation"
+>  	depends on DEBUG_KERNEL
+
+
 -- 
-1.7.3.2
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
