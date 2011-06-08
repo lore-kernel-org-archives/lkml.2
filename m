@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab1FHVpp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 17:45:45 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37397 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab1FHVpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 17:45:44 -0400
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-In-Reply-To: <20110608205253.GA10669@elte.hu>
-References: <20110606160810.GA16636@elte.hu>
-	 <1307376771.2322.168.camel@twins> <20110606161749.GA22157@elte.hu>
-	 <4DED0292.1040605@die-jansens.de> <4DED0423.4050904@die-jansens.de>
-	 <20110606170725.GD2391@elte.hu> <1307380311.2322.223.camel@twins>
-	 <1307548218.3941.6.camel@twins> <20110608191758.GA12457@elte.hu>
-	 <1307562329.3941.21.camel@twins>  <20110608205253.GA10669@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Jun 2011 23:49:18 +0200
-Message-ID: <1307569758.2497.1012.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755487Ab1FHVvk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 17:51:40 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30899 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753269Ab1FHVvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 17:51:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,340,1304319600"; 
+   d="scan'208";a="11396493"
+Message-ID: <4DEFEEE7.1030703@linux.intel.com>
+Date: Wed, 08 Jun 2011 14:51:35 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jim Bos <jim876@xs4all.nl>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+References: <20110608193833.GA29855@srcf.ucam.org> <4DEFD220.5040507@kernel.org> <20110608195250.GB30256@srcf.ucam.org> <4DEFD58D.5060402@kernel.org> <20110608200903.GA30694@srcf.ucam.org> <4DEFDA4A.9080500@kernel.org> <20110608203037.GA31052@srcf.ucam.org> <4DEFDD69.7010000@kernel.org> <20110608204244.GA31484@srcf.ucam.org> <BANLkTikfbSsgGgNEQ3GVD=HOPn1Dz_xh+g@mail.gmail.com> <20110608212813.GB32056@srcf.ucam.org> <BANLkTikbx6xm+NY34ATN7YkJyjPp9CSXTw@mail.gmail.com>
+In-Reply-To: <BANLkTikbx6xm+NY34ATN7YkJyjPp9CSXTw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-08 at 22:52 +0200, Ingo Molnar wrote:
-> Hm, i thought it would be possible to only express it via the 
-> slowpath: if mutex_trylock() succeeds then *all* execution goes into 
-> the slowpath so we don't have to take all the fastpaths into account.
+On 06/08/2011 02:31 PM, Linus Torvalds wrote:
+> On Wed, Jun 8, 2011 at 2:28 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>>
+>> Boot services data includes everything that was allocated by the EFI
+>> memory allocator. Depending on what the system decided to do before
+>> deigning to run our code, that might be a meg - or it might be several
+>> hundred. And in the process it's probably fragmented RAM into god knows
+>> how many small chunks.
+> 
+> In reality?
+> 
+> Whatever. I really think our EFI support is just fundamnetally broken.
+> We should do *everything* in the bootloader, and nothing at all in the
+> kernel. IOW, I think doing the whole "SetVirtualAddrMap()" (or
+> whatever) in the boot loader too, and just promise to neve rever call
+> any EFI routines from the kernel.
+> 
+> IOW, a sane EFI boot loader should just make things look like a
+> regular BIOS, and not bother the kernel with the EFI crap.
+> 
+> EFI was misdesigned. That doesn't mean that _we_ should then
+> mis-design our support for it.
+> 
 
-Right, but you first have to take wait_lock, then do the trylock, but
-that's complicated for asm/mutex-null.h because trylock will then also
-try to obtain the wait_lock.
+No argument that our EFI support is misdesigned.
 
-You can do it by creating ___mutex_trylock_slowpath() which contains the
-meat of __mutex_trylock_slowpath() and then implement
-atomic_mutex_trylock{_irq,_irqsave,} using that, not releasing wait_lock
-on success.
+However, I suspect that what we *should* do is carry an kernel EFI stub
+to go along with the BIOS stub... otherwise we're forever at mercy of
+getting all the boot loader authors to change in lockstep, and there are
+specific ones which are notoriously hard to work with.
 
-Shouldn't be too bad, but it ain't too pretty either.
+The "kernel carries its own stub" approach been very successful in
+dealing with BIOS, and would make a lot of sense to me for EFI as well.
 
-Furthermore, like I said in my initial patch, I share Thomas' worry
-about 'creative' usage of these primitives.
-
+	-hpa
