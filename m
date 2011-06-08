@@ -1,50 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752280Ab1FHJZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 05:25:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40999 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125Ab1FHJZZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 05:25:25 -0400
-Subject: Re: bdi_min_ratio never shrinks, ultimately preventing valid
- setting of min_ratio
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: lkml@pengaru.com, linux-kernel@vger.kernel.org,
-        Wu Fengguang <fengguang.wu@intel.com>, miklos <miklos@szeredi.hu>
-In-Reply-To: <20110607171347.a0bbdfd8.akpm@linux-foundation.org>
-References: <20110601002854.GV5753@shells.gnugeneration.com>
-	 <1307015011.2497.633.camel@laptop>
-	 <20110602183244.GB5753@shells.gnugeneration.com>
-	 <1307049958.2497.726.camel@laptop>
-	 <20110607171347.a0bbdfd8.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 08 Jun 2011 11:25:13 +0200
-Message-ID: <1307525113.2322.291.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752647Ab1FHJa5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 05:30:57 -0400
+Received: from r00tworld.com ([212.85.137.150]:48219 "EHLO r00tworld.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751125Ab1FHJaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 05:30:55 -0400
+From: pageexec@freemail.hu
+To: Ingo Molnar <mingo@elte.hu>
+Date: Wed, 08 Jun 2011 11:29:37 +0200
+MIME-Version: 1.0
+Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
+Reply-to: pageexec@freemail.hu
+CC: Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
+Message-ID: <4DEF4101.17745.1C109461@pageexec.freemail.hu>
+In-reply-to: <20110608071620.GB6747@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>, <4DEEB31B.3353.19E649C2@pageexec.freemail.hu>, <20110608071620.GB6747@elte.hu>
+X-mailer: Pegasus Mail for Windows (4.61)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Wed, 08 Jun 2011 11:30:16 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-07 at 17:13 -0700, Andrew Morton wrote:
+On 8 Jun 2011 at 9:16, Ingo Molnar wrote:
 
-> I grabbed this, wrote a changelog and stuck your signed-off-by on it. 
+> The thing is, as i explained it before, your claim:
+> 
+>   > a page fault is never a fast path
+> 
+> is simply ridiculous on its face and crazy talk.
 
-Thanks, I was still waiting for feedback :/
+you didn't *explain* a thing. you *claimed* something but offered *no*
+proof. where's your measurement showing the single cycle improvement?
+how many times do i get to ask you for it before you're willing to provide
+it? does it even exist? you see, i'm beginning to think that you simply
+just made up that claim, or in plain english, you lied about it. is that
+really the case?
 
-> I also added a cc:stable but I didn't work out how far back in time it
-> goes.  A long way, I think?
+> Beyond all the reasons why we don't want to touch the page fault path 
+> we have a working, implemented, tested IDT based alternative approach 
+> here that is faster
 
-Yeah, ages ago:
+btw, the pf based approach can be made as fast as well since the necessary
+checks can be moved up early. but then we'll face the single cycle brigade ;).
 
-commit 189d3c4a94ef19fca2a71a6a336e9fda900e25e7
-Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date:   Wed Apr 30 00:54:35 2008 -0700
+> and more compartmented 
 
-    mm: bdi: allow setting a minimum for the bdi dirty limit
+what does that even mean here? the pf based approach is less code btw.
 
-git describe --contains doesn't seem to want to give a -linus release,
-my git foo is too weak :-(
+> Even if you do not take my word for it, several prominent kernel 
+> developers told you already that you are wrong,
+
+you must have been reading a different thread or i wasn't cc'd on those
+claims. care to quote them back (i only remember Pekka's mail and he has
+yet to back up his claim about single/low cycle counts being important
+for the bootup case)?
+
+also claiming something and proving something are different things. as
+i told you already, ex cathedra statements don't work here.
+
+> and i also showed you  the commits that prove you wrong.
+
+unfounded single cycle improvement claims don't a proof make. show your
+measurements instead. provided they exist that is.
+
+> Your reply to that was to try to change the topic,
+
+what change are you talking about? you insisted on calling the pf path
+fast and your single cycle improvements relevant, you get to prove it.
+
+> laced with frequent insults thrown at me. You called me an 'asshole' yet
+> the only thing i did was that i argued with you patiently.
+
+i wish you had argued (i.e., presented well thought out, true and releavant
+statements) but instead you only threw out completely baseless accusations,
+insinuations, or even outright lies, never mind the several ad hominem
+statements that i generously overlooked since unlike you, i can handle
+the heat of a discussion ;). IOW, stop pretending to be the hurt angel
+here, you're very far from it.
+
+> Is there *any* point where you are willing to admit that you are 
+> wrong or should i just start filtering out your emails to save me all 
+> this trouble?
+
+sure, just prove me wrong on a claim and i'll admit it ;).
+
+> When you comment on technical details you generally 
+> make very good suggestions so i'd hate to stop listening to your 
+> feedback, but there's a S/N ratio threshold under which i will need 
+> to do it ...
+
+you sound like i care about who you listen to. if you're a mature person
+you might as well act as one. like start answering the questions i posed
+you in the last round of emails then we'll see about that S/N ratio.
+
