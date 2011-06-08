@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab1FHJFB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 05:05:01 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56554 "EHLO
+	id S1755353Ab1FHJEh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 05:04:37 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55078 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755155Ab1FHJDs (ORCPT
+	with ESMTP id S1755051Ab1FHJDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 05:03:48 -0400
+	Wed, 8 Jun 2011 05:03:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=p5sR3aXc5DAbf6W7MyQq45D16PqKWfI8Ksu/gCdbxtGjDX7tgpcKKk5CTLRbGqQRYq
-         xrjrDQvCExQQEi8UgEuwER+fYv3HuuFF42l0nsPZ+K9AkHRfdD0oeWYjheJ26qEX72GO
-         LWehdwLralMrwx+G6MorK6H/AUjMPX+iDngXk=
+        b=CnIDFeDk40gQMaUH5lMCuTYXQpHNqupXx3Els8SUD3+lqffS/1u0M9+TrCU+wCGNmV
+         dkV+dfNMc7j1sqqwESXn7/aGyqK6xTwIMZqTfxM2N9w3TeIxg4zPvegf2mfGzxpiyq3Y
+         UHz1yJDbfTUQwt+fPawe3dARZDBCNrEGn9vuM=
 From: Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com
-Subject: [RFC v1 2/5] crypto: ksign - digital signature verification support
-Date: Wed,  8 Jun 2011 12:03:17 +0300
-Message-Id: <5beb13f0ddba0bd08557e1025500a91109ead3cc.1307522457.git.dmitry.kasatkin@intel.com>
+Subject: [RFC v1 3/5] evm: digital signature support
+Date: Wed,  8 Jun 2011 12:03:18 +0300
+Message-Id: <350dd2d8712307a3b0367823cc0e48d9ff5b947f.1307522457.git.dmitry.kasatkin@intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <cover.1307522457.git.dmitry.kasatkin@intel.com>
 References: <cover.1307522457.git.dmitry.kasatkin@intel.com>
@@ -30,388 +30,329 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
 
-This patch implements RSA digital signature verification using GnuPG library.
-
-Signature and public key have a special format and have special headers.
-Signature header contains keyid, which is used to identify the key,
-needed for signature verification.
-Payload of the signature and the key are multi-precision integers.
-
-Signing and key management utility "evmctl" is available on
-http://meego.gitorious.org/meego-platform-security/evm-utils
-
-Key is added to the kernel keyring with the name equal to a keyid.
-evm-utils provide support to load PEM key into the keyring,
-to convert PEM key to the kernel format and to load it into the keyring.
+When building an image, which has to be flashed to different devices,
+an HMAC cannot be used to sign file metadata, as the HMAC key is different
+on every device. File metadata can be protected using digital signature.
+This patch enables RSA signature based integrity verification.
 
 Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
 Acked-by: Mimi Zohar <zohar@us.ibm.com>
 ---
- crypto/Kconfig               |   13 ++
- crypto/Makefile              |    3 +
- crypto/ksign.c               |  259 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/crypto/ksign.h |   48 ++++++++
- 4 files changed, 323 insertions(+), 0 deletions(-)
- create mode 100644 crypto/ksign.c
- create mode 100644 include/linux/crypto/ksign.h
+ security/integrity/evm/Kconfig      |   14 +++++++
+ security/integrity/evm/evm.h        |   31 ++++++++++++++++
+ security/integrity/evm/evm_crypto.c |   66 ++++++++++++++++++++++++++---------
+ security/integrity/evm/evm_main.c   |   65 ++++++++++++++++++++++++++--------
+ 4 files changed, 144 insertions(+), 32 deletions(-)
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 4fb13ee..604b534 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -863,6 +863,19 @@ config CRYPTO_MPILIB
- 	help
- 	  Multiprecision maths library from GnuPG
+diff --git a/security/integrity/evm/Kconfig b/security/integrity/evm/Kconfig
+index 73f6540..92221b1 100644
+--- a/security/integrity/evm/Kconfig
++++ b/security/integrity/evm/Kconfig
+@@ -10,3 +10,17 @@ config EVM
+ 	  integrity attacks.
  
-+config CRYPTO_KSIGN
-+	bool "In-kernel signature checker (EXPERIMENTAL)"
-+	depends on CRYPTO
+ 	  If you are unsure how to answer this question, answer N.
++
++config EVM_DIGSIG
++	boolean "EVM Digital Signature support"
++	depends on EVM
++	default n
++	select CRYPTO_KSIGN_RSA
 +	help
-+	  Signature checker (used for module sig checking).
++	  When building an image, which has to be flashed to different
++	  devices, an HMAC cannot be used to sign file metadata, as
++	  the HMAC key is different on every device.
++	  File metadata can be protected using digital signature.
++	  This option enables RSA signature based integrity verification.
 +
-+config CRYPTO_KSIGN_RSA
-+	bool "Handle RSA signatures (EXPERIMENTAL)"
-+	select CRYPTO_KSIGN
-+	select CRYPTO_MPILIB
-+	help
-+	  RSA Signature checker.
++	  If unsure, say N.
+diff --git a/security/integrity/evm/evm.h b/security/integrity/evm/evm.h
+index d320f51..6d297a1 100644
+--- a/security/integrity/evm/evm.h
++++ b/security/integrity/evm/evm.h
+@@ -12,14 +12,22 @@
+  * File: evm.h
+  *
+  */
 +
- source "drivers/crypto/Kconfig"
- 
- endif	# if CRYPTO
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 604006d..4ef05e8 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -90,6 +90,9 @@ obj-$(CONFIG_CRYPTO_USER_API_HASH) += algif_hash.o
- obj-$(CONFIG_CRYPTO_USER_API_SKCIPHER) += algif_skcipher.o
- obj-$(CONFIG_CRYPTO_MPILIB) += mpi/
- 
-+obj-$(CONFIG_CRYPTO_KSIGN) += ksignmod.o
-+ksignmod-objs := ksign.o
++#ifndef __INTEGRITY_EVM_H
++#define __INTEGRITY_EVM_H
 +
- #
- # generic algorithms and the async_tx api
- #
-diff --git a/crypto/ksign.c b/crypto/ksign.c
-new file mode 100644
-index 0000000..60ccfc9
---- /dev/null
-+++ b/crypto/ksign.c
-@@ -0,0 +1,259 @@
-+/*
-+ * Copyright (C) 2011 Nokia Corporation
-+ *
-+ * Author:
-+ * Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, version 2 of the License.
-+ *
-+ * File: sign.c
-+ *	implements signature (RSA) verification
-+ *	pkcs decoding is originated from LibTomCrypt code
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/key.h>
-+#include <linux/crypto.h>
-+#include <crypto/hash.h>
-+#include <crypto/sha.h>
-+#include <keys/user-type.h>
-+#include <linux/crypto/mpi.h>
+ #include <linux/xattr.h>
+ #include <linux/security.h>
 +#include <linux/crypto/ksign.h>
 +
-+static struct crypto_shash *shash;
+ #include "../integrity.h"
+ 
+ extern int evm_initialized;
+ extern char *evm_hmac;
++extern char *evm_hash;
+ 
+ extern struct crypto_shash *hmac_tfm;
++extern struct crypto_shash *hash_tfm;
+ 
+ /* List of EVM protected security xattrs */
+ extern char *evm_config_xattrnames[];
+@@ -32,7 +40,30 @@ extern int evm_update_evmxattr(struct dentry *dentry,
+ extern int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
+ 			 const char *req_xattr_value,
+ 			 size_t req_xattr_value_len, char *digest);
++extern int evm_calc_hash(struct dentry *dentry, const char *req_xattr_name,
++			 const char *req_xattr_value,
++			 size_t req_xattr_value_len, char *digest);
+ extern int evm_init_hmac(struct inode *inode, const struct xattr *xattr,
+ 			 char *hmac_val);
+ extern int evm_init_secfs(void);
+ extern void evm_cleanup_secfs(void);
 +
-+static int pkcs_1_v1_5_decode_emsa(const unsigned char *msg,
-+			unsigned long  msglen,
-+			unsigned long  modulus_bitlen,
-+			unsigned char *out,
-+			unsigned long *outlen,
-+			int *is_valid)
-+{
-+	unsigned long modulus_len, ps_len, i;
-+	int result;
++#ifdef CONFIG_EVM_DIGSIG
 +
-+	/* default to invalid packet */
-+	*is_valid = 0;
-+
-+	modulus_len = (modulus_bitlen >> 3) + (modulus_bitlen & 7 ? 1 : 0);
-+
-+	/* test message size */
-+	if ((msglen > modulus_len) || (modulus_len < 11))
-+		return -EINVAL;
-+
-+	/* separate encoded message */
-+	if ((msg[0] != 0x00) || (msg[1] != (unsigned char)1)) {
-+		result = -EINVAL;
-+		goto bail;
-+	}
-+
-+	for (i = 2; i < modulus_len - 1; i++)
-+		if (msg[i] != 0xFF)
-+			break;
-+
-+	/* separator check */
-+	if (msg[i] != 0) {
-+		/* There was no octet with hexadecimal value 0x00
-+		to separate ps from m. */
-+		result = -EINVAL;
-+		goto bail;
-+	}
-+
-+	ps_len = i - 2;
-+
-+	if (*outlen < (msglen - (2 + ps_len + 1))) {
-+		*outlen = msglen - (2 + ps_len + 1);
-+		result = -EOVERFLOW;
-+		goto bail;
-+	}
-+
-+	*outlen = (msglen - (2 + ps_len + 1));
-+	memcpy(out, &msg[2 + ps_len + 1], *outlen);
-+
-+	/* valid packet */
-+	*is_valid = 1;
-+	result    = 0;
-+bail:
-+	return result;
-+}
-+
-+/*
-+ * RSA Signature verification with public key
-+ */
-+static int ksign_verify_rsa(struct key *key,
-+		    const char *sig, int siglen,
-+		       const char *h, int hlen)
-+{
-+	int err = -ENOMEM;
-+	unsigned long len;
-+	unsigned long mlen, mblen;
-+	unsigned nret, l;
-+	int valid, head, i;
-+	unsigned char *out1 = NULL, *out2 = NULL;
-+	MPI in = NULL, res = NULL, pkey[2];
-+	uint8_t *p, *datap, *endp;
-+	struct user_key_payload *ukp;
-+	struct pubkey_hdr *pkh;
-+
-+	down_read(&key->sem);
-+	ukp = key->payload.data;
-+	pkh = (struct pubkey_hdr *)ukp->data;
-+
-+	if (pkh->version != 1)
-+		return -EINVAL;
-+
-+	if (pkh->algo != PUBKEY_ALGO_RSA)
-+		return -EINVAL;
-+
-+	if (pkh->nmpi != 2) {
-+		err = -EINVAL;
-+		goto err1;
-+	}
-+
-+	datap = pkh->mpi;
-+	endp = datap + ukp->datalen;
-+
-+	for (i = 0; i < pkh->nmpi; i++) {
-+		unsigned int remaining = endp - datap;
-+		pkey[i] = mpi_read_from_buffer(datap, &remaining);
-+		datap += remaining;
-+	}
-+
-+	mblen = mpi_get_nbits(pkey[0]);
-+	mlen = (mblen + 7)/8;
-+
-+	out1 = kzalloc(mlen, GFP_KERNEL);
-+	if (!out1)
-+		goto err;
-+
-+	out2 = kzalloc(mlen, GFP_KERNEL);
-+	if (!out1)
-+		goto err;
-+
-+	nret = siglen;
-+	in = mpi_read_from_buffer(sig, &nret);
-+	if (!in)
-+		goto err;
-+
-+	res = mpi_alloc(mpi_get_nlimbs(in) * 2);
-+	if (!res)
-+		goto err;
-+
-+	err = mpi_powm(res, in, pkey[1], pkey[0]);
-+	if (err)
-+		goto err;
-+
-+	if (mpi_get_nlimbs(res) * BYTES_PER_MPI_LIMB > mlen) {
-+		err = -EINVAL;
-+		goto err;
-+	}
-+
-+	p = mpi_get_buffer(res, &l, NULL);
-+	if (!p) {
-+		err = -EINVAL;
-+		goto err;
-+	}
-+
-+	len = mlen;
-+	head = len - l;
-+	memset(out1, 0, head);
-+	memcpy(out1 + head, p, l);
-+
-+	err = -EINVAL;
-+	pkcs_1_v1_5_decode_emsa(out1, len, mblen, out2, &len, &valid);
-+
-+	if (valid && len == hlen)
-+		err = memcmp(out2, h, hlen);
-+
-+err:
-+	mpi_free(in);
-+	mpi_free(res);
-+	kfree(out1);
-+	kfree(out2);
-+	mpi_free(pkey[0]);
-+	mpi_free(pkey[1]);
-+err1:
-+	up_read(&key->sem);
-+
-+	return err;
-+}
-+
-+/*
-+ * Signature verification with public key
-+ */
-+int ksign_verify(const char *sig, int siglen,
++static inline int evm_sign_verify(const char *sig, int siglen,
 +		       const char *digest, int digestlen)
 +{
-+	int err = -ENOMEM;
-+	struct signature_hdr *sh = (struct signature_hdr *)sig;
-+	struct shash_desc *desc = NULL;
-+	unsigned char h[SHA1_DIGEST_SIZE];
-+	struct key *key;
-+	char name[20];
-+
-+	if (siglen < sizeof(*sh) + 2)
-+		return -EINVAL;
-+
-+	if (sh->algo != PUBKEY_ALGO_RSA)
-+		return -ENOTSUPP;
-+
-+	sprintf(name, "%llX", __be64_to_cpup((uint64_t *)sh->keyid));
-+
-+	key = request_key(&key_type_user, name, NULL);
-+	if (IS_ERR(key)) {
-+		pr_err("key not found, id: %s\n", name);
-+		return -ENOENT;
-+	}
-+
-+	desc = kzalloc(sizeof(*desc) + crypto_shash_descsize(shash),
-+		       GFP_KERNEL);
-+	if (!desc)
-+		goto err;
-+
-+	desc->tfm = shash;
-+	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-+
-+	crypto_shash_init(desc);
-+	crypto_shash_update(desc, digest, digestlen);
-+	crypto_shash_update(desc, sig, sizeof(*sh));
-+	crypto_shash_final(desc, h);
-+
-+	kfree(desc);
-+
-+	/* pass signature mpis address */
-+	err = ksign_verify_rsa(key, sig + sizeof(*sh), siglen - sizeof(*sh),
-+			     h, sizeof(h));
-+
-+err:
-+	key_put(key);
-+
-+	if (err)
-+		pr_info("ksign_verify: %d\n", err);
-+
-+	return err ? -EINVAL : 0;
++	return ksign_verify(sig, siglen, digest, digestlen);
 +}
-+EXPORT_SYMBOL_GPL(ksign_verify);
-+
-+static int __init ksign_init(void)
-+{
-+	shash = crypto_alloc_shash("sha1", 0, 0);
-+	if (IS_ERR(shash)) {
-+		pr_err("shash allocation failed\n");
-+		return  PTR_ERR(shash);
-+	}
-+
-+	return 0;
-+
-+}
-+
-+static void __exit ksign_cleanup(void)
-+{
-+	crypto_free_shash(shash);
-+}
-+
-+module_init(ksign_init);
-+module_exit(ksign_cleanup);
-+
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/crypto/ksign.h b/include/linux/crypto/ksign.h
-new file mode 100644
-index 0000000..f1e47cb
---- /dev/null
-+++ b/include/linux/crypto/ksign.h
-@@ -0,0 +1,48 @@
-+#ifndef CRYPTO_KSIGN_H
-+#define CRYPTO_KSIGN_H
-+
-+enum pubkey_type {
-+	PUBKEY_ALGO_RSA,
-+	PUBKEY_ALGO_DSA,
-+	PUBKEY_ALGO_MAX,
-+};
-+
-+enum digest_algo {
-+	DIGEST_ALGO_SHA1,
-+	DIGEST_ALGO_SHA256,
-+	DIGEST_ALGO_MAX
-+};
-+
-+struct pubkey_hdr {
-+	uint8_t		version;
-+	uint8_t		algo;
-+	uint8_t		nmpi;
-+	char		mpi[0];
-+} __attribute__ ((packed));
-+
-+struct signature_hdr {
-+	uint8_t		version;
-+	time_t		timestamp;	/* signature made */
-+	uint8_t		algo;
-+	uint8_t		hash;
-+	uint8_t		keyid[8];
-+	uint8_t		nmpi;
-+	char		mpi[0];
-+} __attribute__ ((packed));
-+
-+#ifdef CONFIG_CRYPTO_KSIGN
-+
-+int ksign_verify(const char *sig, int siglen,
-+		 const char *digest, int digestlen);
 +
 +#else
 +
-+static inline int ksign_verify(const char *sig, int siglen,
-+		 const char *digest, int digestlen)
++static inline int evm_sign_verify(const char *sig, int siglen,
++		       const char *digest, int digestlen)
 +{
 +	return -EOPNOTSUPP;
 +}
 +
-+#endif /* CONFIG_CRYPTO_KSIGN */
++#endif /* CONFIG_EVM_DIGSIG */
 +
-+#endif /* CRYPTO_KSIGN_H */
++#endif
+diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
+index a57e0f0..847a2d7 100644
+--- a/security/integrity/evm/evm_crypto.c
++++ b/security/integrity/evm/evm_crypto.c
+@@ -26,34 +26,48 @@ static unsigned char evmkey[MAX_KEY_SIZE];
+ static int evmkey_len = MAX_KEY_SIZE;
+ 
+ struct crypto_shash *hmac_tfm;
++struct crypto_shash *hash_tfm;
+ 
+-static struct shash_desc *init_desc(void)
++static struct shash_desc *init_desc(const char type)
+ {
+ 	int rc;
++	char *algo;
++	struct crypto_shash **tfm;
+ 	struct shash_desc *desc;
+ 
+-	if (hmac_tfm == NULL) {
+-		hmac_tfm = crypto_alloc_shash(evm_hmac, 0, CRYPTO_ALG_ASYNC);
+-		if (IS_ERR(hmac_tfm)) {
++	if (type == EVM_XATTR_HMAC) {
++		tfm = &hmac_tfm;
++		algo = evm_hmac;
++	} else {
++		tfm = &hash_tfm;
++		algo = evm_hash;
++	}
++
++	if (*tfm == NULL) {
++		*tfm = crypto_alloc_shash(algo, 0, CRYPTO_ALG_ASYNC);
++		if (IS_ERR(*tfm)) {
+ 			pr_err("Can not allocate %s (reason: %ld)\n",
+-			       evm_hmac, PTR_ERR(hmac_tfm));
+-			rc = PTR_ERR(hmac_tfm);
+-			hmac_tfm = NULL;
++			       algo, PTR_ERR(*tfm));
++			rc = PTR_ERR(*tfm);
++			*tfm = NULL;
+ 			return ERR_PTR(rc);
+ 		}
+ 	}
+ 
+-	desc = kmalloc(sizeof(*desc) + crypto_shash_descsize(hmac_tfm),
++	desc = kmalloc(sizeof(*desc) + crypto_shash_descsize(*tfm),
+ 			GFP_KERNEL);
+ 	if (!desc)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	desc->tfm = hmac_tfm;
++	desc->tfm = *tfm;
+ 	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
+ 
+-	rc = crypto_shash_setkey(hmac_tfm, evmkey, evmkey_len);
+-	if (rc)
+-		goto out;	
++	if (type == EVM_XATTR_HMAC) {
++		rc = crypto_shash_setkey(*tfm, evmkey, evmkey_len);
++		if (rc)
++			goto out;
++	}
++
+ 	rc = crypto_shash_init(desc);
+ out:
+ 	if (rc) {
+@@ -97,9 +111,11 @@ static void hmac_add_misc(struct shash_desc *desc, struct inode *inode,
+  * the hmac using the requested xattr value. Don't alloc/free memory for
+  * each xattr, but attempt to re-use the previously allocated memory.
+  */
+-int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
+-		  const char *req_xattr_value, size_t req_xattr_value_len,
+-		  char *digest)
++static int evm_calc_hmac_or_hash(struct dentry *dentry,
++				const char *req_xattr_name,
++				const char *req_xattr_value,
++				size_t req_xattr_value_len,
++				char type, char *digest)
+ {
+ 	struct inode *inode = dentry->d_inode;
+ 	struct shash_desc *desc;
+@@ -111,7 +127,7 @@ int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
+ 
+ 	if (!inode->i_op || !inode->i_op->getxattr)
+ 		return -EOPNOTSUPP;
+-	desc = init_desc();
++	desc = init_desc(type);
+ 	if (IS_ERR(desc))
+ 		return PTR_ERR(desc);
+ 
+@@ -145,6 +161,22 @@ out:
+ 	return error;
+ }
+ 
++int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
++		  const char *req_xattr_value, size_t req_xattr_value_len,
++		  char *digest)
++{
++	return evm_calc_hmac_or_hash(dentry, req_xattr_name, req_xattr_value,
++				req_xattr_value_len, EVM_XATTR_HMAC, digest);
++}
++
++int evm_calc_hash(struct dentry *dentry, const char *req_xattr_name,
++		  const char *req_xattr_value, size_t req_xattr_value_len,
++		  char *digest)
++{
++	return evm_calc_hmac_or_hash(dentry, req_xattr_name, req_xattr_value,
++				req_xattr_value_len, IMA_XATTR_DIGEST, digest);
++}
++
+ /*
+  * Calculate the hmac and update security.evm xattr
+  *
+@@ -175,7 +207,7 @@ int evm_init_hmac(struct inode *inode, const struct xattr *lsm_xattr,
+ {
+ 	struct shash_desc *desc;
+ 
+-	desc = init_desc();
++	desc = init_desc(EVM_XATTR_HMAC);
+ 	if (IS_ERR(desc)) {
+ 		printk(KERN_INFO "init_desc failed\n");
+ 		return PTR_ERR(desc);
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index b0ce1e7..65518fb 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -25,6 +25,7 @@
+ int evm_initialized;
+ 
+ char *evm_hmac = "hmac(sha1)";
++char *evm_hash = "sha1";
+ 
+ char *evm_config_xattrnames[] = {
+ #ifdef CONFIG_SECURITY_SELINUX
+@@ -65,39 +66,71 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 					     size_t xattr_value_len,
+ 					     struct integrity_iint_cache *iint)
+ {
+-	struct evm_ima_xattr_data xattr_data;
++	struct evm_ima_xattr_data *xattr_data = NULL;
++	struct evm_ima_xattr_data calc;
+ 	enum integrity_status evm_status;
+-	int rc;
++	int rc, xattr_len;
+ 
+ 	if (iint && iint->evm_status == INTEGRITY_PASS)
+ 		return iint->evm_status;
+ 
+ 	/* if status is not PASS, try to check again - against -ENOMEM */
+ 
+-	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
+-			   xattr_value_len, xattr_data.digest);
+-	if (rc < 0)
+-		goto err_out;
++	/* first need to know the sig type */
++	rc = vfs_getxattr_alloc(dentry, XATTR_NAME_EVM, (char **)&xattr_data, 0,
++				GFP_NOFS);
++	if (rc <= 0) {
++		if (rc == 0)
++			rc = -EINVAL;
++		goto out;
++	}
+ 
+-	xattr_data.type = EVM_XATTR_HMAC;
+-	rc = vfs_xattr_cmp(dentry, XATTR_NAME_EVM, (u8 *)&xattr_data,
+-			   sizeof xattr_data, GFP_NOFS);
+-	if (rc < 0)
+-		goto err_out;
+-	evm_status = INTEGRITY_PASS;
+-	goto out;
++	xattr_len = rc - 1;
++
++	/* check value type */
++	switch (xattr_data->type) {
++	case EVM_XATTR_HMAC:
++		rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
++				   xattr_value_len, calc.digest);
++		if (rc)
++			break;
++		rc = memcmp(xattr_data->digest, calc.digest,
++			    sizeof(calc.digest));
++		if (rc)
++			rc = -EINVAL;
++		break;
++	case EVM_IMA_XATTR_DIGSIG:
++		rc = evm_calc_hash(dentry, xattr_name, xattr_value,
++				xattr_value_len, calc.digest);
++		if (rc)
++			break;
++		rc = evm_sign_verify(xattr_data->digest, xattr_len,
++				     calc.digest, sizeof(calc.digest));
++		if (!rc) {
++			/* we probably want to replace rsa with hmac here */
++			evm_update_evmxattr(dentry, xattr_name, xattr_value,
++				   xattr_value_len);
++		}
++		break;
++	default:
++		rc = -EINVAL;
++		break;
++	}
+ 
+-err_out:
++out:
+ 	switch (rc) {
++	case 0:
++		evm_status = INTEGRITY_PASS;
++		break;
+ 	case -ENODATA:		/* file not labelled */
+ 		evm_status = INTEGRITY_NOLABEL;
+ 		break;
+ 	default:
+ 		evm_status = INTEGRITY_FAIL;
+ 	}
+-out:
+ 	if (iint)
+ 		iint->evm_status = evm_status;
++	kfree(xattr_data);
+ 	return evm_status;
+ }
+ 
+@@ -363,6 +396,8 @@ static void __exit cleanup_evm(void)
+ 	evm_cleanup_secfs();
+ 	if (hmac_tfm)
+ 		crypto_free_shash(hmac_tfm);
++	if (hash_tfm)
++		crypto_free_shash(hash_tfm);
+ }
+ 
+ /*
 -- 
 1.7.4.1
 
