@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab1FHQgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 12:36:37 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:52559 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751253Ab1FHQgg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 12:36:36 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Lee Jones <lee.jones@linaro.org>, Jonas Aberg <jonas.aberg@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] fs/fat: fix build warning
-Date: Wed, 8 Jun 2011 18:36:03 +0200
-Message-ID: <1307550963-26352-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S1751202Ab1FHQkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 12:40:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24756 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751152Ab1FHQj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 12:39:58 -0400
+Date: Wed, 8 Jun 2011 18:36:53 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, fenghua.yu@intel.com,
+        monstr@monstr.eu, ralf@linux-mips.org, benh@kernel.crashing.org,
+        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        linux390@de.ibm.com, lethal@linux-sh.org, davem@davemloft.net,
+        jdike@addtoit.com, richard@nod.at, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        linux-ia64@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH -v2] Audit: push audit success and retcode into arch
+	ptrace.h
+Message-ID: <20110608163653.GA9592@redhat.com>
+References: <20110603220451.23134.47368.stgit@paris.rdu.redhat.com> <20110607171952.GA25729@redhat.com> <1307472796.2052.12.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307472796.2052.12.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Aberg <jonas.aberg@stericsson.com>
+On 06/07, Eric Paris wrote:
+>
+> On Tue, 2011-06-07 at 19:19 +0200, Oleg Nesterov wrote:
+> >
+> > With or without this patch, can't we call audit_syscall_exit() twice
+> > if there is something else in _TIF_WORK_SYSCALL_EXIT mask apart from
+> > SYSCALL_AUDIT ? First time it is called from asm, then from
+> > syscall_trace_leave(), no?
+> >
+> > For example. The task has TIF_SYSCALL_AUDIT and nothing else, it does
+> > system_call->auditsys->system_call_fastpath. What if it gets, say,
+> > TIF_SYSCALL_TRACE before ret_from_sys_call?
+>
+> No harm is done calling twice.  The first call will do the real work and
+> cleanup.  It will set a flag in the audit data that the work has been
+> done (in_syscall == 0) thus the second call will then not do any real
+> work and won't have anything to clean up.
 
-This fixes a compile warning (unititialized variable) in
-the fat filesystem code.
+Hmm... and I assume context->previous != NULL is not possible on x86_64.
+OK, thanks.
 
-Signed-off-by: Jonas Aberg <jonas.aberg@stericsson.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-v2: use uninitialized_var() macro, this is verified to work with
-static code-checking tools.
----
- fs/fat/dir.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+And I guess, all CONFIG_AUDITSYSCALL code in entry.S is only needed to
+microoptimize the case when TIF_SYSCALL_AUDIT is the only reason for the
+slow path. I wonder if it really makes the measureble difference...
 
-diff --git a/fs/fat/dir.c b/fs/fat/dir.c
-index 4ad6473..5efbd5d 100644
---- a/fs/fat/dir.c
-+++ b/fs/fat/dir.c
-@@ -1231,7 +1231,7 @@ int fat_add_entries(struct inode *dir, void *slots, int nr_slots,
- 	struct super_block *sb = dir->i_sb;
- 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
- 	struct buffer_head *bh, *prev, *bhs[3]; /* 32*slots (672bytes) */
--	struct msdos_dir_entry *de;
-+	struct msdos_dir_entry *uninitialized_var(de);
- 	int err, free_slots, i, nr_bhs;
- 	loff_t pos, i_pos;
- 
--- 
-1.7.3.2
+Oleg.
 
