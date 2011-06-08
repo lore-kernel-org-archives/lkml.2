@@ -1,149 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab1FHKJe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:09:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32270 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753864Ab1FHKJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:09:33 -0400
-Date: Wed, 8 Jun 2011 12:09:18 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: "Amir G." <amir73il@users.sourceforge.net>
-cc: Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
-        tytso@mit.edu, linux-kernel@vger.kernel.org, sandeen@redhat.com
-Subject: Re: [PATCH v1 00/30] Ext4 snapshots
-In-Reply-To: <BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com>
-References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net> <alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com> <BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754616Ab1FHKJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:09:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59985 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950Ab1FHKJf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 06:09:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Ar49Y1iDzNbd71oQnpz0yh0t60Hqe7t7JPWE1JmWgKs/aQBtgoEHyK07RtjrGyYsZ2
+         RkNzUazQXb66KE9DwfVLxnEKFHXgymj17zHItuHtYoAL/5ur8Tr8v2UnJ5bpOPnBvddq
+         wRSAuKAjSXa5lhodqp6y8okvQ3B8w0rhofDKY=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110608054354.GA1717@x4.trippels.de>
+References: <20110608054002.GA1717@x4.trippels.de>
+	<20110608054354.GA1717@x4.trippels.de>
+Date: Wed, 8 Jun 2011 20:09:33 +1000
+Message-ID: <BANLkTinfn82C3TjPxzZuD+v=F+uCx8pmyg@mail.gmail.com>
+Subject: Re: Latest merge of 'drm-radeon-fixes' breaks my setup
+From: Dave Airlie <airlied@gmail.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Dave Airlie <airlied@redhat.com>,
+        =?UTF-8?B?TWFyZWsgT2zFocOhaw==?= <maraeo@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=00151748e0747f587304a5308870
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Jun 2011, Amir G. wrote:
+--00151748e0747f587304a5308870
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> On Tue, Jun 7, 2011 at 6:56 PM, Lukas Czerner <lczerner@redhat.com> wrote:
-> > Hi Amir,
-> >
-> > thanks very much for the resend. I'll take a look at the whole patch
-> > series, but first I want to bring up one important thing.
-> >
-> > While this being a huge feature for ext4 (regardless on how
-> > intrusive it is for the usual code paths) and while we already have
-> > patches in the list with people interesting in looking into them, you
-> > should clearly clarify what is the gain of it, what is the use case (and
-> > I know you have one), and why it is better than other approaches. You
-> > know, advertise it a bit in the marketing way :).
-> 
-> Hi Lukas,
-> 
-> Thank you for pointing out the marketing aspect.
-> 
-> I must admit that my user-case rather speaks for itself.
-> CTERA develops a NAS device which is specialized for
-> backing up local networks and snapshots gives the NAS a time
-> dimension without paying for it in disk space and performance.
-> 
-> The reason for not going with btrfs 3 years ago is clear.
-> So why not go with it now instead of moving forward to
-> ext4 with snapshots?
-> Part of the answer lies in the possibility to run fsck -x,
-> which gets rid of the snapshots in the case of fs corruption
-> and gets you back to good old stable and consistent ext4.
+On Wed, Jun 8, 2011 at 3:43 PM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+> On 2011.06.08 at 07:40 +0200, Markus Trippelsdorf wrote:
+>> The merge of the 'drm-radeon' branch by Linus yesterday breaks my setup
+>> (RS780). The mouse cursor is just a black block suddenly and I see an
+>> endless stream of:
+>> =A0radeon 0000:01:05.0: r600_check_texture_resource:1338 texture invalid=
+ format 26
+>> =A0[drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
 
-But that is not even a real reason, is it ? When you need snapshots,
-well, then you just need it and do no want to get rid of it. When fs
-corruption appears, then it's bad in any case and the fsck should be
-able to more or less fix it.
+This is wierd, can you try the attached patch, it appears this
+uncovered another bug.
 
-So you're saying that when corruption appears, then you *have to* blast
-all snapshots ? I am not sure how btrfs is going to deal with it, but it
-does seem like an advantage at all, why are you presenting it as such ?
+Dave.
 
-> 
-> >
-> > There is some confusion among developers on what actually are benefits
-> > of ext4 snapshots in comparison to btrfs, or in comparison to the new
-> > dm_multisnap code. I know that you have done quite a lot of testing to
-> > assure that it does not actually change old ext4 behavior when snapshot
-> > disabled, and that it works well when enabled, but have you done any
-> > performance related benchmarks ? Do you have any expectations on how it
-> > should behave in different work loads ?
-> >
-> > It would be great to see and be able to confirm that ext4 snapshots are
-> > really a win, not only on the feature side, but on the performance side
-> > as well. I know that there are people out there still undecided or
-> > having a strange feeling about your snapshot work. But who can blame
-> > them, when we have not seen any hard data on this matter ?
-> 
-> Ehm.. I did present this benchmark on LSF:
-> http://global.phoronix-test-suite.com/index.php?k=profile&u=amir73il-4632-11284-26560
-> 
-> unless you snoozed ;-)
-> it shows performance vs. ext4 w/o snapshots and with snapshots
-> and while taking snapshots.
+--00151748e0747f587304a5308870
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-drm-radeon-kms-set-family-for-use-in-parser.patch"
+Content-Disposition: attachment; 
+	filename="0001-drm-radeon-kms-set-family-for-use-in-parser.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_goo3ycne0
 
-I believe that you just missed the fact that not everyone has attended LSF
-and your lightning talk, but that's ok.
-
-It seems to me that random writes are usually faster with you snapshot
-code regardless whether you use snapshots or not. Is that because of
-non snapshot related changes you've made ?
-
-Also random reads seems to be slower with snapshots, is suspect that
-this is because of read through, so the reason for the slowdown that it
-was CPU bound ? I do not see any CPU utilization data.
-
-The postmark results seems quite odd, it is actually a lot faster with
-one snapshot and a lot slower with multiple snapshots, do you have an
-idea what is going on ?
-
-> I did not compare with btrfs, but I bet there are ext4 vs. btrfs
-> benchmarks out there.
-> dm-multisnap is better than dm-snap only when it comes to overhead
-> per snapshot. it still copies every written block, which is far from
-> being the case in ext4 snapshots.
-
-Nevertheless, I still have not seen any comparison with other
-snapshotting possibilities we have. Note that ext4 to btrfs comparison
-is not enough, because we do not know what is the difference between
-the difference of ext4 with/without snapshots and btrfs with/without
-snapshots. The reason for this is that btrfs performance is very likely
-to scale up, but ext4 is pretty much done in that matter and I do not
-expect any huge performance leaps in the future.
-
-Also, rejecting dm-multisnap based on this statement is not enough, show
-us some numbers.
-
-I believe that it is not very convenient for you, because this feature
-support your business case and you do not necessarily want to find out
-that there might be a better way, especially after the work you have
-done already.
-
-So it might be unpleasant for you that people ask questions and delaying
-the inclusion of ext4 snapshots. But what you see as obstacles people
-are throwing at you is really just caution, especially when it comes to
-ext4 which is seen as a simple, stable, reliable and predictable linux
-filesystem, but I bet you understand.
-
-And one last note, I also think that the snapshot format change in the
-future, when we'll have snpashots with 64bit feature compatible seems
-just wrong to me. Adding some features or changing the implementation a
-bit is ok, but format change is different. When the code is upstream and
-stable it is just wrong.
-
-Thanks!
--Lukas
-
-> 
-> >
-> > So I, for myself, and I believe there are others, would like to see some
-> > benchmark numbers and comparison (both, features and performance) with at
-> > least new dm-multisnap code and probably btrfs and plain ext4 as well.
-> >
-> > Thanks!
-> > -Lukas
-> >
+RnJvbSA4N2ExMzA3NjNlN2ExN2U2MWNjMThhNzI3OWQzMWI1OGI3YmRmNWIyIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgpEYXRl
+OiBXZWQsIDggSnVuIDIwMTEgMTk6NTg6MjkgKzEwMDAKU3ViamVjdDogW1BBVENIXSBkcm0vcmFk
+ZW9uL2ttczogc2V0IGZhbWlseSBmb3IgdXNlIGluIHBhcnNlci4KCldpZXJkbHkgdGhlIGttcyBw
+YXJzZXIgbmV2ZXIgaW5pdGlhbGlzZWQgdGhlIGZhbWlseSwgaXQgd2Fzbid0IHJlYWxseSB1c2Vk
+Cm11Y2gsIGJ1dCB0aGUgZm10IGNoZWNrZXIgcGF0Y2ggc3RhcnRlZCB1c2luZyBpdCBhbmQgaXQg
+ZmVsbCBvdmVyLgoKUmVwb3J0ZWQtYnk6IE1hcmt1cyBUcmlwcGVsc2RvcmYgPG1hcmt1c0B0cmlw
+cGVsc2RvcmYuZGU+ClNpZ25lZC1vZmYtYnk6IERhdmUgQWlybGllIDxhaXJsaWVkQHJlZGhhdC5j
+b20+Ci0tLQogZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9yYWRlb25fY3MuYyB8ICAgIDEgKwogMSBm
+aWxlcyBjaGFuZ2VkLCAxIGluc2VydGlvbnMoKyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0
+IGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9yYWRlb25fY3MuYyBiL2RyaXZlcnMvZ3B1L2RybS9y
+YWRlb24vcmFkZW9uX2NzLmMKaW5kZXggOGMxOTE2OS4uZmFlMDBjMCAxMDA2NDQKLS0tIGEvZHJp
+dmVycy9ncHUvZHJtL3JhZGVvbi9yYWRlb25fY3MuYworKysgYi9kcml2ZXJzL2dwdS9kcm0vcmFk
+ZW9uL3JhZGVvbl9jcy5jCkBAIC0yMjgsNiArMjI4LDcgQEAgaW50IHJhZGVvbl9jc19pb2N0bChz
+dHJ1Y3QgZHJtX2RldmljZSAqZGV2LCB2b2lkICpkYXRhLCBzdHJ1Y3QgZHJtX2ZpbGUgKmZpbHAp
+CiAJcGFyc2VyLmZpbHAgPSBmaWxwOwogCXBhcnNlci5yZGV2ID0gcmRldjsKIAlwYXJzZXIuZGV2
+ID0gcmRldi0+ZGV2OworCXBhcnNlci5mYW1pbHkgPSByZGV2LT5mYW1pbHk7CiAJciA9IHJhZGVv
+bl9jc19wYXJzZXJfaW5pdCgmcGFyc2VyLCBkYXRhKTsKIAlpZiAocikgewogCQlEUk1fRVJST1Io
+IkZhaWxlZCB0byBpbml0aWFsaXplIHBhcnNlciAhXG4iKTsKLS0gCjEuNy41LjIKCg==
+--00151748e0747f587304a5308870--
