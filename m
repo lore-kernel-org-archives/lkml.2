@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab1FHX2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 19:28:42 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:38709 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678Ab1FHX2l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 19:28:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=A+Ow54LHcH/mdXXwZAe9Os3WsUUcCEzAEVpO/BxM37V2JYXa2RWMH37s8RBriI3+mC
-         ir/48ueoMqobDOt5JLD+o1f6q5VJQ0XinG62+nAz26K/7WtEvNPjq8QXcgfAQHF2SJUH
-         5IsQsCSMTm/MItcFfftZP2XlMJH+12xCOdIpk=
-Date: Thu, 9 Jun 2011 01:28:35 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 04/28] rcu: Restore checks for blocking in
- RCU read-side critical sections
-Message-ID: <20110608232833.GD25771@somewhere.redhat.com>
-References: <20110608192943.GA13211@linux.vnet.ibm.com>
- <1307561407-13809-4-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1756733Ab1FHX3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 19:29:14 -0400
+Received: from ozlabs.org ([203.10.76.45]:52540 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753678Ab1FHX3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 19:29:12 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>
+Cc: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        Christoph Hellwig <chellwig@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, "Michael S. Tsirkin" <mst@redhat.com>,
+        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: virtio scsi host draft specification, v3
+In-Reply-To: <4DEE2B15.4090809@redhat.com>
+References: <4DEE2B15.4090809@redhat.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 09 Jun 2011 08:58:50 +0930
+Message-ID: <87lixbgax9.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307561407-13809-4-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 12:29:43PM -0700, Paul E. McKenney wrote:
-> Long ago, using TREE_RCU with PREEMPT would result in "scheduling
-> while atomic" diagnostics if you blocked in an RCU read-side critical
-> section.  However, PREEMPT now implies TREE_PREEMPT_RCU, which defeats
-> this diagnostic.  This commit therefore adds a replacement diagnostic
-> based on PROVE_RCU.
+On Tue, 07 Jun 2011 15:43:49 +0200, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> Hi all,
 > 
-> Because rcu_lockdep_assert() and lockdep_rcu_dereference() are now being
-> used for things that have nothing to do with rcu_dereference(), rename
-> lockdep_rcu_dereference() to lockdep_rcu_suspicious() and add a third
-> argument that is a string indicating what is suspicious.  This third
-> argument is passed in from a new third argument to rcu_lockdep_assert().
-> Update all calls to rcu_lockdep_assert() to add an informative third
-> argument.
-> 
-> Finally, add a pair of rcu_lockdep_assert() calls from within
-> rcu_note_context_switch(), one complaining if a context switch occurs
-> in an RCU-bh read-side critical section and another complaining if a
-> context switch occurs in an RCU-sched read-side critical section.
-> These are present only if the PROVE_RCU kernel parameter is enabled.
-> 
-> Again, you must enable PROVE_RCU to see these new diagnostics.  But you
-> are enabling PROVE_RCU to check out new RCU uses in any case, aren't you?
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> after some preliminary discussion on the QEMU mailing list, I present a
+> draft specification for a virtio-based SCSI host (controller, HBA, you
+> name it).
 
-So, do you think we can get rid of this patch now that we are going to have CONFIG_ATOMIC_SLEEP
-working everywhere?
+OK, I'm impressed.  This is very well written and I doesn't make any of
+the obvious mistakes wrt. virtio.
 
-The last remaining piece we need is to check rcu_preempt_depth() from schedule_debug(),
-which does a kind of lightweight might_sleep() check alike.
+Unfortunately, I know almost nothing of SCSI, so I have to leave it to
+others to decide if this is actually useful and sufficient.
+
+I assume you have an implementation, as well?
+
+Thanks,
+Rusty.
