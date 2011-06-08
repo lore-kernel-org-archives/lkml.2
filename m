@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab1FHH3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 03:29:12 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:46749 "EHLO
+	id S1754857Ab1FHH3X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 03:29:23 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:46780 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754667Ab1FHH3I (ORCPT
+	with ESMTP id S1754782Ab1FHH3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 03:29:08 -0400
-X-AuditID: b753bd60-a14abba0000019f4-ec-4def24c14ea3
-X-AuditID: b753bd60-a14abba0000019f4-ec-4def24c14ea3
+	Wed, 8 Jun 2011 03:29:19 -0400
+X-AuditID: b753bd60-a287bba0000050a4-f3-4def24cd4cb8
+X-AuditID: b753bd60-a287bba0000050a4-f3-4def24cd4cb8
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip v2 2/3] Add weak save_stack_trace_regs()
+Subject: [PATCH -tip v2 3/3] [BUGFIX]tracing/kprobes: Fix kprobe-tracer to
+ support stack trace
 To: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -22,8 +23,8 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 08 Jun 2011 16:09:27 +0900
-Message-ID: <20110608070927.17777.37895.stgit@fedora15>
+Date: Wed, 08 Jun 2011 16:09:34 +0900
+Message-ID: <20110608070934.17777.17116.stgit@fedora15>
 In-Reply-To: <20110608070913.17777.37689.stgit@fedora15>
 References: <20110608070913.17777.37689.stgit@fedora15>
 User-Agent: StGIT/0.14.3
@@ -35,9 +36,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add weak symbol of save_stack_trace_regs() as same as
-save_stack_trace_tsk() since that is not implemented
-except x86 yet.
+Fix to support kernel stack trace correctly on kprobe-tracer.
+Since the execution path of kprobe-based dynamic events is different
+from other tracepoint-based events, normal ftrace_trace_stack() doesn't
+work correctly. To fix that, this introduces ftrace_trace_stack_regs()
+which traces stack via pt_regs instead of current stack register.
+
+e.g.
+
+ # echo p schedule+4 > /sys/kernel/debug/tracing/kprobe_events
+ # echo 1 > /sys/kernel/debug/tracing/options/stacktrace
+ # echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
+ # head -n 20 /sys/kernel/debug/tracing/trace
+# tracer: nop
+#
+#           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+#              | |       |          |         |
+            bash-2968  [000] 10297.050245: p_schedule_4: (schedule+0x4/0x4ca)
+            bash-2968  [000] 10297.050247: <stack trace>
+ => schedule_timeout
+ => n_tty_read
+ => tty_read
+ => vfs_read
+ => sys_read
+ => system_call_fastpath
+     kworker/0:1-2940  [000] 10297.050265: p_schedule_4: (schedule+0x4/0x4ca)
+     kworker/0:1-2940  [000] 10297.050266: <stack trace>
+ => worker_thread
+ => kthread
+ => kernel_thread_helper
+            sshd-1132  [000] 10297.050365: p_schedule_4: (schedule+0x4/0x4ca)
+            sshd-1132  [000] 10297.050365: <stack trace>
+ => sysret_careful
+
+Note: Even with this fix, the first entry will be skipped
+if the probe is put on the function entry area before
+the frame pointer is set up (usually, that is 4 bytes
+ (push %bp; mov %sp %bp) on x86), because stack unwinder
+depends on the frame pointer.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -48,34 +84,158 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: linux-kernel@vger.kernel.org
 ---
 
- kernel/stacktrace.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+ include/linux/ftrace_event.h |    4 ++++
+ kernel/trace/trace.c         |   35 ++++++++++++++++++++++++++++++-----
+ kernel/trace/trace.h         |    9 +++++++++
+ kernel/trace/trace_kprobe.c  |    6 ++++--
+ 4 files changed, 47 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/stacktrace.c b/kernel/stacktrace.c
-index eb212f8..6fa38bc 100644
---- a/kernel/stacktrace.c
-+++ b/kernel/stacktrace.c
-@@ -26,12 +26,19 @@ void print_stack_trace(struct stack_trace *trace, int spaces)
- EXPORT_SYMBOL_GPL(print_stack_trace);
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 59d3ef1..b1e69ee 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -129,6 +129,10 @@ void trace_current_buffer_unlock_commit(struct ring_buffer *buffer,
+ void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
+ 				       struct ring_buffer_event *event,
+ 					unsigned long flags, int pc);
++void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
++					    struct ring_buffer_event *event,
++					    unsigned long flags, int pc,
++					    struct pt_regs *regs);
+ void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
+ 					 struct ring_buffer_event *event);
  
- /*
-- * Architectures that do not implement save_stack_trace_tsk get this
-- * weak alias and a once-per-bootup warning (whenever this facility
-- * is utilized - for example by procfs):
-+ * Architectures that do not implement save_stack_trace_tsk or
-+ * save_stack_trace_regs get this weak alias and a once-per-bootup warning
-+ * (whenever this facility is utilized - for example by procfs):
-  */
- __weak void
- save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- {
- 	WARN_ONCE(1, KERN_INFO "save_stack_trace_tsk() not implemented yet.\n");
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index ee9c921..67856d5 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1191,6 +1191,18 @@ void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
  }
-+
-+__weak void
-+save_stack_trace_regs(struct pt_regs *regs, struct stack_trace *trace)
+ EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit);
+ 
++void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
++					    struct ring_buffer_event *event,
++					    unsigned long flags, int pc,
++					    struct pt_regs *regs)
 +{
-+	WARN_ONCE(1,
-+		  KERN_INFO "save_stack_trace_regs() not implemented yet.\n");
++	ring_buffer_unlock_commit(buffer, event);
++
++	ftrace_trace_stack_regs(buffer, flags, 0, pc, regs);
++	ftrace_trace_userstack(buffer, flags, pc);
 +}
++EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit_regs);
++
+ void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
+ 					 struct ring_buffer_event *event)
+ {
+@@ -1236,7 +1248,7 @@ ftrace(struct trace_array *tr, struct trace_array_cpu *data,
+ #ifdef CONFIG_STACKTRACE
+ static void __ftrace_trace_stack(struct ring_buffer *buffer,
+ 				 unsigned long flags,
+-				 int skip, int pc)
++				 int skip, int pc, struct pt_regs *regs)
+ {
+ 	struct ftrace_event_call *call = &event_kernel_stack;
+ 	struct ring_buffer_event *event;
+@@ -1255,24 +1267,36 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
+ 	trace.skip		= skip;
+ 	trace.entries		= entry->caller;
+ 
+-	save_stack_trace(&trace);
++	if (regs)
++		save_stack_trace_regs(regs, &trace);
++	else
++		save_stack_trace(&trace);
+ 	if (!filter_check_discard(call, entry, buffer, event))
+ 		ring_buffer_unlock_commit(buffer, event);
+ }
+ 
++void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
++			     int skip, int pc, struct pt_regs *regs)
++{
++	if (!(trace_flags & TRACE_ITER_STACKTRACE))
++		return;
++
++	__ftrace_trace_stack(buffer, flags, skip, pc, regs);
++}
++
+ void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
+ 			int skip, int pc)
+ {
+ 	if (!(trace_flags & TRACE_ITER_STACKTRACE))
+ 		return;
+ 
+-	__ftrace_trace_stack(buffer, flags, skip, pc);
++	__ftrace_trace_stack(buffer, flags, skip, pc, NULL);
+ }
+ 
+ void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
+ 		   int pc)
+ {
+-	__ftrace_trace_stack(tr->buffer, flags, skip, pc);
++	__ftrace_trace_stack(tr->buffer, flags, skip, pc, NULL);
+ }
+ 
+ /**
+@@ -1288,7 +1312,8 @@ void trace_dump_stack(void)
+ 	local_save_flags(flags);
+ 
+ 	/* skipping 3 traces, seems to get us at the caller of this function */
+-	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count());
++	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count(),
++			     NULL);
+ }
+ 
+ static DEFINE_PER_CPU(int, user_stack_count);
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 229f859..caee141 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -389,6 +389,9 @@ void update_max_tr_single(struct trace_array *tr,
+ void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
+ 			int skip, int pc);
+ 
++void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
++			     int skip, int pc, struct pt_regs *regs);
++
+ void ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags,
+ 			    int pc);
+ 
+@@ -400,6 +403,12 @@ static inline void ftrace_trace_stack(struct ring_buffer *buffer,
+ {
+ }
+ 
++static inline void ftrace_trace_stack_regs(struct ring_buffer *buffer,
++					   unsigned long flags, int skip,
++					   int pc, struct pt_regs *regs)
++{
++}
++
+ static inline void ftrace_trace_userstack(struct ring_buffer *buffer,
+ 					  unsigned long flags, int pc)
+ {
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index f925c45..7053ef3 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1397,7 +1397,8 @@ static __kprobes void kprobe_trace_func(struct kprobe *kp, struct pt_regs *regs)
+ 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+ 
+ 	if (!filter_current_check_discard(buffer, call, entry, event))
+-		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
++		trace_nowake_buffer_unlock_commit_regs(buffer, event,
++						       irq_flags, pc, regs);
+ }
+ 
+ /* Kretprobe handler */
+@@ -1429,7 +1430,8 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
+ 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+ 
+ 	if (!filter_current_check_discard(buffer, call, entry, event))
+-		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
++		trace_nowake_buffer_unlock_commit_regs(buffer, event,
++						       irq_flags, pc, regs);
+ }
+ 
+ /* Event entry printers */
 
