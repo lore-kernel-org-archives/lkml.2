@@ -1,58 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab1FHIfY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 04:35:24 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:10319 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751904Ab1FHIfV (ORCPT
+	id S1755006Ab1FHIh6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 04:37:58 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:60789 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab1FHIh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 04:35:21 -0400
-Message-ID: <4DEF3447.6050209@dsn.okisemi.com>
-Date: Wed, 08 Jun 2011 17:35:19 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: David Brownell <dbrownell@users.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
-Subject: Re: [PATCH/RESEND v4 1/2] spi_topcliff_pch: support new device ML7213
- IOH
-References: <1307425811-5030-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-In-Reply-To: <1307425811-5030-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Jun 2011 04:37:56 -0400
+Date: Wed, 8 Jun 2011 10:37:50 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/3] x86: Readd asmregparm
+Message-ID: <20110608083750.GH27166@one.firstfloor.org>
+References: <1307495401-2631-1-git-send-email-andi@firstfloor.org> <20110608081957.GA14966@elte.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110608081957.GA14966@elte.hu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+> That's a totally useless changelog (you are deliberately hiding 
+> information again) so the series is obviously not acceptable.
+> Please fix and resend.
 
-Why don't you give us your comment/opinion at all for our v4 patch ??
-We have been long waiting since 27-April.
+I reread it and it seems complete to me. Please be more specific.
 
-(2011/06/07 14:50), Tomoya MORINAGA wrote:
-> ***Modify Grant's comments.
->     - Delete unrelated whitespace
->     - Prevent device driver from accessing platform data
->     - Add __devinit and __devexit
->     - Save pdev->dev to pd_dev->dev.parent
->     - Have own suspend/resume processing in platform_driver.
->     - Care returned value in pch_spi_init
->     - Change unregister order
-> 
-> Support ML7213 device of OKI SEMICONDUCTOR.
-> ML7213 is companion chip of Intel Atom E6xx series for IVI(In-Vehicle Infotainment).
-> ML7213 is compatible for Intel EG20T PCH.
-> 
-> Signed-off-by: Tomoya MORINAGA<tomoya-linux@dsn.okisemi.com>
-> ---
->   drivers/spi/Kconfig            |    5 +-
->   drivers/spi/spi_topcliff_pch.c |  599 +++++++++++++++++++++-------------------
->   2 files changed, 317 insertions(+), 287 deletions(-)
-> 
--- 
-tomoya
-OKI SEMICONDUCTOR CO., LTD.
+If you refer to the followon patchkit - it's not ready for posting
+yet. However I believe these changes are reasonable cleanups that are useful
+on their own. That's why I posted them now.
+
+-Andi
