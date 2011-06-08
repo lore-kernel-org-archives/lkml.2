@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab1FHTsR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:48:17 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:60469 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668Ab1FHTsP (ORCPT
+	id S1752455Ab1FHTtr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:49:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:52893 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab1FHTtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:48:15 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Nikolaus Voss <n.voss@weinmann.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] spi/rtc-m41t93: Use spi_get_drvdata() for SPI devices
-Date: Wed,  8 Jun 2011 21:48:03 +0200
-Message-Id: <1307562483-4883-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 8 Jun 2011 15:49:46 -0400
+Message-ID: <4DEFD220.5040507@kernel.org>
+Date: Wed, 08 Jun 2011 12:48:48 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+References: <4DED8752.5070005@kernel.org> <4DEDEA73.7010900@gmail.com> <4DEE17F9.6020503@gmail.com> <4DEEA548.5020405@kernel.org> <4DEFA6E3.6090809@xs4all.nl> <4DEFCAE0.6050700@kernel.org> <20110608192321.GA28865@srcf.ucam.org> <4DEFCD07.5020505@kernel.org> <20110608192950.GA29235@srcf.ucam.org> <4DEFCF1A.9030400@kernel.org> <20110608193833.GA29855@srcf.ucam.org>
+In-Reply-To: <20110608193833.GA29855@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090202.4DEFD22A.0120,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One new offender detected by the recently increased type checking in
-platform_get_drvdata():
+On 06/08/2011 12:38 PM, Matthew Garrett wrote:
+> On Wed, Jun 08, 2011 at 12:35:54PM -0700, Yinghai Lu wrote:
+>> On 06/08/2011 12:29 PM, Matthew Garrett wrote:
+>>>> what former? you can not fix some corner case by breaking most other cases.
+>>>
+>>> All Dell laptops, all new Apples, some Lenovos, various Intel server 
+>>> platforms. That I've found so far.
+>>
+>> do you mean before that patch, all those machine will not boot linux kernel with UEFI support?
+> 
+> Correct.
 
-drivers/rtc/rtc-m41t93.c: In function ‘m41t93_remove’:
-drivers/rtc/rtc-m41t93.c:192: warning: passing argument 1 of ‘platform_get_drvdata’ from incompatible pointer type
+with or without EFI runtime services?
 
-Use spi_get_drvdata() instead of platform_get_drvdata(), cfr. commit
-42fea15d6dc410e62dac6a764142045280624a5b ("spi/rtc-{ds1390,ds3234,m41t94}:
-Use spi_get_drvdata() for SPI devices")
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/rtc/rtc-m41t93.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/rtc/rtc-m41t93.c b/drivers/rtc/rtc-m41t93.c
-index 1a84b3e..7317d3b 100644
---- a/drivers/rtc/rtc-m41t93.c
-+++ b/drivers/rtc/rtc-m41t93.c
-@@ -189,7 +189,7 @@ static int __devinit m41t93_probe(struct spi_device *spi)
- 
- static int __devexit m41t93_remove(struct spi_device *spi)
- {
--	struct rtc_device *rtc = platform_get_drvdata(spi);
-+	struct rtc_device *rtc = spi_get_drvdata(spi);
- 
- 	if (rtc)
- 		rtc_device_unregister(rtc);
--- 
-1.7.0.4
-
+Yinghai
