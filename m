@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab1FHL57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 07:57:59 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:39502 "EHLO
+	id S1753422Ab1FHMO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 08:14:58 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:57909 "EHLO
 	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab1FHL56 (ORCPT
+	with ESMTP id S1751213Ab1FHMO5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 07:57:58 -0400
+	Wed, 8 Jun 2011 08:14:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=MT87nHPge9/q5tNyB+UA8NGPxLbu3YeGmCOiFaKwXUJHsKtiYjVCuT6HQRXOyggNLH
-         /bKZHZmMcfeXRZhWf1HO+BZt+HunMTH2c8P8/ARtcVXWzJGqtZ4+zZDvjXZfTqvjGmBS
-         CGK/Uq1QHk46qd1PKNl3lOlbHI5V/7R6vBuT4=
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=aCnrH9NxqmjWyMqAvwVvr7UPJJIA6KLcdcq40T+sLUOkM3IRS0dleCoI9jbNS+qa5T
+         oTtz04a03CMvaJHxz3Tmk03U29BNeLTaVHYruHiMM7j8Bf6grP35PGoqwYMiZyJK1S4m
+         1L1l1AdXrtjSinqEwkokyyYRGLtr4oUujTsjY=
 MIME-Version: 1.0
-In-Reply-To: <20110608083750.GH27166@one.firstfloor.org>
-References: <1307495401-2631-1-git-send-email-andi@firstfloor.org>
-	<20110608081957.GA14966@elte.hu>
-	<20110608083750.GH27166@one.firstfloor.org>
-Date: Wed, 8 Jun 2011 14:57:57 +0300
-X-Google-Sender-Auth: z0G1cqduru90oWXy5SY5ffy7_dc
-Message-ID: <BANLkTimZ65o-gRf8n3SRzTedd=fTCB55QQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] x86: Readd asmregparm
-From: Pekka Enberg <penberg@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <20110608104727.GT11521@ZenIV.linux.org.uk>
+References: <1306772228-1603-1-git-send-email-minipli@googlemail.com>
+	<20110606161254.5f02d855.akpm@linux-foundation.org>
+	<BANLkTinwMyVsR-pvimeVkcqQrCuNDK4zKw@mail.gmail.com>
+	<20110608104727.GT11521@ZenIV.linux.org.uk>
+Date: Wed, 8 Jun 2011 14:14:56 +0200
+Message-ID: <BANLkTi=qBx0Mk=b2wsA3RZVKk0RUckeN6g@mail.gmail.com>
+Subject: Re: [PATCH] init: use KERNEL_DS when trying to start init process
+From: Mathias Krause <minipli@googlemail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Chris Zankel <chris@zankel.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
-
-On Wed, Jun 8, 2011 at 11:37 AM, Andi Kleen <andi@firstfloor.org> wrote:
->> That's a totally useless changelog (you are deliberately hiding
->> information again) so the series is obviously not acceptable.
->> Please fix and resend.
+On Wed, Jun 8, 2011 at 12:47 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Tue, Jun 07, 2011 at 07:00:24PM -0700, Linus Torvalds wrote:
 >
-> I reread it and it seems complete to me. Please be more specific.
+>> That said, that commit (it's commit ID 4095b99c09e3d in tglx's tree)
+>> predates the "real" BK history too: it's part of the (limited) 2.4.x
+>> history that was imported from the release patches into BK at the
+>> beginning of the use of BK. So at that point we didn't do indivual
+>> commits, it's just the import of the v2.4.3.7 -> v2.4.3.8 patch.
+>>
+>> But yeah, it's old and crufty. And I agree that usually the correct
+>> fix is to remove the set_fs() calls entirely.
 >
-> If you refer to the followon patchkit - it's not ready for posting
-> yet. However I believe these changes are reasonable cleanups that are useful
-> on their own. That's why I posted them now.
+> I think these days its job is done by start_thread(), which is where we
+> switch to USER_DS; it's called by ->load_binary() when it decides it's past
+> the point of no return.  However, it would be a good idea to verify that
+> all architectures do it there properly and we are not exposing a hole by
+> removal of this set_fs()...
 
-So from my point of view, none of the changelogs explain why the
-changes needed. Now, I'm not an expert on the x86 code so maybe I'm
-missing something obvious but to me the only rationale seems to be
-that you need it some unspecified follow-up patchkit. HTH.
+I've checked all implementations of start_thread() and found some candidates:
 
-                         Pekka
+SPARC, TILE and Xtensa don't call set_fs(USER_DS), albeit have
+different definitions for USER_DS and KERNEL_DS. So those might need
+fixing. I'm not familiar with those architectures, so someone else has
+to answer this.
+
+Score does not call set_fs(USER_DS) either but that's no problem
+because USER_DS has the same value as KERNEL_DS on this architecture.
+
+All others call set_fs(USER_DS) as almost the very first instruction
+in start_thread(), or, as for MIPS, do it by setting addr_limit
+directly.
+
+Generally, I think, we should get Acks for the questionable arch
+maintainers before commiting the patch that removes the call to
+set_fs() in search_binary_handler().
+
+I've also checked all binary format handlers if they all call
+start_thread() and found a few that do not (binfmt_em86, binfmt_misc
+and binfmt_script). But those are just interpreter warppers, i.e. call
+search_binary_handler() in the end so should be safe.
+
+Mathias
