@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722Ab1FHSnL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 14:43:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3353 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912Ab1FHSnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 14:43:09 -0400
-Date: Wed, 8 Jun 2011 14:42:54 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] CFQ: use proper locking for cache of last hit cic
-Message-ID: <20110608184254.GD1150@redhat.com>
-References: <1307291201.8545.46.camel@t41.thuisdomein>
- <4DEC441C.9030009@kernel.dk>
- <1307557130.2783.5.camel@t41.thuisdomein>
+	id S1753279Ab1FHSuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 14:50:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31316 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163Ab1FHSuB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 14:50:01 -0400
+Message-ID: <4DEFC43B.1080802@oracle.com>
+Date: Wed, 08 Jun 2011 11:49:31 -0700
+From: Sunil Mushran <sunil.mushran@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307557130.2783.5.camel@t41.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Amir G." <amir73il@users.sourceforge.net>
+CC: Mike Snitzer <snitzer@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        linux-ext4@vger.kernel.org, tytso@mit.edu,
+        linux-kernel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: LVM vs. Ext4 snapshots (was: [PATCH v1 00/30] Ext4 snapshots)
+References: <BANLkTimyBGfg4+ovGsiGqpCz345qVmU_7A@mail.gmail.com>
+In-Reply-To: <BANLkTimyBGfg4+ovGsiGqpCz345qVmU_7A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090204.4DEFC44F.0174:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 08:18:44PM +0200, Paul Bolle wrote:
-> On Mon, 2011-06-06 at 05:06 +0200, Jens Axboe wrote:
-> > On 2011-06-05 18:26, Paul Bolle wrote:
-> > > @@ -2704,8 +2706,13 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
-> > >  	smp_wmb();
-> > >  	cic->key = cfqd_dead_key(cfqd);
-> > >  
-> > > -	if (ioc->last_cic == cic)
-> > > +	spin_lock_irqsave(&ioc->lock, flags);
-> > > +	rcu_read_lock();
-> > > +	last_cic = rcu_dereference(ioc->last_cic);
-> > > +	rcu_read_unlock();
-> > > +	if (last_cic == cic)
-> > >  		rcu_assign_pointer(ioc->last_cic, NULL);
-> > > +	spin_unlock_irqrestore(&ioc->lock, flags);
-> > 
-> > We don't need the ioc->lock for checking the cache, it would in fact
-> > defeat the purpose of using RCU.
-> 
-> Just to show that I'm RCU-challenged, is that because:
-> 1) my use of locking on ioc->lock defends for a race that is not
-> actually possible; or
-> 2) the worst thing that could happen is that some new and correct value
-> of ioc->last_cic will be replaced with NULL, which is simply not a big
-> deal?
+On 06/08/2011 11:26 AM, Amir G. wrote:
+> 2. Data blocks are never copied
+> The move-on-write technique is used to re-allocate data blocks on rewrite
+> instead of copying them.
+> This is not something that can be done when the snapshot is stored on
+> external storage, but it can done when the snapshot file lives in the fs.
 
-I don't understand this point. All ioc->ioc_data updates are under
-ioc->lock except the one __cfq_exit_single_io_context() and that's what
-jens patch fixed. So clearly there was atleast one race where we were
-doing a value update without taking appropriate lock. 
-
-Why do you think that some new and correct value will be replaced
-by NULL?
-
-Thanks
-Vivek
+But does that not lead to fragmentation. And if I am understanding this,
+the fragmentation will not resolve after dropping the snapshot. So while
+you do save the overhead on write, you make the user pay on all future
+reads (that need to hit the disk).
