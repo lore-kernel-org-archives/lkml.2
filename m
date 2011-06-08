@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab1FHKZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:25:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60884 "EHLO
+	id S1755451Ab1FHKZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:25:29 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60887 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928Ab1FHKZK (ORCPT
+	with ESMTP id S1754238Ab1FHKZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:25:10 -0400
+	Wed, 8 Jun 2011 06:25:25 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 06/15] staging/gma500: get control from firmware framebuffer
- if conflicts
+Subject: [PATCH 07/15] gma500: Fix uninitialized variable and style issues
 To: greg@kroah.com, linux-kernel@vger.kernel.org,
         dri-devel@lists.freedesktop.org
-Date: Wed, 08 Jun 2011 11:12:51 +0100
-Message-ID: <20110608101239.9478.21772.stgit@localhost.localdomain>
+Date: Wed, 08 Jun 2011 11:13:05 +0100
+Message-ID: <20110608101301.9478.60080.stgit@localhost.localdomain>
 In-Reply-To: <20110608100411.9478.86672.stgit@localhost.localdomain>
 References: <20110608100411.9478.86672.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -24,49 +23,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Chang <mchang@novell.com>
+From: Andre Bartke <andre.bartke@googlemail.com>
 
-Many Linux distributions would enable vesafb in order to display
-early stage boot splash. In this case, we will get garbled X
-Window screen if running X fbdev on psbfb.
+The return variable of psb_gtt_pin() may be used
+uninitialized. Also fixed some coding style issues.
 
-This is because fb0 is occupied by vesafb while psbfb is on fb1.
-They tried to drive the same pieces of hardware at the same
-time. With unmodified X start-up, it would try to use default
-fb0 framebuffer device and unfortunately it is now broken
-becaues fb1 supersedes it.
-
-We should let psbfb takeover framebuffer control from vesafb
-to get around this problem.
-
-See also commit : 4410f3910947dcea8672280b3adecd53cec4e85e
-
-Signed-off-by: Michael Chang <mchang@novell.com>
+Signed-off-by: Andre Bartke <andre.bartke@gmail.com>
+[Reapplied by hand due to other changes]
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/psb_fb.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ drivers/staging/gma500/psb_gtt.c |   36 ++++++++++++++++++------------------
+ 1 files changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
-index 4e6294c..4b05cdc 100644
---- a/drivers/staging/gma500/psb_fb.c
-+++ b/drivers/staging/gma500/psb_fb.c
-@@ -452,6 +452,16 @@ static int psbfb_create(struct psb_fbdev *fbdev,
- 	info->screen_size = size;
- 	memset(info->screen_base, 0, size);
+diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
+index 6a24246..5a296e1 100644
+--- a/drivers/staging/gma500/psb_gtt.c
++++ b/drivers/staging/gma500/psb_gtt.c
+@@ -58,7 +58,7 @@ static inline uint32_t psb_gtt_mask_pte(uint32_t pfn, int type)
+  */
+ u32 *psb_gtt_entry(struct drm_device *dev, struct gtt_range *r)
+ {
+-        struct drm_psb_private *dev_priv = dev->dev_private;
++	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	unsigned long offset;
  
-+	if (dev_priv->pg->stolen_size) {
-+		info->apertures = alloc_apertures(1);
-+		if (!info->apertures) {
-+			ret = -ENOMEM;
-+			goto out_err0;
-+		}
-+		info->apertures->ranges[0].base = dev->mode_config.fb_base;
-+		info->apertures->ranges[0].size = dev_priv->pg->stolen_size;
-+	}
+ 	offset = r->resource.start - dev_priv->gtt_mem->start;
+@@ -124,7 +124,7 @@ static void psb_gtt_remove(struct drm_device *dev, struct gtt_range *r)
+ 	WARN_ON(r->stolen);
+ 
+ 	gtt_slot = psb_gtt_entry(dev, r);
+-	pte = psb_gtt_mask_pte(page_to_pfn(dev_priv->scratch_page), 0);;
++	pte = psb_gtt_mask_pte(page_to_pfn(dev_priv->scratch_page), 0);
+ 
+ 	for (i = 0; i < r->npage; i++)
+ 		iowrite32(pte, gtt_slot++);
+@@ -213,7 +213,7 @@ static void psb_gtt_detach_pages(struct gtt_range *gt)
+  */
+ int psb_gtt_pin(struct gtt_range *gt)
+ {
+-	int ret;
++	int ret = 0;
+ 	struct drm_device *dev = gt->gem.dev;
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 
+@@ -289,33 +289,33 @@ struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
+ 	struct resource *r = dev_priv->gtt_mem;
+ 	int ret;
+ 	unsigned long start, end;
+-	
 +
- 	drm_fb_helper_fill_fix(info, fb->pitch, fb->depth);
- 	drm_fb_helper_fill_var(info, &fbdev->psb_fb_helper,
- 				sizes->fb_width, sizes->fb_height);
+ 	if (backed) {
+-	        /* The start of the GTT is the stolen pages */
+-	        start = r->start;
+-	        end = r->start + dev_priv->pg->stolen_size - 1;
++		/* The start of the GTT is the stolen pages */
++		start = r->start;
++		end = r->start + dev_priv->pg->stolen_size - 1;
+         } else {
+-                /* The rest we will use for GEM backed objects */
+-                start = r->start + dev_priv->pg->stolen_size;
+-                end = r->end;
++        	/* The rest we will use for GEM backed objects */
++        	start = r->start + dev_priv->pg->stolen_size;
++        	end = r->end;
+         }
+ 
+ 	gt = kzalloc(sizeof(struct gtt_range), GFP_KERNEL);
+ 	if (gt == NULL)
+ 		return NULL;
+-        gt->resource.name = name;
+-        gt->stolen = backed;
+-        gt->in_gart = backed;
+-        /* Ensure this is set for non GEM objects */
+-        gt->gem.dev = dev;
++	gt->resource.name = name;
++	gt->stolen = backed;
++	gt->in_gart = backed;
++	/* Ensure this is set for non GEM objects */
++	gt->gem.dev = dev;
+ 	kref_init(&gt->kref);
+ 
+ 	ret = allocate_resource(dev_priv->gtt_mem, &gt->resource,
+ 				len, start, end, PAGE_SIZE, NULL, NULL);
+ 	if (ret == 0) {
+-	        gt->offset = gt->resource.start - r->start;
++		gt->offset = gt->resource.start - r->start;
+ 		return gt;
+-        }
++	}
+ 	kfree(gt);
+ 	return NULL;
+ }
+@@ -419,7 +419,7 @@ int psb_gtt_init(struct drm_device *dev, int resume)
+ 
+ 	dev_priv->pg = pg = psb_gtt_alloc(dev);
+ 	if (pg == NULL)
+-	        return -ENOMEM;
++		return -ENOMEM;
+ 
+ 	pci_read_config_word(dev->pdev, PSB_GMCH_CTRL, &dev_priv->gmch_ctrl);
+ 	pci_write_config_word(dev->pdev, PSB_GMCH_CTRL,
 
