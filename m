@@ -1,66 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab1FHWMS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 18:12:18 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:47662 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab1FHWMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 18:12:16 -0400
-Message-ID: <4DEFF3B9.7070907@canonical.com>
-Date: Wed, 08 Jun 2011 15:12:09 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+	id S1756496Ab1FHWOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 18:14:09 -0400
+Received: from mout.perfora.net ([74.208.4.194]:63155 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753937Ab1FHWOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 18:14:05 -0400
+Date: Wed, 8 Jun 2011 18:12:55 -0400
+From: Stephen Wilson <wilsons@start.ca>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 7/22]  7: uprobes: mmap and fork hooks.
+Message-ID: <20110608221255.GC9965@wicker.gateway.2wire.net>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607125931.28590.12362.sendpatchset@localhost6.localdomain6>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Matt Mackall <mpm@selenic.com>, David Howells <dhowells@redhat.com>,
-        Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: 3.0.0-rc2-git1 -- BUG: sleeping function called from invalid
- context at mm/slub.c:847
-References: <BANLkTimq+h+WyboMbPGVH1uJuj64YuRLdw@mail.gmail.com> <alpine.DEB.2.00.1106081305430.10320@chino.kir.corp.google.com> <1307564248.4204.1013.camel@calx> <alpine.DEB.2.00.1106081407440.10320@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1106081407440.10320@chino.kir.corp.google.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110607125931.28590.12362.sendpatchset@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:gpGAsBBoWX041erhPUIgpDNKRz86QJGTWvosUx4YKFJ
+ bR/Yzjsua7mywhtVHG+tiycc5ibNA+s0iATBSD4UgtFPOf9Qkn
+ 3q6GfzzA05UHRYXomTIsfWLsivfIE3wP4JNYErxBWs7VbOSyVS
+ Ph7J/EwXbG6+MLh/UEFvrApT1Rbthry4XTNqappJtK0Vh5a8Pp
+ kZ2fQZpltO3o138SUxfZvrwN3nPugYRBrpqlL/M9x4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2011 02:34 PM, David Rientjes wrote:
-> On Wed, 8 Jun 2011, Matt Mackall wrote:
-> 
->>> Not sure why this ever actually worked with apparmor if prepare_creds() 
->>> does an unconditional GFP_KERNEL allocation since this codepath hasn't 
->>> changed in at least a year and we're holding a spinlock from setrlimit.  
->>> John?
->>
->> Probably a lack of people enabling (and using!) both apparmor and
->> might_sleep. I don't this would be caught by a randconfig boot test.
->>
-> 
-> Right, CONFIG_DEBUG_SPINLOCK_SLEEP isn't enabled by default even though 
-> CONFIG_DEBUG_KERNEL is.  We should probably just allow prepare_creds() to 
-> take a gfp_t argument just like security_prepare_creds() and change 
-> existing callers to use GFP_KERNEL with the exception of those using 
-> setrlimit where we're always holding the spinlock.  
-> 
-> Documentation/security/credentials.txt says this:
-> 
-> 	To alter the current process's credentials, a function should first prepare a
-> 	new set of credentials by calling:
-> 
->         	struct cred *prepare_creds(void);   
-> 
-> 	this locks current->cred_replace_mutex and then allocates and constructs a
-> 	duplicate of the current process's credentials, returning with the mutex still
-> 	held if successful.  It returns NULL if not successful (out of memory).
-> 
-> although that mutex doesn't exist.  David, any downsides to passing the 
-> gfp_t into prepare_creds()?
 
-Well it certainly isn't needed for the apparmor case, as the bug is being
-triggered by how apparmor handles policy replacement, and we have a means
-of handling that for atomic contexts.
+
+
+On Tue, Jun 07, 2011 at 06:29:31PM +0530, Srikar Dronamraju wrote:
+> +static void add_to_temp_list(struct vm_area_struct *vma, struct inode *inode,
+> +		struct list_head *tmp_list)
+> +{
+> +	struct uprobe *uprobe;
+> +	struct rb_node *n;
+> +	unsigned long flags;
+> +
+> +	n = uprobes_tree.rb_node;
+> +	spin_lock_irqsave(&uprobes_treelock, flags);
+> +	uprobe = __find_uprobe(inode, 0, &n);
+
+It is valid for a uprobe offset to be zero I guess, so perhaps we need
+to do a put_uprobe() here when the result of __find_uprobe() is
+non-null.
+
+> +	for (; n; n = rb_next(n)) {
+> +		uprobe = rb_entry(n, struct uprobe, rb_node);
+> +		if (uprobe->inode != inode)
+> +			break;
+> +		list_add(&uprobe->pending_list, tmp_list);
+> +		continue;
+> +	}
+> +	spin_unlock_irqrestore(&uprobes_treelock, flags);
+> +}
+> +
+> +/*
+> + * Called from dup_mmap.
+> + * called with mm->mmap_sem and old_mm->mmap_sem acquired.
+> + */
+> +void dup_mmap_uprobe(struct mm_struct *old_mm, struct mm_struct *mm)
+> +{
+> +	atomic_set(&old_mm->uprobes_count,
+> +			atomic_read(&mm->uprobes_count));
+> +}
+> +
+> +/*
+> + * Called from mmap_region.
+> + * called with mm->mmap_sem acquired.
+> + *
+> + * Return -ve no if we fail to insert probes and we cannot
+> + * bail-out.
+> + * Return 0 otherwise. i.e :
+> + *	- successful insertion of probes
+> + *	- no possible probes to be inserted.
+> + *	- insertion of probes failed but we can bail-out.
+> + */
+> +int mmap_uprobe(struct vm_area_struct *vma)
+> +{
+> +	struct list_head tmp_list;
+> +	struct uprobe *uprobe, *u;
+> +	struct mm_struct *mm;
+> +	struct inode *inode;
+> +	unsigned long start, pgoff;
+> +	int ret = 0;
+> +
+> +	if (!valid_vma(vma))
+> +		return ret;	/* Bail-out */
+> +
+> +	INIT_LIST_HEAD(&tmp_list);
+> +
+> +	mm = vma->vm_mm;
+> +	inode = vma->vm_file->f_mapping->host;
+> +	start = vma->vm_start;
+> +	pgoff = vma->vm_pgoff;
+> +	__iget(inode);
+> +
+> +	up_write(&mm->mmap_sem);
+> +	mutex_lock(&uprobes_mutex);
+> +	down_read(&mm->mmap_sem);
+> +
+> +	vma = find_vma(mm, start);
+> +	/* Not the same vma */
+> +	if (!vma || vma->vm_start != start ||
+> +			vma->vm_pgoff != pgoff || !valid_vma(vma) ||
+> +			inode->i_mapping != vma->vm_file->f_mapping)
+> +		goto mmap_out;
+> +
+> +	add_to_temp_list(vma, inode, &tmp_list);
+> +	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+> +		loff_t vaddr;
+> +
+> +		list_del(&uprobe->pending_list);
+> +		if (ret)
+> +			continue;
+> +
+> +		vaddr = vma->vm_start + uprobe->offset;
+> +		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> +		if (vaddr < vma->vm_start || vaddr > vma->vm_end)
+
+Another place where the check should be "vaddr >= vma->vm_end" I think? 
+
+
+Thanks,
+
+> +			/* Not in this vma */
+> +			continue;
+> +		if (vaddr > TASK_SIZE)
+> +			/*
+> +			 * We cannot have a virtual address that is
+> +			 * greater than TASK_SIZE
+> +			 */
+> +			continue;
+> +		mm->uprobes_vaddr = (unsigned long)vaddr;
+> +		ret = install_breakpoint(mm, uprobe);
+> +		if (ret && (ret == -ESRCH || ret == -EEXIST))
+> +			ret = 0;
+> +	}
+> +
+> +mmap_out:
+> +	mutex_unlock(&uprobes_mutex);
+> +	iput(inode);
+> +	up_read(&mm->mmap_sem);
+> +	down_write(&mm->mmap_sem);
+> +	return ret;
+> +}
+
+-- 
+steve
+
