@@ -1,37 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab1FHQ44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 12:56:56 -0400
-Received: from na3sys010aog111.obsmtp.com ([74.125.245.90]:35972 "HELO
-	na3sys010aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751343Ab1FHQ4y convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 12:56:54 -0400
+	id S1752255Ab1FHQ6j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 12:58:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751343Ab1FHQ6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 12:58:37 -0400
+Message-ID: <4DEFAA2F.1010100@redhat.com>
+Date: Wed, 08 Jun 2011 13:58:23 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=LXBgyae2Man7PpqCwR7L0=R7pYg@mail.gmail.com>
-References: <20110606070553.9829.40823.stgit@ponder> <BANLkTim3RgRJoNY61iRuCELvyuNhm==PtA@mail.gmail.com>
- <BANLkTinxYQa=EU=t4m8VUT4X9h0xvaaXQg@mail.gmail.com> <BANLkTi=LXBgyae2Man7PpqCwR7L0=R7pYg@mail.gmail.com>
-From: Roland Dreier <roland@purestorage.com>
-Date: Wed, 8 Jun 2011 09:56:33 -0700
-Message-ID: <BANLkTinqfMF0oxar2aPjnFP+1tL6j2_OwQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: reorganize drivers
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org
+To: Greg KH <greg@kroah.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Igor M. Liplianin" <liplianin@netup.ru>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the staging.current
+ tree
+References: <20110608114130.444a7f99.sfr@canb.auug.org.au> <20110608161127.GD21645@kroah.com>
+In-Reply-To: <20110608161127.GD21645@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 6, 2011 at 10:37 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> Specifically, module names don't give any clues about which directory
-> they were loaded out of, so it is useful to have the module name
-> reflect exactly what the module is for.  Second, a lot of these
-> gpio/spi/i2c cores end up being stuffed into an integrated chipset
-> where they all pretty much share the same name, but the drivers are
-> for different functional blocks.  ie. gpio-omap.o, spi-omap.o,
-> i2c-omap.o
+Hi Greg,
 
-OK, makes sense.
+Em 08-06-2011 13:11, Greg KH escreveu:
+> On Wed, Jun 08, 2011 at 11:41:30AM +1000, Stephen Rothwell wrote:
+>> Hi Greg,
+>>
+>> After merging the staging.current tree, today's linux-next build (x86_64
+>> allmodconfig) failed like this:
+>>
+>> drivers/media/video/cx23885/cx23885-cards.c:28:28: fatal error: staging/altera.h: No such file or directory
+>>
+>> Caused by commit 85ab9ee946da ("Staging: altera: move .h file to proper
+>> place").
+>>
+>> I have used the staging.current tree from next-20110607 for today.
+> 
+> Ok, sorry about that.
+> 
+> Mauro, Igor, why would another driver need to reference a .h file of a
+> staging driver?  I'll patch it right now to point to the proper place
+> (down in the staging tree), but it would be good to resolve this
+> "properly" somehow.
+> 
+> Next time, please never include a staging driver that isn't
+> self-contained, and don't create include/staging/ that's not acceptable.
 
- - R.
+The altera driver were discussed for about two kernel cycles. When it was
+about to be merged upstrem, two people complained about having a FPGA firmware 
+driver inside the Linux Kernel. However, this driver is essential in order to load
+the firmware for a DVB device. So, to avoid postponing the merge for yet another
+kernel cycle, I've moved the offending part to staging, and asked for those
+two people to provide us a new solution up to the next merge window, otherwise, it
+would be moved it to the proper place.
+
+Basically, this driver is used to load the FPGA firmware for the CI module that 
+de-scrambles DVB-C/DVB-T/DVB-S streams, used by some cx23885 devices.
+
+Basically, cx23885 gets the firmware file via request_firmware() and uses the
+altera module to load it. After loaded, the altera-ci driver implements the logic
+to talk with the CI hardware.
+
+There's no Coding Style or any other troubles on this driver that I'm aware,
+except that the altera driver also allows loading FPGA firmwares via LPT port.
+
+The main argue is that there are some userspace tools available to program a
+FPGA hardware, but the problem is that the cx23885 needs to command the firmware
+load, as it needs to occur when the device is booted (or resumed).
+
+There were some discussions about that at LKML:
+	https://lkml.org/lkml/2011/3/7/270
+
+>From my side, I think that the driver is doing the right approach. Using a different
+logic will make harder to sync userspace with kernelspace and will require an
+specialized userspace application for just a few device types (just two of the
+30 boards supported by cx23885 currently needs it).
+
+Igor,
+
+Could you please prepare a patch against linux-next moving it to the proper place?
+It is probably better to apply such patch at Greg's tree, as he has two patches
+touching at the altera include files. Also, please get rid of the parallel port
+support, as you don't need it for cx23885.
+
+Thanks,
+Mauro.
