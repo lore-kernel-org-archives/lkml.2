@@ -1,92 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255Ab1FHQ6j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 12:58:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46704 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343Ab1FHQ6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 12:58:37 -0400
-Message-ID: <4DEFAA2F.1010100@redhat.com>
-Date: Wed, 08 Jun 2011 13:58:23 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1752276Ab1FHRAZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 13:00:25 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:51695 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab1FHRAW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 13:00:22 -0400
+Date: Wed, 8 Jun 2011 22:30:08 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        anderson@redhat.com
+Subject: Re: [RFC Patch 5/6] slimdump: Capture slimdump for fatal MCE
+ generated crashes
+Message-ID: <20110608170008.GA2851@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20110526170722.GB23266@in.ibm.com>
+ <20110526172305.GA18295@in.ibm.com>
+ <20110526174447.GC29496@redhat.com>
+ <20110527165736.GC2384@in.ibm.com>
+ <20110527175949.GG8053@redhat.com>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Igor M. Liplianin" <liplianin@netup.ru>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the staging.current
- tree
-References: <20110608114130.444a7f99.sfr@canb.auug.org.au> <20110608161127.GD21645@kroah.com>
-In-Reply-To: <20110608161127.GD21645@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110527175949.GG8053@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-Em 08-06-2011 13:11, Greg KH escreveu:
-> On Wed, Jun 08, 2011 at 11:41:30AM +1000, Stephen Rothwell wrote:
->> Hi Greg,
->>
->> After merging the staging.current tree, today's linux-next build (x86_64
->> allmodconfig) failed like this:
->>
->> drivers/media/video/cx23885/cx23885-cards.c:28:28: fatal error: staging/altera.h: No such file or directory
->>
->> Caused by commit 85ab9ee946da ("Staging: altera: move .h file to proper
->> place").
->>
->> I have used the staging.current tree from next-20110607 for today.
+On Fri, May 27, 2011 at 01:59:49PM -0400, Vivek Goyal wrote:
+> On Fri, May 27, 2011 at 10:27:36PM +0530, K.Prasad wrote:
+> > On Thu, May 26, 2011 at 01:44:47PM -0400, Vivek Goyal wrote:
+> > > On Thu, May 26, 2011 at 10:53:05PM +0530, K.Prasad wrote:
+> > > > 
+> > > > slimdump: Capture slimdump for fatal MCE generated crashes
+> > > > 
+> > > > System crashes resulting from fatal hardware errors (such as MCE) don't need
+> > > > all the contents from crashing-kernel's memory. Generate a new 'slimdump' that
+> > > > retains only essential information while discarding the old memory.
+> > > > 
+> > > 
+> > > Why to enforce zeroing out of rest of the vmcore data in kernel. Why not
+> > > leave it to user space. 
+> > > 
+> > 
+> > Our concern comes from the fact that it is unsafe for the OS to read
+> > any part of the corrupt memory region, so the kernel does not have to make
+> > that address space available for read/write.
 > 
-> Ok, sorry about that.
+> The very fact you are booting into second kernel you are reading lots
+> of address space already. The assumption is that whole of the reserved
+> region is fine otherwise kernel will not even boot. Then even in older
+> kernel you are accessing memory used for saving the elf headers and
+> mce registers.
+
+The difference, IMHO, is that we avoid a deliberate access of the memory
+location which has previously experienced an unrecoverable memory error
+and upon which a read operation can cause fatal MCE.
+
+While older kernel's memory is used to save elf headers, it is not a
+location that is known to have a memory error.
+
+There could be a case where either a new memory error surfaces in the
+older kernel/inside the kdump kernel's memory region or a previously
+hw-poisoned memory is consumed by the new kernel, during which
+we suspect that the kdump kernel would reboot...but given the small time
+window during which it operates such a situation is going to be very
+rare.
+
+> > 
+> > > As Andi said, you anyway will require disabling MCE temporarily in second
+> > > kernel. So that should allay the concern that we might run into second
+> > > MCE while trying to read the vmcore.
+> > > 
+> > 
+> > The processor manuals don't define the behaviour for a read operation
+> > upon a corrupt memory location. So the consequences for a read after
+> > disabling MCE is unknown (as I've mentioned here:
+> > https://lkml.org/lkml/2011/5/27/258). 
+> > 
 > 
-> Mauro, Igor, why would another driver need to reference a .h file of a
-> staging driver?  I'll patch it right now to point to the proper place
-> (down in the staging tree), but it would be good to resolve this
-> "properly" somehow.
+> First of all a user can simply have a configuration to extract MCE
+> registers and your concern is addressed. Eric W. Biederman said that
+> he had got bunch of MCE triggered dumps also and things were fine. I think
+> we are over engineering this. In the first step lets just keep it simple
+> and just export MCE registers as a note. If accessing rest of regions
+> becomes a issue in real life, then we can have a look at this again.
+
+Again, this suggestion is based on the fact that the coredump from the
+first kernel is available...but the as stated before, capturing the
+coredump from first kernel involves a compulsory read operation over a
+memory location that is known to have an uncorrected error with the
+problems described above.
+
+> > > A user might want to extract just the dmesg buffers also after MCE from
+> > > vmcore.
+> > >
+> > > What I am saying is that this sounds more like a policy. Don't enforce
+> > > it in kernel. Probably give user MCE registers as part of ELF note of
+> > > vmcore. Now leave it up to user what data he wants to extract from vmcore.
+> > > Just the MCE registers or something more then that.
+> > 
+> > I'm unsure, at the moment, as to what it actually entails to extract
+> > dmesg buffers from the old kernel's memory; but given that there exists
+> > a corrupt memory region with unknown consequences for read operations
+> > upon it, I doubt if it is a safe idea to allow user-space application to
+> > navigate through the kernel data-structures to extract the dmesg.
+> > 
+> > Alternatively, we might leave MCE enabled for the kdump kernel and
+> > modify the user-space application to turn resilient to SIGBUS signal. So
+> > if it reads a corrupt memory region, it will receive a signal from
+> > do_machine_check() upon which it can skip that particular address and/or
+> > fill it with zeroes (or somesuch). We haven't gone through the
+> > details....but just some loud thinking
 > 
-> Next time, please never include a staging driver that isn't
-> self-contained, and don't create include/staging/ that's not acceptable.
+> Again, I think simplest would be to disable MCE while we are accessing
+> previous kernel's memory and configure user space to either just extract
+> MCE registers. If you are too paranoid, you can do it in two steps. First
+> save MCE registes and make sure these are on disk and then go for
+> extracting rest of the info like dmesg and in the process if you go down,
+> anyway it was best effort thing.
+>
 
-The altera driver were discussed for about two kernel cycles. When it was
-about to be merged upstrem, two people complained about having a FPGA firmware 
-driver inside the Linux Kernel. However, this driver is essential in order to load
-the firmware for a DVB device. So, to avoid postponing the merge for yet another
-kernel cycle, I've moved the offending part to staging, and asked for those
-two people to provide us a new solution up to the next merge window, otherwise, it
-would be moved it to the proper place.
-
-Basically, this driver is used to load the FPGA firmware for the CI module that 
-de-scrambles DVB-C/DVB-T/DVB-S streams, used by some cx23885 devices.
-
-Basically, cx23885 gets the firmware file via request_firmware() and uses the
-altera module to load it. After loaded, the altera-ci driver implements the logic
-to talk with the CI hardware.
-
-There's no Coding Style or any other troubles on this driver that I'm aware,
-except that the altera driver also allows loading FPGA firmwares via LPT port.
-
-The main argue is that there are some userspace tools available to program a
-FPGA hardware, but the problem is that the cx23885 needs to command the firmware
-load, as it needs to occur when the device is booted (or resumed).
-
-There were some discussions about that at LKML:
-	https://lkml.org/lkml/2011/3/7/270
-
->From my side, I think that the driver is doing the right approach. Using a different
-logic will make harder to sync userspace with kernelspace and will require an
-specialized userspace application for just a few device types (just two of the
-30 boards supported by cx23885 currently needs it).
-
-Igor,
-
-Could you please prepare a patch against linux-next moving it to the proper place?
-It is probably better to apply such patch at Greg's tree, as he has two patches
-touching at the altera include files. Also, please get rid of the parallel port
-support, as you don't need it for cx23885.
+The problem here is that the effect of a read operation over a location
+with memory error (with MCEs disabled) is unknown. We are making
+attempts to characterise the behaviour in conjunction with the hardware
+folks and I will share any information that we learn in this regard.
 
 Thanks,
-Mauro.
+K.Prasad
+
