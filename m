@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab1FHTTM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:19:12 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53008 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753952Ab1FHTTI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:19:08 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: arnd@arndb.de
-Cc: akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, mingo@elte.hu,
-        randy.dunlap@oracle.com, josh@joshtriplett.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mgorman@suse.de, linux-mm@kvack.org, Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH] Add debugging boundary check to pfn_to_page
-Date: Wed,  8 Jun 2011 15:18:54 -0400
-Message-Id: <1307560734-3915-1-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754843Ab1FHTWX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:22:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28846 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753952Ab1FHTWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 15:22:20 -0400
+Date: Wed, 8 Jun 2011 21:19:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, fenghua.yu@intel.com,
+        monstr@monstr.eu, ralf@linux-mips.org, benh@kernel.crashing.org,
+        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        linux390@de.ibm.com, lethal@linux-sh.org, davem@davemloft.net,
+        jdike@addtoit.com, richard@nod.at, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        linux-ia64@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH -v2] Audit: push audit success and retcode into arch
+	ptrace.h
+Message-ID: <20110608191910.GA18698@redhat.com>
+References: <20110603220451.23134.47368.stgit@paris.rdu.redhat.com> <20110607171952.GA25729@redhat.com> <1307472796.2052.12.camel@localhost.localdomain> <20110608163653.GA9592@redhat.com> <1307556823.2577.5.camel@localhost.localdomain> <20110608183720.GA16883@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110608183720.GA16883@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bugzilla 36192 showed a problem where pages were being accessed outside of
-a node boundary.  It would be helpful in diagnosing this kind of problem to
-have pfn_to_page complain when a page is accessed outside of the node boundary.
-This patch adds a new debug config option which adds a WARN_ON in pfn_to_page
-that will complain when pages are accessed outside of the node boundary.
+On 06/08, Oleg Nesterov wrote:
+>
+> OK. Thanks a lot Eric for your explanations.
 
-Signed-of-by: Eric B Munson <emunson@mgebm.net>
----
- include/asm-generic/memory_model.h |   19 +++++++++++++++----
- lib/Kconfig.debug                  |   10 ++++++++++
- 2 files changed, 25 insertions(+), 4 deletions(-)
+Yes. but may I ask another one?
 
-diff --git a/include/asm-generic/memory_model.h b/include/asm-generic/memory_model.h
-index fb2d63f..a0f1d19 100644
---- a/include/asm-generic/memory_model.h
-+++ b/include/asm-generic/memory_model.h
-@@ -62,11 +62,22 @@
- 	(unsigned long)(__pg - __section_mem_map_addr(__nr_to_section(__sec)));	\
- })
+Shouldn't copy_process()->audit_alloc(tsk) path do
+clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT) if it doesn't
+set tsk->audit_context?
+
+I can be easily wrong, but afaics otherwise the child can run
+with TIF_SYSCALL_AUDIT bit copied from parent's thread_info by
+dup_task_struct()->setup_thread_stack() and without ->audit_context,
+right? For what?
+
+Any other reason why audit_syscall_entry() checks context != NULL?
+
+IOW. Any reason the patch below is wrong?
+
+I am just curious, thanks.
+
+Oleg.
+
+--- x/kernel/auditsc.c
++++ x/kernel/auditsc.c
+@@ -885,6 +885,8 @@ int audit_alloc(struct task_struct *tsk)
+ 	if (likely(!audit_ever_enabled))
+ 		return 0; /* Return if not auditing. */
  
--#define __pfn_to_page(pfn)				\
--({	unsigned long __pfn = (pfn);			\
--	struct mem_section *__sec = __pfn_to_section(__pfn);	\
--	__section_mem_map_addr(__sec) + __pfn;		\
-+#ifdef CONFIG_DEBUG_MEMORY_MODEL
-+#define __pfn_to_page(pfn)						\
-+({	unsigned long __pfn = (pfn);					\
-+	struct mem_section *__sec = __pfn_to_section(__pfn);		\
-+	struct page *__page = __section_mem_map_addr(__sec) + __pfn;	\
-+	WARN_ON(__page->flags == 0);					\
-+	__page;								\
- })
-+#else
-+#define __pfn_to_page(pfn)						\
-+({	unsigned long __pfn = (pfn);					\
-+	struct mem_section *__sec = __pfn_to_section(__pfn);		\
-+	__section_mem_map_addr(__sec) + __pfn;	\
-+})
-+#endif /* CONFIG_DEBUG_MEMORY_MODEL */
++	clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
 +
- #endif /* CONFIG_FLATMEM/DISCONTIGMEM/SPARSEMEM */
+ 	state = audit_filter_task(tsk, &key);
+ 	if (likely(state == AUDIT_DISABLED))
+ 		return 0;
+@@ -1591,9 +1593,7 @@ void audit_syscall_entry(int arch, int m
+ 	struct audit_context *context = tsk->audit_context;
+ 	enum audit_state     state;
  
- #define page_to_pfn __page_to_pfn
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index dd373c8..d932cbf 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -777,6 +777,16 @@ config DEBUG_MEMORY_INIT
- 
- 	  If unsure, say Y
- 
-+config DEBUG_MEMORY_MODEL
-+	bool "Debug memory model" if SPARSEMEM || DISCONTIGMEM
-+	depends on SPARSEMEM || DISCONTIGMEM
-+	help
-+	  Enable this to check that page accesses are done within node
-+	  boundaries.  The check will warn each time a page is requested
-+	  outside node boundaries.
-+
-+	  If unsure, say N
-+
- config DEBUG_LIST
- 	bool "Debug linked list manipulation"
- 	depends on DEBUG_KERNEL
--- 
-1.7.4.1
+-	if (unlikely(!context))
+-		return;
+-
++	BUG_ON(!context);
+ 	/*
+ 	 * This happens only on certain architectures that make system
+ 	 * calls in kernel_thread via the entry.S interface, instead of
 
