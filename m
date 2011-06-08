@@ -1,23 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab1FHH27 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 03:28:59 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:58797 "EHLO
+	id S1754649Ab1FHH3E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 03:29:04 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:58822 "EHLO
 	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754478Ab1FHH24 (ORCPT
+	with ESMTP id S1754573Ab1FHH3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 03:28:56 -0400
-X-AuditID: b753bd60-a467eba0000050a4-48-4def24b302ba
-X-AuditID: b753bd60-a467eba0000050a4-48-4def24b302ba
+	Wed, 8 Jun 2011 03:29:00 -0400
+X-AuditID: b753bd60-a0ac3ba000003bac-18-4def24ba3b4b
+X-AuditID: b753bd60-a0ac3ba000003bac-18-4def24ba3b4b
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip v2 0/3] Support stacktrace with dynamic event
+Subject: [PATCH -tip v2 1/3] [CLEANUP]x86: Swap save_stack_trace_regs
+ parameters
 To: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Namhyung Kim <namhyung@gmail.com>, yrl.pp-manager.tt@hitachi.com,
-        linux-kernel@vger.kernel.org
-Date: Wed, 08 Jun 2011 16:09:13 +0900
-Message-ID: <20110608070913.17777.37689.stgit@fedora15>
+        linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org
+Date: Wed, 08 Jun 2011 16:09:21 +0900
+Message-ID: <20110608070921.17777.31103.stgit@fedora15>
+In-Reply-To: <20110608070913.17777.37689.stgit@fedora15>
+References: <20110608070913.17777.37689.stgit@fedora15>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,37 +36,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Swap the 1st and 2nd parameters of save_stack_trace_regs()
+as same as the parameters of save_stack_trace_tsk().
 
-Here is the stacktrace support with dynamic event tracer.
-
-This series also includes save_stack_trace_regs() API
-cleanup and an weak symbol for the arch which doesn't
-support it.
-
-Thank you,
-
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: linux-kernel@vger.kernel.org
 ---
-
-Masami Hiramatsu (3):
-      [BUGFIX]tracing/kprobes: Fix kprobe-tracer to support stack trace
-      Add weak save_stack_trace_regs()
-      [CLEANUP]x86: Swap save_stack_trace_regs parameters
-
 
  arch/x86/kernel/stacktrace.c  |    2 +-
  arch/x86/mm/kmemcheck/error.c |    2 +-
- include/linux/ftrace_event.h  |    4 ++++
  include/linux/stacktrace.h    |    4 ++--
- kernel/stacktrace.c           |   13 ++++++++++---
- kernel/trace/trace.c          |   35 ++++++++++++++++++++++++++++++-----
- kernel/trace/trace.h          |    9 +++++++++
- kernel/trace/trace_kprobe.c   |    6 ++++--
- 8 files changed, 61 insertions(+), 14 deletions(-)
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
+index 55d9bc0..fdd0c64 100644
+--- a/arch/x86/kernel/stacktrace.c
++++ b/arch/x86/kernel/stacktrace.c
+@@ -66,7 +66,7 @@ void save_stack_trace(struct stack_trace *trace)
+ }
+ EXPORT_SYMBOL_GPL(save_stack_trace);
+ 
+-void save_stack_trace_regs(struct stack_trace *trace, struct pt_regs *regs)
++void save_stack_trace_regs(struct pt_regs *regs, struct stack_trace *trace)
+ {
+ 	dump_trace(current, regs, NULL, 0, &save_stack_ops, trace);
+ 	if (trace->nr_entries < trace->max_entries)
+diff --git a/arch/x86/mm/kmemcheck/error.c b/arch/x86/mm/kmemcheck/error.c
+index 704a37c..dab4187 100644
+--- a/arch/x86/mm/kmemcheck/error.c
++++ b/arch/x86/mm/kmemcheck/error.c
+@@ -185,7 +185,7 @@ void kmemcheck_error_save(enum kmemcheck_shadow state,
+ 	e->trace.entries = e->trace_entries;
+ 	e->trace.max_entries = ARRAY_SIZE(e->trace_entries);
+ 	e->trace.skip = 0;
+-	save_stack_trace_regs(&e->trace, regs);
++	save_stack_trace_regs(regs, &e->trace);
+ 
+ 	/* Round address down to nearest 16 bytes */
+ 	shadow_copy = kmemcheck_shadow_lookup(address
+diff --git a/include/linux/stacktrace.h b/include/linux/stacktrace.h
+index 25310f1..115b570 100644
+--- a/include/linux/stacktrace.h
++++ b/include/linux/stacktrace.h
+@@ -14,8 +14,8 @@ struct stack_trace {
+ };
+ 
+ extern void save_stack_trace(struct stack_trace *trace);
+-extern void save_stack_trace_regs(struct stack_trace *trace,
+-				  struct pt_regs *regs);
++extern void save_stack_trace_regs(struct pt_regs *regs,
++				  struct stack_trace *trace);
+ extern void save_stack_trace_tsk(struct task_struct *tsk,
+ 				struct stack_trace *trace);
+ 
 
