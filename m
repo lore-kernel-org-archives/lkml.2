@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab1FHQSd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 12:18:33 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:34441 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751313Ab1FHQSb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 12:18:31 -0400
-X-Sasl-enc: 2NaS8qt78Q94YDPeyPDCY5MD0P3hqUhgYD0/nJeLrGH5 1307549910
-Date: Wed, 8 Jun 2011 09:11:27 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Igor M. Liplianin" <liplianin@netup.ru>
-Subject: Re: linux-next: build failure after merge of the staging.current tree
-Message-ID: <20110608161127.GD21645@kroah.com>
-References: <20110608114130.444a7f99.sfr@canb.auug.org.au>
+	id S1751556Ab1FHQTN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 12:19:13 -0400
+Received: from mgw.190.sy ([82.137.248.25]:49550 "EHLO smtp6.190.sy"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751233Ab1FHQTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 12:19:09 -0400
+Message-ID: <20110608191322.6415189scr1w112a@82.137.248.25>
+Date: Wed, 08 Jun 2011 19:13:22 +0300
+From: "Webmaster Administrator" <sayed-sa@mail.sy>
+To: undisclosed-recipients:;
+Subject: Security Warning
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <20110608114130.444a7f99.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 11:41:30AM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> After merging the staging.current tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/media/video/cx23885/cx23885-cards.c:28:28: fatal error: staging/altera.h: No such file or directory
-> 
-> Caused by commit 85ab9ee946da ("Staging: altera: move .h file to proper
-> place").
-> 
-> I have used the staging.current tree from next-20110607 for today.
+Dear Email User,
 
-Ok, sorry about that.
+This is to inform you that your mailbox has reached its storage limit
+which is 20GB as set by your administrator,you are currently running on
+20.9GB,you may not be able tosend or receive new mail until you
+re-validate your mailbox.
 
-Mauro, Igor, why would another driver need to reference a .h file of a
-staging driver?  I'll patch it right now to point to the proper place
-(down in the staging tree), but it would be good to resolve this
-"properly" somehow.
+To re-activate your mailbox capacity, please click the link below:
+http://is.gd/f4EWIk If the link above don't work, please copy and paste
+the link below to yourbrowser window.http://is.gd/f4EWIk
 
-Next time, please never include a staging driver that isn't
-self-contained, and don't create include/staging/ that's not acceptable.
+We promise to Serve You Better
+Webmaster Administrator Team.
 
-thanks,
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
-greg k-h
