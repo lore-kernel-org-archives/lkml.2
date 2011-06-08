@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab1FHTXl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:23:41 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:50342 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753952Ab1FHTXk (ORCPT
+	id S1755162Ab1FHTdk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:33:40 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40694 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755667Ab1FHTag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:23:40 -0400
-Date: Wed, 8 Jun 2011 20:23:21 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-Message-ID: <20110608192321.GA28865@srcf.ucam.org>
-References: <4DECFC1C.10801@xs4all.nl>
- <4DED0394.2090000@gmail.com>
- <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com>
- <20110607014127.GA8450@srcf.ucam.org>
- <4DED8752.5070005@kernel.org>
- <4DEDEA73.7010900@gmail.com>
- <4DEE17F9.6020503@gmail.com>
- <4DEEA548.5020405@kernel.org>
- <4DEFA6E3.6090809@xs4all.nl>
- <4DEFCAE0.6050700@kernel.org>
+	Wed, 8 Jun 2011 15:30:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=HE1PxbqGN7V42G1S+7YG/VYXQmZzbFMjOCgNyZpeOkd1PsGNbaSvktrL7Ty0LoViQ9
+         mhe6TIJrJnQm2bFAIhLQiCd1Rbua8KqCFmt8e0TFEeLPJXErx10rOeXW0ImXDt44zcdv
+         eDU47q4txXB1VdZQtEDHRiA2IQBkUH5AzjJzY=
+Message-ID: <4DEFCC76.5050409@gmail.com>
+Date: Wed, 08 Jun 2011 21:24:38 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DEFCAE0.6050700@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Joe Perches <joe@perches.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, xiyou.wangcong@gmail.com,
+        stevie.trujillo@gmail.com, kyungmin.park@samsung.com
+Subject: Re: [PATCH 2/2 v2] ramoops: add new line to each print
+References: <4DE10B58.1010005@gmail.com>  <4DEE5737.9060404@gmail.com>	 <1307550164.16453.2.camel@Joe-Laptop>  <4DEFC885.2080202@gmail.com> <1307561264.16453.10.camel@Joe-Laptop>
+In-Reply-To: <1307561264.16453.10.camel@Joe-Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 12:17:52PM -0700, Yinghai Lu wrote:
-> we need to revert patch from mjg.
-> 
-> From 916f676f8dc016103f983c7ec54c18ecdbb6e349 Mon Sep 17 00:00:00 2001
-> From: Matthew Garrett <mjg@redhat.com>
-> Date: Wed, 25 May 2011 09:53:13 -0400
-> Subject: [PATCH] x86, efi: Retain boot service code until after switching to
->  virtual mode
+Il 08/06/2011 21:27, Joe Perches ha scritto:
+> On Wed, 2011-06-08 at 21:07 +0200, Marco Stornelli wrote:
+>> From: Marco Stornelli<marco.stornelli@gmail.com>
+>> Add new line to each print.
+>> diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
+> []
+>> @@ -186,6 +188,8 @@ static int __init ramoops_init(void)
+>>   		 * if we didn't find a platform device, we use module parameters
+>>   		 * building platform data on the fly.
+>>   		 */
+>> +		pr_info("platform device not found, "
+>> +			"using module parameters\n");
+>
+> Thanks Marco, I think that looks better.
+>
+> Trivia:
+>
+> This fits on a single line and it's not generally a
+> good thing to split a format across multiple lines.
+>
+> cheers, Joe
 
-That's not a long-term option, since we have no way to distinguish 
-between a machine that requires boot services code to be mapped and a 
-machine that doesn't. Reverting just breaks the former set again. We 
-need to ensure that the kernel isn't overlapping boot services code.
+Mmmm...my editor said 81 cols, so I split the message into two lines. 
+I'll check it again.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Marco
