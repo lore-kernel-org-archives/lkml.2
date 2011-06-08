@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab1FHNF1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 09:05:27 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:47441 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab1FHNFZ (ORCPT
+	id S1754823Ab1FHNGO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 09:06:14 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:35871 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753786Ab1FHNGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 09:05:25 -0400
-Date: Wed, 8 Jun 2011 07:05:22 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Joerg Roedel <Joerg.Roedel@amd.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, David Brown <davidb@codeaurora.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 0/4] drivers/iommu/ relocations
-Message-ID: <20110608130522.GC29089@parisc-linux.org>
-References: <1307522062-19273-1-git-send-email-ohad@wizery.com>
+	Wed, 8 Jun 2011 09:06:13 -0400
+Date: Wed, 8 Jun 2011 21:06:08 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Matt Mackall <mpm@selenic.com>
+Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hw_random: timeriomem-rng: use resource_size
+Message-ID: <20110608130608.GC4582@gondor.apana.org.au>
+References: <201106011523.13707.hartleys@visionengravers.com> <1307042711.4204.633.camel@calx>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307522062-19273-1-git-send-email-ohad@wizery.com>
+In-Reply-To: <1307042711.4204.633.camel@calx>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 11:34:18AM +0300, Ohad Ben-Cohen wrote:
-> Create a dedicated iommu drivers folder, put the base iommu code there,
-> and move the existing IOMMU API users as well (msm-iommu, amd_iommu and
-> intel-iommu).
+On Thu, Jun 02, 2011 at 02:25:11PM -0500, Matt Mackall wrote:
+> On Wed, 2011-06-01 at 15:23 -0700, H Hartley Sweeten wrote:
+> > Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> > Cc: Matt Mackall <mpm@selenic.com>
+> > Cc: Herbert Xu <herbert@gondor.apana.org.au>
 > 
-> Putting all iommu drivers together will ease finding similarities
-> between different platforms, with the intention of solving problems once,
-> in a generic framework, which everyone can use.
+> Looks good to me.
 > 
-> OMAP's iommu will be moved too as soon as it's migrated.
-> 
-> For previous discussions on this, please see:
-> https://lkml.org/lkml/2011/6/2/369
-> 
-> Ohad Ben-Cohen (4):
->   drivers: iommu: move to a dedicated folder
->   msm: iommu: move to drivers/iommu/
->   x86: amd_iommu: move to drivers/iommu/
->   x86: intel-iommu: move to drivers/iommu/
+> Acked-by: Matt Mackall <mpm@selenic.com>
 
-You've missed at least parisc, ia64, alpha, sparc, powerpc and sh which
-have IOMMUs.  Not that they necessarily all need to be moved across in
-one patchset, but saying "all iommu drivers" is clearly false.
-
+Also applied.  Thanks!
 -- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
