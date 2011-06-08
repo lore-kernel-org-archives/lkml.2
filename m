@@ -1,40 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab1FHUeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 16:34:17 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:33396 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782Ab1FHUeQ (ORCPT
+	id S1753417Ab1FHUhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 16:37:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62842 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab1FHUhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 16:34:16 -0400
-Date: Wed, 8 Jun 2011 14:34:14 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Nikolaus Voss <n.voss@weinmann.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi/rtc-m41t93: Use spi_get_drvdata() for SPI devices
-Message-ID: <20110608203414.GA15006@ponder.secretlab.ca>
-References: <1307562483-4883-1-git-send-email-geert@linux-m68k.org>
+	Wed, 8 Jun 2011 16:37:32 -0400
+Message-ID: <4DEFDD69.7010000@kernel.org>
+Date: Wed, 08 Jun 2011 13:36:57 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1307562483-4883-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+References: <20110608192321.GA28865@srcf.ucam.org> <4DEFCD07.5020505@kernel.org> <20110608192950.GA29235@srcf.ucam.org> <4DEFCF1A.9030400@kernel.org> <20110608193833.GA29855@srcf.ucam.org> <4DEFD220.5040507@kernel.org> <20110608195250.GB30256@srcf.ucam.org> <4DEFD58D.5060402@kernel.org> <20110608200903.GA30694@srcf.ucam.org> <4DEFDA4A.9080500@kernel.org> <20110608203037.GA31052@srcf.ucam.org>
+In-Reply-To: <20110608203037.GA31052@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090209.4DEFDD72.0078,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 09:48:03PM +0200, Geert Uytterhoeven wrote:
-> One new offender detected by the recently increased type checking in
-> platform_get_drvdata():
+On 06/08/2011 01:30 PM, Matthew Garrett wrote:
+> On Wed, Jun 08, 2011 at 01:23:38PM -0700, Yinghai Lu wrote:
+>> On 06/08/2011 01:09 PM, Matthew Garrett wrote:
+>>> On Wed, Jun 08, 2011 at 01:03:25PM -0700, Yinghai Lu wrote:
+>>>> On 06/08/2011 12:52 PM, Matthew Garrett wrote:
+>>>>> On Wed, Jun 08, 2011 at 12:48:48PM -0700, Yinghai Lu wrote:
+>>>>>> On 06/08/2011 12:38 PM, Matthew Garrett wrote:
+>>>>>>> On Wed, Jun 08, 2011 at 12:35:54PM -0700, Yinghai Lu wrote:
+>>>>>>>> On 06/08/2011 12:29 PM, Matthew Garrett wrote:
+>>>>>>>>>> what former? you can not fix some corner case by breaking most other cases.
+>>>>>>>>>
+>>>>>>>>> All Dell laptops, all new Apples, some Lenovos, various Intel server 
+>>>>>>>>> platforms. That I've found so far.
+>>>>>>>>
+>>>>>>>> do you mean before that patch, all those machine will not boot linux kernel with UEFI support?
+>>>>>>>
+>>>>>>> Correct.
+>>>>>>
+>>>>>> with or without EFI runtime services?
+>>>>>
+>>>>> They'll boot with noefi, but that's useless because there's then no way 
+>>>>> to configure a bootloader.
+>>>>
+>>>> efibootmgr will need boot services in addition to run-time services?
+>>>
+>>> No, SetVirtualAddressMap() calls into boot services. This is code, not 
+>>> data. We have no control over what it does.
+>>
+>> Maybe you can parse efimeminfo in arch/x86/boot/compressed/head_64.S to find right decompress position for kernel.
 > 
-> drivers/rtc/rtc-m41t93.c: In function ‘m41t93_remove’:
-> drivers/rtc/rtc-m41t93.c:192: warning: passing argument 1 of ‘platform_get_drvdata’ from incompatible pointer type
+> Hm. I'll take a look into that. Thanks!
 
-Applied, thanks.
 
-g.
+or just let bootloader to mark those boot services just like run-time services in e820 table or setupdata?
 
+Yinghai
