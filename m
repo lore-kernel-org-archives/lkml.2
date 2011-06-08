@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab1FHUhf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 16:37:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62842 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab1FHUhc (ORCPT
+	id S1753489Ab1FHUir (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 16:38:47 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57842 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab1FHUiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 16:37:32 -0400
-Message-ID: <4DEFDD69.7010000@kernel.org>
-Date: Wed, 08 Jun 2011 13:36:57 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Wed, 8 Jun 2011 16:38:46 -0400
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 8 Jun 2011 14:38:26 -0600
+X-Google-Sender-Auth: BKUVU0XR5rGpOuP3O90i1Gfaw8c
+Message-ID: <BANLkTikmjG6oXHRMe=oZx3i6RhXdupBpLA@mail.gmail.com>
+Subject: [GIT PULL] spi bug fixes for v3.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <20110608192321.GA28865@srcf.ucam.org> <4DEFCD07.5020505@kernel.org> <20110608192950.GA29235@srcf.ucam.org> <4DEFCF1A.9030400@kernel.org> <20110608193833.GA29855@srcf.ucam.org> <4DEFD220.5040507@kernel.org> <20110608195250.GB30256@srcf.ucam.org> <4DEFD58D.5060402@kernel.org> <20110608200903.GA30694@srcf.ucam.org> <4DEFDA4A.9080500@kernel.org> <20110608203037.GA31052@srcf.ucam.org>
-In-Reply-To: <20110608203037.GA31052@srcf.ucam.org>
+        spi-devel-general@lists.sourceforge.net
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090209.4DEFDD72.0078,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2011 01:30 PM, Matthew Garrett wrote:
-> On Wed, Jun 08, 2011 at 01:23:38PM -0700, Yinghai Lu wrote:
->> On 06/08/2011 01:09 PM, Matthew Garrett wrote:
->>> On Wed, Jun 08, 2011 at 01:03:25PM -0700, Yinghai Lu wrote:
->>>> On 06/08/2011 12:52 PM, Matthew Garrett wrote:
->>>>> On Wed, Jun 08, 2011 at 12:48:48PM -0700, Yinghai Lu wrote:
->>>>>> On 06/08/2011 12:38 PM, Matthew Garrett wrote:
->>>>>>> On Wed, Jun 08, 2011 at 12:35:54PM -0700, Yinghai Lu wrote:
->>>>>>>> On 06/08/2011 12:29 PM, Matthew Garrett wrote:
->>>>>>>>>> what former? you can not fix some corner case by breaking most other cases.
->>>>>>>>>
->>>>>>>>> All Dell laptops, all new Apples, some Lenovos, various Intel server 
->>>>>>>>> platforms. That I've found so far.
->>>>>>>>
->>>>>>>> do you mean before that patch, all those machine will not boot linux kernel with UEFI support?
->>>>>>>
->>>>>>> Correct.
->>>>>>
->>>>>> with or without EFI runtime services?
->>>>>
->>>>> They'll boot with noefi, but that's useless because there's then no way 
->>>>> to configure a bootloader.
->>>>
->>>> efibootmgr will need boot services in addition to run-time services?
->>>
->>> No, SetVirtualAddressMap() calls into boot services. This is code, not 
->>> data. We have no control over what it does.
->>
->> Maybe you can parse efimeminfo in arch/x86/boot/compressed/head_64.S to find right decompress position for kernel.
-> 
-> Hm. I'll take a look into that. Thanks!
+The following changes since commit 59c5f46fbe01a00eedf54a23789634438bb80603:
 
+  Linux 3.0-rc2 (2011-06-06 18:06:33 +0900)
 
-or just let bootloader to mark those boot services just like run-time services in e820 table or setupdata?
+are available in the git repository at:
+  git://git.secretlab.ca/git/linux-2.6 spi/merge
 
-Yinghai
+Geert Uytterhoeven (1):
+      spi/rtc-m41t93: Use spi_get_drvdata() for SPI devices
+
+Govindraj.R (1):
+      spi/omap2: fix uninitialized variable
+
+ drivers/rtc/rtc-m41t93.c  |    2 +-
+ drivers/spi/omap2_mcspi.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
