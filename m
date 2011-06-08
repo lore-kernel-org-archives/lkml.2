@@ -1,57 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab1FHK2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:28:38 -0400
-Received: from r00tworld.com ([212.85.137.150]:40304 "EHLO r00tworld.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754179Ab1FHK2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:28:37 -0400
-From: pageexec@freemail.hu
-To: Andi Kleen <andi@firstfloor.org>
-Date: Wed, 08 Jun 2011 12:26:49 +0200
-MIME-Version: 1.0
-Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
-Reply-to: pageexec@freemail.hu
-CC: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+	id S1755522Ab1FHKhK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:37:10 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:45594 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab1FHKhI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 06:37:08 -0400
+Date: Wed, 8 Jun 2011 15:59:57 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Josh Stone <jistone@redhat.com>
+Cc: Stephen Wilson <wilsons@start.ca>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Message-ID: <4DEF4E69.14274.1C44F04F@pageexec.freemail.hu>
-In-reply-to: <20110608100612.GJ27166@one.firstfloor.org>
-References: <20110608091120.GI27166@one.firstfloor.org>, <4DEF424F.2351.1C15AD40@pageexec.freemail.hu>, <20110608100612.GJ27166@one.firstfloor.org>
-X-mailer: Pegasus Mail for Windows (4.61)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Wed, 08 Jun 2011 12:27:27 +0200 (CEST)
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 3/22]  3: uprobes: Adding and remove a
+ uprobe in a rb tree.
+Message-ID: <20110608102957.GA10529@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607125850.28590.10861.sendpatchset@localhost6.localdomain6>
+ <20110608041217.GA4879@wicker.gateway.2wire.net>
+ <4DEF1F07.4000400@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4DEF1F07.4000400@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 Jun 2011 at 12:06, Andi Kleen wrote:
+* Josh Stone <jistone@redhat.com> [2011-06-08 00:04:39]:
 
-> > eventually may even go away as time progresses and
-> > linux systems begin to fully rely on the vdso instead.
+> On 06/07/2011 09:12 PM, Stephen Wilson wrote:
+> > Also, changing the argument order seems to solve the issue reported by
+> > Josh Stone where only the uprobe with the lowest address was responding
+> > (thou I did not test with perf, just lightly with the trace_event
+> > interface).
 > 
-> That assumes that everyone uses glibc and also updates their userland. 
-> As pointed out many times that's a deeply flawed assumption.
+> Makes sense, and indeed after swapping the arguments to both calls, the
+> perf test I gave now works as expected.  Thanks!
+> 
+> Josh
 
-i think the assumption is not that everyone uses glibc but that everyone
-else (as in, every other libc) can simply take the necessary changes from
-glibc, provided they need such changes at all (i.e., they're using the
-vsyscall entry points over the vdso ones).
+Thanks Stephen for the fix and Josh for both reporting and confirming
+that the fix works. 
 
-i frankly didn't check any of the alternatives myself (uclibc/klibc/bionic/etc)
-but i can't imagine that it'd be that much harder to patch them than glibc.
+Stephen, Along with the parameter interchange, I also modified the
+parameter name so that they dont confuse with the argument names in
+match_uprobe.  Otherwise 'r' in __find_uprobe would correspond to 'l' in 
+match_uprobe. The result is something like below.
 
-as i said, this was a compromise solution but then i think you already made
-it clear that you didn't even think there was a problem here to solve, so i
-guess we should work that out first, if you want to ;).
+I am resending the faulty patch with the fix and also checked in the fix
+into my git tree.
 
+-- 
+Thanks and Regards
+Srikar
+
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index 95c16dd..72f21db 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -363,14 +363,14 @@ static int match_uprobe(struct uprobe *l, struct uprobe *r, int *match_inode)
+ static struct uprobe *__find_uprobe(struct inode * inode,
+ 			 loff_t offset, struct rb_node **close_match)
+ {
+-	struct uprobe r = { .inode = inode, .offset = offset };
++	struct uprobe u = { .inode = inode, .offset = offset };
+ 	struct rb_node *n = uprobes_tree.rb_node;
+ 	struct uprobe *uprobe;
+ 	int match, match_inode;
+ 
+ 	while (n) {
+ 		uprobe = rb_entry(n, struct uprobe, rb_node);
+-		match = match_uprobe(uprobe, &r, &match_inode);
++		match = match_uprobe(&u, uprobe, &match_inode);
+ 		if (close_match && match_inode)
+ 			*close_match = n;
+ 
+@@ -412,7 +412,7 @@ static struct uprobe *__insert_uprobe(struct uprobe *uprobe)
+ 	while (*p) {
+ 		parent = *p;
+ 		u = rb_entry(parent, struct uprobe, rb_node);
+-		match = match_uprobe(u, uprobe, NULL);
++		match = match_uprobe(uprobe, u, NULL);
+ 		if (!match) {
+ 			atomic_inc(&u->ref);
+ 			return u;
