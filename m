@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab1FHGeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 02:34:09 -0400
-Received: from r00tworld.com ([212.85.137.150]:41868 "EHLO r00tworld.com"
+	id S1753897Ab1FHGt0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 02:49:26 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41605 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752483Ab1FHGeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 02:34:08 -0400
-From: pageexec@freemail.hu
-To: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 08 Jun 2011 08:32:18 +0200
-MIME-Version: 1.0
-Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
-Reply-to: pageexec@freemail.hu
-CC: Brian Gerst <brgerst@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Borislav Petkov <bp@alien8.de>,
+	id S1751484Ab1FHGtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 02:49:25 -0400
+Date: Wed, 8 Jun 2011 08:48:57 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: pageexec@freemail.hu
+Cc: Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Arjan van de Ven <arjan@infradead.org>,
         Jan Beulich <JBeulich@novell.com>,
         richard -rw- weinberger <richard.weinberger@gmail.com>,
         Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
         Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Message-ID: <4DEF1772.24783.1B6E3D6B@pageexec.freemail.hu>
-In-reply-to: <BANLkTimy2AkWxPAOj3JTzXEDak_othZhZA@mail.gmail.com>
-References: <cover.1307292171.git.luto@mit.edu>, <4DEEB516.4681.19EE05CD@pageexec.freemail.hu>, <BANLkTimy2AkWxPAOj3JTzXEDak_othZhZA@mail.gmail.com>
-X-mailer: Pegasus Mail for Windows (4.61)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Wed, 08 Jun 2011 08:32:56 +0200 (CEST)
+Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
+Message-ID: <20110608064857.GA6747@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>
+ <4DED5985.542.14A05486@pageexec.freemail.hu>
+ <20110607083059.GB4133@elte.hu>
+ <4DEEB31B.3353.19E649C2@pageexec.freemail.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DEEB31B.3353.19E649C2@pageexec.freemail.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 Jun 2011 at 19:49, Andrew Lutomirski wrote:
 
-> My patch (the version that's in tip/x86/vdso) more-or-less does that.
-> It's something like six lines of code, including error handling.
+* pageexec@freemail.hu <pageexec@freemail.hu> wrote:
 
-my memory is about more complexity (else i would have done it that way
-to avoid the current result of double kernel entries) but anyway it's
-a moot point now that this code is headed for mainline.
+> On 7 Jun 2011 at 10:30, Ingo Molnar wrote:
+> 
+> > 
+> > * pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+> > 
+> > > > A fastpath is defined by optimization considerations applied 
+> > > > to a codepath (the priority it gets compared to other 
+> > > > codepaths), *not* by its absolute performance.
+> > > 
+> > > we're not talking about random arbitrarily defined paths here 
+> > > but the impact of putting well predicted branches into the pf 
+> > > handler vs. int xx (are you perhaps confused by 'fast path' vs. 
+> > > 'fastpath'?).
+> > 
+> > So please educate me, what is the difference between 'fast path' 
+> > versus 'fastpath', as used by kernel developers, beyond the 
+> > space?
+> 
+> you seemed to have made a distinction, you tell me ;), [...]
 
-> __bad_area_nosemaphore is not a fast path, and in fact I tried that
-> for the very first version of this code that I wrote.  My recollection
-> is that it's noticeably slower than int 0xcc because it has to go
-> through the whole VMA lookup.
+I have not made any distinction at all, *you* wrote:
 
-you can put this logic much earlier, even before taking any locks (but
-then you'll have to fear the dreaded single cycle improvement brigade ;).
+> > > (are you perhaps confused by 'fast path' vs. 'fastpath'?).
 
-> If you want to submit a patch to switch from int 0xcc to
-> __bad_area_nosemaphore, be my guest :)  It will have almost no effect
-> on the complexity of the code, and, in fact, you'll probably get a net
-> deletion of lines because you can remove all the crud in vmlinux.lds.S
-> and some of the mapping code in vsyscall_64.c.
+and several people have asked you why you wrote that and you have not 
+replied to any of those questions yet.
 
-i'll forward port my changes when 3.0 comes out, we'll see how more or
-less complex they become and can then decide if it's worth it.
+Thanks,
 
+	Ingo
