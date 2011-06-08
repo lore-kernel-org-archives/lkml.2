@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab1FHKXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:23:19 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60856 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab1FHKXS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:23:18 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 00/15] GMA500 KMS and GEM
-To: greg@kroah.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Date: Wed, 08 Jun 2011 11:10:54 +0100
-Message-ID: <20110608100411.9478.86672.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1754396Ab1FHKLI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:11:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54007 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753864Ab1FHKLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 06:11:07 -0400
+Date: Wed, 8 Jun 2011 12:11:05 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Thomas Sattler <tsattler@gmx.de>,
+        Ury Stankevich <urykhy@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] mm: memory-failure: Fix isolated page count during
+ memory failure
+Message-ID: <20110608101105.GA9936@tiehlicka.suse.cz>
+References: <1307459225-4481-1-git-send-email-mgorman@suse.de>
+ <1307459225-4481-4-git-send-email-mgorman@suse.de>
+ <20110608100720.GF6742@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110608100720.GF6742@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series versus linux-next 2011/06/08 fixes various bugs including a
-nasty pinning bug found by Andre Bartke.
+On Wed 08-06-11 12:07:20, Michal Hocko wrote:
+> On Tue 07-06-11 16:07:04, Mel Gorman wrote:
+> > From: Minchan Kim <minchan.kim@gmail.com>
+> > 
+> > From: Minchan Kim <minchan.kim@gmail.com>
+> > 
+> > Pages isolated for migration are accounted with the vmstat counters
+> > NR_ISOLATE_[ANON|FILE]. Callers of migrate_pages() are expected to
+> > increment these counters when pages are isolated from the LRU. Once
+> > the pages have been migrated, they are put back on the LRU or freed
+> > and the isolated count is decremented.
+> 
+> Aren't we missing this in compact_zone as well? AFAICS there is no
+> accounting done after we isolate pages from LRU? Or am I missing
+> something?
 
-With these patches applied the driver passes the various GEM tests and you can
-use the KMS tools and test sets to set modes and display stuff from GEM
-buffers including those mapped from main memory via the GTT.
-
-You can't yet take a GEM handle of the system frame buffer. That requires
-a trivial patch to drm_gem and a similar trivial patch to this driver.
-
-The two main remaining tasks now are to provide a 2D command interface for the
-X server including support for blitting between GEM objects (so we need relocs)
-and to clean the code up.
-
-Vblank support is also possible but doesn't seem terribly useful.
----
-
-Alan Cox (12):
-      gma500: Kill spare kref
-      gma500: nuke the PSB debug stuff
-      gma500: nuke the last bits of TTM code
-      gma500: 2D acceleration tidying
-      gma500: polish for completion of this phase
-      gma500: trim some of the debug
-      gma500: Do sane FB cleanup
-      gma500: revamp frame buffer creation and handling
-      gma500: Set the correct bits according to the pipe
-      gma500: Ensure the frame buffer has a linear virtual mapping
-      gma500: Make GTT pages uncached
-      gma500: fix warnings
-
-Andre Bartke (1):
-      gma500: Fix uninitialized variable and style issues
-
-Michael Chang (1):
-      staging/gma500: get control from firmware framebuffer if conflicts
-
-Patrik Jakobsson (1):
-      gma500: Skip bogus LVDS VBT mode and check for LVDS before adding backlight
-
-
- drivers/staging/gma500/mrst_crtc.c          |   27 +-
- drivers/staging/gma500/mrst_lvds.c          |   14 -
- drivers/staging/gma500/psb_2d.c             |   39 +--
- drivers/staging/gma500/psb_bl.c             |   12 -
- drivers/staging/gma500/psb_drm.h            |   90 --------
- drivers/staging/gma500/psb_drv.c            |   58 ++---
- drivers/staging/gma500/psb_drv.h            |  181 ++++------------
- drivers/staging/gma500/psb_fb.c             |  309 +++++++++++++++------------
- drivers/staging/gma500/psb_fb.h             |    6 -
- drivers/staging/gma500/psb_gem.c            |   39 +--
- drivers/staging/gma500/psb_gtt.c            |  187 ++++++----------
- drivers/staging/gma500/psb_gtt.h            |   11 +
- drivers/staging/gma500/psb_intel_bios.c     |   26 +-
- drivers/staging/gma500/psb_intel_display.c  |  130 +++--------
- drivers/staging/gma500/psb_intel_drv.h      |   19 --
- drivers/staging/gma500/psb_intel_lvds.c     |   53 +----
- drivers/staging/gma500/psb_intel_opregion.c |    7 -
- drivers/staging/gma500/psb_intel_sdvo.c     |   34 +--
- drivers/staging/gma500/psb_irq.c            |   33 +--
- drivers/staging/gma500/psb_irq.h            |    8 -
- drivers/staging/gma500/psb_powermgmt.c      |    4 
- drivers/staging/gma500/psb_powermgmt.h      |    2 
- drivers/staging/gma500/psb_reg.h            |    2 
- 23 files changed, 461 insertions(+), 830 deletions(-)
+Scratch that. It was hidden in acct_isolated which is called from
+isolate_migratepages.
+It would be really strange if this was broken ;)
 
 -- 
-Signature
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
