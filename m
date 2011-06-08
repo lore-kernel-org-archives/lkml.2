@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab1FHUJa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 16:09:30 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:19159 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab1FHUJ1 (ORCPT
+	id S1754159Ab1FHUKR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 16:10:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33100 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309Ab1FHUKP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 16:09:27 -0400
+	Wed, 8 Jun 2011 16:10:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=s8GBBsJjrHodGjrOmwP3qGqj4CWg/Z/dPuPnF6r5xxQLnclvi8UhWabAiCfHSUKzi4
-         qRWase7dXP+LZl83MuBg==
-Date: Wed, 8 Jun 2011 13:09:20 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Miles Lane <miles.lane@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        John Johansen <john.johansen@canonical.com>
-Subject: Re: 3.0.0-rc2-git1 -- BUG: sleeping function called from invalid
- context at mm/slub.c:847
-In-Reply-To: <BANLkTimq+h+WyboMbPGVH1uJuj64YuRLdw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1106081305430.10320@chino.kir.corp.google.com>
-References: <BANLkTimq+h+WyboMbPGVH1uJuj64YuRLdw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=vOTkqs8RDIfMTjgXMHfSlJhv6lPgMASgLsoxKXKb2dSO9Q9L4+ncnHlaZ7OqL8wtM9
+         nlqleN16W8kI7VodGzvtlDMRU/Omb6CLOfW3hPLM1FGFEz+ksizIIL6hjqSHuNg8cjhI
+         FpK0QQS4+Vb1MxoW8pP8hgDxCsRP+SoLFW0nM=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <201105202102.p4KL28Io025077@hera.kernel.org>
+References: <201105202102.p4KL28Io025077@hera.kernel.org>
+Date: Wed, 8 Jun 2011 22:10:14 +0200
+X-Google-Sender-Auth: C2WeN2CuWFuPifTUbeZtRyynExM
+Message-ID: <BANLkTimLbj1FHy9j56ScRGwc2t6Ci+QhAw@mail.gmail.com>
+Subject: Re: [SCSI] tcm_fc: Adding FC_FC4 provider (tcm_fc) for FCoE target
+ (TCM - target core) support
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Joe Eykholt <jeykholt@cisco.com>, Kiran Patil <kiran.patil@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        scsi <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jun 2011, Miles Lane wrote:
+>    [SCSI] tcm_fc: Adding FC_FC4 provider (tcm_fc) for FCoE target (TCM - target core) support
+>
+>    This is a comprehensive patch for FC-FC4 provider. tcm_fc is a FC-FC4
+>    provider which glues target core (TCM) with Fiber channel library
+>    (libfc). tcm_fc uses existing FC4 provider hooks from Fiber channel
+>    library. This Fiber channel library is used by FCoE (transport - FC
+>    over Ethernet) protocol driver as well.
 
-> BUG: sleeping function called from invalid context at mm/slub.c:847
->  in_atomic(): 1, irqs_disabled(): 0, pid: 1583, name: cupsd
->  2 locks held by cupsd/1583:
->   #0:  (tasklist_lock){.+.+.+}, at: [<ffffffff8104dafa>] do_prlimit+0x61/0x189
->   #1:  (&(&p->alloc_lock)->rlock){+.+.+.}, at: [<ffffffff8104db2d>]
-> do_prlimit+0x94/0x189
->  Pid: 1583, comm: cupsd Not tainted 3.0.0-rc2-git1 #7
->  Call Trace:
->   [<ffffffff8102ebf2>] __might_sleep+0x10d/0x112
->   [<ffffffff810e6f46>] slab_pre_alloc_hook.isra.49+0x2d/0x33
->   [<ffffffff810e7bc4>] kmem_cache_alloc+0x22/0x132
->   [<ffffffff8105b6e6>] prepare_creds+0x35/0xe4
->   [<ffffffff811c0675>] aa_replace_current_profile+0x35/0xb2
->   [<ffffffff811c4d2d>] aa_current_profile+0x45/0x4c
->   [<ffffffff811c4d4d>] apparmor_task_setrlimit+0x19/0x3a
->   [<ffffffff811beaa5>] security_task_setrlimit+0x11/0x13
->   [<ffffffff8104db6b>] do_prlimit+0xd2/0x189
->   [<ffffffff8104dea9>] sys_setrlimit+0x3b/0x48
->   [<ffffffff814062bb>] system_call_fastpath+0x16/0x1b
-> 
+> --- /dev/null
+> +++ b/drivers/target/tcm_fc/tfc_conf.c
 
-Not sure why this ever actually worked with apparmor if prepare_creds() 
-does an unconditional GFP_KERNEL allocation since this codepath hasn't 
-changed in at least a year and we're holding a spinlock from setrlimit.  
-John?
+> +static int __init ft_init(void)
+> +{
+> +       if (ft_register_configfs())
+> +               return -1;
+> +       if (fc_fc4_register_provider(FC_TYPE_FCP, &ft_prov)) {
+> +               ft_deregister_configfs();
+> +               return -1;
+> +       }
+> +       blocking_notifier_chain_register(&fc_lport_notifier_head, &ft_notifier);
+> +       fc_lport_iterate(ft_lport_add, NULL);
+> +       return 0;
+> +}
+> +
+> +static void __exit ft_exit(void)
+> +{
+> +       blocking_notifier_chain_unregister(&fc_lport_notifier_head,
+> +                                          &ft_notifier);
+> +       fc_fc4_deregister_provider(FC_TYPE_FCP, &ft_prov);
+> +       fc_lport_iterate(ft_lport_del, NULL);
+> +       ft_deregister_configfs();
+> +       synchronize_rcu();
+> +}
+> +
+> +#ifdef MODULE
+> +MODULE_DESCRIPTION("FC TCM fabric driver " FT_VERSION);
+> +MODULE_LICENSE("GPL");
+> +module_init(ft_init);
+> +module_exit(ft_exit);
+> +#endif /* MODULE */
+
+If CONFIG_TCM_FC=y, this gives:
+
+| drivers/target/tcm_fc/tfc_conf.c:642: warning: ‘ft_init’ defined but not used
+
+Shouldn't the #ifdef MODULE and #endif just be removed?
+
+Who else initializes this module if it's builtin?
+E.g. ft_register_configfs() is global, but not used outside this source file?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
