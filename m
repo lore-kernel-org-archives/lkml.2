@@ -1,33 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab1FHABH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 20:01:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55941 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757991Ab1FHABF (ORCPT
+	id S932161Ab1FHAIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 20:08:38 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34605 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758734Ab1FHAIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 20:01:05 -0400
-Date: Tue, 7 Jun 2011 17:00:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>, Vivek Goyal <vgoyal@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Americo Wang <xiyou.wangcong@gmail.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jarod Wilson <jwilson@redhat.com>
-Subject: Re: [Patch] kexec: remove KMSG_DUMP_KEXEC (was Re: Query about
- kdump_msg hook into crash_kexec())
-Message-Id: <20110607170029.b6f41e9b.akpm@linux-foundation.org>
-In-Reply-To: <m1ei3cq5gj.fsf@fess.ebiederm.org>
-References: <20110203095837.93A2.A69D9226@jp.fujitsu.com>
-	<20110203020703.GB21603@redhat.com>
-	<20110203135324.93BC.A69D9226@jp.fujitsu.com>
-	<20110526131028.7052a893.akpm@linux-foundation.org>
-	<5C4C569E8A4B9B42A84A977CF070A35B2C17324B79@USINDEVS01.corp.hds.com>
-	<20110531213704.GV16382@redhat.com>
-	<5C4C569E8A4B9B42A84A977CF070A35B2C17324BB9@USINDEVS01.corp.hds.com>
-	<m1ei3cq5gj.fsf@fess.ebiederm.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 7 Jun 2011 20:08:35 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 8 Jun 2011 09:01:32 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH v8 10/12] memcg: create support routines for
+ page-writeback
+Message-Id: <20110608090132.ef9ccb91.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <xr93tyc1ws4n.fsf@gthelen.mtv.corp.google.com>
+References: <1307117538-14317-1-git-send-email-gthelen@google.com>
+	<1307117538-14317-11-git-send-email-gthelen@google.com>
+	<20110607175056.83619c5f.kamezawa.hiroyu@jp.fujitsu.com>
+	<xr93tyc1ws4n.fsf@gthelen.mtv.corp.google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -35,150 +39,279 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01 Jun 2011 20:26:20 -0700
-ebiederm@xmission.com (Eric W. Biederman) wrote:
+On Tue, 07 Jun 2011 08:58:16 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-> >>What are you using kmsg_dump() for? Using mtdoops, ramoops or something
-> >>else?  Is it working reliably for you?
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+> 
+> > On Fri,  3 Jun 2011 09:12:16 -0700
+> > Greg Thelen <gthelen@google.com> wrote:
 > >
-> > I plan to use kmsg_dump() for set_variable service of UEFI.
-> > I proposed a prototype patch this month and will improve it.
-> > (kmsg_dump is used inside pstore.)
+> >> Introduce memcg routines to assist in per-memcg dirty page management:
+> >> 
+> >> - mem_cgroup_balance_dirty_pages() walks a memcg hierarchy comparing
+> >>   dirty memory usage against memcg foreground and background thresholds.
+> >>   If an over-background-threshold memcg is found, then per-memcg
+> >>   background writeback is queued.  Per-memcg writeback differs from
+> >>   classic, non-memcg, per bdi writeback by setting the new
+> >>   writeback_control.for_cgroup bit.
+> >> 
+> >>   If an over-foreground-threshold memcg is found, then foreground
+> >>   writeout occurs.  When performing foreground writeout, first consider
+> >>   inodes exclusive to the memcg.  If unable to make enough progress,
+> >>   then consider inodes shared between memcg.  Such cross-memcg inode
+> >>   sharing likely to be rare in situations that use per-cgroup memory
+> >>   isolation.  The approach tries to handle the common (non-shared)
+> >>   case well without punishing well behaved (non-sharing) cgroups.
+> >>   As a last resort writeback shared inodes.
+> >> 
+> >>   This routine is used by balance_dirty_pages() in a later change.
+> >> 
+> >> - mem_cgroup_hierarchical_dirty_info() returns the dirty memory usage
+> >>   and limits of the memcg closest to (or over) its dirty limit.  This
+> >>   will be used by throttle_vm_writeout() in a latter change.
+> >> 
+> >> Signed-off-by: Greg Thelen <gthelen@google.com>
+> >> ---
+> >> Changelog since v7:
+> >> - Add more detail to commit description.
+> >> 
+> >> - Declare the new writeback_control for_cgroup bit in this change, the
+> >>   first patch that uses the new field is first used.  In -v7 the field
+> >>   was declared in a separate patch.
+> >> 
+> >>  include/linux/memcontrol.h        |   18 +++++
+> >>  include/linux/writeback.h         |    1 +
+> >>  include/trace/events/memcontrol.h |   83 ++++++++++++++++++++
+> >>  mm/memcontrol.c                   |  150 +++++++++++++++++++++++++++++++++++++
+> >>  4 files changed, 252 insertions(+), 0 deletions(-)
+> >> 
+> >> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> >> index 3d72e09..0d0363e 100644
+> >> --- a/include/linux/memcontrol.h
+> >> +++ b/include/linux/memcontrol.h
+> >> @@ -167,6 +167,11 @@ bool should_writeback_mem_cgroup_inode(struct inode *inode,
+> >>  				       struct writeback_control *wbc);
+> >>  bool mem_cgroups_over_bground_dirty_thresh(void);
+> >>  void mem_cgroup_writeback_done(void);
+> >> +bool mem_cgroup_hierarchical_dirty_info(unsigned long sys_available_mem,
+> >> +					struct mem_cgroup *mem,
+> >> +					struct dirty_info *info);
+> >> +void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
+> >> +				    unsigned long write_chunk);
+> >>  
+> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+> >>  						gfp_t gfp_mask,
+> >> @@ -383,6 +388,19 @@ static inline void mem_cgroup_writeback_done(void)
+> >>  {
+> >>  }
+> >>  
+> >> +static inline void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
+> >> +						  unsigned long write_chunk)
+> >> +{
+> >> +}
+> >> +
+> >> +static inline bool
+> >> +mem_cgroup_hierarchical_dirty_info(unsigned long sys_available_mem,
+> >> +				   struct mem_cgroup *mem,
+> >> +				   struct dirty_info *info)
+> >> +{
+> >> +	return false;
+> >> +}
+> >> +
+> >>  static inline
+> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+> >>  					    gfp_t gfp_mask,
+> >> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+> >> index 66ec339..4f5c0d2 100644
+> >> --- a/include/linux/writeback.h
+> >> +++ b/include/linux/writeback.h
+> >> @@ -47,6 +47,7 @@ struct writeback_control {
+> >>  	unsigned for_reclaim:1;		/* Invoked from the page allocator */
+> >>  	unsigned range_cyclic:1;	/* range_start is cyclic */
+> >>  	unsigned more_io:1;		/* more io to be dispatched */
+> >> +	unsigned for_cgroup:1;		/* enable cgroup writeback */
+> >>  	unsigned shared_inodes:1;	/* write inodes spanning cgroups */
+> >>  };
+> >>  
+> >> diff --git a/include/trace/events/memcontrol.h b/include/trace/events/memcontrol.h
+> >> index 326a66b..b42dae1 100644
+> >> --- a/include/trace/events/memcontrol.h
+> >> +++ b/include/trace/events/memcontrol.h
+> >> @@ -109,6 +109,89 @@ TRACE_EVENT(mem_cgroups_over_bground_dirty_thresh,
+> >>  		  __entry->first_id)
+> >>  )
+> >>  
+> >> +DECLARE_EVENT_CLASS(mem_cgroup_consider_writeback,
+> >> +	TP_PROTO(unsigned short css_id,
+> >> +		 struct backing_dev_info *bdi,
+> >> +		 unsigned long nr_reclaimable,
+> >> +		 unsigned long thresh,
+> >> +		 bool over_limit),
+> >> +
+> >> +	TP_ARGS(css_id, bdi, nr_reclaimable, thresh, over_limit),
+> >> +
+> >> +	TP_STRUCT__entry(
+> >> +		__field(unsigned short, css_id)
+> >> +		__field(struct backing_dev_info *, bdi)
+> >> +		__field(unsigned long, nr_reclaimable)
+> >> +		__field(unsigned long, thresh)
+> >> +		__field(bool, over_limit)
+> >> +	),
+> >> +
+> >> +	TP_fast_assign(
+> >> +		__entry->css_id = css_id;
+> >> +		__entry->bdi = bdi;
+> >> +		__entry->nr_reclaimable = nr_reclaimable;
+> >> +		__entry->thresh = thresh;
+> >> +		__entry->over_limit = over_limit;
+> >> +	),
+> >> +
+> >> +	TP_printk("css_id=%d bdi=%p nr_reclaimable=%ld thresh=%ld "
+> >> +		  "over_limit=%d", __entry->css_id, __entry->bdi,
+> >> +		  __entry->nr_reclaimable, __entry->thresh, __entry->over_limit)
+> >> +)
+> >> +
+> >> +#define DEFINE_MEM_CGROUP_CONSIDER_WRITEBACK_EVENT(name) \
+> >> +DEFINE_EVENT(mem_cgroup_consider_writeback, name, \
+> >> +	TP_PROTO(unsigned short id, \
+> >> +		 struct backing_dev_info *bdi, \
+> >> +		 unsigned long nr_reclaimable, \
+> >> +		 unsigned long thresh, \
+> >> +		 bool over_limit), \
+> >> +	TP_ARGS(id, bdi, nr_reclaimable, thresh, over_limit) \
+> >> +)
+> >> +
+> >> +DEFINE_MEM_CGROUP_CONSIDER_WRITEBACK_EVENT(mem_cgroup_consider_bg_writeback);
+> >> +DEFINE_MEM_CGROUP_CONSIDER_WRITEBACK_EVENT(mem_cgroup_consider_fg_writeback);
+> >> +
+> >> +TRACE_EVENT(mem_cgroup_fg_writeback,
+> >> +	TP_PROTO(unsigned long write_chunk,
+> >> +		 struct writeback_control *wbc),
+> >> +
+> >> +	TP_ARGS(write_chunk, wbc),
+> >> +
+> >> +	TP_STRUCT__entry(
+> >> +		__field(unsigned long, write_chunk)
+> >> +		__field(long, wbc_to_write)
+> >> +		__field(bool, shared_inodes)
+> >> +	),
+> >> +
+> >> +	TP_fast_assign(
+> >> +		__entry->write_chunk = write_chunk;
+> >> +		__entry->wbc_to_write = wbc->nr_to_write;
+> >> +		__entry->shared_inodes = wbc->shared_inodes;
+> >> +	),
+> >> +
+> >> +	TP_printk("write_chunk=%ld nr_to_write=%ld shared_inodes=%d",
+> >> +		  __entry->write_chunk,
+> >> +		  __entry->wbc_to_write,
+> >> +		  __entry->shared_inodes)
+> >> +)
+> >> +
+> >> +TRACE_EVENT(mem_cgroup_enable_shared_writeback,
+> >> +	TP_PROTO(unsigned short css_id),
+> >> +
+> >> +	TP_ARGS(css_id),
+> >> +
+> >> +	TP_STRUCT__entry(
+> >> +		__field(unsigned short, css_id)
+> >> +		),
+> >> +
+> >> +	TP_fast_assign(
+> >> +		__entry->css_id = css_id;
+> >> +		),
+> >> +
+> >> +	TP_printk("enabling shared writeback for memcg %d", __entry->css_id)
+> >> +)
+> >> +
+> >>  #endif /* _TRACE_MEMCONTROL_H */
+> >>  
+> >>  /* This part must be outside protection */
+> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> >> index a5b1794..17cb888 100644
+> >> --- a/mm/memcontrol.c
+> >> +++ b/mm/memcontrol.c
+> >> @@ -1622,6 +1622,156 @@ void mem_cgroup_writeback_done(void)
+> >>  	}
+> >>  }
+> >>  
+> >> +/*
+> >> + * This routine must be called by processes which are generating dirty pages.
+> >> + * It considers the dirty pages usage and thresholds of the current cgroup and
+> >> + * (depending if hierarchical accounting is enabled) ancestral memcg.  If any of
+> >> + * the considered memcg are over their background dirty limit, then background
+> >> + * writeback is queued.  If any are over the foreground dirty limit then
+> >> + * throttle the dirtying task while writing dirty data.  The per-memcg dirty
+> >> + * limits check by this routine are distinct from either the per-system,
+> >> + * per-bdi, or per-task limits considered by balance_dirty_pages().
+> >> + */
+> >> +void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
+> >> +				    unsigned long write_chunk)
+> >> +{
+> >> +	struct backing_dev_info *bdi = mapping->backing_dev_info;
+> >> +	struct mem_cgroup *mem;
+> >> +	struct mem_cgroup *ref_mem;
+> >> +	struct dirty_info info;
+> >> +	unsigned long nr_reclaimable;
+> >> +	unsigned long sys_available_mem;
+> >> +	unsigned long pause = 1;
+> >> +	unsigned short id;
+> >> +	bool over;
+> >> +	bool shared_inodes;
+> >> +
+> >> +	if (mem_cgroup_disabled())
+> >> +		return;
+> >> +
+> >> +	sys_available_mem = determine_dirtyable_memory();
+> >> +
+> >> +	/* reference the memcg so it is not deleted during this routine */
+> >> +	rcu_read_lock();
+> >> +	mem = mem_cgroup_from_task(current);
+> >> +	if (mem && mem_cgroup_is_root(mem))
+> >> +		mem = NULL;
+> >> +	if (mem)
+> >> +		css_get(&mem->css);
+> >> +	rcu_read_unlock();
+> >> +	ref_mem = mem;
+> >> +
+> >> +	/* balance entire ancestry of current's mem. */
+> >> +	for (; mem_cgroup_has_dirty_limit(mem); mem = parent_mem_cgroup(mem)) {
+> >> +		id = css_id(&mem->css);
+> >> +
 > >
-> > https://lkml.org/lkml/2011/5/10/340
+> > Hmm, this sounds natural...but...don't we need to restart checking from ref_mem's
+> > dirty_ratio once we find an ancestor is over dirty_ratio and we slept ?
+> >
+> > Even if parent's dirty ratio comes to be clean state, children's may not.
+> > So, I think some "restart loop" jump after io_schedule_timeout().
+> >
+> > Thanks,
+> > -Kame
 > 
-> Shudder.  Firmware calls in the crash path.
+> I do not think that we need to restart, but maybe you have a case in
+> mind that I am not considering.
 > 
-> If that is the use, we need to remove the kmsg_dump(KMSG_DUMP_KEXEC)
-> hook from crash_kexec yesterday.  It is leading to some really ludicrous
-> suggestions that are on the way from making kexec on panic unreliable
-> and useless.
+> Example hierarchy:
+>               root
+>          A            B
+>      A1      A2
+>   A11 A12  A21 A22
 > 
-> There will always be EFI implementations where that will not work and
-> there will be no way we can fix those.
+> Assume that mem_cgroup_balance_dirty_pages(A11), so ref_mem=A11.
 > 
-> There is a long history of people trying to do things in a crashing
-> kernel, things that simply do not work when the system is in a bad
-> state.  kmsg_dump() when I reviewed the code had significant
-> implementation problems for being called from interrupt handlers
-> and the like.
-> 
-> To introduce a different solution for capturing information when a
-> kernel crashes we need to see numbers that in a large number of
-> situations that the mechanism you are proposing is more reliable and/or
-> more maintainable than the current kexec on panic implementation.
-> 
-> The best work I know of on the reliability of the current situation
-> is "Evaluating Linux Kernel Crash Dumping Mechanisms", by Fernando Luis Vazquez Cao.
-> http://www.linuxsymposium.org/archives/OLS/Reprints-2006/cao-reprint.pdf
-> 
-> 
-> Now it does happen to be a fact that our efi support in linux is
-> so buggy kexec does not work let alone kexec on panic (if the target
-> kernel has any efi support).   But our efi support being buggy is not
-> a reason to add more ways to fail when we have a kernel with efi
-> support.  It is an argument to remove our excessive use of EFI
-> calls.
-> 
-> So let's just remove the ridiculous kmsg_dump(KMSG_DUMP_KEXEC) hook from
-> crash_kexec and remove any temptation for abuses like wanting to use
-> kmsg_dump() on anything but a deeply embedded system where there simply
-> is not enough memory for 2 kernels.
+> We start at A11 and walk up towards the root.  If A11 is over limit,
+> then write A11 until under limit.  Next check A1, if over limit then
+> write A1,A11,A12.  Then check A.  If A is over A limit, then we invoke
+> writeback on A* until A is under A limit.  Are you concerned that while
+> performing writeback on A* that other tasks may push A1 over the A1
+> limit?  Such other task writers would also be calling
+> mem_cgroup_balance_dirty_pages() later.
 > 
 
-So am I allowed to merge kexec-remove-kmsg_dump_kexec.patch yet?
+Hm, ok. Could you add comments to explain the algorithm ?
 
+Thanks,
+-Kame
 
-From: WANG Cong <xiyou.wangcong@gmail.com>
-
-KMSG_DUMP_KEXEC is useless because we already save kernel messages inside
-/proc/vmcore, and it is unsafe to allow modules to do other stuffs in a
-crash dump scenario.
-
-[akpm@linux-foundation.org: fix powerpc build]
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-Reported-by: Vivek Goyal <vgoyal@redhat.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Acked-by: Jarod Wilson <jarod@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- arch/powerpc/platforms/pseries/nvram.c |    1 -
- drivers/char/ramoops.c                 |    3 +--
- drivers/mtd/mtdoops.c                  |    3 +--
- include/linux/kmsg_dump.h              |    1 -
- kernel/kexec.c                         |    3 ---
- 5 files changed, 2 insertions(+), 9 deletions(-)
-
-diff -puN drivers/char/ramoops.c~kexec-remove-kmsg_dump_kexec drivers/char/ramoops.c
---- a/drivers/char/ramoops.c~kexec-remove-kmsg_dump_kexec
-+++ a/drivers/char/ramoops.c
-@@ -69,8 +69,7 @@ static void ramoops_do_dump(struct kmsg_
- 	struct timeval timestamp;
- 
- 	if (reason != KMSG_DUMP_OOPS &&
--	    reason != KMSG_DUMP_PANIC &&
--	    reason != KMSG_DUMP_KEXEC)
-+	    reason != KMSG_DUMP_PANIC)
- 		return;
- 
- 	/* Only dump oopses if dump_oops is set */
-diff -puN drivers/mtd/mtdoops.c~kexec-remove-kmsg_dump_kexec drivers/mtd/mtdoops.c
---- a/drivers/mtd/mtdoops.c~kexec-remove-kmsg_dump_kexec
-+++ a/drivers/mtd/mtdoops.c
-@@ -308,8 +308,7 @@ static void mtdoops_do_dump(struct kmsg_
- 	char *dst;
- 
- 	if (reason != KMSG_DUMP_OOPS &&
--	    reason != KMSG_DUMP_PANIC &&
--	    reason != KMSG_DUMP_KEXEC)
-+	    reason != KMSG_DUMP_PANIC)
- 		return;
- 
- 	/* Only dump oopses if dump_oops is set */
-diff -puN include/linux/kmsg_dump.h~kexec-remove-kmsg_dump_kexec include/linux/kmsg_dump.h
---- a/include/linux/kmsg_dump.h~kexec-remove-kmsg_dump_kexec
-+++ a/include/linux/kmsg_dump.h
-@@ -18,7 +18,6 @@
- enum kmsg_dump_reason {
- 	KMSG_DUMP_OOPS,
- 	KMSG_DUMP_PANIC,
--	KMSG_DUMP_KEXEC,
- 	KMSG_DUMP_RESTART,
- 	KMSG_DUMP_HALT,
- 	KMSG_DUMP_POWEROFF,
-diff -puN kernel/kexec.c~kexec-remove-kmsg_dump_kexec kernel/kexec.c
---- a/kernel/kexec.c~kexec-remove-kmsg_dump_kexec
-+++ a/kernel/kexec.c
-@@ -32,7 +32,6 @@
- #include <linux/console.h>
- #include <linux/vmalloc.h>
- #include <linux/swap.h>
--#include <linux/kmsg_dump.h>
- #include <linux/syscore_ops.h>
- 
- #include <asm/page.h>
-@@ -1079,8 +1078,6 @@ void crash_kexec(struct pt_regs *regs)
- 		if (kexec_crash_image) {
- 			struct pt_regs fixed_regs;
- 
--			kmsg_dump(KMSG_DUMP_KEXEC);
--
- 			crash_setup_regs(&fixed_regs, regs);
- 			crash_save_vmcoreinfo();
- 			machine_crash_shutdown(&fixed_regs);
-diff -puN arch/powerpc/platforms/pseries/nvram.c~kexec-remove-kmsg_dump_kexec arch/powerpc/platforms/pseries/nvram.c
---- a/arch/powerpc/platforms/pseries/nvram.c~kexec-remove-kmsg_dump_kexec
-+++ a/arch/powerpc/platforms/pseries/nvram.c
-@@ -490,7 +490,6 @@ static void oops_to_nvram(struct kmsg_du
- 		/* These are almost always orderly shutdowns. */
- 		return;
- 	case KMSG_DUMP_OOPS:
--	case KMSG_DUMP_KEXEC:
- 		break;
- 	case KMSG_DUMP_PANIC:
- 		panicking = true;
-_
 
