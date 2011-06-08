@@ -1,87 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab1FHTuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:50:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49485 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752161Ab1FHTuH (ORCPT
+	id S1753003Ab1FHTuk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:50:40 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45974 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904Ab1FHTui convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:50:07 -0400
-Date: Wed, 8 Jun 2011 21:49:53 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Remy Bohmer <linux@bohmer.net>
-cc: Nicholas Mc Guire <der.herr@hofr.at>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Armin Steinhoff <armin@steinhoff.de>,
-        Johannes Bauer <hannes_bauer@aon.at>,
-        Monica Puig-Pey <puigpeym@unican.es>,
-        Rolando Martins <rolando.martins@gmail.com>,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Changing Kernel thread priorities
-In-Reply-To: <BANLkTimYSEo4_3ecdEVaJxdME7n9=2Km8Q@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1106082044040.11814@ionos>
-References: <17185480.5304.1307435255996.JavaMail.root@WARSBL214.highway.telekom.at> <alpine.LFD.2.02.1106071033350.11814@ionos> <4DEDF1F2.2080204@steinhoff.de> <1307439469.2322.235.camel@twins> <BANLkTi=KPyds_BWYpXHeUkAg000FGSuJOQ@mail.gmail.com>
- <20110607233517.GA31794@opentech.at> <BANLkTimYSEo4_3ecdEVaJxdME7n9=2Km8Q@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 8 Jun 2011 15:50:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=ifaL/MYC04keIsO8AZUIkbUF6bA3dZf4vYeSuPL7qIN5p9B5rW63RaBJWWh/0dNbhK
+         TB50HpJyN2cjWCffXDTwC4Oqk3eML3cwftVJexmp35NXnjLhxvGVEpVTKEMn516WjTcJ
+         3397V3J72yJn6Gb37MnQ9iHz9a0an/mX22RVQ=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "werner" <w.landgraf@ru.ru>
+Subject: Re: 3.0-rc1 problem with usb, cdrom
+Date: Wed, 8 Jun 2011 21:50:34 +0200
+User-Agent: KMail/1.13.5 (Linux/3.0.0-rc1; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <web-538043386@zbackend1.aha.ru>
+In-Reply-To: <web-538043386@zbackend1.aha.ru>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201106082150.34260.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jun 2011, Remy Bohmer wrote:
-> In real life you may want, for EXAMPLE, this setup:
-> * prio 70: high priority motor control loop
-> * prio 60: network device irq
-> * prio 59: network softirqs
-> * prio 55: some realtime task depending on networkingstack
-> * prio 54: mass storage irq
-> * prio 53: block device softirq
-> * prio 52: some realtime task depending on mass-storage
-> * prio 50: all remaining irq threads
-> * prio 49: all remaining softirqs
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=36982
+for your bug report, please add your address to the CC list in there, thanks!
+
+On środa, 1 czerwca 2011 o 18:43:36 werner wrote:
+> With 3.0-rc1 have the following problems, on my computer
+> and some laptops:
 > 
-> Assume here you do a ifconfig down and ifconfig up, in the current
-> kernel behaviour you will see that the irq thread switches from prio
-> 60 to 50.
-> The irq-thread will become of a lower priority compared to its related
-> softirqs due to this reason, which can result in a complete die of
-> this network interface... even before it ever came back up again...
+> / during booting, udev initialization, it stops several
+> times  appr. 1 minute  (but don't crash)
+> 
+> / At the beginning, the system behaves normal, but later
+> the usb system don't work at all; then no periferics
+> connected (like: printer, usb key , ...) is recognized
+> with lsusb, and the KDE3 device manager stops to work
+> 
+> / On mounting a dvd with /mount /dev/sr0 /cdrom  ,  an
+> error messages comes, it dont mount
+> 
+> 
+> Below see the syslog.    At 13:30, attempt to find sdb ,
+> is a sucessless attempt to find the usb key  (lsusb dont
+> find it).    At 13:33, attempt to mount a dvd.
+> 
+> 
+> W.Landgraf
+> 
+> 
+> 
+> ==================
+> Jun  1 13:30:13 werner kernel: sd 7:0:0:0: [sdb] No
+> Caching mode page present
+> Jun  1 13:30:13 werner kernel: sd 7:0:0:0: [sdb] Assuming
+> drive cache: write through
+> Jun  1 13:30:13 werner kernel: sd 7:0:0:0: [sdb] No
+> Caching mode page present
+> Jun  1 13:30:13 werner kernel: sd 7:0:0:0: [sdb] Assuming
+> drive cache: write through
+> Jun  1 13:30:13 werner kernel: sd 7:0:0:0: [sdb] No
+> Caching mode page present
+> Jun  1 13:30:13 werner kernel: sd 7:0:0:0: [sdb] Assuming
+> drive cache: write through
+> Jun  1 13:30:45 werner kernel: sd 8:0:0:0: [sdb] No
+> Caching mode page present
+> Jun  1 13:30:45 werner kernel: sd 8:0:0:0: [sdb] Assuming
+> drive cache: write through
+> Jun  1 13:30:45 werner kernel: sd 8:0:0:0: [sdb] No
+> Caching mode page present
+> Jun  1 13:30:45 werner kernel: sd 8:0:0:0: [sdb] Assuming
+> drive cache: write through
+> Jun  1 13:30:45 werner kernel: sd 8:0:0:0: [sdb] No
+> Caching mode page present
+> Jun  1 13:30:45 werner kernel: sd 8:0:0:0: [sdb] Assuming
+> drive cache: write through
+> Jun  1 13:33:25 werner kernel: BUG: unable to handle
+> kernel NULL pointer dereference at 000001cd
+> Jun  1 13:33:25 werner kernel: IP: [<c10ffe3e>]
+> blkdev_get+0xe7/0x125
+> Jun  1 13:33:25 werner kernel: *pde = 00000000
+> Jun  1 13:33:25 werner kernel: Oops: 0000 [#1] SMP
+> Jun  1 13:33:25 werner kernel: Modules linked in: rfcomm
+> hidp bluetooth snd_usb_audio snd_usbmidi_lib snd_rawmidi
+> snd_seq_device uvcvideo tpm_tis tpm tpm_bios rtc_cmos
+> 8139too snd_hda_codec_realtek k8temp snd_hda_intel
+> snd_hda_codec snd_hwdep snd_pcm forcedeth snd_timer snd
+> i2c_nforce2 soundcore snd_page_alloc
+> Jun  1 13:33:25 werner kernel:
+> Jun  1 13:33:25 werner kernel: Pid: 1520, comm: mount Not
+> tainted 3.0.0-rc1-i486-1sys #1 Gigabyte Technology Co.,
+> Ltd. M68M-S2P/M68M-S2P
+> Jun  1 13:33:25 werner kernel: EIP: 0060:[<c10ffe3e>]
+> EFLAGS: 00010282 CPU: 0
+> Jun  1 13:33:25 werner kernel: EIP is at
+> blkdev_get+0xe7/0x125
+> Jun  1 13:33:25 werner kernel: EAX: 00000000 EBX: f5423600
+> ECX: 00000000 EDX: f542362c
+> Jun  1 13:33:25 werner kernel: ESI: f5423600 EDI: c2402bfc
+> EBP: e1ddde54 ESP: e1ddde38
+> Jun  1 13:33:25 werner kernel:  DS: 007b ES: 007b FS: 00d8
+> GS: 00e0 SS: 0068
+> Jun  1 13:33:25 werner kernel: Process mount (pid: 1520,
+> ti=e1ddc000 task=f295e440 task.ti=e1ddc000)
+> Jun  1 13:33:25 werner kernel: Stack:
+> Jun  1 13:33:25 werner kernel:  00000083 f5423610 ffffffe2
+> 00000000 f5423600 00000083 c2402bfc e1ddde68
+> Jun  1 13:33:25 werner kernel:  c11000d1 f291e600 00000083
+> 00000000 e1dddeb8 c10dc51f c10b753d c11e2ede
+> Jun  1 13:33:25 werner kernel:  00000000 c2402bfc 00004be8
+> 00000004 00000199 0000000c 00005410 00000000
+> Jun  1 13:33:25 werner kernel: Call Trace:
+> Jun  1 13:33:25 werner kernel:  [<c11000d1>]
+> blkdev_get_by_path+0x26/0x56
+> Jun  1 13:33:25 werner kernel:  [<c10dc51f>]
+> mount_bdev+0x4b/0x187
+> Jun  1 13:33:25 werner kernel:  [<c10b753d>] ?
+> pcpu_populate_chunk+0x197/0x266
+> Jun  1 13:33:25 werner kernel:  [<c11e2ede>] ?
+> isofs_iget5_test+0x25/0x25
+> Jun  1 13:33:25 werner kernel:  [<c11e1e93>]
+> isofs_mount+0x1f/0x24
+> Jun  1 13:33:25 werner kernel:  [<c11e2ede>] ?
+> isofs_iget5_test+0x25/0x25
+> Jun  1 13:33:25 werner kernel:  [<c10dc382>]
+> mount_fs+0x67/0x13d
+> Jun  1 13:33:25 werner kernel:  [<c10f05db>]
+> vfs_kern_mount+0x53/0x7f
+> Jun  1 13:33:25 werner kernel:  [<c10f065b>]
+> do_kern_mount+0x38/0x70
+> Jun  1 13:33:25 werner kernel:  [<c10f06d3>]
+> do_new_mount+0x40/0x6c
+> Jun  1 13:33:25 werner kernel:  [<c10f0872>]
+> do_mount+0x173/0x18e
+> Jun  1 13:33:25 werner kernel:  [<c10f08fa>]
+> sys_mount+0x6d/0x99
+> Jun  1 13:33:25 werner kernel:  [<c1f062ac>]
+> syscall_call+0x7/0xb
+> Jun  1 13:33:25 werner kernel: Code: 55 ec 0f c1 89 7e 30
+> 39 7b 2c 74 04 0f 0b eb fe c7 43 2c 00 00 00 00 8d 43 2c
+> 31 d2 e8 5a 5e f5 ff f0 fe 05 40 1d 3f c2 8b 45 f0 <f6> 80
+> cd 01 00 00 01 74 1b 83 7d ec 00 75 15 f6 45 e4 02 74 0f
+> Jun  1 13:33:25 werner kernel: EIP: [<c10ffe3e>]
+> blkdev_get+0xe7/0x125 SS:ESP 0068:e1ddde38
+> Jun  1 13:33:25 werner kernel: CR2: 00000000000001cd
+> Jun  1 13:33:25 werner kernel: ---[ end trace
+> 9b11eeec630c71b2 ]---
+> ---
+> Professional hosting for everyone - http://www.host.ru
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Not really. If that's the case it needs to be investigated and
-fixed.
-
-> As mentioned before by Thomas, the configuration is a policy issue and
-> must be set from user-context. I understand what he means by that and
-> I agree, but there still has to be a mechanism to make the kernel
-> remember the configuration set by the user to prevent all kinds of
-> race conditions. You cannot demand from the user to run after
-
-Which race conditions?
-
-> executing a shell command like ifconfig or modprobe to run some sort
-> of init-script that repairs what the kernel assumed wrong. The wrong
-> assumptions the kernel does results in: deadlocks, priority inversion
-> issues between irq-threads and softirqs and realtime behaviour impact.
-
-If you do an ifdown/up then your prio 55 task is totally irrelevant
-until the interface is back to full operation again, which includes
-setting the priority right.
-
-There is another gotcha with your approach. It only ever works when
-the interrupt descriptors are static and not dynamically
-allocated/freed. If they are fully dynamic then you have no
-possibility to store the prio information after a full teardown of a
-device.
-
-So moving the base priority down to 1 or 2 is probably the most
-sensible solution to avoid that a newly brought up interrupt thread
-interferes with anything in the rt domain and it's not rocket science
-to adjust the priority in a ifup.post or with an udev rule.
-
-Thanks,
-
-	tglx
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
