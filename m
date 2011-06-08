@@ -1,96 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884Ab1FHNil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 09:38:41 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:40151 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755082Ab1FHNik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 09:38:40 -0400
-Date: Wed, 8 Jun 2011 09:38:33 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: John Kacur <jkacur@redhat.com>
-Cc: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>, david@lang.hm,
-        linux-kernel@vger.kernel.org
-Subject: Re: XFS problem in 2.6.32
-Message-ID: <20110608133833.GD30037@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, John Kacur <jkacur@redhat.com>,
-	Stefan Priebe - Profihost AG <s.priebe@profihost.ag>, david@lang.hm,
-	linux-kernel@vger.kernel.org
-References: <4DEE1D96.6020208@profihost.ag>
- <6D8DA3D2-D90B-4D82-BDC9-C3F0264A68BF@mit.edu>
- <4DEE2C70.8060301@profihost.ag>
- <alpine.DEB.2.02.1106071239530.28905@asgard.lang.hm>
- <4DEE9EDA.90001@profihost.ag>
- <C4F797E7-3B2F-4BAD-BF69-2182DEA775A5@mit.edu>
- <BANLkTim3GuppJ4=VHa0BgNV1d4nQjWUcbg@mail.gmail.com>
+	id S1755864Ab1FHNpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 09:45:15 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:56798 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754779Ab1FHNpM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 09:45:12 -0400
+Message-ID: <4DEF7CA1.8080809@stericsson.com>
+Date: Wed, 8 Jun 2011 15:44:01 +0200
+From: Mattias Wallin <mattias.wallin@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-GB; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTim3GuppJ4=VHa0BgNV1d4nQjWUcbg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+To: john stultz <johnstul@us.ibm.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv2 0/3] clocksource: add db8500 PRCMU timer
+References: <1307007271-1004-1-git-send-email-mattias.wallin@stericsson.com>	 <20110602094622.GS3660@n2100.arm.linux.org.uk>	 <4DE7637B.3060901@stericsson.com>	 <20110602110137.GU3660@n2100.arm.linux.org.uk>	 <4DE77D9A.6090301@stericsson.com>  <4DE788B2.5060308@ti.com> <1307040455.11492.52.camel@work-vm>
+In-Reply-To: <1307040455.11492.52.camel@work-vm>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 10:00:39AM +0200, John Kacur wrote:
+On 06/02/2011 08:47 PM, john stultz wrote:
+> On Thu, 2011-06-02 at 18:27 +0530, Santosh Shilimkar wrote:
+>> On 6/2/2011 5:40 PM, Mattias Wallin wrote:
+>>> On 06/02/2011 01:01 PM, Russell King - ARM Linux wrote:
+>>>> On Thu, Jun 02, 2011 at 12:18:35PM +0200, Mattias Wallin wrote:
+>>>>> On 06/02/2011 11:46 AM, Russell King - ARM Linux wrote:
+>>>>>> Why don't we just find a way of fixing sched_clock so that the value
+>>>>>> doesn't reset over a suspend/resume cycle?
+>>>>> Even if the value isn't reset during suspend/resume we want the
+>>>>> clocksource to keep counting. Or is it ok to have the clocksource stop
+>>>>> or freeze during suspend?
+>>>>
+>>>> kernel/time/timekeeping.c:timekeeping_suspend():
+>>>>
+>>>> timekeeping_forward_now();
+>>>>
+>>>> which does:
+>>>> cycle_now = clock->read(clock);
+>>>> cycle_delta = (cycle_now - clock->cycle_last)&  clock->mask;
+>>>> clock->cycle_last = cycle_now;
+>>>>
+>>>> So that updates the time with the current offset between cycle_last and
+>>>> the current value.
+>>>>
+>>>> kernel/time/timekeeping.c:timekeeping_resume():
+>>>> /* re-base the last cycle value */
+>>>> timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
+>>>>
+>>>> So this re-sets cycle_last to the current value of the clocksource. This
+>>>> means that on resume, the clocksource can start counting from any
+>>>> value it
+>>>> likes.
+>>>>
+>>>> So, without any additional external inputs, time resumes incrementing at
+>>>> the point where the suspend occurred without any jump backwards or
+>>>> forwards.
+>>>>
+>>>> The code accounts for the sleep time by using read_persistent_clock()
+>>>> read
+>>>> a timer which continues running during sleep to calculate the delta
+>>>> between
+>>>> suspend and resume, and injects the delta between them to wind the time
+>>>> forward.
+>>>>
+>>>>> Then we have cpuidle. Is it ok to stop/freeze the timer during cpuidle
+>>>>> sleep states?
+>>>>
+>>>> During _idle_ (iow, no task running) sched_clock and the clocksource
+>>>> should both continue to run - the scheduler needs to know how long the
+>>>> system has been idle for, and the clocksource can't stop because we'll
+>>>> lose track of time.
+>>>>
+>>>> Remember that the clockevent stuff is used as a trigger to the
+>>>> timekeeping
+>>>> code to read the clocksource, and update the current time. Time is moved
+>>>> forward by the delta between a previous clocksource read and the current
+>>>> clocksource read. So stopping or resetting the clocksource in unexpected
+>>>> ways (other than over suspend/resume as mentioned above) will result in
+>>>> time going weird.
+>>>
+>>> Hmm, I have missed the existence of the read_persistent_clock(). It
+>>> sounds like I should keep the MTU as my clocksource / sched_clock and
+>>> have the PRCMU Timer as a persistent_clock instead.
+>>>
+>>> Then one problem remains. The MTU will be powered during cstates:
+>>> running, wfi, ApIdle (arm retenetion). The MTU will loose power during
+>>> cstates ApSleep and ApDeepSleep. So I need to do a similar sync as
+>>> suspend does against the persistent_clock but when leaving and enter the
+>>> deeper cstates.
+>>>
+>>> Should I solve it in the clocksource framework with a flag telling which
+>>> cstates the timer will stop/freeze and then inject time from the
+>>> persistent_clock for those cstates? (I am thinking something like the
+>>> CLOCK_EVT_FEAT_C3STOP flag)
+>>>
+>>> Am I on the wrong track here or how should I solve it?
+>>>
+> [snip]
+>> John mentioned that because of frequent clock-source
+>> switching, will affect the NTP correction badly to an
+>> extent that NTP correction may not work.
+>>
+>> Here is what John suggested to do but I got busy with
+>> other stuff and this one got pushed out from my todo.
+>>
+>> --------------------
+>> John wrote ...
+>> A different approach would be to create a meta-clocksource, that
+>> utilizes the two underlying clocks to create a what looks like a unified
+>> counter.
+>>
+>> Basically you use the slow-always running counter as your long-term freq
+>> adjusted clock, but supplement its low granularity with the highres
+>> halting clock.
+>>
+>> This works best if both counters are driven by the same crystal, so
+>> there won't be much drift between them.
+>> ----------------------
+>
+> Yea. The basic idea is to interpolate between two counters to produce a
+> a continuous clocksource for the timekeeping core.
+>
+> As Russell pointed out, error is injected to the timekeeping code every
+> time you switch between clocksources or the persistent clock. Doing this
+> very frequently will provide very poor time.
+>
+> So by using an interpolated clocksource, we would be able to maintain
+> clock adjustments via ntp and provide accurate long term time, while
+> still having fine-grained resolution (along with some short term error).
+>
+> However, its all easier said then done. There are lots of gotchas and
+> corner-cases with interpolation. That's the whole reason we moved from
+> tick based timekeeping to continuous clocksource based timekeeping. I
+> believe the KVM folks have used similar interpolation method for their
+> kvm clocksource, and I know they had numerous issues. But it seems to
+> work well enough, so I would take a peek at their code to start.
 
-> Ok, I don't speak for my company, and your point about not expecting
-> people to do this work for you is valid, however I don't see why you
-> need to take potshots at Red Hat
+Russell,
+What is your gut feeling about above interpolated clocksource strategy 
+suggestion?
 
-It wasn't a potshot; if it is true, it is a completely rational
-economic argument that is completely within the bounds of the
-requirements of the GPL, and with LKML community standards.
 
-The reason why I say it is because of (a) http://lwn.net/Articles/430098/,
-and (b) a few months ago, when I quietly floated starting a new
-long-term stable kernel series that a number of companies would
-maintain cooperatively, I was told, privately, that such a proposal
-would not likely be received positively by Red Hat management because
-of the reasons behind the policy instituted by (a).
+While we (I) look at an alternative clocksource strategy and experiment 
+are you ok with the three patches I sent?
+I thought about the persistant_clock that I did not know about but that 
+will only help me in suspend so I conclude that I still need the a 
+clocksource that counts in all low power modes.
 
-Which is fine, I don't consider that a potshot, no more than I
-consider the fact that IBM forked the OpenOffice before it was
-relicensed to the LGPL and made changes which they didn't give back,
-and seems to be actively supporting Oracle's attempt to get Apache to
-adopt OpenOffice.org inspite of the currently healthy LibreOffice
-LGPL3 branch which already has an active community to be a potshot.
+I would like to have something merged in case the alternate strategy 
+fails. Something that work in the current kernel. The warnings above 
+hints that it will be difficult and can take a long time to find a 
+solution where both my timers can work together. It also easier to 
+discuss framework changes with improvements of in-kernel drivers.
 
-Both are completely legal things set by the ground rules of the
-copyright licenses involvled, and someone no less than Linus has said
-that the ability to fork is healthy because it keeps people honest.
-
-> - they are quite active in the stable effort.
-> 
-> wget http://www.kernel.org/pub/linux/kernel/v2.6/ChangeLog-2.6.38.8
-> grep Author ChangeLog-2.6.38.8 | grep -i redhat | wc -l
-> 9
-> 
-> grep Author ChangeLog-2.6.38.8 | grep -i suse | wc -l
-> 10
-> 
-> grep Author ChangeLog-2.6.38.8 | grep -i canonical | wc -l
-> 5
-> 
-> I'm not even claiming that these are typical stats, but as just a
-> quick check on your statement, the contributions for one stable
-> release are in the same ballpark as everyone else.
-
-Nah, that just means that commits which are labelled with "CC:
-stable@vger.kernel.org" are automatically accepted into stable kernel
-series.
-
-If you can point efforts where painful backports of ext4 and xfs bug
-fixes into RHEL 6.x are making it back into 2.6.32.y, even though in
-some cases it takes tens of hours of engineering and QA efforts, we
-can talk.  But please note that I wasn't calling out Red Hat as being
-bad or evil by doing what they are doing; it is completely
-economically rational and allowed by the GPL rules for them to be
-doing what they are doing.  (Just as what Android has been doing with
-their constant forward porting of the Wakelocks API is completely
-within the GPL rules.)
-
-	       		     		   - Ted
+Thanks,
+/Mattias Wallin
