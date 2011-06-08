@@ -1,52 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1FHRG5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 13:06:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54890 "EHLO
+	id S1752856Ab1FHRHg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 13:07:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55390 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876Ab1FHRG4 (ORCPT
+	with ESMTP id S1752605Ab1FHRH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 13:06:56 -0400
+	Wed, 8 Jun 2011 13:07:28 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         airlied@redhat.com, thomas@shipmail.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] ttm: Do not increment the amount of pages in a pool by the current amount
-Date: Wed,  8 Jun 2011 13:06:14 -0400
-Message-Id: <1307552775-3185-2-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH] ttm: Fix spelling mistakes and remove unused #ifdef
+Date: Wed,  8 Jun 2011 13:06:15 -0400
+Message-Id: <1307552775-3185-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1307552775-3185-1-git-send-email-konrad.wilk@oracle.com>
 References: <1307552775-3185-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090209.4DEFAC2B.00F6:SCFSTAT5015188,ss=1,fgs=0
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090206.4DEFAC2B.0125:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-.instead increment it by the count of pages that we want to
-splice into the pool list.
+. and some comments to make it easier to understand.
 
-In other words we were incrementing the pool->npages by the wrong
-amount. This bug was observed from code inspection.
-
+Ackedby: Randy Dunlap <randy.dunlap@oracle.com>
+[v2: Added some more updates from Randy Dunlap]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/gpu/drm/ttm/ttm_page_alloc.c |   16 ++++++++--------
+ include/drm/ttm/ttm_bo_api.h         |    3 ---
+ include/drm/ttm/ttm_bo_driver.h      |    6 +++---
+ include/drm/ttm/ttm_memory.h         |    2 +-
+ include/drm/ttm/ttm_object.h         |    4 ++--
+ include/drm/ttm/ttm_page_alloc.h     |    2 +-
+ 6 files changed, 15 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index d948575..002b414 100644
+index 9d9d929..4db6fc7 100644
 --- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
 +++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -602,7 +602,7 @@ static void ttm_page_pool_fill_locked(struct ttm_page_pool *pool,
- 			printk(KERN_ERR TTM_PFX
- 			       "Failed to fill pool (%p).", pool);
- 			/* If we have any pages left put them to the pool. */
--			list_for_each_entry(p, &pool->list, lru) {
-+			list_for_each_entry(p, &new_pages, lru) {
- 				++cpages;
- 			}
- 			list_splice(&new_pages, &pool->list);
+@@ -355,7 +355,7 @@ restart:
+ 			if (nr_free)
+ 				goto restart;
+ 
+-			/* Not allowed to fall tough or break because
++			/* Not allowed to fall through or break because
+ 			 * following context is inside spinlock while we are
+ 			 * outside here.
+ 			 */
+@@ -554,7 +554,7 @@ out:
+ }
+ 
+ /**
+- * Fill the given pool if there isn't enough pages and requested number of
++ * Fill the given pool if there aren't enough pages and the requested number of
+  * pages is small.
+  */
+ static void ttm_page_pool_fill_locked(struct ttm_page_pool *pool,
+@@ -574,8 +574,8 @@ static void ttm_page_pool_fill_locked(struct ttm_page_pool *pool,
+ 
+ 	pool->fill_lock = true;
+ 
+-	/* If allocation request is small and there is not enough
+-	 * pages in pool we fill the pool first */
++	/* If allocation request is small and there are not enough
++	 * pages in a pool we fill the pool up first. */
+ 	if (count < _manager->options.small
+ 		&& count > pool->npages) {
+ 		struct list_head new_pages;
+@@ -612,9 +612,9 @@ static void ttm_page_pool_fill_locked(struct ttm_page_pool *pool,
+ }
+ 
+ /**
+- * Cut count nubmer of pages from the pool and put them to return list
++ * Cut 'count' number of pages from the pool and put them on the return list.
+  *
+- * @return count of pages still to allocate to fill the request.
++ * @return count of pages still required to fulfill the request.
+  */
+ static unsigned ttm_page_pool_get_pages(struct ttm_page_pool *pool,
+ 		struct list_head *pages, int ttm_flags,
+@@ -635,7 +635,7 @@ static unsigned ttm_page_pool_get_pages(struct ttm_page_pool *pool,
+ 		goto out;
+ 	}
+ 	/* find the last pages to include for requested number of pages. Split
+-	 * pool to begin and halves to reduce search space. */
++	 * pool to begin and halve it to reduce search space. */
+ 	if (count <= pool->npages/2) {
+ 		i = 0;
+ 		list_for_each(p, &pool->list) {
+@@ -649,7 +649,7 @@ static unsigned ttm_page_pool_get_pages(struct ttm_page_pool *pool,
+ 				break;
+ 		}
+ 	}
+-	/* Cut count number of pages from pool */
++	/* Cut 'count' number of pages from the pool */
+ 	list_cut_position(pages, &pool->list, p);
+ 	pool->npages -= count;
+ 	count = 0;
+diff --git a/include/drm/ttm/ttm_bo_api.h b/include/drm/ttm/ttm_bo_api.h
+index 62a0e4c..42e3469 100644
+--- a/include/drm/ttm/ttm_bo_api.h
++++ b/include/drm/ttm/ttm_bo_api.h
+@@ -662,9 +662,6 @@ extern int ttm_bo_kmap(struct ttm_buffer_object *bo, unsigned long start_page,
+ 
+ extern void ttm_bo_kunmap(struct ttm_bo_kmap_obj *map);
+ 
+-#if 0
+-#endif
+-
+ /**
+  * ttm_fbdev_mmap - mmap fbdev memory backed by a ttm buffer object.
+  *
+diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
+index 09af2d7..94eb143 100644
+--- a/include/drm/ttm/ttm_bo_driver.h
++++ b/include/drm/ttm/ttm_bo_driver.h
+@@ -78,7 +78,7 @@ struct ttm_backend_func {
+ 	 *
+ 	 * Bind the backend pages into the aperture in the location
+ 	 * indicated by @bo_mem. This function should be able to handle
+-	 * differences between aperture- and system page sizes.
++	 * differences between aperture and system page sizes.
+ 	 */
+ 	int (*bind) (struct ttm_backend *backend, struct ttm_mem_reg *bo_mem);
+ 
+@@ -88,7 +88,7 @@ struct ttm_backend_func {
+ 	 * @backend: Pointer to a struct ttm_backend.
+ 	 *
+ 	 * Unbind previously bound backend pages. This function should be
+-	 * able to handle differences between aperture- and system page sizes.
++	 * able to handle differences between aperture and system page sizes.
+ 	 */
+ 	int (*unbind) (struct ttm_backend *backend);
+ 
+@@ -786,7 +786,7 @@ extern int ttm_bo_device_release(struct ttm_bo_device *bdev);
+  * ttm_bo_device_init
+  *
+  * @bdev: A pointer to a struct ttm_bo_device to initialize.
+- * @mem_global: A pointer to an initialized struct ttm_mem_global.
++ * @glob: A pointer to an initialized struct ttm_bo_global.
+  * @driver: A pointer to a struct ttm_bo_driver set up by the caller.
+  * @file_page_offset: Offset into the device address space that is available
+  * for buffer data. This ensures compatibility with other users of the
+diff --git a/include/drm/ttm/ttm_memory.h b/include/drm/ttm/ttm_memory.h
+index b199170..26c1f78 100644
+--- a/include/drm/ttm/ttm_memory.h
++++ b/include/drm/ttm/ttm_memory.h
+@@ -41,7 +41,7 @@
+  * @do_shrink: The callback function.
+  *
+  * Arguments to the do_shrink functions are intended to be passed using
+- * inheritance. That is, the argument class derives from struct ttm_mem_srink,
++ * inheritance. That is, the argument class derives from struct ttm_mem_shrink,
+  * and can be accessed using container_of().
+  */
+ 
+diff --git a/include/drm/ttm/ttm_object.h b/include/drm/ttm/ttm_object.h
+index 0d9db09..e46054e 100644
+--- a/include/drm/ttm/ttm_object.h
++++ b/include/drm/ttm/ttm_object.h
+@@ -111,7 +111,7 @@ struct ttm_object_device;
+  *
+  * @ref_obj_release: A function to be called when a reference object
+  * with another ttm_ref_type than TTM_REF_USAGE is deleted.
+- * this function may, for example, release a lock held by a user-space
++ * This function may, for example, release a lock held by a user-space
+  * process.
+  *
+  * This struct is intended to be used as a base struct for objects that
+@@ -172,7 +172,7 @@ extern struct ttm_base_object *ttm_base_object_lookup(struct ttm_object_file
+ /**
+  * ttm_base_object_unref
+  *
+- * @p_base: Pointer to a pointer referncing a struct ttm_base_object.
++ * @p_base: Pointer to a pointer referencing a struct ttm_base_object.
+  *
+  * Decrements the base object refcount and clears the pointer pointed to by
+  * p_base.
+diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
+index 8062890..129de12 100644
+--- a/include/drm/ttm/ttm_page_alloc.h
++++ b/include/drm/ttm/ttm_page_alloc.h
+@@ -32,7 +32,7 @@
+ /**
+  * Get count number of pages from pool to pages list.
+  *
+- * @pages: heado of empty linked list where pages are filled.
++ * @pages: head of empty linked list where pages are filled.
+  * @flags: ttm flags for page allocation.
+  * @cstate: ttm caching state for the page.
+  * @count: number of pages to allocate.
 -- 
 1.7.4.1
 
