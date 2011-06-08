@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab1FHKJj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:09:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59985 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950Ab1FHKJf (ORCPT
+	id S1754866Ab1FHKXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:23:19 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60856 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab1FHKXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:09:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Ar49Y1iDzNbd71oQnpz0yh0t60Hqe7t7JPWE1JmWgKs/aQBtgoEHyK07RtjrGyYsZ2
-         RkNzUazQXb66KE9DwfVLxnEKFHXgymj17zHItuHtYoAL/5ur8Tr8v2UnJ5bpOPnBvddq
-         wRSAuKAjSXa5lhodqp6y8okvQ3B8w0rhofDKY=
+	Wed, 8 Jun 2011 06:23:18 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 00/15] GMA500 KMS and GEM
+To: greg@kroah.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Date: Wed, 08 Jun 2011 11:10:54 +0100
+Message-ID: <20110608100411.9478.86672.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20110608054354.GA1717@x4.trippels.de>
-References: <20110608054002.GA1717@x4.trippels.de>
-	<20110608054354.GA1717@x4.trippels.de>
-Date: Wed, 8 Jun 2011 20:09:33 +1000
-Message-ID: <BANLkTinfn82C3TjPxzZuD+v=F+uCx8pmyg@mail.gmail.com>
-Subject: Re: Latest merge of 'drm-radeon-fixes' breaks my setup
-From: Dave Airlie <airlied@gmail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Dave Airlie <airlied@redhat.com>,
-        =?UTF-8?B?TWFyZWsgT2zFocOhaw==?= <maraeo@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=00151748e0747f587304a5308870
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00151748e0747f587304a5308870
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+This patch series versus linux-next 2011/06/08 fixes various bugs including a
+nasty pinning bug found by Andre Bartke.
 
-On Wed, Jun 8, 2011 at 3:43 PM, Markus Trippelsdorf
-<markus@trippelsdorf.de> wrote:
-> On 2011.06.08 at 07:40 +0200, Markus Trippelsdorf wrote:
->> The merge of the 'drm-radeon' branch by Linus yesterday breaks my setup
->> (RS780). The mouse cursor is just a black block suddenly and I see an
->> endless stream of:
->> =A0radeon 0000:01:05.0: r600_check_texture_resource:1338 texture invalid=
- format 26
->> =A0[drm:radeon_cs_ioctl] *ERROR* Invalid command stream !
+With these patches applied the driver passes the various GEM tests and you can
+use the KMS tools and test sets to set modes and display stuff from GEM
+buffers including those mapped from main memory via the GTT.
 
-This is wierd, can you try the attached patch, it appears this
-uncovered another bug.
+You can't yet take a GEM handle of the system frame buffer. That requires
+a trivial patch to drm_gem and a similar trivial patch to this driver.
 
-Dave.
+The two main remaining tasks now are to provide a 2D command interface for the
+X server including support for blitting between GEM objects (so we need relocs)
+and to clean the code up.
 
---00151748e0747f587304a5308870
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-drm-radeon-kms-set-family-for-use-in-parser.patch"
-Content-Disposition: attachment; 
-	filename="0001-drm-radeon-kms-set-family-for-use-in-parser.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_goo3ycne0
+Vblank support is also possible but doesn't seem terribly useful.
+---
 
-RnJvbSA4N2ExMzA3NjNlN2ExN2U2MWNjMThhNzI3OWQzMWI1OGI3YmRmNWIyIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgpEYXRl
-OiBXZWQsIDggSnVuIDIwMTEgMTk6NTg6MjkgKzEwMDAKU3ViamVjdDogW1BBVENIXSBkcm0vcmFk
-ZW9uL2ttczogc2V0IGZhbWlseSBmb3IgdXNlIGluIHBhcnNlci4KCldpZXJkbHkgdGhlIGttcyBw
-YXJzZXIgbmV2ZXIgaW5pdGlhbGlzZWQgdGhlIGZhbWlseSwgaXQgd2Fzbid0IHJlYWxseSB1c2Vk
-Cm11Y2gsIGJ1dCB0aGUgZm10IGNoZWNrZXIgcGF0Y2ggc3RhcnRlZCB1c2luZyBpdCBhbmQgaXQg
-ZmVsbCBvdmVyLgoKUmVwb3J0ZWQtYnk6IE1hcmt1cyBUcmlwcGVsc2RvcmYgPG1hcmt1c0B0cmlw
-cGVsc2RvcmYuZGU+ClNpZ25lZC1vZmYtYnk6IERhdmUgQWlybGllIDxhaXJsaWVkQHJlZGhhdC5j
-b20+Ci0tLQogZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9yYWRlb25fY3MuYyB8ICAgIDEgKwogMSBm
-aWxlcyBjaGFuZ2VkLCAxIGluc2VydGlvbnMoKyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0
-IGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9yYWRlb25fY3MuYyBiL2RyaXZlcnMvZ3B1L2RybS9y
-YWRlb24vcmFkZW9uX2NzLmMKaW5kZXggOGMxOTE2OS4uZmFlMDBjMCAxMDA2NDQKLS0tIGEvZHJp
-dmVycy9ncHUvZHJtL3JhZGVvbi9yYWRlb25fY3MuYworKysgYi9kcml2ZXJzL2dwdS9kcm0vcmFk
-ZW9uL3JhZGVvbl9jcy5jCkBAIC0yMjgsNiArMjI4LDcgQEAgaW50IHJhZGVvbl9jc19pb2N0bChz
-dHJ1Y3QgZHJtX2RldmljZSAqZGV2LCB2b2lkICpkYXRhLCBzdHJ1Y3QgZHJtX2ZpbGUgKmZpbHAp
-CiAJcGFyc2VyLmZpbHAgPSBmaWxwOwogCXBhcnNlci5yZGV2ID0gcmRldjsKIAlwYXJzZXIuZGV2
-ID0gcmRldi0+ZGV2OworCXBhcnNlci5mYW1pbHkgPSByZGV2LT5mYW1pbHk7CiAJciA9IHJhZGVv
-bl9jc19wYXJzZXJfaW5pdCgmcGFyc2VyLCBkYXRhKTsKIAlpZiAocikgewogCQlEUk1fRVJST1Io
-IkZhaWxlZCB0byBpbml0aWFsaXplIHBhcnNlciAhXG4iKTsKLS0gCjEuNy41LjIKCg==
---00151748e0747f587304a5308870--
+Alan Cox (12):
+      gma500: Kill spare kref
+      gma500: nuke the PSB debug stuff
+      gma500: nuke the last bits of TTM code
+      gma500: 2D acceleration tidying
+      gma500: polish for completion of this phase
+      gma500: trim some of the debug
+      gma500: Do sane FB cleanup
+      gma500: revamp frame buffer creation and handling
+      gma500: Set the correct bits according to the pipe
+      gma500: Ensure the frame buffer has a linear virtual mapping
+      gma500: Make GTT pages uncached
+      gma500: fix warnings
+
+Andre Bartke (1):
+      gma500: Fix uninitialized variable and style issues
+
+Michael Chang (1):
+      staging/gma500: get control from firmware framebuffer if conflicts
+
+Patrik Jakobsson (1):
+      gma500: Skip bogus LVDS VBT mode and check for LVDS before adding backlight
+
+
+ drivers/staging/gma500/mrst_crtc.c          |   27 +-
+ drivers/staging/gma500/mrst_lvds.c          |   14 -
+ drivers/staging/gma500/psb_2d.c             |   39 +--
+ drivers/staging/gma500/psb_bl.c             |   12 -
+ drivers/staging/gma500/psb_drm.h            |   90 --------
+ drivers/staging/gma500/psb_drv.c            |   58 ++---
+ drivers/staging/gma500/psb_drv.h            |  181 ++++------------
+ drivers/staging/gma500/psb_fb.c             |  309 +++++++++++++++------------
+ drivers/staging/gma500/psb_fb.h             |    6 -
+ drivers/staging/gma500/psb_gem.c            |   39 +--
+ drivers/staging/gma500/psb_gtt.c            |  187 ++++++----------
+ drivers/staging/gma500/psb_gtt.h            |   11 +
+ drivers/staging/gma500/psb_intel_bios.c     |   26 +-
+ drivers/staging/gma500/psb_intel_display.c  |  130 +++--------
+ drivers/staging/gma500/psb_intel_drv.h      |   19 --
+ drivers/staging/gma500/psb_intel_lvds.c     |   53 +----
+ drivers/staging/gma500/psb_intel_opregion.c |    7 -
+ drivers/staging/gma500/psb_intel_sdvo.c     |   34 +--
+ drivers/staging/gma500/psb_irq.c            |   33 +--
+ drivers/staging/gma500/psb_irq.h            |    8 -
+ drivers/staging/gma500/psb_powermgmt.c      |    4 
+ drivers/staging/gma500/psb_powermgmt.h      |    2 
+ drivers/staging/gma500/psb_reg.h            |    2 
+ 23 files changed, 461 insertions(+), 830 deletions(-)
+
+-- 
+Signature
