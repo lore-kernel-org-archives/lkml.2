@@ -1,97 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab1FHGVy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 02:21:54 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:56620 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab1FHGVx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 02:21:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=DFzPrsStwd6qulAY2W1bqWJnMGr43hbvahoAFxfphRxy2LjA5MAWQ3WBEyGw6oHb5M
-         nc8R5S0pcI30B3pHhIUrqecN+2LcA+x3V5oIU9ms06nUkyjciH3lElC918JB2ISmjoYZ
-         CbuLXv7qYGO9Ny2iAKj4acmPkgQ4nlbvILbdc=
+	id S1753401Ab1FHGUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 02:20:38 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56668 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752104Ab1FHGUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 02:20:36 -0400
+Message-ID: <4DEF152C.5060808@cn.fujitsu.com>
+Date: Wed, 08 Jun 2011 14:22:36 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Thunderbird/3.1.9
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20110608020102.GA29239@localhost>
-References: <20110607213236.634026193@intel.com>
-	<20110607160441.db475211.akpm@linux-foundation.org>
-	<20110608020102.GA29239@localhost>
-Date: Wed, 8 Jun 2011 08:21:52 +0200
-Message-ID: <BANLkTik1jbjXs0rWG1cQEWzGYaMy1TmgnQ@mail.gmail.com>
-Subject: Re: [PATCH 00/15] writeback fixes and cleanups for 3.0 (v5)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 0/15] KVM: optimize for MMIO handled
+References: <4DEE205E.8000601@cn.fujitsu.com>	<20110608121128.2caecdb3.yoshikawa.takuya@oss.ntt.co.jp>	<4DEEEBB6.5090805@cn.fujitsu.com>	<4DEEED3C.3070302@cn.fujitsu.com> <20110608124740.14c807f7.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20110608124740.14c807f7.yoshikawa.takuya@oss.ntt.co.jp>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-08 14:20:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-08 14:20:23,
+	Serialize complete at 2011-06-08 14:20:23
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 8, 2011 at 4:01 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> On Wed, Jun 08, 2011 at 07:04:41AM +0800, Andrew Morton wrote:
->> On Wed, 08 Jun 2011 05:32:36 +0800
->> Wu Fengguang <fengguang.wu@intel.com> wrote:
->>
->> >
->> > Andrew,
->> >
->> > Here are the intented patches for upstream submission, rebased to v3.0-rc2:
->> >
->> >     [PATCH 01/15] writeback: introduce .tagged_writepages for the WB_SYNC_NONE sync stage
->> >     [PATCH 02/15] writeback: update dirtied_when for synced inode to prevent livelock
->> >     [PATCH 03/15] writeback: introduce writeback_control.inodes_cleaned
->> >     [PATCH 04/15] writeback: try more writeback as long as something was written
->> >     [PATCH 05/15] writeback: the kupdate expire timestamp should be a moving target
->> >     [PATCH 06/15] writeback: refill b_io iff empty
->> >     [PATCH 07/15] writeback: split inode_wb_list_lock into bdi_writeback.list_lock
->> >     [PATCH 08/15] writeback: elevate queue_io() into wb_writeback()
->> >     [PATCH 09/15] writeback: avoid extra sync work at enqueue time
->> >     [PATCH 10/15] writeback: add bdi_dirty_limit() kernel-doc
->> >     [PATCH 11/15] writeback: skip balance_dirty_pages() for in-memory fs
->> >     [PATCH 12/15] writeback: remove writeback_control.more_io
->> >     [PATCH 13/15] writeback: remove .nonblocking and .encountered_congestion
->> >     [PATCH 14/15] writeback: trace event writeback_single_inode
->> >     [PATCH 15/15] writeback: trace event writeback_queue_io
->>
->> Looks OK to me, although I think a few of the changelogs are lacking
->> important details.
->
-> Thanks.
->
->> > They are git pullable from
->> >
->> > git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git fs-writeback
->> >
->>
->> Please ask Stephen to suck this into linux-next when ready.
->
-> OK, now it includes the updated patches. It's based on v3.0-rc2 and
-> also compile/runs OK with 3.0.0-rc2-next-20110607.
->
+On 06/08/2011 11:47 AM, Takuya Yoshikawa wrote:
 
-So, did I a few hours ago... Running a kernel with your patchset
-applied right now.
+>>> Sure, KVM guest is the client, and it uses e1000 NIC, and uses NAT
+>>> network connect to the netperf server, the bandwidth of our network
+>>> is 100M.
+>>>
+> 
+> I see the reason, thank you!
+> 
+> I used virtio-net and you used e1000.
+> You are using e1000 to see the MMIO performance change, right?
+> 
 
-- Sedat -
+Hi Takuya,
 
-> Stephen, would you help add this git branch to linux-next? Thank you.
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git#fs-writeback
->
-> Thanks,
-> Fengguang
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Now, i have done the performance test for virtio-net, the performance is
+improved very little, and it is not *regression* ;-)
+
+The reason is, MMIO generated by virtio-net is very very little.
+
+ept = 1:
+============================
+Before patch:
+--------------
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.122.247 (192.168.122.247) port 0 AF_INET
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       60.00     972.21   
+16384  87380 
+
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.122.247 (192.168.122.247) port 0 AF_INET
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       60.00     971.01   
+16384  87380 
+
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.122.247 (192.168.122.247) port 0 AF_INET
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       60.00     974.44   
+16384  87380 
+
+After patch:
+--------------
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.122.247 (192.168.122.247) port 0 AF_INET
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       60.00     973.45   
+16384  87380 
+
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.122.247 (192.168.122.247) port 0 AF_INET
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       60.00     973.63   
+16384  87380 
+
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.122.247 (192.168.122.247) port 0 AF_INET
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       60.00     976.25   
+16384  87380 
+
+ept = 0, bypass_guest_pf=0:
+============================
+Before patch:
+--------------
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.122.247 (192.168.122.247) port 0 AF_INET
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       60.00     975.16   
+16384  87380 
+
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.122.247 (192.168.122.247) port 0 AF_INET
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       60.00     979.95   
+16384  87380 
+
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.122.247 (192.168.122.247) port 0 AF_INET
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       60.00     984.03   
+16384  87380 
+
+After patch:
+--------------
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.122.247 (192.168.122.247) port 0 AF_INET
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       60.00     974.30   
+16384  87380 
+
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.122.247 (192.168.122.247) port 0 AF_INET
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       60.00     976.33   
+16384  87380 
+
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.122.247 (192.168.122.247) port 0 AF_INET
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
+
+16384  87380  1        1       60.00     981.45   
+16384  87380 
