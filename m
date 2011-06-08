@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab1FHXYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 19:24:37 -0400
-Received: from blu0-omc1-s14.blu0.hotmail.com ([65.55.116.25]:32349 "EHLO
-	blu0-omc1-s14.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755011Ab1FHXYg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 19:24:36 -0400
-X-Originating-IP: [184.145.208.36]
-X-Originating-Email: [pdumas9@sympatico.ca]
-Message-ID: <BLU0-SMTP12157D840AA45B618A39A096620@phx.gbl>
-Date: Wed, 8 Jun 2011 19:19:01 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 10/28] rcu: Fix RCU's NMI documentation
-References: <20110608192943.GA13211@linux.vnet.ibm.com> <1307561407-13809-10-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1756713Ab1FHX1G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 19:27:06 -0400
+Received: from ozlabs.org ([203.10.76.45]:48477 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755011Ab1FHX1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 19:27:05 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Mark Wu <dwu@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        tj@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH 1/1] [virt] virtio-blk: Use ida to allocate disk index
+In-Reply-To: <4DEF744D.9040702@redhat.com>
+References: <1306913069-23637-1-git-send-email-dwu@redhat.com> <87mxi1xfz0.fsf@rustcorp.com.au> <4DEF744D.9040702@redhat.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 09 Jun 2011 08:51:05 +0930
+Message-ID: <87mxhrgba6.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <1307561407-13809-10-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 19:18:39 up 427 days,  9:08,  5 users,  load average: 0.38, 0.24,
-	0.16
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-OriginalArrivalTime: 08 Jun 2011 23:19:03.0538 (UTC) FILETIME=[74B8A520:01CC2632]
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> It has long been the case that the architecture must call nmi_enter()
-> and nmi_exit() rather than irq_enter() and irq_exit() in order to
-> permit RCU read-side critical sections in NMIs.  Catch the documentation
-> up with reality.
+On Wed, 08 Jun 2011 09:08:29 -0400, Mark Wu <dwu@redhat.com> wrote:
+> Hi Rusty,
+> Yes, I can't figure out an instance of disk probing in parallel either, but as
+> per the following commit, I think we still need use lock for safety. What's your opinion?
 > 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-
-> ---
->  Documentation/RCU/NMI-RCU.txt |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> commit 4034cc68157bfa0b6622efe368488d3d3e20f4e6
+> Author: Tejun Heo <tj@kernel.org>
+> Date:   Sat Feb 21 11:04:45 2009 +0900
 > 
-> diff --git a/Documentation/RCU/NMI-RCU.txt b/Documentation/RCU/NMI-RCU.txt
-> index a8536cb..84e4f9c 100644
-> --- a/Documentation/RCU/NMI-RCU.txt
-> +++ b/Documentation/RCU/NMI-RCU.txt
-> @@ -95,7 +95,7 @@ not to return until all ongoing NMI handlers exit.  It is therefore safe
->  to free up the handler's data as soon as synchronize_sched() returns.
->  
->  Important note: for this to work, the architecture in question must
-> -invoke irq_enter() and irq_exit() on NMI entry and exit, respectively.
-> +invoke nmi_enter() and nmi_exit() on NMI entry and exit, respectively.
->  
->  
->  Answer to Quick Quiz
-> -- 
-> 1.7.3.2
+>     [SCSI] sd: revive sd_index_lock
 > 
+>     Commit f27bac2761cab5a2e212dea602d22457a9aa6943 which converted sd to
+>     use ida instead of idr incorrectly removed sd_index_lock around id
+>     allocation and free.  idr/ida do have internal locks but they protect
+>     their free object lists not the allocation itself.  The caller is
+>     responsible for that.  This missing synchronization led to the same id
+>     being assigned to multiple devices leading to oops.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+I'm confused.  Tejun, Greg, anyone can probes happen in parallel?
+
+If so, I'll have to review all my drivers.
+
+Thanks,
+Rusty.
+
