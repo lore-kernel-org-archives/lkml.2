@@ -1,106 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab1FHXxA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 19:53:00 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:34325 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754763Ab1FHXw6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 19:52:58 -0400
-Subject: Re: [PATCH] Add debugging boundary check to pfn_to_page
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: arnd@arndb.de, akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        mingo@elte.hu, randy.dunlap@oracle.com, josh@joshtriplett.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mgorman@suse.de, linux-mm@kvack.org
-In-Reply-To: <1307560734-3915-1-git-send-email-emunson@mgebm.net>
-References: <1307560734-3915-1-git-send-email-emunson@mgebm.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Jun 2011 13:49:28 -0700
-Message-ID: <1307566168.3048.137.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755318Ab1FHUvn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 16:51:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19503 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754103Ab1FHUvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 16:51:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,339,1304319600"; 
+   d="scan'208";a="15749137"
+Message-ID: <4DEFE0C9.10206@intel.com>
+Date: Wed, 08 Jun 2011 13:51:21 -0700
+From: Kiran Patil <kiran.patil@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Joe Eykholt <jeykholt@cisco.com>, Nicholas Bellinger <nab@linux-iscsi.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [SCSI] tcm_fc: Adding FC_FC4 provider (tcm_fc) for FCoE target
+ (TCM - target core) support
+References: <201105202102.p4KL28Io025077@hera.kernel.org> <BANLkTimLbj1FHy9j56ScRGwc2t6Ci+QhAw@mail.gmail.com>
+In-Reply-To: <BANLkTimLbj1FHy9j56ScRGwc2t6Ci+QhAw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-08 at 15:18 -0400, Eric B Munson wrote:
-> -#define __pfn_to_page(pfn)                             \
-> -({     unsigned long __pfn = (pfn);                    \
-> -       struct mem_section *__sec = __pfn_to_section(__pfn);    \
-> -       __section_mem_map_addr(__sec) + __pfn;          \
-> +#ifdef CONFIG_DEBUG_MEMORY_MODEL
-> +#define __pfn_to_page(pfn)                                             \
-> +({     unsigned long __pfn = (pfn);                                    \
-> +       struct mem_section *__sec = __pfn_to_section(__pfn);            \
-> +       struct page *__page = __section_mem_map_addr(__sec) + __pfn;    \
-> +       WARN_ON(__page->flags == 0);                                    \
-> +       __page;                                                         \
+Hi Geert,
 
-What was the scenario you're trying to catch here?  If you give a really
-crummy __pfn, you'll probably go off the end of one of the mem_section[]
-arrays, and get garbage back for __sec.  You might also get a NULL back
-from __section_mem_map_addr() if the section is possibly valid, but just
-not present on this particular system.
+Response in-line.
 
-I _think_ the only kind of bug this will catch is if you have a valid
-section, with a valid section_mem_map[] but still manage to find
-yourself with an 'struct page' unclaimed by any zone and thus
-uninitialized.
-
-You could catch a lot more cases by being a bit more paranoid:
-
-void check_pfn(unsigned long pfn)
-{
-	int nid;
-	
-	// hacked in from pfn_to_nid:
-	// Don't actually do this, add a new helper near pfn_to_nid()
-	// Can this even fit in the physnode_map?
-	if (pfn / PAGES_PER_ELEMENT > ARRAY_SIZE(physnode_map))
-		WARN();
-
-	// Is there a valid nid there?
-	nid = pfn_to_nid(pfn);
-	if (nid == -1)
-		WARN();
-	
-	// check against NODE_DATA(nid)->node_start_pfn;
-	// check against NODE_DATA(nid)->node_spanned_pages;
-}
->  })
-> +#else
-> +#define __pfn_to_page(pfn)                                             \
-> +({     unsigned long __pfn = (pfn);                                    \
-> +       struct mem_section *__sec = __pfn_to_section(__pfn);            \
-> +       __section_mem_map_addr(__sec) + __pfn;  \
-> +})
-> +#endif /* CONFIG_DEBUG_MEMORY_MODEL */ 
-
-Instead of making a completely new __pfn_to_page() in the debugging
-case, I'd probably do something like this:
-
-#ifdef CONFIG_DEBUG_MEMORY_MODEL
-#define check_foo(foo) {\
-	some_check_here(foo);\
-	WARN_ON(foo->flags);\
-}
-#else
-#define check_foo(foo) do{}while(0)
-#endif;
-
-#define __pfn_to_page(pfn)                                             \
-({     unsigned long __pfn = (pfn);                                    \
-       struct mem_section *__sec = __pfn_to_section(__pfn);            \
-       struct page *__page = __section_mem_map_addr(__sec) + __pfn;    \
-       check_foo(page)							\
-       __page;                                                         \
- })
-
-That'll make sure that the two copies of __pfn_to_page() don't
-accidentally diverge.  It also makes it a lot easier to read, I think.
-
--- Dave
-
+On 6/8/2011 1:10 PM, Geert Uytterhoeven wrote:
+>>     [SCSI] tcm_fc: Adding FC_FC4 provider (tcm_fc) for FCoE target (TCM - target core) support
+>>
+>>     This is a comprehensive patch for FC-FC4 provider. tcm_fc is a FC-FC4
+>>     provider which glues target core (TCM) with Fiber channel library
+>>     (libfc). tcm_fc uses existing FC4 provider hooks from Fiber channel
+>>     library. This Fiber channel library is used by FCoE (transport - FC
+>>     over Ethernet) protocol driver as well.
+>> --- /dev/null
+>> +++ b/drivers/target/tcm_fc/tfc_conf.c
+>> +static int __init ft_init(void)
+>> +{
+>> +       if (ft_register_configfs())
+>> +               return -1;
+>> +       if (fc_fc4_register_provider(FC_TYPE_FCP,&ft_prov)) {
+>> +               ft_deregister_configfs();
+>> +               return -1;
+>> +       }
+>> +       blocking_notifier_chain_register(&fc_lport_notifier_head,&ft_notifier);
+>> +       fc_lport_iterate(ft_lport_add, NULL);
+>> +       return 0;
+>> +}
+>> +
+>> +static void __exit ft_exit(void)
+>> +{
+>> +       blocking_notifier_chain_unregister(&fc_lport_notifier_head,
+>> +&ft_notifier);
+>> +       fc_fc4_deregister_provider(FC_TYPE_FCP,&ft_prov);
+>> +       fc_lport_iterate(ft_lport_del, NULL);
+>> +       ft_deregister_configfs();
+>> +       synchronize_rcu();
+>> +}
+>> +
+>> +#ifdef MODULE
+>> +MODULE_DESCRIPTION("FC TCM fabric driver " FT_VERSION);
+>> +MODULE_LICENSE("GPL");
+>> +module_init(ft_init);
+>> +module_exit(ft_exit);
+>> +#endif /* MODULE */
+> If CONFIG_TCM_FC=y, this gives:
+>
+> | drivers/target/tcm_fc/tfc_conf.c:642: warning: ‘ft_init’ defined but not used
+>
+> Shouldn't the #ifdef MODULE and #endif just be removed?
+Agree. Will get it fixed.
+> Who else initializes this module if it's builtin?
+> E.g. ft_register_configfs() is global, but not used outside this source file?
+>
+> Gr{oetje,eeting}s,
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
+Thanks
+-- KIran P.
