@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab1FHT2I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:28:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41824 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab1FHT2F (ORCPT
+	id S1756623Ab1FHTfC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:35:02 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54974 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755661Ab1FHTet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:28:05 -0400
-Message-ID: <4DEFCD07.5020505@kernel.org>
-Date: Wed, 08 Jun 2011 12:27:03 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Wed, 8 Jun 2011 15:34:49 -0400
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-References: <4DECFC1C.10801@xs4all.nl> <4DED0394.2090000@gmail.com> <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com> <20110607014127.GA8450@srcf.ucam.org> <4DED8752.5070005@kernel.org> <4DEDEA73.7010900@gmail.com> <4DEE17F9.6020503@gmail.com> <4DEEA548.5020405@kernel.org> <4DEFA6E3.6090809@xs4all.nl> <4DEFCAE0.6050700@kernel.org> <20110608192321.GA28865@srcf.ucam.org>
-In-Reply-To: <20110608192321.GA28865@srcf.ucam.org>
+In-Reply-To: <20110608191758.GA12457@elte.hu>
+References: <20110606155236.GA7374@elte.hu> <1307376039.2322.164.camel@twins>
+ <20110606160810.GA16636@elte.hu> <1307376771.2322.168.camel@twins>
+ <20110606161749.GA22157@elte.hu> <4DED0292.1040605@die-jansens.de>
+ <4DED0423.4050904@die-jansens.de> <20110606170725.GD2391@elte.hu>
+ <1307380311.2322.223.camel@twins> <1307548218.3941.6.camel@twins> <20110608191758.GA12457@elte.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 8 Jun 2011 12:27:19 -0700
+Message-ID: <BANLkTim8LY0ekPQNZasUbinKcvS78y_umw@mail.gmail.com>
+Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
+ watchdog messages
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>, Arne Jansen <lists@die-jansens.de>,
+        mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        efault@gmx.de, npiggin@kernel.dk, akpm@linux-foundation.org,
+        frank.rowand@am.sony.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090204.4DEFCD11.00A0,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2011 12:23 PM, Matthew Garrett wrote:
-> On Wed, Jun 08, 2011 at 12:17:52PM -0700, Yinghai Lu wrote:
->> we need to revert patch from mjg.
->>
->> From 916f676f8dc016103f983c7ec54c18ecdbb6e349 Mon Sep 17 00:00:00 2001
->> From: Matthew Garrett <mjg@redhat.com>
->> Date: Wed, 25 May 2011 09:53:13 -0400
->> Subject: [PATCH] x86, efi: Retain boot service code until after switching to
->>  virtual mode
-> 
-> That's not a long-term option, since we have no way to distinguish 
-> between a machine that requires boot services code to be mapped and a 
-> machine that doesn't. Reverting just breaks the former set again. 
+On Wed, Jun 8, 2011 at 12:17 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> Hm, the no-wakeup aspect seems rather useful.
 
-what former? you can not fix some corner case by breaking most other cases.
+I like the patch, but I would like to get it much better abstracted
+out. Make some kind of
 
-> We need to ensure that the kernel isn't overlapping boot services code.
+  void atomic_down();
+  int atomic_down_trylock();
+  void atomic_up();
 
-bootloader will put kernel from 16M, and boot services are on those area already.
+interfaces that basically get the semaphore in an "atomic" mode that
+leaves the semaphore spinlock locked in the locked region.
 
-Yinghai
+So they would basically be spinlocks that can then be mixed with
+normal sleeping semaphore usage.
+
+> Could we perhaps remove console_sem and replace it with a mutex and
+> do something like this with a mutex and its ->wait_lock?
+
+That would be horrible.
+
+The reason it works well for semaphores is that the semaphores have no
+architecture-specific fast-path any more, and everything is done
+within the spinlock.
+
+With a mutex? Not good. We have several different mutex
+implementations, along with fastpaths that never touch the spinlock at
+all etc. And that is very much on purpose, because the spinlock
+approach is noticeably slower and needs more atomic accesses. In
+contrast, the semaphores are "legacy interfaces" and aren't considered
+high-performance locking any more.
+
+                      Linus
