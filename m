@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab1FHHQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 03:16:50 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59166 "EHLO mx2.mail.elte.hu"
+	id S1754428Ab1FHHYX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 03:24:23 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:55211 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751839Ab1FHHQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 03:16:46 -0400
-Date: Wed, 8 Jun 2011 09:16:20 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: pageexec@freemail.hu
-Cc: Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH v5 8/9] x86-64: Emulate legacy vsyscalls
-Message-ID: <20110608071620.GB6747@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>
- <4DED5985.542.14A05486@pageexec.freemail.hu>
- <20110607083059.GB4133@elte.hu>
- <4DEEB31B.3353.19E649C2@pageexec.freemail.hu>
+	id S1754287Ab1FHHYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 03:24:22 -0400
+Date: Wed, 8 Jun 2011 09:24:16 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Nicolas Palix <Nicolas.Palix@inria.fr>
+Cc: Greg Dietsche <gregory.dietsche@cuw.edu>, Gilles.Muller@lip6.fr,
+        cocci@diku.dk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] coccinelle: if(ret)return ret; return ret; semantic
+ patch
+In-Reply-To: <BANLkTim-x02kkpcRpPhZEKoJv3YMmQRNOg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1106080923060.10548@ask.diku.dk>
+References: <1307320012-31292-1-git-send-email-Gregory.Dietsche@cuw.edu>
+ <Pine.LNX.4.64.1106060651320.7113@ask.diku.dk> <4DEE482D.7020505@cuw.edu>
+ <Pine.LNX.4.64.1106071855540.4074@ask.diku.dk> <BANLkTimMvG332_c4TUPefOJDDE8obowVdQ@mail.gmail.com>
+ <4DEEAD5D.2090406@cuw.edu> <BANLkTim-x02kkpcRpPhZEKoJv3YMmQRNOg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DEEB31B.3353.19E649C2@pageexec.freemail.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 8 Jun 2011, Nicolas Palix wrote:
 
-* pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+> Hi,
+> 
+> On Wed, Jun 8, 2011 at 12:59 AM, Greg Dietsche <gregory.dietsche@cuw.edu> wrote:
+> > On 06/07/2011 04:54 PM, Nicolas Palix wrote:
+> >>
+> >> I remember me having worked on that but I cannot find any patch
+> >> about it so your patch is more that welcome. Some users have requested it
+> >> some months ago.
+> >>
+> >> As far as I can remember, with "M=" you can not use $srctree only but
+> >> still
+> >> need it for the -I for instance. I think I then run into a situation where
+> >> I
+> >> have an ambiguity about how to setup the flags for coccinelle, but I am
+> >> sure
+> >> about the reason I dropped my patch. Maybe I don't know well enough the
+> >> build
+> >> system and options...
+> >>
+> >> So, don't hesitate to submit your patch.
+> >>
+> >
+> > I'll submit what I have done as a new thread / patch series. I've not done
+> > much testing with it and am certainly not any kind of build system expert,
+> > but it has worked well for me so far :) A few more people trying it out /
+> > testing it would be a great idea.
+> 
+> I finally found the thread where we discuss this feature.
+> http://lkml.org/lkml/2010/7/2/279
+> 
+> I haven't the time to test your patch right now but at the time
+> the problem was in the patch mode which produces erroneous file names
+> (in the lines with ---/+++).
+> As far as I can remember, using the -dir and -patch options of
+> coccinelle doesn't work with external modules.
 
-> to give you an idea:
-> - if a code path executes in 1M or 1K cycles once every hour, then
->   it's not a fast path, it doesn't matter to anyone whether it runs
->   1 or 10 cycles faster or not,
-> - if a code path executes in 1M cycles 100 times a second then it's
->   still not a fast path where single cycle speedups would mean anything,
-> - now if a code path executes in 1K cycles 100K times a second then
->   suddenly there's a huge multiplier on even single cycle improvements
->   that *may* be measurable and therefore relevant for some users
+Can you give a concrete example?  -patch is supposed to address the 
+problem of undesired path elements, but perhaps it is not sufficient in 
+this case.  There could be a problem of knowing what the argument to 
+-patch should be?
 
-The thing is, as i explained it before, your claim:
-
-  > a page fault is never a fast path
-
-is simply ridiculous on its face and crazy talk.
-
-Beyond all the reasons why we don't want to touch the page fault path 
-we have a working, implemented, tested IDT based alternative approach 
-here that is faster and more compartmented so there's no reason 
-whatsoever to touch the page fault path. We *do* add code to the page 
-fault path in justified cases so this is not an absolute rule, but we 
-try to avoid doing it, for all the reasons that me and others 
-outlined.
-
-Even if you do not take my word for it, several prominent kernel 
-developers told you already that you are wrong, and i also showed you 
-the commits that prove you wrong.
-
-Your reply to that was to try to change the topic, laced with 
-frequent insults thrown at me. You called me an 'asshole' yet the 
-only thing i did was that i argued with you patiently.
-
-Is there *any* point where you are willing to admit that you are 
-wrong or should i just start filtering out your emails to save me all 
-this trouble? When you comment on technical details you generally 
-make very good suggestions so i'd hate to stop listening to your 
-feedback, but there's a S/N ratio threshold under which i will need 
-to do it ...
-
-Thanks,
-
-	Ingo
+julia 
