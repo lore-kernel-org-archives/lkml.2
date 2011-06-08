@@ -1,140 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab1FHV1t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 17:27:49 -0400
-Received: from relay01.digicable.hu ([92.249.128.189]:50398 "EHLO
-	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755381Ab1FHV1r (ORCPT
+	id S1754721Ab1FHV2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 17:28:36 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:33210 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab1FHV2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 17:27:47 -0400
-Message-ID: <4DEFE938.70408@freemail.hu>
-Date: Wed, 08 Jun 2011 23:27:20 +0200
-From: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+	Wed, 8 Jun 2011 17:28:35 -0400
+Date: Wed, 8 Jun 2011 22:28:13 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jim Bos <jim876@xs4all.nl>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+Message-ID: <20110608212813.GB32056@srcf.ucam.org>
+References: <20110608193833.GA29855@srcf.ucam.org>
+ <4DEFD220.5040507@kernel.org>
+ <20110608195250.GB30256@srcf.ucam.org>
+ <4DEFD58D.5060402@kernel.org>
+ <20110608200903.GA30694@srcf.ucam.org>
+ <4DEFDA4A.9080500@kernel.org>
+ <20110608203037.GA31052@srcf.ucam.org>
+ <4DEFDD69.7010000@kernel.org>
+ <20110608204244.GA31484@srcf.ucam.org>
+ <BANLkTikfbSsgGgNEQ3GVD=HOPn1Dz_xh+g@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Matt Mooney <mfm@muteddisk.com>,
-        Kulikov Vasiliy <segooon@gmail.com>, Endre Kollar <taxy443@gmail.com>,
-        Arjan Mels <arjan.mels@gmx.net>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        David Chang <dchang@novell.com>,
-        Himanshu Chauhan <hschauhan@nulltrace.org>,
-        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
-        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usbip: handle length at sysfs show() functions
-References: <4DE5CA9F.6010303@freemail.hu> <20110607213418.GB11102@kroah.com> <4DEF0822.7070500@freemail.hu> <20110608160931.GB21645@kroah.com>
-In-Reply-To: <20110608160931.GB21645@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Original: 94.21.203.101
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikfbSsgGgNEQ3GVD=HOPn1Dz_xh+g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> On Wed, Jun 08, 2011 at 07:26:58AM +0200, Németh Márton wrote:
->> Greg KH wrote:
->>> On Wed, Jun 01, 2011 at 07:14:07AM +0200, Németh Márton wrote:
->>>> The sysfs show() functions shall return the actual content length of
->>>> the result buffer. According to Documentation/filesystems/sysfs.txt:215
->>>> the scnprintf() function is preferred.
->>>>
->>>> See also the article titled "snprintf() confusion" at
->>>> http://lwn.net/Articles/69419/ .
->>> [...]
->>>
->>> Here we are doing lots of work to try to put more than one value in the
->>> sysfs file, and return the proper data to the kernel about how big the
->>> buffer we used.
->>>
->>> That's wrong, and violates the "one value per file" sysfs rule, so that
->>> should be fixed instead of trying to change the sprintf() call.
->> As I understand there is a need to change the design here. Currently I
->> get the following content when vhci-hcd is loaded but not yet used:
->>
->> $ cat /sys/devices/platform/vhci_hcd/status
->> prt sta spd bus dev socket           local_busid
->> 000 004 000 000 000 0000000000000000 0-0
->> 001 004 000 000 000 0000000000000000 0-0
->> 002 004 000 000 000 0000000000000000 0-0
->> 003 004 000 000 000 0000000000000000 0-0
->> 004 004 000 000 000 0000000000000000 0-0
->> 005 004 000 000 000 0000000000000000 0-0
->> 006 004 000 000 000 0000000000000000 0-0
->> 007 004 000 000 000 0000000000000000 0-0
->>
->> The fields are: port, status, speed, device ID, socket pointer and
->> local busid name. This is too complex for sysfs. Maybe we could extend
->> the devices file of usbfs with some new rows?
+On Wed, Jun 08, 2011 at 02:06:21PM -0700, Linus Torvalds wrote:
+> On Wed, Jun 8, 2011 at 1:42 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > On Wed, Jun 08, 2011 at 01:36:57PM -0700, Yinghai Lu wrote:
+> >
+> >> or just let bootloader to mark those boot services just like run-time services in e820 table or setupdata?
+> >
+> > That was my original approach, but if there's boot services code at the
+> > top of RAM it means that max_pfn is wrong and it's difficult to recover
+> > the memory.
 > 
-> Ick, I doubt it as there are lots of tools that parse that file already.
+> WHO CARES if the memory is difficult to recover? Just let it be. EFI
+> is an abomination in the eyes of God, and we sure as hell shouldn't
+> bend over backwards over the stupidities in it. If it means that you
+> lose a meg of RAM when you use EFI, that's the least of our problems.
 
-usbip is still part of the staging directory. In dmesg the following appear:
+Boot services data includes everything that was allocated by the EFI 
+memory allocator. Depending on what the system decided to do before 
+deigning to run our code, that might be a meg - or it might be several 
+hundred. And in the process it's probably fragmented RAM into god knows 
+how many small chunks.
 
-| usbip_common_mod: module is from the staging directory, the quality is unknown, you have been warned.
-| usbip_common_mod: usbip common driver1.0
-| vhci_hcd: module is from the staging directory, the quality is unknown, you have been warned.
+E820 limits us to 128 ranges, and systems I'm looking at right now are 
+already using over 140 boot services regions. Some of them are 
+contiguous and we could just merge them for e820, but that leaves us at 
+the whim of whoever wrote the allocator for the firmware. And do you 
+want to bet on them having done this sanely?
 
-so this means that usbip is a work-in-progress, it might be changed anytime. On
-the other hand we can do this nice way: a new entry in  Documentation/feature-removal-schedule.txt
-for /sys/devices/platform/vhci_hcd/status file removal, let's say it will be
-removed before the usbip goes to mainline. In parallel the new interface
-can be developed.
-
-> But yes, you are correct, this should not be in sysfs at all.
-> 
-> What's the use for this file?  Who uses it?  Is it just debugging
-> output?  Information for people to gaze at if they feel like it?
-> Something else?
-
-Based on the user space source code at drivers/staging/usbip/userspace/
-I can identify the following usages:
-
-libsrc/vhci_driver.c::get_nports():
- - finding out how many ports the VHCI has
-
-libsrc/vhci_driver.c::parse_status():
- - VHCI port number to identify virtual ports
- - fetching the status of each VHCI ports whether it is
-     - vdev does not connect a remote device: (status = VDEV_ST_NULL = 4):
-       "Port Available"
-     - vdev is used, but the USB address is not assigned yet (status =
-       VDEV_ST_NOTASSIGNED = 5): "Port Initializing"
-     - used (status = VDEV_ST_USED = 6): "Port in Use"
-     - error (VDEV_ST_ERROR = 7): "Port Error"
- - the speed can be unknown/low/full/high/variable
- - it looks like the bus column was merged with the device column but I
-   currently cannot find when
- - the device ID is splited to the upper 16bits: bus number, and lower
-   16bits: device number
- - based on local_busid the usb device file can be found in /sys using
-   sysfs_open_device()
-
-Note that the socket parameter is only printed out as a debug information: it
-is not used anywhere.
-
-Maybe most of the file content is redundant, because:
-
- - we have /sys/bus/usb/devices/usb*/maxchild which is "number of ports if hub"
-   according to linux/usb.h:410 ;
- - we have /sys/bus/usb/devices/*-*/speed to identify the device speed;
- - We have already bus number at /sys/bus/usb/devices/usb*/busnum or at
-   /sys/bus/usb/devices/*-*/busnum ;
- - we also have /sys/bus/usb/devices/*-*/devnum ;
- - it is possbile to collect all the devices from /sys/bus/usb/devices/*-*
-   filtering to the first number to /sys/bus/usb/devices/usb*/busnum .
-
-The only thing which is special for VHCI is the status for each port:
-DEV_ST_NULL/VDEV_ST_NOTASSIGNED/VDEV_ST_USED/VDEV_ST_ERROR .
-
-> Once we figure that out, then we can determine where it should go
-> (debugfs, sysfs in a different file format, usbfs, etc.)
-
-Maybe the status could fit under /sys/devices/platform/vhci_hcd/*-*/status .
-This file could contain only one number showing the status of that single
-device.
-
-Regards,
-
-	Márton Németh
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
