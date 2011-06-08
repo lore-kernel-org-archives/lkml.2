@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab1FHCKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 22:10:33 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52166 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab1FHCKc convert rfc822-to-8bit (ORCPT
+	id S1751703Ab1FHC35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 22:29:57 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:45487 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751055Ab1FHC34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 22:10:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KX1XKvlrqZzeilPMWTiFG4CUB1zRqXLLVWmXnA3DtG1huVB1sZ5Dr13KZAnzNr8wom
-         a8D2H3X3oZCmlhumqzHwq+fR/mztn6BZD+T0H4UrCZ2tzVOzEJzhoIa+vbFOi0oGmiKl
-         B/S1paJkldQIxuiAAA91CEX2+OQ+Q8bFZFXnY=
+	Tue, 7 Jun 2011 22:29:56 -0400
+Message-ID: <4DEEDEA1.6070200@dsn.okisemi.com>
+Date: Wed, 08 Jun 2011 11:29:53 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1307494181.2874.214.camel@pasglop>
-References: <1307472447-1656-1-git-send-email-ericvh@gmail.com>
-	<1307494181.2874.214.camel@pasglop>
-Date: Tue, 7 Jun 2011 21:10:31 -0500
-Message-ID: <BANLkTik596Oo4MTmKO62pmF2yXhYv8Nsvg@mail.gmail.com>
-Subject: Re: [PATCH] [RFC][V3] bluegene: add entry to cpu table
-From: Eric Van Hensbergen <ericvh@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        bg-linux@lists.anl-external.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
+        qi.wang@intel.com, yong.y.wang@intel.com,
+        toshiharu-linux@dsn.okisemi.com, kok.howg.ewe@intel.com,
+        joel.clark@intel.com
+Subject: Re: [RESEND]: RE: [PATCH v2 3/3] pch_gpio: support interrupt function
+References: <4DEDBE90.3090305@dsn.okisemi.com> <20110607172211.GF17754@ponder.secretlab.ca>
+In-Reply-To: <20110607172211.GF17754@ponder.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +#define PPC_FEATURE_HAS_FPU_FP2              0x00000040
->
-> Any chance for a better name ?
->
+(2011/06/08 2:22), Grant Likely wrote:
+> No, I'm saying that you don't need to implement new irq_chip
+> operations if you use the new irq_chip_generic implementation.
 
-That's the official external name,  it sucks.  I'm happy to
-PPC_FEATURE_DOUBLE_HUMMER if you'd prefer, otherwise I'm not feeling
-too creative, but am open to artistic suggestions.
+I understand your saying. It seems "new irq_chip_generic" was 
+implemented in linux-3.0.
+However "irq_chip_generic" is not implemented in stable kernel version. 
+Right ?
+So, first of all, could you accept this patch ?
+After the kernel version becomes stable, I will resubmit a patch for 
+"new irq_chip_generic".
 
-       -eric
+-- 
+tomoya
+OKI SEMICONDUCTOR CO., LTD.
