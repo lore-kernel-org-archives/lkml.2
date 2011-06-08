@@ -1,50 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab1FHCav (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 22:30:51 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:53613 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab1FHCau (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 22:30:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=Sgn3ws6DKpAFcAxWNWnwl8w5DARgR7fnOWXv7Qxr6uOoZ53g7rCkxNjGt/84nQVh/b
-         Qvukm8roND5BbHLmaNXA==
-Date: Tue, 7 Jun 2011 19:30:40 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] trace: Set __GFP_NORETRY flag for ring buffer allocating
- process
-In-Reply-To: <1307491302-9236-1-git-send-email-vnagarnaik@google.com>
-Message-ID: <alpine.DEB.2.00.1106071929570.15402@chino.kir.corp.google.com>
-References: <1307490088-8612-1-git-send-email-vnagarnaik@google.com> <1307491302-9236-1-git-send-email-vnagarnaik@google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752400Ab1FHCe1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 22:34:27 -0400
+Received: from mail.play-mail.info ([211.47.140.228]:57072 "EHLO
+	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751055Ab1FHCe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jun 2011 22:34:26 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Message-Id: <110608113424CV.00731@mail.play-mail.info>
+Date: Wed, 8 Jun 2011 11:34:24 +0900
+From: =?UTF-8?B?5YmN44Gr56eB44Gp44GT44G+44Gn6Ieq5YiG44Gu44GT44Go44KS6Kmx44GX44Gm?= 
+	<marina5250@inter7.jp>
+To: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;charset="utf-8"
+Subject: =?UTF-8?B?5YmN44Gr56eB44Gp44GT44G+44Gn6Ieq5YiG44Gu44GT44Go44KS6Kmx44GX44Gm44GE44Gf44GL44KC5b+Y44KM44Gm44GX44G+44GE44G+44GX44Gf44GL77yf?=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p582Ya3j017339
 
-On Tue, 7 Jun 2011, Vaibhav Nagarnaik wrote:
+ãã£ã¨ãã‚Œã§ãŠè¿”äº‹ã™ã‚‹ã®ã‚’èºŠèº‡ã£ã¦ã„ã‚‰ã£ã—ã‚ƒã‚‹ã®ã‹ãªã¨æ€ã£ã¦ã„ã¾ã—ãŸã€‚
+çªç„¶é€£çµ¡ãŒé€”çµ¶ãˆã€ãã—ã¦ã¾ãŸã“ã†ã—ã¦é€£çµ¡ã™ã‚‹ã“ã¨ã‚‚
+ä¸å®‰ã‚’ç…½ã‚‹çµæœã«ãªã£ã¦ã—ã¾ã£ã¦ã„ã‚‹ã®ã‹ã¨åçœã—ã¦ã„ã¾ã™ã€‚
 
-> The tracing ring buffer is allocated from kernel memory. While
-> allocating a large chunk of memory, OOM might happen which destabilizes
-> the system. Thus random processes might get killed during the
-> allocation.
-> 
-> This patch adds __GFP_NORETRY flag to the ring buffer allocation calls
-> to make it fail more gracefully if the system will not be able to
-> complete the allocation request.
-> 
-> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+ã‚ã®æ™‚é¡˜ã£ã¦ã„ã¦ã‚‚å‡ºæ¥ãªã‹ã£ãŸã“ã¨ã€
+è²´æ–¹ã«ä¼šã„ãŸã„æ€ã„ãŒå®Ÿç¾ã—ãªã‹ã£ãŸã“ã¨ã€
+ä»Šåº¦ã“ãã¯å½¢ã«ã—ãŸã„ã¨æ€ã£ã¦ã„ã¾ã™ã€‚
 
-Acked-by: David Rientjes <rientjes@google.com>
+ä»Šæ—¥ã‚‚æ™‚é–“ã¯ã‚ã‚Šã¾ã™ã‹ã‚‰ãŠè¿”äº‹å¾…ã£ã¦ã¾ã™ã­ã€‚  ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
