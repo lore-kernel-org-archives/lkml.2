@@ -1,178 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab1FHFMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 01:12:16 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52359 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab1FHFMO (ORCPT
+	id S1751989Ab1FHFHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 01:07:06 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:40873 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048Ab1FHFHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 01:12:14 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 8 Jun 2011 14:05:18 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: [BUGFIX][PATCH] memcg: fix behavior of per cpu charge cache
- draining.
-Message-Id: <20110608140518.0cd9f791.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 8 Jun 2011 01:07:04 -0400
+Message-ID: <4DEF0375.4080108@kernel.org>
+Date: Tue, 07 Jun 2011 22:07:01 -0700
+From: "J.H." <warthog9@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: users@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+CC: "FTPAdmin Kernel.org" <ftpadmin@kernel.org>
+Subject: [KORG] IPv6 Now enabled
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 07 Jun 2011 22:07:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is made against mainline git tree.
-==
->From d1372da4d3c6f8051b5b1cf7b5e8b45a8094b388 Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 8 Jun 2011 13:51:11 +0900
-Subject: [BUGFIX][PATCH] memcg: fix behavior of per cpu charge cache draining.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-For performance, memory cgroup caches some "charge" from res_counter
-into per cpu cache. This works well but because it's cache,
-it needs to be flushed in some cases. Typical cases are
-	1. when someone hit limit.
-	2. when rmdir() is called and need to charges to be 0.
+Evening everyone,
 
-But "1" has problem.
+Just thought I'd give a quick heads up to everyone that I just flipped
+DNS so that we are now IPv6 enabled.  For the most part this is going to
+be a frontend facing change, as OSUOSL does not currently have IPv6.
 
-Recently, with large SMP machines, we see many kworker/%d:%d when
-memcg hit limit. It is because of flushing memcg's percpu cache. 
-Bad things in implementation are
+Services affected:
+	- ns
+	- geons
+	- pub
+	- mirrors
+	- archive
+	- git
+	- mirrors.git
+	- android.git
+	- boot
+	- lanana
+	- linuxeda
 
-a) it's called before calling try_to_free_mem_cgroup_pages()
-   so, it's called immidiately when a task hit limit.
-   (I thought it was better to avoid to run into memory reclaim.
-    But it was wrong decision.)
+Things of note *NOT* affected:
+	- master / hera
+	- any of the dynamic web stuff
+	- vger
 
-b) Even if a cpu contains a cache for memcg not related to
-   a memcg which hits limit, drain code is called.
+This is pretty close to one of the single biggest changes we've had at
+kernel.org in a long time.  I've been fairly cautious about the
+roll-out, but considering that our dns weighs in currently at about 2K
+lines and 331K, but if I've missed something please drop a line to
+ftpadmin@kernel.org, stop by #kernel.org on freenode or #korg on
+LinuxNet or just generally get ahold of us and let us know.
 
-This patch fixes a) and b) by
+The general hope is that we can leave this in place going forward, and
+reporting anything amiss sooner rather than later would be good.
 
-A) delay calling of flushing until one run of try_to_free...
-   Then, the number of calling is much decreased.
-B) check percpu cache contains a useful data or not.
-plus
-C) check asynchronous percpu draining doesn't run on the cpu.
+If anyone is interested, I'll probably be doing up a write-up on the
+whole thing, with additional commentary, if your interested drop me a
+line and I'll let you know when it's up.
 
-Reported-by: Ying Han <yinghan@google.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   44 ++++++++++++++++++++++++++++----------------
- 1 files changed, 28 insertions(+), 16 deletions(-)
+- - John 'Warthog9' Hawley
+Chief Kernel.org Administrator
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index bd9052a..c22c0eb 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -359,7 +359,7 @@ enum charge_type {
- static void mem_cgroup_get(struct mem_cgroup *mem);
- static void mem_cgroup_put(struct mem_cgroup *mem);
- static struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *mem);
--static void drain_all_stock_async(void);
-+static void drain_all_stock_async(struct mem_cgroup *mem);
- 
- static struct mem_cgroup_per_zone *
- mem_cgroup_zoneinfo(struct mem_cgroup *mem, int nid, int zid)
-@@ -1670,8 +1670,6 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
- 		victim = mem_cgroup_select_victim(root_mem);
- 		if (victim == root_mem) {
- 			loop++;
--			if (loop >= 1)
--				drain_all_stock_async();
- 			if (loop >= 2) {
- 				/*
- 				 * If we have not been able to reclaim
-@@ -1723,6 +1721,7 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
- 				return total;
- 		} else if (mem_cgroup_margin(root_mem))
- 			return total;
-+		drain_all_stock_async(root_mem);
- 	}
- 	return total;
- }
-@@ -1934,9 +1933,11 @@ struct memcg_stock_pcp {
- 	struct mem_cgroup *cached; /* this never be root cgroup */
- 	unsigned int nr_pages;
- 	struct work_struct work;
-+	unsigned long flags;
-+#define ASYNC_FLUSHING	(0)
- };
- static DEFINE_PER_CPU(struct memcg_stock_pcp, memcg_stock);
--static atomic_t memcg_drain_count;
-+static atomic_t memcg_drain_count; /* Indicates there is synchronous flusher */
- 
- /*
-  * Try to consume stocked charge on this cpu. If success, one page is consumed
-@@ -1984,6 +1985,7 @@ static void drain_local_stock(struct work_struct *dummy)
- {
- 	struct memcg_stock_pcp *stock = &__get_cpu_var(memcg_stock);
- 	drain_stock(stock);
-+	clear_bit(ASYNC_FLUSHING, &stock->flags);
- }
- 
- /*
-@@ -2006,28 +2008,38 @@ static void refill_stock(struct mem_cgroup *mem, unsigned int nr_pages)
-  * Tries to drain stocked charges in other cpus. This function is asynchronous
-  * and just put a work per cpu for draining localy on each cpu. Caller can
-  * expects some charges will be back to res_counter later but cannot wait for
-- * it.
-+ * it. This runs only when per-cpu stock contains information of memcg which
-+ * is under specified root_mem and no other flush runs.
-  */
--static void drain_all_stock_async(void)
-+static void drain_all_stock_async(struct mem_cgroup *root_mem)
- {
- 	int cpu;
--	/* This function is for scheduling "drain" in asynchronous way.
--	 * The result of "drain" is not directly handled by callers. Then,
--	 * if someone is calling drain, we don't have to call drain more.
--	 * Anyway, WORK_STRUCT_PENDING check in queue_work_on() will catch if
--	 * there is a race. We just do loose check here.
-+
-+	/*
-+	 * If synchronous flushing (which flushes all cpus's cache) runs,
-+	 * do nothing.
- 	 */
--	if (atomic_read(&memcg_drain_count))
-+	if (unlikely(atomic_read(&memcg_drain_count)))
- 		return;
--	/* Notify other cpus that system-wide "drain" is running */
--	atomic_inc(&memcg_drain_count);
- 	get_online_cpus();
- 	for_each_online_cpu(cpu) {
- 		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
--		schedule_work_on(cpu, &stock->work);
-+		struct mem_cgroup *mem;
-+		bool do_flush;
-+
-+		rcu_read_lock();
-+		mem = stock->cached;
-+		if (!mem) {
-+			rcu_read_unlock();
-+			continue;
-+		}
-+		do_flush = ((mem == root_mem) ||
-+		     	css_is_ancestor(&mem->css, &root_mem->css));
-+		rcu_read_unlock();
-+		if (do_flush && !test_and_set_bit(ASYNC_FLUSHING, &stock->flags))
-+			schedule_work_on(cpu, &stock->work);
- 	}
-  	put_online_cpus();
--	atomic_dec(&memcg_drain_count);
- 	/* We don't wait for flush_work */
- }
- 
--- 
-1.7.4.1
-
-
+iEYEARECAAYFAk3vA3EACgkQ/E3kyWU9die9VACeI3KVCRnSXY/808YkSYmkiZtG
+LlgAniApyDu6VOkSw1rrMD5u35SPlkzA
+=+ylX
+-----END PGP SIGNATURE-----
