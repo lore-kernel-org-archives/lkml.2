@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298Ab1FHTdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:33:45 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50935 "EHLO e9.ny.us.ibm.com"
+	id S1756067Ab1FHTdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:33:21 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:55064 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755661Ab1FHTag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:30:36 -0400
+	id S1754911Ab1FHTaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 15:30:39 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,11 +14,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Robert Love <robert.w.love@intel.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>
-Subject: [PATCH tip/core/rcu 15/28] scsi,rcu: Convert call_rcu(fc_rport_free_rcu) to kfree_rcu()
-Date: Wed,  8 Jun 2011 12:29:54 -0700
-Message-Id: <1307561407-13809-15-git-send-email-paulmck@linux.vnet.ibm.com>
+        Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH tip/core/rcu 16/28] block,rcu: Convert call_rcu(disk_free_ptbl_rcu_cb) to kfree_rcu()
+Date: Wed,  8 Jun 2011 12:29:55 -0700
+Message-Id: <1307561407-13809-16-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110608192943.GA13211@linux.vnet.ibm.com>
 References: <20110608192943.GA13211@linux.vnet.ibm.com>
@@ -28,50 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-The rcu callback fc_rport_free_rcu() just calls a kfree(),
-so we use kfree_rcu() instead of the call_rcu(fc_rport_free_rcu).
+The rcu callback disk_free_ptbl_rcu_cb() just calls a kfree(),
+so we use kfree_rcu() instead of the call_rcu(disk_free_ptbl_rcu_cb).
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Robert Love <robert.w.love@intel.com>
-Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/scsi/libfc/fc_rport.c |   14 +-------------
- 1 files changed, 1 insertions(+), 13 deletions(-)
+ block/genhd.c |   10 +---------
+ 1 files changed, 1 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/scsi/libfc/fc_rport.c b/drivers/scsi/libfc/fc_rport.c
-index 49e1ccc..01e13a2 100644
---- a/drivers/scsi/libfc/fc_rport.c
-+++ b/drivers/scsi/libfc/fc_rport.c
-@@ -153,18 +153,6 @@ static struct fc_rport_priv *fc_rport_create(struct fc_lport *lport,
- }
+diff --git a/block/genhd.c b/block/genhd.c
+index 2dd9887..f076b5b 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1018,14 +1018,6 @@ static const struct attribute_group *disk_attr_groups[] = {
+ 	NULL
+ };
  
- /**
-- * fc_rport_free_rcu() - Free a remote port
-- * @rcu: The rcu_head structure inside the remote port
-- */
--static void fc_rport_free_rcu(struct rcu_head *rcu)
+-static void disk_free_ptbl_rcu_cb(struct rcu_head *head)
 -{
--	struct fc_rport_priv *rdata;
+-	struct disk_part_tbl *ptbl =
+-		container_of(head, struct disk_part_tbl, rcu_head);
 -
--	rdata = container_of(rcu, struct fc_rport_priv, rcu);
--	kfree(rdata);
+-	kfree(ptbl);
 -}
 -
--/**
-  * fc_rport_destroy() - Free a remote port after last reference is released
-  * @kref: The remote port's kref
-  */
-@@ -173,7 +161,7 @@ static void fc_rport_destroy(struct kref *kref)
- 	struct fc_rport_priv *rdata;
+ /**
+  * disk_replace_part_tbl - replace disk->part_tbl in RCU-safe way
+  * @disk: disk to replace part_tbl for
+@@ -1046,7 +1038,7 @@ static void disk_replace_part_tbl(struct gendisk *disk,
  
- 	rdata = container_of(kref, struct fc_rport_priv, kref);
--	call_rcu(&rdata->rcu, fc_rport_free_rcu);
-+	kfree_rcu(rdata, rcu);
+ 	if (old_ptbl) {
+ 		rcu_assign_pointer(old_ptbl->last_lookup, NULL);
+-		call_rcu(&old_ptbl->rcu_head, disk_free_ptbl_rcu_cb);
++		kfree_rcu(old_ptbl, rcu_head);
+ 	}
  }
  
- /**
 -- 
 1.7.3.2
 
