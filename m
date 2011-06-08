@@ -1,66 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab1FHTi7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:38:59 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:54214 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755053Ab1FHTi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:38:58 -0400
-Date: Wed, 8 Jun 2011 20:38:33 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
-Message-ID: <20110608193833.GA29855@srcf.ucam.org>
-References: <4DED8752.5070005@kernel.org>
- <4DEDEA73.7010900@gmail.com>
- <4DEE17F9.6020503@gmail.com>
- <4DEEA548.5020405@kernel.org>
- <4DEFA6E3.6090809@xs4all.nl>
- <4DEFCAE0.6050700@kernel.org>
- <20110608192321.GA28865@srcf.ucam.org>
- <4DEFCD07.5020505@kernel.org>
- <20110608192950.GA29235@srcf.ucam.org>
- <4DEFCF1A.9030400@kernel.org>
+	id S1755956Ab1FHTkY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:40:24 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:57400 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755053Ab1FHTkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 15:40:22 -0400
+Date: Wed, 8 Jun 2011 12:40:17 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 2/4] sched: Isolate preempt counting in its own config
+ option
+Message-ID: <20110608194017.GE2324@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1307555315-30989-1-git-send-email-fweisbec@gmail.com>
+ <1307555315-30989-3-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DEFCF1A.9030400@kernel.org>
+In-Reply-To: <1307555315-30989-3-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 12:35:54PM -0700, Yinghai Lu wrote:
-> On 06/08/2011 12:29 PM, Matthew Garrett wrote:
-> >> what former? you can not fix some corner case by breaking most other cases.
-> > 
-> > All Dell laptops, all new Apples, some Lenovos, various Intel server 
-> > platforms. That I've found so far.
+On Wed, Jun 08, 2011 at 07:48:33PM +0200, Frederic Weisbecker wrote:
+> Create a new CONFIG_PREEMPT_COUNT that handles the inc/dec
+> of preempt count offset independently. So that the offset
+> can be updated by preempt_disable() and preempt_enable()
+> even without the need for CONFIG_PREEMPT beeing set.
 > 
-> do you mean before that patch, all those machine will not boot linux kernel with UEFI support?
-
-Correct.
-
-> > And we need to be able to map the boot services code, so we can't put 
-> > the kernel on top of it.
+> This prepares to make CONFIG_DEBUG_SPINLOCK_SLEEP working
+> with !CONFIG_PREEMPT where it currently doesn't detect
+> code that sleeps inside explicit preemption disabled
+> sections.
 > 
-> after bootloader, those area should be free already.
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-That's what the spec says. Reality says differently. We need those 
-ranges to be available to the kernel until after SetVirtualAddressMap() 
-has been called, which means we need to avoid putting the kernel on top 
-of them.
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  include/linux/bit_spinlock.h |    2 +-
+>  include/linux/hardirq.h      |    4 ++--
+>  include/linux/pagemap.h      |    4 ++--
+>  include/linux/preempt.h      |   26 +++++++++++++++++---------
+>  include/linux/rcupdate.h     |   12 ++++++------
+>  include/linux/sched.h        |    2 +-
+>  kernel/Kconfig.preempt       |    3 +++
+>  kernel/sched.c               |    2 +-
+>  8 files changed, 33 insertions(+), 22 deletions(-)
+> 
+> diff --git a/include/linux/bit_spinlock.h b/include/linux/bit_spinlock.h
+> index b4326bf..564d997 100644
+> --- a/include/linux/bit_spinlock.h
+> +++ b/include/linux/bit_spinlock.h
+> @@ -88,7 +88,7 @@ static inline int bit_spin_is_locked(int bitnum, unsigned long *addr)
+>  {
+>  #if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
+>  	return test_bit(bitnum, addr);
+> -#elif defined CONFIG_PREEMPT
+> +#elif defined CONFIG_PREEMPT_COUNT
+>  	return preempt_count();
+>  #else
+>  	return 1;
+> diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+> index ba36217..f743883f 100644
+> --- a/include/linux/hardirq.h
+> +++ b/include/linux/hardirq.h
+> @@ -93,7 +93,7 @@
+>   */
+>  #define in_nmi()	(preempt_count() & NMI_MASK)
+> 
+> -#if defined(CONFIG_PREEMPT)
+> +#if defined(CONFIG_PREEMPT_COUNT)
+>  # define PREEMPT_CHECK_OFFSET 1
+>  #else
+>  # define PREEMPT_CHECK_OFFSET 0
+> @@ -115,7 +115,7 @@
+>  #define in_atomic_preempt_off() \
+>  		((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_CHECK_OFFSET)
+> 
+> -#ifdef CONFIG_PREEMPT
+> +#ifdef CONFIG_PREEMPT_COUNT
+>  # define preemptible()	(preempt_count() == 0 && !irqs_disabled())
+>  # define IRQ_EXIT_OFFSET (HARDIRQ_OFFSET-1)
+>  #else
+> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+> index 716875e..8e38d4c 100644
+> --- a/include/linux/pagemap.h
+> +++ b/include/linux/pagemap.h
+> @@ -134,7 +134,7 @@ static inline int page_cache_get_speculative(struct page *page)
+>  	VM_BUG_ON(in_interrupt());
+> 
+>  #if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
+> -# ifdef CONFIG_PREEMPT
+> +# ifdef CONFIG_PREEMPT_COUNT
+>  	VM_BUG_ON(!in_atomic());
+>  # endif
+>  	/*
+> @@ -172,7 +172,7 @@ static inline int page_cache_add_speculative(struct page *page, int count)
+>  	VM_BUG_ON(in_interrupt());
+> 
+>  #if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
+> -# ifdef CONFIG_PREEMPT
+> +# ifdef CONFIG_PREEMPT_COUNT
+>  	VM_BUG_ON(!in_atomic());
+>  # endif
+>  	VM_BUG_ON(page_count(page) == 0);
+> diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+> index 2e681d9..58969b2 100644
+> --- a/include/linux/preempt.h
+> +++ b/include/linux/preempt.h
+> @@ -27,6 +27,21 @@
+> 
+>  asmlinkage void preempt_schedule(void);
+> 
+> +#define preempt_check_resched() \
+> +do { \
+> +	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
+> +		preempt_schedule(); \
+> +} while (0)
+> +
+> +#else /* !CONFIG_PREEMPT */
+> +
+> +#define preempt_check_resched()		do { } while (0)
+> +
+> +#endif /* CONFIG_PREEMPT */
+> +
+> +
+> +#ifdef CONFIG_PREEMPT_COUNT
+> +
+>  #define preempt_disable() \
+>  do { \
+>  	inc_preempt_count(); \
+> @@ -39,12 +54,6 @@ do { \
+>  	dec_preempt_count(); \
+>  } while (0)
+> 
+> -#define preempt_check_resched() \
+> -do { \
+> -	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
+> -		preempt_schedule(); \
+> -} while (0)
+> -
+>  #define preempt_enable() \
+>  do { \
+>  	preempt_enable_no_resched(); \
+> @@ -80,18 +89,17 @@ do { \
+>  	preempt_check_resched(); \
+>  } while (0)
+> 
+> -#else
+> +#else /* !CONFIG_PREEMPT_COUNT */
+> 
+>  #define preempt_disable()		do { } while (0)
+>  #define preempt_enable_no_resched()	do { } while (0)
+>  #define preempt_enable()		do { } while (0)
+> -#define preempt_check_resched()		do { } while (0)
+> 
+>  #define preempt_disable_notrace()		do { } while (0)
+>  #define preempt_enable_no_resched_notrace()	do { } while (0)
+>  #define preempt_enable_notrace()		do { } while (0)
+> 
+> -#endif
+> +#endif /* CONFIG_PREEMPT_COUNT */
+> 
+>  #ifdef CONFIG_PREEMPT_NOTIFIERS
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 99f9aa7..8f4f881 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -239,7 +239,7 @@ extern int rcu_read_lock_bh_held(void);
+>   * Check debug_lockdep_rcu_enabled() to prevent false positives during boot
+>   * and while lockdep is disabled.
+>   */
+> -#ifdef CONFIG_PREEMPT
+> +#ifdef CONFIG_PREEMPT_COUNT
+>  static inline int rcu_read_lock_sched_held(void)
+>  {
+>  	int lockdep_opinion = 0;
+> @@ -250,12 +250,12 @@ static inline int rcu_read_lock_sched_held(void)
+>  		lockdep_opinion = lock_is_held(&rcu_sched_lock_map);
+>  	return lockdep_opinion || preempt_count() != 0 || irqs_disabled();
+>  }
+> -#else /* #ifdef CONFIG_PREEMPT */
+> +#else /* #ifdef CONFIG_PREEMPT_COUNT */
+>  static inline int rcu_read_lock_sched_held(void)
+>  {
+>  	return 1;
+>  }
+> -#endif /* #else #ifdef CONFIG_PREEMPT */
+> +#endif /* #else #ifdef CONFIG_PREEMPT_COUNT */
+> 
+>  #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+> 
+> @@ -276,17 +276,17 @@ static inline int rcu_read_lock_bh_held(void)
+>  	return 1;
+>  }
+> 
+> -#ifdef CONFIG_PREEMPT
+> +#ifdef CONFIG_PREEMPT_COUNT
+>  static inline int rcu_read_lock_sched_held(void)
+>  {
+>  	return preempt_count() != 0 || irqs_disabled();
+>  }
+> -#else /* #ifdef CONFIG_PREEMPT */
+> +#else /* #ifdef CONFIG_PREEMPT_COUNT */
+>  static inline int rcu_read_lock_sched_held(void)
+>  {
+>  	return 1;
+>  }
+> -#endif /* #else #ifdef CONFIG_PREEMPT */
+> +#endif /* #else #ifdef CONFIG_PREEMPT_COUNT */
+> 
+>  #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 483c1ed..4ecd5cb 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2502,7 +2502,7 @@ extern int _cond_resched(void);
+> 
+>  extern int __cond_resched_lock(spinlock_t *lock);
+> 
+> -#ifdef CONFIG_PREEMPT
+> +#ifdef CONFIG_PREEMPT_COUNT
+>  #define PREEMPT_LOCK_OFFSET	PREEMPT_OFFSET
+>  #else
+>  #define PREEMPT_LOCK_OFFSET	0
+> diff --git a/kernel/Kconfig.preempt b/kernel/Kconfig.preempt
+> index bf987b9..24e7cb0 100644
+> --- a/kernel/Kconfig.preempt
+> +++ b/kernel/Kconfig.preempt
+> @@ -35,6 +35,7 @@ config PREEMPT_VOLUNTARY
+> 
+>  config PREEMPT
+>  	bool "Preemptible Kernel (Low-Latency Desktop)"
+> +	select PREEMPT_COUNT
+>  	help
+>  	  This option reduces the latency of the kernel by making
+>  	  all kernel code (that is not executing in a critical section)
+> @@ -52,3 +53,5 @@ config PREEMPT
+> 
+>  endchoice
+> 
+> +config PREEMPT_COUNT
+> +       bool
+> \ No newline at end of file
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 01d9536..90ad7cf 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -2843,7 +2843,7 @@ void sched_fork(struct task_struct *p)
+>  #if defined(CONFIG_SMP)
+>  	p->on_cpu = 0;
+>  #endif
+> -#ifdef CONFIG_PREEMPT
+> +#ifdef CONFIG_PREEMPT_COUNT
+>  	/* Want to start with kernel preemption disabled. */
+>  	task_thread_info(p)->preempt_count = 1;
+>  #endif
+> -- 
+> 1.7.5.4
+> 
