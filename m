@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab1FHWMl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 18:12:41 -0400
-Received: from mout.perfora.net ([74.208.4.194]:54206 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754015Ab1FHWMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 18:12:40 -0400
-Date: Wed, 8 Jun 2011 18:11:41 -0400
-From: Stephen Wilson <wilsons@start.ca>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 13/22] 13: uprobes: Handing int3 and
- singlestep exception.
-Message-ID: <20110608221141.GB9965@wicker.gateway.2wire.net>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607130051.28590.68088.sendpatchset@localhost6.localdomain6>
+	id S1756509Ab1FHWMS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 18:12:18 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:47662 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab1FHWMQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 18:12:16 -0400
+Message-ID: <4DEFF3B9.7070907@canonical.com>
+Date: Wed, 08 Jun 2011 15:12:09 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110607130051.28590.68088.sendpatchset@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:zo3MUd9PZ+vqDTvawJqV25HPvjo25OlNrPzg6epjSWS
- j6aErHIcChBL3ipnqrBBw/DfMniYZ2Wgx43dwH4LyP+XE6VdmC
- QXDydtV7LYjQ1FoCls+5lGmpYSUK3e9/y1lJEs1FFH++6Zoliy
- WEkRaoPmZ3tcmmKeFSjqSQ84car5NRXT0O8uT89MurjUuqUfhi
- z4UG1SS8FKEF0TUwV7ytw9QPSkJkzlc4JVJ4Os9bAI=
+To: David Rientjes <rientjes@google.com>
+CC: Matt Mackall <mpm@selenic.com>, David Howells <dhowells@redhat.com>,
+        Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: 3.0.0-rc2-git1 -- BUG: sleeping function called from invalid
+ context at mm/slub.c:847
+References: <BANLkTimq+h+WyboMbPGVH1uJuj64YuRLdw@mail.gmail.com> <alpine.DEB.2.00.1106081305430.10320@chino.kir.corp.google.com> <1307564248.4204.1013.camel@calx> <alpine.DEB.2.00.1106081407440.10320@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1106081407440.10320@chino.kir.corp.google.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/08/2011 02:34 PM, David Rientjes wrote:
+> On Wed, 8 Jun 2011, Matt Mackall wrote:
+> 
+>>> Not sure why this ever actually worked with apparmor if prepare_creds() 
+>>> does an unconditional GFP_KERNEL allocation since this codepath hasn't 
+>>> changed in at least a year and we're holding a spinlock from setrlimit.  
+>>> John?
+>>
+>> Probably a lack of people enabling (and using!) both apparmor and
+>> might_sleep. I don't this would be caught by a randconfig boot test.
+>>
+> 
+> Right, CONFIG_DEBUG_SPINLOCK_SLEEP isn't enabled by default even though 
+> CONFIG_DEBUG_KERNEL is.  We should probably just allow prepare_creds() to 
+> take a gfp_t argument just like security_prepare_creds() and change 
+> existing callers to use GFP_KERNEL with the exception of those using 
+> setrlimit where we're always holding the spinlock.  
+> 
+> Documentation/security/credentials.txt says this:
+> 
+> 	To alter the current process's credentials, a function should first prepare a
+> 	new set of credentials by calling:
+> 
+>         	struct cred *prepare_creds(void);   
+> 
+> 	this locks current->cred_replace_mutex and then allocates and constructs a
+> 	duplicate of the current process's credentials, returning with the mutex still
+> 	held if successful.  It returns NULL if not successful (out of memory).
+> 
+> although that mutex doesn't exist.  David, any downsides to passing the 
+> gfp_t into prepare_creds()?
 
-
-On Tue, Jun 07, 2011 at 06:30:51PM +0530, Srikar Dronamraju wrote:
-> +/*
-> + * uprobe_post_notifier gets called in interrupt context.
-> + * It completes the single step operation.
-> + */
-> +int uprobe_post_notifier(struct pt_regs *regs)
-> +{
-> +	struct uprobe *uprobe;
-> +	struct uprobe_task *utask;
-> +
-> +	if (!current->mm || !current->utask || !current->utask->active_uprobe)
-> +		/* task is currently not uprobed */
-> +		return 0;
-> +
-> +	utask = current->utask;
-> +	uprobe = utask->active_uprobe;
-> +	if (!uprobe)
-> +		return 0;
-> +
-> +	set_thread_flag(TIF_UPROBE);
-> +	return 1;
-> +}
-
-Looks like this can be simplified.  If current->utask->active_uprobe is
-non-null then surely the assignment to uprobe will be too?
-
-
--- 
-steve
-
+Well it certainly isn't needed for the apparmor case, as the bug is being
+triggered by how apparmor handles policy replacement, and we have a means
+of handling that for atomic contexts.
