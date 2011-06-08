@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab1FHQDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 12:03:35 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40821 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756314Ab1FHQDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 12:03:32 -0400
-Message-ID: <4DEF9D52.1010909@suse.cz>
-Date: Wed, 08 Jun 2011 18:03:30 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] Random kconfig patches
-References: <1307386711-8866-1-git-send-email-lacombar@gmail.com>
-In-Reply-To: <1307386711-8866-1-git-send-email-lacombar@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751674Ab1FIOPM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 10:15:12 -0400
+Received: from router-fw.net-space.pl ([89.174.63.77]:36382 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751556Ab1FIOPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 10:15:08 -0400
+Date: Wed, 8 Jun 2011 18:04:45 +0200
+From: Daniel Kiper <dkiper@net-space.pl>
+To: Ian Campbell <Ian.Campbell@eu.citrix.com>
+Cc: Daniel Kiper <dkiper@net-space.pl>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: kexec/kdump for Xen - implementation question
+Message-ID: <20110608160445.GA6091@router-fw-old.local.net-space.pl>
+References: <20110606160434.GA26021@router-fw-old.local.net-space.pl> <1307442566.775.555.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307442566.775.555.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6.6.2011 20:58, Arnaud Lacombe wrote:
-> Hi Michal,
+On Tue, Jun 07, 2011 at 11:29:26AM +0100, Ian Campbell wrote:
+> On Mon, 2011-06-06 at 17:04 +0100, Daniel Kiper wrote:
+> > Hi,
+> >
+> > Currently, I am working on kexec/kdump for Xen with emphasis on dom0
+> > implementation issues. After reviewing relevant Xen Linux Kernel
+> > Ver. 2.6.18 code I realized (as I expected) that original kexec/kdump
+> > in mainline kernel should be extensively amended. Further, after some
+> > discussion with Konrad Rzeszutek Wilk and Ian Campbell it was clear
+> > for me that it could be done in a few diffrent ways. Due to this facts
+> > I decided to establish general implementation details with LKML and
+> > Xen-devel community to avoid extensive code rewrite in case my own
+> > proposal would not be accepted.
+> >
+> > Now I think about four solutions. I will present them in order of my
+> > preference. However, if you have another soultions to that problem
+> > please drop me a line.
+> >
+> > 1) Currently existing kexec/kdump implementation should be amended
+> >    by adding Xen specific code mainly in arch/i386. It should look
+> >    like:
+> >
+> >    void machine_kexec(struct kimage *image)
+> >    {
+> >    #ifdef CONFIG_XEN
+> >       if (xen_initial_domain()) {
+> >         ...
+> > 	Xen specific code
+> > 	...
+> >       }
+> >    #endif
+> >
+> >      ...
+> >      generic kexec/kdump code
+> >      ...
+> >    }
 >
-> You'll find hereafter a serie of relatively trivial (I hope) patches
-> concerning kconfig. Mostly annotation, deadcode removal, and correctness.
-> This serie is based on top of v3.0-rc1.
->
-> As always, it is also available on my git repo on github:
->
->   git://github.com/lacombar/linux-2.6.git kconfig-trivial
->
-> Regards,
->   - Arnaud
->
-> Arnaud Lacombe (9):
->    kconfig: annotate non-trivial fall-trough
->    kconfig: fix return code for invalid boolean symbol in
->      conf_set_sym_val()
->    kconfig: add missing<stdarg.h>  inclusion
->    kconfig: add missing<ctype.h>  inclusion
->    kconfig: add missing<stdlib.h>  inclusion
->    kconfig: nuke reference to SWIG
->    kconfig: nuke LKC_DIRECT_LINK cruft
->    kconfig/gconf: kill deadcode
->    kconfig/gconf: silent missing prototype warnings
+> This is about the ugliest way to do things and should be avoided.
 
-Thanks, pulled. I like especially the LKC_DIRECT_LINK removal :).
+I think that in this case it is to some extent. I decided put
+this solution before struct machine_kexec_ops solution because
+this (let say conditional solution) touches only x86 code (and
+if it be required IA-64). struct machine_kexec_ops proposal
+require changes for 8 archs. I am not sure it could be accepted
+by kexec/kdump and relevant archs maintainers quickly. However,
+I think that struct machine_kexec_ops is better as longterm
+solution.
 
-Michal
+Daniel
