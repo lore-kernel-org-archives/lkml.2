@@ -1,60 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab1FHVil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 17:38:41 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58933 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751660Ab1FHVik (ORCPT
+	id S1755999Ab1FHVjS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 17:39:18 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58248 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab1FHVjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 17:38:40 -0400
-Date: Wed, 8 Jun 2011 14:38:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nils Carlson <nils.carlson@ericsson.com>
-Cc: <clemens@ladisch.de>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fix periodic-emulation in HPET for delayed interrupts
-Message-Id: <20110608143801.f494fa3e.akpm@linux-foundation.org>
-In-Reply-To: <1306929530-23771-1-git-send-email-nils.carlson@ericsson.com>
-References: <1306929530-23771-1-git-send-email-nils.carlson@ericsson.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 8 Jun 2011 17:39:15 -0400
+Message-ID: <4DEFEBE0.9080208@kernel.org>
+Date: Wed, 08 Jun 2011 14:38:40 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, Jim Bos <jim876@xs4all.nl>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+References: <20110608193833.GA29855@srcf.ucam.org> <4DEFD220.5040507@kernel.org> <20110608195250.GB30256@srcf.ucam.org> <4DEFD58D.5060402@kernel.org> <20110608200903.GA30694@srcf.ucam.org> <4DEFDA4A.9080500@kernel.org> <20110608203037.GA31052@srcf.ucam.org> <4DEFDD69.7010000@kernel.org> <20110608204244.GA31484@srcf.ucam.org> <BANLkTikfbSsgGgNEQ3GVD=HOPn1Dz_xh+g@mail.gmail.com> <20110608212813.GB32056@srcf.ucam.org>
+In-Reply-To: <20110608212813.GB32056@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090203.4DEFEBE8.0042,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Jun 2011 13:58:50 +0200
-Nils Carlson <nils.carlson@ericsson.com> wrote:
+On 06/08/2011 02:28 PM, Matthew Garrett wrote:
+> E820 limits us to 128 ranges, and systems I'm looking at right now are 
+> already using over 140 boot services regions.
 
-> When interrupts are delayed due to interrupt masking or due
-> to other interrupts being serviced the HPET periodic-emuation
-> would fail. This happened because given an interval t and
-> a time for the current interrupt m we would compute the next
-> time as t + m. This works until we are delayed for > t, in
-> which case we would be writing a new value which is in fact
-> in the past.
-> 
-> This can be solved by computing the next time instead as
-> (k * t) + m where k is large enough to be in the future.
-> The exact computation of k is described in a comment to
-> the code.
->
-> ...
->
-> +		/* The time for the next interrupt would logically be t + m,
-> +		 * however, if we are very unlucky and the interrupt is delayed
-> +		 * for longer than t then we will completely miss the next
-> +		 * interrupt if we set t + m and an application will hang.
+parse_setup_data() is used to handle entries above 128.
 
-Strange.  Normally when hardware generates an interrupt it doesn't get
-"missed".  It just sits there pending until the CPU accepts it.
-
-What exactly causes this interrupt to be "delayed"?  Are you referring
-to the CPU disabling local interrupts for too long, or something else?
-
-And why does this delay cause the interrupt to be completely missed?
-
-IOW, is the hpet hardware as busted as it sounds? ;)
-
-And how serious is this bug?  Can the fix be delayed until 3.1, or is it
-needed in 3.0?  2.6.x.y?
+Yinghai
