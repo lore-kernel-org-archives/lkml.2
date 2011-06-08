@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab1FHOlq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 10:41:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5595 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756084Ab1FHOlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 10:41:45 -0400
-Message-ID: <4DEF8A1D.2080707@redhat.com>
-Date: Wed, 08 Jun 2011 09:41:33 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1755960Ab1FHOoc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 10:44:32 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38037 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752053Ab1FHOob (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 10:44:31 -0400
+Date: Wed, 8 Jun 2011 08:44:26 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
+Subject: Re: [PATCH/RESEND v4 1/2] spi_topcliff_pch: support new device
+ ML7213 IOH
+Message-ID: <20110608144426.GA8499@ponder.secretlab.ca>
+References: <1307425811-5030-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <4DEF3447.6050209@dsn.okisemi.com>
 MIME-Version: 1.0
-To: "Amir G." <amir73il@users.sourceforge.net>
-CC: Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
-        tytso@mit.edu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 00/30] Ext4 snapshots
-References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net>	<alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com>	<BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com>	<alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com> <BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com>
-In-Reply-To: <BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DEF3447.6050209@dsn.okisemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/8/11 9:04 AM, Amir G. wrote:
->> And one last note, I also think that the snapshot format change in the
->> > future, when we'll have snpashots with 64bit feature compatible seems
->> > just wrong to me. Adding some features or changing the implementation a
->> > bit is ok, but format change is different. When the code is upstream and
->> > stable it is just wrong.
-> What can I say, I understand why it looks bad, but is 64bit code
-> upstream and stable? Hell no! e2fsprogs 64bit is not out yet!
-> There is no reason to call it 'format change'.
-> It's going to be a new format used only for 64bit fs, which are not
-> even out there yet. And when they are finally out there, they won't
-> have
-> snapshots until the new format is implemented.
+On Wed, Jun 08, 2011 at 05:35:19PM +0900, Tomoya MORINAGA wrote:
+> Hi Grant,
+> 
+> Why don't you give us your comment/opinion at all for our v4 patch ??
+> We have been long waiting since 27-April.
 
-Well, the on-disk format for 64-bit (48-bit?) ext4 is there & fixed; it's
-just that there is no released userspace which can properly handle it, right?
+Sorry about that Tomoya.  I got completely overloaded at the end of
+April and all of May.  I ended up dropping a lot of patches on the
+floor because of it.  I'm not purposefully ignoring you!
 
-I don't anticipate ext4 format changes for >16T, or am I missing something?
+I'll look at them now.
 
--Eric
+g.
+
+> 
+> (2011/06/07 14:50), Tomoya MORINAGA wrote:
+> > ***Modify Grant's comments.
+> >     - Delete unrelated whitespace
+> >     - Prevent device driver from accessing platform data
+> >     - Add __devinit and __devexit
+> >     - Save pdev->dev to pd_dev->dev.parent
+> >     - Have own suspend/resume processing in platform_driver.
+> >     - Care returned value in pch_spi_init
+> >     - Change unregister order
+> > 
+> > Support ML7213 device of OKI SEMICONDUCTOR.
+> > ML7213 is companion chip of Intel Atom E6xx series for IVI(In-Vehicle Infotainment).
+> > ML7213 is compatible for Intel EG20T PCH.
+> > 
+> > Signed-off-by: Tomoya MORINAGA<tomoya-linux@dsn.okisemi.com>
+> > ---
+> >   drivers/spi/Kconfig            |    5 +-
+> >   drivers/spi/spi_topcliff_pch.c |  599 +++++++++++++++++++++-------------------
+> >   2 files changed, 317 insertions(+), 287 deletions(-)
+> > 
+> -- 
+> tomoya
+> OKI SEMICONDUCTOR CO., LTD.
