@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab1FHIpe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 04:45:34 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:6946 "EHLO sjogate2.atmel.com"
+	id S1754887Ab1FHIu3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 04:50:29 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50144 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752429Ab1FHIpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 04:45:32 -0400
-Subject: Re: [PATCH] atmel_serial: keep the platform_device unchanged
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice Vilchez <patrice.vilchez@atmel.com>,
-        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-In-Reply-To: <1302724038-26236-1-git-send-email-plagnioj@jcrosoft.com>
-References: <1302724038-26236-1-git-send-email-plagnioj@jcrosoft.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Wed, 08 Jun 2011 10:45:03 +0200
-Message-ID: <1307522703.10626.9.camel@hcegtvedt.norway.atmel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Jun 2011 08:45:06.0035 (UTC) FILETIME=[5D88AC30:01CC25B8]
+	id S1752429Ab1FHIu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 04:50:26 -0400
+Date: Wed, 8 Jun 2011 10:50:07 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andrew Lutomirski <luto@mit.edu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v4 10/10] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to
+ feature-removal-schedule
+Message-ID: <20110608085007.GA27314@elte.hu>
+References: <cover.1306851090.git.luto@mit.edu>
+ <1660d1687db01852ec58bbf970e22868db367d53.1306851090.git.luto@mit.edu>
+ <20110531183448.GA27166@one.firstfloor.org>
+ <BANLkTinXSDJoT6Uege6zLZqSp87oURfh0w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTinXSDJoT6Uege6zLZqSp87oURfh0w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-04-13 at 21:47 +0200, Jean-Christophe PLAGNIOL-VILLARD
-wrote:
-> specify the port num via platform_data this will allow to match the clock
-> with the plaform_dev staticly
 
-Sure this works as intended, now the platform device id is off, and at
-least for my 3.0 testing it is no longer able to open the console,
-unless I explicit set the id field again.
+* Andrew Lutomirski <luto@mit.edu> wrote:
 
-Example on NGW100 mkII I use USART instance 1 as serial console, if not
-setting the platform device id to 0 (re-mapping), then I get a warning
-about unable to open console.
+> On Tue, May 31, 2011 at 2:34 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>
+> > And it's still a bad idea. Especially since there's a much better 
+> > alternative anyways for the "security problem" which has none of 
+> > these drawbacks.
+> 
+> What's the alternative?
 
-Is you clock optimization an additional patch?
+Andi, you still have not replied to Andy's, Thomas's and my question 
+regarding your claim: exactly what 'alternative' did you mean here?
 
-<snipp AT91 changes)
+Do you plan to reply to our questions or will you continue to ignore 
+them forever, keeping your FUD in the air indefinitely?
 
-> diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
-> index bfc9d07..aa677e2 100644
-> --- a/arch/avr32/mach-at32ap/at32ap700x.c
-> +++ b/arch/avr32/mach-at32ap/at32ap700x.c
-> @@ -1014,6 +1014,7 @@ static struct platform_device *__initdata at32_usarts[4];
->  void __init at32_map_usart(unsigned int hw_id, unsigned int line, int flags)
->  {
->  	struct platform_device *pdev;
-> +	struct atmel_uart_data *pdata;
->  
->  	switch (hw_id) {
->  	case 0:
-> @@ -1042,7 +1043,8 @@ void __init at32_map_usart(unsigned int hw_id, unsigned int line, int flags)
->  		data->regs = (void __iomem *)pdev->resource[0].start;
->  	}
->  
-> -	pdev->id = line;
+Thanks,
 
-AVR32 needs this to be present to work independent of which USART
-peripheral the user chooses to use for console.
-
-> +	pdata = pdev->dev.platform_data;
-> +	pdata->num = portnr;
->  	at32_usarts[line] = pdev;
->  }
->  
-
-<snipp>
-
--- 
-Hans-Christian Egtvedt
-
+	Ingo
