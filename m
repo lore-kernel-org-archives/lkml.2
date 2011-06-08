@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab1FHV5U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 17:57:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43740 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269Ab1FHV5S (ORCPT
+	id S1756340Ab1FHV52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 17:57:28 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47998 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756242Ab1FHV5Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 17:57:18 -0400
-Date: Wed, 8 Jun 2011 23:57:01 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Ingo Molnar <mingo@elte.hu>, Arne Jansen <lists@die-jansens.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        npiggin@kernel.dk, akpm@linux-foundation.org, frank.rowand@am.sony.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [debug patch] printk: Add a printk killswitch to robustify NMI
- watchdog messages
-In-Reply-To: <1307569758.2497.1012.camel@laptop>
-Message-ID: <alpine.LFD.2.02.1106082347050.11814@ionos>
-References: <20110606160810.GA16636@elte.hu>  <1307376771.2322.168.camel@twins> <20110606161749.GA22157@elte.hu>  <4DED0292.1040605@die-jansens.de> <4DED0423.4050904@die-jansens.de>  <20110606170725.GD2391@elte.hu> <1307380311.2322.223.camel@twins> 
- <1307548218.3941.6.camel@twins> <20110608191758.GA12457@elte.hu>  <1307562329.3941.21.camel@twins>  <20110608205253.GA10669@elte.hu> <1307569758.2497.1012.camel@laptop>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 8 Jun 2011 17:57:25 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <alpine.DEB.2.00.1106081407440.10320@chino.kir.corp.google.com>
+References: <BANLkTimq+h+WyboMbPGVH1uJuj64YuRLdw@mail.gmail.com>
+ <alpine.DEB.2.00.1106081305430.10320@chino.kir.corp.google.com>
+ <1307564248.4204.1013.camel@calx> <alpine.DEB.2.00.1106081407440.10320@chino.kir.corp.google.com>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Wed, 8 Jun 2011 17:57:04 -0400
+Message-ID: <BANLkTi=jYTViMUQAN2cvyg_gfBkPwmWsJA@mail.gmail.com>
+Subject: Re: 3.0.0-rc2-git1 -- BUG: sleeping function called from invalid
+ context at mm/slub.c:847
+To: David Rientjes <rientjes@google.com>
+Cc: Matt Mackall <mpm@selenic.com>, David Howells <dhowells@redhat.com>,
+        Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        John Johansen <john.johansen@canonical.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jun 2011, Peter Zijlstra wrote:
+Whoops, sent my previous reply as HTML... sorry!
 
-> On Wed, 2011-06-08 at 22:52 +0200, Ingo Molnar wrote:
-> > Hm, i thought it would be possible to only express it via the 
-> > slowpath: if mutex_trylock() succeeds then *all* execution goes into 
-> > the slowpath so we don't have to take all the fastpaths into account.
-> 
-> Right, but you first have to take wait_lock, then do the trylock, but
-> that's complicated for asm/mutex-null.h because trylock will then also
-> try to obtain the wait_lock.
-> 
-> You can do it by creating ___mutex_trylock_slowpath() which contains the
-> meat of __mutex_trylock_slowpath() and then implement
-> atomic_mutex_trylock{_irq,_irqsave,} using that, not releasing wait_lock
-> on success.
-> 
-> Shouldn't be too bad, but it ain't too pretty either.
-> 
-> Furthermore, like I said in my initial patch, I share Thomas' worry
-> about 'creative' usage of these primitives.
+On Wed, Jun 8, 2011 at 17:34, David Rientjes <rientjes@google.com> wrote:
+> On Wed, 8 Jun 2011, Matt Mackall wrote:
+>
+>> > Not sure why this ever actually worked with apparmor if prepare_creds()
+>> > does an unconditional GFP_KERNEL allocation since this codepath hasn't
+>> > changed in at least a year and we're holding a spinlock from setrlimit.
+>> > John?
+>>
+>> Probably a lack of people enabling (and using!) both apparmor and
+>> might_sleep. I don't this would be caught by a randconfig boot test.
+>>
+>
+> Right, CONFIG_DEBUG_SPINLOCK_SLEEP isn't enabled by default even though
+> CONFIG_DEBUG_KERNEL is.  We should probably just allow prepare_creds() to
+> take a gfp_t argument just like security_prepare_creds() and change
+> existing callers to use GFP_KERNEL with the exception of those using
+> setrlimit where we're always holding the spinlock.
+>
+> Documentation/security/credentials.txt says this:
+>
+>        To alter the current process's credentials, a function should first prepare a
+>        new set of credentials by calling:
+>
+>                struct cred *prepare_creds(void);
+>
+>        this locks current->cred_replace_mutex and then allocates and constructs a
+>        duplicate of the current process's credentials, returning with the mutex still
+>        held if successful.  It returns NULL if not successful (out of memory).
+>
+> although that mutex doesn't exist.  David, any downsides to passing the
+> gfp_t into prepare_creds()?
 
-We are way better off with the semaphore abuse confined to printk.c.
+Are you sure that would actually help?  The bit about the "cred_replace_mutex"
+seems to suggest that you would be locking a mutex *inside* of a spinlock, which
+is not OK either, right?
 
-A mutex would give us lockdep coverage, but due to the strict owner
-semantics - which we have already proven in -rt by converting it to a
-mutex - we can annotate console_sem lockdep wise and still keep the
-nifty semaphore abuse.
+I'm not all that familiar with the problematic code, but I think the
+design is that the
+code should call prepare_creds() *before* it takes the spinlock and then it can
+decide inside the spinlock whether or not it actually needs to change
+credentials.
+I could be wrong, though.
 
-Further I don't have any worries about -rt either as a RT task using
-printf is doomed anyway and we should not encourage that by making it
-somehow more deterministic.
-
-Thanks,
-
-	tglx
+Cheers,
+Kyle Moffett
