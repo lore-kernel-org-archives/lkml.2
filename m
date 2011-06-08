@@ -1,241 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab1FHH3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 03:29:23 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:46780 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754782Ab1FHH3T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 03:29:19 -0400
-X-AuditID: b753bd60-a287bba0000050a4-f3-4def24cd4cb8
-X-AuditID: b753bd60-a287bba0000050a4-f3-4def24cd4cb8
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip v2 3/3] [BUGFIX]tracing/kprobes: Fix kprobe-tracer to
- support stack trace
-To: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung@gmail.com>, yrl.pp-manager.tt@hitachi.com,
-        linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 08 Jun 2011 16:09:34 +0900
-Message-ID: <20110608070934.17777.17116.stgit@fedora15>
-In-Reply-To: <20110608070913.17777.37689.stgit@fedora15>
-References: <20110608070913.17777.37689.stgit@fedora15>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754277Ab1FHHLe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 03:11:34 -0400
+Received: from sh.osrg.net ([192.16.179.4]:56429 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752429Ab1FHHLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 03:11:32 -0400
+Date: Wed, 8 Jun 2011 16:10:58 +0900
+To: dan.j.williams@intel.com
+Cc: fujita.tomonori@lab.ntt.co.jp, shawn.guo@linaro.org,
+        linux@arm.linux.org.uk, patches@linaro.org, vinod.koul@intel.com,
+        gregkh@suse.de, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cjb@laptop.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/3] dmaengine: add new dma API for
+ max_segment_number
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <BANLkTi=FcNncT_6HpvB_6OnQ94f0_sz7Gw@mail.gmail.com>
+References: <BANLkTin7mqqTsosPHbztaPfL7s_TUGT1qg@mail.gmail.com>
+	<20110608142121T.fujita.tomonori@lab.ntt.co.jp>
+	<BANLkTi=FcNncT_6HpvB_6OnQ94f0_sz7Gw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Message-Id: <20110608160844E.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 08 Jun 2011 16:11:00 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix to support kernel stack trace correctly on kprobe-tracer.
-Since the execution path of kprobe-based dynamic events is different
-from other tracepoint-based events, normal ftrace_trace_stack() doesn't
-work correctly. To fix that, this introduces ftrace_trace_stack_regs()
-which traces stack via pt_regs instead of current stack register.
+On Tue, 7 Jun 2011 23:56:21 -0700
+Dan Williams <dan.j.williams@intel.com> wrote:
 
-e.g.
+> > The dma parameter restriction could be due to software (HBA drivers,
+> > or subsystem). The value should be whatever the dma device driver says
+> > it is in such case?
+> 
+> I'm assuming that the dma driver is taking responsibility for setting
+> this correctly.  How would this work otherwise... HBA driver or
+> subsystem queries the dmaengine device and then sets this parameter on
+> its behalf?  In other words dmanengine *is* the subsystem, if I am
+> understanding your definition.
 
- # echo p schedule+4 > /sys/kernel/debug/tracing/kprobe_events
- # echo 1 > /sys/kernel/debug/tracing/options/stacktrace
- # echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
- # head -n 20 /sys/kernel/debug/tracing/trace
-# tracer: nop
-#
-#           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-#              | |       |          |         |
-            bash-2968  [000] 10297.050245: p_schedule_4: (schedule+0x4/0x4ca)
-            bash-2968  [000] 10297.050247: <stack trace>
- => schedule_timeout
- => n_tty_read
- => tty_read
- => vfs_read
- => sys_read
- => system_call_fastpath
-     kworker/0:1-2940  [000] 10297.050265: p_schedule_4: (schedule+0x4/0x4ca)
-     kworker/0:1-2940  [000] 10297.050266: <stack trace>
- => worker_thread
- => kthread
- => kernel_thread_helper
-            sshd-1132  [000] 10297.050365: p_schedule_4: (schedule+0x4/0x4ca)
-            sshd-1132  [000] 10297.050365: <stack trace>
- => sysret_careful
-
-Note: Even with this fix, the first entry will be skipped
-if the probe is put on the function entry area before
-the frame pointer is set up (usually, that is 4 bytes
- (push %bp; mov %sp %bp) on x86), because stack unwinder
-depends on the frame pointer.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-kernel@vger.kernel.org
----
-
- include/linux/ftrace_event.h |    4 ++++
- kernel/trace/trace.c         |   35 ++++++++++++++++++++++++++++++-----
- kernel/trace/trace.h         |    9 +++++++++
- kernel/trace/trace_kprobe.c  |    6 ++++--
- 4 files changed, 47 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 59d3ef1..b1e69ee 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -129,6 +129,10 @@ void trace_current_buffer_unlock_commit(struct ring_buffer *buffer,
- void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
- 				       struct ring_buffer_event *event,
- 					unsigned long flags, int pc);
-+void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
-+					    struct ring_buffer_event *event,
-+					    unsigned long flags, int pc,
-+					    struct pt_regs *regs);
- void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
- 					 struct ring_buffer_event *event);
- 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index ee9c921..67856d5 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1191,6 +1191,18 @@ void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
- }
- EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit);
- 
-+void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
-+					    struct ring_buffer_event *event,
-+					    unsigned long flags, int pc,
-+					    struct pt_regs *regs)
-+{
-+	ring_buffer_unlock_commit(buffer, event);
-+
-+	ftrace_trace_stack_regs(buffer, flags, 0, pc, regs);
-+	ftrace_trace_userstack(buffer, flags, pc);
-+}
-+EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit_regs);
-+
- void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
- 					 struct ring_buffer_event *event)
- {
-@@ -1236,7 +1248,7 @@ ftrace(struct trace_array *tr, struct trace_array_cpu *data,
- #ifdef CONFIG_STACKTRACE
- static void __ftrace_trace_stack(struct ring_buffer *buffer,
- 				 unsigned long flags,
--				 int skip, int pc)
-+				 int skip, int pc, struct pt_regs *regs)
- {
- 	struct ftrace_event_call *call = &event_kernel_stack;
- 	struct ring_buffer_event *event;
-@@ -1255,24 +1267,36 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
- 	trace.skip		= skip;
- 	trace.entries		= entry->caller;
- 
--	save_stack_trace(&trace);
-+	if (regs)
-+		save_stack_trace_regs(regs, &trace);
-+	else
-+		save_stack_trace(&trace);
- 	if (!filter_check_discard(call, entry, buffer, event))
- 		ring_buffer_unlock_commit(buffer, event);
- }
- 
-+void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
-+			     int skip, int pc, struct pt_regs *regs)
-+{
-+	if (!(trace_flags & TRACE_ITER_STACKTRACE))
-+		return;
-+
-+	__ftrace_trace_stack(buffer, flags, skip, pc, regs);
-+}
-+
- void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
- 			int skip, int pc)
- {
- 	if (!(trace_flags & TRACE_ITER_STACKTRACE))
- 		return;
- 
--	__ftrace_trace_stack(buffer, flags, skip, pc);
-+	__ftrace_trace_stack(buffer, flags, skip, pc, NULL);
- }
- 
- void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
- 		   int pc)
- {
--	__ftrace_trace_stack(tr->buffer, flags, skip, pc);
-+	__ftrace_trace_stack(tr->buffer, flags, skip, pc, NULL);
- }
- 
- /**
-@@ -1288,7 +1312,8 @@ void trace_dump_stack(void)
- 	local_save_flags(flags);
- 
- 	/* skipping 3 traces, seems to get us at the caller of this function */
--	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count());
-+	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count(),
-+			     NULL);
- }
- 
- static DEFINE_PER_CPU(int, user_stack_count);
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 229f859..caee141 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -389,6 +389,9 @@ void update_max_tr_single(struct trace_array *tr,
- void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
- 			int skip, int pc);
- 
-+void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
-+			     int skip, int pc, struct pt_regs *regs);
-+
- void ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags,
- 			    int pc);
- 
-@@ -400,6 +403,12 @@ static inline void ftrace_trace_stack(struct ring_buffer *buffer,
- {
- }
- 
-+static inline void ftrace_trace_stack_regs(struct ring_buffer *buffer,
-+					   unsigned long flags, int skip,
-+					   int pc, struct pt_regs *regs)
-+{
-+}
-+
- static inline void ftrace_trace_userstack(struct ring_buffer *buffer,
- 					  unsigned long flags, int pc)
- {
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index f925c45..7053ef3 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1397,7 +1397,8 @@ static __kprobes void kprobe_trace_func(struct kprobe *kp, struct pt_regs *regs)
- 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
- 
- 	if (!filter_current_check_discard(buffer, call, entry, event))
--		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
-+		trace_nowake_buffer_unlock_commit_regs(buffer, event,
-+						       irq_flags, pc, regs);
- }
- 
- /* Kretprobe handler */
-@@ -1429,7 +1430,8 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
- 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
- 
- 	if (!filter_current_check_discard(buffer, call, entry, event))
--		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
-+		trace_nowake_buffer_unlock_commit_regs(buffer, event,
-+						       irq_flags, pc, regs);
- }
- 
- /* Event entry printers */
+Oops, I meant that the subsystem is software layer above
+dmaengine. For example, SCSI subsystem sets the limit of max number of
+sglist entries. That is, it is possible that software layer above
+dmaengine could set dma limit, which is smaller than the limit of
+dmaengine?
 
