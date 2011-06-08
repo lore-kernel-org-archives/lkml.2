@@ -1,195 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab1FHTVI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:21:08 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60956 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979Ab1FHTVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:21:04 -0400
-Date: Wed, 8 Jun 2011 21:20:49 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
-Cc: tglx@linutronix.de, hpa@zytor.com, trenn@novell.com, prarit@redhat.com,
-        tj@kernel.org, linux-kernel@vger.kernel.org, youquan.song@intel.com,
-        stable@kernel.org
-Subject: Re: [patch v2 1/2] stop_machine: enable __stop_machine() to be
- called from the cpu online path
-Message-ID: <20110608192049.GB12457@elte.hu>
-References: <20110607201411.791585562@sbsiddha-MOBL3.sc.intel.com>
- <20110607201425.083758186@sbsiddha-MOBL3.sc.intel.com>
+	id S1754827Ab1FHTXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:23:41 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:50342 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753952Ab1FHTXk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 15:23:40 -0400
+Date: Wed, 8 Jun 2011 20:23:21 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jim Bos <jim876@xs4all.nl>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.39.1 immediately reboots/resets on EFI system
+Message-ID: <20110608192321.GA28865@srcf.ucam.org>
+References: <4DECFC1C.10801@xs4all.nl>
+ <4DED0394.2090000@gmail.com>
+ <BANLkTikVEj2Uz9N0B-kKA3GJTUWzmwz=zQ@mail.gmail.com>
+ <20110607014127.GA8450@srcf.ucam.org>
+ <4DED8752.5070005@kernel.org>
+ <4DEDEA73.7010900@gmail.com>
+ <4DEE17F9.6020503@gmail.com>
+ <4DEEA548.5020405@kernel.org>
+ <4DEFA6E3.6090809@xs4all.nl>
+ <4DEFCAE0.6050700@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110607201425.083758186@sbsiddha-MOBL3.sc.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4DEFCAE0.6050700@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 08, 2011 at 12:17:52PM -0700, Yinghai Lu wrote:
+> we need to revert patch from mjg.
+> 
+> From 916f676f8dc016103f983c7ec54c18ecdbb6e349 Mon Sep 17 00:00:00 2001
+> From: Matthew Garrett <mjg@redhat.com>
+> Date: Wed, 25 May 2011 09:53:13 -0400
+> Subject: [PATCH] x86, efi: Retain boot service code until after switching to
+>  virtual mode
 
-Rusty, Tejun, what do you think about the patch below?
-
-Thanks,
-
-	Ingo
-
-* Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-
-> Currently stop machine infrastructure can be called only from a cpu that is
-> online. But for !CONFIG_SMP, we do allow calling __stop_machine() before the
-> cpu is online.
-> 
-> x86 for example requires stop machine infrastructure in the cpu online path
-> and currently implements its own stop machine (using stop_one_cpu_nowait())
-> for MTRR initialization in the cpu online path.
-> 
-> Enhance the __stop_machine() so that it can be called before the cpu
-> is onlined. This will pave the way for code consolidation and address potential
-> deadlocks caused by multiple mechanisms of doing system wide rendezvous.
-> 
-> This will also address the behavioral differences of __stop_machine()
-> between SMP and UP builds.
-> 
-> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> Cc: stable@kernel.org    # v2.6.35+
-> ---
->  kernel/stop_machine.c |   62 +++++++++++++++++++++++++++++++++++++++++++++-----
->  1 file changed, 57 insertions(+), 5 deletions(-)
-> 
-> Index: linux-2.6-tip/kernel/stop_machine.c
-> ===================================================================
-> --- linux-2.6-tip.orig/kernel/stop_machine.c
-> +++ linux-2.6-tip/kernel/stop_machine.c
-> @@ -136,12 +136,35 @@ void stop_one_cpu_nowait(unsigned int cp
->  static DEFINE_MUTEX(stop_cpus_mutex);
->  static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
->  
-> +/**
-> + * __stop_cpus - stop multiple cpus
-> + * @cpumask: cpus to stop
-> + * @fn: function to execute
-> + * @arg: argument to @fn
-> + *
-> + * Execute @fn(@arg) on online cpus in @cpumask. If @cpumask is NULL, @fn
-> + * is run on all the online cpus including the current cpu (even if it
-> + * is not online).
-> + * On each target cpu, @fn is run in a process context (except when run on
-> + * the cpu that is in the process of coming online, in which case @fn is run
-> + * in the same context as __stop_cpus()) with the highest priority
-> + * preempting any task on the cpu and monopolizing it.  This function
-> + * returns after all executions are complete.
-> + */
->  int __stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
->  {
-> +	int online = percpu_read(cpu_stopper.enabled);
-> +	int include_this_offline = 0;
->  	struct cpu_stop_work *work;
->  	struct cpu_stop_done done;
-> +	unsigned int weight;
->  	unsigned int cpu;
->  
-> +	if (!cpumask) {
-> +		cpumask = cpu_online_mask;
-> +		include_this_offline = 1;
-> +	}
-> +
->  	/* initialize works and done */
->  	for_each_cpu(cpu, cpumask) {
->  		work = &per_cpu(stop_cpus_work, cpu);
-> @@ -149,7 +172,12 @@ int __stop_cpus(const struct cpumask *cp
->  		work->arg = arg;
->  		work->done = &done;
->  	}
-> -	cpu_stop_init_done(&done, cpumask_weight(cpumask));
-> +
-> +	weight = cpumask_weight(cpumask);
-> +	if (!online && include_this_offline)
-> +		weight++;
-> +
-> +	cpu_stop_init_done(&done, weight);
->  
->  	/*
->  	 * Disable preemption while queueing to avoid getting
-> @@ -162,7 +190,20 @@ int __stop_cpus(const struct cpumask *cp
->  				    &per_cpu(stop_cpus_work, cpu));
->  	preempt_enable();
->  
-> -	wait_for_completion(&done.completion);
-> +	if (online)
-> +		wait_for_completion(&done.completion);
-> +	else {
-> +		/*
-> +		 * This cpu is not yet online. If @fn needs to be run on this
-> +		 * cpu, run it now. Also, we can't afford to sleep here,
-> +		 * so poll till the work is completed on all the cpu's.
-> +		 */
-> +		if (include_this_offline)
-> +			fn(arg);
-> +		while (atomic_read(&done.nr_todo) > 1)
-> +			cpu_relax();
-> +	}
-> +
->  	return done.executed ? done.ret : -ENOENT;
->  }
->  
-> @@ -431,6 +472,7 @@ static int stop_machine_cpu_stop(void *d
->  	struct stop_machine_data *smdata = data;
->  	enum stopmachine_state curstate = STOPMACHINE_NONE;
->  	int cpu = smp_processor_id(), err = 0;
-> +	unsigned long flags = 0;
->  	bool is_active;
->  
->  	if (!smdata->active_cpus)
-> @@ -446,7 +488,7 @@ static int stop_machine_cpu_stop(void *d
->  			curstate = smdata->state;
->  			switch (curstate) {
->  			case STOPMACHINE_DISABLE_IRQ:
-> -				local_irq_disable();
-> +				local_irq_save(flags);
->  				hard_irq_disable();
->  				break;
->  			case STOPMACHINE_RUN:
-> @@ -460,7 +502,7 @@ static int stop_machine_cpu_stop(void *d
->  		}
->  	} while (curstate != STOPMACHINE_EXIT);
->  
-> -	local_irq_enable();
-> +	local_irq_restore(flags);
->  	return err;
->  }
->  
-> @@ -470,9 +512,19 @@ int __stop_machine(int (*fn)(void *), vo
->  					    .num_threads = num_online_cpus(),
->  					    .active_cpus = cpus };
->  
-> +	/* Include the calling cpu that might not be online yet. */
-> +	if (!percpu_read(cpu_stopper.enabled))
-> +		smdata.num_threads++;
-> +
->  	/* Set the initial state and stop all online cpus. */
->  	set_state(&smdata, STOPMACHINE_PREPARE);
-> -	return stop_cpus(cpu_online_mask, stop_machine_cpu_stop, &smdata);
-> +
-> +	if (percpu_read(cpu_stopper.enabled))
-> +		return stop_cpus(cpu_online_mask, stop_machine_cpu_stop,
-> +				 &smdata);
-> +	else
-> +		return __stop_cpus(NULL, stop_machine_cpu_stop,
-> +				   &smdata);
->  }
->  
->  int stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
-> 
+That's not a long-term option, since we have no way to distinguish 
+between a machine that requires boot services code to be mapped and a 
+machine that doesn't. Reverting just breaks the former set again. We 
+need to ensure that the kernel isn't overlapping boot services code.
 
 -- 
-Thanks,
-
-	Ingo
+Matthew Garrett | mjg59@srcf.ucam.org
