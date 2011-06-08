@@ -1,177 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab1FHOUK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 10:20:10 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35225 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab1FHOUI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 10:20:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=AlsKLR/PBiRTfFb7IivvJOM85++MyNEkWu7d9wjfgS9l1GaXB6HkxSPxOLBP60+kaI
-         sNjwnbgy+Am8G+wwVEpTRKBQKBmGdZM8JoY8GdP9DWo5LwCx+Vp5+2/g9G3r1dd0BEG5
-         MJK22V7ibrFl93+l1RWjv5TkZD/TTf/Ss3zr8=
-Message-ID: <4DEF8515.5060004@gmail.com>
-Date: Wed, 08 Jun 2011 09:20:05 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1756060Ab1FHOdJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 10:33:09 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42464 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753628Ab1FHOdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 10:33:07 -0400
+Date: Wed, 8 Jun 2011 16:32:45 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, David Brown <davidb@codeaurora.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 0/4] drivers/iommu/ relocations
+Message-ID: <20110608143245.GI30752@elte.hu>
+References: <1307522062-19273-1-git-send-email-ohad@wizery.com>
+ <20110608093546.GG4407@amd.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/5] dt: add of_platform_populate() for creating device
- from the device tree
-References: <20110316083046.1154.89723.stgit@localhost6.localdomain6> <20110316083348.1154.4764.stgit@localhost6.localdomain6>
-In-Reply-To: <20110316083348.1154.4764.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110608093546.GG4407@amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant,
 
-This is a bit old, but my testing has uncovered a few issues.
+* Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
 
-On 03/16/2011 03:33 AM, Grant Likely wrote:
-> of_platform_populate() is similar to of_platform_bus_probe() except
-> that it strictly enforces that all device nodes must have a compatible
-> property, and it can be used to register devices (not buses) which are
-> children of the root node.
->
-> This patch also modifies MPC5200 support to use the new function.
->
-> Signed-off-by: Grant Likely<grant.likely@secretlab.ca>
-> ---
->   arch/powerpc/platforms/52xx/mpc52xx_common.c |   10 ++---
->   drivers/of/platform.c                        |   54 ++++++++++++++++++++++++--
->   include/linux/of_platform.h                  |    3 +
->   3 files changed, 57 insertions(+), 10 deletions(-)
->
-> diff --git a/arch/powerpc/platforms/52xx/mpc52xx_common.c b/arch/powerpc/platforms/52xx/mpc52xx_common.c
-> index 41f3a7e..5767a8a 100644
-> --- a/arch/powerpc/platforms/52xx/mpc52xx_common.c
-> +++ b/arch/powerpc/platforms/52xx/mpc52xx_common.c
-> @@ -97,13 +97,11 @@ struct mpc52xx_gpio_wkup __iomem *wkup_gpio;
->    *					of the localplus bus to the of_platform
->    *					bus.
->    */
-> -void __init
-> -mpc52xx_declare_of_platform_devices(void)
-> +void __init mpc52xx_declare_of_platform_devices(void)
->   {
-> -	/* Find every child of the SOC node and add it to of_platform */
-> -	if (of_platform_bus_probe(NULL, mpc52xx_bus_ids, NULL))
-> -		printk(KERN_ERR __FILE__ ": "
-> -			"Error while probing of_platform bus\n");
-> +	/* Find all the 'platform' devices and register them. */
-> +	if (of_platform_populate(NULL, mpc52xx_bus_ids, NULL))
-> +		pr_err(__FILE__ ": Error while populating devices from DT\n");
->   }
->
->   /*
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index 63d3cb7..9b785be 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -221,19 +221,26 @@ EXPORT_SYMBOL(of_platform_device_create);
->    */
->   static int of_platform_bus_create(struct device_node *bus,
->   				  const struct of_device_id *matches,
-> -				  struct device *parent)
-> +				  struct device *parent, bool strict)
->   {
->   	struct device_node *child;
->   	struct platform_device *dev;
->   	int rc = 0;
->
-> +	/* Make sure it has a compatible property */
-> +	if (strict&&  (!of_get_property(bus, "compatible", NULL))) {
-> +		pr_debug("%s() - skipping %s, no compatible prop\n",
-> +			 __func__, bus->full_name);
-> +		return 0;
-> +	}
-> +
->   	dev = of_platform_device_create(bus, NULL, parent);
->   	if (!dev || !of_match_node(matches, bus))
->   		return 0;
->
->   	for_each_child_of_node(bus, child) {
->   		pr_debug("   create child: %s\n", child->full_name);
-> -		rc = of_platform_bus_create(child, matches,&dev->dev);
-> +		rc = of_platform_bus_create(child, matches,&dev->dev, strict);
->   		if (rc) {
->   			of_node_put(child);
->   			break;
-> @@ -267,11 +274,11 @@ int of_platform_bus_probe(struct device_node *root,
->
->   	/* Do a self check of bus type, if there's a match, create children */
->   	if (of_match_node(matches, root)) {
-> -		rc = of_platform_bus_create(root, matches, parent);
-> +		rc = of_platform_bus_create(root, matches, parent, false);
->   	} else for_each_child_of_node(root, child) {
->   		if (!of_match_node(matches, child))
->   			continue;
-> -		rc = of_platform_bus_create(child, matches, parent);
-> +		rc = of_platform_bus_create(child, matches, parent, false);
->   		if (rc)
->   			break;
->   	}
-> @@ -280,4 +287,43 @@ int of_platform_bus_probe(struct device_node *root,
->   	return rc;
->   }
->   EXPORT_SYMBOL(of_platform_bus_probe);
-> +
-> +/**
-> + * of_platform_populate() - Populate platform_devices from device tree data
-> + * @root: parent of the first level to probe or NULL for the root of the tree
-> + * @matches: match table, NULL to use the default
-> + * @parent: parent to hook devices from, NULL for toplevel
-> + *
-> + * Similar to of_platform_bus_probe(), this function walks the device tree
-> + * and creates devices from nodes.  It differs in that it follows the modern
-> + * convention of requiring all device nodes to have a 'compatible' property,
-> + * and it is suitable for creating devices which are children of the root
-> + * node (of_platform_bus_probe will only create children of the root which
-> + * are selected by the @matches argument).
-> + *
-> + * New board support should be using this function instead of
-> + * of_platform_bus_probe().
-> + *
-> + * Returns 0 on success,<  0 on failure.
-> + */
-> +int of_platform_populate(struct device_node *root,
-> +			const struct of_device_id *matches,
-> +			struct device *parent)
-> +{
-> +	struct device_node *child;
-> +	int rc = 0;
-> +
-> +	root = root ? of_node_get(root) : of_find_node_by_path("/");
-> +	if (!root)
-> +		return -EINVAL;
-> +
-> +	for_each_child_of_node(root, child) {
+> (Cc'ing Ingo)
+> 
+> On Wed, Jun 08, 2011 at 04:34:18AM -0400, Ohad Ben-Cohen wrote:
+> > Create a dedicated iommu drivers folder, put the base iommu code there,
+> > and move the existing IOMMU API users as well (msm-iommu, amd_iommu and
+> > intel-iommu).
+> > 
+> > Putting all iommu drivers together will ease finding similarities
+> > between different platforms, with the intention of solving problems once,
+> > in a generic framework, which everyone can use.
+> > 
+> > OMAP's iommu will be moved too as soon as it's migrated.
+> 
+> Great, thanks. I'll apply the patches as soon as the relevant ACKs come
+> in. Looking at the MAINTAINERS file David Brown needs to ACK the MSM
+> patch and David Woodhouse the VT-d patch.
+> 
+> David B., David W., is this direction ok for both of you?
+> 
+> A more important question is how we handle the IOMMU tree. Currently the
+> situation is as follows:
+> 
+> 	* The AMD IOMMU changes go upstream through Ingo
+> 	* David Woohouse has his own tree which he sents directly to
+> 	  Linus
+> 	* Not sure about the ARM IOMMU code
+> 	* And to comlicate things further there is the upcoming ARM
+> 	  integration tree which may contain code that depends on IOMMU
+> 	  changes
+> 
+> My suggestion is that the ARM tree pulls in the necessary changes from
+> the IOMMU tree and the IOMMU code goes upstream through Ingo or directly
+> to Linus (with some time in linux-next, of course). Thoughts?
 
-This needs a check of of_match_node. Otherwise, a device is created for 
-all top level nodes, not just the matching node.
+I can certainly pull from you trees you pull from elsewhere.
 
-		if (!of_match_node(matches, child))
-			continue;
+David could help keep things tidier by sending the Intel IOMMU bits 
+to me as well.
 
-> +		rc = of_platform_bus_create(child, matches, parent, true);
-> +		if (rc)
-> +			break;
-> +	}
-> +
-> +	of_node_put(root);
-> +	return rc;
-> +}
+In any case the tip:core/iommu tree is in linux-next so whatever you 
+send me shows up there on the next day or so.
 
-Missing EXPORT_SYMBOL.
+Thanks,
 
-Since this is only in next, do you want to fix it or I can submit a patch.
-
-Rob
+	Ingo
