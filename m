@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab1FHThc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:37:32 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:52759 "EHLO e1.ny.us.ibm.com"
+	id S1755623Ab1FHTac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:30:32 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:52745 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755523Ab1FHTab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:30:31 -0400
+	id S1755466Ab1FHTa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 15:30:29 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 09/28] rcu: Catch rcutorture up to new RCU API additions
-Date: Wed,  8 Jun 2011 12:29:48 -0700
-Message-Id: <1307561407-13809-9-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 10/28] rcu: Fix RCU's NMI documentation
+Date: Wed,  8 Jun 2011 12:29:49 -0700
+Message-Id: <1307561407-13809-10-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110608192943.GA13211@linux.vnet.ibm.com>
 References: <20110608192943.GA13211@linux.vnet.ibm.com>
@@ -24,135 +24,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the RCU API contains synchronize_rcu_bh(), synchronize_sched(),
-call_rcu_sched(), and rcu_bh_expedited()...
-
-Make rcutorture test synchronize_rcu_bh(), getting rid of the old
-rcu_bh_torture_synchronize() workaround.  Similarly, make rcutorture test
-synchronize_sched(), getting rid of the old sched_torture_synchronize()
-workaround.  Make rcutorture test call_rcu_sched() instead of wrappering
-synchronize_sched().  Also add testing of rcu_bh_expedited().
+It has long been the case that the architecture must call nmi_enter()
+and nmi_exit() rather than irq_enter() and irq_exit() in order to
+permit RCU read-side critical sections in NMIs.  Catch the documentation
+up with reality.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutorture.c |   55 +++++++++++++++++++-------------------------------
- 1 files changed, 21 insertions(+), 34 deletions(-)
+ Documentation/RCU/NMI-RCU.txt |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index 40d9ed2..f736fe3 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -480,30 +480,6 @@ static void rcu_bh_torture_deferred_free(struct rcu_torture *p)
- 	call_rcu_bh(&p->rtort_rcu, rcu_torture_cb);
- }
+diff --git a/Documentation/RCU/NMI-RCU.txt b/Documentation/RCU/NMI-RCU.txt
+index a8536cb..84e4f9c 100644
+--- a/Documentation/RCU/NMI-RCU.txt
++++ b/Documentation/RCU/NMI-RCU.txt
+@@ -95,7 +95,7 @@ not to return until all ongoing NMI handlers exit.  It is therefore safe
+ to free up the handler's data as soon as synchronize_sched() returns.
  
--struct rcu_bh_torture_synchronize {
--	struct rcu_head head;
--	struct completion completion;
--};
--
--static void rcu_bh_torture_wakeme_after_cb(struct rcu_head *head)
--{
--	struct rcu_bh_torture_synchronize *rcu;
--
--	rcu = container_of(head, struct rcu_bh_torture_synchronize, head);
--	complete(&rcu->completion);
--}
--
--static void rcu_bh_torture_synchronize(void)
--{
--	struct rcu_bh_torture_synchronize rcu;
--
--	init_rcu_head_on_stack(&rcu.head);
--	init_completion(&rcu.completion);
--	call_rcu_bh(&rcu.head, rcu_bh_torture_wakeme_after_cb);
--	wait_for_completion(&rcu.completion);
--	destroy_rcu_head_on_stack(&rcu.head);
--}
--
- static struct rcu_torture_ops rcu_bh_ops = {
- 	.init		= NULL,
- 	.cleanup	= NULL,
-@@ -512,7 +488,7 @@ static struct rcu_torture_ops rcu_bh_ops = {
- 	.readunlock	= rcu_bh_torture_read_unlock,
- 	.completed	= rcu_bh_torture_completed,
- 	.deferred_free	= rcu_bh_torture_deferred_free,
--	.sync		= rcu_bh_torture_synchronize,
-+	.sync		= synchronize_rcu_bh,
- 	.cb_barrier	= rcu_barrier_bh,
- 	.fqs		= rcu_bh_force_quiescent_state,
- 	.stats		= NULL,
-@@ -528,7 +504,7 @@ static struct rcu_torture_ops rcu_bh_sync_ops = {
- 	.readunlock	= rcu_bh_torture_read_unlock,
- 	.completed	= rcu_bh_torture_completed,
- 	.deferred_free	= rcu_sync_torture_deferred_free,
--	.sync		= rcu_bh_torture_synchronize,
-+	.sync		= synchronize_rcu_bh,
- 	.cb_barrier	= NULL,
- 	.fqs		= rcu_bh_force_quiescent_state,
- 	.stats		= NULL,
-@@ -536,6 +512,22 @@ static struct rcu_torture_ops rcu_bh_sync_ops = {
- 	.name		= "rcu_bh_sync"
- };
+ Important note: for this to work, the architecture in question must
+-invoke irq_enter() and irq_exit() on NMI entry and exit, respectively.
++invoke nmi_enter() and nmi_exit() on NMI entry and exit, respectively.
  
-+static struct rcu_torture_ops rcu_bh_expedited_ops = {
-+	.init		= rcu_sync_torture_init,
-+	.cleanup	= NULL,
-+	.readlock	= rcu_bh_torture_read_lock,
-+	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
-+	.readunlock	= rcu_bh_torture_read_unlock,
-+	.completed	= rcu_bh_torture_completed,
-+	.deferred_free	= rcu_sync_torture_deferred_free,
-+	.sync		= synchronize_rcu_bh_expedited,
-+	.cb_barrier	= NULL,
-+	.fqs		= rcu_bh_force_quiescent_state,
-+	.stats		= NULL,
-+	.irq_capable	= 1,
-+	.name		= "rcu_bh_expedited"
-+};
-+
- /*
-  * Definitions for srcu torture testing.
-  */
-@@ -659,11 +651,6 @@ static void rcu_sched_torture_deferred_free(struct rcu_torture *p)
- 	call_rcu_sched(&p->rtort_rcu, rcu_torture_cb);
- }
  
--static void sched_torture_synchronize(void)
--{
--	synchronize_sched();
--}
--
- static struct rcu_torture_ops sched_ops = {
- 	.init		= rcu_sync_torture_init,
- 	.cleanup	= NULL,
-@@ -672,7 +659,7 @@ static struct rcu_torture_ops sched_ops = {
- 	.readunlock	= sched_torture_read_unlock,
- 	.completed	= rcu_no_completed,
- 	.deferred_free	= rcu_sched_torture_deferred_free,
--	.sync		= sched_torture_synchronize,
-+	.sync		= synchronize_sched,
- 	.cb_barrier	= rcu_barrier_sched,
- 	.fqs		= rcu_sched_force_quiescent_state,
- 	.stats		= NULL,
-@@ -688,7 +675,7 @@ static struct rcu_torture_ops sched_sync_ops = {
- 	.readunlock	= sched_torture_read_unlock,
- 	.completed	= rcu_no_completed,
- 	.deferred_free	= rcu_sync_torture_deferred_free,
--	.sync		= sched_torture_synchronize,
-+	.sync		= synchronize_sched,
- 	.cb_barrier	= NULL,
- 	.fqs		= rcu_sched_force_quiescent_state,
- 	.stats		= NULL,
-@@ -1427,7 +1414,7 @@ rcu_torture_init(void)
- 	int firsterr = 0;
- 	static struct rcu_torture_ops *torture_ops[] =
- 		{ &rcu_ops, &rcu_sync_ops, &rcu_expedited_ops,
--		  &rcu_bh_ops, &rcu_bh_sync_ops,
-+		  &rcu_bh_ops, &rcu_bh_sync_ops, &rcu_bh_expedited_ops,
- 		  &srcu_ops, &srcu_expedited_ops,
- 		  &sched_ops, &sched_sync_ops, &sched_expedited_ops, };
- 
+ Answer to Quick Quiz
 -- 
 1.7.3.2
 
