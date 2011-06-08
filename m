@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab1FHKLI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:11:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54007 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753864Ab1FHKLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:11:07 -0400
-Date: Wed, 8 Jun 2011 12:11:05 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Thomas Sattler <tsattler@gmx.de>,
-        Ury Stankevich <urykhy@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] mm: memory-failure: Fix isolated page count during
- memory failure
-Message-ID: <20110608101105.GA9936@tiehlicka.suse.cz>
-References: <1307459225-4481-1-git-send-email-mgorman@suse.de>
- <1307459225-4481-4-git-send-email-mgorman@suse.de>
- <20110608100720.GF6742@tiehlicka.suse.cz>
+	id S1755212Ab1FHKXb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:23:31 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60859 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754903Ab1FHKX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 06:23:29 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 01/15] gma500: fix warnings
+To: greg@kroah.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Date: Wed, 08 Jun 2011 11:11:10 +0100
+Message-ID: <20110608101106.9478.87451.stgit@localhost.localdomain>
+In-Reply-To: <20110608100411.9478.86672.stgit@localhost.localdomain>
+References: <20110608100411.9478.86672.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110608100720.GF6742@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 08-06-11 12:07:20, Michal Hocko wrote:
-> On Tue 07-06-11 16:07:04, Mel Gorman wrote:
-> > From: Minchan Kim <minchan.kim@gmail.com>
-> > 
-> > From: Minchan Kim <minchan.kim@gmail.com>
-> > 
-> > Pages isolated for migration are accounted with the vmstat counters
-> > NR_ISOLATE_[ANON|FILE]. Callers of migrate_pages() are expected to
-> > increment these counters when pages are isolated from the LRU. Once
-> > the pages have been migrated, they are put back on the LRU or freed
-> > and the isolated count is decremented.
-> 
-> Aren't we missing this in compact_zone as well? AFAICS there is no
-> accounting done after we isolate pages from LRU? Or am I missing
-> something?
+From: Alan Cox <alan@linux.intel.com>
 
-Scratch that. It was hidden in acct_isolated which is called from
-isolate_migratepages.
-It would be really strange if this was broken ;)
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+ drivers/staging/gma500/psb_gtt.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
+index 74c5a65..1d0e242 100644
+--- a/drivers/staging/gma500/psb_gtt.c
++++ b/drivers/staging/gma500/psb_gtt.c
+@@ -78,7 +78,6 @@ u32 *psb_gtt_entry(struct drm_device *dev, struct gtt_range *r)
+  */
+ static int psb_gtt_insert(struct drm_device *dev, struct gtt_range *r)
+ {
+-        struct drm_psb_private *dev_priv = dev->dev_private;
+ 	u32 *gtt_slot, pte;
+ 	int numpages = (r->resource.end + 1 - r->resource.start) >> PAGE_SHIFT;
+ 	struct page **pages;
+@@ -490,7 +489,7 @@ int psb_gtt_init(struct drm_device *dev, int resume)
+ 		goto out_err;
+ 	}
+ 
+-	DRM_DEBUG("%s: vram kernel virtual address %p\n", dev_priv->vram_addr);
++	DRM_DEBUG("gma500: vram kernel virtual address %p\n", dev_priv->vram_addr);
+ 
+ 	tt_pages = (pg->gatt_pages < PSB_TT_PRIV0_PLIMIT) ?
+ 		(pg->gatt_pages) : PSB_TT_PRIV0_PLIMIT;
+
