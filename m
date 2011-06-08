@@ -1,84 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab1FHRIq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 13:08:46 -0400
-Received: from realvnc.com ([146.101.152.142]:45235 "EHLO realvnc.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751899Ab1FHRIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 13:08:44 -0400
-Message-ID: <4DEFAC9A.9030106@realvnc.com>
-Date: Wed, 08 Jun 2011 18:08:42 +0100
-From: Toby Gray <toby.gray@realvnc.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1753100Ab1FHRJE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 13:09:04 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55520 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab1FHRI7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 13:08:59 -0400
+Date: Wed, 8 Jun 2011 11:08:57 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: David Jander <david@protonic.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/6] GPIO: pca953x.c: Remove meaningless device-tree
+ bindings
+Message-ID: <20110608170857.GI8499@ponder.secretlab.ca>
+References: <1307537314-4345-1-git-send-email-david@protonic.nl>
+ <1307537314-4345-4-git-send-email-david@protonic.nl>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: cdc-acm: Prevent loss of data when filling tty buffer
-References: <1307547519-29246-1-git-send-email-toby.gray@realvnc.com> <20110608164626.22bc893c@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110608164626.22bc893c@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307537314-4345-4-git-send-email-david@protonic.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2011 16:46, Alan Cox wrote:
->> This patch adds checking for how many bytes have been inserted into the tty
->> buffer and places data which hasn't been inserted into a pending buffer list.
->> The pending buffer list is pushed to the tty buffer when the tty unthrottles
-> I don't think this is the way to tackle it.
-Fair enough. I wasn't 100% sure that adding what is really an extra 
-layer of buffering in the driver was the best solution.
-> If the kernel tty buffer code is shedding data then not only have we
-> asserted a throttle but 64K has been accumulated or the system is out of
-> memory.
->
-> So the questions to me are:
->
-> a) Why is your setup filling 64K in the time it takes the throttle
-> response to occur
-The setup is a Nokia mobile phone sending some application data over a 
-USB connection. Applications running on Nokia's Symbian based mobile 
-phones which wish to communicate with a PC over USB are offered a 
-virtual COM port on the mobile phone side. This COM port appears as a 
-second cdc-acm device to the PC.
+On Wed, Jun 08, 2011 at 02:48:31PM +0200, David Jander wrote:
+> The property 'polarity' is handled by the GPIO core, and the 'gpio-base'
+> should be assigned automatically. It is meaningless in the device-tree,
+> since GPIO's are identified by the "chip-name"/offset pair.
+> This way, the whole pca953x_get_alt_pdata() can go away.
+> We still need to check whether we really want GPIO-interrupt functionality
+> by simply looking if the I2C node has an interrupts property defined, since
+> this property is not used for anything else.
+> 
+> Signed-off-by: David Jander <david@protonic.nl>
+> ---
+>  drivers/gpio/pca953x.c |   62 ++++++++---------------------------------------
+>  1 files changed, 11 insertions(+), 51 deletions(-)
+> 
+> diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
+> index 2dff562..ae9fe61 100644
+> --- a/drivers/gpio/pca953x.c
+> +++ b/drivers/gpio/pca953x.c
+> @@ -21,7 +21,6 @@
+>  #include <linux/slab.h>
+>  #ifdef CONFIG_OF_GPIO
+>  #include <linux/of_platform.h>
+> -#include <linux/of_gpio.h>
+>  #endif
+>  
+>  #define PCA953X_INPUT		0
+> @@ -539,55 +538,6 @@ static void pca953x_irq_teardown(struct pca953x_chip *chip)
+>  }
+>  #endif
+>  
+> -/*
+> - * Handlers for alternative sources of platform_data
+> - */
+> -#ifdef CONFIG_OF_GPIO
+> -/*
+> - * Translate OpenFirmware node properties into platform_data
+> - */
+> -static struct pca953x_platform_data *
+> -pca953x_get_alt_pdata(struct i2c_client *client)
+> -{
+> -	struct pca953x_platform_data *pdata;
+> -	struct device_node *node;
+> -	const __be32 *val;
+> -	int size;
+> -
+> -	node = client->dev.of_node;
+> -	if (node == NULL)
+> -		return NULL;
+> -
+> -	pdata = kzalloc(sizeof(struct pca953x_platform_data), GFP_KERNEL);
+> -	if (pdata == NULL) {
+> -		dev_err(&client->dev, "Unable to allocate platform_data\n");
+> -		return NULL;
+> -	}
+> -
+> -	pdata->gpio_base = -1;
+> -	val = of_get_property(node, "linux,gpio-base", &size);
+> -	if (val) {
+> -		if (size != sizeof(*val))
+> -			dev_warn(&client->dev, "%s: wrong linux,gpio-base\n",
+> -				 node->full_name);
+> -		else
+> -			pdata->gpio_base = be32_to_cpup(val);
+> -	}
+> -
+> -	val = of_get_property(node, "polarity", NULL);
+> -	if (val)
+> -		pdata->invert = *val;
+> -
+> -	return pdata;
+> -}
+> -#else
+> -static struct pca953x_platform_data *
+> -pca953x_get_alt_pdata(struct i2c_client *client)
+> -{
+> -	return NULL;
+> -}
+> -#endif
+> -
 
-In this particular instance the device is sending a large quantity of 
-data (about 1MB) down the COM port. This communication is one way, so 
-the device keeps sending the data as fast as the PC requests more USB 
-bulk transfers.
+Ah, hmm.  I missed that you were adding documentation for properties
+that were already implemented.  I try really hard not to break things
+that others are already relying on, so I don't think this code can be
+removed.  However, bonus points if you make it deprecated and spit
+out a scary warning when these properties are used.
 
-If it hasn't been told to throttle then the cdc-acm code will issue more 
-bulk reads as soon as the last one has completed. This means that it's 
-possible for the tty to not have a chance to be throttle by 
-flush_to_ldisc before too much data has been received over USB.
-> b) Do we care (is the right thing to do to lose bits anyway at that point)
-The cdc-acm driver which Nokia provide for Windows doesn't drop data 
-when transferring large volumes of data, so most application making use 
-of the mobile phone to PC USB connection won't have implemented any form 
-of error correction or retransmission. If we don't care about data loss 
-on Linux then it will force the application layer to implement some way 
-of detecting these losses and to then retransmit the data.
+>  static int __devinit device_pca953x_init(struct pca953x_chip *chip, int invert)
+>  {
+>  	int ret;
+> @@ -654,7 +604,17 @@ static int __devinit pca953x_probe(struct i2c_client *client,
+>  
+>  	pdata = client->dev.platform_data;
+>  	if (pdata == NULL) {
+> -		pdata = pca953x_get_alt_pdata(client);
+> +		pdata = kzalloc(sizeof(struct pca953x_platform_data), GFP_KERNEL);
+> +		if (pdata == NULL) {
+> +			dev_err(&client->dev, "Unable to allocate platform_data\n");
+> +			goto out_failed;
+> +		}
+> +		pdata->gpio_base = -1;
+> +#ifdef CONFIG_OF_GPIO
+> +		/* If I2C node has no interrupts property, disable GPIO interrupts */
+> +		if (of_find_property(client->dev.of_node, "interrupts", NULL) == NULL)
+> +			pdata->irq_base = -1;
+> +#endif
 
-> c) What should we do about it in the *general* case
-> It seems to me either its a cdc-acm specific problem with throttle
-> response behaviour, or its a general case at very high speed (which seems
-> more likely). In neither case is adding an extra queue to paper over it
-> the right solution.
-Agreed. I'm not sure about how specific to cdc-acm it is though. I think 
-the reason that I'm seeing this problem is due to the high data rate of 
-USB combined with the protocol that is being used over the cdc-acm 
-channel not having any flow control or acknowledgements. I have no idea 
-how specialist this situation is though.
+Interesting fact: pdata is only used during setup of this driver.  All
+the goofing around to kzalloc a pdata for the dt use case is really
+kind of pointless, and the driver could be simpler if it were removed.
+It would be nice if somebody could investigate this.
 
-I think a possible alternative solution for the cdc-acm would be for it 
-to make sure that tty_buffer_request_room returns enough space for any 
-pending URB requests. However I think I originally dismissed this as a 
-possibility as I couldn't think of an easy way for the cdc-acm driver to 
-be told that more buffer room has been made available.
-
-Regards,
-
-Toby
+g.
 
