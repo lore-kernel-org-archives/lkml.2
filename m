@@ -1,131 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab1FHK1y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:27:54 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57022 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755600Ab1FHK1w (ORCPT
+	id S1754649Ab1FHKUO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:20:14 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:59565 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866Ab1FHKUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:27:52 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 15/15] gma500: Kill spare kref
-To: greg@kroah.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Date: Wed, 08 Jun 2011 11:15:32 +0100
-Message-ID: <20110608101529.9478.86695.stgit@localhost.localdomain>
-In-Reply-To: <20110608100411.9478.86672.stgit@localhost.localdomain>
-References: <20110608100411.9478.86672.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Wed, 8 Jun 2011 06:20:13 -0400
+Date: Wed, 8 Jun 2011 12:19:57 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Borislav Petkov <bp@amd64.org>, Tony Luck <tony.luck@gmail.com>
+Subject: Re: [PATCH 00/12] x86: minor cleanups/fixes for MCE codes (v2)
+Message-ID: <20110608101957.GA11337@aftab>
+References: <4DEED509.1040504@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DEED509.1040504@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On Tue, Jun 07, 2011 at 09:48:57PM -0400, Hidetoshi Seto wrote:
+> This is a set of minor changes for MCE codes.
+> 
+> Though I know there are many people expecting new RAS architecture
+> such as one that integrates RAS/EDAC with MCE, I hope these small
+> steps will be a help for future works.
+> 
+> v2:
+>  reflect comments, update patch 3,4,5,7,10,12.
+>  rebased on 3.0-rc2.
+> 
+> Thanks,
+> H.Seto
+> 
+>  arch/x86/include/asm/entry_arch.h         |    4 -
+>  arch/x86/include/asm/hw_irq.h             |    1 -
+>  arch/x86/include/asm/irq_vectors.h        |    5 -
+>  arch/x86/include/asm/mce.h                |   19 ++-
+>  arch/x86/kernel/cpu/mcheck/mce-severity.c |  152 ++++++++++------
+>  arch/x86/kernel/cpu/mcheck/mce.c          |  288 ++++++++++++++---------------
+>  arch/x86/kernel/cpu/mcheck/mce_amd.c      |   10 +-
+>  arch/x86/kernel/entry_64.S                |    5 -
+>  arch/x86/kernel/irqinit.c                 |    3 -
+>  9 files changed, 251 insertions(+), 236 deletions(-)
+> 
+> Hidetoshi Seto (11):
+>       mce-severity: cleanup severity table, prep
+>       mce-severity: cleanup severity table
+>       mce-severity: trivial cleanups
+>       x86, mce: replace MCE_SELF_VECTOR by irq_work
+>       x86, mce: replace MCM_ to MCI_MISC_
+>       x86, mce: introduce mce_gather_info()
+>       x86, mce: check the result of ancient_init()
+>       x86, mce: cleanup mce_create/remove_device
+>       x86, mce: cleanup mce_read
+>       x86, mce: use prefix mce_chrdev_ to group functions
+>       x86, mce: use prefix mce_sysdev_ to group functions
+> 
+> Tony Luck (1):
+>       mce-severity: fixes for mce severity table
 
-We are using the underlying kref in the GEM object so we don't need our own
+Well, I can't say I'm crazy about the severities mechanism but I guess
+this is fine for a cleanup patchset. Btw, the problem of making the
+severities readable will come up again when we implement this into perf
+filters and the complexity will be moved into the filter function...
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+Other than that,
 
- drivers/staging/gma500/psb_fb.c  |    1 -
- drivers/staging/gma500/psb_gtt.c |   41 ++++++--------------------------------
- drivers/staging/gma500/psb_gtt.h |    1 -
- 3 files changed, 6 insertions(+), 37 deletions(-)
+Reviewed-by: Borislav Petkov <bp@amd64.org>
 
-diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
-index 988f4db..fb75aba 100644
---- a/drivers/staging/gma500/psb_fb.c
-+++ b/drivers/staging/gma500/psb_fb.c
-@@ -231,7 +231,6 @@ static int psbfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
- 	struct psb_fbdev *fbdev = info->par;
- 	struct psb_framebuffer *psbfb = &fbdev->pfb;
- 	char *fb_screen_base = NULL;
--	struct drm_device *dev = psbfb->base.dev;
- 
- 	if (vma->vm_pgoff != 0)
- 		return -EINVAL;
-diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
-index 54a9308..9da1375 100644
---- a/drivers/staging/gma500/psb_gtt.c
-+++ b/drivers/staging/gma500/psb_gtt.c
-@@ -303,8 +303,6 @@ struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
- 	gt->in_gart = backed;
- 	/* Ensure this is set for non GEM objects */
- 	gt->gem.dev = dev;
--	kref_init(&gt->kref);
--
- 	ret = allocate_resource(dev_priv->gtt_mem, &gt->resource,
- 				len, start, end, PAGE_SIZE, NULL, NULL);
- 	if (ret == 0) {
-@@ -316,18 +314,15 @@ struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
- }
- 
- /**
-- *	psb_gtt_destroy		-	final free up of a gtt
-- *	@kref: the kref of the gtt
-- *
-- *	Called from the kernel kref put when the final reference to our
-- *	GTT object is dropped. At that point we can free up the resources.
-+ *	psb_gtt_free_range	-	release GTT address space
-+ *	@dev: our DRM device
-+ *	@gt: a mapping created with psb_gtt_alloc_range
-  *
-- *	For now we handle mmap clean up here to work around limits in GEM
-+ *	Release a resource that was allocated with psb_gtt_alloc_range. If the object
-+ *	has been pinned by mmap users we clean this up here currently.
-  */
--static void psb_gtt_destroy(struct kref *kref)
-+void psb_gtt_free_range(struct drm_device *dev, struct gtt_range *gt)
- {
--	struct gtt_range *gt = container_of(kref, struct gtt_range, kref);
--
- 	/* Undo the mmap pin if we are destroying the object */
- 	if (gt->mmapping) {
- 		psb_gtt_unpin(gt);
-@@ -338,30 +333,6 @@ static void psb_gtt_destroy(struct kref *kref)
- 	kfree(gt);
- }
- 
--/**
-- *	psb_gtt_kref_put	-	drop reference to a GTT object
-- *	@gt: the GT being dropped
-- *
-- *	Drop a reference to a psb gtt
-- */
--void psb_gtt_kref_put(struct gtt_range *gt)
--{
--	kref_put(&gt->kref, psb_gtt_destroy);
--}
--
--/**
-- *	psb_gtt_free_range	-	release GTT address space
-- *	@dev: our DRM device
-- *	@gt: a mapping created with psb_gtt_alloc_range
-- *
-- *	Release a resource that was allocated with psb_gtt_alloc_range
-- */
--void psb_gtt_free_range(struct drm_device *dev, struct gtt_range *gt)
--{
--	psb_gtt_kref_put(gt);
--}
--
--
- struct psb_gtt *psb_gtt_alloc(struct drm_device *dev)
- {
- 	struct psb_gtt *tmp = kzalloc(sizeof(*tmp), GFP_KERNEL);
-diff --git a/drivers/staging/gma500/psb_gtt.h b/drivers/staging/gma500/psb_gtt.h
-index 7e1f21e..4d6dc5f 100644
---- a/drivers/staging/gma500/psb_gtt.h
-+++ b/drivers/staging/gma500/psb_gtt.h
-@@ -44,7 +44,6 @@ extern void psb_gtt_takedown(struct drm_device *dev);
- struct gtt_range {
- 	struct resource resource;	/* Resource for our allocation */
- 	u32 offset;			/* GTT offset of our object */
--	struct kref kref;		/* Can probably go FIXME - GEM kref will do */
- 	struct drm_gem_object gem;	/* GEM high level stuff */
- 	int in_gart;			/* Currently in the GART (ref ct) */
- 	bool stolen;			/* Backed from stolen RAM */
+Thanks.
 
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
