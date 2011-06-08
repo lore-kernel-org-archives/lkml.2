@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab1FHQc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 12:32:58 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:52548 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751741Ab1FHQcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 12:32:54 -0400
-X-Sasl-enc: FBpceo/h1UTo5JxqegItgXVlN4M69WAmZoaoj5A4WlxI 1307550773
-Date: Wed, 8 Jun 2011 09:22:22 -0700
-From: Greg KH <greg@kroah.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Christoph Hellwig <hch@infradead.org>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>
-Subject: Re: [PATCH 12/49] Staging: hv: storvsc: Add a DMI signature to
- support auto-loading
-Message-ID: <20110608162222.GF21645@kroah.com>
-References: <1307400540-13193-1-git-send-email-kys@microsoft.com>
- <1307400613-13234-1-git-send-email-kys@microsoft.com>
- <1307400613-13234-12-git-send-email-kys@microsoft.com>
- <20110606231259.GA18222@infradead.org>
- <6E21E5352C11B742B20C142EB499E0480813D84D@TK5EX14MBXC122.redmond.corp.microsoft.com>
- <20110607185813.GA3531@kroah.com>
- <6E21E5352C11B742B20C142EB499E0480813DD09@TK5EX14MBXC122.redmond.corp.microsoft.com>
- <20110607222444.GA26968@kroah.com>
- <6E21E5352C11B742B20C142EB499E0480813DFC1@TK5EX14MBXC122.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0480813DFC1@TK5EX14MBXC122.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751862Ab1FHQWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 12:22:46 -0400
+Received: from mail.perches.com ([173.55.12.10]:2629 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751104Ab1FHQWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 12:22:45 -0400
+Subject: Re: [PATCH 2/2] ramoops: add new line to printks
+From: Joe Perches <joe@perches.com>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, xiyou.wangcong@gmail.com,
+        stevie.trujillo@gmail.com, kyungmin.park@samsung.com
+In-Reply-To: <4DEE5737.9060404@gmail.com>
+References: <4DE10B58.1010005@gmail.com>  <4DEE5737.9060404@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Jun 2011 09:22:44 -0700
+Message-ID: <1307550164.16453.2.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 02:44:35AM +0000, KY Srinivasan wrote:
-> > On Tue, Jun 07, 2011 at 10:19:06PM +0000, KY Srinivasan wrote:
-> > > Thanks Greg. Can you give me some pointers here as to what needs to be
-> > > done here. Looking at the code for virtio, it looks like I would need to add stuff
-> > > to scripts/mod/file2alias.c as well as to include/linux/mod_devicetable.h. Will
-> > you
-> > > accept patches for these files to support an ID space for Hyper-V vmbus drivers.
-> > 
-> > Yes, I will take patches for those files to implement this.
-> > 
-> > Along with those files, you also need a way to tell userspace that new
-> > UIDS are found before the individual drivers are loaded.  Hopefully you
-> > can do that now, but if not, it will need to be implemented.
-> 
-> Could you elaborate on what user level changes I will have to do.
+On Tue, 2011-06-07 at 18:52 +0200, Marco Stornelli wrote:
+> From: Marco Stornelli <marco.stornelli@gmail.com>
+> Add new line to each printk.
 
-It's all kernel code, but you need to be emiting "device found" messages
-to userspace through the hotplug bus event when you find the devices.
-Just fill in the correct fields in your hotplug callback and you should
-be fine.
+Perhaps use pr_<level> and pr_fmt instead?
+---
+ drivers/char/ramoops.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-Look at the PCI bus hotplug callback as an example of what is needed if
-you need an example.
+diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
+index 1a9f5f6..1283180 100644
+--- a/drivers/char/ramoops.c
++++ b/drivers/char/ramoops.c
+@@ -19,6 +19,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/kmsg_dump.h>
+@@ -112,14 +114,14 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	if (!mem_size) {
+-		printk(KERN_ERR "ramoops: invalid size specification");
++		pr_err("invalid size specification\n");
+ 		goto fail3;
+ 	}
+ 
+ 	rounddown_pow_of_two(mem_size);
+ 
+ 	if (mem_size < RECORD_SIZE) {
+-		printk(KERN_ERR "ramoops: size too small");
++		pr_err("size too small\n");
+ 		goto fail3;
+ 	}
+ 
+@@ -129,21 +131,21 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	cxt->phys_addr = mem_address;
+ 
+ 	if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
+-		printk(KERN_ERR "ramoops: request mem region failed");
++		pr_err("request mem region failed\n");
+ 		err = -EINVAL;
+ 		goto fail3;
+ 	}
+ 
+ 	cxt->virt_addr = ioremap(cxt->phys_addr,  cxt->size);
+ 	if (!cxt->virt_addr) {
+-		printk(KERN_ERR "ramoops: ioremap failed");
++		pr_err("ioremap failed\n");
+ 		goto fail2;
+ 	}
+ 
+ 	cxt->dump.dump = ramoops_do_dump;
+ 	err = kmsg_dump_register(&cxt->dump);
+ 	if (err) {
+-		printk(KERN_ERR "ramoops: registering kmsg dumper failed");
++		pr_err("registering kmsg dumper failed\n");
+ 		goto fail1;
+ 	}
+ 
+@@ -162,7 +164,7 @@ static int __exit ramoops_remove(struct platform_device *pdev)
+ 	struct ramoops_context *cxt = &oops_cxt;
+ 
+ 	if (kmsg_dump_unregister(&cxt->dump) < 0)
+-		printk(KERN_WARNING "ramoops: could not unregister kmsg_dumper");
++		pr_warn("could not unregister kmsg_dumper\n");
+ 
+ 	iounmap(cxt->virt_addr);
+ 	release_mem_region(cxt->phys_addr, cxt->size);
 
-hope this helps,
 
-greg k-h
