@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab1FHT1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 15:27:47 -0400
-Received: from mail.perches.com ([173.55.12.10]:2637 "EHLO mail.perches.com"
+	id S1755355Ab1FHT2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 15:28:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40335 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753524Ab1FHT1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 15:27:46 -0400
-Subject: Re: [PATCH 2/2 v2] ramoops: add new line to each print
-From: Joe Perches <joe@perches.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, xiyou.wangcong@gmail.com,
-        stevie.trujillo@gmail.com, kyungmin.park@samsung.com
-In-Reply-To: <4DEFC885.2080202@gmail.com>
-References: <4DE10B58.1010005@gmail.com>  <4DEE5737.9060404@gmail.com>
-	 <1307550164.16453.2.camel@Joe-Laptop>  <4DEFC885.2080202@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Jun 2011 12:27:44 -0700
-Message-ID: <1307561264.16453.10.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1754920Ab1FHT2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 15:28:37 -0400
+Message-ID: <4DEFCD5F.4030606@ti.com>
+Date: Wed, 8 Jun 2011 20:28:31 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: Properly register dummy regulator driver
+References: <1307486178-29718-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1307486178-29718-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-08 at 21:07 +0200, Marco Stornelli wrote:
-> From: Marco Stornelli <marco.stornelli@gmail.com>
-> Add new line to each print.
-> diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
-[]
-> @@ -186,6 +188,8 @@ static int __init ramoops_init(void)
->  		 * if we didn't find a platform device, we use module parameters
->  		 * building platform data on the fly.
->  		 */
-> +		pr_info("platform device not found, "
-> +			"using module parameters\n");
+On 07/06/11 23:36, Mark Brown wrote:
+> Recent changes in the driver core appear to mean that the data structures
+> for the driver core are not fully initialised unless the driver is bound.
+> Make sure the driver core knows the dummy driver is in use by binding it
+> to a driver.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
 
-Thanks Marco, I think that looks better.
+Applied
 
-Trivia:
+Thanks
 
-This fits on a single line and it's not generally a
-good thing to split a format across multiple lines.
-
-cheers, Joe
-
+Liam
