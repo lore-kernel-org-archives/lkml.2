@@ -1,84 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab1FHB65 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jun 2011 21:58:57 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49836 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab1FHB64 (ORCPT
+	id S1752955Ab1FHB7T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jun 2011 21:59:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64862 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab1FHB7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jun 2011 21:58:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4DEED74B.20502@jp.fujitsu.com>
-Date: Wed, 08 Jun 2011 10:58:35 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Borislav Petkov <bp@amd64.org>, Tony Luck <tony.luck@gmail.com>
-Subject: [PATCH 08/12] x86, mce: check the result of ancient_init()
-References: <4DEED509.1040504@jp.fujitsu.com>
-In-Reply-To: <4DEED509.1040504@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Tue, 7 Jun 2011 21:59:18 -0400
+X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=ScYqa51SstsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=TjxrF1JDVoqQuucthHIA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v4 04/13] seccomp_filter: add process state reporting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Will Drewry <wad@chromium.org>
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        kees.cook@canonical.com, torvalds@linux-foundation.org,
+        tglx@linutronix.de, mingo@elte.hu, jmorris@namei.org
+In-Reply-To: <BANLkTikSFUqtvw8VZa2oXWOZL3tUnt+UEg@mail.gmail.com>
+References: <1307133252-23259-1-git-send-email-wad@chromium.org>
+	 <1307133252-23259-4-git-send-email-wad@chromium.org>
+	 <20110607235613.GA21645@linux.vnet.ibm.com>
+	 <BANLkTikSFUqtvw8VZa2oXWOZL3tUnt+UEg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 07 Jun 2011 21:59:15 -0400
+Message-ID: <1307498355.9218.18.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because "ancient cpu" like p5 and winchip don't have X86_FEATURE_MCA
-(I suppose so), mcheck_cpu_init() on such cpu will return at check
-of mce_available() after __mcheck_cpu_ancient_init().
+On Tue, 2011-06-07 at 20:05 -0500, Will Drewry wrote:
+> I opted for the simplest
+> approach for now in hopes I wouldn't do it wrong yet-again.
 
-It is hard to know this implicit behavior without knowing cpus well.
-So make it clear that we leave mcheck_cpu_init() when the cpu is
-initialized in __mcheck_cpu_ancient_init().
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+;)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index a182875..2cc98d5 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1332,18 +1332,23 @@ static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
- 	return 0;
- }
- 
--static void __cpuinit __mcheck_cpu_ancient_init(struct cpuinfo_x86 *c)
-+static int __cpuinit __mcheck_cpu_ancient_init(struct cpuinfo_x86 *c)
- {
- 	if (c->x86 != 5)
--		return;
-+		return 0;
-+
- 	switch (c->x86_vendor) {
- 	case X86_VENDOR_INTEL:
- 		intel_p5_mcheck_init(c);
-+		return 1;
- 		break;
- 	case X86_VENDOR_CENTAUR:
- 		winchip_mcheck_init(c);
-+		return 1;
- 		break;
- 	}
-+
-+	return 0;
- }
- 
- static void __mcheck_cpu_init_vendor(struct cpuinfo_x86 *c)
-@@ -1397,7 +1402,8 @@ void __cpuinit mcheck_cpu_init(struct cpuinfo_x86 *c)
- 	if (mce_disabled)
- 		return;
- 
--	__mcheck_cpu_ancient_init(c);
-+	if (__mcheck_cpu_ancient_init(c))
-+		return;
- 
- 	if (!mce_available(c))
- 		return;
--- 
-1.7.1
+-- Steve
 
 
