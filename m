@@ -1,44 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab1FHKaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 06:30:07 -0400
-Received: from mail.bbaw.de ([194.95.188.6]:50722 "EHLO mail.bbaw.de"
+	id S1755580Ab1FHKhZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 06:37:25 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:52667 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754510Ab1FHKaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 06:30:05 -0400
-Date: Wed, 8 Jun 2011 12:30:03 +0200
-From: Lars =?UTF-8?B?VMOkdWJlcg==?= <taeuber@bbaw.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PROBLEM] reproduceable storage errors on high IO load
-Message-Id: <20110608123003.3569604f.taeuber@bbaw.de>
-In-Reply-To: <20110606095127.21d23a70.taeuber@bbaw.de>
-References: <20110606095127.21d23a70.taeuber@bbaw.de>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-AntiVirus: checked by Avira MailGate (version: 2.1.4-7; AVE: 7.9.5.12; VDF: 7.11.9.95; host: mailhub); id=26343-aGcsBF
+	id S1754902Ab1FHKhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 06:37:22 -0400
+Date: Wed, 8 Jun 2011 16:00:19 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 3/22]  3: uprobes: Adding and remove a
+ uprobe in a rb tree.
+Message-ID: <20110608103019.GB6123@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607125850.28590.10861.sendpatchset@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110607125850.28590.10861.sendpatchset@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+Changelog: Including a fix suggested by Stephen Wilson, to fix a small
+	problem in match_uprobe, fix was to interchange the parameters
+	Problem was reported by Josh Stone. (Thanks Josh, Stephen)
 
-I just tested again with different accoustic managment settings (128 and 254)
-in all disks.
-The problem still remains.
+Provides interfaces to add and remove uprobes from the global rb tree.
+Also provides definitions for uprobe_consumer, interfaces to add and
+remove a consumer to a uprobe.  There is a unique uprobe element in the
+rbtree for each unique inode:offset pair.
 
-Am I the only one using SW-RAID6 and having this problem?
+Uprobe gets added to the global rb tree when the first consumer for that
+uprobe gets registered. It gets removed from the tree only when all
+registered consumers are unregistered.
 
-I have several other SW-RAID6s productivly running. But they all have at
-least 12 disks in an array and are very much older (HW + SW).
+Multiple consumers can share the same probe. Each consumer provides a
+filter to limit the tasks on which the handler should run, a handler
+that runs on probe hit and a value which helps filter callback to limit
+the tasks on which the handler should run.
 
-Newer running machines have at least 16 disks running (2.6.35).
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ include/linux/uprobes.h |   12 +++
+ kernel/uprobes.c        |  210 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 222 insertions(+), 0 deletions(-)
 
-Should I test older kernels than 2.6.32?
-
-Please help me.
-The box is ready to run all test you suggest me to run.
-
-Thanks
-Lars
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 232ccea..9187df3 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -23,6 +23,7 @@
+  *	Jim Keniston
+  */
+ 
++#include <linux/rbtree.h>
+ #ifdef CONFIG_ARCH_SUPPORTS_UPROBES
+ #include <asm/uprobes.h>
+ #else
+@@ -50,6 +51,17 @@ typedef u8 uprobe_opcode_t;
+ /* Unexported functions & macros for use by arch-specific code */
+ #define uprobe_opcode_sz (sizeof(uprobe_opcode_t))
+ 
++struct uprobe_consumer {
++	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
++	/*
++	 * filter is optional; If a filter exists, handler is run
++	 * if and only if filter returns true.
++	 */
++	bool (*filter)(struct uprobe_consumer *self, struct task_struct *task);
++
++	struct uprobe_consumer *next;
++};
++
+ /*
+  * Most architectures can use the default versions of @read_opcode(),
+  * @set_bkpt(), @set_orig_insn(), and @is_bkpt_insn();
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index 7ef916e..80ddaf3 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -35,6 +35,12 @@
+ #include <linux/swap.h>	/* needed for try_to_free_swap */
+ 
+ struct uprobe {
++	struct rb_node		rb_node;	/* node in the rb tree */
++	atomic_t		ref;		/* lifetime muck */
++	struct rw_semaphore	consumer_rwsem;
++	struct uprobe_consumer	*consumers;
++	struct inode		*inode;		/* we hold a ref */
++	loff_t			offset;
+ 	u8			insn[MAX_UINSN_BYTES];
+ 	u16			fixups;
+ };
+@@ -307,3 +313,207 @@ bool __weak is_bkpt_insn(u8 *insn)
+ 	memcpy(&opcode, insn, UPROBES_BKPT_INSN_SIZE);
+ 	return (opcode == UPROBES_BKPT_INSN);
+ }
++
++static struct rb_root uprobes_tree = RB_ROOT;
++static DEFINE_SPINLOCK(uprobes_treelock);	/* serialize (un)register */
++
++static int match_uprobe(struct uprobe *l, struct uprobe *r, int *match_inode)
++{
++	if (match_inode)
++		*match_inode = 0;
++
++	if (l->inode < r->inode)
++		return -1;
++	if (l->inode > r->inode)
++		return 1;
++	else {
++		if (match_inode)
++			*match_inode = 1;
++
++		if (l->offset < r->offset)
++			return -1;
++
++		if (l->offset > r->offset)
++			return 1;
++	}
++
++	return 0;
++}
++
++/* Called with uprobes_treelock held */
++static struct uprobe *__find_uprobe(struct inode * inode,
++			 loff_t offset, struct rb_node **close_match)
++{
++	struct uprobe u = { .inode = inode, .offset = offset };
++	struct rb_node *n = uprobes_tree.rb_node;
++	struct uprobe *uprobe;
++	int match, match_inode;
++
++	while (n) {
++		uprobe = rb_entry(n, struct uprobe, rb_node);
++		match = match_uprobe(&u, uprobe, &match_inode);
++		if (close_match && match_inode)
++			*close_match = n;
++
++		if (!match) {
++			atomic_inc(&uprobe->ref);
++			return uprobe;
++		}
++		if (match < 0)
++			n = n->rb_left;
++		else
++			n = n->rb_right;
++
++	}
++	return NULL;
++}
++
++/*
++ * Find a uprobe corresponding to a given inode:offset
++ * Acquires uprobes_treelock
++ */
++static struct uprobe *find_uprobe(struct inode * inode, loff_t offset)
++{
++	struct uprobe *uprobe;
++	unsigned long flags;
++
++	spin_lock_irqsave(&uprobes_treelock, flags);
++	uprobe = __find_uprobe(inode, offset, NULL);
++	spin_unlock_irqrestore(&uprobes_treelock, flags);
++	return uprobe;
++}
++
++static struct uprobe *__insert_uprobe(struct uprobe *uprobe)
++{
++	struct rb_node **p = &uprobes_tree.rb_node;
++	struct rb_node *parent = NULL;
++	struct uprobe *u;
++	int match;
++
++	while (*p) {
++		parent = *p;
++		u = rb_entry(parent, struct uprobe, rb_node);
++		match = match_uprobe(uprobe, u, NULL);
++		if (!match) {
++			atomic_inc(&u->ref);
++			return u;
++		}
++
++		if (match < 0)
++			p = &parent->rb_left;
++		else
++			p = &parent->rb_right;
++
++	}
++	u = NULL;
++	rb_link_node(&uprobe->rb_node, parent, p);
++	rb_insert_color(&uprobe->rb_node, &uprobes_tree);
++	/* get access + drop ref */
++	atomic_set(&uprobe->ref, 2);
++	return u;
++}
++
++/*
++ * Acquires uprobes_treelock.
++ * Matching uprobe already exists in rbtree;
++ *	increment (access refcount) and return the matching uprobe.
++ *
++ * No matching uprobe; insert the uprobe in rb_tree;
++ *	get a double refcount (access + creation) and return NULL.
++ */
++static struct uprobe *insert_uprobe(struct uprobe *uprobe)
++{
++	unsigned long flags;
++	struct uprobe *u;
++
++	spin_lock_irqsave(&uprobes_treelock, flags);
++	u = __insert_uprobe(uprobe);
++	spin_unlock_irqrestore(&uprobes_treelock, flags);
++	return u;
++}
++
++static void put_uprobe(struct uprobe *uprobe)
++{
++	if (atomic_dec_and_test(&uprobe->ref))
++		kfree(uprobe);
++}
++
++static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
++{
++	struct uprobe *uprobe, *cur_uprobe;
++
++	uprobe = kzalloc(sizeof(struct uprobe), GFP_KERNEL);
++	if (!uprobe)
++		return NULL;
++
++	__iget(inode);
++	uprobe->inode = inode;
++	uprobe->offset = offset;
++	init_rwsem(&uprobe->consumer_rwsem);
++
++	/* add to uprobes_tree, sorted on inode:offset */
++	cur_uprobe = insert_uprobe(uprobe);
++
++	/* a uprobe exists for this inode:offset combination*/
++	if (cur_uprobe) {
++		kfree(uprobe);
++		uprobe = cur_uprobe;
++		iput(inode);
++	}
++	return uprobe;
++}
++
++static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
++{
++	struct uprobe_consumer *consumer;
++
++	down_read(&uprobe->consumer_rwsem);
++	consumer = uprobe->consumers;
++	while (consumer) {
++		if (!consumer->filter || consumer->filter(consumer, current))
++			consumer->handler(consumer, regs);
++
++		consumer = consumer->next;
++	}
++	up_read(&uprobe->consumer_rwsem);
++}
++
++static void add_consumer(struct uprobe *uprobe,
++				struct uprobe_consumer *consumer)
++{
++	down_write(&uprobe->consumer_rwsem);
++	consumer->next = uprobe->consumers;
++	uprobe->consumers = consumer;
++	up_write(&uprobe->consumer_rwsem);
++}
++
++/*
++ * For uprobe @uprobe, delete the consumer @consumer.
++ * Return true if the @consumer is deleted successfully
++ * or return false.
++ */
++static bool del_consumer(struct uprobe *uprobe,
++				struct uprobe_consumer *consumer)
++{
++	struct uprobe_consumer *con;
++	bool ret = false;
++
++	down_write(&uprobe->consumer_rwsem);
++	con = uprobe->consumers;
++	if (consumer == con) {
++		uprobe->consumers = con->next;
++		if (!con->next)
++			put_uprobe(uprobe); /* drop creation ref */
++		ret = true;
++	} else {
++		for (; con; con = con->next) {
++			if (con->next == consumer) {
++				con->next = consumer->next;
++				ret = true;
++				break;
++			}
++		}
++	}
++	up_write(&uprobe->consumer_rwsem);
++	return ret;
++}
