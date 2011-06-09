@@ -1,241 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757701Ab1FINO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 09:14:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39530 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757516Ab1FINOV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 09:14:21 -0400
-Message-Id: <20110609131307.590149293@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Thu, 09 Jun 2011 15:06:50 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, efault@gmx.de,
-        Arne Jansen <lists@die-jansens.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 3/3] printk: Avoid all wakeups from printk
-References: <20110609130647.937204592@chello.nl>
-Content-Disposition: inline; filename=printk-funky-locking.patch
+	id S1757714Ab1FINHS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 09:07:18 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33292 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757497Ab1FINHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 09:07:16 -0400
+Date: Thu, 9 Jun 2011 13:07:01 GMT
+From: tip-bot for Ralf Baechle <ralf@linux-mips.org>
+Message-ID: <tip-75bba0143454d0fef1b42d5b35cb5bd2f9388901@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@redhat.com, benh@kernel.crashing.org, ralf@linux-mips.org,
+        mattst88@gmail.com, ink@jurassic.park.msu.ru, tglx@linutronix.de,
+        rth@twiddle.net
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        ralf@linux-mips.org, mattst88@gmail.com, ink@jurassic.park.msu.ru,
+        tglx@linutronix.de, rth@twiddle.net
+In-Reply-To: <20110601180610.684557757@duck.linux-mips.net>
+References: <20110601180610.684557757@duck.linux-mips.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/cleanup] i8253: Alpha, PowerPC: Remove unused asm/8253pit.h
+Git-Commit-ID: 75bba0143454d0fef1b42d5b35cb5bd2f9388901
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Jun 2011 13:07:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since printk() has to acquire the console_sem in order to write its
-data out to the console we have an up() in printk(). Even though
-contention on the console_sem is rare under normal circumstances, when
-it happens printk() will issue a wakeup. If printk us used from a
-context that already owns the scheduler locks or locks that have a
-reverse ordering with the scheduler locks this gives potential for
-deadlocks.
+Commit-ID:  75bba0143454d0fef1b42d5b35cb5bd2f9388901
+Gitweb:     http://git.kernel.org/tip/75bba0143454d0fef1b42d5b35cb5bd2f9388901
+Author:     Ralf Baechle <ralf@linux-mips.org>
+AuthorDate: Wed, 1 Jun 2011 19:05:05 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 9 Jun 2011 15:01:39 +0200
 
-Avoid the wakeup by creating special semaphore operations that keep
-the semaphore internal spinlock held, this ensures console_sem
-contention will spin on this lock and not get queued on the wait_list.
+i8253: Alpha, PowerPC: Remove unused asm/8253pit.h
 
-For now keep these special semaphore operations private to printk,
-if there ever appears another valid user we can move them over to
-semaphore.c (along with extending the interface to provide
-{_irq,_irqsave} versions, as the current ones assume IRQs are disabled
-(as per the use-case in printk).
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
+Link: http://lkml.kernel.org/r/20110601180610.684557757@duck.linux-mips.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/printk.c |  140 +++++++++++++++++++++++++++-----------------------------
- 1 file changed, 69 insertions(+), 71 deletions(-)
+ arch/alpha/include/asm/8253pit.h   |    3 ---
+ arch/powerpc/include/asm/8253pit.h |    3 ---
+ 2 files changed, 0 insertions(+), 6 deletions(-)
 
-Index: linux-2.6/kernel/printk.c
-===================================================================
---- linux-2.6.orig/kernel/printk.c
-+++ linux-2.6/kernel/printk.c
-@@ -765,47 +765,11 @@ static volatile unsigned int printk_cpu 
-  * being able to cope (CON_ANYTIME) don't call them until
-  * this CPU is officially up.
-  */
--static inline int can_use_console(unsigned int cpu)
-+static inline int can_use_console(void)
- {
--	return cpu_online(cpu) || have_callable_console();
-+	return cpu_online(smp_processor_id()) || have_callable_console();
- }
- 
+diff --git a/arch/alpha/include/asm/8253pit.h b/arch/alpha/include/asm/8253pit.h
+deleted file mode 100644
+index a71c9c1..0000000
+--- a/arch/alpha/include/asm/8253pit.h
++++ /dev/null
+@@ -1,3 +0,0 @@
 -/*
-- * Try to get console ownership to actually show the kernel
-- * messages from a 'printk'. Return true (and with the
-- * console_lock held, and 'console_locked' set) if it
-- * is successful, false otherwise.
-- *
-- * This gets called with the 'logbuf_lock' spinlock held and
-- * interrupts disabled. It should return with 'lockbuf_lock'
-- * released but interrupts still disabled.
+- * 8253/8254 Programmable Interval Timer
 - */
--static int console_trylock_for_printk(unsigned int cpu)
--	__releases(&logbuf_lock)
--{
--	int retval = 0, wake = 0;
--
--	if (console_trylock()) {
--		retval = 1;
--
--		/*
--		 * If we can't use the console, we need to release
--		 * the console semaphore by hand to avoid flushing
--		 * the buffer. We need to hold the console semaphore
--		 * in order to do this test safely.
--		 */
--		if (!can_use_console(cpu)) {
--			console_locked = 0;
--			wake = 1;
--			retval = 0;
--		}
--	}
--	printk_cpu = UINT_MAX;
--	spin_unlock(&logbuf_lock);
--	if (wake)
--		up(&console_sem);
--	return retval;
--}
- static const char recursion_bug_msg [] =
- 		KERN_CRIT "BUG: recent printk recursion!\n";
- static int recursion_bug;
-@@ -826,6 +790,38 @@ static inline void printk_delay(void)
- 	}
- }
- 
-+static void __console_flush(void);
-+
-+/*
-+ * Special 'atomic' semaphore operations that mimmick down_trylock() + up(),
-+ * except they don't release the semaphore internal lock and optimize the
-+ * sem->count fiddling away.
-+ *
-+ * The advantage is that this construct doesn't generate wakeups on atomic_up()
-+ * since any contending semaphore acuiqisition will still be spinning on the
-+ * internal lock, instead of having gotten queued on the wait_list.
-+ *
-+ * printk() uses this to avoid generating wakeups, which would make it unsafe
-+ * to use in certain contexts (avoids lock inversion or lock recursion with
-+ * the scheduler locks).
-+ *
-+ * Assumes IRQs are disabled.
-+ */
-+static int atomic_down_trylock(struct semaphore *sem)
-+{
-+	spin_lock(&sem->lock);
-+	if (sem->count > 0)
-+		return 0;
-+
-+	spin_unlock(&sem->lock);
-+	return 1;
-+}
-+
-+static void atomic_up(struct semaphore *sem)
-+{
-+	spin_unlock(&sem->lock);
-+}
-+
- asmlinkage int vprintk(const char *fmt, va_list args)
- {
- 	int printed_len = 0;
-@@ -943,19 +939,14 @@ asmlinkage int vprintk(const char *fmt, 
- 		if (*p == '\n')
- 			new_text_line = 1;
- 	}
-+	printk_cpu = UINT_MAX;
-+	spin_unlock(&logbuf_lock);
- 
--	/*
--	 * Try to acquire and then immediately release the
--	 * console semaphore. The release will do all the
--	 * actual magic (print out buffers, wake up klogd,
--	 * etc). 
--	 *
--	 * The console_trylock_for_printk() function
--	 * will release 'logbuf_lock' regardless of whether it
--	 * actually gets the semaphore or not.
--	 */
--	if (console_trylock_for_printk(this_cpu))
--		console_unlock();
-+	if (!atomic_down_trylock(&console_sem)) {
-+		if (can_use_console())
-+			__console_flush();
-+		atomic_up(&console_sem);
-+	}
- 
- out_restore_irqs:
- 	local_irq_restore(flags);
-@@ -1223,31 +1214,12 @@ void wake_up_klogd(void)
- 		this_cpu_write(printk_pending, 1);
- }
- 
--/**
-- * console_unlock - unlock the console system
-- *
-- * Releases the console_lock which the caller holds on the console system
-- * and the console driver list.
-- *
-- * While the console_lock was held, console output may have been buffered
-- * by printk().  If this is the case, console_unlock(); emits
-- * the output prior to releasing the lock.
-- *
-- * If there is output waiting for klogd, we wake it up.
-- *
-- * console_unlock(); may be called from any context.
+diff --git a/arch/powerpc/include/asm/8253pit.h b/arch/powerpc/include/asm/8253pit.h
+deleted file mode 100644
+index a71c9c1..0000000
+--- a/arch/powerpc/include/asm/8253pit.h
++++ /dev/null
+@@ -1,3 +0,0 @@
+-/*
+- * 8253/8254 Programmable Interval Timer
 - */
--void console_unlock(void)
-+static void __console_flush(void)
- {
- 	unsigned long flags;
- 	unsigned _con_start, _log_end;
- 	unsigned wake_klogd = 0;
- 
--	if (console_suspended) {
--		up(&console_sem);
--		return;
--	}
--
- 	console_may_schedule = 0;
- 
- 	for ( ; ; ) {
-@@ -1271,10 +1243,36 @@ void console_unlock(void)
- 		exclusive_console = NULL;
- 
- 	spin_unlock_irqrestore(&logbuf_lock, flags);
--	up(&console_sem);
-+
- 	if (wake_klogd)
- 		wake_up_klogd();
- }
-+
-+/**
-+ * console_unlock - unlock the console system
-+ *
-+ * Releases the console_lock which the caller holds on the console system
-+ * and the console driver list.
-+ *
-+ * While the console_lock was held, console output may have been buffered
-+ * by printk().  If this is the case, console_unlock(); emits
-+ * the output prior to releasing the lock.
-+ *
-+ * If there is output waiting for klogd, we wake it up.
-+ *
-+ * console_unlock(); may be called from any context.
-+ */
-+void console_unlock(void)
-+{
-+	if (console_suspended) {
-+		up(&console_sem);
-+		return;
-+	}
-+
-+	__console_flush();
-+
-+	up(&console_sem);
-+}
- EXPORT_SYMBOL(console_unlock);
- 
- /**
-
-
