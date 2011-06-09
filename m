@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab1FIUd1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 16:33:27 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:61461 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab1FIUdY (ORCPT
+	id S1751941Ab1FIUgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 16:36:17 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:35015 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab1FIUgP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 16:33:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Timur Tabi <timur@freescale.com>
-Subject: Re: [PATCH 7/7] [v5] drivers/virt: introduce Freescale hypervisor management driver
-Date: Thu, 9 Jun 2011 22:33:07 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: linuxppc-dev@lists.ozlabs.org, alan@lxorguk.ukuu.org.uk,
-        kumar.gala@freescale.com, benh@kernel.crashing.org, greg@kroah.com,
-        akpm@kernel.org, cmetcalf@tilera.com, konrad.wilk@oracle.com,
-        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-References: <1307646794-26374-1-git-send-email-timur@freescale.com> <201106092213.13755.arnd@arndb.de> <4DF12A94.6070605@freescale.com>
-In-Reply-To: <4DF12A94.6070605@freescale.com>
+	Thu, 9 Jun 2011 16:36:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=BMlDgm2dz0IzrctbHrCSGYsxT3QBYfCVcr8lOFnBwNl6bV7N1uIfzVsYwvP56XXT1r
+         nrP/N7t8aPczOQM6mFiQ==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106092233.08030.arnd@arndb.de>
-X-Provags-ID: V02:K0:gsRGxxKG14p1Qphubr0q+mR2TqyLb4W5yZmrJ5KBWBd
- bDIKsmYEVtEAJEVDlNAsbX0MgezIT9KHBevIzUspLBgizNgNh5
- exbXmkL794ITDkPirXz+3ISLGMGQgabuKDbqpMJA5/w9v/fzIW
- MFIz53yZlW4FTKLr8kaaJmP1Vy/G/DETtHwalI/PT4VX+KyKuz
- z0dvGMejfY9OL3wtOEcOQ==
+In-Reply-To: <1307644812.2497.1022.camel@laptop>
+References: <20110606145708.GA7279@quad>
+	<1307644812.2497.1022.camel@laptop>
+Date: Thu, 9 Jun 2011 22:36:10 +0200
+Message-ID: <BANLkTimSO-+-0=bc=TZqvUxe7gwsSn1xRg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] perf_events: fix validation of events using an extra
+ reg (v4)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, Lin Ming <ming.m.lin@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 June 2011 22:18:28 Timur Tabi wrote:
-> > More importantly, the code you have chose (0) conflicts with existing drivers
-> > (frame buffer, scsi and wavefront among others). Please chose a free one and
-> > add it to Documentation/ioctl/ioctl-number.txt in the same patch.
-> 
-> Ok, I was really hoping to avoid doing this.  Like I said, binary compatibility
-> is important, and changing the type will break my existing apps.  Are you
-> insisting that I pick a new number?
+On Thu, Jun 9, 2011 at 8:40 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2011-06-06 at 16:57 +0200, Stephane Eranian wrote:
+>> +static struct cpu_hw_events *allocate_fake_cpuc(void)
+>> +{
+>> +       struct cpu_hw_events *cpuc;
+>> +       int cpu = smp_processor_id();
+>
+> That's a boo-boo, clearly we are in a preemptible context here (see the
+> GFP_KERNEL allocation on the next line), so using smp_processor_id()
+> isn't valid.
+>
+Good point. I missed that.
 
-I definitely insist that you have a proper interface in the driver at the
-time that it gets merged, and that probably includes a collision-free
-ioctl code.
+> Now since all that allocate_shared_regs() does with it is pick a NUMA
+> node, we should probably use raw_smp_processor_id() and leave it at
+> that, right?
+>
+Yeah, for what we do with fake_cpuc, it does not really matter where
+it comes from. This is not on any critical path. The simplest allocator
+will do it.
 
-You can probably make the driver support both the traditional and the
-new interface, but I would prefer if you kept that as a private patch
-on top a clean kernel driver. It's also a good idea to keep the header
-file clean and only define the new interface there, to ensure that all
-applications that are built in the future have to use the new interface.
 
-When you make the patch to add backwards compat support, just add it
-to the driver itself, not to the header.
-
-	Arnd
+>> +       cpuc = kzalloc(sizeof(*cpuc), GFP_KERNEL);
+>> +       if (!cpuc)
+>> +               return ERR_PTR(-ENOMEM);
+>> +
+>> +       /* only needed, if we have extra_regs */
+>> +       if (x86_pmu.extra_regs) {
+>> +               cpuc->shared_regs = allocate_shared_regs(cpu);
+>> +               if (!cpuc->shared_regs)
+>> +                       goto error;
+>> +       }
+>> +       return cpuc;
+>> +error:
+>> +       free_fake_cpuc(cpuc);
+>> +       return ERR_PTR(-ENOMEM);
+>> +}
+>
+>
