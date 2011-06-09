@@ -1,123 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751477Ab1GRWBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jul 2011 18:01:13 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36488 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab1GRWBM (ORCPT
+	id S1751522Ab1GRWHV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jul 2011 18:07:21 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55252 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab1GRWHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jul 2011 18:01:12 -0400
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Americo Wang <xiyou.wangcong@gmail.com>, Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Arnaud Lacombe <lacombar@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [Patch] fix a headers_check warning in include/linux/kernel.h
-Date: Mon, 18 Jul 2011 18:00:57 -0400
-Message-Id: <1311026457-23534-1-git-send-email-lacombar@gmail.com>
-X-Mailer: git-send-email 1.7.6.153.g78432
-In-Reply-To: <CAM_iQpX_0U26_1yX+VJwhkkA7Un6Mj53AqPpRK36ONM32u4BKA@mail.gmail.com>
-References: <CAM_iQpX_0U26_1yX+VJwhkkA7Un6Mj53AqPpRK36ONM32u4BKA@mail.gmail.com>
+	Mon, 18 Jul 2011 18:07:20 -0400
+Date: Thu, 9 Jun 2011 19:12:10 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor
+ messaging bus
+Message-ID: <20110609171210.GB3877@ucw.cz>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+ <1308640714-17961-8-git-send-email-ohad@wizery.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308640714-17961-8-git-send-email-ohad@wizery.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi!
 
-For the sake of having a patch ready. I actually did it yesterday but did not
-send it then. Cc'ed to the authors of the relevant macros; __FUNCTION__ was
-actually exported since ages, but I really do not see why the kernel exports
-this macros...
+> @@ -0,0 +1,75 @@
+> +What:		/sys/bus/rpmsg/devices/.../name
+> +Date:		June 2011
+> +KernelVersion:	3.2
+> +Contact:	Ohad Ben-Cohen <ohad@wizery.com>
+> +Description:
+> +		Every rpmsg device is a communication channel with a remote
+> +		processor. Channels are identified with a (textual) name,
+> +		which is maximum 32 bytes long (defined as RPMSG_NAME_SIZE in
+> +		rpmsg.h).
+> +
+> +		This sysfs entry contains the name of this channel.
+> +
+> +What:		/sys/bus/rpmsg/devices/.../src
+> +Date:		June 2011
+> +KernelVersion:	3.2
+> +Contact:	Ohad Ben-Cohen <ohad@wizery.com>
+> +Description:
+> +		Every rpmsg device is a communication channel with a remote
+> +		processor. Channels have a local ("source") rpmsg address,
+> +		and remote ("destination") rpmsg address. When an entity
+> +		starts listening on one end of a channel, it assigns it with
+> +		a unique rpmsg address (a 32 bits integer). This way when
+> +		inbound messages arrive to this address, the rpmsg core
+> +		dispatches them to the listening entity (a kernel driver).
+> +
+> +		This sysfs entry contains the src (local) rpmsg address
+> +		of this channel. If it contains 0xffffffff, then an address
+> +		wasn't assigned (can happen if no driver exists for this
+> +		channel).
 
- - Arnaud
+So this is basically networking... right? Why not implement it as
+sockets? (accept, connect, read, write)?
 
+									Pavel
 -- 
-From: Arnaud Lacombe <lacombar@gmail.com>
-Subject: linux/kernel.h: hide internal macros
-
-Unexpose to userland the following macros
- - BUILD_BUG_ON.*
- - __FUNCTION__
- - NUMA_BUILD
- - COMPACTION_BUILD
- - REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
-
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
----
- include/linux/kernel.h |   46 +++++++++++++++++++++++-----------------------
- 1 files changed, 23 insertions(+), 23 deletions(-)
-
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 567a6f7..9a43ad7 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -646,29 +646,6 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
- 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
- 	(type *)( (char *)__mptr - offsetof(type,member) );})
- 
--struct sysinfo;
--extern int do_sysinfo(struct sysinfo *info);
--
--#endif /* __KERNEL__ */
--
--#define SI_LOAD_SHIFT	16
--struct sysinfo {
--	long uptime;			/* Seconds since boot */
--	unsigned long loads[3];		/* 1, 5, and 15 minute load averages */
--	unsigned long totalram;		/* Total usable main memory size */
--	unsigned long freeram;		/* Available memory size */
--	unsigned long sharedram;	/* Amount of shared memory */
--	unsigned long bufferram;	/* Memory used by buffers */
--	unsigned long totalswap;	/* Total swap space size */
--	unsigned long freeswap;		/* swap space still available */
--	unsigned short procs;		/* Number of current processes */
--	unsigned short pad;		/* explicit padding for m68k */
--	unsigned long totalhigh;	/* Total high memory size */
--	unsigned long freehigh;		/* Available high memory size */
--	unsigned int mem_unit;		/* Memory unit size in bytes */
--	char _f[20-2*sizeof(long)-sizeof(int)];	/* Padding: libc5 uses this.. */
--};
--
- #ifdef __CHECKER__
- #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
- #define BUILD_BUG_ON_ZERO(e) (0)
-@@ -736,4 +713,27 @@ extern int __build_bug_on_failed;
- # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
- #endif
- 
-+struct sysinfo;
-+extern int do_sysinfo(struct sysinfo *info);
-+
-+#endif /* __KERNEL__ */
-+
-+#define SI_LOAD_SHIFT	16
-+struct sysinfo {
-+	long uptime;			/* Seconds since boot */
-+	unsigned long loads[3];		/* 1, 5, and 15 minute load averages */
-+	unsigned long totalram;		/* Total usable main memory size */
-+	unsigned long freeram;		/* Available memory size */
-+	unsigned long sharedram;	/* Amount of shared memory */
-+	unsigned long bufferram;	/* Memory used by buffers */
-+	unsigned long totalswap;	/* Total swap space size */
-+	unsigned long freeswap;		/* swap space still available */
-+	unsigned short procs;		/* Number of current processes */
-+	unsigned short pad;		/* explicit padding for m68k */
-+	unsigned long totalhigh;	/* Total high memory size */
-+	unsigned long freehigh;		/* Available high memory size */
-+	unsigned int mem_unit;		/* Memory unit size in bytes */
-+	char _f[20-2*sizeof(long)-sizeof(int)];	/* Padding: libc5 uses this.. */
-+};
-+
- #endif
--- 
-1.7.6.153.g78432
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
