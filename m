@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab1FIHAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 03:00:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39823 "EHLO mx1.redhat.com"
+	id S1754457Ab1FIG7w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 02:59:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5932 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751380Ab1FIHAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 03:00:01 -0400
-Message-ID: <4DF06F4F.8050308@redhat.com>
-Date: Thu, 09 Jun 2011 08:59:27 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Mnenhy/0.8.3 Thunderbird/3.1.10
+	id S1752329Ab1FIG7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 02:59:50 -0400
+Message-ID: <4DF06F5E.9070608@redhat.com>
+Date: Thu, 09 Jun 2011 09:59:42 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Christoph Hellwig <chellwig@redhat.com>,
-        Hannes Reinecke <hare@suse.de>, "Michael S. Tsirkin" <mst@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: virtio scsi host draft specification, v3
-References: <4DEE2B15.4090809@redhat.com> <87lixbgax9.fsf@rustcorp.com.au>
-In-Reply-To: <87lixbgax9.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 03/15] KVM: x86: avoid unnecessarily guest page table
+ walking
+References: <4DEE205E.8000601@cn.fujitsu.com> <4DEE20CA.90206@cn.fujitsu.com>
+In-Reply-To: <4DEE20CA.90206@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2011 01:28 AM, Rusty Russell wrote:
->> >  after some preliminary discussion on the QEMU mailing list, I present a
->> >  draft specification for a virtio-based SCSI host (controller, HBA, you
->> >  name it).
+On 06/07/2011 03:59 PM, Xiao Guangrong wrote:
+> We already get the guest physical address, so use it to read guest data
+> directly to avoid walking guest page table again
 >
-> OK, I'm impressed.  This is very well written and it doesn't make any of
-> the obvious mistakes wrt. virtio.
+> Signed-off-by: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
+> ---
+>   arch/x86/kvm/x86.c |    3 +--
+>   1 files changed, 1 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 694538a..8be9ff6 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -3930,8 +3930,7 @@ static int emulator_read_emulated(struct x86_emulate_ctxt *ctxt,
+>   	if ((gpa&  PAGE_MASK) == APIC_DEFAULT_PHYS_BASE)
+>   		goto mmio;
+>
+> -	if (kvm_read_guest_virt(ctxt, addr, val, bytes, exception)
+> -	    == X86EMUL_CONTINUE)
+> +	if (!kvm_read_guest(vcpu->kvm, gpa, val, bytes))
+>   		return X86EMUL_CONTINUE;
 
-Thanks very much, and thanks to those who corrected my early mistakes.
+This breaks is addr/bytes spans a page boundary.
 
-> I assume you have an implementation, as well?
+(the current code is also broken, but only for mmio; the new code is 
+broken for ram as well).
 
-Unfortunately not; "we're working on it", which means I should start in 
-July when I come back from vacation.
+We need a gva_to_gpa() that returns a range of pages.
 
-Do you prefer to wait for one before I make a patch to the LyX source? 
-In the meanwhile, can you reserve a subsystem ID for me?
+-- 
+error compiling committee.c: too many arguments to function
 
-Paolo
