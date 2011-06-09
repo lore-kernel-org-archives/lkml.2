@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab1FIH2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 03:28:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33175 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752883Ab1FIH2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 03:28:06 -0400
-Message-ID: <4DF07601.9060705@redhat.com>
-Date: Thu, 09 Jun 2011 10:28:01 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1756003Ab1FIH34 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 03:29:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:63583 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752871Ab1FIH3y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 03:29:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 7/7] [v4] drivers/virt: introduce Freescale hypervisor management driver
+Date: Thu, 9 Jun 2011 09:29:23 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Timur Tabi <timur@freescale.com>, alan@lxorguk.ukuu.org.uk,
+        kumar.gala@freescale.com, benh@kernel.crashing.org, greg@kroah.com,
+        akpm@kernel.org, cmetcalf@tilera.com, konrad.wilk@oracle.com,
+        dsaxena@linaro.org, linux-kernel@vger.kernel.org,
+        linux-console@vger.kernel.org
+References: <1307573154-15838-1-git-send-email-timur@freescale.com>
+In-Reply-To: <1307573154-15838-1-git-send-email-timur@freescale.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 14/15] KVM: MMU: mmio page fault support
-References: <4DEE205E.8000601@cn.fujitsu.com> <4DEE2281.1000008@cn.fujitsu.com>
-In-Reply-To: <4DEE2281.1000008@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106090929.23671.arnd@arndb.de>
+X-Provags-ID: V02:K0:tFFoGo89QBSPojCovYKqsfW5w0hpZ1YRpLVPLDTvmgl
+ ijgnDWHC+GBUSCgAxo/JguZ6mRoxa8K/rUt6zgyCcpf8e7C0Va
+ tI9HrH6nUMpTXeJn8xPaDrqRCe1+YPdHgG/UtJjwkojqGwxddl
+ mEDLOFsdCj+ck7EgUXW9x1gWFxW/YUQB+SAlSHPk3WumAEsuVQ
+ eL5E+UVOYUEbpmG2G95Hw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2011 04:07 PM, Xiao Guangrong wrote:
-> The idea is from Avi:
->
-> | We could cache the result of a miss in an spte by using a reserved bit, and
-> | checking the page fault error code (or seeing if we get an ept violation or
-> | ept misconfiguration), so if we get repeated mmio on a page, we don't need to
-> | search the slot list/tree.
-> | (https://lkml.org/lkml/2011/2/22/221)
->
-> When the page fault is caused by mmio, we cache the info in the shadow page
-> table, and also set the reserved bits in the shadow page table, so if the mmio
-> is caused again, we can quickly identify it and emulate it directly
->
-> Searching mmio gfn in memslots is heavy since we need to walk all memeslots, it
-> can be reduced by this feature, and also avoid walking guest page table for
-> soft mmu.
->
-> This feature can be disabled/enabled at the runtime, if
-> shadow_notrap_nonpresent_pte is enabled, the PFER.RSVD is always set, we need
-> to walk shadow page table for all page fault, so disable this feature if
-> shadow_notrap_nonpresent is enabled.
->
+On Thursday 09 June 2011 00:45:54 Timur Tabi wrote:
+> +struct fsl_hv_ioctl_memcpy {
+> +       __u32 ret;
+> +       __u32 source;
+> +       __u32 target;
+> +       __u64 local_vaddr;
+> +       __u64 remote_paddr;
+> +       __u64 count;
+> +};
 
-Maybe it's time to kill off bypass_guest_pf=1.  It's not as effective as 
-it used to be, since unsync pages always use shadow_trap_nonpresent_pte, 
-and since we convert between the two nonpresent_ptes during sync and unsync.
+> +struct fsl_hv_ioctl_prop {
+> +       __u32 ret;
+> +       __u32 handle;
+> +       __u64 path;
+> +       __u64 propname;
+> +       __u64 propval;
+> +       __u32 proplen;
+> +};
 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 4f475ab..227cf10 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -91,6 +91,9 @@ module_param(dbg, bool, 0644);
->   static int oos_shadow = 1;
->   module_param(oos_shadow, bool, 0644);
->
-> +static int __read_mostly mmio_pf = 1;
-> +module_param(mmio_pf, bool, 0644);
+These structures have implied padding. Better make it explicit by
+adding the appropriate __u32 __pad1 members or similar.
 
-Why make it a module parameter?
-
-> +static void mark_mmio_spte(u64 *sptep, u64 gfn, unsigned access)
-> +{
-> +	access&= ACC_WRITE_MASK | ACC_USER_MASK;
+> +/*
+> + * ioctl commands.
+> + */
+> +enum {
+> +       FSL_HV_IOCTL_PARTITION_RESTART = 1, /* Boot another partition */
+> +       FSL_HV_IOCTL_PARTITION_GET_STATUS = 2, /* Boot another partition */
+> +       FSL_HV_IOCTL_PARTITION_START = 3, /* Boot another partition */
+> +       FSL_HV_IOCTL_PARTITION_STOP = 4, /* Stop this or another partition */
+> +       FSL_HV_IOCTL_MEMCPY = 5, /* Copy data from one partition to another */
+> +       FSL_HV_IOCTL_DOORBELL = 6, /* Ring a doorbell */
 > +
-> +	__set_spte(sptep, shadow_mmio_mask | access | gfn<<  PAGE_SHIFT);
-> +}
-
-This can only work for shadow.  Is it worth the complexity?
-
-Also, shadow walking is not significantly faster than guest page table 
-walking.  And if we miss, we have to walk the guest page tables in any case.
-
+> +       /* Get a property from another guest's device tree */
+> +       FSL_HV_IOCTL_GETPROP = 7,
 > +
-> +static bool quickly_check_mmio_pf(struct kvm_vcpu *vcpu, u64 addr, bool direct)
-> +{
-> +	if (direct&&  vcpu_match_mmio_gpa(vcpu, addr))
-> +		return true;
-> +
-> +	if (vcpu_match_mmio_gva(vcpu, addr))
-> +		return true;
-> +
-> +	return false;
-> +}
+> +       /* Set a property in another guest's device tree */
+> +       FSL_HV_IOCTL_SETPROP = 8,
+> +};
 
-There is also the case of nesting - it's not direct and it's not a gva.
+As discussed before, this one should really be using the _IOC macros to define
+the commands that you use based on the structure definitions above, e.g.
 
--- 
-error compiling committee.c: too many arguments to function
+#define FSL_HV_IOCTL_GETPROP _IORW(FSL_HV, 8, struct fsl_hv_ioctl_prop)
 
+Then get rid of all the code that takes apart the ioctl command numbers
+again and just do a switch/case based on the command.
+
+	Arnd
+
+	Arnd
