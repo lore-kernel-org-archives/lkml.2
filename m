@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508Ab1FIMNU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 08:13:20 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:35406 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757284Ab1FIMNR convert rfc822-to-8bit (ORCPT
+	id S1757511Ab1FIMOc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 08:14:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48480 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757284Ab1FIMOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 08:13:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=FtFXByLSTwl7/Ecd5wDm/cj5TcLLogwtoz/e3WIspdZ7KMHHxXjMjPLFurhk1JHNgD
-         kgqwhiDee+q81YXYWF1fqOHjI9RjkVYLYHCeC2+rDRDIpv+5rcvl7VUd0EkeP9TVoax/
-         3QubmC3tSuxwV1qyKX0GvZZInK6WcDcIKeDf8=
-MIME-Version: 1.0
-In-Reply-To: <1307596281.3980.59.camel@edumazet-laptop>
-References: <20110609004435.14550.qmail@science.horizon.com>
- <4DF037C6.4000507@linux.intel.com> <BANLkTik62dLMf5PCPGeW=9P=sF2QcnW42g@mail.gmail.com>
- <1307591659.3980.37.camel@edumazet-laptop> <BANLkTi=E9gR3JHa4ipHHGGR2AiO9xJri=A@mail.gmail.com>
- <1307596281.3980.59.camel@edumazet-laptop>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 9 Jun 2011 08:12:56 -0400
-X-Google-Sender-Auth: XEUEYgM21N9bE-V15vMd8nRmaIQ
-Message-ID: <BANLkTinzOFOjfhcaVD6Oym+-Uan3-R_Maw@mail.gmail.com>
-Subject: Re: Change in functionality of futex() system call.
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Darren Hart <dvhart@linux.intel.com>, George Spelvin <linux@horizon.com>,
-        david@rgmadvisors.com, kyle@moffetthome.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 9 Jun 2011 08:14:31 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=vPU38LsHwLEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=K6KS5I2C0cWZuo8TJn0A:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2] trace: Set __GFP_NORETRY flag for ring buffer
+ allocating process
+From: Steven Rostedt <rostedt@goodmis.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: vnagarnaik@google.com, mingo@redhat.com, fweisbec@gmail.com,
+        mrubin@google.com, dhsharp@google.com, linux-kernel@vger.kernel.org
+In-Reply-To: <4DF0B097.7010805@jp.fujitsu.com>
+References: <1307490088-8612-1-git-send-email-vnagarnaik@google.com>
+	 <1307491302-9236-1-git-send-email-vnagarnaik@google.com>
+	 <4DF0B097.7010805@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 09 Jun 2011 08:14:28 -0400
+Message-ID: <1307621668.9218.37.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 1:11 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le jeudi 09 juin 2011 à 00:10 -0400, Andrew Lutomirski a écrit :
->> On Wed, Jun 8, 2011 at 11:54 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> >
->> > You can not prevent DOS on a machine if you allow a process to RO map
->> > your critical files (where you put futexes), because you allow this
->> > process to interfere with critical cache lines bouncing between cpus.
->>
->> The cacheline bounce DoS slows things down and they go back to normal
->> when you kill the DoS-ing task.
->>
->> The wakeup-eating DoS is permanent.  Seems a good deal worse to me.
->>
->> If you make this change, please at least document it in the man page.
->>
->
->
-> This is how futexes had working for years.
->
-> It was very obvious from the beginning. Please submit a man page change
-> since you raised the point. You own the credit to open a CVE and
-> immediately release a fix to all 2.6 versions !
->
-> How come a critical fix (according to you) went without being noticed
-> and documented ?
->
+On Thu, 2011-06-09 at 20:37 +0900, KOSAKI Motohiro wrote:
 
-<cynical answer>Because Linux system calls aren't really documented.
+> Unfortunately, __GFP_NORETRY is racy and don't work as expected.
+> If free memory is not enough, the thread may start to reclaim and
+> another thread can steal the reclaimed memory. And thread0 don't retry.
+> 
+> Then, thread0's alloc page may fail even though system have enough reclaimable
+> memory.
+> 
+>         thread0                                        thread1
+>         ---------------------------------------------------------------
+>         alloc_pages()
+>            get_page_from_freelist() -> fail
+>            try_to_free_pages()
+>                                                     alloc_pages()
+>                                                        get_page_from_freelist() -> success
+>            get_page_from_freelist() -> fail again
+> 
+> I think this is mm issue, and afaik, Minchan and some developers are
+> working on fixing it. but _now_ your patch doesn't work.
 
-It's reasonable to ask people to read a specification of how a system
-call works to see if it's well-thought-out, usable, and has good
-security properties.
+Have you seen this fail in practice?
 
-It's also reasonable to ask people to read an implementation of a
-system call and check to see that it conforms to the spec.
+I'm not too concern if it only triggers when memory is tight. But if it
+is triggering on normal cases, then that worries me.
 
-It's IMO a little less reasonable to ask people to review complicated
-mm code to see if the interface it implements is well-designed.
+Thanks,
 
-The futex(2) and futex(7) manpages are very incomplete, even
-today.</cynical answer>
+-- Steve
 
->
-> If its useful, then it needs a futex extension (and this must be
-> emulated on old kernels without this extension)
 
-I'm arguing for the extension.  I don't think the kernel has any
-obligation to make sure that new use-cases are possible on old
-versions, though.
-
---Andy
