@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855Ab1FIFjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 01:39:14 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58883 "EHLO smtps.tip.net.au"
+	id S1751652Ab1FIFuj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 01:50:39 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:47234 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab1FIFjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 01:39:12 -0400
-Date: Thu, 9 Jun 2011 15:39:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg K-H <greg@kroah.com>
-Cc: David Miller <davem@davemloft.net>,
-        "<netdev@vger.kernel.org>" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: linux-next: build failure after merge of the net tree
-Message-Id: <20110609153904.e602b317.sfr@canb.auug.org.au>
-In-Reply-To: <7CA9E653-DABC-470C-BCA6-905D6EBF9283@kroah.com>
-References: <20110609145657.96fae0d0.sfr@canb.auug.org.au>
-	<7CA9E653-DABC-470C-BCA6-905D6EBF9283@kroah.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__9_Jun_2011_15_39_04_+1000_6kpAXfJ2tYt0zzV1"
+	id S1750953Ab1FIFui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 01:50:38 -0400
+Date: Thu, 9 Jun 2011 11:13:04 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Stephen Wilson <wilsons@start.ca>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3.0-rc2-tip 4/22]  4: Uprobes: register/unregister
+ probes.
+Message-ID: <20110609054304.GC6123@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+ <20110607125900.28590.16071.sendpatchset@localhost6.localdomain6>
+ <20110608221032.GA9965@wicker.gateway.2wire.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110608221032.GA9965@wicker.gateway.2wire.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__9_Jun_2011_15_39_04_+1000_6kpAXfJ2tYt0zzV1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > +
+> > +		mm = vma->vm_mm;
+> > +		if (!valid_vma(vma)) {
+> > +			mmput(mm);
+> > +			continue;
+> > +		}
+> > +
+> > +		vaddr = vma->vm_start + offset;
+> > +		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> > +		if (vaddr < vma->vm_start || vaddr > vma->vm_end) {
+> 
+> This check looks like it is off by one?  vma->vm_end is already one byte
+> past the last valid address in the vma, so we should compare using ">="
+> here I think.
 
-Hi Greg,
+Right, we are off-by one.
+Will correct in the next patchset. 
+Will also correct the other places where we check for vm_end.
 
-On Wed, 8 Jun 2011 22:17:55 -0700 Greg K-H <greg@kroah.com> wrote:
->
-> Sorry, this is something that Linus asked for and will be going to him
-> tomorrow with the rest of the staging-linus branch.
+> > +
+> > +	if (!del_consumer(uprobe, consumer)) {
+> > +		pr_debug("No uprobe found with consumer %p\n",
+> > +				consumer);
+> > +		return;
+> > +	}
+> 
+> When del_consumer() fails dont we still need to do a put_uprobe(uprobe)
+> to drop the extra access ref?
+> 
 
-Yeah, I remember the discussion, just not a conclusion.  At least the
-x86_64 allmodconfig builds worked before I merged the net tree, so that is
-something.
+Yes, we need to check and drop the reference.
+Will correct in the next patchset. 
 
-The powerpc allyesconfig build is going to be interesting :-(
+> > +
+> > +	INIT_LIST_HEAD(&tmp_list);
+> > +
+> > +	mapping = inode->i_mapping;
 
-You might like to check the build results at
-http://kisskb.ellerman.id.au/kisskb/branch/9/ sometime tomorrow.  Or
-point your janitors at it :-)
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__9_Jun_2011_15_39_04_+1000_6kpAXfJ2tYt0zzV1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN8Fx4AAoJEDMEi1NhKgbsqtQH/2q4/o65CQRamoGjKezeBIzo
-AvQk+kdnGwpdoquIa1/BS6CzFiNV8xZkiO1DK4JyuRpLo/jOd4YoQJND3PZgH0ls
-S0DviiVrqzh5nZFKf4u1hPayt5nMTpVvBCgpo3XueRRIcHnKpyMFAOEDv2Lm14FZ
-y25u1AovA1AIsSBbQ3KaJprfa2ffVMVlO4JajVvU+78W7831/GrRE0cmZShhfarZ
-aBHPNBO1a4uS6Pg6NMK6UtkiZhuvufZBRu5Pybq2pWYC8ndgcyvkFy4wqbM6JBPw
-ucaEASj/ssiWNlD7vR1C/DH8rSWqq/+u7lhhimOCHRoi88C0iBje+JZOfXSi5Ks=
-=omz4
------END PGP SIGNATURE-----
-
---Signature=_Thu__9_Jun_2011_15_39_04_+1000_6kpAXfJ2tYt0zzV1--
+-- 
+Thanks and Regards
+Srikar
