@@ -1,90 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab1FIUTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 16:19:18 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:54590 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755555Ab1FIUTP (ORCPT
+	id S1755964Ab1FIUVb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 16:21:31 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:36767 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755660Ab1FIUV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 16:19:15 -0400
-X-Sasl-enc: Wot0P/acIm9xc5kRrmL2LYu1sO9PiJUcBRfKlvTIzAXF 1307650754
-Date: Thu, 9 Jun 2011 13:19:07 -0700
-From: Greg KH <greg@kroah.com>
-To: Henry Ptasinski <henryp@broadcom.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Brett Rudley <brudley@broadcom.com>,
-        Roland Vossen <rvossen@broadcom.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree (staging
- related)
-Message-ID: <20110609201907.GC12792@kroah.com>
-References: <20110609172745.dfd3a298.sfr@canb.auug.org.au>
- <20110609184127.GA2760@kroah.com>
- <20110609195211.GG10107@broadcom.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110609195211.GG10107@broadcom.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 Jun 2011 16:21:28 -0400
+Date: Thu, 09 Jun 2011 13:20:20 -0700 (PDT)
+Message-Id: <20110609.132020.549281704173055530.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-2.6 2011-06-09
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110609191632.GA16198@tuxdriver.com>
+References: <20110609191632.GA16198@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 09 Jun 2011 13:20:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 12:52:12PM -0700, Henry Ptasinski wrote:
-> On Thu, Jun 09, 2011 at 11:41:27AM -0700, Greg KH wrote:
-> > On Thu, Jun 09, 2011 at 05:27:45PM +1000, Stephen Rothwell wrote:
-> > > Hi Greg,
-> > > 
-> > > After merging the final tree, today's linux-next build (powerpc allyesconfig)
-> > > failed like this:
-> > > 
-> > > drivers/staging/brcm80211/brcmsmac/ampdu.c: In function 'wlc_ampdu_dotxstatus':
-> > > drivers/staging/brcm80211/brcmsmac/ampdu.c:840:17: error: invalid operands to binary ^ (have 'volatile u32 *' and 'int')
-> > > drivers/staging/brcm80211/brcmsmac/ampdu.c:840:17: error: invalid operands to binary ^ (have 'volatile u32 *' and 'int')
-> > > drivers/staging/brcm80211/brcmsmac/ampdu.c:848:8: error: invalid operands to binary ^ (have 'volatile u32 *' and 'int')
-> > > drivers/staging/brcm80211/brcmsmac/ampdu.c:848:8: error: invalid operands to binary ^ (have 'volatile u32 *' and 'int')
-> > > drivers/staging/brcm80211/brcmsmac/bmac.c: In function 'wlc_bmac_update_slot_timing':
-> > > drivers/staging/brcm80211/brcmsmac/bmac.c:186:3: error: invalid operands to binary ^ (have 'volatile u16 *' and 'int')
-> > > drivers/staging/brcm80211/brcmsmac/bmac.c:186:3: error: invalid operands to binary ^ (have 'volatile u16 *' and 'int')
-> > > drivers/staging/brcm80211/brcmsmac/bmac.c:190:3: error: invalid operands to binary ^ (have 'volatile u16 *' and 'int')
-> > > drivers/staging/brcm80211/brcmsmac/bmac.c:190:3: error: invalid operands to binary ^ (have 'volatile u16 *' and 'int')
-> > > drivers/staging/brcm80211/brcmsmac/bmac.c: In function 'wlc_setband_inact':
-> > > drivers/staging/brcm80211/brcmsmac/bmac.c:234:2: error: invalid operands to binary ^ (have 'volatile u32 *' and 'int')
-> > > drivers/staging/brcm80211/brcmsmac/bmac.c:234:2: error: invalid operands to binary ^ (have 'volatile u32 *' and 'int')
-> > > drivers/staging/brcm80211/brcmsmac/bmac.c: In function 'wlc_dpc':
-> > > drivers/staging/brcm80211/brcmsmac/bmac.c:311:6: error: invalid operands to binary ^ (have 'volatile u32 *' and 'int')
-> > > 
-> > > (and lots more)
-> > 
-> > Fun :(
-> > 
-> > This looks messy.  It's a macro that is trying to be cute by doing:
-> > #define R_REG(r) \
-> >         ({ \
-> >                 __typeof(*(r)) __osl_v; \
-> >                 __asm__ __volatile__("sync"); \
-> >                 __osl_v = bcmsdh_reg_read(NULL, (unsigned long)(r),\
-> >                                           sizeof(*(r))); \
-> >                 __asm__ __volatile__("sync"); \
-> >                 __osl_v; \
-> >         })
-> > 
-> > on big-endian, non-mips platforms.  Which I really doubt has ever
-> > been tested before.
-> 
-> I think it was used on PPC once upon a time, but likely in a very different
-> incarnation.
-> 
-> > Roland, Brett, any thoughts?
-> > 
-> > Should I just disable this module from being build on PPC as it doesn't
-> > look like its ever been tested or run on that platform before.
-> 
-> Disabling the build on PPC for now sounds ok.  We'll work on cleaning up the
-> macros and try to get some more platform test coverage.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Thu, 9 Jun 2011 15:16:32 -0400
 
-Ok, I've done that now and pushed it to the staging-next tree.
+> There are two reverts, both in mac80211.  One was found to cause a
+> regression.  The other revert was requested by the mac80211 maintainer
+> (Johannes) on the basis of API abuse and a lack of faith that the
+> implementation actual did anything useful. :-(
+> 
+> This includes a fix for an IBSS-related race condition from Johannes,
+> and a fix for an nl80211 integer overflow from Luca.  Also included
+> are a couple of rtlwifi fixes from Mike McCormack, one that fixes a
+> packet dropping error, and another that avoids incorrectly modifying
+> a resubmitted skb.  But the big hero this round is Stanislaw, who
+> not only identified a fix from Wey-Yi that need to go for 3.0 rather
+> than 3.1, but he also fixed an rmmod crash in rt2x00, a locking issue
+> in iwlgacy, a power setting bug in iwl4965, and an 802.11n general
+> instability issue on iwlagn.  As a result, I am researching popular
+> beers in the Czech Republic... :-)
+> 
+> Please let me know if there are problems!
 
-greg k-h
+Pulled, thanks!
