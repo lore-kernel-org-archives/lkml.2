@@ -1,121 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab1FIWMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 18:12:54 -0400
-Received: from plexity.net ([206.123.115.38]:35457 "EHLO plexity.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753536Ab1FIWMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 18:12:51 -0400
-X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Jun 2011 18:12:51 EDT
-Date: Thu, 9 Jun 2011 15:03:03 -0700
-From: Deepak Saxena <dsaxena@plexity.net>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH/Trivial] Update feature-removal-update.txt with 3.x
- versioning
-Message-ID: <20110609220303.GA2612@plexity.net>
-Reply-To: dsaxena@plexity.net
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Plexity, LLC
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756630Ab1FIWD2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 18:03:28 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:53552 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755444Ab1FIWD1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 18:03:27 -0400
+Date: Thu, 09 Jun 2011 15:03:19 -0700 (PDT)
+Message-Id: <20110609.150319.1816839671339957224.davem@davemloft.net>
+To: fubar@us.ibm.com
+Cc: panweiping3@gmail.com, andy@greyhouse.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 net-next 0/5] bonding:use latest lacp_rate and
+ ad_select and delete unused ad_timer and arp_mon_pt
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <31665.1307656691@death>
+References: <cover.1307603621.git.panweiping3@gmail.com>
+	<31665.1307656691@death>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 09 Jun 2011 15:03:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jay Vosburgh <fubar@us.ibm.com>
+Date: Thu, 09 Jun 2011 14:58:11 -0700
 
-Update feature removal schedule with 3.x numbering
- 
-Update all future kernel version entries in feature-removal-schedule.txt
-with appropriate 3.x kernel numbering.
-    
-Signed-off-by: Deepak Saxena <dsaxena@plexity.net>
+> Weiping Pan <panweiping3@gmail.com> wrote:
+> 
+>>There is bug that when you modify lacp_rate via sysfs,
+>>802.3ad won't use the new value of lacp_rate to transmit packets.
+>>This is because port->actor_oper_port_state isn't changed.
+>>
+>>As for ad_select, it can work,
+>>but both struct bond_params and ad_bond_info have lacp_fast and ad_select,
+>>they are duplicate and need extra synchronization.
+>>802.3ad can get them from bond_params directly every time.
+>>
+>>And ad_timer and arp_mon_pt aren't used any more, just delete them.
+>>
+>>changelog:
+>>v2:
+>>add bond_3ad_update_lacp_rate() as a helper function,
+>>and hold bond->lock when iterates slave list.
+>>
+>>v3:
+>>delete duplicate lacp_fast and agg_select_mode from struct ad_bond_info.
+>>
+>>v4:
+>>delete unused ad_timer and arp_mon_pt.
+> 
+> 	All patches in the series look reasonable.
+> 
+> Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
 
----
-
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 1a9446b..7725792 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -199,7 +199,7 @@ Files:	drivers/staging/cs5535_gpio/*
- Check:	drivers/staging/cs5535_gpio/cs5535_gpio.c
- Why:	A newer driver replaces this; it is drivers/gpio/cs5535-gpio.c, and
- 	integrates with the Linux GPIO subsystem.  The old driver has been
--	moved to staging, and will be removed altogether around 2.6.40.
-+	moved to staging, and will be removed altogether around 3.0.
- 	Please test the new driver, and ensure that the functionality you
- 	need and any bugfixes from the old driver are available in the new
- 	one.
-@@ -430,7 +430,7 @@ Who:	Avi Kivity <avi@redhat.com>
- ----------------------------
- 
- What:	iwlwifi 50XX module parameters
--When:	2.6.40
-+When:	3.0
- Why:	The "..50" modules parameters were used to configure 5000 series and
- 	up devices; different set of module parameters also available for 4965
- 	with same functionalities. Consolidate both set into single place
-@@ -441,7 +441,7 @@ Who:	Wey-Yi Guy <wey-yi.w.guy@intel.com>
- ----------------------------
- 
- What:	iwl4965 alias support
--When:	2.6.40
-+When:	3.0
- Why:	Internal alias support has been present in module-init-tools for some
- 	time, the MODULE_ALIAS("iwl4965") boilerplate aliases can be removed
- 	with no impact.
-@@ -499,7 +499,7 @@ Who:    Daniel Lezcano <daniel.lezcano@free.fr>
- ----------------------------
- 
- What:	iwlwifi disable_hw_scan module parameters
--When:	2.6.40
-+When:	3.0
- Why:	Hareware scan is the prefer method for iwlwifi devices for
- 	scanning operation. Remove software scan support for all the
- 	iwlwifi devices.
-@@ -510,7 +510,7 @@ Who:	Wey-Yi Guy <wey-yi.w.guy@intel.com>
- 
- What:   access to nfsd auth cache through sys_nfsservctl or '.' files
-         in the 'nfsd' filesystem.
--When:   2.6.40
-+When:   3.0
- Why:    This is a legacy interface which have been replaced by a more
-         dynamic cache.  Continuing to maintain this interface is an
-         unnecessary burden.
-@@ -546,7 +546,7 @@ Files:	net/netfilter/xt_connlimit.c
- ----------------------------
- 
- What:	noswapaccount kernel command line parameter
--When:	2.6.40
-+When:	3.0
- Why:	The original implementation of memsw feature enabled by
- 	CONFIG_CGROUP_MEM_RES_CTLR_SWAP could be disabled by the noswapaccount
- 	kernel parameter (introduced in 2.6.29-rc1). Later on, this decision
-@@ -579,7 +579,7 @@ Who:	Jean Delvare <khali@linux-fr.org>
- ----------------------------
- 
- What:	Support for UVCIOC_CTRL_ADD in the uvcvideo driver
--When:	2.6.42
-+When:	3.2
- Why:	The information passed to the driver by this ioctl is now queried
- 	dynamically from the device.
- Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-@@ -587,7 +587,7 @@ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
- ----------------------------
- 
- What:	Support for UVCIOC_CTRL_MAP_OLD in the uvcvideo driver
--When:	2.6.42
-+When:	3.2
- Why:	Used only by applications compiled against older driver versions.
- 	Superseded by UVCIOC_CTRL_MAP which supports V4L2 menu controls.
- Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-@@ -595,7 +595,7 @@ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
- ----------------------------
- 
- What:	Support for UVCIOC_CTRL_GET and UVCIOC_CTRL_SET in the uvcvideo driver
--When:	2.6.42
-+When:	3.2
- Why:	Superseded by the UVCIOC_CTRL_QUERY ioctl.
- Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
- 
+All applied, thanks everyone.
