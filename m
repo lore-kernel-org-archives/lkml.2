@@ -1,291 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab1FIR3Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 13:29:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:42081 "EHLO
+	id S1754630Ab1FIRbm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 13:31:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:43333 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab1FIR3M (ORCPT
+	with ESMTP id S1753694Ab1FIR3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 13:29:12 -0400
-X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=vhdKIqpQuCYA:10 a=h9s_3t6JXDMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=uQV9H5oAuIEPXSAttu4A:9 a=4X3RbJuLMaIvbjsrfG4A:7 a=UTB_XpHje0EA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Thu, 9 Jun 2011 13:29:14 -0400
+X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=vhdKIqpQuCYA:10 a=Sff775Mul4EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=KptQAqvHqVzwRrhwPwgA:9 a=SNmEBZ7QmHj0cCXluNcA:7 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110609172910.950101158@goodmis.org>
+Message-Id: <20110609172911.247431641@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 09 Jun 2011 13:27:47 -0400
+Date: Thu, 09 Jun 2011 13:27:48 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Ingo Molnar <mingo@redhat.com>, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>
-Subject: [PATCH 03/15] tracing: Add a free on close control mechanism for buffer_size_kb
+        Paul McQuade <tungstentide@gmail.com>
+Subject: [PATCH 04/15] ftrace: Fixed an include coding style issue
 References: <20110609172744.333794089@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Add-a-free-on-close-control-mechanism-for-bu.patch
+Content-Disposition: inline; filename=0004-ftrace-Fixed-an-include-coding-style-issue.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+From: Paul McQuade <tungstentide@gmail.com>
 
-The proc file entry buffer_size_kb is used to set the size of tracing
-buffer. The memory to expand the buffer size is kernel memory. Consider
-a use case where tracing is handled by a user space utility, which acts
-as a gate keeper for tracing requests. In an OOM condition, tracing is
-considered a low priority task and if the utility gets killed the ring
-buffer memory cannot be released back to the kernel.
+Removed <asm/ftrace.h> because <linux/ftrace.h> was already declared.
+Braces of struct's coding style fixed.
 
-This patch adds an IOCTL on the buffer_size_kb file to set a boolean.
-When this boolean is enabled, closing buffer_size_kb file will cause
-tracing to stop and free up the ring buffer memory.
-
-The user space process can then open the buffer_size_kb file to set the
-new buffer size for tracing, enable the boolean through IOCTL and keep
-the file open. Under OOM condition, if the process gets killed, the
-kernel closes the file descriptor for buffer_size_kb. The release
-handler stops the tracing and releases the kernel memory automatically.
-
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Michael Rubin <mrubin@google.com>
-Cc: David Sharp <dhsharp@google.com>
-Link: http://lkml.kernel.org/r/1306434886-16384-1-git-send-email-vnagarnaik@google.com
+Signed-off-by: Paul McQuade <tungstentide@gmail.com>
+Link: http://lkml.kernel.org/r/4DE59711.3090900@gmail.com
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace.h |    3 +
- kernel/trace/trace.c   |  140 +++++++++++++++++++++++++++++++++++------------
- 2 files changed, 107 insertions(+), 36 deletions(-)
+ kernel/trace/ftrace.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 9d88e1c..72a2f0d 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -127,6 +127,9 @@ struct ftrace_func_command {
- 					char *params, int enable);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 1ee417f..e153807 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -32,7 +32,6 @@
+ 
+ #include <trace/events/sched.h>
+ 
+-#include <asm/ftrace.h>
+ #include <asm/setup.h>
+ 
+ #include "trace_output.h"
+@@ -82,8 +81,7 @@ static int ftrace_disabled __read_mostly;
+ 
+ static DEFINE_MUTEX(ftrace_lock);
+ 
+-static struct ftrace_ops ftrace_list_end __read_mostly =
+-{
++static struct ftrace_ops ftrace_list_end __read_mostly = {
+ 	.func		= ftrace_stub,
  };
  
-+/* enable/disable auto free ring buffer on file close */
-+#define TRACE_RINGBUF_FREE_ON_CLOSE _IOW('t', 0x01, int)
-+
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
- int ftrace_arch_code_modify_prepare(void);
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 6368eeb..b926578 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2768,7 +2768,7 @@ int tracer_init(struct tracer *t, struct trace_array *tr)
- 	return t->init(tr);
+@@ -785,8 +783,7 @@ static void unregister_ftrace_profiler(void)
+ 	unregister_ftrace_graph();
  }
- 
--static int tracing_resize_ring_buffer(unsigned long size)
-+static int __tracing_resize_ring_buffer(unsigned long size)
- {
- 	int ret;
- 
-@@ -2820,6 +2820,41 @@ static int tracing_resize_ring_buffer(unsigned long size)
- 	return ret;
- }
- 
-+static ssize_t tracing_resize_ring_buffer(unsigned long size)
-+{
-+	int cpu, ret = size;
-+
-+	mutex_lock(&trace_types_lock);
-+
-+	tracing_stop();
-+
-+	/* disable all cpu buffers */
-+	for_each_tracing_cpu(cpu) {
-+		if (global_trace.data[cpu])
-+			atomic_inc(&global_trace.data[cpu]->disabled);
-+		if (max_tr.data[cpu])
-+			atomic_inc(&max_tr.data[cpu]->disabled);
-+	}
-+
-+	if (size != global_trace.entries)
-+		ret = __tracing_resize_ring_buffer(size);
-+
-+	if (ret < 0)
-+		ret = -ENOMEM;
-+
-+	for_each_tracing_cpu(cpu) {
-+		if (global_trace.data[cpu])
-+			atomic_dec(&global_trace.data[cpu]->disabled);
-+		if (max_tr.data[cpu])
-+			atomic_dec(&max_tr.data[cpu]->disabled);
-+	}
-+
-+	tracing_start();
-+	mutex_unlock(&trace_types_lock);
-+
-+	return ret;
-+}
-+
- 
- /**
-  * tracing_update_buffers - used by tracing facility to expand ring buffers
-@@ -2837,7 +2872,7 @@ int tracing_update_buffers(void)
- 
- 	mutex_lock(&trace_types_lock);
- 	if (!ring_buffer_expanded)
--		ret = tracing_resize_ring_buffer(trace_buf_size);
-+		ret = __tracing_resize_ring_buffer(trace_buf_size);
- 	mutex_unlock(&trace_types_lock);
- 
- 	return ret;
-@@ -2861,7 +2896,7 @@ static int tracing_set_tracer(const char *buf)
- 	mutex_lock(&trace_types_lock);
- 
- 	if (!ring_buffer_expanded) {
--		ret = tracing_resize_ring_buffer(trace_buf_size);
-+		ret = __tracing_resize_ring_buffer(trace_buf_size);
- 		if (ret < 0)
- 			goto out;
- 		ret = 0;
-@@ -3410,11 +3445,37 @@ out_err:
- 	goto out;
- }
- 
-+struct ftrace_entries_info {
-+	struct trace_array	*tr;
-+	int			free_buffer_on_close;
-+};
-+
-+static int
-+tracing_entries_open(struct inode *inode, struct file *filp)
-+{
-+	struct ftrace_entries_info *info;
-+
-+	if (tracing_disabled)
-+		return -ENODEV;
-+
-+	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
-+
-+	info->tr = (struct trace_array *)inode->i_private;
-+	info->free_buffer_on_close = 0;
-+
-+	filp->private_data = info;
-+
-+	return 0;
-+}
-+
- static ssize_t
- tracing_entries_read(struct file *filp, char __user *ubuf,
- 		     size_t cnt, loff_t *ppos)
- {
--	struct trace_array *tr = filp->private_data;
-+	struct ftrace_entries_info *info = filp->private_data;
-+	struct trace_array *tr = info->tr;
- 	char buf[96];
- 	int r;
- 
-@@ -3436,7 +3497,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- {
- 	unsigned long val;
- 	char buf[64];
--	int ret, cpu;
-+	int ret;
- 
- 	if (cnt >= sizeof(buf))
- 		return -EINVAL;
-@@ -3454,46 +3515,50 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 	if (!val)
- 		return -EINVAL;
- 
--	mutex_lock(&trace_types_lock);
-+	/* value is in KB */
-+	val <<= 10;
- 
--	tracing_stop();
-+	ret = tracing_resize_ring_buffer(val);
-+	if (ret < 0)
-+		return ret;
- 
--	/* disable all cpu buffers */
--	for_each_tracing_cpu(cpu) {
--		if (global_trace.data[cpu])
--			atomic_inc(&global_trace.data[cpu]->disabled);
--		if (max_tr.data[cpu])
--			atomic_inc(&max_tr.data[cpu]->disabled);
--	}
-+	*ppos += cnt;
- 
--	/* value is in KB */
--	val <<= 10;
-+	return cnt;
-+}
- 
--	if (val != global_trace.entries) {
--		ret = tracing_resize_ring_buffer(val);
--		if (ret < 0) {
--			cnt = ret;
--			goto out;
--		}
-+static long
-+tracing_entries_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-+{
-+	int ret = -ENOIOCTLCMD;
-+	struct ftrace_entries_info *info = filp->private_data;
-+
-+	switch (cmd) {
-+	case TRACE_RINGBUF_FREE_ON_CLOSE: {
-+		info->free_buffer_on_close = !!arg;
-+		ret = 0;
-+		break;
-+	}
- 	}
- 
--	*ppos += cnt;
-+	return ret;
-+}
- 
--	/* If check pages failed, return ENOMEM */
--	if (tracing_disabled)
--		cnt = -ENOMEM;
-- out:
--	for_each_tracing_cpu(cpu) {
--		if (global_trace.data[cpu])
--			atomic_dec(&global_trace.data[cpu]->disabled);
--		if (max_tr.data[cpu])
--			atomic_dec(&max_tr.data[cpu]->disabled);
-+static int
-+tracing_entries_release(struct inode *inode, struct file *filp)
-+{
-+	struct ftrace_entries_info *info = filp->private_data;
-+
-+	if (info->free_buffer_on_close) {
-+		/* disable tracing */
-+		tracing_off();
-+		/* resize the ring buffer to 0 */
-+		tracing_resize_ring_buffer(0);
- 	}
- 
--	tracing_start();
--	mutex_unlock(&trace_types_lock);
-+	kfree(info);
- 
--	return cnt;
-+	return 0;
- }
- 
- static int mark_printk(const char *fmt, ...)
-@@ -3635,9 +3700,12 @@ static const struct file_operations tracing_pipe_fops = {
- };
- 
- static const struct file_operations tracing_entries_fops = {
--	.open		= tracing_open_generic,
-+	.open		= tracing_entries_open,
- 	.read		= tracing_entries_read,
- 	.write		= tracing_entries_write,
-+	.unlocked_ioctl	= tracing_entries_ioctl,
-+	.compat_ioctl	= tracing_entries_ioctl,
-+	.release	= tracing_entries_release,
- 	.llseek		= generic_file_llseek,
+ #else
+-static struct ftrace_ops ftrace_profile_ops __read_mostly =
+-{
++static struct ftrace_ops ftrace_profile_ops __read_mostly = {
+ 	.func		= function_profile_call,
  };
  
 -- 
