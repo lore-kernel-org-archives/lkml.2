@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab1FIUpM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 16:45:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:32946 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab1FIUpL (ORCPT
+	id S1756079Ab1FIUvf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 16:51:35 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:49256 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756046Ab1FIUvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 16:45:11 -0400
-Subject: Re: [PATCH 2/3] perf_events: fix validation of events using an
- extra reg (v4)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>, Lin Ming <ming.m.lin@intel.com>
-In-Reply-To: <BANLkTimSO-+-0=bc=TZqvUxe7gwsSn1xRg@mail.gmail.com>
-References: <20110606145708.GA7279@quad> <1307644812.2497.1022.camel@laptop>
-	 <BANLkTimSO-+-0=bc=TZqvUxe7gwsSn1xRg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Jun 2011 22:48:47 +0200
-Message-ID: <1307652527.2497.1024.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Jun 2011 16:51:31 -0400
+X-Sasl-enc: SRUAFfDqSqFV9OuMqeJsyYSwQPkvyNXFfEZUwCUK9hl/ 1307652690
+Date: Thu, 9 Jun 2011 13:51:01 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Roland Vossen <rvossen@broadcom.com>
+Subject: Re: linux-next: manual merge of the staging tree with the
+ staging.current tree
+Message-ID: <20110609205101.GA32526@kroah.com>
+References: <20110609165808.8b36f634.sfr@canb.auug.org.au>
+ <20110609184143.GB2760@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110609184143.GB2760@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-09 at 22:36 +0200, Stephane Eranian wrote:
-> On Thu, Jun 9, 2011 at 8:40 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Mon, 2011-06-06 at 16:57 +0200, Stephane Eranian wrote:
-> >> +static struct cpu_hw_events *allocate_fake_cpuc(void)
-> >> +{
-> >> +       struct cpu_hw_events *cpuc;
-> >> +       int cpu = smp_processor_id();
-> >
-> > That's a boo-boo, clearly we are in a preemptible context here (see the
-> > GFP_KERNEL allocation on the next line), so using smp_processor_id()
-> > isn't valid.
-> >
-> Good point. I missed that.
+On Thu, Jun 09, 2011 at 11:41:43AM -0700, Greg KH wrote:
+> On Thu, Jun 09, 2011 at 04:58:08PM +1000, Stephen Rothwell wrote:
+> > Hi Greg,
+> > 
+> > Today's linux-next merge of the staging tree got a conflict in
+> > drivers/staging/brcm80211/brcmfmac/wl_iw.c between commit e1c78de9a462
+> > ("staging: brcm80211: fix for 'multiple definition of wl_msg_level' build
+> > err") from the staging.current tree and commit 8817f75429a1 ("staging:
+> > brcm80211: removed wl_ (vendor specific acronym)") from the staging tree.
+> > 
+> > I fixed it up (using the latter change) and can carry the fix as
+> > necessary.
+> 
+> Thanks for the fix, it sounds correct.
 
-Yeah, I did too, Ingo found it during testing.
+This should now be resolved.
 
-> > Now since all that allocate_shared_regs() does with it is pick a NUMA
-> > node, we should probably use raw_smp_processor_id() and leave it at
-> > that, right?
-> >
-> Yeah, for what we do with fake_cpuc, it does not really matter where
-> it comes from. This is not on any critical path. The simplest allocator
-> will do it.
-
-OK, fixed that up.
-
+greg k-h
