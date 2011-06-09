@@ -1,74 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab1FIIeG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 04:34:06 -0400
-Received: from mail-px0-f179.google.com ([209.85.212.179]:55546 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993Ab1FIIeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 04:34:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=Ifs162CbhpvZJ7B1NnTCIpXPIlknghbKsA4CohXLNsxTxzvZ/d575VapR3hwJfrYCs
-         4ZnmMBMk+mN+dizmbzz9nAzn1hdzqiqGJ7EMoi02U6U/YujR8o0pQPtTKLBrDiKnNF2T
-         2+9/Y8F3LKCEkqMl388bA5MYcf3TAC+g3TkcI=
-Date: Thu, 9 Jun 2011 17:33:45 +0900
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: Waldemar.Rymarkiewicz@tieto.com
-Cc: keithp@keithp.com, padovan@profusion.mobi, marcel@holtmann.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Regression caused by "Bluetooth: Map sec_level to link key
- requirements"
-Message-ID: <20110609083345.GA2894@dell.ccr.corp.intel.com>
-Mail-Followup-To: Waldemar.Rymarkiewicz@tieto.com, keithp@keithp.com,
-	padovan@profusion.mobi, marcel@holtmann.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <yunboy7a2so.fsf@aiko.keithp.com>
- <99B09243E1A5DA4898CDD8B700111448175AA2DB2A@EXMB04.eu.tieto.com>
+	id S1756843Ab1FIIfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 04:35:37 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:35697 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754619Ab1FIIfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 04:35:32 -0400
+Date: Thu, 9 Jun 2011 10:35:03 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ying Han <yinghan@google.com>
+Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
+Message-ID: <20110609083503.GC11603@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
+ <BANLkTi=sYtLGk2_VQLejEU2rQ0JBgg_ZmQ@mail.gmail.com>
+ <20110602075028.GB20630@cmpxchg.org>
+ <BANLkTi=AZG4LKUdeODB0uP=_CVBRnGs_Nw@mail.gmail.com>
+ <20110602175142.GH28684@cmpxchg.org>
+ <BANLkTi=9083abfiKdZ5_oXyA+dZqaXJfZg@mail.gmail.com>
+ <20110608153211.GB27827@cmpxchg.org>
+ <BANLkTincHpoay1JtpjG0RY9CCvfepRohTXUH6KKULYJ9jbdo+A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <99B09243E1A5DA4898CDD8B700111448175AA2DB2A@EXMB04.eu.tieto.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTincHpoay1JtpjG0RY9CCvfepRohTXUH6KKULYJ9jbdo+A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Jun 09, 2011, Waldemar.Rymarkiewicz@tieto.com wrote:
-> >Patch 13d39315c22b128f4796fc008b04914a7c32bb1a is causing a 
-> >regression From 2.6.39. I cannot communicate with my Nokia 
-> >N900 using either the SyncML or DUN RFCOMM services.  I get a 
-> >connection reset error shortly after startup.
+On Wed, Jun 08, 2011 at 08:52:03PM -0700, Ying Han wrote:
+> On Wed, Jun 8, 2011 at 8:32 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > On Tue, Jun 07, 2011 at 08:53:21PM -0700, Ying Han wrote:
+> >> 2. The way we treat the per-memcg soft_limit is changed in this patch.
+> >> The same comment I made on the following patch where we shouldn't
+> >> change the definition of user API (soft_limit_in_bytes in this case).
+> >> So I attached the patch to fix that where we should only go to the
+> >> ones under their soft_limit above certain reclaim priority. Please
+> >> consider.
 > >
-> >I've reverted this patch on top of something past -rc2 (to be 
-> >precise, I'm branching from ef2398019b305827ea7130ebaf7bf521b444530e).
-> >With the following fix-up to make things build again, my 
-> >bluetooth works again.
+> > Here is your proposal from the other mail:
+> >
+> > : Basically, we shouldn't reclaim from a memcg under its soft_limit
+> > : unless we have trouble reclaim pages from others. Something like the
+> > : following makes better sense:
+> > :
+> > : diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > : index bdc2fd3..b82ba8c 100644
+> > : --- a/mm/vmscan.c
+> > : +++ b/mm/vmscan.c
+> > : @@ -1989,6 +1989,8 @@ restart:
+> > :         throttle_vm_writeout(sc->gfp_mask);
+> > :  }
+> > :
+> > : +#define MEMCG_SOFTLIMIT_RECLAIM_PRIORITY       2
+> > : +
+> > :  static void shrink_zone(int priority, struct zone *zone,
+> > :                                 struct scan_control *sc)
+> > :  {
+> > : @@ -2001,13 +2003,13 @@ static void shrink_zone(int priority, struct zone *zone,
+> > :                 unsigned long reclaimed = sc->nr_reclaimed;
+> > :                 unsigned long scanned = sc->nr_scanned;
+> > :                 unsigned long nr_reclaimed;
+> > : -               int epriority = priority;
+> > :
+> > : -               if (mem_cgroup_soft_limit_exceeded(root, mem))
+> > : -                       epriority -= 1;
+> > : +               if (!mem_cgroup_soft_limit_exceeded(root, mem) &&
+> > : +                               priority > MEMCG_SOFTLIMIT_RECLAIM_PRIORITY)
+> > : +                       continue;
+> >
+> > I am not sure if you are serious or playing devil's advocate here,
+> > because it exacerbates the problem you are concerned about in 1. by
+> > orders of magnitude.
 > 
-> Logs from kernel and bluez would be much appreciated to see what happend.
-> As I remember this was pretty well tested with BITE test by Johan.
+> No, the two are different issues. The first one is a performance
+> concern of detailed implementation, while the second one is a design
+> concern.
 
-The patch was not only fine but actually *needed* by the BITE. So
-reverting it will make some qualification tests fail.
+Got ya.
 
-There's no DUN support in the N900 by default and the only package I'm
-aware that provides it uses the command line rfcomm tool with high
-security on the socket to block just-works SSP pairing (since the rfcomm
-tool doesn't use the authorization framework to guarantee a user pop-up
-dialog). The SyncML code I can't comment on since I haven't seen it.
+> > I guess it would make much more sense to evaluate if reclaiming from
+> > memcgs while there are others exceeding their soft limit is even a
+> > problem.  Otherwise this discussion is pretty pointless.
+> 
+> AFAIK it is a problem since it changes the spec of kernel API
+> memory.soft_limit_in_bytes. That value is set per-memcg which all the
+> pages allocated above that are best effort and targeted to reclaim
+> prior to others.
 
-So potentially this might be limited to high security sockets.
-Speculating further, if the device connecting to the N900 has a pre-2.1
-Bluetooth controller this could simply be about not having a 16-digit
-PIN which high security services require. So could whoever is able to
-reproduce the issue try repairing and entering a 16-digit PIN to see if
-the problem goes away? And if this is in fact the case then the kernel
-code is working exactly as it should; the only issue is that these
-services should really be using medium security level instead of high.
+That's not really true.  Quoting the documentation:
 
-Johan
+    When the system detects memory contention or low memory, control groups
+    are pushed back to their soft limits. If the soft limit of each control
+    group is very high, they are pushed back as much as possible to make
+    sure that one control group does not starve the others of memory.
+
+I am language lawyering here, but I don't think it says it won't touch
+other memcgs at all while there are memcgs exceeding their soft limit.
+
+It would be a lie about the current code in the first place, which
+does soft limit reclaim and then regular reclaim, no matter the
+outcome of the soft limit reclaim cycle.  It will go for the soft
+limit first, but after an allocation under pressure the VM is likely
+to have reclaimed from other memcgs as well.
+
+I saw your patch to fix that and break out of reclaim if soft limit
+reclaim did enough.  But this fix is not much newer than my changes.
+
+The second part of this is:
+
+    Please note that soft limits is a best effort feature, it comes with
+    no guarantees, but it does its best to make sure that when memory is
+    heavily contended for, memory is allocated based on the soft limit
+    hints/setup. Currently soft limit based reclaim is setup such that
+    it gets invoked from balance_pgdat (kswapd).
+
+It's not the pages-over-soft-limit that are best effort.  It says that
+it tries its best to take soft limits into account while reclaiming.
+
+My code does that, so I don't think we are breaking any promises
+currently made in the documentation.
+
+But much more important than keeping documentation promises is not to
+break actual users.  So if you are yourself a user of soft limits,
+test the new code pretty please and complain if it breaks your setup!
