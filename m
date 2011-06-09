@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309Ab1FILcp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 07:32:45 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37028 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756180Ab1FILcl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 07:32:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TLulXrucD/J+rrqRupyljlXFyzVm47f7RRznsnYNAiyTLiqh42om+91TMCWHM2mPs0
-         ilt9E5ivLeX6utO28eI2Ctk94Qm6PMIcCrHC5153xfgcD4r3xM4pHcEm2fS03X3oAqad
-         Ch8pSRZ0mvN9/bU2BuzMxXhMhMz4x9Ek+bC1o=
+	id S1757396Ab1FILfM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 07:35:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36990 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754443Ab1FILfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 07:35:10 -0400
+Date: Thu, 9 Jun 2011 12:35:05 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Micha? Miros?aw <mirqus@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 10/14] netvm: Set PF_MEMALLOC as appropriate during SKB
+ processing
+Message-ID: <20110609113505.GR5247@suse.de>
+References: <1307606573-24704-1-git-send-email-mgorman@suse.de>
+ <1307606573-24704-11-git-send-email-mgorman@suse.de>
+ <BANLkTimUE9yb-DegdUk0BbbOGWoUhEBrqw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1307617752-23426-1-git-send-email-gxt@mprc.pku.edu.cn>
-References: <1307617752-23426-1-git-send-email-gxt@mprc.pku.edu.cn>
-Date: Thu, 9 Jun 2011 20:32:40 +0900
-Message-ID: <BANLkTikNC8uh-X_0iJZH3tYd_kf46W1Rwg@mail.gmail.com>
-Subject: Re: [PATCH] unicore32: fix build error for find bitops
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: GuanXuetao <gxt@mprc.pku.edu.cn>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        greg@kroah.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTimUE9yb-DegdUk0BbbOGWoUhEBrqw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/9 GuanXuetao <gxt@mprc.pku.edu.cn>:
-> From: Guan Xuetao <gxt@mprc.pku.edu.cn>
->
-> Remove the __uc32_ prefix in find bitops functions.
-> see commit <19de85ef574c3a2182e3ccad9581805052f14946>
->  bitops: add #ifndef for each of find bitops
->
-> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Cc: Akinobu Mita <akinobu.mita@gmail.com>
-> ---
->  arch/unicore32/include/asm/bitops.h |    6 ------
->  arch/unicore32/kernel/ksyms.c       |    4 ++--
->  arch/unicore32/lib/findbit.S        |   14 ++++++++------
->  3 files changed, 10 insertions(+), 14 deletions(-)
->
-> diff --git a/arch/unicore32/include/asm/bitops.h b/arch/unicore32/include/asm/bitops.h
-> index 1628a63..a9653f0 100644
-> --- a/arch/unicore32/include/asm/bitops.h
-> +++ b/arch/unicore32/include/asm/bitops.h
-> @@ -13,12 +13,6 @@
->  #ifndef __UNICORE_BITOPS_H__
->  #define __UNICORE_BITOPS_H__
->
-> -#define find_next_bit          __uc32_find_next_bit
-> -#define find_next_zero_bit     __uc32_find_next_zero_bit
-> -
-> -#define find_first_bit         __uc32_find_first_bit
-> -#define find_first_zero_bit    __uc32_find_first_zero_bit
-> -
+On Thu, Jun 09, 2011 at 12:21:31PM +0200, Micha? Miros?aw wrote:
+> 2011/6/9 Mel Gorman <mgorman@suse.de>:
+> [...]
+> > +/*
+> > + * Limit which protocols can use the PFMEMALLOC reserves to those that are
+> > + * expected to be used for communication with swap.
+> > + */
+> > +static bool skb_pfmemalloc_protocol(struct sk_buff *skb)
+> > +{
+> > +       switch (skb->protocol) {
+> > +       case __constant_htons(ETH_P_ARP):
+> > +       case __constant_htons(ETH_P_IP):
+> > +       case __constant_htons(ETH_P_IPV6):
+> > +       case __constant_htons(ETH_P_8021Q):
+> > +               return true;
+> > +       default:
+> > +               return false;
+> > +       }
+> > +}
+> 
+> This is not needed and wrong. Whatever list there will be, it's going
+> to always miss some obscure setup (or not that obscure, like
+> ATAoverEthernet).
+> 
 
-Is this patch really fix the build error?
+NBD is updated in the series to set the socket information
+appropriately but the same cannot be said of AoE. The necessary
+changes have been made IPv4 and IPv6 to handle pfmemalloc sockets
+but the same cannot be necessarily said for the other protocols. Yes,
+the check could be removed but leaving it there makes a clear statement
+on what scenario can be reasonably expected to work.
 
-If these find_*_bit macros are removed, vmlinux will have multiple
-definisions of find_*_bit. Because lib/find_next_bit.c is built
-unconditionally after the commit 63e424c84429903c92a0f1e9654c31ccaf6694d0
-("arch: remove CONFIG_GENERIC_FIND_{NEXT_BIT,BIT_LE,LAST_BIT}".
+-- 
+Mel Gorman
+SUSE Labs
