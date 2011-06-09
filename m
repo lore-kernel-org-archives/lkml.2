@@ -1,223 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab1FIRg4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 13:36:56 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:39497 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab1FIRgx convert rfc822-to-8bit (ORCPT
+	id S1754023Ab1FIRiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 13:38:09 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32398 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752987Ab1FIRiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 13:36:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=QxzgcwdiV7EYQout1w/fR5aWoB4u3NlB9oopLaXiJiKsHQpSzFO5IC6kq/IAfyKFfC
-         UAqF1Bii8Q43lk/iwakQ==
-MIME-Version: 1.0
-In-Reply-To: <20110609083503.GC11603@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
-	<BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
-	<BANLkTi=sYtLGk2_VQLejEU2rQ0JBgg_ZmQ@mail.gmail.com>
-	<20110602075028.GB20630@cmpxchg.org>
-	<BANLkTi=AZG4LKUdeODB0uP=_CVBRnGs_Nw@mail.gmail.com>
-	<20110602175142.GH28684@cmpxchg.org>
-	<BANLkTi=9083abfiKdZ5_oXyA+dZqaXJfZg@mail.gmail.com>
-	<20110608153211.GB27827@cmpxchg.org>
-	<BANLkTincHpoay1JtpjG0RY9CCvfepRohTXUH6KKULYJ9jbdo+A@mail.gmail.com>
-	<20110609083503.GC11603@cmpxchg.org>
-Date: Thu, 9 Jun 2011 10:36:47 -0700
-Message-ID: <BANLkTiknpTjj3saw+zS5ABeD+4ESz68xvRot7TTvKs7A_RtrdA@mail.gmail.com>
-Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
-From: Ying Han <yinghan@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 9 Jun 2011 13:38:07 -0400
+Date: Thu, 9 Jun 2011 10:37:47 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Harry Wei <jiaweiwei.xiyou@gmail.com>,
+        Doug Thompson <dougthompson@xmission.com>
+Cc: linux-kernel@vger.kernel.org, ravi@jetztechnologies.com,
+        arvino55@gmail.com, greg@kroah.com, akpm@linux-foundation.org,
+        randy.dunlap@oracle.com, joe@perches.com
+Subject: Re: [PATCH RESEND]Remove a warning for drivers/edac/i82975x_edac.c
+Message-Id: <20110609103747.59805668.randy.dunlap@oracle.com>
+In-Reply-To: <20110609030401.GA2615@gmail.com>
+References: <20110609030401.GA2615@gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090205.4DF104F8.0043:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 1:35 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Wed, Jun 08, 2011 at 08:52:03PM -0700, Ying Han wrote:
->> On Wed, Jun 8, 2011 at 8:32 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> > On Tue, Jun 07, 2011 at 08:53:21PM -0700, Ying Han wrote:
->> >> 2. The way we treat the per-memcg soft_limit is changed in this patch.
->> >> The same comment I made on the following patch where we shouldn't
->> >> change the definition of user API (soft_limit_in_bytes in this case).
->> >> So I attached the patch to fix that where we should only go to the
->> >> ones under their soft_limit above certain reclaim priority. Please
->> >> consider.
->> >
->> > Here is your proposal from the other mail:
->> >
->> > : Basically, we shouldn't reclaim from a memcg under its soft_limit
->> > : unless we have trouble reclaim pages from others. Something like the
->> > : following makes better sense:
->> > :
->> > : diff --git a/mm/vmscan.c b/mm/vmscan.c
->> > : index bdc2fd3..b82ba8c 100644
->> > : --- a/mm/vmscan.c
->> > : +++ b/mm/vmscan.c
->> > : @@ -1989,6 +1989,8 @@ restart:
->> > :         throttle_vm_writeout(sc->gfp_mask);
->> > :  }
->> > :
->> > : +#define MEMCG_SOFTLIMIT_RECLAIM_PRIORITY       2
->> > : +
->> > :  static void shrink_zone(int priority, struct zone *zone,
->> > :                                 struct scan_control *sc)
->> > :  {
->> > : @@ -2001,13 +2003,13 @@ static void shrink_zone(int priority, struct zone *zone,
->> > :                 unsigned long reclaimed = sc->nr_reclaimed;
->> > :                 unsigned long scanned = sc->nr_scanned;
->> > :                 unsigned long nr_reclaimed;
->> > : -               int epriority = priority;
->> > :
->> > : -               if (mem_cgroup_soft_limit_exceeded(root, mem))
->> > : -                       epriority -= 1;
->> > : +               if (!mem_cgroup_soft_limit_exceeded(root, mem) &&
->> > : +                               priority > MEMCG_SOFTLIMIT_RECLAIM_PRIORITY)
->> > : +                       continue;
->> >
->> > I am not sure if you are serious or playing devil's advocate here,
->> > because it exacerbates the problem you are concerned about in 1. by
->> > orders of magnitude.
->>
->> No, the two are different issues. The first one is a performance
->> concern of detailed implementation, while the second one is a design
->> concern.
->
-> Got ya.
->
->> > I guess it would make much more sense to evaluate if reclaiming from
->> > memcgs while there are others exceeding their soft limit is even a
->> > problem.  Otherwise this discussion is pretty pointless.
->>
->> AFAIK it is a problem since it changes the spec of kernel API
->> memory.soft_limit_in_bytes. That value is set per-memcg which all the
->> pages allocated above that are best effort and targeted to reclaim
->> prior to others.
->
-> That's not really true.  Quoting the documentation:
->
->    When the system detects memory contention or low memory, control groups
->    are pushed back to their soft limits. If the soft limit of each control
->    group is very high, they are pushed back as much as possible to make
->    sure that one control group does not starve the others of memory.
->
-> I am language lawyering here, but I don't think it says it won't touch
-> other memcgs at all while there are memcgs exceeding their soft limit.
+On Thu, 9 Jun 2011 11:04:13 +0800 Harry Wei wrote:
 
-Well... :) I would say that the documentation of soft_limit needs lots
-of work especially after lots of discussions we have after the LSF.
+> From: Harry Wei <harryxiyou@gmail.com>
+> 
+> When i compile 2.6.39.1, a warning shows like below.
+> This patch can fix the warning. And i works well with
+> my PC.
+> 
+> [...]
+> CC [M]  drivers/edac/e752x_edac.o
+> CC [M]  drivers/edac/i82875p_edac.o
+> CC [M]  drivers/edac/i82975x_edac.o
+> drivers/edac/i82975x_edac.c: In function ï¿½ï¿½ï¿½i82975x_process_error_infoï¿½ï¿½ï¿½:
+> drivers/edac/i82975x_edac.c:298: warning: integer constant is too large for ï¿½ï¿½ï¿½unsigned longï¿½ï¿½ï¿½ type
+> CC [M]  drivers/edac/i3000_edac.o
+> CC [M]  drivers/edac/i3200_edac.o
+> CC [M]  drivers/edac/x38_edac.o
+> CC [M]  drivers/edac/i82860_edac.o
+> [...]
+> 
+> 
+> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+> Index: prj/drivers/edac/i82975x_edac.c
+> ===================================================================
+> --- prj.orig/drivers/edac/i82975x_edac.c	2011-06-04 10:09:55.351174516 +0800
+> +++ prj/drivers/edac/i82975x_edac.c	2011-06-04 10:10:30.875168437 +0800
+> @@ -293,9 +293,9 @@
+>  		info->errsts = info->errsts2;
+>  	}
+>  
+> -	page = (unsigned long) info->eap;
+> +	page = (unsigned long long) info->eap;
 
-The RFC i sent after our discussion has the following documentation,
-and I only cut & paste the content relevant to our conversation here:
+But page is still unsigned long, not unsigned long long...
 
-What is "soft_limit"?
-The "soft_limit was introduced in memcg to support over-committing the
-memory resource on the host. Each cgroup can be configured with
-"hard_limit", where it will be throttled or OOM killed by going over
-the limit. However, the allocation can go above the "soft_limit" as
-long as there is no memory contention. The "soft_limit" is the kernel
-mechanism for re-distributing spare memory resource among cgroups.
+>  	if (info->xeap & 1)
+> -		page |= 0x100000000ul;
+> +		page |= 0x100000000ull;
 
-What we have now?
-The current implementation of softlimit is based on per-zone RB tree,
-where only the cgroup exceeds the soft_limit the most being selected
-for reclaim.
+and just making this second change fixes the warning.
 
-It makes less sense to only reclaim from one cgroup rather than
-reclaiming all cgroups based on calculated propotion. This is required
-for fairness.
+I don't know what the right answer is, but this patch does not look
+complete to me.
 
-Proposed design:
-round-robin across the cgroups where they have memory allocated on the
-zone and also exceed the softlimit configured.
-
-there was a question on how to do zone balancing w/o global LRU. This
-could be solved by building another cgroup list per-zone, where we
-also link cgroups under their soft_limit. We won't scan the list
-unless the first list being exhausted and
-the free pages is still under the high_wmark.
-
-Since the per-zone memcg list design is being replaced by your
-patchset, some of the details doesn't apply. But the concept still
-remains where we would like to scan some memcgs first (above
-soft_limit) .
-
->
-> It would be a lie about the current code in the first place, which
-> does soft limit reclaim and then regular reclaim, no matter the
-> outcome of the soft limit reclaim cycle.  It will go for the soft
-> limit first, but after an allocation under pressure the VM is likely
-> to have reclaimed from other memcgs as well.
->
-> I saw your patch to fix that and break out of reclaim if soft limit
-> reclaim did enough.  But this fix is not much newer than my changes.
-
-My soft_limit patch was developed in parallel with your patchset, and
-most of that wouldn't apply here.
-Is that what you are referring to?
-
->
-> The second part of this is:
->
->    Please note that soft limits is a best effort feature, it comes with
->    no guarantees, but it does its best to make sure that when memory is
->    heavily contended for, memory is allocated based on the soft limit
->    hints/setup. Currently soft limit based reclaim is setup such that
->    it gets invoked from balance_pgdat (kswapd).
-
-We had patch merged which add the soft_limit reclaim also in the global ttfp.
-
-memcg-add-the-soft_limit-reclaim-in-global-direct-reclaim.patch
-
-> It's not the pages-over-soft-limit that are best effort.  It says that
-> it tries its best to take soft limits into account while reclaiming.
-Hmm. Both cases are true. The best effort pages I referring to means
-"the page above the soft_limit are targeted to reclaim first under
-memory contention"
-
->
-> My code does that, so I don't think we are breaking any promises
-> currently made in the documentation.
->
-> But much more important than keeping documentation promises is not to
-> break actual users.  So if you are yourself a user of soft limits,
-> test the new code pretty please and complain if it breaks your setup!
-
-Yes, I've been running tests on your patchset, but not getting into
-specific configurations yet. But I don't think it is hard to generate
-the following scenario:
-
-on 32G machine, under root I have three cgroups with 20G hard_limit and
-cgroup-A: soft_limit 1g, usage 20g with clean file pages
-cgroup-B: soft_limit 10g, usage 5g with clean file pages
-cgroup-C: soft_limit 10g, usage 5g with clean file pages
-
-I would assume reclaiming from cgroup-A should be sufficient under
-global memory pressure, and no pages needs to be reclaimed from B or
-C, especially both of them have memory usage under their soft_limit.
-
-I see we also have discussion on the soft_limit reclaim on the [patch
-4] with Michal, then i might start working on that.
-
---Ying
+Back in April there was a discussion about this warning message and the
+conclusion was that this driver should be replaced.  See
+https://lkml.org/lkml/2011/4/21/232 and its replies.
+But we seem to be having problems reaching the EDAC subsystem maintainer
+(again cc-ed).
 
 
+>  	chan = page & 1;
+>  	page >>= 1;
+>  	offst = page & ((1 << PAGE_SHIFT) - 1);
+> --
 
-
->
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
