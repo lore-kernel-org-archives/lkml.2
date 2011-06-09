@@ -1,221 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab1FIWat (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 18:30:49 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:13313 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756591Ab1FIWar convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 18:30:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=chUrsaz6T2VDJNi5M/nFGGZlaSFtQNIE1bJsPZ9CTmoRDIdDI4cW/xb3qsakx7AEXD
-         B0IMxKXIaJY1sWQJBjFQ==
-MIME-Version: 1.0
-In-Reply-To: <20110609183637.GC20333@cmpxchg.org>
-References: <BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
-	<BANLkTi=sYtLGk2_VQLejEU2rQ0JBgg_ZmQ@mail.gmail.com>
-	<20110602075028.GB20630@cmpxchg.org>
-	<BANLkTi=AZG4LKUdeODB0uP=_CVBRnGs_Nw@mail.gmail.com>
-	<20110602175142.GH28684@cmpxchg.org>
-	<BANLkTi=9083abfiKdZ5_oXyA+dZqaXJfZg@mail.gmail.com>
-	<20110608153211.GB27827@cmpxchg.org>
-	<BANLkTincHpoay1JtpjG0RY9CCvfepRohTXUH6KKULYJ9jbdo+A@mail.gmail.com>
-	<20110609083503.GC11603@cmpxchg.org>
-	<BANLkTiknpTjj3saw+zS5ABeD+4ESz68xvRot7TTvKs7A_RtrdA@mail.gmail.com>
-	<20110609183637.GC20333@cmpxchg.org>
-Date: Thu, 9 Jun 2011 15:30:27 -0700
-Message-ID: <BANLkTin3ZZYXdZgSFfi=8QMnN5we8RcoMyZ_vM3kdbRXCaoWnw@mail.gmail.com>
-Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
-From: Ying Han <yinghan@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1756885Ab1FIWa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 18:30:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13834 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756856Ab1FIWa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 18:30:57 -0400
+Date: Thu, 9 Jun 2011 18:30:45 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Martijn Uffing <mp3project@sarijopen.student.utwente.nl>
+Cc: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [OOPS] 3.0-rc1 cifs
+Message-ID: <20110609183045.01f6f9fc@tlielax.poochiereds.net>
+In-Reply-To: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>
+References: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 11:36 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Thu, Jun 09, 2011 at 10:36:47AM -0700, Ying Han wrote:
->> On Thu, Jun 9, 2011 at 1:35 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> > On Wed, Jun 08, 2011 at 08:52:03PM -0700, Ying Han wrote:
->> >> On Wed, Jun 8, 2011 at 8:32 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> >> > I guess it would make much more sense to evaluate if reclaiming from
->> >> > memcgs while there are others exceeding their soft limit is even a
->> >> > problem.  Otherwise this discussion is pretty pointless.
->> >>
->> >> AFAIK it is a problem since it changes the spec of kernel API
->> >> memory.soft_limit_in_bytes. That value is set per-memcg which all the
->> >> pages allocated above that are best effort and targeted to reclaim
->> >> prior to others.
->> >
->> > That's not really true.  Quoting the documentation:
->> >
->> >    When the system detects memory contention or low memory, control groups
->> >    are pushed back to their soft limits. If the soft limit of each control
->> >    group is very high, they are pushed back as much as possible to make
->> >    sure that one control group does not starve the others of memory.
->> >
->> > I am language lawyering here, but I don't think it says it won't touch
->> > other memcgs at all while there are memcgs exceeding their soft limit.
->>
->> Well... :) I would say that the documentation of soft_limit needs lots
->> of work especially after lots of discussions we have after the LSF.
->>
->> The RFC i sent after our discussion has the following documentation,
->> and I only cut & paste the content relevant to our conversation here:
->>
->> What is "soft_limit"?
->> The "soft_limit was introduced in memcg to support over-committing the
->> memory resource on the host. Each cgroup can be configured with
->> "hard_limit", where it will be throttled or OOM killed by going over
->> the limit. However, the allocation can go above the "soft_limit" as
->> long as there is no memory contention. The "soft_limit" is the kernel
->> mechanism for re-distributing spare memory resource among cgroups.
->>
->> What we have now?
->> The current implementation of softlimit is based on per-zone RB tree,
->> where only the cgroup exceeds the soft_limit the most being selected
->> for reclaim.
->>
->> It makes less sense to only reclaim from one cgroup rather than
->> reclaiming all cgroups based on calculated propotion. This is required
->> for fairness.
->>
->> Proposed design:
->> round-robin across the cgroups where they have memory allocated on the
->> zone and also exceed the softlimit configured.
->>
->> there was a question on how to do zone balancing w/o global LRU. This
->> could be solved by building another cgroup list per-zone, where we
->> also link cgroups under their soft_limit. We won't scan the list
->> unless the first list being exhausted and
->> the free pages is still under the high_wmark.
->>
->> Since the per-zone memcg list design is being replaced by your
->> patchset, some of the details doesn't apply. But the concept still
->> remains where we would like to scan some memcgs first (above
->> soft_limit) .
->
-> I think the most important thing we wanted was to round-robin scan all
-> soft limit excessors instead of just the biggest one.  I understood
-> this is the biggest fault with soft limits right now.
->
-> We came up with maintaining a list of excessors, rather than a tree,
-> and from this particular implementation followed naturally that this
-> list is scanned BEFORE we look at other memcgs at all.
->
-> This is a nice to have, but it was never the primary problem with the
-> soft limit implementation, as far as I understood.
->
->> > It would be a lie about the current code in the first place, which
->> > does soft limit reclaim and then regular reclaim, no matter the
->> > outcome of the soft limit reclaim cycle.  It will go for the soft
->> > limit first, but after an allocation under pressure the VM is likely
->> > to have reclaimed from other memcgs as well.
->> >
->> > I saw your patch to fix that and break out of reclaim if soft limit
->> > reclaim did enough.  But this fix is not much newer than my changes.
->>
->> My soft_limit patch was developed in parallel with your patchset, and
->> most of that wouldn't apply here.
->> Is that what you are referring to?
->
-> No, I meant that the current behaviour is old and we are only changing
-> it only now, so we are not really breaking backward compatibility.
->
->> > The second part of this is:
->> >
->> >    Please note that soft limits is a best effort feature, it comes with
->> >    no guarantees, but it does its best to make sure that when memory is
->> >    heavily contended for, memory is allocated based on the soft limit
->> >    hints/setup. Currently soft limit based reclaim is setup such that
->> >    it gets invoked from balance_pgdat (kswapd).
->>
->> We had patch merged which add the soft_limit reclaim also in the global ttfp.
->>
->> memcg-add-the-soft_limit-reclaim-in-global-direct-reclaim.patch
->>
->> > It's not the pages-over-soft-limit that are best effort.  It says that
->> > it tries its best to take soft limits into account while reclaiming.
->> Hmm. Both cases are true. The best effort pages I referring to means
->> "the page above the soft_limit are targeted to reclaim first under
->> memory contention"
->
-> I really don't know where you are taking this from.  That is neither
-> documented anywhere, nor is it the current behaviour.
+On Thu, 9 Jun 2011 22:15:05 +0200 (CEST)
+Martijn Uffing <mp3project@sarijopen.student.utwente.nl> wrote:
 
-I got the email from andrew on may 27 and you were on the cc-ed :)
-Anyway, i just forwarded you that one.
+> 
+> Ave People
+> 
+> 
+> I've got an oops with 3.0-rc1. (The same Oops also occurs with 3.0-rc2 and
+> the git snapshot of today linux-2.6-06e8684.)
+> The Oops occurs at boot time while the boot scripts try to automount a samba
+> share.
+> 
+> Last (tested)  working kernel	:	2.6.39
+> First (tested) oopsing kernel	:	3.0-rc1
+> 
+> I'm willing to try patches, and if it's needed, I can try to
+> git-bisect the kernel. However, I'm short on time and thought maybe somebody
+> already has some idea. I did a diff between 2.6.39/3.0-rc1 and there seems
+> to be a lot of code churn in cifs.
+> 
+> Details of client/server and the Oops attached. If there are any questions
+> please ask and CC: to my mail address. I'm not subscribed to
+> linux-cifs/linux-kernel
+> 
+> Martijn Uffing
+> 
+> 
+> 
+> CLIENT:
+> 
+> -Debian squeeze (64 bits)
+> -kernel vanilla 2.6.39 working   (core 2 duo)
+> -kernel vanilla 3.0-rc1 crashing (core 2 duo)
+> -fstab
+>   X.X.X.X/sysadmin /home/XXXX/docs_sysadmin	cifs	guest,uid=XXXX,gid=XXXX,users,auto,nounix,nobrl     0  0
+> -cat kernelconfig|grep CIFS
+>   CONFIG_CIFS=m
+>   CONFIG_CIFS_STATS=y
+>   # CONFIG_CIFS_STATS2 is not set
+>   CONFIG_CIFS_WEAK_PW_HASH=y
+>   CONFIG_CIFS_UPCALL=y
+>   # CONFIG_CIFS_XATTR is not set
+>   # CONFIG_CIFS_DEBUG2 is not set
+>   CONFIG_CIFS_DFS_UPCALL=y
+>   # CONFIG_CIFS_FSCACHE is not set
+>   CONFIG_CIFS_NFSD_EXPORT=y
+> 
+> 
+> SERVER:
+> -Debian etch (32 bits)
+> -kernel vanilla 2.6.27.59
+> -samba 3.0.24-6etch10
+> -samba share:
+> [sysadmin]
+>      path = /root/sysadmin/docs
+>      guest ok = yes
+>      guest only = yes
+>      force user = root
+>      writable = yes
+>      printable = no
+>      browseable = yes
+>      hosts deny = ALL
+>      hosts allow = X.X.X.X
+> 
+> OOPS:
+> Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
+> svc: failed to register lockdv1 RPC service (errno 97).
+> Registering the dns_resolver key type
+> CIFS VFS: default security mechanism requested.  The default security mechanism will be upgraded from ntlm to ntlmv2 in kernel release 2.6.41
+> BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
+> IP: [<ffffffffa0413286>] CIFSTCon+0xf6/0x4d0 [cifs]
+> PGD 12a9a1067 PUD 1270ef067 PMD 0 
+> Oops: 0000 [#1] SMP 
+> CPU 1 
+> Modules linked in: des_generic ecb md4 hmac nls_utf8 cifs dns_resolver nfsd nfs lockd fscache sunrpc xfs fuse radeon ttm drm_kms_helper drm i2c_algo_bit cfbcopyarea cfbimgblt cfbfillrect loop sg asus_atk0110 sr_mod cdrom usbhid hid pata_marvell sky2 skge evdev snd_hda_codec_hdmi snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq_midi snd_rawmidi intel_agp intel_gtt snd_seq_midi_event snd_seq tpm_tis tpm snd_timer snd_seq_device i2c_i801 snd i2c_core uhci_hcd soundcore snd_page_alloc ehci_hcd tpm_bios pcspkr
+> 
+> Pid: 2065, comm: mount.cifs Not tainted 3.0.0-rc1 #1 System manufacturer P5Q-E/P5Q-E
+> RIP: 0010:[<ffffffffa0413286>]  [<ffffffffa0413286>] CIFSTCon+0xf6/0x4d0 [cifs]
+> RSP: 0018:ffff880127d17b48  EFLAGS: 00010282
+> RAX: ffff88012a905400 RBX: ffff880129dc4200 RCX: 0000000000000000
+> RDX: 0000000000000811 RSI: ffff88012a9055ea RDI: ffff88012a905578
+> RBP: ffff880127d17ba8 R08: 0000000000000005 R09: 0000000000000001
+> R10: ffff88012638d600 R11: ffffffffa00600c0 R12: ffff880128bd0140
+> R13: 0000000000000000 R14: ffff880128bd016f R15: 0000000000000000
+> FS:  00007f4cbf033700(0000) GS:ffff88012fd00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 00000000000000a0 CR3: 000000012a9f1000 CR4: 00000000000406e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process mount.cifs (pid: 2065, threadinfo ffff880127d16000, task ffff880127b26880)
+> Stack:
+>   ffff8801273a5900 ffff88012638d600 ffffffffa00600c0 0000000300000001
+>   ffff880127d17b78 ffff88012a905560 ffff880127d17ba8 ffff880127d17c74
+>   ffff880127d17c68 ffff880129dc4200 00000000fffffff4 ffff8801279b7f01
+> Call Trace:
+>   [<ffffffffa041479e>] get_dfs_path+0x11e/0x190 [cifs]
+>   [<ffffffffa041492c>] expand_dfs_referral+0x11c/0x220 [cifs]
+>   [<ffffffffa0425b55>] ? cifs_buf_release+0x15/0x20 [cifs]
+>   [<ffffffffa040d211>] ? CIFSSMBQFSAttributeInfo+0x1b1/0x260 [cifs]
+>   [<ffffffffa0415dc5>] cifs_mount+0x2c5/0x5d0 [cifs]
+>   [<ffffffff810b2c7d>] ? bdi_setup_and_register+0x7d/0xa0
+>   [<ffffffffa0408311>] cifs_do_mount+0x1f1/0x3b0 [cifs]
+>   [<ffffffff810db35b>] mount_fs+0x1b/0xd0
+>   [<ffffffff810f5c6e>] vfs_kern_mount+0x5e/0xd0
+>   [<ffffffff810f5d4d>] do_kern_mount+0x4d/0x110
+>   [<ffffffff810f732b>] do_mount+0x2cb/0x7d0
+>   [<ffffffff810f78c3>] sys_mount+0x93/0xe0
+>   [<ffffffff8138bdbb>] system_call_fastpath+0x16/0x1b
+> Code: b4 02 00 10 0f 84 e7 02 00 00 48 8b 73 40 8b be cc 01 00 00 85 ff 0f 84 de 02 00 00 4c 89 55 a8 4c 89 5d b0 48 81 c6 ea 01 00 00
+>   8b bd a0 00 00 00 4c 89 f2 e8 3b 37 01 00 4c 8b 5d b0 4c 8b 
+> RIP  [<ffffffffa0413286>] CIFSTCon+0xf6/0x4d0 [cifs]
+>   RSP <ffff880127d17b48>
+> CR2: 00000000000000a0
+> ---[ end trace 64d92145e3df4829 ]---
+> 
 
---Ying
+Thanks for the bug report, Martin. Can you do the following to get us a
+listing of the place where it fell down?
 
->
-> Yeah, currently the soft limit reclaim cycle preceeds the generic
-> reclaim cycle.  But the end result is that other memcgs are reclaimed
-> from as well in both cases.  The exact timing is irrelevant.
->
-> And this has been the case for a long time, so I don't think my rework
-> breaks existing users in that regard.
->
->> > My code does that, so I don't think we are breaking any promises
->> > currently made in the documentation.
->> >
->> > But much more important than keeping documentation promises is not to
->> > break actual users.  So if you are yourself a user of soft limits,
->> > test the new code pretty please and complain if it breaks your setup!
->>
->> Yes, I've been running tests on your patchset, but not getting into
->> specific configurations yet. But I don't think it is hard to generate
->> the following scenario:
->>
->> on 32G machine, under root I have three cgroups with 20G hard_limit and
->> cgroup-A: soft_limit 1g, usage 20g with clean file pages
->> cgroup-B: soft_limit 10g, usage 5g with clean file pages
->> cgroup-C: soft_limit 10g, usage 5g with clean file pages
->>
->> I would assume reclaiming from cgroup-A should be sufficient under
->> global memory pressure, and no pages needs to be reclaimed from B or
->> C, especially both of them have memory usage under their soft_limit.
->
-> Keep in mind that memcgs are scanned proportionally to their size,
-> that we start out with relatively low scan counts, and that the
-> priority levels are a logarithmic scale.
->
-> The formula is essentially this:
->
->        (usage / PAGE_SIZE) >> priority
->
-> which means that we would scan as follows, with decreased soft limit
-> priority for A:
->
->        A: ((20 << 30) >> 12) >> 11 = 2560 pages
->        B: (( 5 << 30) >> 12) >> 12 =  320 pages
->        C:                          =  320 pages.
->
-> So even if B and C are scanned, they are only shrunk by a bit over a
-> megabyte tops.  For decreasing levels (if they are reached at all if
-> there is clean cache around):
->
->        A: 20M 40M 80M 160M ...
->        B:  2M  4M  8M  16M ...
->
-> While it would be sufficient to reclaim only from A, actually
-> reclaiming from B and C is not a big deal in practice, I would
-> suspect.
->
+http://wiki.samba.org/index.php/LinuxCIFS_troubleshooting#Oopses
+
+That should give us a better idea of what went wrong.
+
+Thanks,
+-- 
+Jeff Layton <jlayton@redhat.com>
