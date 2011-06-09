@@ -1,119 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757706Ab1FINRj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 09:17:39 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38374 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757352Ab1FINRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 09:17:38 -0400
-Date: Thu, 9 Jun 2011 15:17:32 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL] perf update
-Message-ID: <20110609131732.GA21100@elte.hu>
-References: <1307458585-24078-1-git-send-email-fweisbec@gmail.com>
- <1307610813.3941.23.camel@twins>
- <20110609091924.GA8188@elte.hu>
- <20110609114313.GA15332@elte.hu>
- <20110609123519.GF25771@somewhere.redhat.com>
+	id S1757900Ab1FINXU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 09:23:20 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58774 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757800Ab1FINXT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 09:23:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110609123519.GF25771@somewhere.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <201106091013.02218.ffainelli@freebox.fr>
+References: <201106061015.50039.ffainelli@freebox.fr>
+	<20110606082131.GH10410@ponder.secretlab.ca>
+	<201106091013.02218.ffainelli@freebox.fr>
+Date: Thu, 9 Jun 2011 07:23:19 -0600
+X-Google-Sender-Auth: CeWKmVdCzV67E_DX4OLc0J0rv-M
+Message-ID: <BANLkTimATt3c1SESZ7EBTOTZxNPLdvpXsw@mail.gmail.com>
+Subject: Re: [PATCH] x86/devicetree: add missing early_init_dt_setup_initrd_arch
+ stub
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Florian Fainelli <ffainelli@freebox.fr>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Maxime Bizon <mbizon@freebox.fr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday, June 9, 2011, Florian Fainelli <ffainelli@freebox.fr> wrote:
+> On Monday 06 June 2011 10:21:31 Grant Likely wrote:
+>> On Mon, Jun 06, 2011 at 10:15:49AM +0200, Florian Fainelli wrote:
+>> > From: Florian Fainelli <ffainelli@freebox.fr>
+>> >
+>> > This patch fixes the following build failure:
+>> >
+>> > drivers/built-in.o: In function `early_init_dt_check_for_initrd':
+>> > /home/florian/dev/kernel/x86/linux-2.6-x86/drivers/of/fdt.c:571:
+>> > undefined reference to `early_init_dt_setup_initrd_arch'
+>> > make: *** [.tmp_vmlinux1] Error 1
+>> >
+>> > which happens as soon as we enable initrd support on a x86 devicetree
+>> > platform such as Intel CE4100.
+>> >
+>> > Tested on a custom Intel CE4100 board.
+>> >
+>> > CC:stable@kernel.org
+>> > Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
+>>
+>> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+>
+> Grant, are you picking this patch to any of your tree?
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+No. This is x86 stuff and should go via the tip tree.
 
-> On Thu, Jun 09, 2011 at 01:43:13PM +0200, Ingo Molnar wrote:
-> > 
-> > * Ingo Molnar <mingo@elte.hu> wrote:
-> > 
-> > > 
-> > > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > > 
-> > > > On Tue, 2011-06-07 at 16:56 +0200, Frederic Weisbecker wrote:
-> > > > 
-> > > > > Frederic Weisbecker (1):
-> > > > >       perf: Split up buffer handling from core code
-> > > > > 
-> > > > > 
-> > > > >  kernel/events/Makefile   |    2 +-
-> > > > >  kernel/events/buffer.c   |  400 ++++++++++++++++++++++++++++++++++++++++
-> > > > >  kernel/events/core.c     |  458 ++--------------------------------------------
-> > > > >  kernel/events/internal.h |   70 +++++++
-> > > > >  4 files changed, 487 insertions(+), 443 deletions(-)
-> > > > 
-> > > > Looks about right.
-> > > > 
-> > > > Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > 
-> > > thanks, i'll pull it it and test it.
-> > 
-> > Note, i ended up applying it by hand:
-> > 
-> >  - fixed a build error,
-> > 
-> >  - streamlined the renaming: we really want this to be ring_buffer.c 
-> >    (most of the complexity comes from this not being a simple buffer 
-> >    but a ring-buffer)
-> > 
-> >  - i streamlined the naming around it: struct ring_buffer 
-> >    internalized via internal.h (it does not clash with ftrace's 
-> >    ring-buffer)
-> > 
-> > It all looks and reads much nicer now, but please double check the 
-> > commit as well :-)
-> > 
-> > One other rename i'd like to do is:
-> > 
-> >    struct perf_output_handle		=> struct rb_handle
-> > 
-> >    perf_output_begin()			=> rb_open()
-> >    perf_output_copy()			=> rb_write()
-> >    perf_output_sample()			=> rb_write_sample()
-> >    perf_output_end()			=> rb_close()
-> > 
-> > Which really makes it a lot more apparent that it's a regular 
-> > input/output flow defined over the ring-buffer!
-> > 
-> > I can do this if this is fine with everyone. There will be no change 
-> > in functionality.
-> 
-> I feel more comfortable if we keep the perf_outpout_*() naming, having some
-> global rb_* would pollute the global namespace.
+g.
 
-Hm, using the rb_ prefix is not good due to the (conceptual) clash 
-with rbtree.h primitives.
+>
+>>
+>> > ---
+>> > Grant,
+>> >
+>> > MIPS, PowerPC, Microblaze and now x86 all have the same way of
+>> > implementing this, would it rather make sense to get this merged to
+>> > generic devicetree functions and let this be overriden if needed?
+>>
+>> Probably, but I'm not going to tackle that problem just yet.  Although
+>> if you want to investigate and propose a patch, then go for it.  :-)
+>
+> Allright, I will take a look at this.
+>
+>>
+>> g.
+>>
+>> > Stable: this is a candidate for 2.6.39.2
+>> >
+>> > diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+>> > index 690bc84..9aeb78a 100644
+>> > --- a/arch/x86/kernel/devicetree.c
+>> > +++ b/arch/x86/kernel/devicetree.c
+>> > @@ -13,6 +13,7 @@
+>> >
+>> >  #include <linux/slab.h>
+>> >  #include <linux/pci.h>
+>> >  #include <linux/of_pci.h>
+>> >
+>> > +#include <linux/initrd.h>
+>> >
+>> >  #include <asm/hpet.h>
+>> >  #include <asm/irq_controller.h>
+>> >
+>> > @@ -98,6 +99,16 @@ void * __init early_init_dt_alloc_memory_arch(u64
+>> > size, u64 align)
+>> >
+>> >     return __alloc_bootmem(size, align, __pa(MAX_DMA_ADDRESS));
+>> >
+>> >  }
+>> >
+>> > +#ifdef CONFIG_BLK_DEV_INITRD
+>> > +void __init early_init_dt_setup_initrd_arch(unsigned long start,
+>> > +                                       unsigned long end)
+>> > +{
+>> > +   initrd_start = (unsigned long)__va(start);
+>> > +   initrd_end = (unsigned long)__va(end);
+>> > +   initrd_below_start_ok = 1;
+>> > +}
+>> > +#endif
+>> > +
+>> >
+>> >  void __init add_dtb(u64 data)
+>> >  {
+>> >
+>> >     initial_dtb = data + offsetof(struct setup_data, data);
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-> perf_rb_* namespace would be fine as well.
-
-How about:
-
-    struct perf_output_handle		=> struct ring_buffer_handle
- 
-    perf_output_begin()			=> ring_buffer_open()
-    perf_output_copy()			=> ring_buffer_write()
-    perf_output_sample()		=> ring_buffer_write_sample()
-    perf_output_end()			=> ring_buffer_close()
-
-?
-
-It doesn't clash with existing names.
-
-Thanks,
-
-	Ingo
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
