@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab1FIF5X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 01:57:23 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:51890 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953Ab1FIF5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 01:57:22 -0400
-Date: Thu, 9 Jun 2011 11:20:15 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Stephen Wilson <wilsons@start.ca>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 7/22]  7: uprobes: mmap and fork hooks.
-Message-ID: <20110609055015.GE6123@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607125931.28590.12362.sendpatchset@localhost6.localdomain6>
- <20110608221255.GC9965@wicker.gateway.2wire.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110608221255.GC9965@wicker.gateway.2wire.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752569Ab1FIGCG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 02:02:06 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:60797 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab1FIGCC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 02:02:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=IWstdmUbBEN4A0uMN4P8yRiBqroeyXufyXFg2d5c30oSXkwjHF4pbJn7XJi7vau5Mt
+         MGeblkgvsCY4/JL8zhD1g/hQJ6gcT9q8dy0HNL+/8Tmirtn1Chmg1MfrIK390kLw2e6Y
+         BEmIy1QaI2pcKi9BJKF/S22502Lqh8BeNYqWM=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: len.brown@intel.com
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]drivers:base:power:trace.c Add "UTC" Coordinated Universal Time to the printk.
+Date: Wed,  8 Jun 2011 23:01:41 -0700
+Message-Id: <1307599301-2524-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static void add_to_temp_list(struct vm_area_struct *vma, struct inode *inode,
-> > +		struct list_head *tmp_list)
-> > +{
-> > +	struct uprobe *uprobe;
-> > +	struct rb_node *n;
-> > +	unsigned long flags;
-> > +
-> > +	n = uprobes_tree.rb_node;
-> > +	spin_lock_irqsave(&uprobes_treelock, flags);
-> > +	uprobe = __find_uprobe(inode, 0, &n);
-> 
-> It is valid for a uprobe offset to be zero I guess, so perhaps we need
-> to do a put_uprobe() here when the result of __find_uprobe() is
-> non-null.
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-Right, will check for the result of __find_uprobe and do a put_uprobe().
-Will correct this in the next patchset.
+sounds stupid, but taking a glance at the time, and seeing the wrong time, or what seemed 
+wrong in dmesg, caused me to go into total check the time clock panic mode.. So the patch below adds:
+"UTC" Coordinated Universal Time abreviation to the printk so people like me dont flip out over the time!
 
+before:
+[    0.114915] Time:  1:47:03  Date: 06/09/11
+
+after:
+[    0.114728] Time:  5:46:02 UTC Date: 06/09/11
+
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+
+---
+ drivers/base/power/trace.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/base/power/trace.c b/drivers/base/power/trace.c
+index c80e138..009f459 100644
+--- a/drivers/base/power/trace.c
++++ b/drivers/base/power/trace.c
+@@ -112,7 +112,7 @@ static unsigned int read_magic_time(void)
+ 	unsigned int val;
+ 
+ 	get_rtc_time(&time);
+-	pr_info("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
++	pr_info("Time: %2d:%02d:%02d UTC Date: %02d/%02d/%02d\n",
+ 		time.tm_hour, time.tm_min, time.tm_sec,
+ 		time.tm_mon + 1, time.tm_mday, time.tm_year % 100);
+ 	val = time.tm_year;				/* 100 years */
 -- 
-Thanks and Regards
-Srikar
+1.7.5.2
+
