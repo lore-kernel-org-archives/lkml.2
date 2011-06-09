@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab1FIDCo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 23:02:44 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14992 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751460Ab1FIDCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 23:02:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,340,1304319600"; 
-   d="scan'208";a="9646134"
-Message-ID: <4DF037C6.4000507@linux.intel.com>
-Date: Wed, 08 Jun 2011 20:02:30 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1754054Ab1FIDEf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 23:04:35 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54906 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752684Ab1FIDEd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 23:04:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :user-agent;
+        b=ZPS4cKVxStHuIaC3jvvnLRrXRjp1ZoOvDTm/QaBb8uK0mBMb17j+c4kdWkv9owtDj0
+         Nxxla2vag90QXNetW+3OW7PxhZTf29R0BTDMbMhVPR1M1nVBhSINYOefmk0/iJHsg8dz
+         scPGX7DgcQI2uCh472/bmE88OX+0/ft0mXTSc=
+Date: Thu, 9 Jun 2011 11:04:13 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: ravi@jetztechnologies.com, arvino55@gmail.com, greg@kroah.com,
+        akpm@linux-foundation.org, randy.dunlap@oracle.com, joe@perches.com
+Subject: [PATCH RESEND]Remove a warning for drivers/edac/i82975x_edac.c
+Message-ID: <20110609030401.GA2615@gmail.com>
+Mail-Followup-To: linux-kernel@vger.kernel.org, ravi@jetztechnologies.com,
+	arvino55@gmail.com, greg@kroah.com, akpm@linux-foundation.org,
+	randy.dunlap@oracle.com, joe@perches.com
 MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>
-CC: david@rgmadvisors.com, kyle@moffetthome.net, luto@mit.edu,
-        linux-kernel@vger.kernel.org
-Subject: Re: Change in functionality of futex() system call.
-References: <20110609004435.14550.qmail@science.horizon.com>
-In-Reply-To: <20110609004435.14550.qmail@science.horizon.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=unknown-8bit
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2011 05:44 PM, George Spelvin wrote:
-> I'm not sure if it's best, but the risk of RO waiters interfering could
-> be solved by giving them a lower prioirty for wakeup and always waking
-> RW-mapped waiters first.
+From: Harry Wei <harryxiyou@gmail.com>
 
-This strikes me as bending over backwards and jumping through hoops
-inside the kernel to avoid having to do proper permissions management in
-userspace.
+When i compile 2.6.39.1, a warning shows like below.
+This patch can fix the warning. And i works well with
+my PC.
+
+[...]
+CC [M]  drivers/edac/e752x_edac.o
+CC [M]  drivers/edac/i82875p_edac.o
+CC [M]  drivers/edac/i82975x_edac.o
+drivers/edac/i82975x_edac.c: In function ���i82975x_process_error_info���:
+drivers/edac/i82975x_edac.c:298: warning: integer constant is too large for ���unsigned long��� type
+CC [M]  drivers/edac/i3000_edac.o
+CC [M]  drivers/edac/i3200_edac.o
+CC [M]  drivers/edac/x38_edac.o
+CC [M]  drivers/edac/i82860_edac.o
+[...]
 
 
-> In most cases, there would only be one type of waiter, so this would
-> have no effect, but if there were, a RO-mapped reader couldn't "steal"
-> wakeup from someone who had it RW-mapped.
-> 
-> It might conflict with a fairness goal, but it does solve the problem
-> without any extension to the API.
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+Index: prj/drivers/edac/i82975x_edac.c
+===================================================================
+--- prj.orig/drivers/edac/i82975x_edac.c	2011-06-04 10:09:55.351174516 +0800
++++ prj/drivers/edac/i82975x_edac.c	2011-06-04 10:10:30.875168437 +0800
+@@ -293,9 +293,9 @@
+ 		info->errsts = info->errsts2;
+ 	}
+ 
+-	page = (unsigned long) info->eap;
++	page = (unsigned long long) info->eap;
+ 	if (info->xeap & 1)
+-		page |= 0x100000000ul;
++		page |= 0x100000000ull;
+ 	chan = page & 1;
+ 	page >>= 1;
+ 	offst = page & ((1 << PAGE_SHIFT) - 1);
