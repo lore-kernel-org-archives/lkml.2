@@ -1,55 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab1FIWEP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 18:04:15 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:17333 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756696Ab1FIWEM (ORCPT
+	id S1756480Ab1FIV5x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 17:57:53 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:35667 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754817Ab1FIV5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 18:04:12 -0400
-Date: Thu, 9 Jun 2011 23:55:54 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH] pch_uart: add missing comment about OKI ML7223
-In-Reply-To: <1307604631-10168-1-git-send-email-alexander.stein@systec-electronic.com>
-Message-ID: <alpine.LNX.2.00.1106092353490.17868@swampdragon.chaosbits.net>
-References: <1307604631-10168-1-git-send-email-alexander.stein@systec-electronic.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 9 Jun 2011 17:57:52 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Robert Rosengren <robert.rosengren@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/3] mfd: ab8500-core MFD devices marked as initdata
+Date: Thu, 9 Jun 2011 23:57:33 +0200
+Message-ID: <1307656653-6258-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jun 2011, Alexander Stein wrote:
+From: Robert Rosengren <robert.rosengren@stericsson.com>
 
-> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
-> ---
->  drivers/tty/serial/pch_uart.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-> index 4652109..e3e6d6b 100644
-> --- a/drivers/tty/serial/pch_uart.c
-> +++ b/drivers/tty/serial/pch_uart.c
-> @@ -44,6 +44,7 @@ enum {
->  /* Set the max number of UART port
->   * Intel EG20T PCH: 4 port
->   * OKI SEMICONDUCTOR ML7213 IOH: 3 port
-> + * OKI SEMICONDUCTOR ML7223 IOH: 2 port
->  */
->  #define PCH_UART_NR	4
->  
+Internal MFD device structs are marked as __devinitdata since the kernel
+will allocate memory for the same when calling mfd_add_devices.
 
-Looks right to me - the driver does claim to support that device.
+Signed-off-by: Robert Rosengren <robert.rosengren@stericsson.com>
+Reviewed-by: Mattias Wallin <mattias.wallin@stericsson.com>
+Reviewed-by: Johan Palsson <johan.palsson@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/mfd/ab8500-core.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
-
-
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index fc0c1af..1fc6be8 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -363,7 +363,7 @@ static void ab8500_irq_remove(struct ab8500 *ab8500)
+ 	}
+ }
+ 
+-static struct resource ab8500_gpio_resources[] = {
++static struct resource __devinitdata ab8500_gpio_resources[] = {
+ 	{
+ 		.name	= "GPIO_INT6",
+ 		.start	= AB8500_INT_GPIO6R,
+@@ -372,7 +372,7 @@ static struct resource ab8500_gpio_resources[] = {
+ 	}
+ };
+ 
+-static struct resource ab8500_gpadc_resources[] = {
++static struct resource __devinitdata ab8500_gpadc_resources[] = {
+ 	{
+ 		.name	= "HW_CONV_END",
+ 		.start	= AB8500_INT_GP_HW_ADC_CONV_END,
+@@ -387,7 +387,7 @@ static struct resource ab8500_gpadc_resources[] = {
+ 	},
+ };
+ 
+-static struct resource ab8500_rtc_resources[] = {
++static struct resource __devinitdata ab8500_rtc_resources[] = {
+ 	{
+ 		.name	= "60S",
+ 		.start	= AB8500_INT_RTC_60S,
+@@ -402,7 +402,7 @@ static struct resource ab8500_rtc_resources[] = {
+ 	},
+ };
+ 
+-static struct resource ab8500_poweronkey_db_resources[] = {
++static struct resource __devinitdata ab8500_poweronkey_db_resources[] = {
+ 	{
+ 		.name	= "ONKEY_DBF",
+ 		.start	= AB8500_INT_PON_KEY1DB_F,
+@@ -417,7 +417,7 @@ static struct resource ab8500_poweronkey_db_resources[] = {
+ 	},
+ };
+ 
+-static struct resource ab8500_bm_resources[] = {
++static struct resource __devinitdata ab8500_bm_resources[] = {
+ 	{
+ 		.name = "MAIN_EXT_CH_NOT_OK",
+ 		.start = AB8500_INT_MAIN_EXT_CH_NOT_OK,
+@@ -534,7 +534,7 @@ static struct resource ab8500_bm_resources[] = {
+ 	},
+ };
+ 
+-static struct resource ab8500_debug_resources[] = {
++static struct resource __devinitdata ab8500_debug_resources[] = {
+ 	{
+ 		.name	= "IRQ_FIRST",
+ 		.start	= AB8500_INT_MAIN_EXT_CH_NOT_OK,
+@@ -549,7 +549,7 @@ static struct resource ab8500_debug_resources[] = {
+ 	},
+ };
+ 
+-static struct resource ab8500_usb_resources[] = {
++static struct resource __devinitdata ab8500_usb_resources[] = {
+ 	{
+ 		.name = "ID_WAKEUP_R",
+ 		.start = AB8500_INT_ID_WAKEUP_R,
+@@ -582,7 +582,7 @@ static struct resource ab8500_usb_resources[] = {
+ 	},
+ };
+ 
+-static struct resource ab8500_temp_resources[] = {
++static struct resource __devinitdata ab8500_temp_resources[] = {
+ 	{
+ 		.name  = "AB8500_TEMP_WARM",
+ 		.start = AB8500_INT_TEMP_WARM,
+@@ -591,7 +591,7 @@ static struct resource ab8500_temp_resources[] = {
+ 	},
+ };
+ 
+-static struct mfd_cell ab8500_devs[] = {
++static struct mfd_cell __devinitdata ab8500_devs[] = {
+ #ifdef CONFIG_DEBUG_FS
+ 	{
+ 		.name = "ab8500-debug",
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.3.2
 
