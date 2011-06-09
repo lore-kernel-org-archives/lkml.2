@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab1FIKig (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 06:38:36 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:34350 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab1FIKie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 06:38:34 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DF0A48B.6040802@cam.ac.uk>
-Date: Thu, 09 Jun 2011 11:46:35 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: anish singh <anish198519851985@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-i2c@fluff.org>,
-        gregkh@suse.de, manuel.stahl@iis.fraunhofer.de,
-        lucas.demarchi@profusion.mobi, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Linux I2C <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH] staging iio: Replace kmalloc with local variable
-References: <1307450354.1516.23.camel@anish-desktop>	<4DEE20E7.4020008@cam.ac.uk>	<20110607134135.GD15795@trinity.fluff.org>	<20110607160206.6cb3168d@endymion.delvare>	<BANLkTim5-ZKXtDkSQyHAJ9-iKtOPsJ917A@mail.gmail.com>	<BANLkTi=e0A2G-d+t4VF5V0gj+eNoh3KRnQ@mail.gmail.com>	<20110609102948.7a3f8d57@endymion.delvare> <BANLkTimq_5rmB+UkaxZwrOtV-ZF3+fEOgQ@mail.gmail.com> <4DF088E5.5000408@cam.ac.uk>
-In-Reply-To: <4DF088E5.5000408@cam.ac.uk>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757042Ab1FIKtT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 06:49:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41376 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753515Ab1FIKtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 06:49:15 -0400
+From: GuanXuetao <gxt@mprc.pku.edu.cn>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: GuanXuetao <gxt@mprc.pku.edu.cn>, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        greg@kroah.com
+Subject: [GIT PULL] unicore32 patches for linux-2.6
+Date: Thu,  9 Jun 2011 10:48:13 +0000
+Message-Id: <cover.1307614950.git.gxt@mprc.pku.edu.cn>
+X-Mailer: git-send-email 1.7.5.4
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Jun 2011 10:48:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/11 09:48, Jonathan Cameron wrote:
-> On 06/09/11 09:34, anish singh wrote:
->>
->>
->> On Thu, Jun 9, 2011 at 1:59 PM, Jean Delvare <khali@linux-fr.org <mailto:khali@linux-fr.org>> wrote:
->>
->>     On Thu, 9 Jun 2011 13:53:09 +0530, anish singh wrote:
->>     > On Wed, Jun 8, 2011 at 10:41 AM, anish singh <anish198519851985@gmail.com <mailto:anish198519851985@gmail.com>>wrote:
->>     > >  On Tue, Jun 7, 2011 at 7:32 PM, Jean Delvare <khali@linux-fr.org <mailto:khali@linux-fr.org>> wrote:
->>     > >> To be clearer, it is down to the i2c BUS (adapter) driver, NOT the i2c
->>     > >> device driver. So the patch is correct.
->>     > >>
->>     > > I think i can take Jean ack on this?If yes then Joanthan kindly apply
->>     > > this patch and i think you didn't lead me in wrong way as whatever
->>     > > said by you is corroborated by jean also i.e. it is I2C bus driver
->>     > > responsiblity
->>     > > to care about DMA.
->>     > >
->>     > Sorry to ping you again.Can i take your ack on this?
->>
->>     Yes of course.
->>
->>     Acked-by: Jean Delvare <khali@linux-fr.org <mailto:khali@linux-fr.org>>
->>
->> Thanks a ton.Jonathan kindly apply it now :)
-> Greg, I'll send this one on to you with the set I currently have out for review.
-> 
-Doh, after all this, I just tried to apply this to find the code in question has already
-gone.  Anish, what tree are you working against? Looks like I did an equivalent clean up
-(with a load of others) back in May then forgot about it.
+Hi Linus,
+Please pull the patches of unicore32 subsystem for linux-2.6 from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git unicore32
 
-Sorry all. I should have actually have checked it was still relevant rather than reviewing
-purely on basis of content of patch...
+Five patches are included after last review, and mac driver is excluded.
 
-Jonathan
+Thanks
+
+Guan Xuetao
+
+---
+Guan Xuetao (5):
+  unicore32: move rtc-puv3.c to drivers/rtc directory
+  unicore32: change zImage physical address, though it's PIC codes
+  unicore32: add KBUILD_DEFCONFIG with unicore32_defconfig (old
+    debug_defconfig)
+  unicore32: change PERCPU to PERCPU_SECTION
+  unicore32: using generic-y format for one line asm-generic files
+
+ MAINTAINERS                                        |    1 +
+ arch/unicore32/Kconfig                             |    4 -
+ arch/unicore32/Makefile                            |   38 +------------
+ arch/unicore32/boot/compressed/Makefile            |    2 +-
+ .../{debug_defconfig => unicore32_defconfig}       |    8 +-
+ arch/unicore32/include/asm/Kbuild                  |   59 ++++++++++++++++++++
+ arch/unicore32/kernel/Makefile                     |    1 -
+ arch/unicore32/kernel/vmlinux.lds.S                |    2 +-
+ drivers/rtc/Kconfig                                |    9 +++
+ drivers/rtc/Makefile                               |    1 +
+ .../kernel/rtc.c => drivers/rtc/rtc-puv3.c         |   14 +----
+ 11 files changed, 79 insertions(+), 60 deletions(-)
+ rename arch/unicore32/configs/{debug_defconfig => unicore32_defconfig} (97%)
+ rename arch/unicore32/kernel/rtc.c => drivers/rtc/rtc-puv3.c (98%)
+
+-- 
+1.7.5.4
+
