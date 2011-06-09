@@ -1,47 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab1FIPfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 11:35:52 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:46608 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597Ab1FIPfs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 11:35:48 -0400
-Date: Thu, 9 Jun 2011 16:35:38 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Jones <pjones@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: CONFIG_EFI should select CONFIG_RELOCATABLE
-Message-ID: <20110609153538.GA29274@srcf.ucam.org>
-References: <1307629964-31658-1-git-send-email-mjg@redhat.com>
- <4DF0DAAB.7010005@zytor.com>
- <4DF0DB8D.5080207@redhat.com>
- <4DF0E584.2030101@zytor.com>
+	id S1753817Ab1FIPhp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 11:37:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31970 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752601Ab1FIPhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 11:37:43 -0400
+Date: Thu, 9 Jun 2011 11:37:38 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: CFQ: async queue blocks the whole system
+Message-ID: <20110609153738.GF29913@redhat.com>
+References: <1307616577-6101-1-git-send-email-tm@tao.ma>
+ <20110609141451.GD29913@redhat.com>
+ <4DF0DD0F.8090407@tao.ma>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DF0E584.2030101@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <4DF0DD0F.8090407@tao.ma>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 08:23:48AM -0700, H. Peter Anvin wrote:
-> On 06/09/2011 07:41 AM, Peter Jones wrote:
+On Thu, Jun 09, 2011 at 10:47:43PM +0800, Tao Ma wrote:
+> Hi Vivek,
+> 	Thanks for the quick response.
+> On 06/09/2011 10:14 PM, Vivek Goyal wrote:
+> > On Thu, Jun 09, 2011 at 06:49:37PM +0800, Tao Ma wrote:
+> >> Hi Jens and Vivek,
+> >> 	We are current running some heavy ext4 metadata test,
+> >> and we found a very severe problem for CFQ. Please correct me if
+> >> my statement below is wrong.
 > >>
-> >> Can we make this a depends on instead of select?
+> >> CFQ only has an async queue for every priority of every class and
+> >> these queues have a very low serving priority, so if the system
+> >> has a large number of sync reads, these queues will be delayed a
+> >> lot of time. As a result, the flushers will be blocked, then the
+> >> journal and finally our applications[1].
+> >>
+> >> I have tried to let jbd/2 to use WRITE_SYNC so that they can checkpoint
+> >> in time and the patches are sent. But today we found another similar
+> >> block in kswapd which make me think that maybe CFQ should be changed
+> >> somehow so that all these callers can benefit from it.
+> >>
+> >> So is there any way to let the async queue work timely or at least
+> >> is there any deadline for async queue to finish an request in time
+> >> even in case there are many reads?
+> >>
+> >> btw, We have tested deadline scheduler and it seems to work in our test.
+> >>
+> >> [1] the message we get from one system:
+> >> INFO: task flush-8:0:2950 blocked for more than 120 seconds.
+> >> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> >> flush-8:0       D ffff88062bfde738     0  2950      2 0x00000000
+> >>  ffff88062b137820 0000000000000046 ffff88062b137750 ffffffff812b7bc3
+> >>  ffff88032cddc000 ffff88062bfde380 ffff88032d3d8840 0000000c2be37400
+> >>  000000002be37601 0000000000000006 ffff88062b137760 ffffffff811c242e
+> >> Call Trace:
+> >>  [<ffffffff812b7bc3>] ? scsi_request_fn+0x345/0x3df
+> >>  [<ffffffff811c242e>] ? __blk_run_queue+0x1a/0x1c
+> >>  [<ffffffff811c57cc>] ? queue_unplugged+0x77/0x8e
+> >>  [<ffffffff813dbe67>] io_schedule+0x47/0x61
+> >>  [<ffffffff811c512c>] get_request_wait+0xe0/0x152
 > > 
-> > Seems weird to me - when you're configuring the kernel, you're more likely
-> > to know that you want EFI than to remember that that requires relocation.
+> > Ok, so flush slept on trying to get a "request" allocated on request 
+> > queue. That means all the ASYNC request descriptors are already consumed
+> > and we are not making progress with ASYNc requests.
 > > 
+> > A relatively recent patch allowed sync queues to always preempt async queues
+> > and schedule sync workload instead of async. This had the potential to
+> > starve async queues and looks like that's what we are running into.
+> > 
+> > commit f8ae6e3eb8251be32c6e913393d9f8d9e0609489
+> > Author: Shaohua Li <shaohua.li@intel.com>
+> > Date:   Fri Jan 14 08:41:02 2011 +0100
+> > 
+> >     block cfq: make queue preempt work for queues from different workload
+> > 
+> > Do you have few seconds of blktrace. I just wanted to verify that this
+> > is what we are running into. 
+> We are using the latest kernel, so the patch is already there. :(
 > 
-> Yes, but "select" is handled very poorly by Kconfig.
+> You are right that all the requests have been allocated and the flusher
+> is waiting for requests to be available. But the root cause is that in
+> heavy sync read, the async queue in cfq is delayed too much. I have
+> added some traces in the cfq codes path and after several investigation,
+> I found several interesting things and tried to improve it. But I am not
+> sure whether it is bug or it is designed intentionally.
+> 
+> 1. In cfq_dispatch_requests we select a sync queue to serve, but if the
+> queue has too much requests in flight, the cfq_slice_used_soon may be
+> true and the cfqq isn't allowed to send and will waste some timeslice.
+> Then why choose this cfqq? Why not choose a qualified one?
 
-I think it's safe in this case.
+CFQ in general tries not to drive too deep a queue depth in an effort
+to improve latencies. CFQ is generally recommened for slow SATA drives
+and dispatching too many requests from a single queue can only serve to
+increase the latency.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> 
+> 2. async queue isn't allowed to be sent if there is some sync request in
+> fly, but as now most of the devices has a greater depth, should we
+> improve it somehow? I guess queue_depth should be a valid number maybe?
+
+We seem to be running this batching thing in cfq_may_dispatch() where
+we drain sync requests before async is dispatched and vice-a-versa. 
+I am not sure how does this batching thing helps. I think Jens should
+be a better person to comment on that.
+
+I ran a fio job with few readers and few writers. I do see that few times
+we have schedule ASYNC workload/queue but did not dispatch a request
+from that. And reason being that there are sync requests in flight. And
+by the time sync requests finish, async queue gets preempted.
+
+So async queue does it scheduled but never gets a chance to dispatch
+a request because there was sync IO in flight.
+
+If there is no major advantage of draining sync requests before async
+is dispatched, I think this should be an easy fix.
+ 
+> 
+> 3. Even there is no sync i/o, the async queue isn't allowed to send too
+> much requests because of the check in cfq_may_dispatch "Async queues
+> must wait a bit before being allowed dispatch", so in my test the async
+> queue has several chances to be selected, but it is only allowed
+> todispatch one request at a time. It is really amazing.
+
+Again heavily loaded to improve sync latencies. Say you have queue
+depth of 128 and you fill that all with async requests because right
+now there is no sync request around. Then a sync request comes in.
+We don't have a way to give it a priority and it might happen that
+it gets executed after 128 async requests have finished (driver and
+drive dependent though).
+
+So in an attempt to improve sync latencies we don't drive too
+high queue depths.
+
+Its latency vs throughput tradeoff.
+
+Thanks
+Vivek
