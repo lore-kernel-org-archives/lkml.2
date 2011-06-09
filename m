@@ -1,250 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab1FIWip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 18:38:45 -0400
-Received: from mga01.intel.com ([192.55.52.88]:65313 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756943Ab1FIWii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 18:38:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,343,1304319600"; 
-   d="scan'208";a="16414807"
-Message-Id: <20110609223341.887877422@sbsiddha-MOBL3.sc.intel.com>
-User-Agent: quilt/0.47-1
-Date: Thu, 09 Jun 2011 15:32:13 -0700
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, trenn@novell.com,
-        prarit@redhat.com, tj@kernel.org, rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com,
-        youquan.song@intel.com, stable@kernel.org
-Subject: [patch v3 2/2] x86, mtrr: use __stop_machine() for doing MTRR rendezvous
-References: <20110609223211.006948233@sbsiddha-MOBL3.sc.intel.com>
-Content-Disposition: inline; filename=use_stop_machine_for_mtrr_rendezvous.patch
+	id S1756872Ab1FIWch (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 18:32:37 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14693 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756591Ab1FIWcf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 18:32:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=M1rL76z5iele+hFflnToLPbpJG39mNU0jojEwZF14VfkwiTBsjWmKgJJW+kkRyWNtj
+         H9hDbclppwNDPHcnQYfA==
+Date: Thu, 9 Jun 2011 15:32:32 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH 1/7] tmpfs: clone shmem_file_splice_read
+In-Reply-To: <alpine.LSU.2.00.1106091529060.2200@sister.anvils>
+Message-ID: <alpine.LSU.2.00.1106091531120.2200@sister.anvils>
+References: <alpine.LSU.2.00.1106091529060.2200@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MTRR rendezvous seqeuence using stop_one_cpu_nowait() can potentially
-happen in parallel with another system wide rendezvous using
-stop_machine(). This can lead to deadlock (The order in which
-works are queued can be different on different cpu's. Some cpu's
-will be running the first rendezvous handler and others will be running
-the second rendezvous handler. Each set waiting for the other set to join
-for the system wide rendezvous, leading to a deadlock).
+Copy __generic_file_splice_read() and generic_file_splice_read()
+from fs/splice.c to shmem_file_splice_read() in mm/shmem.c.  Make
+page_cache_pipe_buf_ops and spd_release_page() accessible to it.
 
-MTRR rendezvous sequence is not implemened using stop_machine() before, as this
-gets called both from the process context aswell as the cpu online paths
-(where the cpu has not come online and the interrupts are disabled etc).
-
-Now that __stop_machine() works even when the calling cpu is not online,
-use __stop_machine() to implement the MTRR rendezvous sequence. This
-will consolidate the code aswell as avoid the above mentioned deadlock.
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: stable@kernel.org    # v2.6.35+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>
 ---
- arch/x86/kernel/cpu/mtrr/main.c |  154 +++++++---------------------------------
- 1 file changed, 27 insertions(+), 127 deletions(-)
+ fs/splice.c            |    4 
+ include/linux/splice.h |    2 
+ mm/shmem.c             |  218 ++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 221 insertions(+), 3 deletions(-)
 
-Index: linux-2.6-tip/arch/x86/kernel/cpu/mtrr/main.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/cpu/mtrr/main.c
-+++ linux-2.6-tip/arch/x86/kernel/cpu/mtrr/main.c
-@@ -137,18 +137,15 @@ static void __init init_table(void)
+--- linux.orig/fs/splice.c	2011-06-09 11:37:57.548770334 -0700
++++ linux/fs/splice.c	2011-06-09 11:38:05.228808404 -0700
+@@ -132,7 +132,7 @@ error:
+ 	return err;
  }
  
- struct set_mtrr_data {
--	atomic_t	count;
--	atomic_t	gate;
- 	unsigned long	smp_base;
- 	unsigned long	smp_size;
- 	unsigned int	smp_reg;
- 	mtrr_type	smp_type;
- };
+-static const struct pipe_buf_operations page_cache_pipe_buf_ops = {
++const struct pipe_buf_operations page_cache_pipe_buf_ops = {
+ 	.can_merge = 0,
+ 	.map = generic_pipe_buf_map,
+ 	.unmap = generic_pipe_buf_unmap,
+@@ -264,7 +264,7 @@ ssize_t splice_to_pipe(struct pipe_inode
+ 	return ret;
+ }
  
--static DEFINE_PER_CPU(struct cpu_stop_work, mtrr_work);
--
- /**
-- * mtrr_work_handler - Synchronisation handler. Executed by "other" CPUs.
-+ * mtrr_work_handler - Work done in the synchronisation handler. Executed by
-+ * all the CPUs.
-  * @info: pointer to mtrr configuration data
-  *
-  * Returns nothing.
-@@ -157,35 +154,26 @@ static int mtrr_work_handler(void *info)
+-static void spd_release_page(struct splice_pipe_desc *spd, unsigned int i)
++void spd_release_page(struct splice_pipe_desc *spd, unsigned int i)
  {
- #ifdef CONFIG_SMP
- 	struct set_mtrr_data *data = info;
--	unsigned long flags;
--
--	atomic_dec(&data->count);
--	while (!atomic_read(&data->gate))
--		cpu_relax();
--
--	local_irq_save(flags);
+ 	page_cache_release(spd->pages[i]);
+ }
+--- linux.orig/include/linux/splice.h	2011-06-09 11:37:57.548770334 -0700
++++ linux/include/linux/splice.h	2011-06-09 11:38:05.228808404 -0700
+@@ -88,5 +88,7 @@ extern ssize_t splice_direct_to_actor(st
+ extern int splice_grow_spd(struct pipe_inode_info *, struct splice_pipe_desc *);
+ extern void splice_shrink_spd(struct pipe_inode_info *,
+ 				struct splice_pipe_desc *);
++extern void spd_release_page(struct splice_pipe_desc *, unsigned int);
  
--	atomic_dec(&data->count);
--	while (atomic_read(&data->gate))
--		cpu_relax();
--
--	/*  The master has cleared me to execute  */
-+	/*
-+	 * We use this same function to initialize the mtrrs during boot,
-+	 * resume, runtime cpu online and on an explicit request to set a
-+	 * specific MTRR.
-+	 *
-+	 * During boot or suspend, the state of the boot cpu's mtrrs has been
-+	 * saved, and we want to replicate that across all the cpus that come
-+	 * online (either at the end of boot or resume or during a runtime cpu
-+	 * online). If we're doing that, @reg is set to something special and on
-+	 * all the cpu's we do mtrr_if->set_all() (On the logical cpu that
-+	 * started the boot/resume sequence, this might be a duplicate
-+	 * set_all()).
-+	 */
- 	if (data->smp_reg != ~0U) {
- 		mtrr_if->set(data->smp_reg, data->smp_base,
- 			     data->smp_size, data->smp_type);
--	} else if (mtrr_aps_delayed_init) {
--		/*
--		 * Initialize the MTRRs inaddition to the synchronisation.
--		 */
-+	} else if (mtrr_aps_delayed_init || !cpu_online(smp_processor_id())) {
- 		mtrr_if->set_all();
- 	}
--
--	atomic_dec(&data->count);
--	while (!atomic_read(&data->gate))
--		cpu_relax();
--
--	atomic_dec(&data->count);
--	local_irq_restore(flags);
++extern const struct pipe_buf_operations page_cache_pipe_buf_ops;
  #endif
- 	return 0;
+--- linux.orig/mm/shmem.c	2011-06-09 11:37:57.552770354 -0700
++++ linux/mm/shmem.c	2011-06-09 11:38:05.232808448 -0700
+@@ -51,6 +51,7 @@ static struct vfsmount *shm_mnt;
+ #include <linux/shmem_fs.h>
+ #include <linux/writeback.h>
+ #include <linux/blkdev.h>
++#include <linux/splice.h>
+ #include <linux/security.h>
+ #include <linux/swapops.h>
+ #include <linux/mempolicy.h>
+@@ -1844,6 +1845,221 @@ static ssize_t shmem_file_aio_read(struc
+ 	return retval;
  }
-@@ -223,20 +211,11 @@ static inline int types_compatible(mtrr_
-  * 14. Wait for buddies to catch up
-  * 15. Enable interrupts.
-  *
-- * What does that mean for us? Well, first we set data.count to the number
-- * of CPUs. As each CPU announces that it started the rendezvous handler by
-- * decrementing the count, We reset data.count and set the data.gate flag
-- * allowing all the cpu's to proceed with the work. As each cpu disables
-- * interrupts, it'll decrement data.count once. We wait until it hits 0 and
-- * proceed. We clear the data.gate flag and reset data.count. Meanwhile, they
-- * are waiting for that flag to be cleared. Once it's cleared, each
-- * CPU goes through the transition of updating MTRRs.
-- * The CPU vendors may each do it differently,
-- * so we call mtrr_if->set() callback and let them take care of it.
-- * When they're done, they again decrement data->count and wait for data.gate
-- * to be set.
-- * When we finish, we wait for data.count to hit 0 and toggle the data.gate flag
-- * Everyone then enables interrupts and we all continue on.
-+ * What does that mean for us? Well, __stop_machine() will ensure that
-+ * the rendezvous handler is started on each CPU. And in lockstep they
-+ * do the state transition of disabling interrupts, updating MTRR's
-+ * (the CPU vendors may each do it differently, so we call mtrr_if->set()
-+ * callback and let them take care of it.) and enabling interrupts.
-  *
-  * Note that the mechanism is the same for UP systems, too; all the SMP stuff
-  * becomes nops.
-@@ -244,92 +223,13 @@ static inline int types_compatible(mtrr_
- static void
- set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type type)
+ 
++static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
++				struct pipe_inode_info *pipe, size_t len,
++				unsigned int flags)
++{
++	struct address_space *mapping = in->f_mapping;
++	unsigned int loff, nr_pages, req_pages;
++	struct page *pages[PIPE_DEF_BUFFERS];
++	struct partial_page partial[PIPE_DEF_BUFFERS];
++	struct page *page;
++	pgoff_t index, end_index;
++	loff_t isize, left;
++	int error, page_nr;
++	struct splice_pipe_desc spd = {
++		.pages = pages,
++		.partial = partial,
++		.flags = flags,
++		.ops = &page_cache_pipe_buf_ops,
++		.spd_release = spd_release_page,
++	};
++
++	isize = i_size_read(in->f_mapping->host);
++	if (unlikely(*ppos >= isize))
++		return 0;
++
++	left = isize - *ppos;
++	if (unlikely(left < len))
++		len = left;
++
++	if (splice_grow_spd(pipe, &spd))
++		return -ENOMEM;
++
++	index = *ppos >> PAGE_CACHE_SHIFT;
++	loff = *ppos & ~PAGE_CACHE_MASK;
++	req_pages = (len + loff + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
++	nr_pages = min(req_pages, pipe->buffers);
++
++	/*
++	 * Lookup the (hopefully) full range of pages we need.
++	 */
++	spd.nr_pages = find_get_pages_contig(mapping, index,
++						nr_pages, spd.pages);
++	index += spd.nr_pages;
++
++	/*
++	 * If find_get_pages_contig() returned fewer pages than we needed,
++	 * readahead/allocate the rest and fill in the holes.
++	 */
++	if (spd.nr_pages < nr_pages)
++		page_cache_sync_readahead(mapping, &in->f_ra, in,
++				index, req_pages - spd.nr_pages);
++
++	error = 0;
++	while (spd.nr_pages < nr_pages) {
++		/*
++		 * Page could be there, find_get_pages_contig() breaks on
++		 * the first hole.
++		 */
++		page = find_get_page(mapping, index);
++		if (!page) {
++			/*
++			 * page didn't exist, allocate one.
++			 */
++			page = page_cache_alloc_cold(mapping);
++			if (!page)
++				break;
++
++			error = add_to_page_cache_lru(page, mapping, index,
++						GFP_KERNEL);
++			if (unlikely(error)) {
++				page_cache_release(page);
++				if (error == -EEXIST)
++					continue;
++				break;
++			}
++			/*
++			 * add_to_page_cache() locks the page, unlock it
++			 * to avoid convoluting the logic below even more.
++			 */
++			unlock_page(page);
++		}
++
++		spd.pages[spd.nr_pages++] = page;
++		index++;
++	}
++
++	/*
++	 * Now loop over the map and see if we need to start IO on any
++	 * pages, fill in the partial map, etc.
++	 */
++	index = *ppos >> PAGE_CACHE_SHIFT;
++	nr_pages = spd.nr_pages;
++	spd.nr_pages = 0;
++	for (page_nr = 0; page_nr < nr_pages; page_nr++) {
++		unsigned int this_len;
++
++		if (!len)
++			break;
++
++		/*
++		 * this_len is the max we'll use from this page
++		 */
++		this_len = min_t(unsigned long, len, PAGE_CACHE_SIZE - loff);
++		page = spd.pages[page_nr];
++
++		if (PageReadahead(page))
++			page_cache_async_readahead(mapping, &in->f_ra, in,
++					page, index, req_pages - page_nr);
++
++		/*
++		 * If the page isn't uptodate, we may need to start io on it
++		 */
++		if (!PageUptodate(page)) {
++			lock_page(page);
++
++			/*
++			 * Page was truncated, or invalidated by the
++			 * filesystem.  Redo the find/create, but this time the
++			 * page is kept locked, so there's no chance of another
++			 * race with truncate/invalidate.
++			 */
++			if (!page->mapping) {
++				unlock_page(page);
++				page = find_or_create_page(mapping, index,
++						mapping_gfp_mask(mapping));
++
++				if (!page) {
++					error = -ENOMEM;
++					break;
++				}
++				page_cache_release(spd.pages[page_nr]);
++				spd.pages[page_nr] = page;
++			}
++			/*
++			 * page was already under io and is now done, great
++			 */
++			if (PageUptodate(page)) {
++				unlock_page(page);
++				goto fill_it;
++			}
++
++			/*
++			 * need to read in the page
++			 */
++			error = mapping->a_ops->readpage(in, page);
++			if (unlikely(error)) {
++				/*
++				 * We really should re-lookup the page here,
++				 * but it complicates things a lot. Instead
++				 * lets just do what we already stored, and
++				 * we'll get it the next time we are called.
++				 */
++				if (error == AOP_TRUNCATED_PAGE)
++					error = 0;
++
++				break;
++			}
++		}
++fill_it:
++		/*
++		 * i_size must be checked after PageUptodate.
++		 */
++		isize = i_size_read(mapping->host);
++		end_index = (isize - 1) >> PAGE_CACHE_SHIFT;
++		if (unlikely(!isize || index > end_index))
++			break;
++
++		/*
++		 * if this is the last page, see if we need to shrink
++		 * the length and stop
++		 */
++		if (end_index == index) {
++			unsigned int plen;
++
++			/*
++			 * max good bytes in this page
++			 */
++			plen = ((isize - 1) & ~PAGE_CACHE_MASK) + 1;
++			if (plen <= loff)
++				break;
++
++			/*
++			 * force quit after adding this page
++			 */
++			this_len = min(this_len, plen - loff);
++			len = this_len;
++		}
++
++		spd.partial[page_nr].offset = loff;
++		spd.partial[page_nr].len = this_len;
++		len -= this_len;
++		loff = 0;
++		spd.nr_pages++;
++		index++;
++	}
++
++	/*
++	 * Release any pages at the end, if we quit early. 'page_nr' is how far
++	 * we got, 'nr_pages' is how many pages are in the map.
++	 */
++	while (page_nr < nr_pages)
++		page_cache_release(spd.pages[page_nr++]);
++	in->f_ra.prev_pos = (loff_t)index << PAGE_CACHE_SHIFT;
++
++	if (spd.nr_pages)
++		error = splice_to_pipe(pipe, &spd);
++
++	splice_shrink_spd(pipe, &spd);
++
++	if (error > 0) {
++		*ppos += error;
++		file_accessed(in);
++	}
++	return error;
++}
++
+ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
  {
--	struct set_mtrr_data data;
--	unsigned long flags;
--	int cpu;
--
--	preempt_disable();
--
--	data.smp_reg = reg;
--	data.smp_base = base;
--	data.smp_size = size;
--	data.smp_type = type;
--	atomic_set(&data.count, num_booting_cpus() - 1);
--
--	/* Make sure data.count is visible before unleashing other CPUs */
--	smp_wmb();
--	atomic_set(&data.gate, 0);
--
--	/* Start the ball rolling on other CPUs */
--	for_each_online_cpu(cpu) {
--		struct cpu_stop_work *work = &per_cpu(mtrr_work, cpu);
--
--		if (cpu == smp_processor_id())
--			continue;
--
--		stop_one_cpu_nowait(cpu, mtrr_work_handler, &data, work);
--	}
--
--
--	while (atomic_read(&data.count))
--		cpu_relax();
--
--	/* Ok, reset count and toggle gate */
--	atomic_set(&data.count, num_booting_cpus() - 1);
--	smp_wmb();
--	atomic_set(&data.gate, 1);
--
--	local_irq_save(flags);
--
--	while (atomic_read(&data.count))
--		cpu_relax();
--
--	/* Ok, reset count and toggle gate */
--	atomic_set(&data.count, num_booting_cpus() - 1);
--	smp_wmb();
--	atomic_set(&data.gate, 0);
--
--	/* Do our MTRR business */
--
--	/*
--	 * HACK!
--	 *
--	 * We use this same function to initialize the mtrrs during boot,
--	 * resume, runtime cpu online and on an explicit request to set a
--	 * specific MTRR.
--	 *
--	 * During boot or suspend, the state of the boot cpu's mtrrs has been
--	 * saved, and we want to replicate that across all the cpus that come
--	 * online (either at the end of boot or resume or during a runtime cpu
--	 * online). If we're doing that, @reg is set to something special and on
--	 * this cpu we still do mtrr_if->set_all(). During boot/resume, this
--	 * is unnecessary if at this point we are still on the cpu that started
--	 * the boot/resume sequence. But there is no guarantee that we are still
--	 * on the same cpu. So we do mtrr_if->set_all() on this cpu aswell to be
--	 * sure that we are in sync with everyone else.
--	 */
--	if (reg != ~0U)
--		mtrr_if->set(reg, base, size, type);
--	else
--		mtrr_if->set_all();
--
--	/* Wait for the others */
--	while (atomic_read(&data.count))
--		cpu_relax();
--
--	atomic_set(&data.count, num_booting_cpus() - 1);
--	smp_wmb();
--	atomic_set(&data.gate, 1);
--
--	/*
--	 * Wait here for everyone to have seen the gate change
--	 * So we're the last ones to touch 'data'
--	 */
--	while (atomic_read(&data.count))
--		cpu_relax();
-+	struct set_mtrr_data data = { .smp_reg = reg,
-+				      .smp_base = base,
-+				      .smp_size = size,
-+				      .smp_type = type
-+				    };
- 
--	local_irq_restore(flags);
--	preempt_enable();
-+	__stop_machine(mtrr_work_handler, &data, cpu_callout_mask);
- }
- 
- /**
-
-
+ 	struct shmem_sb_info *sbinfo = SHMEM_SB(dentry->d_sb);
+@@ -2699,7 +2915,7 @@ static const struct file_operations shme
+ 	.aio_read	= shmem_file_aio_read,
+ 	.aio_write	= generic_file_aio_write,
+ 	.fsync		= noop_fsync,
+-	.splice_read	= generic_file_splice_read,
++	.splice_read	= shmem_file_splice_read,
+ 	.splice_write	= generic_file_splice_write,
+ #endif
+ };
