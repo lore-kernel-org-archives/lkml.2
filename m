@@ -1,81 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab1FILTT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 07:19:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41241 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757290Ab1FILTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 07:19:15 -0400
-Date: Thu, 9 Jun 2011 11:19:00 GMT
-From: tip-bot for Ralf Baechle <ralf@linux-mips.org>
-Message-ID: <tip-d49a40fb35042368fffd28c247fa82f07fa35ec4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        ralf@linux-mips.org, mattst88@gmail.com, ink@jurassic.park.msu.ru,
-        tglx@linutronix.de, rth@twiddle.net
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, mattst88@gmail.com, ink@jurassic.park.msu.ru,
-        tglx@linutronix.de, rth@twiddle.net
-In-Reply-To: <20110601180610.608083130@duck.linux-mips.net>
-References: <20110601180610.608083130@duck.linux-mips.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/cleanup] alpha: i8253: Cleanup remaining users of i8253pit.h
-Git-Commit-ID: d49a40fb35042368fffd28c247fa82f07fa35ec4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1757293Ab1FILTL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 07:19:11 -0400
+Received: from nm28-vm1.access.bullet.mail.mud.yahoo.com ([66.94.236.231]:35472
+	"HELO nm28-vm1.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753515Ab1FILTJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 07:19:09 -0400
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 796472.22854.bm@omp1005.access.mail.mud.yahoo.com
+Message-ID: <149919.28922.qm@web181606.mail.ne1.yahoo.com>
+X-YMail-OSG: Mh9TsMMVM1mxXtsnsreRYhnRbQAesDde6VP10gnLsiILUtu
+ eUJZlJaTxEd3UDb5vYlQw.6pAmOu9HMakVXDQrH3uGB6QqkL9ysWa6dSrauh
+ nWGE4viLiy5gm725kQRGXdn5mN895CL2r9ZTsuzv_AzFWDVOxxvjvjPu6F8Z
+ Nsga7H6C3.HiIhA8O8hTEn9SuFnv8_.piyxpjzA7FMbT9MMEIra5kBPlE2Bn
+ g7L1Pco7YZBgUvSjm9mFLyJoG8BIF.2zfOpnuBaiqg5ST6cKn3Q1L4tI7XVn
+ 4hfDyaHpHLXgcCACvVL_aoRwcY5t8.9itnQbNgVe7hDzu_G2KP2QhKRfKYJk
+ l19ho4D8SQacvHdWpHCH8a7vCsFjfwOT.sdUaLYSLs1m94u5RzsKv_k_icTK
+ P3idONrGUqXwsOZeCcwCa.0dZPICPEkjJBIiq6xFhC1JRDGEdZ7BvyXay1bY
+ q15zrcV_FedHfZaHCmceuAFuwKK19dzQ_M58E_H_2YJrsw7m1dAsVOjzIYJc
+ UaKE_Ce3EfDPM.Iwq_D0MO1vM6GpynZp.ayONpzdjXCUbsRLKeINnvm.fJxN
+ iZB2dfD_od1KSQg0BYkOn4U4f4lWzKzg6kNuyNfyGMqQNJyvVTkuGImP10VO
+ nA0gTcAKjDXhnqqJzdMKHKFckwS17U2Ja54yaY4jGRJh4nUqQZZtMkxvJOos
+ 5T6XrG_LOCf0UgKXJKINTRQAfi13gQAdGOcrMB3XVHpJOPHJUX.oAslriHSJ
+ 4oOfbhB5fkCzqHXBQ4Fazxjsi0Of5ro3aXsRDVgamzfPMMb8.Qj_C129DAKY
+ 6ggyeJjfAgMRy07lbSax_LK9vHsAMq_AupPlVZ3IxqpY.kYwdKydEPRBsjGh
+ ZW94wbxX1uPQdBQoIXw47n7AGSjivsXyByOJpv1qi4x1YA9sR3bwbAByVmHl
+ eKDsRNns_DoKqBu0xkaG2INrvC2A4Da4K14cz8S6BWA--
+X-RocketYMMF: webnvv@att.net
+X-Mailer: YahooMailWebService/0.8.111.303096
+Date: Thu, 9 Jun 2011 04:19:08 -0700 (PDT)
+From: Promotion <stevenwalker.walker6@gmail.com>
+Reply-To: Promotion <guinesspromotion509@gmail.com>
+Subject: Congratulations on behalf of staffs and management of this program.
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Jun 2011 11:19:01 +0000 (UTC)
+Content-Type: multipart/mixed; boundary="0-1225367565-1307618348=:28922"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d49a40fb35042368fffd28c247fa82f07fa35ec4
-Gitweb:     http://git.kernel.org/tip/d49a40fb35042368fffd28c247fa82f07fa35ec4
-Author:     Ralf Baechle <ralf@linux-mips.org>
-AuthorDate: Wed, 1 Jun 2011 19:05:04 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 9 Jun 2011 12:03:50 +0200
+--0-1225367565-1307618348=:28922
+Content-Type: text/plain; charset=us-ascii
 
-alpha: i8253: Cleanup remaining users of i8253pit.h
+Congratulations on behalf of staffs and management of this program.
 
-The Alpha <asm/i8253pit.h> header is empty so this inclusion can just be
-removed.
+--0-1225367565-1307618348=:28922
+Content-Type: application/msword; name="guiness Lotto  vu.rtf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="guiness Lotto  vu.rtf"
 
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Link: http://lkml.kernel.org/r/20110601180610.608083130@duck.linux-mips.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcdWMxXGRlZmYwXHN0c2hmZGJjaDBc
+c3RzaGZsb2NoMFxzdHNoZmhpY2gwXHN0c2hmYmkwXGRlZmxhbmcxMDMzXGRl
+ZmxhbmdmZTEwMzN7XGZvbnR0Ymx7XGYwXGZyb21hblxmY2hhcnNldDBcZnBy
+cTJ7XCpccGFub3NlIDAyMDIwNjAzMDUwNDA1MDIwMzA0fVRpbWVzIE5ldyBS
+b21hbjt9e1xmMVxmc3dpc3NcZmNoYXJzZXQwXGZwcnEye1wqXHBhbm9zZSAw
+MjBiMDYwNDAyMDIwMjAyMDIwNH1BcmlhbDt9DQp7XGYzNlxmcm9tYW5cZmNo
+YXJzZXQyMzhcZnBycTIgVGltZXMgTmV3IFJvbWFuIENFO317XGYzN1xmcm9t
+YW5cZmNoYXJzZXQyMDRcZnBycTIgVGltZXMgTmV3IFJvbWFuIEN5cjt9e1xm
+MzlcZnJvbWFuXGZjaGFyc2V0MTYxXGZwcnEyIFRpbWVzIE5ldyBSb21hbiBH
+cmVlazt9e1xmNDBcZnJvbWFuXGZjaGFyc2V0MTYyXGZwcnEyIFRpbWVzIE5l
+dyBSb21hbiBUdXI7fQ0Ke1xmNDFcZnJvbWFuXGZjaGFyc2V0MTc3XGZwcnEy
+IFRpbWVzIE5ldyBSb21hbiAoSGVicmV3KTt9e1xmNDJcZnJvbWFuXGZjaGFy
+c2V0MTc4XGZwcnEyIFRpbWVzIE5ldyBSb21hbiAoQXJhYmljKTt9e1xmNDNc
+ZnJvbWFuXGZjaGFyc2V0MTg2XGZwcnEyIFRpbWVzIE5ldyBSb21hbiBCYWx0
+aWM7fXtcZjQ0XGZyb21hblxmY2hhcnNldDE2M1xmcHJxMiBUaW1lcyBOZXcg
+Um9tYW4gKFZpZXRuYW1lc2UpO30NCntcZjQ2XGZzd2lzc1xmY2hhcnNldDIz
+OFxmcHJxMiBBcmlhbCBDRTt9e1xmNDdcZnN3aXNzXGZjaGFyc2V0MjA0XGZw
+cnEyIEFyaWFsIEN5cjt9e1xmNDlcZnN3aXNzXGZjaGFyc2V0MTYxXGZwcnEy
+IEFyaWFsIEdyZWVrO317XGY1MFxmc3dpc3NcZmNoYXJzZXQxNjJcZnBycTIg
+QXJpYWwgVHVyO317XGY1MVxmc3dpc3NcZmNoYXJzZXQxNzdcZnBycTIgQXJp
+YWwgKEhlYnJldyk7fQ0Ke1xmNTJcZnN3aXNzXGZjaGFyc2V0MTc4XGZwcnEy
+IEFyaWFsIChBcmFiaWMpO317XGY1M1xmc3dpc3NcZmNoYXJzZXQxODZcZnBy
+cTIgQXJpYWwgQmFsdGljO317XGY1NFxmc3dpc3NcZmNoYXJzZXQxNjNcZnBy
+cTIgQXJpYWwgKFZpZXRuYW1lc2UpO319e1xjb2xvcnRibDtccmVkMFxncmVl
+bjBcYmx1ZTA7XHJlZDBcZ3JlZW4wXGJsdWUyNTU7XHJlZDBcZ3JlZW4yNTVc
+Ymx1ZTI1NTtccmVkMFxncmVlbjI1NVxibHVlMDsNClxyZWQyNTVcZ3JlZW4w
+XGJsdWUyNTU7XHJlZDI1NVxncmVlbjBcYmx1ZTA7XHJlZDI1NVxncmVlbjI1
+NVxibHVlMDtccmVkMjU1XGdyZWVuMjU1XGJsdWUyNTU7XHJlZDBcZ3JlZW4w
+XGJsdWUxMjg7XHJlZDBcZ3JlZW4xMjhcYmx1ZTEyODtccmVkMFxncmVlbjEy
+OFxibHVlMDtccmVkMTI4XGdyZWVuMFxibHVlMTI4O1xyZWQxMjhcZ3JlZW4w
+XGJsdWUwO1xyZWQxMjhcZ3JlZW4xMjhcYmx1ZTA7XHJlZDEyOFxncmVlbjEy
+OFxibHVlMTI4Ow0KXHJlZDE5MlxncmVlbjE5MlxibHVlMTkyO317XHN0eWxl
+c2hlZXR7XHFsIFxsaTBccmkwXHdpZGN0bHBhclxhc3BhbHBoYVxhc3BudW1c
+ZmFhdXRvXGFkanVzdHJpZ2h0XHJpbjBcbGluMFxpdGFwMCBcZnMyNFxsYW5n
+MTAzM1xsYW5nZmUxMDMzXGNncmlkXGxhbmducDEwMzNcbGFuZ2ZlbnAxMDMz
+IFxzbmV4dDAgTm9ybWFsO317XCpcY3MxMCBcYWRkaXRpdmUgXHNzZW1paGlk
+ZGVuIERlZmF1bHQgUGFyYWdyYXBoIEZvbnQ7fXtcKg0KXHRzMTFcdHNyb3dk
+XHRyZnRzV2lkdGhCM1x0cnBhZGRsMTA4XHRycGFkZHIxMDhcdHJwYWRkZmwz
+XHRycGFkZGZ0M1x0cnBhZGRmYjNcdHJwYWRkZnIzXHRyY2JwYXQxXHRyY2Zw
+YXQxXHRzY2VsbHdpZHRoZnRzMFx0c3ZlcnRhbHRcdHNicmRydFx0c2JyZHJs
+XHRzYnJkcmJcdHNicmRyclx0c2JyZHJkZ2xcdHNicmRyZGdyXHRzYnJkcmhc
+dHNicmRydiANClxxbCBcbGkwXHJpMFx3aWRjdGxwYXJcYXNwYWxwaGFcYXNw
+bnVtXGZhYXV0b1xhZGp1c3RyaWdodFxyaW4wXGxpbjBcaXRhcDAgXGZzMjBc
+bGFuZzEwMjRcbGFuZ2ZlMTAyNFxjZ3JpZFxsYW5nbnAxMDI0XGxhbmdmZW5w
+MTAyNCBcc25leHQxMSBcc3NlbWloaWRkZW4gTm9ybWFsIFRhYmxlO319e1wq
+XGxhdGVudHN0eWxlc1xsc2RzdGltYXgxNTZcbHNkbG9ja2VkZGVmMH17XCpc
+cnNpZHRibCBccnNpZDExNjg5Nzg3fXtcKlxnZW5lcmF0b3IgTWljcg0Kb3Nv
+ZnQgV29yZCAxMS4wLjU2MDQ7fXtcaW5mb3tcdGl0bGUgR3VpbmVzcyBCcmV3
+ZXJ5fXtcYXV0aG9yIFByaXZhdGV9e1xvcGVyYXRvciBQcml2YXRlfXtcY3Jl
+YXRpbVx5cjIwMTFcbW82XGR5OVxocjExfXtccmV2dGltXHlyMjAxMVxtbzZc
+ZHk5XGhyMTF9e1x2ZXJzaW9uMn17XGVkbWluczB9e1xub2ZwYWdlczF9e1xu
+b2Z3b3JkczIwNH17XG5vZmNoYXJzMTE2N317XG5vZmNoYXJzd3MxMzY5fXtc
+dmVybjI0Njg5fX0NClx3aWRvd2N0cmxcZnRuYmpcYWVuZGRvY1xub3hsYXR0
+b3llblxleHBzaHJ0blxub3VsdHJsc3BjXGRudGJsbnNiZGJcbm9zcGFjZWZv
+cnVsXGh5cGhjYXBzMFxob3J6ZG9jXGRnaHNwYWNlMTIwXGRndnNwYWNlMTIw
+XGRnaG9yaWdpbjE3MDFcZGd2b3JpZ2luMTk4NFxkZ2hzaG93MFxkZ3ZzaG93
+M1xqY29tcHJlc3Ncdmlld2tpbmQ0XHZpZXdzY2FsZTEwMFxub2xuaHRhZGp0
+YmxccnNpZHJvb3QxMTY4OTc4NyBcZmV0MFxzZWN0ZCANClxsaW5leDBcc2Vj
+dGRlZmF1bHRjbFxzZnRuYmoge1wqXHBuc2VjbHZsMVxwbnVjcm1ccG5zdGFy
+dDFccG5pbmRlbnQ3MjBccG5oYW5nIHtccG50eHRhIC59fXtcKlxwbnNlY2x2
+bDJccG51Y2x0clxwbnN0YXJ0MVxwbmluZGVudDcyMFxwbmhhbmcge1xwbnR4
+dGEgLn19e1wqXHBuc2VjbHZsM1xwbmRlY1xwbnN0YXJ0MVxwbmluZGVudDcy
+MFxwbmhhbmcge1xwbnR4dGEgLn19e1wqXHBuc2VjbHZsNA0KXHBubGNsdHJc
+cG5zdGFydDFccG5pbmRlbnQ3MjBccG5oYW5nIHtccG50eHRhICl9fXtcKlxw
+bnNlY2x2bDVccG5kZWNccG5zdGFydDFccG5pbmRlbnQ3MjBccG5oYW5nIHtc
+cG50eHRiICh9e1xwbnR4dGEgKX19e1wqXHBuc2VjbHZsNlxwbmxjbHRyXHBu
+c3RhcnQxXHBuaW5kZW50NzIwXHBuaGFuZyB7XHBudHh0YiAofXtccG50eHRh
+ICl9fXtcKlxwbnNlY2x2bDdccG5sY3JtXHBuc3RhcnQxXHBuaW5kZW50NzIw
+XHBuaGFuZyB7XHBudHh0YiAofQ0Ke1xwbnR4dGEgKX19e1wqXHBuc2VjbHZs
+OFxwbmxjbHRyXHBuc3RhcnQxXHBuaW5kZW50NzIwXHBuaGFuZyB7XHBudHh0
+YiAofXtccG50eHRhICl9fXtcKlxwbnNlY2x2bDlccG5sY3JtXHBuc3RhcnQx
+XHBuaW5kZW50NzIwXHBuaGFuZyB7XHBudHh0YiAofXtccG50eHRhICl9fVxw
+YXJkXHBsYWluIFxxbCBcbGkwXHJpMFxub3dpZGN0bHBhclxmYWF1dG9ccmlu
+MFxsaW4wXGl0YXAwIA0KXGZzMjRcbGFuZzEwMzNcbGFuZ2ZlMTAzM1xjZ3Jp
+ZFxsYW5nbnAxMDMzXGxhbmdmZW5wMTAzMyB7XGYxXGZzMjBcaW5zcnNpZDEx
+Njg5Nzg3IA0KXHBhciANClxwYXIgDQpccGFyIH17XGJcZjFcZnMzMlxpbnNy
+c2lkMTE2ODk3ODcgR3VpbmVzcyBCcmV3ZXJ5DQpccGFyIDE4NC0xOTIgRHJ1
+bW1vbmQgU3RyZWV0DQpccGFyIExvbmRvbiBOVzEgM0hQLCAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgDQpccGFyICBVbml0ZWQgS2lu
+Z2RvbX17XGYxXGZzMjBcaW5zcnNpZDExNjg5Nzg3IA0KXHBhciANClxwYXIg
+DQpccGFyIA0KXHBhciANClxwYXIgICAgICAgfXtcZjFcZnM0MFxpbnNyc2lk
+MTE2ODk3ODcgICAgICAgIH17XGJcZjFcZnM0MFxpbnNyc2lkMTE2ODk3ODcg
+Q09OR1JBVFVMQVRJT059e1xiXGYxXGZzMjBcaW5zcnNpZDExNjg5Nzg3IA0K
+XHBhciANClxwYXIgDQpccGFyIA0KXHBhciANClxwYXIgV2UgYXJlIHBsZWFz
+ZWQgdG8gaW5mb3JtIHlvdSBvZiB3aW5uZXJzIG9mIHRoZSBHdWlubmVzcyBO
+YXRpb25hbCBMb3R0ZXJ5IFByb2dyYW0NClxwYXIgaGVsZCBvbiAzMHRoIG9m
+IE1heSAyMDExLg0KXHBhciAgDQpccGFyIFlvdXIgZS1tYWlsIGFkZHJlc3Mg
+d2FzIGF0dGFjaGVkIHRvIHJlZmVyZW5jZSBudW1iZXI6IFVLRy8xMTgwMVgy
+WFgvOTkxLCBlbWVyZ2VkIHlvdQ0KXHBhciBhcyB0aGUgbHVja3kgd2lubmVy
+IGZyb20gdGhpcyBkcmF3IGFuZCBpdCB3b24geW91IHRoZSB0b3RhbCBsdW1w
+IHN1bSBvZiBcJ2EzMTAwLDAwMC4wMA0KXHBhciAoT25lIEh1bmRyZWQgVGhv
+dXNhbmQgR3JlYXQgQnJpdGlzaCBQb3VuZHMpLg0KXHBhciAgDQpccGFyIEJl
+IGluZm9ybWVkIHRoYXQga25vdyB0aWNrZXQgd2FzIHNvbGQgYmFzZWQgb24g
+cmFuZG9tIHNlbGVjdGlvbiBleGVyY2lzZXMgb2YNClxwYXIgZGF0YWJhc2Ug
+b2YgZW1haWwgYWRkcmVzc2VzIG9uIGludGVybmV0IHdlYnNpdGVzIHdvcmxk
+d2lkZSBnbG9iZXMsIGFzIHlvdXIgZW1haWwNClxwYXIgQWRkcmVzcyB3YXMg
+c2VsZWN0ZWQuIFRoZSBzZWxlY3Rpb24gcHJvY2VzcyB3YXMgY2FycmllZCBv
+dXQgdGhyb3VnaCByYW5kb20gc2VsZWN0aW9uDQpccGFyIGluIG91ciBjb21w
+dXRlcml6ZWQgZW1haWwgc2VsZWN0aW9uIHN5c3RlbSBmcm9tIGEgZGF0YSBi
+YXNlIG9mIG92ZXIgMTAwLDAwMCBlbWFpbA0KXHBhciBBZGRyZXNzIHdvcmxk
+LXdpZGUgcHJvdmlkZWQgdG8gdXMgYnkgTWljcm9zb2Z0IHRvIGVuaGFuY2Ug
+dGhlIHV0aWxpemF0aW9uIG9mIHRoZQ0KXHBhciBpbnRlcm5ldC4NClxwYXIg
+IA0KXHBhciBUbyBmaWxlIGZvciB5b3VyIGNsYWltcyBhbmQgcmVtaXR0YW5j
+ZSBvZiB5b3VyIHdpbm5pbmcgZnVuZHMgdG8geW91LCB5b3UgYXJlIGFkdmlz
+ZWQNClxwYXIgdG8gY29udGFjdCBhbmQgcHJvdmlkZSBvdXIgYXNzaWduZWQg
+Y2xhaW1zIGFnZW50IG9mZmljZXIgd2l0aCB0aGUgZm9sbG93aW5nDQpccGFy
+IEluZm9ybWF0aW9uXHJxdW90ZSBzOw0KXHBhciAgDQpccGFyIEZ1bGwgTmFt
+ZTogIEFkZHJlc3M6DQpccGFyIFNleDogQWdlOiBPY2N1cGF0aW9uOg0KXHBh
+ciBUZWw6IENvdW50cnk6IFJlZiBObzoNClxwYXIgIA0KXHBhciBDb250YWN0
+IE5hbWU6IEhlbnJ5IFBhdWxzb24NClxwYXIgQ29udGFjdCBFbWFpbDogfXtc
+YlxpbnNyc2lkMTE2ODk3ODcgZ3VpbmVzc2N1c3RvbWVyY2FyZTIwMTFAZ214
+LmNvbX17XGJcZjFcZnMyMFxpbnNyc2lkMTE2ODk3ODcgDQpccGFyICANClxw
+YXIgQ29uZ3JhdHVsYXRpb25zIG9uIGJlaGFsZiBvZiBzdGFmZnMgYW5kIG1h
+bmFnZW1lbnQgb2YgdGhpcyBwcm9ncmFtLg0KXHBhciBZb3VycyBUcnVseQ0K
+XHBhciBNcnMuIFBhdHJpY2lhIFdvb2QNClxwYXIgT25saW5lIENvLW9yZGlu
+YXRpb24NClxwYXIgVUsgR3Vpbm5lc3MgT2xpbmUgTG90dGVyeSBQcm9ncmFt
+Lg0KXHBhciB9e1xmMVxmczIwXGluc3JzaWQxMTY4OTc4NyANClxwYXIgDQpc
+cGFyIH19
 
----
- arch/alpha/kernel/sys_ruffian.c |    1 -
- arch/alpha/kernel/time.c        |    1 -
- 2 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/arch/alpha/kernel/sys_ruffian.c b/arch/alpha/kernel/sys_ruffian.c
-index 8de1046..f33648e 100644
---- a/arch/alpha/kernel/sys_ruffian.c
-+++ b/arch/alpha/kernel/sys_ruffian.c
-@@ -26,7 +26,6 @@
- #include <asm/pgtable.h>
- #include <asm/core_cia.h>
- #include <asm/tlbflush.h>
--#include <asm/8253pit.h>
- 
- #include "proto.h"
- #include "irq_impl.h"
-diff --git a/arch/alpha/kernel/time.c b/arch/alpha/kernel/time.c
-index 818e74e..de406c7 100644
---- a/arch/alpha/kernel/time.c
-+++ b/arch/alpha/kernel/time.c
-@@ -46,7 +46,6 @@
- #include <asm/uaccess.h>
- #include <asm/io.h>
- #include <asm/hwrpb.h>
--#include <asm/8253pit.h>
- #include <asm/rtc.h>
- 
- #include <linux/mc146818rtc.h>
+--0-1225367565-1307618348=:28922--
