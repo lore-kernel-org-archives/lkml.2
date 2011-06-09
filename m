@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756805Ab1FII3u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 04:29:50 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:48207 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab1FII3s (ORCPT
+	id S1756933Ab1FIIa0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 04:30:26 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:1603 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763Ab1FIIaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 04:29:48 -0400
-Date: Thu, 09 Jun 2011 01:29:44 -0700 (PDT)
-Message-Id: <20110609.012944.602872260942727070.davem@davemloft.net>
-To: monstr@monstr.eu
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net: emaclite: Add missing linux/interrupt.h header
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1307607333-24612-1-git-send-email-monstr@monstr.eu>
-References: <1307607333-24612-1-git-send-email-monstr@monstr.eu>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 9 Jun 2011 04:30:23 -0400
+Date: Thu, 9 Jun 2011 10:29:48 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: anish singh <anish198519851985@gmail.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, Ben Dooks <ben-i2c@fluff.org>,
+        gregkh@suse.de, manuel.stahl@iis.fraunhofer.de,
+        lucas.demarchi@profusion.mobi, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Linux I2C <linux-i2c@vger.kernel.org>
+Subject: Re: [PATCH] staging iio: Replace kmalloc with local variable
+Message-ID: <20110609102948.7a3f8d57@endymion.delvare>
+In-Reply-To: <BANLkTi=e0A2G-d+t4VF5V0gj+eNoh3KRnQ@mail.gmail.com>
+References: <1307450354.1516.23.camel@anish-desktop>
+	<4DEE20E7.4020008@cam.ac.uk>
+	<20110607134135.GD15795@trinity.fluff.org>
+	<20110607160206.6cb3168d@endymion.delvare>
+	<BANLkTim5-ZKXtDkSQyHAJ9-iKtOPsJ917A@mail.gmail.com>
+	<BANLkTi=e0A2G-d+t4VF5V0gj+eNoh3KRnQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 09 Jun 2011 01:29:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Simek <monstr@monstr.eu>
-Date: Thu,  9 Jun 2011 10:15:33 +0200
+On Thu, 9 Jun 2011 13:53:09 +0530, anish singh wrote:
+> On Wed, Jun 8, 2011 at 10:41 AM, anish singh <anish198519851985@gmail.com>wrote:
+> >  On Tue, Jun 7, 2011 at 7:32 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> >> To be clearer, it is down to the i2c BUS (adapter) driver, NOT the i2c
+> >> device driver. So the patch is correct.
+> >>
+> > I think i can take Jean ack on this?If yes then Joanthan kindly apply
+> > this patch and i think you didn't lead me in wrong way as whatever
+> > said by you is corroborated by jean also i.e. it is I2C bus driver
+> > responsiblity
+> > to care about DMA.
+> >
+> Sorry to ping you again.Can i take your ack on this?
 
-> Log:
-> drivers/net/xilinx_emaclite.c: In function 'xemaclite_open':
-> drivers/net/xilinx_emaclite.c:961: error: implicit declaration of function 'request_irq'
-> drivers/net/xilinx_emaclite.c: In function 'xemaclite_close':
-> drivers/net/xilinx_emaclite.c:995: error: implicit declaration of function 'free_irq'
-> make[2]: *** [drivers/net/xilinx_emaclite.o] Error 1
-> make[1]: *** [drivers/net] Error 2
-> make: *** [drivers] Error 2
-> 
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
+Yes of course.
 
-This is only relevant for the -next tree, you should specify that when
-submitting patches otherwise the maintainer not apply the patch where
-it actually belongs.
+Acked-by: Jean Delvare <khali@linux-fr.org>
 
-Applied, thanks.
+-- 
+Jean Delvare
