@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751059Ab1FIE0u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 00:26:50 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45826 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab1FIE0t convert rfc822-to-8bit (ORCPT
+	id S1751250Ab1FIEsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 00:48:22 -0400
+Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:57968 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855Ab1FIEsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 00:26:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=YoicAuMES3mBomVYXuUK6btsao/5Lk/THL6kZJSn9xeZGzIgogQN/2kUeS6E0U/F5G
-         EQwIpMXyxRV7O150y5MT35bKVux7X0st9JDsFD62ige3i/30u352Y01pmZgd83v3gWBk
-         YCJXcG/FBGeFRSfW9ql7MfIgnGO75e//ITs7U=
-MIME-Version: 1.0
-In-Reply-To: <20110609030401.GA2615@gmail.com>
-References: <20110609030401.GA2615@gmail.com>
-Date: Wed, 8 Jun 2011 21:26:46 -0700
-Message-ID: <BANLkTim_=2kWXAzkECC4A3t9uxGERwBU7g@mail.gmail.com>
-Subject: Re: [PATCH RESEND]Remove a warning for drivers/edac/i82975x_edac.c
-From: Connor Hansen <cmdkhh@gmail.com>
-To: linux-kernel@vger.kernel.org, ravi@jetztechnologies.com,
-        arvino55@gmail.com, greg@kroah.com, akpm@linux-foundation.org,
-        randy.dunlap@oracle.com, joe@perches.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 9 Jun 2011 00:48:20 -0400
+X-Greylist: delayed 604 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Jun 2011 00:48:19 EDT
+Date: Thu, 9 Jun 2011 13:34:23 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [BUGFIX][PATCH] memcg: fix wrong decision of noswap with
+ softlimit.
+Message-Id: <20110609133423.3223aaff.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20110609095445.5f98b752.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110609095445.5f98b752.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I compile 3.0.0-rc2+ I don't get this warning.
-please make sure this issue still exists.
+On Thu, 9 Jun 2011 09:54:45 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Connor
+> I wonder this should go stable...
+hmm, IMHO, it's not necessary just because there have been no bug reports
+about this bug.
 
-On Wed, Jun 8, 2011 at 8:04 PM, Harry Wei <jiaweiwei.xiyou@gmail.com> wrote:
-> From: Harry Wei <harryxiyou@gmail.com>
->
-> When i compile 2.6.39.1, a warning shows like below.
-> This patch can fix the warning. And i works well with
-> my PC.
->
-> [...]
-> CC [M]  drivers/edac/e752x_edac.o
-> CC [M]  drivers/edac/i82875p_edac.o
-> CC [M]  drivers/edac/i82975x_edac.o
-> drivers/edac/i82975x_edac.c: In function ���i82975x_process_error_info���:
-> drivers/edac/i82975x_edac.c:298: warning: integer constant is too large for ���unsigned long��� type
-> CC [M]  drivers/edac/i3000_edac.o
-> CC [M]  drivers/edac/i3200_edac.o
-> CC [M]  drivers/edac/x38_edac.o
-> CC [M]  drivers/edac/i82860_edac.o
-> [...]
->
->
-> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
-> Index: prj/drivers/edac/i82975x_edac.c
-> ===================================================================
-> --- prj.orig/drivers/edac/i82975x_edac.c        2011-06-04 10:09:55.351174516 +0800
-> +++ prj/drivers/edac/i82975x_edac.c     2011-06-04 10:10:30.875168437 +0800
-> @@ -293,9 +293,9 @@
->                info->errsts = info->errsts2;
->        }
->
-> -       page = (unsigned long) info->eap;
-> +       page = (unsigned long long) info->eap;
->        if (info->xeap & 1)
-> -               page |= 0x100000000ul;
-> +               page |= 0x100000000ull;
->        chan = page & 1;
->        page >>= 1;
->        offst = page & ((1 << PAGE_SHIFT) - 1);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> ==
+> From e2565de1c764057b75b4d9a1674d163b6c873cdd Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Thu, 9 Jun 2011 09:54:32 +0900
+> Subject: [PATCH 2/2] Fix softlimit wrong check of noswap
+> 
+> Now, hierarchical reclaim doesn't make swap if memory's limit is
+> equal to mem+swap limit. Because if reclaim does swap-out,
+> it still hits mem+swap limit and there will be no progress.
+> WHEN HITTING HARD LIMIT.
+> 
+> When it comes to softlimit, it works for kswapd. noswap is nonsense.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+If we implement "softlimit for memsw" in future, we might change the check again,
+but it's another story.
+
+Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+
+Thanks,
+Daisuke Nishimura.
+
+> ---
+>  mm/memcontrol.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 3baddcb..06825be 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1663,7 +1663,7 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
+>  	excess = res_counter_soft_limit_excess(&root_mem->res) >> PAGE_SHIFT;
+>  
+>  	/* If memsw_is_minimum==1, swap-out is of-no-use. */
+> -	if (root_mem->memsw_is_minimum)
+> +	if (!check_soft && root_mem->memsw_is_minimum)
+>  		noswap = true;
+>  
+>  	while (1) {
+> -- 
+> 1.7.4.1
+> 
+> 
