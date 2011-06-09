@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab1FIJNO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 05:13:14 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:56898 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788Ab1FIJNK convert rfc822-to-8bit (ORCPT
+	id S1755319Ab1FIJOB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 05:14:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35592 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506Ab1FIJN4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 05:13:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <1307602821.9501.1.camel@phoenix>
-References: <1307602821.9501.1.camel@phoenix>
-Date: Thu, 9 Jun 2011 11:13:09 +0200
-Message-ID: <BANLkTimr50g_4NnrzcHcZdwkiLOtgFLgyQ@mail.gmail.com>
-Subject: Re: [linux-next] drivers/gpio/gpio-nomadik.c build error
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Prafulla WADASKAR <prafulla.wadaskar@st.com>,
-        Alessandro Rubini <rubini@unipv.it>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 9 Jun 2011 05:13:56 -0400
+Subject: Re: [GIT PULL] perf update
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Stephane Eranian <eranian@google.com>
+In-Reply-To: <1307458585-24078-1-git-send-email-fweisbec@gmail.com>
+References: <1307458585-24078-1-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Thu, 09 Jun 2011 11:13:33 +0200
+Message-ID: <1307610813.3941.23.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 9:00 AM, Axel Lin <axel.lin@gmail.com> wrote:
+On Tue, 2011-06-07 at 16:56 +0200, Frederic Weisbecker wrote:
 
-> make nhk8815_defconfig  with below build error:
->
->  CC      drivers/gpio/gpio-nomadik.o
-> drivers/gpio/gpio-nomadik.c: In function 'nmk_gpio_wakeups_suspend':
-> drivers/gpio/gpio-nomadik.c:904: error: implicit declaration of function 'cpu_is_u8500v2'
-> make[2]: *** [drivers/gpio/gpio-nomadik.o] Error 1
-> make[1]: *** [drivers/gpio] Error 2
-> make: *** [drivers] Error 2
+> Frederic Weisbecker (1):
+>       perf: Split up buffer handling from core code
+> 
+> 
+>  kernel/events/Makefile   |    2 +-
+>  kernel/events/buffer.c   |  400 ++++++++++++++++++++++++++++++++++++++++
+>  kernel/events/core.c     |  458 ++--------------------------------------------
+>  kernel/events/internal.h |   70 +++++++
+>  4 files changed, 487 insertions(+), 443 deletions(-)
 
-BTW: Grant et al, the subject says [linux-next] but the thing actually
-does compile
-in linux-next, since my patch is in there. This error is on Torvalds v3.0-rc2.
+Looks about right.
 
-Thanks,
-Linus Walleij
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
