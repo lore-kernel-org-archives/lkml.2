@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501Ab1FIMHg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 08:07:36 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:37153 "EHLO mail001.aei.ca"
+	id S1757476Ab1FIMJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 08:09:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61833 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753660Ab1FIMHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 08:07:32 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Jiri Kosina <jkosina@suse.cz>
-Subject: Re: Linux 2.6.39.1
-Date: Thu, 9 Jun 2011 08:07:26 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.39.1-crc+; KDE/4.6.3; x86_64; ; )
-Cc: Chase Douglas <chase.douglas@canonical.com>, Greg KH <gregkh@suse.de>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20110603003835.GA20381@kroah.com> <4DEF9705.4070502@canonical.com> <alpine.LNX.2.00.1106081740040.22872@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1106081740040.22872@pobox.suse.cz>
+	id S1753359Ab1FIMJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 08:09:45 -0400
+Date: Thu, 9 Jun 2011 08:09:28 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [RFC] x86, NMI, Treat unknown NMI as hardware error
+Message-ID: <20110609120928.GR8162@redhat.com>
+References: <4DCF7413.4070704@gmail.com>
+ <4DD07959.4030608@intel.com>
+ <20110516190310.GH31888@redhat.com>
+ <4DD20A2F.604@intel.com>
+ <20110517142427.GL31888@redhat.com>
+ <20110517163847.GF24805@tassilo.jf.intel.com>
+ <20110517175707.GP31888@redhat.com>
+ <20110517181859.GA25937@tassilo.jf.intel.com>
+ <20110517190738.GH29881@redhat.com>
+ <4DD622A5.9030902@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106090807.27459.edt@aei.ca>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DD622A5.9030902@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 June 2011 11:41:03 Jiri Kosina wrote:
-> On Wed, 8 Jun 2011, Chase Douglas wrote:
+On Fri, May 20, 2011 at 04:13:25PM +0800, Huang Ying wrote:
+> Hi, Don,
 > 
-> > > I also played a bit with 1.1 CSR dongle and couldn't find any mask that would
-> > > be accepted. I think this command can be left out for older than 1.2 devices.
-> > > 
-> > > Following patch should do it. Could you verify it. I don't have access to old
-> > > hw ATM.
-> > > 
-> > > diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-> > > index 19cd4af..86d1e26 100644
-> > > --- a/net/bluetooth/hci_event.c
-> > > +++ b/net/bluetooth/hci_event.c
-> > > @@ -477,14 +477,16 @@ static void hci_setup_event_mask(struct hci_dev *hdev)
-> > >          * command otherwise */
-> > >         u8 events[8] = { 0xff, 0xff, 0xfb, 0xff, 0x00, 0x00, 0x00, 0x00 };
-> > >  
-> > > -       /* Events for 1.2 and newer controllers */
-> > > -       if (hdev->lmp_ver > 1) {
-> > > -               events[4] |= 0x01; /* Flow Specification Complete */
-> > > -               events[4] |= 0x02; /* Inquiry Result with RSSI */
-> > > -               events[4] |= 0x04; /* Read Remote Extended Features Complete */
-> > > -               events[5] |= 0x08; /* Synchronous Connection Complete */
-> > > -               events[5] |= 0x10; /* Synchronous Connection Changed */
-> > > -       }
-> > > +       /* CSR 1.1 dongles does not accept any bitfield so don't try to set
-> > > +        * any event mask for pre 1.2 devices */
-> > > +       if (hdev->lmp_ver <= 1)
-> > > +               return;
-> > > +
-> > > +       events[4] |= 0x01; /* Flow Specification Complete */
-> > > +       events[4] |= 0x02; /* Inquiry Result with RSSI */
-> > > +       events[4] |= 0x04; /* Read Remote Extended Features Complete */
-> > > +       events[5] |= 0x08; /* Synchronous Connection Complete */
-> > > +       events[5] |= 0x10; /* Synchronous Connection Changed */
-> > >  
-> > >         if (hdev->features[3] & LMP_RSSI_INQ)
-> > >                 events[4] |= 0x04; /* Inquiry Result with RSSI */
+> On 05/18/2011 03:07 AM, Don Zickus wrote:
+> > On Tue, May 17, 2011 at 11:18:59AM -0700, Andi Kleen wrote:
+> >>> Random thought, in the Firmware first mode of HEST (which is the only way
+> >>> GHES records get produced??), does an SCI happen first to jump into the
+> >>> firmware for processing, then an NMI?
+> >>
+> >> Either that or there is a separate service processor which handles it.
+> >> Presumably it depends a lot on the particular system.
 > > 
-> > Where did this patch come from? I don't see it in Linus' tree. If this
-> > patch is merged, I can test the a new kernel out to see if we should
-> > back out the commit from Jiri. However, right now my magic trackpad
-> > (which has the same issue as the magic mouse) works fine on plain 2.6.39.1.
+> > Ah interesting.  I was going to suggest somehow setting a bit when an SCI
+> > comes in and check that bit in the unknown NMI path as a possible hint
+> > that the NMI might be related to HEST (sorta how we flag unknown NMIs in
+> > the perf code).
+> > 
+> > It was just an idea.  Obviously a service processor will make that more
+> > difficult. :-)
 > 
-> It might be because of different versions of CSR dongles you guys might 
-> have.
-> 
-> I am still a bit lost here -- Ed, do you say that with the patch above, 
-> and with my patch reverted, your device is working properly?
+> Hmm, what's the conclusion?  Do you think unknown NMI should be seen as
+> hardware error?  At least on some white listed machines?
 
-Yes.  Your understanding is correct.
+I still sorta have the opinion that a hardware error should be able be
+recognizable either through a GHES record or a bit in the southbridge.
+Whereas an unknown NMI is something lost and has no owner as the result of
+either a buggy NMI handler or an unimplemented NMI handler.
 
-Thanks,
-Ed
+Yeah, I can see hardware errors coming in through an unknown NMI but to me
+(from what I am reading about with APEI/GHES) is those should be trapped
+by the firmware and if they aren't then the firmware is broken.  In those
+cases it should be up to the OEM to provide proper firmware (even certify
+them) to allow the proper experience, which includes being properly
+trapped by an NMI handler.
+
+Perhaps I am a bit naive in my belief but I am a little nervous panicing
+all the time on unknown NMIs when we are still chasing missed perf NMIs on
+a loaded box.
+
+Cheers,
+Don
+
