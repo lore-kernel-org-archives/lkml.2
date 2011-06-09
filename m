@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab1FIHEM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 03:04:12 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:30831
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752569Ab1FIHEJ (ORCPT
+	id S1755364Ab1FIHDD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 03:03:03 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:63750 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754738Ab1FIHDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 03:04:09 -0400
-X-SpamScore: -15
-X-BigFish: VPS-15(zz936eK1432N98dK4015Lzz1202hzz8275bh8275dhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LMIGWG-02-1CI-02
-X-M-MSG: 
-Date: Thu, 9 Jun 2011 09:02:38 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>
-Subject: Re: [GIT PULL] oprofile fixes for v3.0
-Message-ID: <20110609070237.GO20052@erda.amd.com>
-References: <1306860406-6094-1-git-send-email-robert.richter@amd.com>
- <20110608125346.GL20052@erda.amd.com>
- <20110608140631.GA30752@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110608140631.GA30752@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Thu, 9 Jun 2011 03:03:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=OMTIX42G8I+fvKumHxmZbKBT5s+T457ung4UtvE1GdeCTqKpv8ibOx0LsP/G2DMkmj
+         U9TpdFlwlkD8ATqW0xgYSBdR/Wlhx1xhBQukP1rfHjKS3C9dsyZoHS6bWtAMdYcApNfy
+         7TaPbrYFpH0sWmbTzkpNMsdTgpg3JSovyeIUM=
+From: Weiping Pan <panweiping3@gmail.com>
+To: fubar@us.ibm.com, andy@greyhouse.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Weiping Pan <panweiping3@gmail.com>
+Subject: [PATCH v4 net-next 0/5] bonding:use latest lacp_rate and ad_select,
+Date: Thu,  9 Jun 2011 15:03:26 +0800
+Message-Id: <cover.1307601948.git.panweiping3@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.06.11 10:06:31, Ingo Molnar wrote:
-> 
-> * Robert Richter <robert.richter@amd.com> wrote:
-> 
-> > Ingo,
-> > 
-> > please pull oprofile fixes for v3.0 (tip/perf/urgent):
-> > 
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
-> > 
-> > Thanks,
-> > 
-> > -Robert
-> > 
-> > 
-> > The following changes since commit d7ebe75b065a7c2d58ffc12f9d2e00d5ea4e71eb:
-> > 
-> >   perf: Fix comments in include/linux/perf_event.h (2011-06-04 12:31:14 +0200)
-> > 
-> > are available in the git repository at:
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
-> > 
-> > Robert Richter (4):
-> >       oprofile, x86: Add comments to IBS LVT offset initialization
+There is bug that when you modify lacp_rate via sysfs,
+802.3ad won't use the new value of lacp_rate to transmit packets.
+This is because port->actor_oper_port_state isn't changed.
 
-Ingo,
+As for ad_select, it can work,
+but both struct bond_params and ad_bond_info have lacp_fast and ad_select,
+they are duplicate and need extra synchronization.
+802.3ad can get them from bond_params directly every time.
 
-it seems you pulled (86dd7909c2c4ae3f219a9233bf0f095b05632ecf) from
+And ad_timer and arp_mon_pt aren't used any more, just delete them.
 
- cbf74cea070fa1f705de4712e25d9e56ae6543c7 (oprofile, x86: Add comments to IBS LVT offset initialization)
+changelog:
+v2:
+add bond_3ad_update_lacp_rate() as a helper function,
+and hold bond->lock when iterates slave list.
 
-These ones are still missing:
+v3:
+delete duplicate lacp_fast and agg_select_mode from struct ad_bond_info.
 
-> >       oprofile: Free potentially owned tasks in case of errors
-> >       oprofile: Fix locking dependency in sync_start()
-> >       oprofile, dcookies: Fix possible circular locking dependency
+v4:
+delete unused ad_timer and arp_mon_pt.
 
-But oprofile/urgent is
+Weiping Pan (5):
+  bonding: make 802.3ad use latest lacp_rate
+  bonding:delete lacp_fast from ad_bond_info
+  bonding:delete agg_select_mode from ad_bond_info
+  bonding: delete unused ad_timer
+  bonding: delete unused arp_mon_pt
 
- fe47ae7f53e179d2ef6771024feb000cbb86640f (oprofile, dcookies: Fix possible circular locking dependency)
-
-Is this intended? Maybe a korg git sync issue?
-
-Thanks,
-
--Robert
-
-> > 
-> >  arch/x86/kernel/apic/apic.c      |    3 ++-
-> >  arch/x86/oprofile/op_model_amd.c |   13 +++++++++----
-> >  drivers/oprofile/buffer_sync.c   |   21 +++++++++++----------
-> >  fs/dcookies.c                    |    3 +++
-> >  4 files changed, 25 insertions(+), 15 deletions(-)
-> 
-> Pulled, thanks a lot Robert!
-> 
-> 	Ingo
-> 
+ drivers/net/bonding/bond_3ad.c   |   41 ++++++++++++++++++++++++++++++++-----
+ drivers/net/bonding/bond_3ad.h   |    8 +-----
+ drivers/net/bonding/bond_main.c  |    3 +-
+ drivers/net/bonding/bond_sysfs.c |    1 +
+ drivers/net/bonding/bonding.h    |    1 -
+ 5 files changed, 39 insertions(+), 15 deletions(-)
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+1.7.4.4
 
