@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab1FIDwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 23:52:00 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53551 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756365Ab1FIDv6 (ORCPT
+	id S1756748Ab1FIDy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 23:54:26 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39834 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755799Ab1FIDyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 23:51:58 -0400
-Date: Wed, 8 Jun 2011 20:52:33 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, viro@ZenIV.linux.org.uk,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, apw@canonical.com, nbd@openwrt.org,
-        hramrach@centrum.cz, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
-        mszeredi@suse.cz
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-Message-Id: <20110608205233.ebfedc4d.akpm@linux-foundation.org>
-In-Reply-To: <20110609115934.3c53f78f@notabene.brown>
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
-	<20110608153208.dc705cda.akpm@linux-foundation.org>
-	<20110609115934.3c53f78f@notabene.brown>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Wed, 8 Jun 2011 23:54:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=ddxC8l2Va7KGvdceZ0sBvrFofldOefkjIHGsPZCLWJ09ogoQ1wBhrWOB9PNl0FWYrw
+         tgl5ZaVLewz+nDhF8KBpSDL+OvDNQVXjgZtTmSisQ8zxmcJq/CbXP0aM9rqNHQjrCdGR
+         XJXNxe2AlGdXhvH5BLf4v7Tc8cVCV3wuadnxY=
+Subject: Re: Change in functionality of futex() system call.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Darren Hart <dvhart@linux.intel.com>, George Spelvin <linux@horizon.com>,
+        david@rgmadvisors.com, kyle@moffetthome.net,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTik62dLMf5PCPGeW=9P=sF2QcnW42g@mail.gmail.com>
+References: <20110609004435.14550.qmail@science.horizon.com>
+	 <4DF037C6.4000507@linux.intel.com>
+	 <BANLkTik62dLMf5PCPGeW=9P=sF2QcnW42g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Jun 2011 05:54:19 +0200
+Message-ID: <1307591659.3980.37.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jun 2011 11:59:34 +1000 NeilBrown <neilb@suse.de> wrote:
+Le mercredi 08 juin 2011 à 23:38 -0400, Andrew Lutomirski a écrit :
 
-> On Wed, 8 Jun 2011 15:32:08 -0700 Andrew Morton <akpm@linux-foundation.org>
-> wrote:
+> Huh?
 > 
-> > On Wed,  1 Jun 2011 14:46:13 +0200
-> > Miklos Szeredi <miklos@szeredi.hu> wrote:
-> > 
-> > > I'd like to ask for overlayfs to be merged into 3.1.
-> > 
-> > Dumb questions:
-> > 
-> > I've never really understood the need for fs overlaying.  Who wants it?
-> > What are the use-cases?
+> I still don't understand why userspace ought to need to deny read
+> access to a file to prevent DoS.  I think it's entirely reasonable for
+> userspace to make the assumption that users with read access cannot
+> make changes visible to writers unless explicitly documented (i.e.
+> file locking, which is so thoroughly broken that it shouldn't be taken
+> as an example of how to design anything).
 > 
-> https://lwn.net/Articles/324291/
-> 
-> I think the strongest use case is that LIVE-DVD's want it to have a write-able
-> root filesystem which is stored on the DVD.
+> Given that current kernels make this use safe and the proposal is to
+> make it unsafe, I think it's worth designing the interface to avoid
+> introducing new security problems.
 
-Well, these things have been around for over 20 years.  What motivated
-the developers of other OS's to develop these things and how are their
-users using them?
+I am very tired of this discussion, you repeat the same arguments over
+and over.
 
-> > 
-> > This sort of thing could be implemented in userspace and wired up via
-> > fuse, I assume.  Has that been attempted and why is it inadequate?
-> 
-> I think that would be a valid question if the proposal was large and
-> complex.  But overlayfs is really quite small and self-contained.
+You can not prevent DOS on a machine if you allow a process to RO map
+your critical files (where you put futexes), because you allow this
+process to interfere with critical cache lines bouncing between cpus.
 
-Not merging it would be even smaller and simpler.  If there is a
-userspace alternative then that option should be evaluated and compared
-in a rational manner.
+Really, please forget about this crazy idea of allowing foreigners to
+_read_ or memory _map_ your files. Dont do it.
 
 
-
-Another issue: there have been numerous attempts at Linux overlay
-filesystems from numerous parties.  Does (or will) this implementation
-satisfy all their requirements?
-
-Because if not, we're in a situation where the in-kernel code is
-unfixably inadequate so we end up merging another similar-looking
-thing, or the presence of this driver makes it harder for them to get
-other drivers merged and the other parties' requirements remain
-unsatisfied.
 
