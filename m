@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab1FIMe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 08:34:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55736 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336Ab1FIMeZ (ORCPT
+	id S1757540Ab1FIMf2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 08:35:28 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:39073 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756616Ab1FIMf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 08:34:25 -0400
-X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=cWu3orRm09UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=rQQHXOjxP4oWyp9PBsUA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] sched: remove resetting exec_start in
- put_prev_task_rt()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <BANLkTikoO5F5H4sEUoDPKX3qiahuehp=Mg@mail.gmail.com>
-References: <BANLkTimqWD=q6YnSDi-v9y=LMWecgEzEWg@mail.gmail.com>
-	 <BANLkTikoO5F5H4sEUoDPKX3qiahuehp=Mg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 09 Jun 2011 08:34:23 -0400
-Message-ID: <1307622863.9218.40.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Jun 2011 08:35:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fwUCjS7eaNiNKmt+dGZUw+C+2FUK/3jZibVoO2g84x4E66W5JF+d+cIF4SFvktG/E3
+         NpBaCsXl7Am1px91SLIy8Ih1fe7/Pc0gABmL/yG9eaR76LPf7z3FEDslhEMVHLTyXBHb
+         0WdemyV467KjEIdFpUgKDydRaU8z/ywOPVYos=
+Date: Thu, 9 Jun 2011 14:35:22 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL] perf update
+Message-ID: <20110609123519.GF25771@somewhere.redhat.com>
+References: <1307458585-24078-1-git-send-email-fweisbec@gmail.com>
+ <1307610813.3941.23.camel@twins>
+ <20110609091924.GA8188@elte.hu>
+ <20110609114313.GA15332@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110609114313.GA15332@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-02 at 16:04 +0800, Yong Zhang wrote:
-> On Wed, Jun 1, 2011 at 10:03 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> > Resetting exec_start, after updated in update_curr_rt(), could open window for
-> > messing up the subsequent computations of delta_exec of the given task.
+On Thu, Jun 09, 2011 at 01:43:13PM +0200, Ingo Molnar wrote:
 > 
-> I can't see how could this happen. what kind of 'subsequent computations'
-> do you mean?
+> * Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> > 
+> > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > 
+> > > On Tue, 2011-06-07 at 16:56 +0200, Frederic Weisbecker wrote:
+> > > 
+> > > > Frederic Weisbecker (1):
+> > > >       perf: Split up buffer handling from core code
+> > > > 
+> > > > 
+> > > >  kernel/events/Makefile   |    2 +-
+> > > >  kernel/events/buffer.c   |  400 ++++++++++++++++++++++++++++++++++++++++
+> > > >  kernel/events/core.c     |  458 ++--------------------------------------------
+> > > >  kernel/events/internal.h |   70 +++++++
+> > > >  4 files changed, 487 insertions(+), 443 deletions(-)
+> > > 
+> > > Looks about right.
+> > > 
+> > > Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > 
+> > thanks, i'll pull it it and test it.
+> 
+> Note, i ended up applying it by hand:
+> 
+>  - fixed a build error,
+> 
+>  - streamlined the renaming: we really want this to be ring_buffer.c 
+>    (most of the complexity comes from this not being a simple buffer 
+>    but a ring-buffer)
+> 
+>  - i streamlined the naming around it: struct ring_buffer 
+>    internalized via internal.h (it does not clash with ftrace's 
+>    ring-buffer)
+> 
+> It all looks and reads much nicer now, but please double check the 
+> commit as well :-)
+> 
+> One other rename i'd like to do is:
+> 
+>    struct perf_output_handle		=> struct rb_handle
+> 
+>    perf_output_begin()			=> rb_open()
+>    perf_output_copy()			=> rb_write()
+>    perf_output_sample()			=> rb_write_sample()
+>    perf_output_end()			=> rb_close()
+> 
+> Which really makes it a lot more apparent that it's a regular 
+> input/output flow defined over the ring-buffer!
+> 
+> I can do this if this is fine with everyone. There will be no change 
+> in functionality.
 
-I still don't see a race.
+I feel more comfortable if we keep the perf_outpout_*() naming, having some
+global rb_* would pollute the global namespace.
 
-Hilf, if you still believe there's a race here, can you explain it in
-detail. Do something like:
+perf_rb_* namespace would be fine as well.
 
-	CPU0			CPU1
-	----			----
-   do_something;
-				does_something_not_expected;
-   continue_something;
-
-Obviously changing what those "somethings" are. That way we can visually
-see what you are trying to say.
+Thanks.
 
 > 
-> But because exec_start will be reset by _pick_next_task_rt()/set_curr_task_rt(),
-> you patch is ok. IMHO it is not critical, it's just cleanup instead.
-
-I disagree. Yes the exec_start is reset there, but I like the fact that
-it's 0 when not running.
-
--- Steve
-
-
+> Thanks,
+> 
+> 	Ingo
