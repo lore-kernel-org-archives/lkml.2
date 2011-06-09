@@ -1,102 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab1FIHCu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 03:02:50 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37003 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752569Ab1FIHCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 03:02:48 -0400
-Date: Thu, 9 Jun 2011 09:02:15 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: pageexec@freemail.hu
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@mit.edu>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        Brian Gerst <brgerst@gmail.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to
- COMPAT_VSYSCALLS
-Message-ID: <20110609070215.GD7734@elte.hu>
-References: <cover.1307292171.git.luto@mit.edu>
- <4DED6AAC.12348.14E3578E@pageexec.freemail.hu>
- <20110607100519.GF4133@elte.hu>
- <4DEEB31B.30013.19E648C8@pageexec.freemail.hu>
+	id S1756758Ab1FIHEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 03:04:12 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:30831
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752569Ab1FIHEJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 03:04:09 -0400
+X-SpamScore: -15
+X-BigFish: VPS-15(zz936eK1432N98dK4015Lzz1202hzz8275bh8275dhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LMIGWG-02-1CI-02
+X-M-MSG: 
+Date: Thu, 9 Jun 2011 09:02:38 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sourceforge.net" 
+	<oprofile-list@lists.sourceforge.net>
+Subject: Re: [GIT PULL] oprofile fixes for v3.0
+Message-ID: <20110609070237.GO20052@erda.amd.com>
+References: <1306860406-6094-1-git-send-email-robert.richter@amd.com>
+ <20110608125346.GL20052@erda.amd.com>
+ <20110608140631.GA30752@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4DEEB31B.30013.19E648C8@pageexec.freemail.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110608140631.GA30752@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* pageexec@freemail.hu <pageexec@freemail.hu> wrote:
-
-> On 7 Jun 2011 at 12:05, Ingo Molnar wrote:
+On 08.06.11 10:06:31, Ingo Molnar wrote:
 > 
-> > * pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+> * Robert Richter <robert.richter@amd.com> wrote:
+> 
+> > Ingo,
 > > 
-> > > you called this feature "borderline security FUD" but have yet 
-> > > to prove it.
+> > please pull oprofile fixes for v3.0 (tip/perf/urgent):
 > > 
-> > No, i did not claim that this feature is "borderline security 
-> > FUD", at all.
-> 
-> so can i take it as your concession that the vsyscall feature is 
-> indeed a security problem and it's being randomized/(re)moved for 
-> security reasons?
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+> > 
+> > Thanks,
+> > 
+> > -Robert
+> > 
+> > 
+> > The following changes since commit d7ebe75b065a7c2d58ffc12f9d2e00d5ea4e71eb:
+> > 
+> >   perf: Fix comments in include/linux/perf_event.h (2011-06-04 12:31:14 +0200)
+> > 
+> > are available in the git repository at:
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+> > 
+> > Robert Richter (4):
+> >       oprofile, x86: Add comments to IBS LVT offset initialization
 
-Again, i made two statements:
+Ingo,
 
-  "That naming is borderline security FUD"
-  "It's only a security problem if there's a security hole elsewhere."
+it seems you pulled (86dd7909c2c4ae3f219a9233bf0f095b05632ecf) from
 
-I stand by those statements and i reject your repeated attempts to 
-put words in my mouth that i did not say, such as:
+ cbf74cea070fa1f705de4712e25d9e56ae6543c7 (oprofile, x86: Add comments to IBS LVT offset initialization)
 
-   > you called this feature "borderline security FUD" [...]
+These ones are still missing:
 
-> in that case the naming of this feature is correct and you have no 
-> reason to call it "borderline security FUD". so make up your mind!
-> 
-> > That the *NAMING* is borderline security FUD. (I already applied 
-> > the patches before i wrote that mail, see the commit 
-> > notifications on lkml.)
-> 
-> how can the name be "borderline security FUD" but what the name 
-> refers to not be that? you see, we name things for a reason, mostly 
-> because we think the name has something to do with the thing it 
-> names, duh?
+> >       oprofile: Free potentially owned tasks in case of errors
+> >       oprofile: Fix locking dependency in sync_start()
+> >       oprofile, dcookies: Fix possible circular locking dependency
 
-It's borderline security FUD because it suggests that keeping the 
-vsyscall around is in itself a security hole. As i outlined whether 
-there's *another* bug that *can be exploited* is highly dependent on 
-the usecase - while the Kconfig name made no such distinction. (For 
-example a device maker might choose to keep the option enabled in 
-some embedded usecase, those are pretty limited environments that 
-have few vectors of attack.)
+But oprofile/urgent is
 
-Anyway, repeating and explaining my arguments a dozen times did not 
-make any difference to you, and there's a point where i have to stop 
-wasting time on a person, so i've started filtering out your mails. 
-If you want to send me any patches then please send it to any of my 
-co-maintainers who will be able to review them.
+ fe47ae7f53e179d2ef6771024feb000cbb86640f (oprofile, dcookies: Fix possible circular locking dependency)
+
+Is this intended? Maybe a korg git sync issue?
 
 Thanks,
 
-	Ingo
+-Robert
+
+> > 
+> >  arch/x86/kernel/apic/apic.c      |    3 ++-
+> >  arch/x86/oprofile/op_model_amd.c |   13 +++++++++----
+> >  drivers/oprofile/buffer_sync.c   |   21 +++++++++++----------
+> >  fs/dcookies.c                    |    3 +++
+> >  4 files changed, 25 insertions(+), 15 deletions(-)
+> 
+> Pulled, thanks a lot Robert!
+> 
+> 	Ingo
+> 
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
