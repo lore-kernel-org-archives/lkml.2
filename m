@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab1FIV6M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 17:58:12 -0400
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:57853 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756529Ab1FIV6K (ORCPT
+	id S1756671Ab1FIV6X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 17:58:23 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:49959 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756425Ab1FIV6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 17:58:10 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3/3] mfd: clean-up ab8500 register file
-Date: Thu, 9 Jun 2011 23:57:57 +0200
-Message-ID: <1307656677-6889-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 9 Jun 2011 17:58:19 -0400
+From: Jay Vosburgh <fubar@us.ibm.com>
+To: Weiping Pan <panweiping3@gmail.com>
+cc: andy@greyhouse.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 net-next 0/5] bonding:use latest lacp_rate and ad_select and delete unused ad_timer and arp_mon_pt
+In-reply-to: <cover.1307603621.git.panweiping3@gmail.com>
+References: <cover.1307603621.git.panweiping3@gmail.com>
+Comments: In-reply-to Weiping Pan <panweiping3@gmail.com>
+   message dated "Thu, 09 Jun 2011 15:19:00 +0800."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.2.1
+Date: Thu, 09 Jun 2011 14:58:11 -0700
+Message-ID: <31665.1307656691@death>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+Weiping Pan <panweiping3@gmail.com> wrote:
 
-This adds a previously undefined test register and removed a
-number of double-defined accessory detect registers (they are
-already defined higher up in the file.
+>There is bug that when you modify lacp_rate via sysfs,
+>802.3ad won't use the new value of lacp_rate to transmit packets.
+>This is because port->actor_oper_port_state isn't changed.
+>
+>As for ad_select, it can work,
+>but both struct bond_params and ad_bond_info have lacp_fast and ad_select,
+>they are duplicate and need extra synchronization.
+>802.3ad can get them from bond_params directly every time.
+>
+>And ad_timer and arp_mon_pt aren't used any more, just delete them.
+>
+>changelog:
+>v2:
+>add bond_3ad_update_lacp_rate() as a helper function,
+>and hold bond->lock when iterates slave list.
+>
+>v3:
+>delete duplicate lacp_fast and agg_select_mode from struct ad_bond_info.
+>
+>v4:
+>delete unused ad_timer and arp_mon_pt.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- include/linux/mfd/ab8500.h |    8 +-------
- 1 files changed, 1 insertions(+), 7 deletions(-)
+	All patches in the series look reasonable.
 
-diff --git a/include/linux/mfd/ab8500.h b/include/linux/mfd/ab8500.h
-index b318430..838c6b4 100644
---- a/include/linux/mfd/ab8500.h
-+++ b/include/linux/mfd/ab8500.h
-@@ -28,6 +28,7 @@
- #define AB8500_INTERRUPT	0xE
- #define AB8500_RTC		0xF
- #define AB8500_MISC		0x10
-+#define AB8500_DEVELOPMENT	0x11
- #define AB8500_DEBUG		0x12
- #define AB8500_PROD_TEST	0x13
- #define AB8500_OTP_EMUL		0x15
-@@ -74,13 +75,6 @@
- #define AB8500_INT_ACC_DETECT_21DB_F	37
- #define AB8500_INT_ACC_DETECT_21DB_R	38
- #define AB8500_INT_GP_SW_ADC_CONV_END	39
--#define AB8500_INT_ACC_DETECT_1DB_F	33
--#define AB8500_INT_ACC_DETECT_1DB_R	34
--#define AB8500_INT_ACC_DETECT_22DB_F	35
--#define AB8500_INT_ACC_DETECT_22DB_R	36
--#define AB8500_INT_ACC_DETECT_21DB_F	37
--#define AB8500_INT_ACC_DETECT_21DB_R	38
--#define AB8500_INT_GP_SW_ADC_CONV_END	39
- #define AB8500_INT_GPIO6R		40
- #define AB8500_INT_GPIO7R		41
- #define AB8500_INT_GPIO8R		42
--- 
-1.7.3.2
+Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
 
+	-J
+
+
+
+>Weiping Pan (5):
+>  bonding: make 802.3ad use latest lacp_rate
+>  bonding:delete lacp_fast from ad_bond_info
+>  bonding:delete agg_select_mode from ad_bond_info
+>  bonding: delete unused ad_timer
+>  bonding: delete unused arp_mon_pt
+>
+> drivers/net/bonding/bond_3ad.c   |   41 ++++++++++++++++++++++++++++++++-----
+> drivers/net/bonding/bond_3ad.h   |    8 +-----
+> drivers/net/bonding/bond_main.c  |    3 +-
+> drivers/net/bonding/bond_sysfs.c |    1 +
+> drivers/net/bonding/bonding.h    |    1 -
+> 5 files changed, 39 insertions(+), 15 deletions(-)
+>
+>-- 
+>1.7.4.4
+>
