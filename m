@@ -1,65 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab1FISXk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 14:23:40 -0400
-Received: from mail.perches.com ([173.55.12.10]:2698 "EHLO mail.perches.com"
+	id S1752860Ab1FIS1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 14:27:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31528 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047Ab1FISXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 14:23:38 -0400
-Subject: [PATCH] vsprintf: Update %pI6c to not compress a single 0
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Murray <amurray@mpcdata.com>
-In-Reply-To: <1307642692-23556-1-git-send-email-amurray@mpcdata.com>
-References: <BANLkTik14_Zbfb3e9FXx_yUs35kBh6FqFg@mail.gmail.com>
-	 <1307642692-23556-1-git-send-email-amurray@mpcdata.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Jun 2011 11:23:37 -0700
-Message-ID: <1307643817.13329.32.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751047Ab1FIS1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 14:27:11 -0400
+Date: Thu, 9 Jun 2011 14:27:06 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: CFQ: async queue blocks the whole system
+Message-ID: <20110609182706.GG29913@redhat.com>
+References: <1307616577-6101-1-git-send-email-tm@tao.ma>
+ <20110609141451.GD29913@redhat.com>
+ <4DF0DD0F.8090407@tao.ma>
+ <20110609153738.GF29913@redhat.com>
+ <4DF0EA55.10209@tao.ma>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DF0EA55.10209@tao.ma>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RFC 5952 http://tools.ietf.org/html/rfc5952
-mandates that 2 or more consecutive 0's are
-required before using :: compression.
+On Thu, Jun 09, 2011 at 11:44:21PM +0800, Tao Ma wrote:
 
-Update ip6_compressed_string to match the RFC and
-update the http reference as well.
+[..]
+> > CFQ in general tries not to drive too deep a queue depth in an effort
+> > to improve latencies. CFQ is generally recommened for slow SATA drives
+> > and dispatching too many requests from a single queue can only serve to
+> > increase the latency.
+> ok, so do you mean that for a fast drive, cfq isn't recommended and
+> deadline is always prefered? ;) We have a SAS with queue_depth=128, so
+> it should be a fast drive I guess. :)
 
-Signed-off-by: Joe Perches <joe@perches.com>
+I think in general that has been true in my experience. SSDs are still
+ok with CFQ because that sets nonrotational flag and cuts down on 
+idling. But if it is a rotational media which can handle multiple
+parallel requests at a time you might have better throughput results
+with deadline.
+
+[..]
+> > Its latency vs throughput tradeoff.
+> ok, so it seems that all these are designed, not a bug. Thanks for the
+> clarification.
+> 
+> btw, reverting the patch doesn't work. I can still get the livelock.
+
+Can you give following patch a try and see if it helps. On my system this
+does allow CFQ to dispatch some writes once in a while.
+
+thanks
+Vivek
+
 ---
- lib/vsprintf.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ block/cfq-iosched.c |   25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index c112056..4365df3 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -666,6 +666,8 @@ char *ip6_compressed_string(char *p, const char *addr)
- 			colonpos = i;
- 		}
- 	}
-+	if (longest == 1)		/* don't compress a single 0 */
-+		colonpos = -1;
+Index: linux-2.6/block/cfq-iosched.c
+===================================================================
+--- linux-2.6.orig/block/cfq-iosched.c	2011-06-09 11:44:40.000000000 -0400
++++ linux-2.6/block/cfq-iosched.c	2011-06-09 14:04:01.036983301 -0400
+@@ -303,6 +303,8 @@ struct cfq_data {
  
- 	/* emit address */
- 	for (i = 0; i < range; i++) {
-@@ -826,7 +828,7 @@ int kptr_restrict __read_mostly;
-  *       IPv4 uses dot-separated decimal with leading 0's (010.123.045.006)
-  * - '[Ii]4[hnbl]' IPv4 addresses in host, network, big or little endian order
-  * - 'I6c' for IPv6 addresses printed as specified by
-- *       http://tools.ietf.org/html/draft-ietf-6man-text-addr-representation-00
-+ *       http://tools.ietf.org/html/rfc5952
-  * - 'U' For a 16 byte UUID/GUID, it prints the UUID/GUID in the form
-  *       "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-  *       Options for %pU are:
--- 
-1.7.6.rc0
-
-
-
+ 	/* Number of groups which are on blkcg->blkg_list */
+ 	unsigned int nr_blkcg_linked_grps;
++
++	unsigned long last_async_dispatched;
+ };
+ 
+ static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
+@@ -2063,6 +2065,10 @@ static void cfq_dispatch_insert(struct r
+ 
+ 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
+ 	cfqq->nr_sectors += blk_rq_sectors(rq);
++
++	if (!cfq_cfqq_sync(cfqq))
++		cfqd->last_async_dispatched = jiffies;
++
+ 	cfq_blkiocg_update_dispatch_stats(&cfqq->cfqg->blkg, blk_rq_bytes(rq),
+ 					rq_data_dir(rq), rq_is_sync(rq));
+ }
+@@ -3315,8 +3321,25 @@ cfq_should_preempt(struct cfq_data *cfqd
+ 	 * if the new request is sync, but the currently running queue is
+ 	 * not, let the sync request have priority.
+ 	 */
+-	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq))
++	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq)) {
++		unsigned long async_delay = 0;
++
++		async_delay = jiffies - cfqd->last_async_dispatched;
++
++		/*
++		 * CFQ is heavily loaded in favor of sync queues and that
++ 		 * can lead to starvation of async queues. If it has been
++ 		 * too long since last async request was dispatched, don't
++ 		 * preempt async queue
++ 		 *
++ 		 * Once we have per group async queues, this will need
++ 		 * modification.
++ 		 */
++		if (async_delay > 2 * HZ)
++			return false;
++
+ 		return true;
++	}
+ 
+ 	if (new_cfqq->cfqg != cfqq->cfqg)
+ 		return false;
