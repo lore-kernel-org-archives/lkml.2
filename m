@@ -1,153 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757597Ab1FINEw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 09:04:52 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33167 "EHLO hera.kernel.org"
+	id S1757620Ab1FINFT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 09:05:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33194 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754939Ab1FINEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 09:04:51 -0400
-Date: Thu, 9 Jun 2011 13:04:32 GMT
+	id S1757290Ab1FINFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 09:05:17 -0400
+Date: Thu, 9 Jun 2011 13:04:58 GMT
 From: tip-bot for Ralf Baechle <ralf@linux-mips.org>
-Message-ID: <tip-cb2455aa274b780802c593fecf115240a655d809@git.kernel.org>
+Message-ID: <tip-15f304b664c0d0a3e76ed3a9ce3615a86908babe@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         linux@arm.linux.org.uk, ralf@linux-mips.org, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         ralf@linux-mips.org, linux@arm.linux.org.uk, tglx@linutronix.de
-In-Reply-To: <20110601180610.134151920@duck.linux-mips.net>
-References: <20110601180610.134151920@duck.linux-mips.net>
+In-Reply-To: <20110601180610.221426078@duck.linux-mips.net>
+References: <20110601180610.221426078@duck.linux-mips.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/cleanup] i8253: Unify all kernel declarations of i8253_lock
-Git-Commit-ID: cb2455aa274b780802c593fecf115240a655d809
+Subject: [tip:timers/cleanup] i8253: Consolidate all kernel definitions of i8253_lock
+Git-Commit-ID: 15f304b664c0d0a3e76ed3a9ce3615a86908babe
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Jun 2011 13:04:32 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Jun 2011 13:04:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cb2455aa274b780802c593fecf115240a655d809
-Gitweb:     http://git.kernel.org/tip/cb2455aa274b780802c593fecf115240a655d809
+Commit-ID:  15f304b664c0d0a3e76ed3a9ce3615a86908babe
+Gitweb:     http://git.kernel.org/tip/15f304b664c0d0a3e76ed3a9ce3615a86908babe
 Author:     Ralf Baechle <ralf@linux-mips.org>
-AuthorDate: Wed, 1 Jun 2011 19:04:58 +0100
+AuthorDate: Wed, 1 Jun 2011 19:04:59 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Thu, 9 Jun 2011 15:01:38 +0200
 
-i8253: Unify all kernel declarations of i8253_lock
+i8253: Consolidate all kernel definitions of i8253_lock
+
+Move them to drivers/clocksource/i8253.c and remove the
+implementations in arch/
+
+[ tglx: Avoid the extra file in lib - folded arch patches in. The
+  export will become conditional in a later step ]
 
 Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Link: http://lkml.kernel.org/r/20110601180610.221426078@duck.linux-mips.net
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-mips@linux-mips.org
-Link: http://lkml.kernel.org/r/20110601180610.134151920@duck.linux-mips.net
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
 ---
- arch/arm/include/asm/i8253.h  |    9 ---------
- arch/mips/include/asm/i8253.h |   12 ------------
- arch/x86/include/asm/i8253.h  |   10 ----------
- include/linux/i8253.h         |   14 ++++++++++++++
- 4 files changed, 14 insertions(+), 31 deletions(-)
+ arch/arm/mach-footbridge/isa-timer.c |    2 --
+ arch/mips/kernel/i8253.c             |    3 ---
+ arch/x86/Kconfig                     |    1 +
+ arch/x86/kernel/i8253.c              |    3 ---
+ drivers/clocksource/Kconfig          |    6 ++++++
+ drivers/clocksource/Makefile         |    2 +-
+ drivers/clocksource/i8253.c          |   13 ++++++++++++-
+ init/Kconfig                         |    1 +
+ 8 files changed, 21 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/include/asm/i8253.h b/arch/arm/include/asm/i8253.h
-index 70656b6..5b41b92 100644
---- a/arch/arm/include/asm/i8253.h
-+++ b/arch/arm/include/asm/i8253.h
-@@ -1,15 +1,6 @@
- #ifndef __ASMARM_I8253_H
- #define __ASMARM_I8253_H
+diff --git a/arch/arm/mach-footbridge/isa-timer.c b/arch/arm/mach-footbridge/isa-timer.c
+index 3c7367b..71fd96d 100644
+--- a/arch/arm/mach-footbridge/isa-timer.c
++++ b/arch/arm/mach-footbridge/isa-timer.c
+@@ -19,8 +19,6 @@
  
--/* i8253A PIT registers */
--#define PIT_MODE	0x43
--#define PIT_CH0		0x40
--
- #define PIT_LATCH	((PIT_TICK_RATE + HZ / 2) / HZ)
+ #include "common.h"
  
--extern raw_spinlock_t i8253_lock;
+-DEFINE_RAW_SPINLOCK(i8253_lock);
 -
--#define outb_pit	outb_p
--#define inb_pit		inb_p
--
- #endif
-diff --git a/arch/mips/include/asm/i8253.h b/arch/mips/include/asm/i8253.h
-index 9ad0113..32ec1f0 100644
---- a/arch/mips/include/asm/i8253.h
-+++ b/arch/mips/include/asm/i8253.h
-@@ -5,20 +5,8 @@
- #ifndef __ASM_I8253_H
- #define __ASM_I8253_H
+ static void pit_set_mode(enum clock_event_mode mode,
+ 	struct clock_event_device *evt)
+ {
+diff --git a/arch/mips/kernel/i8253.c b/arch/mips/kernel/i8253.c
+index 82b5a9f..3d2ff57 100644
+--- a/arch/mips/kernel/i8253.c
++++ b/arch/mips/kernel/i8253.c
+@@ -16,9 +16,6 @@
+ #include <asm/io.h>
+ #include <asm/time.h>
  
--#include <linux/spinlock.h>
+-DEFINE_RAW_SPINLOCK(i8253_lock);
+-EXPORT_SYMBOL(i8253_lock);
 -
--/* i8253A PIT registers */
--#define PIT_MODE		0x43
--#define PIT_CH0			0x40
--#define PIT_CH2			0x42
--
- #define PIT_LATCH		LATCH
+ /*
+  * Initialize the PIT timer.
+  *
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index da34972..e6060a1 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -70,6 +70,7 @@ config X86
+ 	select IRQ_FORCED_THREADING
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+ 	select HAVE_BPF_JIT if (X86_64 && NET)
++	select I8253_LOCK
  
--extern raw_spinlock_t i8253_lock;
--
- extern void setup_pit_timer(void);
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS)
+diff --git a/arch/x86/kernel/i8253.c b/arch/x86/kernel/i8253.c
+index 3235550..9c92b6f 100644
+--- a/arch/x86/kernel/i8253.c
++++ b/arch/x86/kernel/i8253.c
+@@ -16,9 +16,6 @@
+ #include <asm/hpet.h>
+ #include <asm/smp.h>
  
--#define inb_pit inb_p
--#define outb_pit outb_p
+-DEFINE_RAW_SPINLOCK(i8253_lock);
+-EXPORT_SYMBOL(i8253_lock);
 -
- #endif /* __ASM_I8253_H */
-diff --git a/arch/x86/include/asm/i8253.h b/arch/x86/include/asm/i8253.h
-index 65aaa91..20480ce 100644
---- a/arch/x86/include/asm/i8253.h
-+++ b/arch/x86/include/asm/i8253.h
-@@ -1,20 +1,10 @@
- #ifndef _ASM_X86_I8253_H
- #define _ASM_X86_I8253_H
+ /*
+  * HPET replaces the PIT, when enabled. So we need to know, which of
+  * the two timers is used
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index 96c9219..330343b 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -1,5 +1,11 @@
+ config CLKSRC_I8253
+ 	bool
  
--/* i8253A PIT registers */
--#define PIT_MODE		0x43
--#define PIT_CH0			0x40
--#define PIT_CH2			0x42
++config I8253_LOCK
++	bool
++
++config CLKBLD_I8253
++	def_bool y if CLKSRC_I8253 || I8253_LOCK
++
+ config CLKSRC_MMIO
+ 	bool
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index b995942..7922a0c 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -6,5 +6,5 @@ obj-$(CONFIG_CS5535_CLOCK_EVENT_SRC)	+= cs5535-clockevt.o
+ obj-$(CONFIG_SH_TIMER_CMT)	+= sh_cmt.o
+ obj-$(CONFIG_SH_TIMER_MTU2)	+= sh_mtu2.o
+ obj-$(CONFIG_SH_TIMER_TMU)	+= sh_tmu.o
+-obj-$(CONFIG_CLKSRC_I8253)	+= i8253.o
++obj-$(CONFIG_CLKBLD_I8253)	+= i8253.o
+ obj-$(CONFIG_CLKSRC_MMIO)	+= mmio.o
+diff --git a/drivers/clocksource/i8253.c b/drivers/clocksource/i8253.c
+index 33735eb..e594f52 100644
+--- a/drivers/clocksource/i8253.c
++++ b/drivers/clocksource/i8253.c
+@@ -6,10 +6,20 @@
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
+ #include <linux/timex.h>
 -
- #define PIT_LATCH	LATCH
++#include <linux/module.h>
+ #include <linux/i8253.h>
  
--extern raw_spinlock_t i8253_lock;
--
- extern struct clock_event_device *global_clock_event;
- 
- extern void setup_pit_timer(void);
- 
--#define inb_pit		inb_p
--#define outb_pit	outb_p
--
- #endif /* _ASM_X86_I8253_H */
-diff --git a/include/linux/i8253.h b/include/linux/i8253.h
-index d2cba88..13048d3 100644
---- a/include/linux/i8253.h
-+++ b/include/linux/i8253.h
-@@ -2,10 +2,24 @@
-  * This file is subject to the terms and conditions of the GNU General Public
-  * License.  See the file "COPYING" in the main directory of this archive
-  * for more details.
+ /*
++ * Protects access to I/O ports
 + *
-+ *  Machine specific IO port address definition for generic.
-+ *  Written by Osamu Tomita <tomita@cinet.co.jp>
-  */
- #ifndef __LINUX_I8253_H
- #define __LINUX_I8253_H
- 
-+#include <linux/spinlock.h>
- #include <asm/i8253.h>
- 
-+/* i8253A PIT registers */
-+#define PIT_MODE	0x43
-+#define PIT_CH0		0x40
-+#define PIT_CH2		0x42
++ * 0040-0043 : timer0, i8253 / i8254
++ * 0061-0061 : NMI Control Register which contains two speaker control bits.
++ */
++DEFINE_RAW_SPINLOCK(i8253_lock);
++EXPORT_SYMBOL(i8253_lock);
 +
-+#define inb_pit         inb_p
-+#define outb_pit        outb_p
-+
-+extern raw_spinlock_t i8253_lock;
-+
- #endif /* __LINUX_I8253_H */
++#ifdef CONFIG_CLKSRC_I8253
++/*
+  * Since the PIT overflows every tick, its not very useful
+  * to just read by itself. So use jiffies to emulate a free
+  * running counter:
+@@ -86,3 +96,4 @@ int __init clocksource_i8253_init(void)
+ {
+ 	return clocksource_register_hz(&i8253_cs, PIT_TICK_RATE);
+ }
++#endif
+diff --git a/init/Kconfig b/init/Kconfig
+index ebafac4..2d2ef44 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1002,6 +1002,7 @@ config ELF_CORE
+ config PCSPKR_PLATFORM
+ 	bool "Enable PC-Speaker support" if EXPERT
+ 	depends on ALPHA || X86 || MIPS || PPC_PREP || PPC_CHRP || PPC_PSERIES
++	select I8253_LOCK
+ 	default y
+ 	help
+           This option allows to disable the internal PC-Speaker
