@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023Ab1FITdr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 15:33:47 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56839 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754692Ab1FITdm (ORCPT
+	id S1754936Ab1FITdF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 15:33:05 -0400
+Received: from outmail004.snc4.facebook.com ([66.220.144.136]:62122 "EHLO
+	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754696Ab1FITdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 15:33:42 -0400
-Date: Thu, 9 Jun 2011 12:32:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: NeilBrown <neilb@suse.de>, Miklos Szeredi <miklos@szeredi.hu>,
-        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nbd@openwrt.org, hramrach@centrum.cz, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, mszeredi@suse.cz
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-Message-Id: <20110609123220.6afb9d0f.akpm@linux-foundation.org>
-In-Reply-To: <20110609134947.GD13242@shadowen.org>
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
-	<20110608153208.dc705cda.akpm@linux-foundation.org>
-	<20110609115934.3c53f78f@notabene.brown>
-	<20110608205233.ebfedc4d.akpm@linux-foundation.org>
-	<20110609134947.GD13242@shadowen.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Jun 2011 15:33:02 -0400
+Date: Thu, 9 Jun 2011 12:33:00 -0700
+From: Arun Sharma <asharma@fb.com>
+To: Sam Liao <phyomh@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] [perf] Add inverted call graph report support.
+Message-ID: <20110609193300.GA16858@dev1756.snc6.facebook.com>
+References: <BANLkTi=svHgWzyKiEHjMc-j5Hq4y5R8Mow@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=svHgWzyKiEHjMc-j5Hq4y5R8Mow@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jun 2011 14:49:47 +0100
-Andy Whitcroft <apw@canonical.com> wrote:
-
-> On Wed, Jun 08, 2011 at 08:52:33PM -0700, Andrew Morton wrote:
+On Thu, Jun 09, 2011 at 02:44:19PM +0800, Sam Liao wrote:
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -247,9 +247,14 @@ int perf_session__resolve_callchain(struct
+> perf_session *self,
+>  	callchain_cursor_reset(&self->callchain_cursor);
 > 
-> > > > This sort of thing could be implemented in userspace and wired up via
-> > > > fuse, I assume.  Has that been attempted and why is it inadequate?
-> > > 
-> > > I think that would be a valid question if the proposal was large and
-> > > complex.  But overlayfs is really quite small and self-contained.
-> > 
-> > Not merging it would be even smaller and simpler.  If there is a
-> > userspace alternative then that option should be evaluated and compared
-> > in a rational manner.
+>  	for (i = 0; i < chain->nr; i++) {
+> -		u64 ip = chain->ips[i];
+> +		u64 ip;
+>  		struct addr_location al;
 > 
-> For the Ubuntu liveCD we have tried to use unions via fuse with a view
-> to dropping aufs2 as an external module.  The performance was atrocious
-> (IIRC of the order of 10x slower), to the point that most people assumed
-> it was broken and reset the machine.
+> +		if (callchain_param.order == ORDER_CALLEE)
+> +			ip = chain->ips[i];
+> +		else
+> +			ip = chain->ips[chain->nr - i - 1];
 
-On Thu, 9 Jun 2011 15:57:48 +0200
-Michal Suchanek <hramrach@centrum.cz> wrote:
+This can dereference a bad pointer if chain->nr == 0.
 
-> The problem with the userspace alternative is that it does not work. I
-> tried to run my live CD on top of unionfs-fuse and the filesystem
-> would fail intermittently leading to random errors during boot.
-
-
-If the implementation is slow or buggy then the appropriate action is
-to speed it up and to fix the bugs, so these are just non-arguments,
-IMO.
-
-If it is demonstrated that the userspace implementation simply cannot
-ever have acceptable performance then OK, we have an argument for a
-kernel driver.
+ -Arun
