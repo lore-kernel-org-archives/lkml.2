@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750895Ab1FIELE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 00:11:04 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33922 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725Ab1FIELC (ORCPT
+	id S1751059Ab1FIE0u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 00:26:50 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45826 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab1FIE0t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 00:11:02 -0400
+	Thu, 9 Jun 2011 00:26:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=Nz0dW5DZ0cAenUhMPySCf+DdieKkEpoCGCdrWs9aHkZZfBzcZG/YMJy/G2Q0YU4ef4
-         eNJ/jHnPcRn9S9rygMWWtHjk+t6E+jf5My7n4nDxMosEys/RlAqZ0qDBnxUeBHexyyXY
-         y2A8K8ERfVtQB0dii3cQeAR7FU++Bo6ggJ6wE=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=YoicAuMES3mBomVYXuUK6btsao/5Lk/THL6kZJSn9xeZGzIgogQN/2kUeS6E0U/F5G
+         EQwIpMXyxRV7O150y5MT35bKVux7X0st9JDsFD62ige3i/30u352Y01pmZgd83v3gWBk
+         YCJXcG/FBGeFRSfW9ql7MfIgnGO75e//ITs7U=
 MIME-Version: 1.0
-In-Reply-To: <1307591659.3980.37.camel@edumazet-laptop>
-References: <20110609004435.14550.qmail@science.horizon.com>
- <4DF037C6.4000507@linux.intel.com> <BANLkTik62dLMf5PCPGeW=9P=sF2QcnW42g@mail.gmail.com>
- <1307591659.3980.37.camel@edumazet-laptop>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 9 Jun 2011 00:10:41 -0400
-X-Google-Sender-Auth: a7zX-uw2GiByBgVkdn8Lf6WJH_g
-Message-ID: <BANLkTi=E9gR3JHa4ipHHGGR2AiO9xJri=A@mail.gmail.com>
-Subject: Re: Change in functionality of futex() system call.
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Darren Hart <dvhart@linux.intel.com>, George Spelvin <linux@horizon.com>,
-        david@rgmadvisors.com, kyle@moffetthome.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110609030401.GA2615@gmail.com>
+References: <20110609030401.GA2615@gmail.com>
+Date: Wed, 8 Jun 2011 21:26:46 -0700
+Message-ID: <BANLkTim_=2kWXAzkECC4A3t9uxGERwBU7g@mail.gmail.com>
+Subject: Re: [PATCH RESEND]Remove a warning for drivers/edac/i82975x_edac.c
+From: Connor Hansen <cmdkhh@gmail.com>
+To: linux-kernel@vger.kernel.org, ravi@jetztechnologies.com,
+        arvino55@gmail.com, greg@kroah.com, akpm@linux-foundation.org,
+        randy.dunlap@oracle.com, joe@perches.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 8, 2011 at 11:54 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+When I compile 3.0.0-rc2+ I don't get this warning.
+please make sure this issue still exists.
+
+Connor
+
+On Wed, Jun 8, 2011 at 8:04 PM, Harry Wei <jiaweiwei.xiyou@gmail.com> wrote:
+> From: Harry Wei <harryxiyou@gmail.com>
 >
-> You can not prevent DOS on a machine if you allow a process to RO map
-> your critical files (where you put futexes), because you allow this
-> process to interfere with critical cache lines bouncing between cpus.
-
-The cacheline bounce DoS slows things down and they go back to normal
-when you kill the DoS-ing task.
-
-The wakeup-eating DoS is permanent.  Seems a good deal worse to me.
-
-If you make this change, please at least document it in the man page.
-
+> When i compile 2.6.39.1, a warning shows like below.
+> This patch can fix the warning. And i works well with
+> my PC.
 >
-> Really, please forget about this crazy idea of allowing foreigners to
-> _read_ or memory _map_ your files. Dont do it.
+> [...]
+> CC [M]  drivers/edac/e752x_edac.o
+> CC [M]  drivers/edac/i82875p_edac.o
+> CC [M]  drivers/edac/i82975x_edac.o
+> drivers/edac/i82975x_edac.c: In function ���i82975x_process_error_info���:
+> drivers/edac/i82975x_edac.c:298: warning: integer constant is too large for ���unsigned long��� type
+> CC [M]  drivers/edac/i3000_edac.o
+> CC [M]  drivers/edac/i3200_edac.o
+> CC [M]  drivers/edac/x38_edac.o
+> CC [M]  drivers/edac/i82860_edac.o
+> [...]
 >
-
-Then how am I supposed to efficiently broadcast information to
-untrusted processes?  I'll have to put any futexes involved into
-different files, but one way or another the actual data will have to
-be memory mapped to avoid syscall overhead.
-
---Andy
+>
+> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+> Index: prj/drivers/edac/i82975x_edac.c
+> ===================================================================
+> --- prj.orig/drivers/edac/i82975x_edac.c        2011-06-04 10:09:55.351174516 +0800
+> +++ prj/drivers/edac/i82975x_edac.c     2011-06-04 10:10:30.875168437 +0800
+> @@ -293,9 +293,9 @@
+>                info->errsts = info->errsts2;
+>        }
+>
+> -       page = (unsigned long) info->eap;
+> +       page = (unsigned long long) info->eap;
+>        if (info->xeap & 1)
+> -               page |= 0x100000000ul;
+> +               page |= 0x100000000ull;
+>        chan = page & 1;
+>        page >>= 1;
+>        offst = page & ((1 << PAGE_SHIFT) - 1);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
