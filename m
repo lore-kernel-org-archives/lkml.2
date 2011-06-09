@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab1FIURF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 16:17:05 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56480 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755887Ab1FIURC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 16:17:02 -0400
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-From: Miklos Szeredi <mszeredi@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>, NeilBrown <neilb@suse.de>,
-        Miklos Szeredi <miklos@szeredi.hu>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nbd@openwrt.org, hramrach@centrum.cz, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu
-In-Reply-To: <BANLkTimTyYp1P4qd8awvsq6PVZn1TQ5A-Q@mail.gmail.com>
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
-	 <20110608153208.dc705cda.akpm@linux-foundation.org>
-	 <20110609115934.3c53f78f@notabene.brown>
-	 <20110608205233.ebfedc4d.akpm@linux-foundation.org>
-	 <20110609134947.GD13242@shadowen.org>
-	 <20110609123220.6afb9d0f.akpm@linux-foundation.org>
-	 <BANLkTimTyYp1P4qd8awvsq6PVZn1TQ5A-Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Jun 2011 22:17:22 +0200
-Message-ID: <1307650642.9874.10.camel@tucsk.pomaz.szeredi.hu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	id S1755757Ab1FIUU3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 16:20:29 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:38095 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755102Ab1FIUUZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 16:20:25 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4DF12A94.6070605@freescale.com>
+Date: Thu, 9 Jun 2011 15:18:28 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linuxppc-dev@lists.ozlabs.org>, <alan@lxorguk.ukuu.org.uk>,
+        <kumar.gala@freescale.com>, <benh@kernel.crashing.org>,
+        <greg@kroah.com>, <akpm@kernel.org>, <cmetcalf@tilera.com>,
+        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>,
+        <linux-console@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH 7/7] [v5] drivers/virt: introduce Freescale hypervisor
+ management driver
+References: <1307646794-26374-1-git-send-email-timur@freescale.com> <201106092213.13755.arnd@arndb.de>
+In-Reply-To: <201106092213.13755.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-09 at 12:40 -0700, Linus Torvalds wrote:
-> On Thu, Jun 9, 2011 at 12:32 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> >
-> > If the implementation is slow or buggy then the appropriate action is
-> > to speed it up and to fix the bugs, so these are just non-arguments,
-> > IMO.
+Arnd Bergmann wrote:
+> As mentioned, it would be easier and more readable to just do
 > 
-> Umm.
+> 	switch(cmd) {
+> 	case FSL_HV_IOCTL_PARTITION_RESTART:
+> 		...
 > 
-> "userspace filesystem"?
+> 	case FSL_HV_IOCTL_PARTITION_GET_STATUS;
+> 		...
 > 
-> The problem is right there. Always has been. People who think that
-> userspace filesystems are realistic for anything but toys are just
-> misguided.
-> 
-> fuse works fine if the thing being exported is some random low-use
-> interface to a fundamentally slow device. But for something like your
-> root filesystem? Nope. Not going to happen.
+> There is no need to check the bits individually when you can simply
+> compare the command number.
 
-It's a tradeoff between speed and ease of development.
+But this will break backwards compatibility with older applications that used
+the union as the size parameter.  Although these applications won't compile with
+the new header file, older already-compiled applications still work.
 
-NTFS has been doing nicely in userspace for almost half a decade.  It's
-not as fast as a kernel driver _could_ be, but it's faster than _the_
-kernel driver.
+I will eventually update the applications to use the new header file, and at
+that point I will modify the switch statement as you suggest.  But until then,
+I'd like to keep the code as-is.
 
-And there's room for improvement.  The fact is (and you know it) the
-speed of filesystems mainly comes from caching not from the filesystem
-itself, so whether it's in userspace or in kernelspace matters not all
-that much in the end.
+>> > +enum fsl_hv_ioctl_cmd {
+>> > +       FSL_HV_IOCTL_PARTITION_RESTART = _IOWR(0, 1, struct fsl_hv_ioctl_restart),
+>> > +       FSL_HV_IOCTL_PARTITION_GET_STATUS = _IOWR(0, 2, struct fsl_hv_ioctl_status),
+>> > +       FSL_HV_IOCTL_PARTITION_START = _IOWR(0, 3, struct fsl_hv_ioctl_start),
+>> > +       FSL_HV_IOCTL_PARTITION_STOP = _IOWR(0, 4, struct fsl_hv_ioctl_stop),
+>> > +       FSL_HV_IOCTL_MEMCPY = _IOWR(0, 5, struct fsl_hv_ioctl_memcpy),
+>> > +       FSL_HV_IOCTL_DOORBELL = _IOWR(0, 6, struct fsl_hv_ioctl_doorbell),
+>> > +       FSL_HV_IOCTL_GETPROP = _IOWR(0, 7, struct fsl_hv_ioctl_prop),
+>> > +       FSL_HV_IOCTL_SETPROP = _IOWR(0, 8, struct fsl_hv_ioctl_prop),
+>> > +};
 
-> So Andrew, I think that arguing that something _can_ be done with
-> fuse, and thus _should_ be done with fuse is just ridiculous. That's
-> like saying you should do a microkernel - it may sound nice on paper,
-> but it's a damn stupid idea for people who care more about some idea
-> than they care about reality.
+> Using a #define here is usually preferred because then you can use #ifdef in a user
+> application to check if a given value has been assigned.
 
-I think it isn't ridiculous, but here the tradeoffs might be in favor of
-a kernel based solution.  And I'm saying that after having done both.
+You're right -- I had enum on the brain.
 
-Thanks,
-Miklos
+> More importantly, the code you have chose (0) conflicts with existing drivers
+> (frame buffer, scsi and wavefront among others). Please chose a free one and
+> add it to Documentation/ioctl/ioctl-number.txt in the same patch.
 
+Ok, I was really hoping to avoid doing this.  Like I said, binary compatibility
+is important, and changing the type will break my existing apps.  Are you
+insisting that I pick a new number?
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
 
