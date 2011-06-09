@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab1FISxH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 14:53:07 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56431 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753878Ab1FISxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 14:53:04 -0400
-Date: Thu, 9 Jun 2011 11:52:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
-        thomas.abraham@linaro.org
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110609185259.GA29287@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
- <20110528005640.9076c0b1.akpm@linux-foundation.org>
+	id S1754517Ab1FISz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 14:55:26 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:20200 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751205Ab1FISzW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 14:55:22 -0400
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4DF11715.5030001@freescale.com>
+Date: Thu, 9 Jun 2011 13:55:17 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110528005640.9076c0b1.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linuxppc-dev@lists.ozlabs.org>, <alan@lxorguk.ukuu.org.uk>,
+        <kumar.gala@freescale.com>, <benh@kernel.crashing.org>,
+        <greg@kroah.com>, <akpm@kernel.org>, <cmetcalf@tilera.com>,
+        <konrad.wilk@oracle.com>, <dsaxena@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <linux-console@vger.kernel.org>
+Subject: Re: [PATCH 7/7] [v4] drivers/virt: introduce Freescale hypervisor
+ management driver
+References: <1307573154-15838-1-git-send-email-timur@freescale.com> <201106090929.23671.arnd@arndb.de>
+In-Reply-To: <201106090929.23671.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 28, 2011 at 12:56:40AM -0700, Andrew Morton wrote:
-> On Fri, 27 May 2011 18:01:28 +0530 Ankita Garg <ankita@in.ibm.com> wrote:
-> 
-> > This patchset proposes a generic memory regions infrastructure that can be
-> > used to tag boundaries of memory blocks which belongs to a specific memory
-> > power management domain and further enable exploitation of platform memory
-> > power management capabilities.
-> 
-> A couple of quick thoughts...
-> 
-> I'm seeing no estimate of how much energy we might save when this work
-> is completed.  But saving energy is the entire point of the entire
-> patchset!  So please spend some time thinking about that and update and
-> maintain the [patch 0/n] description so others can get some idea of the
-> benefit we might get from all of this.  That estimate should include an
-> estimate of what proportion of machines are likely to have hardware
-> which can use this feature and in what timeframe.
-> 
-> IOW, if it saves one microwatt on 0.001% of machines, not interested ;)
+Arnd Bergmann wrote:
+> Then get rid of all the code that takes apart the ioctl command numbers
+> again and just do a switch/case based on the command.
 
-FWIW, I have seen estimates on the order of a 5% reduction in power
-consumption for some common types of embedded devices.
+I still need to keep that code to maintain binary compatibility with existing
+applications that pass the union as a parameter.
 
-							Thanx, Paul
+I'll fix that after we've updated the applications.  But we have a
+chicken-or-the-egg problem where we need the same application to work with the
+new and old ioctl interface for a period of time.
 
-> Also, all this code appears to be enabled on all machines?  So machines
-> which don't have the requisite hardware still carry any additional
-> overhead which is added here.  I can see that ifdeffing a feature like
-> this would be ghastly but please also have a think about the
-> implications of this and add that discussion also.  
-> 
-> If possible, it would be good to think up some microbenchmarks which
-> probe the worst-case performance impact and describe those and present
-> the results.  So others can gain an understanding of the runtime costs.
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
+
