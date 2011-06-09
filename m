@@ -1,41 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab1FIP44 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 11:56:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58577 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753886Ab1FIP4w (ORCPT
+	id S1754441Ab1FIP5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 11:57:18 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:14861 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754171Ab1FIP5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 11:56:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTimAR8ou0dwX_uB8g4pQQtu0+V5k5w@mail.gmail.com>
-References: <4DEFD979.50405@tilera.com> <1307607243-5737-1-git-send-email-minipli@googlemail.com>
- <20110609104017.GW11521@ZenIV.linux.org.uk> <BANLkTimAR8ou0dwX_uB8g4pQQtu0+V5k5w@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 9 Jun 2011 08:56:00 -0700
-Message-ID: <BANLkTimVZxa2pvBqzC3RCg+2o_HzHcwtVQ@mail.gmail.com>
-Subject: Re: [PATCH] init: use KERNEL_DS when trying to start init process
-To: Mathias Krause <minipli@googlemail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Chris Metcalf <cmetcalf@tilera.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Zankel <chris@zankel.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 9 Jun 2011 11:57:15 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6371"; a="96645562"
+From: Tatyana Brokhman <tlinder@codeaurora.org>
+To: greg@kroah.com
+Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        ablay@codeaurora.org, Tatyana Brokhman <tlinder@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v2] usb:dummy_hcd: Force FS device connection according to module parameter
+Date: Thu,  9 Jun 2011 18:56:47 +0300
+Message-Id: <1307635009-5741-1-git-send-email-tlinder@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 5:06 AM, Mathias Krause <minipli@googlemail.com> wrote:
->
-> ...Albeit by looking closer at the implementation of flush_old_exec()
-> I think we should just move the set_fs() call there and remove it from
-> the architecture dependent implementations of flush_thread() and
-> start_thread().
+This patch adds a new module parameter to dummy_hcd: is_high_speed
+When set to false the connected device will be forced to operate in FS
+mode. The default of this parameter is true.
 
-Yeah, that sounds like the sane (and safe - it won't matter if there
-are some architectures that get overlooked and then have a duplicate
-set_fs() somewhere) approach.
+Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 
-                              Linus
+---
+ drivers/usb/gadget/dummy_hcd.c |   20 +++++++++++++++-----
+ 1 files changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
+index f0cdd13..cb1e0fa 100644
+--- a/drivers/usb/gadget/dummy_hcd.c
++++ b/drivers/usb/gadget/dummy_hcd.c
+@@ -72,13 +72,17 @@ MODULE_LICENSE ("GPL");
+ 
+ struct dummy_hcd_module_parameters {
+ 	bool is_super_speed;
++	bool is_high_speed;
+ };
+ 
+ static struct dummy_hcd_module_parameters mod_data = {
+-	.is_super_speed = false
++	.is_super_speed = false,
++	.is_high_speed = true,
+ };
+ module_param_named(is_super_speed, mod_data.is_super_speed, bool, S_IRUGO);
+ MODULE_PARM_DESC(is_super_speed, "true to simulate SuperSpeed connection");
++module_param_named(is_high_speed, mod_data.is_high_speed, bool, S_IRUGO);
++MODULE_PARM_DESC(is_high_speed, "true to simulate HighSpeed connection");
+ /*-------------------------------------------------------------------------*/
+ 
+ /* gadget side driver data structres */
+@@ -904,12 +908,15 @@ usb_gadget_probe_driver(struct usb_gadget_driver *driver,
+ 	dum->gadget.ep0 = &dum->ep [0].ep;
+ 	if (mod_data.is_super_speed)
+ 		dum->gadget.speed = driver->speed;
+-	else
++	else if (mod_data.is_high_speed)
+ 		dum->gadget.speed = min((u8)USB_SPEED_HIGH, (u8)driver->speed);
++	else
++		dum->gadget.speed = USB_SPEED_FULL;
+ 	if (dum->gadget.speed < driver->speed)
+-		dev_dbg(udc_dev(dum), "This device can perform faster if"
+-				      " you connect it to a "
+-				      "SupeSpeed port...\n");
++		dev_dbg(udc_dev(dum), "This device can perform faster"
++				" if you connect it to a %s port...\n",
++			(driver->speed == USB_SPEED_SUPER ?
++			 "SuperSpeed" : "HighSpeed"));
+ 
+ 	if (dum->gadget.speed == USB_SPEED_SUPER) {
+ 		for (i = 0; i < DUMMY_ENDPOINTS; i++)
+@@ -2417,6 +2424,9 @@ static int __init init (void)
+ 	if (usb_disabled ())
+ 		return -ENODEV;
+ 
++	if (!mod_data.is_high_speed && mod_data.is_super_speed)
++		return -EINVAL;
++
+ 	the_hcd_pdev = platform_device_alloc(driver_name, -1);
+ 	if (!the_hcd_pdev)
+ 		return retval;
+-- 
+1.7.3.3
+
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
