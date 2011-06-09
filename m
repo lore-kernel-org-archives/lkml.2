@@ -1,331 +1,575 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab1FINAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 09:00:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35369 "EHLO mx1.redhat.com"
+	id S1757574Ab1FINBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 09:01:24 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43411 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757290Ab1FINAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 09:00:01 -0400
-Date: Thu, 9 Jun 2011 14:59:46 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: "Amir G." <amir73il@users.sourceforge.net>
-cc: Lukas Czerner <lczerner@redhat.com>,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>, linux-ext4@vger.kernel.org,
-        tytso@mit.edu, linux-kernel@vger.kernel.org, sandeen@redhat.com
-Subject: Re: [PATCH v1 00/30] Ext4 snapshots
-In-Reply-To: <BANLkTin0RKZbDmB1movombH9o4HDpTnvFw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1106091443370.4138@dhcp-27-109.brq.redhat.com>
-References: <1307459283-22130-1-git-send-email-amir73il@users.sourceforge.net> <alpine.LFD.2.00.1106071735100.11385@dhcp-27-109.brq.redhat.com> <BANLkTikAB-RDDS8PMMrFK-OuY6PuavBixA@mail.gmail.com> <alpine.LFD.2.00.1106081114240.5026@dhcp-27-109.brq.redhat.com>
- <BANLkTi=T1OtyRSWNTA6xhkTy5uaHWqA_XA@mail.gmail.com> <alpine.LFD.2.00.1106081716200.6609@dhcp-27-109.brq.redhat.com> <BANLkTikUXdvMQROYEdxnyfcPuB0e9ozMOg@mail.gmail.com> <BANLkTinU9Hegr3iA5it2vNjE_RYbB+8+RQ@mail.gmail.com> <BANLkTik9Mnq5yqK795pxyr8SK-3EOzzNhA@mail.gmail.com>
- <alpine.LFD.2.00.1106090834270.4138@dhcp-27-109.brq.redhat.com> <BANLkTi=fugrRE0P5m8nMPrH_kZqPZB7ajA@mail.gmail.com> <alpine.LFD.2.00.1106091012030.4138@dhcp-27-109.brq.redhat.com> <BANLkTin0RKZbDmB1movombH9o4HDpTnvFw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757242Ab1FINBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 09:01:22 -0400
+Date: Thu, 9 Jun 2011 15:01:19 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [PATCHv2] kconfig: introduce specialized printer
+Message-ID: <20110609130119.GD4612@sepie.suse.cz>
+References: <4D10D7DF.7040903@suse.cz>
+ <1305517329-7558-1-git-send-email-lacombar@gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2107359872-1307624390=:4138"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1305517329-7558-1-git-send-email-lacombar@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sun, May 15, 2011 at 11:42:09PM -0400, Arnaud Lacombe wrote:
+> Make conf_write_symbol() grammar agnostic to be able to use it from different
+> code path. These path pass a printer callback which will print a symbol's name
+> and its value in different format.
+> 
+> conf_write_symbol()'s job become mostly only to prepare a string for the
+> printer. This avoid to have to pass specialized flag to generic
+> functions
+> 
+> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+> ---
+>  scripts/kconfig/confdata.c  |  268 +++++++++++++++++++++++++++----------------
+>  scripts/kconfig/lkc.h       |    5 +
+>  scripts/kconfig/lkc_proto.h |    1 +
+>  scripts/kconfig/symbol.c    |   46 +++++++-
+>  4 files changed, 219 insertions(+), 101 deletions(-)
+> 
+> History:
+> v2: Address Michal's comment in msg-id <4D10D7DF.7040903@suse.cz>:
+>  - add brief comment before each printer
+>  - introduce a `skip_unset' variable in kconfig printer
+>  - merge inner switch in an if() statement
+>  - annotate fallthrough
+>  - fix tristate printer behavior
 
---8323328-2107359872-1307624390=:4138
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Hi,
 
-On Thu, 9 Jun 2011, Amir G. wrote:
+below is my merge with current kbuild-2.6.git#kconfig, notably with the
+config_is_xxx() stuff (which we should finalize somehow, but that's not
+the point here). Please review, thanks.
 
-> On Thu, Jun 9, 2011 at 11:46 AM, Lukas Czerner <lczerner@redhat.com> wrote:
-> > On Thu, 9 Jun 2011, Amir G. wrote:
-> >
-> >> On Thu, Jun 9, 2011 at 9:50 AM, Lukas Czerner <lczerner@redhat.com> wrote:
-> >> > On Thu, 9 Jun 2011, Yongqiang Yang wrote:
-> >> >
-> >> >> On Thu, Jun 9, 2011 at 11:18 AM, Amir G. <amir73il@users.sourceforge.net> wrote:
-> >> >> > On Thu, Jun 9, 2011 at 4:59 AM, Yongqiang Yang <xiaoqiangnk@gmail.com> wrote:
-> >> >> >>> But I do understand the difference. And also, when it comes to fs level
-> >> >> >>> snapshotting I would suspect that it would do something we can not do
-> >> >> >>> with the current solutions, for example per-file or per-directory snapshots,
-> >> >> >>> cat ext4 snapshots do that ?
-> >> >> >> Hi Lukas,
-> >> >> >>
-> >> >> >> I noticed that there is no answer to this question in the thread.  I
-> >> >> >
-> >> >> > I think I answered this question with No it can't ;-)
-> >> >> I think this can be implemented easily by chattr and adding check in
-> >> >> should_snapshot() or should_move_data().
-> >> >>
-> >> >> And I thought Lukas are focusing on if ext4-snapshots can do this
-> >> >> easily.  So i said YES:-)
-> >> >
-> >> > Cool, finally something interesting :). So, how it'll work ? Does that
-> >> > require any format changes again:) ? Can you exclude the whole root and
-> >> > then selectively pick the directories or files you are interested in ?
-> >>
-> >> The design is actually very simple and not as powerful as you
-> >> probably desire.
-> >> I hate to get into the design of future features, when we haven't
-> >> even ACKed the current feature yet, but since you're the only one
-> >> did any review, I owe you that much ;-)
-> >
-> > Thanks Amir!
-> >
-> > You have to understand that I am still not convinced that ext4 snapshot
-> > in its current state is really what we want to have in ext4. Especially
-> > given the very basic features it provides, without any knowledge on how
-> > it can be extended (but you're slowly providing that information, so
-> > thanks for that). And especially facing the new dm-multisnap, I really
-> > wonder if it is worth it.
-> 
-> Did you not see my post on LVM vs. Ext4 snapshots?
-> https://lkml.org/lkml/2011/6/8/296
-> dm-multisnap is much better than dm-snap, but it's not perfect.
-> And ext4 snapshots aren't perfect either, but they do bring some
-> new interesting options for sys admins.
-> 
-> >
-> > If we want filesystem level snapshotting we can try to do it right with
-> > all the benefits that snapshots on that level brings. But what I see
-> > now, is not even remotely the case. And I have the feeling that all the
-> > features that might be interesting for snapshotting at file system
-> > level, are just a hack and not inherent from the design. But that is
-> > probably because your goal was to snapshot the whole filesystem for the
-> > backup purposes, but that's not what I would expect from fs level
-> > snapshots. I really hope you understand my point.
-> >
-> 
-> I think I understand the point. The reason that ext4 snapshots are
-> less powerful then, say, btrfs snapshots, is not because of my design,
-> it is because I was building on top a 20 year old on-disk format (ext2), which
-> was extended 2 times already, but remained mostly backwards compatible.
-> There is only so much you can do without block reference counts and this
-> is all that I was trying to do.
 
-And I can imagine it works well enough. But given that we have better,
-more generic solution, which does not require hacking stable filesystem
-I am becoming more and more against ext4 snapshots to be merged. And if
-anyone wishes to have some fancy fs level snapshoting features (which
-ext4 snapshots can no provide from the resons you have pointed out), you
-can always turn to btrfs, which has been designed that way unlike ext4.
+Subject: [PATCH] kconfig: introduce specialized printer
 
-> 
-> 
-> >>
-> >> To exclude a file from snapshot it needs to have the NOCOW_FL flag.
-> >> Ironically, btrfs have already added that flag in parallel to me (for the
-> >> same purpose) so the flag it is already reserved in the code :-)
-> >>
-> >> To avoid some transition issues and keep it really simple,
-> >> I disallow changing the NOCOW_FL
-> >> for regular file and only allow to change it for directories.
-> >> The NOCOW_FL is inherited from the parent directory,
-> >> so setting/clearing the flag on a directory means:
-> >> "All files/subdirs will be created excluded/not-excluded from now on".
-> >>
-> >> Inside the snapshot image, excluded directories, which are not really
-> >> excluded, show normally, but excluded files are shown with zero length,
-> >> because making the files disappear is hard, but their blocks may have already
-> >> been reused, so we cannot allow access to them.
-> >>
-> >> >
-> >> > How does rollback work with ext4 snapshots ? Can you selectively roll
-> >> > back one file, or the whole directory subtree even when you're
-> >> > snapshotting more ?
-> >>
-> >> So there is actually no inherent "rollback" feature, not for a file/dir
-> >> and not for the entire fs.
-> >> It's a drawback of ext4 snapshots, but hey, cp/rsync from snapshot
-> >> still works for file/dir ;-)
-> >> As for full "fs" rollback. A revert tool has been developed (by students),
-> >> which requires an external storage to export the "revert patch".
-> >> This tool is going to be enhanced to use LVM snapshot storage
-> >> and LVM --merge option to implement ext4 "revert to snapshot" with Yum.
-> >
-> > And that is the problem. Because at this level you should be able to do
-> > it without very much trouble, because being at file system level you
-> > should have all the information. Do not get me wrong, I am not saying
-> > that this is easy, but is should be "from design". Exporting the
-> > "revert patch" to the external storage, or exporting snapshot to LVM
-> > format to be able to merge it...that is all just hacks, because the
-> > design itself does not count with that possibility.
-> >
-> 
-> The design makes a conscious choice to keep snapshots *inside*
-> the filesystem.
-> This is both an advantage (no need to change on-disk format and checking tools)
-> and disadvantage (you cannot mount a snapshot without mounting the fs first).
+Rebase of Arnaud's patch on top of "kconfig: autogenerated config_is_xxx
+macro".
 
-And thats where ext4 snapshots loose. With dm you do not need to change
-on-disk format, tools or filesystem itself, and you can mount the snapshot
-without also mounting the origin.
-
-> 
-> 
-> >>
-> >> >
-> >> > You see, when it comes to the full fs snapshots I am not convinced that
-> >> > it is *very* useful, yes it might have some users, but you can alway
-> >> > take the safe way and do lvm snapshots (or better use the new multisnap)
-> >> > for backup, without need to modify stable filesystem code.
-> >> >
-> >>
-> >> You think like a developer. Try talking to some sys admins.
-> >> Especially ones that worked with Solaris/ZFS or NetApp.
-> >> See what they think about snapshots and about the LVM alternative...
-> >> Snapshots have addictive qualities. Ones you've used them, you can't
-> >> go back to not having them.
-> >> Imagine how people used to live before the 'Undo' button and imagine
-> >> that your employer forced you to use an editor without an Undo button.
-> >> This is the kind of feedback I got from sys admins that moved from Solaris
-> >> to Linux.
-> >
-> > Exactly, so if we want fs level snapshots, it should use that
-> > privilege no hack its way to do things like roll back, or
-> > excludes+includes. Ext4 was not meant to work that way, nor was your
-> > snapshots designed to work that way. If we are considering backups only,
-> > because that is what you ext4 snaphosts can provide now, I would prefer
-> > to use LVM. But yes, we all need to know how the new multisnap works
-> > out.
-> >
-> 
-> Why do you keep saying 'backup only'?
-> There is a huge difference between having long lived snapshots,
-> like CTERA products have, and temporary snapshot for backup
-> purpose (for which LVM is adequate).
-
-dm's multisnapshots are designed to be long lived and can be used as
-such.
-
-> 
-> >>
-> >>
-> >> > Also, I do not buy the whole argument of "not have to create separate disk
-> >> > space for snapshot". It is actually better for sysadmins, because you
-> >> > have perfect control on what is going on, how much space is used for
-> >> > your snapshots and how much is used by your data. You can always easily
-> >> > extend the snapshot volume, or let it die silently when it is too old
-> >> > and too big.
-> >> >
-> >>
-> >> Seriously, Lukas, talk to sys admins.
-> >> Letting the snapshot die silently is the worst possible thing that a snapshots
-> >> implementation can do (for long lived snapshots).
-> >
-> > Oh, no you misunderstood. Even with your snapshots you'll have to delete
-> > old snapshots someday, because otherwise you'll run out of space. With
-> > LVM however, you have prereserved space for it, so even if your snapshot
-> > volume gets full, it does not affect your filesystem what so ever. And,
-> > as a administrator, you can decide whether to extend the snapshot volume
-> > to let it live longer, or just let it be and it will die eventually.
-> >
-> > And, as far as I know, the new multisnap will notify the admin when the
-> > snapshot volume approaches the watermark the same way that for example
-> > thinly provisioned storage would do. But again, with your snapshots it
-> > will give you ENOSPC when the snapshot grow too big, and at the end
-> > of the day, you need to create data to be able to backup it:), so having
-> > snapshots separate from your fs volume makes sense.
-> >
-> 
-> Yes, one day you will run out of space and will be getting a warning
-> before that, if you are using a CTERA product.
-> You won't be getting the warning from the kernel snapshots code, but from
-> disk space monitoring daemon.
-> And when you get the warning (or ENOSPC if you ignored the warnings)
-> you will have 2 options:
-> 1. add disks and resize the fs
-> 2. delete some snapshots
-> 
-> When using a CTERA product, you not have to pre-partition your disk
-> space between fs and snapshots - they are thinly provisioned, which
-> is a big advantage for a product which does not require being an IT expert to
-> operate it.
-
-dm multisnapshot code is using thin provisioning, you just have to pick
-the volume and that's it.
-
-> 
-> 
-> >>
-> >>
-> >> > How does it actually work on ext4 snapshots ? When you're going to
-> >> > rewrite a file, you will never know how much disk space it'll take in
-> >> > advance, am I right ? Is the filesystem accounting for the snapshot size
-> >> > as well ? or is it hidden ?
-> >>
-> >> It's not hidden, it's accounted for as a regular file (usually owned by root).
-> >> You need a bit of scripting to gather the disk space used by snapshots (du).
-> >>
-> >> In ANY snapshots implementation, you can get ENOSPC on operations,
-> >> which traditionally could not produce this error.
-> >> This statement is also true for thin provisioning implementations.
-> >> The question is how the implementation handles these situations.
-> >>
-> >> What I came to realize on LSF, is that my implementation is the only
-> >> one (of LVM and btrfs) that tries to deal with the ENOSPC issue and
-> >> does a good job most of the time.
-> >>
-> >> I deal with it by reserving space for metadata COW on snapshot
-> >> take, so if a future ENOSPC during metadata COW is possible,
-> >> snapshot take will fail with ENOSPC.
-> >>
-> >> As for ENOSPC during regular file rewrite, that's not such a big problem.
-> >> The application simply gets ENOSPC as if the file was sparse to begin
-> >> with. It may not be pleasant if the application have fallocated the space
-> >> and used mmap/close without msync...
-> >> The only way I see around this issue is reserving space on mmap time
-> >> (and returning ENOSPC at that time), but again, this issue is shared
-> >> with btrfs, but is easier to fix (I think) with ext4 snapshots.
-> >
-> > Yes, I do understand that ext4 snaphosts are doing well in that aspect,
-> > but as I said, having snapshots separate from your file system gives
-> > you advantage of not running into ENOSPC on your file system until you
-> > really fill it with data.
-> 
-> It should be, as David wrote, a choice to the sys admin.
-> Because ext4 snapshots are thinly provisioned, you can always say
-> "use 10% for snapshots and 90% for data" (like you would with LVM),
-> But you cannot say "reserve 10% for snapshots 50% for data and the
-> rest to either" when you administer LVM snapshots.
-
-I am not sure how can this be managed with multisnap target, but I do
-not see a reason why it can not be done, given that both data and
-snapshots can be allocated from within the same pool.
-
-> 
-> You are confusing user functionality with functionality provided by the kernel.
-> LVM happens to check water marks in the kernel because of it's design.
-> That doesn't mean that the same thing cannot be accomplished for ext4
-> snapshots by user tools.
-
-That was not my point, I was simply saying that it is not ext4 snapshots
-advantage.
-
-> 
-> 
-> >
-> > Granted, I have to take a look at the multisnap code, to see what it can
-> > do and compare it with ext4 snapshots, because really, if it is good
-> > enough and you will be able to do snapshotting backups as you do with
-> > your approach, I do not see the reason why to complicate our life in
-> > ext4.
-> >
-> 
-> I don't know how you intend to determine if dm-multisnap is 'good enough'.
-> I don't claim to have the capability myself to determine if ext4 snapshots
-> are 'good enough'.
-> I just try to present the technical differences between the 3 solutions
-> (LVM,ext4,btrfs) and claim that each have their advantages and disadvantages
-> over others.
-> I wish more sys admins and end users would provide feedback, though I don't
-> know how many of them are following LKML.
-
-I do. When it can do long lived snapshots without any obvious headaches
-it is good enough. Your only contra argument was that lvm snapshotting
-is slow, which is not that big argument now when we have multisnap
-almost ready. I am not even talking about features, because clearly
-mutlisnap has superset of the features that ext4 does - no I am not
-counting per-file or per-directory snapshotting because clearly those
-are just hacks and it was not designed that way.
-
--Lukas
---8323328-2107359872-1307624390=:4138--
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index a49cf4f..be6952c 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -422,64 +422,228 @@ int conf_read(const char *name)
+ 	return 0;
+ }
+ 
+-/* Write a S_STRING */
+-static void conf_write_string(bool headerfile, const char *name,
+-                              const char *str, FILE *out)
++/*
++ * Kconfig configuration printer
++ *
++ * This printer is used when generating the resulting configuration after
++ * kconfig invocation and `defconfig' files. Unset symbol might be omitted by
++ * passing a non-NULL argument to the printer.
++ *
++ */
++static void
++kconfig_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
++{
++
++	switch (sym->type) {
++	case S_BOOLEAN:
++	case S_TRISTATE:
++		if (*value == 'n') {
++			bool skip_unset = (arg != NULL);
++
++			if (!skip_unset)
++				fprintf(fp, "# %s%s is not set\n",
++				    CONFIG_, sym->name);
++			return;
++		}
++		break;
++	default:
++		break;
++	}
++
++	fprintf(fp, "%s%s=%s\n", CONFIG_, sym->name, value);
++}
++
++static void
++kconfig_print_comment(FILE *fp, const char *value, void *arg)
+ {
+-	int l;
+-	if (headerfile)
+-		fprintf(out, "#define %s%s \"", CONFIG_, name);
+-	else
+-		fprintf(out, "%s%s=\"", CONFIG_, name);
+-
+-	while (1) {
+-		l = strcspn(str, "\"\\");
++	const char *p = value;
++	size_t l;
++
++	for (;;) {
++		l = strcspn(p, "\n");
++		fprintf(fp, "#");
+ 		if (l) {
+-			xfwrite(str, l, 1, out);
+-			str += l;
++			fprintf(fp, " ");
++			fwrite(p, l, 1, fp);
++			p += l;
+ 		}
+-		if (!*str)
++		fprintf(fp, "\n");
++		if (*p++ == '\0')
+ 			break;
+-		fprintf(out, "\\%c", *str++);
+ 	}
+-	fputs("\"\n", out);
+ }
+ 
+-static void conf_write_symbol(struct symbol *sym, FILE *out, bool write_no)
++static struct conf_printer kconfig_printer_cb =
+ {
+-	const char *str;
++	.print_symbol = kconfig_print_symbol,
++	.print_comment = kconfig_print_comment,
++};
++
++/*
++ * Header printer
++ *
++ * This printer is used when generating the `include/generated/autoconf.h' file.
++ */
++static void
++header_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
++{
++	const char *suffix = "";
+ 
+ 	switch (sym->type) {
+ 	case S_BOOLEAN:
+ 	case S_TRISTATE:
+-		switch (sym_get_tristate_value(sym)) {
+-		case no:
+-			if (write_no)
+-				fprintf(out, "# %s%s is not set\n",
+-				    CONFIG_, sym->name);
+-			break;
+-		case mod:
+-			fprintf(out, "%s%s=m\n", CONFIG_, sym->name);
+-			break;
+-		case yes:
+-			fprintf(out, "%s%s=y\n", CONFIG_, sym->name);
+-			break;
++		switch (*value) {
++		case 'n':
++			return;
++		case 'm':
++			suffix = "_MODULE";
++			/* FALLTHROUGH */
++		default:
++			value = "1";
+ 		}
+ 		break;
+-	case S_STRING:
+-		conf_write_string(false, sym->name, sym_get_string_value(sym), out);
++	default:
+ 		break;
+-	case S_HEX:
+-	case S_INT:
+-		str = sym_get_string_value(sym);
+-		fprintf(out, "%s%s=%s\n", CONFIG_, sym->name, str);
++	}
++
++	fprintf(fp, "#define %s%s%s %s\n",
++	    CONFIG_, sym->name, suffix, value);
++}
++
++static void
++header_print_comment(FILE *fp, const char *value, void *arg)
++{
++	const char *p = value;
++	size_t l;
++
++	fprintf(fp, "/*\n");
++	for (;;) {
++		l = strcspn(p, "\n");
++		fprintf(fp, " *");
++		if (l) {
++			fprintf(fp, " ");
++			fwrite(p, l, 1, fp);
++			p += l;
++		}
++		fprintf(fp, "\n");
++		if (*p++ == '\0')
++			break;
++	}
++	fprintf(fp, " */\n");
++}
++
++static struct conf_printer header_printer_cb =
++{
++	.print_symbol = header_print_symbol,
++	.print_comment = header_print_comment,
++};
++
++/*
++ * Function-style header printer
++ *
++ * This printer is used to generate the config_is_xxx() function-style macros
++ * in `include/generated/autoconf.h' 
++ */
++static void
++header_function_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
++{
++	int val = 0;
++	char c;
++	char *tmp, *d;
++
++	switch (sym->type) {
++	case S_BOOLEAN:
++	case S_TRISTATE:
+ 		break;
++	default:
++		return;
++	}
++	if (*value == 'm')
++		val = 2;
++	else if (*value == 'y')
++		val = 1;
++
++	d = strdup(CONFIG_);
++	tmp = d;
++	while ((c = *d)) {
++		*d = tolower(c);
++		d++;
++	}
++
++	fprintf(fp, "#define %sis_", tmp);
++	free(tmp);
++
++	d = strdup(sym->name);
++	tmp = d;
++	while ((c = *d)) {
++		*d = tolower(c);
++		d++;
++	}
++	fprintf(fp, "%s%s() %d\n", tmp, (val > 1) ? "_module" : "",
++		      val ? 1 : 0);
++	free(tmp);
++}
++
++static struct conf_printer header_function_printer_cb =
++{
++	.print_symbol = header_function_print_symbol,
++};
++
++
++/*
++ * Tristate printer
++ *
++ * This printer is used when generating the `include/config/tristate.conf' file.
++ */
++static void
++tristate_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
++{
++
++	if (sym->type == S_TRISTATE && *value != 'n')
++		fprintf(fp, "%s%s=%c\n", CONFIG_, sym->name, (char)toupper(*value));
++}
++
++static struct conf_printer tristate_printer_cb =
++{
++	.print_symbol = tristate_print_symbol,
++	.print_comment = kconfig_print_comment,
++};
++
++static void conf_write_symbol(FILE *fp, struct symbol *sym,
++			      struct conf_printer *printer, void *printer_arg)
++{
++	const char *str;
++
++	switch (sym->type) {
+ 	case S_OTHER:
+ 	case S_UNKNOWN:
+ 		break;
++	case S_STRING:
++		str = sym_get_string_value(sym);
++		str = sym_escape_string_value(str);
++		printer->print_symbol(fp, sym, str, printer_arg);
++		free((void *)str);
++		break;
++	default:
++		str = sym_get_string_value(sym);
++		printer->print_symbol(fp, sym, str, printer_arg);
+ 	}
+ }
+ 
++static void
++conf_write_heading(FILE *fp, struct conf_printer *printer, void *printer_arg)
++{
++	char buf[256];
++
++	snprintf(buf, sizeof(buf),
++	    "\n"
++	    "Automatically generated file; DO NOT EDIT.\n"
++	    "%s\n",
++	    rootmenu.prompt->text);
++
++	printer->print_comment(fp, buf, printer_arg);
++}
++
+ /*
+  * Write out a minimal config.
+  * All values that has default values are skipped as this is redundant.
+@@ -536,7 +700,7 @@ int conf_write_defconfig(const char *filename)
+ 						goto next_menu;
+ 				}
+ 			}
+-			conf_write_symbol(sym, out, true);
++			conf_write_symbol(out, sym, &kconfig_printer_cb, NULL);
+ 		}
+ next_menu:
+ 		if (menu->list != NULL) {
+@@ -601,11 +765,7 @@ int conf_write(const char *name)
+ 	if (!out)
+ 		return 1;
+ 
+-	fprintf(out, _("#\n"
+-		       "# Automatically generated make config: don't edit\n"
+-		       "# %s\n"
+-		       "#\n"),
+-		     rootmenu.prompt->text);
++	conf_write_heading(out, &kconfig_printer_cb, NULL);
+ 
+ 	if (!conf_get_changed())
+ 		sym_clear_all_valid();
+@@ -626,8 +786,8 @@ int conf_write(const char *name)
+ 			if (!(sym->flags & SYMBOL_WRITE))
+ 				goto next;
+ 			sym->flags &= ~SYMBOL_WRITE;
+-			/* Write config symbol to file */
+-			conf_write_symbol(sym, out, true);
++
++			conf_write_symbol(out, sym, &kconfig_printer_cb, NULL);
+ 		}
+ 
+ next:
+@@ -773,33 +933,9 @@ out:
+ 	return res;
+ }
+ 
+-static void conf_write_function_autoconf(FILE *out, char* conf, char* name,
+-					 int val)
+-{
+-	char c;
+-	char *tmp, *d;
+-
+-	d = strdup(conf);
+-	tmp = d;
+-	while ((c = *conf++))
+-		*d++ = tolower(c);
+-
+-	fprintf(out, "#define %sis_", tmp);
+-	free(tmp);
+-
+-	d = strdup(name);
+-	tmp = d;
+-	while ((c = *name++))
+-		*d++ = tolower(c);
+-	fprintf(out, "%s%s() %d\n", tmp, (val > 1) ? "_module" : "",
+-		      val ? 1 : 0);
+-	free(tmp);
+-}
+-
+ int conf_write_autoconf(void)
+ {
+ 	struct symbol *sym;
+-	const char *str;
+ 	const char *name;
+ 	FILE *out, *tristate, *out_h;
+ 	int i;
+@@ -828,72 +964,24 @@ int conf_write_autoconf(void)
+ 		return 1;
+ 	}
+ 
+-	fprintf(out, "#\n"
+-		     "# Automatically generated make config: don't edit\n"
+-		     "# %s\n"
+-		     "#\n",
+-		     rootmenu.prompt->text);
+-	fprintf(tristate, "#\n"
+-			  "# Automatically generated - do not edit\n"
+-			  "\n");
+-	fprintf(out_h, "/*\n"
+-		       " * Automatically generated C config: don't edit\n"
+-		       " * %s\n"
+-		       " */\n",
+-		       rootmenu.prompt->text);
++	conf_write_heading(out, &kconfig_printer_cb, NULL);
++
++	conf_write_heading(tristate, &tristate_printer_cb, NULL);
++
++	conf_write_heading(out_h, &header_printer_cb, NULL);
+ 
+ 	for_all_symbols(i, sym) {
+-		int fct_val = 0;
+ 		sym_calc_value(sym);
+ 		if (!(sym->flags & SYMBOL_WRITE) || !sym->name)
+ 			continue;
+ 
+-		/* write symbol to config file */
+-		conf_write_symbol(sym, out, false);
++		/* write symbol to auto.conf, tristate and header files */
++		conf_write_symbol(out, sym, &kconfig_printer_cb, (void *)1);
+ 
+-		/* update autoconf and tristate files */
+-		switch (sym->type) {
+-		case S_BOOLEAN:
+-		case S_TRISTATE:
+-			switch (sym_get_tristate_value(sym)) {
+-			case no:
+-				break;
+-			case mod:
+-				fprintf(tristate, "%s%s=M\n",
+-				    CONFIG_, sym->name);
+-				fprintf(out_h, "#define %s%s_MODULE 1\n",
+-				    CONFIG_, sym->name);
+-				fct_val = 2;
+-				break;
+-			case yes:
+-				if (sym->type == S_TRISTATE)
+-					fprintf(tristate,"%s%s=Y\n",
+-					    CONFIG_, sym->name);
+-				fprintf(out_h, "#define %s%s 1\n",
+-				    CONFIG_, sym->name);
+-				fct_val = 1;
+-				break;
+-			}
+-			conf_write_function_autoconf(out_h, CONFIG_, sym->name, fct_val);
+-			break;
+-		case S_STRING:
+-			conf_write_string(true, sym->name, sym_get_string_value(sym), out_h);
+-			break;
+-		case S_HEX:
+-			str = sym_get_string_value(sym);
+-			if (str[0] != '0' || (str[1] != 'x' && str[1] != 'X')) {
+-				fprintf(out_h, "#define %s%s 0x%s\n",
+-				    CONFIG_, sym->name, str);
+-				break;
+-			}
+-		case S_INT:
+-			str = sym_get_string_value(sym);
+-			fprintf(out_h, "#define %s%s %s\n",
+-			    CONFIG_, sym->name, str);
+-			break;
+-		default:
+-			break;
+-		}
++		conf_write_symbol(tristate, sym, &tristate_printer_cb, (void *)1);
++
++		conf_write_symbol(out_h, sym, &header_printer_cb, NULL);
++		conf_write_symbol(out_h, sym, &header_function_printer_cb, NULL);
+ 	}
+ 	fclose(out);
+ 	fclose(tristate);
+diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
+index 625ec69..306c5a5 100644
+--- a/scripts/kconfig/lkc.h
++++ b/scripts/kconfig/lkc.h
+@@ -87,6 +87,11 @@ void sym_set_change_count(int count);
+ void sym_add_change_count(int count);
+ void conf_set_all_new_symbols(enum conf_def_mode mode);
+ 
++struct conf_printer {
++	void (*print_symbol)(FILE *, struct symbol *, const char *, void *);
++	void (*print_comment)(FILE *, const char *, void *);
++};
++
+ /* confdata.c and expr.c */
+ static inline void xfwrite(const void *str, size_t len, size_t count, FILE *out)
+ {
+diff --git a/scripts/kconfig/lkc_proto.h b/scripts/kconfig/lkc_proto.h
+index 17342fe..47fe9c3 100644
+--- a/scripts/kconfig/lkc_proto.h
++++ b/scripts/kconfig/lkc_proto.h
+@@ -31,6 +31,7 @@ P(symbol_hash,struct symbol *,[SYMBOL_HASHSIZE]);
+ P(sym_lookup,struct symbol *,(const char *name, int flags));
+ P(sym_find,struct symbol *,(const char *name));
+ P(sym_expand_string_value,const char *,(const char *in));
++P(sym_escape_string_value, const char *,(const char *in));
+ P(sym_re_search,struct symbol **,(const char *pattern));
+ P(sym_type_name,const char *,(enum symbol_type type));
+ P(sym_calc_value,void,(struct symbol *sym));
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index cf8edf4..071f00c 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -750,7 +750,8 @@ const char *sym_get_string_value(struct symbol *sym)
+ 		case no:
+ 			return "n";
+ 		case mod:
+-			return "m";
++			sym_calc_value(modules_sym);
++			return (modules_sym->curr.tri == no) ? "n" : "m";
+ 		case yes:
+ 			return "y";
+ 		}
+@@ -892,6 +893,49 @@ const char *sym_expand_string_value(const char *in)
+ 	return res;
+ }
+ 
++const char *sym_escape_string_value(const char *in)
++{
++	const char *p;
++	size_t reslen;
++	char *res;
++	size_t l;
++
++	reslen = strlen(in) + strlen("\"\"") + 1;
++
++	p = in;
++	for (;;) {
++		l = strcspn(p, "\"\\");
++		p += l;
++
++		if (p[0] == '\0')
++			break;
++
++		reslen++;
++		p++;
++	}
++
++	res = malloc(reslen);
++	res[0] = '\0';
++
++	strcat(res, "\"");
++
++	p = in;
++	for (;;) {
++		l = strcspn(p, "\"\\");
++		strncat(res, p, l);
++		p += l;
++
++		if (p[0] == '\0')
++			break;
++
++		strcat(res, "\\");
++		strncat(res, p++, 1);
++	}
++
++	strcat(res, "\"");
++	return res;
++}
++
+ struct symbol **sym_re_search(const char *pattern)
+ {
+ 	struct symbol *sym, **sym_arr = NULL;
