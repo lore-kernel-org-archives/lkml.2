@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab1FIG6S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 02:58:18 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47158 "EHLO smtps.tip.net.au"
+	id S1755171Ab1FIHAG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 03:00:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39823 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754619Ab1FIG6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 02:58:14 -0400
-Date: Thu, 9 Jun 2011 16:58:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Roland Vossen <rvossen@broadcom.com>
-Subject: linux-next: manual merge of the staging tree with the
- staging.current tree
-Message-Id: <20110609165808.8b36f634.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__9_Jun_2011_16_58_08_+1000_nb8S27KVHF8LEm4n"
+	id S1751380Ab1FIHAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 03:00:01 -0400
+Message-ID: <4DF06F4F.8050308@redhat.com>
+Date: Thu, 09 Jun 2011 08:59:27 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Mnenhy/0.8.3 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        Christoph Hellwig <chellwig@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, "Michael S. Tsirkin" <mst@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: virtio scsi host draft specification, v3
+References: <4DEE2B15.4090809@redhat.com> <87lixbgax9.fsf@rustcorp.com.au>
+In-Reply-To: <87lixbgax9.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__9_Jun_2011_16_58_08_+1000_nb8S27KVHF8LEm4n
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/09/2011 01:28 AM, Rusty Russell wrote:
+>> >  after some preliminary discussion on the QEMU mailing list, I present a
+>> >  draft specification for a virtio-based SCSI host (controller, HBA, you
+>> >  name it).
+>
+> OK, I'm impressed.  This is very well written and it doesn't make any of
+> the obvious mistakes wrt. virtio.
 
-Hi Greg,
+Thanks very much, and thanks to those who corrected my early mistakes.
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/brcm80211/brcmfmac/wl_iw.c between commit e1c78de9a462
-("staging: brcm80211: fix for 'multiple definition of wl_msg_level' build
-err") from the staging.current tree and commit 8817f75429a1 ("staging:
-brcm80211: removed wl_ (vendor specific acronym)") from the staging tree.
+> I assume you have an implementation, as well?
 
-I fixed it up (using the latter change) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Unfortunately not; "we're working on it", which means I should start in 
+July when I come back from vacation.
 
---Signature=_Thu__9_Jun_2011_16_58_08_+1000_nb8S27KVHF8LEm4n
-Content-Type: application/pgp-signature
+Do you prefer to wait for one before I make a patch to the LyX source? 
+In the meanwhile, can you reserve a subsystem ID for me?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN8G8AAAoJEDMEi1NhKgbsw3oIAJo1Ae3Q6dWJXnXOpFzHzUrI
-O55FlTC5xpBFMVnxRZnIGDeCWN9LdzWntzcIJmK/iUwuvhLOT531KngoOOfFLGDz
-m9/GKY+OEEbDigmqfKyNMe9Y2tRsT5lannIi/MObh1tNO61+e9pGtIqicpn4Ad7r
-ZuPKh+0EkJ1ubslz+OsN8c9t4joq3hCK9yqfcfNKqFhC/XrTX5ubhjJ2HjqgfXgx
-q6QaVT3pyIOyqQF78sQfBvrWYGbk+M9crUkBjF4nCT8E/ZP2g7XFCStft5LiSUQN
-p0SAHlSvscbLUq6iRQ7FrLc44zZnUrf5Ekugadhs5qbNZz3Ldjmvg0svbuj3InE=
-=s27Q
------END PGP SIGNATURE-----
-
---Signature=_Thu__9_Jun_2011_16_58_08_+1000_nb8S27KVHF8LEm4n--
+Paolo
