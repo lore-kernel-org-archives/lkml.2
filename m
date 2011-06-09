@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab1FISpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 14:45:45 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55082 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751481Ab1FISpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 14:45:42 -0400
-Date: Thu, 9 Jun 2011 11:45:34 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 14/28] security,rcu: Convert
- call_rcu(whitelist_item_free) to kfree_rcu()
-Message-ID: <20110609184534.GJ2285@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110608192943.GA13211@linux.vnet.ibm.com>
- <1307561407-13809-14-git-send-email-paulmck@linux.vnet.ibm.com>
- <alpine.LRH.2.00.1106091038330.18724@tundra.namei.org>
+	id S1754326Ab1FISqT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 14:46:19 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33775 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752293Ab1FISqS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 14:46:18 -0400
+Date: Thu, 9 Jun 2011 12:46:14 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: Mika Westerberg <mika.westerberg@iki.fi>,
+        linux-arm-kernel@lists.infradead.org, hsweeten@visionengravers.com,
+        rmallon@gmail.com, dan.j.williams@intel.com, lrg@ti.com,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/5] spi/ep93xx: add DMA support
+Message-ID: <20110609184614.GA5800@ponder.secretlab.ca>
+References: <20110603204400.GH17972@ponder.secretlab.ca>
+ <20110607171403.GA3011@acer>
+ <BANLkTikKOcc2Vg1p3kG4ZSLjJ0RTZWS=2A@mail.gmail.com>
+ <20110607190607.GB3011@acer>
+ <20110607191824.GA2035@ponder.secretlab.ca>
+ <20110607192945.GC3011@acer>
+ <20110607194034.GC2035@ponder.secretlab.ca>
+ <1307505512.10976.91.camel@vkoul-udesk3>
+ <20110608215356.GA17138@ponder.secretlab.ca>
+ <1307637757.10976.93.camel@vkoul-udesk3>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1106091038330.18724@tundra.namei.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1307637757.10976.93.camel@vkoul-udesk3>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 10:39:02AM +1000, James Morris wrote:
-> On Wed, 8 Jun 2011, Paul E. McKenney wrote:
-> 
-> > From: Lai Jiangshan <laijs@cn.fujitsu.com>
+On Thu, Jun 09, 2011 at 10:12:37PM +0530, Koul, Vinod wrote:
+> On Wed, 2011-06-08 at 15:53 -0600, Grant Likely wrote:
+> > On Wed, Jun 08, 2011 at 09:28:32AM +0530, Koul, Vinod wrote:
+> > > Acked-by: Vinod Koul <vinod.koul@intel.com>
+> > > 
+> > > Let me know which branch you have pushed and I will merge that to my
+> > > tree
 > > 
-> > The rcu callback whitelist_item_free() just calls a kfree(),
-> > so we use kfree_rcu() instead of the call_rcu(whitelist_item_free).
+> > Just pushed out to the branch below.  Take a look, make sure it is
+> > correct, and if it looks good to you then go ahead and merge it, and I
+> > ll also merge it into spi/next.
 > > 
-> > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: James Morris <jmorris@namei.org>
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> Acked-by: James Morris <jmorris@namei.org>
+> > The following changes since commit 59c5f46fbe01a00eedf54a23789634438bb80603:
+> > 
+> >   Linux 3.0-rc2 (2011-06-06 18:06:33 +0900)
+> > 
+> > are available in the git repository at:
+> >   git://git.secretlab.ca/git/linux-2.6 ep93xx-dma
+>
+> Thanks, I have merged them into my slave-dma next.
 
-Thank you, James!
+Good.  I've merged it into spi/next also.
 
-							Thanx, Paul
+g.
+
