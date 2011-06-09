@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974Ab1FIHSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 03:18:46 -0400
+	id S1756930Ab1FIHSn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 03:18:43 -0400
 Received: from mail-qw0-f46.google.com ([209.85.216.46]:38573 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756832Ab1FIHSg (ORCPT
+	with ESMTP id S1754466Ab1FIHSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 03:18:36 -0400
+	Thu, 9 Jun 2011 03:18:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=nN8xAe9IIlEKjaDOnKWchs60o/pTB6qkZ5s4iU2q2TpxVeztWeP3idAhPbhTBfIdhq
-         A37uD2jPsiwuWQcDHpIe3tQ/xJhdiTOp/4jBgUEIk/S6BdrU+6QH6/E7Oy6JZp+LBAhE
-         AljS4WjMTsmifiHUVAKDHK3/Aph00KYPQUI+8=
+        b=OxYrsodIoXrSx25Y6wnfhKsfEzGIUMTKa3rtQ1LDyA2xrH4uxhXWKpcn3gsgP9MlXn
+         GnO1FqV4lJrOwgZywkICi/FLC9ZVgQQvzVDEJyQK8EudQgnKXB27cLVLXQY4RmrkN3lc
+         M/wd+HrnvBkiNZl/WFxfDR8DlyMtGBq3AEc8Q=
 From: Weiping Pan <panweiping3@gmail.com>
 To: fubar@us.ibm.com, andy@greyhouse.net
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Weiping Pan <panweiping3@gmail.com>
-Subject: [PATCH net-next 2/5] bonding:delete lacp_fast from ad_bond_info
-Date: Thu,  9 Jun 2011 15:19:02 +0800
-Message-Id: <3817de7b47ccfd48b0028f38f268ff241a34e9ec.1307603621.git.panweiping3@gmail.com>
+Subject: [PATCH net-next 3/5] bonding:delete agg_select_mode from ad_bond_info
+Date: Thu,  9 Jun 2011 15:19:03 +0800
+Message-Id: <61b3301f160012b2568e9801325d09787c8dff4c.1307603621.git.panweiping3@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <cover.1307603621.git.panweiping3@gmail.com>
 References: <cover.1307603621.git.panweiping3@gmail.com>
@@ -29,103 +29,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These is also a bug, that if you modify lacp_rate via sysfs,
-and add new slaves in bonding, new slaves won't use the latest lacp_rate,
-since ad_bond_info->lacp_fast is initialized only once,
-in bond_3ad_initialize().
+bond_params->ad_select and ad_bond_info->agg_select_mode have the same
+meaning, they are duplicate and need extra synchronization.
 
-Since both struct bond_params and ad_bond_info have lacp_fast,
-they are duplicate and need extra synchronization.
-
-bond_3ad_bind_slave() can use bond_params->lacp_fast to initialize port.
-So we can just remove lacp_fast from struct ad_bond_info.
+__get_agg_selection_mode() get ad_select from bond_params directly.
 
 Signed-off-by: Weiping Pan <panweiping3@gmail.com>
 ---
- drivers/net/bonding/bond_3ad.c  |    7 +++----
- drivers/net/bonding/bond_3ad.h  |    5 +----
- drivers/net/bonding/bond_main.c |    3 +--
- 3 files changed, 5 insertions(+), 10 deletions(-)
+ drivers/net/bonding/bond_3ad.c |    3 +--
+ drivers/net/bonding/bond_3ad.h |    1 -
+ 2 files changed, 1 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
-index 4512bc4..013a801 100644
+index 013a801..6122725 100644
 --- a/drivers/net/bonding/bond_3ad.c
 +++ b/drivers/net/bonding/bond_3ad.c
-@@ -1868,11 +1868,10 @@ static u16 aggregator_identifier;
-  * bond_3ad_initialize - initialize a bond's 802.3ad parameters and structures
-  * @bond: bonding struct to work on
-  * @tick_resolution: tick duration (millisecond resolution)
-- * @lacp_fast: boolean. whether fast periodic should be used
-  *
-  * Can be called only after the mac address of the bond is set.
-  */
--void bond_3ad_initialize(struct bonding *bond, u16 tick_resolution, int lacp_fast)
-+void bond_3ad_initialize(struct bonding *bond, u16 tick_resolution)
+@@ -262,7 +262,7 @@ static inline u32 __get_agg_selection_mode(struct port *port)
+ 	if (bond == NULL)
+ 		return BOND_AD_STABLE;
+ 
+-	return BOND_AD_INFO(bond).agg_select_mode;
++	return bond->params.ad_select;
+ }
+ 
+ /**
+@@ -1859,7 +1859,6 @@ static void ad_marker_response_received(struct bond_marker *marker,
+ void bond_3ad_initiate_agg_selection(struct bonding *bond, int timeout)
  {
- 	// check that the bond is not initialized yet
- 	if (MAC_ADDRESS_COMPARE(&(BOND_AD_INFO(bond).system.sys_mac_addr),
-@@ -1880,7 +1879,6 @@ void bond_3ad_initialize(struct bonding *bond, u16 tick_resolution, int lacp_fas
+ 	BOND_AD_INFO(bond).agg_select_timer = timeout;
+-	BOND_AD_INFO(bond).agg_select_mode = bond->params.ad_select;
+ }
  
- 		aggregator_identifier = 0;
- 
--		BOND_AD_INFO(bond).lacp_fast = lacp_fast;
- 		BOND_AD_INFO(bond).system.sys_priority = 0xFFFF;
- 		BOND_AD_INFO(bond).system.sys_mac_addr = *((struct mac_addr *)bond->dev->dev_addr);
- 
-@@ -1903,6 +1901,7 @@ void bond_3ad_initialize(struct bonding *bond, u16 tick_resolution, int lacp_fas
- int bond_3ad_bind_slave(struct slave *slave)
- {
- 	struct bonding *bond = bond_get_bond_by_slave(slave);
-+	int lacp_fast = bond->params.lacp_fast;
- 	struct port *port;
- 	struct aggregator *aggregator;
- 
-@@ -1918,7 +1917,7 @@ int bond_3ad_bind_slave(struct slave *slave)
- 		// port initialization
- 		port = &(SLAVE_AD_INFO(slave).port);
- 
--		ad_initialize_port(port, BOND_AD_INFO(bond).lacp_fast);
-+		ad_initialize_port(port, lacp_fast);
- 
- 		port->slave = slave;
- 		port->actor_port_number = SLAVE_AD_INFO(slave).id;
+ static u16 aggregator_identifier;
 diff --git a/drivers/net/bonding/bond_3ad.h b/drivers/net/bonding/bond_3ad.h
-index e466faf..9782785 100644
+index 9782785..1682e69 100644
 --- a/drivers/net/bonding/bond_3ad.h
 +++ b/drivers/net/bonding/bond_3ad.h
-@@ -254,9 +254,6 @@ struct ad_bond_info {
+@@ -253,7 +253,6 @@ struct ad_system {
+ struct ad_bond_info {
  	struct ad_system system;	    /* 802.3ad system structure */
  	u32 agg_select_timer;	    // Timer to select aggregator after all adapter's hand shakes
- 	u32 agg_select_mode;	    // Mode of selection of active aggregator(bandwidth/count)
--	int lacp_fast;		/* whether fast periodic tx should be
--				 * requested
--				 */
+-	u32 agg_select_mode;	    // Mode of selection of active aggregator(bandwidth/count)
  	struct timer_list ad_timer;
  };
  
-@@ -269,7 +266,7 @@ struct ad_slave_info {
- };
- 
- // ================= AD Exported functions to the main bonding code ==================
--void bond_3ad_initialize(struct bonding *bond, u16 tick_resolution, int lacp_fast);
-+void bond_3ad_initialize(struct bonding *bond, u16 tick_resolution);
- int  bond_3ad_bind_slave(struct slave *slave);
- void bond_3ad_unbind_slave(struct slave *slave);
- void bond_3ad_state_machine_handler(struct work_struct *);
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 716c852..bb1af9c 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1843,8 +1843,7 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
- 			/* Initialize AD with the number of times that the AD timer is called in 1 second
- 			 * can be called only after the mac address of the bond is set
- 			 */
--			bond_3ad_initialize(bond, 1000/AD_TIMER_INTERVAL,
--					    bond->params.lacp_fast);
-+			bond_3ad_initialize(bond, 1000/AD_TIMER_INTERVAL);
- 		} else {
- 			SLAVE_AD_INFO(new_slave).id =
- 				SLAVE_AD_INFO(new_slave->prev).id + 1;
 -- 
 1.7.4.4
 
