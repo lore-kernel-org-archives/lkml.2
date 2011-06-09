@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab1FIOnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 10:43:06 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:34048 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685Ab1FIOnF (ORCPT
+	id S1752959Ab1FIOwV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 10:52:21 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:58716 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab1FIOwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 10:43:05 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4DF0DDDA.40105@cam.ac.uk>
-Date: Thu, 09 Jun 2011 15:51:06 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+	Thu, 9 Jun 2011 10:52:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-operating-system
+         :user-agent;
+        b=av7Ht6Y1V+a7zdkF0BDcD3wqqdsFO3W86SxpBcW8QnTSBFetBy8uYuJ2v9aiBYWfHr
+         v6+u4rGaxSC5CKu+c12Q==
+Date: Thu, 9 Jun 2011 07:51:59 -0700
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 1/4] watchdog: fix rounding issues in
+ get_sample_period()
+Message-ID: <20110609145159.GG17986@google.com>
+References: <1305588901-8141-1-git-send-email-msb@chromium.org>
+ <20110518135302.GM29881@redhat.com>
+ <20110519162631.GJ11023@google.com>
+ <20110609114745.GQ8162@redhat.com>
 MIME-Version: 1.0
-To: anish singh <anish198519851985@gmail.com>
-CC: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-i2c@fluff.org>,
-        gregkh@suse.de, manuel.stahl@iis.fraunhofer.de,
-        lucas.demarchi@profusion.mobi, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Linux I2C <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH] staging iio: Replace kmalloc with local variable
-References: <1307450354.1516.23.camel@anish-desktop>	<4DEE20E7.4020008@cam.ac.uk>	<20110607134135.GD15795@trinity.fluff.org>	<20110607160206.6cb3168d@endymion.delvare>	<BANLkTim5-ZKXtDkSQyHAJ9-iKtOPsJ917A@mail.gmail.com>	<BANLkTi=e0A2G-d+t4VF5V0gj+eNoh3KRnQ@mail.gmail.com>	<20110609102948.7a3f8d57@endymion.delvare>	<BANLkTimq_5rmB+UkaxZwrOtV-ZF3+fEOgQ@mail.gmail.com>	<4DF088E5.5000408@cam.ac.uk>	<4DF0A48B.6040802@cam.ac.uk> <BANLkTik4Tfd73iKcDsXK-sfy6_ADVX4oYA@mail.gmail.com>
-In-Reply-To: <BANLkTik4Tfd73iKcDsXK-sfy6_ADVX4oYA@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110609114745.GQ8162@redhat.com>
+X-Operating-System: Linux/2.6.32-gg426-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/11 15:29, anish singh wrote:
+Don Zickus (dzickus@redhat.com) wrote:
+> On Thu, May 19, 2011 at 09:26:31AM -0700, Mandeep Singh Baines wrote:
+> > Don Zickus (dzickus@redhat.com) wrote:
+> > > On Mon, May 16, 2011 at 04:34:58PM -0700, Mandeep Singh Baines wrote:
+> > > > In get_sample_period(), softlockup_thresh is integer divided by 5 before
+> > > > the multiplication by NSEC_PER_SEC. This results in softlockup_thresh
+> > > > being rounded down to the nearest integer multiple of 5.
+> > > > 
+> > > > For example, a softlockup_thresh of 4 rounds down to 0.
+> > > 
+> > > Mandeep,
+> > > 
+> > > Thanks for the patches.  Unfortunately, I am taking some time off so I'll
+> > > shephard these patches when I get back.  For the most part they look fine,
+> > > aside from Ingo's comments.
+> > > 
+> > 
+> > No problem. Enjoy your time off:)
+> > 
+> > Ingo, since Don is out, would you mind acking the patches (assuming you're
+> > happy). It simplifies pushing these patches into our local ChromiumOS tree
+> > if I have an upstream ack.
 > 
+> Hi Mandeep,
 > 
-> On Thu, Jun 9, 2011 at 7:46 PM, Jonathan Cameron <jic23@cam.ac.uk <mailto:jic23@cam.ac.uk>> wrote:
-> 
->     On 06/09/11 09:48, Jonathan Cameron wrote:
->     > On 06/09/11 09:34, anish singh wrote:
->     >>
->     >>
->     >> On Thu, Jun 9, 2011 at 1:59 PM, Jean Delvare <khali@linux-fr.org <mailto:khali@linux-fr.org> <mailto:khali@linux-fr.org <mailto:khali@linux-fr.org>>> wrote:
->     >>
->     >>     On Thu, 9 Jun 2011 13:53:09 +0530, anish singh wrote:
->     >>     > On Wed, Jun 8, 2011 at 10:41 AM, anish singh <anish198519851985@gmail.com <mailto:anish198519851985@gmail.com> <mailto:anish198519851985@gmail.com <mailto:anish198519851985@gmail.com>>>wrote:
->     >>     > >  On Tue, Jun 7, 2011 at 7:32 PM, Jean Delvare <khali@linux-fr.org <mailto:khali@linux-fr.org> <mailto:khali@linux-fr.org <mailto:khali@linux-fr.org>>> wrote:
->     >>     > >> To be clearer, it is down to the i2c BUS (adapter) driver, NOT the i2c
->     >>     > >> device driver. So the patch is correct.
->     >>     > >>
->     >>     > > I think i can take Jean ack on this?If yes then Joanthan kindly apply
->     >>     > > this patch and i think you didn't lead me in wrong way as whatever
->     >>     > > said by you is corroborated by jean also i.e. it is I2C bus driver
->     >>     > > responsiblity
->     >>     > > to care about DMA.
->     >>     > >
->     >>     > Sorry to ping you again.Can i take your ack on this?
->     >>
->     >>     Yes of course.
->     >>
->     >>     Acked-by: Jean Delvare <khali@linux-fr.org <mailto:khali@linux-fr.org> <mailto:khali@linux-fr.org <mailto:khali@linux-fr.org>>>
->     >>
->     >> Thanks a ton.Jonathan kindly apply it now :)
->     > Greg, I'll send this one on to you with the set I currently have out for review.
->     >
->     Doh, after all this, I just tried to apply this to find the code in question has already
->     gone.  Anish, what tree are you working against?
-> 
-> I am using linux-next.Is it not the right tree for staging?
-Something curious is going on then because this code is no longer in linux-next either.
-> 
->     Looks like I did an equivalent clean up
->     (with a load of others) back in May then forgot about it.
-> 
->     Sorry all. I should have actually have checked it was still relevant rather than reviewing
->     purely on basis of content of patch...
-> 
->     Jonathan
-> 
+> It looks like Ingo took most of your patches.  Is there any outstanding
+> ones that didn't make it that you see?
 > 
 
+Hi Don,
+
+Thanks for following up. All the patches are now in.
+
+I am working on a few new NMI issues so I'll be sending out a few patches
+in a day or so. I've committed one critical fix to our 2.6.32 tree and am now
+working on forward-porting it to tip/master:
+
+http://git.chromium.org/gitweb/?p=chromiumos/third_party/kernel.git;a=commitdiff;h=2a825f5f38f24e655dd655253eaaa5a82460a43e;hp=09ecdd5b43b9df930efd51a3fe317c18907a6c2d
+
+Regards,
+Mandeep
+
+> Cheers,
+> Don
