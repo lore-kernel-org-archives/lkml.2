@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab1FIVHo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 17:07:44 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34165 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753837Ab1FIVHn (ORCPT
+	id S1756203Ab1FIVXU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 17:23:20 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16610 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870Ab1FIVXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 17:07:43 -0400
-Date: Thu, 9 Jun 2011 14:07:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        efault@gmx.de, Arne Jansen <lists@die-jansens.de>
-Subject: Re: [PATCH 1/3] printk: Release console_sem after logbuf_lock
-Message-Id: <20110609140714.fc9ea187.akpm@linux-foundation.org>
-In-Reply-To: <1307652883.2497.1028.camel@laptop>
-References: <20110609130647.937204592@chello.nl>
-	<20110609131307.493181962@chello.nl>
-	<20110609130617.f8aca966.akpm@linux-foundation.org>
-	<20110609202707.GA28951@elte.hu>
-	<1307652883.2497.1028.camel@laptop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Jun 2011 17:23:18 -0400
+Date: Thu, 9 Jun 2011 23:14:58 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] Avoid potential NULL deref in irq_set_irq_wake()
+Message-ID: <alpine.LNX.2.00.1106092300360.17868@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 09 Jun 2011 22:54:43 +0200
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+In kernel/irq/manage.c::irq_set_irq_wake() we call irq_get_desc_buslock() 
+which may return NULL (it calls into 
+__irq_get_desc_lock()-->irq_to_desc()-->radix_tree_lookup()-->radix_tree_lookup_element() 
+which can return NULL in a number of different situations). If it does 
+we'll dereference a NULL pointer - *Boom*.
 
-> On Thu, 2011-06-09 at 22:27 +0200, Ingo Molnar wrote:
-> 
-> > > > @@ -1271,8 +1273,8 @@ void console_unlock(void)
-> > > >  	if (unlikely(exclusive_console))
-> > > >  		exclusive_console = NULL;
-> > > >  
-> > > > -	up(&console_sem);
-> > > >  	spin_unlock_irqrestore(&logbuf_lock, flags);
-> > > > +	up(&console_sem);
-> > > >  	if (wake_klogd)
-> > > >  		wake_up_klogd();
-> > > >  }
-> > > 
-> > > I have a horrible feeling that I put the up() inside logbuf_lock for
-> > > Special And Cunning Reasons.  But I'm struggling to work out what they
-> > > might have been and my archives only go back to October 2000(!).
-> > > 
-> > > Hate it when that happens.
-> > 
-> > Heh, here's what i told Peter two days ago when i saw that chunk:
-> > 
-> >   => Subject: printk: Release console_sem after logbuf_lock
-> >   => i have some vague memories about some sort of complication in that area ...
-> >   => but don't remember the specifics
-> >   => only a 'there be dragons' mental marker
-> 
-> Right, my reply was that I couldn't convince myself unlock order could
-> make a difference, but clearly I can easily have missed something
-> subtle.
+irq_set_irq_wake() has lots of callers - I checked a few and I couldn't 
+find anything that guarantees that they won't call it with some input that 
+will cause irq_get_desc_buslock() to return NULL, so I think it's a good 
+thing to test and -EINVAL was the most sane error code in this situation 
+that I could think of.
 
-I wish I could find the darned patch.  I have a file here
-no-console-lock-2.patch which was last diffed on October 7, 1999 but it
-has no changelog :(
+Not all callers test the return value of irq_set_irq_wake(), but those 
+that do take != 0 to mean error as far as I can see, so they should be 
+fine. I guess those that don't test actually should, but that's a 
+different issue.
 
-But this:
-http://lkml.indiana.edu/hypermail/linux/kernel/0109.2/0127.html is Sep
-2001 and I have an earlier (unchangelogged) no-console-lock.patch diffed
-against 2.4.2 in March 2001.
+Feedback welcome.
 
-It's odd that the patch (and changelog) don't appear in my lkml
-archives.  Sigh, http://www.youtube.com/watch?v=oO3YmT2d-8k
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ manage.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
+ Found by the Coverity checker.
+ Untested except for build test.
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index d64bafb..b42c15c 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -488,8 +488,11 @@ static int set_irq_wake_real(unsigned int irq, unsigned int on)
+ int irq_set_irq_wake(unsigned int irq, unsigned int on)
+ {
+ 	unsigned long flags;
+-	struct irq_desc *desc = irq_get_desc_buslock(irq, &flags);
+ 	int ret = 0;
++	struct irq_desc *desc = irq_get_desc_buslock(irq, &flags);
++
++	if (!desc)
++		return -EINVAL;
+ 
+ 	/* wakeup-capable irqs can be shared between drivers that
+ 	 * don't need to have the same sleep mode behaviors.
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
