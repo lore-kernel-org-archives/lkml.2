@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab1FIHDU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 03:03:20 -0400
+	id S1756823Ab1FIHDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 03:03:25 -0400
 Received: from mail-qw0-f46.google.com ([209.85.216.46]:33126 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619Ab1FIHDR (ORCPT
+	with ESMTP id S1756782Ab1FIHDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 03:03:17 -0400
+	Thu, 9 Jun 2011 03:03:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=bmHZ41970dsEkJCDdFfj9nk0zKY0P+CLmko5dR8SUOuvjT2aTJqOUduFzcj1kf0qmY
-         ymrPkyKco5DiZ39rAuV5/omYKtAQAPb5+Z+R9aPm64x6Wsam/Y6ldbSgk7BuMme3zFGg
-         0D/GXVBPczvXVP5uO5uZSdR2UPoMsmHpjdX8M=
+        b=VDhB5md/L09K+JOjeB5Ibc6L6nKRH67iIERtOJf9ypKjc4wgdhcCQknFv5iOJjDZoP
+         kwTluAIY2405gvZfIbYBqn4lUJIjwd0HZCYQ7v9nlGDQzgZF22TzZVgShQpFBMzgry6V
+         SrXuS3rTcGSueA71PfZmIGVUXw82y7PWXoIq4=
 From: Weiping Pan <panweiping3@gmail.com>
 To: fubar@us.ibm.com, andy@greyhouse.net
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Weiping Pan <panweiping3@gmail.com>
-Subject: [PATCH net-next 4/5] bonding: delete unused ad_timer
-Date: Thu,  9 Jun 2011 15:03:30 +0800
-Message-Id: <5fd74a13b14c3bd39f6f033dc0ddc48fb9c2c3b6.1307601948.git.panweiping3@gmail.com>
+Subject: [PATCH net-next 5/5] bonding: delete unused arp_mon_pt
+Date: Thu,  9 Jun 2011 15:03:31 +0800
+Message-Id: <a525731fc8b30cb4aa596eeb1915e49f01160dca.1307601948.git.panweiping3@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <cover.1307601948.git.panweiping3@gmail.com>
 References: <cover.1307601948.git.panweiping3@gmail.com>
@@ -29,26 +29,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we use agg_select_timer and ad_work.
+Now all received packets are handled by bond_handle_frame,
+and arp_mon_pt isn't used any more.
 
 Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
 Signed-off-by: Weiping Pan <panweiping3@gmail.com>
 ---
- drivers/net/bonding/bond_3ad.h |    1 -
+ drivers/net/bonding/bonding.h |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_3ad.h b/drivers/net/bonding/bond_3ad.h
-index 1682e69..235b2cc 100644
---- a/drivers/net/bonding/bond_3ad.h
-+++ b/drivers/net/bonding/bond_3ad.h
-@@ -253,7 +253,6 @@ struct ad_system {
- struct ad_bond_info {
- 	struct ad_system system;	    /* 802.3ad system structure */
- 	u32 agg_select_timer;	    // Timer to select aggregator after all adapter's hand shakes
--	struct timer_list ad_timer;
- };
- 
- struct ad_slave_info {
+diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
+index ea1d005..382903f 100644
+--- a/drivers/net/bonding/bonding.h
++++ b/drivers/net/bonding/bonding.h
+@@ -240,7 +240,6 @@ struct bonding {
+ 	struct   bond_params params;
+ 	struct   list_head vlan_list;
+ 	struct   vlan_group *vlgrp;
+-	struct   packet_type arp_mon_pt;
+ 	struct   workqueue_struct *wq;
+ 	struct   delayed_work mii_work;
+ 	struct   delayed_work arp_work;
 -- 
 1.7.4.4
 
