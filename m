@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab1FIDGd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 23:06:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:26260 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752684Ab1FIDGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 23:06:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,340,1304319600"; 
-   d="scan'208";a="9647744"
-Date: Thu, 9 Jun 2011 11:06:28 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "Antonino A. Daplas" <adaplas@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC] fbmem: reset file->private_data on failed fb_open()
-Message-ID: <20110609030628.GA10233@localhost>
+	id S1755011Ab1FIDN4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 23:13:56 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49243 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752684Ab1FIDNz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 23:13:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=gwt09n0+2//ZTdrD8bXjjsUT53NeV8zUI0OIakCJI0yIUvjk8RFkbKUcjgE5PIcaAH
+         rxa8c7dY7aTXKLP+4NkKlTg2ar0diqYgaLv2BRepGOv8qlR4DifrBcS18ADBA1ldrEfH
+         jF1Oc39phb/+nIyloiEwhp3JUY1/a8VdBrevk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4DF03894.2090202@gmail.com>
+References: <1307413455-6942-1-git-send-email-panweiping3@gmail.com>
+	<4DF03894.2090202@gmail.com>
+Date: Thu, 9 Jun 2011 11:13:54 +0800
+Message-ID: <BANLkTimb-ankqNPyvcJMJY24zf9hB5AgOQ@mail.gmail.com>
+Subject: Re: [PATCH] bonding: use new value of lacp_rate and ad_select
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: WeipingPan <panweiping3@gmail.com>
+Cc: jpirko@redhat.com, Jay Vosburgh <fubar@us.ibm.com>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        "<netdev@vger.kernel.org>, open list" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I wrote this when looking at NULL dereference bug
-https://bugzilla.kernel.org/show_bug.cgi?id=18912
+On Thu, Jun 9, 2011 at 11:05 AM, WeipingPan <panweiping3@gmail.com> wrote:
+> On 06/07/2011 10:24 AM, Weiping Pan wrote:
+>>
+>> There is bug that when you modify lacp_rate via sysfs,
+>> 802.3ad won't use the new value of lacp_rate to transmit packets.
+>> This is because port->actor_oper_port_state isn't changed.
+>>
+>> As for ad_select, it can work,
+>> but both struct bond_params and ad_bond_info have lacp_fast and ad_select,
+>> they are duplicate and need extra synchronization.
+>> 802.3ad can get them from bond_params directly every time.
+>>
+> Any comments ?
+>
 
-Will it help by clearing private_data? I have no idea at all, because
-for regular files, ->release won't be called on failed ->open. Just in
-case there are some exceptions in fbmem...
-
----
- drivers/video/fbmem.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---- linux-next.orig/drivers/video/fbmem.c	2011-06-09 10:36:06.000000000 +0800
-+++ linux-next/drivers/video/fbmem.c	2011-06-09 10:39:30.000000000 +0800
-@@ -1424,26 +1424,28 @@ __releases(&info->lock)
- 	file->private_data = info;
- 	if (info->fbops->fb_open) {
- 		res = info->fbops->fb_open(info,1);
- 		if (res)
- 			module_put(info->fbops->owner);
- 	}
- #ifdef CONFIG_FB_DEFERRED_IO
- 	if (info->fbdefio)
- 		fb_deferred_io_open(info, inode, file);
- #endif
- out:
- 	mutex_unlock(&info->lock);
--	if (res)
-+	if (res) {
-+		file->private_data = NULL;
- 		put_fb_info(info);
-+	}
- 	return res;
- }
- 
- static int 
- fb_release(struct inode *inode, struct file *file)
- __acquires(&info->lock)
- __releases(&info->lock)
- {
- 	struct fb_info * const info = file->private_data;
- 
- 	mutex_lock(&info->lock);
- 	if (info->fbops->fb_release)
+I think you'd better separate bug fix from cleanup's.
