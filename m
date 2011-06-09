@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab1FITJj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 15:09:39 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51970 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab1FITJe (ORCPT
+	id S1754728Ab1FITJa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 15:09:30 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36932 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753574Ab1FITJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 15:09:34 -0400
-Date: Thu, 9 Jun 2011 20:09:23 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: x86@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] efi: Fix argument types for SetVariable()
-Message-ID: <20110609190922.GA1805@srcf.ucam.org>
-References: <1307388985-7852-1-git-send-email-mjg@redhat.com>
- <BANLkTi=wmubWjiQ3Lw7s_iA11AoE+J3BPQ@mail.gmail.com>
+	Thu, 9 Jun 2011 15:09:28 -0400
+Date: Thu, 9 Jun 2011 20:09:26 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Joe Perches <joe@perches.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] regulator: Add rdev_crit() macro
+Message-ID: <20110609190925.GD2821@opensource.wolfsonmicro.com>
+References: <1307631997-32061-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1307644635.13329.36.camel@Joe-Laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTi=wmubWjiQ3Lw7s_iA11AoE+J3BPQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1307644635.13329.36.camel@Joe-Laptop>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 12:02:53PM -0700, Tony Luck wrote:
-> On Mon, Jun 6, 2011 at 12:36 PM, Matthew Garrett <mjg@redhat.com> wrote:
-> > diff --git a/include/linux/efi.h b/include/linux/efi.h
-> > index e376270..0758753 100644
-> > --- a/include/linux/efi.h
-> > +++ b/include/linux/efi.h
-> > @@ -168,7 +168,7 @@ typedef efi_status_t efi_get_variable_t (efi_char16_t *name, efi_guid_t *vendor,
-> >  typedef efi_status_t efi_get_next_variable_t (unsigned long *name_size, efi_char16_t *name,
-> >                                              efi_guid_t *vendor);
-> >  typedef efi_status_t efi_set_variable_t (efi_char16_t *name, efi_guid_t *vendor,
-> > -                                        unsigned long attr, unsigned long data_size,
-> > +                                        u32 attr, unsigned long data_size,
-> >                                         void *data);
-> >  typedef efi_status_t efi_get_next_high_mono_count_t (u32 *count);
-> >  typedef void efi_reset_system_t (int reset_type, efi_status_t status,
-> 
-> x86 isn't the only user of <linux/efi.h>
-> 
-> Building next-20110609 I see:
-> 
-> arch/ia64/kernel/efi.c:578: warning: assignment from incompatible pointer type
-> arch/ia64/kernel/efi.c:701: warning: assignment from incompatible pointer type
+On Thu, Jun 09, 2011 at 11:37:15AM -0700, Joe Perches wrote:
 
-Oops. I'll follow up.
+> > +#define rdev_crit(rdev, fmt, ...)					\
+> > +	pr_crit("%s: " fmt, rdev_get_name(rdev), ##__VA_ARGS__)
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> If that's really necessary, shouldn't rdev_emerg, rdev_alert
+> and rdev_notice be added as well?
+
+Yes, but I don't habitually use those when adding random trace during
+debug so don't care myself.
