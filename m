@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab1FIVkX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 17:40:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42534 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab1FIVkW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 17:40:22 -0400
-From: Andrew Murray <amurray@mpcdata.com>
-To: trivial@kernel.org
-Cc: linux-embedded@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Murray <amurray@mpcdata.com>,
-        Andrew Murray <amurray@mpc-data.co.uk>
-Subject: [PATCH] Bootgraph.pl bug fix
-Date: Thu,  9 Jun 2011 22:40:10 +0100
-Message-Id: <1307655610-28446-1-git-send-email-amurray@mpcdata.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756433Ab1FIVmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 17:42:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53688 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754611Ab1FIVms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 17:42:48 -0400
+Date: Thu, 9 Jun 2011 23:42:41 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: mmarek@suse.cz, pefoley2@verizon.net, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild fixes for 3.0
+Message-ID: <20110609214241.GA4849@sepie.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the assumption of the bootgraph.pl script that the
-timing information reported by PRINTK_TIME will contain at least one
-entry with a time of less than 100 seconds.
+Hi Linus,
 
-Not all boards correctly reset the system timer and in many cases the
-inital times reported by PRINTK_TIME is high. When this occurs the
-bootchart.pl script fails to give any useful output.
+These are the fixes to make sure 3.0 relally is 3.0, plus one fix for
+Makefile.asm-generic.  Please pull and unset the SUBLEVEL variable,
+thanks.
 
-This patch sets the $firsttime variable to the largest value expected
-by PRINTK_TIME
+Michal
 
-Signed-off-by: Andrew Murray <amurray@mpc-data.co.uk>
----
- scripts/bootgraph.pl |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The following changes since commit 55922c9d1b84b89cb946c777fddccb3247e7df2c:
 
-diff --git a/scripts/bootgraph.pl b/scripts/bootgraph.pl
-index 12caa82..b78fca9 100644
---- a/scripts/bootgraph.pl
-+++ b/scripts/bootgraph.pl
-@@ -44,7 +44,7 @@ my %end;
- my %type;
- my $done = 0;
- my $maxtime = 0;
--my $firsttime = 100;
-+my $firsttime = 99999;
- my $count = 0;
- my %pids;
- my %pidctr;
--- 
-1.7.4.1
+  Linux 3.0-rc1 (2011-05-29 17:43:36 -0700)
 
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git rc-fixes
+
+Michal Marek (5):
+      kbuild: Fix KERNELVERSION for empty SUBLEVEL or PATCHLEVEL
+      kbuild: Fix <linux/version.h> for empty SUBLEVEL or PATCHLEVEL
+      kbuild: Move depmod call to a separate script
+      kbuild: Hack for depmod not handling X.Y versions
+      perf: Use make kernelversion instead of parsing the Makefile
+
+Peter Foley (1):
+      kbuild: silence Nothing to be done for 'all' message
+
+ Makefile                         |   16 ++----------
+ scripts/Makefile.asm-generic     |    1 +
+ scripts/depmod.sh                |   48 ++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/PERF-VERSION-GEN |    7 +----
+ 4 files changed, 53 insertions(+), 19 deletions(-)
+ create mode 100755 scripts/depmod.sh
