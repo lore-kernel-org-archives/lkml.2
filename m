@@ -1,180 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab1FIVfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 17:35:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:54281 "EHLO mga14.intel.com"
+	id S1756364Ab1FIVgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 17:36:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37463 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754707Ab1FIVfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 17:35:43 -0400
+	id S1754241Ab1FIVgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 17:36:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,343,1304319600"; 
-   d="scan'208";a="10301471"
+   d="scan'208";a="16383404"
 From: "Luck, Tony" <tony.luck@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Borislav Petkov" <bp@amd64.org>
 Cc: linux-kernel@vger.kernel.org, "Huang, Ying" <ying.huang@intel.com>,
         "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>,
         "Avi Kivity" <avi@redhat.com>
 In-Reply-To: <4df13a522720782e51@agluck-desktop.sc.intel.com>
-Subject: [PATCH 07/10] MCE: replace mce.c use of TIF_MCE_NOTIFY with user_return_notifier
-Date: Thu, 09 Jun 2011 14:35:42 -0700
-Message-Id: <4df13cae2729896ba5@agluck-desktop.sc.intel.com>
+Subject: [PATCH 08/10] NOTIFIER: Take over TIF_MCE_NOTIFY and implement task return notifier
+Date: Thu, 09 Jun 2011 14:36:42 -0700
+Message-Id: <4df13cea27302b7ccf@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tony Luck <tony.luck@intel.com>
 
-Ingo wrote:
-> We already have a generic facility to do such things at
-> return-to-userspace: _TIF_USER_RETURN_NOTIFY.
+Existing user return notifier mechanism is designed to catch a specific
+cpu just as it returns to run any task in user mode.  We also need a
+machanism to catch a specific task.
 
-This just a proof of concept patch ... before this can become
-real the user-return-notifier code would have to be made NMI
-safe (currently it uses hlist_add_head/hlist_del, which would
-need to be changed to Ying's NMI-safe single threaded lists).
+N.B. This version is not fit for use - it uses normal Linux lists (which
+are not NMI safe).  Once Ying's NMI-safe single threaded lists are merged,
+it should be updated to use them.
 
-Reviewed-by: Avi Kivity <avi@redhat.com>
 NOT-Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- arch/x86/Kconfig                 |    1 +
- arch/x86/kernel/cpu/mcheck/mce.c |   47 +++++++++++++++++++++++++++----------
- arch/x86/kernel/signal.c         |    6 -----
- 3 files changed, 35 insertions(+), 19 deletions(-)
+ arch/x86/include/asm/thread_info.h   |    8 +++---
+ arch/x86/kernel/signal.c             |    3 ++
+ include/linux/sched.h                |    3 ++
+ include/linux/user-return-notifier.h |   14 +++++++++++++
+ kernel/fork.c                        |    1 +
+ kernel/user-return-notifier.c        |   36 ++++++++++++++++++++++++++++++++++
+ 6 files changed, 61 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cc6c53a..054e127 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -845,6 +845,7 @@ config X86_REROUTE_FOR_BROKEN_BOOT_IRQS
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index 1f2e61e..5574f96 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -82,7 +82,7 @@ struct thread_info {
+ #define TIF_SYSCALL_EMU		6	/* syscall emulation active */
+ #define TIF_SYSCALL_AUDIT	7	/* syscall auditing active */
+ #define TIF_SECCOMP		8	/* secure computing */
+-#define TIF_MCE_NOTIFY		10	/* notify userspace of an MCE */
++#define TIF_TASK_RETURN_NOTIFY	10	/* notify kernel of return to task */
+ #define TIF_USER_RETURN_NOTIFY	11	/* notify kernel of userspace return */
+ #define TIF_NOTSC		16	/* TSC is not accessible in userland */
+ #define TIF_IA32		17	/* 32bit process */
+@@ -105,7 +105,7 @@ struct thread_info {
+ #define _TIF_SYSCALL_EMU	(1 << TIF_SYSCALL_EMU)
+ #define _TIF_SYSCALL_AUDIT	(1 << TIF_SYSCALL_AUDIT)
+ #define _TIF_SECCOMP		(1 << TIF_SECCOMP)
+-#define _TIF_MCE_NOTIFY		(1 << TIF_MCE_NOTIFY)
++#define _TIF_TASK_RETURN_NOTIFY	(1 << TIF_TASK_RETURN_NOTIFY)
+ #define _TIF_USER_RETURN_NOTIFY	(1 << TIF_USER_RETURN_NOTIFY)
+ #define _TIF_NOTSC		(1 << TIF_NOTSC)
+ #define _TIF_IA32		(1 << TIF_IA32)
+@@ -139,8 +139,8 @@ struct thread_info {
+ 	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT)
  
- config X86_MCE
- 	bool "Machine Check / overheating reporting"
-+	select USER_RETURN_NOTIFIER
- 	---help---
- 	  Machine Check support allows the processor to notify the
- 	  kernel if it detects a problem (e.g. overheating, data corruption).
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index ffc8d11..28d223e 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -38,6 +38,7 @@
- #include <linux/mm.h>
- #include <linux/debugfs.h>
- #include <linux/edac_mce.h>
-+#include <linux/user-return-notifier.h>
+ /* Only used for 64 bit */
+-#define _TIF_DO_NOTIFY_MASK						\
+-	(_TIF_SIGPENDING | _TIF_MCE_NOTIFY | _TIF_NOTIFY_RESUME |	\
++#define _TIF_DO_NOTIFY_MASK							\
++	(_TIF_SIGPENDING | _TIF_TASK_RETURN_NOTIFY | _TIF_NOTIFY_RESUME |	\
+ 	 _TIF_USER_RETURN_NOTIFY)
  
- #include <asm/processor.h>
- #include <asm/hw_irq.h>
-@@ -69,6 +70,15 @@ atomic_t mce_entry;
- 
- DEFINE_PER_CPU(unsigned, mce_exception_count);
- 
-+struct mce_notify {
-+	struct user_return_notifier urn;
-+	bool registered;
-+};
-+
-+static void mce_do_notify(struct user_return_notifier *urn);
-+
-+static DEFINE_PER_CPU(struct mce_notify, mce_notify);
-+
- /*
-  * Tolerant levels:
-  *   0: always panic on uncorrected errors, log corrected errors
-@@ -947,6 +957,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	int i;
- 	int worst = 0;
- 	int severity;
-+	struct mce_notify *np;
- 	/*
- 	 * Establish sequential order between the CPUs entering the machine
- 	 * check handler.
-@@ -1099,7 +1110,12 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		force_sig(SIGBUS, current);
- 
- 	/* notify userspace ASAP */
--	set_thread_flag(TIF_MCE_NOTIFY);
-+	np = &__get_cpu_var(mce_notify);
-+	if (np->registered == 0) {
-+		np->urn.on_user_return = mce_do_notify;
-+		user_return_notifier_register(&np->urn);
-+		np->registered = 1;
-+	}
- 
- 	if (worst > 0)
- 		mce_report_event(regs);
-@@ -1116,28 +1132,35 @@ void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
- 	printk(KERN_ERR "Action optional memory failure at %lx ignored\n", pfn);
- }
- 
-+static void mce_process_ring(void)
-+{
-+	unsigned long pfn;
-+
-+	mce_notify_irq();
-+	while (mce_ring_get(&pfn))
-+		memory_failure(pfn, MCE_VECTOR);
-+}
-+
- /*
-  * Called after mce notification in process context. This code
-  * is allowed to sleep. Call the high level VM handler to process
-  * any corrupted pages.
-  * Assume that the work queue code only calls this one at a time
-  * per CPU.
-- * Note we don't disable preemption, so this code might run on the wrong
-- * CPU. In this case the event is picked up by the scheduled work queue.
-- * This is merely a fast path to expedite processing in some common
-- * cases.
-  */
--void mce_notify_process(void)
-+static void mce_do_notify(struct user_return_notifier *urn)
- {
--	unsigned long pfn;
--	mce_notify_irq();
--	while (mce_ring_get(&pfn))
--		memory_failure(pfn, MCE_VECTOR);
-+	struct mce_notify *np = container_of(urn, struct mce_notify, urn);
-+
-+	user_return_notifier_unregister(urn);
-+	np->registered = 0;
-+
-+	mce_process_ring();
- }
- 
- static void mce_process_work(struct work_struct *dummy)
- {
--	mce_notify_process();
-+	mce_process_ring();
- }
- 
- #ifdef CONFIG_X86_MCE_INTEL
-@@ -1218,8 +1241,6 @@ int mce_notify_irq(void)
- 	/* Not more than two messages every minute */
- 	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
- 
--	clear_thread_flag(TIF_MCE_NOTIFY);
--
- 	if (test_and_clear_bit(0, &mce_need_notify)) {
- 		wake_up_interruptible(&mce_wait);
- 
+ /* flags to check in __switch_to() */
 diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 4fd173c..44efc22 100644
+index 44efc22..f0f45b1 100644
 --- a/arch/x86/kernel/signal.c
 +++ b/arch/x86/kernel/signal.c
-@@ -838,12 +838,6 @@ static void do_signal(struct pt_regs *regs)
+@@ -838,6 +838,9 @@ static void do_signal(struct pt_regs *regs)
  void
  do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
  {
--#ifdef CONFIG_X86_MCE
--	/* notify userspace of pending MCEs */
--	if (thread_info_flags & _TIF_MCE_NOTIFY)
--		mce_notify_process();
--#endif /* CONFIG_X86_64 && CONFIG_X86_MCE */
--
++	if (thread_info_flags & _TIF_TASK_RETURN_NOTIFY)
++		fire_task_return_notifiers();
++
  	/* deal with pending signal delivery */
  	if (thread_info_flags & _TIF_SIGPENDING)
  		do_signal(regs);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 781abd1..ec7a581 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1540,6 +1540,9 @@ struct task_struct {
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+ 	atomic_t ptrace_bp_refcnt;
+ #endif
++#ifdef CONFIG_USER_RETURN_NOTIFIER
++	struct hlist_head return_notifier_list;
++#endif
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff --git a/include/linux/user-return-notifier.h b/include/linux/user-return-notifier.h
+index 9c4a445..6114b25 100644
+--- a/include/linux/user-return-notifier.h
++++ b/include/linux/user-return-notifier.h
+@@ -15,6 +15,9 @@ struct user_return_notifier {
+ void user_return_notifier_register(struct user_return_notifier *urn);
+ void user_return_notifier_unregister(struct user_return_notifier *urn);
+ 
++void task_return_notifier_register(struct user_return_notifier *urn);
++void task_return_notifier_unregister(struct user_return_notifier *urn);
++
+ static inline void propagate_user_return_notify(struct task_struct *prev,
+ 						struct task_struct *next)
+ {
+@@ -26,11 +29,18 @@ static inline void propagate_user_return_notify(struct task_struct *prev,
+ 
+ void fire_user_return_notifiers(void);
+ 
++void fire_task_return_notifiers(void);
++
+ static inline void clear_user_return_notifier(struct task_struct *p)
+ {
+ 	clear_tsk_thread_flag(p, TIF_USER_RETURN_NOTIFY);
+ }
+ 
++static inline void clear_task_return_notifier(struct task_struct *p)
++{
++	clear_tsk_thread_flag(p, TIF_TASK_RETURN_NOTIFY);
++}
++
+ #else
+ 
+ struct user_return_notifier {};
+@@ -42,8 +52,12 @@ static inline void propagate_user_return_notify(struct task_struct *prev,
+ 
+ static inline void fire_user_return_notifiers(void) {}
+ 
++static inline void fire_task_return_notifiers(void) {}
++
+ static inline void clear_user_return_notifier(struct task_struct *p) {}
+ 
++static inline void clear_task_return_notifier(struct task_struct *p) {}
++
+ #endif
+ 
+ #endif
+diff --git a/kernel/fork.c b/kernel/fork.c
+index e7548de..1af37c2 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -282,6 +282,7 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
+ 
+ 	setup_thread_stack(tsk, orig);
+ 	clear_user_return_notifier(tsk);
++	clear_task_return_notifier(tsk);
+ 	clear_tsk_need_resched(tsk);
+ 	stackend = end_of_stack(tsk);
+ 	*stackend = STACK_END_MAGIC;	/* for overflow detection */
+diff --git a/kernel/user-return-notifier.c b/kernel/user-return-notifier.c
+index 92cb706..7c9389e 100644
+--- a/kernel/user-return-notifier.c
++++ b/kernel/user-return-notifier.c
+@@ -42,3 +42,39 @@ void fire_user_return_notifiers(void)
+ 		urn->on_user_return(urn);
+ 	put_cpu_var(return_notifier_list);
+ }
++
++/*
++ * Request a notification when the current task returns to userspace.  Must be
++ * called in atomic context.  The notifier will also be called in atomic
++ * context.
++ */
++void task_return_notifier_register(struct user_return_notifier *urn)
++{
++	set_tsk_thread_flag(current, TIF_TASK_RETURN_NOTIFY);
++	hlist_add_head(&urn->link, &(current->return_notifier_list));
++}
++EXPORT_SYMBOL_GPL(task_return_notifier_register);
++
++/*
++ * Removes a registered user return notifier.  Must be called from atomic
++ * context, and from the same cpu registration occurred in.
++ */
++void task_return_notifier_unregister(struct user_return_notifier *urn)
++{
++	hlist_del(&urn->link);
++	if (hlist_empty(&(current->return_notifier_list)))
++		clear_tsk_thread_flag(current, TIF_TASK_RETURN_NOTIFY);
++}
++EXPORT_SYMBOL_GPL(task_return_notifier_unregister);
++
++/* Calls registered user return notifiers */
++void fire_task_return_notifiers(void)
++{
++	struct user_return_notifier *urn;
++	struct hlist_node *tmp1, *tmp2;
++	struct hlist_head *head;
++
++	head = &(current->return_notifier_list);
++	hlist_for_each_entry_safe(urn, tmp1, tmp2, head, link)
++		urn->on_user_return(urn);
++}
 -- 
 1.7.3.1
 
