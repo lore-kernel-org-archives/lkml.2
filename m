@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab1FIUgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 16:36:17 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:35015 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab1FIUgP convert rfc822-to-8bit (ORCPT
+	id S1755895Ab1FIUkZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 16:40:25 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:34126
+	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752892Ab1FIUkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 16:36:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BMlDgm2dz0IzrctbHrCSGYsxT3QBYfCVcr8lOFnBwNl6bV7N1uIfzVsYwvP56XXT1r
-         nrP/N7t8aPczOQM6mFiQ==
+	Thu, 9 Jun 2011 16:40:22 -0400
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4DF12FAD.9010101@freescale.com>
+Date: Thu, 9 Jun 2011 15:40:13 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
 MIME-Version: 1.0
-In-Reply-To: <1307644812.2497.1022.camel@laptop>
-References: <20110606145708.GA7279@quad>
-	<1307644812.2497.1022.camel@laptop>
-Date: Thu, 9 Jun 2011 22:36:10 +0200
-Message-ID: <BANLkTimSO-+-0=bc=TZqvUxe7gwsSn1xRg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] perf_events: fix validation of events using an extra
- reg (v4)
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>, Lin Ming <ming.m.lin@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Greg KH <greg@kroah.com>
+CC: Arnd Bergmann <arnd@arndb.de>, <linuxppc-dev@lists.ozlabs.org>,
+        <alan@lxorguk.ukuu.org.uk>, <kumar.gala@freescale.com>,
+        <benh@kernel.crashing.org>, <akpm@kernel.org>, <cmetcalf@tilera.com>,
+        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>,
+        <linux-console@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH 7/7] [v5] drivers/virt: introduce Freescale hypervisor
+ management driver
+References: <1307646794-26374-1-git-send-email-timur@freescale.com> <201106092213.13755.arnd@arndb.de> <4DF12A94.6070605@freescale.com> <20110609203117.GB14235@kroah.com>
+In-Reply-To: <20110609203117.GB14235@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 8:40 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2011-06-06 at 16:57 +0200, Stephane Eranian wrote:
->> +static struct cpu_hw_events *allocate_fake_cpuc(void)
->> +{
->> +       struct cpu_hw_events *cpuc;
->> +       int cpu = smp_processor_id();
->
-> That's a boo-boo, clearly we are in a preemptible context here (see the
-> GFP_KERNEL allocation on the next line), so using smp_processor_id()
-> isn't valid.
->
-Good point. I missed that.
+Greg KH wrote:
+> Why is binary compatibility important?  Isn't this a brand new driver
+> for a brand new system?  What userspace tools are out there in the wild
+> for such a thing?
 
-> Now since all that allocate_shared_regs() does with it is pick a NUMA
-> node, we should probably use raw_smp_processor_id() and leave it at
-> that, right?
->
-Yeah, for what we do with fake_cpuc, it does not really matter where
-it comes from. This is not on any critical path. The simplest allocator
-will do it.
+This driver (and the hypervisor it talks to, plus the apps, etc) has been in
+internal development for three years.  There hasn't been a lot of effort
+internally to release this software upstream until recently.
 
+I personally have been complaining about it for quite some time, but I have no
+control over our internal release process.  Even when the hardware has been
+announced and available for purchase, the BSP is sometimes only available under
+NDA.  Eventually, everything is publicly released, and most of the code is
+pushed upstream, but it's a long and painful struggle at times.
 
->> +       cpuc = kzalloc(sizeof(*cpuc), GFP_KERNEL);
->> +       if (!cpuc)
->> +               return ERR_PTR(-ENOMEM);
->> +
->> +       /* only needed, if we have extra_regs */
->> +       if (x86_pmu.extra_regs) {
->> +               cpuc->shared_regs = allocate_shared_regs(cpu);
->> +               if (!cpuc->shared_regs)
->> +                       goto error;
->> +       }
->> +       return cpuc;
->> +error:
->> +       free_fake_cpuc(cpuc);
->> +       return ERR_PTR(-ENOMEM);
->> +}
->
->
+My concern has been dealing with the headaches of bug reports from customers,
+etc as they upgrade their kernel but not their apps, and then wonder why nothing
+works.
+
+But as Arnd pointed out, it really isn't as big of deal as I make it out to be.
+ I can maintain compatibility internally.  I blame my allergy medicine.
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
+
