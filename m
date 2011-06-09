@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab1FITrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 15:47:33 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56262 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755031Ab1FITra convert rfc822-to-8bit (ORCPT
+	id S1755495Ab1FITuI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 15:50:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:48366 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755141Ab1FITuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 15:47:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=IGqi5yK5cKWt1/qw/9l+7wOPltGmntUnsIQLJ2WCvDNfbzTlKbKI77wiS4o3t2U7cv
-         bDNY/qW7n5UZfvAUShJzNdx5LWgCgjyFbQrp7AtAhbozX39dIb2NdFW79HqI35MzW94n
-         6G7Hu5X8GSfWzWv5IE1sPcNE7BGRmDifulmwU=
+	Thu, 9 Jun 2011 15:50:03 -0400
+Message-ID: <4DF123AA.6070402@oracle.com>
+Date: Thu, 09 Jun 2011 12:48:58 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=LZ=rGMOJopOeZ5zmmxcFEDDbDiw@mail.gmail.com>
-References: <BANLkTi=LZ=rGMOJopOeZ5zmmxcFEDDbDiw@mail.gmail.com>
-Date: Thu, 9 Jun 2011 15:47:29 -0400
-Message-ID: <BANLkTikMLvgtAJp8Vex2u-Fcv5YGMvWBgg@mail.gmail.com>
-Subject: Consensus inquiry regarding POSIX_FADV_NOREUSE
-From: "Jonah H. Harris" <jonah.harris@gmail.com>
-To: linux-kernel@vger.kernel.org
+To: Timur Tabi <timur@freescale.com>
+CC: alan@lxorguk.ukuu.org.uk, arnd@arndb.de, kumar.gala@freescale.com,
+        benh@kernel.crashing.org, greg@kroah.com, akpm@kernel.org,
+        cmetcalf@tilera.com, konrad.wilk@oracle.com, dsaxena@linaro.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-console@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 7/7] [v5] drivers/virt: introduce Freescale hypervisor
+ management driver
+References: <1307646794-26374-1-git-send-email-timur@freescale.com> <20110609124010.6335559e.randy.dunlap@oracle.com> <4DF12345.1040409@freescale.com>
+In-Reply-To: <4DF12345.1040409@freescale.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4DF123B7.004C:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+On 06/09/11 12:47, Timur Tabi wrote:
+> Randy Dunlap wrote:
+>>>> +enum fsl_hv_ioctl_cmd {
+>>>> +	FSL_HV_IOCTL_PARTITION_RESTART = _IOWR(0, 1, struct fsl_hv_ioctl_restart),
+>>>> +	FSL_HV_IOCTL_PARTITION_GET_STATUS = _IOWR(0, 2, struct fsl_hv_ioctl_status),
+>>>> +	FSL_HV_IOCTL_PARTITION_START = _IOWR(0, 3, struct fsl_hv_ioctl_start),
+>>>> +	FSL_HV_IOCTL_PARTITION_STOP = _IOWR(0, 4, struct fsl_hv_ioctl_stop),
+>>>> +	FSL_HV_IOCTL_MEMCPY = _IOWR(0, 5, struct fsl_hv_ioctl_memcpy),
+>>>> +	FSL_HV_IOCTL_DOORBELL = _IOWR(0, 6, struct fsl_hv_ioctl_doorbell),
+>>>> +	FSL_HV_IOCTL_GETPROP = _IOWR(0, 7, struct fsl_hv_ioctl_prop),
+>>>> +	FSL_HV_IOCTL_SETPROP = _IOWR(0, 8, struct fsl_hv_ioctl_prop),
+>>>> +};
+> 
+>> Missing an entry in Documentation/ioctl/ioctl-number.txt for 0 (with conflict!).
+> 
+> If I change it from 0, I'm going to break binary compatibility with our apps.  I
+> agree that maybe I shouldn't have picked 0, but considering how many conflicts
+> there already are, I wonder what the point is.  Even if I pick a number that is
+> currently not listed in the chart, that doesn't mean that it's actually not
+> being used, or that it won't conflict in the future.
 
-I'm thinking about implementing the POSIX_FADV_NOREUSE advice option
-of fadvise (mm/fadvise.c). While POSIX_FADV_DONTNEED works for many
-use cases, it would be nice to forcibly evict pages as quickly as
-possible to avoid having a single application pollute the cache --
-especially when cache is used more heavily by other applications.
+Yes, I understood that.
 
-I have some ideas in regard to implementation, but as of yet I don't
-have a concrete proposal. Instead, I wanted to see whether anyone is
-averse to the idea before I start researching it more completely. To
-that end, I've reviewed a large number of previous discussions and am
-seeking clarification in regard to the current consensus of the
-following:
+> So is it okay to stick with 0, or do I need to pick a new number?
 
-  For developers who don't want their pages cached, should they use
-O_DIRECT or fadvise?
+I wasn't suggesting that you change the 0, just note that it has conflicts,
+like other ioctls do.
 
-In the past, I've used O_DIRECT quite successfully. But as it requires
-dealing with alignment, it's not as simple to use or as general-case
-as fadvise.
 
-Thoughts?
-
---
-Jonah H. Harris, VP of Architecture
-myYearbook.com
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
