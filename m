@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab1FIF1J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 01:27:09 -0400
-Received: from gate.crashing.org ([63.228.1.57]:58154 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214Ab1FIF1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 01:27:05 -0400
-Subject: Re: [patch 13/14] PCSPKR: Cleanup Kconfig dependencies
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: ralf@linux-mips.org
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-alpha@vger.kernel.org, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org
-In-Reply-To: <20110601180610.984881988@duck.linux-mips.net>
-References: <20110601180456.801265664@duck.linux-mips.net>
-	 <20110601180610.984881988@duck.linux-mips.net>
+	id S1751622Ab1FIFL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 01:11:27 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56182 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab1FIFL0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 01:11:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=ppYCYJ676Sodg52A+ejx52dUvymfOjJRDUVG/jIMoBDPbN6URHnUenPUMmbk3gn9/+
+         T3BVsIdbdaW7/tqn+GwY1PJxLVR4RVZ8zuyL+C3fOC1lVqcjFst6lL05I870r3Hu6pfk
+         rstfIMfGHfyD/PX3razXhpRjSsr6pHsvhpsdw=
+Subject: Re: Change in functionality of futex() system call.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Darren Hart <dvhart@linux.intel.com>, George Spelvin <linux@horizon.com>,
+        david@rgmadvisors.com, kyle@moffetthome.net,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <BANLkTi=E9gR3JHa4ipHHGGR2AiO9xJri=A@mail.gmail.com>
+References: <20110609004435.14550.qmail@science.horizon.com>
+	 <4DF037C6.4000507@linux.intel.com>
+	 <BANLkTik62dLMf5PCPGeW=9P=sF2QcnW42g@mail.gmail.com>
+	 <1307591659.3980.37.camel@edumazet-laptop>
+	 <BANLkTi=E9gR3JHa4ipHHGGR2AiO9xJri=A@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Jun 2011 15:09:32 +1000
-Message-ID: <1307596172.2874.268.camel@pasglop>
+Date: Thu, 09 Jun 2011 07:11:21 +0200
+Message-ID: <1307596281.3980.59.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-01 at 19:05 +0100, ralf@linux-mips.org wrote:
-> plain text document attachment
-> (i8253-use-aux-symbol-for-pcspkr-config.patch)
-> Lenghty lists of the kind "depends on ARCH1 || ARCH2 ... || ARCH123" are
-> usually either wrong or too coarse grained.  Or plain an ugly sin.
+Le jeudi 09 juin 2011 à 00:10 -0400, Andrew Lutomirski a écrit :
+> On Wed, Jun 8, 2011 at 11:54 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> >
+> > You can not prevent DOS on a machine if you allow a process to RO map
+> > your critical files (where you put futexes), because you allow this
+> > process to interfere with critical cache lines bouncing between cpus.
+> 
+> The cacheline bounce DoS slows things down and they go back to normal
+> when you kill the DoS-ing task.
+> 
+> The wakeup-eating DoS is permanent.  Seems a good deal worse to me.
+> 
+> If you make this change, please at least document it in the man page.
+> 
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
 
-> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-> To: linux-kernel@vger.kernel.org
-> Cc: Richard Henderson <rth@twiddle.net>
-> Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-> Cc: Matt Turner <mattst88@gmail.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Cc: linux-alpha@vger.kernel.org
-> Cc: linux-mips@linux-mips.org
-> Cc: linuxppc-dev@lists.ozlabs.org
+This is how futexes had working for years.
+
+It was very obvious from the beginning. Please submit a man page change
+since you raised the point. You own the credit to open a CVE and
+immediately release a fix to all 2.6 versions !
+
+How come a critical fix (according to you) went without being noticed
+and documented ?
+
+> Then how am I supposed to efficiently broadcast information to
+> untrusted processes?  I'll have to put any futexes involved into
+> different files, but one way or another the actual data will have to
+> be memory mapped to avoid syscall overhead.
+
+futexes are a linux extension over standard VM games.
+
+If you dont know how to share a memory segment between a group of
+processes, disallowing others to come spy on you, maybe its better to
+use another IPC ?
+
+Instead of 'fixing' futexes, what about educating people how to
+correctly use memory segments ?
+
 
 
