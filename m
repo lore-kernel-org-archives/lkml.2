@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab1FIS6a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 14:58:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35015 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab1FIS61 convert rfc822-to-8bit (ORCPT
+	id S1754644Ab1FITAM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 15:00:12 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43973 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216Ab1FITAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 14:58:27 -0400
+	Thu, 9 Jun 2011 15:00:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FL9Wc1Qh/gewFHc3V+EzUTICHTBmlbVDpyWGVXIPOyOete/sgct1v9udzqGnNH+qMM
-         E2U659xkvYRjIvkog58N0JuAbGUisBHqNUsG5yddgeh/g030n2FjYVH+NN+NEHuIgYff
-         0m8VhQWHgl4nJmJwgZ2xY2CwnItxm8U4ocbwQ=
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=HmERQ8Mm6UlmXmzt0Fti8L0CkONJ0XIhOr7AaPgfAlCiq4/B78eYpPQErzSiJuC6X2
+         wEapHxvBwnGCWvf6fyZs9S3kYd7CMZOXWVajiIaQ94SQdvGKeilfvEaWGVtBATy+UbRs
+         fGC488XLUnrT0TJwylrhcxBU7xu3Ms06Cw0Io=
+Date: Thu, 9 Jun 2011 21:59:58 +0300
+From: Maxin B John <maxin.john@gmail.com>
+To: linux-doc@vger.kernel.org
+Cc: catalin.marinas@arm.com, rdunlap@xenotime.net, dbaluta@ixiacom.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Documentation: update kmemleak architecture support info
+Message-ID: <20110609185957.GA3250@maxin>
 MIME-Version: 1.0
-In-Reply-To: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2DED@dbde02.ent.ti.com>
-References: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2DED@dbde02.ent.ti.com>
-Date: Fri, 10 Jun 2011 00:28:25 +0530
-Message-ID: <BANLkTikvURS7aQEBax0xEfcFZMg3-cUPow@mail.gmail.com>
-Subject: Re: [RFC] dmaengine: add new api for preparing simple slave transfer
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: "Raju, Sundaram" <sundaram@ti.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 6:09 PM, Raju, Sundaram <sundaram@ti.com> wrote:
+Kmemleak now supports s390 and mips too.
 
-> Generic buffer description:
-> A generic buffer can be split into number of frames which contain number of chunks inside them. The frames need not be contiguous, nor do the chunks inside a frame.
->
->        -------------------------------------------------------------------
->        | Chunk 0 |ICG| Chunk 1 |ICG| ... |ICG| Chunk n |       Frame 0
->        -------------------------------------------------------------------
->        |                       Inter Frame Gap                     |
->        -------------------------------------------------------------------
->        | Chunk 0 |ICG| Chunk 1 |ICG| ... |ICG| Chunk n |       Frame 1
->        -------------------------------------------------------------------
->        |                       Inter Frame Gap                     |
->        -------------------------------------------------------------------
->        |                               ........                                    |
->        -------------------------------------------------------------------
->        |                       Inter Frame Gap                     |
->        -------------------------------------------------------------------
->        | Chunk 0 |ICG| Chunk 1 |ICG| ... |ICG| Chunk n |       Frame m
->        -------------------------------------------------------------------
-
-IIUC the above figure, the work done by DMA controller remains the
-same, either by
-passing this as a transfer of the new type or as a normal sg-list  - unless
-the DMAC driver attempts to reorder the transfers or the DMAC h/w
-natively supports
-some form of sg-list.
-For DMACs, that have no special support, different representation
-wouldn't make a
-difference.
-And if the DMAC does support the kind of fancy scatter-gather, it
-should be possible for
-the dma api driver to analyze the submitted 'normal' sg-list and
-program the transfers at one go.
-Besides, it should be possible to have a 'template' sequence of
-requests prepared
-already because usually, for above mentioned scenario, the parameters
-don't change across
-items in a list.
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+---
+diff --git a/Documentation/kmemleak.txt b/Documentation/kmemleak.txt
+index 090e6ee..82833ff 100644
+--- a/Documentation/kmemleak.txt
++++ b/Documentation/kmemleak.txt
+@@ -11,7 +11,8 @@ with the difference that the orphan objects are not freed but only
+ reported via /sys/kernel/debug/kmemleak. A similar method is used by the
+ Valgrind tool (memcheck --leak-check) to detect the memory leaks in
+ user-space applications.
+-Kmemleak is supported on x86, arm, powerpc, sparc, sh, microblaze and tile.
++Kmemleak is supported on x86, arm, powerpc, sparc, sh, microblaze, tile,
++s390 and mips.
+ 
+ Usage
+ -----
