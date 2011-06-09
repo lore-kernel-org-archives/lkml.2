@@ -1,118 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab1FIXc7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 19:32:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25040 "EHLO mx1.redhat.com"
+	id S1757181Ab1FIXfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 19:35:19 -0400
+Received: from r00tworld.com ([212.85.137.150]:46311 "EHLO r00tworld.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754730Ab1FIXc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 19:32:56 -0400
-Message-ID: <4DF1581E.8050308@redhat.com>
-Date: Thu, 09 Jun 2011 20:32:46 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1755347Ab1FIXfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 19:35:13 -0400
+From: pageexec@freemail.hu
+To: Ingo Molnar <mingo@elte.hu>
+Date: Fri, 10 Jun 2011 01:33:29 +0200
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for June 8 (docbook/media)
-References: <20110608161046.4ad95776.sfr@canb.auug.org.au> <20110608125243.e63a07fc.randy.dunlap@oracle.com> <4DF11E15.5030907@infradead.org> <4DF12263.3070900@redhat.com> <4DF12DD1.7060606@oracle.com>
-In-Reply-To: <4DF12DD1.7060606@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] x86-64, vsyscalls: Rename UNSAFE_VSYSCALLS to COMPAT_VSYSCALLS
+Reply-to: pageexec@freemail.hu
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@mit.edu>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
+        Brian Gerst <brgerst@gmail.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>, Valdis.Kletnieks@vt.edu,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <4DF15849.13114.243B8330@pageexec.freemail.hu>
+In-reply-to: <20110609070215.GD7734@elte.hu>
+References: <cover.1307292171.git.luto@mit.edu>, <4DEEB31B.30013.19E648C8@pageexec.freemail.hu>, <20110609070215.GD7734@elte.hu>
+X-mailer: Pegasus Mail for Windows (4.61)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Fri, 10 Jun 2011 01:34:10 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 09-06-2011 17:32, Randy Dunlap escreveu:
-> On 06/09/11 12:43, Mauro Carvalho Chehab wrote:
->> Em 09-06-2011 16:25, Mauro Carvalho Chehab escreveu:
->>> Em 08-06-2011 16:52, Randy Dunlap escreveu:
->>>> The DocBook/media/Makefile seems to be causing too much noise:
->>>>
->>>> ls: cannot access linux-next-20110608/Documentation/DocBook/media/*/*.gif: No such file or directory
->>>> ls: cannot access linux-next-20110608/Documentation/DocBook/media/*/*.png: No such file or directory
->>>>
->>>> Maybe the cleanmediadocs target could be made silent?
->>>
->>> I'll take a look on it. 
->>>
->>> FYI, The next build will probably be noisier, as it is now pointing to some 
->>> documentation gaps at the DVB API. Those gaps should take a longer time to fix, 
->>> as we need to discuss upstream about what should be done with those API's,
->>> that seems to be abandoned upstream (only one legacy DVB driver uses them).
->>> However, I was told that some out-of-tree drivers and some drivers under development
->>> are using them.
->>>
->>> So, I intend to wait until the next merge window before either dropping those 
->>> legacy API specs (or moving them to a deprecated section) or to merge those
->>> out-of-tree drivers, with the proper documentation updates.
->>>
->>>> also, where is the mediaindexdocs target defined?
->>>
->>> Thanks for noticing it. We don't need this target anymore. I'll write a patch
->>> removing it.
->>
->> This patch should remove the undesired noise.
+On 9 Jun 2011 at 9:02, Ingo Molnar wrote:
+
+> * pageexec@freemail.hu <pageexec@freemail.hu> wrote:
+> > so can i take it as your concession that the vsyscall feature is 
+> > indeed a security problem and it's being randomized/(re)moved for 
+> > security reasons?
 > 
+> Again, i made two statements:
 > 
-> Doesn't work for me.  Did you test it?
-
-Yes:
-
-$ make htmldocs
-  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//v4l2.xml
-  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//media-entities.tmpl
-  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//media-indices.tmpl
-  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//videodev2.h.xml
-  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//audio.h.xml
-  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//ca.h.xml
-  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//dmx.h.xml
-  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//frontend.h.xml
-  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//net.h.xml
-  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//video.h.xml
-  DOCPROC Documentation/DocBook/media_api.xml
-  HTML    Documentation/DocBook/media_api.html
-Error: no ID for constraint linkend: AUDIO_GET_PTS.
-Error: no ID for constraint linkend: AUDIO_BILINGUAL_CHANNEL_SELECT.
-Error: no ID for constraint linkend: CA_RESET.
-Error: no ID for constraint linkend: CA_GET_CAP.
-Error: no ID for constraint linkend: CA_GET_SLOT_INFO.
-Error: no ID for constraint linkend: CA_GET_DESCR_INFO.
-Error: no ID for constraint linkend: CA_GET_MSG.
-Error: no ID for constraint linkend: CA_SEND_MSG.
-Error: no ID for constraint linkend: CA_SET_DESCR.
-Error: no ID for constraint linkend: CA_SET_PID.
-Error: no ID for constraint linkend: DMX_GET_PES_PIDS.
-Error: no ID for constraint linkend: DMX_GET_CAPS.
-Error: no ID for constraint linkend: DMX_SET_SOURCE.
-Error: no ID for constraint linkend: DMX_ADD_PID.
-Error: no ID for constraint linkend: DMX_REMOVE_PID.
-Error: no ID for constraint linkend: NET_ADD_IF.
-Error: no ID for constraint linkend: NET_REMOVE_IF.
-Error: no ID for constraint linkend: NET_GET_IF.
-Error: no ID for constraint linkend: VIDEO_GET_SIZE.
-Error: no ID for constraint linkend: VIDEO_GET_FRAME_RATE.
-Error: no ID for constraint linkend: VIDEO_GET_PTS.
-Error: no ID for constraint linkend: VIDEO_GET_FRAME_COUNT.
-Error: no ID for constraint linkend: VIDEO_COMMAND.
-Error: no ID for constraint linkend: VIDEO_TRY_COMMAND.
-rm -rf Documentation/DocBook/index.html; echo '<h1>Linux Kernel HTML Documentation</h1>' >> Documentation/DocBook/index.html && echo '<h2>Kernel Version: 3.0.0-rc1</h2>' >> Documentation/DocBook/index.html && cat Documentation/DocBook/80211.html Documentation/DocBook/alsa-driver-api.html Documentation/DocBook/debugobjects.html Documentation/DocBook/device-drivers.html Documentation/DocBook/deviceiobook.html Documentation/DocBook/drm.html Documentation/DocBook/filesystems.html Documentation/DocBook/gadget.html Documentation/DocBook/genericirq.html Documentation/DocBook/kernel-api.html Documentation/DocBook/kernel-hacking.html Documentation/DocBook/kernel-locking.html Documentation/DocBook/kgdb.html Documentation/DocBook/libata.html Documentation/DocBook/librs.html Documentation/DocBook/lsm.html Documentation/DocBook/mcabook.html Documentation/DocBook/media_api.html Documentation/DocBook/mtdnand.html Documentation/DocBook/networking.html Documentation/DocBook/rapidio.html Docum
-entation/DocBook/regulator.html Documentation/DocBook/s390-drivers.html Documentation/DocBook/scsi.html Documentation/DocBook/sh.html Documentation/DocBook/tracepoint.html Documentation/DocBook/uio-howto.html Documentation/DocBook/usb.html Documentation/DocBook/writing-an-alsa-driver.html Documentation/DocBook/writing_usb_driver.html Documentation/DocBook/z8530book.html >> Documentation/DocBook/index.html
-v4l@pedra ~/v4l/patchwork $ make cleandocs
-make[1]: [cleanmediadocs] Erro 1 (ignorado)
-v4l@pedra ~/v4l/patchwork $ make cleanmediadocs
-make[1]: [cleanmediadocs] Erro 1 (ignorado)
-
-(the above linkend errors are due to the lack of documentation for those ioctls, as I've
-explained before).
-
+>   "That naming is borderline security FUD"
+>   "It's only a security problem if there's a security hole elsewhere."
 > 
-> Even this does not silence the noise for me:
+> I stand by those statements and i reject your repeated attempts to 
+> put words in my mouth that i did not say, such as:
 > 
-> cleanmediadocs:
-> 	-@rm `find $(MEDIA_OBJ_DIR) -type l` $(GENFILES) $(IMGFILES) >/dev/null 2>&1
+>    > you called this feature "borderline security FUD" [...]
 
-Weird.
-The errors should be doing to stderr, so 2>/dev/null should be working.
+it's no more putting words into your mouth than your own attempt:
 
-Mauro
+> You generally seem to assume that security is an absolute goal 
+> with no costs attached.
+
+(for which i'm still waiting for an actual proof btw ;)
+
+also, notice i didn't quote you ("..." or >... style), i simply paraphrased
+what you said and explained why. i got no response to those arguments though
+so i guess you conceded them. then why do you keep arguing the same nonsense?
+
+> > how can the name be "borderline security FUD" but what the name 
+> > refers to not be that? you see, we name things for a reason, mostly 
+> > because we think the name has something to do with the thing it 
+> > names, duh?
+> 
+> It's borderline security FUD because it suggests that keeping the 
+> vsyscall around is in itself a security hole.
+
+it's not a hole per se, rather it's an accessory to writing reliable
+exploits (not only userland ones btw). that's the *only* reason this
+patchset even exists. do you deny that? now, if you don't deny it then
+you also agree that the current vsyscall page *is* a security problem
+(problem != hole). therefore the suggested name for the config option
+that removes it for good cannot be "borderline security FUD".
+
+> As i outlined whether there's *another* bug that *can be exploited* is
+> highly dependent on the usecase - while the Kconfig name made no such
+> distinction. (For example a device maker might choose to keep the
+> option enabled in some embedded usecase, those are pretty limited
+> environments that have few vectors of attack.) 
+
+but you see, your own argument defeats your point: if for another use
+case the presence of the vsyscall page *is* a security hazard (like,
+i don't know, every single server and desktop out there?) then *not*
+making it clear in the option name *is* a problem. see how it cuts
+both ways? what now? ;) prudent people err on the side of safety.
+
+also if the above device maker disables it even if their devices would
+never ever be exploited using the vsyscall page, they haven't lost anything.
+heck, they'll have reduced their kernel image and gained some all too
+important cycles ;).
+
+> Anyway, repeating and explaining my arguments a dozen times
+
+repeated - yes, explained - no, that's the problem. you didn't even address
+what *i* said (how many questions of mine have you left unanswered?). i'm
+guessing because you realized how wrong you were but you're not the kind of
+person who'd admit it.
+
+> did not make any difference to you, and there's a point where i have
+> to stop wasting time on a person, so i've started filtering out your
+> mails. If you want to send me any patches then please send it to any
+> of my co-maintainers who will be able to review them. 
+
+PS: thanks for the cycles^Wchuckles ;)
+
