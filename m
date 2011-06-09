@@ -1,176 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab1FIREq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 13:04:46 -0400
-Received: from home.keithp.com ([63.227.221.253]:57094 "EHLO keithp.com"
+	id S1753630Ab1FIRLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 13:11:38 -0400
+Received: from ebb06.tieto.com ([131.207.168.38]:48703 "EHLO ebb06.tieto.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752666Ab1FIREp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 13:04:45 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Waldemar.Rymarkiewicz@tieto.com, padovan@profusion.mobi
-Cc: marcel@holtmann.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: RE: Regression caused by "Bluetooth: Map sec_level to link key requirements"
-In-Reply-To: <99B09243E1A5DA4898CDD8B700111448175AA2DB3B@EXMB04.eu.tieto.com>
-References: <yunboy7a2so.fsf@aiko.keithp.com> <99B09243E1A5DA4898CDD8B700111448175AA2DB3B@EXMB04.eu.tieto.com>
-User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 09 Jun 2011 10:04:39 -0700
-Message-ID: <yunvcwf3pi0.fsf@aiko.keithp.com>
+	id S1753278Ab1FIRLg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 13:11:36 -0400
+X-AuditID: 83cfa826-b7c5dae0000046d4-cc-4df0fec65f89
+From: <Waldemar.Rymarkiewicz@tieto.com>
+To: <keithp@keithp.com>, <johan.hedberg@gmail.com>
+CC: <padovan@profusion.mobi>, <marcel@holtmann.org>,
+        <linux-bluetooth@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Date: Thu, 9 Jun 2011 20:11:21 +0300
+Subject: RE: Regression caused by "Bluetooth: Map sec_level to link key
+ requirements"
+Thread-Topic: Regression caused by "Bluetooth: Map sec_level to link key
+ requirements"
+Thread-Index: AcwmxuAZ1bPeo42oQYuSgQdGD9srIgAAFofw
+Message-ID: <99B09243E1A5DA4898CDD8B700111448175AA2DE98@EXMB04.eu.tieto.com>
+References: <yunboy7a2so.fsf@aiko.keithp.com>
+ <99B09243E1A5DA4898CDD8B700111448175AA2DB2A@EXMB04.eu.tieto.com>
+ <20110609083345.GA2894@dell.ccr.corp.intel.com>
+ <yuny61b3pnm.fsf@aiko.keithp.com>
+In-Reply-To: <yuny61b3pnm.fsf@aiko.keithp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hi Keith, 
 
-On Thu, 9 Jun 2011 11:02:51 +0300, <Waldemar.Rymarkiewicz@tieto.com> wrote:
->=20=20
-> >Patch 13d39315c22b128f4796fc008b04914a7c32bb1a is causing a=20
-> >regression From 2.6.39. I cannot communicate with my Nokia=20
-> >N900 using either the SyncML or DUN RFCOMM services.  I get a=20
-> >connection reset error shortly after startup.
-> >
-> >I've reverted this patch on top of something past -rc2 (to be=20
-> >precise, I'm branching from ef2398019b305827ea7130ebaf7bf521b444530e).
-> >With the following fix-up to make things build again, my=20
-> >bluetooth works again.
-> >
->=20
-> hcidump -Rt > foo.log  from your test session will help as well
+>I re-pair'ed using a manually entered a 16 digit pin, but now 
+>DUN setup doesn't succeed at all.
 
-Sent along with my other reply. Running the test generates no additional
-dmesg output at all.
+Did you try to remove all stored link keys and start again?
+If you already have a pincode which is insecure you have to remove it manually.
 
-As a simpler test than accessing the syncml service, I just tried to
-connect to the DUN service using 'cu'. Again, no dmesg additions, and
-here's the hcidump -Rt output:
+Try 'hciconfig hciX noauth noencrypt ' before.
 
-HCI sniffer - Bluetooth packet analyzer ver 2.0
-device: hci0 snap_len: 1028 filter: 0xffffffff
-2011-06-09 10:02:16.878449 > 04 01 01 00=20
-2011-06-09 10:02:26.358023 < 01 05 04 0D 6E F5 C1 5B 9B EC 18 CC 02 00 00 0=
-0 01=20
-2011-06-09 10:02:26.359579 > 04 0F 04 00 01 05 04=20
-2011-06-09 10:02:27.674655 > 04 12 08 00 6E F5 C1 5B 9B EC 01=20
-2011-06-09 10:02:27.827639 > 04 03 0B 00 0C 00 6E F5 C1 5B 9B EC 01 00=20
-2011-06-09 10:02:27.827717 < 01 1B 04 02 0C 00=20
-2011-06-09 10:02:27.829596 > 04 1B 03 0C 00 05=20
-2011-06-09 10:02:27.830593 > 04 0F 04 00 01 1B 04=20
-2011-06-09 10:02:27.831591 > 04 0B 0B 00 0C 00 BF EE 0F C6 98 3D 59 82=20
-2011-06-09 10:02:27.831630 < 01 1C 04 03 0C 00 01=20
-2011-06-09 10:02:27.833596 > 04 1B 03 0C 00 03=20
-2011-06-09 10:02:27.834595 > 04 0F 04 00 01 1C 04=20
-2011-06-09 10:02:27.842634 > 04 23 0D 00 0C 00 01 01 01 00 00 00 00 00 00 0=
-0=20
-2011-06-09 10:02:27.842666 < 01 19 04 0A 6E F5 C1 5B 9B EC 02 00 00 00=20
-2011-06-09 10:02:27.844622 > 04 0F 04 00 01 19 04=20
-2011-06-09 10:02:27.864641 > 04 07 FF 00 6E F5 C1 5B 9B EC 6E 61 6D 69 00 0=
-0 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-2011-06-09 10:02:27.864670 < 01 11 04 02 0C 00=20
-2011-06-09 10:02:27.866587 > 04 0F 04 00 01 11 04=20
-2011-06-09 10:02:27.867596 > 04 17 06 6E F5 C1 5B 9B EC=20
-2011-06-09 10:02:27.867846 < 01 0B 04 16 6E F5 C1 5B 9B EC 04 E5 A3 63 F2 A=
-4 56 70 F6 39=20
-  B0 7A BD 91 94 F6=20
-2011-06-09 10:02:27.879587 > 04 0E 0A 01 0B 04 00 6E F5 C1 5B 9B EC=20
-2011-06-09 10:02:27.897588 > 04 06 03 00 0C 00=20
-2011-06-09 10:02:27.897620 < 01 13 04 03 0C 00 01=20
-2011-06-09 10:02:27.899591 > 04 0F 04 00 01 13 04=20
-2011-06-09 10:02:27.927654 > 04 08 04 00 0C 00 01=20
-2011-06-09 10:02:27.927702 < 02 0C 00 0A 00 06 00 01 00 0A 01 02 00 02 00=20
-2011-06-09 10:02:27.933985 > 02 0C 20 10 00 0C 00 01 00 0B 01 08 00 02 00 0=
-0 00 00 00 00=20
-  00=20
-2011-06-09 10:02:28.075644 > 04 13 05 01 0C 00 01 00=20
-2011-06-09 10:02:31.299684 > 04 2F FF 01 6E F5 C1 5B 9B EC 01 00 00 01 5A F=
-F 7F DD 05 09=20
-  6E 61 6D 69 17 03 03 11 15 11 17 11 16 11 12 11 1F 11 0A 11=20
-  0C 11 0E 11 05 11 06 11 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-2011-06-09 10:02:35.975767 > 04 05 04 00 0C 00 13=20
-2011-06-09 10:02:35.978580 < 01 05 04 0D 6E F5 C1 5B 9B EC 18 CC 02 00 00 0=
-0 01=20
-2011-06-09 10:02:35.980698 > 04 0F 04 00 01 05 04=20
-2011-06-09 10:02:41.200825 > 04 01 01 00=20
-2011-06-09 10:02:42.562819 > 04 12 08 00 6E F5 C1 5B 9B EC 01=20
-2011-06-09 10:02:42.715788 > 04 03 0B 00 0C 00 6E F5 C1 5B 9B EC 01 00=20
-2011-06-09 10:02:42.715870 < 01 1B 04 02 0C 00=20
-2011-06-09 10:02:42.716794 > 04 1B 03 0C 00 05=20
-2011-06-09 10:02:42.718795 > 04 0F 04 00 01 1B 04=20
-2011-06-09 10:02:42.719791 > 04 0B 0B 00 0C 00 BF EE 0F C6 98 3D 59 82=20
-2011-06-09 10:02:42.719831 < 01 1C 04 03 0C 00 01=20
-2011-06-09 10:02:42.720791 > 04 1B 03 0C 00 03=20
-2011-06-09 10:02:42.722790 > 04 0F 04 00 01 1C 04=20
-2011-06-09 10:02:42.727796 > 04 23 0D 00 0C 00 01 01 01 00 00 00 00 00 00 0=
-0=20
-2011-06-09 10:02:42.727830 < 01 19 04 0A 6E F5 C1 5B 9B EC 02 00 00 00=20
-2011-06-09 10:02:42.729789 > 04 0F 04 00 01 19 04=20
-2011-06-09 10:02:42.749861 > 04 07 FF 00 6E F5 C1 5B 9B EC 6E 61 6D 69 00 0=
-0 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00=20
-2011-06-09 10:02:42.749889 < 01 11 04 02 0C 00=20
-2011-06-09 10:02:42.751844 > 04 0F 04 00 01 11 04=20
-2011-06-09 10:02:42.752792 > 04 17 06 6E F5 C1 5B 9B EC=20
-2011-06-09 10:02:42.752933 < 01 0B 04 16 6E F5 C1 5B 9B EC 04 E5 A3 63 F2 A=
-4 56 70 F6 39=20
-  B0 7A BD 91 94 F6=20
-2011-06-09 10:02:42.764900 > 04 0E 0A 01 0B 04 00 6E F5 C1 5B 9B EC=20
-2011-06-09 10:02:42.782857 > 04 06 03 00 0C 00=20
-2011-06-09 10:02:42.782894 < 01 13 04 03 0C 00 01=20
-2011-06-09 10:02:42.784842 > 04 0F 04 00 01 13 04=20
-2011-06-09 10:02:42.812897 > 04 08 04 00 0C 00 01=20
-2011-06-09 10:02:42.812939 < 02 0C 00 0A 00 06 00 01 00 0A 01 02 00 02 00=20
-2011-06-09 10:02:42.819490 > 02 0C 20 10 00 0C 00 01 00 0B 01 08 00 02 00 0=
-0 00 00 00 00=20
-  00=20
-2011-06-09 10:02:42.950848 > 04 13 05 01 0C 00 01 00=20
+Check syslog and switch debug on in the kernel first.
 
-=2D-=20
-keith.packard@intel.com
 
---=-=-=
-Content-Type: application/pgp-signature
+Waldek
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iD8DBQFN8P0nQp8BWwlsTdMRAhGHAJ9UBGKO+59nM4a6zsejifpVyjBWVgCg0Til
-EvtgFmel3Mkd5bUChil/Hy0=
-=7ocD
------END PGP SIGNATURE-----
---=-=-=--
