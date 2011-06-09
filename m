@@ -1,78 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab1FIJMV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 05:12:21 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:34599 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753956Ab1FIJMU (ORCPT
+	id S1755573Ab1FIJN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 05:13:26 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48275 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab1FIJNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 05:12:20 -0400
-Date: Thu, 9 Jun 2011 12:12:14 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Tatyana Brokhman <tlinder@codeaurora.org>, greg@kroah.com,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        ablay@codeaurora.org, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH/RESEND v15 1/10] usb: Add usb_endpoint_descriptor to be
- part of the struct usb_ep
-Message-ID: <20110609091213.GA13552@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1307360469-29120-1-git-send-email-tlinder@codeaurora.org>
- <20110609083207.GX13552@legolas.emea.dhcp.ti.com>
+	Thu, 9 Jun 2011 05:13:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=bh1SeUmFQKjXTb0UkMmWOtvABdjR5hNd4BUS+oC8FVYXxTiGraBcUPAcRX6NXGIxlI
+         iMEkw0ayTDvHq8l8lkZtXn7w5QB1CBQsPZZ69/KVR5MeTtaXQT4gQaPsfjenov+kdjgz
+         kPAhoeAHqN4G7F/XmHeXulk3/BixsYWxeERAY=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ds9maZbwT7uk2FVi"
-Content-Disposition: inline
-In-Reply-To: <20110609083207.GX13552@legolas.emea.dhcp.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110609091705.GA2190@mail.fossee.in>
+References: <20110609091705.GA2190@mail.fossee.in>
+From: Prashant Shah <pshah.mumbai@gmail.com>
+Date: Thu, 9 Jun 2011 14:43:03 +0530
+Message-ID: <BANLkTin74+ryVSjsfk=f789bYVjk_0Pqzg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Staging: comedi: add dyna_pci10xx0 driver to Makefile
+To: devel@linuxdriverproject.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        Ian Abbott <abbotti@mev.co.uk>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---ds9maZbwT7uk2FVi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jun 9, 2011 at 2:47 PM, Prashant P. Shah <pshah.mumbai@gmail.com> wrote:
+> Add dyna_pci10xx0 entry to comedi Kconfig and Makefile
 
-Hi again,
+Please use the patches that I have resend. I made a spelling mistake
+in the commit message (extra 0 in the dyna_pci10xx0 name)
 
-On Thu, Jun 09, 2011 at 11:32:10AM +0300, Felipe Balbi wrote:
-> On Mon, Jun 06, 2011 at 02:40:45PM +0300, Tatyana Brokhman wrote:
-> > Change usb_ep_enable() prototype to use endpoint descriptor from usb_ep.
-> > This optimization spares the FDs from saving the endpoint chosen
-> > descriptor. This optimization is not full though. To fully exploit this
-> > change one needs to update all the UDCs as well since in the current
-> > implementation each of them saves the endpoint descriptor in it's
-> > internal (and extended) endpoint structure.
-> >=20
-> > Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
->=20
-> now that I look at this patch carefully, won't this break all gadget
-> drivers ? I mean, if I apply this patch, all gadget drivers will be
-> using descriptor from struct usb_ep, but noone is actually assigning
-> that pointer.
-
-actually, I was wrong. The gadget driver is setting it, not the
-controller anymore. I'll take this series in.
-
---=20
-balbi
-
---ds9maZbwT7uk2FVi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN8I5tAAoJEAv8Txj19kN1qPcH/jWE5IlPOmx3vspXokgzwxJo
-VATVmWifIk6FYj6S/289P1cJoQeiGVZAJxp6+5Ta+ObhAhkHPkRF5TK38S0aeVRM
-8O3Qw+H8EaTZvcXC2Ulj86JNYiYE4T03gs3bwyHASAhMf6sB2Yir4+2Aju6ljU5d
-FZ8x6/ten8Wg1PO+G/M62TqgERPpDe/9EIxsGj8zaFqpgZcVr+aRqNEuI0nYrwz3
-5//tfmklcBT9jp5ASxDGdj1tEqu/dkxTqGvD8wOAS345MAofxa8TjxAntHM78I7P
-gC55+1HSlC4ivCjK34dIavzPO1dMfHBUuMLH5JKy6Rovxop62NlxznrYeobCCV0=
-=Hnsw
------END PGP SIGNATURE-----
-
---ds9maZbwT7uk2FVi--
+Thanks.
