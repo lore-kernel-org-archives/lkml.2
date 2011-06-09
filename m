@@ -1,169 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab1FIX5o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 19:57:44 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:50277 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757334Ab1FIX5m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 19:57:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=M7ICEHvFVVq+e6ITaicJ2OkfDmP3YyThl2RgvjFnLaQiXQL8E7tgENjlBmxD2mePYz
-         mqghGo2PDkx5kc2+sn6w==
-Date: Thu, 9 Jun 2011 16:57:29 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        efault@gmx.de, Arne Jansen <lists@die-jansens.de>
-Subject: Re: [PATCH 1/3] printk: Release console_sem after logbuf_lock
-In-Reply-To: <20110609140714.fc9ea187.akpm@linux-foundation.org>
-Message-ID: <alpine.LSU.2.00.1106091655560.2710@sister.anvils>
-References: <20110609130647.937204592@chello.nl> <20110609131307.493181962@chello.nl> <20110609130617.f8aca966.akpm@linux-foundation.org> <20110609202707.GA28951@elte.hu> <1307652883.2497.1028.camel@laptop>
- <20110609140714.fc9ea187.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S932136Ab1FIX6L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 19:58:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56292 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755187Ab1FIX6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 19:58:08 -0400
+Date: Fri, 10 Jun 2011 01:58:00 +0200
+From: Jan Kara <jack@suse.cz>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] writeback: reduce per-bdi dirty threshold ramp up
+ time
+Message-ID: <20110609235800.GI4926@quack.suse.cz>
+References: <20110413235211.GN31057@dastard>
+ <20110414002301.GA9826@localhost>
+ <20110414151424.GA367@localhost>
+ <20110414181609.GH5054@quack.suse.cz>
+ <20110415034300.GA23430@localhost>
+ <20110415143711.GA17181@localhost>
+ <20110415221314.GE5432@quack.suse.cz>
+ <1302942809.2388.254.camel@twins>
+ <20110418145929.GH5557@quack.suse.cz>
+ <1306239869.2497.50.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1306239869.2497.50.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jun 2011, Andrew Morton wrote:
-> On Thu, 09 Jun 2011 22:54:43 +0200
-> Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+On Tue 24-05-11 14:24:29, Peter Zijlstra wrote:
+> Sorry for the delay, life got interesting and then it slipped my mind.
+  And I missed you reply so sorry for my delay as well :).
+
+> On Mon, 2011-04-18 at 16:59 +0200, Jan Kara wrote:
+> >   Your formula is:
+> > p(j)=\sum_i x_i(j)/(t_i*2^{i+1})
+> >   where $i$ sums from 0 to \infty, x_i(j) is the number of events of type
+> > $j$ in period $i$, $t_i$ is the total number of events in period $i$.
 > 
-> > On Thu, 2011-06-09 at 22:27 +0200, Ingo Molnar wrote:
-> > 
-> > > > > @@ -1271,8 +1273,8 @@ void console_unlock(void)
-> > > > >  	if (unlikely(exclusive_console))
-> > > > >  		exclusive_console = NULL;
-> > > > >  
-> > > > > -	up(&console_sem);
-> > > > >  	spin_unlock_irqrestore(&logbuf_lock, flags);
-> > > > > +	up(&console_sem);
-> > > > >  	if (wake_klogd)
-> > > > >  		wake_up_klogd();
-> > > > >  }
-> > > > 
-> > > > I have a horrible feeling that I put the up() inside logbuf_lock for
-> > > > Special And Cunning Reasons.  But I'm struggling to work out what they
-> > > > might have been and my archives only go back to October 2000(!).
-> > > > 
-> > > > Hate it when that happens.
-> > > 
-> > > Heh, here's what i told Peter two days ago when i saw that chunk:
-> > > 
-> > >   => Subject: printk: Release console_sem after logbuf_lock
-> > >   => i have some vague memories about some sort of complication in that area ...
-> > >   => but don't remember the specifics
-> > >   => only a 'there be dragons' mental marker
-> > 
-> > Right, my reply was that I couldn't convince myself unlock order could
-> > make a difference, but clearly I can easily have missed something
-> > subtle.
+> Actually:
 > 
-> I wish I could find the darned patch.  I have a file here
-> no-console-lock-2.patch which was last diffed on October 7, 1999 but it
-> has no changelog :(
+>  p_j = \Sum_{i=0} (d/dt_i) * x_j / 2^(i+1)
 > 
-> But this:
-> http://lkml.indiana.edu/hypermail/linux/kernel/0109.2/0127.html is Sep
-> 2001 and I have an earlier (unchangelogged) no-console-lock.patch diffed
-> against 2.4.2 in March 2001.
+> [ discrete differential ]
 > 
-> It's odd that the patch (and changelog) don't appear in my lkml
-> archives.  Sigh, http://www.youtube.com/watch?v=oO3YmT2d-8k
+> Where x_j is the total number of events for the j-th element of the set
+> and t_i is the i-th last period.
+> 
+> Also, the 1/2^(i+1) factor ensures recent history counts heavier while
+> still maintaining a normalized distribution.
+> 
+> Furthermore, by measuring time in the same measure as the events we get:
+> 
+>  t = \Sum_i x_i
+> 
+> which yields that:
+> 
+>  p_j = x_j * {\Sum_i (d/dt_i)} * {\Sum 2^(-i-1)}
+>      = x_j * (1/t) * 1
+> 
+> Thus
+> 
+>  \Sum_j p_j = \Sum_j x_j / (\Sum_i x_i) = 1
+  Yup, I understand this.
 
-Does your mail below stir any useful memories?
+> >   I want to compute
+> > l(j)=\sum_i x_i(j)/2^{i+1}
+> > g=\sum_i t_i/2^{i+1}
+> >   and
+> > p(j)=l(j)/g
+> 
+> Which gives me:
+> 
+>  p_j = x_j * \Sum_i 1/t_i
+>      = x_j / t
+  It cannot really be simplified like this - 2^{i+1} parts do not cancel
+out in p(j). Let's write the formula in an iterative manner so that it
+becomes clearer. The first step almost looks like the 2^{i+1} members can
+cancel out (note that I use x_1 and t_1 instead of x_0 and t_0 so that I don't
+have to renumber when going for the next step):
+l'(j) = x_1/2 + l(j)/2
+g' = t_1/2 + g/2
+thus
+p'(j) = l'(j) / g'
+      = (x_1 + l(j))/2 / ((t_1 + g)/2)
+      = (x_1 + l(j)) / (t_1+g)
 
->From andrewm@uow.edu.au Sun Mar  4 11:19:14 2001
-Date: Sun, 04 Mar 2001 18:31:56 +1100
-From: Andrew Morton <andrewm@uow.edu.au>
-To: linux-fbdev-devel@sourceforge.net, lkml <linux-kernel@vger.kernel.org>, lad <linux-audio-dev@ginette.musique.umontreal.ca>, James Simmons <jsimmons@linux-fbdev.org>, Brad Douglas <brad@neruo.com>
-Subject: [prepatches] removal of console_lock
+But if you properly expand to the next step you'll get:
+l''(j) = x_0/2 + l'(j)/2
+       = x_0/2 + x_1/4 + l(j)/4
+g'' = t_0/2 + g'/2
+    = t_0/2 + t_1/4 + g/4
+thus we only get:
+p''(j) = l''(j)/g''
+       = (x_0/2 + x_1/4 + l(j)/4) / (t_0/2 + t_1/4 + g/4)
+       = (x_0 + x_1/2 + l(j)/2) / (t_0 + t_1/2 + g/2)
 
+Hmm, I guess I should have written the formulas as
 
-All console-related activity curently happens under spin_lock_irqsave(&console_lock). 
-This causes interrutps to be blocked for 1-2 milliseconds with vgacon, and for
-hundreds of milliseconds with fbdevs.  This results in network overruns, audio
-dropouts, dropped characters on serial ports and other such nice things.
+l(j) = \sum_i x_i(j)/2^i
+g = \sum_i t_i/2^i
 
-This patch fixes it.  Interrupts are enabled across all console operations.
+It is equivalent and less confusing for the iterative expression where
+we get directly:
 
-It's still somewhat a work-in-progress.
+l'(j)=x_0+l(j)/2
+g'=t_0+g/2
 
-- There are (pre-existing) races around the timer functions in
-  console.c. The dirty fix is to push all this stuff into keventd
-  context and to use acquire_cosole_sem().  The clean fix is to
-  rewrite the timer state machine.
+which directly shows what's going on.
 
-  Or do nothing.  This thing only fires four times a day, the race
-  doesn't look like it'll crash the machine and there have been no
-  bug reports...
+> Again, if we then measure t in the same events as x, such that:
+> 
+>  t = \Sum_i x_i
+> 
+> we again get:
+> 
+>  \Sum_j p_j = \Sum_j x_j / \Sum_i x_i = 1
+> 
+> However, if you start measuring t differently that breaks, and the
+> result is no longer normalized and thus not suitable as a proportion.
+  The normalization works with my formula as you noted in your next email
+(I just expand it here for other readers):
+\Sum_j p_j = \Sum_j l(j)/g
+           = 1/g * \Sum_j \Sum_i x_i(j)/2^(i+1)
+	   = 1/g * \Sum_i (1/2^(i+1) * \Sum_j x_i(j))
+(*)        = 1/g * \Sum_i t_i/2^(i+1)
+           = 1
 
-- console_print().   blah.  What's this for?  I just mapped it
-  onto printk().  My preferred option is to kill it off altogether.
+(*) Here we use that t_i = \Sum_j x_i(j) because that's the definition of
+t_i.
 
+Note that exactly same equality holds when 2^(i+1) is replaced with 2^i in
+g and l(j).
 
-I'm putting this out now for comments, and for interested parties to
-test.  Please.  I'm serious.
+> Furthermore, while x_j/t is an average, it does not have decaying
+> history, resulting in past behaviour always affecting current results.
+> The decaying history thing will ensure that past behaviour will slowly
+> be 'forgotten' so that when the media is used differently (seeky to
+> non-seeky workload transition) the slow writeout speed will be forgotten
+> and we'll end up at the high writeout speed corresponding to less seeks.
+> Your average will end up hovering in the middle of the slow and fast
+> modes.
+  So this the most disputable point of my formulas I believe :). You are
+right that if, for example, nothing happens during a time slice (i.e. t_0 =
+0, x_0(j)=0), the proportions don't change (well, after some time rounding
+starts to have effect but let's ignore that for now). Generally, if
+previously t_i was big and then became small (system bandwidth lowered;
+e.g. t_5=10000, t_4=10, t_3=20,...,), it will take roughly log_2(maximum
+t_i/current t_i) time slices for the contribution of terms with t_i big 
+to become comparable with the contribution of later terms with t_i small.
+After this number of time slices, proportions will catch up with the change.
 
+On the other hand when t_i was small for some time and then becomes big,
+proportions will effectively reflect current state. So when someone starts
+writing to a device on otherwise quiet system, the device immediately gets
+fraction close to 1.
 
-Patches against 2.4.3-pre1 and 2.4.2-ac9 are at
+I'm not sure how big problem the above behavior is or what would actually
+be a desirable one...
 
-	http://www.uow.edu.au/~andrewm/linux/console.html
+> >   Clearly, all these values can be computed in O(1).
+> 
+> True, but you get to keep x and t counts over all history, which could
+> lead to overflow scenarios (although switching to u64 should mitigate
+> that problem in our lifetime).
+  I think even 32-bit numbers might be fine. The numbers we need to keep are
+of an order of total maximum bandwidth of the system. If you plug maxbw
+instead of all x_i(j) and t_i, you'll get that l(j)=maxbw (or 2*maxbw if we
+use 2^i in the formula) and similarly for g. So the math will work in
+32-bits for a bandwidth of an order of TB per slice (which I expect to be
+something between 0.1 and 10 s). Reasonable given today's HW although
+probably we'll have to go to 64-bits soon, you are right.
 
-These patches are ~1600 lines and touch 35 files.
-
-
-
-Some notes:
-
-- show_console() had been removed.  It's unused.
-
-- console_tasklet has been replaced with a keventd callback,
-  `console_callback'.
-
-- unblank_console() has gone.  It was only used by panic(),
-  and...
-
-- ... the call to poke_blanked_console() in vt_console_print() has
-  been restored.  It doesn't deadlock during oopses now.
-
-- arch/s390x/kernel/cpprintk.c has been removed.
-
-- bust_spinlocks() has been enhanced (x86 and mips64).
-
-- Major revamp of printk().  The approach taken in printk() is to try
-  to acquire the (new) console_sem.  If we succeed, the output is
-  placed into the log buffer and is printed to the consoles.  If we fail
-  to acquire the semaphore we just buffer the output in the log buffer
-  and the current holder of the console_sem will do the printing for us
-  prior to releasing console_sem.
-
-  If an oops is in progress we simply reset the locking and print
-  things immediately.
-
-- Added a new syslog() mode: syslog(9, ...).  It returns the number
-  of characters which are currently queued in the log buffer.  Needed
-  to do this for kmsg_poll().
-
-- Being heartily sick of reverse-engineering interface information
-  from implementations, I have gratuitously added comments in several
-  random parts of the kernel.  Shoot me.
-
-- Several video drivers are using spin_lock() in a timer
-  handler.  There's a remote possibility that these can
-  deadlock (say, the timer fires again while the lock is held).
-  These have been changed to use _irqsave.
-
-- The various low-level drivers have been reviewed to ensure that
-  they are safe when interrupts are enabled.  Looks OK.
-
--
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
