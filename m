@@ -1,210 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364Ab1FIVgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 17:36:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37463 "EHLO mga01.intel.com"
+	id S1756383Ab1FIVho (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 17:37:44 -0400
+Received: from mga11.intel.com ([192.55.52.93]:30981 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754241Ab1FIVgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 17:36:48 -0400
+	id S1754241Ab1FIVhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 17:37:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,343,1304319600"; 
-   d="scan'208";a="16383404"
+   d="scan'208";a="14372315"
 From: "Luck, Tony" <tony.luck@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Borislav Petkov" <bp@amd64.org>
 Cc: linux-kernel@vger.kernel.org, "Huang, Ying" <ying.huang@intel.com>,
         "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>,
         "Avi Kivity" <avi@redhat.com>
 In-Reply-To: <4df13a522720782e51@agluck-desktop.sc.intel.com>
-Subject: [PATCH 08/10] NOTIFIER: Take over TIF_MCE_NOTIFY and implement task return notifier
-Date: Thu, 09 Jun 2011 14:36:42 -0700
-Message-Id: <4df13cea27302b7ccf@agluck-desktop.sc.intel.com>
+Subject: [PATCH 09/10] MCE: run through processors with more severe problems first
+Date: Thu, 09 Jun 2011 14:37:42 -0700
+Message-Id: <4df13d2627304cd979@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tony Luck <tony.luck@intel.com>
 
-Existing user return notifier mechanism is designed to catch a specific
-cpu just as it returns to run any task in user mode.  We also need a
-machanism to catch a specific task.
+Instead of letting cpus run through the MC bank scanning code
+in the order that they turned up in the handler, we arrange to
+deal with those that have more severe problems (mcgstatus.ripv=0)
+first. This will make life simpler in the case that banks are
+shared between processors, since the cpu with the problem will
+see it and clear it, leaving the other cpu(s) that share the
+bank with nothing to do.
 
-N.B. This version is not fit for use - it uses normal Linux lists (which
-are not NMI safe).  Once Ying's NMI-safe single threaded lists are merged,
-it should be updated to use them.
-
-NOT-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- arch/x86/include/asm/thread_info.h   |    8 +++---
- arch/x86/kernel/signal.c             |    3 ++
- include/linux/sched.h                |    3 ++
- include/linux/user-return-notifier.h |   14 +++++++++++++
- kernel/fork.c                        |    1 +
- kernel/user-return-notifier.c        |   36 ++++++++++++++++++++++++++++++++++
- 6 files changed, 61 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |   88 ++++++++++++++++++++++++++-----------
+ 1 files changed, 62 insertions(+), 26 deletions(-)
 
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index 1f2e61e..5574f96 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -82,7 +82,7 @@ struct thread_info {
- #define TIF_SYSCALL_EMU		6	/* syscall emulation active */
- #define TIF_SYSCALL_AUDIT	7	/* syscall auditing active */
- #define TIF_SECCOMP		8	/* secure computing */
--#define TIF_MCE_NOTIFY		10	/* notify userspace of an MCE */
-+#define TIF_TASK_RETURN_NOTIFY	10	/* notify kernel of return to task */
- #define TIF_USER_RETURN_NOTIFY	11	/* notify kernel of userspace return */
- #define TIF_NOTSC		16	/* TSC is not accessible in userland */
- #define TIF_IA32		17	/* 32bit process */
-@@ -105,7 +105,7 @@ struct thread_info {
- #define _TIF_SYSCALL_EMU	(1 << TIF_SYSCALL_EMU)
- #define _TIF_SYSCALL_AUDIT	(1 << TIF_SYSCALL_AUDIT)
- #define _TIF_SECCOMP		(1 << TIF_SECCOMP)
--#define _TIF_MCE_NOTIFY		(1 << TIF_MCE_NOTIFY)
-+#define _TIF_TASK_RETURN_NOTIFY	(1 << TIF_TASK_RETURN_NOTIFY)
- #define _TIF_USER_RETURN_NOTIFY	(1 << TIF_USER_RETURN_NOTIFY)
- #define _TIF_NOTSC		(1 << TIF_NOTSC)
- #define _TIF_IA32		(1 << TIF_IA32)
-@@ -139,8 +139,8 @@ struct thread_info {
- 	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT)
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 28d223e..9c72245 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -662,7 +662,7 @@ static int mce_no_way_out(struct mce *m, char **msg)
+  * Variable to establish order between CPUs while scanning.
+  * Each CPU spins initially until executing is equal its number.
+  */
+-static atomic_t mce_executing;
++static atomic_t mce_executing = ATOMIC_INIT(-1);
  
- /* Only used for 64 bit */
--#define _TIF_DO_NOTIFY_MASK						\
--	(_TIF_SIGPENDING | _TIF_MCE_NOTIFY | _TIF_NOTIFY_RESUME |	\
-+#define _TIF_DO_NOTIFY_MASK							\
-+	(_TIF_SIGPENDING | _TIF_TASK_RETURN_NOTIFY | _TIF_NOTIFY_RESUME |	\
- 	 _TIF_USER_RETURN_NOTIFY)
+ /*
+  * Defines order of CPUs on entry. First CPU becomes Monarch.
+@@ -778,13 +778,40 @@ static void mce_reign(void)
+ static atomic_t global_nwo;
  
- /* flags to check in __switch_to() */
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 44efc22..f0f45b1 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -838,6 +838,9 @@ static void do_signal(struct pt_regs *regs)
- void
- do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
- {
-+	if (thread_info_flags & _TIF_TASK_RETURN_NOTIFY)
-+		fire_task_return_notifiers();
+ /*
++ * Keep separate bitmaps for cpus that have the option return from
++ * machine check handler (MCG_STATUS.RIPV == 1) and those for that
++ * cannot.
++ */
++static cpumask_t	can_return;
++static cpumask_t	cant_return;
 +
- 	/* deal with pending signal delivery */
- 	if (thread_info_flags & _TIF_SIGPENDING)
- 		do_signal(regs);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 781abd1..ec7a581 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1540,6 +1540,9 @@ struct task_struct {
- #ifdef CONFIG_HAVE_HW_BREAKPOINT
- 	atomic_t ptrace_bp_refcnt;
- #endif
-+#ifdef CONFIG_USER_RETURN_NOTIFIER
-+	struct hlist_head return_notifier_list;
-+#endif
- };
- 
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
-diff --git a/include/linux/user-return-notifier.h b/include/linux/user-return-notifier.h
-index 9c4a445..6114b25 100644
---- a/include/linux/user-return-notifier.h
-+++ b/include/linux/user-return-notifier.h
-@@ -15,6 +15,9 @@ struct user_return_notifier {
- void user_return_notifier_register(struct user_return_notifier *urn);
- void user_return_notifier_unregister(struct user_return_notifier *urn);
- 
-+void task_return_notifier_register(struct user_return_notifier *urn);
-+void task_return_notifier_unregister(struct user_return_notifier *urn);
-+
- static inline void propagate_user_return_notify(struct task_struct *prev,
- 						struct task_struct *next)
- {
-@@ -26,11 +29,18 @@ static inline void propagate_user_return_notify(struct task_struct *prev,
- 
- void fire_user_return_notifiers(void);
- 
-+void fire_task_return_notifiers(void);
-+
- static inline void clear_user_return_notifier(struct task_struct *p)
- {
- 	clear_tsk_thread_flag(p, TIF_USER_RETURN_NOTIFY);
- }
- 
-+static inline void clear_task_return_notifier(struct task_struct *p)
-+{
-+	clear_tsk_thread_flag(p, TIF_TASK_RETURN_NOTIFY);
-+}
-+
- #else
- 
- struct user_return_notifier {};
-@@ -42,8 +52,12 @@ static inline void propagate_user_return_notify(struct task_struct *prev,
- 
- static inline void fire_user_return_notifiers(void) {}
- 
-+static inline void fire_task_return_notifiers(void) {}
-+
- static inline void clear_user_return_notifier(struct task_struct *p) {}
- 
-+static inline void clear_task_return_notifier(struct task_struct *p) {}
-+
- #endif
- 
- #endif
-diff --git a/kernel/fork.c b/kernel/fork.c
-index e7548de..1af37c2 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -282,6 +282,7 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
- 
- 	setup_thread_stack(tsk, orig);
- 	clear_user_return_notifier(tsk);
-+	clear_task_return_notifier(tsk);
- 	clear_tsk_need_resched(tsk);
- 	stackend = end_of_stack(tsk);
- 	*stackend = STACK_END_MAGIC;	/* for overflow detection */
-diff --git a/kernel/user-return-notifier.c b/kernel/user-return-notifier.c
-index 92cb706..7c9389e 100644
---- a/kernel/user-return-notifier.c
-+++ b/kernel/user-return-notifier.c
-@@ -42,3 +42,39 @@ void fire_user_return_notifiers(void)
- 		urn->on_user_return(urn);
- 	put_cpu_var(return_notifier_list);
- }
++static int	monarch;
 +
 +/*
-+ * Request a notification when the current task returns to userspace.  Must be
-+ * called in atomic context.  The notifier will also be called in atomic
-+ * context.
++ * next cpu choosing first from cant_return, and then from can_return
 + */
-+void task_return_notifier_register(struct user_return_notifier *urn)
++int mce_nextcpu(int this)
 +{
-+	set_tsk_thread_flag(current, TIF_TASK_RETURN_NOTIFY);
-+	hlist_add_head(&urn->link, &(current->return_notifier_list));
++	int next;
++
++	if (this == -1 || cpumask_test_cpu(this, &cant_return)) {
++		next = cpumask_next(this, &cant_return);
++		if (next >= nr_cpu_ids)
++			next = cpumask_next(-1, &can_return);
++		return next;
++	}
++
++	return cpumask_next(this, &can_return);
 +}
-+EXPORT_SYMBOL_GPL(task_return_notifier_register);
 +
 +/*
-+ * Removes a registered user return notifier.  Must be called from atomic
-+ * context, and from the same cpu registration occurred in.
-+ */
-+void task_return_notifier_unregister(struct user_return_notifier *urn)
-+{
-+	hlist_del(&urn->link);
-+	if (hlist_empty(&(current->return_notifier_list)))
-+		clear_tsk_thread_flag(current, TIF_TASK_RETURN_NOTIFY);
-+}
-+EXPORT_SYMBOL_GPL(task_return_notifier_unregister);
+  * Start of Monarch synchronization. This waits until all CPUs have
+  * entered the exception handler and then determines if any of them
+  * saw a fatal event that requires panic. Then it executes them
+- * in the entry order.
++ * one at a time.
+  * TBD double check parallel CPU hotunplug
+  */
+-static int mce_start(int *no_way_out)
++static int mce_start(int *no_way_out, int noreturn)
+ {
+ 	int order;
+ 	int cpus = num_online_cpus();
+@@ -800,6 +827,11 @@ static int mce_start(int *no_way_out)
+ 	smp_wmb();
+ 	order = atomic_inc_return(&mce_callin);
+ 
++	if (noreturn)
++		cpumask_set_cpu(smp_processor_id(), &cant_return);
++	else
++		cpumask_set_cpu(smp_processor_id(), &can_return);
 +
-+/* Calls registered user return notifiers */
-+void fire_task_return_notifiers(void)
-+{
-+	struct user_return_notifier *urn;
-+	struct hlist_node *tmp1, *tmp2;
-+	struct hlist_head *head;
-+
-+	head = &(current->return_notifier_list);
-+	hlist_for_each_entry_safe(urn, tmp1, tmp2, head, link)
-+		urn->on_user_return(urn);
-+}
+ 	/*
+ 	 * Wait for everyone.
+ 	 */
+@@ -818,23 +850,26 @@ static int mce_start(int *no_way_out)
+ 
+ 	if (order == 1) {
+ 		/*
+-		 * Monarch: Starts executing now, the others wait.
++		 * Choose a cpu to be monarch.  It will run first
+ 		 */
+-		atomic_set(&mce_executing, 1);
+-	} else {
+-		/*
+-		 * Subject: Now start the scanning loop one by one in
+-		 * the original callin order.
+-		 * This way when there are any shared banks it will be
+-		 * only seen by one CPU before cleared, avoiding duplicates.
+-		 */
+-		while (atomic_read(&mce_executing) < order) {
+-			if (mce_timed_out(&timeout)) {
+-				atomic_set(&global_nwo, 0);
+-				return -1;
+-			}
+-			ndelay(SPINUNIT);
++		monarch = mce_nextcpu(-1);
++		atomic_set(&mce_executing, monarch);
++	}
++	/*
++	 * Subject: Now start the scanning loop one by one in
++	 * choosing first the "cant_return" cpus and the the others.
++	 * This way when there are any shared banks it will be
++	 * only seen by one CPU before cleared, avoiding duplicates.
++	 * Letting the "cant_return" folks go first means that for
++	 * "action required" errors, the cpu that hit the problem
++	 * will find its error in the shared bank first.
++	 */
++	while (atomic_read(&mce_executing) != smp_processor_id()) {
++		if (mce_timed_out(&timeout)) {
++			atomic_set(&global_nwo, 0);
++			return -1;
+ 		}
++		ndelay(SPINUNIT);
+ 	}
+ 
+ 	/*
+@@ -862,17 +897,16 @@ static int mce_end(int order)
+ 	/*
+ 	 * Allow others to run.
+ 	 */
+-	atomic_inc(&mce_executing);
++	atomic_set(&mce_executing, mce_nextcpu(smp_processor_id()));
+ 
+-	if (order == 1) {
++	if (smp_processor_id() == monarch) {
+ 		/* CHECKME: Can this race with a parallel hotplug? */
+-		int cpus = num_online_cpus();
+ 
+ 		/*
+ 		 * Monarch: Wait for everyone to go through their scanning
+ 		 * loops.
+ 		 */
+-		while (atomic_read(&mce_executing) <= cpus) {
++		while (atomic_read(&mce_executing) != nr_cpu_ids) {
+ 			if (mce_timed_out(&timeout))
+ 				goto reset;
+ 			ndelay(SPINUNIT);
+@@ -885,7 +919,7 @@ static int mce_end(int order)
+ 		/*
+ 		 * Subject: Wait for Monarch to finish.
+ 		 */
+-		while (atomic_read(&mce_executing) != 0) {
++		while (atomic_read(&mce_executing) != -1) {
+ 			if (mce_timed_out(&timeout))
+ 				goto reset;
+ 			ndelay(SPINUNIT);
+@@ -903,12 +937,14 @@ static int mce_end(int order)
+ reset:
+ 	atomic_set(&global_nwo, 0);
+ 	atomic_set(&mce_callin, 0);
++	cpumask_clear(&can_return);
++	cpumask_clear(&cant_return);
+ 	barrier();
+ 
+ 	/*
+ 	 * Let others run again.
+ 	 */
+-	atomic_set(&mce_executing, 0);
++	atomic_set(&mce_executing, -1);
+ 	return ret;
+ }
+ 
+@@ -1006,7 +1042,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 	 * This way we don't report duplicated events on shared banks
+ 	 * because the first one to see it will clear it.
+ 	 */
+-	order = mce_start(&no_way_out);
++	order = mce_start(&no_way_out, kill_it);
+ 	for (i = 0; i < banks; i++) {
+ 		__clear_bit(i, toclear);
+ 		if (!mce_banks[i].ctl)
+@@ -2218,7 +2254,7 @@ static void mce_reset(void)
+ {
+ 	cpu_missing = 0;
+ 	atomic_set(&mce_fake_paniced, 0);
+-	atomic_set(&mce_executing, 0);
++	atomic_set(&mce_executing, -1);
+ 	atomic_set(&mce_callin, 0);
+ 	atomic_set(&global_nwo, 0);
+ }
 -- 
 1.7.3.1
 
