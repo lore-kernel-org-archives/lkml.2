@@ -1,49 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab1FIKo4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 06:44:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31485 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753515Ab1FIKoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 06:44:55 -0400
-Subject: Re: [PATCH 14/15] gma500: nuke the PSB debug stuff
-From: Dave Airlie <airlied@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Date: Thu, 09 Jun 2011 20:36:51 +1000
-In-Reply-To: <20110609091103.4b61f2a1@lxorguk.ukuu.org.uk>
-References: <20110608100411.9478.86672.stgit@localhost.localdomain>
-	 <20110608101515.9478.67943.stgit@localhost.localdomain>
-	 <BANLkTikYtLExBTcYAwicjEH=1bQp28WitQ@mail.gmail.com>
-	 <20110609091103.4b61f2a1@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1307615814.5963.2.camel@t60prh>
-Mime-Version: 1.0
+	id S1754129Ab1FIKk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 06:40:28 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45164 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931Ab1FIKk0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 06:40:26 -0400
+Date: Thu, 9 Jun 2011 11:40:17 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Zankel <chris@zankel.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] init: use KERNEL_DS when trying to start init process
+Message-ID: <20110609104017.GW11521@ZenIV.linux.org.uk>
+References: <4DEFD979.50405@tilera.com>
+ <1307607243-5737-1-git-send-email-minipli@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1307607243-5737-1-git-send-email-minipli@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-09 at 09:11 +0100, Alan Cox wrote:
-> On Thu, 9 Jun 2011 03:10:03 +0200
-> Patrik Jakobsson <patrik.r.jakobsson@gmail.com> wrote:
-> 
-> > Hi Alan
-> > 
-> > Just a thought. Shouldn't we use the DRM macros for printing debug info?
-> 
-> Linux has perfectly good printing functions and using them means we can
-> use dev_dbg() which supports things like nice runtime switching.
+On Thu, Jun 09, 2011 at 10:14:03AM +0200, Mathias Krause wrote:
 
-You mean like the drm debug functions runtime switching? that predated
-the kernel ones and nobody ever ported :-)
+> v1 was actually the alternative solution in run_init_process()
+> v2 was missing the set_fs() calls for SPARC, TILE and Xtensa
 
-Though if psb wants to be different to other drm drivers it can lead the
-way, though it'll be a total nightmare for all the people who follow
-documentation on how to debug drm drivers using drm.debug=1,2,4,8. for
-various code paths.
-
-Dave.
-
-
+sparc does not need it...
