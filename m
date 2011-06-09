@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab1FIUOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 16:14:05 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:53754 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755385Ab1FIUOB (ORCPT
+	id S1755624Ab1FIUNI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 16:13:08 -0400
+Received: from outmail004.snc4.facebook.com ([66.220.144.136]:64596 "EHLO
+	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753574Ab1FIUNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 16:14:01 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-160.messagelabs.com!1307650435!12606939!18
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.178]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ep93xx_eth: Update MAINTAINERS
-Date: Thu, 9 Jun 2011 13:13:25 -0700
-User-Agent: KMail/1.9.9
-CC: <kernel@wantstofly.org>, <akpm@linux-foundation.org>, <joe@perches.com>,
-        <davem@davemloft.net>
+	Thu, 9 Jun 2011 16:13:04 -0400
+Message-ID: <4DF12974.7030707@fb.com>
+Date: Thu, 09 Jun 2011 13:13:40 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: David Ahern <dsahern@gmail.com>
+CC: Sam Liao <phyomh@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-perf-users@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] [perf] Add inverted call graph report support.
+References: <BANLkTi=svHgWzyKiEHjMc-j5Hq4y5R8Mow@mail.gmail.com> <20110609193300.GA16858@dev1756.snc6.facebook.com> <4DF128B1.4010409@gmail.com>
+In-Reply-To: <4DF128B1.4010409@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201106091313.25840.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lennert stated that he has been short on time lately. Since I'm maintaining
-the ep93xx core stuff, I'm willing to also take over maintaining the Ethernet
-driver.
+On 6/9/11 1:10 PM, David Ahern wrote:
+>
+>
+> On 06/09/2011 01:33 PM, Arun Sharma wrote:
+>> On Thu, Jun 09, 2011 at 02:44:19PM +0800, Sam Liao wrote:
+>>> --- a/tools/perf/util/session.c
+>>> +++ b/tools/perf/util/session.c
+>>> @@ -247,9 +247,14 @@ int perf_session__resolve_callchain(struct
+>>> perf_session *self,
+>>>   	callchain_cursor_reset(&self->callchain_cursor);
+>>>
+>>>   	for (i = 0; i<  chain->nr; i++) {
+>>> -		u64 ip = chain->ips[i];
+>>> +		u64 ip;
+>>>   		struct addr_location al;
+>>>
+>>> +		if (callchain_param.order == ORDER_CALLEE)
+>>> +			ip = chain->ips[i];
+>>> +		else
+>>> +			ip = chain->ips[chain->nr - i - 1];
+>>
+>> This can dereference a bad pointer if chain->nr == 0.
+>
+> Should not enter the loop if chain->nr is 0 (See for arg).
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Lennert Buytenhek <kernel@wantstofly.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>
-Cc: "David S. Miller" <davem@davemloft.net>
+Ah right. I had this problem with an earlier version of the patch. This 
+version seems to be fine.
 
----
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index d1220da..a32f2ae 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1740,7 +1740,7 @@ S:	Supported
- F:	drivers/net/enic/
- 
- CIRRUS LOGIC EP93XX ETHERNET DRIVER
--M:	Lennert Buytenhek <kernel@wantstofly.org>
-+M:	Hartley Sweeten <hsweeten@visionengravers.com>
- L:	netdev@vger.kernel.org
- S:	Maintained
- F:	drivers/net/arm/ep93xx_eth.c
+  -Arun
