@@ -1,133 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab1FIXhr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 19:37:47 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52311 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756275Ab1FIXhq (ORCPT
+	id S1757223Ab1FIXlQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 19:41:16 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:55683 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756037Ab1FIXlM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 19:37:46 -0400
-Message-ID: <4DF1593A.6080306@oracle.com>
-Date: Thu, 09 Jun 2011 16:37:30 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Thu, 9 Jun 2011 19:41:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NgwI+JvhoVwQUfZ63mj51x3UoyoHFNXdl+4eheCpxynYzdZF2peak7WZZLnvG46892
+         qsvPlz2Lru/T5781jQHw8PXvH/dTXlEoPCLrEyF7SedSBYeZ2huccespSSHwPFboF6ph
+         pP3EPtwWmrLvpI/kU+/q7pCfdZ6BZfe6U+CpQ=
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for June 8 (docbook/media)
-References: <20110608161046.4ad95776.sfr@canb.auug.org.au> <20110608125243.e63a07fc.randy.dunlap@oracle.com> <4DF11E15.5030907@infradead.org> <4DF12263.3070900@redhat.com> <4DF12DD1.7060606@oracle.com> <4DF1581E.8050308@redhat.com>
-In-Reply-To: <4DF1581E.8050308@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4DF15944.006D:SCFMA922111,ss=1,fgs=0
+In-Reply-To: <20110609172347.GB20333@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+	<1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
+	<20110609154839.GF4878@barrios-laptop>
+	<20110609172347.GB20333@cmpxchg.org>
+Date: Fri, 10 Jun 2011 08:41:10 +0900
+Message-ID: <BANLkTimD-pecv82qAZkyxA9nLQWbcDry-w@mail.gmail.com>
+Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/11 16:32, Mauro Carvalho Chehab wrote:
-> Em 09-06-2011 17:32, Randy Dunlap escreveu:
->> On 06/09/11 12:43, Mauro Carvalho Chehab wrote:
->>> Em 09-06-2011 16:25, Mauro Carvalho Chehab escreveu:
->>>> Em 08-06-2011 16:52, Randy Dunlap escreveu:
->>>>> The DocBook/media/Makefile seems to be causing too much noise:
->>>>>
->>>>> ls: cannot access linux-next-20110608/Documentation/DocBook/media/*/*.gif: No such file or directory
->>>>> ls: cannot access linux-next-20110608/Documentation/DocBook/media/*/*.png: No such file or directory
->>>>>
->>>>> Maybe the cleanmediadocs target could be made silent?
->>>>
->>>> I'll take a look on it. 
->>>>
->>>> FYI, The next build will probably be noisier, as it is now pointing to some 
->>>> documentation gaps at the DVB API. Those gaps should take a longer time to fix, 
->>>> as we need to discuss upstream about what should be done with those API's,
->>>> that seems to be abandoned upstream (only one legacy DVB driver uses them).
->>>> However, I was told that some out-of-tree drivers and some drivers under development
->>>> are using them.
->>>>
->>>> So, I intend to wait until the next merge window before either dropping those 
->>>> legacy API specs (or moving them to a deprecated section) or to merge those
->>>> out-of-tree drivers, with the proper documentation updates.
->>>>
->>>>> also, where is the mediaindexdocs target defined?
->>>>
->>>> Thanks for noticing it. We don't need this target anymore. I'll write a patch
->>>> removing it.
->>>
->>> This patch should remove the undesired noise.
+On Fri, Jun 10, 2011 at 2:23 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Fri, Jun 10, 2011 at 12:48:39AM +0900, Minchan Kim wrote:
+>> On Wed, Jun 01, 2011 at 08:25:13AM +0200, Johannes Weiner wrote:
+>> > When a memcg hits its hard limit, hierarchical target reclaim is
+>> > invoked, which goes through all contributing memcgs in the hierarchy
+>> > below the offending memcg and reclaims from the respective per-memcg
+>> > lru lists.  This distributes pressure fairly among all involved
+>> > memcgs, and pages are aged with respect to their list buddies.
+>> >
+>> > When global memory pressure arises, however, all this is dropped
+>> > overboard.  Pages are reclaimed based on global lru lists that have
+>> > nothing to do with container-internal age, and some memcgs may be
+>> > reclaimed from much more than others.
+>> >
+>> > This patch makes traditional global reclaim consider container
+>> > boundaries and no longer scan the global lru lists.  For each zone
+>> > scanned, the memcg hierarchy is walked and pages are reclaimed from
+>> > the per-memcg lru lists of the respective zone.  For now, the
+>> > hierarchy walk is bounded to one full round-trip through the
+>> > hierarchy, or if the number of reclaimed pages reach the overall
+>> > reclaim target, whichever comes first.
+>> >
+>> > Conceptually, global memory pressure is then treated as if the root
+>> > memcg had hit its limit.  Since all existing memcgs contribute to the
+>> > usage of the root memcg, global reclaim is nothing more than target
+>> > reclaim starting from the root memcg.  The code is mostly the same for
+>> > both cases, except for a few heuristics and statistics that do not
+>> > always apply.  They are distinguished by a newly introduced
+>> > global_reclaim() primitive.
+>> >
+>> > One implication of this change is that pages have to be linked to the
+>> > lru lists of the root memcg again, which could be optimized away with
+>> > the old scheme.  The costs are not measurable, though, even with
+>> > worst-case microbenchmarks.
+>> >
+>> > As global reclaim no longer relies on global lru lists, this change is
+>> > also in preparation to remove those completely.
+>
+> [cut diff]
+>
+>> I didn't look at all, still. You might change the logic later patches.
+>> If I understand this patch right, it does round-robin reclaim in all memcgs
+>> when global memory pressure happens.
 >>
+>> Let's consider this memcg size unbalance case.
 >>
->> Doesn't work for me.  Did you test it?
-> 
-> Yes:
-> 
-> $ make htmldocs
->   GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//v4l2.xml
->   GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//media-entities.tmpl
->   GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//media-indices.tmpl
->   GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//videodev2.h.xml
->   GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//audio.h.xml
->   GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//ca.h.xml
->   GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//dmx.h.xml
->   GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//frontend.h.xml
->   GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//net.h.xml
->   GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//video.h.xml
->   DOCPROC Documentation/DocBook/media_api.xml
->   HTML    Documentation/DocBook/media_api.html
-> Error: no ID for constraint linkend: AUDIO_GET_PTS.
-> Error: no ID for constraint linkend: AUDIO_BILINGUAL_CHANNEL_SELECT.
-> Error: no ID for constraint linkend: CA_RESET.
-> Error: no ID for constraint linkend: CA_GET_CAP.
-> Error: no ID for constraint linkend: CA_GET_SLOT_INFO.
-> Error: no ID for constraint linkend: CA_GET_DESCR_INFO.
-> Error: no ID for constraint linkend: CA_GET_MSG.
-> Error: no ID for constraint linkend: CA_SEND_MSG.
-> Error: no ID for constraint linkend: CA_SET_DESCR.
-> Error: no ID for constraint linkend: CA_SET_PID.
-> Error: no ID for constraint linkend: DMX_GET_PES_PIDS.
-> Error: no ID for constraint linkend: DMX_GET_CAPS.
-> Error: no ID for constraint linkend: DMX_SET_SOURCE.
-> Error: no ID for constraint linkend: DMX_ADD_PID.
-> Error: no ID for constraint linkend: DMX_REMOVE_PID.
-> Error: no ID for constraint linkend: NET_ADD_IF.
-> Error: no ID for constraint linkend: NET_REMOVE_IF.
-> Error: no ID for constraint linkend: NET_GET_IF.
-> Error: no ID for constraint linkend: VIDEO_GET_SIZE.
-> Error: no ID for constraint linkend: VIDEO_GET_FRAME_RATE.
-> Error: no ID for constraint linkend: VIDEO_GET_PTS.
-> Error: no ID for constraint linkend: VIDEO_GET_FRAME_COUNT.
-> Error: no ID for constraint linkend: VIDEO_COMMAND.
-> Error: no ID for constraint linkend: VIDEO_TRY_COMMAND.
-> rm -rf Documentation/DocBook/index.html; echo '<h1>Linux Kernel HTML Documentation</h1>' >> Documentation/DocBook/index.html && echo '<h2>Kernel Version: 3.0.0-rc1</h2>' >> Documentation/DocBook/index.html && cat Documentation/DocBook/80211.html Documentation/DocBook/alsa-driver-api.html Documentation/DocBook/debugobjects.html Documentation/DocBook/device-drivers.html Documentation/DocBook/deviceiobook.html Documentation/DocBook/drm.html Documentation/DocBook/filesystems.html Documentation/DocBook/gadget.html Documentation/DocBook/genericirq.html Documentation/DocBook/kernel-api.html Documentation/DocBook/kernel-hacking.html Documentation/DocBook/kernel-locking.html Documentation/DocBook/kgdb.html Documentation/DocBook/libata.html Documentation/DocBook/librs.html Documentation/DocBook/lsm.html Documentation/DocBook/mcabook.html Documentation/DocBook/media_api.html Documentation/DocBook/mtdnand.html Documentation/DocBook/networking.html Documentation/DocBook/rapidio.html Doc
-um
-> entation/DocBook/regulator.html Documentation/DocBook/s390-drivers.html Documentation/DocBook/scsi.html Documentation/DocBook/sh.html Documentation/DocBook/tracepoint.html Documentation/DocBook/uio-howto.html Documentation/DocBook/usb.html Documentation/DocBook/writing-an-alsa-driver.html Documentation/DocBook/writing_usb_driver.html Documentation/DocBook/z8530book.html >> Documentation/DocBook/index.html
-> v4l@pedra ~/v4l/patchwork $ make cleandocs
-> make[1]: [cleanmediadocs] Erro 1 (ignorado)
-> v4l@pedra ~/v4l/patchwork $ make cleanmediadocs
-> make[1]: [cleanmediadocs] Erro 1 (ignorado)
-> 
-> (the above linkend errors are due to the lack of documentation for those ioctls, as I've
-> explained before).
-> 
->>
->> Even this does not silence the noise for me:
->>
->> cleanmediadocs:
->> 	-@rm `find $(MEDIA_OBJ_DIR) -type l` $(GENFILES) $(IMGFILES) >/dev/null 2>&1
-> 
-> Weird.
-> The errors should be doing to stderr, so 2>/dev/null should be working.
+>> If A-memcg has lots of LRU pages, scanning count for reclaim would be bigger
+>> so the chance to reclaim the pages would be higher.
+>> If we reclaim A-memcg, we can reclaim the number of pages we want easily and break.
+>> Next reclaim will happen at some time and reclaim will start the B-memcg of A-memcg
+>> we reclaimed successfully before. But unfortunately B-memcg has small lru so
+>> scanning count would be small and small memcg's LRU aging is higher than bigger memcg.
+>> It means small memcg's working set can be evicted easily than big memcg.
+>> my point is that we should not set next memcg easily.
+>> We have to consider memcg LRU size.
+>
+> I may be missing something, but you said yourself that B had a smaller
+> scan count compared to A, so the aging speed should be proportional to
+> respective size.
+>
+> The number of pages scanned per iteration is essentially
+>
+>        number of lru pages in memcg-zone >> priority
+>
+> so we scan relatively more pages from B than from A each round.
+>
+> It's the exact same logic we have been applying traditionally to
+> distribute pressure fairly among zones to equalize their aging speed.
+>
+> Is that what you meant or are we talking past each other?
 
-Big hint:  I see these errors not during "make htmldocs" but during a kernel code build
-when CONFIG_BUILD_DOCSRC=y.
+True if we can reclaim pages easily(ie, default priority) in all memcgs.
+But let's think about it.
+Normally direct reclaim path reclaims only SWAP_CLUSTER_MAX size.
+If we have small memcg, scan window size would be smaller and it is
+likely to be hard reclaim in the priority compared to bigger memcg. It
+means it can raise priority easily in small memcg and even it might
+call lumpy or compaction in case of global memory pressure. It can
+churn all LRU order. :(
+Of course, we have bailout routine so we might make such unfair aging
+effect small but it's not same with old behavior(ie, single LRU list,
+fair aging POV global according to priority raise)
 
-Sorry, I should have mentioned this earlier.
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+
 
 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Kind regards,
+Minchan Kim
