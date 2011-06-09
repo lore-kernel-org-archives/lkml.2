@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285Ab1FIXAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 19:00:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35983 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932131Ab1FIXAC (ORCPT
+	id S1757256Ab1FIXAM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 19:00:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45615 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932127Ab1FIXAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 19:00:02 -0400
+	Thu, 9 Jun 2011 19:00:00 -0400
 Subject: Re: [PATCH v4 3.0-rc2-tip 2/22]  2: uprobes: Breakground page
  replacement.
 From: Peter Zijlstra <peterz@infradead.org>
@@ -28,8 +28,8 @@ In-Reply-To: <20110607125835.28590.25476.sendpatchset@localhost6.localdomain6>
 References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
 	 <20110607125835.28590.25476.sendpatchset@localhost6.localdomain6>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Jun 2011 01:03:28 +0200
-Message-ID: <1307660608.2497.1772.camel@laptop>
+Date: Fri, 10 Jun 2011 01:03:29 +0200
+Message-ID: <1307660609.2497.1773.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -38,13 +38,28 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 2011-06-07 at 18:28 +0530, Srikar Dronamraju wrote:
-> +static void print_insert_fail(struct task_struct *tsk,
-> +                       unsigned long vaddr, const char *why)
-> +{
-> +       pr_warn_once("Can't place breakpoint at pid %d vaddr" " %#lx: %s\n",
-> +                       tsk->pid, vaddr, why);
-> +} 
+> +       vaddr_old = kmap_atomic(old_page, KM_USER0);
+> +       vaddr_new = kmap_atomic(new_page, KM_USER1);
+> +
+> +       memcpy(vaddr_new, vaddr_old, PAGE_SIZE);
+> +       /* poke the new insn in, ASSUMES we don't cross page boundary */
+> +       addr = vaddr;
+> +       vaddr &= ~PAGE_MASK;
+> +       memcpy(vaddr_new + vaddr, &opcode, uprobe_opcode_sz);
+> +
+> +       kunmap_atomic(vaddr_new);
+> +       kunmap_atomic(vaddr_old); 
 
-Why would we ever want to print this instead of simply failing the
-operation and returning an error code to userspace?
+
+> +       vaddr_new = kmap_atomic(page, KM_USER0);
+> +       vaddr &= ~PAGE_MASK;
+> +       memcpy(opcode, vaddr_new + vaddr, uprobe_opcode_sz);
+> +       kunmap_atomic(vaddr_new);
+> 
+
+Both sequences in resp {write,read}_opcode() assume the opcode doesn't
+cross page boundaries but don't in fact have any assertions validating
+this assumption.
+
+
 
