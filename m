@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab1FIMrY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 08:47:24 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45491 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757571Ab1FIMrW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 08:47:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=szeredi.hu; s=google;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=ODPFJ6kkyJieQ1KbHCtZiof4ppRSTM1F/C8ejXjKMIadXaC9fzq7zpSVkIrr8l1ncm
-         6FEtPY+EzUaIRv+XYX8hMBjj9clixL9CMyyw7KZQZyO4C22eoOtt81s08uFYiSRSajI2
-         g9XGEW39OOYlWKEgblaqWOywLW7sIjI4yuHEc=
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: NeilBrown <neilb@suse.de>, viro@ZenIV.linux.org.uk,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, apw@canonical.com, nbd@openwrt.org,
-        hramrach@centrum.cz, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
-	<20110608153208.dc705cda.akpm@linux-foundation.org>
-	<20110609115934.3c53f78f@notabene.brown>
-	<20110608205233.ebfedc4d.akpm@linux-foundation.org>
-Date: Thu, 09 Jun 2011 14:47:49 +0200
-In-Reply-To: <20110608205233.ebfedc4d.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Wed, 8 Jun 2011 20:52:33 -0700")
-Message-ID: <87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1757542Ab1FIM4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 08:56:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39604 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757290Ab1FIM4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 08:56:48 -0400
+Date: Thu, 9 Jun 2011 13:56:42 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Micha? Miros?aw <mirqus@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 10/14] netvm: Set PF_MEMALLOC as appropriate during SKB
+ processing
+Message-ID: <20110609125642.GS5247@suse.de>
+References: <1307606573-24704-1-git-send-email-mgorman@suse.de>
+ <1307606573-24704-11-git-send-email-mgorman@suse.de>
+ <BANLkTimUE9yb-DegdUk0BbbOGWoUhEBrqw@mail.gmail.com>
+ <20110609113505.GR5247@suse.de>
+ <BANLkTi=8jx8B8fR_+Z76UoTe_jhG9G-Tyw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=8jx8B8fR_+Z76UoTe_jhG9G-Tyw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+On Thu, Jun 09, 2011 at 02:28:24PM +0200, Micha? Miros?aw wrote:
+> 2011/6/9 Mel Gorman <mgorman@suse.de>:
+> > On Thu, Jun 09, 2011 at 12:21:31PM +0200, Micha? Miros?aw wrote:
+> >> 2011/6/9 Mel Gorman <mgorman@suse.de>:
+> >> [...]
+> >> > +/*
+> >> > + * Limit which protocols can use the PFMEMALLOC reserves to those that are
+> >> > + * expected to be used for communication with swap.
+> >> > + */
+> >> > +static bool skb_pfmemalloc_protocol(struct sk_buff *skb)
+> >> > +{
+> >> > +       switch (skb->protocol) {
+> >> > +       case __constant_htons(ETH_P_ARP):
+> >> > +       case __constant_htons(ETH_P_IP):
+> >> > +       case __constant_htons(ETH_P_IPV6):
+> >> > +       case __constant_htons(ETH_P_8021Q):
+> >> > +               return true;
+> >> > +       default:
+> >> > +               return false;
+> >> > +       }
+> >> > +}
+> >>
+> >> This is not needed and wrong. Whatever list there will be, it's going
+> >> to always miss some obscure setup (or not that obscure, like
+> >> ATAoverEthernet).
+> >>
+> >
+> > NBD is updated in the series to set the socket information
+> > appropriately but the same cannot be said of AoE. The necessary
+> > changes have been made IPv4 and IPv6 to handle pfmemalloc sockets
+> > but the same cannot be necessarily said for the other protocols. Yes,
+> > the check could be removed but leaving it there makes a clear statement
+> > on what scenario can be reasonably expected to work.
+> 
+> Ok. Then the comment before skb_pfmemalloc_protocol() is misleading.
+> It should say that this is a list of protocols which implement the
+> required special handling of PFMEMALLOC skbs.
+> 
 
-> On Thu, 9 Jun 2011 11:59:34 +1000 NeilBrown <neilb@suse.de> wrote:
->
->> On Wed, 8 Jun 2011 15:32:08 -0700 Andrew Morton <akpm@linux-foundation.org>
->> wrote:
->> > I've never really understood the need for fs overlaying.  Who wants it?
->> > What are the use-cases?
->> 
->> https://lwn.net/Articles/324291/
->> 
->> I think the strongest use case is that LIVE-DVD's want it to have a
->> write-able root filesystem which is stored on the DVD.
->
-> Well, these things have been around for over 20 years.  What motivated
-> the developers of other OS's to develop these things and how are their
-> users using them?
+That's a very reasonable suggestion. My thinking behind that comment
+was a backwards because I only "expected" protocols that implemented
+the special handling to be used for swap :/
 
-That's a good question, Erez might be able to answer that better.
+Thanks.
 
-We have customers who need this for the "common base + writable
-configuration" case in a virtualized environment.
-
-Since overlayfs's announcement several projects have tried it and have
-been very good testers and bug reporters.  These include OpenWRT, Ubuntu
-and other Debian based live systems.
-
->> > This sort of thing could be implemented in userspace and wired up via
->> > fuse, I assume.  Has that been attempted and why is it inadequate?
-
-Yes, unionfs-fuse and deltafs (written by me) are two examples.
-
-One issue that a customer had with deltafs was lack of XIP support.  The
-other one (from the same customer) was the general yuck factor of
-userspace filesystems.
-
-There are also performance and resource use issues associated with
-userspace filesystems.  These may or may not be problem depending on the
-actual use.  But it's a fact that out-of-kernel filesystems will never
-be as efficient as in-kernel ones.
-
->> I think that would be a valid question if the proposal was large and
->> complex.  But overlayfs is really quite small and self-contained.
->
-> Not merging it would be even smaller and simpler.  If there is a
-> userspace alternative then that option should be evaluated and compared
-> in a rational manner.
->
->
->
-> Another issue: there have been numerous attempts at Linux overlay
-> filesystems from numerous parties.  Does (or will) this implementation
-> satisfy all their requirements?
-
-Overlayfs aims to be the simplest possible but not simpler.
-
-I think the reason why "aufs" never had a real chance at getting merged
-is because of feature creep.
-
-Of course I expect new features to be added to overlayfs after the
-merge, but I beleive some of the features in those other solutions are
-simply unnecessary.
-
-Thanks,
-Miklos
+-- 
+Mel Gorman
+SUSE Labs
