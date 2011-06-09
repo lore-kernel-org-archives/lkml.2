@@ -1,114 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab1FIPAd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 11:00:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42941 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752087Ab1FIPAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 11:00:31 -0400
-Date: Thu, 9 Jun 2011 17:00:26 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Ying Han <yinghan@google.com>, Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+	id S1753605Ab1FIPA4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 11:00:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59685 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab1FIPAz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 11:00:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=k0/O2hJMeqbdFs2ktvPTIjpagGYUl45TQQ7WF8hgVtcaqUh1ojXQokD0WTupyqX5GB
+         CAODLTQ4yZFKcXEtViGLL0p8IHMKCdf2y4mui1E5Y2aIj69W1QVrfLU8zbtXrhJN6wtq
+         B/AP8ZcuX46PrLr2y7JSYCSBbZsDx8UTVjkhg=
+Date: Fri, 10 Jun 2011 00:00:45 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 4/8] memcg: rework soft limit reclaim
-Message-ID: <20110609150026.GD3994@tiehlicka.suse.cz>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <1306909519-7286-5-git-send-email-hannes@cmpxchg.org>
- <BANLkTim5TSWpBfeF2dugGZwQmNC-Cf+GCNctraq8FtziJxsd2g@mail.gmail.com>
- <BANLkTimuRks4+h=Kjt2Lzc-s-XsAHCH9vg@mail.gmail.com>
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v3 03/10] Add additional isolation mode
+Message-ID: <20110609150045.GC4878@barrios-laptop>
+References: <cover.1307455422.git.minchan.kim@gmail.com>
+ <b72a86ed33c693aeccac0dba3fba8c13145106ab.1307455422.git.minchan.kim@gmail.com>
+ <20110609135902.GV5247@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimuRks4+h=Kjt2Lzc-s-XsAHCH9vg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110609135902.GV5247@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 02-06-11 22:25:29, Ying Han wrote:
-> On Thu, Jun 2, 2011 at 2:55 PM, Ying Han <yinghan@google.com> wrote:
-> > On Tue, May 31, 2011 at 11:25 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> >> Currently, soft limit reclaim is entered from kswapd, where it selects
-[...]
-> >> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> >> index c7d4b44..0163840 100644
-> >> --- a/mm/vmscan.c
-> >> +++ b/mm/vmscan.c
-> >> @@ -1988,9 +1988,13 @@ static void shrink_zone(int priority, struct zone *zone,
-> >>                unsigned long reclaimed = sc->nr_reclaimed;
-> >>                unsigned long scanned = sc->nr_scanned;
-> >>                unsigned long nr_reclaimed;
-> >> +               int epriority = priority;
-> >> +
-> >> +               if (mem_cgroup_soft_limit_exceeded(root, mem))
-> >> +                       epriority -= 1;
-> >
-> > Here we grant the ability to shrink from all the memcgs, but only
-> > higher the priority for those exceed the soft_limit. That is a design
-> > change
-> > for the "soft_limit" which giving a hint to which memcgs to reclaim
-> > from first under global memory pressure.
+On Thu, Jun 09, 2011 at 02:59:02PM +0100, Mel Gorman wrote:
+> On Tue, Jun 07, 2011 at 11:38:16PM +0900, Minchan Kim wrote:
+> > There are some places to isolate lru page and I believe
+> > users of isolate_lru_page will be growing.
+> > The purpose of them is each different so part of isolated pages
+> > should put back to LRU, again.
+> > 
+> > The problem is when we put back the page into LRU,
+> > we lose LRU ordering and the page is inserted at head of LRU list.
+> > It makes unnecessary LRU churning so that vm can evict working set pages
+> > rather than idle pages.
+> > 
+> > This patch adds new modes when we isolate page in LRU so we don't isolate pages
+> > if we can't handle it. It could reduce LRU churning.
+> > 
+> > This patch doesn't change old behavior. It's just used by next patches.
+> > 
+> > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Cc: Mel Gorman <mgorman@suse.de>
+> > Cc: Andrea Arcangeli <aarcange@redhat.com>
+> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> > Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> > ---
+> >  include/linux/swap.h |    2 ++
+> >  mm/vmscan.c          |    6 ++++++
+> >  2 files changed, 8 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/include/linux/swap.h b/include/linux/swap.h
+> > index 48d50e6..731f5dd 100644
+> > --- a/include/linux/swap.h
+> > +++ b/include/linux/swap.h
+> > @@ -248,6 +248,8 @@ enum ISOLATE_MODE {
+> >  	ISOLATE_NONE,
+> >  	ISOLATE_INACTIVE = 1,	/* Isolate inactive pages */
+> >  	ISOLATE_ACTIVE = 2,	/* Isolate active pages */
+> > +	ISOLATE_CLEAN = 8,      /* Isolate clean file */
+> > +	ISOLATE_UNMAPPED = 16,  /* Isolate unmapped file */
+> >  };
 > 
-> 
-> Basically, we shouldn't reclaim from a memcg under its soft_limit
-> unless we have trouble reclaim pages from others. 
+> This really should be a bitwise type like gfp_t.
 
-Agreed.
+Agree. As I said, I will change it.
 
-> Something like the following makes better sense:
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index bdc2fd3..b82ba8c 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1989,6 +1989,8 @@ restart:
->         throttle_vm_writeout(sc->gfp_mask);
->  }
+> >  
+> >  /* linux/mm/vmscan.c */
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 4cbe114..26aa627 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -990,6 +990,12 @@ int __isolate_lru_page(struct page *page, enum ISOLATE_MODE mode, int file)
+> >  
+> >  	ret = -EBUSY;
+> >  
+> > +	if (mode & ISOLATE_CLEAN && (PageDirty(page) || PageWriteback(page)))
+> > +		return ret;
+> > +
+> > +	if (mode & ISOLATE_UNMAPPED && page_mapped(page))
+> > +		return ret;
+> > +
+> >  	if (likely(get_page_unless_zero(page))) {
+> >  		/*
+> >  		 * Be careful not to clear PageLRU until after we're
 > 
-> +#define MEMCG_SOFTLIMIT_RECLAIM_PRIORITY       2
-> +
->  static void shrink_zone(int priority, struct zone *zone,
->                                 struct scan_control *sc)
->  {
-> @@ -2001,13 +2003,13 @@ static void shrink_zone(int priority, struct zone *zone,
->                 unsigned long reclaimed = sc->nr_reclaimed;
->                 unsigned long scanned = sc->nr_scanned;
->                 unsigned long nr_reclaimed;
-> -               int epriority = priority;
-> 
-> -               if (mem_cgroup_soft_limit_exceeded(root, mem))
-> -                       epriority -= 1;
-> +               if (!mem_cgroup_soft_limit_exceeded(root, mem) &&
-> +                               priority > MEMCG_SOFTLIMIT_RECLAIM_PRIORITY)
-> +                       continue;
+> This patch does notuse ISOLATE_CLEAN or ISOLATE_UMAPPED anywhere. While
+> I can guess how they will be used, it would be easier to review if one
+> patch introduced ISOLATE_CLEAN and updated the call sites where it was
+> relevant. Same with ISOLATE_UNMAPPED.
 
-yes, this makes sense but I am not sure about the right(tm) value of the
-MEMCG_SOFTLIMIT_RECLAIM_PRIORITY. 2 sounds too low. You would do quite a
-lot of loops 
-(DEFAULT_PRIORITY-MEMCG_SOFTLIMIT_RECLAIM_PRIORITY) * zones * memcg_count
-without any progress (assuming that all of them are under soft limit
-which doesn't sound like a totally artificial configuration) until you
-allow reclaiming from groups that are under soft limit. Then, when you
-finally get to reclaiming, you scan rather aggressively.
+Totally agree.
+I also always wanted it to others. :(
 
-Maybe something like 3/4 of DEFAULT_PRIORITY? You would get 3 times
-over all (unbalanced) zones and all cgroups that are above the limit
-(scanning max{1/4096+1/2048+1/1024, 3*SWAP_CLUSTER_MAX} of the LRUs for
-each cgroup) which could be enough to collect the low hanging fruit.
+> 
+> Also when using & like this, I thought the compiler warned if it wasn't
+> in parenthesis but maybe that's wrong. The problem is the operator
+
+My compiler(gcc version 4.4.3 (Ubuntu 4.4.3-4ubuntu5) was smart.
+
+> precedence for bitwise AND and logical AND is easy to forget as it's
+> so rarely an issue.
+
+I will update the part for readability as well as compiler warning unexpected
+
+> 
+> i.e. it's easy to forget if
+> 
+> mode & ISOLATE_UNMAPPED && page_mapped(page)
+> 
+> means
+> 
+> mode & (ISOLATE_UNMAPPED && page_mapped(page))
+> 
+> or
+> 
+> (mode & ISOLATE_UNMAPPED) && page_mapped(page)
+> 
+> Be nice and specific for this one.
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
+
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Kind regards
+Minchan Kim
