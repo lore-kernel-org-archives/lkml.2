@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115Ab1FILxa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 07:53:30 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44402 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754443Ab1FILx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 07:53:27 -0400
-Date: Thu, 9 Jun 2011 12:55:21 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Dave Airlie <airlied@redhat.com>
-Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 14/15] gma500: nuke the PSB debug stuff
-Message-ID: <20110609125521.63e6df68@lxorguk.ukuu.org.uk>
-In-Reply-To: <1307615814.5963.2.camel@t60prh>
-References: <20110608100411.9478.86672.stgit@localhost.localdomain>
-	<20110608101515.9478.67943.stgit@localhost.localdomain>
-	<BANLkTikYtLExBTcYAwicjEH=1bQp28WitQ@mail.gmail.com>
-	<20110609091103.4b61f2a1@lxorguk.ukuu.org.uk>
-	<1307615814.5963.2.camel@t60prh>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757419Ab1FIMAP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 08:00:15 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:36397 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754443Ab1FIMAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 08:00:11 -0400
+Message-ID: <4DF0B5C2.6030500@mev.co.uk>
+Date: Thu, 9 Jun 2011 13:00:02 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110526 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: "Prashant P. Shah" <pshah.mumbai@gmail.com>
+CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Staging: comedi: dyna_pci10xx: replace semaphore with
+ mutex
+References: <20110609115215.GA14569@mail.fossee.in>
+In-Reply-To: <20110609115215.GA14569@mail.fossee.in>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Though if psb wants to be different to other drm drivers it can lead the
-> way, though it'll be a total nightmare for all the people who follow
-> documentation on how to debug drm drivers using drm.debug=1,2,4,8. for
-> various code paths.
+On 09/06/11 12:52, Prashant P. Shah wrote:
+> -	sema_init(&devpriv->sem, 1);
+> +	mutex_init(&devpriv->mutex);
+>  	dev->board_ptr = &boardtypes[board_index];
+>  	devpriv->pci_dev = pcidev;
 
-Actually it seems to work out nicely because you can debug DRM core
-goings on and driver goings on separately. Also the driver ones can be
-turned on/off on their own at runtime which is a godsend.
+You could call mutex_destroy() in your _detach routine as well.  It's
+used for debugging mutexes:
 
-As you can imagine I've been testing the debugging a fair bit !
+static int dyna_pci10xx_detach(struct comedi_device *dev)
+{
+	if (devpriv && devpriv->pci_dev) {
+		comedi_pci_disable(devpriv->pci_dev);
+		mutex_destroy(&devpriv->mutex);
+	}
+	return 0;
+}
 
-Alan
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
