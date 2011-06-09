@@ -1,57 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab1FIOlW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 10:41:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8184 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751951Ab1FIOlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 10:41:21 -0400
-Message-ID: <4DF0DB8D.5080207@redhat.com>
-Date: Thu, 09 Jun 2011 10:41:17 -0400
-From: Peter Jones <pjones@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1752854Ab1FIOlq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 10:41:46 -0400
+Received: from mail-px0-f179.google.com ([209.85.212.179]:40438 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab1FIOlo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 10:41:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=FFesLkuEiIRWpQ3PABeKNHgdauuJINuNoiq1A/Rw6UR7V+d1NBNX6hAokG5i4/biV/
+         1ZHMB7wpg02jHJxZVNbPtHBFhS/KlI1JsutoPyta9AwXMOSei47Ok+//9cexeNUYpxCN
+         xgQDsO+cY46zoDBQLSlmos0YeAreWwuNZtVbE=
+Date: Thu, 9 Jun 2011 23:41:36 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v3 01/10] compaction: trivial clean up acct_isolated
+Message-ID: <20110609144135.GA4878@barrios-laptop>
+References: <cover.1307455422.git.minchan.kim@gmail.com>
+ <71a79768ff8ef356db09493dbb5d6c390e176e0d.1307455422.git.minchan.kim@gmail.com>
+ <20110609133327.GT5247@suse.de>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Matthew Garrett <mjg@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: CONFIG_EFI should select CONFIG_RELOCATABLE
-References: <1307629964-31658-1-git-send-email-mjg@redhat.com> <4DF0DAAB.7010005@zytor.com>
-In-Reply-To: <4DF0DAAB.7010005@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110609133327.GT5247@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2011 10:37 AM, H. Peter Anvin wrote:
-> On 06/09/2011 07:32 AM, Matthew Garrett wrote:
->> EFI doesn't provide any guarantees that any given address will be free,
->> so the bootloader must have the freedom to position the kernel
->> appropriately. Make CONFIG_EFI select CONFIG_RELOCATABLE in order to
->> ensure that this constraint is satisfiable.
->>
->> Signed-off-by: Matthew Garrett<mjg@redhat.com>
->> ---
->>   arch/x86/Kconfig |    1 +
->>   1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
->> index da34972..580cd31 100644
->> --- a/arch/x86/Kconfig
->> +++ b/arch/x86/Kconfig
->> @@ -1454,6 +1454,7 @@ config ARCH_USES_PG_UNCACHED
->>   config EFI
->>   	bool "EFI runtime service support"
->>   	depends on ACPI
->> +	select RELOCATABLE
->>   	---help---
->>   	  This enables the kernel to use EFI runtime services that are
->>   	  available (such as the EFI variable services).
->
-> Can we make this a depends on instead of select?
+Hi Mel,
 
-Seems weird to me - when you're configuring the kernel, you're more likely
-to know that you want EFI than to remember that that requires relocation.
+On Thu, Jun 09, 2011 at 02:33:27PM +0100, Mel Gorman wrote:
+> On Tue, Jun 07, 2011 at 11:38:14PM +0900, Minchan Kim wrote:
+> > acct_isolated of compaction uses page_lru_base_type which returns only
+> > base type of LRU list so it never returns LRU_ACTIVE_ANON or LRU_ACTIVE_FILE.
+> > In addtion, cc->nr_[anon|file] is used in only acct_isolated so it doesn't have
+> > fields in conpact_control.
+> > This patch removes fields from compact_control and makes clear function of
+> > acct_issolated which counts the number of anon|file pages isolated.
+> > 
+> > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Cc: Mel Gorman <mgorman@suse.de>
+> > Cc: Andrea Arcangeli <aarcange@redhat.com>
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> > Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> > ---
+> >  mm/compaction.c |   18 +++++-------------
+> >  1 files changed, 5 insertions(+), 13 deletions(-)
+> > 
+> > diff --git a/mm/compaction.c b/mm/compaction.c
+> > index 021a296..61eab88 100644
+> > --- a/mm/compaction.c
+> > +++ b/mm/compaction.c
+> > @@ -35,10 +35,6 @@ struct compact_control {
+> >  	unsigned long migrate_pfn;	/* isolate_migratepages search base */
+> >  	bool sync;			/* Synchronous migration */
+> >  
+> > -	/* Account for isolated anon and file pages */
+> > -	unsigned long nr_anon;
+> > -	unsigned long nr_file;
+> > -
+> >  	unsigned int order;		/* order a direct compactor needs */
+> >  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+> >  	struct zone *zone;
+> > @@ -212,17 +208,13 @@ static void isolate_freepages(struct zone *zone,
+> >  static void acct_isolated(struct zone *zone, struct compact_control *cc)
+> >  {
+> >  	struct page *page;
+> > -	unsigned int count[NR_LRU_LISTS] = { 0, };
+> > +	unsigned int count[2] = { 0, };
+> >  
+> > -	list_for_each_entry(page, &cc->migratepages, lru) {
+> > -		int lru = page_lru_base_type(page);
+> > -		count[lru]++;
+> > -	}
+> > +	list_for_each_entry(page, &cc->migratepages, lru)
+> > +		count[!!page_is_file_cache(page)]++;
+> >  
+> > -	cc->nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
+> > -	cc->nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
+> > -	__mod_zone_page_state(zone, NR_ISOLATED_ANON, cc->nr_anon);
+> > -	__mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
+> > +	__mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
+> > +	__mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
+> 
+> You are hard-coding assumptions about the value of LRU_INACTIVE_ANON
+> and LRU_INACTIVE_FILE here. I have no expectation that these will
+
+I used page_is_file_cache and logical not.
+If page_is_file_cache returns zero(ie, anon), logicacl not makes it with 0.
+If page_is_file_cache doesn't return zero(ie, file), logical not makes it with 1.
+So, anon pages would be put in count[0] and file pages would be in count[1].
+
+Do I miss your point?
+
+> change but who knows for sure? To be robust against unexpected
+> changes, count should still be NR_LRU_LISTS and you should use the
+> LRU_INACTIVE_ANON and LRU_INACTIVE_FILE values.
+> 
+> I agree that summing LRU_ACTIVE_* is silly.
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
 
 -- 
-         Peter
+Kind regards
+Minchan Kim
