@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab1FHX61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 19:58:27 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:40884 "EHLO e2.ny.us.ibm.com"
+	id S1756805Ab1FIACK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 20:02:10 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:40582 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755372Ab1FHX60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 19:58:26 -0400
-Date: Wed, 8 Jun 2011 16:58:14 -0700
+	id S1755372Ab1FIACI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 20:02:08 -0400
+Date: Wed, 8 Jun 2011 17:02:03 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -14,87 +14,94 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
         rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
         eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 03/28] rcu: Streamline code produced by
- __rcu_read_unlock()
-Message-ID: <20110608235814.GN2324@linux.vnet.ibm.com>
+Subject: Re: [PATCH tip/core/rcu 05/28] rcu: Move rcu_head definition to
+ types.h
+Message-ID: <20110609000203.GO2324@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20110608192943.GA13211@linux.vnet.ibm.com>
- <1307561407-13809-3-git-send-email-paulmck@linux.vnet.ibm.com>
- <BLU0-SMTP16E45D0FAD13ACF913B28B96620@phx.gbl>
+ <1307561407-13809-5-git-send-email-paulmck@linux.vnet.ibm.com>
+ <BLU0-SMTP635E2E394E1488A2717A5B96620@phx.gbl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BLU0-SMTP16E45D0FAD13ACF913B28B96620@phx.gbl>
+In-Reply-To: <BLU0-SMTP635E2E394E1488A2717A5B96620@phx.gbl>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 07:17:17PM -0400, Mathieu Desnoyers wrote:
+On Wed, Jun 08, 2011 at 07:26:21PM -0400, Mathieu Desnoyers wrote:
 > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > Given some common flag combinations, particularly -Os, gcc will inline
-> > rcu_read_unlock_special() despite its being in an unlikely() clause.
-> > Use noline to prohibit this misoptimization.
-> 
-> noline -> noinline
-
-Good eyes, fixed!
-
-> > In addition, move the second barrier() in __rcu_read_unlock() so that
-> > it is not on the common-case code path.  This will allow the compiler to
-> > generate better code for the common-case path through __rcu_read_unlock().
+> > Take a first step towards untangling Linux kernel header files by
+> > placing the struct rcu_head definition into include/linux/types.h.
+> > Once this is in place, then header files that need only rcu_head
+> > can include types.h rather than rcupdate.h.
 > > 
-> > Finally, fix up whitespace in kernel/lockdep.c to keep checkpatch happy.
-> 
-> This cleanup probably moved to a separate patch, but this comment line
-> did not follow.
-
-Indeed -- I have removed it.
-
-> Other than that, feel free to add my
-> 
-> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-
-Thank you!
-
-						Thanx, Paul
-
-> > Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Yes! I'm suddenly feeling the temperature drop by a few degrees in
+> #include hell ;) One detail though: I think rcupdate.h should then
+> include types.h.
+
+Glad you like it!
+
+But please see below.
+
+> Thanks,
+> 
+> Mathieu
+> 
+> 
 > > ---
-> >  kernel/rcutree_plugin.h |   12 ++++++------
-> >  1 files changed, 6 insertions(+), 6 deletions(-)
+> >  include/linux/rcupdate.h |   10 +---------
+> >  include/linux/types.h    |   10 ++++++++++
+> >  2 files changed, 11 insertions(+), 9 deletions(-)
 > > 
-> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> > index ea2e2fb..40a6db7 100644
-> > --- a/kernel/rcutree_plugin.h
-> > +++ b/kernel/rcutree_plugin.h
-> > @@ -284,7 +284,7 @@ static struct list_head *rcu_next_node_entry(struct task_struct *t,
-> >   * notify RCU core processing or task having blocked during the RCU
-> >   * read-side critical section.
-> >   */
-> > -static void rcu_read_unlock_special(struct task_struct *t)
-> > +static noinline void rcu_read_unlock_special(struct task_struct *t)
-> >  {
-> >  	int empty;
-> >  	int empty_exp;
-> > @@ -387,11 +387,11 @@ void __rcu_read_unlock(void)
-> >  	struct task_struct *t = current;
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 8be0433..ad09eb8 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -64,15 +64,7 @@ static inline void rcutorture_record_progress(unsigned long vernum)
+> >  #define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
+> >  #define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
 > >  
-> >  	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
-> > -	--t->rcu_read_lock_nesting;
-> > -	barrier();  /* decrement before load of ->rcu_read_unlock_special */
-> > -	if (t->rcu_read_lock_nesting == 0 &&
-> > -	    unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
-> > -		rcu_read_unlock_special(t);
-> > +	if (--t->rcu_read_lock_nesting == 0) {
-> > +		barrier();  /* decr before ->rcu_read_unlock_special load */
-> > +		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
-> > +			rcu_read_unlock_special(t);
-> > +	}
-> >  #ifdef CONFIG_PROVE_LOCKING
-> >  	WARN_ON_ONCE(ACCESS_ONCE(t->rcu_read_lock_nesting) < 0);
-> >  #endif /* #ifdef CONFIG_PROVE_LOCKING */
+> > -/**
+> > - * struct rcu_head - callback structure for use with RCU
+> > - * @next: next update requests in a list
+> > - * @func: actual update function to call after the grace period.
+> > - */
+> > -struct rcu_head {
+> > -	struct rcu_head *next;
+> > -	void (*func)(struct rcu_head *head);
+> > -};
+> > +#include <linux/types.h>
+
+And here you go!
+
+> >  
+> >  /* Exported common interfaces */
+> >  extern void call_rcu_sched(struct rcu_head *head,
+> > diff --git a/include/linux/types.h b/include/linux/types.h
+> > index 176da8c..57a9723 100644
+> > --- a/include/linux/types.h
+> > +++ b/include/linux/types.h
+> > @@ -238,6 +238,16 @@ struct ustat {
+> >  	char			f_fpack[6];
+> >  };
+> >  
+> > +/**
+> > + * struct rcu_head - callback structure for use with RCU
+> > + * @next: next update requests in a list
+> > + * @func: actual update function to call after the grace period.
+> > + */
+> > +struct rcu_head {
+> > +	struct rcu_head *next;
+> > +	void (*func)(struct rcu_head *head);
+> > +};
+> > +
+> >  #endif	/* __KERNEL__ */
+> >  #endif /*  __ASSEMBLY__ */
+> >  #endif /* _LINUX_TYPES_H */
 > > -- 
 > > 1.7.3.2
 > > 
