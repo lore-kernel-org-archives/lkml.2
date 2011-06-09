@@ -1,283 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab1FIO7Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 10:59:16 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:42531 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770Ab1FIO7N (ORCPT
+	id S1753280Ab1FIPAL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 11:00:11 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54834 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab1FIPAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 10:59:13 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [PATCH RFC] pch_uart: Add console support
-Date: Thu,  9 Jun 2011 16:59:07 +0200
-Message-Id: <1307631547-31884-1-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: git-send-email 1.7.3.4
+	Thu, 9 Jun 2011 11:00:08 -0400
+Date: Thu, 9 Jun 2011 10:59:26 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: kexec/kdump for Xen - implementation question
+Message-ID: <20110609145925.GA26417@dumpdata.com>
+References: <20110606160434.GA26021@router-fw-old.local.net-space.pl>
+ <1307442566.775.555.camel@zakaz.uk.xensource.com>
+ <20110608160445.GA6091@router-fw-old.local.net-space.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110608160445.GA6091@router-fw-old.local.net-space.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090208.4DF0DFE6.0057:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add console support to pch_uart. To enable append e.g.
-console=ttyPCH0,115200 to your kernel command line.
+On Wed, Jun 08, 2011 at 06:04:45PM +0200, Daniel Kiper wrote:
+> On Tue, Jun 07, 2011 at 11:29:26AM +0100, Ian Campbell wrote:
+> > On Mon, 2011-06-06 at 17:04 +0100, Daniel Kiper wrote:
+> > > Hi,
+> > >
+> > > Currently, I am working on kexec/kdump for Xen with emphasis on dom0
+> > > implementation issues. After reviewing relevant Xen Linux Kernel
+> > > Ver. 2.6.18 code I realized (as I expected) that original kexec/kdump
+> > > in mainline kernel should be extensively amended. Further, after some
+> > > discussion with Konrad Rzeszutek Wilk and Ian Campbell it was clear
+> > > for me that it could be done in a few diffrent ways. Due to this facts
+> > > I decided to establish general implementation details with LKML and
+> > > Xen-devel community to avoid extensive code rewrite in case my own
+> > > proposal would not be accepted.
+> > >
+> > > Now I think about four solutions. I will present them in order of my
+> > > preference. However, if you have another soultions to that problem
+> > > please drop me a line.
+> > >
+> > > 1) Currently existing kexec/kdump implementation should be amended
+> > >    by adding Xen specific code mainly in arch/i386. It should look
+> > >    like:
+> > >
+> > >    void machine_kexec(struct kimage *image)
+> > >    {
+> > >    #ifdef CONFIG_XEN
+> > >       if (xen_initial_domain()) {
+> > >         ...
+> > > 	Xen specific code
+> > > 	...
+> > >       }
+> > >    #endif
+> > >
+> > >      ...
+> > >      generic kexec/kdump code
+> > >      ...
+> > >    }
+> >
+> > This is about the ugliest way to do things and should be avoided.
+> 
+> I think that in this case it is to some extent. I decided put
+> this solution before struct machine_kexec_ops solution because
+> this (let say conditional solution) touches only x86 code (and
+> if it be required IA-64). struct machine_kexec_ops proposal
+> require changes for 8 archs. I am not sure it could be accepted
+> by kexec/kdump and relevant archs maintainers quickly. However,
 
-Expected issues:
-* Should not work on CM-iTC boards due to different clock.
+Slowly is in general how LKML works with patches. Once you have
+an idea of how you want the callback/structs be set lets
+email the maintainer of the kexec to get his feedback. If he is OK
+then I don't think the different arch maintainers will care much
+(as long as it has been tested - and that can be done with QEMU).
+> I think that struct machine_kexec_ops is better as longterm
+> solution.
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
----
- drivers/tty/serial/Kconfig    |    9 +++
- drivers/tty/serial/pch_uart.c |  159 ++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 167 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index 636144c..69115fe 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -1600,6 +1600,15 @@ config SERIAL_PCH_UART
- 	  ML7213/ML7223 is companion chip for Intel Atom E6xx series.
- 	  ML7213/ML7223 is completely compatible for Intel EG20T PCH.
- 
-+config SERIAL_PCH_UART_CONSOLE
-+	bool "Support for console on Intel EG20T PCH UART/OKI SEMICONDUCTOR ML7213 IOH"
-+	depends on SERIAL_PCH_UART=y
-+	select SERIAL_CORE_CONSOLE
-+	help
-+	  Say Y here if you wish to use the PCH UART as the system console
-+	  (the system  console is the device which receives all kernel messages and
-+	  warnings and which allows logins in single user mode).
-+
- config SERIAL_MSM_SMD
- 	bool "Enable tty device interface for some SMD ports"
- 	default n
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index e3e6d6b..a3d0c9e 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -22,6 +22,9 @@
- #include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/dmi.h>
-+#include <linux/console.h>
-+#include <linux/nmi.h>
-+#include <linux/delay.h>
- 
- #include <linux/dmaengine.h>
- #include <linux/pch_dma.h>
-@@ -197,6 +200,10 @@ enum {
- 
- #define PCI_VENDOR_ID_ROHM		0x10DB
- 
-+#define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
-+
-+#define DEFAULT_BAUD_RATE 1843200 /* 1.8432MHz */
-+
- struct pch_uart_buffer {
- 	unsigned char *buf;
- 	int size;
-@@ -271,6 +278,9 @@ static struct pch_uart_driver_data drv_dat[] = {
- 	[pch_ml7223_uart1] = {PCH_UART_2LINE, 1},
- };
- 
-+#ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
-+static struct eg20t_port *pch_uart_ports[PCH_UART_NR];
-+#endif
- static unsigned int default_baud = 9600;
- static const int trigger_level_256[4] = { 1, 64, 128, 224 };
- static const int trigger_level_64[4] = { 1, 16, 32, 56 };
-@@ -1378,6 +1388,143 @@ static struct uart_ops pch_uart_ops = {
- 	.verify_port = pch_uart_verify_port
- };
- 
-+#ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
-+
-+/*
-+ *	Wait for transmitter & holding register to empty
-+ */
-+static void wait_for_xmitr(struct eg20t_port *up, int bits)
-+{
-+	unsigned int status, tmout = 10000;
-+
-+	/* Wait up to 10ms for the character(s) to be sent. */
-+	for (;;) {
-+		status = ioread8(up->membase + UART_LSR);
-+
-+		if ((status & bits) == bits)
-+			break;
-+		if (--tmout == 0)
-+			break;
-+		udelay(1);
-+	}
-+
-+	/* Wait up to 1s for flow control if necessary */
-+	if (up->port.flags & UPF_CONS_FLOW) {
-+		unsigned int tmout;
-+		for (tmout = 1000000; tmout; tmout--) {
-+			unsigned int msr = ioread8(up->membase + UART_MSR);
-+			if (msr & UART_MSR_CTS)
-+				break;
-+			udelay(1);
-+			touch_nmi_watchdog();
-+		}
-+	}
-+}
-+
-+static void pch_console_putchar(struct uart_port *port, int ch)
-+{
-+	struct eg20t_port *priv =
-+		container_of(port, struct eg20t_port, port);
-+
-+	wait_for_xmitr(priv, UART_LSR_THRE);
-+	iowrite8(ch, priv->membase + PCH_UART_THR);
-+}
-+
-+/*
-+ *	Print a string to the serial port trying not to disturb
-+ *	any possible real use of the port...
-+ *
-+ *	The console_lock must be held when we get here.
-+ */
-+static void
-+pch_console_write(struct console *co, const char *s, unsigned int count)
-+{
-+	struct eg20t_port *priv;
-+
-+	unsigned long flags;
-+	u8 ier;
-+	int locked = 1;
-+
-+	priv = pch_uart_ports[co->index];
-+
-+	touch_nmi_watchdog();
-+
-+	local_irq_save(flags);
-+	if (priv->port.sysrq) {
-+		/* serial8250_handle_port() already took the lock */
-+		locked = 0;
-+	} else if (oops_in_progress) {
-+		locked = spin_trylock(&priv->port.lock);
-+	} else
-+		spin_lock(&priv->port.lock);
-+
-+	/*
-+	 *	First save the IER then disable the interrupts
-+	 */
-+	ier = ioread8(priv->membase + UART_IER);
-+
-+	pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_ALL_INT);
-+
-+	uart_console_write(&priv->port, s, count, pch_console_putchar);
-+
-+	/*
-+	 *	Finally, wait for transmitter to become empty
-+	 *	and restore the IER
-+	 */
-+	wait_for_xmitr(priv, BOTH_EMPTY);
-+	iowrite8(ier, priv->membase + UART_IER);
-+
-+	if (locked)
-+		spin_unlock(&priv->port.lock);
-+	local_irq_restore(flags);
-+}
-+
-+static int __init pch_console_setup(struct console *co, char *options)
-+{
-+	struct uart_port *port;
-+	int baud = 9600;
-+	int bits = 8;
-+	int parity = 'n';
-+	int flow = 'n';
-+
-+	/*
-+	 * Check whether an invalid uart number has been specified, and
-+	 * if so, search for the first available port that does have
-+	 * console support.
-+	 */
-+	if (co->index >= PCH_UART_NR)
-+		co->index = 0;
-+	port = &pch_uart_ports[co->index]->port;
-+
-+	if (!port || (!port->iobase && !port->membase))
-+		return -ENODEV;
-+
-+	/* setup uartclock */
-+	port->uartclk = DEFAULT_BAUD_RATE;
-+
-+	if (options)
-+		uart_parse_options(options, &baud, &parity, &bits, &flow);
-+
-+	return uart_set_options(port, co, baud, parity, bits, flow);
-+}
-+
-+static struct uart_driver pch_uart_driver;
-+
-+static struct console pch_console = {
-+	.name		= PCH_UART_DRIVER_DEVICE,
-+	.write		= pch_console_write,
-+	.device		= uart_console_device,
-+	.setup		= pch_console_setup,
-+	.flags		= CON_PRINTBUFFER | CON_ANYTIME,
-+	.index		= -1,
-+	.data		= &pch_uart_driver,
-+};
-+
-+#define PCH_CONSOLE	&pch_console
-+#else
-+#define PCH_CONSOLE	NULL
-+#endif
-+
- static struct uart_driver pch_uart_driver = {
- 	.owner = THIS_MODULE,
- 	.driver_name = KBUILD_MODNAME,
-@@ -1385,6 +1532,7 @@ static struct uart_driver pch_uart_driver = {
- 	.major = 0,
- 	.minor = 0,
- 	.nr = PCH_UART_NR,
-+	.cons = PCH_CONSOLE,
- };
- 
- static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
-@@ -1411,7 +1559,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	if (!rxbuf)
- 		goto init_port_free_txbuf;
- 
--	base_baud = 1843200; /* 1.8432MHz */
-+	base_baud = DEFAULT_BAUD_RATE;
- 
- 	/* quirk for CM-iTC board */
- 	board_name = dmi_get_system_info(DMI_BOARD_NAME);
-@@ -1459,6 +1607,9 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	pci_set_drvdata(pdev, priv);
- 	pch_uart_hal_request(pdev, fifosize, base_baud);
- 
-+#ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
-+	pch_uart_ports[board->line_no] = priv;
-+#endif
- 	ret = uart_add_one_port(&pch_uart_driver, &priv->port);
- 	if (ret < 0)
- 		goto init_port_hal_free;
-@@ -1466,6 +1617,9 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	return priv;
- 
- init_port_hal_free:
-+#ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
-+	pch_uart_ports[board->line_no] = NULL;
-+#endif
- 	free_page((unsigned long)rxbuf);
- init_port_free_txbuf:
- 	kfree(priv);
-@@ -1486,6 +1640,9 @@ static void pch_uart_pci_remove(struct pci_dev *pdev)
- 	struct eg20t_port *priv;
- 
- 	priv = (struct eg20t_port *)pci_get_drvdata(pdev);
-+#ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
-+	pch_uart_ports[priv->port.line] = NULL;
-+#endif
- 	pch_uart_exit_port(priv);
- 	pci_disable_device(pdev);
- 	kfree(priv);
--- 
-1.7.3.4
-
+Sounds like that is the winner then.
