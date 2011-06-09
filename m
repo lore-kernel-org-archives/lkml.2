@@ -1,106 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756668Ab1FIH16 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 03:27:58 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37542 "EHLO smtps.tip.net.au"
+	id S1756911Ab1FIH2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 03:28:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33175 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752954Ab1FIH14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 03:27:56 -0400
-Date: Thu, 9 Jun 2011 17:27:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: linux-next: build failure after merge of the final tree (staging
- related)
-Message-Id: <20110609172745.dfd3a298.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__9_Jun_2011_17_27_45_+1000_V0D5c.8UiXL+VFtg"
+	id S1752883Ab1FIH2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 03:28:06 -0400
+Message-ID: <4DF07601.9060705@redhat.com>
+Date: Thu, 09 Jun 2011 10:28:01 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 14/15] KVM: MMU: mmio page fault support
+References: <4DEE205E.8000601@cn.fujitsu.com> <4DEE2281.1000008@cn.fujitsu.com>
+In-Reply-To: <4DEE2281.1000008@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__9_Jun_2011_17_27_45_+1000_V0D5c.8UiXL+VFtg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/07/2011 04:07 PM, Xiao Guangrong wrote:
+> The idea is from Avi:
+>
+> | We could cache the result of a miss in an spte by using a reserved bit, and
+> | checking the page fault error code (or seeing if we get an ept violation or
+> | ept misconfiguration), so if we get repeated mmio on a page, we don't need to
+> | search the slot list/tree.
+> | (https://lkml.org/lkml/2011/2/22/221)
+>
+> When the page fault is caused by mmio, we cache the info in the shadow page
+> table, and also set the reserved bits in the shadow page table, so if the mmio
+> is caused again, we can quickly identify it and emulate it directly
+>
+> Searching mmio gfn in memslots is heavy since we need to walk all memeslots, it
+> can be reduced by this feature, and also avoid walking guest page table for
+> soft mmu.
+>
+> This feature can be disabled/enabled at the runtime, if
+> shadow_notrap_nonpresent_pte is enabled, the PFER.RSVD is always set, we need
+> to walk shadow page table for all page fault, so disable this feature if
+> shadow_notrap_nonpresent is enabled.
+>
 
-Hi Greg,
+Maybe it's time to kill off bypass_guest_pf=1.  It's not as effective as 
+it used to be, since unsync pages always use shadow_trap_nonpresent_pte, 
+and since we convert between the two nonpresent_ptes during sync and unsync.
 
-After merging the final tree, today's linux-next build (powerpc allyesconfi=
-g)
-failed like this:
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 4f475ab..227cf10 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -91,6 +91,9 @@ module_param(dbg, bool, 0644);
+>   static int oos_shadow = 1;
+>   module_param(oos_shadow, bool, 0644);
+>
+> +static int __read_mostly mmio_pf = 1;
+> +module_param(mmio_pf, bool, 0644);
 
-drivers/staging/brcm80211/brcmsmac/ampdu.c: In function 'wlc_ampdu_dotxstat=
-us':
-drivers/staging/brcm80211/brcmsmac/ampdu.c:840:17: error: invalid operands =
-to binary ^ (have 'volatile u32 *' and 'int')
-drivers/staging/brcm80211/brcmsmac/ampdu.c:840:17: error: invalid operands =
-to binary ^ (have 'volatile u32 *' and 'int')
-drivers/staging/brcm80211/brcmsmac/ampdu.c:848:8: error: invalid operands t=
-o binary ^ (have 'volatile u32 *' and 'int')
-drivers/staging/brcm80211/brcmsmac/ampdu.c:848:8: error: invalid operands t=
-o binary ^ (have 'volatile u32 *' and 'int')
-drivers/staging/brcm80211/brcmsmac/bmac.c: In function 'wlc_bmac_update_slo=
-t_timing':
-drivers/staging/brcm80211/brcmsmac/bmac.c:186:3: error: invalid operands to=
- binary ^ (have 'volatile u16 *' and 'int')
-drivers/staging/brcm80211/brcmsmac/bmac.c:186:3: error: invalid operands to=
- binary ^ (have 'volatile u16 *' and 'int')
-drivers/staging/brcm80211/brcmsmac/bmac.c:190:3: error: invalid operands to=
- binary ^ (have 'volatile u16 *' and 'int')
-drivers/staging/brcm80211/brcmsmac/bmac.c:190:3: error: invalid operands to=
- binary ^ (have 'volatile u16 *' and 'int')
-drivers/staging/brcm80211/brcmsmac/bmac.c: In function 'wlc_setband_inact':
-drivers/staging/brcm80211/brcmsmac/bmac.c:234:2: error: invalid operands to=
- binary ^ (have 'volatile u32 *' and 'int')
-drivers/staging/brcm80211/brcmsmac/bmac.c:234:2: error: invalid operands to=
- binary ^ (have 'volatile u32 *' and 'int')
-drivers/staging/brcm80211/brcmsmac/bmac.c: In function 'wlc_dpc':
-drivers/staging/brcm80211/brcmsmac/bmac.c:311:6: error: invalid operands to=
- binary ^ (have 'volatile u32 *' and 'int')
+Why make it a module parameter?
 
-(and lots more)
+> +static void mark_mmio_spte(u64 *sptep, u64 gfn, unsigned access)
+> +{
+> +	access&= ACC_WRITE_MASK | ACC_USER_MASK;
+> +
+> +	__set_spte(sptep, shadow_mmio_mask | access | gfn<<  PAGE_SHIFT);
+> +}
 
-Also in several other files in drivers/staging/brcm80211/
+This can only work for shadow.  Is it worth the complexity?
 
-Also:
+Also, shadow walking is not significantly faster than guest page table 
+walking.  And if we miss, we have to walk the guest page tables in any case.
 
-drivers/staging/comedi/drivers.c: In function 'comedi_buf_alloc':
-drivers/staging/comedi/drivers.c:505:37: error: 'PAGE_KERNEL_NOCACHE' undec=
-lared (first use in this function)
-In file included from drivers/staging/comedi/drivers/addi_apci_035.c:7:0:
-drivers/staging/comedi/drivers/addi-data/addi_common.c: In function 'i_ADDI=
-_Attach':
-drivers/staging/comedi/drivers/addi-data/addi_common.c:2765:7: error: impli=
-cit declaration of function 'virt_to_bus'
+> +
+> +static bool quickly_check_mmio_pf(struct kvm_vcpu *vcpu, u64 addr, bool direct)
+> +{
+> +	if (direct&&  vcpu_match_mmio_gpa(vcpu, addr))
+> +		return true;
+> +
+> +	if (vcpu_match_mmio_gva(vcpu, addr))
+> +		return true;
+> +
+> +	return false;
+> +}
 
-(Also several other occurrences of that one)
+There is also the case of nesting - it's not direct and it's not a gva.
 
-I left this build broken, but these should be fixed if you are going to
-remove STAGING_EXCLUDE_BUILD.
+-- 
+error compiling committee.c: too many arguments to function
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__9_Jun_2011_17_27_45_+1000_V0D5c.8UiXL+VFtg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJN8HXxAAoJEDMEi1NhKgbsE2UIAJCKz4USINxHE2d6C7ofvWh1
-nr/TpKczn8NUR9Fe3CI9UEw9TbsnWuO43Gxmr34Xtqev4XaZuWmETTYCFqBqA/Fz
-TUqmdA0ilDTwTjLlKBmBtmgGV8LvoEmv1NgeiZbiKYfI+qepdSIvSEftjSHDcL3Y
-IX4SjeE32hNcP0mGpxJ1deeqLlBq0U/lM6LrMyY9Xr7LLojicjgePWDtzeTAbzkS
-zAvIpuIwVIGOe4IczP2oLFwnB+vtBFefiWJfMbLFjzO7tVGEZ1wcbjixBYi+K2jB
-MjA8ixQ3Fg+guzHsfkvmutDtYX062sqcyoHLkLG8CtVBPrLdaWqNaBrF7iOiV/4=
-=gtUL
------END PGP SIGNATURE-----
-
---Signature=_Thu__9_Jun_2011_17_27_45_+1000_V0D5c.8UiXL+VFtg--
