@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757838Ab1FINdX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 09:33:23 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34036 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757904Ab1FINa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 09:30:59 -0400
+	id S1757994Ab1FINbM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 09:31:12 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57273 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757911Ab1FINbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 09:31:07 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Samuel Ortiz <sameo@linux.intel.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: [PATCH v3 05/12] MFD: twl4030-codec: Rename internals from codec to audio
-Date: Thu, 9 Jun 2011 16:30:23 +0300
-Message-ID: <1307626230-29660-6-git-send-email-peter.ujfalusi@ti.com>
+CC: <linux-input@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Misael Lopez Cruz <misael.lopez@ti.com>
+Subject: [PATCH v3 06/12] MFD: twl4030-codec -> twl4030-audio: Rename the driver
+Date: Thu, 9 Jun 2011 16:30:24 +0300
+Message-ID: <1307626230-29660-7-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.5.3
 In-Reply-To: <1307626230-29660-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1307626230-29660-1-git-send-email-peter.ujfalusi@ti.com>
@@ -27,308 +27,1326 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation of renaming the driver from twl4030-codec
-to twl4030-audio, first do some clean ups in the driver,
-which does not cause any problems outside.
+Rename the driver, and header file from twl4030-codec to
+twl4030-audio.
+To avoid breakage change depending drivers at the same time.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: Misael Lopez Cruz <misael.lopez@ti.com>
 ---
- drivers/mfd/twl4030-codec.c |  135 ++++++++++++++++++++++---------------------
- 1 files changed, 68 insertions(+), 67 deletions(-)
+ drivers/input/misc/Kconfig         |    2 +-
+ drivers/input/misc/twl4030-vibra.c |   10 +-
+ drivers/mfd/Kconfig                |    2 +-
+ drivers/mfd/Makefile               |    2 +-
+ drivers/mfd/twl4030-audio.c        |  277 +++++++++++++++++++++++++++++++++++
+ drivers/mfd/twl4030-codec.c        |  278 ------------------------------------
+ include/linux/mfd/twl4030-audio.h  |  272 +++++++++++++++++++++++++++++++++++
+ include/linux/mfd/twl4030-codec.h  |  272 -----------------------------------
+ sound/soc/codecs/Kconfig           |    2 +-
+ sound/soc/codecs/twl4030.c         |   16 +-
+ sound/soc/omap/sdp3430.c           |    2 +-
+ sound/soc/omap/zoom2.c             |    2 +-
+ 12 files changed, 568 insertions(+), 569 deletions(-)
+ create mode 100644 drivers/mfd/twl4030-audio.c
+ delete mode 100644 drivers/mfd/twl4030-codec.c
+ create mode 100644 include/linux/mfd/twl4030-audio.h
+ delete mode 100644 include/linux/mfd/twl4030-codec.h
 
-diff --git a/drivers/mfd/twl4030-codec.c b/drivers/mfd/twl4030-codec.c
-index 2bf4136..e1782b3 100644
---- a/drivers/mfd/twl4030-codec.c
-+++ b/drivers/mfd/twl4030-codec.c
-@@ -1,5 +1,6 @@
- /*
-- * MFD driver for twl4030 codec submodule
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 45dc6aa..077309a 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -267,7 +267,7 @@ config INPUT_TWL4030_PWRBUTTON
+ config INPUT_TWL4030_VIBRA
+ 	tristate "Support for TWL4030 Vibrator"
+ 	depends on TWL4030_CORE
+-	select TWL4030_CODEC
++	select MFD_TWL4030_AUDIO
+ 	select INPUT_FF_MEMLESS
+ 	help
+ 	  This option enables support for TWL4030 Vibrator Driver.
+diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
+index 014dd4a..7abca85 100644
+--- a/drivers/input/misc/twl4030-vibra.c
++++ b/drivers/input/misc/twl4030-vibra.c
+@@ -28,7 +28,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/workqueue.h>
+ #include <linux/i2c/twl.h>
+-#include <linux/mfd/twl4030-codec.h>
++#include <linux/mfd/twl4030-audio.h>
+ #include <linux/input.h>
+ #include <linux/slab.h>
+ 
+@@ -67,7 +67,7 @@ static void vibra_enable(struct vibra_info *info)
+ {
+ 	u8 reg;
+ 
+-	twl4030_codec_enable_resource(TWL4030_CODEC_RES_POWER);
++	twl4030_audio_enable_resource(TWL4030_AUDIO_RES_POWER);
+ 
+ 	/* turn H-Bridge on */
+ 	twl_i2c_read_u8(TWL4030_MODULE_AUDIO_VOICE,
+@@ -75,7 +75,7 @@ static void vibra_enable(struct vibra_info *info)
+ 	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
+ 			 (reg | TWL4030_VIBRA_EN), TWL4030_REG_VIBRA_CTL);
+ 
+-	twl4030_codec_enable_resource(TWL4030_CODEC_RES_APLL);
++	twl4030_audio_enable_resource(TWL4030_AUDIO_RES_APLL);
+ 
+ 	info->enabled = true;
+ }
+@@ -90,8 +90,8 @@ static void vibra_disable(struct vibra_info *info)
+ 	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
+ 			 (reg & ~TWL4030_VIBRA_EN), TWL4030_REG_VIBRA_CTL);
+ 
+-	twl4030_codec_disable_resource(TWL4030_CODEC_RES_APLL);
+-	twl4030_codec_disable_resource(TWL4030_CODEC_RES_POWER);
++	twl4030_audio_disable_resource(TWL4030_AUDIO_RES_APLL);
++	twl4030_audio_disable_resource(TWL4030_AUDIO_RES_POWER);
+ 
+ 	info->enabled = false;
+ }
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 0f09c05..3a6f76a 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -218,7 +218,7 @@ config TWL4030_POWER
+ 	  and load scripts controlling which resources are switched off/on
+ 	  or reset when a sleep, wakeup or warm reset event occurs.
+ 
+-config TWL4030_CODEC
++config MFD_TWL4030_AUDIO
+ 	bool
+ 	depends on TWL4030_CORE
+ 	select MFD_CORE
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index efe3cc3..4cf9465 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -40,7 +40,7 @@ obj-$(CONFIG_MENELAUS)		+= menelaus.o
+ obj-$(CONFIG_TWL4030_CORE)	+= twl-core.o twl4030-irq.o twl6030-irq.o
+ obj-$(CONFIG_TWL4030_MADC)      += twl4030-madc.o
+ obj-$(CONFIG_TWL4030_POWER)    += twl4030-power.o
+-obj-$(CONFIG_TWL4030_CODEC)	+= twl4030-codec.o
++obj-$(CONFIG_MFD_TWL4030_AUDIO)	+= twl4030-audio.o
+ obj-$(CONFIG_TWL6030_PWM)	+= twl6030-pwm.o
+ 
+ obj-$(CONFIG_MFD_MC13XXX)	+= mc13xxx-core.o
+diff --git a/drivers/mfd/twl4030-audio.c b/drivers/mfd/twl4030-audio.c
+new file mode 100644
+index 0000000..5cdf841
+--- /dev/null
++++ b/drivers/mfd/twl4030-audio.c
+@@ -0,0 +1,277 @@
++/*
 + * MFD driver for twl4030 audio submodule, which contains an audio codec, and
 + * the vibra control.
-  *
-  * Author: Peter Ujfalusi <peter.ujfalusi@ti.com>
-  *
-@@ -31,53 +32,53 @@
- #include <linux/mfd/core.h>
- #include <linux/mfd/twl4030-codec.h>
- 
--#define TWL4030_CODEC_CELLS	2
++ *
++ * Author: Peter Ujfalusi <peter.ujfalusi@ti.com>
++ *
++ * Copyright:   (C) 2009 Nokia Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/slab.h>
++#include <linux/kernel.h>
++#include <linux/fs.h>
++#include <linux/platform_device.h>
++#include <linux/i2c/twl.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/twl4030-audio.h>
++
 +#define TWL4030_AUDIO_CELLS	2
- 
--static struct platform_device *twl4030_codec_dev;
++
 +static struct platform_device *twl4030_audio_dev;
- 
--struct twl4030_codec_resource {
++
 +struct twl4030_audio_resource {
- 	int request_count;
- 	u8 reg;
- 	u8 mask;
- };
- 
--struct twl4030_codec {
++	int request_count;
++	u8 reg;
++	u8 mask;
++};
++
 +struct twl4030_audio {
- 	unsigned int audio_mclk;
- 	struct mutex mutex;
--	struct twl4030_codec_resource resource[TWL4030_CODEC_RES_MAX];
--	struct mfd_cell cells[TWL4030_CODEC_CELLS];
-+	struct twl4030_audio_resource resource[TWL4030_CODEC_RES_MAX];
++	unsigned int audio_mclk;
++	struct mutex mutex;
++	struct twl4030_audio_resource resource[TWL4030_AUDIO_RES_MAX];
 +	struct mfd_cell cells[TWL4030_AUDIO_CELLS];
- };
- 
- /*
-  * Modify the resource, the function returns the content of the register
-  * after the modification.
-  */
--static int twl4030_codec_set_resource(enum twl4030_codec_res id, int enable)
-+static int twl4030_audio_set_resource(enum twl4030_codec_res id, int enable)
- {
--	struct twl4030_codec *codec = platform_get_drvdata(twl4030_codec_dev);
++};
++
++/*
++ * Modify the resource, the function returns the content of the register
++ * after the modification.
++ */
++static int twl4030_audio_set_resource(enum twl4030_audio_res id, int enable)
++{
 +	struct twl4030_audio *audio = platform_get_drvdata(twl4030_audio_dev);
- 	u8 val;
- 
- 	twl_i2c_read_u8(TWL4030_MODULE_AUDIO_VOICE, &val,
--			codec->resource[id].reg);
++	u8 val;
++
++	twl_i2c_read_u8(TWL4030_MODULE_AUDIO_VOICE, &val,
 +			audio->resource[id].reg);
- 
- 	if (enable)
--		val |= codec->resource[id].mask;
++
++	if (enable)
 +		val |= audio->resource[id].mask;
- 	else
--		val &= ~codec->resource[id].mask;
++	else
 +		val &= ~audio->resource[id].mask;
- 
- 	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
--					val, codec->resource[id].reg);
++
++	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
 +					val, audio->resource[id].reg);
- 
- 	return val;
- }
- 
--static inline int twl4030_codec_get_resource(enum twl4030_codec_res id)
-+static inline int twl4030_audio_get_resource(enum twl4030_codec_res id)
- {
--	struct twl4030_codec *codec = platform_get_drvdata(twl4030_codec_dev);
++
++	return val;
++}
++
++static inline int twl4030_audio_get_resource(enum twl4030_audio_res id)
++{
 +	struct twl4030_audio *audio = platform_get_drvdata(twl4030_audio_dev);
- 	u8 val;
- 
- 	twl_i2c_read_u8(TWL4030_MODULE_AUDIO_VOICE, &val,
--			codec->resource[id].reg);
++	u8 val;
++
++	twl_i2c_read_u8(TWL4030_MODULE_AUDIO_VOICE, &val,
 +			audio->resource[id].reg);
- 
- 	return val;
- }
-@@ -88,24 +89,24 @@ static inline int twl4030_codec_get_resource(enum twl4030_codec_res id)
-  */
- int twl4030_codec_enable_resource(enum twl4030_codec_res id)
- {
--	struct twl4030_codec *codec = platform_get_drvdata(twl4030_codec_dev);
++
++	return val;
++}
++
++/*
++ * Enable the resource.
++ * The function returns with error or the content of the register
++ */
++int twl4030_audio_enable_resource(enum twl4030_audio_res id)
++{
 +	struct twl4030_audio *audio = platform_get_drvdata(twl4030_audio_dev);
- 	int val;
- 
- 	if (id >= TWL4030_CODEC_RES_MAX) {
--		dev_err(&twl4030_codec_dev->dev,
++	int val;
++
++	if (id >= TWL4030_AUDIO_RES_MAX) {
 +		dev_err(&twl4030_audio_dev->dev,
- 				"Invalid resource ID (%u)\n", id);
- 		return -EINVAL;
- 	}
- 
--	mutex_lock(&codec->mutex);
--	if (!codec->resource[id].request_count)
++				"Invalid resource ID (%u)\n", id);
++		return -EINVAL;
++	}
++
 +	mutex_lock(&audio->mutex);
 +	if (!audio->resource[id].request_count)
- 		/* Resource was disabled, enable it */
--		val = twl4030_codec_set_resource(id, 1);
++		/* Resource was disabled, enable it */
 +		val = twl4030_audio_set_resource(id, 1);
- 	else
--		val = twl4030_codec_get_resource(id);
++	else
 +		val = twl4030_audio_get_resource(id);
- 
--	codec->resource[id].request_count++;
--	mutex_unlock(&codec->mutex);
++
 +	audio->resource[id].request_count++;
 +	mutex_unlock(&audio->mutex);
- 
- 	return val;
- }
-@@ -117,31 +118,31 @@ EXPORT_SYMBOL_GPL(twl4030_codec_enable_resource);
-  */
- int twl4030_codec_disable_resource(unsigned id)
- {
--	struct twl4030_codec *codec = platform_get_drvdata(twl4030_codec_dev);
++
++	return val;
++}
++EXPORT_SYMBOL_GPL(twl4030_audio_enable_resource);
++
++/*
++ * Disable the resource.
++ * The function returns with error or the content of the register
++ */
++int twl4030_audio_disable_resource(unsigned id)
++{
 +	struct twl4030_audio *audio = platform_get_drvdata(twl4030_audio_dev);
- 	int val;
- 
- 	if (id >= TWL4030_CODEC_RES_MAX) {
--		dev_err(&twl4030_codec_dev->dev,
++	int val;
++
++	if (id >= TWL4030_AUDIO_RES_MAX) {
 +		dev_err(&twl4030_audio_dev->dev,
- 				"Invalid resource ID (%u)\n", id);
- 		return -EINVAL;
- 	}
- 
--	mutex_lock(&codec->mutex);
--	if (!codec->resource[id].request_count) {
--		dev_err(&twl4030_codec_dev->dev,
++				"Invalid resource ID (%u)\n", id);
++		return -EINVAL;
++	}
++
 +	mutex_lock(&audio->mutex);
 +	if (!audio->resource[id].request_count) {
 +		dev_err(&twl4030_audio_dev->dev,
- 			"Resource has been disabled already (%u)\n", id);
--		mutex_unlock(&codec->mutex);
++			"Resource has been disabled already (%u)\n", id);
 +		mutex_unlock(&audio->mutex);
- 		return -EPERM;
- 	}
--	codec->resource[id].request_count--;
++		return -EPERM;
++	}
 +	audio->resource[id].request_count--;
- 
--	if (!codec->resource[id].request_count)
++
 +	if (!audio->resource[id].request_count)
- 		/* Resource can be disabled now */
--		val = twl4030_codec_set_resource(id, 0);
++		/* Resource can be disabled now */
 +		val = twl4030_audio_set_resource(id, 0);
- 	else
--		val = twl4030_codec_get_resource(id);
++	else
 +		val = twl4030_audio_get_resource(id);
- 
--	mutex_unlock(&codec->mutex);
++
 +	mutex_unlock(&audio->mutex);
- 
- 	return val;
- }
-@@ -149,15 +150,15 @@ EXPORT_SYMBOL_GPL(twl4030_codec_disable_resource);
- 
- unsigned int twl4030_codec_get_mclk(void)
- {
--	struct twl4030_codec *codec = platform_get_drvdata(twl4030_codec_dev);
++
++	return val;
++}
++EXPORT_SYMBOL_GPL(twl4030_audio_disable_resource);
++
++unsigned int twl4030_audio_get_mclk(void)
++{
 +	struct twl4030_audio *audio = platform_get_drvdata(twl4030_audio_dev);
- 
--	return codec->audio_mclk;
++
 +	return audio->audio_mclk;
- }
- EXPORT_SYMBOL_GPL(twl4030_codec_get_mclk);
- 
--static int __devinit twl4030_codec_probe(struct platform_device *pdev)
++}
++EXPORT_SYMBOL_GPL(twl4030_audio_get_mclk);
++
 +static int __devinit twl4030_audio_probe(struct platform_device *pdev)
- {
--	struct twl4030_codec *codec;
++{
 +	struct twl4030_audio *audio;
- 	struct twl4030_codec_data *pdata = pdev->dev.platform_data;
- 	struct mfd_cell *cell = NULL;
- 	int ret, childs = 0;
-@@ -187,33 +188,33 @@ static int __devinit twl4030_codec_probe(struct platform_device *pdev)
- 	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
- 					val, TWL4030_REG_APLL_CTL);
- 
--	codec = kzalloc(sizeof(struct twl4030_codec), GFP_KERNEL);
--	if (!codec)
++	struct twl4030_codec_data *pdata = pdev->dev.platform_data;
++	struct mfd_cell *cell = NULL;
++	int ret, childs = 0;
++	u8 val;
++
++	if (!pdata) {
++		dev_err(&pdev->dev, "Platform data is missing\n");
++		return -EINVAL;
++	}
++
++	/* Configure APLL_INFREQ and disable APLL if enabled */
++	val = 0;
++	switch (pdata->audio_mclk) {
++	case 19200000:
++		val |= TWL4030_APLL_INFREQ_19200KHZ;
++		break;
++	case 26000000:
++		val |= TWL4030_APLL_INFREQ_26000KHZ;
++		break;
++	case 38400000:
++		val |= TWL4030_APLL_INFREQ_38400KHZ;
++		break;
++	default:
++		dev_err(&pdev->dev, "Invalid audio_mclk\n");
++		return -EINVAL;
++	}
++	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
++					val, TWL4030_REG_APLL_CTL);
++
 +	audio = kzalloc(sizeof(struct twl4030_audio), GFP_KERNEL);
 +	if (!audio)
- 		return -ENOMEM;
- 
--	platform_set_drvdata(pdev, codec);
++		return -ENOMEM;
++
 +	platform_set_drvdata(pdev, audio);
- 
--	twl4030_codec_dev = pdev;
--	mutex_init(&codec->mutex);
--	codec->audio_mclk = pdata->audio_mclk;
++
 +	twl4030_audio_dev = pdev;
 +	mutex_init(&audio->mutex);
 +	audio->audio_mclk = pdata->audio_mclk;
- 
- 	/* Codec power */
--	codec->resource[TWL4030_CODEC_RES_POWER].reg = TWL4030_REG_CODEC_MODE;
--	codec->resource[TWL4030_CODEC_RES_POWER].mask = TWL4030_CODECPDZ;
-+	audio->resource[TWL4030_CODEC_RES_POWER].reg = TWL4030_REG_CODEC_MODE;
-+	audio->resource[TWL4030_CODEC_RES_POWER].mask = TWL4030_CODECPDZ;
- 
- 	/* PLL */
--	codec->resource[TWL4030_CODEC_RES_APLL].reg = TWL4030_REG_APLL_CTL;
--	codec->resource[TWL4030_CODEC_RES_APLL].mask = TWL4030_APLL_EN;
-+	audio->resource[TWL4030_CODEC_RES_APLL].reg = TWL4030_REG_APLL_CTL;
-+	audio->resource[TWL4030_CODEC_RES_APLL].mask = TWL4030_APLL_EN;
- 
- 	if (pdata->audio) {
--		cell = &codec->cells[childs];
++
++	/* Codec power */
++	audio->resource[TWL4030_AUDIO_RES_POWER].reg = TWL4030_REG_CODEC_MODE;
++	audio->resource[TWL4030_AUDIO_RES_POWER].mask = TWL4030_CODECPDZ;
++
++	/* PLL */
++	audio->resource[TWL4030_AUDIO_RES_APLL].reg = TWL4030_REG_APLL_CTL;
++	audio->resource[TWL4030_AUDIO_RES_APLL].mask = TWL4030_APLL_EN;
++
++	if (pdata->audio) {
 +		cell = &audio->cells[childs];
- 		cell->name = "twl4030-codec";
- 		cell->platform_data = pdata->audio;
- 		cell->pdata_size = sizeof(*pdata->audio);
- 		childs++;
- 	}
- 	if (pdata->vibra) {
--		cell = &codec->cells[childs];
++		cell->name = "twl4030-codec";
++		cell->platform_data = pdata->audio;
++		cell->pdata_size = sizeof(*pdata->audio);
++		childs++;
++	}
++	if (pdata->vibra) {
 +		cell = &audio->cells[childs];
- 		cell->name = "twl4030-vibra";
- 		cell->platform_data = pdata->vibra;
- 		cell->pdata_size = sizeof(*pdata->vibra);
-@@ -221,7 +222,7 @@ static int __devinit twl4030_codec_probe(struct platform_device *pdev)
- 	}
- 
- 	if (childs)
--		ret = mfd_add_devices(&pdev->dev, pdev->id, codec->cells,
++		cell->name = "twl4030-vibra";
++		cell->platform_data = pdata->vibra;
++		cell->pdata_size = sizeof(*pdata->vibra);
++		childs++;
++	}
++
++	if (childs)
 +		ret = mfd_add_devices(&pdev->dev, pdev->id, audio->cells,
- 				      childs, NULL, 0);
- 	else {
- 		dev_err(&pdev->dev, "No platform data found for childs\n");
-@@ -232,45 +233,45 @@ static int __devinit twl4030_codec_probe(struct platform_device *pdev)
- 		return 0;
- 
- 	platform_set_drvdata(pdev, NULL);
--	kfree(codec);
--	twl4030_codec_dev = NULL;
++				      childs, NULL, 0);
++	else {
++		dev_err(&pdev->dev, "No platform data found for childs\n");
++		ret = -ENODEV;
++	}
++
++	if (!ret)
++		return 0;
++
++	platform_set_drvdata(pdev, NULL);
 +	kfree(audio);
 +	twl4030_audio_dev = NULL;
- 	return ret;
- }
- 
--static int __devexit twl4030_codec_remove(struct platform_device *pdev)
++	return ret;
++}
++
 +static int __devexit twl4030_audio_remove(struct platform_device *pdev)
- {
--	struct twl4030_codec *codec = platform_get_drvdata(pdev);
++{
 +	struct twl4030_audio *audio = platform_get_drvdata(pdev);
- 
- 	mfd_remove_devices(&pdev->dev);
- 	platform_set_drvdata(pdev, NULL);
--	kfree(codec);
--	twl4030_codec_dev = NULL;
++
++	mfd_remove_devices(&pdev->dev);
++	platform_set_drvdata(pdev, NULL);
 +	kfree(audio);
 +	twl4030_audio_dev = NULL;
- 
- 	return 0;
- }
- 
- MODULE_ALIAS("platform:twl4030-audio");
- 
--static struct platform_driver twl4030_codec_driver = {
--	.probe		= twl4030_codec_probe,
--	.remove		= __devexit_p(twl4030_codec_remove),
++
++	return 0;
++}
++
++MODULE_ALIAS("platform:twl4030-audio");
++
 +static struct platform_driver twl4030_audio_driver = {
 +	.probe		= twl4030_audio_probe,
 +	.remove		= __devexit_p(twl4030_audio_remove),
- 	.driver		= {
- 		.owner	= THIS_MODULE,
- 		.name	= "twl4030-audio",
- 	},
- };
- 
--static int __devinit twl4030_codec_init(void)
++	.driver		= {
++		.owner	= THIS_MODULE,
++		.name	= "twl4030-audio",
++	},
++};
++
 +static int __devinit twl4030_audio_init(void)
- {
--	return platform_driver_register(&twl4030_codec_driver);
++{
 +	return platform_driver_register(&twl4030_audio_driver);
- }
--module_init(twl4030_codec_init);
++}
 +module_init(twl4030_audio_init);
- 
--static void __devexit twl4030_codec_exit(void)
++
 +static void __devexit twl4030_audio_exit(void)
- {
--	platform_driver_unregister(&twl4030_codec_driver);
++{
 +	platform_driver_unregister(&twl4030_audio_driver);
- }
--module_exit(twl4030_codec_exit);
++}
 +module_exit(twl4030_audio_exit);
++
++MODULE_AUTHOR("Peter Ujfalusi <peter.ujfalusi@ti.com>");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/mfd/twl4030-codec.c b/drivers/mfd/twl4030-codec.c
+deleted file mode 100644
+index e1782b3..0000000
+--- a/drivers/mfd/twl4030-codec.c
++++ /dev/null
+@@ -1,278 +0,0 @@
+-/*
+- * MFD driver for twl4030 audio submodule, which contains an audio codec, and
+- * the vibra control.
+- *
+- * Author: Peter Ujfalusi <peter.ujfalusi@ti.com>
+- *
+- * Copyright:   (C) 2009 Nokia Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but
+- * WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+- * 02110-1301 USA
+- *
+- */
+-
+-#include <linux/module.h>
+-#include <linux/types.h>
+-#include <linux/slab.h>
+-#include <linux/kernel.h>
+-#include <linux/fs.h>
+-#include <linux/platform_device.h>
+-#include <linux/i2c/twl.h>
+-#include <linux/mfd/core.h>
+-#include <linux/mfd/twl4030-codec.h>
+-
+-#define TWL4030_AUDIO_CELLS	2
+-
+-static struct platform_device *twl4030_audio_dev;
+-
+-struct twl4030_audio_resource {
+-	int request_count;
+-	u8 reg;
+-	u8 mask;
+-};
+-
+-struct twl4030_audio {
+-	unsigned int audio_mclk;
+-	struct mutex mutex;
+-	struct twl4030_audio_resource resource[TWL4030_CODEC_RES_MAX];
+-	struct mfd_cell cells[TWL4030_AUDIO_CELLS];
+-};
+-
+-/*
+- * Modify the resource, the function returns the content of the register
+- * after the modification.
+- */
+-static int twl4030_audio_set_resource(enum twl4030_codec_res id, int enable)
+-{
+-	struct twl4030_audio *audio = platform_get_drvdata(twl4030_audio_dev);
+-	u8 val;
+-
+-	twl_i2c_read_u8(TWL4030_MODULE_AUDIO_VOICE, &val,
+-			audio->resource[id].reg);
+-
+-	if (enable)
+-		val |= audio->resource[id].mask;
+-	else
+-		val &= ~audio->resource[id].mask;
+-
+-	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
+-					val, audio->resource[id].reg);
+-
+-	return val;
+-}
+-
+-static inline int twl4030_audio_get_resource(enum twl4030_codec_res id)
+-{
+-	struct twl4030_audio *audio = platform_get_drvdata(twl4030_audio_dev);
+-	u8 val;
+-
+-	twl_i2c_read_u8(TWL4030_MODULE_AUDIO_VOICE, &val,
+-			audio->resource[id].reg);
+-
+-	return val;
+-}
+-
+-/*
+- * Enable the resource.
+- * The function returns with error or the content of the register
+- */
+-int twl4030_codec_enable_resource(enum twl4030_codec_res id)
+-{
+-	struct twl4030_audio *audio = platform_get_drvdata(twl4030_audio_dev);
+-	int val;
+-
+-	if (id >= TWL4030_CODEC_RES_MAX) {
+-		dev_err(&twl4030_audio_dev->dev,
+-				"Invalid resource ID (%u)\n", id);
+-		return -EINVAL;
+-	}
+-
+-	mutex_lock(&audio->mutex);
+-	if (!audio->resource[id].request_count)
+-		/* Resource was disabled, enable it */
+-		val = twl4030_audio_set_resource(id, 1);
+-	else
+-		val = twl4030_audio_get_resource(id);
+-
+-	audio->resource[id].request_count++;
+-	mutex_unlock(&audio->mutex);
+-
+-	return val;
+-}
+-EXPORT_SYMBOL_GPL(twl4030_codec_enable_resource);
+-
+-/*
+- * Disable the resource.
+- * The function returns with error or the content of the register
+- */
+-int twl4030_codec_disable_resource(unsigned id)
+-{
+-	struct twl4030_audio *audio = platform_get_drvdata(twl4030_audio_dev);
+-	int val;
+-
+-	if (id >= TWL4030_CODEC_RES_MAX) {
+-		dev_err(&twl4030_audio_dev->dev,
+-				"Invalid resource ID (%u)\n", id);
+-		return -EINVAL;
+-	}
+-
+-	mutex_lock(&audio->mutex);
+-	if (!audio->resource[id].request_count) {
+-		dev_err(&twl4030_audio_dev->dev,
+-			"Resource has been disabled already (%u)\n", id);
+-		mutex_unlock(&audio->mutex);
+-		return -EPERM;
+-	}
+-	audio->resource[id].request_count--;
+-
+-	if (!audio->resource[id].request_count)
+-		/* Resource can be disabled now */
+-		val = twl4030_audio_set_resource(id, 0);
+-	else
+-		val = twl4030_audio_get_resource(id);
+-
+-	mutex_unlock(&audio->mutex);
+-
+-	return val;
+-}
+-EXPORT_SYMBOL_GPL(twl4030_codec_disable_resource);
+-
+-unsigned int twl4030_codec_get_mclk(void)
+-{
+-	struct twl4030_audio *audio = platform_get_drvdata(twl4030_audio_dev);
+-
+-	return audio->audio_mclk;
+-}
+-EXPORT_SYMBOL_GPL(twl4030_codec_get_mclk);
+-
+-static int __devinit twl4030_audio_probe(struct platform_device *pdev)
+-{
+-	struct twl4030_audio *audio;
+-	struct twl4030_codec_data *pdata = pdev->dev.platform_data;
+-	struct mfd_cell *cell = NULL;
+-	int ret, childs = 0;
+-	u8 val;
+-
+-	if (!pdata) {
+-		dev_err(&pdev->dev, "Platform data is missing\n");
+-		return -EINVAL;
+-	}
+-
+-	/* Configure APLL_INFREQ and disable APLL if enabled */
+-	val = 0;
+-	switch (pdata->audio_mclk) {
+-	case 19200000:
+-		val |= TWL4030_APLL_INFREQ_19200KHZ;
+-		break;
+-	case 26000000:
+-		val |= TWL4030_APLL_INFREQ_26000KHZ;
+-		break;
+-	case 38400000:
+-		val |= TWL4030_APLL_INFREQ_38400KHZ;
+-		break;
+-	default:
+-		dev_err(&pdev->dev, "Invalid audio_mclk\n");
+-		return -EINVAL;
+-	}
+-	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
+-					val, TWL4030_REG_APLL_CTL);
+-
+-	audio = kzalloc(sizeof(struct twl4030_audio), GFP_KERNEL);
+-	if (!audio)
+-		return -ENOMEM;
+-
+-	platform_set_drvdata(pdev, audio);
+-
+-	twl4030_audio_dev = pdev;
+-	mutex_init(&audio->mutex);
+-	audio->audio_mclk = pdata->audio_mclk;
+-
+-	/* Codec power */
+-	audio->resource[TWL4030_CODEC_RES_POWER].reg = TWL4030_REG_CODEC_MODE;
+-	audio->resource[TWL4030_CODEC_RES_POWER].mask = TWL4030_CODECPDZ;
+-
+-	/* PLL */
+-	audio->resource[TWL4030_CODEC_RES_APLL].reg = TWL4030_REG_APLL_CTL;
+-	audio->resource[TWL4030_CODEC_RES_APLL].mask = TWL4030_APLL_EN;
+-
+-	if (pdata->audio) {
+-		cell = &audio->cells[childs];
+-		cell->name = "twl4030-codec";
+-		cell->platform_data = pdata->audio;
+-		cell->pdata_size = sizeof(*pdata->audio);
+-		childs++;
+-	}
+-	if (pdata->vibra) {
+-		cell = &audio->cells[childs];
+-		cell->name = "twl4030-vibra";
+-		cell->platform_data = pdata->vibra;
+-		cell->pdata_size = sizeof(*pdata->vibra);
+-		childs++;
+-	}
+-
+-	if (childs)
+-		ret = mfd_add_devices(&pdev->dev, pdev->id, audio->cells,
+-				      childs, NULL, 0);
+-	else {
+-		dev_err(&pdev->dev, "No platform data found for childs\n");
+-		ret = -ENODEV;
+-	}
+-
+-	if (!ret)
+-		return 0;
+-
+-	platform_set_drvdata(pdev, NULL);
+-	kfree(audio);
+-	twl4030_audio_dev = NULL;
+-	return ret;
+-}
+-
+-static int __devexit twl4030_audio_remove(struct platform_device *pdev)
+-{
+-	struct twl4030_audio *audio = platform_get_drvdata(pdev);
+-
+-	mfd_remove_devices(&pdev->dev);
+-	platform_set_drvdata(pdev, NULL);
+-	kfree(audio);
+-	twl4030_audio_dev = NULL;
+-
+-	return 0;
+-}
+-
+-MODULE_ALIAS("platform:twl4030-audio");
+-
+-static struct platform_driver twl4030_audio_driver = {
+-	.probe		= twl4030_audio_probe,
+-	.remove		= __devexit_p(twl4030_audio_remove),
+-	.driver		= {
+-		.owner	= THIS_MODULE,
+-		.name	= "twl4030-audio",
+-	},
+-};
+-
+-static int __devinit twl4030_audio_init(void)
+-{
+-	return platform_driver_register(&twl4030_audio_driver);
+-}
+-module_init(twl4030_audio_init);
+-
+-static void __devexit twl4030_audio_exit(void)
+-{
+-	platform_driver_unregister(&twl4030_audio_driver);
+-}
+-module_exit(twl4030_audio_exit);
+-
+-MODULE_AUTHOR("Peter Ujfalusi <peter.ujfalusi@ti.com>");
+-MODULE_LICENSE("GPL");
+-
+diff --git a/include/linux/mfd/twl4030-audio.h b/include/linux/mfd/twl4030-audio.h
+new file mode 100644
+index 0000000..3d22b72
+--- /dev/null
++++ b/include/linux/mfd/twl4030-audio.h
+@@ -0,0 +1,272 @@
++/*
++ * MFD driver for twl4030 audio submodule
++ *
++ * Author: Peter Ujfalusi <peter.ujfalusi@ti.com>
++ *
++ * Copyright:   (C) 2009 Nokia Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ *
++ */
++
++#ifndef __TWL4030_CODEC_H__
++#define __TWL4030_CODEC_H__
++
++/* Codec registers */
++#define TWL4030_REG_CODEC_MODE		0x01
++#define TWL4030_REG_OPTION		0x02
++#define TWL4030_REG_UNKNOWN		0x03
++#define TWL4030_REG_MICBIAS_CTL		0x04
++#define TWL4030_REG_ANAMICL		0x05
++#define TWL4030_REG_ANAMICR		0x06
++#define TWL4030_REG_AVADC_CTL		0x07
++#define TWL4030_REG_ADCMICSEL		0x08
++#define TWL4030_REG_DIGMIXING		0x09
++#define TWL4030_REG_ATXL1PGA		0x0A
++#define TWL4030_REG_ATXR1PGA		0x0B
++#define TWL4030_REG_AVTXL2PGA		0x0C
++#define TWL4030_REG_AVTXR2PGA		0x0D
++#define TWL4030_REG_AUDIO_IF		0x0E
++#define TWL4030_REG_VOICE_IF		0x0F
++#define TWL4030_REG_ARXR1PGA		0x10
++#define TWL4030_REG_ARXL1PGA		0x11
++#define TWL4030_REG_ARXR2PGA		0x12
++#define TWL4030_REG_ARXL2PGA		0x13
++#define TWL4030_REG_VRXPGA		0x14
++#define TWL4030_REG_VSTPGA		0x15
++#define TWL4030_REG_VRX2ARXPGA		0x16
++#define TWL4030_REG_AVDAC_CTL		0x17
++#define TWL4030_REG_ARX2VTXPGA		0x18
++#define TWL4030_REG_ARXL1_APGA_CTL	0x19
++#define TWL4030_REG_ARXR1_APGA_CTL	0x1A
++#define TWL4030_REG_ARXL2_APGA_CTL	0x1B
++#define TWL4030_REG_ARXR2_APGA_CTL	0x1C
++#define TWL4030_REG_ATX2ARXPGA		0x1D
++#define TWL4030_REG_BT_IF		0x1E
++#define TWL4030_REG_BTPGA		0x1F
++#define TWL4030_REG_BTSTPGA		0x20
++#define TWL4030_REG_EAR_CTL		0x21
++#define TWL4030_REG_HS_SEL		0x22
++#define TWL4030_REG_HS_GAIN_SET		0x23
++#define TWL4030_REG_HS_POPN_SET		0x24
++#define TWL4030_REG_PREDL_CTL		0x25
++#define TWL4030_REG_PREDR_CTL		0x26
++#define TWL4030_REG_PRECKL_CTL		0x27
++#define TWL4030_REG_PRECKR_CTL		0x28
++#define TWL4030_REG_HFL_CTL		0x29
++#define TWL4030_REG_HFR_CTL		0x2A
++#define TWL4030_REG_ALC_CTL		0x2B
++#define TWL4030_REG_ALC_SET1		0x2C
++#define TWL4030_REG_ALC_SET2		0x2D
++#define TWL4030_REG_BOOST_CTL		0x2E
++#define TWL4030_REG_SOFTVOL_CTL		0x2F
++#define TWL4030_REG_DTMF_FREQSEL	0x30
++#define TWL4030_REG_DTMF_TONEXT1H	0x31
++#define TWL4030_REG_DTMF_TONEXT1L	0x32
++#define TWL4030_REG_DTMF_TONEXT2H	0x33
++#define TWL4030_REG_DTMF_TONEXT2L	0x34
++#define TWL4030_REG_DTMF_TONOFF		0x35
++#define TWL4030_REG_DTMF_WANONOFF	0x36
++#define TWL4030_REG_I2S_RX_SCRAMBLE_H	0x37
++#define TWL4030_REG_I2S_RX_SCRAMBLE_M	0x38
++#define TWL4030_REG_I2S_RX_SCRAMBLE_L	0x39
++#define TWL4030_REG_APLL_CTL		0x3A
++#define TWL4030_REG_DTMF_CTL		0x3B
++#define TWL4030_REG_DTMF_PGA_CTL2	0x3C
++#define TWL4030_REG_DTMF_PGA_CTL1	0x3D
++#define TWL4030_REG_MISC_SET_1		0x3E
++#define TWL4030_REG_PCMBTMUX		0x3F
++#define TWL4030_REG_RX_PATH_SEL		0x43
++#define TWL4030_REG_VDL_APGA_CTL	0x44
++#define TWL4030_REG_VIBRA_CTL		0x45
++#define TWL4030_REG_VIBRA_SET		0x46
++#define TWL4030_REG_VIBRA_PWM_SET	0x47
++#define TWL4030_REG_ANAMIC_GAIN		0x48
++#define TWL4030_REG_MISC_SET_2		0x49
++
++/* Bitfield Definitions */
++
++/* TWL4030_CODEC_MODE (0x01) Fields */
++#define TWL4030_APLL_RATE		0xF0
++#define TWL4030_APLL_RATE_8000		0x00
++#define TWL4030_APLL_RATE_11025		0x10
++#define TWL4030_APLL_RATE_12000		0x20
++#define TWL4030_APLL_RATE_16000		0x40
++#define TWL4030_APLL_RATE_22050		0x50
++#define TWL4030_APLL_RATE_24000		0x60
++#define TWL4030_APLL_RATE_32000		0x80
++#define TWL4030_APLL_RATE_44100		0x90
++#define TWL4030_APLL_RATE_48000		0xA0
++#define TWL4030_APLL_RATE_96000		0xE0
++#define TWL4030_SEL_16K			0x08
++#define TWL4030_CODECPDZ		0x02
++#define TWL4030_OPT_MODE		0x01
++#define TWL4030_OPTION_1		(1 << 0)
++#define TWL4030_OPTION_2		(0 << 0)
++
++/* TWL4030_OPTION (0x02) Fields */
++#define TWL4030_ATXL1_EN		(1 << 0)
++#define TWL4030_ATXR1_EN		(1 << 1)
++#define TWL4030_ATXL2_VTXL_EN		(1 << 2)
++#define TWL4030_ATXR2_VTXR_EN		(1 << 3)
++#define TWL4030_ARXL1_VRX_EN		(1 << 4)
++#define TWL4030_ARXR1_EN		(1 << 5)
++#define TWL4030_ARXL2_EN		(1 << 6)
++#define TWL4030_ARXR2_EN		(1 << 7)
++
++/* TWL4030_REG_MICBIAS_CTL (0x04) Fields */
++#define TWL4030_MICBIAS2_CTL		0x40
++#define TWL4030_MICBIAS1_CTL		0x20
++#define TWL4030_HSMICBIAS_EN		0x04
++#define TWL4030_MICBIAS2_EN		0x02
++#define TWL4030_MICBIAS1_EN		0x01
++
++/* ANAMICL (0x05) Fields */
++#define TWL4030_CNCL_OFFSET_START	0x80
++#define TWL4030_OFFSET_CNCL_SEL		0x60
++#define TWL4030_OFFSET_CNCL_SEL_ARX1	0x00
++#define TWL4030_OFFSET_CNCL_SEL_ARX2	0x20
++#define TWL4030_OFFSET_CNCL_SEL_VRX	0x40
++#define TWL4030_OFFSET_CNCL_SEL_ALL	0x60
++#define TWL4030_MICAMPL_EN		0x10
++#define TWL4030_CKMIC_EN		0x08
++#define TWL4030_AUXL_EN			0x04
++#define TWL4030_HSMIC_EN		0x02
++#define TWL4030_MAINMIC_EN		0x01
++
++/* ANAMICR (0x06) Fields */
++#define TWL4030_MICAMPR_EN		0x10
++#define TWL4030_AUXR_EN			0x04
++#define TWL4030_SUBMIC_EN		0x01
++
++/* AVADC_CTL (0x07) Fields */
++#define TWL4030_ADCL_EN			0x08
++#define TWL4030_AVADC_CLK_PRIORITY	0x04
++#define TWL4030_ADCR_EN			0x02
++
++/* TWL4030_REG_ADCMICSEL (0x08) Fields */
++#define TWL4030_DIGMIC1_EN		0x08
++#define TWL4030_TX2IN_SEL		0x04
++#define TWL4030_DIGMIC0_EN		0x02
++#define TWL4030_TX1IN_SEL		0x01
++
++/* AUDIO_IF (0x0E) Fields */
++#define TWL4030_AIF_SLAVE_EN		0x80
++#define TWL4030_DATA_WIDTH		0x60
++#define TWL4030_DATA_WIDTH_16S_16W	0x00
++#define TWL4030_DATA_WIDTH_32S_16W	0x40
++#define TWL4030_DATA_WIDTH_32S_24W	0x60
++#define TWL4030_AIF_FORMAT		0x18
++#define TWL4030_AIF_FORMAT_CODEC	0x00
++#define TWL4030_AIF_FORMAT_LEFT		0x08
++#define TWL4030_AIF_FORMAT_RIGHT	0x10
++#define TWL4030_AIF_FORMAT_TDM		0x18
++#define TWL4030_AIF_TRI_EN		0x04
++#define TWL4030_CLK256FS_EN		0x02
++#define TWL4030_AIF_EN			0x01
++
++/* VOICE_IF (0x0F) Fields */
++#define TWL4030_VIF_SLAVE_EN		0x80
++#define TWL4030_VIF_DIN_EN		0x40
++#define TWL4030_VIF_DOUT_EN		0x20
++#define TWL4030_VIF_SWAP		0x10
++#define TWL4030_VIF_FORMAT		0x08
++#define TWL4030_VIF_TRI_EN		0x04
++#define TWL4030_VIF_SUB_EN		0x02
++#define TWL4030_VIF_EN			0x01
++
++/* EAR_CTL (0x21) */
++#define TWL4030_EAR_GAIN		0x30
++
++/* HS_GAIN_SET (0x23) Fields */
++#define TWL4030_HSR_GAIN		0x0C
++#define TWL4030_HSR_GAIN_PWR_DOWN	0x00
++#define TWL4030_HSR_GAIN_PLUS_6DB	0x04
++#define TWL4030_HSR_GAIN_0DB		0x08
++#define TWL4030_HSR_GAIN_MINUS_6DB	0x0C
++#define TWL4030_HSL_GAIN		0x03
++#define TWL4030_HSL_GAIN_PWR_DOWN	0x00
++#define TWL4030_HSL_GAIN_PLUS_6DB	0x01
++#define TWL4030_HSL_GAIN_0DB		0x02
++#define TWL4030_HSL_GAIN_MINUS_6DB	0x03
++
++/* HS_POPN_SET (0x24) Fields */
++#define TWL4030_VMID_EN			0x40
++#define	TWL4030_EXTMUTE			0x20
++#define TWL4030_RAMP_DELAY		0x1C
++#define TWL4030_RAMP_DELAY_20MS		0x00
++#define TWL4030_RAMP_DELAY_40MS		0x04
++#define TWL4030_RAMP_DELAY_81MS		0x08
++#define TWL4030_RAMP_DELAY_161MS	0x0C
++#define TWL4030_RAMP_DELAY_323MS	0x10
++#define TWL4030_RAMP_DELAY_645MS	0x14
++#define TWL4030_RAMP_DELAY_1291MS	0x18
++#define TWL4030_RAMP_DELAY_2581MS	0x1C
++#define TWL4030_RAMP_EN			0x02
++
++/* PREDL_CTL (0x25) */
++#define TWL4030_PREDL_GAIN		0x30
++
++/* PREDR_CTL (0x26) */
++#define TWL4030_PREDR_GAIN		0x30
++
++/* PRECKL_CTL (0x27) */
++#define TWL4030_PRECKL_GAIN		0x30
++
++/* PRECKR_CTL (0x28) */
++#define TWL4030_PRECKR_GAIN		0x30
++
++/* HFL_CTL (0x29, 0x2A) Fields */
++#define TWL4030_HF_CTL_HB_EN		0x04
++#define TWL4030_HF_CTL_LOOP_EN		0x08
++#define TWL4030_HF_CTL_RAMP_EN		0x10
++#define TWL4030_HF_CTL_REF_EN		0x20
++
++/* APLL_CTL (0x3A) Fields */
++#define TWL4030_APLL_EN			0x10
++#define TWL4030_APLL_INFREQ		0x0F
++#define TWL4030_APLL_INFREQ_19200KHZ	0x05
++#define TWL4030_APLL_INFREQ_26000KHZ	0x06
++#define TWL4030_APLL_INFREQ_38400KHZ	0x0F
++
++/* REG_MISC_SET_1 (0x3E) Fields */
++#define TWL4030_CLK64_EN		0x80
++#define TWL4030_SCRAMBLE_EN		0x40
++#define TWL4030_FMLOOP_EN		0x20
++#define TWL4030_SMOOTH_ANAVOL_EN	0x02
++#define TWL4030_DIGMIC_LR_SWAP_EN	0x01
++
++/* VIBRA_CTL (0x45) */
++#define TWL4030_VIBRA_EN		0x01
++#define TWL4030_VIBRA_DIR		0x02
++#define TWL4030_VIBRA_AUDIO_SEL_L1	(0x00 << 2)
++#define TWL4030_VIBRA_AUDIO_SEL_R1	(0x01 << 2)
++#define TWL4030_VIBRA_AUDIO_SEL_L2	(0x02 << 2)
++#define TWL4030_VIBRA_AUDIO_SEL_R2	(0x03 << 2)
++#define TWL4030_VIBRA_SEL		0x10
++#define TWL4030_VIBRA_DIR_SEL		0x20
++
++/* TWL4030 codec resource IDs */
++enum twl4030_audio_res {
++	TWL4030_AUDIO_RES_POWER = 0,
++	TWL4030_AUDIO_RES_APLL,
++	TWL4030_AUDIO_RES_MAX,
++};
++
++int twl4030_audio_disable_resource(enum twl4030_audio_res id);
++int twl4030_audio_enable_resource(enum twl4030_audio_res id);
++unsigned int twl4030_audio_get_mclk(void);
++
++#endif	/* End of __TWL4030_CODEC_H__ */
+diff --git a/include/linux/mfd/twl4030-codec.h b/include/linux/mfd/twl4030-codec.h
+deleted file mode 100644
+index 5cc16bb..0000000
+--- a/include/linux/mfd/twl4030-codec.h
++++ /dev/null
+@@ -1,272 +0,0 @@
+-/*
+- * MFD driver for twl4030 codec submodule
+- *
+- * Author: Peter Ujfalusi <peter.ujfalusi@ti.com>
+- *
+- * Copyright:   (C) 2009 Nokia Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but
+- * WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+- * 02110-1301 USA
+- *
+- */
+-
+-#ifndef __TWL4030_CODEC_H__
+-#define __TWL4030_CODEC_H__
+-
+-/* Codec registers */
+-#define TWL4030_REG_CODEC_MODE		0x01
+-#define TWL4030_REG_OPTION		0x02
+-#define TWL4030_REG_UNKNOWN		0x03
+-#define TWL4030_REG_MICBIAS_CTL		0x04
+-#define TWL4030_REG_ANAMICL		0x05
+-#define TWL4030_REG_ANAMICR		0x06
+-#define TWL4030_REG_AVADC_CTL		0x07
+-#define TWL4030_REG_ADCMICSEL		0x08
+-#define TWL4030_REG_DIGMIXING		0x09
+-#define TWL4030_REG_ATXL1PGA		0x0A
+-#define TWL4030_REG_ATXR1PGA		0x0B
+-#define TWL4030_REG_AVTXL2PGA		0x0C
+-#define TWL4030_REG_AVTXR2PGA		0x0D
+-#define TWL4030_REG_AUDIO_IF		0x0E
+-#define TWL4030_REG_VOICE_IF		0x0F
+-#define TWL4030_REG_ARXR1PGA		0x10
+-#define TWL4030_REG_ARXL1PGA		0x11
+-#define TWL4030_REG_ARXR2PGA		0x12
+-#define TWL4030_REG_ARXL2PGA		0x13
+-#define TWL4030_REG_VRXPGA		0x14
+-#define TWL4030_REG_VSTPGA		0x15
+-#define TWL4030_REG_VRX2ARXPGA		0x16
+-#define TWL4030_REG_AVDAC_CTL		0x17
+-#define TWL4030_REG_ARX2VTXPGA		0x18
+-#define TWL4030_REG_ARXL1_APGA_CTL	0x19
+-#define TWL4030_REG_ARXR1_APGA_CTL	0x1A
+-#define TWL4030_REG_ARXL2_APGA_CTL	0x1B
+-#define TWL4030_REG_ARXR2_APGA_CTL	0x1C
+-#define TWL4030_REG_ATX2ARXPGA		0x1D
+-#define TWL4030_REG_BT_IF		0x1E
+-#define TWL4030_REG_BTPGA		0x1F
+-#define TWL4030_REG_BTSTPGA		0x20
+-#define TWL4030_REG_EAR_CTL		0x21
+-#define TWL4030_REG_HS_SEL		0x22
+-#define TWL4030_REG_HS_GAIN_SET		0x23
+-#define TWL4030_REG_HS_POPN_SET		0x24
+-#define TWL4030_REG_PREDL_CTL		0x25
+-#define TWL4030_REG_PREDR_CTL		0x26
+-#define TWL4030_REG_PRECKL_CTL		0x27
+-#define TWL4030_REG_PRECKR_CTL		0x28
+-#define TWL4030_REG_HFL_CTL		0x29
+-#define TWL4030_REG_HFR_CTL		0x2A
+-#define TWL4030_REG_ALC_CTL		0x2B
+-#define TWL4030_REG_ALC_SET1		0x2C
+-#define TWL4030_REG_ALC_SET2		0x2D
+-#define TWL4030_REG_BOOST_CTL		0x2E
+-#define TWL4030_REG_SOFTVOL_CTL		0x2F
+-#define TWL4030_REG_DTMF_FREQSEL	0x30
+-#define TWL4030_REG_DTMF_TONEXT1H	0x31
+-#define TWL4030_REG_DTMF_TONEXT1L	0x32
+-#define TWL4030_REG_DTMF_TONEXT2H	0x33
+-#define TWL4030_REG_DTMF_TONEXT2L	0x34
+-#define TWL4030_REG_DTMF_TONOFF		0x35
+-#define TWL4030_REG_DTMF_WANONOFF	0x36
+-#define TWL4030_REG_I2S_RX_SCRAMBLE_H	0x37
+-#define TWL4030_REG_I2S_RX_SCRAMBLE_M	0x38
+-#define TWL4030_REG_I2S_RX_SCRAMBLE_L	0x39
+-#define TWL4030_REG_APLL_CTL		0x3A
+-#define TWL4030_REG_DTMF_CTL		0x3B
+-#define TWL4030_REG_DTMF_PGA_CTL2	0x3C
+-#define TWL4030_REG_DTMF_PGA_CTL1	0x3D
+-#define TWL4030_REG_MISC_SET_1		0x3E
+-#define TWL4030_REG_PCMBTMUX		0x3F
+-#define TWL4030_REG_RX_PATH_SEL		0x43
+-#define TWL4030_REG_VDL_APGA_CTL	0x44
+-#define TWL4030_REG_VIBRA_CTL		0x45
+-#define TWL4030_REG_VIBRA_SET		0x46
+-#define TWL4030_REG_VIBRA_PWM_SET	0x47
+-#define TWL4030_REG_ANAMIC_GAIN		0x48
+-#define TWL4030_REG_MISC_SET_2		0x49
+-
+-/* Bitfield Definitions */
+-
+-/* TWL4030_CODEC_MODE (0x01) Fields */
+-#define TWL4030_APLL_RATE		0xF0
+-#define TWL4030_APLL_RATE_8000		0x00
+-#define TWL4030_APLL_RATE_11025		0x10
+-#define TWL4030_APLL_RATE_12000		0x20
+-#define TWL4030_APLL_RATE_16000		0x40
+-#define TWL4030_APLL_RATE_22050		0x50
+-#define TWL4030_APLL_RATE_24000		0x60
+-#define TWL4030_APLL_RATE_32000		0x80
+-#define TWL4030_APLL_RATE_44100		0x90
+-#define TWL4030_APLL_RATE_48000		0xA0
+-#define TWL4030_APLL_RATE_96000		0xE0
+-#define TWL4030_SEL_16K			0x08
+-#define TWL4030_CODECPDZ		0x02
+-#define TWL4030_OPT_MODE		0x01
+-#define TWL4030_OPTION_1		(1 << 0)
+-#define TWL4030_OPTION_2		(0 << 0)
+-
+-/* TWL4030_OPTION (0x02) Fields */
+-#define TWL4030_ATXL1_EN		(1 << 0)
+-#define TWL4030_ATXR1_EN		(1 << 1)
+-#define TWL4030_ATXL2_VTXL_EN		(1 << 2)
+-#define TWL4030_ATXR2_VTXR_EN		(1 << 3)
+-#define TWL4030_ARXL1_VRX_EN		(1 << 4)
+-#define TWL4030_ARXR1_EN		(1 << 5)
+-#define TWL4030_ARXL2_EN		(1 << 6)
+-#define TWL4030_ARXR2_EN		(1 << 7)
+-
+-/* TWL4030_REG_MICBIAS_CTL (0x04) Fields */
+-#define TWL4030_MICBIAS2_CTL		0x40
+-#define TWL4030_MICBIAS1_CTL		0x20
+-#define TWL4030_HSMICBIAS_EN		0x04
+-#define TWL4030_MICBIAS2_EN		0x02
+-#define TWL4030_MICBIAS1_EN		0x01
+-
+-/* ANAMICL (0x05) Fields */
+-#define TWL4030_CNCL_OFFSET_START	0x80
+-#define TWL4030_OFFSET_CNCL_SEL		0x60
+-#define TWL4030_OFFSET_CNCL_SEL_ARX1	0x00
+-#define TWL4030_OFFSET_CNCL_SEL_ARX2	0x20
+-#define TWL4030_OFFSET_CNCL_SEL_VRX	0x40
+-#define TWL4030_OFFSET_CNCL_SEL_ALL	0x60
+-#define TWL4030_MICAMPL_EN		0x10
+-#define TWL4030_CKMIC_EN		0x08
+-#define TWL4030_AUXL_EN			0x04
+-#define TWL4030_HSMIC_EN		0x02
+-#define TWL4030_MAINMIC_EN		0x01
+-
+-/* ANAMICR (0x06) Fields */
+-#define TWL4030_MICAMPR_EN		0x10
+-#define TWL4030_AUXR_EN			0x04
+-#define TWL4030_SUBMIC_EN		0x01
+-
+-/* AVADC_CTL (0x07) Fields */
+-#define TWL4030_ADCL_EN			0x08
+-#define TWL4030_AVADC_CLK_PRIORITY	0x04
+-#define TWL4030_ADCR_EN			0x02
+-
+-/* TWL4030_REG_ADCMICSEL (0x08) Fields */
+-#define TWL4030_DIGMIC1_EN		0x08
+-#define TWL4030_TX2IN_SEL		0x04
+-#define TWL4030_DIGMIC0_EN		0x02
+-#define TWL4030_TX1IN_SEL		0x01
+-
+-/* AUDIO_IF (0x0E) Fields */
+-#define TWL4030_AIF_SLAVE_EN		0x80
+-#define TWL4030_DATA_WIDTH		0x60
+-#define TWL4030_DATA_WIDTH_16S_16W	0x00
+-#define TWL4030_DATA_WIDTH_32S_16W	0x40
+-#define TWL4030_DATA_WIDTH_32S_24W	0x60
+-#define TWL4030_AIF_FORMAT		0x18
+-#define TWL4030_AIF_FORMAT_CODEC	0x00
+-#define TWL4030_AIF_FORMAT_LEFT		0x08
+-#define TWL4030_AIF_FORMAT_RIGHT	0x10
+-#define TWL4030_AIF_FORMAT_TDM		0x18
+-#define TWL4030_AIF_TRI_EN		0x04
+-#define TWL4030_CLK256FS_EN		0x02
+-#define TWL4030_AIF_EN			0x01
+-
+-/* VOICE_IF (0x0F) Fields */
+-#define TWL4030_VIF_SLAVE_EN		0x80
+-#define TWL4030_VIF_DIN_EN		0x40
+-#define TWL4030_VIF_DOUT_EN		0x20
+-#define TWL4030_VIF_SWAP		0x10
+-#define TWL4030_VIF_FORMAT		0x08
+-#define TWL4030_VIF_TRI_EN		0x04
+-#define TWL4030_VIF_SUB_EN		0x02
+-#define TWL4030_VIF_EN			0x01
+-
+-/* EAR_CTL (0x21) */
+-#define TWL4030_EAR_GAIN		0x30
+-
+-/* HS_GAIN_SET (0x23) Fields */
+-#define TWL4030_HSR_GAIN		0x0C
+-#define TWL4030_HSR_GAIN_PWR_DOWN	0x00
+-#define TWL4030_HSR_GAIN_PLUS_6DB	0x04
+-#define TWL4030_HSR_GAIN_0DB		0x08
+-#define TWL4030_HSR_GAIN_MINUS_6DB	0x0C
+-#define TWL4030_HSL_GAIN		0x03
+-#define TWL4030_HSL_GAIN_PWR_DOWN	0x00
+-#define TWL4030_HSL_GAIN_PLUS_6DB	0x01
+-#define TWL4030_HSL_GAIN_0DB		0x02
+-#define TWL4030_HSL_GAIN_MINUS_6DB	0x03
+-
+-/* HS_POPN_SET (0x24) Fields */
+-#define TWL4030_VMID_EN			0x40
+-#define	TWL4030_EXTMUTE			0x20
+-#define TWL4030_RAMP_DELAY		0x1C
+-#define TWL4030_RAMP_DELAY_20MS		0x00
+-#define TWL4030_RAMP_DELAY_40MS		0x04
+-#define TWL4030_RAMP_DELAY_81MS		0x08
+-#define TWL4030_RAMP_DELAY_161MS	0x0C
+-#define TWL4030_RAMP_DELAY_323MS	0x10
+-#define TWL4030_RAMP_DELAY_645MS	0x14
+-#define TWL4030_RAMP_DELAY_1291MS	0x18
+-#define TWL4030_RAMP_DELAY_2581MS	0x1C
+-#define TWL4030_RAMP_EN			0x02
+-
+-/* PREDL_CTL (0x25) */
+-#define TWL4030_PREDL_GAIN		0x30
+-
+-/* PREDR_CTL (0x26) */
+-#define TWL4030_PREDR_GAIN		0x30
+-
+-/* PRECKL_CTL (0x27) */
+-#define TWL4030_PRECKL_GAIN		0x30
+-
+-/* PRECKR_CTL (0x28) */
+-#define TWL4030_PRECKR_GAIN		0x30
+-
+-/* HFL_CTL (0x29, 0x2A) Fields */
+-#define TWL4030_HF_CTL_HB_EN		0x04
+-#define TWL4030_HF_CTL_LOOP_EN		0x08
+-#define TWL4030_HF_CTL_RAMP_EN		0x10
+-#define TWL4030_HF_CTL_REF_EN		0x20
+-
+-/* APLL_CTL (0x3A) Fields */
+-#define TWL4030_APLL_EN			0x10
+-#define TWL4030_APLL_INFREQ		0x0F
+-#define TWL4030_APLL_INFREQ_19200KHZ	0x05
+-#define TWL4030_APLL_INFREQ_26000KHZ	0x06
+-#define TWL4030_APLL_INFREQ_38400KHZ	0x0F
+-
+-/* REG_MISC_SET_1 (0x3E) Fields */
+-#define TWL4030_CLK64_EN		0x80
+-#define TWL4030_SCRAMBLE_EN		0x40
+-#define TWL4030_FMLOOP_EN		0x20
+-#define TWL4030_SMOOTH_ANAVOL_EN	0x02
+-#define TWL4030_DIGMIC_LR_SWAP_EN	0x01
+-
+-/* VIBRA_CTL (0x45) */
+-#define TWL4030_VIBRA_EN		0x01
+-#define TWL4030_VIBRA_DIR		0x02
+-#define TWL4030_VIBRA_AUDIO_SEL_L1	(0x00 << 2)
+-#define TWL4030_VIBRA_AUDIO_SEL_R1	(0x01 << 2)
+-#define TWL4030_VIBRA_AUDIO_SEL_L2	(0x02 << 2)
+-#define TWL4030_VIBRA_AUDIO_SEL_R2	(0x03 << 2)
+-#define TWL4030_VIBRA_SEL		0x10
+-#define TWL4030_VIBRA_DIR_SEL		0x20
+-
+-/* TWL4030 codec resource IDs */
+-enum twl4030_codec_res {
+-	TWL4030_CODEC_RES_POWER = 0,
+-	TWL4030_CODEC_RES_APLL,
+-	TWL4030_CODEC_RES_MAX,
+-};
+-
+-int twl4030_codec_disable_resource(enum twl4030_codec_res id);
+-int twl4030_codec_enable_resource(enum twl4030_codec_res id);
+-unsigned int twl4030_codec_get_mclk(void);
+-
+-#endif	/* End of __TWL4030_CODEC_H__ */
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 98175a0..0002220 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -236,7 +236,7 @@ config SND_SOC_TLV320DAC33
+ 	tristate
  
- MODULE_AUTHOR("Peter Ujfalusi <peter.ujfalusi@ti.com>");
- MODULE_LICENSE("GPL");
+ config SND_SOC_TWL4030
+-	select TWL4030_CODEC
++	select MFD_TWL4030_AUDIO
+ 	tristate
+ 
+ config SND_SOC_TWL6040
+diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
+index bec788b..5e648d3 100644
+--- a/sound/soc/codecs/twl4030.c
++++ b/sound/soc/codecs/twl4030.c
+@@ -36,7 +36,7 @@
+ #include <sound/tlv.h>
+ 
+ /* Register descriptions are here */
+-#include <linux/mfd/twl4030-codec.h>
++#include <linux/mfd/twl4030-audio.h>
+ 
+ /* Shadow register used by the audio driver */
+ #define TWL4030_REG_SW_SHADOW		0x4A
+@@ -251,9 +251,9 @@ static void twl4030_codec_enable(struct snd_soc_codec *codec, int enable)
+ 		return;
+ 
+ 	if (enable)
+-		mode = twl4030_codec_enable_resource(TWL4030_CODEC_RES_POWER);
++		mode = twl4030_audio_enable_resource(TWL4030_AUDIO_RES_POWER);
+ 	else
+-		mode = twl4030_codec_disable_resource(TWL4030_CODEC_RES_POWER);
++		mode = twl4030_audio_disable_resource(TWL4030_AUDIO_RES_POWER);
+ 
+ 	if (mode >= 0) {
+ 		twl4030_write_reg_cache(codec, TWL4030_REG_CODEC_MODE, mode);
+@@ -375,13 +375,13 @@ static void twl4030_apll_enable(struct snd_soc_codec *codec, int enable)
+ 	if (enable) {
+ 		twl4030->apll_enabled++;
+ 		if (twl4030->apll_enabled == 1)
+-			status = twl4030_codec_enable_resource(
+-							TWL4030_CODEC_RES_APLL);
++			status = twl4030_audio_enable_resource(
++							TWL4030_AUDIO_RES_APLL);
+ 	} else {
+ 		twl4030->apll_enabled--;
+ 		if (!twl4030->apll_enabled)
+-			status = twl4030_codec_disable_resource(
+-							TWL4030_CODEC_RES_APLL);
++			status = twl4030_audio_disable_resource(
++							TWL4030_AUDIO_RES_APLL);
+ 	}
+ 
+ 	if (status >= 0)
+@@ -2260,7 +2260,7 @@ static int twl4030_soc_probe(struct snd_soc_codec *codec)
+ 	}
+ 	snd_soc_codec_set_drvdata(codec, twl4030);
+ 	/* Set the defaults, and power up the codec */
+-	twl4030->sysclk = twl4030_codec_get_mclk() / 1000;
++	twl4030->sysclk = twl4030_audio_get_mclk() / 1000;
+ 	codec->dapm.idle_bias_off = 1;
+ 
+ 	twl4030_init_chip(codec);
+diff --git a/sound/soc/omap/sdp3430.c b/sound/soc/omap/sdp3430.c
+index 3f72d17..9f6a758 100644
+--- a/sound/soc/omap/sdp3430.c
++++ b/sound/soc/omap/sdp3430.c
+@@ -36,7 +36,7 @@
+ #include <plat/mcbsp.h>
+ 
+ /* Register descriptions for twl4030 codec part */
+-#include <linux/mfd/twl4030-codec.h>
++#include <linux/mfd/twl4030-audio.h>
+ 
+ #include "omap-mcbsp.h"
+ #include "omap-pcm.h"
+diff --git a/sound/soc/omap/zoom2.c b/sound/soc/omap/zoom2.c
+index 0170994..9a2666f 100644
+--- a/sound/soc/omap/zoom2.c
++++ b/sound/soc/omap/zoom2.c
+@@ -32,7 +32,7 @@
+ #include <plat/mcbsp.h>
+ 
+ /* Register descriptions for twl4030 codec part */
+-#include <linux/mfd/twl4030-codec.h>
++#include <linux/mfd/twl4030-audio.h>
+ 
+ #include "omap-mcbsp.h"
+ #include "omap-pcm.h"
 -- 
 1.7.5.3
 
