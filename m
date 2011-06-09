@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab1FIUkZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 16:40:25 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:34126
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752892Ab1FIUkW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 16:40:22 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4DF12FAD.9010101@freescale.com>
-Date: Thu, 9 Jun 2011 15:40:13 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Arnd Bergmann <arnd@arndb.de>, <linuxppc-dev@lists.ozlabs.org>,
-        <alan@lxorguk.ukuu.org.uk>, <kumar.gala@freescale.com>,
-        <benh@kernel.crashing.org>, <akpm@kernel.org>, <cmetcalf@tilera.com>,
-        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>,
-        <linux-console@vger.kernel.org>,
-        <virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH 7/7] [v5] drivers/virt: introduce Freescale hypervisor
- management driver
-References: <1307646794-26374-1-git-send-email-timur@freescale.com> <201106092213.13755.arnd@arndb.de> <4DF12A94.6070605@freescale.com> <20110609203117.GB14235@kroah.com>
-In-Reply-To: <20110609203117.GB14235@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1755960Ab1FIUpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 16:45:42 -0400
+Received: from gate.crashing.org ([63.228.1.57]:52159 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752715Ab1FIUpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 16:45:41 -0400
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Jun 2011 06:45:28 +1000
+Message-ID: <1307652328.2874.274.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> Why is binary compatibility important?  Isn't this a brand new driver
-> for a brand new system?  What userspace tools are out there in the wild
-> for such a thing?
+Hi Linus !
 
-This driver (and the hypervisor it talks to, plus the apps, etc) has been in
-internal development for three years.  There hasn't been a lot of effort
-internally to release this software upstream until recently.
+Here are a small batch of fixes for powerpc.
 
-I personally have been complaining about it for quite some time, but I have no
-control over our internal release process.  Even when the hardware has been
-announced and available for purchase, the BSP is sometimes only available under
-NDA.  Eventually, everything is publicly released, and most of the code is
-pushed upstream, but it's a long and painful struggle at times.
+Just one note: I just noticed a mistake while fixing a bug in "powerpc:
+Force page alignment for initrd reserved memory". Bloody "citool"
+changed the authorchip to me. The real author is Dave Carroll
+<dcarroll@astekcorp.com>. (it's a nasty mis-feature of ci-tool that
+overrides the author when doing an amend of an existing commit).
 
-My concern has been dealing with the headaches of bug reports from customers,
-etc as they upgrade their kernel but not their apps, and then wonder why nothing
-works.
+I didn't want to rebase the branch for that tho.
 
-But as Arnd pointed out, it really isn't as big of deal as I make it out to be.
- I can maintain compatibility internally.  I blame my allergy medicine.
+Cheers,
+Ben.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+The following changes since commit 06e86849cf4019945a106913adb9ff0abcc01770:
+
+  Merge branch 'pm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6 (2011-06-08 15:58:51 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+Benjamin Herrenschmidt (1): (Dave Carroll really)
+      powerpc: Force page alignment for initrd reserved memory
+
+Kumar Gala (2):
+      powerpc/fsl_rio: Fix compile error when CONFIG_FSL_RIO not set
+      powerpc/book3e: Fix CPU feature handling on e5500 in 32-bit mode
+
+Shaohui Xie (1):
+      powerpc/85xx: fix race bug of calling request_irq after enable elbc interrupts
+
+Wolfram Sang (1):
+      dtc/powerpc: remove obsolete .gitignore entries
+
+ arch/powerpc/boot/.gitignore         |    1 -
+ arch/powerpc/boot/dtc-src/.gitignore |    3 ---
+ arch/powerpc/include/asm/rio.h       |    2 +-
+ arch/powerpc/kernel/cputable.c       |    2 +-
+ arch/powerpc/kernel/prom.c           |   27 ++++++++++++++++++++++++---
+ arch/powerpc/mm/init_32.c            |   15 ---------------
+ arch/powerpc/mm/init_64.c            |   14 --------------
+ arch/powerpc/mm/mem.c                |   19 +++++++++++++++++++
+ arch/powerpc/sysdev/fsl_lbc.c        |    6 +++---
+ 9 files changed, 48 insertions(+), 41 deletions(-)
+ delete mode 100644 arch/powerpc/boot/dtc-src/.gitignore
+
 
