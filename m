@@ -1,87 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab1FIWBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 18:01:39 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54491 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756427Ab1FIWBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 18:01:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=szeredi.hu; s=google;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=TK41fgzZzVRFrTkfMnt0WrYbY28BuBl+phFG0aeiic0Up3DVVXuzOP4JafDrTqsJrp
-         +QpeM/wCjmrtVW0XxqIp50HtnG60NzLmhqg+9Hi7kpYJbuy9O6Urkfu/2chD+XrxGlS1
-         LUrLebeiL7a58PFwmRBkLAscpLFtu6DUB9KgA=
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: NeilBrown <neilb@suse.de>, viro@ZenIV.linux.org.uk,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, apw@canonical.com, nbd@openwrt.org,
-        hramrach@centrum.cz, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
-        hooanon05@yahoo.co.jp
-Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
-References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
-	<20110608153208.dc705cda.akpm@linux-foundation.org>
-	<20110609115934.3c53f78f@notabene.brown>
-	<20110608205233.ebfedc4d.akpm@linux-foundation.org>
-	<87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu>
-	<20110609123843.77153b27.akpm@linux-foundation.org>
-Date: Fri, 10 Jun 2011 00:02:05 +0200
-In-Reply-To: <20110609123843.77153b27.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Thu, 9 Jun 2011 12:38:43 -0700")
-Message-ID: <877h8uzmsi.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1756745Ab1FIWMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 18:12:54 -0400
+Received: from plexity.net ([206.123.115.38]:35457 "EHLO plexity.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753536Ab1FIWMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 18:12:51 -0400
+X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Jun 2011 18:12:51 EDT
+Date: Thu, 9 Jun 2011 15:03:03 -0700
+From: Deepak Saxena <dsaxena@plexity.net>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH/Trivial] Update feature-removal-update.txt with 3.x
+ versioning
+Message-ID: <20110609220303.GA2612@plexity.net>
+Reply-To: dsaxena@plexity.net
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Plexity, LLC
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
 
->> > Well, these things have been around for over 20 years.  What motivated
->> > the developers of other OS's to develop these things and how are their
->> > users using them?
->> 
->> That's a good question, Erez might be able to answer that better.
->> 
->> We have customers who need this for the "common base + writable
->> configuration" case in a virtualized environment.
->> 
->> Since overlayfs's announcement several projects have tried it and have
->> been very good testers and bug reporters.  These include OpenWRT, Ubuntu
->> and other Debian based live systems.
->
-> I assume that the live CD was your motivator for developing overlayfs?
+Update feature removal schedule with 3.x numbering
+ 
+Update all future kernel version entries in feature-removal-schedule.txt
+with appropriate 3.x kernel numbering.
+    
+Signed-off-by: Deepak Saxena <dsaxena@plexity.net>
 
-Actually no.  The main motivator was that I started reviewing
-union-mounts and got thinking about how to do it better.
+---
 
->> > Another issue: there have been numerous attempts at Linux overlay
->> > filesystems from numerous parties.  Does (or will) this implementation
->> > satisfy all their requirements?
->> 
->> Overlayfs aims to be the simplest possible but not simpler.
->> 
->> I think the reason why "aufs" never had a real chance at getting merged
->> is because of feature creep.
->> 
->> Of course I expect new features to be added to overlayfs after the
->> merge, but I beleive some of the features in those other solutions are
->> simply unnecessary.
->
-> This is my main worry.  If overlayfs doesn't appreciably decrease the
-> motivation to merge other unioned filesystems then we might end up with
-> two similar-looking things.  And, I assume, the later and more
-> fully-blown implementation might make overlayfs obsolete but by that
-> time it will be hard to remove.
->
-> So it would be interesting to hear the thoughts of the people who have
-> been working on the other implementations.
-
-Added J. R. Okajima (aufs maintainer) to CC.
-
-Thanks,
-Miklos
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 1a9446b..7725792 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -199,7 +199,7 @@ Files:	drivers/staging/cs5535_gpio/*
+ Check:	drivers/staging/cs5535_gpio/cs5535_gpio.c
+ Why:	A newer driver replaces this; it is drivers/gpio/cs5535-gpio.c, and
+ 	integrates with the Linux GPIO subsystem.  The old driver has been
+-	moved to staging, and will be removed altogether around 2.6.40.
++	moved to staging, and will be removed altogether around 3.0.
+ 	Please test the new driver, and ensure that the functionality you
+ 	need and any bugfixes from the old driver are available in the new
+ 	one.
+@@ -430,7 +430,7 @@ Who:	Avi Kivity <avi@redhat.com>
+ ----------------------------
+ 
+ What:	iwlwifi 50XX module parameters
+-When:	2.6.40
++When:	3.0
+ Why:	The "..50" modules parameters were used to configure 5000 series and
+ 	up devices; different set of module parameters also available for 4965
+ 	with same functionalities. Consolidate both set into single place
+@@ -441,7 +441,7 @@ Who:	Wey-Yi Guy <wey-yi.w.guy@intel.com>
+ ----------------------------
+ 
+ What:	iwl4965 alias support
+-When:	2.6.40
++When:	3.0
+ Why:	Internal alias support has been present in module-init-tools for some
+ 	time, the MODULE_ALIAS("iwl4965") boilerplate aliases can be removed
+ 	with no impact.
+@@ -499,7 +499,7 @@ Who:    Daniel Lezcano <daniel.lezcano@free.fr>
+ ----------------------------
+ 
+ What:	iwlwifi disable_hw_scan module parameters
+-When:	2.6.40
++When:	3.0
+ Why:	Hareware scan is the prefer method for iwlwifi devices for
+ 	scanning operation. Remove software scan support for all the
+ 	iwlwifi devices.
+@@ -510,7 +510,7 @@ Who:	Wey-Yi Guy <wey-yi.w.guy@intel.com>
+ 
+ What:   access to nfsd auth cache through sys_nfsservctl or '.' files
+         in the 'nfsd' filesystem.
+-When:   2.6.40
++When:   3.0
+ Why:    This is a legacy interface which have been replaced by a more
+         dynamic cache.  Continuing to maintain this interface is an
+         unnecessary burden.
+@@ -546,7 +546,7 @@ Files:	net/netfilter/xt_connlimit.c
+ ----------------------------
+ 
+ What:	noswapaccount kernel command line parameter
+-When:	2.6.40
++When:	3.0
+ Why:	The original implementation of memsw feature enabled by
+ 	CONFIG_CGROUP_MEM_RES_CTLR_SWAP could be disabled by the noswapaccount
+ 	kernel parameter (introduced in 2.6.29-rc1). Later on, this decision
+@@ -579,7 +579,7 @@ Who:	Jean Delvare <khali@linux-fr.org>
+ ----------------------------
+ 
+ What:	Support for UVCIOC_CTRL_ADD in the uvcvideo driver
+-When:	2.6.42
++When:	3.2
+ Why:	The information passed to the driver by this ioctl is now queried
+ 	dynamically from the device.
+ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+@@ -587,7 +587,7 @@ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+ ----------------------------
+ 
+ What:	Support for UVCIOC_CTRL_MAP_OLD in the uvcvideo driver
+-When:	2.6.42
++When:	3.2
+ Why:	Used only by applications compiled against older driver versions.
+ 	Superseded by UVCIOC_CTRL_MAP which supports V4L2 menu controls.
+ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+@@ -595,7 +595,7 @@ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+ ----------------------------
+ 
+ What:	Support for UVCIOC_CTRL_GET and UVCIOC_CTRL_SET in the uvcvideo driver
+-When:	2.6.42
++When:	3.2
+ Why:	Superseded by the UVCIOC_CTRL_QUERY ioctl.
+ Who:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+ 
