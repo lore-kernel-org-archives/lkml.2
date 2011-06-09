@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab1FIUcg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 16:32:36 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23707 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab1FIUcd (ORCPT
+	id S1752028Ab1FIUd1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 16:33:27 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:61461 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab1FIUdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 16:32:33 -0400
-Message-ID: <4DF12DD1.7060606@oracle.com>
-Date: Thu, 09 Jun 2011 13:32:17 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Thu, 9 Jun 2011 16:33:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Timur Tabi <timur@freescale.com>
+Subject: Re: [PATCH 7/7] [v5] drivers/virt: introduce Freescale hypervisor management driver
+Date: Thu, 9 Jun 2011 22:33:07 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: linuxppc-dev@lists.ozlabs.org, alan@lxorguk.ukuu.org.uk,
+        kumar.gala@freescale.com, benh@kernel.crashing.org, greg@kroah.com,
+        akpm@kernel.org, cmetcalf@tilera.com, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+References: <1307646794-26374-1-git-send-email-timur@freescale.com> <201106092213.13755.arnd@arndb.de> <4DF12A94.6070605@freescale.com>
+In-Reply-To: <4DF12A94.6070605@freescale.com>
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for June 8 (docbook/media)
-References: <20110608161046.4ad95776.sfr@canb.auug.org.au> <20110608125243.e63a07fc.randy.dunlap@oracle.com> <4DF11E15.5030907@infradead.org> <4DF12263.3070900@redhat.com>
-In-Reply-To: <4DF12263.3070900@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090208.4DF12DDB.00E1:SCFSTAT5015188,ss=1,fgs=0
+Message-Id: <201106092233.08030.arnd@arndb.de>
+X-Provags-ID: V02:K0:gsRGxxKG14p1Qphubr0q+mR2TqyLb4W5yZmrJ5KBWBd
+ bDIKsmYEVtEAJEVDlNAsbX0MgezIT9KHBevIzUspLBgizNgNh5
+ exbXmkL794ITDkPirXz+3ISLGMGQgabuKDbqpMJA5/w9v/fzIW
+ MFIz53yZlW4FTKLr8kaaJmP1Vy/G/DETtHwalI/PT4VX+KyKuz
+ z0dvGMejfY9OL3wtOEcOQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/11 12:43, Mauro Carvalho Chehab wrote:
-> Em 09-06-2011 16:25, Mauro Carvalho Chehab escreveu:
->> Em 08-06-2011 16:52, Randy Dunlap escreveu:
->>> The DocBook/media/Makefile seems to be causing too much noise:
->>>
->>> ls: cannot access linux-next-20110608/Documentation/DocBook/media/*/*.gif: No such file or directory
->>> ls: cannot access linux-next-20110608/Documentation/DocBook/media/*/*.png: No such file or directory
->>>
->>> Maybe the cleanmediadocs target could be made silent?
->>
->> I'll take a look on it. 
->>
->> FYI, The next build will probably be noisier, as it is now pointing to some 
->> documentation gaps at the DVB API. Those gaps should take a longer time to fix, 
->> as we need to discuss upstream about what should be done with those API's,
->> that seems to be abandoned upstream (only one legacy DVB driver uses them).
->> However, I was told that some out-of-tree drivers and some drivers under development
->> are using them.
->>
->> So, I intend to wait until the next merge window before either dropping those 
->> legacy API specs (or moving them to a deprecated section) or to merge those
->> out-of-tree drivers, with the proper documentation updates.
->>
->>> also, where is the mediaindexdocs target defined?
->>
->> Thanks for noticing it. We don't need this target anymore. I'll write a patch
->> removing it.
+On Thursday 09 June 2011 22:18:28 Timur Tabi wrote:
+> > More importantly, the code you have chose (0) conflicts with existing drivers
+> > (frame buffer, scsi and wavefront among others). Please chose a free one and
+> > add it to Documentation/ioctl/ioctl-number.txt in the same patch.
 > 
-> This patch should remove the undesired noise.
+> Ok, I was really hoping to avoid doing this.  Like I said, binary compatibility
+> is important, and changing the type will break my existing apps.  Are you
+> insisting that I pick a new number?
 
+I definitely insist that you have a proper interface in the driver at the
+time that it gets merged, and that probably includes a collision-free
+ioctl code.
 
-Doesn't work for me.  Did you test it?
+You can probably make the driver support both the traditional and the
+new interface, but I would prefer if you kept that as a private patch
+on top a clean kernel driver. It's also a good idea to keep the header
+file clean and only define the new interface there, to ensure that all
+applications that are built in the future have to use the new interface.
 
-Even this does not silence the noise for me:
+When you make the patch to add backwards compat support, just add it
+to the driver itself, not to the header.
 
-cleanmediadocs:
-	-@rm `find $(MEDIA_OBJ_DIR) -type l` $(GENFILES) $(IMGFILES) >/dev/null 2>&1
-
-
-> 
-> commit 75125b9d44456e0cf2d1fbb72ae33c13415299d1
-> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Date:   Thu Jun 9 16:34:29 2011 -0300
-> 
->     [media] DocBook: Don't be noisy at make cleanmediadocs
->     
->     While here, remove the mediaindexdocs from PHONY.
->     
->     Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
->     Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> 
-> diff --git a/Documentation/DocBook/media/Makefile b/Documentation/DocBook/media/Makefile
-> index 1e909c2..b7627e1 100644
-> --- a/Documentation/DocBook/media/Makefile
-> +++ b/Documentation/DocBook/media/Makefile
-> @@ -21,10 +21,10 @@ MEDIA_TEMP =  media-entities.tmpl \
->  IMGFILES := $(addprefix $(MEDIA_OBJ_DIR)/media/, $(notdir $(shell ls $(MEDIA_SRC_DIR)/*/*.gif $(MEDIA_SRC_DIR)/*/*.png)))
->  GENFILES := $(addprefix $(MEDIA_OBJ_DIR)/, $(MEDIA_TEMP))
->  
-> -PHONY += cleanmediadocs mediaindexdocs
-> +PHONY += cleanmediadocs
->  
->  cleanmediadocs:
-> -	-@rm `find $(MEDIA_OBJ_DIR) -type l` $(GENFILES) $(IMGFILES)
-> +	-@rm `find $(MEDIA_OBJ_DIR) -type l` $(GENFILES) $(IMGFILES) 2>/dev/null
->  
->  $(obj)/media_api.xml: $(GENFILES) FORCE
->  
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	Arnd
