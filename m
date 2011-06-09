@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab1FIDEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jun 2011 23:04:35 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54906 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab1FIDEd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jun 2011 23:04:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :user-agent;
-        b=ZPS4cKVxStHuIaC3jvvnLRrXRjp1ZoOvDTm/QaBb8uK0mBMb17j+c4kdWkv9owtDj0
-         Nxxla2vag90QXNetW+3OW7PxhZTf29R0BTDMbMhVPR1M1nVBhSINYOefmk0/iJHsg8dz
-         scPGX7DgcQI2uCh472/bmE88OX+0/ft0mXTSc=
-Date: Thu, 9 Jun 2011 11:04:13 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: ravi@jetztechnologies.com, arvino55@gmail.com, greg@kroah.com,
-        akpm@linux-foundation.org, randy.dunlap@oracle.com, joe@perches.com
-Subject: [PATCH RESEND]Remove a warning for drivers/edac/i82975x_edac.c
-Message-ID: <20110609030401.GA2615@gmail.com>
-Mail-Followup-To: linux-kernel@vger.kernel.org, ravi@jetztechnologies.com,
-	arvino55@gmail.com, greg@kroah.com, akpm@linux-foundation.org,
-	randy.dunlap@oracle.com, joe@perches.com
+	id S1754763Ab1FIDGd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jun 2011 23:06:33 -0400
+Received: from mga03.intel.com ([143.182.124.21]:26260 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752684Ab1FIDGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jun 2011 23:06:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,340,1304319600"; 
+   d="scan'208";a="9647744"
+Date: Thu, 9 Jun 2011 11:06:28 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: "Antonino A. Daplas" <adaplas@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [RFC] fbmem: reset file->private_data on failed fb_open()
+Message-ID: <20110609030628.GA10233@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=unknown-8bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Harry Wei <harryxiyou@gmail.com>
+I wrote this when looking at NULL dereference bug
+https://bugzilla.kernel.org/show_bug.cgi?id=18912
 
-When i compile 2.6.39.1, a warning shows like below.
-This patch can fix the warning. And i works well with
-my PC.
+Will it help by clearing private_data? I have no idea at all, because
+for regular files, ->release won't be called on failed ->open. Just in
+case there are some exceptions in fbmem...
 
-[...]
-CC [M]  drivers/edac/e752x_edac.o
-CC [M]  drivers/edac/i82875p_edac.o
-CC [M]  drivers/edac/i82975x_edac.o
-drivers/edac/i82975x_edac.c: In function ���i82975x_process_error_info���:
-drivers/edac/i82975x_edac.c:298: warning: integer constant is too large for ���unsigned long��� type
-CC [M]  drivers/edac/i3000_edac.o
-CC [M]  drivers/edac/i3200_edac.o
-CC [M]  drivers/edac/x38_edac.o
-CC [M]  drivers/edac/i82860_edac.o
-[...]
+---
+ drivers/video/fbmem.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-
-Signed-off-by: Harry Wei <harryxiyou@gmail.com>
-Index: prj/drivers/edac/i82975x_edac.c
-===================================================================
---- prj.orig/drivers/edac/i82975x_edac.c	2011-06-04 10:09:55.351174516 +0800
-+++ prj/drivers/edac/i82975x_edac.c	2011-06-04 10:10:30.875168437 +0800
-@@ -293,9 +293,9 @@
- 		info->errsts = info->errsts2;
+--- linux-next.orig/drivers/video/fbmem.c	2011-06-09 10:36:06.000000000 +0800
++++ linux-next/drivers/video/fbmem.c	2011-06-09 10:39:30.000000000 +0800
+@@ -1424,26 +1424,28 @@ __releases(&info->lock)
+ 	file->private_data = info;
+ 	if (info->fbops->fb_open) {
+ 		res = info->fbops->fb_open(info,1);
+ 		if (res)
+ 			module_put(info->fbops->owner);
  	}
+ #ifdef CONFIG_FB_DEFERRED_IO
+ 	if (info->fbdefio)
+ 		fb_deferred_io_open(info, inode, file);
+ #endif
+ out:
+ 	mutex_unlock(&info->lock);
+-	if (res)
++	if (res) {
++		file->private_data = NULL;
+ 		put_fb_info(info);
++	}
+ 	return res;
+ }
  
--	page = (unsigned long) info->eap;
-+	page = (unsigned long long) info->eap;
- 	if (info->xeap & 1)
--		page |= 0x100000000ul;
-+		page |= 0x100000000ull;
- 	chan = page & 1;
- 	page >>= 1;
- 	offst = page & ((1 << PAGE_SHIFT) - 1);
+ static int 
+ fb_release(struct inode *inode, struct file *file)
+ __acquires(&info->lock)
+ __releases(&info->lock)
+ {
+ 	struct fb_info * const info = file->private_data;
+ 
+ 	mutex_lock(&info->lock);
+ 	if (info->fbops->fb_release)
