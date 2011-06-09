@@ -1,90 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403Ab1FILV7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 07:21:59 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57227 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757292Ab1FILV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 07:21:57 -0400
-Date: Thu, 9 Jun 2011 11:21:50 GMT
-From: tip-bot for Ralf Baechle <ralf@linux-mips.org>
-Message-ID: <tip-5168b2792f59b4a51806b6fc8b1df43109db0968@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        ralf@linux-mips.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, tglx@linutronix.de
-In-Reply-To: <20110601180611.061710714@duck.linux-mips.net>
-References: <20110601180611.061710714@duck.linux-mips.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/cleanup] pcpskr: MIPS: Make config dependencies finer grained
-Git-Commit-ID: 5168b2792f59b4a51806b6fc8b1df43109db0968
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Jun 2011 11:21:51 +0000 (UTC)
+	id S1757352Ab1FILXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 07:23:50 -0400
+Received: from smtp-out-035.synserver.de ([212.40.185.35]:1193 "EHLO
+	smtp-out-035.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753660Ab1FILXt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 07:23:49 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 29105
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>, stable@kernel.org
+Subject: [PATCH] ASoC: snd_soc_new_{mixer,mux,pga} make sure to use right DAPM context
+Date: Thu,  9 Jun 2011 13:22:36 +0200
+Message-Id: <1307618556-32068-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5168b2792f59b4a51806b6fc8b1df43109db0968
-Gitweb:     http://git.kernel.org/tip/5168b2792f59b4a51806b6fc8b1df43109db0968
-Author:     Ralf Baechle <ralf@linux-mips.org>
-AuthorDate: Wed, 1 Jun 2011 19:05:10 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 9 Jun 2011 12:03:52 +0200
+Currently it is possible that snd_soc_new_{mixer,mux,pga} is called with a
+DAPM context not matching the widgets context. This can lead to a wrong
+prefix_len calculation, which will result in undefined behaviour. To avoid
+this always use the DAPM context from the widget itself.
 
-pcpskr: MIPS: Make config dependencies finer grained
-
-Only the Siemens-Nixdorf RM series workstations and the Jazz family
-workstations have PC speakers built in; Malta can connect one via the
-infamous AMR connector with an AMR sound card or a little creativity.
-So we don't want to offer the PC speaker driver on all MIPS systems.
-
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
-Link: http://lkml.kernel.org/r/20110601180611.061710714@duck.linux-mips.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Cc: stable@kernel.org
 
 ---
- arch/mips/Kconfig |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ sound/soc/soc-dapm.c |   17 ++++++++---------
+ 1 files changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index bf35bb6..45f7aac 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -5,7 +5,6 @@ config MIPS
- 	select HAVE_IDE
- 	select HAVE_OPROFILE
- 	select HAVE_IRQ_WORK
--	select HAVE_PCSPKR_PLATFORM
- 	select HAVE_PERF_EVENTS
- 	select PERF_USE_VMALLOC
- 	select HAVE_ARCH_KGDB
-@@ -186,6 +185,7 @@ config MACH_JAZZ
- 	select CSRC_R4K
- 	select DEFAULT_SGI_PARTITION if CPU_BIG_ENDIAN
- 	select GENERIC_ISA_DMA
-+	select HAVE_PCSPKR_PLATFORM
- 	select IRQ_CPU
- 	select I8253
- 	select I8259
-@@ -267,6 +267,7 @@ config MIPS_MALTA
- 	select CSRC_R4K
- 	select DMA_NONCOHERENT
- 	select GENERIC_ISA_DMA
-+	select HAVE_PCSPKR_PLATFORM
- 	select IRQ_CPU
- 	select IRQ_GIC
- 	select HW_HAS_PCI
-@@ -641,6 +642,7 @@ config SNI_RM
- 	select DEFAULT_SGI_PARTITION if CPU_BIG_ENDIAN
- 	select DMA_NONCOHERENT
- 	select GENERIC_ISA_DMA
-+	select HAVE_PCSPKR_PLATFORM
- 	select HW_HAS_EISA
- 	select HW_HAS_PCI
- 	select IRQ_CPU
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index 34106bc..fd2d774 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -337,9 +337,9 @@ static int dapm_is_shared_kcontrol(struct snd_soc_dapm_context *dapm,
+ }
+ 
+ /* create new dapm mixer control */
+-static int dapm_new_mixer(struct snd_soc_dapm_context *dapm,
+-	struct snd_soc_dapm_widget *w)
++static int dapm_new_mixer(struct snd_soc_dapm_widget *w)
+ {
++	struct snd_soc_dapm_context *dapm = w->dapm;
+ 	int i, ret = 0;
+ 	size_t name_len, prefix_len;
+ 	struct snd_soc_dapm_path *path;
+@@ -437,9 +437,9 @@ static int dapm_new_mixer(struct snd_soc_dapm_context *dapm,
+ }
+ 
+ /* create new dapm mux control */
+-static int dapm_new_mux(struct snd_soc_dapm_context *dapm,
+-	struct snd_soc_dapm_widget *w)
++static int dapm_new_mux(struct snd_soc_dapm_widget *w)
+ {
++	struct snd_soc_dapm_context *dapm = w->dapm;
+ 	struct snd_soc_dapm_path *path = NULL;
+ 	struct snd_kcontrol *kcontrol;
+ 	struct snd_card *card = dapm->card->snd_card;
+@@ -522,8 +522,7 @@ static int dapm_new_mux(struct snd_soc_dapm_context *dapm,
+ }
+ 
+ /* create new dapm volume control */
+-static int dapm_new_pga(struct snd_soc_dapm_context *dapm,
+-	struct snd_soc_dapm_widget *w)
++static int dapm_new_pga(struct snd_soc_dapm_widget *w)
+ {
+ 	if (w->num_kcontrols)
+ 		dev_err(w->dapm->dev,
+@@ -1838,13 +1837,13 @@ int snd_soc_dapm_new_widgets(struct snd_soc_dapm_context *dapm)
+ 		case snd_soc_dapm_mixer:
+ 		case snd_soc_dapm_mixer_named_ctl:
+ 			w->power_check = dapm_generic_check_power;
+-			dapm_new_mixer(dapm, w);
++			dapm_new_mixer(w);
+ 			break;
+ 		case snd_soc_dapm_mux:
+ 		case snd_soc_dapm_virt_mux:
+ 		case snd_soc_dapm_value_mux:
+ 			w->power_check = dapm_generic_check_power;
+-			dapm_new_mux(dapm, w);
++			dapm_new_mux(w);
+ 			break;
+ 		case snd_soc_dapm_adc:
+ 		case snd_soc_dapm_aif_out:
+@@ -1857,7 +1856,7 @@ int snd_soc_dapm_new_widgets(struct snd_soc_dapm_context *dapm)
+ 		case snd_soc_dapm_pga:
+ 		case snd_soc_dapm_out_drv:
+ 			w->power_check = dapm_generic_check_power;
+-			dapm_new_pga(dapm, w);
++			dapm_new_pga(w);
+ 			break;
+ 		case snd_soc_dapm_input:
+ 		case snd_soc_dapm_output:
+-- 
+1.7.2.5
+
