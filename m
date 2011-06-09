@@ -1,101 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab1FIVZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 17:25:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19694 "EHLO mga09.intel.com"
+	id S1756219Ab1FIV2R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 17:28:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28454 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754241Ab1FIVZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 17:25:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,343,1304319600"; 
-   d="scan'208";a="12182403"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Ingo Molnar" <mingo@elte.hu>, "Borislav Petkov" <bp@amd64.org>
-Cc: linux-kernel@vger.kernel.org, "Huang, Ying" <ying.huang@intel.com>,
-        "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>,
-        "Avi Kivity" <avi@redhat.com>
-Subject: [RFC] reworked machine check recovery patches
-Date: Thu, 09 Jun 2011 14:25:38 -0700
-Message-Id: <4df13a522720782e51@agluck-desktop.sc.intel.com>
+	id S1756041Ab1FIV2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 17:28:15 -0400
+Date: Thu, 9 Jun 2011 17:26:44 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH v8 11/12] writeback: make background writeback cgroup
+ aware
+Message-ID: <20110609212644.GL29913@redhat.com>
+References: <1307117538-14317-1-git-send-email-gthelen@google.com>
+ <1307117538-14317-12-git-send-email-gthelen@google.com>
+ <20110607193835.GD26965@redhat.com>
+ <xr93lixdv0df.fsf@gthelen.mtv.corp.google.com>
+ <20110607210540.GB30919@redhat.com>
+ <20110608091815.fdef924d.kamezawa.hiroyu@jp.fujitsu.com>
+ <BANLkTim-sYkuekCcOA+HXhCtED4xKfT=0Q@mail.gmail.com>
+ <20110608203945.GF1150@redhat.com>
+ <BANLkTikg=Gnh7UnLQUTfO7yA3kD3f7MK9YK4EUrbaPBsQBxKuQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTikg=Gnh7UnLQUTfO7yA3kD3f7MK9YK4EUrbaPBsQBxKuQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the in-kernel recovery path for memory errors. Still
-no change to the eventual reporting mechanism (mcelog vs. perf).
+On Thu, Jun 09, 2011 at 10:55:40AM -0700, Greg Thelen wrote:
+> On Wed, Jun 8, 2011 at 1:39 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Tue, Jun 07, 2011 at 09:02:21PM -0700, Greg Thelen wrote:
+> >
+> > [..]
+> >> > As far as I can say, you should not place programs onto ROOT cgroups if you need
+> >> > performance isolation.
+> >>
+> >> Agreed.
+> >>
+> >> > From the code, I think if the system hits dirty_ratio, "1" bit of bitmap should be
+> >> > set and background writeback can work for ROOT cgroup seamlessly.
+> >> >
+> >> > Thanks,
+> >> > -Kame
+> >>
+> >> Not quite.  The proposed patches do not set the "1" bit (css_id of
+> >> root is 1).  mem_cgroup_balance_dirty_pages() (from patch 10/12)
+> >> introduces the following balancing loop:
+> >> +       /* balance entire ancestry of current's mem. */
+> >> +       for (; mem_cgroup_has_dirty_limit(mem); mem =
+> >> parent_mem_cgroup(mem)) {
+> >>
+> >> The loop terminates when mem_cgroup_has_dirty_limit() is called for
+> >> the root cgroup.  The bitmap is set in the body of the loop.  So the
+> >> root cgroup's bit (bit 1) will never be set in the bitmap.  However, I
+> >> think the effect is the same.  The proposed changes in this patch
+> >> (11/12) have background writeback first checking if the system is over
+> >> limit and if yes, then b_dirty inodes from any cgroup written.  This
+> >> means that a small system background limit with an over-{fg or
+> >> bg}-limit cgroup could cause other cgroups that are not over their
+> >> limit to have their inodes written back.  In an system-over-limit
+> >> situation normal system-wide bdi writeback is used (writing inodes in
+> >> b_dirty order).  For those who want isolation, a simple rule to avoid
+> >> this is to ensure that that sum of all cgroup background_limits is
+> >> less than the system background limit.
+> >
+> > Ok, we seem to be mixing multiple things.
+> >
+> > - First of all, i thought running apps in root group is very valid
+> >  use case. Generally by default we run everything in root group and
+> >  once somebody notices that an application or group of application
+> >  is memory hog, that can be moved out in a cgroup of its own with
+> >  upper limits.
+> >
+> > - Secondly, root starvation issue is not present as long as we fall
+> >  back to normal way of writting inodes once we have crossed dirty
+> >  limit. But you had suggested that we move cgroup based writeout
+> >  above so that we always use same scheme for writeout and that
+> >  potentially will have root starvation issue.
+> 
+> To reduce the risk of breaking system writeback (by potentially
+> starting root inodes), my preference is to to retain this patch's
+> original ordering (first check and write towards system limits, only
+> if under system limits write per-cgroup).
+> 
+> > - If we don't move it up, then atleast it will not work for CFQ IO
+> >  controller.
+> 
+> As originally proposed, over_bground_thresh() would check system
+> background limit, and if over limit then write b_dirty, until under
+> system limit.  Then over_bground_thresh() checks cgroup background
+> limits, and if over limit(s) write over-limit-cgroup inodes until
+> cgroups are under their background limits.
+> 
+> How does the order of the checks in over_bground_thresh() affect CFQ
+> IO?
 
-Lots of changes based on feedback from the previous set of
-discussions.  Big stuff:
+If you are over background limit, you will select inodes independent of
+cgroup they belong to. So it might happen that for a long time you
+select inode only from low prio IO cgroup and that will result in 
+pages being written from low prio cgroup (as against to high prio
+cgroup) and low prio group gets to finish its writes earlier. This
+is just reverse of what we wanted from IO controller.
 
-0) Scaled back on ambitions - just worry about recovery from
-   memory errors while executing in user mode. Adding recovery
-   for some kernel cases is deferred to some future date.
+So CFQ IO controller really can't do anything here till inode writeback
+logic is cgroup aware in a way that we are doing round robin among
+dirty cgroups so that most of the time these groups have some IO to
+do at device level.
 
-1) Took Seto-san's "mce_gather_info()" patch in place of the
-   one to just move mce_get_rip() around. Added an expanded
-   comment to explain that we need to collect all this information
-   to make decisions about severity for errors we find when scanning
-   the machine check banks.  The rest of Seto-san's patches to
-   make the severity table easier to read look interesting.
+> Are you referring to recently proposed block throttle patches,
+> which (AFAIK) throttle the rate at which a cgroup can produce dirty
+> pages as a way to approximate the rate that async dirty pages will be
+> written to disk?
 
-2) Ingo pointed me the the user-return-notifier code as an alternative
-   to TIF_MCE_NOTIFY.  Part 7 uses return notifiers to cover the
-   existing use of this TIF bit (Avi: Thanks for the review)
+No this is not related to throttling of async writes.
 
-3) Take the newly freed TIF_MCE_NOTIFY bit and use it to implement
-   an extension in part 8 to make a "per-task" user notifier.
-
-3) Re-implement the recovery path using the task_return_notifier ...
-   this gets rid of the "mce_error_pfn" field that was used in the
-   previous implementation that was so obnoxious.
-
-N.B. both the existing parts and my extensions to the user return
-notifiers are not NMI safe because they use ordinary Linux lists.
-If this seems to be a worthwhile direction, this deficiency can
-be fixed using Ying's NMI safe single linked lists.  Ditto the
-hacky "allocator" of task_notify structures in mce_action_required().
-Just a proof of concept ... should be replaced with a more
-generic NMI safe allocator.
-
--Tony
-
-0001-MCE-fixes-for-mce-severity-table
-0002-MCE-save-most-severe-error-information
-0003-MCE-introduce-mce_gather_info
-0004-MCE-Move-ADDR-MISC-reading-code-into-common-function
-0005-MCE-Mask-out-address-mask-bits-below-address-granual
-0006-HWPOISON-Handle-hwpoison-in-current-process
-0007-MCE-replace-mce.c-use-of-TIF_MCE_NOTIFY-with-user_re
-0008-NOTIFIER-Take-over-TIF_MCE_NOTIFY-and-implement-task
-0009-MCE-run-through-processors-with-more-severe-problems
-0010-MCE-Add-Action-Required-support
-
-
- arch/x86/Kconfig                          |    1 +
- arch/x86/include/asm/thread_info.h        |    8 +-
- arch/x86/kernel/cpu/mcheck/mce-severity.c |   37 +++-
- arch/x86/kernel/cpu/mcheck/mce.c          |  339 ++++++++++++++++++++++-------
- arch/x86/kernel/signal.c                  |    7 +-
- include/linux/sched.h                     |    3 +
- include/linux/user-return-notifier.h      |   14 ++
- kernel/fork.c                             |    1 +
- kernel/user-return-notifier.c             |   36 +++
- mm/memory-failure.c                       |   28 ++-
- 10 files changed, 369 insertions(+), 105 deletions(-)
-
-Andi Kleen (3):
-      MCE: Move ADDR/MISC reading code into common function
-      MCE: Mask out address mask bits below address granuality
-      HWPOISON: Handle hwpoison in current process
-
-Hidetoshi Seto (1):
-      MCE: introduce mce_gather_info()
-
-Tony Luck (6):
-      MCE: fixes for mce severity table
-      MCE: save most severe error information
-      MCE: replace mce.c use of TIF_MCE_NOTIFY with user_return_notifier
-      NOTIFIER: Take over TIF_MCE_NOTIFY and implement task return notifier
-      MCE: run through processors with more severe problems first
-      MCE: Add Action-Required support
-
+Thanks
+Vivek
