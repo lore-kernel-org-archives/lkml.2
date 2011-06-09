@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167Ab1FIW7s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 18:59:48 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:42574 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755800Ab1FIW7r (ORCPT
+	id S1757228Ab1FIW7w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 18:59:52 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35912 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755800Ab1FIW7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 18:59:47 -0400
-Date: Thu, 09 Jun 2011 15:59:43 -0700 (PDT)
-Message-Id: <20110609.155943.162785602513776337.davem@davemloft.net>
-To: jj@chaosbits.net
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][RFC] Sparc: Remove trigraph in die_if_kernel() message.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1106071627260.8844@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1106071627260.8844@swampdragon.chaosbits.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 9 Jun 2011 18:59:48 -0400
+Subject: Re: [PATCH v4 3.0-rc2-tip 0/22]  0: Uprobes patchset with perf
+ probe support
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Jun 2011 01:03:16 +0200
+Message-ID: <1307660596.2497.1760.camel@laptop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 09 Jun 2011 15:59:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Tue, 7 Jun 2011 16:38:19 +0200 (CEST)
+On Tue, 2011-06-07 at 18:28 +0530, Srikar Dronamraju wrote:
+> Please do provide your valuable comments.
 
-> In arch/sparc/kernel/traps_32.c::do_priv_instruction() we have this:
-> 
->   die_if_kernel("Penguin instruction from Penguin mode??!?!", regs);
-> 
-> If I'm not mistaken, that "??!" will be taken as a trigraph for "|" by the 
-> preprocessor, so the final string will end up either as
->   "Penguin instruction from Penguin mode|?!"
-> which I assume is not what we want, or as the correct string but with a 
-> warning about an ignored trigraph which I assume we don't want either. So, 
-> in order to elliminate the trigraph but keep the original string intact I 
-> changed it to
-> 
->   die_if_kernel("Penguin instruction from Penguin mode?""?!?!", regs);
-> 
-> I've tested with a small test program on my x86-64 host and it behaves as 
-> I would expect, but I've not tested the actual code in 
-> arch/sparc/kernel/traps_32.c since I have no way to compile for sparc 
-> (which is why I submit this as a [RFC] patch).
-> 
-> Please take a look and apply if you agree :-)
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Your patch split-up is complete crap. I'm about to simply fold all of
+them just to be able to read anything.
 
-Applied, thanks Jesper :-)
+The split-up appears to do its best to make it absolutely impossible to
+get a sane overview of things, tons of things are out of order, either
+it relies on future patches filling out things or modifies stuff in
+previous patches.
+
+Its a complete pain to read..
+
