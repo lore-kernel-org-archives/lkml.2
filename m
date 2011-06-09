@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab1FIIsa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 04:48:30 -0400
-Received: from mx0.init-ka.de ([62.153.77.47]:52712 "EHLO gateway13.init-ka.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753802Ab1FIIs1 convert rfc822-to-8bit (ORCPT
+	id S1756222Ab1FIIki (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 04:40:38 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:52156 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752871Ab1FIIkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 04:48:27 -0400
-From: "Hornung, Michael" <mhornung@init-ka.de>
-To: "'Bjorn Helgaas'" <bhelgaas@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Date: Thu, 9 Jun 2011 10:48:22 +0200
-Subject: AW: Kernel > 2.6.30: PCI issue causes Kernel freeze at booting
-Thread-Topic: Kernel > 2.6.30: PCI issue causes Kernel freeze at booting
-Thread-Index: Acwgeh2QJSAruKWnRde7JyjU7aT41AGA8Xlg
-Message-ID: <334319B2EBE0B144BAE1402B79D82DC5CE13B09E@srvpegasus>
-References: <334319B2EBE0B144BAE1402B79D82DC5CE13B056@srvpegasus>
- <BANLkTimNSe5JjM2+_-XzS7D8XPeZrPL0oA@mail.gmail.com>
- <334319B2EBE0B144BAE1402B79D82DC5CE13B05A@srvpegasus>
- <BANLkTimX1KG-BZ98LH_NweOUOaUbQtZirg@mail.gmail.com>
- <BANLkTimrpnCdzRArjAn2NOZMu0Bhf6Pn8Q@mail.gmail.com>
- <334319B2EBE0B144BAE1402B79D82DC5CE13B07E@srvpegasus>
- <BANLkTikgg_4Xj2Z3q6pR+QJSxg6c6cQ32w@mail.gmail.com>
- <334319B2EBE0B144BAE1402B79D82DC5CE13B082@srvpegasus>
- <BANLkTikyq-vn1vLZi_ReccwLqm7joRHbwg@mail.gmail.com>
-In-Reply-To: <BANLkTikyq-vn1vLZi_ReccwLqm7joRHbwg@mail.gmail.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Thu, 9 Jun 2011 04:40:35 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4DF088E5.5000408@cam.ac.uk>
+Date: Thu, 09 Jun 2011 09:48:37 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-X-OriginalArrivalTime: 09 Jun 2011 08:48:24.0003 (UTC) FILETIME=[FDF1F130:01CC2681]
+To: anish singh <anish198519851985@gmail.com>
+CC: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-i2c@fluff.org>,
+        gregkh@suse.de, manuel.stahl@iis.fraunhofer.de,
+        lucas.demarchi@profusion.mobi, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Linux I2C <linux-i2c@vger.kernel.org>
+Subject: Re: [PATCH] staging iio: Replace kmalloc with local variable
+References: <1307450354.1516.23.camel@anish-desktop>	<4DEE20E7.4020008@cam.ac.uk>	<20110607134135.GD15795@trinity.fluff.org>	<20110607160206.6cb3168d@endymion.delvare>	<BANLkTim5-ZKXtDkSQyHAJ9-iKtOPsJ917A@mail.gmail.com>	<BANLkTi=e0A2G-d+t4VF5V0gj+eNoh3KRnQ@mail.gmail.com>	<20110609102948.7a3f8d57@endymion.delvare> <BANLkTimq_5rmB+UkaxZwrOtV-ZF3+fEOgQ@mail.gmail.com>
+In-Reply-To: <BANLkTimq_5rmB+UkaxZwrOtV-ZF3+fEOgQ@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> I opened this bug report to make sure we don't lose this.  I don't
->>> know when or if this will be addressed, but your system is valuable as
->>> a real live test case that shows what we're doing wrong.
->>>
->>> https://bugzilla.kernel.org/show_bug.cgi?id=36462
+On 06/09/11 09:34, anish singh wrote:
+> 
+> 
+> On Thu, Jun 9, 2011 at 1:59 PM, Jean Delvare <khali@linux-fr.org <mailto:khali@linux-fr.org>> wrote:
+> 
+>     On Thu, 9 Jun 2011 13:53:09 +0530, anish singh wrote:
+>     > On Wed, Jun 8, 2011 at 10:41 AM, anish singh <anish198519851985@gmail.com <mailto:anish198519851985@gmail.com>>wrote:
+>     > >  On Tue, Jun 7, 2011 at 7:32 PM, Jean Delvare <khali@linux-fr.org <mailto:khali@linux-fr.org>> wrote:
+>     > >> To be clearer, it is down to the i2c BUS (adapter) driver, NOT the i2c
+>     > >> device driver. So the patch is correct.
+>     > >>
+>     > > I think i can take Jean ack on this?If yes then Joanthan kindly apply
+>     > > this patch and i think you didn't lead me in wrong way as whatever
+>     > > said by you is corroborated by jean also i.e. it is I2C bus driver
+>     > > responsiblity
+>     > > to care about DMA.
+>     > >
+>     > Sorry to ping you again.Can i take your ack on this?
+> 
+>     Yes of course.
+> 
+>     Acked-by: Jean Delvare <khali@linux-fr.org <mailto:khali@linux-fr.org>>
+> 
+> Thanks a ton.Jonathan kindly apply it now :)
+Greg, I'll send this one on to you with the set I currently have out for review.
 
->>> Bjorn
-
-Hi Bjorn,
-
-just for the record, the BIOS hack does only work for kernels obove 2.6.33 (2.6.33.14). Those below seem not to care about the PNP device nodes.
-
-With best regards
-
-
-Michael Hornung
-
-------------------------------------------------------------
-Michael Hornung
-Hardware
-Mobile Telematic and Fare Collection Systems
-
-Phone +49-(0)721-6100-305
-Fax +49-(0)721-6100-399
-E-Mail mhornung@init-ka.de
-
-INIT Innovative Informatikanwendungen
-in Transport-, Verkehrs- und Leitsystemen GmbH 
-Käppelestrasse 4-6
-76131 Karlsruhe
-Germany
-http://www.init-ka.de  
- 
-Geschäftsführer:
-Dr.-Ing. Gottfried Greschner, Dipl.-Inform. Achim Becker, Dipl.-Ing. (FH) Wolfgang Degen, Dipl.-Kfm. Dr. Jürgen Greschner
- 
-Amtsgericht Mannheim HRB 103679 . Internationale Registrierungen: 988055689MVA (Norwegen), FC027220 (UK)  
- 
-Vertraulichkeitshinweis:
-Der Inhalt dieser E-Mail ist vertraulich zu behandeln. Das Schreiben ist nur zur Kenntnis des oben genannten Empfängers bestimmt. Wenn Sie nicht der richtige Adressat sind, informieren Sie bitte sofort den Absender und vernichten diese Nachricht. Unerlaubte Kopien sowie unbefugte Weitergabe sind nicht gestattet.
-Bitte beachten Sie, dass durch diese E-Mail keine rechtsverbindlichen Willenserklärungen abgegeben werden.
- 
-Privacy Notice:
-Content of this e-mail must be treated as strictly confidential. This writing is intended only for the knowledge of the above-mentioned addressee. If you are not the correct recipient please inform the sender immediately and permanently erase this message. Illegal copies as well as unauthorized passing is not permitted and strictly forbidden.
-Please note that by sending this mail INIT does not make any commitment and is under no obligation.
+Jonathan
