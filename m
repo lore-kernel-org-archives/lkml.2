@@ -1,68 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab1FIJFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 05:05:11 -0400
-Received: from lo.gmane.org ([80.91.229.12]:56801 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123Ab1FIJFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 05:05:08 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Sven Anders <anders@anduras.de>
-Subject: Re: [PATCH 3/5] v2 =?utf-8?b?c2VjY29tcF9maWx0ZXJzOg==?= Enable ftrace-based system call filtering
-Date: Thu, 9 Jun 2011 09:00:32 +0000 (UTC)
-Message-ID: <loom.20110609T105102-215@post.gmane.org>
-References: <BANLkTim9UyYAGhg06vCFLxkYPX18cPymEQ@mail.gmail.com> <1306254027.18455.47.camel@twins> <20110524195435.GC27634@elte.hu> <alpine.LFD.2.02.1105242239230.3078@ionos> <20110525150153.GE29179@elte.hu> <alpine.LFD.2.02.1105251836030.3078@ionos> <20110525180100.GY19633@outflux.net> <BANLkTimiLvtyKJe-+Fd+4N_rGLfYdUvSVA@mail.gmail.com> <20110525191152.GC19633@outflux.net> <BANLkTimYs4rkgP+hmnG3atLhhCz+jQF=Dg@mail.gmail.com> <20110525201927.GA8397@elte.hu>
+	id S1753829Ab1FIJFT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 05:05:19 -0400
+Received: from protonic.xs4all.nl ([213.84.116.84]:25767 "EHLO
+	protonic.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753591Ab1FIJFO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 05:05:14 -0400
+Date: Thu, 9 Jun 2011 11:05:21 +0200
+From: David Jander <david.jander@protonic.nl>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: David Jander <david@protonic.nl>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/6] GPIO: pca953x.c: Remove meaningless device-tree
+ bindings
+Message-ID: <20110609110521.28db651a@archvile>
+In-Reply-To: <20110608170857.GI8499@ponder.secretlab.ca>
+References: <1307537314-4345-1-git-send-email-david@protonic.nl>
+	<1307537314-4345-4-git-send-email-david@protonic.nl>
+	<20110608170857.GI8499@ponder.secretlab.ca>
+Organization: Protonic Holland
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 77.21.181.137 (Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.17) Gecko/20110422 Ubuntu/9.10 (karmic) Firefox/3.6.17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar <mingo <at> elte.hu> writes:
+On Wed, 8 Jun 2011 11:08:57 -0600
+Grant Likely <grant.likely@secretlab.ca> wrote:
 
-> <flame>
+> On Wed, Jun 08, 2011 at 02:48:31PM +0200, David Jander wrote:
+> > The property 'polarity' is handled by the GPIO core, and the 'gpio-base'
+> > should be assigned automatically. It is meaningless in the device-tree,
+> > since GPIO's are identified by the "chip-name"/offset pair.
+> > This way, the whole pca953x_get_alt_pdata() can go away.
+> > We still need to check whether we really want GPIO-interrupt functionality
+> > by simply looking if the I2C node has an interrupts property defined, since
+> > this property is not used for anything else.
+> > 
+> > Signed-off-by: David Jander <david@protonic.nl>
+> > ---
+> >  drivers/gpio/pca953x.c |   62
+> > ++++++++--------------------------------------- 1 files changed, 11
+> > insertions(+), 51 deletions(-)
+> > 
+> > diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
+> > index 2dff562..ae9fe61 100644
+> > --- a/drivers/gpio/pca953x.c
+> > +++ b/drivers/gpio/pca953x.c
+> > @@ -21,7 +21,6 @@
+> >  #include <linux/slab.h>
+> >  #ifdef CONFIG_OF_GPIO
+> >  #include <linux/of_platform.h>
+> > -#include <linux/of_gpio.h>
+> >  #endif
+> >  
+> >  #define PCA953X_INPUT		0
+> > @@ -539,55 +538,6 @@ static void pca953x_irq_teardown(struct pca953x_chip
+> > *chip) }
+> >  #endif
+> >  
+> > -/*
+> > - * Handlers for alternative sources of platform_data
+> > - */
+> > -#ifdef CONFIG_OF_GPIO
+> > -/*
+> > - * Translate OpenFirmware node properties into platform_data
+> > - */
+> > -static struct pca953x_platform_data *
+> > -pca953x_get_alt_pdata(struct i2c_client *client)
+> > -{
+> > -	struct pca953x_platform_data *pdata;
+> > -	struct device_node *node;
+> > -	const __be32 *val;
+> > -	int size;
+> > -
+> > -	node = client->dev.of_node;
+> > -	if (node == NULL)
+> > -		return NULL;
+> > -
+> > -	pdata = kzalloc(sizeof(struct pca953x_platform_data), GFP_KERNEL);
+> > -	if (pdata == NULL) {
+> > -		dev_err(&client->dev, "Unable to allocate
+> > platform_data\n");
+> > -		return NULL;
+> > -	}
+> > -
+> > -	pdata->gpio_base = -1;
+> > -	val = of_get_property(node, "linux,gpio-base", &size);
+> > -	if (val) {
+> > -		if (size != sizeof(*val))
+> > -			dev_warn(&client->dev, "%s: wrong
+> > linux,gpio-base\n",
+> > -				 node->full_name);
+> > -		else
+> > -			pdata->gpio_base = be32_to_cpup(val);
+> > -	}
+> > -
+> > -	val = of_get_property(node, "polarity", NULL);
+> > -	if (val)
+> > -		pdata->invert = *val;
+> > -
+> > -	return pdata;
+> > -}
+> > -#else
+> > -static struct pca953x_platform_data *
+> > -pca953x_get_alt_pdata(struct i2c_client *client)
+> > -{
+> > -	return NULL;
+> > -}
+> > -#endif
+> > -
 > 
-> IMHO the key design mistake of LSM is that it detaches security 
-> policy from applications: you need to be admin to load policies, you 
-> need to be root to use/configure an LSM. Dammit, you need to be root 
-> to add labels to files!
+> Ah, hmm.  I missed that you were adding documentation for properties
+> that were already implemented.  I try really hard not to break things
+> that others are already relying on, so I don't think this code can be
+> removed.  However, bonus points if you make it deprecated and spit
+> out a scary warning when these properties are used.
+
+Ok :-)
+Is something like a WARN() a good thing to do here?
+
+> >  static int __devinit device_pca953x_init(struct pca953x_chip *chip, int
+> > invert) {
+> >  	int ret;
+> > @@ -654,7 +604,17 @@ static int __devinit pca953x_probe(struct i2c_client
+> > *client, 
+> >  	pdata = client->dev.platform_data;
+> >  	if (pdata == NULL) {
+> > -		pdata = pca953x_get_alt_pdata(client);
+> > +		pdata = kzalloc(sizeof(struct pca953x_platform_data),
+> > GFP_KERNEL);
+> > +		if (pdata == NULL) {
+> > +			dev_err(&client->dev, "Unable to allocate
+> > platform_data\n");
+> > +			goto out_failed;
+> > +		}
+> > +		pdata->gpio_base = -1;
+> > +#ifdef CONFIG_OF_GPIO
+> > +		/* If I2C node has no interrupts property, disable GPIO
+> > interrupts */
+> > +		if (of_find_property(client->dev.of_node, "interrupts",
+> > NULL) == NULL)
+> > +			pdata->irq_base = -1;
+> > +#endif
 > 
-> This not only makes the LSM policies distro specific (and needlessly 
-> forked and detached from real security), but also gives the message 
-> that:
-> 
->  'to ensure your security you need to be privileged'
-> 
-> which is the anti-concept of good security IMO.
-> 
-> [....]
-> </flame>
-> 
-> Thanks,
-> 	Ingo
+> Interesting fact: pdata is only used during setup of this driver.  All
+> the goofing around to kzalloc a pdata for the dt use case is really
+> kind of pointless, and the driver could be simpler if it were removed.
+> It would be nice if somebody could investigate this.
 
+I agree. Before I fix that, would it have been ok to just look up the
+"interrupts" property like this to decide whether to activate GPIO-interrupt
+support?
+Unfortunately of_platform code leaves the .irq member as 0 if this property is
+not specified, and AFAIK, "0" is a valid IRQ number on some platforms, so I
+can't check on the value.
 
-Hello!
-An incomplete idea I had some time ago:
+Should I post a complete new patch set, or can I just reply on the not yet
+accepted parts (2 and 3, while 6 could be dismissed)?
 
-Couldn't the security information (like the selinux profiles) be
-part of the binaries?
+Also, I just realized that I do need to free the alloc'd irq descriptors in
+case the driver fails in gpiochip_add(). You already accepted that patch,
+though. Should I post a separate patch adding just the missing
+irq_free_descs(), or should I modify the patch and repost it?
 
-Each source package should deliver it's own security information
-and this should be better than adding it later, because the 
-developer of the program knows, what his program should be allowed
-to do. Moreover, if the developer changes something, he can/must
-add the security information altogether.
+Best regards,
 
-Of course these information has to be signed in some way to
-avoid tampering.
-
-Just an idea...
-
-
+-- 
+David Jander
+Protonic Holland.
