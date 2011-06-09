@@ -1,88 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab1FIPAL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 11:00:11 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54834 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab1FIPAI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 11:00:08 -0400
-Date: Thu, 9 Jun 2011 10:59:26 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Daniel Kiper <dkiper@net-space.pl>
-Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: kexec/kdump for Xen - implementation question
-Message-ID: <20110609145925.GA26417@dumpdata.com>
-References: <20110606160434.GA26021@router-fw-old.local.net-space.pl>
- <1307442566.775.555.camel@zakaz.uk.xensource.com>
- <20110608160445.GA6091@router-fw-old.local.net-space.pl>
+	id S1753437Ab1FIPAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 11:00:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42941 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752087Ab1FIPAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 11:00:31 -0400
+Date: Thu, 9 Jun 2011 17:00:26 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Ying Han <yinghan@google.com>, Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 4/8] memcg: rework soft limit reclaim
+Message-ID: <20110609150026.GD3994@tiehlicka.suse.cz>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-5-git-send-email-hannes@cmpxchg.org>
+ <BANLkTim5TSWpBfeF2dugGZwQmNC-Cf+GCNctraq8FtziJxsd2g@mail.gmail.com>
+ <BANLkTimuRks4+h=Kjt2Lzc-s-XsAHCH9vg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110608160445.GA6091@router-fw-old.local.net-space.pl>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTimuRks4+h=Kjt2Lzc-s-XsAHCH9vg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090208.4DF0DFE6.0057:SCFSTAT5015188,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 06:04:45PM +0200, Daniel Kiper wrote:
-> On Tue, Jun 07, 2011 at 11:29:26AM +0100, Ian Campbell wrote:
-> > On Mon, 2011-06-06 at 17:04 +0100, Daniel Kiper wrote:
-> > > Hi,
-> > >
-> > > Currently, I am working on kexec/kdump for Xen with emphasis on dom0
-> > > implementation issues. After reviewing relevant Xen Linux Kernel
-> > > Ver. 2.6.18 code I realized (as I expected) that original kexec/kdump
-> > > in mainline kernel should be extensively amended. Further, after some
-> > > discussion with Konrad Rzeszutek Wilk and Ian Campbell it was clear
-> > > for me that it could be done in a few diffrent ways. Due to this facts
-> > > I decided to establish general implementation details with LKML and
-> > > Xen-devel community to avoid extensive code rewrite in case my own
-> > > proposal would not be accepted.
-> > >
-> > > Now I think about four solutions. I will present them in order of my
-> > > preference. However, if you have another soultions to that problem
-> > > please drop me a line.
-> > >
-> > > 1) Currently existing kexec/kdump implementation should be amended
-> > >    by adding Xen specific code mainly in arch/i386. It should look
-> > >    like:
-> > >
-> > >    void machine_kexec(struct kimage *image)
-> > >    {
-> > >    #ifdef CONFIG_XEN
-> > >       if (xen_initial_domain()) {
-> > >         ...
-> > > 	Xen specific code
-> > > 	...
-> > >       }
-> > >    #endif
-> > >
-> > >      ...
-> > >      generic kexec/kdump code
-> > >      ...
-> > >    }
+On Thu 02-06-11 22:25:29, Ying Han wrote:
+> On Thu, Jun 2, 2011 at 2:55 PM, Ying Han <yinghan@google.com> wrote:
+> > On Tue, May 31, 2011 at 11:25 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> >> Currently, soft limit reclaim is entered from kswapd, where it selects
+[...]
+> >> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> >> index c7d4b44..0163840 100644
+> >> --- a/mm/vmscan.c
+> >> +++ b/mm/vmscan.c
+> >> @@ -1988,9 +1988,13 @@ static void shrink_zone(int priority, struct zone *zone,
+> >>                unsigned long reclaimed = sc->nr_reclaimed;
+> >>                unsigned long scanned = sc->nr_scanned;
+> >>                unsigned long nr_reclaimed;
+> >> +               int epriority = priority;
+> >> +
+> >> +               if (mem_cgroup_soft_limit_exceeded(root, mem))
+> >> +                       epriority -= 1;
 > >
-> > This is about the ugliest way to do things and should be avoided.
+> > Here we grant the ability to shrink from all the memcgs, but only
+> > higher the priority for those exceed the soft_limit. That is a design
+> > change
+> > for the "soft_limit" which giving a hint to which memcgs to reclaim
+> > from first under global memory pressure.
 > 
-> I think that in this case it is to some extent. I decided put
-> this solution before struct machine_kexec_ops solution because
-> this (let say conditional solution) touches only x86 code (and
-> if it be required IA-64). struct machine_kexec_ops proposal
-> require changes for 8 archs. I am not sure it could be accepted
-> by kexec/kdump and relevant archs maintainers quickly. However,
+> 
+> Basically, we shouldn't reclaim from a memcg under its soft_limit
+> unless we have trouble reclaim pages from others. 
 
-Slowly is in general how LKML works with patches. Once you have
-an idea of how you want the callback/structs be set lets
-email the maintainer of the kexec to get his feedback. If he is OK
-then I don't think the different arch maintainers will care much
-(as long as it has been tested - and that can be done with QEMU).
-> I think that struct machine_kexec_ops is better as longterm
-> solution.
+Agreed.
 
-Sounds like that is the winner then.
+> Something like the following makes better sense:
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index bdc2fd3..b82ba8c 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1989,6 +1989,8 @@ restart:
+>         throttle_vm_writeout(sc->gfp_mask);
+>  }
+> 
+> +#define MEMCG_SOFTLIMIT_RECLAIM_PRIORITY       2
+> +
+>  static void shrink_zone(int priority, struct zone *zone,
+>                                 struct scan_control *sc)
+>  {
+> @@ -2001,13 +2003,13 @@ static void shrink_zone(int priority, struct zone *zone,
+>                 unsigned long reclaimed = sc->nr_reclaimed;
+>                 unsigned long scanned = sc->nr_scanned;
+>                 unsigned long nr_reclaimed;
+> -               int epriority = priority;
+> 
+> -               if (mem_cgroup_soft_limit_exceeded(root, mem))
+> -                       epriority -= 1;
+> +               if (!mem_cgroup_soft_limit_exceeded(root, mem) &&
+> +                               priority > MEMCG_SOFTLIMIT_RECLAIM_PRIORITY)
+> +                       continue;
+
+yes, this makes sense but I am not sure about the right(tm) value of the
+MEMCG_SOFTLIMIT_RECLAIM_PRIORITY. 2 sounds too low. You would do quite a
+lot of loops 
+(DEFAULT_PRIORITY-MEMCG_SOFTLIMIT_RECLAIM_PRIORITY) * zones * memcg_count
+without any progress (assuming that all of them are under soft limit
+which doesn't sound like a totally artificial configuration) until you
+allow reclaiming from groups that are under soft limit. Then, when you
+finally get to reclaiming, you scan rather aggressively.
+
+Maybe something like 3/4 of DEFAULT_PRIORITY? You would get 3 times
+over all (unbalanced) zones and all cgroups that are above the limit
+(scanning max{1/4096+1/2048+1/1024, 3*SWAP_CLUSTER_MAX} of the LRUs for
+each cgroup) which could be enough to collect the low hanging fruit.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
