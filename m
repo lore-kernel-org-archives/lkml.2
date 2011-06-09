@@ -1,188 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550Ab1FIXcW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 19:32:22 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:56620 "EHLO zene.cmpxchg.org"
+	id S1756768Ab1FIXc7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 19:32:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25040 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754828Ab1FIXcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 19:32:21 -0400
-Date: Fri, 10 Jun 2011 01:31:54 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Ying Han <yinghan@google.com>
-Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
-Message-ID: <20110609233154.GA26745@cmpxchg.org>
-References: <20110602075028.GB20630@cmpxchg.org>
- <BANLkTi=AZG4LKUdeODB0uP=_CVBRnGs_Nw@mail.gmail.com>
- <20110602175142.GH28684@cmpxchg.org>
- <BANLkTi=9083abfiKdZ5_oXyA+dZqaXJfZg@mail.gmail.com>
- <20110608153211.GB27827@cmpxchg.org>
- <BANLkTincHpoay1JtpjG0RY9CCvfepRohTXUH6KKULYJ9jbdo+A@mail.gmail.com>
- <20110609083503.GC11603@cmpxchg.org>
- <BANLkTiknpTjj3saw+zS5ABeD+4ESz68xvRot7TTvKs7A_RtrdA@mail.gmail.com>
- <20110609183637.GC20333@cmpxchg.org>
- <BANLkTin3ZZYXdZgSFfi=8QMnN5we8RcoMyZ_vM3kdbRXCaoWnw@mail.gmail.com>
+	id S1754730Ab1FIXc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 19:32:56 -0400
+Message-ID: <4DF1581E.8050308@redhat.com>
+Date: Thu, 09 Jun 2011 20:32:46 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTin3ZZYXdZgSFfi=8QMnN5we8RcoMyZ_vM3kdbRXCaoWnw@mail.gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for June 8 (docbook/media)
+References: <20110608161046.4ad95776.sfr@canb.auug.org.au> <20110608125243.e63a07fc.randy.dunlap@oracle.com> <4DF11E15.5030907@infradead.org> <4DF12263.3070900@redhat.com> <4DF12DD1.7060606@oracle.com>
+In-Reply-To: <4DF12DD1.7060606@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 03:30:27PM -0700, Ying Han wrote:
-> On Thu, Jun 9, 2011 at 11:36 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > On Thu, Jun 09, 2011 at 10:36:47AM -0700, Ying Han wrote:
-> >> On Thu, Jun 9, 2011 at 1:35 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> >> > On Wed, Jun 08, 2011 at 08:52:03PM -0700, Ying Han wrote:
-> >> >> On Wed, Jun 8, 2011 at 8:32 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> >> >> > I guess it would make much more sense to evaluate if reclaiming from
-> >> >> > memcgs while there are others exceeding their soft limit is even a
-> >> >> > problem.  Otherwise this discussion is pretty pointless.
-> >> >>
-> >> >> AFAIK it is a problem since it changes the spec of kernel API
-> >> >> memory.soft_limit_in_bytes. That value is set per-memcg which all the
-> >> >> pages allocated above that are best effort and targeted to reclaim
-> >> >> prior to others.
-> >> >
-> >> > That's not really true.  Quoting the documentation:
-> >> >
-> >> >    When the system detects memory contention or low memory, control groups
-> >> >    are pushed back to their soft limits. If the soft limit of each control
-> >> >    group is very high, they are pushed back as much as possible to make
-> >> >    sure that one control group does not starve the others of memory.
-> >> >
-> >> > I am language lawyering here, but I don't think it says it won't touch
-> >> > other memcgs at all while there are memcgs exceeding their soft limit.
-> >>
-> >> Well... :) I would say that the documentation of soft_limit needs lots
-> >> of work especially after lots of discussions we have after the LSF.
-> >>
-> >> The RFC i sent after our discussion has the following documentation,
-> >> and I only cut & paste the content relevant to our conversation here:
-> >>
-> >> What is "soft_limit"?
-> >> The "soft_limit was introduced in memcg to support over-committing the
-> >> memory resource on the host. Each cgroup can be configured with
-> >> "hard_limit", where it will be throttled or OOM killed by going over
-> >> the limit. However, the allocation can go above the "soft_limit" as
-> >> long as there is no memory contention. The "soft_limit" is the kernel
-> >> mechanism for re-distributing spare memory resource among cgroups.
-> >>
-> >> What we have now?
-> >> The current implementation of softlimit is based on per-zone RB tree,
-> >> where only the cgroup exceeds the soft_limit the most being selected
-> >> for reclaim.
-> >>
-> >> It makes less sense to only reclaim from one cgroup rather than
-> >> reclaiming all cgroups based on calculated propotion. This is required
-> >> for fairness.
-> >>
-> >> Proposed design:
-> >> round-robin across the cgroups where they have memory allocated on the
-> >> zone and also exceed the softlimit configured.
-> >>
-> >> there was a question on how to do zone balancing w/o global LRU. This
-> >> could be solved by building another cgroup list per-zone, where we
-> >> also link cgroups under their soft_limit. We won't scan the list
-> >> unless the first list being exhausted and
-> >> the free pages is still under the high_wmark.
-> >>
-> >> Since the per-zone memcg list design is being replaced by your
-> >> patchset, some of the details doesn't apply. But the concept still
-> >> remains where we would like to scan some memcgs first (above
-> >> soft_limit) .
-> >
-> > I think the most important thing we wanted was to round-robin scan all
-> > soft limit excessors instead of just the biggest one.  I understood
-> > this is the biggest fault with soft limits right now.
-> >
-> > We came up with maintaining a list of excessors, rather than a tree,
-> > and from this particular implementation followed naturally that this
-> > list is scanned BEFORE we look at other memcgs at all.
-> >
-> > This is a nice to have, but it was never the primary problem with the
-> > soft limit implementation, as far as I understood.
-> >
-> >> > It would be a lie about the current code in the first place, which
-> >> > does soft limit reclaim and then regular reclaim, no matter the
-> >> > outcome of the soft limit reclaim cycle.  It will go for the soft
-> >> > limit first, but after an allocation under pressure the VM is likely
-> >> > to have reclaimed from other memcgs as well.
-> >> >
-> >> > I saw your patch to fix that and break out of reclaim if soft limit
-> >> > reclaim did enough.  But this fix is not much newer than my changes.
-> >>
-> >> My soft_limit patch was developed in parallel with your patchset, and
-> >> most of that wouldn't apply here.
-> >> Is that what you are referring to?
-> >
-> > No, I meant that the current behaviour is old and we are only changing
-> > it only now, so we are not really breaking backward compatibility.
-> >
-> >> > The second part of this is:
-> >> >
-> >> >    Please note that soft limits is a best effort feature, it comes with
-> >> >    no guarantees, but it does its best to make sure that when memory is
-> >> >    heavily contended for, memory is allocated based on the soft limit
-> >> >    hints/setup. Currently soft limit based reclaim is setup such that
-> >> >    it gets invoked from balance_pgdat (kswapd).
-> >>
-> >> We had patch merged which add the soft_limit reclaim also in the global ttfp.
-> >>
-> >> memcg-add-the-soft_limit-reclaim-in-global-direct-reclaim.patch
-> >>
-> >> > It's not the pages-over-soft-limit that are best effort.  It says that
-> >> > it tries its best to take soft limits into account while reclaiming.
-> >> Hmm. Both cases are true. The best effort pages I referring to means
-> >> "the page above the soft_limit are targeted to reclaim first under
-> >> memory contention"
-> >
-> > I really don't know where you are taking this from.  That is neither
-> > documented anywhere, nor is it the current behaviour.
+Em 09-06-2011 17:32, Randy Dunlap escreveu:
+> On 06/09/11 12:43, Mauro Carvalho Chehab wrote:
+>> Em 09-06-2011 16:25, Mauro Carvalho Chehab escreveu:
+>>> Em 08-06-2011 16:52, Randy Dunlap escreveu:
+>>>> The DocBook/media/Makefile seems to be causing too much noise:
+>>>>
+>>>> ls: cannot access linux-next-20110608/Documentation/DocBook/media/*/*.gif: No such file or directory
+>>>> ls: cannot access linux-next-20110608/Documentation/DocBook/media/*/*.png: No such file or directory
+>>>>
+>>>> Maybe the cleanmediadocs target could be made silent?
+>>>
+>>> I'll take a look on it. 
+>>>
+>>> FYI, The next build will probably be noisier, as it is now pointing to some 
+>>> documentation gaps at the DVB API. Those gaps should take a longer time to fix, 
+>>> as we need to discuss upstream about what should be done with those API's,
+>>> that seems to be abandoned upstream (only one legacy DVB driver uses them).
+>>> However, I was told that some out-of-tree drivers and some drivers under development
+>>> are using them.
+>>>
+>>> So, I intend to wait until the next merge window before either dropping those 
+>>> legacy API specs (or moving them to a deprecated section) or to merge those
+>>> out-of-tree drivers, with the proper documentation updates.
+>>>
+>>>> also, where is the mediaindexdocs target defined?
+>>>
+>>> Thanks for noticing it. We don't need this target anymore. I'll write a patch
+>>> removing it.
+>>
+>> This patch should remove the undesired noise.
 > 
-> I got the email from andrew on may 27 and you were on the cc-ed :)
-> Anyway, i just forwarded you that one.
+> 
+> Doesn't work for me.  Did you test it?
 
-I wasn't asking about this patch at all...  This is the conversation:
+Yes:
 
-Me:
+$ make htmldocs
+  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//v4l2.xml
+  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//media-entities.tmpl
+  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//media-indices.tmpl
+  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//videodev2.h.xml
+  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//audio.h.xml
+  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//ca.h.xml
+  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//dmx.h.xml
+  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//frontend.h.xml
+  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//net.h.xml
+  GEN     /home/v4l/v4l/patchwork/Documentation/DocBook//video.h.xml
+  DOCPROC Documentation/DocBook/media_api.xml
+  HTML    Documentation/DocBook/media_api.html
+Error: no ID for constraint linkend: AUDIO_GET_PTS.
+Error: no ID for constraint linkend: AUDIO_BILINGUAL_CHANNEL_SELECT.
+Error: no ID for constraint linkend: CA_RESET.
+Error: no ID for constraint linkend: CA_GET_CAP.
+Error: no ID for constraint linkend: CA_GET_SLOT_INFO.
+Error: no ID for constraint linkend: CA_GET_DESCR_INFO.
+Error: no ID for constraint linkend: CA_GET_MSG.
+Error: no ID for constraint linkend: CA_SEND_MSG.
+Error: no ID for constraint linkend: CA_SET_DESCR.
+Error: no ID for constraint linkend: CA_SET_PID.
+Error: no ID for constraint linkend: DMX_GET_PES_PIDS.
+Error: no ID for constraint linkend: DMX_GET_CAPS.
+Error: no ID for constraint linkend: DMX_SET_SOURCE.
+Error: no ID for constraint linkend: DMX_ADD_PID.
+Error: no ID for constraint linkend: DMX_REMOVE_PID.
+Error: no ID for constraint linkend: NET_ADD_IF.
+Error: no ID for constraint linkend: NET_REMOVE_IF.
+Error: no ID for constraint linkend: NET_GET_IF.
+Error: no ID for constraint linkend: VIDEO_GET_SIZE.
+Error: no ID for constraint linkend: VIDEO_GET_FRAME_RATE.
+Error: no ID for constraint linkend: VIDEO_GET_PTS.
+Error: no ID for constraint linkend: VIDEO_GET_FRAME_COUNT.
+Error: no ID for constraint linkend: VIDEO_COMMAND.
+Error: no ID for constraint linkend: VIDEO_TRY_COMMAND.
+rm -rf Documentation/DocBook/index.html; echo '<h1>Linux Kernel HTML Documentation</h1>' >> Documentation/DocBook/index.html && echo '<h2>Kernel Version: 3.0.0-rc1</h2>' >> Documentation/DocBook/index.html && cat Documentation/DocBook/80211.html Documentation/DocBook/alsa-driver-api.html Documentation/DocBook/debugobjects.html Documentation/DocBook/device-drivers.html Documentation/DocBook/deviceiobook.html Documentation/DocBook/drm.html Documentation/DocBook/filesystems.html Documentation/DocBook/gadget.html Documentation/DocBook/genericirq.html Documentation/DocBook/kernel-api.html Documentation/DocBook/kernel-hacking.html Documentation/DocBook/kernel-locking.html Documentation/DocBook/kgdb.html Documentation/DocBook/libata.html Documentation/DocBook/librs.html Documentation/DocBook/lsm.html Documentation/DocBook/mcabook.html Documentation/DocBook/media_api.html Documentation/DocBook/mtdnand.html Documentation/DocBook/networking.html Documentation/DocBook/rapidio.html Docum
+entation/DocBook/regulator.html Documentation/DocBook/s390-drivers.html Documentation/DocBook/scsi.html Documentation/DocBook/sh.html Documentation/DocBook/tracepoint.html Documentation/DocBook/uio-howto.html Documentation/DocBook/usb.html Documentation/DocBook/writing-an-alsa-driver.html Documentation/DocBook/writing_usb_driver.html Documentation/DocBook/z8530book.html >> Documentation/DocBook/index.html
+v4l@pedra ~/v4l/patchwork $ make cleandocs
+make[1]: [cleanmediadocs] Erro 1 (ignorado)
+v4l@pedra ~/v4l/patchwork $ make cleanmediadocs
+make[1]: [cleanmediadocs] Erro 1 (ignorado)
 
-> >> > It's not the pages-over-soft-limit that are best effort.  It says that
-> >> > it tries its best to take soft limits into account while reclaiming.
+(the above linkend errors are due to the lack of documentation for those ioctls, as I've
+explained before).
 
-You:
+> 
+> Even this does not silence the noise for me:
+> 
+> cleanmediadocs:
+> 	-@rm `find $(MEDIA_OBJ_DIR) -type l` $(GENFILES) $(IMGFILES) >/dev/null 2>&1
 
-> >> Hmm. Both cases are true. The best effort pages I referring to means
-> >> "the page above the soft_limit are targeted to reclaim first under
-> >> memory contention"
+Weird.
+The errors should be doing to stderr, so 2>/dev/null should be working.
 
-Me:
-
-> > I really don't know where you are taking this from.  That is neither
-> > documented anywhere, nor is it the current behaviour.
-
-And this is still my question.
-
-Current: scan up to all pages of the biggest soft limit offender, then
-reclaim from random memcgs (because of the global LRU).
-
-After my patch: scan all memcgs according to their size, with double
-the pressure on those over their soft limit.
-
-Please tell me exactly how my patch regresses existing behaviour, a
-user interface, a documented feature, etc.
-
-If you have an even better idea, please propose it.
+Mauro
