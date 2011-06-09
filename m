@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab1FITWd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 15:22:33 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64443 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754817Ab1FITW0 (ORCPT
+	id S1755014Ab1FITZH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 15:25:07 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34494 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754818Ab1FITW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 15:22:26 -0400
+	Thu, 9 Jun 2011 15:22:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=p5rVmcmH5YHYQxkXIUndGxCUmcREGeqtg8QkOzgfchBja1oJsx2f88GS9qn2kCQ4kS
-         SZVDLh1XP3MPzrz6bynD7zZu5CnArRYgnWmD83TA3VYUvnLKK3p80BECxyBM5LYsdJK8
-         0DdnQsN7w+17Vh03QlH94GVVInoN2yL1SoZTo=
+        b=SqjxB19bOeRgxnn8EIHPEU620vkJMx2XaUHiaento6ixaxXCgSQpNT7blXwkT3MkFX
+         qtG3QJYA4PHrKopBN9+fz6sBZpbquELsMJ4nLGpJ2eBd/g/X+eiiF+esxkzFF4K/nXiE
+         mOepuhOpk2SJYn++NO3CGd6H2Ht4DNAJHsicU=
 From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
 Cc: Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>,
         Dirk Brandewie <dirk.brandewie@gmail.com>,
         Ben Dooks <ben-linux@fluff.org>
-Subject: [PATCH 02/13] i2c-designware: Check component type register
-Date: Thu,  9 Jun 2011 12:21:39 -0700
-Message-Id: <1307647310-24332-3-git-send-email-dirk.brandewie@gmail.com>
+Subject: [PATCH 03/13] i2c-designware: Allow mixed endianness accesses
+Date: Thu,  9 Jun 2011 12:21:40 -0700
+Message-Id: <1307647310-24332-4-git-send-email-dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1307647310-24332-1-git-send-email-dirk.brandewie@gmail.com>
 References: <1307647310-24332-1-git-send-email-dirk.brandewie@gmail.com>
@@ -30,59 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>
 
-Designware component type register is checked before attaching to the device.
+Allows CPUs of a given endianness to access a dw controller of a different
+endianness. Endianncess difference is detected at run time through the dw
+component type register.
 
 Signed-off-by: Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>
 Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 Signed-off-by: Ben Dooks <ben-linux@fluff.org>
 ---
- drivers/i2c/busses/i2c-designware.c |   17 +++++++++++++----
- 1 files changed, 13 insertions(+), 4 deletions(-)
+ drivers/i2c/busses/i2c-designware.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-designware.c b/drivers/i2c/busses/i2c-designware.c
-index 1afb8c0..4be9297 100644
+index 4be9297..680f7c9 100644
 --- a/drivers/i2c/busses/i2c-designware.c
 +++ b/drivers/i2c/busses/i2c-designware.c
-@@ -69,6 +69,7 @@
- #define DW_IC_TXFLR		0x74
- #define DW_IC_RXFLR		0x78
- #define DW_IC_COMP_PARAM_1	0xf4
-+#define DW_IC_COMP_TYPE		0xfc
- #define DW_IC_TX_ABRT_SOURCE	0x80
+@@ -37,6 +37,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/swab.h>
  
- #define DW_IC_CON_MASTER		0x1
-@@ -710,6 +711,7 @@ static int __devinit dw_i2c_probe(struct platform_device *pdev)
- 	struct i2c_adapter *adap;
- 	struct resource *mem, *ioarea;
- 	int irq, r;
-+	u32 reg;
+ /*
+  * Registers offset
+@@ -193,6 +194,7 @@ static char *abort_sources[] = {
+  * @status: i2c master status, one of STATUS_*
+  * @abort_source: copy of the TX_ABRT_SOURCE register
+  * @irq: interrupt number for the i2c master
++ * @swab: true if the instantiated IP is of different endianess
+  * @adapter: i2c subsystem adapter node
+  * @tx_fifo_depth: depth of the hardware tx fifo
+  * @rx_fifo_depth: depth of the hardware rx fifo
+@@ -216,6 +218,7 @@ struct dw_i2c_dev {
+ 	unsigned int		status;
+ 	u32			abort_source;
+ 	int			irq;
++	int			swab;
+ 	struct i2c_adapter	adapter;
+ 	unsigned int		tx_fifo_depth;
+ 	unsigned int		rx_fifo_depth;
+@@ -223,11 +226,19 @@ struct dw_i2c_dev {
  
- 	/* NOTE: driver uses the static register mapping */
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -756,12 +758,19 @@ static int __devinit dw_i2c_probe(struct platform_device *pdev)
- 		r = -EBUSY;
- 		goto err_unuse_clocks;
- 	}
--	{
--		u32 param1 = dw_readl(dev, DW_IC_COMP_PARAM_1);
- 
--		dev->tx_fifo_depth = ((param1 >> 16) & 0xff) + 1;
--		dev->rx_fifo_depth = ((param1 >> 8)  & 0xff) + 1;
-+	reg = dw_readl(dev, DW_IC_COMP_TYPE);
-+	if (reg != 0x44570140) {
-+		dev_err(&pdev->dev, "Unknown Synopsys component type: "
-+				"0x%08x\n",	reg);
-+		r = -ENODEV;
-+		goto err_iounmap;
- 	}
+ static u32 dw_readl(struct dw_i2c_dev *dev, int offset)
+ {
+-	return readl(dev->base + offset);
++	u32 value = readl(dev->base + offset);
 +
-+	reg = dw_readl(dev, DW_IC_COMP_PARAM_1);
-+	dev->tx_fifo_depth = ((reg >> 16) & 0xff) + 1;
-+	dev->rx_fifo_depth = ((reg >> 8)  & 0xff) + 1;
-+
- 	i2c_dw_init(dev);
++	if (dev->swab)
++		return swab32(value);
++	else
++		return value;
+ }
  
- 	dw_writel(dev, 0, DW_IC_INTR_MASK); /* disable IRQ */
+ static void dw_writel(struct dw_i2c_dev *dev, u32 b, int offset)
+ {
++	if (dev->swab)
++		b = swab32(b);
++
+ 	writel(b, dev->base + offset);
+ }
+ 
+@@ -760,7 +771,9 @@ static int __devinit dw_i2c_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	reg = dw_readl(dev, DW_IC_COMP_TYPE);
+-	if (reg != 0x44570140) {
++	if (reg == ___constant_swab32(0x44570140))
++		dev->swab = 1;
++	else if (reg != 0x44570140) {
+ 		dev_err(&pdev->dev, "Unknown Synopsys component type: "
+ 				"0x%08x\n",	reg);
+ 		r = -ENODEV;
 -- 
 1.7.3.4
 
