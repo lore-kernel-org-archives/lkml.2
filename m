@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066Ab1FIHTL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 03:19:11 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37658 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757045Ab1FIHTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 03:19:08 -0400
-Date: Thu, 9 Jun 2011 09:18:54 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        stable@kernel.org
-Subject: Re: [PATCH] oprofile, x86: Fix race in nmi handler while starting
-Message-ID: <20110609071854.GE20544@elte.hu>
-References: <1307465249-20055-1-git-send-email-robert.richter@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1307465249-20055-1-git-send-email-robert.richter@amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1756614Ab1FIHSa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 03:18:30 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:37660 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827Ab1FIHS1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 03:18:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=fhIvIEa9AXD2sxCMng9n/5EYXZ/qKVPFCt02LJrsPJHwpAIjIQmtszb4PR4NIj7CbT
+         zWTHl6pQAwCnPY/5ob+osoixpjG60MNI3D54Y5k6OXZMo+50bhWHyf325HLTtiF6/HgO
+         3pa/qbC/gOVR7M+qfelZvdPA31Eju8jt2HURE=
+From: Weiping Pan <panweiping3@gmail.com>
+To: fubar@us.ibm.com, andy@greyhouse.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Weiping Pan <panweiping3@gmail.com>
+Subject: [PATCH v4 net-next 0/5] bonding:use latest lacp_rate and ad_select and delete unused ad_timer and arp_mon_pt
+Date: Thu,  9 Jun 2011 15:19:00 +0800
+Message-Id: <cover.1307603621.git.panweiping3@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There is bug that when you modify lacp_rate via sysfs,
+802.3ad won't use the new value of lacp_rate to transmit packets.
+This is because port->actor_oper_port_state isn't changed.
 
-* Robert Richter <robert.richter@amd.com> wrote:
+As for ad_select, it can work,
+but both struct bond_params and ad_bond_info have lacp_fast and ad_select,
+they are duplicate and need extra synchronization.
+802.3ad can get them from bond_params directly every time.
 
-> In some rare cases, nmis are generated immediately after the nmi 
-> handler of the cpu was started. This causes the counter not to be 
-> enabled. Before enabling the nmi handlers we need to set variable 
-> ctr_running first and make sure its value is written to memory.
-> 
-> Also, the patch makes all existing barriers a memory barrier 
-> instead of a compiler barrier only.
+And ad_timer and arp_mon_pt aren't used any more, just delete them.
 
-Could we *PLEASE* just do the obvious and turn oprofile into a perf 
-user on x86 too, like ARM already does? Two years down the line and 
-there's zero progress in that area. We want to obsolete the Oprofile 
-PMU bits on x86, the infrastructure duplication causes non-trivial 
-problems like this one.
+changelog:
+v2:
+add bond_3ad_update_lacp_rate() as a helper function,
+and hold bond->lock when iterates slave list.
 
-Thanks,
+v3:
+delete duplicate lacp_fast and agg_select_mode from struct ad_bond_info.
 
-	Ingo
+v4:
+delete unused ad_timer and arp_mon_pt.
+
+Weiping Pan (5):
+  bonding: make 802.3ad use latest lacp_rate
+  bonding:delete lacp_fast from ad_bond_info
+  bonding:delete agg_select_mode from ad_bond_info
+  bonding: delete unused ad_timer
+  bonding: delete unused arp_mon_pt
+
+ drivers/net/bonding/bond_3ad.c   |   41 ++++++++++++++++++++++++++++++++-----
+ drivers/net/bonding/bond_3ad.h   |    8 +-----
+ drivers/net/bonding/bond_main.c  |    3 +-
+ drivers/net/bonding/bond_sysfs.c |    1 +
+ drivers/net/bonding/bonding.h    |    1 -
+ 5 files changed, 39 insertions(+), 15 deletions(-)
+
+-- 
+1.7.4.4
+
