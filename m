@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab1FILXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 07:23:50 -0400
-Received: from smtp-out-035.synserver.de ([212.40.185.35]:1193 "EHLO
-	smtp-out-035.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660Ab1FILXt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 07:23:49 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 29105
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, stable@kernel.org
-Subject: [PATCH] ASoC: snd_soc_new_{mixer,mux,pga} make sure to use right DAPM context
-Date: Thu,  9 Jun 2011 13:22:36 +0200
-Message-Id: <1307618556-32068-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.5
+	id S1757290Ab1FILZu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 07:25:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26168 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753649Ab1FILZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 07:25:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,341,1304319600"; 
+   d="scan'208";a="16078883"
+Date: Thu, 9 Jun 2011 14:25:46 +0300
+From: Heikki Krogerus <krohei@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Grazvydas Ignotas <notasas@gmail.com>
+Subject: Re: [PATCH 0/3] Support for SUSPEND and RESUME for USB chargers
+Message-ID: <20110609112546.GA23520@xps8300>
+References: <1307526281-12125-1-git-send-email-krohei@gmail.com>
+ <20110608205405.GB27448@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110608205405.GB27448@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently it is possible that snd_soc_new_{mixer,mux,pga} is called with a
-DAPM context not matching the widgets context. This can lead to a wrong
-prefix_len calculation, which will result in undefined behaviour. To avoid
-this always use the DAPM context from the widget itself.
+On Wed, Jun 08, 2011 at 01:54:05PM -0700, Greg KH wrote:
+> On Wed, Jun 08, 2011 at 12:44:38PM +0300, Heikki Krogerus wrote:
+> > The charging should be prevented if the bus is suspended.
+> > 
+> > These notifications will come from the udc drivers. I'll create a
+> > separate patch set for those, as I guess the maintainers of the
+> > controller drivers need to approve those.
+> 
+> Can you send them here as well?  These patches never set this value, so
+> I don't see why you did it this way, instead of just getting the
+> "normal" suspend/resume callback and triggering off of that.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: stable@kernel.org
+I'm not completely sure what you mean with "normal" suspend/resume
+callback? I want to get the information about the SUSPEND and RESUME
+bus states to the charger drivers and I don't want to tie them with
+any USB transceiver or controller driver. Wasn't this the reason for
+having the otg notifiers in the first place?
 
----
- sound/soc/soc-dapm.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
+I'll spend a bit more time with these and resend when I have
+everything ready. Gražvydas noticed an issue with the
+isp1704_charger.c so that patch is broken in any case.
 
-diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-index 34106bc..fd2d774 100644
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -337,9 +337,9 @@ static int dapm_is_shared_kcontrol(struct snd_soc_dapm_context *dapm,
- }
- 
- /* create new dapm mixer control */
--static int dapm_new_mixer(struct snd_soc_dapm_context *dapm,
--	struct snd_soc_dapm_widget *w)
-+static int dapm_new_mixer(struct snd_soc_dapm_widget *w)
- {
-+	struct snd_soc_dapm_context *dapm = w->dapm;
- 	int i, ret = 0;
- 	size_t name_len, prefix_len;
- 	struct snd_soc_dapm_path *path;
-@@ -437,9 +437,9 @@ static int dapm_new_mixer(struct snd_soc_dapm_context *dapm,
- }
- 
- /* create new dapm mux control */
--static int dapm_new_mux(struct snd_soc_dapm_context *dapm,
--	struct snd_soc_dapm_widget *w)
-+static int dapm_new_mux(struct snd_soc_dapm_widget *w)
- {
-+	struct snd_soc_dapm_context *dapm = w->dapm;
- 	struct snd_soc_dapm_path *path = NULL;
- 	struct snd_kcontrol *kcontrol;
- 	struct snd_card *card = dapm->card->snd_card;
-@@ -522,8 +522,7 @@ static int dapm_new_mux(struct snd_soc_dapm_context *dapm,
- }
- 
- /* create new dapm volume control */
--static int dapm_new_pga(struct snd_soc_dapm_context *dapm,
--	struct snd_soc_dapm_widget *w)
-+static int dapm_new_pga(struct snd_soc_dapm_widget *w)
- {
- 	if (w->num_kcontrols)
- 		dev_err(w->dapm->dev,
-@@ -1838,13 +1837,13 @@ int snd_soc_dapm_new_widgets(struct snd_soc_dapm_context *dapm)
- 		case snd_soc_dapm_mixer:
- 		case snd_soc_dapm_mixer_named_ctl:
- 			w->power_check = dapm_generic_check_power;
--			dapm_new_mixer(dapm, w);
-+			dapm_new_mixer(w);
- 			break;
- 		case snd_soc_dapm_mux:
- 		case snd_soc_dapm_virt_mux:
- 		case snd_soc_dapm_value_mux:
- 			w->power_check = dapm_generic_check_power;
--			dapm_new_mux(dapm, w);
-+			dapm_new_mux(w);
- 			break;
- 		case snd_soc_dapm_adc:
- 		case snd_soc_dapm_aif_out:
-@@ -1857,7 +1856,7 @@ int snd_soc_dapm_new_widgets(struct snd_soc_dapm_context *dapm)
- 		case snd_soc_dapm_pga:
- 		case snd_soc_dapm_out_drv:
- 			w->power_check = dapm_generic_check_power;
--			dapm_new_pga(dapm, w);
-+			dapm_new_pga(w);
- 			break;
- 		case snd_soc_dapm_input:
- 		case snd_soc_dapm_output:
+> Still confused,
+
+I did not think this through. Sorry about that. I should have send
+everything from the beginning and I should have been more clear what
+I'm after with these.
+
 -- 
-1.7.2.5
-
+heikki
