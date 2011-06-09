@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab1FIXoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 19:44:18 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43685 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755001Ab1FIXoQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 19:44:16 -0400
-Date: Thu, 9 Jun 2011 16:44:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: aquini@linux.com
-Cc: Russ Anderson <rja@sgi.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, rja@americas.sgi.com
-Subject: Re: [PATCH] mm: fix negative commitlimit when gigantic hugepages
- are allocated
-Message-Id: <20110609164408.8370746e.akpm@linux-foundation.org>
-In-Reply-To: <20110603025555.GA10530@optiplex.tchesoft.com>
-References: <20110518153445.GA18127@sgi.com>
-	<BANLkTinbHnrf2isuLzUFZN8ypaT476G1zw@mail.gmail.com>
-	<20110519045630.GA22533@sgi.com>
-	<BANLkTinyYP-je9Nf8X-xWEdpgvn8a631Mw@mail.gmail.com>
-	<20110519221101.GC19648@sgi.com>
-	<20110520130411.d1e0baef.akpm@linux-foundation.org>
-	<20110520223032.GA15192@x61.tchesoft.com>
-	<20110526210751.GA14819@optiplex.tchesoft.com>
-	<20110602040821.GA7934@sgi.com>
-	<20110603025555.GA10530@optiplex.tchesoft.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757361Ab1FIXqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 19:46:55 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:38228 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756806Ab1FIXqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 19:46:51 -0400
+Date: Fri, 10 Jun 2011 01:45:53 +0200
+From: David Sterba <dave@jikos.cz>
+To: Jim Schutt <jaschut@sandia.gov>
+Cc: miaox@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org,
+        "ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
+Subject: Re: 3.0-rcX BUG at fs/btrfs/ioctl.c:432 - bisected
+Message-ID: <20110609234553.GN12709@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Jim Schutt <jaschut@sandia.gov>, miaox@cn.fujitsu.com,
+	linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+	"ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
+References: <4DF140AB.4030805@sandia.gov>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4DF140AB.4030805@sandia.gov>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Jun 2011 23:55:57 -0300
-Rafael Aquini <aquini@linux.com> wrote:
+Hi,
 
-> When 1GB hugepages are allocated on a system, free(1) reports
-> less available memory than what really is installed in the box.
-> Also, if the total size of hugepages allocated on a system is
-> over half of the total memory size, CommitLimit becomes
-> a negative number.
-> 
-> The problem is that gigantic hugepages (order > MAX_ORDER)
-> can only be allocated at boot with bootmem, thus its frames
-> are not accounted to 'totalram_pages'. However,  they are
-> accounted to hugetlb_total_pages()
-> 
-> What happens to turn CommitLimit into a negative number
-> is this calculation, in fs/proc/meminfo.c:
-> 
->         allowed = ((totalram_pages - hugetlb_total_pages())
->                 * sysctl_overcommit_ratio / 100) + total_swap_pages;
-> 
-> A similar calculation occurs in __vm_enough_memory() in mm/mmap.c.
-> 
-> Also, every vm statistic which depends on 'totalram_pages' will render
-> confusing values, as if system were 'missing' some part of its memory.
+a candidate fix:
 
-Is this bug serious enough to justify backporting the fix into -stable
-kernels?
+http://git.kernel.org/?p=linux/kernel/git/mason/btrfs-unstable.git;a=commit;h=aa0467d8d2a00e75b2bb6a56a4ee6d70c5d1928f
 
+"
+ With Linus' tree, today's linux-next build (powercp ppc64_defconfig)
+ produced this warning:
+
+ fs/btrfs/delayed-inode.c: In function 'btrfs_delayed_update_inode':
+ fs/btrfs/delayed-inode.c:1598:6: warning: 'ret' may be used
+ uninitialized in this function
+ Introduced by commit 16cdcec736cd ("btrfs: implement delayed inode items
+ operation").
+
+ This fixes a bug in btrfs_update_inode(): if the returned value from
+ btrfs_delayed_update_inode is a nonzero garbage, inode stat data are not
+ updated and several call paths may hit a BUG_ON or fail with strange
+ code.
+"
+
+if you can reproduce it reliably, add this patch on top of the delayed inodes.
+
+
+
+On Thu, Jun 09, 2011 at 03:52:43PM -0600, Jim Schutt wrote:
+> Hi,
+> 
+> I've run into the following BUG on 3.0-rcX kernels when
+> running mkcephfs:
+> 
+> Jun  9 15:14:50 an1 [  299.446615] ------------[ cut here ]------------
+> Jun  9 15:14:50 an1 [  299.447357] kernel BUG at fs/btrfs/ioctl.c:432!
+
+ioctl.c:
+ 431         ret = btrfs_update_inode(trans, root, dir);
+ 432         BUG_ON(ret);
+
+> Jun  9 15:14:50 an1 [  299.447357] RSP: 0018:ffff88021b163c48  EFLAGS: 00010206
+> Jun  9 15:14:50 an1 [  299.447357] RAX: 0000000019b201a0 RBX: ffff88022402d800 RCX: ffff88019206c028
+                                          ^^^^^^^^^^^^^^^^
+ret, which seems to contain value of delayed_node from previous return value
+(deduced from assembly):
+
+delayed-node.c:
+1600         delayed_node = btrfs_get_or_create_delayed_node(inode);
+1601         if (IS_ERR(delayed_node))
+1602                 return PTR_ERR(delayed_node);
+
+
+> Please let me know what other information I can provide, or
+> any testing I can do, that will help to resolve this issue.
+
+thanks, I think the stacktrace contains everything important. I was trying to
+trigger the bugon myself when the report arrived, but did not succeed. the
+issue is quite recent and seeing this report was a "cache" hit :)
+
+Note: there are two more possibilities to hit the bugon in the ioctl: ENOMEM
+and ENOENT being retunred from btrfs_update_inode, but the symptoms fit the
+case described above.
+
+
+david
