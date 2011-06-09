@@ -1,81 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757677Ab1FINGv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 09:06:51 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33269 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757584Ab1FINGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 09:06:50 -0400
-Date: Thu, 9 Jun 2011 13:06:37 GMT
-From: tip-bot for Ralf Baechle <ralf@linux-mips.org>
-Message-ID: <tip-36af1b461293e838d6f47edd6f59f0beac222600@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        ralf@linux-mips.org, mattst88@gmail.com, ink@jurassic.park.msu.ru,
-        tglx@linutronix.de, rth@twiddle.net
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, mattst88@gmail.com, ink@jurassic.park.msu.ru,
-        tglx@linutronix.de, rth@twiddle.net
-In-Reply-To: <20110601180610.608083130@duck.linux-mips.net>
-References: <20110601180610.608083130@duck.linux-mips.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/cleanup] alpha: i8253: Cleanup remaining users of i8253pit.h
-Git-Commit-ID: 36af1b461293e838d6f47edd6f59f0beac222600
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Jun 2011 13:06:37 +0000 (UTC)
+	id S1757906Ab1FINOn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 09:14:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39542 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757364Ab1FINOm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 09:14:42 -0400
+Message-Id: <20110609130647.937204592@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Thu, 09 Jun 2011 15:06:47 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, efault@gmx.de,
+        Arne Jansen <lists@die-jansens.de>
+Subject: [PATCH 0/3] printk: Remove lockdep_off() and wakeups
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  36af1b461293e838d6f47edd6f59f0beac222600
-Gitweb:     http://git.kernel.org/tip/36af1b461293e838d6f47edd6f59f0beac222600
-Author:     Ralf Baechle <ralf@linux-mips.org>
-AuthorDate: Wed, 1 Jun 2011 19:05:04 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 9 Jun 2011 15:01:39 +0200
+These three patches rework printk() to remove the lockdep_off() hackery and
+remove the need for printk() to do wakeups, which should make it much more
+reliable in various contexts.
 
-alpha: i8253: Cleanup remaining users of i8253pit.h
+The first patch is already in -tip, the others are not. Ingo reported some
+problems with #2, but I've been unable to reproduce so far.
 
-The Alpha <asm/i8253pit.h> header is empty so this inclusion can just be
-removed.
+The third patch has the semaphore trickery in and keeps it private to printk.c
+as per Thomas' request.
 
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Link: http://lkml.kernel.org/r/20110601180610.608083130@duck.linux-mips.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+A kernel with all three applied and lockdep enabled seems to have no problem
+booting.
 
----
- arch/alpha/kernel/sys_ruffian.c |    1 -
- arch/alpha/kernel/time.c        |    1 -
- 2 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/arch/alpha/kernel/sys_ruffian.c b/arch/alpha/kernel/sys_ruffian.c
-index 8de1046..f33648e 100644
---- a/arch/alpha/kernel/sys_ruffian.c
-+++ b/arch/alpha/kernel/sys_ruffian.c
-@@ -26,7 +26,6 @@
- #include <asm/pgtable.h>
- #include <asm/core_cia.h>
- #include <asm/tlbflush.h>
--#include <asm/8253pit.h>
- 
- #include "proto.h"
- #include "irq_impl.h"
-diff --git a/arch/alpha/kernel/time.c b/arch/alpha/kernel/time.c
-index 818e74e..de406c7 100644
---- a/arch/alpha/kernel/time.c
-+++ b/arch/alpha/kernel/time.c
-@@ -46,7 +46,6 @@
- #include <asm/uaccess.h>
- #include <asm/io.h>
- #include <asm/hwrpb.h>
--#include <asm/8253pit.h>
- #include <asm/rtc.h>
- 
- #include <linux/mc146818rtc.h>
