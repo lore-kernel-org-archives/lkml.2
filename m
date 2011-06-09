@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958Ab1FIJTq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 05:19:46 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37326 "EHLO mx1.suse.de"
+	id S1753956Ab1FIJUH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 05:20:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37340 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753993Ab1FIJTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 05:19:44 -0400
-Date: Thu, 09 Jun 2011 11:19:41 +0200
-Message-ID: <s5hfwnjxsya.wl%tiwai@suse.de>
+	id S1751368Ab1FIJUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 05:20:05 -0400
+Date: Thu, 09 Jun 2011 11:20:04 +0200
+Message-ID: <s5hei33xsxn.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Michal Hocko <mhocko@suse.cz>
 Cc: LKML <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
 Subject: Re: [alsa-devel] Headphone output doesn't work with 3.0.0-rc* anymore
-In-Reply-To: <20110609085616.GA4207@tiehlicka.suse.cz>
+In-Reply-To: <20110609090607.GB4207@tiehlicka.suse.cz>
 References: <20110607180522.GA4004@tiehlicka.suse.cz>
 	<s5hy61cxqcz.wl%tiwai@suse.de>
 	<20110608174855.GA4138@tiehlicka.suse.cz>
 	<s5hr573y1rl.wl%tiwai@suse.de>
 	<20110609085616.GA4207@tiehlicka.suse.cz>
+	<20110609090607.GB4207@tiehlicka.suse.cz>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -27,77 +28,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 9 Jun 2011 10:56:16 +0200,
+At Thu, 9 Jun 2011 11:06:07 +0200,
 Michal Hocko wrote:
 > 
-> On Thu 09-06-11 08:09:18, Takashi Iwai wrote:
-> > At Wed, 8 Jun 2011 19:48:55 +0200,
-> > Michal Hocko wrote:
-> > > 
-> > > On Wed 08-06-11 18:03:24, Takashi Iwai wrote:
-> > > > At Tue, 7 Jun 2011 20:05:58 +0200,
-> > > > Michal Hocko wrote:
-> > > > > 
-> > > > > Hi,
-> > > > > before 3.0.0-rc1, when I plugged anything into headphone output of my
-> > > > > laptop, speakers were disabled and the sound has been routed to the
-> > > > > headphone output. This doesn't seem to work anymore starting with
-> > > > > 3.0.0-rc1. Speakers stay on even if I plug something to the headphone
-> > > > > output.
-> > > > > Is this a bug or a new behavior that userspace has to cope
-> > > > > with?
-> > > > > 
-> > > > > I am sorry for the lack of information but I have no idea what to
-> > > > > provide.
-> > > > 
-> > > > Please give alsa-info.sh output at best.  Run it with --no-upload
-> > > > option, and attach the output file.  This will contain most of
-> > > > necessary information.
-> > > 
-> > > See attached. I have added also .39 output where things work as expected
-> > > (just in case it could be useful).
+> On Thu 09-06-11 10:56:16, Michal Hocko wrote:
+> > On Thu 09-06-11 08:09:18, Takashi Iwai wrote:
+> > > At Wed, 8 Jun 2011 19:48:55 +0200,
+> [...]
+> > > Thanks, that's helpful.
+> > > As a quirk solution, could you try to pass model=auto option to
+> > > snd-hda-intel module?
 > > 
-> > Thanks, that's helpful.
-> > As a quirk solution, could you try to pass model=auto option to
-> > snd-hda-intel module?
+> > Headphones work now but speakers are quite... I have tried to play
+> > with Headphone and Speaker controls in alsamixer but no changes.
+> > 
+> > Here is what I get in logs when the module is loaded:
+> > [ 5320.360277] HDA Intel 0000:00:1b.0: PCI INT A disabled
+> > [ 5326.920247] HDA Intel 0000:00:1b.0: power state changed by ACPI to D0
+> > [ 5326.920262] HDA Intel 0000:00:1b.0: power state changed by ACPI to D0
+> > [ 5326.920279] HDA Intel 0000:00:1b.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
+> > [ 5326.920375] HDA Intel 0000:00:1b.0: irq 42 for MSI/MSI-X
+> > [ 5326.920405] HDA Intel 0000:00:1b.0: setting latency timer to 64
+> > [ 5326.981085] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input18
+> > [ 5326.981262] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input19
+> > [ 5326.987934] input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input20
+> > 
+> > [maybe not important but input numbers are increasing for every new load]
+> > 
+> > There is another strange thing. After I stop mplayer and wait for some
+> > time (~1min) I can hear a "click" sound and then there is no sound at
+> > all... If I start mplayer in the meantime it just works...
+> > If I try to remove the module and load it again then things work and stop
+> > working after first playback again.
 > 
-> Headphones work now but speakers are quite... I have tried to play
-> with Headphone and Speaker controls in alsamixer but no changes.
-> 
-> Here is what I get in logs when the module is loaded:
-> [ 5320.360277] HDA Intel 0000:00:1b.0: PCI INT A disabled
-> [ 5326.920247] HDA Intel 0000:00:1b.0: power state changed by ACPI to D0
-> [ 5326.920262] HDA Intel 0000:00:1b.0: power state changed by ACPI to D0
-> [ 5326.920279] HDA Intel 0000:00:1b.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-> [ 5326.920375] HDA Intel 0000:00:1b.0: irq 42 for MSI/MSI-X
-> [ 5326.920405] HDA Intel 0000:00:1b.0: setting latency timer to 64
-> [ 5326.981085] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input18
-> [ 5326.981262] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input19
-> [ 5326.987934] input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input20
-> 
-> [maybe not important but input numbers are increasing for every new load]
+> And I have just found out that I do not have to start any playback to
+> see this. It is sufficient to load the module and wait a minute and
+> there is no sound at all (both from speakers or headphones).
 
-No bug, it's the implementation issue of input layer :)
+OK, could you give alsa-info.sh outputs at both working and
+non-working states?
 
-> There is another strange thing. After I stop mplayer and wait for some
-> time (~1min) I can hear a "click" sound and then there is no sound at
-> all... If I start mplayer in the meantime it just works...
 
-This is possibly the powersave.  It means that the resume doesn't work
-properly after powersave.
-
-> If I try to remove the module and load it again then things work and stop
-> working after first playback again.
-> 
-> > You may need to adjust the mixer after changing
-> > this, but it should provide the full (even better) functionality.
-> > It'll support also the auto-mic jack switching.
-> 
-> $ amixer | grep -i "auto.*mic"
-> What is the control to look at?
-
-There is no control.  Simply plugging the mic jack will switch the
-recording source automatically.
-
+thanks,
 
 Takashi
