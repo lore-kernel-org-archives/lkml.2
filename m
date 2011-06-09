@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419Ab1FIFZj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 01:25:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49665 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895Ab1FIFZi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 01:25:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=DJm8nOQeWbZJToei25u2cLT0mcgN0GQym3lb1/aW+mHi6fo/PwaNiadSRm9ZiDmlQ2
-         HhkBnEfUAyu5isbDdXrf8N/K8vMkh6+kUurQ/400WBsFSV9JN5194lU9+gubYvqCZyM1
-         k3pOr/JnsyGeTQqNynt7WVGQhKFsTLGINpwgA=
-Subject: Re: Change in functionality of futex() system call.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: George Spelvin <linux@horizon.com>
-Cc: luto@mit.edu, david@rgmadvisors.com, dvhart@linux.intel.com,
-        kyle@moffetthome.net, linux-kernel@vger.kernel.org
-In-Reply-To: <20110609044354.1171.qmail@science.horizon.com>
-References: <20110609044354.1171.qmail@science.horizon.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Jun 2011 07:25:33 +0200
-Message-ID: <1307597133.3980.65.camel@edumazet-laptop>
+	id S1751855Ab1FIFjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 01:39:14 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58883 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750895Ab1FIFjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 01:39:12 -0400
+Date: Thu, 9 Jun 2011 15:39:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg K-H <greg@kroah.com>
+Cc: David Miller <davem@davemloft.net>,
+        "<netdev@vger.kernel.org>" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: linux-next: build failure after merge of the net tree
+Message-Id: <20110609153904.e602b317.sfr@canb.auug.org.au>
+In-Reply-To: <7CA9E653-DABC-470C-BCA6-905D6EBF9283@kroah.com>
+References: <20110609145657.96fae0d0.sfr@canb.auug.org.au>
+	<7CA9E653-DABC-470C-BCA6-905D6EBF9283@kroah.com>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__9_Jun_2011_15_39_04_+1000_6kpAXfJ2tYt0zzV1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 09 juin 2011 à 00:43 -0400, George Spelvin a écrit :
+--Signature=_Thu__9_Jun_2011_15_39_04_+1000_6kpAXfJ2tYt0zzV1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Just for example, consider a circular buffer that a few (trusted)
-> processes can write to, but many (less trusted) can read.  Obviously,
-> being able to sleep on the head pointer is useful.
+Hi Greg,
 
+On Wed, 8 Jun 2011 22:17:55 -0700 Greg K-H <greg@kroah.com> wrote:
+>
+> Sorry, this is something that Linus asked for and will be going to him
+> tomorrow with the rest of the staging-linus branch.
 
-If its useful, then it needs a futex extension (and this must be
-emulated on old kernels without this extension)
+Yeah, I remember the discussion, just not a conclusion.  At least the
+x86_64 allmodconfig builds worked before I merged the net tree, so that is
+something.
 
-Remember futex_wake() call would just have to wakeup _all_ threads
-instead of one, if kernel lacks this function.
+The powerpc allyesconfig build is going to be interesting :-(
 
-If you dont trust futex_wait() users, just use futex_wake(ALL)
+You might like to check the build results at
+http://kisskb.ellerman.id.au/kisskb/branch/9/ sometime tomorrow.  Or
+point your janitors at it :-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Its should not be a consequence of a previous (unrelated) patch, it
-should be an added functionality, dully documented.
+--Signature=_Thu__9_Jun_2011_15_39_04_+1000_6kpAXfJ2tYt0zzV1
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJN8Fx4AAoJEDMEi1NhKgbsqtQH/2q4/o65CQRamoGjKezeBIzo
+AvQk+kdnGwpdoquIa1/BS6CzFiNV8xZkiO1DK4JyuRpLo/jOd4YoQJND3PZgH0ls
+S0DviiVrqzh5nZFKf4u1hPayt5nMTpVvBCgpo3XueRRIcHnKpyMFAOEDv2Lm14FZ
+y25u1AovA1AIsSBbQ3KaJprfa2ffVMVlO4JajVvU+78W7831/GrRE0cmZShhfarZ
+aBHPNBO1a4uS6Pg6NMK6UtkiZhuvufZBRu5Pybq2pWYC8ndgcyvkFy4wqbM6JBPw
+ucaEASj/ssiWNlD7vR1C/DH8rSWqq/+u7lhhimOCHRoi88C0iBje+JZOfXSi5Ks=
+=omz4
+-----END PGP SIGNATURE-----
 
+--Signature=_Thu__9_Jun_2011_15_39_04_+1000_6kpAXfJ2tYt0zzV1--
