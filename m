@@ -1,118 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab1FIXPG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 19:15:06 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:52282 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754413Ab1FIXPC (ORCPT
+	id S1755897Ab1FIXbK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 19:31:10 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:31197 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab1FIXbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 19:15:02 -0400
-Date: Thu, 09 Jun 2011 16:14:57 -0700 (PDT)
-Message-Id: <20110609.161457.1118202817700762427.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 09 Jun 2011 16:14:58 -0700 (PDT)
+	Thu, 9 Jun 2011 19:31:07 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6372"; a="96773526"
+From: David Brown <davidb@codeaurora.org>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Jeff Ohlstein <johlstei@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, stable@kernel.org
+Subject: Re: [PATCH] msm: timer: compensate for timer shift in msm_read_timer_count
+References: <1307591042-2369-1-git-send-email-johlstei@codeaurora.org>
+	<1307626910.16418.1.camel@m0nster>
+Date: Thu, 09 Jun 2011 16:31:06 -0700
+In-Reply-To: <1307626910.16418.1.camel@m0nster> (Daniel Walker's message of
+	"Thu, 09 Jun 2011 06:41:50 -0700")
+Message-ID: <8ya1uz2inut.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 09 2011, Daniel Walker wrote:
 
-1) Fix sun4d regressions added by genirq conversion, from
-   Kjetil Oftedal.
+>> diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+>> index 38b95e9..b3579fe 100644
+>> --- a/arch/arm/mach-msm/timer.c
+>> +++ b/arch/arm/mach-msm/timer.c
+>> @@ -100,7 +100,7 @@ static cycle_t msm_read_timer_count(struct clocksource *cs)
+>>  {
+>>  	struct msm_clock *clk = container_of(cs, struct msm_clock, clocksource);
+>>  
+>> -	return readl(clk->global_counter);
+>> +	return readl(clk->global_counter) >> clk->shift;
+>>  }
+>
+> Could you comment in the code with something explaining what the shift
+> is doing.
 
-2) In the fix for sparc32 IPIs, the traphandler tests interrupt
-   numbers with an off-by-one errors.  From Daniel Hellstrom.
+Probably best to describe this near msm_clock's definition (or
+MSM_DGT_SHIFT), since it is a bit unclear what these values are.
+A good (but short) description of how the shifts and even why.
 
-3) Reinstate LEON irq intialization, mistekenly removed during
-   genirc conversion.  From Daniel Hellstrom.
+The comment shouldn't be in the function body (CodingStyle, chapter 8).
 
-4) Add PCI support for LEON.  Also from Daniel Hellstrom.
+David
 
-Please pull, thanks a lot!
-
-The following changes since commit dfb863a714b81848504d3b73ca0ecae90b91cbc0:
-
-  Merge branch 'merge' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc (2011-06-09 13:50:25 -0700)
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-2.6.git master
-
-Daniel Hellstrom (5):
-      sparc32: added CONFIG_PCIC_PCI Kconfig setting
-      sparc32,leon: added LEON-common low-level PCI routines
-      sparc32,leon: add GRPCI2 PCI Host driver
-      sparc32, sun4m: bugfix in SMP IPI traphandler
-      sparc32, leon: bugfix in LEON SMP interrupt init
-
-David S. Miller (1):
-      sparc: PCIC_PCI needs SPARC32 dependency
-
-Geert Uytterhoeven (1):
-      sparc: Do not select GENERIC_HARDIRQS_NO_DEPRECATED
-
-Joe Perches (1):
-      sparc: Remove unnecessary semicolons
-
-oftedal (3):
-      Restructure sun4d_build_device_irq so that timer interrupts can be allocated
-      Do not skip interrupt sources in sun4d interrupt handler and acknowledge interrupts correctly
-      Add support for allocating irqs for bootbus devices
-
- arch/sparc/Kconfig                  |   18 +-
- arch/sparc/include/asm/floppy_32.h  |    8 +-
- arch/sparc/include/asm/floppy_64.h  |    4 +-
- arch/sparc/include/asm/leon.h       |    3 +
- arch/sparc/include/asm/leon_pci.h   |   21 +
- arch/sparc/include/asm/pci_32.h     |   24 +
- arch/sparc/include/asm/pcic.h       |    2 +-
- arch/sparc/include/asm/system_32.h  |    2 +-
- arch/sparc/include/asm/system_64.h  |    2 +-
- arch/sparc/kernel/Makefile          |    4 +-
- arch/sparc/kernel/apc.c             |    2 +-
- arch/sparc/kernel/auxio_32.c        |    2 +-
- arch/sparc/kernel/chmc.c            |    2 +-
- arch/sparc/kernel/entry.S           |    8 +-
- arch/sparc/kernel/leon_kernel.c     |   31 ++
- arch/sparc/kernel/leon_pci.c        |  253 ++++++++++
- arch/sparc/kernel/leon_pci_grpci2.c |  897 +++++++++++++++++++++++++++++++++++
- arch/sparc/kernel/module.c          |    2 +-
- arch/sparc/kernel/pci_common.c      |    4 +-
- arch/sparc/kernel/pci_schizo.c      |    6 +-
- arch/sparc/kernel/prom_irqtrans.c   |    2 +-
- arch/sparc/kernel/psycho_common.c   |    2 +-
- arch/sparc/kernel/sbus.c            |    4 +-
- arch/sparc/kernel/setup_32.c        |    2 +-
- arch/sparc/kernel/setup_64.c        |    2 +-
- arch/sparc/kernel/smp_32.c          |    6 +-
- arch/sparc/kernel/sun4d_irq.c       |  126 ++++--
- arch/sparc/kernel/sys_sparc32.c     |    2 +-
- arch/sparc/kernel/sys_sparc_64.c    |    6 +-
- arch/sparc/kernel/time_64.c         |    2 +-
- arch/sparc/kernel/traps_64.c        |    2 +-
- arch/sparc/kernel/unaligned_64.c    |    6 +-
- arch/sparc/kernel/us2e_cpufreq.c    |    6 +-
- arch/sparc/kernel/us3_cpufreq.c     |    4 +-
- arch/sparc/kernel/viohs.c           |    2 +-
- arch/sparc/kernel/visemul.c         |   14 +-
- arch/sparc/mm/fault_32.c            |    2 +-
- arch/sparc/mm/init_32.c             |    2 +-
- arch/sparc/mm/init_64.c             |    6 +-
- arch/sparc/mm/srmmu.c               |    4 +-
- arch/sparc/mm/sun4c.c               |    8 +-
- arch/sparc/mm/tsb.c                 |    6 +-
- arch/sparc/prom/console_32.c        |    2 +-
- arch/sparc/prom/init_32.c           |    2 +-
- arch/sparc/prom/mp.c                |    2 +-
- drivers/pci/Makefile                |    1 +
- 46 files changed, 1401 insertions(+), 117 deletions(-)
- create mode 100644 arch/sparc/include/asm/leon_pci.h
- create mode 100644 arch/sparc/kernel/leon_pci.c
- create mode 100644 arch/sparc/kernel/leon_pci_grpci2.c
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
