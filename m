@@ -1,103 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab1FIMf2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 08:35:28 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:39073 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756616Ab1FIMf1 (ORCPT
+	id S1757561Ab1FIMjn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 08:39:43 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58814 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756616Ab1FIMjm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 08:35:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fwUCjS7eaNiNKmt+dGZUw+C+2FUK/3jZibVoO2g84x4E66W5JF+d+cIF4SFvktG/E3
-         NpBaCsXl7Am1px91SLIy8Ih1fe7/Pc0gABmL/yG9eaR76LPf7z3FEDslhEMVHLTyXBHb
-         0WdemyV467KjEIdFpUgKDydRaU8z/ywOPVYos=
-Date: Thu, 9 Jun 2011 14:35:22 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL] perf update
-Message-ID: <20110609123519.GF25771@somewhere.redhat.com>
-References: <1307458585-24078-1-git-send-email-fweisbec@gmail.com>
- <1307610813.3941.23.camel@twins>
- <20110609091924.GA8188@elte.hu>
- <20110609114313.GA15332@elte.hu>
+	Thu, 9 Jun 2011 08:39:42 -0400
+From: "Raju, Sundaram" <sundaram@ti.com>
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>
+Date: Thu, 9 Jun 2011 18:09:28 +0530
+Subject: [RFC] dmaengine: add new api for preparing simple slave transfer
+Thread-Topic: [RFC] dmaengine: add new api for preparing simple slave
+ transfer
+Thread-Index: AcwmokXkLC9x6sWtS12fwG8O5fG5jA==
+Message-ID: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2DED@dbde02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110609114313.GA15332@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 09, 2011 at 01:43:13PM +0200, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> > 
-> > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > 
-> > > On Tue, 2011-06-07 at 16:56 +0200, Frederic Weisbecker wrote:
-> > > 
-> > > > Frederic Weisbecker (1):
-> > > >       perf: Split up buffer handling from core code
-> > > > 
-> > > > 
-> > > >  kernel/events/Makefile   |    2 +-
-> > > >  kernel/events/buffer.c   |  400 ++++++++++++++++++++++++++++++++++++++++
-> > > >  kernel/events/core.c     |  458 ++--------------------------------------------
-> > > >  kernel/events/internal.h |   70 +++++++
-> > > >  4 files changed, 487 insertions(+), 443 deletions(-)
-> > > 
-> > > Looks about right.
-> > > 
-> > > Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > 
-> > thanks, i'll pull it it and test it.
-> 
-> Note, i ended up applying it by hand:
-> 
->  - fixed a build error,
-> 
->  - streamlined the renaming: we really want this to be ring_buffer.c 
->    (most of the complexity comes from this not being a simple buffer 
->    but a ring-buffer)
-> 
->  - i streamlined the naming around it: struct ring_buffer 
->    internalized via internal.h (it does not clash with ftrace's 
->    ring-buffer)
-> 
-> It all looks and reads much nicer now, but please double check the 
-> commit as well :-)
-> 
-> One other rename i'd like to do is:
-> 
->    struct perf_output_handle		=> struct rb_handle
-> 
->    perf_output_begin()			=> rb_open()
->    perf_output_copy()			=> rb_write()
->    perf_output_sample()			=> rb_write_sample()
->    perf_output_end()			=> rb_close()
-> 
-> Which really makes it a lot more apparent that it's a regular 
-> input/output flow defined over the ring-buffer!
-> 
-> I can do this if this is fine with everyone. There will be no change 
-> in functionality.
+SDMA and EDMA are TI SoC specific DMA controllers. Their drivers have been maintained in the respective SoC folders till now. 
+arch/arm/plat-omap/dma.c
+arch/arm/mach-davinci/dma.c
 
-I feel more comfortable if we keep the perf_outpout_*() naming, having some
-global rb_* would pollute the global namespace.
+I have gone through the existing offload engine (DMA) drivers in drivers/dma which do slave transfers. I would like to move SDMA and EDMA also to dmaengine framework.
 
-perf_rb_* namespace would be fine as well.
+I believe that even though the dmaengine framework addresses and supports most of the required use cases of a client driver to a DMA controller, some extensions are required in it to make it still more generic.
 
-Thanks.
+Current framework contains two APIs to prepare for slave transfers: 
+        struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
+                struct dma_chan *chan, struct scatterlist *sgl,
+                unsigned int sg_len, enum dma_data_direction direction,
+                unsigned long flags);
 
-> 
-> Thanks,
-> 
-> 	Ingo
+        struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+                struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+                size_t period_len, enum dma_data_direction direction);
+
+and one control API.
+        int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+                unsigned long arg);
+
+A simple single buffer transfer (i.e. non sg transfer) can be done only as a trivial case of the device_prep_slave_sg API. The client driver is expected to prepare a sg list and provide to the dmaengine API for that single buffer also. 
+
+In a slave transfer, the client has to define all the buffer related attributes and the peripheral related attributes. 
+
+The above 2 APIs in the dmaengine framework expect all the peripheral/slave related attributes to be filled in the dma_slave_config data structure. 
+struct dma_slave_config {
+        enum dma_data_direction direction;
+        dma_addr_t src_addr;
+        dma_addr_t dst_addr;
+        enum dma_slave_buswidth src_addr_width;
+        enum dma_slave_buswidth dst_addr_width;
+        u32 src_maxburst;
+        u32 dst_maxburst;
+};
+
+This data structure is passed to the offload engine via the dma_chan data structure in its private pointer.
+
+Now coming to the buffer related attributes, sg list is a nice way to represent a disjoint buffer; all the offload engines in drivers/dma create a descriptor for each of the contiguous chunk in the sg list buffer and pass it to the controller.
+
+But many a times a client may want to transfer from a single buffer to the peripheral and most of the DMA controllers have the capability to transfer data in chunks/frames directly at a stretch. All the attributes of a buffer, which are required for the transfer can be programmed in single descriptor and submitted to the DMA controller.
+
+So I think the slave transfer API must also have a provision to pass the buffer configuration. The buffer attributes have to be passed directly as an argument in the prepare API, unlike dma_slave_config as they will be different for each buffer that is going to be transferred.  
+
+It is a stretch and impractical to use a highly segmented buffer (like the one described below) in a sglist. This is because sg list itself is a representation of a disjoint buffer collection in terms of smaller buffers. Now then each of these smaller buffers can have different buffer configurations (like described below) and we are not going to go down that road now.
+
+Hence it makes sense to pass these buffer attributes for only a single buffer transfer and not a sg list. This can be done by 
+OPTION #1
+1. Adding a pointer of the dma_buffer_config data structure in the device_prep_slave_sg API
+2. Ensuring that it will be ignored if a sg list passed. Only when a single buffer is passed (in the sg list) then this buffer configuration will be used. 
+3. Any client that wants to do a sg transfer can simply ignore this buffer configuration and pass NULL.
+The main disadvantage of this option is that all the existing drivers need to be updated since the API signature is changed.
+
+Now it might even be better to have a separate API for non sg transfers. 
+This is OPTION #2
+Advantages of this option are 
+1. No change required in the existing drivers that use device_prep_slave_sg API. 
+2. If any offload engine wants to prepare a simple buffer transfer differently and not as a trivial case of a sg list, this will be useful. I know this can be done using 2 different implementations inside the device_prep_slave_sg itself, but I think it's cleaner to have different APIs.
+ 
+I have provided the generic buffer configuration I can think of, here and also a new API definition, if it makes sense to have one.
+ 
+This buffer configuration might not be completely generic, and hence I ask all of you to please provide comments to improve it.
+
+Generic buffer description: 
+A generic buffer can be split into number of frames which contain number of chunks inside them. The frames need not be contiguous, nor do the chunks inside a frame. 
+
+	-------------------------------------------------------------------
+	| Chunk 0 |ICG| Chunk 1 |ICG| ... |ICG| Chunk n |	Frame 0
+	-------------------------------------------------------------------
+	|               	Inter Frame Gap			    |	
+	-------------------------------------------------------------------
+	| Chunk 0 |ICG| Chunk 1 |ICG| ... |ICG| Chunk n |	Frame 1
+	-------------------------------------------------------------------
+	|               	Inter Frame Gap			    |	
+	-------------------------------------------------------------------
+	|               		........				    |	
+	-------------------------------------------------------------------
+	|               	Inter Frame Gap			    |	
+	-------------------------------------------------------------------
+	| Chunk 0 |ICG| Chunk 1 |ICG| ... |ICG| Chunk n |	Frame m
+	-------------------------------------------------------------------
+
+Note: ICG = Inter Chunk Gap.
+
+struct dma_buffer_config {
+        u32 chunk_size;		/* number of bytes in a chunk */
+        u32 frame_size;		/* number of chunks in a frame */ 
+    /* u32 n_frames;		     number of frames in the buffer */
+        u32 inter_chunk_gap;	/* number of bytes between end of a chunk and the start 					of the next chunk */
+        u32 inter_frame_gap;	/* number of bytes between end of a frame and the start 					of the next frame */
+        bool sync_rate;		/* 0 - a sync event is required from the peripheral to 					transfer a chunk
+				    1 - a sync event is required from the peripheral to 					transfer a frame */
+};
+
+The patch to add a new API for single buffer transfers alone:
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+@@ -491,6 +492,10 @@ struct dma_device {
+                struct dma_chan *chan, struct scatterlist *sgl,
+                unsigned int sg_len, enum dma_data_direction direction,
+                unsigned long flags);
++       struct dma_async_tx_descriptor *(*device_prep_slave)(
++               struct dma_chan *chan, dma_addr_t buf_addr,
++               unsigned int buf_len, struct dma_buffer_config *buf_prop,
++               enum dma_data_direction direction, unsigned long flags);
+        struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+                struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+                size_t period_len, enum dma_data_direction direction);
+
+The number of frames (n_frames) can always be determined using all other values in the dma_buffer_config along with the buffer length (buf_len) passed in the API.
+n_frames = buf_len / (chunk_sixe * frame_size);
+
+Regards,
+Sundaram
