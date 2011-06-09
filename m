@@ -1,142 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757261Ab1FILJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 07:09:53 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33000 "EHLO hera.kernel.org"
+	id S1757190Ab1FILOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 07:14:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36506 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757222Ab1FILJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 07:09:44 -0400
-From: GuanXuetao <gxt@mprc.pku.edu.cn>
-To: arnd@arndb.de
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, greg@kroah.com,
-        Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH] unicore32: fix build error for find bitops
-Date: Thu,  9 Jun 2011 11:09:12 +0000
-Message-Id: <1307617752-23426-1-git-send-email-gxt@mprc.pku.edu.cn>
-X-Mailer: git-send-email 1.7.5.4
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Jun 2011 11:09:32 +0000 (UTC)
+	id S1753768Ab1FILOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 07:14:07 -0400
+Date: Thu, 9 Jun 2011 13:14:01 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
+Subject: Re: [alsa-devel] Headphone output doesn't work with 3.0.0-rc* anymore
+Message-ID: <20110609111401.GA3994@tiehlicka.suse.cz>
+References: <20110607180522.GA4004@tiehlicka.suse.cz>
+ <s5hy61cxqcz.wl%tiwai@suse.de>
+ <20110608174855.GA4138@tiehlicka.suse.cz>
+ <s5hr573y1rl.wl%tiwai@suse.de>
+ <20110609085616.GA4207@tiehlicka.suse.cz>
+ <20110609090607.GB4207@tiehlicka.suse.cz>
+ <s5hei33xsxn.wl%tiwai@suse.de>
+ <20110609092826.GC4207@tiehlicka.suse.cz>
+ <s5haadrxrsm.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5haadrxrsm.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+On Thu 09-06-11 11:44:41, Takashi Iwai wrote:
+> At Thu, 9 Jun 2011 11:28:26 +0200,
+> Michal Hocko wrote:
+> > 
+> > [1  <text/plain; us-ascii (7bit)>]
+> > On Thu 09-06-11 11:20:04, Takashi Iwai wrote:
+> > > At Thu, 9 Jun 2011 11:06:07 +0200,
+> > > Michal Hocko wrote:
+> > > > 
+> > > > On Thu 09-06-11 10:56:16, Michal Hocko wrote:
+> > > > > On Thu 09-06-11 08:09:18, Takashi Iwai wrote:
+> > > > > > At Wed, 8 Jun 2011 19:48:55 +0200,
+> > > > [...]
+> > > > > > Thanks, that's helpful.
+> > > > > > As a quirk solution, could you try to pass model=auto option to
+> > > > > > snd-hda-intel module?
+> > > > > 
+> > > > > Headphones work now but speakers are quite... I have tried to play
+> > > > > with Headphone and Speaker controls in alsamixer but no changes.
+> > > > > 
+> > > > > Here is what I get in logs when the module is loaded:
+> > > > > [ 5320.360277] HDA Intel 0000:00:1b.0: PCI INT A disabled
+> > > > > [ 5326.920247] HDA Intel 0000:00:1b.0: power state changed by ACPI to D0
+> > > > > [ 5326.920262] HDA Intel 0000:00:1b.0: power state changed by ACPI to D0
+> > > > > [ 5326.920279] HDA Intel 0000:00:1b.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
+> > > > > [ 5326.920375] HDA Intel 0000:00:1b.0: irq 42 for MSI/MSI-X
+> > > > > [ 5326.920405] HDA Intel 0000:00:1b.0: setting latency timer to 64
+> > > > > [ 5326.981085] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input18
+> > > > > [ 5326.981262] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input19
+> > > > > [ 5326.987934] input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input20
+> > > > > 
+> > > > > [maybe not important but input numbers are increasing for every new load]
+> > > > > 
+> > > > > There is another strange thing. After I stop mplayer and wait for some
+> > > > > time (~1min) I can hear a "click" sound and then there is no sound at
+> > > > > all... If I start mplayer in the meantime it just works...
+> > > > > If I try to remove the module and load it again then things work and stop
+> > > > > working after first playback again.
+> > > > 
+> > > > And I have just found out that I do not have to start any playback to
+> > > > see this. It is sufficient to load the module and wait a minute and
+> > > > there is no sound at all (both from speakers or headphones).
+> > > 
+> > > OK, could you give alsa-info.sh outputs at both working and
+> > > non-working states?
+> > 
+> > Sure. Attached. The only change seems to be:
+> >  Node 0x02 [Audio Output] wcaps 0x11: Stereo
+> >    Device: name="ALC262 Analog", type="Audio", device=0
+> > -  Converter: stream=5, channel=0
+> > +  Converter: stream=0, channel=0
+> 
+> This is OK.  It shows that the converter was assigned once to this
+> stream when you played back a sound before power-save.
+> 
+> As long as the codec registers show the same value, it's not obviously
+> what went wrong.  The symptom sounds like a resume issue.  If so,
+> S3/S4 might show the same problem.
+> 
+> BTW, does my patch fix the problem when you load without model=auto?
 
-Remove the __uc32_ prefix in find bitops functions.
-see commit <19de85ef574c3a2182e3ccad9581805052f14946>
-  bitops: add #ifndef for each of find bitops
+I have just booted to the rc2 with the patch (https://lkml.org/lkml/2011/6/9/25)
+and it looks it didn't solve the problem. Playback works only from
+speakers when headphones are not plugged in - no sound if plugged in.
+See alsa-info.txt-fresh-boot. Same thing happens if I 
+modprobe -r snd-hda-intel and then load it again (without any parameters).
 
-Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
----
- arch/unicore32/include/asm/bitops.h |    6 ------
- arch/unicore32/kernel/ksyms.c       |    4 ++--
- arch/unicore32/lib/findbit.S        |   14 ++++++++------
- 3 files changed, 10 insertions(+), 14 deletions(-)
+> If yes, does the problem appear with it?  I.e. is the silence problem
+> specific to model=auto or not?
 
-diff --git a/arch/unicore32/include/asm/bitops.h b/arch/unicore32/include/asm/bitops.h
-index 1628a63..a9653f0 100644
---- a/arch/unicore32/include/asm/bitops.h
-+++ b/arch/unicore32/include/asm/bitops.h
-@@ -13,12 +13,6 @@
- #ifndef __UNICORE_BITOPS_H__
- #define __UNICORE_BITOPS_H__
- 
--#define find_next_bit		__uc32_find_next_bit
--#define find_next_zero_bit	__uc32_find_next_zero_bit
--
--#define find_first_bit		__uc32_find_first_bit
--#define find_first_zero_bit	__uc32_find_first_zero_bit
--
- #define _ASM_GENERIC_BITOPS_FLS_H_
- #define _ASM_GENERIC_BITOPS___FLS_H_
- #define _ASM_GENERIC_BITOPS_FFS_H_
-diff --git a/arch/unicore32/kernel/ksyms.c b/arch/unicore32/kernel/ksyms.c
-index a897080..d98bd81 100644
---- a/arch/unicore32/kernel/ksyms.c
-+++ b/arch/unicore32/kernel/ksyms.c
-@@ -24,8 +24,8 @@
- 
- #include "ksyms.h"
- 
--EXPORT_SYMBOL(__uc32_find_next_zero_bit);
--EXPORT_SYMBOL(__uc32_find_next_bit);
-+EXPORT_SYMBOL(find_next_zero_bit);
-+EXPORT_SYMBOL(find_next_bit);
- 
- EXPORT_SYMBOL(__backtrace);
- 
-diff --git a/arch/unicore32/lib/findbit.S b/arch/unicore32/lib/findbit.S
-index c360ce9..c777462 100644
---- a/arch/unicore32/lib/findbit.S
-+++ b/arch/unicore32/lib/findbit.S
-@@ -17,7 +17,7 @@
-  * Purpose  : Find a 'zero' bit
-  * Prototype: int find_first_zero_bit(void *addr, unsigned int maxbit);
-  */
--__uc32_find_first_zero_bit:
-+ENTRY(find_first_zero_bit)
- 		cxor.a	r1, #0
- 		beq	3f
- 		mov	r2, #0
-@@ -29,13 +29,14 @@ __uc32_find_first_zero_bit:
- 		bub	1b
- 3:		mov	r0, r1			@ no free bits
- 		mov	pc, lr
-+ENDPROC(find_first_zero_bit)
- 
- /*
-  * Purpose  : Find next 'zero' bit
-  * Prototype: int find_next_zero_bit
-  *		(void *addr, unsigned int maxbit, int offset)
-  */
--ENTRY(__uc32_find_next_zero_bit)
-+ENTRY(find_next_zero_bit)
- 		cxor.a	r1, #0
- 		beq	3b
- 		and.a	ip, r2, #7
-@@ -47,14 +48,14 @@ ENTRY(__uc32_find_next_zero_bit)
- 		or	r2, r2, #7		@ if zero, then no bits here
- 		add	r2, r2, #1		@ align bit pointer
- 		b	2b			@ loop for next bit
--ENDPROC(__uc32_find_next_zero_bit)
-+ENDPROC(find_next_zero_bit)
- 
- /*
-  * Purpose  : Find a 'one' bit
-  * Prototype: int find_first_bit
-  *		(const unsigned long *addr, unsigned int maxbit);
-  */
--__uc32_find_first_bit:
-+ENTRY(find_first_bit)
- 		cxor.a	r1, #0
- 		beq	3f
- 		mov	r2, #0
-@@ -66,13 +67,14 @@ __uc32_find_first_bit:
- 		bub	1b
- 3:		mov	r0, r1			@ no free bits
- 		mov	pc, lr
-+ENDPROC(find_first_bit)
- 
- /*
-  * Purpose  : Find next 'one' bit
-  * Prototype: int find_next_zero_bit
-  *		(void *addr, unsigned int maxbit, int offset)
-  */
--ENTRY(__uc32_find_next_bit)
-+ENTRY(find_next_bit)
- 		cxor.a	r1, #0
- 		beq	3b
- 		and.a	ip, r2, #7
-@@ -83,7 +85,7 @@ ENTRY(__uc32_find_next_bit)
- 		or	r2, r2, #7		@ if zero, then no bits here
- 		add	r2, r2, #1		@ align bit pointer
- 		b	2b			@ loop for next bit
--ENDPROC(__uc32_find_next_bit)
-+ENDPROC(find_next_bit)
- 
- /*
-  * One or more bits in the LSB of r3 are assumed to be set.
+If I try to modproble with model=auto I get headphones working but not
+output from speakers. Have a look at alsa-info.txt-modprobe_auto.
+
 -- 
-1.7.5.4
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
