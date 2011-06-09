@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab1FIJiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 05:38:13 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:52301 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335Ab1FIJiM (ORCPT
+	id S1753515Ab1FIJoB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 05:44:01 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:53976 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752247Ab1FIJn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 05:38:12 -0400
+	Thu, 9 Jun 2011 05:43:58 -0400
+Date: Thu, 9 Jun 2011 12:43:45 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tatyana Brokhman <tlinder@codeaurora.org>
+Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        balbi@ti.com, ablay@codeaurora.org,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH/RESEND v15 1/10] usb: Add usb_endpoint_descriptor to be
+ part of the struct usb_ep
+Message-ID: <20110609094343.GB13552@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1307360469-29120-1-git-send-email-tlinder@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <4DF06E29.4010807@st.com>
-References: <4DF06E29.4010807@st.com>
-Date: Thu, 9 Jun 2011 11:38:11 +0200
-Message-ID: <BANLkTik9kZjJs5H2kvM+xAtd_CR5NA0dDw@mail.gmail.com>
-Subject: Re: Why move all map_sg/unmap_sg for slave channel to its client?
-From: Linus Walleij <linus.walleij@linaro.org>
-To: viresh kumar <viresh.kumar@st.com>
-Cc: "Koul, Vinod" <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        anemo@mba.ocn.ne.jp, Shiraz HASHIM <shiraz.hashim@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="N+dhEFW7Y2Uiel/w"
+Content-Disposition: inline
+In-Reply-To: <1307360469-29120-1-git-send-email-tlinder@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 8:54 AM, viresh kumar <viresh.kumar@st.com> wrote:
 
-> I thought map_sg/unmap_sg for slave channels will be handled according
-> to the flags passed in prep_slave_sg(). But then i found following patch:
-> (...)
-> I don't have much knowledge about that discussion, but i think this should be left
-> configurable.
-> If the client wants to control map/unmap then it can simply pass
-> DMA_COMPL_SKIP_DEST_UNMAP | DMA_COMPL_SKIP_SRC_UNMAP in flags. I didn't wanted to
-> skip this in my driver and so i don't pass them.
+--N+dhEFW7Y2Uiel/w
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What if the same driver is used on many different platforms like say
-drivers/tty/serial/amba-pl011.c, and some of the platforms using it
-has DMA engines that does not implement mapping/unmapping of
-the passed sglist?
+On Mon, Jun 06, 2011 at 02:40:45PM +0300, Tatyana Brokhman wrote:
+> Change usb_ep_enable() prototype to use endpoint descriptor from usb_ep.
+> This optimization spares the FDs from saving the endpoint chosen
+> descriptor. This optimization is not full though. To fully exploit this
+> change one needs to update all the UDCs as well since in the current
+> implementation each of them saves the endpoint descriptor in it's
+> internal (and extended) endpoint structure.
+>=20
+> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 
-In that case I think you have to modify all drivers in drivers/dma/*
-to do this mapping, and then you could just make it a required behaviour
-and skip the flags altogether.
+applied to gadget branch, thanks
 
-But apparently that approach was blocked at one point so let's see
-what the others say.
+--=20
+balbi
 
-Yours,
-Linus Walleij
+--N+dhEFW7Y2Uiel/w
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJN8JXPAAoJEAv8Txj19kN1zLcIAIPDPldmu+WQ61blIKKqAQ2d
+ZN+9ayxL+spSS5mKnwCIerbXzbt8HmPFqt0XzFnca0NAdijqv+3TZpOLh6fS4GnU
+a1WXyC/vviNDZo0tHZzo8EYPazCIHqu+ubmPy3huiWzYMll/Ibbhlg++Hwgov968
+1vjQ0CymetS7tM8krmzMPJwAjBM3Dgnc5DT5tBkKESiASJgxif1hMWrYu++fVivf
+zzWlDnhpwiN3cuP9mwNky+72w8Az1X5NaoU7sTp6AYBQ/8FeTAWzUxOeH/RcXI+1
+fz9kZY+DzuSeXHUsxu8u24TpPJVAUlKF4mpc3P+JPe4K8BUwRu014ey46nfpdDk=
+=OQwF
+-----END PGP SIGNATURE-----
+
+--N+dhEFW7Y2Uiel/w--
