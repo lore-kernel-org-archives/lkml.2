@@ -1,204 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482Ab1FIXsE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 19:48:04 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59772 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757366Ab1FIXsA (ORCPT
+	id S1757491Ab1FIXsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 19:48:40 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:46034 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757406Ab1FIXr4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 19:48:00 -0400
+	Thu, 9 Jun 2011 19:47:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=rTJ1+0zsAX7crHdWEna0c8OBcB4DD88FmQEDDNITVUnm/TDowCQ1qCHFwB+D8ldbkc
-         DkiOII98jJnO8KHm6qtMMLZNCUQevCogBh07kMD0tN35efk8E2aYy32LoA67ZmMM7uhA
-         PZ1LBmlR04oK6oomgvrIQxGWG51CeCCIw1A6g=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 4/4] x86: Call idle_exit() after irq_enter()
-Date: Fri, 10 Jun 2011 01:47:27 +0200
-Message-Id: <1307663247-5397-5-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1307663247-5397-1-git-send-email-fweisbec@gmail.com>
-References: <1307663247-5397-1-git-send-email-fweisbec@gmail.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QyChm+pPctMjvYXTBmwekcNSR6MFHTd3AynkU8UFgSZkSxmVueNWQs91bjJ6eYmfL0
+         zlLbcJhlU5xg5ld5K0bjjdlrnn+IGhKecsijFwQCU3Zlmj3r9Pi13AHCfjuhTf2RIrkK
+         LHo92Unf3pVj63Hh7uWZD0YNdHHXo/dkZIyAE=
+MIME-Version: 1.0
+In-Reply-To: <BANLkTimD-pecv82qAZkyxA9nLQWbcDry-w@mail.gmail.com>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+	<1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
+	<20110609154839.GF4878@barrios-laptop>
+	<20110609172347.GB20333@cmpxchg.org>
+	<BANLkTimD-pecv82qAZkyxA9nLQWbcDry-w@mail.gmail.com>
+Date: Fri, 10 Jun 2011 08:47:55 +0900
+Message-ID: <BANLkTin7uRdUg_mer3ve5nz3WjX9qjP4SQ@mail.gmail.com>
+Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-idle_exit() calls the idle notifier, which uses RCU. But
-this is called before we call irq_enter(), thus before we
-exit the RCU extended quiescent state if we are in idle.
+On Fri, Jun 10, 2011 at 8:41 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Fri, Jun 10, 2011 at 2:23 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+>> On Fri, Jun 10, 2011 at 12:48:39AM +0900, Minchan Kim wrote:
+>>> On Wed, Jun 01, 2011 at 08:25:13AM +0200, Johannes Weiner wrote:
+>>> > When a memcg hits its hard limit, hierarchical target reclaim is
+>>> > invoked, which goes through all contributing memcgs in the hierarchy
+>>> > below the offending memcg and reclaims from the respective per-memcg
+>>> > lru lists.  This distributes pressure fairly among all involved
+>>> > memcgs, and pages are aged with respect to their list buddies.
+>>> >
+>>> > When global memory pressure arises, however, all this is dropped
+>>> > overboard.  Pages are reclaimed based on global lru lists that have
+>>> > nothing to do with container-internal age, and some memcgs may be
+>>> > reclaimed from much more than others.
+>>> >
+>>> > This patch makes traditional global reclaim consider container
+>>> > boundaries and no longer scan the global lru lists.  For each zone
+>>> > scanned, the memcg hierarchy is walked and pages are reclaimed from
+>>> > the per-memcg lru lists of the respective zone.  For now, the
+>>> > hierarchy walk is bounded to one full round-trip through the
+>>> > hierarchy, or if the number of reclaimed pages reach the overall
+>>> > reclaim target, whichever comes first.
+>>> >
+>>> > Conceptually, global memory pressure is then treated as if the root
+>>> > memcg had hit its limit.  Since all existing memcgs contribute to the
+>>> > usage of the root memcg, global reclaim is nothing more than target
+>>> > reclaim starting from the root memcg.  The code is mostly the same for
+>>> > both cases, except for a few heuristics and statistics that do not
+>>> > always apply.  They are distinguished by a newly introduced
+>>> > global_reclaim() primitive.
+>>> >
+>>> > One implication of this change is that pages have to be linked to the
+>>> > lru lists of the root memcg again, which could be optimized away with
+>>> > the old scheme.  The costs are not measurable, though, even with
+>>> > worst-case microbenchmarks.
+>>> >
+>>> > As global reclaim no longer relies on global lru lists, this change is
+>>> > also in preparation to remove those completely.
+>>
+>> [cut diff]
+>>
+>>> I didn't look at all, still. You might change the logic later patches.
+>>> If I understand this patch right, it does round-robin reclaim in all memcgs
+>>> when global memory pressure happens.
+>>>
+>>> Let's consider this memcg size unbalance case.
+>>>
+>>> If A-memcg has lots of LRU pages, scanning count for reclaim would be bigger
+>>> so the chance to reclaim the pages would be higher.
+>>> If we reclaim A-memcg, we can reclaim the number of pages we want easily and break.
+>>> Next reclaim will happen at some time and reclaim will start the B-memcg of A-memcg
+>>> we reclaimed successfully before. But unfortunately B-memcg has small lru so
+>>> scanning count would be small and small memcg's LRU aging is higher than bigger memcg.
+>>> It means small memcg's working set can be evicted easily than big memcg.
+>>> my point is that we should not set next memcg easily.
+>>> We have to consider memcg LRU size.
+>>
+>> I may be missing something, but you said yourself that B had a smaller
+>> scan count compared to A, so the aging speed should be proportional to
+>> respective size.
+>>
+>> The number of pages scanned per iteration is essentially
+>>
+>>        number of lru pages in memcg-zone >> priority
+>>
+>> so we scan relatively more pages from B than from A each round.
+>>
+>> It's the exact same logic we have been applying traditionally to
+>> distribute pressure fairly among zones to equalize their aging speed.
+>>
+>> Is that what you meant or are we talking past each other?
+>
+> True if we can reclaim pages easily(ie, default priority) in all memcgs.
+> But let's think about it.
+> Normally direct reclaim path reclaims only SWAP_CLUSTER_MAX size.
+> If we have small memcg, scan window size would be smaller and it is
+> likely to be hard reclaim in the priority compared to bigger memcg. It
+> means it can raise priority easily in small memcg and even it might
+> call lumpy or compaction in case of global memory pressure. It can
+> churn all LRU order. :(
+> Of course, we have bailout routine so we might make such unfair aging
+> effect small but it's not same with old behavior(ie, single LRU list,
+> fair aging POV global according to priority raise)
 
-Fix this by calling the idle exit notifier after irq_enter().
+To make fair, how about considering turn over different memcg before
+raise up priority?
+It can make aging speed fairly while it can make high contention of
+lru_lock. :(
 
-This fixes the following warning:
 
-[    0.559953] ===================================================
-[    0.559954] [ INFO: suspicious rcu_dereference_check() usage. ]
-[    0.559956] ---------------------------------------------------
-[    0.559958] kernel/notifier.c:81 invoked rcu_dereference_check() while in RCU extended quiescent state!
-[    0.559960]
-[    0.559961] other info that might help us debug this:
-[    0.559961]
-[    0.559962]
-[    0.559963] rcu_scheduler_active = 1, debug_locks = 1
-[    0.559965] 1 lock held by kworker/0:0/0:
-[    0.559966]  #0:  (rcu_read_lock){......}, at: [<ffffffff81785ce0>] __atomic_notifier_call_chain+0x0/0xa0
-[    0.559976]
-[    0.559977] stack backtrace:
-[    0.559980] Pid: 0, comm: kworker/0:0 Not tainted 3.0.0-rc1+ #108
-[    0.559981] Call Trace:
-[    0.559983]  <IRQ>  [<ffffffff8108e176>] lockdep_rcu_dereference+0xb6/0xf0
-[    0.559990]  [<ffffffff81785cca>] notifier_call_chain+0x13a/0x150
-[    0.559993]  [<ffffffff81785d47>] __atomic_notifier_call_chain+0x67/0xa0
-[    0.559996]  [<ffffffff81785ce0>] ? notifier_call_chain+0x150/0x150
-[    0.560000]  [<ffffffff812a454e>] ? do_raw_spin_unlock+0x5e/0xb0
-[    0.560000]  [<ffffffff81785d91>] atomic_notifier_call_chain+0x11/0x20
-[    0.560000]  [<ffffffff8100af73>] exit_idle+0x43/0x50
-[    0.560000]  [<ffffffff81027869>] smp_apic_timer_interrupt+0x39/0xa0
-[    0.560000]  [<ffffffff81789e13>] apic_timer_interrupt+0x13/0x20
-[    0.560000]  <EOI>  [<ffffffff810301e6>] ? native_safe_halt+0x6/0x10
-[    0.560000]  [<ffffffff8108fecd>] ? trace_hardirqs_on+0xd/0x10
-[    0.560000]  [<ffffffff810130ac>] default_idle+0x2c/0x50
-[    0.560000]  [<ffffffff810131c8>] amd_e400_idle+0x58/0x130
-[    0.560000]  [<ffffffff8100b069>] cpu_idle+0xb9/0x110
-[    0.560000]  [<ffffffff817795af>] start_secondary+0x1cf/0x1d6
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/apic/apic.c              |    6 +++---
- arch/x86/kernel/apic/io_apic.c           |    3 ++-
- arch/x86/kernel/cpu/mcheck/mce.c         |    2 +-
- arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
- arch/x86/kernel/cpu/mcheck/threshold.c   |    2 +-
- arch/x86/kernel/irq.c                    |    5 ++---
- 6 files changed, 10 insertions(+), 10 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index fabf01e..d3db17c 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -855,8 +855,8 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
- 	 * Besides, if we don't timer interrupts ignore the global
- 	 * interrupt lock, which is the WrongThing (tm) to do.
- 	 */
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 	local_apic_timer_interrupt();
- 	irq_exit();
- 
-@@ -1788,8 +1788,8 @@ void smp_spurious_interrupt(struct pt_regs *regs)
- {
- 	u32 v;
- 
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 	/*
- 	 * Check if this really is a spurious interrupt and ACK it
- 	 * if it is a vectored one.  Just in case...
-@@ -1814,8 +1814,8 @@ void smp_error_interrupt(struct pt_regs *regs)
- {
- 	u32 v, v1;
- 
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 	/* First tickle the hardware, only then report what went on. -- REW */
- 	v = apic_read(APIC_ESR);
- 	apic_write(APIC_ESR, 0);
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 45fd33d..f0744a3 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2290,8 +2290,9 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
- 	unsigned vector, me;
- 
- 	ack_APIC_irq();
--	exit_idle();
-+
- 	irq_enter();
-+	exit_idle();
- 
- 	me = smp_processor_id();
- 	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 3385ea2..b3cdf7c 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -478,8 +478,8 @@ static inline void mce_get_rip(struct mce *m, struct pt_regs *regs)
- asmlinkage void smp_mce_self_interrupt(struct pt_regs *regs)
- {
- 	ack_APIC_irq();
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 	mce_notify_irq();
- 	mce_schedule_work();
- 	irq_exit();
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index 6f8c5e9..569c0fa 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -400,8 +400,8 @@ static void (*smp_thermal_vector)(void) = unexpected_thermal_interrupt;
- 
- asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
- {
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 	inc_irq_stat(irq_thermal_count);
- 	smp_thermal_vector();
- 	irq_exit();
-diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c b/arch/x86/kernel/cpu/mcheck/threshold.c
-index d746df2..aa578ca 100644
---- a/arch/x86/kernel/cpu/mcheck/threshold.c
-+++ b/arch/x86/kernel/cpu/mcheck/threshold.c
-@@ -19,8 +19,8 @@ void (*mce_threshold_vector)(void) = default_threshold_interrupt;
- 
- asmlinkage void smp_threshold_interrupt(void)
- {
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 	inc_irq_stat(irq_threshold_count);
- 	mce_threshold_vector();
- 	irq_exit();
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 1cb0b9f..08f947d 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -180,8 +180,8 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
- 	unsigned vector = ~regs->orig_ax;
- 	unsigned irq;
- 
--	exit_idle();
- 	irq_enter();
-+	exit_idle();
- 
- 	irq = __this_cpu_read(vector_irq[vector]);
- 
-@@ -208,9 +208,8 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
- 
- 	ack_APIC_irq();
- 
--	exit_idle();
--
- 	irq_enter();
-+	exit_idle();
- 
- 	inc_irq_stat(x86_platform_ipis);
- 
 -- 
-1.7.5.4
-
+Kind regards,
+Minchan Kim
