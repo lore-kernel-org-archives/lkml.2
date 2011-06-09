@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab1FITht (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 15:37:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56809 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754866Ab1FIThr (ORCPT
+	id S1755230Ab1FITjH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 15:39:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35663 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754559Ab1FITjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 15:37:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: Re: [PATCH v3 06/12] MFD: twl4030-codec -> twl4030-audio: Rename the driver
-Date: Thu, 9 Jun 2011 21:37:28 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>
-References: <1307626230-29660-1-git-send-email-peter.ujfalusi@ti.com> <1307626230-29660-7-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1307626230-29660-7-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Thu, 9 Jun 2011 15:39:03 -0400
+Date: Thu, 9 Jun 2011 12:38:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: NeilBrown <neilb@suse.de>, viro@ZenIV.linux.org.uk,
+        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, apw@canonical.com, nbd@openwrt.org,
+        hramrach@centrum.cz, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu
+Subject: Re: [PATCH 0/7] overlay filesystem: request for inclusion
+Message-Id: <20110609123843.77153b27.akpm@linux-foundation.org>
+In-Reply-To: <87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu>
+References: <1306932380-10280-1-git-send-email-miklos@szeredi.hu>
+	<20110608153208.dc705cda.akpm@linux-foundation.org>
+	<20110609115934.3c53f78f@notabene.brown>
+	<20110608205233.ebfedc4d.akpm@linux-foundation.org>
+	<87wrgvb28a.fsf@tucsk.pomaz.szeredi.hu>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106092137.28678.arnd@arndb.de>
-X-Provags-ID: V02:K0:thpS92fORp1DItmkJLFSm0BnaLxlnJUZSM0LbacderG
- UBpsHZE3MtVGM8337kTdIPQFMW2OtlXzpxr4+FSm61zjw/zHbS
- nT2y3TkCDXzsoiWCBkherD/MxtxER2a0oIek/qXGfLfFGC177T
- wa82DIhVbtAOeimeATdy1gIytDcw7EYfDdH7NbACw3OnYgjt1H
- uqs3BAVrKka49jz3K+z8w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 June 2011 15:30:24 Peter Ujfalusi wrote:
-> Rename the driver, and header file from twl4030-codec to
-> twl4030-audio.
-> To avoid breakage change depending drivers at the same time.
+On Thu, 09 Jun 2011 14:47:49 +0200
+Miklos Szeredi <miklos@szeredi.hu> wrote:
+
+> Andrew Morton <akpm@linux-foundation.org> writes:
 > 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> CC: Misael Lopez Cruz <misael.lopez@ti.com>
-> ---
->  drivers/input/misc/Kconfig         |    2 +-
->  drivers/input/misc/twl4030-vibra.c |   10 +-
->  drivers/mfd/Kconfig                |    2 +-
->  drivers/mfd/Makefile               |    2 +-
->  drivers/mfd/twl4030-audio.c        |  277 +++++++++++++++++++++++++++++++++++
->  drivers/mfd/twl4030-codec.c        |  278 ------------------------------------
->  include/linux/mfd/twl4030-audio.h  |  272 +++++++++++++++++++++++++++++++++++
->  include/linux/mfd/twl4030-codec.h  |  272 -----------------------------------
+> > On Thu, 9 Jun 2011 11:59:34 +1000 NeilBrown <neilb@suse.de> wrote:
+> >
+> >> On Wed, 8 Jun 2011 15:32:08 -0700 Andrew Morton <akpm@linux-foundation.org>
+> >> wrote:
+> >> > I've never really understood the need for fs overlaying.  Who wants it?
+> >> > What are the use-cases?
+> >> 
+> >> https://lwn.net/Articles/324291/
+> >> 
+> >> I think the strongest use case is that LIVE-DVD's want it to have a
+> >> write-able root filesystem which is stored on the DVD.
+> >
+> > Well, these things have been around for over 20 years.  What motivated
+> > the developers of other OS's to develop these things and how are their
+> > users using them?
+> 
+> That's a good question, Erez might be able to answer that better.
+> 
+> We have customers who need this for the "common base + writable
+> configuration" case in a virtualized environment.
+> 
+> Since overlayfs's announcement several projects have tried it and have
+> been very good testers and bug reporters.  These include OpenWRT, Ubuntu
+> and other Debian based live systems.
 
-Better use the -M flag to git-format-patch when moving files, to make it
-obvious what has or has not changed, and to reduce the size of the email.
+I assume that the live CD was your motivator for developing overlayfs?
 
-Also, shouldn't this file go into the sound/soc/ directory? It seems that this
-is really the device driver, not part of the multi-function layer.
+> >> > This sort of thing could be implemented in userspace and wired up via
+> >> > fuse, I assume.  Has that been attempted and why is it inadequate?
+> 
+> Yes, unionfs-fuse and deltafs (written by me) are two examples.
+> 
+> One issue that a customer had with deltafs was lack of XIP support.  The
+> other one (from the same customer) was the general yuck factor of
+> userspace filesystems.
+> 
+> There are also performance and resource use issues associated with
+> userspace filesystems.  These may or may not be problem depending on the
+> actual use.  But it's a fact that out-of-kernel filesystems will never
+> be as efficient as in-kernel ones.
 
-	Arnd
+Yes, userspace filesystems have a good yuck factor.  In a way it's a
+sad commentary on the concept of FUSE, but I guess one could look at it
+another way: FUSE is good for prototypes and oddball small-volume stuff
+but once a FUSE-based setup has proven useful and people are getting
+benefit from it, it's time to look at an in-kernel implementation.
+
+> > Another issue: there have been numerous attempts at Linux overlay
+> > filesystems from numerous parties.  Does (or will) this implementation
+> > satisfy all their requirements?
+> 
+> Overlayfs aims to be the simplest possible but not simpler.
+> 
+> I think the reason why "aufs" never had a real chance at getting merged
+> is because of feature creep.
+> 
+> Of course I expect new features to be added to overlayfs after the
+> merge, but I beleive some of the features in those other solutions are
+> simply unnecessary.
+
+This is my main worry.  If overlayfs doesn't appreciably decrease the
+motivation to merge other unioned filesystems then we might end up with
+two similar-looking things.  And, I assume, the later and more
+fully-blown implementation might make overlayfs obsolete but by that
+time it will be hard to remove.
+
+So it would be interesting to hear the thoughts of the people who have
+been working on the other implementations.
