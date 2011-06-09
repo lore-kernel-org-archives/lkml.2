@@ -1,228 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab1FIVih (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 17:38:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:26719 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756050Ab1FIVif convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 17:38:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GVig8xHMv5Jv0h7gJ0StP+fA++npccgte3Q38sY68dST0hpcDzQuWbF0S3UfC/4MrG
-         MBfUkw57/UYfFpOdE7MQ==
-MIME-Version: 1.0
-In-Reply-To: <20110609183637.GC20333@cmpxchg.org>
-References: <BANLkTikgqSsg5+49295h7kdZ=sQpZLs4kw@mail.gmail.com>
-	<BANLkTi=sYtLGk2_VQLejEU2rQ0JBgg_ZmQ@mail.gmail.com>
-	<20110602075028.GB20630@cmpxchg.org>
-	<BANLkTi=AZG4LKUdeODB0uP=_CVBRnGs_Nw@mail.gmail.com>
-	<20110602175142.GH28684@cmpxchg.org>
-	<BANLkTi=9083abfiKdZ5_oXyA+dZqaXJfZg@mail.gmail.com>
-	<20110608153211.GB27827@cmpxchg.org>
-	<BANLkTincHpoay1JtpjG0RY9CCvfepRohTXUH6KKULYJ9jbdo+A@mail.gmail.com>
-	<20110609083503.GC11603@cmpxchg.org>
-	<BANLkTiknpTjj3saw+zS5ABeD+4ESz68xvRot7TTvKs7A_RtrdA@mail.gmail.com>
-	<20110609183637.GC20333@cmpxchg.org>
-Date: Thu, 9 Jun 2011 14:38:30 -0700
-Message-ID: <BANLkTinnjBMRPyDn+c3WJFUowNXTYtWrhgCO3ZuCVb2C-cx8gA@mail.gmail.com>
-Subject: Re: [patch 0/8] mm: memcg naturalization -rc2
-From: Ying Han <yinghan@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1756454Ab1FIVir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 17:38:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:2312 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756427Ab1FIVin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jun 2011 17:38:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,343,1304319600"; 
+   d="scan'208";a="12190868"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: "Ingo Molnar" <mingo@elte.hu>, "Borislav Petkov" <bp@amd64.org>
+Cc: linux-kernel@vger.kernel.org, "Huang, Ying" <ying.huang@intel.com>,
+        "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>,
+        "Avi Kivity" <avi@redhat.com>
+In-Reply-To: <4df13a522720782e51@agluck-desktop.sc.intel.com>
+Subject: [PATCH 10/10] MCE: Add Action-Required support
+Date: Thu, 09 Jun 2011 14:38:43 -0700
+Message-Id: <4df13d6327307cf53@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 11:36 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Thu, Jun 09, 2011 at 10:36:47AM -0700, Ying Han wrote:
->> On Thu, Jun 9, 2011 at 1:35 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> > On Wed, Jun 08, 2011 at 08:52:03PM -0700, Ying Han wrote:
->> >> On Wed, Jun 8, 2011 at 8:32 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> >> > I guess it would make much more sense to evaluate if reclaiming from
->> >> > memcgs while there are others exceeding their soft limit is even a
->> >> > problem.  Otherwise this discussion is pretty pointless.
->> >>
->> >> AFAIK it is a problem since it changes the spec of kernel API
->> >> memory.soft_limit_in_bytes. That value is set per-memcg which all the
->> >> pages allocated above that are best effort and targeted to reclaim
->> >> prior to others.
->> >
->> > That's not really true.  Quoting the documentation:
->> >
->> >    When the system detects memory contention or low memory, control groups
->> >    are pushed back to their soft limits. If the soft limit of each control
->> >    group is very high, they are pushed back as much as possible to make
->> >    sure that one control group does not starve the others of memory.
->> >
->> > I am language lawyering here, but I don't think it says it won't touch
->> > other memcgs at all while there are memcgs exceeding their soft limit.
->>
->> Well... :) I would say that the documentation of soft_limit needs lots
->> of work especially after lots of discussions we have after the LSF.
->>
->> The RFC i sent after our discussion has the following documentation,
->> and I only cut & paste the content relevant to our conversation here:
->>
->> What is "soft_limit"?
->> The "soft_limit was introduced in memcg to support over-committing the
->> memory resource on the host. Each cgroup can be configured with
->> "hard_limit", where it will be throttled or OOM killed by going over
->> the limit. However, the allocation can go above the "soft_limit" as
->> long as there is no memory contention. The "soft_limit" is the kernel
->> mechanism for re-distributing spare memory resource among cgroups.
->>
->> What we have now?
->> The current implementation of softlimit is based on per-zone RB tree,
->> where only the cgroup exceeds the soft_limit the most being selected
->> for reclaim.
->>
->> It makes less sense to only reclaim from one cgroup rather than
->> reclaiming all cgroups based on calculated propotion. This is required
->> for fairness.
->>
->> Proposed design:
->> round-robin across the cgroups where they have memory allocated on the
->> zone and also exceed the softlimit configured.
->>
->> there was a question on how to do zone balancing w/o global LRU. This
->> could be solved by building another cgroup list per-zone, where we
->> also link cgroups under their soft_limit. We won't scan the list
->> unless the first list being exhausted and
->> the free pages is still under the high_wmark.
->>
->> Since the per-zone memcg list design is being replaced by your
->> patchset, some of the details doesn't apply. But the concept still
->> remains where we would like to scan some memcgs first (above
->> soft_limit) .
->
-> I think the most important thing we wanted was to round-robin scan all
-> soft limit excessors instead of just the biggest one.  I understood
-> this is the biggest fault with soft limits right now.
->
-> We came up with maintaining a list of excessors, rather than a tree,
-> and from this particular implementation followed naturally that this
-> list is scanned BEFORE we look at other memcgs at all.
->
-> This is a nice to have, but it was never the primary problem with the
-> soft limit implementation, as far as I understood.
->
->> > It would be a lie about the current code in the first place, which
->> > does soft limit reclaim and then regular reclaim, no matter the
->> > outcome of the soft limit reclaim cycle.  It will go for the soft
->> > limit first, but after an allocation under pressure the VM is likely
->> > to have reclaimed from other memcgs as well.
->> >
->> > I saw your patch to fix that and break out of reclaim if soft limit
->> > reclaim did enough.  But this fix is not much newer than my changes.
->>
->> My soft_limit patch was developed in parallel with your patchset, and
->> most of that wouldn't apply here.
->> Is that what you are referring to?
->
-> No, I meant that the current behaviour is old and we are only changing
-> it only now, so we are not really breaking backward compatibility.
->
->> > The second part of this is:
->> >
->> >    Please note that soft limits is a best effort feature, it comes with
->> >    no guarantees, but it does its best to make sure that when memory is
->> >    heavily contended for, memory is allocated based on the soft limit
->> >    hints/setup. Currently soft limit based reclaim is setup such that
->> >    it gets invoked from balance_pgdat (kswapd).
->>
->> We had patch merged which add the soft_limit reclaim also in the global ttfp.
->>
->> memcg-add-the-soft_limit-reclaim-in-global-direct-reclaim.patch
->>
->> > It's not the pages-over-soft-limit that are best effort.  It says that
->> > it tries its best to take soft limits into account while reclaiming.
->> Hmm. Both cases are true. The best effort pages I referring to means
->> "the page above the soft_limit are targeted to reclaim first under
->> memory contention"
->
-> I really don't know where you are taking this from.  That is neither
-> documented anywhere, nor is it the current behaviour.
->
-> Yeah, currently the soft limit reclaim cycle preceeds the generic
-> reclaim cycle.  But the end result is that other memcgs are reclaimed
-> from as well in both cases.  The exact timing is irrelevant.
->
-> And this has been the case for a long time, so I don't think my rework
-> breaks existing users in that regard.
->
->> > My code does that, so I don't think we are breaking any promises
->> > currently made in the documentation.
->> >
->> > But much more important than keeping documentation promises is not to
->> > break actual users.  So if you are yourself a user of soft limits,
->> > test the new code pretty please and complain if it breaks your setup!
->>
->> Yes, I've been running tests on your patchset, but not getting into
->> specific configurations yet. But I don't think it is hard to generate
->> the following scenario:
->>
->> on 32G machine, under root I have three cgroups with 20G hard_limit and
->> cgroup-A: soft_limit 1g, usage 20g with clean file pages
->> cgroup-B: soft_limit 10g, usage 5g with clean file pages
->> cgroup-C: soft_limit 10g, usage 5g with clean file pages
->>
->> I would assume reclaiming from cgroup-A should be sufficient under
->> global memory pressure, and no pages needs to be reclaimed from B or
->> C, especially both of them have memory usage under their soft_limit.
->
-> Keep in mind that memcgs are scanned proportionally to their size,
-> that we start out with relatively low scan counts, and that the
-> priority levels are a logarithmic scale.
->
-> The formula is essentially this:
->
->        (usage / PAGE_SIZE) >> priority
->
-> which means that we would scan as follows, with decreased soft limit
-> priority for A:
->
->        A: ((20 << 30) >> 12) >> 11 = 2560 pages
->        B: (( 5 << 30) >> 12) >> 12 =  320 pages
->        C:                          =  320 pages.
->
-> So even if B and C are scanned, they are only shrunk by a bit over a
-> megabyte tops.  For decreasing levels (if they are reached at all if
-> there is clean cache around):
->
->        A: 20M 40M 80M 160M ...
->        B:  2M  4M  8M  16M ...
->
-> While it would be sufficient to reclaim only from A, actually
-> reclaiming from B and C is not a big deal in practice, I would
-> suspect.
+From: Tony Luck <tony.luck@intel.com>
 
-One way to think about how the user will set the soft_limit ( in our
-case for example) is to set the soft_limit to be the working_set_size
-of the cgroup (by doing working set estimation).
+Implement core MCA recovery. This is used for errors
+that happen in the current execution context.
 
-The soft_limit will be readjust at run time based on the workload. In
-that case, shrinking the memory from B/C has potential performance
-impact on the application. While it doesn't mean we can never reclaim
-pages from them, but shrinking from A ( usage is 19G above its
-soft_limit ) first will provide better predictability of performance.
+The kernel has to first pass the error information
+to a function running on the current process stack.
+This is done using task_return_notifier_register().
 
---Ying
+Just handle errors in user mode for now. Later we
+may be able to handle some kernel cases (e.g. when
+kernel is in copy_*_user())
 
->
+Based on some original code by Andi Kleen.
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   35 +++++++-
+ arch/x86/kernel/cpu/mcheck/mce.c          |  118 +++++++++++++++++++++++++++--
+ 2 files changed, 142 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+index 352d16a..fe8a28c 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+@@ -13,6 +13,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/init.h>
+ #include <linux/debugfs.h>
++#include <linux/module.h>
+ #include <asm/mce.h>
+ 
+ #include "mce-internal.h"
+@@ -54,6 +55,9 @@ static struct severity {
+ 	{ .mcgmask = x, .mcgres = res, SEV(s), .msg = m, ## r }
+ #define MASK(x, y, s, m, r...) \
+ 	{ .mask = x, .result = y, SEV(s), .msg = m, ## r }
++#define ARMASK(x, y, s, m, r...) \
++	{ .mcgmask = MCG_STATUS_RIPV, .mcgres = 0, \
++	  .mask = x, .result = y, SEV(s), .msg = m, ## r }
+ #define MCI_UC_S (MCI_STATUS_UC|MCI_STATUS_S)
+ #define MCI_UC_SAR (MCI_STATUS_UC|MCI_STATUS_S|MCI_STATUS_AR)
+ #define MCACOD 0xffff
+@@ -67,7 +71,7 @@ static struct severity {
+ 	MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, 0, PANIC,
+ 		"Neither restart nor error IP"),
+ 	MCGMASK(MCG_STATUS_RIPV, 0, PANIC, "In kernel and no restart IP",
+-		KERNEL),
++		KERNEL, NOSER),
+ 	BITCLR(MCI_STATUS_UC, KEEP, "Corrected error", NOSER),
+ 
+ 	/* ignore OVER for UCNA */
+@@ -77,10 +81,16 @@ static struct severity {
+ 	     "Illegal combination (UCNA with AR=1)", SER),
+ 	MASK(MCI_STATUS_S, 0, KEEP, "Non signalled machine check", SER),
+ 
+-	/* AR add known MCACODs here */
+ 	MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_STATUS_OVER|MCI_UC_SAR, PANIC,
+ 	     "Action required with lost events", SER),
+-	MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_SAR, PANIC,
++
++	/* known AR MCACODs: */
++	ARMASK(MCI_UC_SAR|MCI_STATUS_OVER|0xffff, MCI_UC_SAR|0x134, AR,
++	     "Action required: data load error", SER),
++	ARMASK(MCI_UC_SAR|MCI_STATUS_OVER|0xffff, MCI_UC_SAR|0x150, AR,
++	     "Action required: instruction fetch error", SER),
++
++	ARMASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_SAR, PANIC,
+ 	     "Action required; unknown MCACOD", SER),
+ 
+ 	/* known AO MCACODs: */
+@@ -89,6 +99,7 @@ static struct severity {
+ 	MASK(MCI_UC_SAR|MCI_STATUS_OVER|MCACOD, MCI_UC_S|0x17a, AO,
+ 	     "Action optional: last level cache writeback error", SER),
+ 
++
+ 	MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_S, SOME,
+ 	     "Action optional unknown MCACOD", SER),
+ 	MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_S|MCI_STATUS_OVER, SOME,
+@@ -110,6 +121,17 @@ static int error_context(struct mce *m)
+ 	return IN_KERNEL;
+ }
+ 
++static int kernel_ar_recoverable(struct mce *m, int tolerant)
++{
++	if (tolerant >= 2)
++		return MCE_AR_SEVERITY;
++	if (!(m->mcgstatus & MCG_STATUS_EIPV) || !m->ip)
++		return MCE_PANIC_SEVERITY;
++	if (search_exception_tables(m->ip))
++		return MCE_AR_SEVERITY;
++	return MCE_PANIC_SEVERITY;
++}
++
+ int mce_severity(struct mce *a, int tolerant, char **msg)
+ {
+ 	enum context ctx = error_context(a);
+@@ -129,9 +151,12 @@ int mce_severity(struct mce *a, int tolerant, char **msg)
+ 		if (msg)
+ 			*msg = s->msg;
+ 		s->covered = 1;
+-		if (s->sev >= MCE_UC_SEVERITY && ctx == IN_KERNEL) {
+-			if (panic_on_oops || tolerant < 1)
++		if (ctx == IN_KERNEL) {
++			if (s->sev >= MCE_UC_SEVERITY &&
++				(panic_on_oops || tolerant < 1))
+ 				return MCE_PANIC_SEVERITY;
++			if (s->sev == MCE_AR_SEVERITY)
++				return kernel_ar_recoverable(a, tolerant);
+ 		}
+ 		return s->sev;
+ 	}
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 9c72245..a7a8c53 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -80,6 +80,20 @@ static void mce_do_notify(struct user_return_notifier *urn);
+ static DEFINE_PER_CPU(struct mce_notify, mce_notify);
+ 
+ /*
++ * Task return notifiers are used for "action required"
++ * recovery of tasks - i.e. we prevent return to the task
++ * that encountered the machine check, but we ensure that
++ * we process the error in task context.
++ */
++struct task_notify {
++	struct user_return_notifier urn;
++	unsigned	long pfn;
++	atomic_t	inuse;
++};
++static struct task_notify task_notifier[NR_CPUS];
++static void mce_do_task(struct user_return_notifier *urn);
++
++/*
+  * Tolerant levels:
+  *   0: always panic on uncorrected errors, log corrected errors
+  *   1: panic or SIGBUS on uncorrected errors, log corrected errors
+@@ -975,6 +989,84 @@ static void mce_clear_state(unsigned long *toclear)
+ 	}
+ }
+ 
++/* Stub when hwpoison is not compiled in */
++int __attribute__((weak)) __memory_failure(unsigned long pfn, int vector,
++					   int precount)
++{
++	return -1;
++}
++
++/*
++ * Uncorrected error for current process.
++ */
++static void mce_action_required(struct mce *m, char *msg, struct pt_regs *regs)
++{
++	int	i;
++
++	if (!mce_usable_address(m))
++		mce_panic("No address for Action-Required Machine Check",
++			  m, msg);
++	if (!(m->mcgstatus & MCG_STATUS_EIPV))
++		mce_panic("No EIPV for Action-Required Machine Check",
++			  m, msg);
++
++	for (i = 0; i < NR_CPUS; i++)
++		if (!atomic_cmpxchg(&task_notifier[i].inuse, 0, 1))
++			break;
++	if (i == NR_CPUS)
++		mce_panic("Too many concurrent errors", m, msg);
++
++	task_notifier[i].urn.on_user_return = mce_do_task;
++	task_notifier[i].pfn = m->addr >> PAGE_SHIFT;
++	task_return_notifier_register(&task_notifier[i].urn);
++}
++
++#undef pr_fmt
++#define pr_fmt(x) "MCE: %s:%d " x "\n", current->comm, current->pid
++#define PADDR(x) ((u64)(x) << PAGE_SHIFT)
++
++/*
++ * No successfull recovery. Make sure at least that there's
++ * a SIGBUS.
++ */
++static void ar_fallback(struct task_struct *me, unsigned long pfn)
++{
++	if (signal_pending(me) && sigismember(&me->pending.signal, SIGBUS))
++		return;
++
++	/*
++	 * For some reason hwpoison wasn't able to send a proper
++	 * SIGBUS.  Send a fallback signal. Unfortunately we don't
++	 * know the virtual address here, so can't tell the program
++	 * details.
++	 */
++	force_sig(SIGBUS, me);
++	pr_err("Killed due to action-required memory corruption");
++}
++
++/*
++ * Handle action-required on the process stack.  hwpoison does the
++ * bulk of the work and with some luck might even be able to fix the
++ * problem.
++ *
++ * Logic changes here should be reflected in kernel_ar_recoverable().
++ */
++static void handle_action_required(unsigned long pfn)
++{
++	struct task_struct *me = current;
++
++	pr_err("Uncorrected hardware memory error in user-access at %llx",
++	       PADDR(pfn));
++	if (__memory_failure(pfn, MCE_VECTOR, 0) < 0) {
++		pr_err("Memory error not recovered");
++		ar_fallback(me, pfn);
++	} else
++		pr_err("Memory error recovered");
++}
++
++#undef pr_fmt
++#define pr_fmt(x) x
++
+ /*
+  * The actual machine check handler. This only handles real
+  * exceptions when something got corrupted coming in through int 18.
+@@ -1086,12 +1178,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 			continue;
+ 		}
+ 
+-		/*
+-		 * Kill on action required.
+-		 */
+-		if (severity == MCE_AR_SEVERITY)
+-			kill_it = 1;
+-
+ 		mce_read_aux(&m, i);
+ 
+ 		/*
+@@ -1136,6 +1222,15 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 		mce_panic("Fatal machine check on current CPU", &m, msg);
+ 
+ 	/*
++	 * Do recovery in current process if needed. This has to be delayed
++	 * until we're back on the process stack.
++	 */
++	if (worst == MCE_AR_SEVERITY) {
++		mce_action_required(&m, msg, regs);
++		kill_it = 0;
++	}
++
++	/*
+ 	 * If the error seems to be unrecoverable, something should be
+ 	 * done.  Try to kill as little as possible.  If we can kill just
+ 	 * one task, do that.  If the user has set the tolerance very
+@@ -1194,6 +1289,17 @@ static void mce_do_notify(struct user_return_notifier *urn)
+ 	mce_process_ring();
+ }
+ 
++static void mce_do_task(struct user_return_notifier *urn)
++{
++	struct task_notify *np = container_of(urn, struct task_notify, urn);
++	unsigned long pfn = np->pfn;
++
++	task_return_notifier_unregister(urn);
++	atomic_set(&np->inuse, 0);
++
++	handle_action_required(pfn);
++}
++
+ static void mce_process_work(struct work_struct *dummy)
+ {
+ 	mce_process_ring();
+-- 
+1.7.3.1
+
