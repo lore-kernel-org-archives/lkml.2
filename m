@@ -1,76 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab1FIVvf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jun 2011 17:51:35 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:36638 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756437Ab1FIVvd (ORCPT
+	id S1756615Ab1FIVx0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jun 2011 17:53:26 -0400
+Received: from sentry-two.sandia.gov ([132.175.109.14]:58860 "EHLO
+	sentry-two.sandia.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756447Ab1FIVxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jun 2011 17:51:33 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=NRi1As8QrxKB7JyuHXS3ZmNujml24iv9NkXlDA35dJ+4vvgkGNP7xu8fc27z+R9hqpms7WjdJMO6nfT+3nxXN0MZpiF/kT8ixZMR0VB8HSaVr1Kvm2JLypgFNVISW+Nk;
-Date: Thu, 9 Jun 2011 14:51:30 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Andrew Murray <amurray@mpcdata.com>
-Cc: joe@perches.com, w.sang@pengutronix.de, geert@linux-m68k.org,
-        linux-embedded@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org, udknight@gmail.com, namhyung@gmail.com,
-        Andrew Murray <amurray@mpc-data.co.uk>
-Subject: Re: [PATCH] printk-formats.txt documentation update
-Message-Id: <20110609145130.7fda9bd1.rdunlap@xenotime.net>
-In-Reply-To: <1307654688-28015-1-git-send-email-amurray@mpcdata.com>
-References: <20110609124549.48117a75.rdunlap@xenotime.net>
-	<1307654688-28015-1-git-send-email-amurray@mpcdata.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 9 Jun 2011 17:53:21 -0400
+X-WSS-ID: 0LMJM4V-0B-154-02
+X-M-MSG: 
+X-Server-Uuid: 6BFC7783-7E22-49B4-B610-66D6BE496C0E
+Message-ID: <4DF140AB.4030805@sandia.gov>
+Date: Thu, 9 Jun 2011 15:52:43 -0600
+From: "Jim Schutt" <jaschut@sandia.gov>
+User-Agent: Thunderbird 2.0.0.24 (X11/20110418)
+MIME-Version: 1.0
+To: miaox@cn.fujitsu.com
+cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        "ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
+Subject: 3.0-rcX BUG at fs/btrfs/ioctl.c:432 - bisected
+X-Originating-IP: [134.253.95.179]
+X-TMWD-Spam-Summary: TS=20110609215251; ID=1; SEV=2.3.1;
+ DFV=B2011060921; IFV=NA; AIF=B2011060921; RPD=5.03.0010; ENG=NA;
+ RPDID=7374723D303030312E30413039303230392E34444631343042322E303134333A534346535441543838363133332C73733D312C6667733D30;
+ CAT=NONE; CON=NONE; SIG=AAAAAAAAAAAAAAAAAAAAAAAAfQ==
+X-MMS-Spam-Filter-ID: B2011060921_5.03.0010
+X-WSS-ID: 61EF9F3B340783307-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-RSA-Inspected: yes
+X-RSA-Classifications: Healthcare Dictionaries, public
+X-RSA-Action: allow
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  9 Jun 2011 22:24:48 +0100 Andrew Murray wrote:
+Hi,
 
-> From: Andrew Murray <amurray@mpc-data.co.uk>
-> 
-> This patch updates the incomplete documentation concerning the printk
-> extended format specifiers
-> 
-> Signed-off-by: Andrew Murray <amurray@mpc-data.co.uk>
-> ---
->  Documentation/printk-formats.txt |  119 +++++++++++++++++++++++++++++++++++++-
->  1 files changed, 117 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
-> index 1b5a5dd..6455e5b 100644
-> --- a/Documentation/printk-formats.txt
-> +++ b/Documentation/printk-formats.txt
-> @@ -9,7 +9,121 @@ If variable is of Type,		use printk format specifier:
+I've run into the following BUG on 3.0-rcX kernels when
+running mkcephfs:
 
-> +UUID/GUID addresses:
-> +
-> +	%pUb	00010203-0405-0607-0809-0a0b0c0d0e0f
-> +	%pUB	00010203-0405-0607-0809-0A0B0C0D0E0F
-> +	%pUl	03020100-0504-0706-0809-0a0b0c0e0e0f
-> +	%pUL	03020100-0504-0706-0809-0A0B0C0E0E0F
-> +
-> +	For printing-16 byte UUID/GUIDs addresses. The additional 'l', 'L',
+Jun  9 15:14:50 an1 [  299.446615] ------------[ cut here ]------------
+Jun  9 15:14:50 an1 [  299.447357] kernel BUG at fs/btrfs/ioctl.c:432!
+Jun  9 15:14:50 an1 [  299.447357] invalid opcode: 0000 [#1] SMP
+Jun  9 15:14:50 an1 [  299.447357] last sysfs file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
+Jun  9 15:14:50 an1 [  299.447357] CPU 2
+Jun  9 15:14:50 an1 [  299.447357] Modules linked in: btrfs zlib_deflate lzo_compress ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp i2c_dev i2c_core ext3 jbd scsi_transport_iscsi rds ib_ipoib rdma_ucm rdma_cm ib_ucm ib_uverbs ib_umad ib_cm iw_cm ib_addr ipv6 ib_sa dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod video sbs sbshc pci_slot battery acpi_pad ac kvm sg ses sd_mod enclosure ide_cd_mod cdrom megaraid_sas qla2xxx ib_mthca scsi_transport_fc scsi_tgt ib_mad ib_core button serio_raw ata_piix libata scsi_mod tpm_tis tpm dcdbas tpm_bios iTCO_wdt ioatdma iTCO_vendor_support ehci_hcd i5k_amb dca uhci_hcd hwmon i5000_edac edac_core pcspkr rtc nfs nfs_acl auth_rpcgss fscache lockd sunrpc tg3 bnx2 e1000 [last unloaded: freq_table]
+Jun  9 15:14:50 an1 [  299.447357]
+Jun  9 15:14:50 an1 [  299.447357] Pid: 6047, comm: cosd Not tainted 2.6.39-00001-g16cdcec #24 Dell Inc. PowerEdge 1950/0DT097
+Jun  9 15:14:50 an1 [  299.447357] RIP: 0010:[<ffffffffa0709b96>]  [<ffffffffa0709b96>] create_subvol+0x36a/0x440 [btrfs]
+Jun  9 15:14:50 an1 [  299.447357] RSP: 0018:ffff88021b163c48  EFLAGS: 00010206
+Jun  9 15:14:50 an1 [  299.447357] RAX: 0000000019b201a0 RBX: ffff88022402d800 RCX: ffff88019206c028
+Jun  9 15:14:50 an1 [  299.447357] RDX: ffff88021884f618 RSI: 00000000fffffff4 RDI: ffff88019206c048
+Jun  9 15:14:50 an1 [  299.447357] RBP: ffff88021b163de8 R08: ffff88021b163bb8 R09: ffff88019206c048
+Jun  9 15:14:50 an1 [  299.447357] R10: ffffffffa06c7ed7 R11: ffff88021b163bb8 R12: ffff88021b163d88
+Jun  9 15:14:50 an1 [  299.447357] R13: 0000000000000000 R14: ffff880222fac000 R15: ffff8801e8b6e280
+Jun  9 15:14:50 an1 [  299.447357] FS:  00007fa5aa04d710(0000) GS:ffff88022fc80000(0000) knlGS:0000000000000000
+Jun  9 15:14:50 an1 [  299.447357] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Jun  9 15:14:50 an1 [  299.447357] CR2: 0000000001d45000 CR3: 000000021bd42000 CR4: 00000000000006e0
+Jun  9 15:14:50 an1 [  299.447357] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jun  9 15:14:50 an1 [  299.447357] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Jun  9 15:14:50 an1 [  299.447357] Process cosd (pid: 6047, threadinfo ffff88021b162000, task ffff8801dee243e0)
+Jun  9 15:14:50 an1 [  299.447357] Stack:
+Jun  9 15:14:50 an1 [  299.447357]  ffff880200000002 0000000000000003 0000000000000000 ffff8801e8b6d000
+Jun  9 15:14:50 an1 [  299.447357]  0000000000000000 000000071b163c80 ffff8801d6af9008 ffff880192075000
+Jun  9 15:14:50 an1 [  299.447357]  ffff8801e898eb40 ffff880219b201a0 0000000000000001 0000000000000000
+Jun  9 15:14:50 an1 [  299.447357] Call Trace:
+Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff810362ec>] ? need_resched+0x23/0x2d
+Jun  9 15:14:50 an1 [  299.447357]  [<ffffffffa0709d7a>] btrfs_mksubvol+0x10e/0x167 [btrfs]
+Jun  9 15:14:50 an1 [  299.447357]  [<ffffffffa070a29f>] btrfs_ioctl_snap_create_transid+0x9c/0x121 [btrfs]
+Jun  9 15:14:50 an1 [  299.447357]  [<ffffffffa070a45e>] btrfs_ioctl_snap_create+0x50/0x67 [btrfs]
+Jun  9 15:14:50 an1 [  299.447357]  [<ffffffffa070bc5a>] btrfs_ioctl+0x1d0/0x2c6 [btrfs]
+Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff8111fe12>] vfs_ioctl+0x1d/0x34
+Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff8112048d>] do_vfs_ioctl+0x171/0x17a
+Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff811130a2>] ? fget_light+0x69/0x81
+Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff811204f2>] sys_ioctl+0x5c/0x7c
+Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff8111d48d>] ? putname+0x33/0x37
+Jun  9 15:14:50 an1 [  299.447357]  [<ffffffff813b21eb>] system_call_fastpath+0x16/0x1b
+Jun  9 f6 4c 89 ff 01 c0 48 98 48 03 82 c8 00 00 00 48 89 82 c8 00 00 00 48 89 42 c0 48 8b 95 a8 fe ff ff e8 5e d5 fd ff 85 c0 74 04 <0f> 0b eb fe 48 8b 85 a8 fe ff ff 49 8b 8e 17 01 00 00 4c 89 ff
+Jun  9 15:14:50 an1 [  299.447357] RIP  [<ffffffffa0709b96>] create_subvol+0x36a/0x440 [btrfs]
+Jun  9 15:14:50 an1 [  299.447357]  RSP <ffff88021b163c48>
+Jun  9 15:14:50 an1 [  299.767860] ---[ end trace 10d1f43d69984a37 ]---
+Jun  9 15:15:23 an1 [  333.037241] ------------[ cut here ]------------
 
-	For printing 16-byte
 
-You want to resend or shall I just fix it?
+It bisects to the following commit:
 
-> +	'b' and 'B' specifiers are used to specify a little endian order in
-> +	lower ('l') or upper case ('L') hex characters - and big endian order
-> +	in lower ('b') or upper case ('B') hex characters.
-> +
-> +	Where no additional specifiers are used the default little endian
-> +	order with lower case hex characters will be printed.
+16cdcec736cd214350cdb591bf1091f8beedefa0 is the first bad commit
+commit 16cdcec736cd214350cdb591bf1091f8beedefa0
+Author: Miao Xie <miaox@cn.fujitsu.com>
+Date:   Fri Apr 22 18:12:22 2011 +0800
+
+     btrfs: implement delayed inode items operation
+
+Please let me know what other information I can provide, or
+any testing I can do, that will help to resolve this issue.
+
+Thanks -- Jim
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
